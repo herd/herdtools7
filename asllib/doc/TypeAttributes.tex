@@ -30,27 +30,6 @@ the builtin singular type \texttt{Color} consists of two constants:
 \texttt{RED} and~\texttt{BLACK}.
 \ASLListing{An enumeration type}{typing-builtinenumerationtype}{\typingtests/TypingRule.EnumerationType.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-The \emph{builtin singular types} are:
-\begin{itemize}
-\item the \integertypesterm{};
-\item the \realtypeterm{};
-\item the \stringtypeterm{};
-\item the \booleantypeterm{};
-\item the \bitvectortypeterm{} (which includes \texttt{bit}, as a special case);
-\item the \enumerationtypeterm{}.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vb \eqdef \astlabel(\tty) \in \{\TReal, \TString, \TBool, \TBits, \TEnum, \TInt\}
-}{
-  \isbuiltinsingular(\tty) \typearrow \vb
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{is_builtin_singular}
 \CodeSubsection{\BuiltinSingularBegin}{\BuiltinSingularEnd}{../types.ml}
 \identd{PQCK} \identd{NZWT}
@@ -68,19 +47,6 @@ type ticks of integer;
 \end{lstlisting}
 \texttt{ticks} is a named type.
 
-\BackupProseAndFormally{
-\ProseParagraph
-A named type is a type that is declared by using the \texttt{type ... of ...} syntax.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vb \eqdef \astlabel(\tty) = \TNamed
-}{
-  \isnamed(\tty) \typearrow \vb
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{is_named}
 \CodeSubsection{\NamedBegin}{\NamedEnd}{../types.ml}
 \identd{vmzx}
@@ -94,21 +60,6 @@ The well-typed specification in \listingref{AnonymousType} illustrates the use
 of anonymous types as permitted by \TypingRuleRef{TypeSatisfaction}.
 \ASLListing{Well-typed anonymous types}{AnonymousType}{\typingtests/TypingRule.AnonymousType.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\Anonymoustypes\ are types that are not declared using the \texttt{type ... of ...} syntax:
-\integertypesterm{}, the \realtypeterm{}, the \stringtypeterm{}, the \booleantypeterm{},
-\bitvectortypesterm{}, \tupletypesterm{}, and \arraytypesterm{}.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vb \eqdef \astlabel(\tty) \neq \TNamed
-}{
-  \isanonymous(\tty) \typearrow \vb
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{is_anonymous}
 \CodeSubsection{\AnonymousBegin}{\AnonymousEnd}{../types.ml}
 
@@ -124,24 +75,6 @@ type B of A;
 type C of B;
 \end{lstlisting}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item obtaining the \underlyingtypeterm\ of $\tty$ in the \staticenvironmentterm{} $\tenv$ yields $\vtone$\ProseOrTypeError;
-  \item applying $\isbuiltinsingular$ to $\vtone$ yields $\vb$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \makeanonymous(\tenv, \tty) \typearrow \vtone \OrTypeError\hva\\\\
-  \isbuiltinsingular(\vtone) \typearrow \vb
-}{
-  \issingular(\tenv, \tty) \typearrow \vb
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{is_singular}
 \CodeSubsection{\SingularBegin}{\SingularEnd}{../types.ml}
 
@@ -162,19 +95,6 @@ type SyntaxException of exception {message: string };
 type PointRecord of Record {x : real, y: real, z: real};
 \end{lstlisting}
 
-\BackupProseAndFormally{
-\ProseParagraph
-The result $\vb$ is $\True$ if and only if $\tty$ is either a record type, a
-collection type or an exception type, which is determined via the AST label of
-$\tty$.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{
-  \isstructured(\tty) \typearrow \overname{\astlabel(\tty) \in \{\TRecord, \TException, \TCollection\}}{\vb}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{is_structured}
 \identd{WGQS} \identd{QXYC}
 
@@ -190,88 +110,6 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
 \ASLListing{Types and their structure}{Structure}{\typingtests/TypingRule.Structure.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-\item \AllApplyCase{named}
-  \begin{itemize}
-  \item $\tty$ is a named type $\vx$;
-  \item obtaining the declared type associated with $\vx$ in the \staticenvironmentterm{} $\tenv$ yields $\vtone$\ProseOrTypeError;
-  \item obtaining the structure of $\vtone$ \staticenvironmentterm{} $\tenv$ yields $\vt$\ProseOrTypeError;
-  \end{itemize}
-\item \AllApplyCase{builtin\_singular}
-  \begin{itemize}
-  \item $\tty$ is a builtin singular type;
-  \item $\vt$ is $\tty$.
-  \end{itemize}
-\item \AllApplyCase{tuple}
-  \begin{itemize}
-  \item $\tty$ is a \tupletypeterm{} with list of types $\tys$;
-  \item the types in $\tys$ are indexed as $\vt_i$, for $i=1..k$;
-  \item obtaining the structure of each type $\vt_i$, for $i=1..k$, in $\tys$ in the \staticenvironmentterm{} $\tenv$,
-  yields $\vtp_i$\ProseOrTypeError;
-  \item $\vt$ is a \tupletypeterm{} with the list of types $\vtp_i$, for $i=1..k$.
-  \end{itemize}
-\item \AllApplyCase{array}
-  \begin{itemize}
-    \item $\tty$ is an array type of length $\ve$ with element type $\vt$;
-    \item obtaining the structure of $\vt$ yields $\vtone$\ProseOrTypeError;
-    \item $\vt$ is an array type of length $\ve$ with element type $\vtone$.
-  \end{itemize}
-\item \AllApplyCase{structured}
-  \begin{itemize}
-  \item $\tty$ is a \structuredtypeterm\ with fields $\fields$;
-  \item obtaining the structure for each type $\vt$ associated with field $\id$ yields a type $\vt_\id$\ProseOrTypeError;
-  \item $\vt$ is a record, a collection or an exception, in correspondence to $\tty$, with the list of pairs $(\id, \vt\_\id)$;
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[named]{
-  \declaredtype(\tenv, \vx) \typearrow \vtone \OrTypeError\hva\\\\
-  \tstruct(\tenv, \vtone)\typearrow\vt \OrTypeError
-}{
-  \tstruct(\tenv, \overname{\TNamed(\vx)}{\tty}) \typearrow \vt
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[builtin\_singular]{
-  \isbuiltinsingular(\tty) \typearrow \True
-}{
-  \tstruct(\tenv, \tty) \typearrow \tty
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[tuple]{
-  \tys \reverseeqdef \vt_{1..k}\\
-  i=1..k: \tstruct(\tenv, \vt_i) \typearrow \vtp_i \OrTypeError
-}{
-  \tstruct(\tenv, \overname{\TTuple(\tys)}{\tty}) \typearrow  \TTuple(i=1..k: \vtp_i)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[array]{
-  \tstruct(\tenv, \vt) \typearrow \vtone \OrTypeError
-}{
-  \tstruct(\tenv, \overname{\TArray(\ve, \vt)}{\tty}) \typearrow \TArray(\ve, \vtone)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[structured]{
-  L \in \{\TRecord, \TException, \TCollection\}\hva\\\\
-  (\id,\vt) \in \fields : \tstruct(\tenv, \vt) \typearrow \vt_\id \OrTypeError
-}{
-  \tstruct(\tenv, \overname{L(\fields)}{\tty}) \typearrow
- L([ (\id,\vt) \in \fields : (\id,\vt_\id) ])
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{get_structure}
 \CodeSubsection{\StructureBegin}{\StructureEnd}{../types.ml}
 \identd{FXQV}
@@ -295,41 +133,6 @@ The \underlyingtypeterm{} of \texttt{(integer, T2)} and \texttt{T3} is
 \texttt{T2}, which is \texttt{(integer, integer)}.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{named}
-  \begin{itemize}
-    \item $\tty$ is a named type $\vx$;
-    \item obtaining the type declared for $\vx$ yields $\vtone$\ProseOrTypeError;
-    \item the \underlyingtypeterm\ of $\vtone$ is $\vt$.
-  \end{itemize}
-
-  \item \AllApplyCase{non-named}
-  \begin{itemize}
-    \item $\tty$ is not a named type $\vx$;
-    \item $\vt$ is $\tty$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[named]{
-  \tty \reverseeqdef \TNamed(\vx) \\
-  \declaredtype(\tenv, \vx) \typearrow \vtone \OrTypeError \hva\\\\
-  \makeanonymous(\tenv, \vtone) \typearrow \vt
-}{
-  \makeanonymous(\tenv, \tty) \typearrow \vt
-}
-\hva\and
-\inferrule[non-named]{
-  \astlabel(\tty) \neq \TNamed
-}{
-  \makeanonymous(\tenv, \tty) \typearrow \tty
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{make_anonymous}
 \CodeSubsection{\MakeAnonymousBegin}{\MakeAnonymousEnd}{../types.ml}
 
@@ -346,59 +149,5 @@ is a \constrainedintegerterm{} type.
 \ASLListing{Checking for constrained integers}{check-constrained-integer}{\typingtests/TypingRule.CheckConstrainedInteger.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{well-constrained}
-  \begin{itemize}
-    \item $\vt$ is a well-constrained integer;
-    \item the result is $\True$.
-  \end{itemize}
-
-  \item \AllApplyCase{parameterized}
-  \begin{itemize}
-    \item $\vt$ is a \parameterizedintegertypeterm;
-    \item the result is $\True$.
-  \end{itemize}
-
-  \item \AllApplyCase{unconstrained}
-  \begin{itemize}
-    \item $\vt$ is an unconstrained integer or pending constrained integer;
-    \item the result is a \typingerrorterm{} indicating that a constrained integer type is expected.
-  \end{itemize}
-
-  \item \AllApplyCase{conflicting\_type}
-  \begin{itemize}
-    \item $\vt$ is not an integer type;
-    \item the result is a \typingerrorterm{} indicating the type conflict.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[well-constrained]{}
-{
-  \checkconstrainedinteger(\tenv, \overname{\TInt(\WellConstrained(\Ignore))}{\tty}) \typearrow \True
-}
-\hva\and
-\inferrule[parameterized]{}
-{
-  \checkconstrainedinteger(\tenv, \overname{\TInt(\Parameterized(\Ignore))}{\tty}) \typearrow \True
-}
-\hva\and
-\inferrule[unconstrained]{
-  \astlabel(\vc) = \Unconstrained \;\lor\; \astlabel(\vc) = \PendingConstrained
-}{
-  \checkconstrainedinteger(\tenv, \overname{\TInt(\vc)}{\tty}) \typearrow \TypeErrorVal{\UnexpectedType}
-}
-\hva\and
-\inferrule[conflicting\_type]{
-  \astlabel(\vt) \neq \TInt
-}{
-  \checkconstrainedinteger(\tenv, \vt) \typearrow \TypeErrorVal{\UnexpectedType}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{check_constrained_integer}
 \CodeSubsection{\CheckConstrainedIntegerBegin}{\CheckConstrainedIntegerEnd}{../Typing.ml}

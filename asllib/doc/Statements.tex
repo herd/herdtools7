@@ -82,20 +82,6 @@ Annotating the \passstatementterm{} in \listingref{semantics-spass} does
 not modify the \staticenvironmentterm{}.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is a pass statement, that is, $\SPass$;
-  \item $\news$ is $\vs$;
-  \item $\newtenv$ is $\tenv$;
-  \item \Proseeqdef{$\vses$}{the empty set}.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{\annotatestmt(\tenv, \SPass) \typearrow (\SPass, \tenv, \overname{\emptyset}{\vses})}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 
 \RenderProseAndFormally{annotate_stmt_SPass}
 \CodeSubsection{\SPassBegin}{\SPassEnd}{../Typing.ml}
@@ -106,22 +92,6 @@ not modify the \staticenvironmentterm{}.
 In \listingref{semantics-spass}, \texttt{pass;} does not modify the environment.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\vs$ is a \passstatementterm, $\SPass$;
-\item $\newg$ is the empty graph;
-\item $\newenv$ is $\env$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{
-  \evalstmt(\env, \SPass) \evalarrow \Continuing(\overname{\emptygraph}{\newg}, \overname{\env}{\newenv})
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_stmt_SPass}
 \CodeSubsection{\EvalSPassBegin}{\EvalSPassEnd}{../Interpreter.ml}
 
@@ -152,29 +122,6 @@ In \listingref{semantics-sassign}, the assignment \verb|x = 3;|
 is well-typed.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is an assignment \texttt{le = re}, that is, $\SAssign(\vle, \vre)$;
-  \item annotating the \rhsexpression{} $\vre$ in $\tenv$ yields $(\vtre, \vreone, \vsesre)$\ProseOrTypeError;
-  \item annotating the \assignableexpression\ $\vle$ with the type $\vtre$ in $\tenv$ yields $(\vleone, \vsesle)$\ProseOrTypeError;
-  \item $\news$ is the assignment \texttt{le1 = re1}, that is, $\SAssign(\vleone, \vreone)$;
-  \item $\newtenv$ is $\tenv$;
-  \item \Proseeqdef{$\vses$}{the union of $\vsesre$ and $\vsesle$}.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \vre) \typearrow (\vtre, \vreone, \vsesre) \OrTypeError\hva\\\\
-  \annotatelexpr(\tenv, \vle, \vtre) \typearrow (\vleone, \vsesle) \OrTypeError\hva\\\\
-  \vses \eqdef \vsesre \cup \vsesle
-}{
-  \annotatestmt(\tenv, \overname{\SAssign(\vle, \vre)}{\vs}) \typearrow
-  (\overname{\SAssign(\vleone, \vreone)}{\news}, \overname{\tenv}{\newtenv}, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_stmt_SAssign}
 \CodeSubsection{\SAssignBegin}{\SAssignEnd}{../Typing.ml}
 
@@ -211,37 +158,6 @@ $\nvint(2)$ to the mutable variable~\texttt{b}, and discards $\nvint(3)$.
 \ASLListing{Assignment from a call expression.}{assigncallsemantics}{\semanticstests/SemanticsRule.SAssignCall.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ assigns an \assignableexpression{} list from a subprogram call,\\ $\SAssign(\LEDestructuring(\les),\ECall(\vcall))$;
-  \item $\les$ is a list of \assignableexpressions, each of which is either a variable ($\LEVar(\Ignore)$)
-        or a discarded variable ($\LEDiscard$);
-  \item evaluating the subprogram call as per \chapref{SubprogramCalls} is
-        $\ResultCall(\vms, \envone)$\ProseOrAbnormal;
-  \item assigning each value in $\vms$ to the respective element of the tuple $\les$ is $\ResultLexpr(\vgtwo, \newg)$\ProseOrAbnormal.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vs = \SAssign(\LEDestructuring(\les),\ECall(\vcall))\\
-  \vles \eqdef \vle_{1..k}\\
-  i=1..k: \lexprisvar(\vle_i) \evalarrow \True\\
-  {
-    \begin{array}{r}
-  \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \\
-  \ResultCall(\vms, \envone) \OrAbnormal
-    \end{array}
-  }\hva\\\\
-  \evalmultiassignment(\envone, \vles, \vms) \evalarrow \ResultLexpr(\newg, \newenv) \OrAbnormal
-}{
-  \evalstmt(\env, \vs)
-  \evalarrow \Continuing(\newg, \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_stmt_SAssignCall}
 \CodeSubsection{\EvalSAssignCallBegin}{\EvalSAssignCallEnd}{../Interpreter.ml}
 
@@ -253,42 +169,6 @@ $\nvint(42)$, and $\newenv$ is such that \texttt{x} is bound to $\nvint(3)$.
 \ASLListing{Evaluating an assignment}{semantics-sassign}{\semanticstests/SemanticsRule.SAssign.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is an assignment statement, $\SAssign(\vle, \vre)$;
-  \item \OneApplies
-  \begin{itemize}
-    \item $\vre$ is not a call expression;
-    \item $\vle$ is not a multi-variable expression (that is, not a $\LEDestructuring$);
-    \item $\vle$ is a multi-variable expression, but one of its components is neither a variable
-          nor a discarded variable.
-  \end{itemize}
-  \item evaluating the expression $\vre$ in $\env$ yields
-        $\ResultExpr(\vm, \envone)$ (here, $\vm$ is a pair consisting of a value and an execution graph)\ProseOrAbnormal;
-  \item evaluating the \assignableexpression\ $\vle$ with $\vm$ in $\envone$,
-        as per \chapref{AssignableExpressions}, yields $\ResultLexpr(\newg, \newenv)$\ProseOrAbnormal.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  {\left(
-  \begin{array}{c}
-  \astlabel(\vle) \neq \LEDestructuring\ \lor \\
-  \astlabel(\vre) \neq \ECall\ \lor\\
-  \vle = \LEDestructuring(\les) \land \exists \vi\in\listrange(\vle).\ \neg\lexprisvar(\vle[\vi])
-  \end{array}
-  \right)
-  }\\
-  \evalexpr(\env, \vre) \evalarrow \ResultExpr(\vm, \envone) \OrAbnormal\\
-  \evallexpr(\envone, \vle, \vm) \evalarrow \ResultLexpr(\newg, \newenv) \OrAbnormal
-}{
-  \evalstmt(\env, \SAssign(\vle, \vre)) \evalarrow \Continuing(\newg, \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_stmt_SAssign}
 \CodeSubsection{\EvalSAssignBegin}{\EvalSAssignEnd}{../Interpreter.ml}
 
@@ -299,15 +179,6 @@ In \ExampleRef{Evaluation of Multi-variable Assignment from Subprogram Calls},
 the \assignableexpressions{} \verb|a|, \verb|b| are variables,
 and \verb|-| is a discarded \assignableexpression{}.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\ProseEqdef{$\vle$}{$\True$ if and only if $\vle$ is either a variable or a discarded left-hand-side expression.}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{ \lexprisvar(\vle) \evalarrow \astlabel(\vle) \in \{\LEVar, \LEDiscard\}}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{lexpr_is_var}
 
 \section{Setter Assignment Statements\label{sec:SetterAssignmentStatements}}
@@ -592,69 +463,6 @@ since immutable local storage elements require an initializing expression.
 \ASLListing{An uninitialized immutable local storage declaration}{typing-sdecl-bad2}{\typingtests/TypingRule.SDecl.bad2.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{some}
-  \begin{itemize}
-        \item $\vs$ is a declaration with an initializing expression $\ve$,\\
-          ($\SDecl(\ldk, \ldi, \tyopt, \some{\ve})$);
-    \item annotating the \rhsexpression{} $\ve$ in $\tenv$ yields $(\vte,\vep, \vsese)$\ProseOrTypeError;
-    \item applying $\annotatelocaldecltypeannot$ to the environment $\tenv$, type annotation $\tyopt$, type $\vte$, local declaration keyword $\ldk$, expression $\vep$, and local declaration item $\ldi$ yields $(\tenvone, \tyoptp, \vsesldi)$\ProseOrTypeError;
-    \item \Proseeqdef{$\vses$}{the union of $\vsese$ and $\vsesldi$};
-    \item $\news$ is a declaration with $\ldk$, $\ldi$, type annotation $\tyoptp$, and an expression $\vep$;
-    \item $\newtenv$ is $\tenvone$.
-  \end{itemize}
-
-  \item \AllApplyCase{none}
-  \begin{itemize}
-  \item $\vs$ is a local declaration statement with a variable keyword and no initializing expression,
-        that is, $\SDecl(\LDKVar, \ldi, \tyopt, \None)$ (local declarations of \texttt{let} variables require
-        an initializing expression, otherwise they are rejected by an ASL parser);
-  \item checking that $\tyopt$ is not $\None$, that is, the declaration has a type annotation, yields $\True$\ProseOrTypeError;
-  \item $\tyopt$ is $\some{\vt}$;
-  \item annotating $\vt$ in $\tenv$ yields $(\vtp, \vsestp)$\ProseOrTypeError;
-  \item applying $\basevalue$ to $\vtp$ in $\tenv$ yields $\veinit$\ProseOrTypeError;
-  \item annotating the local declaration item $\ldi$ with the type $\vtp$ and local declaration keyword $\LDIVar$
-        yields $\newtenv$\ProseOrTypeError;
-  \item define $\news$ as local declaration statement with variable keyword, local declaration item $\ldi$, type annotation $\vtp$, and initializing expression $\veinit$, that is, $\SDecl(\LDKVar, \ldi, \some{\veinit})$;
-  \item \Proseeqdef{$\vses$}{$\vsestp$}.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[some]{
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsese) \OrTypeError\hva\\\\
-  {
-  \begin{array}{r}
-  \annotatelocaldecltypeannot(\tenv, \tyopt, \vte, \ldk, \vep, \ldi) \typearrow \\
-  (\tenvone, \tyoptp, \vsesldi) \OrTypeError
-  \end{array}
-  }\\
-  \vses \eqdef \vsese \cup \vsesldi\\
-  \news \eqdef \SDecl(\ldk, \ldi, \tyoptp, \some{\vep})
-}{
-  \annotatestmt(\tenv, \overname{\SDecl(\ldk, \ldi, \tyopt, \some{\ve})}{\vs}) \typearrow (\news, \overname{\tenvone}{\newtenv}, \vses)
-}
-\end{mathpar}
-\identr{YSPM}
-
-\begin{mathpar}
-\inferrule[none]{
-  \vs = \SDecl(\LDKVar, \ldi, \tyopt, \None)\\
-  \techeck(\tyopt \neq \None, \TypeErrorVal{\BadDeclaration}) \typearrow \True \OrTypeError \\
-  \tyopt \reverseeqdef \some{\vt} \\
-  \annotatetype(\tenv, \vt) \typearrow (\vtp, \vses) \OrTypeError\hva\\\\
-  \basevalue(\tenv, \vtp) \typearrow \veinit \OrTypeError\hva\\\\
-  \annotatelocaldeclitem(\tenv, \vtp, \LDKVar, \None, \ldip) \typearrow \newtenv \OrTypeError \\
-  \news \eqdef \SDecl(\LDKVar, \ldi, \some{\vtp}, \some{\veinit})
-}{
-  \annotatestmt(\tenv, \vs) \typearrow (\news, \newtenv, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_stmt_SDecl}
 \CodeSubsection{\SDeclegin}{\SDeclEnd}{../Typing.ml}
 
@@ -664,64 +472,6 @@ since immutable local storage elements require an initializing expression.
 See \ExampleRef{Typing Declaration Statements}.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{none}
-  \begin{itemize}
-    \item $\tyopt$ is $\None$;
-    \item \Prosenoprecisionloss{\vte};
-    \item applying $\annotatelocaldeclitem(\tenv, \vte, \ldk, \some{\vep}, \ldi)$ yields\\ $\newtenv$\ProseOrTypeError;
-    \item $\tyoptp$ is $\tyopt$;
-    \item \Proseeqdef{$\vses$}{the empty set}.
-  \end{itemize}
-
-  \item \AllApplyCase{some}
-  \begin{itemize}
-    \item $\tyopt$ is $\some{\vt}$;
-    \item determining the \structureterm{} of $\vte$ in $\tenv$ yields $\vtep$\ProseOrTypeError;
-    \item propagating integer constraints from $\vtep$ to $\vt$ using\\ $\inheritintegerconstraints$ yields $\vtp$\ProseOrTypeError;
-    \item annotating the type $\vtp$ in $\tenv$ yields $(\vtpp, \vses)$\ProseOrTypeError;
-  \item determining whether $\vtpp$ can be initialized with $\vte$ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item annotating the local declaration item $\ldi$ with the local declaration keyword $\ldk$, given
-  the expression $\vep$, in the environment $\tenv$, yields $\newtenv$;
-  \item $\tyoptp$ is $\some{\vtpp}$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[none]{
-  \checknoprecisionloss(\vte) \typearrow \True \OrTypeError\hva\\\\
-  \annotatelocaldeclitem(\tenv, \vte, \ldk, \some{\vep}, \ldi) \typearrow \newtenv \OrTypeError
-}{
-  {
-    \begin{array}{r}
-  \annotatelocaldecltypeannot(\tenv, \overname{\None}{\tyopt}, \vte, \ldk, \vep, \ldi) \typearrow\\
-   (\newtenv, \overname{\None}{\tyoptp}, \overname{\emptyset}{\vses})
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[some]{
-  \tstruct(\tenv, \vte) \typearrow \vtep \OrTypeError \\
-  \inheritintegerconstraints(\vt, \vtep) \typearrow \vtp \OrTypeError \\
-  \annotatetype(\tenv, \vtp) \typearrow (\vtpp, \vses) \OrTypeError\hva\\\\
-  \checkcanbeinitializedwith(\tenv, \vtpp, \vte) \typearrow \True \OrTypeError\hva\\\\
-  \annotatelocaldeclitem(\tenv, \vtpp, \ldk, \some{ \vep }, \ldip) \typearrow \newtenv \OrTypeError
-}{
-  {
-    \begin{array}{r}
-  \annotatelocaldecltypeannot(\tenv, \overname{\some{\vt}}{\tyopt}, \vte, \ldk, \vep, \ldi) \typearrow\\
-   (\newtenv, \overname{\some{\vtpp}}{\tyoptp}, \vses)
-   \end{array}
-  }
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_local_decl_type_annot}
 
 \TypingRuleDef{InheritIntegerConstraints}
@@ -737,75 +487,6 @@ in the \CaseName{int} below.
 {\typingtests/TypingRule.InheritIntegerConstraints.unconstrained.bad.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{int}
-  \begin{itemize}
-    \item $\lhs$ is a \pendingconstrainedintegertypeterm{};
-    \item \Prosenoprecisionloss{$\rhs$};
-    \item checking that $\rhs$ is a \wellconstrainedintegertypeterm{} yields $\True$\ProseOrTypeError;
-    \item \Proseeqdef{$\lhsp$}{$\rhs$}.
-  \end{itemize}
-
-  \item \AllApplyCase{tuple}
-  \begin{itemize}
-    \item $\lhs$ is a tuple of types $\vlhstys$;
-    \item $\rhs$ is a tuple of types $\vrhstys$;
-    \item checking that the lengths of $\vlhstys$ and $\vrhstys$ are equal yields $\True$\ProseOrTypeError;
-    \item define $\vlhstysp$ by applying $\inheritintegerconstraints$ to each element of \\
-         $ \vlhstys$ and $\vrhstys$\ProseOrTypeError;
-    \item \Proseeqdef{$\lhsp$}{$\TTuple(\vlhstysp)$}.
-  \end{itemize}
-
-  \item \AllApplyCase{other}
-  \begin{itemize}
-    \item $\lhs$ is not a \pendingconstrainedintegertypeterm{}, or one of $\lhs$ and $\rhs$ is not a \tupletypeterm{};
-    \item \Proseeqdef{$\lhsp$}{$\lhs$}.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[int]{
-  \checknoprecisionloss(\rhs) \typearrow \True \OrTypeError\hva\\\\
-  \techeck(\iswellconstrainedinteger(\rhs), \UnexpectedType) \typearrow \True\OrTypeError
-}{
-  \inheritintegerconstraints(\overname{\TInt(\PendingConstrained)}{\lhs}, \rhs) \typearrow \overname{\rhs}{\lhsp}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[tuple]{
-  \lhs = \TTuple(\vlhstys) \\
-  \rhs = \TTuple(\vrhstys) \hva\\\\
-  \techeck(\equallength(\vlhstys, \vrhstys), \UnexpectedType) \typearrow \True \OrTypeError \hva\\\\
-  {
-  \begin{array}{r}
-  \vi \in \listrange(\lhs): \inheritintegerconstraints(\vlhstys_\vi, \vrhstys_\vi) \typearrow \\
-  \vlhstysp_\vi \OrTypeError
-  \end{array}
-  }
-}{
-  \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\TTuple(\vlhstysp)}{\lhsp}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[other]{
-  {
-    \begin{array}{ll}
-  \lhs \neq \TInt(\PendingConstrained) & \lor\\
-  \astlabel(\lhs) \neq \TTuple & \lor\\
-  \astlabel(\rhs) \neq \TTuple &
-    \end{array}
-  }
-}{
-  \inheritintegerconstraints(\lhs, \rhs) \typearrow \overname{\lhs}{\lhsp}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{inherit_integer_constraints}
 
 \TypingRuleDef{CheckNoPrecisionLoss}
@@ -821,54 +502,6 @@ constant types would result in more than $\maxconstraintsize$ elements, see
 \ASLListing{Type-checking a declaration with an imprecise type}{typing-imprecisetype}{\typingtests/TypingRule.CheckNoPrecisionLoss.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{Well-Constrained}
-      \begin{itemize}
-        \item $\vt$ is a \wellconstrainedintegertypeterm{} with \precisionlossindicatorterm{} $\vp$;
-        \item checking that $\vp = \PrecisionFull$ yields $\True$\ProseOrTypeError;
-      \end{itemize}
-    \item \AllApplyCase{Integer}
-      \begin{itemize}
-        \item $\vt$ is not a \wellconstrainedintegertypeterm{};
-      \end{itemize}
-    \item \AllApplyCase{Other}
-      \begin{itemize}
-        \item $\vt$ is not an \integertypeterm{};
-      \end{itemize}
-  \end{itemize}
-  \item the result is $\True$. That is, no \typingerrorterm{} is raised.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-  \inferrule[Well-Constrained]{%
-    \techeck(p = \PrecisionFull, \PrecisionLostDefining) \typearrow \True\OrTypeError
-  }{%
-    \checknoprecisionloss(\overname{\TInt(\WellConstrained(\Ignore, p))}{\vt}) \typearrow \True
-  }
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[Integer]{%
-    \astlabel(\vc) \neq \WellConstrained
-  }{%
-    \checknoprecisionloss(\overname{\TInt(\vc)}{\vt}) \typearrow \True
-  }
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[Other]{%
-    \astlabel(\vt) \neq \TInt
-  }{%
-    \checknoprecisionloss(\vt) \typearrow \True
-  }
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{check_no_precision_loss}
 \CodeSubsection{\CheckNoPrecisionLossBegin}{\CheckNoPreciisonLossEnd}{../Typing.ml}
 
@@ -878,41 +511,6 @@ constant types would result in more than $\maxconstraintsize$ elements, see
 See \ExampleRef{Type-satisfaction Examples}.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{okay}
-  \begin{itemize}
-    \item testing whether $\vt$ \typesatisfiesterm\ $\vs$ in $\tenv$ yields $\True$;
-    \item the result is $\True$.
-  \end{itemize}
-
-  \item \AllApplyCase{error}
-  \begin{itemize}
-    \item testing whether $\vt$ \typesatisfiesterm\ $\vs$ in $\tenv$ yields $\False$;
-    \item the result is a \typingerrorterm{} indicating that an expression of type $\vs$ cannot
-          be used to initialize a storage element of type $\vt$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[okay]{
-  \typesatisfies(\tenv, \vt, \vs) \typearrow \True
-}{
-  \checkcanbeinitializedwith(\tenv, \vs, \vt) \typearrow \True
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[error]{
-  \typesatisfies(\tenv, \vt, \vs) \typearrow \False
-}{
-  \checkcanbeinitializedwith(\tenv, \vs, \vt) \typearrow \TypeErrorVal{\TypeSatisfactionFailure}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{check_can_be_initialized_with}
 \identr{ZCVD}  \identr{LXQZ}
 
@@ -934,29 +532,6 @@ In \listingref{semantics-sdeclnone},
 \ASLListing{Evaluating a declaration without a given initial value}{semantics-sdeclnone}{\semanticstests/SemanticsRule.SDeclNone.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is a declaration with an initial value,
-        $\SDecl(\Ignore, \ldi, \Ignore, \some{\ve})$;
-  \item evaluating $\ve$ in $\env$ is $\ResultExpr(\vm, \envone)$\ProseOrAbnormal;
-  \item evaluating the local declaration $\ldi$ with $\vm$ as the initializing
-        value in $\envone$ as per \chapref{LocalStorageDeclarations} is
-        $\ResultLexpr(\newg, \newenv)$;
-  \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr(\vm, \envone) \OrAbnormal\\
-  \evallocaldecl(\envone, \ldi, \vm) \evalarrow \ResultLexpr(\newg, \newenv)\\
-}{
-  \evalstmt(\env, \SDecl(\Ignore, \ldi, \Ignore, \some{\ve})) \evalarrow \Continuing(\newg, \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_stmt_SDecl}
 \CodeSubsection{\EvalSDeclBegin}{\EvalSDeclEnd}{../Interpreter.ml}
 
@@ -1192,27 +767,6 @@ is annotated in the \staticenvironmentterm{} where
 and also recorded to be equivalent to $\LInt(3)$ (in the $\exprequiv$ map).
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is the AST node for the sequence of statements $\vsone$ and $\vstwo$, that is, $\SSeq(\vsone, \vstwo)$;
-  \item annotating $\vsone$ in $\tenv$ yields $(\newsone, \tenvone, \vsesone)$\ProseOrTypeError;
-  \item annotating $\vstwo$ in $\tenvone$ yields $(\newstwo, \newtenv, \vsestwo)$\ProseOrTypeError;
-  \item $\news$ is the AST node for the sequence of statements $\newsone$ and $\newstwo$, that is, $\SSeq(\newsone, \newstwo)$;
-  \item \Proseeqdef{$\vses$}{the union of $\vsesone$ and $\vsestwo$}.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotatestmt(\tenv, \vs1) \typearrow (\newsone, \tenvone, \vsesone) \OrTypeError\hva\\\\
-  \annotatestmt(\tenvone, \vs2) \typearrow (\newstwo, \newtenv, \vsestwo) \OrTypeError\hva\\\\
-  \vses \eqdef \vsesone \cup \vsestwo
-}{
-  \annotatestmt(\tenv, \overname{\SSeq(\vsone, \vstwo)}{\vs}) \typearrow (\overname{\SSeq(\newsone, \newstwo)}{\news}, \newtenv, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_stmt_SSeq}
 \CodeSubsection{\SSeqBegin}{\SSeqEnd}{../Typing.ml}
 
@@ -1224,33 +778,6 @@ the evaluation of \texttt{let x = 3; let y = x + 1} first evaluates \texttt{let 
 evaluates \texttt{let y = x + 1}.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is a \sequencingstatementterm{} \texttt{s1; s2}, that is, $\SSeq(\vsone, \vstwo)$;
-  \item evaluating $\vsone$ in $\env$ is either $\Continuing(\vgone, \envone)$ in which case
-        the evaluation continues,
-        or a returning configuration ($\Returning((\vvs, \newg), \newenv)$)
-        or an abnormal configuration, which short-circuit the entire evaluation;
-  \item evaluating $\vstwo$ in $\envone$ yields a non-abnormal configuration (either $\Returning$ or $\Continuing$) $C$\ProseOrAbnormal;
-  \item $\newg$ is the ordered composition of $\vgone$ and the execution graph of $C$ with the
-        $\aslpo$ edge;
-  \item $D$ is the configuration $C$ with the execution graph component replaced with $\newg$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalstmt(\env, \vsone) \evalarrow \Continuing(\vgone, \envone) \OrAbnormal,\ReturningConfig\hva\\\\
-  \evalstmt(\envone, \vstwo) \evalarrow C \OrAbnormal\hva\\\\
-  \newg \eqdef \ordered{\vgone}{\aslpo}{\graphof{C}}\\
-  D \eqdef \withgraph{C}{\newg}
-}{
-  \evalstmt(\env, \SSeq(\vsone, \vstwo)) \evalarrow D
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_stmt_SSeq}
 \CodeSubsection{\EvalSSeqBegin}{\EvalSSeqEnd}{../Interpreter.ml}
 
@@ -1309,34 +836,6 @@ since call statements are only allowed for procedures, not functions.
 \ASLListing{An ill-defined call statement}{scall-bad}{\typingtests/TypingRule.SCall.bad.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is a call to a subprogram, that is, $\SCall(\vcall)$;
-  \item annotating the subprogram call $\vcall$ as per \chapref{SubprogramCalls}
-      yields $(\vcallp, \None, \vses)$\ProseOrTypeError;
-  \item $\news$ is the call using $\vcallp$, that is, $\SCall(\vcallp)$;
-  \item $\newtenv$ is $\tenv$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  {
-    \begin{array}{r}
-      \annotatecall(\vcall) \typearrow (\vcallp, \None, \vses) \OrTypeError
-    \end{array}
-  }
-}{
-  {
-    \begin{array}{r}
-  \annotatestmt(\tenv, \overname{\SCall(\vcall)}{\vs}) \typearrow
-  (\overname{\SCall(\vcallp)}{\news}, \tenv, \vses)
-    \end{array}
-  }
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_stmt_SCall}
 \CodeSubsection{\SCallBegin}{\SCallEnd}{../Typing.ml}
 \identd{VXKM}
@@ -1348,30 +847,6 @@ In \listingref{scall}, the call statement \verb|catenate_into_g{4, 3}(x, y, TRUE
 assigns \verb|'1101 111'| to the global variable \verb|g|.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is a call statement, $\SCall(\vcall)$;
-  \item evaluating the subprogram call as per \chapref{SubprogramCalls} yields\\
-  $\ResultCall(\newg, \newenv)$\ProseOrAbnormal;
-  \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-{
-\begin{array}{r}
-  \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \\
-  \ResultCall(\newg, \newenv) \OrAbnormal
-\end{array}
-}
-}{
-  \evalstmt(\env, \overname{\SCall(\vcall)}{\vs}) \evalarrow \Continuing(\newg, \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_stmt_SCall}
 \CodeSubsection{\EvalSCallBegin}{\EvalSCallEnd}{../Interpreter.ml}
 \identd{KCYT}
@@ -1452,33 +927,6 @@ an \atcexpressionterm{}.
 \ASLListing{Typing conditional statements with two bitvector types}{SCond}{\typingtests/TypingRule.SCond.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is a condition $\ve$ with the statements $\vsone$ and $\vstwo$, that is, $\SCond(\ve, \vsone, \vstwo)$;
-  \item annotating the \rhsexpression{} $\ve$ in $\tenv$ yields\\ $(\tcond, \econd, \vsescond)$\ProseOrTypeError;
-  \item checking that $\tcond$ \typesatisfiesterm\ $\TBool$ yields $\True$\ProseOrTypeError;
-  \item annotating the statement $\vsone$ in $\tenv$ yields $(\vsonep, \vsesone)$\ProseOrTypeError;
-  \item annotating the statement $\vstwo$ in $\tenv$ yields $(\vstwop, \vsestwo)$\ProseOrTypeError;
-  \item $\news$ is the condition $\econd$ with the statements $\vsonep$ and $\vstwop$, that is, $\SCond(\econd, \vsonep, \vstwop)$;
-  \item $\newtenv$ is $\tenv$;
-  \item \Proseeqdef{$\vses$}{the union of $\vsescond$, $\vsesone$, and $\vsestwo$}.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \ve) \typearrow (\tcond, \econd, \vsescond) \OrTypeError\hva\\\\
-  \checktypesatisfies(\tenv, \tcond, \TBool) \typearrow \True \OrTypeError\hva\\\\
-  \annotateblock(\tenv, \vsone) \typearrow (\vsonep, \vsesone) \OrTypeError\hva\\\\
-  \annotateblock(\tenv, \vstwo) \typearrow (\vstwop, \vsestwo) \OrTypeError\hva\\\\
-  \vses \eqdef \vsescond \cup \vsesone \cup \vsestwo
-}{
-  \annotatestmt(\tenv, \overname{\SCond(\ve, \vsone, \vstwo)}{\vs}) \typearrow
-  (\overname{\SCond(\econd, \vsonep, \vstwop)}{\news}, \overname{\tenv}{\newtenv})
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_stmt_SCond}
 \CodeSubsection{\SCondBegin}{\SCondEnd}{../Typing.ml}
 \identr{NBDJ}
@@ -1501,36 +949,6 @@ The specification in \listingref{semantics-scond4} does not result in any error.
 \ASLListing{Evaluating a condition statement with only a \texttt{then} branch}{semantics-scond4}{\semanticstests/SemanticsRule.SCond4.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\vs$ is a condition statement, $\SCond(\ve, \vsone, \vstwo)$;
-\item evaluating $\ve$ in $\env$ yields $\ResultExpr((\vv, \vgone), \envone)$\ProseOrAbnormal;
-\item $\vv$ is a native Boolean for $\vb$;
-\item the statement $\vsp$ is $\vsone$ if $\vb$ is $\True$ and $\vstwo$ otherwise
-      (so that $\vsone$ will be evaluated if the condition evaluates to $\True$ and otherwise
-      $\vstwo$ will be evaluated);
-\item evaluating $\vsp$ in $\envone$ as per \chapref{BlockStatements} is a non-abnormal configuration
-      (either $\Returning$ or $\Continuing$) $C$\ProseOrAbnormal;
-\item $\vg$ is the ordered composition of $\vgone$ and the execution graph of the configuration $C$;
-\item $D$ is the configuration $C$ with the execution graph component updated to be $\vg$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \envone) \OrAbnormal\hva\\\\
-  \vv \reverseeqdef \nvbool(\vb)\\
-  \vsp \eqdef \choice{\vb}{\vsone}{\vstwo}\\
-  \evalblock(\envone, \vsp) \evalarrow C \OrAbnormal\hva\\\\
-  \vg \eqdef \ordered{\vgone}{\aslctrl}{\graphof{C}}\\
-  D \eqdef \withgraph{C}{\vg}
-}{
-  \evalstmt(\env, \overname{\SCond(\ve, \vsone, \vstwo)}{\vs}) \evalarrow D
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_stmt_SCond}
 \CodeSubsection{\EvalSCondBegin}{\EvalSCondEnd}{../Interpreter.ml}
 
@@ -1922,30 +1340,6 @@ since the expression needs to be both of a \booleantypeterm{} and \readonlyterm{
 \ASLListing{Ill-typed assertion statements}{assert-ill-typed}{\typingtests/TypingRule.SAssert.bad.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is an assert statement with expression $\ve$, that is, $\SAssert(\ve)$;
-  \item annotating the \rhsexpression{} $\ve$ in $\tenv$ yields $(\tep,\vep, \vsese)$\ProseOrTypeError;
-  \item checking that $\vsese$ is \readonlyterm{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
-  \item checking that $\vtep$ \typesatisfiesterm\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item $\news$ is an assert statement with expression $\vep$, that is, $\SAssert(\vep)$;
-  \item $\newtenv$ is $\tenv$;
-  \item \Proseeqdef{$\vses$}{$\vsese$}.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \ve) \typearrow (\vtep, \vep, \vsese) \OrTypeError\hva\\\\
-  \techeck(\sesisreadonly(\vsese) \typearrow \True, \SideEffectViolation) \typearrow \True \OrTypeError\hva\\\\
-  \checktypesatisfies(\tenv, \vtep, \TBool) \typearrow \True \OrTypeError\hva\\\\
-  \vses \eqdef \vsese
-  }{
-  \annotatestmt(\tenv, \overname{\SAssert(\ve)}{\vs}) \typearrow (\overname{\SAssert(\vep)}{\news}, \overname{\tenv}{\newtenv}, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_stmt_SAssert}
 \CodeSubsection{\SAssertBegin}{\SAssertEnd}{../Typing.ml}
 \identr{JQYF}
@@ -1963,48 +1357,6 @@ evaluating \texttt{assert (42 == 3);} results in an \DynamicAssertionFailure{} e
 \ASLListing{Evaluating an assertion that fails}{semantics-sassertno}{\semanticstests/SemanticsRule.SAssertNo.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is an assertion statement, $\SAssert(\ve)$;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{okay}
-    \begin{itemize}
-      \item evaluating $\ve$ in $\env$ is $\ResultExpr((\vv, \newg), \newenv)$\ProseOrAbnormal;
-      \item $\vv$ is a native Boolean value for $\True$;
-      \item the resulting configuration is $\Continuing(\newg, \newenv)$.
-    \end{itemize}
-
-    \item \AllApplyCase{error}
-    \begin{itemize}
-      \item evaluating $\ve$ in $\env$ is $\ResultExpr((\vv, \newg), \newenv)$;
-      \item $\vv$ is a native Boolean value for $\False$;
-      \item the result is a \DynamicErrorConfigurationTerm{} indicating the assertion failure returned (\DynamicAssertionFailure).
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[okay]{
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \newg), \newenv) \OrAbnormal\hva\\\\
-  \vv \reverseeqdef \nvbool(\True)
-}{
-  \evalstmt(\env, \SAssert(\ve)) \evalarrow \Continuing(\newg, \newenv)
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[error]{
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \Ignore), \Ignore)\\
-  \vv \reverseeqdef \nvbool(\False)
-}{
-  \evalstmt(\env, \SAssert(\ve)) \evalarrow \DynamicErrorVal{\DynamicAssertionFailure}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_stmt_SAssert}
 \CodeSubsection{\EvalSAssertBegin}{\EvalSAssertEnd}{../Interpreter.ml}
 \identd{QJYV} \identr{WZSL} \identr{WQRN}
@@ -2090,36 +1442,6 @@ is ill-typed, since the loop limit is not a \constrainedintegerterm.
 \ASLListing{An ill-typed loop limit}{typing-swhile-bad-limit}{\typingtests/TypingRule.SWhile.bad_limit.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\vs$ is a \texttt{while} statement with expression $\veone$, optional limit expression $\vlimitone$,
-      and statement block $\vsone$, that is, $\SWhile(\veone, \vsone)$;
-\item annotating the \rhsexpression{} $\veone$ in $\tenv$ yields $(\vt, \vetwo, \vsese)$\ProseOrTypeError;
-\item annotating the optional limit expression $\vlimitone$ via $\annotatelimitexpr$ in $\tenv$ yields $(\vlimittwo, \vseslimit)$\ProseOrTypeError;
-\item checking that $\vt$ \typesatisfiesterm\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
-\item annotating $\vsone$ as a block statement as per \TypingRuleRef{Block} in $\tenv$ yields $(\vstwo, \vsesblock)$\ProseOrTypeError;
-\item $\news$ is a \texttt{while} statement with expression $\vetwo$, optional limit expression $\vlimittwo$,
-      and statement block $\vstwo$, that is, $\SWhile(\vetwo, \vstwo)$;
-\item $\newtenv$ is $\tenv$;
-\item \Proseeqdef{$\vses$}{the union of $\vsesblock$, $\vsese$, and $\vseslimit$}.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vs = \SWhile(\veone, \vlimitone, \vsone)\\
-  \annotateexpr(\tenv, \veone) \typearrow (\vt, \vetwo, \vsese) \OrTypeError\hva\\\\
-  \annotatelimitexpr(\tenv, \vlimitone) \typearrow (\vlimittwo, \vseslimit) \OrTypeError\hva\\\\
-  \checktypesatisfies(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\hva\\\\
-  \annotateblock(\tenv, \vsone) \typearrow (\vstwo, \vsesblock) \OrTypeError\hva\\\\
-  \vses \eqdef \vsesblock \cup \vsese \cup \vseslimit
-}{
-  \annotatestmt(\tenv, \vs) \typearrow
-  (\overname{\SWhile(\vetwo, \vlimittwo, \vstwo)}{\news}, \overname{\tenv}{\newtenv}, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_stmt_SWhile}
 \CodeSubsection{\SWhileBegin}{\SWhileEnd}{../Typing.ml}
 \identr{FTVN}
@@ -2139,39 +1461,6 @@ the limit expression \verb|i_limit| whose type the
 limit expressions.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{none}
-  \begin{itemize}
-    \item $\ve$ is $\None$;
-    \item \Proseeqdef{$\vep$}{$\None$};
-    \item \Proseeqdef{$\vses$}{the empty set}.
-  \end{itemize}
-
-  \item \AllApplyCase{some}
-  \begin{itemize}
-    \item $\ve$ is $\some{\vlimit}$;
-    \item applying $\annotatesymbolicconstrainedinteger$ to $\vlimit$ in $\tenv$ yields $(\vlimitp, \vses)$\ProseOrTypeError;
-    \item \Proseeqdef{$\vep$}{$\some{\vlimitp}$}.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[none]{}{
-  \annotatelimitexpr(\tenv, \overname{\None}{\ve}) \typearrow (\overname{\None}{\vep}, \overname{\emptyset}{\vses})
-}
-\end{mathpar}
-\begin{mathpar}
-\inferrule[some]{
-  \annotatesymbolicconstrainedinteger(\tenv, \vlimit) \typearrow (\vlimitp, \vses) \OrTypeError
-}{
-  \annotatelimitexpr(\tenv, \overname{\some{\vlimit}}{\ve}) \typearrow (\overname{\some{\vlimitp}}{\vep}, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_limit_expr}
 \CodeSubsection{\AnnotateLimitExprBegin}{\AnnotateLimitExprEnd}{../Typing.ml}
 
@@ -2194,34 +1483,6 @@ error once the loop limit for the \whilestatementterm{} is reached.
 \ASLListing{Reaching a while loop limit}{swhile-limit-reached}{\semanticstests/SemanticsRule.SWhile.limit_reached.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-Evaluation of the statement $\vs$ in an environment $\env$ yields
-the output configuration $C$.
-\AllApply
-\begin{itemize}
-  \item $\vs$ is a \texttt{while} statement, $\SWhile(\ve, \velimitopt, \vbody)$;
-  \item evaluating the optional limit expression $\velimitopt$ via $\evallimit$ in $\env$
-        yields $(\vlimitopt, \vgone)$\ProseOrDynErrorDiverging;
-  \item evaluating the loop as per \SemanticsRuleRef{Loop} in an environment $\env$,
-  with the arguments $\True$ (which conveys that this is a \texttt{while} statement), $\vlimitopt$, $\ve$, and $\vbody$
-  yields the (non-error configuration) $C$\ProseOrDynErrorDiverging;
-  \item $\vgtwo$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge;
-  \item the output configuration $D$ is the output configuration $C$ with its execution graph
-        substituted with $\vgtwo$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evallimit(\env, \velimitopt) \evalarrow (\vlimitopt, \vgone) \OrDynErrorDiverging\hva\\\\
-  \evalloop(\env, \True, \vlimitopt, \ve, \vbody) \evalarrow C \OrDynErrorDiverging\hva\\\\
-  \vgtwo \eqdef \ordered{\vgone}{\asldata}{\graphof{C}}\\
-  D \eqdef \withgraph{C}{\vgtwo}
-}{
-  \evalstmt(\env, \overname{\SWhile(\ve, \velimitopt, \vbody)}{\vs}) \evalarrow D
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_stmt_SWhile}
 \CodeSubsection{\EvalSWhileBegin}{\EvalSWhileEnd}{../Interpreter.ml}
 
@@ -2247,64 +1508,6 @@ and the loop condition $\ve$ not holding, which is exactly when we want the
 loop to exit. The opposite holds for a \texttt{repeat} loop.
 The negation of the condition is used to decide whether to continue the loop iteration.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-\item \AllApplyCase{exit}
-  \begin{itemize}
-    \item evaluating $\econd$ in $\env$ is $\ResultExpr(\condm, \newenv)$\ProseOrAbnormal;
-    \item $\condm$ consists of a native Boolean for $\vb$ and an execution graph $\newg$;
-    \item $\vb$ is not equal to $\iswhile$;
-    \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$
-    and the loop is exited.
-  \end{itemize}
-\item \AllApplyCase{continue}
-  \begin{itemize}
-    \item evaluating $\econd$ in $\env$ is $\ResultExpr(\condm, \envone)$\ProseOrAbnormal;
-    \item $\mcond$ consists of a native Boolean for $\vb$ and an execution graph $\vgone$;
-    \item $\vb$ is equal to $\iswhile$;
-    \item \Proseticklooplimit{$\vlimitopt$}{$\vlimitoptp$}\ProseOrError;
-    \item evaluating $\vbody$ in $\envone$ as per \SemanticsRuleRef{Block} yields \\
-          $\Continuing(\vgtwo, \envtwo)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig, \DivergingConfig};
-    \item evaluating $(\iswhile, \vlimitoptp, \econd, \vbody)$ in $\envtwo$ as a loop yields \\
-          $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig, \DivergingConfig};
-    \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label
-          and then the ordered composition of the result and $\vgthree$ with the $\aslpo$ edge;
-    \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[exit]{
-  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \newenv) \OrAbnormal\hva\\\\
-  \condm \reverseeqdef (\nvbool(\vb), \newg)\\
-  \vb \neq \iswhile
-}{
-  \evalloop(\env, \iswhile, \vlimitopt, \econd, \vbody) \evalarrow \Continuing(\newg, \newenv)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[continue]{
-  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \envone) \OrAbnormal\hva\\\\
-  \condm \reverseeqdef (\nvbool(\vb), \vgone)\\
-  \vb = \iswhile\\
-  \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp \OrDynError\hva\\\\
-  \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo) \OrAbnormal, \ReturningConfig\hva\\\\
-  {
-    \begin{array}{r}
-      \evalloop(\envtwo, \iswhile, \vlimitoptp, \econd, \vbody) \evalarrow \\
-      \Continuing(\vgthree, \newenv) \OrAbnormal, \ReturningConfig\\
-    \end{array}
-  }\\
-  \newg \eqdef \ordered{\ordered{\vgone}{\aslctrl}{\vgtwo}}{\aslpo}{\vgthree}
-}{
-  \evalloop(\env, \iswhile, \vlimitopt, \econd, \vbody) \evalarrow \Continuing(\newg, \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_loop}
 \CodeSubsection{\EvalLoopBegin}{\EvalLoopEnd}{../Interpreter.ml}
 
@@ -2320,41 +1523,6 @@ limit expression is evaluated just once for the entire evaluation
 of the \whilestatementterm.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{none}
-  \begin{itemize}
-    \item $\velimitopt$ is $\None$;
-    \item $\vvopt$ is $\None$;
-    \item $\vg$ is the empty execution graph.
-  \end{itemize}
-
-  \item \AllApplyCase{some}
-  \begin{itemize}
-    \item $\velimitopt$ is the expression $\velimit$;
-    \item evaluating the side-effect-free expression $\velimitopt$ in $\denv$ yields the native integer for $\vv$ and
-          the execution graph $\vg$\ProseOrDynErrorDiverging;
-    \item $\vvopt$ is $\some{\vv}$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[none]{}{
-  \evallimit(\env, \overname{\None}{\velimitopt}) \evalarrow (\overname{\None}{\vvopt}, \overname{\emptygraph}{\vg})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[some]{
-  \evalexprsef(\env, \velimit) \evalarrow (\nvint(\vv), \vg) \OrDynErrorDiverging
-}{
-  \evallimit(\env, \overname{\some{\velimit}}{\velimitopt}) \evalarrow (\overname{\some{\vv}}{\vvopt}, \vg)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_limit}
 
 \SemanticsRuleDef{TickLoopLimit}
@@ -2366,50 +1534,6 @@ starts at $\nvint(4)$ and decrements towards $\nvint(0)$,
 stopping at $\nvint(1)$ on the last iteration of the loop.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{none}
-  \begin{itemize}
-    \item $\vvopt$ is $\None$;
-    \item $\vvoptp$ is $\None$.
-  \end{itemize}
-
-  \item \AllApplyCase{some\_ok}
-  \begin{itemize}
-    \item $\vvopt$ is the positive integer $\vv$;
-    \item $\vvoptp$ is $\some{\vv-1}$.
-  \end{itemize}
-
-  \item \AllApplyCase{some\_error}
-  \begin{itemize}
-    \item $\vvopt$ is the integer $0$;
-    \item the result is a \DynamicErrorConfigurationTerm{} indicating that a limit has been reached
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[none]{}{
-  \ticklooplimit(\overname{\None}{\vvopt}) \evalarrow \overname{\None}{\vvoptp}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[some\_ok]{
-  \vv > 0
-}{
-  \ticklooplimit(\overname{\some{\vv}}{\vvopt}) \evalarrow \overname{\some{\vv-1}}{\vvoptp}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[some\_error]{}{
-  \ticklooplimit(\overname{\some{ 0 }}{\vvopt}) \evalarrow \DynamicErrorVal{\LimitExceeded}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{tick_loop_limit}
 
 \section{Repeat Statements\label{sec:RepeatStatements}}
@@ -2451,39 +1575,6 @@ stopping at $\nvint(1)$ on the last iteration of the loop.
 The \repeatstatementsterm{} in \listingref{semantics-srepeat} are well-typed.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is a \texttt{repeat} statement with statement block $\vsone$,
-        optional limit expression $\vlimitone$, and expression $\veone$, that is, $\SRepeat(\vsone, \veone, \vlimitone)$;
-  \item annotating $\vsone$ as a block statement per \TypingRuleRef{Block} in $\tenv$ yields $(\vstwo, \vsesblock)$\ProseOrTypeError;
-  \item annotating the optional limit expression $\vlimitone$ via $\annotatelimitexpr$ in $\tenv$ yields $(\vlimittwo, \vseslimit)$\ProseOrTypeError;
-  \item annotating the \rhsexpression{} $\veone$ in $\tenv$ yields $(\vt, \vetwo, \vsese)$\ProseOrTypeError;
-  \item checking that $\vt$ \typesatisfiesterm\ $\TBool$ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item $\news$ is a \texttt{repeat} statement with statement block $\vstwo$, optional limit expression $\vlimittwo$,
-        and condition expression $\vetwo$ and , that is, $\SRepeat(\vstwo, \vetwo, \vlimittwo)$;
-  \item $\newtenv$ is $\tenv$;
-  \item \Proseeqdef{$\vses$}{the union of $\vsesblock$, $\vsese$, and $\vseslimit$}.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateblock(\tenv, \vsone) \typearrow (\vstwo, \vsesblock) \OrTypeError\hva\\\\
-  \annotatelimitexpr(\tenv, \vlimitone) \typearrow (\vlimittwo, \vseslimit) \OrTypeError\hva\\\\
-  \annotateexpr(\tenv, \veone) \typearrow (\vt, \vetwo, \vsese) \OrTypeError\hva\\\\
-  \checktypesatisfies(\tenv, \vt, \TBool) \typearrow \True \OrTypeError\hva\\\\
-  \vses \eqdef \vsesblock \cup \vsese \cup \vseslimit
-}{
-  {
-  \begin{array}{r}
-    \annotatestmt(\tenv, \overname{\SRepeat(\vsone, \veone, \vlimitone)}{\vs}) \typearrow\\
-    (\overname{\SRepeat(\vstwo, \vetwo, \vlimittwo)}{\news}, \overname{\tenv}{\newtenv}, \vses)
-  \end{array}
-  }
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_stmt_SRepeat}
 \CodeSubsection{\SRepeatBegin}{\SRepeatEnd}{../Typing.ml}
 \identr{FTVN}
@@ -2510,44 +1601,6 @@ i = 4
 % CONSOLE_END
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-Evaluation of the statement $\vs$ in an environment $\env$ yields
-either \\ $\Returning((\vvs, \newg), \newenv)$ or an output configuration $D$.
-
-\AllApply
-\begin{itemize}
-  \item $\vs$ is a \texttt{repeat} statement, $\SRepeat(\ve, \vbody, \velimitopt)$;
-  \item evaluating the optional limit expression $\velimitopt$ via $\evallimit$ in $\env$
-        yields $(\vlimitopt, \vgone)$\ProseOrDynErrorDiverging;
-  \item \Proseticklooplimit{$\vlimitoptone$}{$\vlimitopttwo$}\ProseOrError;
-  \item evaluating $\vbody$ in $\env$ as per \chapref{BlockStatements}
-        yields $\Continuing(\vgtwo, \envone)$\ProseTerminateAs{\ReturningConfig,\ThrowingConfig,\DynErrorConfig,\DivergingConfig};
-  \item evaluating the loop as per \secref{SemanticsRule.Loop} in an environment $\envone$,
-        with the arguments $\False$ (which conveys that this is a \texttt{repeat} statement),
-        $\vlimitopttwo$,
-        $\ve$,
-        and $\vbody$
-        results in $C$;
-  \item $\vgthree$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ and the graph of $C$
-        with the $\aslpo$ edge;
-  \item the output configuration $D$ is the output configuration $C$ with its execution graph
-        substituted with $\vgthree$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evallimit(\env, \velimitopt) \evalarrow (\vlimitoptone, \vgone) \OrDynErrorDiverging\hva\\\\
-  \ticklooplimit(\vlimitoptone) \evalarrow \vlimitopttwo \OrDynError\hva\\\\
-  \evalblock(\env, \vbody) \evalarrow \Continuing(\vgtwo, \envone) \OrAbnormal, \ReturningConfig\hva\\\\
-  \evalloop(\envone, \False, \vlimitopttwo, \ve, \vbody) \evalarrow C\\
-  \vgthree \eqdef \ordered{\vgone}{\asldata}{\ordered{\vgtwo}{\aslpo}{\graphof{C}}}\\
-  D \eqdef \withgraph{C}{\vgthree}
-}{
-  \evalstmt(\env, \overname{\SRepeat(\ve, \vbody, \velimitopt)}{\vs}) \evalarrow D
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_stmt_SRepeat}
 \CodeSubsection{\EvalSRepeatBegin}{\EvalSRepeatEnd}{../Interpreter.ml}
 
@@ -2641,96 +1694,6 @@ show examples of ill-typed \texttt{for} loops.
 \ASLListing{Ill-typed for loop 4}{typing-forloop-bad4}{\typingtests/TypingRule.SFor.bad4.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is a \texttt{for} statement with index $\vindexname$,
-        start expression $\vstarte$,
-        direction $\dir$,
-        end expression $\vende$,
-        body statement (block) $\vbody$,
-        and optional limit expression $\vlimit$,
-        that is, $\SFor\left\{\begin{array}{rcl}
-          \Forindexname &:& \vindexname\\
-          \Forstarte &:& \vstarte\\
-          \fordirection &:& \vdir\\
-          \Forende &:& \vende\\
-          \Forbody &:& \vbody\\
-          \Forlimit &:& \vlimit
-        \end{array}\right\}$;
-  \item annotating the \rhsexpression{} $\vstarte$ in $\tenv$ yields\\ $(\vstartt, \vstartep, \vsesstart)$\ProseOrTypeError;
-  \item annotating the \rhsexpression{} $\vende$ in $\tenv$ yields\\ $(\vendt, \vendep, \vsesend)$\ProseOrTypeError;
-  \item annotating the optional loop limit expression $\vlimit$ via $\annotatelimitexpr$ in $\tenv$
-        yields $(\vlimitp, \vseslimit)$\ProseOrTypeError;
-  \item checking that $\vsesstart$ is \readonlyterm{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
-  \item checking that $\vsesend$ is \readonlyterm{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
-  \item \Proseeqdef{$\vsescond$}{the union of $\vsesstart$, $\vsesend$, and $\vseslimit$};
-  \item obtaining the \underlyingtypeterm\ of $\vstartt$ in $\tenv$ yields $\vstartstruct$\ProseOrTypeError;
-  \item obtaining the \underlyingtypeterm\ of $\vendt$ in $\tenv$ yields $\vendstruct$\ProseOrTypeError;
-  \item applying $\getforconstraints$ to $\vstartstruct$, $\vendstruct$,
-        $\vstartep$, $\vendep$, and $\dir$ in $\tenv$,
-        to obtain the constraints on the loop index $\vindexname$,
-        yields $\cs$\ProseOrTypeError;
-  \item $\tty$ is the integer type with constraints $\cs$;
-  \item checking that $\vindexname$ is not already declared in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item adding $\vindexname$ as a local immutable variable with type $\tty$ to $\tenv$ yields $\tenvp$;
-  \item annotating $\vbody$ as a block statement in $\tenvp$ yields $(\vbodyp, \vsesblock)$\ProseOrTypeError;
-  \item $\news$ is the \texttt{for} statement with index $\vindexname$,
-        start expression $\vstartep$, direction $\dir$,
-        end expression $\vendep$,
-        body statement (block) $\vbodyp$, and
-        optional limit expression $\vlimit$;
-  \item $\newtenv$ is $\tenv$ (notice that this means $\vindexname$ is only declared for annotating $\vbodyp$ but then goes
-        out of scope);
-  \item define $\vses$ as the union of $\vsesblock$ and $\vsescond$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \vstarte) \typearrow (\vstartt, \vstartep, \vsesstart) \OrTypeError\hva\\\\
-  \annotateexpr(\tenv, \vende) \typearrow (\vendt, \vendep, \vsesend) \OrTypeError\hva\\\\
-  \annotatelimitexpr(\tenv, \vlimit) \typearrow (\vlimitp, \vseslimit) \OrTypeError\hva\\\\
-  \techeck(\sesisreadonly(\vsesstart), \SideEffectViolation) \typearrow \True\OrTypeError\hva\\\\
-  \techeck(\sesisreadonly(\vsesend), \SideEffectViolation) \typearrow \True\OrTypeError\hva\\\\
-  \vsescond \eqdef \vsesstart \cup \vsesend \cup \vseslimit\\
-  \makeanonymous(\tenv, \vstartt) \typearrow \vstartstruct \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \vendt) \typearrow \vendstruct \OrTypeError\hva\\\\
-  {
-    \begin{array}{r}
-  \getforconstraints(\tenv, \vstartstruct, \vendstruct, \vstartep, \vendep, \dir) \typearrow \\
-    \cs \OrTypeError
-    \end{array}
-  }\hva\\\\
-  \tty \eqdef \TInt(\cs)\\
-  \checkvarnotinenv(\tenv, \vindexname) \typearrow \True \OrTypeError\hva\\\\
-  \addlocal(\tenv, \tty, \vindexname, \LDKLet) \typearrow \tenvp\\
-  \annotateblock(\tenvp, \vbody) \typearrow (\vbodyp, \vsesblock) \OrTypeError\hva\\\\
-  \vses \eqdef \vsesblock \cup \vsescond
-}{
-  {
-    \begin{array}{r}
-  \annotatestmt\left(\tenv, \overname{\SFor\left\{\begin{array}{rcl}
-    \Forindexname &:& \vindexname\\
-    \Forstarte &:& \vstarte\\
-    \Fordir &:& \vdir\\
-    \Forende &:& \vende\\
-    \Forbody &:& \vbody\\
-    \Forlimit &:& \vlimit
-  \end{array}\right\}}{\vs}\right) \typearrow \\
-  \left(\overname{\SFor\left\{\begin{array}{rcl}
-    \Forindexname &:& \vindexname\\
-    \Forstarte &:& \vstartep\\
-    \Fordir &:& \vdir\\
-    \Forende &:& \vendep\\
-    \Forbody &:& \vbodyp\\
-    \Forlimit &:& \vlimitp
-  \end{array}\right\}}{\news}, \overname{\tenv}{\newtenv}, \vses\right)
-\end{array}
-  }
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_stmt_SFor}
 \CodeSubsection{\SForBegin}{\SForEnd}{../Typing.ml}
 \identr{SSBD} \identr{ZSND} \identr{VTJW}
@@ -2744,68 +1707,6 @@ In \listingref{semantics-sfor} the constraints for the loop index variable
 and the constraints for the loop index variable \verb|i| in \verb|main| are \verb|0..4|.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{not\_integers}
-  \begin{itemize}
-    \item at least one of $\structone$ and $\structtwo$ is not an integer type;
-    \item the result is a \typingerrorterm{} indicating that the start expression and end expression of \texttt{for} loops
-          must have the \structureterm\ of integer types.
-  \end{itemize}
-
-  \item \AllApplyCase{unconstrained}
-  \begin{itemize}
-    \item both of $\structone$ and $\structtwo$ are integer types;
-    \item at least one of $\structone$ and $\structtwo$ is the unconstrained integer type;
-    \item define $\vis$ as $\Unconstrained$.
-  \end{itemize}
-
-  \item \AllApplyCase{well\_constrained}
-  \begin{itemize}
-    \item both of $\structone$ and $\structtwo$ are integer types;
-    \item neither $\structone$ nor $\structtwo$ is the unconstrained integer type;
-    \item symbolically simplifying $\veonep$ in $\tenv$ yields $\eonen$\ProseOrTypeError;
-    \item symbolically simplifying $\vetwop$ in $\tenv$ yields $\etwon$\ProseOrTypeError;
-    \item define $\icsup$ as the single range constraint with expressions $\eonen$ and $\etwon$;
-    \item define $\icsdown$ as the single range constraint with expressions $\etwon$ and $\eonen$;
-    \item define $\vis$ as $\icsup$ if $\dir$ is $\UP$ and $\icsdown$ otherwise.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[not\_integers]{
-  \astlabel(\structone) \neq \TInt \lor \astlabel(\structtwo) \neq \TInt
-}{
-  \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \TypeErrorVal{\UnexpectedType}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[unconstrained]{
-  \astlabel(\structone) = \TInt \land \astlabel(\structtwo) = \TInt\\
-  \structone = \unconstrainedinteger \lor \structtwo = \unconstrainedinteger\\
-}{
-  \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \overname{\Unconstrained}{\vis}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[well\_constrained]{
-  \astlabel(\structone) = \TInt \land \astlabel(\structtwo) = \TInt\\
-  \structone \neq \unconstrainedinteger \land \structtwo \neq \unconstrainedinteger\hva\\
-  \normalize(\tenv, \veonep) \typearrow \eonen \OrTypeError\\\\
-  \normalize(\tenv, \vetwop) \typearrow \etwon \OrTypeError\hva\\\\
-  \icsup \eqdef \WellConstrained([\ConstraintRange(\eonen, \etwon)])\\
-  \icsdown \eqdef \WellConstrained([\ConstraintRange(\etwon, \eonen)])\hva\\
-  \vis \eqdef \choice{\dir=\UP}{\icsup}{\icsdown}
-}{
-  \getforconstraints(\tenv, \structone, \structtwo, \veonep, \vetwop, \dir) \typearrow \vis
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{get_for_constraints}
 
 \subsection{Semantics}
@@ -2843,72 +1744,6 @@ Recall that the expressions for the \texttt{for} loop range are
 \sideeffectfreeterm{}, as guaranteed by \TypingRuleRef{SFor}, which is why
 they are evaluated via $\evalexprsef$.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is a \texttt{for} statement, $\SFor\left\{\begin{array}{rcl}
-    \Forindexname &:& \vindexname\\
-    \Forstarte &:& \vstarte\\
-    \fordirection &:& \vdir\\
-    \Forende &:& \vende\\
-    \Forbody &:& \vbody\\
-    \Forlimit &:& \Ignore
-  \end{array}\right\}$;
-  \item evaluating the side-effect-free expression $\vstarte$ in $\env$ yields\\
-        $\ResultExprSEF(\vstartv, \vgone)$\ProseOrDynErrorDiverging;
-  \item evaluating the side-effect-free expression $\vende$ in $\env$ yields\\
-        $\ResultExprSEF(\vendv, \vgtwo)$\ProseOrError;
-  \item \Proseevallimit{$\env$}{$\velimitopt$}{$(\vlimitopt, \vgthree)$}\ProseOrDynErrorDiverging;
-  \item declaring the local identifier $\vindexname$ in $\env$ with value $\vstartv$ is $(\vgfour, \envone)$;
-  \item applying the \texttt{for} loop with arguments \\
-        $(\vindexname, \vlimitopt, \vstartv, \dir, \vendv, \vbody)$ in $\envone$,
-        as per \\
-        \SemanticsRuleRef{EvalFor} yields $\Continuing(\vgfive, \envtwo)$\ProseReturningOrAbnormal;
-  \item removing the local $\vindexname$ from $\envtwo$ is $\envthree$;
-  \item $\newg$ is formed as follows:
-        the parallel composition of $\vgone$, $\vgtwo$, and $\vgthree$;
-        followed by the ordered composition of the result with $\vgfour$ using the $\asldata$ edge;
-        followed by the ordered composition of the result with $\vgfive$ using the $\aslpo$ edge.
-  \item $\newenv$ is $\envthree$.
-  \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexprsef(\env, \vstarte) \evalarrow \ResultExprSEF(\vstartv, \vgone) \OrDynErrorDiverging\hva\\\\
-  \evalexprsef(\env, \vende) \evalarrow \ResultExprSEF(\vendv, \vgtwo) \OrDynErrorDiverging\hva\\\\
-  \evallimit(\env, \velimitopt) \evalarrow (\vlimitopt, \vgthree) \OrDynErrorDiverging\hva\\\\
-  \declarelocalidentifier(\env, \vindexname, \vstartv) \evalarrow (\vgfour,\envone)\\
-  {
-    \begin{array}{r}
-      \evalfor(\envone, \vindexname, \vlimitopt, \vstartv, \dir, \vendv, \vbody) \evalarrow \\
-      \Continuing(\vgfive, \envtwo) \OrReturningOrAbnormal
-    \end{array}
-  }\\
-  \removelocal(\envtwo, \vindexname) \evalarrow \envthree\\
-  \newg \eqdef \ordered{(\vgone \parallelcomp \vgtwo \parallelcomp \vgthree)}{\asldata}{ \ordered{\vgfour}{\aslpo}{\vgfive}   }\\
-  \newenv \eqdef \envthree
-}{
-  {
-  \begin{array}{r}
-  \evalstmt\left(\env,
-  \overname{
-  \SFor\left\{\begin{array}{rcl}
-    \Forindexname &:& \vindexname\\
-    \Forstarte &:& \vstarte\\
-    \fordirection &:& \vdir\\
-    \Forende &:& \vende\\
-    \Forbody &:& \vbody\\
-    \Forlimit &:& \velimitopt\\
-  \end{array}\right\}}{\vs}
-  \right) \evalarrow \\ \Continuing(\newg, \newenv)
-  \end{array}
-  }
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_stmt_SFor}
 \CodeSubsection{\EvalSForBegin}{\EvalSForEnd}{../Interpreter.ml}
 
@@ -2925,73 +1760,6 @@ a continuing configuration $\Continuing(\newg, \newenv)$, or a returning configu
 or an abnormal configuration.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\compfordir$ is either $\LT$ when $\dir$ is $\UP$ or $\GT$ when $\dir$ is $\DOWN$;
-  \item reading $\vstart$ into the identifier $\vindexname$ gives $\vgone$;
-  \item \OneApplies
-    \begin{itemize}
-    \item \AllApplyCase{return}
-    \begin{itemize}
-      \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native \\
-            Boolean for $\True$
-            (\ProseNote{notice that this tests whether $\vend < \vstart$
-            for $\dir = \UP$, which is the same as $\neg(\vstart \leq \vend)$});
-      \item $\newg$ is $\vgone$;
-      \item $\newenv$ is $\env$;
-      \item the result of the entire evaluation is $\Continuing(\newg, \newenv)$.
-    \end{itemize}
-    \item \AllApplyCase{continue}
-    \begin{itemize}
-      \item using $\compfordir$ to compare $\vend$ to $\vstart$ gives the native \\
-            Boolean for $\False$;
-      \item \Proseticklooplimit{$\vlimitopt$}{$\vnextlimitopt$}\ProseOrError;
-      \item evaluating the loop body via $\evalforloop$ with\\ $(\vindexname, \vlimitopt, \vstart, \dir, \vend, \vbody)$
-      in $\env$ yields\\ $\Continuing(\vgtwo, \newenv)$\ProseOrAbnormalReturning;
-      \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ label.
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[return]{
-  \compfordir \eqdef \choice{\dir = \UP}{\LT}{\GT}\\
-  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\\\
-  \commonprefixline\\\\
-  \evalbinop(\compfordir, \vend, \vstart) \evalarrow \nvbool(\True)
-}{
-  {
-    \begin{array}{r}
-      \evalfor(\env, \vindexname, \vlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \\
-      \Continuing(\overname{\vgone}{\newg}, \overname{\env}{\newenv})
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[continue]{
-  \compfordir \eqdef \choice{\dir = \UP}{\LT}{\GT}\\
-  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\\\
-  \commonprefixline\\\\
-  \evalbinop(\compfordir, \vend, \vstart) \evalarrow \nvint(\False)\\
-  \ticklooplimit(\vlimitopt) \evalarrow \vnextlimitopt \OrDynError\\\\
-  \evalforloop(\env, \vindexname, \vnextlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \\
-  \Continuing(\vgtwo, \newenv) \OrAbnormalReturning\\\\
-  \newg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
-}{
-  {
-    \begin{array}{r}
-      \evalfor(\env, \vindexname, \vlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \\
-      \Continuing(\newg, \newenv)
-    \end{array}
-  }
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_for}
 \CodeSubsection{\EvalForBegin}{\EvalForEnd}{../Interpreter.ml}
 
@@ -3001,42 +1769,6 @@ or an abnormal configuration.
 See \ExampleRef{Overall Evaluation of For Statements}.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-    \item evaluating $\vbody$ as a block statement (see \SemanticsRuleRef{Block}) in $\env$
-      yields\\ $\Continuing(\vgone, \envone)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
-  \item stepping the index $\vindexname$ with $\vstart$ and the direction $\dir$ in $\envone$,
-        ($\evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir)$) yields\\ $((\vstep, \envtwo), \vgtwo)$;
-  \item evaluating the \texttt{for} loop with $(\vindexname, \vlimitopt, \vstep, \dir, \vend, \vbody)$
-        in $\envtwo$ results in a continuing configuration $\Continuing(\vgthree, \newenv)$\ProseTerminateAs{\ReturningConfig, \ThrowingConfig, \DynErrorConfig};
-  \item $\newg$ is the ordered composition of $\vgone$, $\vgtwo$, and $\vgthree$ with the $\aslpo$
-        edge.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalblock(\env, \vbody) \evalarrow \Continuing(\vgone, \envone) \OrAbnormalReturning\hva\\\\
-  \evalforstep(\envone, \vindexname, \vlimitopt, \vstart, \dir) \evalarrow ((\vstep, \envtwo), \vgtwo)\hva\\
-  {
-    \begin{array}{r}
-      \evalfor(\envtwo, \vindexname, \vlimitopt, \vstep, \dir, \vend, \vbody) \evalarrow \\
-      \Continuing(\vgthree, \newenv) \OrAbnormalReturning
-    \end{array}
-  }\\
-  \newg \eqdef \ordered{\ordered{\vgone}{\aslpo}{\vgtwo}}{\aslpo}{\vgthree}
-}{
-  {
-    \begin{array}{r}
-      \evalforloop(\env, \vindexname, \vlimitopt, \vstart, \dir, \vend, \vbody) \evalarrow \\
-      \Continuing(\newg, \newenv)
-    \end{array}
-  }
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_for_loop}
 
 \SemanticsRuleDef{EvalForStep}
@@ -3044,39 +1776,6 @@ See \ExampleRef{Overall Evaluation of For Statements}.
 
 See \ExampleRef{Overall Evaluation of For Statements}.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\opfordir$ is either $\ADD$ when $\dir$ is $\UP$ or $\SUB$ when $\dir$ is $\DOWN$;
-  \item reading $\vstart$ into the identifier $\vindexname$ gives $\vgone$;
-  \item applying the binary operator $\opfordir$ to $\vstart$ and the native integer for $1$ is $\vstep$;
-  \item the execution graph for writing $\vstep$ into the identifier $\vindexname$ gives $\vgtwo$;
-  \item updating the local component of the dynamic environment of $\env$ by binding \\ $\vindexname$ to $\vstep$
-  gives $\newenv$;
-  \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \opfordir \eqdef \choice{\dir = \UP}{\ADD}{\SUB}\\
-  \readidentifier(\vindexname, \vstart) \evalarrow \vgone\\
-  \evalbinop(\opfordir, \vstart, \nvint(1)) \evalarrow \vstep\\
-  \writeidentifier(\vindex, \vstep) \evalarrow \vgtwo\\
-  \env \reverseeqdef (\tenv, \denv)\\
-  \newenv \eqdef (\tenv, \{\dynamicenvsG: \denv.\dynamicenvsG, \dynamicenvsL: \denv.\dynamicenvsL[\vindexname\mapsto\vstep]\})\\
-  \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
-}{
-  {
-    \begin{array}{r}
-      \evalforstep(\env, \vindexname, \vlimitopt, \vstart, \dir) \evalarrow \\
-      ((\vstep, \newenv), \newg)
-    \end{array}
-  }
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_for_step}
 
 \hypertarget{def-throwstatementterm}{}
@@ -3105,32 +1804,6 @@ See \ExampleRef{Overall Evaluation of For Statements}.
 shows examples of well-typed \throwstatementsterm.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is a throw statement with expression $\ve$, that is, $\SThrow(\ve)$;
-  \item annotating the \rhsexpression{} $\ve$ in $\tenv$ yields $(\vte, \vep, \vsesone)$\ProseOrTypeError;
-  \item checking that $\vte$ has the structure of an exception type yields $\True$\ProseOrTypeError;
-  \item view $\vte$ as the named type for $\exnname$;
-  \item $\news$ is a throw statement with expression $\vep$ and type $\vte$ ($\SThrow(\vep, \vte)$);
-  \item $\newtenv$ is $\tenv$;
-  \item \Proseeqdef{$\vses$}{the union of $\vsesone$ and the set containing a \LocalEffectTerm{} and a \GlobalEffectTerm{}, both with \purity{} $\SEImpure$.}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vsesone) \OrTypeError\hva\\\\
-  \checkstructurelabel(\tenv, \vte, \TException) \typearrow \True \OrTypeError\hva\\\\
-  \vte \reverseeqdef \TNamed(\exnname)\\
-  \vses \eqdef \vsesone \cup \{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\}
-}{
-  \annotatestmt(\tenv, \overname{\SThrow(\ve)}{\vs}) \typearrow
-  (\overname{\SThrow(\vep, \vte)}{\news}, \overname{\tenv}{\newtenv}, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_stmt_SThrow}
 \identr{NXRC}
 \CodeSubsection{\SThrowBegin}{\SThrowEnd}{../Typing.ml}
@@ -3143,34 +1816,6 @@ terminates successfully. That is, no \dynamicerrorterm{} occurs.
 \ASLListing{Throwing an exception}{semantics-sthrowsometyped}{\semanticstests/SemanticsRule.SThrowSomeTyped.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is a \texttt{throw} statement, \\
-        $\SThrow(\ve, \vt)$;
-  \item evaluating $\ve$ in $\env$ is $\ResultExpr((\vv, \vgone), \newenv)$\ProseOrAbnormal;
-  \item $\name$ is a fresh identifier (which conceptually holds the exception value);
-  \item $\vgtwo$ is a Write Effect to $\name$;
-  \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge;
-  \item $\vex$ consists of the exception value $\vv$ and the name of the variable holding it ---
-        $\name$;
-  \item the result of the entire evaluation is $\Throwing(\vex, \vt, \newg, \env)$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\hva\\\\
-  \name\in\Identifier \text{ is fresh}\\
-  \vgtwo \eqdef \WriteEffect(\name)\\
-  \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}\\
-  \vex \eqdef \valuereadfrom(\vv, \name)
-}{
-  \evalstmt(\env, \SThrow(\ve, \vt)) \evalarrow
-  \Throwing(\vex, \vt, \newg, \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_stmt_SThrow}
 \CodeSubsection{\EvalSThrowBegin}{\EvalSThrowEnd}{../Interpreter.ml}
 
@@ -3337,27 +1982,6 @@ does not result in any Assertion error, and the specification terminates with th
 \ASLListing{Evaluating a \texttt{try} statement}{semantics-stry}{\semanticstests/SemanticsRule.STry.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is a \texttt{try} statement, $\STry(\vs, \catchers, \otherwiseopt)$;
-  \item evaluating $\vsone$ in $\env$ as per \chapref{BlockStatements}
-        yields the configuration $\sm$\ProseOrDynErrorDiverging;
-  \item evaluating $(\catchers, \otherwiseopt, \sm)$ as per \chapref{CatchingExceptions}
-        is $C$, which is the result of the entire evaluation.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalblock(\env, \vsone) \evalarrow \sm \OrDynErrorDiverging\hva\\\\
-  \evalcatchers(\env, \catchers, \otherwiseopt, \sm) \evalarrow C
-}{
-  \evalstmt(\env, \STry(\vsone, \catchers, \otherwiseopt)) \evalarrow C
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_stmt_STry}
 \CodeSubsection{\EvalSTryBegin}{\EvalSTryEnd}{../Interpreter.ml}
 
@@ -3398,70 +2022,6 @@ since \verb|proc| is not a function but a procedure.
 \ASLListing{An ill-typed return statement}{typing-return-bad}{\typingtests/TypingRule.SReturn.bad.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{error}
-  \begin{itemize}
-    \item $\vs$ is a \texttt{return} statement with an optional expression $\veopt$\\ ($\SReturn(\veopt)$);
-    \item the condition that $\veopt$ is $\None$ if and only if the enclosing subprogram does not have a return type
-          (that is, $\returntype$ in the \localstaticenvironmentterm{} is $\None$) does not hold;
-    \item the result is an error indicating the mismatch between the declared (existence of the) return type
-          and the (existence of the) return expression.
-  \end{itemize}
-
-  \item \AllApplyCase{none}
-  \begin{itemize}
-    \item $\vs$ is a \texttt{return} statement with no expression, that is, $\SReturn(\None)$;
-    \item the enclosing subprogram does not have a \texttt{return} type (it is either a setter
-          or a procedure);
-    \item $\news$ is a \texttt{return} statement with no expression, that is, $\SReturn(\None)$;
-    \item $\newtenv$ is $\tenv$;
-    \item \Proseeqdef{$\vses$}{the empty set}.
-  \end{itemize}
-
-  \item \AllApplyCase{some}
-  \begin{itemize}
-    \item $\vs$ is a \texttt{return} statement with an expression $\ve$, that is, $\SReturn(\some{ \vep })$;
-    \item the enclosing subprogram has a return type $\vt$;
-    \item annotating the \rhsexpression{} $\ve$ in $\tenv$ yields $(\tep,\vep,\vses)$\ProseOrTypeError;
-    \item checking whether $\vtep$ \typesatisfiesterm\ $\vt$ in $\tenv$ yields $\True$\ProseOrTypeError;
-    \item $\news$ is a \texttt{return} statement with value $\vep$, that is, $\SReturn(\some{ \vep })$;
-    \item $\newtenv$ is $\tenv$.
-  \end{itemize}
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[error]{
-  \vb \eqdef (\tenv.\staticenvsL.\returntype = \None \leftrightarrow \veopt = \None) \\
-  \vb = \False
-}{
-  \annotatestmt(\tenv, \overname{\SReturn(\veopt)}{\vs}) \typearrow \TypeErrorVal{\BadSubprogramDeclaration}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[none]{
-  \tenv.\staticenvsL.\returntype = \None
-}{
-  \annotatestmt(\tenv, \overname{\SReturn(\None)}{\vs}) \typearrow
-  (\overname{\SReturn(\None)}{\news}, \overname{\tenv}{\newtenv}, \overname{\emptyset}{\vses})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[some]{
-  \vs = \SReturn(\some{ \ve })\\
-  \tenv.\staticenvsL.\returntype = \some{ \vt }\\
-  \annotateexpr(\tenv, \ve) \typearrow (\vtep, \vep, \vses) \OrTypeError\hva\\\\
-  \checktypesatisfies(\tenv, \vtep, \vt) \typearrow \True \OrTypeError
-}{
-  \annotatestmt(\tenv, \vs) \typearrow
-  (\overname{\SReturn(\some{ \vep })}{\news}, \overname{\tenv}{\newtenv}, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_stmt_SReturn}
 \CodeSubsection{\SReturn}{\SReturnEnd}{../Typing.ml}
 \identr{FTPK}
@@ -3484,66 +2044,6 @@ In \listingref{semantics-sreturntuple},
 \ASLListing{Evaluating a \texttt{return} statement with a tuple of values}{semantics-sreturntuple}{\semanticstests/SemanticsRule.SReturnSome.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{none}
-  \begin{itemize}
-    \item $\vs$ is a \texttt{return} statement, $\SReturn(\None)$;
-    \item $\vvs$ is the empty list, $\emptylist$;
-    \item $\newg$ is the empty graph;
-    \item $\newenv$ is $\env$.
-  \end{itemize}
-
-  \item \AllApplyCase{one}
-  \begin{itemize}
-    \item $\vs$ is a \texttt{return} statement;
-    \item $\vs$ is a \texttt{return} statement for a single expression, $\SReturn(\some{\ve})$;
-    \item evaluating $\ve$ in $\env$ is $\ResultExpr((\vv, \vgone), \newenv)$\ProseOrAbnormal;
-    \item \Proseeqdef{$\wid$}{the string with the prefix \returnvarprefix{} and the string \texttt{"0"}};
-    \item $\vvs$ is $[\vv]$;
-    \item $\vgtwo$ is the result of adding a Write Effect for $\wid$ and the value $\vv$;
-    \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
-  \end{itemize}
-
-  \item \AllApplyCase{tuple}
-  \begin{itemize}
-    \item $\vs$ is a \texttt{return} statement for a list of expressions,\\ $\SReturn(\some{\ETuple(\es)})$;
-    \item evaluating each expression in $\es$ separately as per \secref{SemanticsRule.EExprListM} yields $\ResultExprListM(\ms, \newenv)$\ProseOrAbnormal;
-    \item writing the list of values in $\vms$ results in $(\vvs, \newg)$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[none]{}
-{
-  \evalstmt(\env, \SReturn(\None)) \evalarrow \Returning((\emptylist, \emptygraph), \env)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[one]{
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\hva\\\\
-  \wid \in \Identifier\text{ is fresh}\\
-  \writeidentifier(\wid, \vv) \evalarrow \vgtwo\\
-  \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
-}{
-  \evalstmt(\env, \SReturn(\some{\ve})) \evalarrow \Returning(([\vv], \newg), \newenv)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[tuple]{
-  \vs = \SReturn(\some{\ETuple(\es)})\\
-  \evalexprlistm(\env, \es) \evalarrow \ResultExprListM(\ms, \newenv) \OrAbnormal\\
-  \writefolder(\ms) \evalarrow (\vvs, \newg)
-}{
-  \evalstmt(\env, \vs) \evalarrow \Returning((\vvs, \newg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_stmt_SReturn}
 \CodeSubsubsection{\SReturnBegin}{\EvalSReturnEnd}{../Interpreter.ml}
 
@@ -3555,44 +2055,6 @@ In \listingref{semantics-sreturntuple}, the expressions \verb|3| and \verb|42|
 are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\vEs$ is an empty list;
-    \item $\vms$ is then empty list.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item $\vEs$ is a list with \head\ $\ve$ and \tail\ $\vesone$;
-    \item evaluating $\ve$ in $\env$ yields $\ResultExpr(\vmone, \envone)$\ProseOrAbnormal;
-    \item evaluating $\vesone$ in $\envone$ via $\evalexprlistm$ yields\\ $\ResultExprListM(\vmsone, \newenv)$\ProseOrAbnormal;
-    \item the result is a configuration consisting of a list with $\vmone$ as its \head\ and $\vmsone$
-          as its \tail\ and $\newenv$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[empty]{}
-{
-  \evalexprlistm(\env, \overname{\emptylist}{\vEs}) \evalarrow \ResultExprListM(\overname{\emptylist}{\vms}, \overname{\env}{\newenv})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  \vEs = [\ve] \concat \vesone\\
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal\hva\\
-  \evalexprlistm(\envone, \vesone) \evalarrow \ResultExprListM(\vmsone, \newenv) \OrAbnormal
-}{
-  \evalexprlistm(\env, \vEs) \evalarrow \ResultExprListM([\vmone]\concat\vmsone, \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_list_m}
 
 \SemanticsRuleDef{WriteFolder}
@@ -3607,51 +2069,6 @@ The \executiongraphterm{} is empty, since literal expressions do not yield
 empty \executiongraphterm{}.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\vms$ is the empty list;
-    \item \Proseeqdef{$\vvs$}{the empty list};
-    \item \Proseeqdef{$\newg$}{the empty graph}.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item $\vms$ is a list with \head{} $\vm$ and \tail{} $\vmsone$;
-    \item view $\vm$ as the \nativevalueterm{} $\vv$ and the \executiongraphterm{} $\vg$;
-    \item \Proseeqdef{$\wid$}{a fresh identifier};
-    \item applying $\writeidentifier$ to $\wid$ and $\vv$ yields $\vgone$;
-    \item applying $\writefolder$ to $\vms$ and $\vgone$ yields the pair $(\vvsone, \vgtwo)$;
-    \item \Proseeqdef{$\vvs$}{the list with \head{} $\vv$ and \tail{} $\vvsone$};
-    \item \Proseeqdef{$\newg$}{the ordered composition of $\vg$ and $\vgone$ with the $\aslpo$ edge
-          and $\vgtwo$ with the $\asldata$ edge}.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[empty]{}{
-  \writefolder(\overname{\emptylist}{\vms}) \evalarrow (\overname{\emptylist}{\vvs}, \overname{\emptygraph}{\newg})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  \vms = [\vm] \concat \vmsone\\
-  \vm \eqdef (\vv, \vg)\\
-  \wid \in \Identifier\text{ is fresh}\\
-  \writeidentifier(\wid, \vv) \evalarrow \vgone\hva\\
-  \writefolder(\vmsone, \vgone) \evalarrow (\vvsone, \vgtwo)\\
-  \vvs \eqdef [\vv] \concat \vvsone\\
-  \newg \eqdef \ordered{\vg}{\aslpo}{\ordered{\vgone}{\asldata}{\vgtwo}}
-}{
-  \writefolder(\vms) \evalarrow (\vvs, \newg)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{write_folder}
 
 \hypertarget{def-printstatementterm}{}
@@ -3695,31 +2112,6 @@ empty \executiongraphterm{}.
 \listingref{literals1} shows literals and their corresponding types in comments.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ denotes the print statement with arguments $\vargs$ and newline indicator $\vnewline$;
-  \item annotating for each \Proselistrange{$i$}{$\vargs$}, the expression $\vargs_i$ in $\tenv$ yields $(\vt_i, \vargsp_i, \vxs_i)$\ProseOrTypeError;
-  \item checking for each \Proselistrange{$i$}{$\vargs$}, that $\vt_i$ is a singular type yields $\True$\ProseOrTypeError;
-  \item $\news$ denotes the print statement with arguments $\vargsp$ and newline indicator $\vnewline$;
-  \item $\newtenv$ is $\tenv$;
-  \item define $\vses$ as the union of the set containing a \GlobalEffectTerm{} with \purity{} $\SEImpure$ and a \LocalEffectTerm{} with \purity{} $\SEImpure$, and each set $\vxs_i$, for \Proselistrange{$i$}{$\vargs$}.
-\end{itemize}
-
-\FormallyParagraph
-% This rule was fixed when translated to aslspec.
-\begin{mathpar}
-  \inferrule{%
-    \vs = \SPrint(\vargs, \vnewline)\\
-    \vi\in\listrange(\vargs): \annotateexpr(\tenv, \vargs[i]) \typearrow (\vt_i, \vargsp[i], \vxs_i)\OrTypeError \hva\\\\
-    \vi\in\listrange(\vargs): \techeck(\issingular(\vt_i), \UnexpectedType) \typearrow \True \OrTypeError \hva\\\\
-    \vses \eqdef \{\LocalEffect(\SEImpure), \GlobalEffect(\SEImpure)\} \cup \bigcup_{\vi\in\listrange(\vargs)} \vxs_i
-  }{%
-    \annotatestmt (\tenv, \vs) \typearrow (\SPrint(\vargsp, \vnewline), \tenv, \vses)
-  }
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_stmt_SPrint}
 \CodeSubsection{\SPrintBegin}{\SPrintEnd}{../Typing.ml}
 
@@ -3753,51 +2145,6 @@ Notice that empty bitvectors are displayed as \verb|0x|.
 We define the constant \RenderConstant{new_line}, which stands
 for the newline character: $\vnewline \triangleq \ascii{10}$.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{print}
-  \begin{itemize}
-    \item $\vs$ denotes a \printstatementterm{} with arguments $\elist$ and newline indicator $\False$;
-    \item the evaluation of $\elist$ in $\env$ is\\ $\ResultExprList((\vlist, \vg), \venvs[1])$\ProseOrAbnormal;
-    \item for each element of $\vlist$ at index $\vi$, outputting that element to the console (without any separator),
-          if one exists, at environment $\venvs[i]$ yields environment $\venvs[\vi+1]$;
-    \item \Proseeqdef{$\newenv$}{the last environment, that is, $\venvs[\vn+1]$ where $\vn$ is the number of elements in $\vlist$};
-  \end{itemize}
-
-  \item \AllApplyCase{println}
-  \begin{itemize}
-    \item $\vs$ denotes a \printstatementterm{} with arguments $\elist$ and newline indicator $\True$;
-    \item the evaluation of the same statement with a newline indicator set to $\False$, that is,
-          $\SPrint(\elist, \False)$ yields the configuration \\
-          $\Continuing(\vg, \envone)$\ProseOrAbnormal;
-    \item outputting a newline character to the console, if one exists, with environment $\envone$ yields $\newenv$;
-  \end{itemize}
-  \item the resulting configuration is $\Continuing(\vg, \newenv)$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[print]{
-  \evalexprlist(\env, \elist) \evalarrow \ResultExprList((\vlist, \vg), \env_1) \OrAbnormal\\
-  \vi\in\listrange(\vlist): \outputtoconsole(\env_\vi, \vlist[i]) \evalarrow \env_{\vi + 1} \\
-  n \eqdef \listlen{\vlist}\\
-  \newenv \eqdef \env_{n + 1}
-}{
-  \evalstmt(\env, \SPrint(\elist, \False)) \evalarrow \Continuing(\vg, \newenv)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[println]{
-  \evalstmt(\env, \SPrint(\elist, \False)) \evalarrow \Continuing(\vg, \envone) \OrAbnormal\hva\\\\
-  \outputtoconsole(\envone, \nvstring(\vnewline)) \evalarrow \newenv
-}{
-  \evalstmt(\env, \SPrint(\elist, \True)) \evalarrow \Continuing(\vg, \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_stmt_SPrint}
 \CodeSubsection{\EvalSPrintBegin}{\EvalSPrintEnd}{../Interpreter.ml}
 
@@ -3916,17 +2263,6 @@ to implement a custom form of assertion checking.
 \ExampleDef{Typing an Unreachable Statement}
 The \unreachablestatementterm{} in \listingref{UnreachableStatement} is well-typed.
 
-\BackupProseAndFormally{
-\ProseParagraph
-Annotating $\SUnreachable$ in the \staticenvironmentterm{} $\tenv$ yields\\$(\SUnreachable, \tenv, \emptyset)$.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{
-  \annotatestmt(\tenv, \SUnreachable) \typearrow (\SUnreachable, \tenv, \overname{\emptyset}{\vses})
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_stmt_SUnreachable}
 
 \SemanticsRuleDef{SUnreachable}
@@ -3934,16 +2270,6 @@ Annotating $\SUnreachable$ in the \staticenvironmentterm{} $\tenv$ yields\\$(\SU
 Evaluating the specification in \listingref{UnreachableStatement} results in a \dynamicerrorterm,
 since the \unreachablestatementterm{} is evaluated.
 
-\BackupProseAndFormally{
-\ProseParagraph
-Evaluating $\SUnreachable$ in an environment $\env$ results in a \DynamicErrorConfigurationTerm{} indicating this ($\UnreachableError$).
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{
-  \evalstmt(\env, \SUnreachable) \evalarrow \DynamicErrorVal{\UnreachableError}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_stmt_SUnreachable}
 
 \section{Pragma Statements\label{sec:PragmaStatements}}
@@ -3980,28 +2306,6 @@ Evaluating $\SUnreachable$ in an environment $\env$ results in a \DynamicErrorCo
 The \pragmastatementterm{} in \listingref{typing-spragma} is well-typed.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is a pragma statement with identifier $\id$ and expression list $\vargs$. That is, $\SPragma(\id, \vargs)$;
-  \item for each \Proselistrange{$i$}{$\vargs$}, \Proseannotateexpr{$\tenv$}{$\vargs[i]$}{$(\Ignore, \Ignore, \vxs_i)$}\ProseOrTypeError;
-  \item define $\vses$ as the union of $\vxs_i$, for every \Proselistrange{$i$}{$\vargs$};
-  \item define $\news$ as the \passstatementterm, that is, $\SPass$
-  \item $\newtenv$ is $\tenv$;
-  \item define $\vses$ as the union of $\vsess$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  i\in\listrange(\vargs): \annotateexpr(\tenv, \vargs[i]) \typearrow (\Ignore, \Ignore, \vxs_i) \OrTypeError\hva\\\\
-  \vses \eqdef \bigcup_{i\in\listrange(\vargs)} \vxs_i
-}{
-  \annotatestmt(\tenv, \overname{\SPragma(\id, \vargs)}{\vs}) \typearrow (\overname{\SPass}{\news}, \tenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_stmt_SPragma}
 \CodeSubsection{\SPragmaBegin}{\SPragmaEnd}{../Typing.ml}
 

@@ -354,88 +354,6 @@ correspond to \CaseName{pending\_constrained}.
 {\typingtests/TypingRule.TInt.rhs_pending_constrained.bad.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{pending\_constrained}
-    \begin{itemize}
-      \item $\tty$ is a \pendingconstrainedintegertypeterm;
-      \item the result is a \typingerrorterm{} (\UnexpectedType).
-    \end{itemize}
-  \item \AllApplyCase{well\_constrained}
-    \begin{itemize}
-      \item $\tty$ is the well-constrained integer type constrained by
-        constraints $\vc_i$, for $i=1..k$;
-      \item annotating each constraint $\vc_i$, for $i=1..k$,
-      yields $(\newc_i, \vxs_i)$\ProseOrTypeError;
-      \item $\newconstraints$ is the list of annotated constraints $\newc_i$,
-      for $i=1..k$;
-      \item $\newty$ is the well-constrained integer type constrained
-        by $\newconstraints$ with $\PrecisionFull$;
-      \item define $\vses$ as the union of all $\vxs_i$, for $i=1..k$.
-    \end{itemize}
-
-    \item \AllApplyCase{parameterized}
-    \begin{itemize}
-      \item $\tty$ is a \parameterizedintegertypeterm\ for $\name$;
-      \item define $\vses$ as the \sideeffectsetterm{} containing a $\Pure$ \LocalEffectTerm{} and an \ImmutabilityTerm{} with immutability $\True$.
-      \item $\newty$ is the unconstrained integer type.
-    \end{itemize}
-
-    \item \AllApplyCase{unconstrained}
-    \begin{itemize}
-      \item $\tty$ is an \unconstrainedintegertypeterm;
-      \item $\newty$ is the unconstrained integer type;
-      \item define $\vses$ as the empty set.
-    \end{itemize}
-  \end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[pending\_constrained]{}{
-  {
-    \begin{array}{r}
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TInt(\PendingConstrained)}{\tty}) \typearrow
-  \TypeErrorVal{\UnexpectedType}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[well\_constrained]{
-  \constraints \reverseeqdef \vc_{1..k}\\
-  i=1..k: \annotateconstraint(\vc_i) \typearrow (\newc_i, \vxs_i) \OrTypeError\hva\\\\
-  \newconstraints \eqdef \newc_{1..k}\\
-  \vses \eqdef \bigcup_{i=1..k} \vxs_i
-}{
-  {
-    \begin{array}{r}
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TInt(\WellConstrained(\constraints))}{\tty}) \typearrow \\
-  (\overname{\TInt(\WellConstrained(\newconstraints, \PrecisionFull))}{\newty}, \vses)
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[parameterized]{
-  \tty \reverseeqdef \TInt(\Parameterized(\name))\\
-  \vses \eqdef \{ \LocalEffect(\Pure), \Immutability(\True) \}
-}{
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \tty) \typearrow (\overname{\tty}{\newty}, \vses)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[unconstrained]{
-  \tty \reverseeqdef \unconstrainedinteger
-}{
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \tty) \typearrow (\overname{\tty}{\newty}, \overname{\emptyset}{\vses})
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_type_t_int}
 \CodeSubsection{\TIntBegin}{\TIntEnd}{../Typing.ml}
 
@@ -449,52 +367,6 @@ expressions of \texttt{let} storage elements.
 \ASLListing{Annotated constraints}{annotate-constraint}{\typingtests/TypingRule.AnnotateConstraint.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{exact}
-  \begin{itemize}
-        \item $\vc$ is the exact integer constraint for the expression $\ve$, that is,\\ $\ConstraintExact(\ve)$;
-        \item applying $\annotatesymbolicconstrainedinteger$ to $\ve$ in $\tenv$ yields\\ $(\vep, \vses)$\ProseOrTypeError;
-        \item define $\newc$ as the exact integer constraint for $\vep$ ($\ConstraintExact(\vep)$).
-  \end{itemize}
-
-  \item \AllApplyCase{range}
-  \begin{itemize}
-    \item $\vc$ is the \Proserangeconstraint{$\veone$}{$\vetwo$} ($\ConstraintRange(\veone, \vetwo)$);
-    \item applying $\annotatesymbolicconstrainedinteger$ to $\veone$ in $\tenv$ yields\\ $(\veonep, \vsesone)$\ProseOrTypeError;
-    \item applying $\annotatesymbolicconstrainedinteger$ to $\vetwo$ in $\tenv$ yields\\ $(\vetwop, \vsestwo)$\ProseOrTypeError;
-    \item define $\newc$ as the range integer constraint for expressions $\veonep$ and $\vetwop$, that is, $\ConstraintRange(\veonep, \vetwop)$;
-    \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[exact]{
-  \vc = \ConstraintExact(\ve)\\
-  \annotatesymbolicconstrainedinteger(\tenv, \ve) \typearrow (\vep, \vses) \OrTypeError
-}{
-  \annotateconstraint(\tenv, \vc) \typearrow (\overname{\ConstraintExact(\vep)}{\newc}, \vses)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[range]{
-  \annotatesymbolicconstrainedinteger(\tenv, \veone) \typearrow (\veonep, \vsesone) \OrTypeError\hva\\\\
-  \annotatesymbolicconstrainedinteger(\tenv, \vetwo) \typearrow (\vetwop, \vsestwo) \OrTypeError\hva\\\\
-  \vses \eqdef \vsesone \cup \vsestwo
-}{
-  {
-  \begin{array}{r}
-    \annotateconstraint(\tenv, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \\
-    (\overname{\ConstraintRange(\veonep, \vetwop)}{\newc}, \vses)
-  \end{array}
-  }
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_constraint}
 
 \section{The Real Type\label{sec:RealType}}
@@ -537,23 +409,6 @@ In \listingref{typing-treal}, all the uses of the \realtypeterm{} are well-typed
 See \ExampleRef{Well-typed Real Types} for examples of well-typed \realtypeterm{}.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\tty$ is the \realtypeterm{}, $\TReal$.
-  \item $\newty$ is the \realtypeterm{}, $\TReal$;
-  \item define $\vses$ as the empty set.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}
-{
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TReal}{\tty}) \typearrow (\overname{\TReal}{\newty}, \overname{\emptyset}{\vses})
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_type_t_real}
 \CodeSubsection{\TRealBegin}{\TRealEnd}{../Typing.ml}
 
@@ -593,23 +448,6 @@ In \listingref{typing-tstring}, all the uses of the \stringtypeterm{} are well-t
 See \ExampleRef{Well-typed String Types} for examples of well-typed \stringtypesterm.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\tty$ is the \stringtypeterm{}, $\TString$.
-  \item $\newty$ is the \stringtypeterm{}, $\TString$.
-  \item \Proseeqdef{$\vses$}{the empty set}.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}
-{
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TString}{\tty}) \typearrow (\overname{\TString}{\newty}, \overname{\emptyset}{\vses})
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_type_t_string}
 \CodeSubsection{\TStringBegin}{\TStringEnd}{../Typing.ml}
 
@@ -643,23 +481,6 @@ In \listingref{typing-tbool}, all the uses of the \booleantypeterm{} are well-ty
 See \ExampleRef{Well-typed Boolean Types} for examples of well-typed \booleantypesterm.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\tty$ is the boolean type, $\TBool$;
-  \item $\newty$ is the boolean type, $\TBool$;
-  \item define $\vses$ as the empty set.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}
-{
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TBool}{\tty}) \typearrow (\overname{\TBool}{\newty}, \overname{\emptyset}{\vses})
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_type_t_bool}
 \CodeSubsection{\TBoolBegin}{\TBoolEnd}{../Typing.ml}
 
@@ -788,85 +609,6 @@ to be \constrainedintegersterm.
 \ExampleRef{A bitvector type with bitfields} shows a well-typed \bitvectortypeterm{} with bitfields.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\tty$ is the \bitvectortypeterm{} with width given by the expression
-    $\ewidth$ and the bitfields given by $\bitfields$, that is, $\TBits(\ewidth, \bitfields)$;
-  \item annotating the expression $\ewidth$ yields $(\twidth, \ewidthp, \seswidth)$\ProseOrTypeError;
-  \item \Prosechecksymbolicallyevaluable{\seswidth};
-  \item \Prosecheckconstrainedinteger{$\tenv$}{$\twidth$};
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{with\_bitfields}
-    \begin{itemize}
-      \item $\bitfields$ is not empty;
-      \item checking that $\seswidth$ is \pureterm{} via $\sesispure$ yields $\True$\ProseTerminateAs{\SideEffectViolation};
-      \item annotating the bitfields $\bitfields$ yields\\ $(\bitfieldsp, \vsesbitfields)$\ProseOrTypeError;
-      \item \Prosestaticeval{$\tenv$}{$\ewidthp$}{$\LInt(\vwidth)$};
-      \item \Prosecheckcommonbitfieldsalign{$\tenv$}{$\bitfieldsp$}{$\vwidth$}\ProseOrTypeError;
-      \item \Proseeqdef{$\newty$}{the \bitvectortypeterm{} with width given by the expression
-            $\ewidthp$ and the bitfields given by $\bitfieldsp$, that is, $\TBits(\ewidthp, \bitfieldsp)$};
-      \item \Proseeqdef{$\vses$}{the union of $\seswidth$ and $\vsesbitfields$}.
-    \end{itemize}
-
-    \item \AllApplyCase{no\_bitfields}
-    \begin{itemize}
-      \item $\bitfields$ is empty;
-      \item \Proseeqdef{$\newty$}{the \bitvectortypeterm{} with width given by the expression
-            $\ewidthp$ and an empty list of bitfields, that is,
-            $\TBits(\ewidthp, \emptylist)$};
-      \item \Proseeqdef{$\vses$}{$\seswidth$}.
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[with\_bitfields]{
-  \annotateexpr(\tenv, \ewidth) \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\\\\
-  \checksymbolicallyevaluable(\seswidth) \typearrow \True \OrTypeError\\\\
-  \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\hva\\\\
-  \commonprefixline\hva\\\\
-  \bitfields \neq \emptylist\\\\
-  \techeck(\sesispure(\seswidth), \SideEffectViolation) \typearrow \True \OrTypeError\\\\
-  {
-  \begin{array}{r}
-    \annotatebitfields(\tenv, \ewidthp, \bitfields) \typearrow \\
-    (\bitfieldsp, \vsesbitfields) \OrTypeError
-  \end{array}
-  }\hva\\
-  \staticeval(\tenv, \ewidthp) \typearrow \LInt(\vwidth) \OrTypeError\\\\
-  \checkcommonbitfieldsalign(\tenv, \bitfieldsp, \vwidth) \typearrow \True \OrTypeError\\\\
-  \vses \eqdef \seswidth \cup \vsesbitfields
-}{
-  {
-    \begin{array}{r}
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TBits(\ewidth, \bitfields)}{\tty}) \typearrow \\
-  (\overname{\TBits(\ewidthp, \bitfieldsp)}{\newty}, \vses)
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[no\_bitfields]{
-  \annotateexpr(\tenv, \ewidth) \typearrow (\twidth, \ewidthp, \seswidth) \OrTypeError\hva\\\\
-  \checksymbolicallyevaluable(\seswidth) \typearrow \True \OrTypeError\\\\
-  \checkconstrainedinteger(\tenv, \twidth) \typearrow \True \OrTypeError\hva\\\\
-  \commonprefixline\hva\\\\
-  \bitfields = \emptylist
-}{
-  {
-    \begin{array}{r}
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TBits(\ewidth, \bitfields)}{\tty}) \typearrow \\
-  (\overname{\TBits(\ewidthp, \emptylist)}{\newty}, \overname{\seswidth}{\seswidth})
-    \end{array}
-  }
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_type_t_bits}
 \CodeSubsection{\TBitsBegin}{\TBitsEnd}{../Typing.ml}
 
@@ -935,30 +677,6 @@ element index.
 See \ExampleRef{Well-typed Tuples} for examples of well-typed \tupletypesterm.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\tty$ is the \Prosetupletype{$\tys$}, that is, $\TTuple(\tys)$;
-  \item $\tys$ is the list $\tty_i$, for $i=1..k$ and $k>1$;
-  \item annotating each type $\tty_i$ in $\tenv$, for $i=1..k$,
-        yields $(\ttyp_i, \vxs_i)$\ProseOrTypeError;
-  \item $\newty$ is the \Prosetupletype{$\ttyp_i$}, for $i=1..k$;
-  \item define $\vses$ as the union of all $\vxs_i$, for $i=1..k$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  k > 1\\
-  \tys \reverseeqdef \tty_{1..k}\\
-  i=1..k: \annotatetype(\False, \tenv, \tty_i) \typearrow (\ttyp_i, \vxs_i) \OrTypeError\hva\\\\
-  \vses \eqdef \bigcup_{i=1..k} \vxs_i
-}{
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TTuple(\tys)}{\tty}) \typearrow (\overname{\TTuple(\tysp)}{\newty}, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_type_t_tuple}
 \CodeSubsection{\TTupleBegin}{\TTupleEnd}{../Typing.ml}
 
@@ -1066,30 +784,6 @@ show examples of ill-typed enumeration type declarations.
 \ASLListing{Ill-typed enumeration types}{typing-tenum-bad4}{\typingtests/TypingRule.TEnumDecl.bad4.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\tty$ is the \enumerationtypeterm{} with enumeration literals
-        $\vli$, that is, $\TEnum(\vli)$;
-  \item $\decl$ is $\True$, indicating that $\tty$ should be considered in the context of a declaration;
-  \item determining that $\vli$ does not contain duplicates yields $\True$\ProseOrTypeError;
-  \item determining that none of the labels in $\vli$ is declared in the global environment
-  yields $\True$\ProseOrTypeError;
-  \item $\newty$ is the \enumerationtypeterm{} $\tty$;
-  \item define $\vses$ as the empty set.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \checknoduplicates(\vli) \typearrow \True \OrTypeError\hva\\\\
-  \vl \in \vli: \checkvarnotingenv(\tenv.\staticenvsG, \vl) \typearrow \True \OrTypeError
-}{
-  \annotatetype(\True, \tenv, \overname{\TEnum(\vli)}{\tty}) \typearrow (\overname{\TEnum(\vli)}{\newty}, \overname{\emptyset}{\vses})
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_type_t_enum_decl}
 \CodeSubsection{\TEnumDeclBegin}{\TEnumDeclEnd}{../Typing.ml}
 
@@ -1161,65 +855,6 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
 \ASLListing{Ill-typed array types}{typing-tarray-bad2}{\typingtests/TypingRule.TArray.bad2.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\tty$ is the array type with element type $\vt$;
-  \item Annotating the type $\vt$ in $\tenv$ yields $(\vtp, \vsest)$\ProseOrTypeError;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{expr\_is\_enum}
-    \begin{itemize}
-      \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
-      via $\getvariableenum$ yields the enumeration variable
-      name $\vs$ and list of labels $\vlabels$, that is, $\some{ \vs, \vlabels }$\ProseOrTypeError;
-      \item $\newty$ is the array type indexed by an \enumerationtypeterm{}
-      named $\vs$ with list of labels $\vlabels$ and of elements of type $\vtp$\\ ($\TArray(\ArrayLengthEnum(\vs, \vlabels), \vtp)$);
-      \item \Proseeqdef{$\vses$}{the empty set}.
-    \end{itemize}
-
-    \item \AllApplyCase{expr\_not\_enum}
-    \begin{itemize}
-      \item the array index is $\ve$ and determining whether $\ve$ corresponds to an enumeration in $\tenv$
-      via $\getvariableenum$ yields $\None$ (meaning it does not
-      correspond to an enumeration)\ProseOrTypeError;
-      \item annotating the \symbolicallyevaluableterm{} \constrainedintegerterm{} expression $\ve$ yields
-      $(\vep, \vsesindex)$\ProseOrTypeError;
-      \item $\newty$ the array type indexed by integer bounded by
-      the expression $\vep$ and of elements of type $\vtp$
-      ($\TArray(\ArrayLengthExpr(\vep), \vtp)$);
-      \item define $\vses$ as the union of $\vsest$ and $\vsesindex$.
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[expr\_is\_enum]{
-  \tty = \AbbrevTArrayLengthExpr{\ve}{\vt}\\
-  \annotatetype(\False, \tenv, \vt) \typearrow (\vtp, \vsest) \OrTypeError\hva\\\\
-  \commonprefixline\hva\\\\
-  \getvariableenum(\tenv, \ve) \typearrow \some{ \vs, \vlabels }
-}{
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \tty) \typearrow
-  (\overname{\AbbrevTArrayLengthEnum{\ve}{\vlabels}{\vtp}}{\newty}, \overname{\emptyset}{\vses})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[expr\_not\_enum]{
-  \annotatetype(\False, \tenv, \vt) \typearrow (\vtp, \vsest) \OrTypeError\hva\\\\
-  \commonprefixline\hva\\\\
-  \getvariableenum(\tenv, \ve) \typearrow \None\\
-  \annotatesymbolicconstrainedinteger(\tenv, \ve) \typearrow (\vep, \vsesindex) \OrTypeError\hva\\\\
-  \vses \eqdef \vsest \cup \vsesindex
-}{
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\AbbrevTArrayLengthExpr{\ve}{\vt}}{\tty}) \typearrow
-  (\overname{\AbbrevTArrayLengthExpr{\vep}{\vtp}}{\newty}, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_type_t_array}
 \CodeSubsection{\TArrayBegin}{\TArrayEnd}{../Typing.ml}
 
@@ -1232,76 +867,6 @@ enumeration labels from variable expressions.
 \ASLListing{Retrieving enumeration labels from expressions}{typing-getvariableenum}{\typingtests/TypingRule.GetVariableEnum.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{not\_evar}
-  \begin{itemize}
-    \item $\ve$ is not a variable expression;
-    \item the result is $\None$.
-  \end{itemize}
-
-  \item \AllApplyCase{no\_declared\_type}
-  \begin{itemize}
-    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
-    \item $\vx$ is not associated with a type in the global environment of $\tenv$;
-    \item the result is $\None$.
-  \end{itemize}
-
-  \item \AllApplyCase{declared\_enum}
-  \begin{itemize}
-    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
-    \item $\vx$ is associated with a type $\vt$ in the global environment of $\tenv$;
-    \item obtaining the \underlyingtypeterm\ of $\vt$ in $\tenv$ yields an \enumerationtypeterm{} with labels $\vlabels$;
-    \item the result is the pair consisting of $\vx$ and $\vlabels$.
-  \end{itemize}
-
-  \item \AllApplyCase{declared\_not\_enum}
-  \begin{itemize}
-    \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
-    \item $\vx$ is associated with a type $\vt$ in the global environment of $\tenv$;
-    \item obtaining the \underlyingtypeterm\ of $\vt$ in $\tenv$ yields a type that is not an \enumerationtypeterm{};
-    \item the result is $\None$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[not\_evar]{
-  \astlabel(\ve) \neq \EVar
-}{
-  \getvariableenum(\tenv, \ve) \typearrow \None
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[no\_declared\_type]{
-  \tenv.\staticenvsG.\declaredtypes(\vx) = \bot
-}{
-  \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \None
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[declared\_enum]{
-  \tenv.\staticenvsG.\declaredtypes(\vx) = (\vt, \Ignore)\\
-  \makeanonymous(\tenv, \vt) \typearrow \TEnum(\vlabels)
-}{
-  \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \some{(\vx, \vlabels)}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[declared\_not\_enum]{
-  \tenv.\staticenvsG.\declaredtypes(\vx) = (\vt, \Ignore)\\
-  \makeanonymous(\tenv, \vt) \typearrow \vtone\\
-  \astlabel(\vtone) \neq \TEnum
-}{
-  \getvariableenum(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow \None
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{get_variable_enum}
 
 \identi{PKXK} \identd{YYDW}%
@@ -1321,24 +886,6 @@ expressions and classifies them as either \symbolicallyevaluableterm{} or not.
 {\typingtests/TypingRule.AnnotateSymbolicallyEvaluableExpr.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item \Proseannotateexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$};
-  \item \Prosechecksymbolicallyevaluable{$\vses$}.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\hva\\\\
-  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError
-}{
-  \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses)
-}
-\end{mathpar}
-} % BACKUP_ORIGINAL_RULE
 \RenderProseAndFormally{annotate_symbolically_evaluable_expr}
 \CodeSubsection{\AnnotateSymbolicallyEvaluableExprBegin}{\AnnotateSymbolicallyEvaluableExprEnd}{../Typing.ml}
 
@@ -1353,25 +900,6 @@ This includes the expression \verb|i - 3|, since the \underlyingtypeterm{}
 of \verb|i| is the \unconstrainedintegertypeterm.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item determining the \underlyingtypeterm{} of $\vt$ yields $\vtp$\ProseOrTypeError;
-  \item checking that $\vtp$ is an \integertypeterm{} yields $\True$\ProseTerminateAs{\UnexpectedType};
-  \item the result is $\True$;
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \makeanonymous(\tenv, \vt) \typearrow \vtp \OrTypeError\hva\\\\
-  \techeck(\astlabel(\vtp) = \TInt, \UnexpectedType) \typearrow \True \OrTypeError
-}{
-  \checkunderlyinginteger(\tenv, \vt) \typearrow \True
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{check_underlying_integer}
 \CodeSubsection{\CheckUnderlyingIntegerBegin}{\CheckUnderlyingIntegerEnd}{../Typing.ml}
 
@@ -1412,38 +940,6 @@ is ill-typed, since the field \verb|v| repeats.
 \ExampleRef{Well-typed Record Types} shows examples of well-typed \recordtypesterm.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\tty$ is a \structuredtypeterm\ with AST label $L$;
-  \item the list of fields of $\tty$ is $\fields$;
-  \item $\decl$ is $\True$, indicating that $\tty$ should be considered in the context of a declaration;
-  \item $\fields$ is a list of pairs where the first element is an identifier and the second is a type --- $(\vx_i, \vt_i)$, for $i=1..k$;
-  \item checking that the list of field identifiers $\vx_{1..k}$ does not contain duplicates
-  yields $\True$\ProseOrTypeError;
-  \item annotating each field type $\vt_i$, for $i=1..k$, yields $(\vtp_i, \vxs_i)$
-        \ProseOrTypeError;
-  \item $\fieldsp$ is the list with $(\vx_i, \vtp_i)$, for $i=1..k$;
-  \item $\newty$ is the AST node with AST label $L$ (either record type or exception type,
-  corresponding to the type $\tty$) and fields $\fieldsp$;
-  \item define $\vses$ as the union of all $\vxs_i$, for $i=1..k$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  L \in \{\TRecord, \TException\}\\
-  \fields \reverseeqdef [i=1..k: (\vx_i, \vt_i)]\\
-  \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\hva\\\\
-  i=1..k: \annotatetype(\False, \tenv, \vt_i) \typearrow (\vtp_i, \vxs_i) \OrTypeError\hva\\\\
-  \fieldsp \eqdef [i=1..k: (\vx_i, \vtp_i)]\\
-  \vses \eqdef \bigcup_{i=1..k} \vxs_i
-}{
-  \annotatetype(\True, \tenv, \overname{L(\fields)}{\tty}) \typearrow (\overname{L(\fieldsp)}{\newty}, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_type_t_record_exception}
 \CodeSubsection{\TStructuredDeclBegin}{\TStructuredDeclEnd}{../Typing.ml}
 
@@ -1532,40 +1028,6 @@ utilizing collection types and ill-typed storage declarations utilizing
 collection types in comments.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\tty$ is a \collectiontypeterm{} with the list of fields of $\fields$;
-  \item $\decl$ is $\False$, indicating that $\tty$ should not be considered in the context of a declaration;
-  \item $\fields$ is a list of pairs where the first element is an identifier and the second is a type --- $(\vx_i, \vt_i)$, for $i=1..k$;
-  \item checking that the list of field identifiers $\vx_{1..k}$ does not contain duplicates
-  yields $\True$\ProseOrTypeError;
-  \item annotating each field type $\vt_i$, for $i=1..k$, yields $(\vtp_i, \vxs_i)$
-        \ProseOrTypeError;
-  \item $\fieldsp$ is the list with $(\vx_i, \vtp_i)$, for $i=1..k$;
-  \item checking that the \structureterm{} of the type $\vtp_i$ in the \staticenvironmentterm{} $\tenv$
-        is a \bitvectortypeterm, for every $i$ in $1..k$, yields $\True$\ProseOrTypeError;
-  \item $\newty$ is the AST node with AST label $L$ (either record type or exception type,
-        corresponding to the type $\tty$) and fields $\fieldsp$;
-  \item define $\vses$ as the union of all $\vxs_i$, for $i=1..k$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \tty = \TCollection(\fields)\\
-  \fields \reverseeqdef [i=1..k: (\vx_i, \vt_i)]\\
-  \checknoduplicates(\vx_{1..k}) \typearrow \True \OrTypeError\hva\\\\
-  i=1..k: \annotatetype(\False, \tenv, \vt_i) \typearrow (\vtp_i, \vxs_i) \OrTypeError\hva\\\\
-  \fieldsp \eqdef [i=1..k: (\vx_i, \vtp_i)]\\
-  i=1..k: \checkstructurelabel(\tenv, \vtp_i, \TBits) \typearrow \True \OrTypeError\hva\\\\
-  \vses \eqdef \bigcup_{i=1..k} \vxs_i
-}{
-  \annotatetype(\False, \tenv, \tty) \typearrow (\overname{\TCollection(\fieldsp)}{\newty}, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_type_t_collection}
 
 \section{Named Types\label{sec:NamedTypes}}
@@ -1624,28 +1086,6 @@ show examples of ill-typed named types.
 \ASLListing{Ill-typed named types}{typing-tnamed-bad2}{\typingtests/TypingRule.TNamed.bad2.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\tty$ is the named type $\vx$, that is $\TNamed(\vx)$;
-  \item checking whether $\vx$ is bound to any declared type in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item $\vx$ is bound to a type with associated \purity{} $\vpurity$;
-  \item define $\vses$ as the set of the \GlobalEffectTerm\ with purity $\vpurity$ and the \ImmutabilityTerm\ with immutability $\True$;
-  \item $\newty$ is $\tty$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \techeck(\tenv.\staticenvsG.\declaredtypes(\vx) \neq \bot, \UndefinedIdentifier) \typearrow \True \OrTypeError\hva\\\\
-  \tenv.\staticenvsG.\declaredtypes(\vx) = (\Ignore, \vpurity)\\
-  \vses \eqdef \{\ \GlobalEffect(\vpurity), \Immutability(\True) \}
-}{
-  \annotatetype(\overname{\Ignore}{\vdecl}, \tenv, \overname{\TNamed(\vx)}{\tty}) \typearrow (\overname{\TNamed(\vx)}{\newty}, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_type_t_named}
 \CodeSubsection{\TNamedBegin}{\TNamedEnd}{../Typing.ml}
 
@@ -1679,26 +1119,6 @@ In \listingref{typing-trecorderror}, the use of a record type outside of a decla
 \ASLListing{An erroneous use of a record type}{typing-trecorderror}{\typingtests/TypingRule.TNonDecl.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\tty$ is a \structuredtypeterm\ or an \enumerationtypeterm{};
-  \item $\decl$ is $\False$, indicating that $\tty$ should be considered to be outside the context of a declaration
-  of $\tty$;
-  \item a \typingerrorterm{} is returned, indicating that the use of anonymous form of enumerations, record,
-  and exceptions types is not allowed here.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \astlabel(\tty) \in \{\TEnum, \TRecord, \TException\}
-}{
-  \annotatetype(\False, \tenv, \tty) \typearrow \TypeErrorVal{\UnexpectedType}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_type_t_non_decl}
 \CodeSubsection{\TNonDeclBegin}{\TNonDeclEnd}{../Typing.ml}
 

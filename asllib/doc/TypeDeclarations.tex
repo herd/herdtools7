@@ -173,30 +173,6 @@ We also define the following helper rules:
 See \ExampleRef{Types} for examples of well-typed type declarations.
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vd$ is a type declaration with identifier $\vx$, type $\tty$,
-        and \optionalterm\ field initializers $\vs$, that is, $\DTypeDecl(\vx, \tty, \vs)$;
-  \item declaring the type described by $(\vx, \tty, \vs)$ in $\genv$
-        as per \\
-        \TypingRuleRef{DeclaredType} yields the modified \globalstaticenvironmentterm{} \\
-        $\newgenv$, annotated type $\ttyp$, and annotated \optionalterm{} field initializers $\vsp$\ProseOrTypeError;
-  \item define $\newd$ as $\vd$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vd = \DTypeDecl(\vx, \tty, \vs)\\
-  \declaretype(\genv, \vx, \tty, \vs) \typearrow (\newgenv, \ttyp, \vsp) \OrTypeError \\
-  \newd \eqdef \DTypeDecl(\vx, \ttyp, \vsp)
-}{
-  \typecheckdecl(\genv, \vd) \typearrow (\newd, \newgenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{typecheck_decl_type_decl}
 
 \TypingRuleDef{DeclareType}
@@ -211,70 +187,6 @@ $\GlobalEffect(\SEPure)$ and\\$\Immutability(\True)$.
 \ASLListing{Type declarations}{DeclareType}{\typingtests/TypingRule.DeclareType.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item checking that $\name$ is not already declared in the global environment of $\genv$ yields $\True$\ProseOrTypeError;
-  \item define $\tenv$ as the \staticenvironmentterm{} whose global component is $\genv$ and its local component is the empty local
-        \staticenvironmentterm{};
-  \item annotating $\tty$ in $\tenv$ yields $(\vtone, \vsest)$\ProseOrTypeError;
-  \item annotating the \optionalterm\ extra fields $\vs$ for $\vtone$ in $\tenv$ yields via \\ $\annotateextrafields$
-        yields the modified environment $\tenvone$, type $\vttwo$, and annotated \optionalterm{} extra fields $\vsp$\ProseOrTypeError;
-  \item applying $\sesispure$ to $\vsest$ yields $\vb$;
-  \item \Proseeqdef{$\vpurity$}{$\SEPure$ if $\vb$ is $\True$, otherwise $\SEReadonly$};
-  \item applying $\addtype$ to $\name$, $\vttwo$, and $\vpurity$ in $\tenv$ yields $\tenvtwo$;
-  \item $\tenvtwo$ is $\tenvone$ with its $\declaredtypes$ component updated by binding $\name$ to $\vttwo$;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{enum}
-    \begin{itemize}
-      \item $\vttwo$ is an \enumerationtypeterm{} with labels $\ids$, that is, $\TEnum(\ids)$;
-      \item applying $\declareenumlabels$ to $\vttwo$ in $\tenvtwo$ yields $\newgenv$\ProseOrTypeError.
-    \end{itemize}
-
-    \item \AllApplyCase{not\_enum}
-    \begin{itemize}
-      \item $\vttwo$ is not an \enumerationtypeterm{};
-      \item $\newgenv$ is $\tenvtwo$.
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[enum]{
-  \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\\\\
-  \withemptylocal(\genv) \typearrow \tenv\hva\\\\
-  \annotatetype(\True, \tenv, \tty) \typearrow (\vtone, \vsest) \OrTypeError\\\\
-  \annotateextrafields(\tenv, \name, \vtone, \vs) \typearrow (\tenvone, \vttwo, \vsp)\hva\\
-  \sesispure(\vsest) \typearrow \vb\\
-  \vpurity \eqdef \choice{\vb}{\SEPure}{\SEReadonly}\\
-  \addtype(\tenvone, \name, \vttwo, \vpurity) \typearrow \tenvtwo\hva\\\\
-  \commonprefixline\hva\\\\
-  \vttwo = \TEnum(\ids)\\
-  \declareenumlabels(\tenvtwo, \vttwo) \typearrow \newgenv \OrTypeError
-}{
-  \declaretype(\genv, \name, \tty, \vs) \typearrow (\newgenv, \vttwo, \vsp)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[not\_enum]{
-  \checkvarnotingenv(\genv, \name) \typearrow \True \OrTypeError\hva\\\\
-  \withemptylocal(\genv) \typearrow \tenv\hva\\\\
-  \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\tenvone, \vtone, \vsp)\\
-  \annotatetype(\True, \tenvone, \vtone) \typearrow (\vttwo, \vsest) \OrTypeError\hva\\\\
-  \sesispure(\vsest) \typearrow \vb\\
-  \vpurity \eqdef \choice{\vb}{\SEPure}{\SEReadonly}\\
-  \addtype(\tenvone, \name, \vttwo, \vpurity) \typearrow \tenvtwo\hva\\\\
-  \commonprefixline\hva\\\\
-  \astlabel(\vttwo) \neq \TEnum
-}{
-  \declaretype(\genv, \name, \tty, \vs) \typearrow (\overname{\tenvtwo}{\newgenv}, \vttwo, \vsp)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{declare_type}
 \CodeSubsection{\DeclareTypeBegin}{\DeclareTypeEnd}{../Typing.ml}
 \identr{DHRC} \identd{YZBQ} \identr{DWSP} \identi{MZXL} \identr{MDZD} \identr{CHKR}
@@ -294,109 +206,6 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 \ASLListing{Subtyping an undefined typed}{AnnotateExtraFields-bad}{\typingtests/TypingRule.AnnotateExtraFields.bad.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{none}
-  \begin{itemize}
-    \item $\vs$ is $\None$;
-    \item $\newtenv$ is $\tenv$;
-    \item $\newty$ is $\tty$;
-    \item $\vsp$ is $\None$.
-  \end{itemize}
-
-  \item \AllApplyCase{empty\_fields}
-  \begin{itemize}
-    \item $\vs$ is $\some{(\vsuper, \extrafields)}$;
-    \item checking that $\tty$ \subtypesatisfiesterm\ the named type $\vsuper$ (that is, \\ $\TNamed(\vsuper)$) yields
-          $\True$\ProseOrTypeError;
-    \item $\extrafields$ is the empty list;
-    \item $\newtenv$ is $\tenv$ with its $\subtypes$ component updated by binding $\name$ to $\vsuper$;
-    \item $\newty$ is $\tty$;
-    \item $\vsp$ is $\some{\vsuper, \emptylist}$.
-  \end{itemize}
-
-  \item \AllApplyCase{no\_super}
-  \begin{itemize}
-    \item $\vs$ is $\some{(\vsuper, \extrafields)}$;
-    \item checking that $\tty$ \subtypesatisfiesterm\ the named type $\vsuper$ (that is, \\ $\TNamed(\vsuper)$) yields
-          $\True$\ProseOrTypeError;
-    \item $\extrafields$ is not an empty list;
-    \item $\vsuper$ is not bound to a type in $\tenv$;
-    \item the result is a \typingerrorterm{} indicating that $\vsuper$ is not a declared type.
-  \end{itemize}
-
-  \item \AllApplyCase{structured}
-  \begin{itemize}
-    \item $\vs$ is $\some{(\vsuper, \extrafields)}$;
-    \item checking that $\tty$ \subtypesatisfiesterm\ the named type $\vsuper$ (that is,\\ $\TNamed(\vsuper)$) yields
-          $\True$\ProseOrTypeError;
-    \item $\extrafields$ is not an empty list;
-    \item $\vsuper$ is bound to a type $\vt$ in $\tenv$;
-    \item checking that $\vt$ is a \structuredtypeterm\ yields $\True$ or a \typingerrorterm{}
-          indicating that a \structuredtypeterm\ was expected, thereby short-circuiting the entire rule;
-    \item $\vt$ has AST label $L$ and fields $\fields$;
-    \item $\newty$ is the type with AST label $L$ and list fields that is the concatenation of $\fields$ and $\extrafields$;
-    \item $\newtenv$ is $\tenv$ with its $\subtypes$ component updated by binding $\name$ to $\vsuper$;
-    \item $\vsp$ is $\some{(\vsuper, \emptylist)}$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[none]{}{
-  \annotateextrafields(\tenv, \name, \tty, \overname{\None}{\vs}) \typearrow (\overname{\tenv}{\newtenv}, \overname{\tty}{\newty}, \overname{\None}{\vsp})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[empty\_fields]{
-  \vs = \some{(\vsuper, \extrafields)}\\
-  \subtypesatisfies(\tty, \TNamed(\vsuper)) \typearrow \vb\\
-  \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
-  \extrafields = \emptylist \\
-  \newtenv \eqdef \{\staticenvsG: \tenv.\staticenvsG.\subtypes[\name\mapsto\vsuper], \staticenvsL: \tenv.\staticenvsL\} \\
-  \vsp \eqdef \some{(\vsuper, \emptylist)}
-}{
-  \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\newtenv, \overname{\tty}{\newty}, \vsp)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[no\_super]{
-  \vs = \some{(\vsuper, \extrafields)}\\
-  \subtypesatisfies(\tty, \TNamed(\vsuper)) \typearrow \vb\\
-  \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
-  \extrafields \neq \emptylist\hva\\\\
-  \tenv.\staticenvsG.\declaredtypes(\vsuper) = \bot
-}{
-  \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow
-  \TypeErrorVal{\UndefinedIdentifier}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[structured]{
-  \vs = \some{(\vsuper, \extrafields)}\\
-  \subtypesatisfies(\tty, \TNamed(\vsuper)) \typearrow \vb\\
-  \techeck(\vb, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
-  \extrafields \neq \emptylist\hva\\\\
-  \tenv.\staticenvsG.\declaredtypes(\vsuper) = (\vt, \Ignore)\\
-  {
-    \begin{array}{r}
-  \techeck(\astlabel(\vt) \in \{\TRecord, \TException\}, \UnexpectedType) \typearrow \\ \True \OrTypeError
-    \end{array}
-  }\\
-  \vt \reverseeqdef L(\fields)\hva\\
-  \newty \eqdef L(\fields \concat \extrafields)\\
-  \newtenv \eqdef \{\staticenvsG: \tenv.\staticenvsG.\subtypes[\name\mapsto\vsuper], \staticenvsL: \tenv.\staticenvsL\} \\
-  \vsp \eqdef \some{(\vsuper, \emptylist)}
-}{
-  \annotateextrafields(\tenv, \name, \tty, \vs) \typearrow (\newtenv, \newty, \vsp)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_extra_fields}
 
 \TypingRuleDef{DeclaredType}
@@ -414,39 +223,6 @@ since the expression \verb|20 as MyInt| refers to the undeclared type \verb|MyIn
 \ASLListing{Referring to an undeclared type}{DeclaredType-bad}{\typingtests/TypingRule.DeclaredType.bad.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{exists}
-  \begin{itemize}
-    \item $\id$ is bound in the global environment to the type $\vt$.
-  \end{itemize}
-
-  \item \AllApplyCase{type\_not\_declared}
-  \begin{itemize}
-    \item $\id$ is not bound in the global environment to any type;
-    \item the result is a \typingerrorterm{} indicating the lack of a type declaration for $\id$ (\UndefinedIdentifier).
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[exists]{
-  \tenv.\staticenvsG.\declaredtypes(\id) = (\vt, \Ignore)
-}{
-  \declaredtype(\tenv, \id) \typearrow \vt
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[type\_not\_declared]{
-  \tenv.\staticenvsG.\declaredtypes(\id) = \bot
-}{
-  \declaredtype(\tenv, \id) \typearrow \TypeErrorVal{\UndefinedIdentifier}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{declared_type}
 
 \TypingRuleDef{DeclareEnumLabels}
@@ -468,34 +244,6 @@ $\BlueLabel$ & $\TNamed(\ColorType)$ & $\LLabel(\BlueLabel)$\\
 \end{center}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ids$ is the (non-empty) list of labels $\id_{1..k}$;
-  \item $\tenv_0$ is $\tenv$;
-  \item declaring the constant $\id_i$ with the type $\TNamed(\name)$ and literal\\$\LLabel(\id_i)$ in $\tenv_{i-1}$
-        via $\declareconst$
-        yields $\tenv_i$, for $i=1 $ to $k$ (if $k>1$)\ProseOrTypeError;
-  \item $\newtenv$ is $\tenv_k$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \ids \reverseeqdef \id_{1..k}\\
-  \tenv_0 \eqdef \tenv\\
-  {
-  \begin{array}{r}
-    \vi=1..k: \declareconst(\tenv_{\vi-1}, \id_\vi, \TNamed(\name), \LLabel(\id_\vi)) \typearrow \\
-    \tenv_{\vi} \OrTypeError
-  \end{array}
-  }
-}{
-  \declareenumlabels(\tenv, \name, \ids) \typearrow \overname{\tenv_k}{\newtenv}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{declare_enum_labels}
 
 \TypingRuleDef{DeclareConst}
@@ -520,23 +268,4 @@ in the empty \globalstaticenvironmentterm{} yields the following \globalstaticen
 \ASLListing{Declaring a global constant}{DeclareConst}{\typingtests/TypingRule.DeclareConst.asl}
 
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item adding the global storage given by the identifier $\name$, global declaration keyword $\GDKConstant$,
-        and type $\tty$ to $\genv$ yields $\genvone$\ProseOrTypeError;
-  \item applying $\addglobalconstant$ to $\name$ and $\vv$ in $\genvone$ yields $\newgenv$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \addglobalstorage(\genv, \name, \GDKConstant, \tty) \typearrow \genvone \OrTypeError\hva\\\\
-  \addglobalconstant(\genvone, \name, \vv) \typearrow \newgenv
-}{
-  \declareconst(\genv, \name, \tty, \vv) \typearrow \newgenv
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{declare_const}

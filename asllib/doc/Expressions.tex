@@ -95,26 +95,6 @@ A literal expression represents a literal as an expression.
 In \listingref{literalssemantics}, each of the expressions \texttt{3}
 is annotated with the type \verb|integer{3}|.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\ve$ is the literal expression $\vv$;
-\item annotating the literal $\vv$ in the \staticenvironmentterm{} $\tenv$ yields the type $\vt$;
-\item \Proseeqdef{$\newe$}{$\ve$};
-\item \Proseeqdef{$\vses$}{the empty set}.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \ve = \ELiteral(\vv)\\
-  \annotateliteral(\tenv, \vv) \typearrow \vt
-}{
-  \annotateexpr(\tenv, \ve) \typearrow (\vt, \overname{\ve}{\newe}, \overname{\emptyset}{\vses})
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_ELit}
 \CodeSubsection{\ELitBegin}{\ELitEnd}{../Typing.ml}
 
@@ -123,22 +103,6 @@ is annotated with the type \verb|integer{3}|.
 \ExampleDef{Evaluation of Literal Expressions}
 In \listingref{literalssemantics}, each of the expressions \texttt{3} evaluates to the \nativevalueterm{} $\nvint(3)$.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\ve$ is the literal expression for $\vl$, that is, $\ELiteral(\vl)$
-\item $\vv$ is the \nativevalueterm{} corresponding to $\vl$;
-\item $\vg$ is the empty graph, as literals do not yield any Read and Write Effects;
-\item $\newenv$ is $\env$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{
-  \evalexpr(\env, \overname{\ELiteral(\vl)}{\ve}) \evalarrow \ResultExpr((\overname{\NVLiteral(\vl)}{\vv},\overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_ELit}
 \CodeSubsection{\EvalELitBegin}{\EvalELitEnd}{../Interpreter.ml}
 
@@ -173,87 +137,6 @@ are well-typed.
 The variable \texttt{t} in \listingref{expressions-evar-undefined} is undefined.
 \ASLListing{An undefined variable}{expressions-evar-undefined}{\typingtests/TypingRule.EVar.undefined.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ is a variable expression for $\vx$, that is, $\EVar(\vx)$;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{local}
-    \begin{itemize}
-    \item $\vx$ is bound to the type $\vt$ and local declaration keyword $k$ via the $\localstoragetypes$ map of the local environment component of $\tenv$;
-    \item define $\newe$ as $\ve$;
-    \item define $\vses$ as the \sideeffectsetterm\ produced from $k$ by $\sesldk$.
-    \end{itemize}
-
-    \item \AllApplyCase{global.const}
-    \begin{itemize}
-    \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
-    \item $\vx$ is bound to $(\tty, \GDKConstant)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
-    \item $\vx$ is bound to $\vv$ via the $\constantvalues$ map of the global component of $\tenv$;
-    \item define $\newe$ as the literal expression for $\vv$;
-    \item define $\vses$ as the empty set.
-    \end{itemize}
-
-    \item \AllApplyCase{global.non\_const}
-    \begin{itemize}
-      \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
-      \item $\vx$ is bound to $(\tty, k)$ via the $\globalstoragetypes$ map of the global component of $\tenv$;
-      \item either $\vx$ is not bound in the $\constantvalues$ map of the global component of $\tenv$ or $k$ is not $\GDKConstant$;
-      \item define $\newe$ as $\ve$;
-      \item define $\vses$ as the \sideeffectsetterm\ produced from $k$ by $\sesgdk$.
-    \end{itemize}
-
-    \item \AllApplyCase{error\_undefined}
-    \begin{itemize}
-      \item $\vx$ is not bound via the $\localstoragetypes$ map of the local component of $\tenv$;
-      \item $\vx$ is not bound via the $\globalstoragetypes$ map of the global component of $\tenv$;
-      \item the result is a \typingerrorterm{} indicating that $\vx$ is an undefined identifier\\ ($\UndefinedIdentifier$).
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[local]{
-  \tenv.\staticenvsL.\localstoragetypes(\vx) =  (\vt, k) \\
-  \sesldk(k) \typearrow \vses
-}{
-  \annotateexpr(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow (\vt, \overname{\EVar(\vx)}{\newe}, \vses)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[global\_constant]{
-  \tenv.\staticenvsL.\localstoragetypes(\vx) = \bot \\
-  \tenv.\staticenvsG.\globalstoragetypes(\vx) = (\tty, \GDKConstant)\\
-  \tenv.\staticenvsG.\constantvalues(\vx) = \vv
-}{
-  \annotateexpr(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow (\tty, \overname{\eliteral{\vv}}{\newe}, \overname{\emptyset}{\vses})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[global\_non\_constant]{
-  \tenv.\staticenvsL.\localstoragetypes(\vx) = \bot \\
-  \tenv.\staticenvsG.\globalstoragetypes(\vx) = (\tty, k)\\
-  \tenv.\staticenvsG.\constantvalues(\vx) = \bot \lor k \neq \GDKConstant\\
-  \sesgdk(k) \typearrow \vses
-}{
-  \annotateexpr(\tenv, \overname{\EVar(\vx)}{\ve}) \typearrow (\tty, \overname{\EVar(\vx)}{\newe}, \vses)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[error\_undefined]{
-  \tenv.\staticenvsL.\localstoragetypes(\vx) = \bot \\
-  \tenv.\staticenvsG.\globalstoragetypes(\vx) = \bot
-}{
-  \annotateexpr(\tenv,\overname{\EVar(\vx)}{\ve}) \typearrow \TypeErrorVal{\UndefinedIdentifier}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_EVar}
 
 \subsection{Semantics}
@@ -269,49 +152,6 @@ In \listingref{globalvarsemantics}, the evaluation of~\texttt{global\_x} within~
 applies the rule \SemanticsRuleRef{EVar}.GLOBAL.
 \ASLListing{Semantics of global variables}{globalvarsemantics}{\semanticstests/SemanticsRule.EGlobalVar.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes a variable expression, that is, $\EVar(\vx)$;
-  \item view $\env$ as an environment where $\denv$ is the dynamic environment;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{local}
-    \begin{itemize}
-      \item $\vx$ is bound locally in $\env$;
-      \item $\vv$ is the value of $\vx$ in the local component of $\env$;
-    \end{itemize}
-
-    \item \AllApplyCase{global}
-    \begin{itemize}
-      \item $\vx$ is bound in the storage map of $\denv$;
-      \item $\vv$ is the value of $\vx$ in the global component of $\env$;
-    \end{itemize}
-  \end{itemize}
-  \item $\newenv$ is $\env$;
-  \item $\vg$ is the graph containing a single Read Effect for $\vx$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[local]{
-  \env \reverseeqdef (\Ignore, \denv)\\
-  \vx \in \dom(\denv.\dynamicenvsL)
-}{
-  \evalexpr(\env, \EVar(\vx)) \evalarrow \ResultExpr((\overname{\denv.\dynamicenvsL(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[global]{
-  \env \reverseeqdef (\Ignore, \denv)\\
-  \vx \in \dom(\denv.\dynamicenvsG.\storage)
-}{
-  \evalexpr(\env, \EVar(\vx)) \evalarrow \ResultExpr((\overname{\denv.\dynamicenvsG.\storage(\vx)}{\vv}, \overname{\ReadEffect(\vx)}{\vg}), \overname{\env}{\newenv})
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_EVar}
 \CodeSubsection{\EvalEVarBegin}{\EvalEVarEnd}{../Interpreter.ml}
 
@@ -559,30 +399,6 @@ the sum of widths of the two concatenated \bitvectortypesterm{}
 is equal to the width of the \bitvectortypeterm{} of the return type.
 \ASLListing{Concatenating bitvectors}{EBinop-2}{\typingtests/TypingRule.EBinop2.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes a binary operation $\op$ over two expressions $\veone$ and $\vetwo$, that is, \\ $\EBinop(\op, \veone, \vetwo)$;
-  \item \Proseannotateexpr{$\tenv$}{$\veone$}{\\ $(\vtone, \veonep, \vsesone)$\ProseOrTypeError};
-  \item \Proseannotateexpr{$\tenv$}{$\vetwo$}{\\ $(\vttwo, \vetwop, \vsestwo)$\ProseOrTypeError};
-  \item \Proseapplybinoptypes{$\tenv$}{\op}{\vtone}{\vttwo}{$\vt$\ProseOrTypeError};
-  \item define $\newe$ as the binary expression $\op$ over $\veonep$ and $\vetwop$;
-  \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vtone, \veonep, \vsesone) \OrTypeError\hva\\\\
-  \annotateexpr(\tenv, \vetwo) \typearrow (\vttwo, \vetwop, \vsestwo) \OrTypeError\hva\\\\
-  \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt \OrTypeError\hva\\\\
-  \vses \eqdef \vsesone \cup \vsestwo
-}{
-  \annotateexpr(\tenv, \overname{\EBinop(\op, \veone, \vetwo)}{\ve}) \typearrow (\vt, \overname{\EBinop(\op, \veone', \vetwo')}{\newe}, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_EBinop}
 \CodeSubsection{\BinopBegin}{\BinopEnd}{../Typing.ml}
 
@@ -593,26 +409,6 @@ In \listingref{andsemantics},
 the expression \texttt{FALSE \&\& fail()} evaluates to the value \texttt{FALSE}. Notice that the function \texttt{fail} is never called.
 \ASLListing{Semantics of conjunction}{andsemantics}{\semanticstests/SemanticsRule.EBinopAndFalse.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\ve$ denotes a conjunction over two expressions,
-      $\EBinop(\BAND, \veone, \vetwo)$;
-\item $C$ is the result of the evaluation of the expression
-      \texttt{if e1 then e2 else false} (see \SemanticsRuleRef{ECond}).
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \falsep \eqdef \ELiteral(\LBool(\False))\\
-  \evalexpr(\env, \ECond(\veone, \vetwo, \falsep)) \evalarrow C
-}{
-\evalexpr(\env, \EBinop(\BAND, \veone, \vetwo)) \evalarrow C
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_BinopAnd}
 \CodeSubsection{\EvalBinopAndBegin}{\EvalBinopAndEnd}{../Interpreter.ml}
 
@@ -645,25 +441,6 @@ an if-statement is used to achieve the same effect.
 In \listingref{semantics-binopor}, the expression \texttt{(0 == 1) || (1 == 1)} evaluates to the value \True.
 \ASLListing{Evaluating a disjunction expression}{semantics-binopor}{\semanticstests/SemanticsRule.EBinopOrTrue.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\ve$ denotes a disjunction of two expressions, $\EBinop(\BOR, \veone, \vetwo)$;
-\item $C$ is the result of the evaluation of
-      \texttt{if e1 then true else e2} (see \SemanticsRuleRef{ECond}).
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \truep \eqdef \ELiteral(\LBool(\True))\\
-  \evalexpr(\env, \ECond(\veone, \truep, \vetwo)) \evalarrow C
-}{
-\evalexpr(\env, \EBinop(\BOR, \veone, \vetwo)) \evalarrow C
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_BinopOr}
 \CodeSubsection{\EvalBinopOrBegin}{\EvalBinopOrEnd}{../Interpreter.ml}
 
@@ -697,24 +474,6 @@ In \listingref{semantics-binopimpl},
 the expression \texttt{(0 == 1) ==> (1 == 0)} evaluates to the value \True, according to the definition of implication.
 \ASLListing{Evaluating an implication expression}{semantics-binopimpl}{\semanticstests/SemanticsRule.EBinopImplExFalso.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes an implication over two expressions, $\EBinop(\IMPL, \veone, \vetwo)$;
-  \item $\ve$ is evaluated as \texttt{if e1 then e2 else true}.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \truep \eqdef \ELiteral(\LBool(\True))\\
-  \evalexpr(\env, \ECond(\veone, \vetwo, \truep)) \evalarrow C
-}{
-\evalexpr(\env, \EBinop(\IMPL, \veone, \vetwo)) \evalarrow C
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_BinopImpl}
 \CodeSubsection{\EvalBinopImplBegin}{\EvalBinopImplEnd}{../Interpreter.ml}
 The evaluation via the rule above ensures that $\veone$ is evaluated first and only if
@@ -746,41 +505,6 @@ In \listingref{semantics-binopassert},
 the expression \texttt{3 + 2} evaluates to the value \texttt{5}.
 \ASLListing{Evaluating a binary expression}{semantics-binopassert}{\semanticstests/SemanticsRule.EBinopPlusAssert.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes a Binary Operator $\op$ over two expressions, $\EBinop(\op, \veone, \vetwo)$;
-  \item the operator $\op$ is not one of $\BAND$, $\BOR$, or $\IMPL$.
-        These operators are handled by rules
-        \SemanticsRuleRef{BinopAnd},
-        \SemanticsRuleRef{BinopOr}, and
-        \SemanticsRuleRef{BinopImpl};
-  \item the evaluation of the expression $\veone$ in $\env$ is the configuration \\
-        $\ResultExpr(\vmone, \envone)$\ProseOrAbnormal;
-  \item the evaluation of the expression $\vetwo$ in $\envone$ is the configuration \\
-        $\ResultExpr(\vmtwo, \newenv)$\ProseOrAbnormal;
-  \item $\vmone$ consists of the value $\vvone$ and the execution graph $\vgone$;
-  \item $\vmtwo$ consists of the value $\vvtwo$ and the execution graph $\vgtwo$;
-  \item applying the Binary Operator $\op$ to $\vvone$ and $\vvtwo$ results in $\vv$\ProseOrError;
-  \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\
-  \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \OrAbnormal \hva\\\\
-  \evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv) \OrAbnormal \hva\\\\
-  \vmone \reverseeqdef (\vvone, \vgone) \\
-  \vmtwo \reverseeqdef (\vvtwo, \vgtwo) \\
-  \evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv \OrDynError\hva\\\\
-  \vg \eqdef \vgone \parallelcomp \vgtwo
-}{
-  \evalexpr( \env, \overname{\EBinop(\op, \veone, \vetwo)}{\ve} ) \evalarrow
-  \ResultExpr((\vv, \vg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_ORIGINAL_RULE
 \RenderProseAndFormally{eval_expr_Binop}
 \CodeSubsection{\EvalBinopBegin}{\EvalBinopEnd}{../Interpreter.ml}
 
@@ -816,25 +540,6 @@ as well as \texttt{==}).
 \ExampleRef{Applying Unary Operations to Types} shows examples
 of well-typed unary operation expressions.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes a unary operation $\op$ over an expression $\vep$, that is $\EUnop(\op, \vep)$;
-  \item annotating $\vep$ in $\tenv$ yields $(\vtpp, \vepp, \vses)$\ProseOrTypeError;
-  \item checking compatibility of $\op$ with $\vtpp$ as per \TypingRuleRef{ApplyUnopType} yields $\vt$\ProseOrTypeError;
-  \item define $\newe$ as $\op$ over $\vepp$, that is, $\EUnop(\op, \vepp)$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \vep) \typearrow (\vtpp, \vepp, \vses) \OrTypeError\hva\\\\
-  \applyunoptype(\tenv, \op, \vtpp) \typearrow \vt \OrTypeError
-}{
-  \annotateexpr(\tenv, \overname{\EUnop(\op, \vep)}{\ve}) \typearrow (\vt, \EUnop(\op, \vepp), \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_EUnop}
 \CodeSubsection{\UnopBegin}{\UnopEnd}{../Typing.ml}
 
@@ -845,26 +550,6 @@ In \listingref{semantics-unopassert},
 the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 \ASLListing{Evaluating a unary operation expression}{semantics-unopassert}{\semanticstests/SemanticsRule.EUnopAssert.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\ve$ denotes a unary operator $\op$ over an expression, $\EUnop(\op, \veone)$;
-\item the evaluation of the expression $\veone$ in $\env$ yields\\ $\ResultExpr((\vvone, \vg), \newenv)$\ProseOrAbnormal;
-\item applying the unary operator $\op$ to $\vvone$ is $\vv$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexpr( \env, \veone) \evalarrow \ResultExpr((\vvone,\vg), \newenv) \OrAbnormal\hva\\\\
-  \evalunop(\op, \vvone) \evalarrow \vv
-}
-{
-  \evalexpr( \env, \EUnop(\op, \veone) ) \evalarrow
-  \ResultExpr((\vv, \vg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_Unop}
 \CodeSubsection{\EvalUnopBegin}{\EvalUnopEnd}{../Interpreter.ml}
 
@@ -909,37 +594,6 @@ an example of typing a conditional expression.
 
 \ExampleRef{Lowest Common Ancestor Examples} shows more examples of typing conditional expressions.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes a conditional expression with condition $\econd$ with two options $\etrue$ and $\efalse$;
-  \item annotating $\econd$ in $\tenv$ results in $(\tcond, \econdp, \vsescond)$\ProseOrTypeError;
-  \item checking that $\tcond$ has the \structureterm{} of the \booleantypeterm{} in $\tenv$ yields \True\ProseOrTypeError;
-  \item annotating $\etrue$ in $\tenv$ results in $(\ttrue, \etruep, \vsestrue)$\ProseOrTypeError;
-  \item annotating $\efalse$ in $\tenv$ results in $(\tfalse, \efalsep, \vsesfalse)$;
-  \item obtaining the lowest common ancestor of $\ttrue$ and $\tfalse$ results in $\vt$\ProseOrTypeError;
-  \item $\newe$ is the condition $\econdp$ with two options $\etruep$ and $\efalsep$, that is, $\ECond(\econdp, \etruep, \efalsep)$;
-  \item define $\vses$ as the union of $\vsescond$, $\vsestrue$, and $\vsesfalse$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \econd) \typearrow (\tcond, \econd', \vsescond) \OrTypeError\hva\\\\
-  \annotateexpr(\tenv, \etrue) \typearrow (\ttrue, \etrue', \vsestrue) \OrTypeError\hva\\\\
-  \annotateexpr(\tenv, \efalse) \typearrow (\tfalse, \efalse', \vsesfalse) \OrTypeError\hva\\\\
-  \lca(\ttrue, \tfalse) \typearrow \vt \OrTypeError\hva\\\\
-  \vses \eqdef \vsescond \cup \vsestrue \cup \vsesfalse
-}{
-  {
-    \begin{array}{r}
-  \annotateexpr(\tenv, \overname{\ECond(\econd, \etrue, \efalse)}{\ve}) \typearrow \\
-  (\vt, \ECond(\econdp, \etruep, \efalsep), \vses)
-    \end{array}
-  }
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_ECond}
 \CodeSubsection{\ECondBegin}{\ECondEnd}{../Typing.ml}
 \identr{XZVT}
@@ -962,33 +616,6 @@ evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
 % Transliteration note: the code uses an optimized semantics for the case where
 % true and false sub-expressions do not contain function calls. Since this is an
 % optimization, we do not document it.
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes a conditional expression $\econd$ with two options $\veone$ and $\vetwo$,
-        that is, $\ECond(\econd, \veone, \vetwo)$;
-  \item the evaluation of the conditional expression $\econd$ in $\env$ yields\\ $\ResultExpr(\mcond, \envone)$\ProseOrAbnormal;
-  \item $\mcond$ consists of a native Boolean for $\vb$ and execution graph $\vgone$;
-  \item $\vep$ is $\veone$ if $\vb$ is $\True$ and $\vetwo$ otherwise;
-  \item the evaluation of $\vep$ in $\envone$ yields $\ResultExpr((\vvtwo, \vgtwo), \newenv)$\ProseOrAbnormal;
-  \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslctrl$ edge.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\hva\\\\
-  \mcond \reverseeqdef (\nvbool(\vb), \vgone)\\
-  \vep \eqdef \choice{\vb}{\veone}{\vetwo}\hva\\\\
-  \evalexpr(\envone, \vep) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\hva\\\\
-  \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
-}{
-  \evalexpr(\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}) \evalarrow
-  \ResultExpr((\vv, \vg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_ECond}
 \CodeSubsection{\EvalECondBegin}{\EvalECondEnd}{../Interpreter.ml}
 
@@ -1083,25 +710,6 @@ conditional expression evaluates to the \texttt{else} expression.
 \listingref{semantics-ecall} shows call expressions (on the right-hand-side of assignments)
 and the inferred types of the expressions, as type annotations on the left-hand-side variables.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes a call to a subprogram, that is, $\ECall(\vcall)$;
-  \item applying $\annotatecall$ to $\vcall$ in $\tenv$
-        annotates the call of the subprogram in $\tenv$ as a function (see Chapter~\ref{chap:SubprogramCalls})
-        and yields $(\vcallp, \some{ \vt }, \vses)$\ProseOrTypeError.
-  \item $\newe$ is the call using $\vcallp$, that is, $\ECall(\vcallp)$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotatecall(\vcall) \typearrow (\vcallp, \some{ \vt }, \vses) \OrTypeError
-}{
-  \annotateexpr(\tenv, \overname{\ECall(\vcall)}{\ve}) \typearrow (\vt, \overname{\ECall(\vcallp)}{\newe}, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_ECall}
 \CodeSubsection{\ECallBegin}{\ECallEnd}{../Typing.ml}
 \identd{CFYP} \identr{BQJG}
@@ -1112,62 +720,6 @@ and the inferred types of the expressions, as type annotations on the left-hand-
 \listingref{semantics-ecall} shows call expressions (on the right-hand-side of assignments)
 and the values they evaluate to, as assertions on the values assigned.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes a subprogram call, $\ECall(\vcall)$;
-  \item the evaluation of that subprogram call in $\env$ yields\\
-  $\ResultCall(\vms, \newenv)$\ProseOrAbnormal;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{single\_returned\_value}
-    \begin{itemize}
-      \item $\vms$ consists of a single returned value $(\vv,\vg)$,
-      which goes into the output configuration $\ResultExpr((\vv, \vg), \newenv)$.
-    \end{itemize}
-
-    \item \AllApplyCase{multiple\_returned\_values}
-    \begin{itemize}
-      \item $\vms$ consists of a list of returned value $(\vv_i,\vg_i)$, for $i=1..k$;
-      \item $\vg$ is the parallel composition of $\vg_i$, for $i=1..k$;
-      \item $\vv$ is the \nativevalueterm{}  vector of values $\vv_i$, for $i=1..k$;
-      \item the resulting configuration is $\ResultExpr((\vv, \vg), \newenv)$.
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[single\_returned\_value]{
-  {
-    \begin{array}{r}
-  \evalcall(\env, \vcall.\name, \vcall.\params, \vcall.\args) \evalarrow \\ \ResultCall(\vms, \newenv) \OrAbnormal
-  \end{array}
-  }\hva\\\\
-  \commonprefixline\hva\\\\
-  \vms \reverseeqdef [(\vv, \vg)]
-}{
-  \evalexpr(\env, \ECall(\vcall)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[multiple\_returned\_values]{
-  {
-    \begin{array}{r}
-  \evalcall(\env, \vcall.\callname, \vcall.\callparams, \vcall.\callargs) \evalarrow \\ \ResultCall(\vms, \newenv) \OrAbnormal
-  \end{array}
-  }\hva\\\\
-  \commonprefixline\hva\\\\
-  \vms \reverseeqdef [i=1..k: (\vv_i, \vg_i)]\\
-  \vg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k \\
-  \vv \eqdef \NVVector(\vv_{1..k})
-}{
-  \evalexpr(\env, \ECall(\vcall)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_ECall}
 \CodeSubsection{\EvalECallBegin}{\EvalECallEnd}{../Interpreter.ml}
 
@@ -1219,65 +771,6 @@ show examples of ill-typed slicing expressions.
 \ASLListing{Ill-typed slicing expression due to incorrect width}{ESlice-bad1}{\typingtests/TypingRule.ESlice.bad1.asl}
 \ASLListing{Ill-typed slicing expression due to incorrect type}{ESlice-bad2}{\typingtests/TypingRule.ESlice.bad2.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes the slicing of expression $\vep$ by the slices $\slices$, that is,\\
-        $\ESlice(\vep, \slices)$;
-  \item annotating the expression $\vep$ in $\tenv$ yields $(\tep,\vepp, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \structureterm\ of $\tep$ in $\tenv$ yields $\structtep$\ProseOrTypeError;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{okay}
-    \begin{itemize}
-      \item $\structtep$ is either a bitvector or an integer;
-      \item checking that $\slices$ is not empty yields $\True$\ProseTerminateAs{\BadSlices};
-      \item annotating $\slices$ in $\tenv$ yields $(\slicesp, \vsestwo)$\ProseOrTypeError;
-      \item obtaining the width of $\slices$ in $\tenv$ via $\sliceswidth$ yields $\vw$\ProseOrTypeError;
-      \item $\vt$ is the bitvector type of width $\vw$, that is, $\TBits(\vw, \emptylist)$;
-      \item define $\newe$ as the slicing of expression $\vepp$ by the slices $\slicesp$, that is,
-            $\ESlice(\vepp, \slicesp)$;
-      \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$.
-    \end{itemize}
-
-    \item \AllApplyCase{error}
-    \begin{itemize}
-      \item $\structtep$ is neither a bitvector nor an integer;
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \vep) \typearrow (\tep, \vepp, \vsesone) \OrTypeError\hva\\\\
-  \tstruct(\tenv, \tep) \typearrow \structtep \OrTypeError\hva\\\\
-  \astlabel(\structtep) \in \{\TInt, \TBits\}\\
-  \techeck(\slices \neq \emptylist, \BadSlices) \typearrow \True \OrTypeError\hva\\\\
-  \annotateslices(\tenv, \slices) \typearrow (\slicesp, \vsestwo) \OrTypeError\hva\\\\
-  \sliceswidth(\tenv, \slices) \typearrow \vw \OrTypeError\hva\\\\
-  \vses \eqdef \vsesone \cup \vsestwo
-}{
-  {
-    \begin{array}{r}
-  \annotateexpr(\tenv, \overname{\ESlice(\vep, \slices)}{\ve}) \typearrow\\
-  (\overname{\TBits(\vw, \emptylist)}{\vt}, \overname{\ESlice(\vepp, \slicesp)}{\newe}, \vses)
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \vep) \typearrow (\tep, \vepp) \OrTypeError\hva\\\\
-  \tstruct(\tenv, \tep) \typearrow \vtp\\
-  \astlabel(\vtp) \not\in \{\TInt, \TBits\}
-}{
-  \annotateexpr(\tenv, \overname{\ESlice(\vep, \slices)}{\ve}) \typearrow \TypeErrorVal{\BadSlices}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_ESlice}
 \CodeSubsection{\ESliceBegin}{\ESliceEnd}{../Typing.ml}
 \subsubsection{Comments}
@@ -1299,35 +792,6 @@ same as the slicing expressions
 Note that in the following definition,
 the function $\readfrombitvector$ takes care of converting integers to bitvectors.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\ve$ denotes a slicing expression, $\ESlice(\ebv, \slices)$;
-\item the evaluation of $\ebv$ in $\env$ yields $\ResultExpr(\mbv, \envone)$\ProseOrAbnormal;
-\item the evaluation of $\slices$ in $\env$ yields $\ResultExpr(\mpositions, \newenv)$\ProseOrAbnormal;
-\item $\mpositions$ consists of $\positions$ --- all the indices that need to be added to the
-resulting bitvector --- and the execution graph $\vgone$;
-\item reading from $\vbv$ as a bitvector at the indices indicated by $\positions$
-      (see \SemanticsRuleRef{ReadFromBitvector}) results in the bitvector $\vv$,
-      which concatenates all of the values from the indicates indices\ProseOrError;
-\item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexpr(\env, \ebv) \evalarrow \ResultExpr(\mbv, \envone)  \OrAbnormal\hva\\\\
-  \mbv \reverseeqdef (\vbv,\vgone) \\
-  \evalslices(\envone, \slices) \evalarrow \ResultSlices(\mpositions, \newenv)  \OrAbnormal \\
-  \mpositions \reverseeqdef (\positions, \vgtwo) \hva\\
-  \readfrombitvector(\vbv, \positions) \evalarrow \vv \OrDynError\hva\\\\
-  \vg \eqdef \vgone \parallelcomp \vgtwo
-}{
-  \evalexpr(\env, \ESlice(\ebv, \slices)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_ESlice}
 \CodeSubsection{\EvalESliceBegin}{\EvalESliceEnd}{../Interpreter.ml}
 
@@ -1378,37 +842,6 @@ array access expressions on the right-hand-side of the
 assignments to \verb|int_arr| and \verb|big_little_arr|
 and the types inferred for them via the added \verb|as <inferred-type>|.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes the \arrayaccessterm{} expression with base $\ebase$ and index $\eindex$;
-  \item \Proseannotateexpr{$\tenv$}{$\ebase$}{\\ $(\tbase,\ebasep, \vsesbase)$}\ProseOrTypeError;
-  \item obtaining the \underlyingtypeterm\ of $\tbase$ in $\tenv$ yields $\tanonbase$\ProseOrTypeError;
-  \item checking whether $\tanonbase$ is an array type yields $\True$\ProseOrTypeError;
-  \item view $\tanonbase$ as the array type with size expression $\size$ and element type $\telem$,
-        that is, $\TArray(\size, \telem)$;
-  \item applying $\annotategetarray$ to $(\size, \telem)$ and \\
-        $(\ebasep, \vsesbase, \eindex)$ yields
-        $(\vt, \newe, \vses)$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \ebase) \typearrow (\tbase, \ebasep, \vsesbase) \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \tbase) \typearrow \tanonbase \OrTypeError\hva\\\\
-  \techeck(\astlabel(\tanonbase) = \TArray, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
-  \tanonbase \reverseeqdef \TArray(\size, \telem)\\
-  {
-    \begin{array}{r}
-  \annotategetarray(\tenv, (\size, \telem), (\ebasep, \vsesbase, \eindex)) \typearrow \\ (\vt, \newe, \vses)
-    \end{array}
-  }
-}{
-  \annotateexpr(\tenv, \overname{\EGetArray(\ebase, \eindex)}{\ve}) \typearrow (\vt, \newe, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_EGetArray}
 \CodeSubsection{\EGetArrayBegin}{\EGetArrayEnd}{../Typing.ml}
 
@@ -1416,40 +849,6 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
 \RenderRelation{annotate_get_array}
 See \ExampleRef{Array Access Expressions}.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item \Proseannotateexpr{$\tenv$}{$\eindex$}{(\tindexp, \eindexp, \vsesindex)}\ProseOrTypeError;
-  \item applying $\typeofarraylength$ to $\size$, to obtain the type of the array length yields
-        $\wantedtindex$;
-  \item checking that $\tindexp$ \typesatisfiesterm\ $\wantedtindex$ in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item define $\vses$ as the union of $\vsesindex$ and $\vsesbase$;
-  \item \Proseeqdef{$\newe$}{
-    an access to an integer-indexed array for $\ebase$ and $\eindexp$, that is, $\EGetArray(\ebase, \eindexp)$ if $\size$ is an integer-typed array index,
-    and an access to an enumeration-indexed array for $\ebase$ and $\eindexp$, that is,\\
-    $\EGetEnumArray(\ebase, \eindexp)$ if $\size$ is an enumeration-typed array index.
-  }
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \eindex) \typearrow (\tindexp, \eindexp, \vsesindex) \OrTypeError\hva\\\\
-  \typeofarraylength(\size) \typearrow \wantedtindex\\
-  \checktypesatisfies(\tenv, \tindexp, \wantedtindex) \typearrow \True \OrTypeError\hva\\\\
-  \vses \eqdef \vsesindex \cup \vsesbase \\
-  \newe \eqdef \ifthenelse{\astlabel(\size) = \ArrayLengthExpr}{\EGetArray(\ebase, \eindexp)}{\EGetEnumArray(\ebase, \eindexp)}
-}{
-  {
-  \begin{array}{r}
-  \annotategetarray(\tenv, (\size, \telem), (\ebase, \vsesbase, \eindex)) \typearrow\\
-  (\overname{\telem}{\vt}, \newe, \vses)
-  \end{array}
-  }
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_get_array}
 \CodeSubsection{\AnnotateGetArrayBegin}{\AnnotateGetArrayEnd}{../Typing.ml}
 
@@ -1467,35 +866,6 @@ since we are trying to access index \texttt{3} of an array
 which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
 \ASLListing{Evaluating an illegal array access}{semantics-egetarrayerror}{\semanticstests/SemanticsRule.EGetArrayTooSmall.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes an array access expression, $\EGetArray(\earray, \eindex)$;
-  \item the evaluation of $\earray$ in $\env$ is $\ResultExpr(\marray, \envone)$\ProseOrAbnormal;
-  \item the evaluation of $\eindex$ in $\env$ is  $\ResultExpr(\mindex, \newenv)$\ProseOrAbnormal
-  \item $\marray$ consists of the native vector $\varray$ and execution graph $\vgone$;
-  \item $\mindex$ consists of the native integer $\vindex$ and execution graph $\vgtwo$;
-  \item $\vindex$ is the native integer for $\vi$;
-  \item evaluating the value at index $\vi$ of $\varray$ yields $\vv$\ProseOrError;
-  \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexpr(\env, \earray) \evalarrow \ResultExpr(\marray, \envone)  \OrAbnormal\\
-  \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \newenv)  \OrAbnormal\hva\\
-  \marray \reverseeqdef (\varray, \vgone)\\
-  \mindex \reverseeqdef (\vindex, \vgtwo)\\
-  \vindex \reverseeqdef \nvint(\vi)\\
-  \getindex(\vi, \varray) \evalarrow \vv \OrDynError\\\\
-  \vg \eqdef \vgone \parallelcomp \vgtwo\\
-}{
-  \evalexpr(\env, \EGetArray(\earray, \eindex)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_EGetArray}
 \CodeSubsection{\EvalEGetArrayBegin}{\EvalEGetArrayEnd}{../Interpreter.ml}
 
@@ -1507,36 +877,6 @@ with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
 \ASLListing{Evaluating an access to an enumeration-indexed array}{semantics-egetenumarray}
 {\semanticstests/SemanticsRule.EGetEnumArray.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes an array access expression, $\EGetArray(\earray, \eindex)$;
-  \item the evaluation of $\earray$ in $\env$ is $\ResultExpr(\marray, \envone)$\ProseOrAbnormal;
-  \item the evaluation of $\eindex$ in $\env$ is  $\ResultExpr(\mindex, \newenv)$\ProseOrAbnormal
-  \item $\marray$ consists of the native value $\varray$ and execution graph $\vgone$;
-  \item $\mindex$ consists of the native value $\vindex$ and execution graph $\vgtwo$;
-  \item $\vindex$ is the native literal for the label $\vl$;
-  \item accessing the field $\vl$ of $\varray$, which is a native record value, yields $\vv$;
-  \item $\vg$ is the parallel composition of $\vgone$ and $\vgtwo$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \ve = \EGetEnumArray(\earray, \eindex)\\
-  \evalexpr(\env, \earray) \evalarrow \ResultExpr(\marray, \envone)  \OrAbnormal\hva\\
-  \evalexpr(\envone, \eindex) \evalarrow \ResultExpr(\mindex, \newenv)  \OrAbnormal\hva\\
-  \marray \reverseeqdef (\varray, \vgone)\\
-  \mindex \reverseeqdef (\vindex, \vgtwo)\\
-  \vindex \reverseeqdef \nvlabel(\vl)\hva\\
-  \getfield(\vl, \varray) \evalarrow \vv\\
-  \vg \eqdef \vgone \parallelcomp \vgtwo\\
-}{
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv, \vg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_EGetEnumArray}
 \CodeSubsection{\EvalEGetEnumArrayBegin}{\EvalEGetEnumArrayEnd}{../Interpreter.ml}
 
@@ -1572,61 +912,6 @@ and the types inferred for them via the added \verb|as <inferred type>|.
 \listingref{eget-bad-record-field} shows an ill-typed field expression.
 \ASLListing{An ill-typed record field expression}{eget-bad-record-field}{\typingtests/TypingRule.EGetBadRecordField.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
-  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \underlyingtypeterm\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
-  \item $\vtetwo$ is a record or exception type with fields $\fields$;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{okay}
-    \begin{itemize}
-      \item the field $\fieldname$ is associated with the type $\vt$ in $\fields$
-      \item define $\newe$ as the access of field $\fieldname$ on the record or exception object $\vetwo$, that is, $\EGetField(\vetwo, \fieldname)$;
-      \item define $\vses$ as $\vsesone$.
-    \end{itemize}
-
-    \item \AllApplyCase{error}
-    \begin{itemize}
-        \item the field $\fieldname$ is not associated with any type in $\fields$
-        \item the result is a \typingerrorterm{} indicating the missing field.
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
-  \vtetwo = L(\fields)\\
-  L \in \{\TRecord, \TException\}\\
-  \assocopt{\fields}{\fieldname} \typearrow \some{ \vt}
-}{
-  {
-    \begin{array}{r}
-      \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \\
-      (\vt, \EGetField(\vetwo, \fieldname), \overname{\vsesone}{\vses})
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo) \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
-  \vtetwo = L(\fields)\\
-  L \in \{\TRecord, \TException\}\\
-  \assocopt{\fields}{\fieldname} \typearrow \None
-}{
-  \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \TypeErrorVal{\BadField}
-}
-\end{mathpar}
-} % END_OF_BACKUP_RULE
 \RenderProseAndFormally{annotate_expr_EGetField_record_or_exception}
 
 \CodeSubsection{\EGetRecordFieldBegin}{\EGetRecordFieldEnd}{../Typing.ml}
@@ -1638,49 +923,6 @@ and the types inferred for them via the added \verb|as <inferred type>|.
 All of the collection field expressions in
 \listingref{typing-lesetcollectionfields} are well-typed.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
-  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \underlyingtypeterm{} of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
-  \item $\vtetwo$ is a collection type with fields $\fields$;
-  \item $\vetwo$ is a variable expression for \collectionvarname;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{okay}
-    \begin{itemize}
-      \item the field $\fieldname$ is associated with the type $\vt$ in $\fields$;
-      \item define $\newe$ as the access of field $\fieldname$ on the collection object $\vbase$, that is, $\EGetCollectionFields(\vbase, [\fieldname])$;
-      \item define $\vses$ as $\vsesone$.
-    \end{itemize}
-    \item \AllApplyCase{error}
-    \begin{itemize}
-      \item the field $\fieldname$ is not associated with any type in $\fields$
-      \item the result is a \typingerrorterm{} indicating the missing field.
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
-  \vetwo = \EVar(\vbase) \\
-  \vtetwo = \TCollection(\fields)\\
-  \assocopt{\fields}{\fieldname} \typearrow \some{ \vt}
-}{
-  {
-    \begin{array}{r}
-      \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \\
-      (\vt, \EGetCollectionFields(\vbase, [\fieldname]), \overname{\vsesone}{\vses})
-    \end{array}
-  }
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_EGetField_collection}
 \CodeSubsection{\EGetCollectionFieldBegin}{\EGetCollectionFieldEnd}{../Typing.ml}
 
@@ -1704,110 +946,6 @@ which includes the type annotation \verb|bits(4)|.
 \listingref{eget-bad-bitfield} shows an ill-typed bitfield expression.
 \ASLListing{An ill-typed bitfield expression}{eget-bad-bitfield}{\typingtests/TypingRule.EGetBadBitField.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
-  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \underlyingtypeterm\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
-  \item $\vtetwo$ is a bitvector type with bit fields $\bitfields$;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{simple}
-    \begin{itemize}
-      \item $\fieldname$ is declared in $\bitfields$ with a slice list $\slices$, that is, \\ $\BitFieldSimple(\Ignore, \slices)$;
-      \item $\vethree$ denotes the slicing of the expression \vetwo\ by the slices $\slices$, that is, \\ $\ESlice(\vetwo, \slices)$;
-      \item annotating $\vethree$ in $\tenv$ yields $(\vt, \newe, \vses)$\ProseOrTypeError.
-    \end{itemize}
-
-    \item \AllApplyCase{nested}
-    \begin{itemize}
-      \item $\fieldname$ is declared in $\bitfields$ with a slice list $\slices$ and nested bitfields $\bitfieldsp$
-            ($\BitFieldNested(\Ignore, \slices, \bitfieldsp)$);
-      \item $\vethree$ denotes the slicing of the expression \vetwo\ by the slices $\slices$, that is, \\ $\ESlice(\vetwo, \slices)$;
-      \item annotating $\vethree$ in $\tenv$ yields $(\vtefour, \newe, \vsesnew)$\ProseOrTypeError;
-      \item $\vtefour$ is a bitvector type with length expression $\vwidth$ ($\TBits(\vwidth, \Ignore)$);
-      \item define $\vt$ as a bitvector type with length expression $\vwidth$ and bitfields $\bitfieldsp$;
-      \item define $\vses$ as $\vsesnew$.
-    \end{itemize}
-
-    \item \AllApplyCase{typed}
-    \begin{itemize}
-      \item $\fieldname$ is declared in $\bitfields$ with a slice list $\slices$ and typed bitfield with type $\vt$ that is,
-            $\BitFieldType(\Ignore, \slices, \vt)$;
-      \item $\vethree$ denotes the slicing of the expression \vetwo\ by the slices $\slices$, that is, \\ $\ESlice(\vetwo, \slices)$;
-      \item annotating $\vethree$ in $\tenv$ yields $(\vtefour, \newe, \vsesnew)$\ProseOrTypeError;
-      \item determining whether $\vtefour$ \typesatisfiesterm\ $\vt$ yields $\True$\ProseOrTypeError;
-      \item define $\vses$ as $\vsesnew$.
-    \end{itemize}
-
-    \item \AllApplyCase{error}
-    \begin{itemize}
-      \item the field $\fieldname$ is not found in $\bitfields$
-      \item the result is a \typingerrorterm{} indicating the missing field.
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
-  \vtetwo = \TBits(\Ignore, \bitfields)\\
-  \findbitfieldopt(\bitfields, \fieldname) \typearrow \some{ \BitFieldSimple(\Ignore, \slices)}\\
-  \vethree \eqdef \ESlice(\vetwo, \slices)\\
-  \annotateexpr(\tenv, \vethree) \typearrow (\vt, \newe, \vses) \OrTypeError
-}{
-  \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow (\vt, \newe, \vses)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
-  \vtetwo = \TBits(\Ignore, \bitfields)\hva\\\\
-  {
-    \begin{array}{r}
-  \findbitfieldopt(\bitfields, \fieldname) \typearrow \\ \some{ \BitFieldNested(\Ignore, \slices, \bitfieldsp)}
-    \end{array}
-  }\hva\\\\
-  \vethree \eqdef \ESlice(\vetwo, \slices)\\
-  \annotateexpr(\tenv, \vethree) \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\hva\\\\
-  \vtefour \reverseeqdef \TBits(\vwidth, \Ignore)\\
-  \vt \eqdef \TBits(\vwidth, \bitfieldsp)
-}{
-  \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow (\vt, \newe, \overname{\vses}{\vsesnew})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
-  \vtetwo = \TBits(\Ignore, \bitfields)\\
-  \findbitfieldopt(\bitfields, \fieldname) \typearrow \some{ \BitFieldType(\Ignore, \slices, \vt)}\\
-  \vethree \eqdef \ESlice(\vetwo, \slices)\\
-  \annotateexpr(\tenv, \vethree) \typearrow (\vtefour, \newe, \vsesnew) \OrTypeError\hva\\\\
-  \checktypesatisfies(\tenv, \vtefour, \vt) \typearrow \True \OrTypeError
-}{
-  \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow (\vt, \newe, \overname{\vses}{\vsesnew})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
-  \vtetwo = \TBits(\Ignore, \bitfields)\\
-  \findbitfieldopt(\bitfields, \fieldname) \typearrow \None
-}{
-  \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \TypeErrorVal{\BadField}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_EGetField_bitfield}
 \CodeSubsection{\EGetBitFieldBegin}{\EGetBitFieldEnd}{../Typing.ml}
 \CodeSubsection{\EGetBitFieldNestedBegin}{\EGetBitFieldNestedEnd}{../Typing.ml}
@@ -1822,65 +960,12 @@ is the \integertypeterm.
 In the following rule definition, we use $\itemprefix$ to stand
 for its verbatim string.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
-  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \underlyingtypeterm\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
-  \item $\vtetwo$ is \tupletypeterm{} with list of types $\tys$, that is, $\TTuple(\tys)$;
-  \item $\fieldname$ is an identifier consisting of the prefix \itemprefix{} and the suffix $\num$;
-  \item $\num$ is lexically an integer numeral with the integer value $\vindex$;
-  \item determining whether $\vindex$ is between $0$, inclusive, and the number of types in $\tys$, exclusive, yields $\True$\ProseOrTypeError;
-  \item $\vt$ is the type at position $\vindex$ of $\tys$;
-  \item $\newe$ is the expression for obtaining the item at index $\vindex$ from the expression $\vetwo$, that is, $\EGetItem(\vetwo, \vindex)$;
-  \item define $\vses$ as $\vsesone$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
-  \vtetwo = \TTuple(\tys)\\
-  \fieldname = \itemprefix \concatstrings \num\\
-  \num \in \Lang{\REintlit}\\
-  \decimaltolit{\num} = \Tintlit(\vindex)\\
-  \techeck(0 \leq \vindex \leq \listlen{\tys}, \BadTupleIndex) \typearrow \True \OrTypeError\hva\\\\
-  \vt \eqdef \tys[\vindex]\\
-  \newe \eqdef \EGetItem(\vetwo, \vindex)
-}{
-  \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow (\vt, \newe, \overname{\vsesone}{\vses})
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_EGetField_tuple_item}
 \CodeSubsection{\EGetTupleItemBegin}{\EGetTupleItemEnd}{../Typing.ml}
 
 \TypingRuleDef{EGetBadField}
 \listingref{eget-bad-bitfield} shows an example of an ill-typed bitfield expression.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes the access of field $\fieldname$ in the value represented by the expression $\veone$, that is, $\EGetField(\veone, \fieldname)$;
-  \item annotating the expression $\veone$ in $\tenv$ yields $(\vteone, \vetwo, \vsesone)$\ProseOrTypeError;
-  \item obtaining the \underlyingtypeterm\ of $\vteone$ yields $\vtetwo$\ProseOrTypeError;
-  \item $\vtetwo$ is neither one of the following types: record, exception, collection, bitvector, or tuple;
-  \item the result is an error indicating that the type of $\veone$ is inappropriate for accessing the field $\fieldname$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \veone) \typearrow (\vteone, \vetwo, \vsesone) \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vtetwo \OrTypeError\hva\\\\
-  \astlabel(\vtetwo) \not\in \{\TRecord, \TException, \TBits, \TTuple\}
-}{
-  \annotateexpr(\tenv, \overname{\EGetField(\veone, \fieldname)}{\ve}) \typearrow \TypeErrorVal{\UnexpectedType}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_EGetField_error}
 \CodeSubsection{\EGetBadFieldBegin}{\EGetBadFieldEnd}{../Typing.ml}
 
@@ -1891,24 +976,6 @@ In \listingref{semantics-egetfield},
 the expression \verb|my_record.a| evaluates to the value \texttt{3}.
 \ASLListing{Evaluating a field access expression}{semantics-egetfield}{\semanticstests/SemanticsRule.ERecord.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\ve$ denotes a field access expression, $\EGetField(\erecord, \fieldname)$;
-\item the evaluation of $\erecord$ in $\env$ is $\ResultExpr((\vrecord, \vg), \newenv)$\ProseOrAbnormal;
-\item $\vv$ is the value mapped by $\fieldname$ in the native record $\vrecord$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexpr(\env, \erecord) \evalarrow \ResultExpr((\vrecord, \vg), \newenv)  \OrAbnormal\\
-  \getfield(\fieldname, \vrecord) \evalarrow \vv
-}{
-  \evalexpr(\env, \EGetField(\erecord, \fieldname)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_EGetField}
 \CodeSubsection{\EvalEGetFieldBegin}{\EvalEGetFieldEnd}{../Interpreter.ml}
 
@@ -1920,26 +987,6 @@ and
 the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \ASLListing{Evaluating a tuple item access expression}{semantics-egetitem}{\semanticstests/SemanticsRule.EGetItem.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ is an expression for accessing the component given by the index $\vindex$ of the tuple
-        given by the expression $\etuple$, that is, $\EGetItem(\etuple, \vindex)$;
-  \item evaluating the expression $\etuple$ yields\\ $\ResultExpr((\vvtuple, \vg), \newenv)$\ProseOrAbnormal;
-  \item accessing the native tuple value $\vvtuple$ at index $\vindex$ via $\getindex$ yields
-        the native value $\vv$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexpr(\env, \etuple) \evalarrow \ResultExpr((\vvtuple, \vg), \newenv) \OrAbnormal\hva\\\\
-  \getindex(\vvtuple, \vindex) \evalarrow \vv
-}{
-  \evalexpr(\env, \overname{\EGetItem(\etuple, \vindex)}{\ve}) \evalarrow \ResultExpr((\vv, \vg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_EGetTupleItem}
 \CodeSubsection{\EvalEGetTupleItemBegin}{\EvalEGetTupleItemEnd}{../Interpreter.ml}
 
@@ -1976,117 +1023,6 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \listingref{egetfields} shows examples of well-typed multi-field expressions.
 \ASLListing{Typing multi-field expressions}{egetfields}{\typingtests/TypingRule.EGetFields.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ is a multi-field access expression for the base expression $\ebase$ and list of fields $\vfields$,
-        that is, $\EGetFields(\ebase, \vfields)$;
-  \item \Proseannotateexpr{$\tenv$}{$\ebase$}{\\ $(\tbaseannot, \vetwo, \vsesbase)$}\ProseOrTypeError;
-  \item obtaining the \underlyingtypeterm\ of $\tbaseannot$ in $\tenv$ yields\\
-        $\tbaseannotanon$\ProseOrTypeError;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{bits}
-    \begin{itemize}
-      \item $\tbaseannotanon$ is a bitvector type with list of bitfields $\vbitfields$\ProseOrTypeError;
-      \item applying $\findbitfieldsslices$ to each field name $\name$ and list of bitfields $\vbitfields$ in $\vfields$ yields
-            $\vslices_\name$\ProseOrTypeError;
-      \item define $\veslice$ as the slicing expression for $\ebase$ and lists of slices $\vslices_\name$, for each $\name$ in $\vfields$;
-      \item \Proseannotateexpr{$\tenv$}{$\veslice$}{\\ $(\vt, \newe, \vses)$}\ProseOrTypeError.
-    \end{itemize}
-
-    \item \AllApplyCase{record}
-    \begin{itemize}
-      \item $\tbaseannotanon$ is a record or exception type with list of fields \\$\vbasefields$\ProseOrTypeError;
-      \item applying $\getbitfieldwidth$ to $\vf$ in $\vbasefields$ and $\vbasefields$, for each $\vf$ in $\vbasefields$, in $\tenv$ yields $\ewidth_\vf$\ProseOrTypeError;
-      \item applying $\widthplus$ to the list of expressions $\ewidth_\vf$,
-            for each $\vf$ in $\vbasefields$, yields $\veslicewidth$\ProseOrTypeError;
-      \item define $\vt$ as the bitvector type with width $\veslicewidth$ and an empty list of bitfields;
-      \item define $\ve$ as the multi-field access for $\ebaseannot$ and list of fields \\
-            $\vbasefields$;
-      \item define $\vses$ as $\vsesbase$.
-    \end{itemize}
-
-    \item \AllApplyCase{collection}
-    \begin{itemize}
-      \item $\tbaseannotanon$ is a collection type with list of fields $\vbasefields$\ProseOrTypeError;
-      \item $\ebaseannot$ denotes a variable expression for $\vbase$ ($\EVar(\vbase)$);
-      \item applying $\getbitfieldwidth$ to $\vf$ in $\vbasefields$ and $\vbasefields$, for each $\vf$ in $\vbasefields$, in $\tenv$ yields $\ewidth_\vf$\ProseOrTypeError;
-      \item applying $\widthplus$ to the list of expressions $\ewidth_\vf$,
-            for each $\vf$ in $\vbasefields$, yields $\veslicewidth$\ProseOrTypeError;
-      \item define $\vt$ as the bitvector type with width $\veslicewidth$ and an empty list of bitfields;
-      \item define $\ve$ as the collection multi-field access for $\vbase$ and list of fields \\
-            $\vbasefields$, that is, $\EGetCollectionFields(\vbase, \vbasefields)$;
-      \item define $\vses$ as $\vsesbase$.
-    \end{itemize}
-
-    \item \AllApplyCase{error}
-    \begin{itemize}
-      \item $\tbaseannotanon$ is neither a bitvector type nor a record type;
-      \item the result is a \typingerrorterm{} indicating an unexpected type.
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[bits]{
-  \annotateexpr(\tenv, \ebase) \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \tbaseannot) \typearrow \TBits(\Ignore, \vbitfields) \OrTypeError\hva\\\\
-  \name\in\vfields: \findbitfieldsslices(\name, \vbitfields) \typearrow \vslices_\name \OrTypeError\hva\\\\
-  \veslice \eqdef \ESlice(\ebase, [\name\in\vfields: \vslices_\name])\\
-  \annotateexpr(\tenv, \veslice) \typearrow (\vt, \newe, \vses) \OrTypeError
-}{
-  \annotateexpr(\tenv, \overname{\EGetFields(\ebase, \vfields)}{\ve}) \typearrow (\vt, \newe, \vses)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[record]{
-  \annotateexpr(\tenv, \ebase) \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \tbaseannot) \typearrow \TRecord(\vbasefields) \OrTypeError\hva\\\\
-  \vf \in \vbasefields: \getbitfieldwidth(\tenv, \vf, \tfields) \typearrow \ewidth_\vf \OrTypeError\hva\\\\
-  \widthplus(\tenv, [\vf \in \vbasefields: \ewidth_\vf]) \typearrow \veslicewidth\OrTypeError
-}{
-  {
-  \begin{array}{r}
-    \annotateexpr(\tenv, \overname{\EGetFields(\ebase, \vfields)}{\ve}) \typearrow \\
-    (\overname{\TBits(\veslicewidth, \emptylist)}{\vt}, \overname{\EGetFields(\ebaseannot, \vfields)}{\newe}, \overname{\vsesbase}{\vses})
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[collection]{
-  \annotateexpr(\tenv, \ebase) \typearrow (\tbaseannot, \ebaseannot, \vsesbase) \OrTypeError\hva\\\\
-  \ebaseannot = \EVar(\vbase)\\
-  \makeanonymous(\tenv, \tbaseannot) \typearrow \TRecord(\vbasefields) \OrTypeError\hva\\\\
-  \vf \in \vbasefields: \getbitfieldwidth(\tenv, \vf, \tfields) \typearrow \ewidth_\vf \OrTypeError\hva\\\\
-  \widthplus(\tenv, [\vf \in \vbasefields: \ewidth_\vf]) \typearrow \veslicewidth\OrTypeError\\
-  \vt \eqdef \TBits(\veslicewidth, \emptylist)\\
-  \newe \eqdef \EGetCollectionFields(\vbase, \vbasefields)
-}{
-  {
-  \begin{array}{r}
-    \annotateexpr(\tenv, \overname{\EGetFields(\ebase, \vfields)}{\ve}) \typearrow \\
-    (\vt, \newe, \overname{\vsesbase}{\vses})
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[error]{
-  \annotateexpr(\tenv, \veone) \typearrow (\tbaseannot, \ebaseannot, \Ignore) \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \tbaseannot) \typearrow \tbaseannotanon \OrTypeError\hva\\\\
-  \astlabel(\tbaseannotanon) \not\in \{\TBits, \TRecord\}
-}{
-  \annotateexpr(\tenv, \overname{\EGetFields(\veone, \vfields)}{\ve}) \typearrow \TypeErrorVal{\UnexpectedType}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 
 \RenderProseAndFormally{annotate_expr_EGetFields}
 \CodeSubsection{\EGetFieldsBegin}{\EGetFieldsEnd}{../Typing.ml}
@@ -2104,58 +1040,6 @@ Attempting to obtain the list of slices associated with
 \verb|crc|, given the list of bitfields of the \verb|Packet| type,
 yields a \typingerrorterm, since it is a nested bitfield.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{found}
-  \begin{itemize}
-    \item $\vbitfields$ is a list with \head\ $\vfield$ and \tail\ $\vbitfieldsone$;
-    \item applying $\bitfieldgetname$ to $\vfield$ yields $\namep$, which equals $\name$;
-    \item applying $\bitfieldgetslices$ to $\vfield$ yields $\vslices$.
-  \end{itemize}
-
-  \item \AllApplyCase{tail}
-  \begin{itemize}
-    \item $\vbitfields$ is a list with \head\ $\vfield$ and \tail\ $\vbitfieldsone$;
-    \item applying $\bitfieldgetname$ to $\vfield$ yields $\namep$, which is different to $\name$;
-    \item applying $\findbitfieldsslices$ to $\name$ and $\vbitfieldsone$ yields $\vslices$\ProseOrTypeError.
-  \end{itemize}
-
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\vbitfields$ is an empty list;
-    \item the result is a \typingerrorterm{} indicating that a bitfield named $\name$ does not exist in $\vbitfields$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-  \begin{mathpar}
-  \inferrule[found]{
-    \bitfieldgetname(\vfield) \typearrow \namep\\
-    \namep = \name\\
-    \bitfieldgetslices(\vfield) \typearrow \vslices
-  }{
-    \findbitfieldsslices(\name, \overname{[\vfield] \concat \vbitfieldsone}{\vbitfields}) \typearrow \vslices
-  }
-  \end{mathpar}
-
-  \begin{mathpar}
-  \inferrule[tail]{
-    \bitfieldgetname(\vfield) \typearrow \namep\\
-    \namep \neq \name\\
-    \findbitfieldsslices(\name, \vbitfieldsone) \typearrow \vslices \OrTypeError
-  }{
-    \findbitfieldsslices(\name, \overname{[\vfield] \concat \vbitfieldsone}{\vbitfields}) \typearrow \vslices
-  }
-  \end{mathpar}
-
-  \begin{mathpar}
-  \inferrule[empty]{}{
-    \findbitfieldsslices(\name, \overname{\emptylist}{\vbitfields}) \typearrow \TypeErrorVal{\BadField}
-  }
-  \end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{find_bitfields_slices}
 
 \TypingRuleDef{GetBitfieldWidth}
@@ -2167,41 +1051,6 @@ obtaining the width of the field \verb|bits3_2|,
 given the list of fields of the type \verb|RecordWithBits|
 yields the literal expression for \verb|2|.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{okay}
-  \begin{itemize}
-    \item applying $\assocoptname$ to find the type associated with $\name$ in $\tfields$ yields the type $\vt$;
-    \item applying $\getbitvectorwidth$ to $\vt$ in $\tenv$ yields $\ewidth$\ProseOrTypeError.
-  \end{itemize}
-
-  \item \AllApplyCase{error}
-  \begin{itemize}
-    \item applying $\assocoptname$ to find the type associated with $\name$ in $\tfields$ yields $\None$;
-    \item the result is a \typingerrorterm{} indicating that $\name$ is not associated with any field in $\tfields$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[okay]{
-  \assocopt{\tfields}{\name} \typearrow \some{\vt}\\
-  \getbitvectorwidth(\tenv, \vt) \typearrow \ewidth \OrTypeError
-}{
-  \getbitfieldwidth(\tenv, \name, \tfields) \typearrow \ewidth
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[error]{
-  \assocopt{\tfields}{\name} \typearrow \None
-}{
-  \getbitfieldwidth(\tenv, \name, \tfields) \typearrow \TypeErrorVal{\BadField}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{get_bitfield_width}
 
 \TypingRuleDef{WidthPlus}
@@ -2214,40 +1063,6 @@ yields the expression \verb|2+3|,
 (in AST terms, \\
 $\AbbrevEBinop{\ADD}{\ELInt{2}}{\ELInt{2}}$).
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\exprs$ is an empty list;
-    \item $\ewidth$ is the literal expression for $0$.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item $\exprs$ is the list with \head\ $\ve$ and \tail\ $\exprsone$;
-    \item applying $\widthplus$ to $\exprsone$ yields $\ewidthone$;
-    \item applying $\normalize$ to the binary operation for $\ADD$ and $\ve$ and $\ewidthone$ yields $\ewidth$\ProseOrTypeError.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[empty]{}{
-  \widthplus(\tenv, \overname{\emptylist}{\exprs}) \typearrow \overname{\ELInt{0}}{\ewidth}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  \widthplus(\exprsone) \typearrow \ewidthone\\
-  \normalize(\tenv, \EBinop(\ADD, \ve, \ewidthone)) \typearrow \ewidth \OrTypeError
-}{
-  \widthplus(\tenv, \overname{[\ve] \concat \exprsone}{\exprs}) \typearrow \ewidth
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{width_plus}
 
 \subsection{Semantics}
@@ -2262,30 +1077,6 @@ and evaluating the multi-field expression \\
 \verb|record_var.[bits3_2, bit1, bit0, info]|
 yields the bitvector value \verb|'001010'|.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ is the multi-field access expression for the expression $\erecord$ and list of field names
-        $\vfieldnames$;
-  \item evaluating the expression $\erecord$ in $\env$ yields \\$((\vrecord, \vg), \newenv)$\ProseOrAbnormal;
-  \item obtaining the value associated with the field $\fieldname$ in $\vv$, for each $\fieldname$ in $\vfieldnames$,
-        yields $\vv_\fieldname$;
-  \item define $\vv$ as the concatenation of $\vv_\fieldname$, for each $\fieldname$ in $\vfieldnames$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexpr(\env, \erecord) \evalarrow ((\vrecord, \vg), \newenv) \OrAbnormal\hva\\\\
-  \fieldname\in\vfieldnames: \getfield(\fieldname, \vv) \evalarrow \vv_\fieldname\\
-  \concatbitvectors([\fieldname\in\vfieldnames: \vv_\fieldname]) \typearrow \vv
-}{
-  \evalexpr(\env, \overname{\EGetFields(\erecord, \vfieldnames)}{\ve}) \evalarrow
-  ((\vv, \vg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_EGetFields}
 \CodeSubsection{\EvalEGetFieldsBegin}{\EvalEGetFieldsEnd}{../interpreter.ml}
 
@@ -2295,38 +1086,6 @@ yields the bitvector value \verb|'001010'|.
 All of the collection field expressions in
 \listingref{typing-lesetcollectionfields} are well-typed.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ is the collection multi-field access expression for the
-    collection global storage element $\vbase$ and list of field names
-    $\vfieldnames$;
-  \item $\vbase$ is bound in the storage map of $\denv$;
-  \item $\vv$ is the value of $\vbase$ in the global component of $\env$;
-  \item obtaining the value associated with the field $\fieldname$ in $\vv$,
-    for each $\fieldname$ in $\vfieldnames$, yields $\vv_\fieldname$;
-  \item define $\vv$ as the concatenation of $\vv_\fieldname$, for each
-    $\fieldname$ in $\vfieldnames$.
-  \item $\vg$ is the graph containing a Read Effect for each field $\fieldname$
-    in $\vfieldnames$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \env \reverseeqdef (\Ignore, \denv)\\
-  \vbase \in \dom(\denv.\dynamicenvsG.\storage) \\
-  \vv \eqdef \denv.\dynamicenvsG.\storage(\vbase) \\
-  \fieldname\in\vfieldnames: \getfield(\fieldname, \vv) \evalarrow \vv_\fieldname \hva\\
-  \vg \eqdef \left\{ \fieldname\in\vfieldnames: \ReadEffect(\vbase + \ttdotstr + \fieldname) \right\} \\
-  \concatbitvectors([\fieldname\in\vfieldnames: \vv_\fieldname]) \evalarrow \vv \\
-}{
-  \evalexpr(\env, \overname{\EGetCollectionFields(\vbase, \vfieldnames)}{\ve}) \evalarrow
-  ((\vv, \vg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_EGetCollectionFields}
 \CodeSubsection{\EvalEGetCollectionFieldsBegin}{\EvalEGetCollectionFieldsEnd}{../interpreter.ml}
 
@@ -2416,42 +1175,6 @@ The specification in \listingref{typing-atc-bad} is ill-typed,
 as it is applied to unrelated kinds of types.
 \ASLListing{Ill-typed ATC of a bitvector type}{typing-atc-bad}{\typingtests/TypingRule.ATC.bad.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes an asserting type conversion with expression $\vep$ and type $\tty$, that is $\EATC(\vep, \tty)$;
-  \item annotating the expression $\vep$ in $\tenv$ yields $(\vt, \vepp, \vsese)$\ProseOrTypeError;
-  \item obtaining the \structureterm\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
-  \item annotating the type $\tty$ as a non-declaration in $\tenv$ yields $(\ttyp, \vsesty)$\ProseOrTypeError;
-  \item obtaining the \structureterm\ of $\tty'$ in $\tenv$ yields $\vtystruct$\ProseOrTypeError;
-  \item applying $\checkatc$ to $\vtstruct$ and $\vtystruct$ in $\tenv$ to check whether the type assertion
-        will always fail yields $\True$\ProseOrTypeError;
-  \item define $\vsesp$ as the union of $\vsesty$ and $\vsese$;
-  \item checking whether $\vtstruct$ \subtypesatisfiesterm\ $\vtystruct$ in $\tenv$ yields \\
-        $\valwayssucceeds$\ProseOrTypeError\
-        (if $\valwayssucceeds$ holds then the type assertion will always succeed dynamically, and therefore can be omitted);
-  \item $\newe$ is $\vepp$ if $\valwayssucceeds$ is $\True$ and $\EATC(\ttyp, \vepp)$ otherwise;
-  \item $\vses$ is $\vsese$ if $\valwayssucceeds$ is $\True$ and $\vsesp$ otherwise;
-  \item $\vt$ is $\ttyp$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \vep) \typearrow (\vt, \vepp, \vsese) \OrTypeError\hva\\\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\hva\\\\
-  \annotatetype(\tenv, \tty) \typearrow (\ttyp, \vsesty) \OrTypeError\hva\\\\
-  \tstruct(\tenv, \ttyp) \typearrow \vtystruct \OrTypeError\hva\\\\
-  \checkatc(\tenv, \vtstruct, \vtystruct) \typearrow \True \OrTypeError\hva\\\\
-  \vsesp \eqdef \vsesty \cup \vsese \\
-  \subtypesatisfies(\tenv, \vtstruct, \vtystruct) \typearrow \valwayssucceeds \OrTypeError\hva\\\\
-  (\newe, \vses) \eqdef \choice{\valwayssucceeds}{(\vepp, \vsese)}{(\EATC(\vepp, \ttyp), \vsesp)}
-}{
-  \annotateexpr(\tenv, \overname{\EATC(\vep, \tty)}{\ve}) \typearrow (\overname{\ttyp}{\vt}, \newe, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_EATC}
 \CodeSubsection{\ATCBegin}{\ATCEnd}{../Typing.ml}
 \lrmcomment{
@@ -2471,100 +1194,6 @@ The formal definition is given next.
 \listingref{checkatc} shows examples of ill-typed ATC expressions.
 \ASLListing{Ill-typed ATC expressions}{checkatc}{\typingtests/TypingRule.CheckATC.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{equal}
-  \begin{itemize}
-    \item determining whether $\vtone$ is \typeequivalentterm\ to $\vttwo$ in $\tenv$ yields $\True$\ProseOrTypeError;
-    \item the result is $\True$.
-  \end{itemize}
-
-  \item \AllApplyCase{different\_labels\_error}
-  \begin{itemize}
-    \item determining whether $\vtone$ is \typeequivalentterm\ to $\vttwo$ in $\tenv$ yields $\False$;
-    \item the AST labels of $\vtone$ and $\vttwo$ are different;
-    \item the result is a \typingerrorterm{} indicating that the type assertion will always fail.
-  \end{itemize}
-
-  \item \AllApplyCase{int\_bits}
-  \begin{itemize}
-    \item determining whether $\vtone$ is \typeequivalentterm\ to $\vttwo$ in $\tenv$ yields $\False$;
-    \item the AST labels of $\vtone$ and $\vttwo$ are the same;
-    \item the AST label of $\vtone$ is either $\TInt$ or $\TBits$;
-    \item the result is $\True$.
-  \end{itemize}
-
-  \item \AllApplyCase{tuple}
-  \begin{itemize}
-    \item determining whether $\vtone$ is \typeequivalentterm\ to $\vttwo$ in $\tenv$ yields $\False$;
-    \item $\vtone$ is a \tupletypeterm{} with list of tuples $\vlone$, that is, $\TTuple(\vlone)$;
-    \item $\vtone$ is a \tupletypeterm{} with list of tuples $\vltwo$, that is, $\TTuple(\vltwo)$;
-    \item checking whether $\vlone$ and $\vltwo$ have the same length yields $\True$\ProseTerminateAs{\TypeAssertionFailure};
-    \item applying $\checkatc$ to $\vlone[\vi]$ and $\vltwo[\vi]$ in $\tenv$ for every $\vi\in\listrange(\vlone)$ yields $\True$\ProseOrTypeError;
-    \item the result is $\True$;
-  \end{itemize}
-
-  \item \AllApplyCase{other\_error}
-  \begin{itemize}
-    \item determining whether $\vtone$ is \typeequivalentterm\ to $\vttwo$ in $\tenv$ yields $\False$;
-    \item the AST labels of $\vtone$ and $\vttwo$ are the same;
-    \item the AST label of $\vtone$ is neither $\TInt$, nor $\TBits$, nor $\TTuple$;
-    \item the result is a \typingerrorterm{} indicating that the type assertion will always fail ($\TypeAssertionFailure$).
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[equal]{
-  \typeequal(\tenv, \vtone, \vttwo) \typearrow \True \OrTypeError
-}{
-  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[different\_labels\_error]{
-  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\hva\\\\
-  \astlabel(\vtone) \neq \astlabel(\vttwo)
-}{
-  \checkatc(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{\TypeAssertionFailure}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[int\_bits]{
-  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\hva\\\\
-  \astlabel(\vtone) = \astlabel(\vttwo)\\
-  \astlabel(\vtone) \in \{\TInt, \TBits\}
-}{
-  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[tuple]{
-  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\hva\\\\
-  \vtone = \TTuple(\vlone)\\
-  \vttwo = \TTuple(\vltwo)\\
-  \techeck(\vlone = \vltwo, \TypeAssertionFailure) \typearrow \True\OrTypeError\hva\\\\
-  \vi\in\listrange(\vlone): \checkatc(\vlone[\vi], \vltwo[\vi]) \typearrow \True\OrTypeError
-}{
-  \checkatc(\tenv, \vtone, \vttwo) \typearrow \True
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[other\_error]{
-  \typeequal(\tenv, \vtone, \vttwo) \typearrow \False\hva\\\\
-  \astlabel(\vtone) = \astlabel(\vttwo)\\
-  \astlabel(\vtone) \not\in \{\TInt, \TBits, \TTuple\}
-}{
-  \checkatc(\tenv, \vtone, \vttwo) \typearrow \TypeErrorVal{\TypeAssertionFailure}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{check_atc}
 
 \subsection{Semantics}
@@ -2590,48 +1219,6 @@ which is nested in the \verb|if FALSE then|
 will never occur, but it is still classified as a \dynamicerrorterm{}.
 \ASLListing{Various dynamic errors}{semantics-variousatcs}{\semanticstests/SemanticsRule.ATCVariousErrors.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\ve$ denotes an asserted type conversion expression, $\EATC(\veone, \vt)$;
-\item evaluating $\veone$ in $\env$ results in $\ResultExpr((\vv, \vgone), \newenv)$\ProseOrAbnormal;
-\item evaluating whether $\vv$ has type $\vt$ in $\env$ results in $(\vb, \vgtwo)$\ProseOrDynErrorDiverging;
-\item \OneApplies
-      \begin{itemize}
-      \item \AllApplyCase{okay}
-            \begin{itemize}
-            \item $\vb$ is the native Boolean for \True;
-            \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
-            \end{itemize}
-      \item \AllApplyCase{error}
-            \begin{itemize}
-            \item $\vb$ is the native Boolean for \False;
-            \item the result is a \DynamicErrorConfigurationTerm{} indicating that the type assertion failed
-                  (\DynamicTypeAssertionFailure).
-            \end{itemize}
-      \end{itemize}
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[okay]{
-  \evalexpr(\env, \veone) \evalarrow \ResultExpr((\vv, \vgone), \newenv) \OrAbnormal\hva\\\\
-  \isvaloftype(\env, \vv, \vt) \evalarrow (\vb, \vgtwo) \OrDynErrorDiverging\hva\\\\
-  \vb \reverseeqdef \nvbool(\True)\\
-  \vg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
-}{
-  \evalexpr(\env, \EATC(\veone, \vt)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
-}
-\hva\and
-\inferrule[error]{
-  \evalexpr(\env, \veone) \evalarrow \ResultExpr((\vv, \Ignore), \Ignore)\\
-  \isvaloftype(\env, \vv, \vt) \evalarrow (\vb, \Ignore)\\
-  \vb \reverseeqdef \nvbool(\False)
-}{
-  \evalexpr(\env, \EATC(\veone, \vt)) \evalarrow \DynamicErrorVal{\DynamicTypeAssertionFailure}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_EATC}
 \CodeSubsection{\EvalATCBegin}{\EvalATCEnd}{../Interpreter.ml}
 
@@ -2654,102 +1241,6 @@ checking whether the value \verb|2| is a member of the type \verb|integer{1,2,3}
 succeeds whereas checking whether the value \verb|2| is a member
 of the type \verb|integer{4, 5, 6}| fails.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{type\_equal}
-  \begin{itemize}
-    \item the AST label of $\vt$ is not $\TInt$, $\TBits$, or $\TTuple$;
-    \item $\vb$ is $\True$ (since \TypingRuleRef{ATC}
-    succeeds in these cases only if the \structureterm\ of the type of the expression and the \structureterm\ of the type asserted against are \typeequivalentterm);
-    \item $\vg$ is the empty graph.
-  \end{itemize}
-
-  \item \AllApplyCase{int\_unconstrained}
-  \begin{itemize}
-    \item $\vt$ has the structure of the unconstrained integer;
-    \item $\vb$ is \True;
-    \item $\vg$ is the empty graph.
-  \end{itemize}
-
-  \item \AllApplyCase{int\_wellconstrained}
-  \begin{itemize}
-    \item $\vt$ has the structure of a well-constrained integer with constraints $\vc_{1..k}$;
-    \item $\vv$ is the \nativevalueterm{}  integer for $n$;
-    \item the evaluation of every constraint $\vc_i$ with $n$ in environment $\env$
-          yields a Boolean value $\vb_i$ and an execution graph $\vg_i$\ProseOrDynErrorDiverging;
-    \item $\vb$ is the Boolean disjunction of all Boolean values $\vb_i$, for $i=1..k$;
-    \item $\vg$ is the parallel composition of all execution graphs $\vg_i$, for $i=1..k$;
-  \end{itemize}
-
-  \item \AllApplyCase{bits}
-  \begin{itemize}
-    \item $\vt$ is a bitvector type with expression $\ve$, that is, $\TBits(\ve, \Ignore)$;
-    \item $\vv$ is a native bitvector value for the sequence of bits $\vbits$, that is, \\ $\nvbitvector(\vbits)$;
-    \item evaluating the side-effect-free expression $\ve$ in $\env$ yields \\$\ResultExpr(\vvp, \vg)$\ProseOrDynErrorDiverging;
-    \item \Proseeqdef{$\vb$}{$\True$ if and only if $\vvp$ is equal to the number of bits in $\vbits$}.
-  \end{itemize}
-
-  \item \AllApplyCase{tuple}
-  \begin{itemize}
-    \item $\vt$ is a tuple with types $\vt_i$, for $i=1..k$;
-    \item the value at every index $i=1..k$ of $\vv$ is $\vu_i$, for $i=1..k$,
-    \item the evaluation of $\isvaloftype$ for every value $\vu_i$
-          and corresponding type $\vt_i$, for $i=1..k$,
-          results in a Boolean $\vb_i$ and execution graph $\vg_i$\ProseOrDynErrorDiverging;
-    \item $\vb$ is the Boolean conjunction of all Boolean values $\vb_i$, for $i=1..k$;
-    \item $\vg$ is the parallel composition of all execution graphs $\vg_i$, for $i=1..k$;
-    of the constraints.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[type\_equal]{
-  \astlabel(\vt) \not\in \{\TInt, \TBits, \TTuple \}
-}{
-  \isvaloftype(\env, \vv, \vt) \evalarrow (\overname{\True}{\vb}, \overname{\emptygraph}{\vg})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[int\_unconstrained]{}{
-  \isvaloftype(\env, \vv, \overname{\TInt(\Unconstrained)}{\vt}) \evalarrow (\overname{\True}{\vb}, \overname{\emptygraph}{\vg})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[int\_wellconstrained]{
-  \vv \reverseeqdef \nvint(n)\\
-  i=1..k: \isconstraintsat(\env, \vc_i, n) \evalarrow (\vb_i, \vg_i) \OrDynErrorDiverging\hva\\\\
-  \vb \eqdef \bigvee_{i=1}^k \vb_i\\
-  \vg \eqdef \parallel_{i=1}^k \vg_i
-}{
-  \isvaloftype(\env, \vv, \overname{\TInt(\WellConstrained(\vc_{1..k}))}{\vt}) \evalarrow (\vb, \vg)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[bits]{
-  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvp, \vg) \OrDynErrorDiverging
-}{
-  \isvaloftype(\env, \overname{\nvbitvector(\vbits)}{\vv}, \overname{\TBits(\ve, \Ignore)}{\vt}) \evalarrow
-  (\overname{\vvp = |\vbits|}{\vb}, \vg)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[tuple]{
-  i=1..k: \getindex(i, \vv) \evalarrow \vu_i\\
-  i=1..k: \isvaloftype(\env, \vu_i, \vt_i) \evalarrow (\vb_i, \vg_i) \OrDynErrorDiverging\hva\\\\
-  \vb \eqdef \bigwedge_{i=1}^k \vb_i \\
-  \vg \eqdef\ \parallelcomp_{i=1}^k \vg_i
-}{
-  \isvaloftype(\env, \vv, \overname{\TTuple(i=1..k: \vt_i)}{\vt}) \evalarrow (\vb, \vg)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{is_val_of_type}
 \CodeSubsection{\EvalValOfTypeBegin}{\EvalValOfTypeEnd}{../Interpreter.ml}
 
@@ -2774,50 +1265,6 @@ See \ExampleRef{Checking Whether a Value Belongs to a Type}.
 The use of $\evalexprsef$ in the definition of this function is justified by checks in $\annotatetype$, verifying
 that expressions appearing in types are all \sideeffectfreeterm{}.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{Constraint\_Exact\_Sat}
-  \begin{itemize}
-    \item $\vc$ is an \Proseexactconstraint{$\ve$};
-    \item evaluating the side-effect-free expression $\ve$ in $\env$ yields the \concurrentnativevalue\ given
-          by the native integer value for $m$ and the \executiongraphterm\ $\vg$\ProseOrDynErrorDiverging.
-    \item \Proseeqdef{$\vb$}{$\True$ if and only if $m$ is equal to $n$}.
-  \end{itemize}
-
-  \item \AllApplyCase{Constraint\_Range\_Sat}
-  \begin{itemize}
-    \item $\vc$ is a \Proserangeconstraint{$\veone$}{$\vetwo$};
-    \item evaluating the side-effect-free expression $\veone$ in $\env$ yields the \concurrentnativevalue\ given
-          by the native integer value for $a$ and the \executiongraphterm\ $\vgone$\ProseOrDynErrorDiverging.
-    \item evaluating the side-effect-free expression $\vetwo$ in $\env$ yields the \concurrentnativevalue\ given
-          by the native integer value for $b$ and the \executiongraphterm\ $\vgtwo$\ProseOrDynErrorDiverging.
-    \item \Proseeqdef{$\vb$}{$\True$ if and only if $n$ is greater than or equal to $a$ and less than or equal to $b$};
-    \item \Proseeqdef{$\vg$}{the parallel composition of $\vgone$ and $\vgtwo$}.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[Constraint\_Exact\_Sat]{
-  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(m), \vg) \OrDynErrorDiverging
-}{
-  \isconstraintsat(\env, \overname{\ConstraintExact(\ve)}{\vc}, n) \evalarrow (\overname{m = n}{\vb}, \vg)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[Constraint\_Range\_Sat]{
-  \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\nvint(a), \vgone) \OrDynErrorDiverging\hva\\\\
-  \evalexprsef(\env, \vetwo) \evalarrow \ResultExprSEF(\nvint(b), \vgtwo) \OrDynErrorDiverging\hva\\\\
-  \vb \eqdef \choice{a \leq n \land n \leq b}{\True}{\False}\\
-  \vg \eqdef \vgone \parallelcomp \vgtwo
-}{
-  \isconstraintsat(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}, n) \evalarrow (\vb, \vg)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{is_constraint_sat}
 
 \hypertarget{def-patternexpressionterm}{}
@@ -2888,31 +1335,6 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
 \TypingRuleDef{EPattern}
 \listingref{semantics-epattern} shows examples of pattern expressions.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes a pattern expression to test whether $\veone$ matches the pattern $\vpat$, that is, \\ $\EPattern(\veone, \vpat)$;
-  \item annotating the expression $\veone$ in $\tenv$ yields $(\vtetwo, \vetwo, \vsese)$\ProseOrTypeError;
-  \item applying $\annotatepattern$ to $\vtetwo$ and $\vpat$ in $\tenv$ yields $(\vpatp, \vsespat)$\ProseOrTypeError;
-  \item define $\vt$ as $\TBool$;
-  \item define $\newe$ as the pattern expression for $\vetwo$ and the pattern $\vpatp$, that is, \\
-        $\EPattern(\vetwo, \vpatp)$;
-  \item define $\vses$ as the union of $\vsese$ and $\vsespat$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \ve = \EPattern(\veone, \vpat)\\
-  \annotateexpr(\tenv, \veone) \typearrow (\vtetwo, \vetwo, \vsese) \OrTypeError\hva\\\\
-  \annotatepattern(\tenv, \vtetwo, \vpat) \typearrow (\vpatp, \vsespat) \OrTypeError\hva\\\\
-  \vses \eqdef \vsese \cup \vsespat
-}{
-  \annotateexpr(\tenv, \ve) \typearrow (\overname{\TBool}{\vt}, \overname{\EPattern(\vetwo, \vpatp)}{\newe}, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_EPattern}
 \CodeSubsection{\EPatternBegin}{\EPatternEnd}{../Typing.ml}
 
@@ -2926,30 +1348,6 @@ whereas the expression \texttt{42 IN \{0..3, -4\}} evaluates to $\nvbool(\False)
 In addition, all assertions, which demonstrate pattern expression involving bitmasks,
 succeed.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes a pattern expression, $\EPattern(\ve, \vp)$;
-  \item evaluating the expression $\ve$ in an environment $\env$ results in \\
-  $\ResultExpr((\vvone, \vgone), \newenv)$\ProseOrAbnormal;
-  \item evaluating whether the pattern $\vp$ matches the value $\vvone$ in $\env$
-        results in \\
-        $\ResultPattern(\vv, \vgtwo)$\ProseOrAbnormal,
-        where $\vv$ is a native Boolean that determines whether there is indeed a match;
-  \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vvone, \vgone), \newenv) \OrAbnormal\hva\\\\
-  \evalpattern(\env, \vvone, \vp) \evalarrow \ResultPattern(\vv, \vgtwo) \OrAbnormal\hva\\\\
-  \vg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
-}{
-  \evalexpr(\env, \EPattern(\ve, \vp)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_EPattern}
 \CodeSubsection{\EvalEPatternBegin}{\EvalEPatternEnd}{../Interpreter.ml}
 
@@ -2992,37 +1390,6 @@ Note that there are two important consequences of producing an arbitrary value w
 \listingref{typing-arbitrary} show examples of well-typed arbitrary value expressions.
 \ASLListing{Well-typed arbitrary value expressions}{typing-arbitrary}{\typingtests/TypingRule.EArbitrary.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes an expression \ARBITRARY\ of type $\tty$ ($\EArbitrary(\tty)$);
-  \item annotating the type $\tty$ as a non-declaration in $\tenv$ yields $(\ttyone, \vsesty)$\ProseOrTypeError;
-  \item obtaining the \structureterm\ of $\ttyone$ in $\tenv$ yields $\ttytwo$\ProseOrTypeError;
-  \item $\vt$ is $\ttyone$;
-  \item define $\newe$ as an expression \ARBITRARY\ of type $\ttytwo$ ($\EArbitrary(\ttytwo)$);
-  \item define $\vses$ as the union of $\vsesty$ and the set containing an \ImmutabilityTerm{} with immutability $\False$, and a \LocalEffectTerm{} and a \GlobalEffectTerm{}, both with \purity{} $\SEReadonly$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \ve = \EArbitrary(\tty)\\
-  \annotatetype(\tenv, \tty) \typearrow (\ttyone, \vsesty) \OrTypeError\hva\\\\
-  \tstruct(\tenv, \ttyone) \typearrow \ttytwo \OrTypeError\hva\\\\
-  {
-  \vses \eqdef \vsesty \cup \left\{
-  \begin{array}{l}
-  \LocalEffect(\SEReadonly),\\
-  \GlobalEffect(\SEReadonly),\\
-  \Immutability(\False)
-  \end{array}
-  \right\}
-  }
-}{
-  \annotateexpr(\tenv, \ve) \typearrow (\ttyone, \EArbitrary(\ttytwo), \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_EArbitrary}
 \CodeSubsection{\EArbitraryBegin}{\EArbitraryEnd}{../Typing.ml}
 
@@ -3048,48 +1415,6 @@ and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
 \ASLListing{Evaluating an \texttt{ARBITRARY} expression for array types}{semantics-earbitraryarray}
 {\semanticstests/SemanticsRule.EArbitraryArray.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes the \texttt{ARBITRARY} expression annotated with type $\vt$;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{okay}
-    \begin{itemize}
-      \item the domain of $\vt$ in $\env$ (see \secref{DynDomain}) is not empty;
-      \item $\vv$ is an arbitrary value in the domain of $\vt$ in $\env$;
-      \item $\newenv$ is $\env$.
-      \item $\vg$ is the empty execution graph.
-    \end{itemize}
-
-    \item \AllApplyCase{error}
-    \begin{itemize}
-      \item the domain of $\vt$ in $\env$ is empty;
-      \item the result is a \DynamicErrorConfigurationTerm{} (\ArbitraryEmptyType) indicating that the type $\vt$ has an empty
-            domain in $\env$ and therefore no value can be returned.
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[okay]{
-  \dynamicdomain(\env, \vt) \neq \emptyset\\
-  \vv \in \dynamicdomain(\env, \vt)
-}{
-  \evalexpr(\env, \overname{\EArbitrary (\vt)}{\ve}) \evalarrow \ResultExpr((\vv, \overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[error]{
-  \dynamicdomain(\env, \vt) = \emptyset
-}{
-  \evalexpr(\env, \overname{\EArbitrary (\vt)}{\ve}) \evalarrow \DynamicErrorVal{\ArbitraryEmptyType}
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_EArbitrary}
 \CodeSubsection{\EvalEArbitraryBegin}{\EvalEArbitraryEnd}{../Interpreter.ml}
 
@@ -3170,58 +1495,6 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \listingref{semantics-egetfield} shows an example of a well-typed record construction expression
 and an example (in comment) where the same field is initialized twice, which is invalid.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes the record construction expression (which is also used for creating exceptions) of type $\tty$ with fields $\fields$,
-        that is, $\ERecord(\tty, \vfields)$;
-  \item checking that $\tty$ is a \namedtypeterm{} yields $\True$\ProseOrTypeError;
-  \item obtaining the \underlyingtypeterm{} of $\tty$ in $\tenv$ yields $\ttyanon$\ProseOrTypeError;
-  \item checking that $\ttyanon$ is a \structuredtypeterm{} yields $\True$\ProseTerminateAs{\UnexpectedType};
-  \item $\ttyanon$ is a \structuredtypeterm{} with a list of $\vfield$ elements (each consisting of a field name and a field type);
-  \item obtaining the list of field names from $\vfields$ yields the list of identifiers \\
-        $\initializedfields$;
-  \item obtaining the list of field names from $\fieldtypes$ yields the list of identifiers $\names$;
-  \item checking whether the set of identifiers in $\names$ is equal to the set of identifiers in $\initializedfields$
-        yields $\True$\ProseOrTypeError;
-  \item checking that the list $\initializedfields$ does not contain duplicates yields \\
-        $\True$\ProseOrTypeError;
-  \item applying $\annotatefieldinit$ to annotate each $\vfield[\vi]$ of $\vfields$ with\\ $\fieldtypes$
-         in $\tenv$ yields the list of triples comprised of the respective lists
-         $\fieldnames$, $\fieldinits$, and $\fieldeffects$\ProseOrTypeError;
-  \item define $\fieldsp$ as the list of pairs obtained by combining the lists $\fieldnames$ and $\fieldinits$;
-  \item $\vt$ is $\tty$;
-  \item define $\newe$ as the record expression with type $\tty$ and field initializers $\fieldsp$, that is, $\ERecord(\tty, \fieldsp)$;
-  \item define $\vses$ as the union of the lists in $\fieldeffects$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \ve = \ERecord(\tty, \vfields)\\
-  \techeck(\astlabel(\tty) = \TNamed, \UnexpectedType) \typearrow \True \OrTypeError\hva\\\\
-  \makeanonymous(\tenv, \tty) \typearrow \ttyanon \OrTypeError\hva\\\\
-  \techeck(\astlabel(\ttyanon) \in \{\TRecord, \TException\}, \UnexpectedType) \typearrow \True\OrTypeError\hva\\\\
-  \ttyanon \reverseeqdef L(\fieldtypes)\\
-  \initializedfields \eqdef \{\name \;|\; (\name, \Ignore)\in\vfields\}\\
-  \names \eqdef \fieldnames(\fieldtypes)\\
-  \techeck(\{\names\} = \{\initializedfields\}, \BadField) \typearrow \True \OrTypeError\hva\\\\
-  \checknoduplicates(\initializedfields) \typearrow \True \OrTypeError\hva\\\\
-  {
-    \begin{array}{r}
-  (\name, \vep) \in \vfields: \annotatefieldinit(\tenv, (\name, \vep), \fieldtypes) \typearrow \\
-  (\name, \ve_\name, \vxs_\name) \OrTypeError
-    \end{array}
-  }\\
-  \fieldsp \eqdef [(\name, \vep) \in \fields : (\name, \ve_\name)]\\
-  \vses \eqdef \bigcup_{(\name, \Ignore) \in \fields} \vxs_\name\\
-}{
-  \annotateexpr(\tenv, \ve) \typearrow
-  (\overname{\tty}{\vt}, \overname{\ERecord(\tty, \fieldsp)}{\newe}, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_ERecord}
 \CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Typing.ml}
 \identr{WBCQ}
@@ -3231,28 +1504,6 @@ and an example (in comment) where the same field is initialized twice, which is 
 
 See \listingref{semantics-egetfield} for an example.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item annotating the expression $\vep$ in $\tenv$ yields $(\vtp, \vepp, \vses)$\ProseOrTypeError;
-  \item checking whether there exists a type associated with $\name$ in $\fieldtypes$ yields $\True$\ProseOrTypeError;
-  \item the unique type associated with $\name$ in $\fieldtypes$ is $\tspecp$;
-  \item determining whether $\vtp$ \typesatisfiesterm\ $\tspecp$ in $\tenv$ yields $\True$\ProseOrTypeError;
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \vep) \typearrow (\vtp, \vepp, \vses) \OrTypeError\hva\\\\
-  \techeck(\fieldtype(\fieldtypes, \name) \neq \bot, \BadField) \typearrow \True \OrTypeError\hva\\\\
-  \fieldtype(\fieldtypes, \name) = \tspecp\\
-  \checktypesatisfies(\tenv, \vtp, \tspecp) \typearrow \True \OrTypeError
-}{
-  \annotatefieldinit(\tenv, (\name, \vep), \fieldtypes) \typearrow (\name, \vepp, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_field_init}
 
 \subsection{Semantics}
@@ -3262,33 +1513,6 @@ In \listingref{semantics-egetfield},
 the expression \verb|MyRecordType{a=3, b=42}| evaluates to the native record value \\
 $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\ve$ denotes a record creation expression, $\ERecord(\names, \efields)$;
-\item the names of the fields are $\id_{1..k}$;
-\item the expressions associated with the fields are $\ve_{1..k}$;
-\item evaluating the expressions of $\fields$ in order yields \\
-      $\ResultExprList((\vvfields,\vg), \newenv)$\ProseOrAbnormal;
-\item $\vvfields$ is a list of \nativevaluesterm{} $\vv_{1..k}$;
-\item $\vv$ is the native record that maps $\id_i$ to $\vv_i$, for $i=1..k$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \efields \reverseeqdef [i=1..k: (\id_i, \ve_i)]\\
-  \names \eqdef \id_{1..k} \\
-  \fields \eqdef \ve_{1..k} \hva\\
-  \evalexprlist(\env, \fields) \evalarrow \ResultExprList((\vvfields,\vg), \newenv)  \OrAbnormal\\
-  \vvfields \reverseeqdef \vv_{1..k}\\
-  \vv \eqdef \NVRecord(\{i=1..k: \id_i\mapsto \vv_i\})
-}{
-  \evalexpr(\env, \ERecord(\Ignore, \efields)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_ERecord}
 \CodeSubsection{\EvalERecordBegin}{\EvalERecordEnd}{../Interpreter.ml}
 
@@ -3320,48 +1544,6 @@ $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
 \TypingRuleDef{ETuple}
 \listingref{semantics-etuple} shows an example of a well-typed tuple expressions.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{parenthesized}
-  \begin{itemize}
-    \item $\ve$ denotes a tuple expression with list of expressions consisting solely of $\vep$, that is, $\ETuple([\vep])$,
-          meaning it represents a parenthesized expression (see \ASTRuleRef{ParenExpr});
-    \item annotating $\vep$ in $\tenv$ yields $(\vt, \newe, \vses)$\ProseOrTypeError.
-  \end{itemize}
-
-  \item \AllApplyCase{list}
-  \begin{itemize}
-    \item $\ve$ denotes a tuple expression with list of expressions $\vli$, that is, $ \ETuple(\vli)$;
-    \item $\vli$ consists of at least two expressions;
-    \item annotating each expression $\vli[i]$ in $\tenv$, for $i=1..k$, yields \\
-          $(\vt[i], \es[i], \vxs[i])$\ProseOrTypeError;
-    \item $\vt$ is the \tupletypeterm{} with list of types $\vt_i$, for $i=1..k$;
-    \item $\newe$ is tuple expression over list of expressions $\es[i]$, for $i=1..k$;
-    \item defining $\vses$ as the union of all sets listed by $\vxs$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[parenthesized]{
-  \annotateexpr(\tenv, \vep) \typearrow (\vt, \newe, \vses) \OrTypeError
-}{
-  \annotateexpr(\tenv, \overname{\ETuple(\vep)}{\ve}) \typearrow (\vt, \newe, \vses)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[list]{
-  |\vli| > 1\\
-  i=1..k: \annotateexpr(\tenv, \vle[i]) \typearrow (\vt_i, \ve_i, \vxs_i) \OrTypeError\hva\\\\
-  \vses \eqdef \bigcup_{i=1..k} \vxs_i
-}{
-  \annotateexpr(\tenv, \overname{\ETuple(\vli)}{\ve}) \typearrow (\overname{\TTuple(\vt_{1..k})}{\vt}, \overname{\ETuple(\ve_{1..k})}{\newe}, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{annotate_expr_ETuple}
 \CodeSubsection{\ETupleBegin}{\ETupleEnd}{../Typing.ml}
 
@@ -3373,25 +1555,6 @@ the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
 
 \ASLListing{Evaluation of tuple expressions}{semantics-etuple}{\semanticstests/SemanticsRule.ETuple.asl}
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ denotes a tuple expression, $\ETuple(\elist)$;
-  \item the evaluation of $\elist$ in $\env$ is $\ResultExprList((\vlist, \vg), \newenv)$\ProseOrAbnormal;
-  \item $\vv$ is the native vector constructed from the values in $\vlist$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexprlist(\env, \elist) \evalarrow \ResultExprList((\vlist, \vg), \newenv) \OrAbnormal\\
-  \vv \eqdef \NVVector(\vlist)
-}{
-  \evalexpr(\env, \ETuple(\elist)) \evalarrow \ResultExpr((\vv, \vg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_ETuple}
 \CodeSubsection{\EvalETupleBegin}{\EvalETupleEnd}{../Interpreter.ml}
 
@@ -3443,41 +1606,6 @@ which evaluates to
 \NVVector([\nvint(0), \nvint(0), \nvint(0), \nvint(0)]) \enspace.
 \]
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ is an array construction expression with length expression $\elength$ and value expression $\evalue$,
-        that is, $\EArray\{\EArrayLength: \elength, \EArrayValue: \evalue\}$;
-  \item evaluating the expression $\evalue$ in $\env$ yields \\
-        $\ResultExpr((\vvalue, \vgone), \newenv)$\ProseOrAbnormal;
-  \item evaluating the side-effect-free expression $\elength$ in $\env$ yields \\
-        $\ResultExprSEF((\vlength, \vgtwo))$\ProseOrDynErrorDiverging;
-  \item $\vlength$ is a native integer value for $\nlength$;
-  \item checking that $\nlength$ is non-negative yields $\True$\ProseTerminateAs{\NegativeArrayLength};
-  \item define $\vv$ as the native vector of length $\nlength$ where each position has the value $\vvalue$;
-  \item define $\vg$ as the parallel composition of $\vgone$ and $\vgtwo$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexpr(\env, \evalue) \evalarrow \ResultExpr((\vvalue, \vgone), \newenv) \OrAbnormal\hva\\\\
-  \evalexprsef(\env, \elength) \evalarrow \ResultExprSEF((\vlength, \vgtwo)) \OrDynErrorDiverging\hva\\\\
-  \vlength \reverseeqdef \nvint(\nlength)\\
-  \decheck(\nlength \geq 0, \NegativeArrayLength) \evalarrow \True \OrDynError\hva\\\\
-  \vv \eqdef \NVVector(i=1..\nlength: \vvalue)\\
-  \vg \eqdef \vgone \parallelcomp \vgtwo
-}{
-  {
-  \begin{array}{r}
-  \evalexpr(\env, \overname{\EArray\{\EArrayLength: \elength, \EArrayValue: \evalue\}}{\ve}) \evalarrow \\
-  \ResultExpr((\vv, \vg), \newenv)
-  \end{array}
-  }
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_EArray}
 \CodeSubsection{\EvalEArrayBegin}{\EvalEArrayEnd}{../Typing.ml}
 
@@ -3491,34 +1619,6 @@ which evaluates to
 \NVRecord(\{\vBIG\mapsto\nvbitvector(0000), \vLITTLE\mapsto\nvbitvector(0000)\}) \enspace.
 \]
 
-\BackupProseAndFormally{
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ve$ is an array construction expression for an enumerated-index array with
-        list of labels $\vlabels$ and value expression $\evalue$,
-        that is, \\
-        $\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \evalue\}$;
-  \item evaluating the expression $\evalue$ in $\env$ yields \\
-        $\ResultExpr((\vvalue, \vg), \newenv)$\ProseOrAbnormal;
-  \item \Proseeqdef{$\vv$}{the native record mapping each label $\vl\in\vlabels$ to $\vvalue$}.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexpr(\env, \evalue) \evalarrow \ResultExpr((\vvalue, \vg), \newenv) \OrAbnormal\hva\\\\
-  \vv \eqdef \NVRecord(\vl\in\vlabels: [\vl\mapsto \vvalue])
-}{
-  {
-  \begin{array}{r}
-    \evalexpr(\env, \overname{\EEnumArray\{\EArrayLabels: \vlabels, \EArrayValue: \evalue\}}{\ve}) \evalarrow\\
-    \ResultExpr((\vv, \vg), \newenv)
-  \end{array}
-  }
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_EEnumArray}
 \CodeSubsection{\EvalEEnumArrayBegin}{\EvalEEnumArrayEnd}{../Typing.ml}
 
@@ -3538,20 +1638,6 @@ Evaluating the literal expression $\LInt(1)$ in any environment $\env$,
 yields \\
 $\ResultExprSEF(\nvint(1), \emptygraph)$.
 
-\BackupProseAndFormally{
-\ProseParagraph
-Evaluating $\ve$ in $\env$ yields the configuration $\ResultExpr((\vv,\vg), \env)$\ProseOrDynErrorDiverging,
-which is then converted to the configuration $\ResultExprSEF(\vv, \vg)$.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vv,\vg), \env) \OrDynErrorDiverging
-}{
-  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vv, \vg)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_sef}
 Notice that the output configuration does not contain an environment,
 since \sideeffectfreeexpressionsterm{} do not modify the environment.
@@ -3566,48 +1652,4 @@ evaluating the expression \verb|MyRecordType{a=3, b=42}| entails evaluating
 the expression list \verb|3, 42|, which yields
 the list of values $[\nvint(3), \nvint(42)]$.
 
-\BackupProseAndFormally{
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item \Proseemptylist{$\vle$};
-    \item \Proseemptylist{$\vv$};
-    \item \Proseemptygraph{$\vg$};
-    \item \Proseeqdef{$\newenv$}{$\env$}.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item $\vle$ is a \Proselist{$\ve$}{$\vle1$};
-    \item \Proseevalexpr{$\env$}{$\ve$}{\\ $\ResultExpr((\vvone, \vgone), \envone)$}\ProseOrAbnormal;
-    \item evaluating the list of expressions $\vle1$ in the environment $\envone$ yields \\
-          $\ResultExprList((\vvs, \vgtwo), \envtwo)$\ProseOrAbnormal;
-    \item \Proseeqdef{$\vg$}{the parallel composition of $\vgone$ and $\vgtwo$};
-    \item \Proseeqdef{$\vv$}{the list with \head{} $\vvone$ and \tail{} $\vvs$}.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[empty]{}
-{
-  \evalexprlist(\env, \overname{\emptylist}{\vle}) \evalarrow
-  \ResultExprList((\overname{\emptylist}{\vv}, \overname{\emptygraph}{\vg}), \overname{\env}{\newenv})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  \vle = [\ve] \concat \vle1\\
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vvone, \vgone), \envone) \OrAbnormal\hva\\\\
-  \evalexprlist(\envone, \vle1) \evalarrow \ResultExprList((\vvs, \vgtwo), \newenv) \OrAbnormal\hva\\\\
-  \vg \eqdef \vgone \parallelcomp \vgtwo \\
-  \vv \eqdef [\vvone] \concat \vvs
-}{
-  \evalexprlist(\env, \vle) \evalarrow \ResultExprList((\vv, \vg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{eval_expr_list}

@@ -1080,37 +1080,16 @@ and returns $\True$ when $\vb$ is $\True$ and a build error \configurationterm{}
 
 We define a similar function for type errors.
 \RenderRelation{te_check}
-\BackupProseAndFormally{
-\begin{mathpar}
-\inferrule[te\_check\_true]{}{ \techeck(\True, \vcode) \typearrow \True }
-\hva\and
-\inferrule[te\_check\_false]{}{ \techeck(\False, \vcode) \typearrow \TypeErrorVal{\vcode} }
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{te_check}
 
 We define a similar function for dynamic errors.
 \RenderRelation{de_check}
-\BackupProseAndFormally{
-\begin{mathpar}
-\inferrule[de\_check\_true]{}{ \decheck(\True, \vcode) \evalarrow \True }
-\hva\and
-\inferrule[de\_check\_false]{}{ \decheck(\False, \vcode) \evalarrow \DynamicError(\vcode) }
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{de_check}
 
 \subsection{Boolean Transition Judgments}
 \RenderRelation{bool_transition}
 We use this function defined by the following trivial rule to allow us to treat Boolean values as transition judgments,
 which in turn allows us to employ \shortcircuitrulemacros{}:
-\BackupProseAndFormally{
-\begin{mathpar}
-\inferrule[bool\_trans\_true]{}{ \booltrans(\overname{\True}{\cond}) \booltransarrow \overname{\True}{\vresult} }
-\hva\and
-\inferrule[bool\_trans\_false]{}{ \booltrans(\overname{\False}{\cond}) \booltransarrow \overname{\False}{\vresult} }
-\end{mathpar}
-} % END_OF_BACKUP_PROSE_AND_FORMALLY
 \RenderProseAndFormally{bool_transition}
 
 This is useful in defining functions that return a Boolean value, where if a condition does not hold,
