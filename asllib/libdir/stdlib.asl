@@ -10,7 +10,7 @@
 // UInt()
 // ======
 // Convert a bitvector to an unsigned integer, where bit 0 is LSB.
-pure func UInt{N} (x: bits(N)) => integer{0..2^N-1}
+pure func UInt{N} (x: bits(N)) => integer{0..(2^N)-1}
 begin
     var result: integer = 0;
     for i = 0 to N-1 do
@@ -25,7 +25,7 @@ end;
 // ======
 // Convert a 2s complement bitvector to a signed integer.
 pure func SInt{N} (x: bits(N))
-  => integer{(if N == 0 then 0 else -(2^(N-1))) .. (if N == 0 then 0 else 2^(N-1)-1)}
+  => integer{(if N == 0 then 0 else -(2^(N-1))) .. (if N == 0 then 0 else (2^(N-1))-1)}
 begin
     var result: integer = UInt(x);
     if N > 0 && x[N-1] == '1' then
