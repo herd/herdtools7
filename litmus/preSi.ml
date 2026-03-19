@@ -214,8 +214,9 @@ module Make
 (***************)
       module DP = DumpParams.Make(Cfg)
 
-      let dump_header test =
+      let dump_header doc test =
         O.o "/* Parameters */" ;
+        O.f "#define DOC_NAME \"%s\"" doc.Name.name ;
         O.o "#define OUT 1" ;
         DP.dump O.o ;
         let n = T.get_nprocs test in
@@ -418,7 +419,7 @@ module Make
         O.o "}" ;
         O.o ""
 
-      let dump_fault_handler find_ins_inserted doc test =
+      let dump_fault_handler find_ins_inserted test =
         if have_fault_handler then begin
           let ok,no = T.partition_asmhandlers test in
           begin match no with
@@ -546,20 +547,25 @@ module Make
              (*Insert.insert O.o "kvm_fault_handler.c" ;
              O.o "" ;*)
              if not (T.has_asmhandler test) then begin
-               O.o "static void pp_faults(void) {" ;
+               let fname = "pp" in
+               let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c" in
+               let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
+               O.o ("#include <" ^ fname ^ ".h>") ;
+               O.o ""
+               (*O.o "static void pp_faults(int nthreads, count_t *nfaults, char *doc_name) {" ;
                O.oi "count_t total=0;" ;
-               O.oi "for (int k=0 ; k < NTHREADS; k++) { total += nfaults[k]; }" ;
+               O.oi "for (int k=0 ; k < nthreads; k++) { total += nfaults[k]; }" ;
                O.oi "if (total > 0) {" ;
-               O.fii "printf(\"Faults %s %%\"PCTR\"\",total);"  doc.Name.name ;
-               O.oii "for (int k = 0 ; k < NTHREADS ; k++) {" ;
+               O.oii "printf(\"Faults %s %\"PRIu32\"\",doc_name,total);" ;
+               O.oii "for (int k = 0 ; k < nthreads ; k++) {" ;
                O.oiii "count_t c = nfaults[k];" ;
-               let fmt = " P%d:%\"PCTR\"" in
+               let fmt = " P%d:%\"PRIu32\"" in
                O.fiii "if (c > 0) printf(\"%s\",k,c);" fmt;
                O.oii "}" ;
                O.oii "printf(\"\\n\");" ;
                O.oi "}" ;
                O.o "}" ;
-               O.o ""
+               O.o "" *)
              end
           | [] ->
              begin match ok with
@@ -2447,7 +2453,7 @@ module Make
         let db = DirtyBit.get test.T.info
         and procs_user = ProcsUser.get test.T.info in
         ObjUtil.insert_lib_file O.o "header.txt" ;
-        dump_header test ;
+        dump_header doc test ;
         dump_getinstrs test ;
         dump_delay_def () ;
         dump_read_timebase () ;
@@ -2459,7 +2465,7 @@ module Make
         let stats = get_stats test in
         dump_fault_type env test ;
         let some_ptr = dump_outcomes env test in
-        dump_fault_handler find_ins_inserted doc test ;
+        dump_fault_handler find_ins_inserted test ;
         dump_cond_def env test ;
         dump_parameters env test ;
         dump_hash_def doc.Name.name env test ;

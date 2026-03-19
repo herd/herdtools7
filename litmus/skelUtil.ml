@@ -1065,7 +1065,7 @@ end
               if
                 Cfg.have_fault_handler
                 && not (T.has_asmhandler test)
-              then O.oi "pp_faults();" ;
+              then O.oi "pp_faults(NTHREADS, nfaults, DOC_NAME);" ;
               let s = sprintf "Time %s "  doc.Name.name in
               O.fi "puts(%S);" s ;
               O.oi "emit_millions(tsc_millions(total));" ;
