@@ -65,7 +65,6 @@ module type WithTr = sig
 
 end
 
-
 type no_extra_op1
 type 'a no_constr_op1
 type no_extra_op
@@ -109,6 +108,7 @@ module No (Cst : Constant.S) :
   and toExtraPteVal _ = raise Exit
   let fromExtraAddrReg _ = raise Exit
   and toExtraAddrReg _ = raise Exit
+
 end
 
 module type S1 = sig

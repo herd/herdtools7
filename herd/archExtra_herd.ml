@@ -34,6 +34,8 @@ module type I = sig
 
   val fromto_of_instr : instr -> (Label.Set.t * Label.Set.t) option
 
+  module CS : ConstraintSolver.S with module V = V
+
   module FaultType : FaultType.S
 end
 
@@ -185,13 +187,15 @@ module type S = sig
   val rstate_filter : (rlocation -> bool) -> rstate -> rstate
   val debug_rstate : rstate -> string
 
-  type final_state = rstate * FaultSet.t
+  type final_state = rstate * FaultSet.t * I.CS.arch_solver_state
   val do_dump_final_state :
     type_env -> FaultAtomSet.t ->
-    (string -> string) -> final_state -> string
+    (string -> string) -> (I.CS.finalized_solver_state -> string) option ->
+    final_state -> string
 
   (* Set of final states *)
   module StateSet : MySet.S with type elt = final_state
+  module StateSetNoSolver : MySet.S with type elt = final_state
 
 (*********)
 (* State *)
@@ -925,7 +929,7 @@ module Make(C:Config) (I:I) : S with module I = I
 
 
 
-      type final_state = rstate * FaultSet.t
+      type final_state = rstate * FaultSet.t * I.CS.arch_solver_state
 
       let pp_nice_rstate st delim pp_bd =
         let bds =
@@ -979,9 +983,20 @@ module Make(C:Config) (I:I) : S with module I = I
             ConstrGen.dump_rloc (dump_loc tr) l ^
               "=" ^ pp_typed t v ^";")
 
-      let do_dump_final_state tenv fobs tr (st,flts) =
+      let do_dump_final_state tenv fobs tr pp_solver_st (st,flts,solver) =
         let pp_st = do_dump_rstate tenv tr st in
-        if FaultSet.is_empty flts && FaultAtomSet.is_empty fobs then pp_st
+        let pp_solver =
+          match pp_solver_st with
+          | None -> ""
+          | Some pp_solver ->
+              begin match I.CS.render_solver_state solver with
+              | None -> ""
+              | Some finalized -> pp_solver finalized
+              end
+        in
+        if FaultSet.is_empty flts && FaultAtomSet.is_empty fobs
+        then
+          pp_st ^ pp_solver
         else
           let data_intr_to_any_flt fault =
             match fault with
@@ -1026,17 +1041,31 @@ module Make(C:Config) (I:I) : S with module I = I
                     (fun f0 -> check_one_fatom f f0) fobs)
                 flts in
           pp_st ^ " " ^
-          FaultSet.pp_str " "
-            (fun f -> pp_fault (data_intr_to_any_flt f) ^ ";")
-            flts ^
-          String.concat "" noflts
+          FaultSet.pp_str " "  (fun f -> pp_fault (data_intr_to_any_flt f) ^ ";")  flts ^
+          String.concat "" noflts ^
+          pp_solver
 
       module StateSet =
         MySet.Make
           (struct
             type t = final_state
 
-            let compare (st1,flt1) (st2,flt2) =
+            let compare (st1,flt1,solver1) (st2,flt2,solver2) =
+              match RState.compare I.V.compare st1 st2 with
+              | 0 -> begin
+                match FaultSet.compare flt1 flt2 with
+                | 0 -> I.CS.compare_solver_state solver1 solver2
+                | r -> r
+              end
+              | r -> r
+          end)
+
+      module StateSetNoSolver =
+        MySet.Make
+          (struct
+            type t = final_state
+
+            let compare (st1,flt1,_) (st2,flt2,_) =
               match RState.compare I.V.compare st1 st2 with
               | 0 -> FaultSet.compare flt1 flt2
               | r -> r

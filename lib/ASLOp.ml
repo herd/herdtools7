@@ -69,6 +69,10 @@ type addrreg = AArch64AddrReg.t
 type instr = AArch64Base.instruction
 type cst = (scalar, pteval, addrreg, instr) Constant.t
 
+let compare_predicate _ _ = assert false
+let inverse_predicate _ = assert false
+let pp_predicate _ = assert false
+
 let pp_op = function
   | Divrm -> "DIVRM"
   | SetIndex i -> Printf.sprintf "Set[%d]" i
