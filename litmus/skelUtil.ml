@@ -1104,7 +1104,7 @@ end
               (fun i -> D.dump i ; O.o "")
               is ;
             A.V.Instr.Set.iter
-              (fun i -> (O.f "static ins_t %s;" (A.GetInstr.instr_name i)))
+              (fun i -> O.f "static ins_t %s;" (A.GetInstr.instr_name i))
               is ;
             List.iter
               (fun ((p,lab as lbl),_) ->
