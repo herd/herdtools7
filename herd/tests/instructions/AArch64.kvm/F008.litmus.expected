@@ -1,0 +1,12 @@
+Test F008 Allowed
+States 3
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+0:X1=1; 1:X1=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:X1=0 /\ 1:X1=0)
+Observation F008 Never 0 3
+Hash=b5b6af38861bd5499272fce4882a07b4
+
