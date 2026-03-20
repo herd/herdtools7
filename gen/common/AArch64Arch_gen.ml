@@ -480,6 +480,8 @@ let is_tthm fields =
      | Pa -> ""
      | PaN -> "N"
      | PaI -> "I"
+     | PaA -> "A"
+     | PaL -> "L"
 
    and pp_pair_idx = function
      | UnspecLoc -> ""
