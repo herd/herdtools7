@@ -24,7 +24,7 @@
 
 uint32_t getcachelinesize(void);
 
-uint32_t cache_line_size;
+extern uint32_t cache_line_size;
 
 void selfbar(void *p);
 
