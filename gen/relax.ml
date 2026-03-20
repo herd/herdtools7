@@ -39,6 +39,7 @@ module type S = sig
   val pp_relax : relax -> string
   val pp_relax_list : relax list -> string
   val edges_of : relax -> edge list
+  val edges_ofs : relax list -> edge list
 
 (* Replace Irr directions in par expansion to W and R *)
   val expand_relaxs :
@@ -49,12 +50,12 @@ module type S = sig
   val po : relax list
 
 (* parsing *)
-  val parse_relax : LexUtil.t -> relax
-  val parse_relaxs : LexUtil.t list -> relax list
+  val parse_relax : string -> relax
+  val parse_relaxs : string list -> relax list
 (* parsing, with macro expansion *)
-  val expand_relax_macro : LexUtil.t -> relax list
+  val expand_relax_macro : string -> relax list
  (* NB use for set of relaxations only *)
-  val expand_relax_macros : LexUtil.t list -> relax list
+  val expand_relax_macros : string list -> relax list
 
 (* Sets *)
   module Set : MySet.S with type elt = relax
@@ -109,6 +110,7 @@ and type edge = E.edge
         let edges_of r = match r with
         | ERS es -> es
         | PPO -> assert false
+        let edges_ofs = Util.List.concat_map edges_of
 
 
         let rec compare_edges es1 es2 = match es1,es2 with
@@ -227,7 +229,7 @@ and type edge = E.edge
 (* Expansion of irrelevant direction specifications in edges *)
 (*************************************************************)
         let rec do_expand_relax ppo r f = match r with
-        | ERS es -> E.expand_edges es (fun es -> f (ERS es))
+        | ERS es -> eprintf "e: %s\n" (E.pp_edges es); E.expand_edges es (fun es -> f (ERS es))
         | PPO  -> ppo (fun r -> do_expand_relax ppo r f)
 
 
@@ -283,12 +285,9 @@ and type edge = E.edge
             []
 
 
-        open LexUtil
+        open Ast
 
-        let parse_relax = function
-          | One r -> do_parse_relax r
-          | Seq [] -> Warn.fatal "Empty relaxation"
-          | Seq es -> ERS (List.map E.parse_edge es)
+        let parse_relax = do_parse_relax
 
         let parse_relaxs = List.map parse_relax
 
@@ -347,25 +346,21 @@ and type edge = E.edge
           else None
 
         let expand_relax_macro = function
-          | One s ->
-              begin match s with
-              | "allRR" -> allR Diff R
-              | "allRW" -> allR Diff W
-              | "allWR" -> allW Diff R
-              | "allWW" -> allW Diff W
-              | "someRR" -> someR Diff R
-              | "someRW" -> someR Diff W
-              | "someWR" -> someW Diff R
-              | "someWW" -> someW Diff W
-              | _ ->  [do_parse_relax s]
-              end
-          | Seq [] -> Warn.fatal "Empty relaxation"
-          | Seq es -> [ERS (List.map E.parse_edge es)]
+          | "allRR" -> allR Diff R
+          | "allRW" -> allR Diff W
+          | "allWR" -> allW Diff R
+          | "allWW" -> allW Diff W
+          | "someRR" -> someR Diff R
+          | "someRW" -> someR Diff W
+          | "someWR" -> someW Diff R
+          | "someWW" -> someW Diff W
+          | s ->  [do_parse_relax s]
 
         let expand_relax_macros lus =
           let rs = List.map expand_relax_macro lus in
           let rs = List.flatten rs in
           rs
+
 
 (********)
 (* Sets *)
