@@ -18,7 +18,9 @@
 /* Support for self-modifying code */
 /***********************************/
 #include <self.h>
+#include <../utils.h>
 
+uint32_t cache_line_size;
 
 uint32_t getcachelinesize(void) {
   uint64_t csz;
