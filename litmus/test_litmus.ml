@@ -62,14 +62,29 @@ module type S = sig
       type test =  (A.fullstate, P.code list, C.prop, A.location, A.V.v, FaultType.t)  MiscParser.result
 
   val find_offset_out : Proc.t -> Label.t -> t -> int
+  (** [find_offset_out p l t] for a test [t], returns the number of
+      instructions from the beginning of the code of thread [p] to the
+      label [l] *)
 
   val code_exists : (P.ins -> bool) -> t -> bool
-  val get_exported_labels_init_code :
-      A.state -> P.code list ->  Label.Full.Set.t
   val get_init_labels : t -> Label.Full.Set.t
+  (** [get_init_labels t] returns the set of labels that appear in the
+      initialisation of [t]. *)
+
   val get_exported_labels : t -> Label.Full.Set.t
+  (** [get_exported_labels t] returns the set of labels that either
+      appear in the initialisation of test [t] or are referenced by the
+      code of the threads of [t]. *)
+
   val from_labels : t -> (Label.Full.full * P.ins) list
+  (** [from_labels t] returns the [(label, instruction)] pairs for
+      labels in [get_exported_labels t] that are defined in the code of
+      the threads of [t]. *)
+
   val all_labels : t -> Label.Full.full list
+  (** [all_labels t] returns the list of labels defined in the code of
+      the threads of [t]. *)
+
 end
 
 
