@@ -726,10 +726,8 @@ module Make
             (fun (p,lbl) ->
               let lbl_var = OutUtils.fmt_lbl_var p lbl in
               O.fi "ins_t *%s;" lbl_var;
-              if Cfg.is_kvm then begin
-                O.fi "pteval_t *%s;" (OutUtils.fmt_pte_tag lbl_var);
-                O.fi "pteval_t %s;" (OutUtils.fmt_phy_tag lbl_var);
-              end;) CfgLoc.all_labels ;
+              O.fi "pteval_t *%s;" (OutUtils.fmt_pte_tag lbl_var);
+              O.fi "pteval_t %s;" (OutUtils.fmt_phy_tag lbl_var);) CfgLoc.all_labels ;
           if do_precise then O.fi "ins_t *ret[N];" ;
           O.o "} labels_t;" ;
           O.o ""
@@ -1492,7 +1490,7 @@ module Make
           O.o "static void labels_init(vars_t *_vars) {" ;
           if do_label_init || do_precise then
             O.fi "labels_t *lbls = &_vars->labels;" ;
-          if Cfg.is_kvm && Misc.consp CfgLoc.all_labels then
+          if Misc.consp CfgLoc.all_labels then
             O.oi "pteval_t *_p;" ;
           O.o "";
           List.iter (fun (p,lbl) ->
@@ -1503,19 +1501,12 @@ module Make
                   sprintf "_vars->%s" (LangUtils.code_fun p)
                 else
                   LangUtils.code_fun p in
-              let prelude =
-                if do_self then
-                  sprintf "_vars->%s" (OutUtils.fmt_prelude p)
-                else
-                  sprintf "prelude_size((ins_t *)%s)" (LangUtils.code_fun p) in
               let rhs =
-                sprintf "((ins_t *)%s)+%s+%d"
-                  proc prelude off in
+                sprintf "((ins_t *)%s)+_vars->%s+%d"
+                  proc (OutUtils.fmt_prelude p) off in
               O.fi "%s = %s;" lhs rhs;
-              if Cfg.is_kvm then begin
-                O.fi "lbls->%s = _p = litmus_tr_pte((void *)%s);" (OutUtils.fmt_pte_tag lbl_var) lhs;
-                O.fi "lbls->%s = *_p;" (OutUtils.fmt_phy_tag lbl_var);
-              end;)
+              O.fi "lbls->%s = _p = litmus_tr_pte((void *)%s);" (OutUtils.fmt_pte_tag lbl_var) lhs;
+              O.fi "lbls->%s = *_p;" (OutUtils.fmt_phy_tag lbl_var);)
             CfgLoc.all_labels ;
           if do_precise then begin
             List.iter
