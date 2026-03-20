@@ -123,7 +123,17 @@ module Make(O:Config) (M:Builder.S) =
 (********)
     let do_zyva name_opt pp_rs =
       try begin
-        let es = List.map LexUtil.split pp_rs
+        let es =
+          pp_rs
+          |> List.map ( fun segment ->
+            Lexing.from_string segment
+            |> Parser.main LexUtil.token
+            |> Ast.flatten
+            |> ( function
+              | [x] -> x
+              | _ ->
+                Warn.user_error "`diyone7` only accepts exactly one input cycle." )
+          )
           |> List.concat
           |> List.map M.R.parse_relax
           |> List.map M.R.edges_of
