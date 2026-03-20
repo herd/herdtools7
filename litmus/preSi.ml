@@ -382,7 +382,7 @@ module Make
           let fname = "self" in
           let _ = Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c" in
           let _ = Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h" in
-          O.o ("#include <" ^ fname ^ ".h>") ;
+          (*O.o ("#include <" ^ fname ^ ".h>") ;*)
           O.o "" ;
           let fname = if Cfg.is_kvm then "kvm-self" else "presi-self" in
           let _ = Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c" in

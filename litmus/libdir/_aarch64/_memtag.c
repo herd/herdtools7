@@ -14,9 +14,6 @@
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
 
-#ifndef _MEMTAG_H
-#define _MEMTAG_H 1
-
 #include "kvm-headers.h"
 #include "memtag.h"
 
@@ -83,5 +80,3 @@ void mte_init(tag_check_key tag_check)
     set_tcr_el1(tcr); // also issues isb and flushes tlb
   }
 }
-
-#endif /* _MEMTAG_H */
