@@ -60,10 +60,12 @@ type t =
   | Instances (* Compute dependencies on instruction instances *)
  (*Replaces old KVM -> Virtual memory *)
   | VMSA
-(* AArch64: Enhanced Translation Synchronization - FEAT_ETS, FEAT_ETS2 *)
+(* AArch64: Enhanced Translation Synchronization - FEAT_ETS, FEAT_ETS2,
+  FEAT_ETS3, FEAT_ETS4 *)
   | ETS (*Deprecated*)
   | ETS2 (*New feature introduced after deprecating ETS*)
   | ETS3 (*A feature further strengthening ETS2*)
+  | ETS4 (*A feature further strengthening ETS3*)
 (* AArch64: Enhanced Exception Synchronization - FEAT_ExS *)
   | ExS | EIS | EOS
 (* Do not insert branching event between pte read and accesses *)
@@ -157,6 +159,7 @@ let (mode_variants, arch_variants) : t list * t list =
   | ETS -> ETS
   | ETS2 -> ETS2
   | ETS3 -> ETS3
+  | ETS4 -> ETS4
   | ExS -> ExS
   | EIS -> EIS
   | EOS -> EOS
@@ -217,7 +220,7 @@ let (mode_variants, arch_variants) : t list * t list =
       Fault.Handling.tags
   and arch_feat =
     List.map f
-      [ ETS; ETS2; ETS3;
+      [ ETS; ETS2; ETS3; ETS4;
         ExS; EIS; EOS;
         DIC; IDC; NV2;
         Mixed; Unaligned; DontCheckMixed; Ifetch;
@@ -260,6 +263,7 @@ let parse s = match Misc.lowercase s with
 | "ets" -> Some ETS
 | "ets2" -> Some ETS2
 | "ets3" -> Some ETS3
+| "ets4" -> Some ETS4
 | "exs" -> Some ExS
 | "eis" -> Some EIS
 | "eos" -> Some EOS
@@ -365,6 +369,7 @@ let pp = function
   | ETS -> "ets"
   | ETS2 -> "ets2"
   | ETS3 -> "ets3"
+  | ETS4 -> "ets4"
   | ExS -> "exs"
   | EIS -> "eis"
   | EOS -> "eos"
@@ -444,6 +449,7 @@ let pp = function
   | ETS -> "Enable FEAT_ETS, Enhanced Translation Synchronization (deprecated)"
   | ETS2 -> "Enable FEAT_ETS2"
   | ETS3 -> "Enable FEAT_ETS3"
+  | ETS4 -> "Enable FEAT_ETS4"
   | ExS -> "Enable FEAT_ExS, Enhanced Exception Synchronization (AArch64 only)"
   | EIS -> "If FEAT_ExS is enabled, configure the effect of certain Exception entry events, see SCTLR_ELx.EIS (AArch64 only)"
   | EOS -> "If FEAT_ExS is enabled, configure the effect of an Exception return, see SCTLR_ELx.EOS (AArch64 only)"
