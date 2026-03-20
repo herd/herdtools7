@@ -1860,15 +1860,17 @@ module Make
           List.iter
             (fun a -> O.fii "litmus_flush_tlb((void *)%s);" a)
             inits;
-          if Cfg.is_kvm && do_self then begin
+          if Cfg.is_kvm && do_self && false then begin
             List.iter
               (fun (p,lbl) ->
-                let lbl_var =  OutUtils.fmt_lbl_var p lbl in
-                let lbl_loc = sprintf "_vars->labels.%s" lbl_var in
-                let lbl_pte = sprintf "_vars->labels.pte_%s" lbl_var in
-                let lbl_saved_pte = sprintf "_vars->labels.saved_pte_%s" lbl_var in
-                O.fii "litmus_set_pte_safe(%s,%s,%s);" lbl_loc lbl_pte lbl_saved_pte;
-                O.fii "litmus_flush_tlb((void *)%s);" lbl_loc;)
+                if p = proc then begin
+                  let lbl_var =  OutUtils.fmt_lbl_var p lbl in
+                  let lbl_loc = sprintf "_vars->labels.%s" lbl_var in
+                  let lbl_pte = sprintf "_vars->labels.pte_%s" lbl_var in
+                  let lbl_saved_pte = sprintf "_vars->labels.saved_pte_%s" lbl_var in
+                  O.fii "litmus_set_pte_safe(%s,%s,%s);" lbl_loc lbl_pte lbl_saved_pte ;
+                  O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+                end)
               CfgLoc.all_labels
           end
         end ;
