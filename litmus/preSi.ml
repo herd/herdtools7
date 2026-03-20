@@ -156,12 +156,6 @@ module Make
 
       let do_self = Cfg.variant Variant_litmus.Self
 
-      let is_pte =
-        let open Mode in
-        match Cfg.mode with
-        | Std|PreSi -> false
-        | Kvm -> true
-
 (*************)
 (* Utilities *)
 (*************)
@@ -320,10 +314,6 @@ module Make
 (* Memory barrier *)
       let dump_mbar_def () =
         O.o "" ;
-(*
-        O.o "/* Full memory barrier */" ;
-        UD.dump_mbar_def () ;
-*)
         let dump_find_ins =
           do_self
           || CfgLoc.need_prelude
@@ -344,8 +334,7 @@ module Make
         end ;
         if CfgLoc.need_prelude then begin
           ObjUtil.insert_lib_file O.o "_prelude_size.c"
-        end ;
-        dump_find_ins
+        end
 
 
       (* Fault handler *)
@@ -361,7 +350,7 @@ module Make
         O.o "}" ;
         O.o ""
 
-      let dump_fault_handler find_ins_inserted doc test =
+      let dump_fault_handler doc test =
         if have_fault_handler then begin
           let ok,no = T.partition_asmhandlers test in
           begin match no with
@@ -402,17 +391,10 @@ module Make
                | Handled -> ()
              end ;
 
-             let insert_ins_ops () =
-               if not find_ins_inserted then begin
-                 ObjUtil.insert_lib_file O.o "_find_ins.c" ;
-                 O.o ""
-               end in
-
              let faults = U.get_faults test in
              begin match faults with
              | [] ->
                 if do_precise then begin
-                    insert_ins_ops () ;
                     if do_dynalloc then begin
                         O.o "static vars_t **vars_ptr;" ;
                         O.o "" ;
@@ -430,10 +412,6 @@ module Make
              | _::_ ->
                 O.o "#define SEE_FAULTS 1" ;
                 O.o "" ;
-                begin match CfgLoc.all_labels with
-                | [] -> if do_precise then insert_ins_ops ()
-                | _ -> insert_ins_ops ()
-                end ;
                 if do_dynalloc then begin
                     O.o "static th_faults_info_t **th_faults;" ;
                     O.o "static vars_t **vars_ptr;" ;
@@ -726,7 +704,7 @@ module Make
             (fun (p,lbl) ->
               let lbl_var = OutUtils.fmt_lbl_var p lbl in
               O.fi "ins_t *%s;" lbl_var;
-              if Cfg.is_kvm then begin
+              if Cfg.is_kvm && do_self then begin
                 O.fi "pteval_t *%s;" (OutUtils.fmt_pte_tag lbl_var);
                 O.fi "pteval_t %s;" (OutUtils.fmt_phy_tag lbl_var);
               end;) CfgLoc.all_labels ;
@@ -1404,7 +1382,7 @@ module Make
 (* Test instance *)
 (*****************)
 
-      let dump_instance_def procs_user test =
+      let dump_instance_def tname procs_user test =
         O.o "/***************/" ;
         O.o "/* Memory size */" ;
         O.o "/***************/" ;
@@ -1458,11 +1436,7 @@ module Make
                   O.fi "_vars->%s = code_size((ins_t *)%s,%i);"
                     (fmt_code_size n) (fmt_code n) (A.Out.get_nrets t) ;
                   let prelude_size =
-                    if do_self && is_pte then
-                      sprintf "ALIGN(prelude_size((ins_t *)%s),PAGE_SIZE)/sizeof(ins_t)-1" (fmt_code n)
-                    else
-                      sprintf "prelude_size((ins_t *)%s)" (fmt_code n)
-                  in
+                    sprintf "prelude_size((ins_t *)%s)" (fmt_code n) in
                   O.fi "_vars->%s = %s;" (fmt_prelude n) prelude_size;
                   if Cfg.is_kvm then
                     O.fi "_vars->%s = memalign_pages(LINE, _vars->%s);"
@@ -1492,7 +1466,7 @@ module Make
           O.o "static void labels_init(vars_t *_vars) {" ;
           if do_label_init || do_precise then
             O.fi "labels_t *lbls = &_vars->labels;" ;
-          if Cfg.is_kvm && Misc.consp CfgLoc.all_labels then
+          if Cfg.is_kvm && do_self && Misc.consp CfgLoc.all_labels then
             O.oi "pteval_t *_p;" ;
           O.o "";
           List.iter (fun (p,lbl) ->
@@ -1504,31 +1478,28 @@ module Make
                 else
                   LangUtils.code_fun p in
               let prelude =
-                if do_self then
-                  sprintf "_vars->%s" (OutUtils.fmt_prelude p)
-                else
-                  sprintf "prelude_size((ins_t *)%s)" (LangUtils.code_fun p) in
+                sprintf "((ins_t *)%s - (ins_t *)%s)"
+                  (LangUtils.start_label tname p) (LangUtils.code_fun p) in
               let rhs =
                 sprintf "((ins_t *)%s)+%s+%d"
                   proc prelude off in
               O.fi "%s = %s;" lhs rhs;
-              if Cfg.is_kvm then begin
+              if Cfg.is_kvm && do_self then begin
                 O.fi "lbls->%s = _p = litmus_tr_pte((void *)%s);" (OutUtils.fmt_pte_tag lbl_var) lhs;
                 O.fi "lbls->%s = *_p;" (OutUtils.fmt_phy_tag lbl_var);
               end;)
             CfgLoc.all_labels ;
           if do_precise then begin
             List.iter
-              (fun (p,(t,_)) ->
+              (fun (p,_) ->
                  let proc =
                    if do_self then
                      sprintf "_vars->%s" (LangUtils.code_fun p)
                    else
                      LangUtils.code_fun p in
                  let rhs =
-                   sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,%d)"
-                     proc (LangUtils.code_fun p)
-                     (A.Out.get_nnops t-1) in
+                   sprintf "((ins_t *)%s)+((ins_t *)%s-(ins_t *)%s)"
+                     proc (LangUtils.end_label tname p) (LangUtils.code_fun p) in
                  O.fi "lbls->ret[%d] = %s;" p rhs)
               test.T.code
           end ;
@@ -1572,7 +1543,7 @@ module Make
 
 (* Thread code, as functions *)
       let dump_thread_code
-            procs_user env (proc,(out,(_outregs,envVolatile)))  =
+            procs_user env tname (proc,(out,(_outregs,envVolatile)))  =
         let global_env = U.select_global env in
         let global_env =
           List.map (* Array -> pointer to first element *)
@@ -1606,7 +1577,7 @@ module Make
               { no_extra_args with trashed = ["tr0";]; }
           end else no_extra_args in
         Lang.dump_fun
-          O.out args0 global_env envVolatile proc out
+          O.out args0 global_env envVolatile tname proc out
 
 (* Untouched variables, per thread + responsability *)
       let part_vars test =
@@ -1688,7 +1659,7 @@ module Make
           O.fx indent "%s;" (U.do_store at symb (pp_const v)) ;
           do_clean indent symb
 
-      let dump_run_thread procs_user faults
+      let dump_run_thread tname procs_user faults
           pte_init tag_init env test _some_ptr stats global_env
           (_vars,inits) (proc,(out,(_outregs,envVolatile)))  =
         let user_mode = List.exists (Proc.equal proc) procs_user in
@@ -1764,40 +1735,45 @@ module Make
                   ()
               )
               inits;
-            List.iter
-              (fun (p,lbl) ->
-                let x = sprintf "%d:%s" p lbl in
-                let lbl_var =  OutUtils.fmt_lbl_var p lbl in
-                let lbl_loc = sprintf "_vars->labels.%s" lbl_var in
-                let lbl_pte = sprintf "_vars->labels.pte_%s" lbl_var in
-                try
-                  begin match Misc.Simple.assoc x bds with
-                  | P phy ->
-                      O.fii
-                        "(void)litmus_set_pte_safe(%s,%s,_vars->labels.saved_pte_%s);" lbl_loc lbl_pte phy ;
-                      O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
-                  | Z ->
-                      O.fii "(void)litmus_set_pte(%s,%s,litmus_set_pte_invalid(*%s));" lbl_loc lbl_pte lbl_pte ;
-                      O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
-                  | V (o,pteval) ->
-                      let is_default = A.V.PteVal.is_default pteval in
-                      if not (o = None && is_default) then begin
-                        let arg = match o with
-                          | None -> sprintf "_vars->labels.saved_pte_%s" lbl_var
-                          | Some s -> sprintf "_vars->labels.saved_pte_%s" s in
-                        O.fii "pteval_t pte_%s = %s;" lbl_var (PU.dump_pteval_flags arg pteval) ;
-                        List.iter
-                          (fun attr ->
-                             O.fii "litmus_set_pte_attribute(&pte_%s, %s);" lbl_var attr)
-                          (A.V.PteVal.attrs_as_kvm_symbols pteval) ;
-                        O.fii "(void)litmus_set_pte_safe(%s,%s,pte_%s);" lbl_loc lbl_pte lbl_var ;
-                        O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+            if Cfg.is_kvm && do_self then begin
+              List.iter
+                (fun (p,lbl) ->
+                  if p = proc then begin
+                    let x = sprintf "%d:%s" p lbl in
+                    let lbl_var =  OutUtils.fmt_lbl_var p lbl in
+                    let lbl_loc = sprintf "_vars->labels.%s" lbl_var in
+                    let lbl_pte = sprintf "_vars->labels.pte_%s" lbl_var in
+                    try
+                      begin match Misc.Simple.assoc x bds with
+                      | P phy ->
+                          O.fii
+                            "(void)litmus_set_pte_safe(%s,%s,_vars->labels.saved_pte_%s);" lbl_loc lbl_pte phy ;
+                          O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+                      | Z ->
+                          O.fii "(void)litmus_set_pte(%s,%s,litmus_set_pte_invalid(*%s));" lbl_loc lbl_pte lbl_pte ;
+                          O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+                      | V (o,pteval) ->
+                          let is_default = A.V.PteVal.is_default pteval in
+                          if not (o = None && is_default) then begin
+                            let arg = match o with
+                              | None -> sprintf "_vars->labels.saved_pte_%s" lbl_var
+                              | Some s -> sprintf "_vars->labels.saved_pte_%s" s in
+                            O.fii "pteval_t pte_%s = %s;" lbl_var (PU.dump_pteval_flags arg pteval) ;
+                            List.iter
+                              (fun attr ->
+                                O.fii "litmus_set_pte_attribute(&pte_%s, %s);" lbl_var attr)
+                              (A.V.PteVal.attrs_as_kvm_symbols pteval) ;
+                            O.fii "(void)litmus_set_pte_safe(%s,%s,pte_%s);" lbl_loc lbl_pte lbl_var ;
+                            O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+                          end
                       end
-                  end
-                with Not_found ->
+                    with Not_found ->
+                      ()
+                  end else
                   ()
-              )
-              CfgLoc.all_labels;
+                )
+                CfgLoc.all_labels
+            end
         end ;
         (* Synchronise *)
         if have_timebase then O.oii "_ctx->next_tb = read_timebase();" ;
@@ -1814,11 +1790,11 @@ module Make
               (if user_mode then ["_c->id"] else [])
               (fun _ s -> s)
               O.out (Indent.as_string Indent.indent2)
-            (global_env,[]) envVolatile proc out
+            (global_env,[]) envVolatile tname proc out
         end else begin
           Lang.dump
             O.out (Indent.as_string Indent.indent2)
-            (global_env,[]) envVolatile proc out
+            (global_env,[]) envVolatile tname proc out
         end ;
 (* Synchronise *)
         O.oii "barrier_wait(_b);" ;
@@ -1855,15 +1831,19 @@ module Make
           List.iter
             (fun a -> O.fii "litmus_flush_tlb((void *)%s);" a)
             inits;
-          List.iter
-            (fun (p,lbl) ->
-              let lbl_var =  OutUtils.fmt_lbl_var p lbl in
-              let lbl_loc = sprintf "_vars->labels.%s" lbl_var in
-              let lbl_pte = sprintf "_vars->labels.pte_%s" lbl_var in
-              let lbl_saved_pte = sprintf "_vars->labels.saved_pte_%s" lbl_var in
-              O.fii "litmus_set_pte_safe(%s,%s,%s);" lbl_loc lbl_pte lbl_saved_pte;
-              O.fii "litmus_flush_tlb((void *)%s);" lbl_loc;)
-            CfgLoc.all_labels
+          if Cfg.is_kvm && do_self && false then begin
+            List.iter
+              (fun (p,lbl) ->
+                if p = proc then begin
+                  let lbl_var =  OutUtils.fmt_lbl_var p lbl in
+                  let lbl_loc = sprintf "_vars->labels.%s" lbl_var in
+                  let lbl_pte = sprintf "_vars->labels.pte_%s" lbl_var in
+                  let lbl_saved_pte = sprintf "_vars->labels.saved_pte_%s" lbl_var in
+                  O.fii "litmus_set_pte_safe(%s,%s,%s);" lbl_loc lbl_pte lbl_saved_pte ;
+                  O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+                end)
+              CfgLoc.all_labels
+          end
         end ;
 (* Save/Restore memtags *)
         O.oii "barrier_wait(_b);" ;
@@ -1984,21 +1964,21 @@ module Make
         O.oii "break; }" ;
         ()
 
-      let dump_test_code env test procs_user =
+      let dump_test_code tname env test procs_user =
         O.o "/*************/" ;
         O.o "/* Test code */" ;
         O.o "/*************/" ;
         O.o "" ;
         if do_ascall then begin
             List.iter
-              (dump_thread_code procs_user env)
+              (dump_thread_code procs_user env tname)
               test.T.code
           end
 
-      let dump_run_def  env test some_ptr stats procs_user =
+      let dump_run_def tname env test some_ptr stats procs_user =
         let faults = U.get_faults test in
         (* Notice: initialise the "nop" global variable before others *)
-        UD.dump_init_getinstrs test ;
+        UD.dump_init_getinstrs test tname ;
         O.o "inline static int do_run(thread_ctx_t *_c, param_t *_p,global_t *_g) {" ;
         O.oi "int _ok = 0;" ;
         O.oi "int _role = _c->role;" ;
@@ -2058,8 +2038,8 @@ module Make
         and pte_init = get_pte_init test.T.init
         and tag_init = get_tag_init test.T.init in
         List.iter2
-          (dump_run_thread
-             procs_user faults pte_init tag_init env test some_ptr stats global_env)
+          (dump_run_thread tname procs_user faults
+            pte_init tag_init env test some_ptr stats global_env)
           (part_vars test)
           test.T.code ;
         O.oi "}" ;
@@ -2371,7 +2351,7 @@ module Make
         UD.dump_getinstrs test ;
         dump_delay_def () ;
         dump_read_timebase () ;
-        let find_ins_inserted = dump_mbar_def () in
+        dump_mbar_def () ;
         dump_barrier_def () ;
         dump_topology doc test ;
         dump_user_stacks procs_user ;
@@ -2379,14 +2359,14 @@ module Make
         let stats = get_stats test in
         dump_fault_type env test ;
         let some_ptr = dump_outcomes env test in
-        dump_fault_handler find_ins_inserted doc test ;
+        dump_fault_handler doc test ;
         dump_cond_def env test ;
         dump_parameters env test ;
         dump_hash_def doc.Name.name env test ;
         dump_set_feature test db ;
-        dump_test_code env test procs_user ;
-        dump_instance_def procs_user test ;
-        dump_run_def env test some_ptr stats procs_user ;
+        dump_test_code doc.Name.name env test procs_user ;
+        dump_instance_def doc.Name.name procs_user test ;
+        dump_run_def doc.Name.name env test some_ptr stats procs_user ;
         dump_zyva_def doc.Name.name env test db procs_user ;
         dump_prelude_def doc test ;
         O.o "static int feature_check(void) {" ;

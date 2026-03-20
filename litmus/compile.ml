@@ -862,41 +862,7 @@ module A.FaultType = A.FaultType)
             StringMap.empty (InfoAlign.parse ps)
         with Not_found -> StringMap.empty in
       let ty_env = ty_env1,ty_env2 in
-      let label_init = T.get_exported_labels_init_code initenv code in
       let prog = A.code_by_proc code in
-      let prog =
-        if do_self || is_pte || not (Label.Full.Set.is_empty label_init) then
-          let do_append_nop = is_pte && do_precise in
-          List.map
-            (fun (p,(c,f)) ->
-              (* Add nop to signal code start *)
-              let is_user = ProcsUser.is procs_user p in
-              let nop =
-                match A.nop with
-                | None ->
-                    Warn.fatal
-                      "Architecture %s has no NOP instruction, compilation is impossible"
-                      (Archs.pp A.arch)
-                | Some nop ->
-                   A.Instruction nop in
-              if do_self && is_pte then
-                begin
-                  (* Add start marker and align the rest to the page boundary *)
-                  let c = [nop;A.Pagealign]@c in
-                  (* Align the rest to the page boundary and add marker *)
-                  let c = if do_append_nop then c@[A.Pagealign;nop] else c in
-                  p,(c,f)
-                end
-              else
-                begin
-                  (* Except in user mode, where it will be added later *)
-                  let c = if not is_user then nop::c else c in
-                  let c = (* Append nop for faukt handler to return at end of code *)
-                    if do_append_nop then c@[nop] else c in
-                  p,(c,f)
-                end
-            ) prog
-        else prog in
       let stable_info = match MiscParser.get_info  t MiscParser.stable_key with
       | None -> A.RegSet.empty
       | Some s ->

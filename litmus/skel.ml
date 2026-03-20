@@ -1328,7 +1328,7 @@ module Make
           end
         end
 
-      let dump_reinit env test cpys =
+      let dump_reinit env tname test cpys =
         O.o "/*******************************************************/" ;
         O.o "/* Context allocation, freeing and reinitialization    */" ;
         O.o "/*******************************************************/" ;
@@ -1402,7 +1402,7 @@ module Make
           ObjUtil.insert_lib_file O.o "_prelude_size.c" ;
           ()
         end ;
-        UD.dump_init_getinstrs test ;
+        UD.dump_init_getinstrs test tname ;
         O.f "static void init(ctx_t *_a%s) {"
           (if do_staticalloc then ",int id" else "") ;
         O.oi "int size_of_test = _a->_p->size_of_test;" ;
@@ -1760,7 +1760,7 @@ module Make
             let global_env = U.select_global env in
             if do_ascall then begin
                 Lang.dump_fun O.out
-                  Template.no_extra_args global_env envVolatile proc out
+                  Template.no_extra_args global_env envVolatile tname proc out
             end ;
             let  do_collect =  do_collect_local && (do_safer || proc=0) in
             O.f "static void *P%i(void *_vb) {" proc ;
@@ -1967,7 +1967,7 @@ module Make
                 LangUtils.code_fun proc in
               Lang.dump_call f_id [] (fun _ s -> s)
              else Lang.dump)
-              O.out (Indent.as_string iloop) (global_env,aligned_env) envVolatile proc out ;
+              O.out (Indent.as_string iloop) (global_env,aligned_env) envVolatile tname proc out ;
             if do_verbose_barrier && have_timebase  then begin
               if do_timebase then begin
                 O.fx iloop "_a->tb_delta[%i][_i] = _delta;" proc ;
@@ -2944,7 +2944,7 @@ module Make
         UD.define_label_offsets env test ;
         dump_check_globals env doc test ;
         dump_templates env doc.Name.name test ;
-        dump_reinit env test cpys ;
+        dump_reinit env doc.Name.name test cpys ;
         let nprocs = T.get_nprocs test in
         if U.label_in_outs env test then
           UD.dump_label_funcs do_self (T.all_labels test) nprocs ;

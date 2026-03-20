@@ -49,24 +49,24 @@ module Make(C:Config)(E:Extra) = struct
 
   let has_explicit_handler _ = false
 
-  let dump_start chan indent proc =
+  let dump_start chan indent tname proc =
     if not E.simple then begin
       if C.asmcommentaslabel then
         fprintf chan
           "%sasm __volatile__ (\"\\n%s:\" ::: \"memory\");\n"
-          indent (LangUtils.start_label proc)
+          indent (LangUtils.start_label tname proc)
       else
         fprintf chan
           "%sasm __volatile__ (\"\\n%s\" ::: \"memory\");\n"
           indent (LangUtils.start_comment C.comment proc)
     end
 
-  let dump_end chan indent proc =
+  let dump_end chan indent tname proc =
     if not E.simple then begin
       if C.asmcommentaslabel then
         fprintf chan
           "%sasm __volatile__ (\"\\n%s:\" ::: \"memory\");\n"
-          indent (LangUtils.end_label proc)
+          indent (LangUtils.end_label tname proc)
       else
         fprintf chan
           "%sasm __volatile__ (\"\\n%s\" ::: \"memory\");\n"
@@ -92,7 +92,7 @@ module Make(C:Config)(E:Extra) = struct
       (List.map
          (fun (x,ty) -> sprintf "%s -> %s" x (CType.debug ty))
          env)
-  let dump_fun chan _args0 globEnv _envVolatile proc t =
+  let dump_fun chan _args0 globEnv _envVolatile tname proc t =
     let env = t.CTarget.ty_env in
     if dbg then
       begin
@@ -112,11 +112,11 @@ module Make(C:Config)(E:Extra) = struct
            (fun (ty,v) -> sprintf "%s %s" ty v)
            defs) in
     (* Function prototype  *)
-    LangUtils.dump_code_def chan E.noinline false C.mode proc params ;
+    LangUtils.dump_code_def chan E.noinline C.mode tname proc params ;
     (* body *)
-    dump_start chan "  " proc ;
+    dump_start chan "  " tname proc ;
     CTarget.out_code chan t.CTarget.code ;
-    dump_end chan "  " proc ;
+    dump_end chan "  " tname proc ;
     (* output parameters *)
     List.iter
       (fun reg ->
@@ -128,7 +128,7 @@ module Make(C:Config)(E:Extra) = struct
     out "}\n\n"
 
 
-  let dump_call f_id args0 tr_idx chan indent (globEnv,_) _envVolatile proc t =
+  let dump_call f_id args0 tr_idx chan indent (globEnv,_) _envVolatile _tname proc t =
 
     if dbg then
       begin
@@ -177,7 +177,7 @@ module Make(C:Config)(E:Extra) = struct
     LangUtils.dump_code_call chan indent f_id args
 
 
-  let dump chan indent (globEnv,_) _envVolatile proc t =
+  let dump chan indent (globEnv,_) _envVolatile tname proc t =
     let env = t.CTarget.ty_env in
     let out x = fprintf chan x in
     out "%sdo {\n" indent;
@@ -214,12 +214,10 @@ module Make(C:Config)(E:Extra) = struct
               indent outname (CType.dump ty) (CTarget.fmt_reg x)
 
       in
-      let print_start = dump_start chan in
-      let print_end = dump_end chan in
       List.iter dump_input t.CTarget.inputs;
-      print_start indent proc;
+      dump_start chan indent tname proc;
       CTarget.out_code chan t.CTarget.code ;
-      print_end indent proc;
+      dump_end chan indent tname proc;
       List.iter dump_output t.CTarget.finals
     end;
     out "%s} while(0);\n" indent

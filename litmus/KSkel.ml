@@ -632,7 +632,7 @@ let dump_barrier_def () =
   end
 
 
-let dump_threads _tname env test =
+let dump_threads tname env test =
   O.o "/***************/" ;
   O.o "/* Litmus code */" ;
   O.o "/***************/" ;
@@ -649,7 +649,7 @@ let dump_threads _tname env test =
   List.iter
     (fun (proc,(out,(_outregs,envVolatile))) ->
       Lang.dump_fun O.out Template.no_extra_args
-        global_env envVolatile proc out ;
+        global_env envVolatile tname proc out ;
       O.f "static int thread%i(void *_p) {" proc ;
       O.oi "ctx_t *_a = (ctx_t *)_p;" ;
       O.o "" ;
@@ -672,7 +672,7 @@ let dump_threads _tname env test =
       | Some _|None -> idx in
       Lang.dump_call (LangUtils.code_fun proc)
         [] tr_idx O.out (Indent.as_string indent3)
-        (global_env,aligned_env) envVolatile proc out ;
+        (global_env,aligned_env) envVolatile tname proc out ;
       O.oii "}" ;
       O.oi "}" ;
       O.oi "smp_mb();" ;
