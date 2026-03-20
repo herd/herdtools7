@@ -36,7 +36,7 @@ and vars_of_opt_named_type_terms opt_named_terms =
 
 let variant_to_label_opt { TypeVariant.term } =
   match term with
-  | Label label -> Some label
+  | Label { label } -> Some label
   | Tuple { label_opt } | Record { label_opt } -> label_opt
   | _ -> None
 
@@ -50,3 +50,31 @@ let sort_record_fields fields =
     (fun { Term.name = name1 } { Term.name = name2 } ->
       String.compare name1 name2)
     fields
+
+let loc_of_expr =
+  let open Expr in
+  function
+  | Var { loc }
+  | FieldAccess { loc }
+  | ListIndex { loc }
+  | Record { loc }
+  | RecordUpdate { loc }
+  | UnresolvedApplication { loc }
+  | Tuple { loc }
+  | Relation { loc }
+  | Map { loc }
+  | Transition { loc }
+  | Indexed { loc }
+  | NamedExpr { loc } ->
+      loc
+
+let loc_of_term =
+  let open Term in
+  function
+  | Label { loc }
+  | TypeOperator { loc }
+  | Tuple { loc }
+  | Record { loc }
+  | Function { loc }
+  | ConstantsSet { loc } ->
+      loc

@@ -103,11 +103,12 @@ let is_type_name id_to_defining_node id =
   | Some (Node_Type _) -> true
   | _ -> false
 
-(** [check_is_constant id_to_defining_node id] raises an error if [id] is not
-    defined as a constant directly or as a type variant with a label. *)
-let check_is_constant id_to_defining_node id =
+(** [check_is_constant context_term id_to_defining_node id] raises an error if
+    [id] is not defined as a constant directly or as a type variant with a
+    label. [context_term] is used for error reporting. *)
+let check_is_constant context_term id_to_defining_node id =
   if is_constant id_to_defining_node id then ()
-  else Error.non_constant_used_as_constant_set id
+  else Error.non_constant_used_as_constant_set context_term id
 
 (** Utility functions for handling layouts. *)
 module Layout = struct
@@ -120,10 +121,10 @@ module Layout = struct
   let relation_to_tuple { Relation.name; input; output } =
     let opt_named_output_terms = List.map (fun term -> (None, term)) output in
     let open Term in
-    make_tuple
+    make_tuple missing_location
       [
-        (None, make_labelled_tuple name input);
-        (None, make_tuple opt_named_output_terms);
+        (None, make_labelled_tuple missing_location name input);
+        (None, make_tuple missing_location opt_named_output_terms);
       ]
 
   let rec for_type_term term =
@@ -141,7 +142,8 @@ module Layout = struct
           in
           Vertical layout_per_field
         else Unspecified
-    | ConstantsSet names -> Horizontal (List.map (fun _ -> Unspecified) names)
+    | ConstantsSet { labels } ->
+        Horizontal (List.map (fun _ -> Unspecified) labels)
     | Function { from_type = _, from_term; to_type = _, to_term; _ } ->
         Horizontal [ for_type_term from_term; for_type_term to_term ]
 
@@ -220,7 +222,7 @@ let make_variant_id_to_containing_type ast =
       List.fold_left
         (fun acc_map { TypeVariant.term } ->
           match term with
-          | Term.Label label
+          | Term.Label { label }
           | Term.Tuple { label_opt = Some label }
           | Term.Record { label_opt = Some label }
           (* Only labels, labelled tuples, and labelled records have
@@ -348,7 +350,9 @@ let symbol_table_for_id id_to_defining_node id =
   | Some (Node_Relation { Relation.parameters }) ->
       List.fold_left
         (fun curr_table param ->
-          let type_for_param = Type.make TypeKind_Generic param [] [] in
+          let type_for_param =
+            Type.make missing_location TypeKind_Generic param [] []
+          in
           StringMap.add param (Node_Type type_for_param) curr_table)
         id_to_defining_node parameters
   | _ -> id_to_defining_node
@@ -380,24 +384,24 @@ module ResolveApplicationExpr = struct
     let open Expr in
     match expr with
     | Var _ | FieldAccess _ -> expr
-    | Tuple { label_opt; args } ->
+    | Tuple ({ args } as node) ->
         let resolved_args = List.map resolve_in_context args in
-        Tuple { label_opt; args = resolved_args }
-    | Relation { is_operator = true; name; args } ->
+        Tuple { node with args = resolved_args }
+    | Relation ({ is_operator = true; args; _ } as node) ->
         let resolved_args = List.map resolve_in_context args in
-        Relation { is_operator = true; name; args = resolved_args }
-    | ListIndex { list_var; index } ->
+        Relation { node with args = resolved_args }
+    | ListIndex ({ index; _ } as node) ->
         let resolved_index = resolve_in_context index in
-        ListIndex { list_var; index = resolved_index }
-    | Record { label_opt; fields } ->
+        ListIndex { node with index = resolved_index }
+    | Record ({ fields; _ } as node) ->
         let resolved_fields =
           List.map
             (fun (field_name, field_expr) ->
               (field_name, resolve_in_context field_expr))
             fields
         in
-        Record { label_opt; fields = resolved_fields }
-    | RecordUpdate { record_expr; updates } ->
+        Record { node with fields = resolved_fields }
+    | RecordUpdate ({ record_expr; updates; _ } as node) ->
         let resolved_record_expr = resolve_in_context record_expr in
         let resolved_updates =
           List.map
@@ -406,26 +410,30 @@ module ResolveApplicationExpr = struct
             updates
         in
         RecordUpdate
-          { record_expr = resolved_record_expr; updates = resolved_updates }
-    | UnresolvedApplication { lhs; args } -> (
+          {
+            node with
+            record_expr = resolved_record_expr;
+            updates = resolved_updates;
+          }
+    | UnresolvedApplication { lhs; args; loc } -> (
         let resolved_args = List.map resolve_in_context args in
         match lhs with
-        | Var id -> (
+        | Var { loc; id } -> (
             match StringMap.find_opt id id_to_defining_node with
-            | Some (Node_Relation { Relation.is_operator; name }) ->
-                Relation { is_operator; name; args = resolved_args }
+            | Some (Node_Relation { Relation.is_operator; name; _ }) ->
+                Relation { loc; is_operator; name; args = resolved_args }
             | Some (Node_TypeVariant { term = Term.Tuple { label_opt } })
             | Some
                 (Node_Constant { opt_type = Some (Term.Tuple { label_opt }) })
               ->
-                Tuple { label_opt; args = resolved_args }
+                Tuple { loc; label_opt; args = resolved_args }
             | Some (Node_Constant { Constant.name })
             | Some (Node_Type { Type.name }) ->
                 Error.invalid_application_of_symbol_in_expr name expr
             | Some (Node_RecordField _) | Some (Node_TypeVariant _) | None ->
                 Error.illegal_lhs_application expr)
-        | _ -> Map { lhs = resolve_in_context lhs; args = resolved_args })
-    | Transition { lhs; rhs; short_circuit } ->
+        | _ -> Map { loc; lhs = resolve_in_context lhs; args = resolved_args })
+    | Transition ({ lhs; rhs; short_circuit; _ } as node) ->
         let resolved_lhs = resolve_in_context lhs in
         let resolved_rhs = resolve_in_context rhs in
         let resolved_short_circuit =
@@ -433,6 +441,7 @@ module ResolveApplicationExpr = struct
         in
         Transition
           {
+            node with
             lhs = resolved_lhs;
             rhs = resolved_rhs;
             short_circuit = resolved_short_circuit;
@@ -541,6 +550,7 @@ module ResolveRules = struct
           if is_output then
             Transition
               {
+                loc = missing_location;
                 lhs = conclusion_lhs;
                 rhs = expr;
                 short_circuit = Some [];
@@ -571,10 +581,10 @@ module ResolveRules = struct
     (* Converts an optionally-named type term into a relation argument expression. *)
     let rec arg_of opt_named_term =
       match opt_named_term with
-      | Some name, _ -> Expr.Var name
+      | Some id, _ -> Expr.make_var missing_location id
       | None, Term.Tuple { label_opt; args } ->
           let args = List.map arg_of args in
-          Expr.make_opt_labelled_tuple label_opt args
+          Expr.make_opt_labelled_tuple missing_location label_opt args
       | ( None,
           ( Term.Label _ | Term.Record _ | Term.TypeOperator _ | Term.Function _
           | Term.ConstantsSet _ ) ) ->
@@ -582,7 +592,8 @@ module ResolveRules = struct
             PP.pp_type_term (snd opt_named_term)
     in
     let named_args = List.map arg_of input in
-    Expr.Relation { name; is_operator; args = named_args }
+    Expr.Relation
+      { loc = missing_location; name; is_operator; args = named_args }
 
   (** In text, a list of [case] elements without non-[case] elements in between
       them are considered to be a single case element with multiple cases.
@@ -806,10 +817,13 @@ module Check = struct
           List.iter2
             (fun { Term.term } cell -> check_layout term cell)
             fields cells
-    | ConstantsSet names, (Horizontal cells | Vertical cells) ->
-        if List.compare_lengths names cells <> 0 then
+    | ConstantsSet { loc; labels }, (Horizontal cells | Vertical cells) ->
+        if List.compare_lengths labels cells <> 0 then
           Error.bad_layout term layout ~consistent_layout
-        else List.iter2 (fun _ cell -> check_layout (Label "") cell) names cells
+        else
+          List.iter2
+            (fun _ cell -> check_layout (Label { loc; label = "" }) cell)
+            labels cells
     | ( Function { from_type = _, from_term; to_type = _, to_term; _ },
         (Horizontal cells | Vertical cells) ) ->
         if List.length cells <> 2 then
@@ -825,9 +839,13 @@ module Check = struct
       let open Layout in
       match node with
       | Node_Type { Type.name } ->
-          check_layout (Label name) (math_layout_for_node node)
+          check_layout
+            (Label { loc = missing_location; label = name })
+            (math_layout_for_node node)
       | Node_Constant { Constant.name } ->
-          check_layout (Label name) (math_layout_for_node node)
+          check_layout
+            (Label { loc = missing_location; label = name })
+            (math_layout_for_node node)
       | Node_TypeVariant { TypeVariant.term } ->
           check_layout term (math_layout_for_node node)
       | Node_Relation def ->
@@ -841,7 +859,7 @@ module Check = struct
   let rec referenced_ids =
     let open Term in
     function
-    | Label id -> [ id ]
+    | Label { label } -> [ label ]
     | TypeOperator { term = _, t } -> referenced_ids t
     | Tuple { label_opt; args } -> (
         let component_ids =
@@ -858,7 +876,7 @@ module Check = struct
         match label_opt with
         | None -> fields_ids
         | Some label -> label :: fields_ids)
-    | ConstantsSet constant_names -> constant_names
+    | ConstantsSet { labels } -> labels
     | Function { from_type = _, from_term; to_type = _, to_term } ->
         referenced_ids from_term @ referenced_ids to_term
 
@@ -911,11 +929,12 @@ module Check = struct
       List.iter
         (fun term ->
           match term with
-          | Term.Label id -> (
-              match StringMap.find id id_to_defining_node with
+          | Term.Label { label } -> (
+              match StringMap.find label id_to_defining_node with
               | Node_Type typedef -> (
                   match Type.short_circuit_macro typedef with
-                  | None -> Error.missing_short_circuit_attribute name term id
+                  | None ->
+                      Error.missing_short_circuit_attribute name term label
                   | Some _ -> ())
               | _ -> Error.not_type_name_error name term)
           | Term.ConstantsSet _ -> ()
@@ -1098,8 +1117,8 @@ module Check = struct
     let rec reduce_single_variant_type spec term =
       let open Term in
       match term with
-      | Label id -> (
-          match defining_node_opt_for_id spec id with
+      | Label { label } -> (
+          match defining_node_opt_for_id spec label with
           | Some
               (Node_Type
                  { Type.variants = [ { TypeVariant.term = variant_term } ]; _ })
@@ -1175,35 +1194,36 @@ module Check = struct
       let super = reduce_term spec super in
       let result =
         match (sub, super) with
-        | Label sub_id, _ when is_builtin_constant sub_id spec.bottom_constant
-          ->
+        | Label { label = sub_id }, _
+          when is_builtin_constant sub_id spec.bottom_constant ->
             (* The bottom constant is a subset of every type. *)
             true
-        | Label sub_id, Label super_id
-          when is_builtin_type sub_id spec.n_type
-               && is_builtin_type super_id spec.z_type ->
+        | Label { label = sub_label }, Label { label = super_label }
+          when is_builtin_type sub_label spec.n_type
+               && is_builtin_type super_label spec.z_type ->
             true
-        | Label sub_label, TypeOperator { op = List0 | List1 }
+        | Label { label = sub_label }, TypeOperator { op = List0 | List1 }
           when is_builtin_constant sub_label spec.empty_list ->
             (* The empty list is a subset of every list, since
                empty_list is universally quantified over all element types.
             *)
             true
-        | Label sub_label, TypeOperator { op = Powerset | Powerset_Finite }
+        | ( Label { label = sub_label },
+            TypeOperator { op = Powerset | Powerset_Finite } )
           when is_builtin_constant sub_label spec.empty_set ->
             (* The empty set is a subset of every set. *)
             true
-        | ( Label sub_label,
+        | ( Label { label = sub_label },
             TypeOperator { op = Option | Powerset | Powerset_Finite } )
           when is_builtin_constant sub_label spec.none_constant ->
             (* None is a subset of Option and also every set. *)
             true
-        | Label sub_label, ConstantsSet super_names ->
-            List.exists (String.equal sub_label) super_names
-        | _, Label super_label ->
+        | Label { label = sub_label }, ConstantsSet { labels = super_labels } ->
+            List.exists (String.equal sub_label) super_labels
+        | _, Label { label = super_label } ->
             let sub_is_label_case =
               match sub with
-              | Label sub_label ->
+              | Label { label = sub_label } ->
                   String.equal sub_label super_label
                   ||
                   (* The case where [sub_label] is a type name,
@@ -1251,8 +1271,9 @@ module Check = struct
             in
             equivalence_test sub_from_term super_from_term
             && equivalence_test sub_to_term super_to_term
-        | ConstantsSet sub_names, ConstantsSet super_names ->
-            List.for_all (fun name -> List.mem name super_names) sub_names
+        | ( ConstantsSet { labels = sub_labels },
+            ConstantsSet { labels = super_labels } ) ->
+            List.for_all (fun name -> List.mem name super_labels) sub_labels
         | _ ->
             (* false is safely conservative. *)
             false
@@ -1426,9 +1447,9 @@ module Check = struct
       | Function { from_type = _, from_term; to_type = _, to_term } ->
           check_well_formed id_to_defining_node from_term;
           check_well_formed id_to_defining_node to_term
-      | ConstantsSet labels ->
-          List.iter (check_is_constant id_to_defining_node) labels
-      | Label label -> (
+      | ConstantsSet { labels } ->
+          List.iter (check_is_constant term id_to_defining_node) labels
+      | Label { label } -> (
           let variant_def = StringMap.find label id_to_defining_node in
           match variant_def with
           | Node_Type _ | Node_TypeVariant { TypeVariant.term = Label _ } -> ()
@@ -1597,7 +1618,7 @@ module Check = struct
       in
       let use_def =
         match expr with
-        | Var id ->
+        | Var { id } ->
             vars_of_identifiers spec.id_to_defining_node [ id ]
             |> check_and_add_for_expr mode use_def
         | FieldAccess { base } -> (
@@ -1645,7 +1666,11 @@ module Check = struct
             let use_def = update_use_def_for_expr Use spec use_def lhs in
             update_use_def_for_expr Def spec use_def rhs
         | Relation
-            { is_operator = true; name; args = Var bound_var :: tail_args }
+            {
+              is_operator = true;
+              name;
+              args = Var { id = bound_var } :: tail_args;
+            }
           when is_quantifying_operator spec name ->
             update_use_def_with_bound_variable mode spec use_def tail_args
               ~context_expr:expr ~bound_var
@@ -1740,7 +1765,8 @@ module Check = struct
 
     (** [type_term_for_typedef def] returns the type term corresponding to the
         given type definition. *)
-    let type_term_for_typedef def = Term.Label def.Type.name
+    let type_term_for_typedef def =
+      Term.Label { loc = missing_location; label = def.Type.name }
 
     (** [type_of_id spec type_env id] returns the type of [id] using [spec] to
         lookup the defining node for [id] if needed, and using [type_env] as a
@@ -1807,12 +1833,12 @@ module Check = struct
             unify_structural_terms spec term1 term2
           in
           let get_variant_label = function
-            | Label id when StringMap.mem id spec.variant_id_to_containing_type
-              ->
-                Some id
-            | Tuple { label_opt = Some id; _ }
-            | Record { label_opt = Some id; _ } ->
-                Some id
+            | Label { label }
+              when StringMap.mem label spec.variant_id_to_containing_type ->
+                Some label
+            | Tuple { label_opt = Some label; _ }
+            | Record { label_opt = Some label; _ } ->
+                Some label
             | _ -> None
           in
           match structural_unification_result_opt with
@@ -1827,7 +1853,7 @@ module Check = struct
                     StringMap.find label2 spec.variant_id_to_containing_type
                   in
                   if String.equal container1 container2 then
-                    Some (Label container1)
+                    Some (Label { loc = missing_location; label = container1 })
                   else None
               | _ -> None)
       in
@@ -1844,11 +1870,13 @@ module Check = struct
         same internal structure. If successful, returns the unified term.
         Otherwise, returns [None]. *)
     and unify_structural_terms spec term1 term2 =
+      let loc = loc_of_term term1 in
       if term1 == term2 then Some term1
       else
         let open Term in
         match (term1, term2) with
-        | Label id1, Label id2 when String.equal id1 id2 ->
+        | Label { label = id1 }, Label { label = id2 } when String.equal id1 id2
+          ->
             (* Here, we assume that the labels are not type names. *)
             Some term1
         | ( TypeOperator { op = op1; term = _, arg_term1 },
@@ -1857,7 +1885,8 @@ module Check = struct
             match unify_terms spec arg_term1 arg_term2 with
             | Some unified_arg_term ->
                 Some
-                  (TypeOperator { op = op1; term = (None, unified_arg_term) })
+                  (TypeOperator
+                     { loc; op = op1; term = (None, unified_arg_term) })
             | None -> None)
         | ( Tuple { label_opt = label1_opt; args = args1 },
             Tuple { label_opt = label2_opt; args = args2 } )
@@ -1868,6 +1897,7 @@ module Check = struct
                 Some
                   (Tuple
                      {
+                       loc;
                        label_opt = label1_opt;
                        args =
                          List.map2
@@ -1893,6 +1923,7 @@ module Check = struct
                 Some
                   (Record
                      {
+                       loc;
                        label_opt = label1_opt;
                        fields =
                          List.map2
@@ -1971,7 +2002,7 @@ module Check = struct
         let arg_type = reduce_term spec arg_type in
         let open Term in
         match (formal_type, arg_type) with
-        | Label formal_id, _ ->
+        | Label { label = formal_id }, _ ->
             if is_parameter formal_id then
               unify_parameter_type spec ~relation_name formal_id arg_type
                 type_env
@@ -2035,19 +2066,19 @@ module Check = struct
       let rec substitute_type_parameters term parameter_env =
         let open Term in
         match term with
-        | Label id -> (
-            match StringMap.find_opt id parameter_env with
+        | Label { label } -> (
+            match StringMap.find_opt label parameter_env with
             | Some substituted_type -> substituted_type
             | None -> term)
-        | Tuple { label_opt; args } ->
+        | Tuple ({ args } as node) ->
             let substituted_args =
               List.map
                 (fun (name, sub_term) ->
                   (name, substitute_type_parameters sub_term parameter_env))
                 args
             in
-            Tuple { label_opt; args = substituted_args }
-        | Record { label_opt; fields } ->
+            Tuple { node with args = substituted_args }
+        | Record ({ fields } as node) ->
             let substituted_fields =
               List.map
                 (fun ({ term = field_term } as field) ->
@@ -2057,13 +2088,10 @@ module Check = struct
                   })
                 fields
             in
-            Record { label_opt; fields = substituted_fields }
+            Record { node with fields = substituted_fields }
         | Function
-            {
-              from_type = from_name, from_term;
-              to_type = to_name, to_term;
-              total;
-            } ->
+            ({ from_type = from_name, from_term; to_type = to_name, to_term } as
+             node) ->
             let substituted_from_term =
               substitute_type_parameters from_term parameter_env
             in
@@ -2072,15 +2100,16 @@ module Check = struct
             in
             Function
               {
+                node with
                 from_type = (from_name, substituted_from_term);
                 to_type = (to_name, substituted_to_term);
-                total;
               }
-        | TypeOperator { op; term = term_name, inner_term } ->
+        | TypeOperator ({ term = term_name, inner_term } as node) ->
             let substituted_inner_term =
               substitute_type_parameters inner_term parameter_env
             in
-            TypeOperator { op; term = (term_name, substituted_inner_term) }
+            TypeOperator
+              { node with term = (term_name, substituted_inner_term) }
         | ConstantsSet _ -> term
 
       (** [make_operator_formals_for_actual_num_of_args spec operator_name
@@ -2216,10 +2245,11 @@ module Check = struct
         let rec list_structured_terms_for_one_term spec term =
           let open Term in
           match term with
-          | Label id
-          | Term.Tuple { label_opt = None; args = [ (_, Term.Label id) ] }
-            when is_type_name spec.id_to_defining_node id -> (
-              match defining_node_for_id spec id with
+          | Label { label }
+          | Term.Tuple
+              { label_opt = None; args = [ (_, Term.Label { label }) ] }
+            when is_type_name spec.id_to_defining_node label -> (
+              match defining_node_for_id spec label with
               | Node_Type { Type.variants } ->
                   Utils.list_concat_map
                     (fun { TypeVariant.term = variant } ->
@@ -2324,8 +2354,8 @@ module Check = struct
       match base_type with
       | Term.Record { fields; _ } ->
           List.exists (fun { Term.name } -> String.equal name field_name) fields
-      | Term.Label id -> (
-          match defining_node_opt_for_id spec id with
+      | Term.Label { label } -> (
+          match defining_node_opt_for_id spec label with
           | Some (Node_Type { Type.variants; _ }) ->
               List.for_all
                 (fun { TypeVariant.term } ->
@@ -2343,10 +2373,10 @@ module Check = struct
       let open Expr in
       let t, tenv =
         match expr with
-        | Var id when is_ignore_var id ->
+        | Var { id } when is_ignore_var id ->
             (* If we type '_' with the bottom type, it will be subsumed by any other type. *)
             (spec.bottom_term, type_env)
-        | Var id ->
+        | Var { id } ->
             let id_type = type_of_id ~context_expr:expr spec type_env id in
             (id_type, type_env)
         | FieldAccess { base; field } ->
@@ -2378,7 +2408,7 @@ module Check = struct
                 (type_term_for_typedef spec.n_type)
             then (elem_type, type_env)
             else Error.invalid_list_index_type index_type ~context_expr:expr
-        | Record { label_opt; fields } ->
+        | Record { loc; label_opt; fields } ->
             (* All arguments must typecheck, and if the record is labelled,
                the inferred record type must be subsumed by the labelled record type. *)
             let fields =
@@ -2394,10 +2424,11 @@ module Check = struct
               let record_fields =
                 List.map2
                   (fun field_name field_type ->
-                    Term.make_record_field (field_name, field_type) [])
+                    let loc = loc_of_term field_type in
+                    Term.make_record_field loc (field_name, field_type) [])
                   field_names field_types
               in
-              Term.Record { label_opt; fields = record_fields }
+              Term.Record { loc; label_opt; fields = record_fields }
             in
             let { TypeVariant.term = declared_type } =
               record_variant_for_expr spec expr
@@ -2447,7 +2478,7 @@ module Check = struct
                   ~context_expr:expr)
         | NamedExpr { expr = sub_expr } ->
             infer_type_in_env spec type_env sub_expr
-        | Tuple { label_opt; args } ->
+        | Tuple { loc; label_opt; args } ->
             (* All arguments must typecheck, and if the tuple is labelled,
                the inferred tuple type must be subsumed by the labelled tuple type. *)
             let arg_types, type_env = infer_type_list spec type_env args in
@@ -2455,7 +2486,7 @@ module Check = struct
               let anonymous_typed_args =
                 List.map (fun t -> (None, t)) arg_types
               in
-              Term.Tuple { label_opt; args = anonymous_typed_args }
+              Term.Tuple { loc; label_opt; args = anonymous_typed_args }
             in
             let () =
               match label_opt with
@@ -2480,17 +2511,18 @@ module Check = struct
             (* Mathematically, assignment expressions are just equalities so the
              resulting type is Boolean. *)
             (type_term_for_typedef spec.bool, type_env)
-        | Relation { is_operator = true; name; args = [ lhs; rhs ] }
+        | Relation { loc; is_operator = true; name; args = [ lhs; rhs ] }
           when is_builtin_relation name spec.reverse_assign ->
             (* Reduce to normal assignment by switching lhs and rhs. *)
             infer_type_in_env spec type_env
               (Relation
                  {
+                   loc;
                    is_operator = true;
                    name = spec.assign.name;
                    args = [ rhs; lhs ];
                  })
-        | Relation { name; args; is_operator = true } ->
+        | Relation { loc; name; args; is_operator = true } ->
             (* If the operator is quantifying, the type of the bound variable
                (first argument) cannot be inferred from the expression alone,
                since it's a newly introduced variable. Therefore, we first
@@ -2508,7 +2540,7 @@ module Check = struct
             let () =
               if false then
                 let instantiated_operator =
-                  Relation.make name RelationProperty_Function None
+                  Relation.make loc name RelationProperty_Function None
                     (List.map (fun t -> (None, t)) instantiated_arg_types)
                     [ instantiated_output_type ]
                     [] None
@@ -2678,7 +2710,7 @@ module Check = struct
         in
         let bound_variable_name, domain_term, type_env =
           match args with
-          | Var id :: domain_expr :: _ ->
+          | Var { id } :: domain_expr :: _ ->
               let domain_term, type_env =
                 infer_type_in_env spec type_env domain_expr
               in
@@ -2726,8 +2758,8 @@ module Check = struct
         match expr with NamedExpr { expr = sub_expr } -> sub_expr | _ -> expr
       in
       match (expr, target_type) with
-      | Var id, _ when is_ignore_var id -> type_env
-      | Var id, _ -> StringMap.add id target_type type_env
+      | Var { id }, _ when is_ignore_var id -> type_env
+      | Var { id }, _ -> StringMap.add id target_type type_env
       | ( Relation { name; args = [ arg ]; is_operator = true },
           Term.TypeOperator { op; term = _, op_arg_type } )
         when is_builtin_relation name spec.some_operator
@@ -2766,7 +2798,7 @@ module Check = struct
             (fun curr_env arg (_, target_arg_type) ->
               apply_type spec curr_env arg target_arg_type)
             type_env args target_args
-      | ListIndex { list_var; index }, _ ->
+      | ListIndex { loc; list_var; index }, _ ->
           let index_type, _ = infer_type_in_env spec type_env index in
           let () =
             if
@@ -2776,7 +2808,7 @@ module Check = struct
             else Error.invalid_list_index_type index_type ~context_expr:expr
           in
           let list_var_type =
-            Term.TypeOperator { op = List0; term = (None, target_type) }
+            Term.TypeOperator { loc; op = List0; term = (None, target_type) }
           in
           StringMap.add list_var list_var_type type_env
       | ( Expr.Record { fields = expr_fields; _ },
@@ -2945,20 +2977,19 @@ module Check = struct
         and that the last judgment, and only the last judgment, is an output
         judgment. If not, raises a [SpecError] describing the issue.
         [relation_name] is used when reporting errors. *)
-    let check_well_formed_expanded relation_name expanded_rule =
+    let check_well_formed_expanded relation expanded_rule =
       let open ExpandRules in
       (* Reverse the list to easily access the last judgment. *)
       match List.rev expanded_rule.judgments with
-      | [] -> Error.empty_rule relation_name
+      | [] -> Error.empty_rule relation
       | { expr = Transition _; is_output = true } :: prefix_rules ->
           List.iter
             (fun { Rule.is_output } ->
               if is_output then
-                Error.multiple_output_judgments relation_name
-                  expanded_rule.name_opt
+                Error.multiple_output_judgments relation expanded_rule.name_opt
               else ())
             prefix_rules
-      | _ -> Error.missing_output_judgment relation_name expanded_rule.name_opt
+      | _ -> Error.missing_output_judgment relation expanded_rule.name_opt
 
     (** [formals_of_relation id_to_defining_node rel_name] returns the list of
         formal arguments for the relation named [rel_name] using
@@ -3001,7 +3032,7 @@ module Check = struct
           | Some label ->
               let type_components = args_of_tuple id_to_defining_node label in
               if List.compare_lengths args type_components <> 0 then
-                Error.invalid_number_of_components label expr
+                Error.invalid_number_of_components expr
                   ~expected:(List.length type_components)
                   ~actual:(List.length args)
           | None -> ())
@@ -3060,9 +3091,7 @@ module Check = struct
         List.iter
           (fun expanded_rule ->
             try
-              let () =
-                check_well_formed_expanded relation.Relation.name expanded_rule
-              in
+              let () = check_well_formed_expanded relation expanded_rule in
               let open ExpandRules in
               let () =
                 List.iter
@@ -3188,27 +3217,29 @@ module ExtendNames = struct
   (** [opt_extend] Wraps [expr] with a name if [opt_param_name] is [Some].
       Avoids naming a variable expression with its own name. *)
   let opt_extend spec expr opt_param_name =
+    let loc = loc_of_expr expr in
     match (expr, opt_param_name) with
     | _, None -> expr
-    | Var v, Some name when String.equal v name ->
-        NamedExpr { expr; name; same_name = true }
+    | Var { id }, Some name when String.equal id name ->
+        NamedExpr { loc; expr; name; same_name = true }
         (* Avoid naming a variable with its own name. *)
     | ( Expr.Relation
-          { name = operator_name; is_operator = true; args = [ Var v ] },
+          { name = operator_name; is_operator = true; args = [ Var { id } ] },
         Some name ) ->
         let relation = relation_for_id spec operator_name in
-        if Relation.is_typecast_operator relation && String.equal v name then
+        if Relation.is_typecast_operator relation && String.equal id name then
           (* Typecasts render the input variable. If the input variable has the same name
              as the parameter, avoid naming it. *)
-          NamedExpr { expr; name; same_name = true }
-        else NamedExpr { expr; name; same_name = false }
-    | _, Some name -> NamedExpr { expr; name; same_name = false }
+          NamedExpr { loc; expr; name; same_name = true }
+        else NamedExpr { loc; expr; name; same_name = false }
+    | _, Some name -> NamedExpr { loc; expr; name; same_name = false }
 
   (** [extend_with_names type_term expr ] recursively transforms [expr] by
       adding names from [type_term] to sub-expressions of [expr]. Currently,
       only tuples (labelled or unlabelled) are supported, which is sufficient
       for most output configurations. *)
   let rec extend_with_names spec type_term expr =
+    let loc = loc_of_expr expr in
     match (type_term, expr) with
     | Term.Tuple { label_opt = None; args = [ (opt_name, _) ] }, _ ->
         (* An unlabelled tuple with a single component serves as a named reference
@@ -3234,7 +3265,7 @@ module ExtendNames = struct
               opt_extend spec (extend_with_names spec arg_type arg) opt_name)
             term_components expr_components
         in
-        Expr.Tuple { label_opt = expr_label_opt; args = extended_args }
+        Expr.Tuple { loc; label_opt = expr_label_opt; args = extended_args }
     | _ -> expr
 
   (** [extend_rule_element output_type rule_element] extends output judgments in
@@ -3242,8 +3273,10 @@ module ExtendNames = struct
   let rec extend_rule_element spec output_types rule_element =
     match rule_element with
     | Judgment
-        ({ expr = Transition { lhs; rhs; short_circuit }; is_output = true } as
-         judgment) ->
+        ({
+           expr = Transition { loc; lhs; rhs; short_circuit };
+           is_output = true;
+         } as judgment) ->
         let output_type =
           match match_output_expr_to_term spec rhs output_types with
           | Some output_type -> output_type
@@ -3253,7 +3286,7 @@ module ExtendNames = struct
         in
         let extended_rhs = extend_with_names spec output_type rhs in
         let extended_expr =
-          Transition { lhs; rhs = extended_rhs; short_circuit }
+          Transition { loc; lhs; rhs = extended_rhs; short_circuit }
         in
         Judgment { judgment with expr = extended_expr }
     | Judgment _ -> rule_element
@@ -3320,7 +3353,7 @@ module ExtendConstantsWithTypes = struct
                  name PP.pp_expr init_expr))
       | None, None ->
           (* A constant without a specified type has a type labeled by its name. *)
-          Label name
+          Label { loc = missing_location; label = name }
     in
     { def with Constant.opt_type = Some constant_type }
 
@@ -3372,9 +3405,11 @@ let add_default_rule_renders ({ ast } as spec) =
     List.filter_map
       (fun elem ->
         match elem with
-        | Elem_Relation { Relation.name; rule_opt = Some _ }
+        | Elem_Relation { Relation.name; loc; rule_opt = Some _ }
           when not (StringSet.mem name relations_with_rules) ->
-            let rule_render = RuleRender.make ~name ~relation_name:name [] in
+            let rule_render =
+              RuleRender.make loc ~name ~relation_name:name []
+            in
             Some (Elem_RenderRule rule_render)
         | _ -> None)
       ast
@@ -3460,7 +3495,7 @@ let make_spec_with_builtins ast =
     ast;
     id_to_defining_node;
     bottom_constant = get_constant "bot";
-    bottom_term = Label "bot";
+    bottom_term = Label { loc = missing_location; label = "bot" };
     none_constant = get_constant "None";
     empty_set = get_constant "empty_set";
     empty_list = get_constant "empty_list";

@@ -4,6 +4,13 @@
 
 exception SpecError of string
 
+type position = Lexing.position
+type source_location = { start_pos : position; end_pos : position }
+
+let missing_location =
+  let dummy_pos = Lexing.dummy_pos in
+  { start_pos = dummy_pos; end_pos = dummy_pos }
+
 (** Extends an error message and re-raises an exception. This is a temporary
     hack until the AST supports source locations. *)
 let stack_spec_error msg extra_msg =
@@ -203,28 +210,41 @@ module Term = struct
   (** Terms for constructing types out of other types, with [Label t] being the
       leaf case.
 
-      In the context of a type definition, a [Label] variant defines a new label
-      \- a type representing just this single label. In other contexts, for
-      example a type variant appearing in the signature of a relation, this can
-      refer to a type defined elsewhere. *)
+      In the context of a type definition, a [Label] variant defines a new
+      label. That is, a type representing just this single label. In other
+      contexts, for example a type variant appearing in the signature of a
+      relation, this can refer to a type defined elsewhere. *)
   type t =
-    | Label of string
+    | Label of { loc : source_location; label : string }
         (** Either a set containing the single value named by the given string
             or a reference to a type with the given name. *)
-    | TypeOperator of { op : type_operator; term : opt_named_type_term }
+    | TypeOperator of {
+        loc : source_location;
+        op : type_operator;
+        term : opt_named_type_term;
+      }
         (** A set containing all types formed by applying the type operator [op]
             to the type given by [term]. *)
-    | Tuple of { label_opt : string option; args : opt_named_type_term list }
+    | Tuple of {
+        loc : source_location;
+        label_opt : string option;
+        args : opt_named_type_term list;
+      }
         (** A set containing all optionally-labelled tuples formed by the given
             argunent terms. An unlabelled tuple containing a single term is a
             special case - its domain is the domain of that term; this serves to
             reference types defined elsewhere. *)
-    | Record of { label_opt : string option; fields : record_field list }
+    | Record of {
+        loc : source_location;
+        label_opt : string option;
+        fields : record_field list;
+      }
         (** A set containing all optionally-labelled records formed by the given
             fields. *)
-    | ConstantsSet of string list
-        (** A set containing all constants formed by the given names. *)
+    | ConstantsSet of { loc : source_location; labels : string list }
+        (** A set containing all constants formed by the given labels. *)
     | Function of {
+        loc : source_location;
         from_type : opt_named_type_term;
         to_type : opt_named_type_term;
         total : bool;
@@ -238,28 +258,38 @@ module Term = struct
   and opt_named_type_term = string option * t
   (** A term optionally associated with a variable name. *)
 
-  and record_field = { name : string; term : t; att : Attributes.t }
+  and record_field = {
+    loc : source_location;
+    name : string;
+    term : t;
+    att : Attributes.t;
+  }
   (** A field of a record type. *)
+
+  (** [make_label loc label] Constructs a label with the given location [loc]
+      and label [label]. *)
+  let make_label loc label = Label { loc; label }
 
   (** [make_type_operation op term] Constructs a type term in which [op] is
       applied to [term]. *)
-  let make_type_operation op term = TypeOperator { op; term }
+  let make_type_operation loc op term = TypeOperator { loc; op; term }
 
   (** [make_tuple args] Constructs an unlabelled tuple for the tuple args
       [args]. *)
-  let make_tuple args = Tuple { label_opt = None; args }
+  let make_tuple loc args = Tuple { loc; label_opt = None; args }
 
   (** [make_labelled_tuple label args] Constructs a tuple labelled [label] and
       tuple args [args]. *)
-  let make_labelled_tuple label args = Tuple { label_opt = Some label; args }
+  let make_labelled_tuple loc label args =
+    Tuple { loc; label_opt = Some label; args }
 
-  let make_record_field (name, term) attributes =
+  let make_record_field loc (name, term) attributes =
     let att = Attributes.of_list attributes in
-    { name; term; att }
+    { loc; name; term; att }
 
   (** [make_record fields] Constructs an unlabelled record with fields [fields].
   *)
-  let make_record fields = Record { label_opt = None; fields }
+  let make_record loc fields = Record { loc; label_opt = None; fields }
 
   let field_type { term } = term
   let field_name { name } = name
@@ -272,31 +302,48 @@ module Term = struct
 
   (** [make_labelled_record label fields] Constructs a record labelled [label]
       with fields [fields]. *)
-  let make_labelled_record label fields =
-    Record { label_opt = Some label; fields }
+  let make_labelled_record loc label fields =
+    Record { loc; label_opt = Some label; fields }
 end
 
 module Expr = struct
   (** A term that can be used to form a rule judgment. *)
   type t =
-    | Var of string
-    | FieldAccess of { base : t; field : string }
-    | ListIndex of { list_var : string; index : t }
+    | Var of { loc : source_location; id : string }
+    | FieldAccess of { loc : source_location; base : t; field : string }
+    | ListIndex of { loc : source_location; list_var : string; index : t }
         (** An expression indexing into the list variable [list_var] at position
             [index]. *)
-    | Record of { label_opt : string option; fields : (string * t) list }
-        (** A record construction expression. *)
-    | RecordUpdate of { record_expr : t; updates : (string * t) list }
+    | Record of {
+        loc : source_location;
+        label_opt : string option;
+        fields : (string * t) list;
+      }  (** A record construction expression. *)
+    | RecordUpdate of {
+        loc : source_location;
+        record_expr : t;
+        updates : (string * t) list;
+      }
         (** A record update expression that updates the fields given in
             [updates] of the record given by [record_expr]. *)
-    | UnresolvedApplication of { lhs : t; args : t list }
+    | UnresolvedApplication of { loc : source_location; lhs : t; args : t list }
         (** An application expression whose left-hand side has not yet been
             resolved. *)
-    | Tuple of { label_opt : string option; args : t list }
-    | Relation of { name : string; is_operator : bool; args : t list }
-    | Map of { lhs : t; args : t list }
+    | Tuple of {
+        loc : source_location;
+        label_opt : string option;
+        args : t list;
+      }
+    | Relation of {
+        loc : source_location;
+        name : string;
+        is_operator : bool;
+        args : t list;
+      }
+    | Map of { loc : source_location; lhs : t; args : t list }
         (** A map expression applies a function given by [lhs] to [args]. *)
     | Transition of {
+        loc : source_location;
         lhs : t;
         rhs : t;
         short_circuit : t list option;
@@ -307,8 +354,18 @@ module Expr = struct
       }
         (** A transition from the [lhs] configuration to the [rhs] configuration
             with optional alternatives. *)
-    | Indexed of { index : string; list_var : string; body : t }
-    | NamedExpr of { expr : t; name : string; same_name : bool }
+    | Indexed of {
+        loc : source_location;
+        index : string;
+        list_var : string;
+        body : t;
+      }
+    | NamedExpr of {
+        loc : source_location;
+        expr : t;
+        name : string;
+        same_name : bool;
+      }
         (** An (internally-)named expression. Used for giving names to
             sub-expressions appearing in the output configuration of an output
             judgment. Initially, all expressions are unnamed, names are assigned
@@ -317,38 +374,45 @@ module Expr = struct
             is used to determine whether to render the name in the output. *)
 
   (** [make_var id] constructs a variable expression with identifier [id]. *)
-  let make_var id = Var id
+  let make_var loc id = Var { loc; id }
+
+  (** [make_field_access base field] constructs a field access expression
+      accessing field [field] of record [base]. *)
 
   (** [make_tuple args] constructs a tuple expression with the given arguments.
   *)
-  let make_tuple args = Tuple { label_opt = None; args }
+  let make_tuple loc args = Tuple { loc; label_opt = None; args }
 
-  let make_labelled_tuple label args = Tuple { label_opt = Some label; args }
-  let make_opt_labelled_tuple label_opt args = Tuple { label_opt; args }
+  let make_labelled_tuple loc label args =
+    Tuple { loc; label_opt = Some label; args }
+
+  let make_opt_labelled_tuple loc label_opt args =
+    Tuple { loc; label_opt; args }
 
   (** [make_application lhs args] constructs an application expression with
       left-hand side [lhs] and argument expressions [args]. During rule
       resolution, [lhs] is expected to resolve to either a relation name or a
       tuple label. *)
-  let make_application lhs args = UnresolvedApplication { lhs; args }
+  let make_application loc lhs args = UnresolvedApplication { loc; lhs; args }
 
   (** [make_operator_application op_name args] constructs an application
       expression representing the application of operator [op_name] to [args].
   *)
-  let make_operator_application name args =
-    Relation { name; is_operator = true; args }
+  let make_operator_application loc name args =
+    Relation { loc; name; is_operator = true; args }
 
-  let make_record label_opt fields = Record { label_opt; fields }
+  let make_record loc label_opt fields = Record { loc; label_opt; fields }
 
-  let make_record_update record_expr updates =
-    RecordUpdate { record_expr; updates }
+  let make_record_update loc record_expr updates =
+    RecordUpdate { loc; record_expr; updates }
 
-  let make_list_index list_var index = ListIndex { list_var; index }
+  let make_list_index loc list_var index = ListIndex { loc; list_var; index }
 end
 
 (** A datatype for a constant definition. *)
 module Constant : sig
   type t = {
+    loc : source_location;
     name : string;
     opt_type : Term.t option;
     opt_value_and_attributes : (Expr.t * Attributes.t) option;
@@ -356,6 +420,7 @@ module Constant : sig
   }
 
   val make :
+    source_location ->
     string ->
     Term.t option ->
     (Expr.t * attribute_pairs) option ->
@@ -370,6 +435,7 @@ module Constant : sig
   (** The layout for the value, if one exists. *)
 end = struct
   type t = {
+    loc : source_location;
     name : string;
     opt_type : Term.t option;
     opt_value_and_attributes : (Expr.t * Attributes.t) option;
@@ -380,13 +446,14 @@ end = struct
 
   open Attributes
 
-  let make name opt_type opt_value_and_attribute_pairs attributes =
+  let make loc name opt_type opt_value_and_attribute_pairs attributes =
     let opt_value_and_attributes =
       match opt_value_and_attribute_pairs with
       | Some (e, attr_pairs) -> Some (e, Attributes.of_list attr_pairs)
       | None -> None
     in
     {
+      loc;
       name;
       opt_type;
       opt_value_and_attributes;
@@ -409,9 +476,14 @@ end
 module TypeVariant : sig
   open Term
 
-  type t = { type_kind : type_kind; term : Term.t; att : Attributes.t }
+  type t = {
+    loc : source_location;
+    type_kind : type_kind;
+    term : Term.t;
+    att : Attributes.t;
+  }
 
-  val make : type_kind -> Term.t -> attribute_pairs -> t
+  val make : source_location -> type_kind -> Term.t -> attribute_pairs -> t
   val attributes_to_list : t -> attribute_pairs
   val prose_description : t -> string
   val math_macro : t -> string option
@@ -420,10 +492,15 @@ module TypeVariant : sig
   (** The layout of the type term when rendered in the context of its containing
       type. *)
 end = struct
-  type t = { type_kind : Term.type_kind; term : Term.t; att : Attributes.t }
+  type t = {
+    loc : source_location;
+    type_kind : Term.type_kind;
+    term : Term.t;
+    att : Attributes.t;
+  }
 
-  let make type_kind term attribute_pairs =
-    { type_kind; term; att = Attributes.of_list attribute_pairs }
+  let make loc type_kind term attribute_pairs =
+    { loc; type_kind; term; att = Attributes.of_list attribute_pairs }
 
   open Attributes
 
@@ -442,6 +519,7 @@ end
 (** A datatype for a type definition. *)
 module Type : sig
   type t = {
+    loc : source_location;
     name : string;
     type_kind : Term.type_kind;
     variants : TypeVariant.t list;
@@ -449,7 +527,12 @@ module Type : sig
   }
 
   val make :
-    Term.type_kind -> string -> TypeVariant.t list -> attribute_pairs -> t
+    source_location ->
+    Term.type_kind ->
+    string ->
+    TypeVariant.t list ->
+    attribute_pairs ->
+    t
 
   val attributes_to_list : t -> attribute_pairs
   val prose_description : t -> string
@@ -460,22 +543,24 @@ module Type : sig
   (** The layout used when rendered as a stand-alone type definition. *)
 end = struct
   type t = {
+    loc : source_location;
     name : string;
     type_kind : Term.type_kind;
     variants : TypeVariant.t list;
     att : Attributes.t;
   }
 
-  let make type_kind name variants attribute_pairs =
+  let make loc type_kind name variants attribute_pairs =
     (* The [type_kind] of the variants is the [type_kind] given above. *)
     let variants_with_parent_type_kind =
       List.map
         (fun ({ TypeVariant.term } as variant) ->
           let attribute_pairs = TypeVariant.attributes_to_list variant in
-          TypeVariant.make type_kind term attribute_pairs)
+          TypeVariant.make loc type_kind term attribute_pairs)
         variants
     in
     {
+      loc;
       type_kind;
       name;
       variants = variants_with_parent_type_kind;
@@ -547,6 +632,7 @@ module Relation : sig
     | RelationCategory_Semantics
 
   type t = {
+    loc : source_location;
     name : string;
     parameters : string list;
         (** Type parameters. Currently, only available to operators. *)
@@ -562,6 +648,7 @@ module Relation : sig
   }
 
   val make :
+    source_location ->
     string ->
     relation_property ->
     relation_category option ->
@@ -572,6 +659,7 @@ module Relation : sig
     t
 
   val make_operator :
+    source_location ->
     string ->
     string list ->
     Term.opt_named_type_term list ->
@@ -610,6 +698,7 @@ end = struct
     | RelationCategory_Semantics
 
   type t = {
+    loc : source_location;
     name : string;
     parameters : string list;
     is_operator : bool;
@@ -622,8 +711,9 @@ end = struct
     rule_opt : Rule.t option;
   }
 
-  let make name property category input output attributes rule_opt =
+  let make loc name property category input output attributes rule_opt =
     {
+      loc;
       name;
       parameters = [];
       is_operator = false;
@@ -636,8 +726,10 @@ end = struct
       rule_opt;
     }
 
-  let make_operator name parameters input output_type is_variadic attributes =
+  let make_operator loc name parameters input output_type is_variadic attributes
+      =
     {
+      loc;
       name;
       parameters;
       is_operator = true;
@@ -696,12 +788,19 @@ module TypesRender : sig
   type type_subset_pointer = { type_name : string; variant_names : string list }
 
   type t = {
+    loc : source_location;
     name : string;
     pointers : type_subset_pointer list;
     att : Attributes.t;
   }
 
-  val make : string -> (string * string list) list -> attribute_pairs -> t
+  val make :
+    source_location ->
+    string ->
+    (string * string list) list ->
+    attribute_pairs ->
+    t
+
   val attributes_to_list : t -> attribute_pairs
 
   val lhs_hypertargets : t -> bool
@@ -711,13 +810,15 @@ end = struct
   type type_subset_pointer = { type_name : string; variant_names : string list }
 
   type t = {
+    loc : source_location;
     name : string;
     pointers : type_subset_pointer list;
     att : Attributes.t;
   }
 
-  let make name pointer_pairs attributes =
+  let make loc name pointer_pairs attributes =
     {
+      loc;
       name;
       pointers =
         List.map
@@ -733,18 +834,29 @@ end = struct
 end
 
 module RuleRender : sig
-  type t = { name : string; relation_name : string; path : string }
+  type t = {
+    loc : source_location;
+    name : string;
+    relation_name : string;
+    path : string;
+  }
 
-  val make : name:string -> relation_name:string -> string list -> t
+  val make :
+    source_location -> name:string -> relation_name:string -> string list -> t
 end = struct
-  type t = { name : string; relation_name : string; path : string }
+  type t = {
+    loc : source_location;
+    name : string;
+    relation_name : string;
+    path : string;
+  }
 
   (** [make ~name ~relation_name path] creates a rule render named [name], for
       the relation [relation_name] with [path] acting as a filter on the cases
       to render. Only cases whose predicates match the path are included (so an
       empty path selects all cases). *)
-  let make ~name ~relation_name path =
-    { name; relation_name; path = Rule.join_case_names path }
+  let make loc ~name ~relation_name path =
+    { loc; name; relation_name; path = Rule.join_case_names path }
 end
 
 (** The top-level elements of a specification. *)

@@ -89,13 +89,13 @@ module Make (S : SPEC_VALUE) = struct
   let rec pp_type_term fmt (type_term, layout) =
     let open Term in
     match type_term with
-    | Label name -> (
-        match get_short_circuit_macro name with
+    | Label { label } -> (
+        match get_short_circuit_macro label with
         | Some short_circuit_macro ->
             (* We like to render short-circuit expressions above type names that define them. *)
-            pp_overtext fmt pp_id_as_macro name pp_print_string
+            pp_overtext fmt pp_id_as_macro label pp_print_string
               short_circuit_macro
-        | None -> pp_id_as_macro fmt name)
+        | None -> pp_id_as_macro fmt label)
     | TypeOperator { op; term = sub_term } ->
         pp_type_operator fmt op pp_opt_named_type_term (sub_term, layout)
     | Tuple { label_opt = None; args = [ type_term ] } ->
@@ -113,11 +113,11 @@ module Make (S : SPEC_VALUE) = struct
         fprintf fmt "%a%a" pp_id_opt_as_macro label_opt
           (pp_fields pp_field_name pp_record_field_as_pair)
           (pp_record_fields_as_pairs, layout)
-    | ConstantsSet constant_names ->
+    | ConstantsSet { labels } ->
         let layout_contains_vertical = LayoutUtils.contains_vertical layout in
         pp_parenthesized Braces layout_contains_vertical
           (PP.pp_sep_list ~sep:", " pp_id_as_macro)
-          fmt constant_names
+          fmt labels
     | Function { from_type; to_type; total } ->
         let arrow_macro_name =
           if total then rightarrow_macro_name else partialto_macro_name
@@ -161,7 +161,7 @@ module Make (S : SPEC_VALUE) = struct
   let pp_relation_math layout fmt { Relation.name; property; input; output } =
     (* Reuse the rendering for type terms. *)
     let input_as_labelled_tuple =
-      Term.Tuple { label_opt = Some name; args = input }
+      Term.Tuple { loc = missing_location; label_opt = Some name; args = input }
     in
     let property_macro_name =
       match property with
@@ -393,17 +393,17 @@ module Make (S : SPEC_VALUE) = struct
     let short_circuit_macros_for_type_term type_term =
       let open Term in
       match type_term with
-      | Label id -> (
-          match Spec.defining_node_for_id S.spec id with
+      | Label { label } -> (
+          match Spec.defining_node_for_id S.spec label with
           | Node_Type typedef ->
               [
                 Type.short_circuit_macro typedef |> Option.get
                 (* get is ensured to succeed by [Spec.check_relations_outputs] *);
               ]
-          | Node_TypeVariant { term = Label id } -> [ get_or_gen_math_macro id ]
+          | Node_TypeVariant { term = Label { label } } ->
+              [ get_or_gen_math_macro label ]
           | _ -> assert false)
-      | ConstantsSet constant_names ->
-          List.map get_or_gen_math_macro constant_names
+      | ConstantsSet { labels } -> List.map get_or_gen_math_macro labels
       | _ -> assert false (* Checked in spec.ml *)
 
     (** [pp_expr fmt (expr, layout)] renders the expression [expr] with the
@@ -414,18 +414,18 @@ module Make (S : SPEC_VALUE) = struct
       | NamedExpr { expr = sub_expr; name; same_name } ->
           if same_name then pp_expr fmt (sub_expr, layout)
           else pp_overtext fmt pp_expr (sub_expr, layout) pp_var name
-      | Var name -> (
+      | Var { id } -> (
           (* Constants/labels should render via their macros.
           Plain variables should be rendered as text. *)
-          match Spec.defining_node_opt_for_id S.spec name with
+          match Spec.defining_node_opt_for_id S.spec id with
           | Some (Node_Constant _) | Some (Node_TypeVariant { term = Label _ })
             ->
-              pp_id_as_macro fmt name
+              pp_id_as_macro fmt id
           | Some (Node_Type _)
-          (* type names cannot be used as an expression so this case
-          corresponds to a variable that happens to share a name with a type. *)
+          (* type names cannot be used as expressions so this case
+             corresponds to a variable that happens to share a name with a type. *)
           | _ ->
-              pp_var fmt name)
+              pp_var fmt id)
       | Relation { name; is_operator; args } when is_operator ->
           (* operators often use custom macros, which might not mix well with arrays,
              so it's better to put them inside braces. *)
@@ -697,23 +697,24 @@ module Make (S : SPEC_VALUE) = struct
       match expr with
       | NamedExpr { expr = sub_expr } -> strip_names_from_expr sub_expr
       | Var name -> Var name
-      | ListIndex { list_var; index } ->
-          ListIndex { list_var; index = strip_names_from_expr index }
-      | Tuple { label_opt; args } ->
-          Tuple { label_opt; args = List.map strip_names_from_expr args }
-      | Record { label_opt; fields } ->
+      | ListIndex ({ index } as node) ->
+          ListIndex { node with index = strip_names_from_expr index }
+      | Tuple ({ args } as node) ->
+          Tuple { node with args = List.map strip_names_from_expr args }
+      | Record ({ fields } as node) ->
           Record
             {
-              label_opt;
+              node with
               fields =
                 List.map
                   (fun (field, field_expr) ->
                     (field, strip_names_from_expr field_expr))
                   fields;
             }
-      | RecordUpdate { record_expr; updates } ->
+      | RecordUpdate ({ record_expr; updates } as node) ->
           RecordUpdate
             {
+              node with
               record_expr = strip_names_from_expr record_expr;
               updates =
                 List.map
@@ -721,26 +722,27 @@ module Make (S : SPEC_VALUE) = struct
                     (field, strip_names_from_expr update_expr))
                   updates;
             }
-      | FieldAccess { base; field } ->
-          FieldAccess { base = strip_names_from_expr base; field }
-      | Map { lhs; args } ->
+      | FieldAccess ({ base } as node) ->
+          FieldAccess { node with base = strip_names_from_expr base }
+      | Map ({ lhs; args } as node) ->
           Map
             {
+              node with
               lhs = strip_names_from_expr lhs;
               args = List.map strip_names_from_expr args;
             }
-      | Relation { name; is_operator; args } ->
-          Relation
-            { name; is_operator; args = List.map strip_names_from_expr args }
-      | Transition { lhs; rhs; short_circuit } ->
+      | Relation ({ args } as node) ->
+          Relation { node with args = List.map strip_names_from_expr args }
+      | Transition ({ lhs; rhs; short_circuit } as node) ->
           Transition
             {
+              node with
               lhs = strip_names_from_expr lhs;
               rhs = strip_names_from_expr rhs;
               short_circuit;
             }
-      | Indexed { index; list_var; body } ->
-          Indexed { index; list_var; body = strip_names_from_expr body }
+      | Indexed ({ body } as node) ->
+          Indexed { node with body = strip_names_from_expr body }
       | UnresolvedApplication _ -> assert false
 
     (** [is_compound_expr expr] returns [true] if [expr] is considered compound
@@ -766,12 +768,12 @@ module Make (S : SPEC_VALUE) = struct
           let expr_prose = expr_to_prose stripped_sub_expr in
           Format.asprintf "%s (for the output variable %s)" expr_prose
             (var_to_prose name)
-      | Var name when String.equal name Spec.ignore_var ->
+      | Var { id } when String.equal id Spec.ignore_var ->
           "some arbitrary value"
-      | Var name -> (
+      | Var { id } -> (
           (* Constants/labels take their prose template from the prose_description attribute,
               while plain variables are rendered as text. *)
-          match Spec.defining_node_opt_for_id S.spec name with
+          match Spec.defining_node_opt_for_id S.spec id with
           | Some (Node_Constant def) ->
               let prose = Constant.prose_description def in
               prose_or_math prose expr
@@ -782,7 +784,7 @@ module Make (S : SPEC_VALUE) = struct
           (* type names cannot be used as an expression so this case
           corresponds to a variable that happens to share a name with a type. *)
           | _ ->
-              var_to_prose name)
+              var_to_prose id)
       | ListIndex { list_var; index = Var _ as index } ->
           (* An optimization of the prose for variable indices. *)
           Format.asprintf "%s[%s]" (var_to_prose list_var) (expr_to_prose index)
@@ -868,7 +870,8 @@ module Make (S : SPEC_VALUE) = struct
                 (List.map fst fields)
             in
             List.map
-              (fun field -> (field, Expr.Var Spec.ignore_var))
+              (fun field ->
+                (field, Expr.make_var missing_location Spec.ignore_var))
               unspecified_fields
           in
           let field_to_prose =

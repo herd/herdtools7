@@ -6,5 +6,5 @@ typedef A =
 
 typedef B =
     // L should only be instantiated with two types, not three.
-    | (L(O, A, B))
+    | (xL(O, A, B))
 ;
