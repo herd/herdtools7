@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <instruction.h>
+#include <self.h>
 
 void litmus_icache_sync(uintptr_t vaddr, uintptr_t vaddr_end);
 
