@@ -1526,9 +1526,24 @@ module Make
                    else
                      LangUtils.code_fun p in
                  let rhs =
-                   sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,%d)"
-                     proc (LangUtils.code_fun p)
-                     (A.Out.get_nnops t-1) in
+                    if do_self then
+                      (* In -mode kvm and -variant self, the function code<N>
+                         and the end of the thread need be aligned to the page
+                         boundary. For this reason, here it suffices that
+                         we just count the number of .align directives to
+                         find the end of the thread, where it would be safe
+                         to return in a face of a fault in precise mode. Here,
+                         we make the assumption that between .align
+                         directives, we have less than 1024 (4-byte)
+                         instructions, but that should be a safe assumption
+                         for litmus tests. *)
+                      sprintf "((ins_t *)%s+%d*PAGE_SIZE/sizeof(ins_t))"
+                        proc (A.Out.get_npagealign t)
+                    else
+                      (* Otherwise, the beginning and the end of the thread are
+                         marked with NOPs. *)
+                      sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,%d)"
+                        proc (LangUtils.code_fun p) (A.Out.get_nnops t-1) in
                  O.fi "lbls->ret[%d] = %s;" p rhs)
               test.T.code
           end ;
