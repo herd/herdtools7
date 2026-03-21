@@ -16,14 +16,13 @@
 
 open Printf
 open Code
-open LexUtil
 
 module type DiyConfig = sig
   include DumpAll.Config
   val choice : Code.check
   val variant : Variant_gen.t -> bool
-  val prefix : LexUtil.t list list
-  val cumul :   LexUtil.t list Config.cumul
+  val prefix : string list
+  val cumul :   Ast.t list Config.cumul
   val max_ins : int
   val upto : bool
   val varatom : string list
@@ -33,16 +32,22 @@ module Make(C:Builder.S)(O:DiyConfig) = struct
 
 open C.E
 open C.R
+open Ast
 
 let parse_fence s k =  match s with
   | One f -> C.E.parse_fence f::k
   | Seq [] -> k
   | Seq (fs) ->
       List.fold_right
-        (fun s k -> C.E.parse_fence s::k)
+        (fun s k ->
+          match s with
+          | One s -> C.E.parse_fence s::k
+          | _ -> assert false)
         fs k
+  | Opt _ -> assert false
+  | Choice _ -> assert false
+  | Multi _ -> assert false
 
-let parse_relaxs = List.map parse_relax
 let parse_fences fs = List.fold_right parse_fence fs []
 
 
@@ -55,9 +60,17 @@ let parse_fences fs = List.fold_right parse_fence fs []
     let min_relax = !Config.min_relax
 
     let prefix =
-      match List.map parse_relaxs O.prefix with
-      | [] -> [[]] (* No prefix <=> one empty prefix *)
-      | pss -> pss
+      List.map ( fun segment ->
+        String.trim segment
+        |> (fun s -> Lexing.from_string s)
+        |> Parser.main LexUtil.token
+        |> Ast.flatten
+      ) O.prefix
+      |> List.flatten
+      |> List.map C.R.parse_relaxs
+      |> ( function
+        | [] -> [[]]
+        | l -> l )
 
     let variant = O.variant
 
@@ -83,8 +96,8 @@ let parse_fences fs = List.fold_right parse_fence fs []
         List.fold_left
           (fun k es -> ERS es::k) rs ess
 
-
   let to_relax_list parsed_list =
+    eprintf "%s\n" (String.concat ";" parsed_list);
     let relax_list = C.R.expand_relax_macros parsed_list in
     match C.A.bellatom, O.varatom with
     | true, _
@@ -107,10 +120,34 @@ let parse_fences fs = List.fold_right parse_fence fs []
         List.fold_left
           (var_relax V.varatom_one) [] relax_list
 
+  (* Parse a string such as "[Po DpAddr] Fre"
+     which is "[Po,DpAddr]|Fre" in canonical form.
+     That is the top level white space become Choice.
+     The result is a list of relaxation that has been unfolded.
+     Each relaxation contains, wrapped in `ERS`,
+     one or several edges in sequence. *)
+  let parse_argument input_argument =
+    let input = String.trim input_argument in
+    if input = "" then []
+    else
+      Lexing.from_string input
+      |> Parser.main LexUtil.token
+      (* Manually convert the top level to Choice *)
+      |> ( function
+        | Seq sq -> Choice sq
+        | ast -> ast
+      )
+      |> Ast.flatten
+      |> List.map
+        ( fun flatten_relax ->
+          to_relax_list flatten_relax
+          |> C.R.edges_ofs
+          |> ( fun e -> C.R.ERS e ) )
+
   let gen lr ls rl n =
-    let lr = to_relax_list lr
-    and ls = to_relax_list ls
-    and rl = to_relax_list rl in
+    let lr = parse_argument lr
+    and ls = parse_argument ls
+    and rl = parse_argument rl in
     if O.verbose > 0 then begin
       Printf.eprintf
         "expanded relax=%s\n" (C.R.pp_relax_list lr)
@@ -133,7 +170,7 @@ let parse_fences fs = List.fold_right parse_fence fs []
     M.gen ~relax:lr ~safe:ls n
 
   let orl_opt = function
-    | None -> []
+    | None -> ""
     | Some xs -> xs
 
   let go n (*size*) orl olr ols (*relax and safe lists*) =
@@ -142,26 +179,19 @@ let parse_fences fs = List.fold_right parse_fence fs []
     | Default|Sc|Critical|Free|Ppo|Transitive|Total|MixedCheck ->
         begin match olr,ols with
         | None,None -> M.gen n
-        | None,Some ls -> gen [] ls orl n
-        | Some lr,None -> gen lr [] orl n
+        | None,Some ls -> gen "" ls orl n
+        | Some lr,None -> gen lr "" orl n
         | Some lr,Some ls -> gen lr ls orl n
         end
     | Thin -> gen_thin n
     | Uni ->
         begin match olr,ols with
         | None,None -> gen_uni n
-        | None,Some ls -> gen [] ls orl n
-        | Some lr,None -> gen lr [] orl n
+        | None,Some ls -> gen "" ls orl n
+        | Some lr,None -> gen lr "" orl n
         | Some lr,Some ls -> gen lr ls orl n
         end
 end
-
-
-let split s = match s with
-  | None -> None
-  | Some s ->
-  let splitted = LexUtil.split s in
-  Some splitted
 
 let get_arg s =
   raise (Arg.Bad (Printf.sprintf "%s takes no argument, argument %s is present" Config.prog s))
@@ -188,11 +218,9 @@ let exec_conf s =
   ()
 
 let split_cands xs =
-  match
-    List.concat (List.map LexUtil.split xs)
-  with
-  | [] -> None
-  | _::_ as xs -> Some xs
+  if xs = [] then None
+  else (Some (String.concat " " xs))
+
 
 let () =
   Arg.parse (Config.diy_spec ()) get_arg Config.usage_msg;
@@ -204,18 +232,9 @@ let () =
   Config.valid_stdout_flag false ;
   let relax_list = split_cands !Config.relaxs
   and safe_list = split_cands !Config.safes
-  and reject_list = split !Config.rejects
+  and reject_list = !Config.rejects
   and filter_list = split_cands !Config.filter_check in
 
-  let () =
-    if !Config.verbose > 0 then begin
-      let relaxs =
-        match relax_list with
-        | None -> []
-        | Some xs -> xs in
-      Printf.eprintf "parsed relax=%s\n"
-        (String.concat " " (List.map LexUtil.pp relaxs))
-    end in
   let cpp = match !Config.arch with `CPP -> true  |  _ -> false in
 
   let module Co = struct
@@ -244,12 +263,14 @@ let () =
 (* Specific *)
     open Config
     let choice = !Config.mode
-    let prefix =  List.rev_map LexUtil.split !Config.prefix
+    let prefix = !Config.prefix
     let variant = !Config.variant
     let cumul = match !Config.cumul with
     | Empty -> Empty
     | All -> All
-    | Set s -> Set (LexUtil.split s)
+    | Set s -> Set ( Lexing.from_string s
+                     |> Parser.main LexUtil.token
+                     |> Ast.to_list )
     let upto = !Config.upto
     let varatom = !varatom
     let max_ins = !Config.max_ins
@@ -314,12 +335,12 @@ let () =
     match filter_list with
     | Some filter_list ->
         begin
-        match M.to_relax_list filter_list with
+        match M.parse_argument filter_list with
         | [lhs;rhs] ->
             let lhs_unfold = Builder.R.expand_relaxs Builder.ppo [lhs] in
             let rhs_unfold = Builder.R.expand_relaxs Builder.ppo [rhs] in
-            let relax = Option.value ~default:[] relax_list |> M.to_relax_list in
-            let safe = Option.value ~default:[] safe_list |> M.to_relax_list in
+            let relax = Option.value ~default:"" relax_list |> M.parse_argument in
+            let safe = Option.value ~default:"" safe_list |> M.parse_argument in
             List.map ( fun l ->
               List.map ( fun r ->
                 l,r,M.M.filter_check ~relax ~safe (Builder.R.edges_of l) (Builder.R.edges_of r)
@@ -336,7 +357,7 @@ let () =
         | _ -> Warn.user_error "Please input exactly two relaxations"
         end
     | None -> (* The common path to generate tests *)
-      M.go !Config.size reject_list relax_list safe_list;
+       M.go !Config.size reject_list relax_list safe_list;
     exit 0
   with
   | Misc.Fatal msg | Misc.UserError msg->
