@@ -10266,8 +10266,18 @@ semantics function static_env_to_env(tenv: static_envs) ->
   \staticenvironmentterm{} {tenv} into an environment
   {env}.",
   prose_transition = "transforming the constants defined in {tenv} into an \environmentterm{} yields",
-};
-
+} =
+  constant_bindings := bindings(tenv.static_envs_G.constant_values);
+  constant_bindings =: list_combine(constant_ids, constant_literals);
+  constant_values := list_map(l, constant_literals, NV_Literal(l));
+  global_storage_bindings := list_combine(constant_ids, constant_values);
+  global_storage := bindings_to_map(global_storage_bindings);
+  empty_global := empty_denv.dynamic_envs_G;
+  new_global := empty_global(storage: global_storage);
+  new_denv := empty_denv(dynamic_envs_G: new_global);
+  --
+  (tenv, new_denv);
+;
 
 //////////////////////////////////////////////////
 // Relations for Subprogram Calls
