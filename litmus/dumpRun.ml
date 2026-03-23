@@ -160,8 +160,6 @@ end = struct
     end ;
     begin
       fprintf chan "UTILS_OBJ = $(UTILS_SRC:.c=.o)\n\n"
-           (*(String.concat " " shared_utils) ;
-         fprintf chan "UTILS_OBJ = $(UTILS_SRC:.c=.o)\n\n"*)
     end ;
     ()
 

@@ -14,7 +14,7 @@
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
 #ifndef KVM_TIMEBASE_H
-#define KVM_TIMEBASE_H
+#define KVM_TIMEBASE_H 1
 #include <asm/processor.h>
 inline static tb_t read_timebase(void) {
   return read_sysreg(cntpct_el0) ;

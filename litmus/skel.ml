@@ -572,7 +572,7 @@ module Make
       let dump_getinstrs test = 
         if Insert.exists "instruction.h" then begin
           let fname = "instruction" in
-          let _ = Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
           O.o ("#include <" ^ fname  ^ ".h>") ;
           O.o "" ;
         end ;
@@ -698,12 +698,10 @@ module Make
         end ;
         if do_self then begin
           let fname = "self" in
-          let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c" in
-          let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
+          ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
           O.o ("#include <" ^ fname  ^ ".h>") ;
           O.o "" ;
-          (* Insert.insert O.o "self.c" ;
-          O.o "" *)
         end
 
 
@@ -1424,12 +1422,10 @@ module Make
         in
         if do_self || CfgLoc.need_prelude || U.label_in_outs env test then begin
           let fname = "_find_ins" in
-          let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c" in
-          let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
+          ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
           O.o ("#include <" ^ fname  ^ ".h>") ;
           O.o "" ;
-          (*ObjUtil.insert_lib_file O.o "_find_ins.c" ;
-          O.o "" ;*)
           if do_self then begin
             O.o "static size_t code_size(ins_t *p,int skip) { return find_ins(getret(),p,skip)+1; }" ;
             O.o ""
