@@ -96,7 +96,7 @@ $\sort([(x, 1), (y, 1), (x, -1)], \comparemonomialbindings) \typearrow [(x, -1),
 \hva\and
 \inferrule[two\_or\_more]{
   \listlen{\vlone} = n\\
-  f : 1..n \rightarrow 1..n \text{ is a bijection}\\
+  f(1..n) \rightarrow 1..n \text{ is a bijection}\\
   \vltwo \eqdef [\ i=1..n: \vlone[f(i)]\ ]\\
   i=1..n-1: \compare(\vltwo[i], \vltwo[i+1]) \geq 0
 }{

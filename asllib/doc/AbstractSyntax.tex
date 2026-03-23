@@ -442,7 +442,7 @@ The meta relation
 \[
 \buildlist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
 \]
-which is parameterized by an AST building relation $b : E \aslrel A$,
+which is parameterized by an AST building relation $b(E) \aslrel A$,
 takes a parse node that represents a possibly-empty list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
 to each of them --- $\vsymasts$.
 
@@ -470,7 +470,7 @@ The meta relation
 \[
 \buildclist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
 \]
-which is parameterized by an AST building relation $b : E \aslrel A$,
+which is parameterized by an AST building relation $b(E) \aslrel A$,
 takes a parse node that represents a possibly-empty comma-separated list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
 to each of them --- $\vsymasts$.
 
@@ -497,7 +497,7 @@ The meta relation
 \[
 \buildplist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
 \]
-which is parameterized by an AST building relation $b : E \aslrel A$,
+which is parameterized by an AST building relation $b(E) \aslrel A$,
 takes a parse node that represents a parenthesized comma-separated list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
 to each of them --- $\vsymasts$.
 
@@ -515,7 +515,7 @@ The meta relation
 \[
 \buildtclist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
 \]
-which is parameterized by an AST building relation $b : E \aslrel A$,
+which is parameterized by an AST building relation $b(E) \aslrel A$,
 takes a parse node that represents a non-empty comma-separated trailing list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
 to each of them --- $\vsymasts$.
 
@@ -542,7 +542,7 @@ The meta relation
 \[
 \buildoption[b](\overname{N}{\vsym}) \;\aslrel\; \overname{\Option{A}}{\vsymast}
 \]
-which is parameterized by an AST building relation $b : N \aslrel A$,
+which is parameterized by an AST building relation $b(N) \aslrel A$,
 takes a parse node that represents an optional $N$ value $\vsym$, and returns the result of applying $b$
 to the value if it exists --- $\vsymasts$.
 

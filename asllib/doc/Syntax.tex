@@ -704,7 +704,7 @@ We denote the set of well-formed parse trees for a non-terminal symbol $S$ by $\
 \hypertarget{def-aslparse}{}
 A parser is a function
 \[
-\aslparse : (\KleeneStar{\Token} \setminus \{\Terror\}) \aslto \parsenode{\Nspec} \cup \{\ParseErrorConfig\}
+\aslparse(\KleeneStar{\Token} \setminus \{\Terror\}) \aslto \parsenode{\Nspec} \cup \{\ParseErrorConfig\}
 \]
 \hypertarget{def-parseerror}{}
 where $\ParseErrorConfig$ stands for a \emph{parse error}.

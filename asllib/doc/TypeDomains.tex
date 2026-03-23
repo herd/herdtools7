@@ -54,7 +54,7 @@ That is, if $\annotatetype(\tenv, \vt) \typearrow \TypeErrorConfig$.
 As part of the definition, we also associate dynamic domains to integer constraints
 by overloading $\dynamicdomain$:
 \[
-  \dynamicdomain : \overname{\envs}{\env} \cartimes \overname{\intconstraint}{\vc}
+  \dynamicdomain(\overname{\envs}{\env}, \overname{\intconstraint}{\vc})
   \partialto \overname{\pow{\nativevalue}}{\vd}
 \]
 
@@ -441,5 +441,3 @@ The dynamic domain of a subprogram parameter \texttt{N: integer} is the (singlet
 the native integer value $c$,
 which is assigned to \texttt{N} by a given dynamic environment. The static domain of that parameter
 is the infinite set of all native integer values.
-
-
