@@ -18,7 +18,7 @@
 /* Instance */
 /************/
 #ifndef _INSTANCE_H
-#define _INSTANCE_H
+#define _INSTANCE_H 1
 
 typedef struct {
   int id ;

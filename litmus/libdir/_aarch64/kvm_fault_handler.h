@@ -18,7 +18,7 @@
 /* Handle MMU faults */
 /*********************/
 #ifndef KVM_FAULT_HANDLER_H
-#define KVM_FAULT_HANDLER_H
+#define KVM_FAULT_HANDLER_H 1
 
 #ifdef SEE_FAULTS
 static bool is_iabt(unsigned long esr)
