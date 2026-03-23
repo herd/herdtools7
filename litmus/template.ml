@@ -96,12 +96,14 @@ module type S = sig
       all_clobbers : arch_reg list;
       nrets : int ; (* number of return instruction in code *)
       nnops : int ; (* number of nop instruction in code *)
+      npagealign : int ;
       ty_env :  CType.t RegMap.t ;
       code_ty_env :  CType.t RegMap.t ;
     }
 
   val get_nrets : t -> int
   val get_nnops : t -> int
+  val get_npagealign : t -> int
   val has_asmhandler : t -> bool
   val get_addrs_only : t -> string list
   val get_phys_only : t -> string list
@@ -186,7 +188,7 @@ module Make(O:Config)(A:I) =
         fhandler : ins list ;
         name : Name.t ;
         all_clobbers : arch_reg list;
-        nrets : int ; nnops : int ;
+        nrets : int ; nnops : int ; npagealign : int ;
         ty_env : CType.t RegMap.t ;
         code_ty_env :  CType.t RegMap.t ;
       }
@@ -194,6 +196,7 @@ module Make(O:Config)(A:I) =
 
     let get_nrets t = t.nrets
     and get_nnops t = t.nnops
+    and get_npagealign t = t.npagealign
     and has_asmhandler t = Misc.consp t.fhandler
 
     (* Generic function to extract some symbols *)

@@ -442,6 +442,12 @@ module A.FaultType = A.FaultType)
 
     let count_nop = count_ins A.is_nop
 
+    let count_pagealign =
+      let f k = function
+        | A.Pagealign -> k + 1
+        | _ -> k in
+      List.fold_left f 0
+
 (****************)
 (* Compile code *)
 (****************)
@@ -703,13 +709,14 @@ module A.FaultType = A.FaultType)
             let nrets = count_ret code in
             (* For user mode one nop added at the assembly level *)
             let nnops = count_nop code + (if is_user then 1 else 0) in
+            let npagealign = count_pagealign code in
             let addrs =  G.Set.union (extract_addrs code) (extract_addrs fhandler) in
             let stable = stable_regs code in
             let code,fhandler =  compile_code proc is_user code fhandler in
-            proc,addrs,stable,code,fhandler,nrets,nnops)
+            proc,addrs,stable,code,fhandler,nrets,nnops,npagealign)
           prog in
       List.map
-        (fun (proc,addrs,stable,code,fhandler,nrets,nnops) ->
+        (fun (proc,addrs,stable,code,fhandler,nrets,nnops,npagealign) ->
           let addrs,ptes =
             G.Set.fold
               (fun s (a,p) -> match s with
@@ -752,7 +759,7 @@ module A.FaultType = A.FaultType)
             stable;
             final;
             all_clobbers;
-            code; fhandler; name; nrets; nnops;
+            code; fhandler; name; nrets; nnops; npagealign;
             ty_env;
             code_ty_env = RegMap.empty;
           } in

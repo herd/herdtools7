@@ -726,7 +726,7 @@ module Make
             (fun (p,lbl) ->
               let lbl_var = OutUtils.fmt_lbl_var p lbl in
               O.fi "ins_t *%s;" lbl_var;
-              if Cfg.is_kvm then begin
+              if Cfg.is_kvm && do_self then begin
                 O.fi "pteval_t *%s;" (OutUtils.fmt_pte_tag lbl_var);
                 O.fi "pteval_t %s;" (OutUtils.fmt_phy_tag lbl_var);
               end;) CfgLoc.all_labels ;
@@ -1492,7 +1492,7 @@ module Make
           O.o "static void labels_init(vars_t *_vars) {" ;
           if do_label_init || do_precise then
             O.fi "labels_t *lbls = &_vars->labels;" ;
-          if Cfg.is_kvm && Misc.consp CfgLoc.all_labels then
+          if Cfg.is_kvm && do_self && Misc.consp CfgLoc.all_labels then
             O.oi "pteval_t *_p;" ;
           O.o "";
           List.iter (fun (p,lbl) ->
@@ -1512,7 +1512,7 @@ module Make
                 sprintf "((ins_t *)%s)+%s+%d"
                   proc prelude off in
               O.fi "%s = %s;" lhs rhs;
-              if Cfg.is_kvm then begin
+              if Cfg.is_kvm && do_self then begin
                 O.fi "lbls->%s = _p = litmus_tr_pte((void *)%s);" (OutUtils.fmt_pte_tag lbl_var) lhs;
                 O.fi "lbls->%s = *_p;" (OutUtils.fmt_phy_tag lbl_var);
               end;)
@@ -1526,9 +1526,24 @@ module Make
                    else
                      LangUtils.code_fun p in
                  let rhs =
-                   sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,%d)"
-                     proc (LangUtils.code_fun p)
-                     (A.Out.get_nnops t-1) in
+                    if do_self then
+                      (* In -mode kvm and -variant self, the function code<N>
+                         and the end of the thread need be aligned to the page
+                         boundary. For this reason, here it suffices that
+                         we just count the number of .align directives to
+                         find the end of the thread, where it would be safe
+                         to return in a face of a fault in precise mode. Here,
+                         we make the assumption that between .align
+                         directives, we have less than 1024 (4-byte)
+                         instructions, but that should be a safe assumption
+                         for litmus tests. *)
+                      sprintf "((ins_t *)%s+%d*PAGE_SIZE/sizeof(ins_t))"
+                        proc (A.Out.get_npagealign t)
+                    else
+                      (* Otherwise, the beginning and the end of the thread are
+                         marked with NOPs. *)
+                      sprintf "((ins_t *)%s)+find_ins(nop,(ins_t *)%s,%d)"
+                        proc (LangUtils.code_fun p) (A.Out.get_nnops t-1) in
                  O.fi "lbls->ret[%d] = %s;" p rhs)
               test.T.code
           end ;
@@ -1764,40 +1779,45 @@ module Make
                   ()
               )
               inits;
-            List.iter
-              (fun (p,lbl) ->
-                let x = sprintf "%d:%s" p lbl in
-                let lbl_var =  OutUtils.fmt_lbl_var p lbl in
-                let lbl_loc = sprintf "_vars->labels.%s" lbl_var in
-                let lbl_pte = sprintf "_vars->labels.pte_%s" lbl_var in
-                try
-                  begin match Misc.Simple.assoc x bds with
-                  | P phy ->
-                      O.fii
-                        "(void)litmus_set_pte_safe(%s,%s,_vars->labels.saved_pte_%s);" lbl_loc lbl_pte phy ;
-                      O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
-                  | Z ->
-                      O.fii "(void)litmus_set_pte(%s,%s,litmus_set_pte_invalid(*%s));" lbl_loc lbl_pte lbl_pte ;
-                      O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
-                  | V (o,pteval) ->
-                      let is_default = A.V.PteVal.is_default pteval in
-                      if not (o = None && is_default) then begin
-                        let arg = match o with
-                          | None -> sprintf "_vars->labels.saved_pte_%s" lbl_var
-                          | Some s -> sprintf "_vars->labels.saved_pte_%s" s in
-                        O.fii "pteval_t pte_%s = %s;" lbl_var (PU.dump_pteval_flags arg pteval) ;
-                        List.iter
-                          (fun attr ->
-                             O.fii "litmus_set_pte_attribute(&pte_%s, %s);" lbl_var attr)
-                          (A.V.PteVal.attrs_as_kvm_symbols pteval) ;
-                        O.fii "(void)litmus_set_pte_safe(%s,%s,pte_%s);" lbl_loc lbl_pte lbl_var ;
-                        O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+            if Cfg.is_kvm && do_self then begin
+              List.iter
+                (fun (p,lbl) ->
+                  if p = proc then begin
+                    let x = sprintf "%d:%s" p lbl in
+                    let lbl_var =  OutUtils.fmt_lbl_var p lbl in
+                    let lbl_loc = sprintf "_vars->labels.%s" lbl_var in
+                    let lbl_pte = sprintf "_vars->labels.pte_%s" lbl_var in
+                    try
+                      begin match Misc.Simple.assoc x bds with
+                      | P phy ->
+                          O.fii
+                            "(void)litmus_set_pte_safe(%s,%s,_vars->labels.saved_pte_%s);" lbl_loc lbl_pte phy ;
+                          O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+                      | Z ->
+                          O.fii "(void)litmus_set_pte(%s,%s,litmus_set_pte_invalid(*%s));" lbl_loc lbl_pte lbl_pte ;
+                          O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+                      | V (o,pteval) ->
+                          let is_default = A.V.PteVal.is_default pteval in
+                          if not (o = None && is_default) then begin
+                            let arg = match o with
+                              | None -> sprintf "_vars->labels.saved_pte_%s" lbl_var
+                              | Some s -> sprintf "_vars->labels.saved_pte_%s" s in
+                            O.fii "pteval_t pte_%s = %s;" lbl_var (PU.dump_pteval_flags arg pteval) ;
+                            List.iter
+                              (fun attr ->
+                                O.fii "litmus_set_pte_attribute(&pte_%s, %s);" lbl_var attr)
+                              (A.V.PteVal.attrs_as_kvm_symbols pteval) ;
+                            O.fii "(void)litmus_set_pte_safe(%s,%s,pte_%s);" lbl_loc lbl_pte lbl_var ;
+                            O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+                          end
                       end
-                  end
-                with Not_found ->
+                    with Not_found ->
+                      ()
+                  end else
                   ()
-              )
-              CfgLoc.all_labels;
+                )
+                CfgLoc.all_labels
+            end
         end ;
         (* Synchronise *)
         if have_timebase then O.oii "_ctx->next_tb = read_timebase();" ;
@@ -1855,15 +1875,19 @@ module Make
           List.iter
             (fun a -> O.fii "litmus_flush_tlb((void *)%s);" a)
             inits;
-          List.iter
-            (fun (p,lbl) ->
-              let lbl_var =  OutUtils.fmt_lbl_var p lbl in
-              let lbl_loc = sprintf "_vars->labels.%s" lbl_var in
-              let lbl_pte = sprintf "_vars->labels.pte_%s" lbl_var in
-              let lbl_saved_pte = sprintf "_vars->labels.saved_pte_%s" lbl_var in
-              O.fii "litmus_set_pte_safe(%s,%s,%s);" lbl_loc lbl_pte lbl_saved_pte;
-              O.fii "litmus_flush_tlb((void *)%s);" lbl_loc;)
-            CfgLoc.all_labels
+          if Cfg.is_kvm && do_self then begin
+            List.iter
+              (fun (p,lbl) ->
+                if p = proc then begin
+                  let lbl_var =  OutUtils.fmt_lbl_var p lbl in
+                  let lbl_loc = sprintf "_vars->labels.%s" lbl_var in
+                  let lbl_pte = sprintf "_vars->labels.pte_%s" lbl_var in
+                  let lbl_saved_pte = sprintf "_vars->labels.saved_pte_%s" lbl_var in
+                  O.fii "litmus_set_pte_safe(%s,%s,%s);" lbl_loc lbl_pte lbl_saved_pte ;
+                  O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+                end)
+              CfgLoc.all_labels
+          end
         end ;
 (* Save/Restore memtags *)
         O.oii "barrier_wait(_b);" ;
