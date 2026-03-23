@@ -19,7 +19,7 @@
 /**************************/
 
 #ifndef KVM_USER_STACKS_H
-#define KVM_USER_STACKS_H
+#define KVM_USER_STACKS_H 1
 #define USER_MODE 1
 
 static uint64_t user_stack[AVAIL];

@@ -16,7 +16,7 @@
 
 /* Notice: this file contains public domain code by Bob Jenkins */
 #ifndef _HASH_H
-#define _HASH_H
+#define _HASH_H 1
 typedef struct {
   log_t key ;
 #ifdef STATS
