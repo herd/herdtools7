@@ -287,7 +287,7 @@ module Make
         O.o "#include \"cache.h\"" ;
         O.o "" ;
         let fname = "count" in
-        let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
+        ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
         O.o ("#include <" ^ fname ^ ".h>") ;
         O.o "" ;
         (*O.o "typedef uint32_t count_t;" ;*)
@@ -854,7 +854,7 @@ module Make
         UD.dump_vars_types false test ;
         UD.dump_array_typedefs test ;
         let fname = "log" in
-        let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
+        ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
         O.o ("#include <" ^ fname ^ ".h>") ;
         O.o "" ;
         O.o "struct log_t {" ;
@@ -1302,7 +1302,7 @@ module Make
         O.o "typedef enum { cignore, cflush, ctouch, cmax, } dir_t;" ;
         O.o "" ;
         let fname = "param" in
-        let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
+        ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
         O.o ("#include <" ^ fname ^ ".h>") ;
         O.o "" ;
         O.f "#define TAG_LENGTH %d" (List.length all_tags_except_part) ;
