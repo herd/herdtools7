@@ -18,7 +18,7 @@
 /* Handle MMU faults */
 /*********************/
 #ifndef KVM_FAULT_HANDLER_H
-#define KVM_FAULT_HANDLER_H
+#define KVM_FAULT_HANDLER_H 1
 
 static void record_fault(who_t *w, unsigned long pc, unsigned long esr) {
 #ifdef SEE_FAULTS

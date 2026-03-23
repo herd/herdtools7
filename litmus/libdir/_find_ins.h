@@ -14,7 +14,7 @@
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
 #ifndef _FIND_INS_H
-#define _FIND_INS_H
+#define _FIND_INS_H 1
 #include <instruction.h>
 #include <stddef.h>
 
