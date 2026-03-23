@@ -529,8 +529,8 @@ module Make
              O.o "" ;
              if not (T.has_asmhandler test) then begin
                let fname = "pp" in
-               let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c" in
-               let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
+               ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c") ;
+               ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
                O.o ("#include <" ^ fname ^ ".h>") ;
                O.o ""
                (*O.o "static void pp_faults(int nthreads, count_t *nfaults, char *doc_name) {" ;
