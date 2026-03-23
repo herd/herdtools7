@@ -16,7 +16,7 @@
 
 /* Notice: this file contains public domain code by Bob Jenkins */
 #ifndef _HASH_H
-#define _HASH_H
+#define _HASH_H 1
 #include <../utils.h>
 #ifndef KVM
 #include <stdio.h>
