@@ -1010,7 +1010,7 @@ based on the dependency ordering \\
 In this case, there is no ordering between these two subprograms.
 Assuming $I$ is processed before $R$, adding $I$ to the
 \staticenvironmentterm{}, the \staticenvironmentterm{} has
-$\overloadedsubprograms(\addten) = \bot$
+$\addten \not\in \dom(\overloadedsubprograms)$
 and is then updated by binding $\addten$ to $\{\addten\}$ in $\overloadedsubprograms$.
 Then, processing $R$, results in
 binding $\addten$ to
