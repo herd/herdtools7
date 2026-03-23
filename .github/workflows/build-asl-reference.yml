@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - 'internal/bento.mll'
       - 'asllib/doc/**'
       - 'asllib/aslspec/**'
       - '.github/workflows/build-asl-reference.yml'
