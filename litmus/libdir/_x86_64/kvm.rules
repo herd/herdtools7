@@ -1,8 +1,8 @@
 clean:
-	/bin/rm -f *.o *.s *.t *.elf *.flat *~
+	/bin/rm -f *.o lib/*.o *.s *.t *.elf *.flat *~
 
 cleansource:
-	/bin/rm -f *.o *.c *.h *.s *~
+	/bin/rm -rf *.o *.c *.h *.s *~ lib
 
 %.s: %.c
 	$(CC) $(GCCOPTS) -S $<

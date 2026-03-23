@@ -347,7 +347,7 @@ module Make
           O.o "typedef uint64_t tb_t ;" ;
           O.o "#define PTB PRIu64" ;
           let fname = if Cfg.is_kvm && Insert.exists "kvm_timebase.h" then "kvm_timebase" else "timebase" in
-          let _ = Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h" in
+          let _ = Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h" in
           O.o ("#include <" ^ fname ^ ".h>") ;
           O.o ""
           (*Insert.insert O.o
