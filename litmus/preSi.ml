@@ -279,7 +279,7 @@ module Make
         end ;
         if Insert.exists "intrinsics.h" then begin
           let fname = "intrinsics" in
-          let _ = Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
           O.o ("#include <" ^ fname ^ ".h>") ;
           O.o ""
         end ;
