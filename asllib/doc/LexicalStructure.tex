@@ -399,17 +399,18 @@ and a \emph{lexeme action} $a_i : \Strings\cartimes\Strings \aslto \KleeneStar{\
 \hypertarget{def-rematch}{}
 The function
 \[
-\remaxmatch : \overname{\RegExp}{e} \cartimes \overname{\Strings}{s} \aslto (\overname{\Strings}{s_1} \cartimes \overname{\Strings}{s_2}) \cup \{\bot\}
+\remaxmatch : \overname{\RegExp}{e} \cartimes \overname{\Strings}{s} \aslto (\overname{\Strings}{s_1} \cartimes \overname{\Strings}{s_2}) \cup \{\nomatch\}
 \]
 returns the \emph{longest} match of a regular expression $e$ for a prefix of a string $s$.
 More precisely:
 $\remaxmatch(e, s) = (s_1,s_2)$ means that $s_1\in\Lang{e}$ and $s = s_1 \concat s_2$.
-If no match exists, it is indicated by returning $\bot$.
+\texthypertarget{def-nomatch}
+If no match exists, it is indicated by returning $\nomatch$.
 
 \hypertarget{def-maxmatch}{}
 The function $\maxmatches : \overname{\LexSpec}{R} \cartimes \overname{\Strings}{s} \aslto \overname{\LexSpec}{R'}$
 returns the sublist of $R$ consisting of pairs whose maximal matches for $s$ are equal. Importantly, the result sublist $R'$ maintains
-the order of pairs in $R$. If all expressions in $R$ do not match (that is $\remaxmatch$ returns $\bot$ for all pairs in $R$), then $R'$ is the empty list.
+the order of pairs in $R$. If all expressions in $R$ do not match (that is $\remaxmatch$ returns $\nomatch$ for all pairs in $R$), then $R'$ is the empty list.
 
 The function $\aslscan$ is constructively defined via the following inference rules:
 
