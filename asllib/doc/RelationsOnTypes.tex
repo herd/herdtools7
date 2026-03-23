@@ -229,7 +229,7 @@ The signatures for the arithmetic operations for the \realtypeterm{} are as foll
   \supers(\tenv, \vt) \triangleq
   \begin{cases}
     \{\vt\} \cup \supers(\vs) & \text{ if }\tenv.\staticenvsG.\subtypes(\vt) = \vs\\
-    \{\vt\}  & \text{ otherwise } (\text{that is, }\tenv.\staticenvsG.\subtypes(\vt) = \bot)\\
+    \{\vt\}  & \text{ otherwise } (\text{that is, }\vt \not\in\dom(\tenv.\staticenvsG.\subtypes))\\
   \end{cases}
 \]
 
