@@ -18,7 +18,7 @@
 /* Support for self-modifying code */
 /***********************************/
 #ifndef SELF_H
-#define SELF_H
+#define SELF_H 1
 #include <stdint.h>
 
 
