@@ -99,6 +99,8 @@ module type S = sig
   val parse_atoms : string list -> atom option list
   val get_access_atom: atom option -> MachMixed.t option
 
+  val equal_edge_atoms : edge -> edge -> bool
+
   val parse_fence : string -> fence
   val parse_edge : string -> edge
   val parse_edges : string -> edge list
@@ -140,11 +142,10 @@ module type S = sig
 (* Resolve Irr directions and unspecified atom *)
   val resolve_edges : edge list -> edge list
 
-(* Add `predicate` to `edge` *)
+  (* Predicate assicoated with the relaxation *)
   val add_predicate : edge_predicate -> edge -> edge
-
-(* parse `predicate` *)
   val parse_predicate : string -> edge_predicate
+  val get_predicate : edge -> edge_predicate option
 
 (* Atomic variation over yet unspecified atoms *)
   val varatom : edge list -> (edge list -> 'a -> 'a) -> 'a -> 'a
@@ -474,6 +475,9 @@ let fold_tedges f r =
     | Some a1,Some a2 -> A.overlap_atoms a1 a2
 
   let get_access_atom = A.get_access_atom
+
+  let equal_edge_atoms lhs rhs =
+    lhs.edge = rhs.edge && lhs.a1 = rhs.a1 && lhs.a2 = rhs.a2
 
   let same_access_atoms a1 a2 =
     Misc.opt_eq MachMixed.equal (get_access_atom a1) (get_access_atom a2)
@@ -1046,6 +1050,8 @@ let fold_tedges f r =
     | "before" -> Before
     | "after" -> After
     | s -> Warn.user_error "predicate %s is not supported." s
+
+  let get_predicate e = e.pred
 
 (********************)
 (* Atomic variation *)

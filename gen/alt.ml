@@ -317,9 +317,6 @@ module Make(C:Builder.S)
         | _ -> true
         end
 
-    (* List.is_empty only supports for ocaml 5.1 afterwards *)
-    let is_empty_list l = (l = [])
-
     let pp_ess ess =
       let list_sep = " " in
       let list_list_sep = " " in
@@ -328,6 +325,65 @@ module Make(C:Builder.S)
           es |> List.map (fun e -> pp_edge e)
              |> String.concat list_list_sep )
         |> String.concat list_sep
+
+    let merge_predicate_and_check_compatibility safes po_safe next exist =
+      if O.verbose > 2 then
+        eprintf "next: %s, exists: %s\n" (pp_ess [next]) (pp_ess exist);
+      (* Given `lhs = [after(..); after(..);....]` and
+         `rhs = [before(..); before(..); ....]`,
+         helper function returns the new `lhs` and `rhs` in two
+         segaments respectively, hence `Some (lhs_1, lhs_2, rhs_1, rhs_2)`
+         The `before` and `after` will be checked and erased:
+           - `before` merges with concrete if edge matches.
+           - `after` merges with concrete if edge matches.
+           - `before` pairing with `after` fails.
+           - concrete pairing concrete leads to further `can_precede` check.
+         If the check fails, `None` returns. *)
+      let rec do_rec lhs rhs =
+        match lhs,rhs with
+        | [],r -> Some ([],[],[],r)
+        | l,[] -> Some ([],l,[],[])
+        | (lhs_hd :: lhs_tail as lhs), (rhs_hd :: rhs_tail as rhs) ->
+            let lhs_predicate = C.E.get_predicate lhs_hd in
+            let rhs_predicate = C.E.get_predicate rhs_hd in
+            match lhs_predicate, rhs_predicate with
+            (* Nothing needs to be merged, TODO check if can_precede??  *)
+            | None, None -> Some ([], lhs, [], rhs)
+            | Some l, None when l = C.E.After && C.E.equal_edge_atoms lhs_hd rhs_hd ->
+                do_rec lhs_tail rhs_tail
+                |> Option.map ( fun (lhs_1, lhs_2, rhs_1, rhs_2) ->
+                  (lhs_1, lhs_2, rhs_1 @ [rhs_hd], rhs_2)
+                )
+            | None, Some r when r = C.E.Before && C.E.equal_edge_atoms lhs_hd rhs_hd ->
+                do_rec lhs_tail rhs_tail
+                |> Option.map ( fun (lhs_1, lhs_2, rhs_1, rhs_2) ->
+                  (lhs_1 @ [lhs_hd], lhs_2, rhs_1, rhs_2)
+                )
+            | _, _ -> None in
+      let no_predicate_in_hd = function
+        | []
+        | {pred = None; _} :: _ -> true
+        | _ -> false in
+      match exist with
+      (* Base case: there is no `exist` *)
+      | [] -> Some (next,[])
+      | (_,exist_hd) :: exist_tail ->
+          match do_rec (List.rev (snd next)) exist_hd with
+          | None -> None
+          | Some (lhs_1, lhs_2, rhs_1, rhs_2) ->
+            let lhs = List.rev (lhs_1 @ lhs_2) in
+            let next = (ERS lhs, lhs) in
+            let rhs = rhs_1 @ rhs_2 in
+            let exist = (ERS rhs, rhs) :: exist_tail in
+            (* Ensure both `lhs` and `rhs` merged completely *)
+            if no_predicate_in_hd lhs_2
+              && no_predicate_in_hd rhs_2
+              && can_precede safes po_safe next exist then
+              Some (next,exist)
+            else None
+
+    (* List.is_empty only supports for ocaml 5.1 afterwards *)
+    let is_empty_list l = (l = [])
 
     let edges_ofs rs =
       List.map (fun r -> (r, edges_of r)) rs
@@ -402,39 +458,52 @@ module Make(C:Builder.S)
       let rsuff = List.split rsuff |> snd |> List.concat in
       not (List.exists (fun rl -> is_prefix rsuff rl) rl)
 
-
     (* This function is used `zyva` *)
     let call_rec_base prefix f0 safes po_safe over n r suff f_rec k ?(reject=[])=
+      (* compute potentially overlap between `r` and `suff`, or
+         whether `r` can precede `suff` otherwise. *)
+      match merge_predicate_and_check_compatibility safes po_safe r suff with
+      | None -> k
+      | Some (r,suff) ->
+      let r_suff = r::suff in
       if
-        can_precede safes po_safe r suff &&
         minprocs suff <= O.nprocs &&
-        minint (r::suff) <= O.max_ins-1 &&
-        check_cycle (r::suff) reject
-      then
-        let suff = r::suff
-        and n = n-sz r in
-        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess suff) ;
+        minint r_suff <= O.max_ins-1 &&
+        check_cycle r_suff reject
+      then begin
+        (* size only decreases when there is at least one non-insert edge in `r` *)
+        let n = n-sz r in
+        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess r_suff) ;
         let k =
           if
             over &&
             (n = 0 || (n > 0 && O.upto)) &&
-            can_prefix prefix (can_precede safes po_safe) suff
+            can_prefix prefix (can_precede safes po_safe) r_suff
           then begin
-            let tr =  prefix@suff in
-            if O.verbose > 2 then
-            eprintf "TRY: '%s'\n"
-              (C.E.pp_edges (List.flatten (List.map snd tr))) ;
-            try f0 po_safe tr k
-            with  Misc.Exit -> k
-            | Misc.Fatal msg |Misc.UserError msg ->
-                eprintf "Marche pas: '%s'\n" msg ;
-                k
-            | e ->
-              eprintf "Exc in F0: '%s'\n" (Printexc.to_string e) ;
-              raise e
+            (* merge the last relax to the from of `r_suff`. *)
+            match merge_predicate_and_check_compatibility safes po_safe (Misc.last r_suff) r_suff with
+            | None -> k
+            | Some (_,r_suff) ->
+              (* find a cycle candidate `r_suff`, call the `f0`.
+                For example, `f0` is the test generator. *)
+              let tr =  prefix@r_suff in
+              if O.verbose > 2 then
+              eprintf "TRY: '%s'\n"
+                (C.E.pp_edges (List.flatten (List.map snd tr))) ;
+              try f0 po_safe tr k
+              with  Misc.Exit -> k
+              | Misc.Fatal msg |Misc.UserError msg ->
+                  eprintf "Marche pas: '%s'\n" msg ;
+                  k
+              | e ->
+                eprintf "Exc in F0: '%s'\n" (Printexc.to_string e) ;
+                raise e
           end else k in
+        (* recursive call if the size `n` is still positive *)
         if n <= 0 then k
-        else f_rec n suff k
+        else f_rec n r_suff k
+      end
+      (* `r` and `suff` does not compatible so further search stops *)
       else k
     (* END of call_rec_base *)
 
