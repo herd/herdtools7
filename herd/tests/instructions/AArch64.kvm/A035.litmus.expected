@@ -1,0 +1,10 @@
+Test A035 Required
+States 1
+0:X0=(oa:PA(x), x:0); 0:X2=(oa:PA(y));
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=(oa:PA(x), x:0) /\ 0:X2=(oa:PA(y)))
+Observation A035 Always 1 0
+Hash=6cb20add2198be8d9374dc1d759a237a
+
