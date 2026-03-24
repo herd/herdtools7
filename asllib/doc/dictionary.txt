@@ -2067,6 +2067,7 @@ successful
 successfully
 successive
 successor
+succinct
 succinctly
 such
 sufficient

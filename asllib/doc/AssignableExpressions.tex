@@ -42,14 +42,14 @@ to satisfy \\ \SyntacticSugarRef{SetterFieldAssignment}.
 \paragraph{Semantics:} Assignable expressions are evaluated by $\evallexpr$.
 \RenderRelation{eval_lexpr}
 \paragraph{A Convention for Assignable Expressions Semantics Rules:}
-In this chapter, variables containing $\vm$ range over $\nativevalue\cartimes\XGraphs$
+In this chapter, variables containing $\vm$ range over values of the type $(\nativevalue, \XGraphs)$
 while variables in which $\vm$ is replaced with $\vv$ correspond to their value component.
 For example, $\rmarray\reverseeqdef(\rvarray,\vgtwo)$ and $\mindex\reverseeqdef(\vindex, \vgone)$.
 
 \paragraph{Viewing Assignable Expressions as Right-hand-side Expressions:}
 Some of the typing rules and semantics rules require viewing \assignableexpressions\
 as \rhsexpressions.
-The correspondence is given by the function $\torexpr(\lexpr) \rightarrow \expr$, defined in \secref{LeftToRight}.
+The correspondence is given by the function $\torexpr(\lexpr) \aslto \expr$, defined in \secref{LeftToRight}.
 %
 For example, \SemanticsRuleRef{LESetField}
 needs to evaluate the record subexpression $\rerecord$, which is an \assignableexpression.

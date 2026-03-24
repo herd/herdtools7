@@ -399,7 +399,7 @@ and a \emph{lexeme action} $a_i(\Strings, \Strings) \aslto \KleeneStar{\Token}$.
 \hypertarget{def-rematch}{}
 The function
 \[
-\remaxmatch(\overname{\RegExp}{e}, \overname{\Strings}{s}) \aslto (\overname{\Strings}{s_1} \cartimes \overname{\Strings}{s_2}) \cup \{\nomatch\}
+\remaxmatch(\overname{\RegExp}{e}, \overname{\Strings}{s}) \aslto (\overname{\Strings}{s_1}, \overname{\Strings}{s_2}) \cup \{\nomatch\}
 \]
 returns the \emph{longest} match of a regular expression $e$ for a prefix of a string $s$.
 More precisely:
