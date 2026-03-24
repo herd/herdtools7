@@ -323,6 +323,20 @@ module Make(C:Builder.S)
         | _ -> true
         end
 
+    let overlap next exist =
+    match exist with
+    | [] | (_,[])::_ -> None
+    | (_,rhs::tail)::remain ->
+        let lhs = snd next |> Misc.last in
+        (* Allow external communication edges overlap *)
+        match rhs.edge with
+        | Ws Ext | Rf Ext | Fr Ext | Hat when lhs.edge = rhs.edge ->
+            if tail <> [] then
+              Some (next :: (ERS tail,tail) :: remain)
+            else
+              Some (next :: remain)
+        | _ -> None
+
     (* List.is_empty only supports for ocaml 5.1 afterwards *)
     let is_empty_list l = (l = [])
 
@@ -408,25 +422,34 @@ module Make(C:Builder.S)
       let rsuff = List.split rsuff |> snd |> List.concat in
       not (List.exists (fun rl -> is_prefix rsuff rl) rl)
 
-
     (* This function is used `zyva` *)
     let call_rec_base prefix f0 safes po_safe over n r suff f_rec k ?(reject=[])=
+      (* compute potentially overlap between `r` and `suff`, or
+         whether `r` can precede `suff` otherwise. *)
+      let r_suff_opt =
+        match overlap r suff with
+        | None when can_precede safes po_safe r suff -> Some (r::suff)
+        | opt -> opt in
+      match r_suff_opt with
+      | None -> k
+      | Some r_suff ->
       if
-        can_precede safes po_safe r suff &&
         minprocs suff <= O.nprocs &&
-        minint (r::suff) <= O.max_ins-1 &&
-        check_cycle (r::suff) reject
-      then
-        let suff = r::suff
-        and n = n-sz r in
-        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess suff) ;
+        minint r_suff <= O.max_ins-1 &&
+        check_cycle r_suff reject
+      then begin
+        (* size only decreases when there is at least one non-insert edge in `r` *)
+        let n = n-sz r in
+        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess r_suff) ;
         let k =
           if
             over &&
             (n = 0 || (n > 0 && O.upto)) &&
-            can_prefix prefix (can_precede safes po_safe) suff
+            can_prefix prefix (can_precede safes po_safe) r_suff
           then begin
-            let tr =  prefix@suff in
+            (* find a cycle candidate `r_suff`, call the `f0`.
+              For example, `f0` is the test generator. *)
+            let tr =  prefix@r_suff in
             if O.verbose > 2 then
             eprintf "TRY: '%s'\n"
               (C.E.pp_edges (List.flatten (List.map snd tr))) ;
@@ -439,8 +462,11 @@ module Make(C:Builder.S)
               eprintf "Exc in F0: '%s'\n" (Printexc.to_string e) ;
               raise e
           end else k in
+        (* recursive call if the size `n` is still positive *)
         if n <= 0 then k
-        else f_rec n suff k
+        else f_rec n r_suff k
+      end
+      (* `r` and `suff` does not compatible so further search stops *)
       else k
     (* END of call_rec_base *)
 
