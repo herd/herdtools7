@@ -393,6 +393,7 @@ let zeros_size_one = S_BitVector (BV.zeros 1)
 let bv_of_bool b =  S_BitVector (if b then BV.one else BV.zero)
 
 let bv_of_int x = S_BitVector (BV.of_int x)
+let bv_of_int_sized n x = S_BitVector (BV.of_int_sized n x)
 
 let do_bv_of_bit = function
   | 0 -> BV.zero

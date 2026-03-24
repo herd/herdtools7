@@ -119,8 +119,7 @@ let rec pp_expr fmt =
       fprintf fmt "%s(%a)" name (pp_comma_list pp_expr) args
   | Map { lhs; args } ->
       fprintf fmt "%a(%a)" pp_expr lhs (pp_comma_list pp_expr) args
-  | FieldAccess { var; fields } ->
-      pp_print_string fmt (String.concat "." (var :: fields))
+  | FieldAccess { base; field } -> fprintf fmt "%a.%s" pp_expr base field
   | ListIndex { list_var; index } -> fprintf fmt "%s[%a]" list_var pp_expr index
   | Record { label_opt; fields } ->
       fprintf fmt "%a[%a]"
@@ -129,12 +128,17 @@ let rec pp_expr fmt =
         (pp_sep_list ~sep:", " (fun fmt (field, expr) ->
              fprintf fmt "%s : %a" field pp_expr expr))
         fields
+  | RecordUpdate { record_expr; updates } ->
+      fprintf fmt "%a[%a]" pp_expr record_expr
+        (pp_sep_list ~sep:", " (fun fmt (field, expr) ->
+             fprintf fmt "%s : %a" field pp_expr expr))
+        updates
   | Transition { lhs; rhs; short_circuit } ->
       fprintf fmt "%a -> %a%a" pp_expr lhs pp_expr rhs pp_short_circuit
         short_circuit
   | Indexed { index; list_var; body } ->
       fprintf fmt "%s(%s, %s: %a)" (tok_str INDEX) index list_var pp_expr body
-  | NamedExpr (e, name) -> fprintf fmt "%a /* %s */" pp_expr e name
+  | NamedExpr { expr; name } -> fprintf fmt "%a /* %s */" pp_expr expr name
 
 and pp_short_circuit fmt short_circuit =
   match short_circuit with

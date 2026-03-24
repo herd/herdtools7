@@ -339,8 +339,7 @@ Monad type:
           (fun (v,cls,es) ->
              let data =
                let data =
-                 E.EventRel.filter
-                   (fun (e1,e2) -> p1 e1 && p2 e2)
+                 E.EventRel.restrict_domains p1 p2
                    (E.EventRel.cartesian es.E.events es.E.events) in
                E.EventRel.union es.E.intra_causality_data data in
             v,cls,{ es with E.intra_causality_data=data; })
@@ -1403,12 +1402,6 @@ Monad type:
         | V.Val (Symbolic (System (PTE,_))) -> true
         | _ -> false
 
-      let is_instrloc a =
-        let open Constant in
-        match a with
-        | V.Val (Symbolic (Virtual {name=n; _})) -> Symbol.is_label n
-        | _ -> false
-
 (*
  * Add init writes for tag addresses.
  * A symbolic location has its own tag address, hence
@@ -1440,7 +1433,7 @@ Monad type:
         let glob_set = V.ValueSet.of_list glob in
         let glob_set =
           V.ValueSet.filter
-            (fun a ->  not (is_pteloc a || is_instrloc a))
+            (fun a ->  not (is_pteloc a))
             glob_set in
         let s = V.ValueSet.map (fun a -> V.op1 Op.TagLoc a) glob_set in
         let env =

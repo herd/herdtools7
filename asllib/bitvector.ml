@@ -260,21 +260,18 @@ let to_int64_raw (length, data) =
   let n = length / 8 and m = length mod 8 in
   for i = 0 to n - 1 do
     let c = String.get data i |> Char.code in
-    result := Int64.logor !result (c lsl (i * 8) |> Int64.of_int)
+    let c = Int64.(shift_left (of_int c) (i * 8)) in
+    result := Int64.logor !result c
   done;
   if m != 0 then
     let c = String.get data n |> Char.code |> ( land ) (last_char_mask m) in
-    result := Int64.logor !result (c lsl (n * 8) |> Int64.of_int)
+    let c = Int64.(shift_left (of_int c) (n * 8)) in
+    result := c
   else ();
   !result
 
 let to_int64_signed bv = bv |> sign_extend 8 |> to_int64_raw
-
-let to_int64_unsigned (length, data) =
-  let _, data = zero_extend 8 (length, data) in
-  let _, data = remask (63, data) in
-  to_int64_raw (64, data)
-
+let to_int64_unsigned bv = bv |> zero_extend 8 |> to_int64_raw
 let to_z_unsigned (_, data) = Z.of_bits data
 
 let to_z_signed ((sz, _) as bv) =
@@ -608,6 +605,12 @@ type mask = {
   specified : string;
   initial_string : string;
 }
+
+let mask_equal m1 m2 =
+  Int.equal m1.length m2.length
+  && String.equal m1.set m2.set
+  && String.equal m2.unset m2.unset
+  && String.equal m2.specified m2.specified
 
 let mask_length mask = mask.length
 

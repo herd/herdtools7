@@ -1,0 +1,14 @@
+(cram
+ (deps
+  (source_tree data)
+  (source_tree libdir)
+  %{bin:uoaim7})
+ (enabled_if %{bin-available:uoaim7}))
+
+(tests
+ (names test_hw_reqs test_name_parser test_defs)
+ (deps
+  (source_tree libdir)
+  (source_tree data))
+ (enabled_if %{lib-available:uoaim})
+ (libraries uoaim))

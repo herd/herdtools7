@@ -13,14 +13,8 @@ by choosing a single value from the dynamic domain of $\vt$ (\SemanticsRuleRef{E
 Static domains are used to define subtype satisfaction (\TypingRuleRef{SubtypeSatisfaction})
 via a conservative subsumption test as defined in \chapref{SymbolicDomainSubsetTesting}.
 
-\subsection{Dynamic Domain of a Type\label{sec:DynDomain}}
-\hypertarget{def-dyndomain}{}
-The dynamic domain is defined via the partial function
-\[
-  \dynamicdomain : \overname{\envs}{\env} \cartimes \overname{\ty}{\vt}
-  \partialto \overname{\pow{\nativevalue}}{\vd}
-\]
-which assigns the set of values that a type $\vt$ can hold in a given environment $\env$.
+\subsection{The Dynamic Domain of a Type\label{sec:DynDomain}}
+\RenderRelation{dynamic_domain}
 %
 We say that $\dynamicdomain(\env, \vt)$ is the \emph{dynamic domain} of $\vt$
 in the environment $\env$.
@@ -38,11 +32,11 @@ In those cases, we simply refer to their \emph{domain}.
 Associating a set of values to a type is done by evaluating any expression appearing
 in the type definitions.
 %
-Expressions appearing in types are guaranteed to be side-effect-free by the
+Expressions appearing in types are guaranteed to be \sideeffectfreeterm{} by the
 function $\annotatetype$.
 %
 Evaluation is defined by the relation $\evalexprsef\empty$,
-which evaluates side-effect-free expressions and either returns
+which evaluates \sideeffectfreeexpressionsterm{} and either returns
 a configuration of the form $\ResultExprSEF(\vv,\vg)$ or a dynamic error configuration $\DynErrorConfig$.
 In the first case, $\vv$ is a \nativevalueterm{} and $\vg$
 is an \emph{execution graph}. Execution graphs are related to the concurrent semantics
@@ -51,7 +45,7 @@ In the latter case (which can occur if, for example, an expression attempts to d
 \texttt{8} by \texttt{0}), a \DynamicErrorConfigurationTerm{}, for which we use the notation
 $\DynErrorConfig$, is returned.
 %
-The dynamic domain is empty in cases where evaluating side-effect-free expressions
+The dynamic domain is empty in cases where evaluating \sideeffectfreeexpressionsterm{}
 results in a \DynamicErrorConfigurationTerm{}.
 %
 The dynamic domain is undefined if the type $\vt$ is not well-typed in $\tenv$.
@@ -245,11 +239,11 @@ by overloading $\dynamicdomain$:
 
 \begin{mathpar}
 \inferrule[t\_bool]{}{ \dynamicdomain(\env, \overname{\TBool}{\vt}) = \overname{\tbool}{\vd} }
-\and
+\hva\and
 \inferrule[t\_string]{}{ \dynamicdomain(\env, \overname{\TString}{\vt}) = \overname{\tstring}{\vd} }
-\and
+\hva\and
 \inferrule[t\_real]{}{ \dynamicdomain(\env, \overname{\TReal}{\vt}) = \overname{\treal}{\vd} }
-\and
+\hva\and
 \inferrule[t\_enumeration]{}{
   \dynamicdomain(\env, \overname{\TEnum(\vl_{1..k})}{\vt}) = \overname{\{ \vi = 1..k: \nvlabel(\vl_\vi) \}}{\vd}
 }
@@ -273,7 +267,7 @@ by overloading $\dynamicdomain$:
 }{
   \dynamicdomain(\env, \overname{\ConstraintExact(\ve)}{\vc}) = \overname{\{ \nvint(n) \}}{\vd}
 }
-\and
+\hva\and
 \inferrule[constraint\_exact\_abnormal]{
   \evalexprsef(\env, \ve) \evalarrow C\\
   C \in \TDynError \cup \TDiverging
@@ -289,14 +283,14 @@ by overloading $\dynamicdomain$:
 }{
   \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\{ \nvint(n) \;|\;  a \leq n \land n \leq b\}}{\vd}
 }
-\and
+\hva\and
 \inferrule[constraint\_range\_abnormal1]{
   \evalexprsef(\env, \veone) \evalarrow C\\
   C \in \TDynError \cup \TDiverging
 }{
   \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\emptyset}{\vd}
 }
-\and
+\hva\and
 \inferrule[constraint\_range\_abnormal2]{
   \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\Ignore, \Ignore)\\
   \evalexprsef(\env, \vetwo) \evalarrow C\\
@@ -310,7 +304,7 @@ The notation $\denv.\dynamicenvsL(\id)$ denotes the \nativevalueterm{} associate
 in the \emph{local dynamic environment} of $\denv$.
 \begin{mathpar}
 \inferrule[t\_int\_parameterized]{
-  \env \eqname (\Ignore, \denv)\\
+  \env \reverseeqdef (\Ignore, \denv)\\
   \denv.\dynamicenvsL(\id) = \nvint(n)
 }{
   \dynamicdomain(\env, \overname{\TInt(\Parameterized(\id))}{\vt}) = \overname{\{ \nvint(n) \}}{\vd}
@@ -324,20 +318,20 @@ in the \emph{local dynamic environment} of $\denv$.
 }{
   \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\emptyset}{\vd}
 }
-\and
+\hva\and
 \inferrule[t\_bits\_negative\_width\_error]{
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
   k < 0
 }{
   \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\emptyset}{\vd}
 }
-\and
+\hva\and
 \inferrule[t\_bits\_empty]{
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(0), \Ignore)
 }{
   \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\{ \nvbitvector(\emptylist) \}}{\vd}
 }
-\and
+\hva\and
 \inferrule[t\_bits\_non\_empty]{
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
   k > 0
@@ -388,7 +382,7 @@ in the \emph{local dynamic environment} of $\denv$.
 
 \begin{mathpar}
 \inferrule[t\_enum\_array]{
-  \env \eqname (\tenv, \Ignore)\\
+  \env \reverseeqdef (\tenv, \Ignore)\\
   \tenv.\staticenvsG.\declaredtypes(\id) = \TEnum(\vl_{1..k})\\
   \dynamicdomain(\env, \telem) = D_\telem
 }{
@@ -413,7 +407,7 @@ in the \emph{local dynamic environment} of $\denv$.
 
 \begin{mathpar}
 \inferrule[t\_named]{
-  \env \eqname (\tenv, \Ignore)\\
+  \env \reverseeqdef (\tenv, \Ignore)\\
   \tenv.\staticenvsG.\declaredtypes(\id)=\tty
 }{
   \dynamicdomain(\env, \overname{\TNamed(\id)}{\vt}) = \overname{\dynamicdomain(\env, \tty)}{\vd}
@@ -448,7 +442,4 @@ the native integer value $c$,
 which is assigned to \texttt{N} by a given dynamic environment. The static domain of that parameter
 is the infinite set of all native integer values.
 
-\identd{BMGM} \identr{PHRL} \identr{PZNR}
-\identr{RLQP} \identr{LYDS} \identr{SVDJ} \identi{WLPJ} \identr{FWMM}
-\identi{WPWL} \identi{CDVY} \identi{KFCR} \identi{BBQR} \identr{ZWGH}
-\identr{DKGQ} \identr{DHZT} \identi{HSWR} \identd{YZBQ}
+

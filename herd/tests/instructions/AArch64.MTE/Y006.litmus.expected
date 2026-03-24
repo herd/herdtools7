@@ -1,0 +1,16 @@
+Test Y006 Required
+States 7
+0:X1=x:black;
+0:X1=x:blue;
+0:X1=x:cyan;
+0:X1=x:green;
+0:X1=x:red;
+0:X1=x:white;
+0:X1=x:yellow;
+Ok
+Witnesses
+Positive: 7 Negative: 0
+Condition forall (0:X1=x:green \/ 0:X1=x:red \/ 0:X1=x:blue \/ 0:X1=x:black \/ 0:X1=x:white \/ 0:X1=x:cyan \/ 0:X1=x:yellow \/ 0:X1=x:white)
+Observation Y006 Always 7 0
+Hash=a449945119946ee7f9aed0ca554e05f2
+

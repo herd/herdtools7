@@ -429,7 +429,7 @@ end
         | CType.Pointer _ -> ["%s"]
         | CType.Base "pteval_t" ->
             ["("; "oa:%s";  ", af:%d"; ", db:%d";
-             ", dbm:%d"; ", valid:%d"; ", el0:%d"; ")"]
+             ", dbm:%d"; ", valid:%d"; ", el0:%d"; ", x:%d"; ")"]
         | CType.Base "parel1_t" ->
             ["("; "oa:%s";  ", f:%d"; ")"]
         | CType.Base t -> [pp_fmt_base t]
