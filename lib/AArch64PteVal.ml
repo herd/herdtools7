@@ -420,7 +420,7 @@ let orop p m =
     let p = if is_set m mask_db then { p with db=0; } else p in
     let p = if is_set m mask_af then { p with af=1; } else p in
     let p = if is_set m mask_dbm then { p with dbm=1; } else p in
-    let p = if is_set m mask_x then { p with x=1; } else p in
+    let p = if is_set m mask_x then { p with x=0; } else p in
     Some p
 
 and andnot2 p m =
@@ -431,7 +431,7 @@ and andnot2 p m =
     let p = if is_set m mask_db then { p with db=1; } else p in
     let p = if is_set m mask_af then { p with af=0; } else p in
     let p = if is_set m mask_dbm then { p with dbm=0; } else p in
-    let p = if is_set m mask_x then { p with x=0; } else p in
+    let p = if is_set m mask_x then { p with x=1; } else p in
     Some p
 
 and andop p m =
@@ -452,6 +452,6 @@ and andop p m =
     if is_set m mask_dbm && p.dbm=1
     then Int64.logor r mask_dbm else r  in
   let r =
-    if is_set m mask_x && p.x=1
+    if is_set m mask_x && p.x=0
     then Int64.logor r mask_x else r  in
   Some r
