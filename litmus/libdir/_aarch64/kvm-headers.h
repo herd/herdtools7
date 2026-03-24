@@ -108,7 +108,7 @@ static const uint64_t msk_af = 0x400UL;
 static const uint64_t msk_dbm = 0x8000000000000UL;
 static const uint64_t msk_db = 0x80UL;
 static const uint64_t msk_el0 = 0x40UL;
-static const uint64_t msk_x = 0x4000000000000UL;
+static const uint64_t msk_x = 0x40000000000000UL;
 #define  msk_full (msk_valid|msk_af|msk_dbm|msk_db|msk_el0|msk_x)
 
 static inline void unset_el0(pteval_t *p) {
@@ -117,6 +117,7 @@ static inline void unset_el0(pteval_t *p) {
 
 static inline pteval_t litmus_set_pte_flags(pteval_t old,pteval_t flags) {
   flags ^= msk_db; /* inverse dirty bit -> AP[2] */
+  flags ^= msk_x;  /* inverse XN bit */
   old &= ~msk_full ;
   old |= flags ;
   return old ;
@@ -218,7 +219,7 @@ inline static pteval_t pack_pte(int oa,pteval_t v) {
     pack_flag(v ^ msk_db,msk_db,DB_PACKED) |
     pack_flag(v,msk_dbm,DBM_PACKED) |
     pack_flag(v,msk_valid,VALID_PACKED) |
-    pack_flag(v,msk_x,X_PACKED) |
+    pack_flag(v ^ msk_x,msk_x,X_PACKED) |
     pack_flag(v,msk_el0,EL0_PACKED) ;
 }
 
@@ -244,7 +245,7 @@ pack_pack(int oa,int af,int db,int dbm,int valid,int el0,int x) {
   - db set       -> corresponding bit unset
 */
 
-#define NULL_PACKED (pack_pack(NVARS,0,1,0,0,0,0))
+#define NULL_PACKED (pack_pack(NVARS,0,1,0,0,0,1))
 
 inline static int unpack_oa(pteval_t v) {
   return v >> OA_PACKED;
