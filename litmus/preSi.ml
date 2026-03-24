@@ -1406,14 +1406,9 @@ module Make
         ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
         O.o ("#include <" ^ fname ^ ".h>") ;
         O.o "" ;
-<<<<<<< HEAD
         O.o "static entry_t main_hash[HASHSZ];" ;
         O.o "static entry_t instance_hash[NEXE][HASHSZ];" ;
         O.o "" ;
-        (*ObjUtil.insert_lib_file O.o "_hash.c" ;
-        O.o "" ;*)
-=======
->>>>>>> inlineport
         O.o "static void pp_entry(FILE *out,entry_t *p, int verbose, const char **group) {" ;
         let fmt = "%-6PCTR%c>" in
         EPF.fi fmt ["p->c";"p->ok ? '*' : ':'";] ;
@@ -2088,10 +2083,10 @@ module Make
         O.o "/*************/" ;
         O.o "" ;
         if do_ascall then begin
-            List.iter
-              (dump_thread_code procs_user env)
-              test.T.code
-          end
+          List.iter
+            (dump_thread_code procs_user env)
+            test.T.code
+        end
 
       let dump_run_def  env test some_ptr stats procs_user =
         let faults = U.get_faults test in

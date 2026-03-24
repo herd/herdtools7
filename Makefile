@@ -28,7 +28,6 @@ HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
 HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
 HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
 HERD_ASSUMPTIONS_TEST		  = _build/default/internal/herd_assumptions_test.exe
-BENTO                         = _build/default/tools/bento.exe
 ASLREF                        = _build/default/asllib/aslref.exe
 CHECK_OBS                     = _build/default/internal/check_obs.exe
 all: build
@@ -975,8 +974,8 @@ clean-asl-pseudocode:
 
 .PHONY: asldoc
 asldoc: Version.ml
-	@ dune build -j $(J) --profile $(DUNE_PROFILE) $(BENTO) $(ASLREF)
-	@ $(MAKE) $(MFLAGS) -C asllib/doc all BENTO=$(CURDIR)/$(BENTO) ASLREF=$(CURDIR)/$(ASLREF)
+	@ dune build -j $(J) --profile $(DUNE_PROFILE) $(ASLREF)
+	@ $(MAKE) $(MFLAGS) -C asllib/doc all ASLREF=$(CURDIR)/$(ASLREF)
 
 .PHONY: clean-asldoc
 clean-asldoc:

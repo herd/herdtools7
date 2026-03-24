@@ -10,7 +10,6 @@
  mheader
  splitdot
  trTrue
- bento
  lexMiaou)
 
 (executables
@@ -52,7 +51,6 @@
   cat2html
   mlog2name
   mcat2includes
-  bento
   miaou
   cat2lisp
   dot2desc
@@ -95,7 +93,6 @@
   cat2html7
   mlog2name7
   mcat2includes7
-  bento
   miaou7
   cat2lisp
   dot2desc7
