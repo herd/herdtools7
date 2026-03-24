@@ -29,7 +29,11 @@ module AttributeKey = struct
         (** A description of the element in prose with template variables in the
             format [{var}]. *)
     | Prose_Application
-        (** A description of the element in prose, describing its application in
+        (** A description of the element in prose, describing the value produced
+            by applying the relation to argument expressions. Can contain
+            template variables in the format [{var}]. *)
+    | Prose_Transition
+        (** A description of the element in prose, describing its transition in
             an inference rule premise. Can contain template variables in the
             format [{var}]. *)
     | Math_Macro  (** A LaTeX macro name for the element. *)
@@ -40,6 +44,7 @@ module AttributeKey = struct
     | Custom
         (** Whether an operator over a list of arguments should be rendered by a
             custom multi-argument macro. *)
+    | Typecast  (** Whether an operator serves only to perform a typecast. *)
     | Short_Circuit_Macro
         (** A LaTeX macro name to succinctly denote any value of a type [T].
             This is used to denote the short-circuit result of a relation
@@ -48,22 +53,20 @@ module AttributeKey = struct
         (** An attribute for [TypesRender] elements indicating whether
             hypertargets should be generated for the LHS of type definitions in
             the rendered output. *)
-    | Auto_Name
-        (** An attribute indicating whether automatic naming of sub-expressions
-            in rule judgments should be enabled. *)
 
   (* A total ordering on attribute keys. *)
   let compare a b =
     let key_to_int = function
       | Prose_Description -> 0
       | Prose_Application -> 1
-      | Math_Macro -> 2
-      | Math_Layout -> 3
-      | Short_Circuit_Macro -> 4
-      | LHS_Hypertargets -> 5
-      | Associative -> 6
-      | Custom -> 7
-      | Auto_Name -> 8
+      | Prose_Transition -> 2
+      | Math_Macro -> 3
+      | Math_Layout -> 4
+      | Short_Circuit_Macro -> 5
+      | LHS_Hypertargets -> 6
+      | Associative -> 7
+      | Custom -> 8
+      | Typecast -> 9
     in
     let a_int = key_to_int a in
     let b_int = key_to_int b in
@@ -74,13 +77,14 @@ module AttributeKey = struct
   let to_str = function
     | Prose_Description -> "prose_description"
     | Prose_Application -> "prose_application"
+    | Prose_Transition -> "prose_transition"
     | Math_Macro -> "math_macro"
     | Math_Layout -> "math_layout"
     | Short_Circuit_Macro -> "short_circuit_macro"
     | LHS_Hypertargets -> "lhs_hypertargets"
     | Associative -> "associative"
     | Custom -> "custom"
-    | Auto_Name -> "auto_name"
+    | Typecast -> "typecast"
 end
 
 (** A value associated with an attribute key. *)
@@ -187,6 +191,15 @@ module Term = struct
     | List1  (** All non-empty sequences of the given member type. *)
     | Option  (** A set containing at most a single value of the given type. *)
 
+  let type_operator_equal op1 op2 =
+    match (op1, op2) with
+    | Powerset, Powerset -> true
+    | Powerset_Finite, Powerset_Finite -> true
+    | List0, List0 -> true
+    | List1, List1 -> true
+    | Option, Option -> true
+    | _ -> false
+
   (** Terms for constructing types out of other types, with [Label t] being the
       leaf case.
 
@@ -267,12 +280,15 @@ module Expr = struct
   (** A term that can be used to form a rule judgment. *)
   type t =
     | Var of string
-    | FieldAccess of { var : string; fields : string list }
+    | FieldAccess of { base : t; field : string }
     | ListIndex of { list_var : string; index : t }
         (** An expression indexing into the list variable [list_var] at position
             [index]. *)
     | Record of { label_opt : string option; fields : (string * t) list }
         (** A record construction expression. *)
+    | RecordUpdate of { record_expr : t; updates : (string * t) list }
+        (** A record update expression that updates the fields given in
+            [updates] of the record given by [record_expr]. *)
     | UnresolvedApplication of { lhs : t; args : t list }
         (** An application expression whose left-hand side has not yet been
             resolved. *)
@@ -292,11 +308,13 @@ module Expr = struct
         (** A transition from the [lhs] configuration to the [rhs] configuration
             with optional alternatives. *)
     | Indexed of { index : string; list_var : string; body : t }
-    | NamedExpr of t * string
+    | NamedExpr of { expr : t; name : string; same_name : bool }
         (** An (internally-)named expression. Used for giving names to
             sub-expressions appearing in the output configuration of an output
             judgment. Initially, all expressions are unnamed, names are assigned
-            during rule resolution. *)
+            during rule resolution. [same_name] indicates whether the name of
+            this expression is the same as the name of its sub-expression, which
+            is used to determine whether to render the name in the output. *)
 
   (** [make_var id] constructs a variable expression with identifier [id]. *)
   let make_var id = Var id
@@ -321,6 +339,10 @@ module Expr = struct
     Relation { name; is_operator = true; args }
 
   let make_record label_opt fields = Record { label_opt; fields }
+
+  let make_record_update record_expr updates =
+    RecordUpdate { record_expr; updates }
+
   let make_list_index list_var index = ListIndex { list_var; index }
 end
 
@@ -493,12 +515,6 @@ module Rule = struct
     | Some (MathLayoutAttribute layout) -> layout
     | _ -> Unspecified
 
-  (** [auto_name_judgment] returns [true] if automatic naming of sub-expressions
-      in the judgment is enabled, [false] otherwise. By default, automatic
-      naming is enabled unless the [auto_name] attribute is set to [false]. *)
-  let auto_name_judgment { att } =
-    Attributes.get_bool AttributeKey.Auto_Name ~default:true att
-
   (** A tree of elements. *)
   type rule_element =
     | Judgment of judgment  (** A leaf judgment. *)
@@ -568,6 +584,7 @@ module Relation : sig
   val prose_description : t -> string
   val math_macro : t -> string option
   val prose_application : t -> string
+  val prose_transition : t -> string
 
   val is_associative_operator : t -> bool
   (** [is_associative_operator t] tests whether the operator represented by [t]
@@ -576,6 +593,10 @@ module Relation : sig
   val is_custom_operator : t -> bool
   (** [is_custom_operator t] tests whether the operator represented by [t] has
       the [custom] attributes set to [true]. *)
+
+  val is_typecast_operator : t -> bool
+  (** [is_typecast_operator t] tests whether the operator represented by [t] has
+      the [typecast] attributes set to [true]. *)
 
   val math_layout : t -> layout option
   (** The layout used when rendered as a stand-alone relation definition. *)
@@ -639,6 +660,21 @@ end = struct
   let math_macro self =
     Attributes.find_math_macro AttributeKey.Math_Macro self.att
 
+  let prose_transition self =
+    let template =
+      Attributes.get_string_or_empty AttributeKey.Prose_Transition self.att
+    in
+    (* For now, the template must only relate to the input portion
+       in the style of "operating on {arg1}...{argn} yields".
+       We allow relating prose to each outcome by separating them with a "|" in the template,
+       but we only use the first portion of the template.
+       That is, given "operating on {arg1}...{argn} yields | ...",
+       we only use "operating on {arg1}...{argn} yields" as the template.
+       In the future, we may use the portions after the first "|" by matching them to the
+       output based on the type of the output.
+    *)
+    String.split_on_char '|' template |> List.hd
+
   let prose_application self =
     Attributes.get_string_or_empty AttributeKey.Prose_Application self.att
 
@@ -650,6 +686,9 @@ end = struct
 
   let is_custom_operator self =
     Attributes.get_bool AttributeKey.Custom ~default:false self.att
+
+  let is_typecast_operator self =
+    Attributes.get_bool AttributeKey.Typecast ~default:false self.att
 end
 
 (** A datatype for grouping (subsets of) type definitions. *)

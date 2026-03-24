@@ -74,19 +74,6 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   | Graph.Columns -> PC.oneinit
   | Graph.Free|Graph.Cluster -> false
 
-(* Attempt *)
-
-  let _reduces_more r1 r2 =
-    let open E.EventRel in
-    filter
-      (fun (e1,_e2) ->
-        not
-          (E.EventSet.is_empty (succs r2 e1)) &&
-        not
-          (E.EventSet.is_empty (preds r2 e1)))
-      r1
-
-
   open PrettyConf
   open PPMode
 
@@ -551,9 +538,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
              E.EventSet.union min min2,E.EventSet.union max max2) p ess
           )
         (E.EventSet.empty, E.EventSet.empty) by_proc_and_poi in
-     let r =
-     E.EventRel.filter (fun (e1,e2) -> E.EventSet.mem e1 maxs && E.EventSet.mem e2 mins) po
-     in
+     let r = E.EventRel.restrict_domains_to_sets maxs mins po in
      if dbg then
        eprintf "make_visible_po {%a} => \n {%a} \n%!" E.debug_rel po0 E.debug_rel r;
      r
@@ -842,7 +827,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   | E.IdSome ii ->
       fprintf chan "proc:%s poi:%i\\l"
         (Proc.pp ii.A.proc)
-        ii.A.program_order_index
+        ii.A.static_poi
 
 (*
   This complex function is not meant to be used directly,
@@ -890,8 +875,8 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
           else
             let r =
               if StringSet.mem tag PC.noid then
-                E.EventRel.filter
-                  (fun (e1,e2) -> not (E.event_equal e1 e2))
+                E.EventRel.restrict_rel
+                  (fun e1 e2 -> not (E.event_equal e1 e2))
                   r
               else r in
             (tag,r)::k)
@@ -1525,8 +1510,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   let select_event = let open Misc in select_event &&& select_non_init
 
   let select_events = E.EventSet.filter select_event
-  let select_rel =
-    E.EventRel.filter (fun (e1,e2) -> select_event e1 && select_event e2)
+  let select_rel = E.EventRel.restrict_domains select_event select_event
 
   let select_es es =
     { es with

@@ -3,6 +3,9 @@
 
 open AST
 
+(* The _ variable in aslspec. *)
+val ignore_var : string
+
 (** Wraps AST nodes that define identifiers that may appear in type terms and
     expression terms: types, constants, relations, labels, labelled tuples, and
     labelled records. *)
@@ -53,6 +56,10 @@ val relation_for_id : t -> string -> Relation.t
 (** [relation_for_id spec id] returns the relation definition for [id] in
     [spec], assuming it is defined as a relation. *)
 
+val record_variant_for_expr : t -> Expr.t -> TypeVariant.t
+(** [record_variant_for_expr spec expr] returns the record type variant
+    corresponding to [expr], assuming [expr] is a record expression. *)
+
 val is_defined_id : t -> string -> bool
 (** [is_defined_id spec id] returns [true] if [id] is defined in [spec] and
     [false] otherwise. *)
@@ -62,6 +69,14 @@ val is_variadic_operator : t -> string -> bool
     variadic operator in [spec], and [false] otherwise. A variadic operator is
     an operator that can take a variable number of arguments and handle them as
     though they were given in a list. *)
+
+val is_quantifying_operator : t -> string -> bool
+(** [is_quantifying_operator spec id] returns [true] if [id] corresponds to a
+    quantifying operator in [spec], and [false] otherwise. *)
+
+val is_cond_operator_name : t -> string -> bool
+(** [is_cond_operator_name spec id] returns [true] if [id] corresponds to the
+    match_cases operator in [spec], and [false] otherwise. *)
 
 (** A module for expanding rules with cases into multiple rules without cases.
 *)
@@ -79,3 +94,15 @@ module ExpandRules : sig
   (** [split_absolute_rule_name abs_name] splits an absolute rule name
       [abs_name] into its components by splitting at the '.' character. *)
 end
+
+val filter_rule_for_path : Relation.t -> string -> Rule.t
+(** [filter_rule_for_path relation path_str] filters the rule given for
+    [relation] to only include the cases along the path specified by [path_str].
+    The path is a dot-separated, where each name corresponds to the name of the
+    case to take at each level of nesting. For example, "name1.name2" means ---
+    take the first case at the top level, and then the second case within that
+    case.
+
+    @raise [SpecError]
+      if [path_str] is not a valid path through the cases of the rule for
+      [relation]. *)

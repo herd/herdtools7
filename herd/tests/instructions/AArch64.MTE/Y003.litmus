@@ -1,0 +1,12 @@
+AArch64 Y003
+(* IRG with exclusion *)
+{
+  0:X0=x:blue;
+  int64_t 0:X2={:red,:blue};
+}
+
+P0            ;
+IRG X1,X0,X2  ;
+
+forall (not (0:X1=x:red) /\ not (0:X1=x:blue))
+

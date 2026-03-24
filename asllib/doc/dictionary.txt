@@ -314,6 +314,7 @@ character
 characters
 check
 checked
+checker
 checking
 checks
 child
@@ -358,6 +359,7 @@ collections
 collectively
 colloquially
 column
+columns
 combination
 combinations
 combine
@@ -517,6 +519,7 @@ corresponds
 could
 counter
 counting
+counts
 coupled
 cover
 covered
@@ -525,6 +528,7 @@ create
 creates
 creating
 creation
+cross
 current
 currently
 custom
@@ -1504,6 +1508,7 @@ pair
 paired
 pairing
 pairs
+pairwise
 paragraph
 parallel
 parameter
@@ -2189,6 +2194,7 @@ transitioning
 transitions
 transitive
 transitively
+translate
 translated
 translates
 translation
@@ -2314,6 +2320,7 @@ various
 vector
 vectors
 verbatim
+verbose
 verification
 verifiers
 verifying

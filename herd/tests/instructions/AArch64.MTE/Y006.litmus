@@ -1,0 +1,22 @@
+AArch64 Y006
+(* Tag exclusion by register *)
+{
+  0:X0=x:red;
+  int64_t 0:X2={:magenta};
+}
+
+P0           ;
+IRG X1,X0,X2 ;
+locations[0:X1;]
+
+(* only magenta is excluded by 0:X2 *)
+forall (
+  0:X1=x:green \/
+  0:X1=x:red \/
+  0:X1=x:blue \/
+  0:X1=x:black \/
+  0:X1=x:white \/
+  0:X1=x:cyan \/
+  0:X1=x:yellow \/
+  0:X1=x:white
+)

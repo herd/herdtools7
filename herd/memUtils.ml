@@ -71,7 +71,7 @@ module Make(S : SemExtra.S) = struct
   | None -> assert false
 
 (* Lift dependance relation to memory *)
-  let restrict p = E.EventRel.filter (fun (e1,e2) -> p e1 && p e2)
+  let restrict p = E.EventRel.filter_nodes p
 
   let trans_close_mem r = restrict E.is_mem (S.tr r)
   let trans_close_mems r_p = List.map trans_close_mem r_p
@@ -200,10 +200,7 @@ let lift_proc_info i evts =
     (match E.proc_of e with Some q -> q = p | None -> false) ||
     E.is_mem_store e
 
-  let proc_view_event2 p (e1,e2) =
-    proc_view_event p e1 && proc_view_event p e2
-
-  let proc_view p vb = E.EventRel.filter (proc_view_event2 p) vb
+  let proc_view p vb = E.EventRel.filter_nodes (proc_view_event p) vb
 
 (* Perform difference, columnwise, ie difference of projected relations *)
   let diff_p = List.map2 E.EventRel.diff
@@ -301,8 +298,8 @@ let lift_proc_info i evts =
     | S.Init,S.Store _
     | S.Store _,S.Init -> false
 
-  let ext r = E.EventRel.filter (fun (e1,e2) -> not (E.same_proc e1 e2)) r
-  let internal r = E.EventRel.filter (fun (e1,e2) -> E.same_proc e1 e2) r
+  let ext r = E.EventRel.restrict_rel (fun e1 e2 -> not (E.same_proc e1 e2)) r
+  let internal r = E.EventRel.restrict_rel E.same_proc r
 
 (**************************************)
 (* Place loads in write_serialization *)
@@ -363,6 +360,21 @@ let lift_proc_info i evts =
         else k)
       es.E.events LocEnv.empty
 
+  let collect_by_loc2 es p1 p2 =
+    E.EventSet.fold
+      (fun e k ->
+        let b1 = p1 e and b2 = p2 e in
+        if b1 || b2 then
+          LocEnv.update (get_loc e)
+            (fun opt ->
+              let k1, k2 = match opt with Some t -> t | None -> ([], []) in
+              let k1 = if b1 then e :: k1 else k1
+              and k2 = if b2 then e :: k2 else k2 in
+              Some (k1, k2))
+            k
+        else k)
+      es.E.events LocEnv.empty
+
   let not_speculated es e = not (E.EventSet.mem e es.E.speculated)
   let collect_reg_loads es = collect_by_loc es E.is_reg_load_any
   and collect_reg_stores es = collect_by_loc es E.is_reg_store_any
@@ -375,16 +387,32 @@ let lift_proc_info i evts =
   and collect_stores es = collect_by_loc es E.is_store
   and collect_loads_non_spec es = collect_by_loc es (fun e -> E.is_load e && not_speculated es e)
   and collect_stores_non_spec es = collect_by_loc es (fun e -> E.is_store e && not_speculated es e)
-  and collect_atomics es = collect_by_loc es E.is_atomic
+  and collect_reg_loads_stores es = collect_by_loc2 es E.is_reg_load_any E.is_reg_store_any
+
+  let accumulate_loc_proc proc loc e =
+    IntMap.update proc @@
+      function
+      | None -> Some (LocEnv.singleton loc [e])
+      | Some m -> Some (LocEnv.accumulate loc e m)
+
+  let collect_atomics es =
+    let m,sp =
+      E.EventSet.fold
+        (fun e (m,sp as k) ->
+           if E.is_atomic e then
+             match E.proc_of e with
+             | None -> if E.is_spurious e then (m, e::sp) else k
+             | Some proc -> accumulate_loc_proc proc (get_loc e) e m, sp
+           else k)
+        es.E.events (IntMap.empty,[]) in
+    IntMap.bindings m,sp
 
   let partition_events es =
     let env =
       E.EventSet.fold
         (fun e k -> match E.location_of e with
-        | Some loc ->
-            LocEnv.accumulate loc e k
+        | Some loc -> LocEnv.accumulate loc e k
         | None -> k) es LocEnv.empty in
-
     LocEnv.fold (fun _ evts k -> E.EventSet.of_list evts::k) env []
 
 (********************************************)
@@ -392,9 +420,7 @@ let lift_proc_info i evts =
 (********************************************)
 
   let restrict_to_mem_stores rel =
-    E.EventRel.filter
-      (fun (e1,e2) -> E.is_mem_store e1 && E.is_mem_store e2)
-      rel
+    E.EventRel.filter_nodes E.is_mem_store rel
 
   let fold_write_serialization_candidates conc vb kont res =
     let vb =

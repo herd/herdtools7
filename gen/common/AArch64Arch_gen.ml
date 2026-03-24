@@ -32,8 +32,7 @@ module Make
 let do_self = C.variant Variant_gen.Self
 let do_tag = C.variant Variant_gen.MemTag
 let do_morello = C.variant Variant_gen.Morello
-let do_fullkvm = C.variant Variant_gen.FullKVM
-let do_kvm = do_fullkvm || C.variant Variant_gen.KVM
+let do_kvm = C.variant Variant_gen.KVM
 let do_neon = C.variant Variant_gen.Neon
 let do_sve = C.variant Variant_gen.SVE
 let do_sme = C.variant Variant_gen.SME
@@ -538,27 +537,6 @@ let is_tthm fields =
      else
        r
 
-   let fold_all_subsets f =
-     let rec fold_rec xs k r = match xs with
-       | [] -> if WPTESet.is_empty k then r else f k r
-       | x::xs ->
-          let r = fold_rec xs (WPTESet.add x k) r in
-          fold_rec xs k r in
-     fold_rec WPTE.all WPTESet.empty
-
-   let fold_small_subsets f =
-     let rec fold_rec xs r =
-       match xs with
-       | [] -> r
-       | x::xs ->
-          let sx = WPTESet.singleton x in
-          List.fold_right
-            (fun y r -> f (WPTESet.add y sx) r)
-            xs (f sx (fold_rec xs r)) in
-     fold_rec WPTE.all
-
-   let fold_subsets = if do_fullkvm then  fold_all_subsets else fold_small_subsets
-
    let fold_pte f r =
      if do_kvm then
        let open WPTE in
@@ -885,7 +863,7 @@ let pp_fence f = match f with
     (match loc with Prev -> "p"| Next -> "n")
 
 let fold_cumul_fences f k =
-   do_fold_dmb_dsb do_kvm C.moreedges (fun b k -> f (Barrier b) k) k
+   do_fold_dmb_dsb (fun b k -> f (Barrier b) k) k
 
 let fold_shootdown f acc =
   if not do_kvm then acc
@@ -909,14 +887,17 @@ let fold_cachesync =
   else fun _ k -> k
 
 
-let fold_cmo f k = fold_dirloc (fun d k -> f (CMO (DC_CVAU,d)) (f (CMO (IC_IVAU,d)) k)) k
+let fold_cmo f k =
+  if do_self then
+    fold_dirloc (fun d k -> f (CMO (DC_CVAU,d)) (f (CMO (IC_IVAU,d)) k)) k
+  else k
 
 
 let fold_all_fences f k =
   let k = fold_shootdown f k in
   let k = fold_cachesync f k in
   let k = fold_cmo f k in
-  fold_barrier do_kvm C.moreedges (fun b k -> f (Barrier b) k) k
+  fold_barrier (fun b k -> f (Barrier b) k) k
 
 
 let fold_some_fences f k =
@@ -1089,6 +1070,13 @@ let compute_rmw r ~old ~operand =
     end
     | LrSc | Swp | Cas  -> operand
     | AllAmo -> assert false
+
+(* Rule out `rmw_list` that contains the same type of atomic operation for a location. *)
+let is_valid_rmw rmw_list =
+  let atomic_st_list = List.filter_map ( function
+    | StOp op -> Some ( op )
+    | _ -> None ) rmw_list in
+  List.length atomic_st_list = List.length (Util.List.uniq ~eq:atomic_op_equal atomic_st_list)
 end
 
 include

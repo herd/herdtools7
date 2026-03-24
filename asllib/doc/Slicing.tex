@@ -126,103 +126,7 @@ The slices in
 \listingref{semantics-scaledfromzero}
 are all well-typed.
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{single}
-  \begin{itemize}
-    \item $\vs$ is a \singleslice\ at index \vi, that is $\SliceSingle(\vi)$;
-    \item annotating the slice at offset $\vi$ of length $1$ yields $\vsp$\ProseOrTypeError.
-  \end{itemize}
-
-  \item \AllApplyCase{range}
-  \begin{itemize}
-    \item $\vs$ is a slice for the range \texttt{(j, i)}, that is $\SliceRange(\vj, \vi)$;
-    \item \Prosebinopliterals{\texttt{j-i+1}}{$\length$};
-    \item annotating the slice at offset $\vi$ of length $\length$ yields $\vsp$\ProseOrTypeError.
-  \end{itemize}
-
-  \item \AllApplyCase{length}
-  \begin{itemize}
-    \item $\vs$ is a \lengthslice\ of length $\elength$ and offset $\eoffset$, that is, \\
-          $\SliceLength(\eoffset, \elength)$;
-    \item annotating the expression $\eoffset$ in $\tenv$ yields \\
-          $(\toffset, \eoffsetp, \vsesoffset)$\ProseOrTypeError;
-    \item annotating the \symbolicallyevaluableterm\ \constrainedintegerterm\ expression $\elength$ in $\tenv$ yields
-    $(\elengthp, \vseslength)$\ProseOrTypeError;
-    \item checking that $\vsesoffset$ is \readonlyterm{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
-    \item checking that $\vseslength$ is \readonlyterm{} via $\sesisreadonly$ yields $\True$\ProseOrTypeError;
-    \item determining whether $\toffset$ has the \structureofinteger\ yields $\True$\ProseOrTypeError;
-    \item $\vsp$ is the slice at offset $\eoffsetp$ and length $\elength'$, that is,\\
-     $\SliceLength(\eoffsetp, \elength')$;
-     \item define $\vses$ as the union of $\vsesoffset$ and $\vseslength$.
-  \end{itemize}
-
-  \item \AllApplyCase{scaled}
-  \begin{itemize}
-    \item $\vs$ is a \scaledslice\ \texttt{[factor *:length]}, that is, \\
-          $\SliceStar(\factor, \length)$;
-    \item $\offset$ is $\factor * \length$;
-    \item annotating the slice at offset $\offset$ of length $\length$ yields $\vsp$\ProseOrTypeError.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[single]{
-  \annotateslice(\SliceLength(\vi, \eliteral{1})) \typearrow \vsp \OrTypeError
-}{
-  \annotateslice(\tenv, \overname{\SliceSingle(\vi)}{\vs}) \typearrow \vsp
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[range]{
-  \binopliterals(\SUB, \vj, \vi) \typearrow \lengthp\\
-  \binopliterals(\ADD, \lengthp, \eliteral{1}) \typearrow \length\\
-  \annotateslice(\SliceLength(\vi, \length)) \typearrow \vsp \OrTypeError
-}{
-  \annotateslice(\tenv, \overname{\SliceRange(\vj, \vi)}{\vs}) \typearrow \vsp
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[length]{
-  \vs = \SliceLength(\eoffset, \elength)\\
-  \annotateexpr(\tenv, \eoffset) \typearrow (\toffset, \eoffsetp, \vsesoffset) \OrTypeError\\\\
-  {
-    \begin{array}{r}
-  \annotatesymbolicconstrainedinteger(\tenv, \elength) \typearrow \\ (\elengthp, \vseslength) \OrTypeError
-  \end{array}
-  }\\\\
-  \techeck(\sesisreadonly(\vsesoffset), \SideEffectViolation) \typearrow \True \OrTypeError\\\\
-  \techeck(\sesisreadonly(\vseslength), \SideEffectViolation) \typearrow \True \OrTypeError\\\\
-  \checkunderlyinginteger(\tenv, \toffset) \typearrow \True \OrTypeError\\\\
-  \vses \eqdef \vsesoffset \cup \vseslength
-}{
-  {
-    \begin{array}{r}
-  \annotateslice(\tenv, \vs) \typearrow \\
-    (\overname{\SliceLength(\eoffsetp, \elength')}{\vsp}, \vses)
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[scaled]{
-  \binopliterals(\MUL, \factor, \length) \typearrow \offset\\
-  \annotateslice(\SliceLength(\offset, \length)) \typearrow \vsp \OrTypeError
-}{
-  \annotateslice(\tenv, \overname{\SliceStar(\factor, \length)}{\vs}) \typearrow \vsp
-}
-\end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{annotate_slice}
-\lrmcomment{\identr{GXKG}: The notation \texttt{b[j:i]} is syntactic sugar for \texttt{b[i+:(j-i+1)]}.}
-\lrmcomment{\identr{GXKG}: The notation \texttt{b[i]} is syntactic sugar for \texttt{b[i +: 1]}.}
-\lrmcomment{\identr{GXQG}: The notation \texttt{b[i *: n]} is syntactic sugar for \texttt{b[i*n +: n]}}
+\RenderProseAndFormally{annotate_slice}
 
 \TypingRuleDef{SlicesWidth}
 \RenderRelation{slices_width}
@@ -231,42 +135,7 @@ are all well-typed.
 In \listingref{eval-slices}
 The width of the list of slices \verb|[2, 7:5, 0+:3]| is $7$.
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\vslices$ is the empty list;
-    \item $\vwidth$ is the literal integer expression for $0$.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item $\vslices$ is the list with \head\ $\vs$ and \tail\ $\slicesone$;
-    \item applying $\slicewidth$ to $\vs$ yields $\veone$;
-    \item applying $\sliceswidth$ to $\slicesone$ yields $\vetwo$;
-    \item symbolically simplifying the binary expression summing $\veone$ with $\vetwo$ yields $\vwidth$\ProseOrTypeError.
-  \end{itemize}
-\end{itemize}
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[empty]{}{
-  \sliceswidth(\tenv, \overname{\emptylist}{\vslices}) \typearrow \overname{\ELInt{0}}{\vwidth}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  \slicewidth(\vs) \typearrow \veone\\
-  \sliceswidth(\slicesone) \typearrow \vetwo\\
-  \normalize(\AbbrevEBinop{\ADD}{\veone}{\vetwo}) \typearrow \vwidth \OrTypeError
-}{
-  \sliceswidth(\tenv, \overname{[\vs]\concat\slicesone}{\vslices}) \typearrow \vwidth
-}
-\end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{slices_width}
+\RenderProseAndFormally{slices_width}
 
 \TypingRuleDef{SliceWidth}
 \RenderRelation{slice_width}
@@ -287,49 +156,7 @@ the width of the slice \texttt{x[3*:2]} is $2$.
 In \listingref{semantics-scaledfromzero},
 the width of the slice \texttt{x[:3]} is $3$.
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{single}
-  \begin{itemize}
-    \item $\vslice$ is a single slice, that is, $\SliceSingle(\Ignore)$;
-    \item $\vwidth$ is the literal integer expression for $1$;
-  \end{itemize}
-
-  \item \AllApplyCase{scaled, length}
-  \begin{itemize}
-    \item $\vslice$ is either a slice of the form \texttt{\_*:$\ve$} or \texttt{\_+:$\ve$};
-    \item $\vwidth$ is $\ve$;
-  \end{itemize}
-
-  \item \AllApplyCase{range}
-  \begin{itemize}
-    \item $\vslice$ is a slice of the form \texttt{$\veone$:$\vetwo$};
-    \item $\vwidth$ is the expression for $1 + (\veone - \vetwo)$.
-  \end{itemize}
-\end{itemize}
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[single]{}{
-  \slicewidth(\overname{\SliceSingle(\Ignore)}{\vslice}) \typearrow \overname{\ELInt{1}}{\vwidth}
-}
-\and
-\inferrule[scaled]{}{
-  \slicewidth(\overname{\SliceStar(\Ignore, \ve)}{\vslice}) \typearrow \overname{\ve}{\vwidth}
-}
-\and
-\inferrule[length]{}{
-  \slicewidth(\overname{\SliceLength(\Ignore, \ve)}{\vslices}) \typearrow \overname{\ve}{\vwidth}
-}
-\and
-\inferrule[range]{}{
-  \slicewidth(\overname{\SliceRange(\veone, \vetwo)}{\vslices}) \typearrow
-  \overname{\AbbrevEBinop{\ADD}{\ELInt{1}}{(\AbbrevEBinop{\SUB}{\veone}{\vetwo})}}{\vwidth}
-}
-\end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{slice_width}
+\RenderProseAndFormally{slice_width}
 
 \TypingRuleDef{SymbolicConstrainedInteger}
 \RenderRelation{annotate_symbolic_constrained_integer}
@@ -345,27 +172,7 @@ evaluable \underline{and} their \underlyingtypesterm{} are \constrainedintegerte
 since they consist of \staticallyevaluableterm{} expressions (literals) and
 the parameter \verb|N|.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item \Proseannotatesymbolicallyevaluableexpr{$\tenv$}{$\ve$}{$(\vt, \vep, \vses)$\ProseOrTypeError};
-  \item determining whether $\vt$ is a symbolically \constrainedintegerterm{} in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item applying $\normalize$ to $\vep$ in $\tenv$ yields $\vepp$.
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  \annotatesymbolicallyevaluableexpr(\tenv, \ve) \typearrow (\vt, \vep, \vses) \OrTypeError\\\\
-  \checkconstrainedinteger(\tenv, \vt) \typearrow \True \OrTypeError\\\\
-  \normalize(\tenv, \vep) \typearrow \vepp
-}{
-  \annotatesymbolicconstrainedinteger(\tenv, \ve) \typearrow (\vepp, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{annotate_symbolic_constrained_integer}
+\RenderProseAndFormally{annotate_symbolic_constrained_integer}
 \CodeSubsection{\SymbolicConstrainedIntegerBegin}{\SymbolicConstrainedIntegerEnd}{../Typing.ml}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -395,107 +202,7 @@ In \listingref{semantics-scaledfromzero},
 the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
 \ASLListing{A syntactic sugar slice}{semantics-scaledfromzero}{\semanticstests/SemanticsRule.SliceFromZero.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{single}
-  \begin{itemize}
-    \item $\vs$ is a \singleslice\ with the expression $\ve$, $\SliceSingle(\ve)$;
-    \item evaluating $\ve$ in $\env$ results in $\ResultExpr((\vstart, \newg), \newenv)$\ProseOrAbnormal;
-    \item $\vlength$ is the integer value 1.
-  \end{itemize}
-
-  \item \AllApplyCase{range}
-  \begin{itemize}
-    \item $\vs$ is the \rangeslice\ between the
-      expressions $\estart$ and $\etop$, that is, \\ $\SliceRange(\etop, \estart)$;
-    \item evaluating $\etop$ in $\env$ is $\ResultExpr(\mtop, \envone)$\ProseOrAbnormal;
-    \item $\mtop$ is a pair consisting of the native integer $\vvsubtop$ and execution graph $\vgone$;
-    \item evaluating $\estart$ in $\envone$ is $\ResultExpr(\mstart, \newenv)$\ProseOrAbnormal;
-    \item $\mstart$ is a pair consisting of the native integer $\vstart$ and execution graph $\vgtwo$;
-    \item $\vlength$ is the integer value $(\vvsubtop - \vstart) + 1$;
-    \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
-  \end{itemize}
-
-  \item \AllApplyCase{length}
-  \begin{itemize}
-    \item $\vs$ is the \lengthslice, which starts at expression~$\estart$ with length~$\elength$,
-    that is, $\SliceLength(\estart, \elength)$;
-    \item evaluating $\estart$ in $\env$ is $\ResultExpr(\mstart, \envone)$\ProseOrAbnormal;
-    \item evaluating $\elength$ in $\envone$ is $\ResultExpr(\mlength, \newenv)$\ProseOrAbnormal;
-    \item $\mstart$ is a pair consisting of the native integer $\vstart$ and execution graph $\vgone$;
-    \item $\mlength$ is a pair consisting of the native integer $\vlength$ and execution graph $\vgtwo$;
-    \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
-  \end{itemize}
-
-  \item \AllApplyCase{scaled}
-  \begin{itemize}
-    \item $\vs$ is the \scaledslice\ with factor given by the
-      expression $\efactor$ and length given by the
-      expression $\elength$, that is, $\SliceStar(\efactor, \elength)$;
-    \item evaluating $\efactor$ in $\env$ is $\ResultExpr(\mfactor, \envone)$\ProseOrAbnormal;
-    \item $\mfactor$ is a pair consisting of the native integer $\vfactor$ and execution graph $\vgone$;
-    \item evaluating $\elength$ in $\env$ is $\ResultExpr(\mlength, \newenv)$\ProseOrAbnormal;
-    \item $\mlength$ is a pair consisting of the native integer $\vlength$ and execution graph $\vgtwo$;
-    \item $\vstart$ is the native integer $\vfactor \times \vlength$;
-    \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[single]{
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vstart, \newg), \newenv) \OrAbnormal\\
-  \vlength \eqdef \nvint(1)
-}{
-  \evalslice(\env, \SliceSingle(\ve)) \evalarrow (((\vstart, \vlength), \newg), \newenv)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[range]{
-  \vs = \SliceRange(\etop, \estart)\\
-  \evalexpr(\env, \etop) \evalarrow \ResultExpr(\mtop, \envone) \OrAbnormal\\\\
-  \mtop \eqname (\vvsubtop, \vgone)\\
-  \evalexpr(\envone, \estart) \evalarrow \ResultExpr(\mstart, \newenv) \OrAbnormal\\\\
-  \mstart \eqname (\vstart, \vgtwo)\\
-  \evalbinop(\SUB, \vvsubtop, \vstart) \evalarrow \vdiff\\
-  \evalbinop(\ADD, \nvint(1), \vdiff) \evalarrow \vlength\\
-  \newg \eqdef \vgone \parallelcomp \vgtwo
-}{
-  \evalslice(\env, \vs) \evalarrow (((\vstart, \vlength), \newg), \newenv)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[length]{
-  \vs = \SliceLength(\estart, \elength)\\
-  \evalexpr(\env, \estart) \evalarrow \ResultExpr(\mstart, \envone) \OrAbnormal\\
-  \evalexpr(\envone, \elength) \evalarrow \ResultExpr(\mlength, \newenv) \OrAbnormal\\
-  \mstart \eqname (\vstart, \vgone)\\
-  \mlength \eqname (\vlength, \vgtwo)\\
-  \newg \eqdef \vgone \parallelcomp \vgtwo
-}{
-  \evalslice(\env, \vs) \evalarrow (((\vstart, \vlength), \newg), \newenv)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[scaled]{
-  \vs = \SliceStar(\efactor, \elength)\\
-  \evalexpr(\env, \efactor) \evalarrow \ResultExpr(\mfactor, \envone) \OrAbnormal\\
-  \mfactor \eqname (\vfactor, \vgone)\\
-  \evalexpr(\envone, \elength) \evalarrow \ResultExpr(\mlength, \newenv) \OrAbnormal\\
-  \mlength \eqname (\vlength, \vgtwo)\\
-  \evalbinop(\MUL, \vfactor, \vlength) \evalarrow \vstart \\
-  \newg \eqdef \vgone \parallelcomp \vgtwo
-}{
-  \evalslice(\env, \vs) \evalarrow (((\vstart, \vlength), \newg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_slice}
+\RenderProseAndFormally{eval_slice}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \FormalRelationsDef{Lists of Bitvector Slices}
@@ -548,36 +255,12 @@ In \listingref{ImpureBitvectorSlice}, the bit vector slice on \verb|x| is ill-ty
 \verb|side_effecting()| is not \pureterm{}.
 \ASLListing{An ill-typed bitvector slice}{ImpureBitvectorSlice}{\typingtests/TypingRule.AnnotateSlices.bad-impure.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item annotating the slice $\vslices[\vi]$ in $\tenv$, for each $\vi\in\listrange(\vslices)$, yields \\
-        the list of slices $\vslicesp$ and list of \sideeffectdescriptorsetsterm{} $\xs$\ProseOrTypeError;
-  \item define $\vses$ as the union of all $\vxs[\vi]$, for every \Proselistrange{$\vi$}{$\vslices$}.
-\end{itemize}
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule{
-  i\in\listrange(\vslices): \annotateslice(\tenv, \vslices[i]) \typearrow (\vs_i, \vxs_i) \OrTypeError\\\\
-  \slicesp \eqdef [i\in\listrange(\vslices): \vs_i]\\
-  \vses \eqdef \bigcup_{i\in\listrange(\vslices)} \vxs_i
-}{
-  \annotateslices(\tenv, \vslices) \typearrow (\slicesp, \vses)
-}
-\end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{annotate_slices}
+\RenderProseAndFormally{annotate_slices}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \SemanticsRulesDef{Lists of Bitvector Slices}
 \SemanticsRuleDef{Slices}
 \RenderRelation{eval_slices}
-
-\ProseParagraph
-$\evalslices(\env, \vslices)$ is the list of pairs \texttt{(start\_n, length\_n)} that
-correspond to the start (included) and the length of each slice in
-$\slices$.
 
 \ExampleDef{Evaluating a List of Slices}
 In \listingref{eval-slices}, evaluating the list of slices \verb|[2, 7:5, 0+:3]|
@@ -585,47 +268,5 @@ yields the list of ranges $[(2,1), (5,3), (0,3)]$.
 
 \ASLListing{Evaluating a list of slices}{eval-slices}{\semanticstests/SemanticsRule.Slices.asl}
 
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item the list of slices is empty;
-    \item $\ranges$ is the empty list;
-    \item $\newg$ is the empty graph;
-    \item $\newenv$ is $\env$.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item the list of slices has $\vslice$ as the head and $\slicesone$ as the tail;
-    \item evaluating the slice $\vslice$ in $\env$ results in \\
-          $((\range, \vgone), \envone)$\ProseOrAbnormal;
-    \item evaluating the tail list $\slicesone$ in $\envone$ results in \\
-          $\ResultSlices((\rangesone, \vgtwo), \newenv)$\ProseOrAbnormal;
-    \item $\ranges$ is the concatenation of $\range$ to $\rangesone$;
-    \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\BackupOriginalRule{
-\begin{mathpar}
-\inferrule[empty]{}
-{
-  \evalslices(\env, \emptylist) \evalarrow \ResultSlices((\emptylist, \emptygraph), \env)
-}
-\end{mathpar}
-\begin{mathpar}
-\inferrule[non\_empty]{
-  \slices \eqname [\vslice] \concat \slicesone\\
-  \evalslice(\env, \vslice) \evalarrow ((\range, \vgone), \envone) \OrAbnormal\\\\
-  \evalslices(\envone, \slicesone) \evalarrow \ResultSlices((\rangesone, \vgtwo), \newenv) \OrAbnormal\\\\
-  \ranges \eqdef [\range] \concat \rangesone\\
-  \newg \eqdef \vgone \parallelcomp \vgtwo
-}{
-  \evalslices(\env, \slices) \evalarrow \ResultSlices((\ranges, \newg), \newenv)
-}
-\end{mathpar}
-} % END_OF_BACKUP_RULE
-\RenderRule{eval_slices}
+\RenderProseAndFormally{eval_slices}
 \CodeSubsection{\EvalSlicesBegin}{\EvalSlicesEnd}{../Interpreter.ml}

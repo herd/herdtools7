@@ -74,10 +74,12 @@ module type S = sig
    the test, such as its name (cf. Test.mli) *)
 
 
-  (* Code memory is a mapping from labels to sequences of instructions, too far from actual machine, maybe *)
-  type code = (int * instr) list
+  module CodeInstr : sig
+    type t = { instr: instr; static_poi: int }
+  end
 
-  val convert_if_imm_branch : int -> int -> int Label.Map.t -> int Label.Map.t -> instr -> instr
+  (* Code memory is a mapping from labels to sequences of instructions, too far from actual machine, maybe *)
+  type code = (int * CodeInstr.t) list
 
   (* Program loaded in memory *)
   type program = int Label.Map.t
@@ -107,10 +109,12 @@ module type S = sig
       fetch_proc : proc; (* Fetching source *)
       proc       : proc; (* Current thread *)
       program_order_index   : program_order_index;
+      static_poi : program_order_index;
       inst : instr;
       labels : Label.Set.t; lbl2addr:program;
       addr : int;
-      addr2v : string -> I.V.v;
+      addr2v : int -> string -> I.V.v;
+      rel_addr : I.V.v option;
       env : ii_env;
       in_handler : bool;
     }
@@ -336,17 +340,12 @@ module Make(C:Config) (I:I) : S with module I = I
       (* Components of test structures *)
       (*********************************)
 
-      (* Code memory is a mapping from globals locs, to instructions *)
-      type code = (int * instr) list
+      module CodeInstr = struct
+        type t = { instr: instr; static_poi: int }
+      end
 
-      (* This function is a default behaviour for all architectures.
-         When variant -self is enabled, it fails trying to convert a branch
-         instruction to a label into a branch-with-offset representation. *)
-      let convert_if_imm_branch _ _ _ _ i =
-        if C.variant Variant.Ifetch then
-          Warn.fatal "Functionality %s not implemented for -variant self" "convert_if_imm_branch"
-        else
-          i
+      (* Code memory is a mapping from globals locs, to instructions *)
+      type code = (int * CodeInstr.t) list
 
       (* Programm loaded in memory *)
       type program = int Label.Map.t
@@ -374,10 +373,12 @@ module Make(C:Config) (I:I) : S with module I = I
           fetch_proc : proc;
           proc       : proc;
           program_order_index   : program_order_index;
+          static_poi : program_order_index;
           inst : instr;
           labels : Label.Set.t; lbl2addr : program;
           addr : int ;
-          addr2v : string -> I.V.v;
+          addr2v : int -> string -> I.V.v;
+          rel_addr : I.V.v option;
           env : ii_env;
           in_handler : bool;
         }
@@ -521,6 +522,7 @@ module Make(C:Config) (I:I) : S with module I = I
         type fault_type = I.FaultType.t
         let pp_fault_type = I.FaultType.pp
         let fault_type_compare = I.FaultType.compare
+        let fault_type_matches = I.FaultType.matches
       end
 
       include Fault.Make(FaultArg)
@@ -563,7 +565,7 @@ module Make(C:Config) (I:I) : S with module I = I
       let state_size st = State.fold (fun _ _ k -> 1+k) st 0
 
       let state_fold = State.fold
-      let state_filter = State.filter
+      let state_filter = State.filter_by_key
 
       let pp_nice_state st delim pp_bd =
         let bds =
@@ -910,7 +912,7 @@ module Make(C:Config) (I:I) : S with module I = I
       let rstate_to_list st =
         List.rev (RState.fold (fun l v k -> (l,v)::k) st [])
 
-      let rstate_filter = RState.filter
+      let rstate_filter = RState.filter_by_key
 
       let debug_rstate rs =
         let bds = rstate_to_list rs in
@@ -981,6 +983,28 @@ module Make(C:Config) (I:I) : S with module I = I
         let pp_st = do_dump_rstate tenv tr st in
         if FaultSet.is_empty flts && FaultAtomSet.is_empty fobs then pp_st
         else
+          let data_intr_to_any_flt fault =
+            match fault with
+            | (lbl,loc, Some ft0, msg) ->
+                let any_flt =
+                  FaultAtomSet.fold
+                    (fun fatom k ->
+                      match fatom, k with
+                      | _, Some _ -> k
+                      | (_,_, Some ft_expected), None ->
+                          if check_one_fatom fault fatom
+                             && I.FaultType.matches ft0 ft_expected
+                          then Some ft_expected
+                          else None
+                      | _ -> k)
+                    fobs None
+                in
+                begin match any_flt with
+                | Some ft_expected -> (lbl,loc, Some ft_expected, msg)
+                | None -> fault
+                end
+            | _ -> fault
+          in
           let noflts =
             FaultAtomSet.fold
               (fun (((p,lbl),loc,ftype) as f0) k ->
@@ -1002,7 +1026,9 @@ module Make(C:Config) (I:I) : S with module I = I
                     (fun f0 -> check_one_fatom f f0) fobs)
                 flts in
           pp_st ^ " " ^
-          FaultSet.pp_str " "  (fun f -> pp_fault f ^ ";")  flts ^
+          FaultSet.pp_str " "
+            (fun f -> pp_fault (data_intr_to_any_flt f) ^ ";")
+            flts ^
           String.concat "" noflts
 
       module StateSet =

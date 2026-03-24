@@ -7,8 +7,26 @@
   Generated LaTeX macros into generated_macros.tex
   $ aslspec rule.spec --render; diff -w generated_macros.tex rule.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  82,86c82,86
+  <     \item define \texttt{res} as \begin{itemize}\item \texttt{a} if \texttt{a} is equal to \texttt{b}, \item the sum of \texttt{a} and \texttt{b} if \texttt{a} is greater than \texttt{b}, and \item \texttt{b} if \texttt{a} is less than \texttt{b}\end{itemize}
+  <     \item define \texttt{y} as the rec record with $\Fieldf$ value \texttt{a} and $\Fieldg$ value \texttt{b}
+  <     \item define \texttt{r\_f} as the sum of the field $\FIELDf$ of \texttt{r} and the field $\FIELDg$ of \texttt{r}
+  <     \item define \texttt{r'} as \texttt{r} with $\FIELDf$ updated to \texttt{res}
+  <     \item \textbf{the result is:} the pair consisting of \texttt{res} (for the output variable \texttt{c}) and \texttt{r'} (for the output variable \texttt{r'}).
+  ---
+  >     \item define \texttt{res} as  (1) if \texttt{a} is equal to \texttt{b} holds then \texttt{a},  (2) if \texttt{a} is greater than \texttt{b} holds then the sum of  (1) \texttt{a}, and  (2) \texttt{b}, and  (3) if \texttt{a} is less than \texttt{b} holds then \texttt{b};
+  >     \item define \texttt{y} as the rec record with $\Fieldf$ value \texttt{a} and $\Fieldg$ value \texttt{b};
+  >     \item define \texttt{r\_f} as the sum of  (1) the field $\FIELDf$ of \texttt{r}, and  (2) the field $\FIELDg$ of \texttt{r};
+  >     \item define \texttt{r'} as \texttt{r} with $\FIELDf$ updated to \texttt{res};
+  >     \item \textbf{the result is:} the pair consisting of \texttt{res} (for the output variable \texttt{c}) and \texttt{r'}.
   $ aslspec operators.spec --render; diff -w generated_macros.tex operators.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  55,56c55,56
+  <     \item the sum of \texttt{a} and \texttt{b} is equal to \texttt{c}
+  <     \item define \texttt{d} as: if \texttt{a} is in \texttt{S} then \texttt{b} else \texttt{c}
+  ---
+  >     \item the sum of all numbers in  (1) \texttt{a}, and  (2) \texttt{b} is equal to \texttt{c};
+  >     \item define \texttt{d} as: if \texttt{a} is in \texttt{S} then \texttt{b} else \texttt{c};
 
   $ aslspec type_name.bad
   Syntax Error: illegal element-defining identifier: t2 around type_name.bad line 1 column 41
@@ -24,6 +42,11 @@
 
   $ aslspec unmatched_prose_var.spec
   Specification Error: The prose template 'transforms {a} to {b}' contains the following unmatched variables: {b}
+  While checking: relation transform_description_unmatched_b(a: A) -> A
+                  {
+                     prose_description = "transforms {a} to {b}",
+                     prose_application = "",
+                  };
   [1]
 
 # Check that all type terms are well-formed
@@ -57,5 +80,6 @@
   While checking: B
   [1]
   $ aslspec relation_unnamed_arguments.bad
-  Specification Error: All arguments in the relation 'unnamed_arg_has_rule' must have names, since it specifies a rule.
+  Specification Error: The term Num in relation 'unnamed_arg_has_rule' does not provide a name for at least one of its sub-terms.
   [1]
+  $ aslspec constants.spec

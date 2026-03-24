@@ -138,28 +138,29 @@ and type edge = E.edge
         let bc_dp dp sl d = ERS [E.plain_edge (E.Dp (dp,sl,d)); rf]
 
 (* Pretty print, macros are filtered and printed specially *)
-        let pp_relax r =
+        let internal_pp_relax backward_compatibility r =
           let open E in
           match r with
           | ERS [e] -> E.pp_edge e
           | ERS
               [{edge=Rf Ext; a1=None;a2=None;};
-               {edge=Fenced _;a1=None; a2=None;} as e] ->
+               {edge=Fenced _;a1=None; a2=None;} as e] when backward_compatibility ->
                  sprintf "AC%s" (pp_edge e)
           | ERS [{edge=Fenced _; a1=None;a2=None;} as e;
-                 {edge=Rf Ext; a1=None; a2=None;}] ->
+                 {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
                    sprintf "BC%s" (pp_edge e)
           | ERS [{edge=Rf Ext; a1=None; a2=None;};
                  {edge=Fenced _; a1=None; a2=None;} as e;
-                 {edge=Rf Ext; a1=None; a2=None;}] ->
+                 {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
                    sprintf "ABC%s" (pp_edge e)
           | ERS [{edge=Dp _; a1=None; a2=None;} as e;
-                 {edge=Rf Ext; a1=None; a2=None;}] ->
+                 {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
                    sprintf "BC%s" (pp_edge e)
           | ERS es ->
               sprintf "[%s]" (String.concat "," (List.map pp_edge es))
           | PPO -> "PPO"
 
+        let pp_relax = internal_pp_relax false
 
         let pp_relax_list lr = String.concat " " (List.map pp_relax lr)
 
@@ -211,7 +212,7 @@ and type edge = E.edge
         let () =
           iter_relax E.wildcard
             (fun e ->
-              let pp = pp_relax e in
+              let pp = internal_pp_relax true e in
               Hashtbl.add t pp e);
           ()
 

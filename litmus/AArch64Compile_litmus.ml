@@ -1487,19 +1487,16 @@ module Make(V:Constant.S)(C:Config) =
 
 (* Arithmetic *)
     let mov_const v r k =
-      let memo =
-        sprintf
+      let outputs,dst = do_arg1o v r 0 in
+      let memo = sprintf "mov %s,#%i" dst k in
+      { empty_ins with
+        memo; outputs;
+        reg_env =
           (match v with
-            | V32 ->  "mov ^wo0,#%i"
-            | V64 ->  "mov ^o0,#%i"
-            | V128 -> assert false)
-          k in
-      { empty_ins with memo; outputs=[r;];
-        reg_env = ((match v with
           | V32 -> add_w
           | V64 -> add_q
           | V128 -> assert false)
-        [r;])}
+            outputs; }
 
     let adr tr_lab r lbl =
       let _,lbl = dump_tgt tr_lab lbl in
@@ -2010,6 +2007,13 @@ module Make(V:Constant.S)(C:Config) =
         inputs = [r1;r2];
         outputs = [r1];
         reg_env = (add_q [r1]) @ [(r2,voidstar)]}::k
+   | I_IRG (r1,r2,r3) ->
+      let r3,f3 = do_arg1i V64 r3 2 in
+      { empty_ins with
+        memo = sprintf "irg ^o0,^i1,%s" f3;
+        inputs = [r1;r2]@r3;
+        outputs = [r1];
+        reg_env = (add_q ([r1;r2]@r3))}::k
     | I_ALIGND _|I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|
       I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SC _|
       I_SEAL _|I_STCT _|I_UNSEAL _ ->

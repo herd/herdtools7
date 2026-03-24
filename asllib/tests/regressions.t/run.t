@@ -477,6 +477,7 @@ Required tests:
   $ aslref subtypes-example.asl
   $ aslref subtypes-with.asl
   $ aslref tuples.asl
+  $ aslref tuple-return.asl
   $ aslref declaration-primitive-local.asl
   $ aslref --no-type-check -0 typing-assign-v0.asl
   $ aslref constant-functions.asl

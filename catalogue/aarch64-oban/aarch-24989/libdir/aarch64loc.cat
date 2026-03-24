@@ -1,0 +1,24 @@
+(* Same General Purpose Register *)
+let same-gpr = [Rreg|Wreg]; loc; [Rreg|Wreg]
+
+(* Translation-intrinsically-before *)
+let tr-ib =
+  [Imp & TTD & R]; iico_data; [B]; iico_ctrl; [Exp & M | MMU & FAULT]
+
+(* Effect with valid PA *)
+let E-valid-PA = M | DC.CVAU | IC
+
+(* Same Location *)
+let same-loc =
+  [E-valid-PA & ~(Tag & M)]; loc; [E-valid-PA & ~(Tag & M)]
+  | [Tag & M]; loc; [Tag & M]
+
+(* Same-cache-line relation *)
+(* NOTE : currently assumes all locations are on different cache lines *)
+(*        also extends to IC without a location specified              *)
+let scl = loc
+  | (M | DC.CVAU | IC) * (IC.IALLU | IC.IALLUIS)
+  | (IC.IALLU | IC.IALLUIS) * (M | DC.CVAU | IC)
+ 
+let va-loc = ([Imp & TTD & R]; tr-ib; same-low-order-bits; tr-ib^-1; [Imp & TTD & R]) & loc
+let po-va-loc = po & va-loc

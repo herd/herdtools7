@@ -450,6 +450,7 @@ match name with
 | "stzg"|"STZG" -> STZG
 | "stz2g"|"STZ2G" -> STZ2G
 | "ldg"|"LDG" -> LDG
+| "irg"|"IRG" -> IRG
 (* Operations *)
 | "ubfm"|"UBFM" -> UBFM
 | "sbfm"|"SBFM" -> SBFM
@@ -785,6 +786,7 @@ rule token = parse
 | "regions" { REGIONS }
 | '&' (name as x) { META x }
 | "codevar:" (name as x) { CODEVAR x }
+| ".pagealign" { DOTPAGEALIGN }
 | name as x  { check_name x }
 | eof { EOF }
 | ""  { error "AArch64 lexer" lexbuf }

@@ -533,8 +533,8 @@ F2S+DSB-ETS                                    Forbidden
 NT-11-dsbld+dsb                                Forbidden
 F2S+DSB-ETS                                    Forbidden
 NT-11-dmb+dsb                                  Forbidden
-F2.mod-reduced-with-type+BBM                   Forbidden
-F2.mod-reduced+BBM                             Forbidden
+F2.mod-reduced-with-type+BBM                   Allowed
+F2.mod-reduced+BBM                             Allowed
 NT-07-af+OBS                                   Allowed
 F2V                                            Forbidden
 F1e+Fatal                                      Allowed
@@ -547,13 +547,13 @@ ExtTLBIAfter                                   Allowed
 F1e+Handled                                    Allowed
 DBchange-UP-STR-DSB-TLBI-DSB-ISB               Forbidden
 F2.mod                                         Allowed
-F1                                             Forbidden
+F1                                             Allowed
 F1c+Fatal                                      Allowed
 DBchange-UP-STR-DSB-ISB                        Allowed
 D15347-store                                   Forbidden
 D15347-store-rel                               Forbidden
 F1b                                            Forbidden
-F1a                                            Forbidden
+F1a                                            Allowed
 D15347-store-DSB                               Forbidden
 D15347-store-DMBST                             Forbidden
 D15347-store-DMBLD                             Forbidden
@@ -562,7 +562,7 @@ D15347-store-DMB                               Forbidden
 D15347-store-DSB-ISB                           Forbidden
 D15347-load-valid                              Forbidden
 D15347-load-shoot                              Forbidden
-F2                                             Forbidden
+F2                                             Allowed
 D15347-load-rel-acq                            Forbidden
 D15347-load-DSB                                Forbidden
 D15347-load-shoot+VMALL                        Forbidden
@@ -570,7 +570,7 @@ D15347-load-DSB-ISB4                           Allowed
 D15347-load-invalid                            Forbidden
 D15347-load-DSB-ISB3                           Allowed
 D15347-load-DSB-TLBI-DSB2                      Forbidden
-F2S                                            Forbidden
+F2S                                            Allowed
 D15347-load-DSB-ISB                            Forbidden
 D15347-load-DMB                                Forbidden
 D15347-load-DSB-ISB2                           Forbidden
@@ -632,17 +632,17 @@ Artem2+TLBIx-TLBIy+dmb2                        Forbidden
 2+2WNExpExp+NExpNExp                           Allowed
 Artem3+UCx-TLBIy+dsb.ish-isb+dmb.ld            Forbidden
 2+2WNExpExp+NExpNExp+SHOW                      Forbidden
-F2.mod-with-type+BBM                           Forbidden
+F2.mod-with-type+BBM                           Allowed
 Artem3+TLBIx-TLBIy+dmb.sy+dmb.ld               Forbidden
 Artem3+TLBIy-TLBIx+dmb.sy+dmb.ld               Allowed
 NT-11-data+dsb                                 Forbidden
 Artem3+TLBIVMALL+dmb.sy+dmb.ld                 Allowed
 NT-11-addr                                     Forbidden
-F2.mod-with-type+BBM2                          Forbidden
+F2.mod-with-type+BBM2                          Allowed
 NT-11-ctrl                                     Forbidden
 F2.mod-MP-sync                                 Allowed
 Artem3+HDx-TLBIy+dsb.st+dmb.ld                 Forbidden
-F2.mod-with-type+BBM-DSB-ISB                   Forbidden
+F2.mod-with-type+BBM-DSB-ISB                   Allowed
 Artem3+HDx-TLBIy+dmb.st+dmb.ld                 Allowed
 LDR-BY2PTE-0-LLSC                              Forbidden
 NT-05-ctrl                                     Forbidden
@@ -680,7 +680,7 @@ NT-12-dmb-allha-variant1-LLSC                  Forbidden
 NT-11-tlbi-allha                               Forbidden
 NT-11-tlbi-allha+dsb                           Forbidden
 RW+RR-DMBLD+DMBLD-SWP4+WREG                    Forbidden
-F2.mod+BBM                                     Forbidden
+F2.mod+BBM                                     Allowed
 coRR-pte9-ob                                   Forbidden
 TwoPhantoms                                    Allowed
 NT-02-addr                                     Allowed
@@ -862,7 +862,7 @@ MP+dmb.st+swpal-mmufault-po                 Forbid
 2+2W+shoot+dmb.st_mmufault_db Forbid
 2+2W+shoot+dmb.sy_mmufault_db Forbid
 2+2W+shoot+po-mmufault_db     Allow 
-2+2W+shoot+rel_mmufault_db    Forbid
+2+2W+shoot+rel_mmufault_db    Allow
 MP+shoot+addrlrs-mmufault_af  Forbid
 MP+shoot+datalrs-mmufault_af  Forbid
 R+shoot+dmb.st-mmufault_af    Forbid
@@ -881,7 +881,7 @@ S+shoot+pickaddrpo_mmufault_db Allow
 S+shoot+pickctrl_mmufault_db  Allow 
 S+shoot+pickdata_mmufault_db  Allow 
 S+shoot+po-mmufault_db        Allow 
-S+shoot+rel_mmufault_db       Forbid
+S+shoot+rel_mmufault_db       Allow
 S+shoot+swpal-mmufault        Forbid
 WRWW+shoot+po-mmufault_db     Allow
 

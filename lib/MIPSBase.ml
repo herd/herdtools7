@@ -390,6 +390,7 @@ let get_next = function
   | BC (_,_,_,lbl)|BCZ (_,_,lbl) -> [Label.Next; Label.To lbl;]
 
 let nop = Some NOP
+and mk_imm_branch _ = None
 and is_nop = function
   | NOP -> true
   | _ -> false

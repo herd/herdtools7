@@ -20,6 +20,28 @@ let bool_of_string s =
   | _ ->
       let msg = Format.sprintf "expected boolean string (true/false), got: %s" s in
       raise (SpecError msg)
+
+(** Checks that the given string has balanced braces, which avoids LaTeX compilation errors. *)
+let check_balanced_braces s =
+  let rec scan i depth =
+    if i >= String.length s then
+      depth = 0
+    else
+      let c = s.[i] in
+      let new_depth =
+        match c with
+        | '{' -> depth + 1
+        | '}' -> depth - 1
+        | _ -> depth
+      in
+      if new_depth < 0 then
+        false (* More closing braces than opening *)
+      else
+        scan (i + 1) new_depth
+  in
+  if not (scan 0 0) then
+    let msg = Format.sprintf "unbalanced braces in string: %s" s in
+    raise (SpecError msg)
 %}
 
 %type <AST.t> spec
@@ -35,19 +57,18 @@ let bool_of_string s =
 %token CASE
 %token COLON_EQ
 %token EQ_COLON
+%token COND
 %token CONSTANT
 %token CONSTANTS_SET
 %token CUSTOM
 %token FUN
 %token FUNCTION
 %token INDEX
-%token LATEX
 %token LIST0
 %token LIST1
 %token MATH_MACRO
 %token MATH_LAYOUT
 %token LHS_HYPERTARGETS
-%token AUTO_NAME
 %token OPTION
 %token OPERATOR
 %token PARTIAL
@@ -55,20 +76,18 @@ let bool_of_string s =
 %token POWERSET_FINITE
 %token PROSE_APPLICATION
 %token PROSE_DESCRIPTION
+%token PROSE_TRANSITION
 %token RENDER
 %token RELATION
 %token RULE
 %token SEMANTICS
 %token SHORT_CIRCUIT_MACRO
+%token TYPECAST
 %token TYPEDEF
 %token TYPING
 %token VARIADIC
 
 %token IFF
-%token LIST
-%token SET
-%token SIZE
-%token SOME
 
 (* Punctuation and operator tokens *)
 %token ARROW
@@ -89,6 +108,9 @@ let bool_of_string s =
 %token MINUS
 %token MINUS_MINUS
 
+%nonassoc COLON_EQ
+%nonassoc EQ_COLON
+
 %token PLUS
 %token TIMES
 %token DIVIDE
@@ -102,15 +124,6 @@ let bool_of_string s =
 %token NEQ
 
 %token IF THEN ELSE
-
-%nonassoc COLON_EQ
-%nonassoc EQ_COLON
-
-%right MINUS
-%right PLUS
-%right TIMES
-%right DIVIDE
-%right EXPONENT
 %right AND
 %right OR
 %right ELSE
@@ -124,7 +137,15 @@ let bool_of_string s =
 %nonassoc GE
 %nonassoc GT
 %nonassoc NEQ
+
+%right MINUS
+%right PLUS
+%right TIMES
+%right DIVIDE
+%right EXPONENT
+
 %left LPAR
+%left DOT
 
 %%
 
@@ -265,8 +286,12 @@ let type_attribute :=
     | short_circuit_macro_attribute
 
 let prose_description_attribute ==
-    | PROSE_DESCRIPTION; EQ; template=STRING; { (Prose_Description, StringAttribute template) }
-    | template=STRING; { (Prose_Description, StringAttribute template) }
+    | PROSE_DESCRIPTION; EQ; template=STRING; {
+        check_balanced_braces template;
+        (Prose_Description, StringAttribute template) }
+    | template=STRING; {
+        check_balanced_braces template;
+        (Prose_Description, StringAttribute template) }
 
 let math_macro_attribute ==
     MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, MathMacroAttribute macro) }
@@ -283,13 +308,13 @@ let relation_attributes ==
 
 let relation_attribute :=
     | prose_application_attribute
+    | prose_transition_attribute
     | type_attribute
 
 let operator_attributes ==
     LBRACE; pairs=tclist0(operator_attribute); RBRACE; { pairs }
 
 let operator_attribute :=
-    | prose_description_attribute
     | math_macro_attribute
     | operator_style_attribute
     | prose_application_attribute
@@ -297,9 +322,17 @@ let operator_attribute :=
 let operator_style_attribute ==
     | ASSOCIATIVE; EQ; value=IDENTIFIER; { (Associative, BoolAttribute (bool_of_string value)) }
     | CUSTOM; EQ; value=IDENTIFIER; { (Custom, BoolAttribute (bool_of_string value)) }
+    | TYPECAST; EQ; value=IDENTIFIER; { (Typecast, BoolAttribute (bool_of_string value)) }
 
 let prose_application_attribute ==
-    PROSE_APPLICATION; EQ; template=STRING; { (Prose_Application, StringAttribute template) }
+    PROSE_APPLICATION; EQ; template=STRING; {
+        check_balanced_braces template;
+        (Prose_Application, StringAttribute template) }
+
+let prose_transition_attribute ==
+    PROSE_TRANSITION; EQ; template=STRING; {
+        check_balanced_braces template;
+        (Prose_Transition, StringAttribute template) }
 
 let type_variants_with_attributes :=
     | { [] }
@@ -404,16 +437,25 @@ let expr :=
       { Expr.make_tuple args }
     | lhs=expr; args=plist0(expr);
       { Expr.make_application lhs args }
-    | var=IDENTIFIER; DOT; ~=field_path;
-      { Expr.FieldAccess { var; fields = field_path} }
+    | base=expr; DOT; field=IDENTIFIER;
+      { Expr.FieldAccess { base; field } }
     | list_var=IDENTIFIER; LBRACKET; index=expr; RBRACKET;
       { Expr.make_list_index list_var index }
     | label_opt=ioption(IDENTIFIER); LBRACKET; fields=tclist1(field_and_value); RBRACKET;
       { Expr.make_record label_opt fields }
+    | base=expr; LPAR; fields=tclist1(field_and_value); RPAR;
+      { Expr.make_record_update base fields }
     | lhs=expr; ~=infix_expr_operator; rhs=expr;
       { Expr.make_operator_application infix_expr_operator [lhs; rhs] }
     | IF; cond=expr; THEN; then_branch=expr; ELSE; else_branch=expr;
       { Expr.make_operator_application "if_then_else" [cond; then_branch; else_branch] }
+    | cond_expr
+
+let cond_expr :=
+    | COND; LPAR; cases=tclist1(cond_case); RPAR;
+      { Expr.make_operator_application "cond_op" cases }
+let cond_case :=
+    | condition=expr; COLON; result=expr; { Expr.make_operator_application "cond_case" [condition; result] }
 
 let maybe_output_expr ==
     | { false }
@@ -455,10 +497,6 @@ let short_circuit_expr :=
     | lhs=IDENTIFIER; args=plist0(IDENTIFIER);
       { Expr.make_application (Expr.make_var lhs) (List.map Expr.make_var args) }
 
-let field_path :=
-  | id=IDENTIFIER; { [ id ] }
-  | id1=IDENTIFIER; DOT; fields=field_path; { id1 :: fields }
-
 let infix_expr_operator ==
     | COLON_EQ; { "assign" }
     | EQ_COLON; { "reverse_assign" }
@@ -487,9 +525,6 @@ let judgment_attributes ==
 
 let judgment_attribute :=
     | math_layout_attribute
-    | auto_name_attribute
-
-let auto_name_attribute := AUTO_NAME; EQ; value=IDENTIFIER; { (Auto_Name, BoolAttribute (bool_of_string value)) }
 
 let render_rule :=
   | RENDER; RULE; name=IDENTIFIER; EQ; relation_name=IDENTIFIER; rule_name=pared(rule_name);
