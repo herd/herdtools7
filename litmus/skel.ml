@@ -698,8 +698,8 @@ module Make
         end ;
         if do_self then begin
           let fname = "self" in
-          ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c") ;
-          ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
           O.o ("#include <" ^ fname  ^ ".h>") ;
           O.o "" ;
         end
