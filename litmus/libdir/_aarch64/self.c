@@ -17,6 +17,7 @@
 /***********************************/
 /* Support for self-modifying code */
 /***********************************/
+#include <stdlib.h>
 #include <self.h>
 #include <../utils.h>
 
