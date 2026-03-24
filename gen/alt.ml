@@ -335,6 +335,19 @@ module Make(C:Builder.S)
               Some (next :: (ERS tail,tail) :: remain)
             else
               Some (next :: remain)
+        (* TODO: this is a hack allowing `Hat` combine with `Fre` *)
+        | Hat when lhs.edge = Fr Ext ->
+            let rec modify_last change = function
+              | [] -> assert false
+              | [_] -> [change]
+              | hd :: tail -> hd :: modify_last change tail in
+            let next = snd next
+              |> modify_last rhs in
+            let next = (ERS next, next) in
+            if tail <> [] then
+              Some (next :: (ERS tail,tail) :: remain)
+            else
+              Some (next :: remain)
         | _ -> None
 
     (* List.is_empty only supports for ocaml 5.1 afterwards *)
