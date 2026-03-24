@@ -69,6 +69,7 @@ val same_instance : event -> event -> bool
   val same_proc     : event -> event -> bool
   val same_proc_not_init : event -> event -> bool
   val progorder_of  : event -> A.program_order_index option
+  val static_poi  : event -> A.program_order_index option
 
 (* Is e1 before e2 w.r.t. prog order ? Nothing assumed on e1 and e2 *)
   val po_strict : event -> event -> bool
@@ -643,6 +644,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     | IdSome i -> Some i.A.program_order_index
     | IdInit|IdSpurious -> None
 
+    let static_poi e =
+      match e.iiid with
+      | IdSome i -> Some i.A.static_poi
+      | IdInit | IdSpurious -> None
 
 (************************)
 (* Predicates on events *)
@@ -921,10 +926,21 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       Misc.is_none es.ctrl_output
 
 (****************************)
-(* Projection of event set *)
+(* Projection of event set  *)
 (****************************)
 
-    module Proj(S:MySet.S) = struct
+    (* Mimimal set signature sufficient for projection *)
+
+    module type ToProj = sig
+      type elt
+      type t
+
+      val empty : t
+      val add : elt -> t -> t
+      val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+    end
+
+    module Proj(S:ToProj) = struct
 
       let rec add_env p e = function
         | [] -> assert false
@@ -954,7 +970,16 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         | Some p -> [p]
         | None -> []) (procs_of es) es.events
 
-    module ProjRel = Proj(EventRel)
+    module ProjRel =
+      Proj
+        (struct
+          type elt = event * event
+          type t = EventRel.t
+
+          let empty = EventRel.empty
+          let add = EventRel.add
+          let fold = EventRel.fold
+        end)
 
     let proc_of_pair (e1,e2) =
       let p1 = proc_of e1 and p2 = proc_of e2 in
@@ -1027,7 +1052,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
          Printf.eprintf "Minimal avoid, input is none\n%!" ;
          let intra_causality =
            let r = iico es in
-           EventRel.filter (fun (e,_) -> not (EventSet.mem e aset)) r in
+           EventRel.restrict_domain
+             (fun e -> not (EventSet.mem e aset)) r in
          min_evts (EventSet.diff es.events aset) intra_causality
       | Some es ->
          Printf.eprintf "Minimal avoid, input is {%a}\n%!" debug_events es;
@@ -1439,9 +1465,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       let r = union es1 es2 in
       { r with
         intra_causality_data =
-        EventRel.filter
+        EventRel.restrict_rel
           (* Found that reviewing code, check by assert... *)
-          (fun (e1,e2) ->
+          (fun e1 e2 ->
             let b = e1 != e2 in
             if not b then
               eprintf "Warning: get rid of event %a\n%!" debug_event e1 ;

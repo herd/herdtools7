@@ -1,3 +1,4 @@
+
 \chapter{Dynamic Semantics Definitions\label{chap:Semantics}}
 
 The dynamic semantics of ASL define all valid behaviours of a given ASL specification.
@@ -147,10 +148,8 @@ We define the following shorthand notations for \nativevalueterm{} literals:
 We define the following types of \nativevaluesterm{}:
 \RenderTypes{native_types}
 
-
-
 \begin{definition}[Dynamic Environments\label{def:dynamicenvironments}]
-A \emph{sequential dynamic environment}, or \\ \emph{dynamic environment}
+A \emph{sequential dynamic environment}, or \\ \emph{\dynamicenvironmentterm}
 $\denv \in \dynamicenvs$
 consists of a \emph{dynamic global environment} and a \emph{dynamic local environment}.
 \hypertarget{def-pending-calls}{}%
@@ -161,7 +160,6 @@ to the number of calls being evaluated for those subprograms via the $\pendingca
 The dynamic local environment maps identifiers corresponding to local storage elements to \nativevaluesterm{}:
 
 \RenderTypes{dynamic_envs_and_components}
-
 
 \end{definition}
 
@@ -247,8 +245,8 @@ and the output nodes are contained in the set of nodes:
 We denote the empty execution graph $\emptygraph \triangleq (\emptyset, \emptyset, \emptyset)$.
 %
 We define the following functions, which return an execution graph that represents a single Read/Write Effect to a variable \texttt{x}.
-\hypertarget{operator-writeeffect}{}
-\hypertarget{operator-readeffect}{}
+\hypertarget{relation-writeeffect}{}
+\hypertarget{relation-readeffect}{}
 \begin{definition}[Read/Write Effects]
 \[
   \begin{array}{rclll}
@@ -281,6 +279,9 @@ the ordered composition $\ordered{S_1}{l}{S_2}$ is defined as follows:
 \]
 Intuitively, this composition constrains the output effects of $S_1$ to appear before any effect of $S_2$ with respect
 to the given ordering label.
+
+\texthypertarget{def-parallellist}
+We write $\parallelgraphs{L}$ for the parallel composition of all execution graphs in the list $L$.
 \end{definition}
 
 \subsection{Concurrent Values\label{sec:ConcurrentValues}}
@@ -308,7 +309,7 @@ ASL dynamic semantics mainly utilize the following types of output \semanticscon
   \Semanticsconfigurationsterm{} consisting of different combinations of values,
   execution graphs, and environments. These represent intermediate results
   generated while evaluating various constructs such as
-  expressions, side-effect-free expressions, \assignableexpressions,
+  expressions, \sideeffectfreeexpressionsterm{}, \assignableexpressions,
   local declaration items, slices, and expression lists
   (which are evaluated in two different ways, by $\ResultExprList$ and $\ResultExprListM$, for the purpose of concurrency):
 \RenderType{TNormal}
@@ -318,7 +319,7 @@ ASL dynamic semantics mainly utilize the following types of output \semanticscon
   There are two flavors of exceptions:
   exceptions without an exception value (as in \texttt{throw;}), and ones with an exception value,
   an identifier to which the Read Effect is attributed, and an associated type.
-  The ASL dynamic semantics propagate these \emph{exceptional \semanticsconfigurationsterm{}} to the nearest catch clause that matches
+  The ASL dynamic semantics propagate these \emph{exceptional \semanticsconfigurationsterm{}} to the nearest \catcherterm{} that matches
   them, and otherwise they are caught at the top-level and reported as errors (see \dynamicerrorsterm{} below).
 
   \item[Returned Values.] \Semanticsconfigurationsterm{} in \RenderType{TReturning}
@@ -343,7 +344,6 @@ ASL dynamic semantics mainly utilize the following types of output \semanticscon
 
 \end{description}
 Helper relations often have output \semanticsconfigurationsterm{} that are just tuples, without an associated configuration domain.
-
 
 
 We will say that a semantic transition
@@ -372,8 +372,8 @@ appearing are \hyperlink{def-freshvariables}{fresh}:
 
 \subsection{Extracting and Substituting Elements of Semantics Configurations}
 
-\hypertarget{operator-graphof}{}
-\hypertarget{operator-environof}{}
+\hypertarget{relation-graphof}{}
+\hypertarget{relation-environof}{}
 Given a \semanticsconfigurationterm{} $C$, we define the graph component of the \semanticsconfigurationterm{},
 $\graphof{C}$, and the environment of the \semanticsconfigurationterm{}, $\environof{C}$, as follows:
 \[
@@ -388,7 +388,7 @@ $\graphof{C}$, and the environment of the \semanticsconfigurationterm{}, $\envir
   \ResultExprList((\Ignore, \vg), \env) & \vg & \env \\
   \ResultExprListM(\Ignore, \env) & \text{undefined} & \env\\
   \ResultPattern(\Ignore, \Ignore) & \vg & \text{undefined}\\
-  \ResultCall(\Ignore, \env) & \text{undefined} & \env\\
+  \ResultCall(\Ignore, \vg) & \vg & \text{undefined}\\
   \Throwing(\Ignore, \Ignore,\vg, \env) & \vg & \env\\
   \Returning((\Ignore,\vg), \env) & \vg & \env\\
   \Continuing(\vg, \env) & \vg & \env\\
@@ -397,7 +397,7 @@ $\graphof{C}$, and the environment of the \semanticsconfigurationterm{}, $\envir
 \end{array}
 \]
 
-\hypertarget{operator-withgraph}{}
+\hypertarget{relation-withgraph}{}
 Given a \semanticsconfigurationterm{} $C$, we define $\withgraph{C}{\vgp}$ to be a \semanticsconfigurationterm{}
 like $C$ where the graph component is substituted with $\vgp$:
 \begin{small}
@@ -413,7 +413,7 @@ like $C$ where the graph component is substituted with $\vgp$:
   \ResultExprList(([i=1..k: \vv_i], \vg), \env) & \ResultExprList(([i=1..k: \vv_i], \vgp), \env)\\
   \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined}\\
   \ResultPattern(\vb, \vg) & \ResultPattern(\vb, \vgp)\\
-  \ResultCall([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined}\\
+  \ResultCall((\vvs, \gdenv), \vg) & \ResultCall((\vvs, \gdenv), \vgp)\\
   \Throwing(\valuereadfrom(\vx,\vv),\vt,\vg, \env) & \Throwing(\valuereadfrom(\vx,\vv),\vt,\vgp, \env)\\
   \Returning((i=1..k: \vv_i,\vg), \env) & \Returning((i=1..k: \vv_i,\vgp), \env)\\
   \Continuing(\vg, \env) & \Continuing(\vgp, \env)\\
@@ -432,18 +432,18 @@ like $C$ where the environment component, if one exists, is substituted with $\e
   \textbf{\Semanticsconfigurationterm{}} & \withenviron{C}{\envp}\\
   \hline
   \ResultExpr((\vv, \vg), \env) & \ResultExpr((\vv, \vg), \envp)\\
-  \ResultExprSEF(\vv, \vg) & \text{undefined}\\
+  \ResultExprSEF(\Ignore, \Ignore) & \text{undefined}\\
   \ResultLexpr(\vg, \env) & \ResultLexpr(\vg, \envp)\\
   \ResultLDI(\vg, \env) & \ResultLDI(\vg, \envp)\\
   \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \env) & \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \envp)\\
   \ResultExprList(([i=1..k: \vv_i], \vg), \env) & \ResultExprList(([i=1..k: \vv_i], \vg), \envp)\\
   \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \env) & \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \envp)\\
-  \ResultPattern(\vb, \vg) & \text{undefined}\\
-  \ResultCall([i=1..k: (\vv_i,\vg_i)], \env) & \ResultCall([i=1..k: (\vv_i,\vg_i)], \envp)\\
+  \ResultPattern(\Ignore, \Ignore) & \text{undefined}\\
+  \ResultCall(\Ignore, \Ignore) & \text{undefined}\\
   \Throwing(\valuereadfrom(\vx,\vv),\vt,\vg, \env) & \Throwing(\valuereadfrom(\vx,\vv),\vt,\vg, \envp)\\
   \Returning((i=1..k: \vv_i,\vg), \env) & \Returning((i=1..k: \vv_i,\vg), \envp)\\
   \Continuing(\vg, \env) & \Continuing(\vg, \envp)\\
-  \DynamicError(\vs) & \text{undefined}\\
+  \DynamicError(\Ignore) & \text{undefined}\\
   \Diverging & \text{undefined} \\
 \end{array}
 \]
@@ -497,7 +497,7 @@ to an output \semanticsconfigurationterm{} with the value resulting from the cal
 
 We annotate subexpressions to allow referring to them.
 
-\hypertarget{def-emptyenv}{}
+\texthypertarget{def-emptyenv}
 We define the empty environment $\emptyenv$ as $(\emptydenv, \emptytenv)$.
 
 Notice that, we have dropped the execution graph component and simplified pairs of the form $(\vv,\vg)$,
@@ -513,8 +513,8 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 
 \begin{mathpar}
 \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
-  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \veone) \evalarrow \ResultExpr(\nvint(1), \emptyenv) } \\\\
-  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vetwo) \evalarrow \ResultExpr(\nvint(2), \emptyenv) } \\\\
+  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \veone) \evalarrow \ResultExpr(\nvint(1), \emptyenv) } \hva\\\\
+  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vetwo) \evalarrow \ResultExpr(\nvint(2), \emptyenv) } \hva\\\\
   \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\evalbinop(\ADD, \nvint(1), \nvint(2)) \evalarrow \nvint(3)}
 }{
   \evalexpr( \emptyenv, \veonetwo ) \evalarrow
@@ -524,8 +524,8 @@ rule, along with the rule for binary operator (for multiplication), to evaluate 
 
 \begin{mathpar}
 \inferrule*[right=\ref{sec:SemanticsRule.Binop}]{
-  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vefour) \evalarrow \ResultExpr(\nvint(4), \emptyenv) } \\\\
-  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vefive) \evalarrow \ResultExpr(\nvint(5), \emptyenv) } \\\\
+  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vefour) \evalarrow \ResultExpr(\nvint(4), \emptyenv) } \hva\\\\
+  \inferrule*[right=\ref{sec:SemanticsRule.ELit}]{}{ \evalexpr(\emptyenv, \vefive) \evalarrow \ResultExpr(\nvint(5), \emptyenv) } \hva\\\\
   \inferrule*[right=\ref{sec:SemanticsRule.BinopValues}]{}{\evalbinop(\ADD, \nvint(4), \nvint(5)) \evalarrow \nvint(9)}
 }{
   \evalexpr( \emptyenv, \vefourfive ) \evalarrow
@@ -553,10 +553,10 @@ Further, the threading through of environments similarly impose an ordering.
 For example, \SemanticsRuleRef{ECond} is duplicated below:
 \begin{mathpar}
 \inferrule{
-  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\\\\
-  \mcond \eqname (\nvbool(\vb), \vgone)\\
-  \vep \eqdef \choice{\vb}{\veone}{\vetwo}\\\\
-  \evalexpr(\envone, \vep) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\\\\
+  \evalexpr(\env, \econd) \evalarrow \ResultExpr(\mcond, \envone) \OrAbnormal\hva\\\\
+  \mcond \reverseeqdef (\nvbool(\vb), \vgone)\\
+  \vep \eqdef \ifthenelseop[H]{\vb}{\veone}{\vetwo}\hva\\\\
+  \evalexpr(\envone, \vep) \evalarrow \ResultExpr((\vv, \vgtwo), \newenv)  \OrAbnormal\hva\\\\
   \vg \eqdef \ordered{\vgone}{\aslctrl}{\vgtwo}
 }{
   \evalexpr(\env, \overname{\ECond(\econd, \veone, \vetwo)}{\ve}) \evalarrow
@@ -653,10 +653,10 @@ obtained by expanding the macro rule for \SemanticsRuleRef{Loop}.CONTINUE:
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \envone)\\
-  \condm \eqname (\nvbool(\vb), \vgone)\\
-  \vb = \iswhile\\
+  \condm \reverseeqdef (\nvbool(\vb), \vgone)\\
+  \vb = \iswhile\hva\\
   \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp\\
-  \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo)\\
+  \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo)\hva\\
   \evalloop(\envtwo, \iswhile, \vlimitoptp, \econd, \vbody) \evalarrow \Continuing(\vgthree, \newenv)\\
   \newg \eqdef \ordered{\ordered{\vgone}{\aslctrl}{\vgtwo}}{\aslpo}{\vgthree}
 }{
@@ -669,10 +669,10 @@ for the same macro rule:
 \begin{mathpar}
 \inferrule{
   \evalexpr(\env, \econd) \evalarrow \ResultExpr(\condm, \envone)\\
-  \condm \eqname (\nvbool(\vb), \vgone)\\
-  \vb = \iswhile\\
+  \condm \reverseeqdef (\nvbool(\vb), \vgone)\\
+  \vb = \iswhile\hva\\
   \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp\\
-  \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo)\\
+  \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo)\hva\\
   \evalloop(\envtwo, \iswhile, \vlimitoptp, \econd, \vbody) \evalarrow \DivergingConfig\\
   \newg \eqdef \ordered{\ordered{\vgone}{\aslctrl}{\vgtwo}}{\aslpo}{\vgthree}
 }{

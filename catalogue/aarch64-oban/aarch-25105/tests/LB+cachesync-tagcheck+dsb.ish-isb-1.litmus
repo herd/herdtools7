@@ -1,0 +1,15 @@
+AArch64 LB+cachesync-tagcheck+dsb.ish-isb-1
+Variant=ifetch,mte
+{
+0:X0=NOP; 0:X1=P1:Lself00;
+0:X9=y:green; 1:X8=y:red; 1:X9=y:green;
+}
+ P0          | P1           ;
+ STR W0,[X1] |  STG X8,[X9] ;
+ DC CVAU,X1  |  DSB ISH     ;
+ DSB ISH     |  ISB         ;
+ IC IVAU,X1  | Lself00:     ;
+ DSB ISH     |  B L01       ;
+ L0:         |  MOV W2,#1   ;
+ STR WZR,[X9]| L01:         ;
+exists (~Fault(P0:L0) /\ 1:X2=0)

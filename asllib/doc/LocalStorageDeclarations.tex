@@ -183,8 +183,8 @@ with the type inferred type \texttt{integer{3}}.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \checkvarnotinenv(\tenv, \vx) \typearrow \True \OrTypeError\\\\
-  \checknoprecisionloss(\tty) \typearrow \True \OrTypeError\\\\
+  \checkvarnotinenv(\tenv, \vx) \typearrow \True \OrTypeError\hva\\\\
+  \checknoprecisionloss(\tty) \typearrow \True \OrTypeError\hva\\\\
   \addlocal(\tenv, \vx, \tty, \ldk) \typearrow \tenvtwo\\
   \addimmutableexpression(\tenvtwo, \ldk, \veopt, \vx) \typearrow \newtenv
 }{
@@ -192,7 +192,7 @@ with the type inferred type \texttt{integer{3}}.
 }
 \end{mathpar}
 \CodeSubsection{\LDVarBegin}{\LDVarEnd}{../Typing.ml}
-\identr{YSPM} \identd{FXST}
+
 
 \TypingRuleDef{CheckIsNotCollection}%
 \RenderRelation{check_is_not_collection}
@@ -203,58 +203,8 @@ In \listingref{checkisnotcollection}, the statement
 \TypingRuleRef{LDVar} calls \TypingRuleRef{CheckIsNotCollection}.
 \ASLListing{Declaring a local variable with a collection type}{checkisnotcollection}{\typingtests/TypingRule.CheckIsNotCollection.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item
-    \AllApplyCase{Not-Collection}
-    \begin{itemize}
-      \item \Prosemakeanonymous{\tenv}{\vt}{\vtstruct};
-      \item $\vtstruct$ is not a \collectiontypeterm{};
-      \item the result is $\True$.
-    \end{itemize}
-  \item \AllApplyCase{Collection}
-    \begin{itemize}
-      \item \Prosemakeanonymous{\tenv}{\vt}{\vtstruct};
-      \item $\vtstruct$ is a \collectiontypeterm{};
-      \item the result is a \typingerrorterm{}.
-    \end{itemize}
-  \item \AllApplyCase{Tuple}
-    \begin{itemize}
-      \item \Prosemakeanonymous{\tenv}{\vt}{\vtstruct};
-      \item $\vtstruct$ is a \tupletypeterm{} with type list $\tys$;
-      \item for every $\tty$ in $\tys$, \Prosecheckisnotcollection{\tty}{\tenv}.
-    \end{itemize}
-\end{itemize}
 
-\FormallyParagraph
-\begin{mathpar}
-  \inferrule[Collection]{
-    \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-    \astlabel(\vtstruct) = \TCollection \\
-  }{%
-    \checkisnotcollection(\tenv, \vt) \typearrow
-    \TypeErrorVal{\UnexpectedType}
-  }
-\end{mathpar}
-\begin{mathpar}
-  \inferrule[Not-Collection]{
-    \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-    \astlabel(\vtstruct) \notin \left\{ \TCollection, \TTuple \right\} \\
-  }{%
-    \checkisnotcollection(\tenv, \vt) \typearrow \True
-  }
-\end{mathpar}
-\begin{mathpar}
-  \inferrule[Tuple]{
-    \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-    \astlabel(\vtstruct) = \TTuple (\tys) \\
-    \tty \in \tys: \checkisnotcollection(\tenv, \tty) \typearrow \True
-    \OrTypeError
-  }{%
-    \checkisnotcollection(\tenv, \vt) \typearrow \True
-  }
-\end{mathpar}
+\RenderProseAndFormally{check_is_not_collection}
 
 \CodeSubsection{\CheckIsNotCollectionBegin}{\CheckIsNotCollectionEnd}{../Typing.ml}
 
@@ -264,25 +214,8 @@ In \listingref{checkisnotcollection}, the statement
 The statement \texttt{var x = 3;} in \listingref{ldvar} binds \texttt{x}
 to the evaluation of \texttt{3} in $\env$.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ldi$ is a variable declaration, $\LDIVar(\vx)$;
-  \item $\vm$ is a pair consisting of the value $\vv$ and execution graph $\vgone$;
-  \item declaring $\vx$ in $\env$ is $(\newenv, \vgtwo)$;
-  \item $\newg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\asldata$ edge.
-\end{itemize}
 
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vm \eqname (\vv, \vgone)\\
-  \declarelocalidentifier(\env, \vx, \vv)\evalarrow(\newenv, \vgtwo)\\
-  \newg \eqdef \ordered{\vgone}{\asldata}{\vgtwo}
-}{
-  \evallocaldecl(\env, \LDIVar(\vx), \vm) \evalarrow \ResultLDI(\newg, \newenv)
-}
-\end{mathpar}
+\RenderProseAndFormally{eval_local_decl_LDI_Var}
 \CodeSubsection{\EvalLDVarBegin}{\EvalLDVarEnd}{../Interpreter.ml}
 
 \section{Typing of Tuple Declarations\label{sec:Typing of Tuple Declarations}}
@@ -290,45 +223,16 @@ to the evaluation of \texttt{3} in $\env$.
 \ExampleDef{Well-typed Tuple Declarations}
 \ASLListing{Declaring a tuple in the local storage}{typing-ldtuple}{\typingtests/TypingRule.LDTuple.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ldi$ denotes a tuple of identifiers $\vids_{1..k}$, that is, $\LDITuple(\vids_{1..k})$;
-  \item obtaining the \underlyingtypeterm\ of $\tty$ in $\tenv$ yields $\vtp$\ProseOrTypeError;
-  \item determining whether $\vtp$ is a \tupletypeterm{} yields $\True$\ProseOrTypeError;
-  \item determining whether the number of elements of $\vtp$ is $k$ yields $\True$\ProseOrTypeError;
-  \item declaring the identifiers in $\vids$ in the \staticenvironmentterm{} $\tenv$ from right to left with their corresponding
-        (that is, with the same index) types $t_{1..k}$ in $\tenv$,
-        propagating static environments from one declaration to the next,
-        yields the resulting environment $\newtenv$\ProseOrTypeError.
-\end{itemize}
 
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \makeanonymous(\tenv, \tty) \typearrow \vtp \OrTypeError\\\\
-  \techeck(\astlabel(\vtp) = \TTuple, \UnexpectedType) \typearrow \True \OrTypeError\\\\
-  \vtp \eqname \TTuple([\vt_{1..n}])\\\\
-  \techeck(k = n, \UnexpectedType) \typearrow \True \OrTypeError\\\\
-  \newtenv_k \eqdef \tenv\\\\
-  {
-    \begin{array}{r}
-      i=k..1: \hfill \\
-      \quad \checkvarnotinenv(\newtenv_i, \vids_i) \typearrow \True \OrTypeError\\
-      \quad \addlocal(\tenv, \vids_i, \vt_i, \ldk) \typearrow \newtenv_{i-1}
-    \end{array}
-  }\\\\
-  \newtenv \eqdef \newtenv_0
-}{
-  {
-  \begin{array}{r}
-  \annotatelocaldeclitem(\tenv, \tty, \ldk, \veopt, \overname{\LDITuple(\vids_{1..k})}{\ldi}) \typearrow \\
-  \newtenv
-  \end{array}
-  }
-}
-\end{mathpar}
+\RenderProseAndFormally{annotate_local_decl_item}
 \CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Typing.ml}
+
+\TypingRuleDef{AddLocalVars}
+\RenderRelation{add_local_vars}
+
+See \ExampleRef{Well-typed Tuple Declarations}.
+
+\RenderProseAndFormally{add_local_vars}
 
 \section{Semantics of Tuple Declarations\label{sec:Semantics of Tuple Declarations}}
 \SemanticsRuleDef{LDTuple}
@@ -339,30 +243,8 @@ In \listingref{semantics-ldtuple},
 evaluation of \texttt{3} in $\env$.
 \ASLListing{Evaluating a tuple declaration in the local storage}{semantics-ldtuple}{\semanticstests/SemanticsRule.LDTuple.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ldi$ declares a list of local variables, $\LDITuple(\vids)$;
-  \item $\vm$ is a pair consisting of the native vector $\vv$ and execution graph $\vg$;
-  \item $\vids$ is a list of identifiers $\id_{1..k}$;
-  \item the value at each index of $\vv$ is $\vv_i$, for $i=1..k$;
-  \item $\liv$ is the list of pairs $(\vv_i, \vg)$, for $i=1..k$;
-  \item the output configuration is obtained by declaring each identifier $\id_i$
-  with the corresponding value ($\vm$ component) $(\vv_i, \vg)$.
-\end{itemize}
 
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vm \eqname (\vv, \vg)\\
-  \ldis \eqname \id_{1..k}\\
-  i=1..k: \getindex(i, \vv) \evalarrow \vv_i\\
-  \liv \eqname [i=1..k: (\vv_i, \vg)]\\
-  \declareldituple(\env, \vids, \liv) \evalarrow C
-}{
-  \evallocaldecl(\env, \LDITuple(\vids), \vm) \evalarrow C
-}
-\end{mathpar}
+\RenderProseAndFormally{eval_local_decl_LDI_Tuple}
 \CodeSubsection{\EvalLDTupleBegin}{\EvalLDTupleEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{DeclareLDITuple}
@@ -370,44 +252,5 @@ evaluation of \texttt{3} in $\env$.
 
 See \ExampleRef{Evaluation of Tuple Declarations}.
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item both $\vids$ and $\liv$ are empty lists;
-    \item \Proseeqdef{$\vg$}{the empty \executiongraphterm};
-    \item \Proseeqdef{$\newenv$}{$\env$}.
-  \end{itemize}
 
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item $\vids$ is a list with \head{} $\id$ and \tail{} $\vids'$;
-    \item $\liv$ is a list with \head{} $\vm$ and \tail{} $\liv'$;
-    \item applying $\declarelocalidentifier$ to $\id$ and $\vv$ in $\env$ yields $(\envone, \vgtwo)$;
-    \item applying $\declareldituple$ to $\vids'$ and $\liv'$ in $\envone$ yields\\ $\ResultLDI(\vgthree, \newenv)$;
-    \item \Proseeqdef{$\vg$}{the parallel composition of the ordered composition of $\vgone$ and $\vgtwo$
-          with the $\asldata$ edge, and $\vgthree$}.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[empty]{}
-{
-  \declareldituple(\env, \overname{\emptylist}{\vids}, \overname{\emptylist}{\liv}) \evalarrow \ResultLDI(\emptygraph, \env)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  \vids = [\id] \concat \vids'\\
-  \liv = [\vm] \concat \liv'\\
-  \vm \eqname (\vv, \vgone)\\\\
-  \declarelocalidentifier(\env, \id, \vv) \evalarrow (\envone, \vgtwo)\\
-  \declareldituple(\envone, \vids', \liv') \evalarrow \ResultLDI(\vgthree, \newenv)\\
-  \vg \eqdef (\ordered{\vgone}{\asldata}{\vgtwo}) \parallelcomp \vgthree\\
-}{
-  \declareldituple(\env, \vids, \liv) \evalarrow \ResultLDI(\vg, \newenv)
-}
-\end{mathpar}
+\RenderProseAndFormally{declare_ldi_tuple}

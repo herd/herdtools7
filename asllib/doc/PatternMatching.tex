@@ -65,20 +65,7 @@ transforms a pattern parse node $\vparsednode$ into a pattern AST node $\vastnod
 \TypingRuleDef{PAll}
 The pattern \verb|-| in \listingref{semantics-pall} is well-typed.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vp$ is the pattern matching everything, that is, $\PatternAll$;
-  \item \Proseeqdef{$\newp$}{$\vp$};
-  \item \Proseeqdef{$\vses$}{the empty set}.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}
-{
-  \annotatepattern(\tenv, \vt, \overname{\PatternAll}{\vp}) \typearrow (\overname{\PatternAll}{\newp}, \overname{\emptyset}{\vses})
-}
-\end{mathpar}
+\RenderProseAndFormally{annotate_pattern_all}
 \CodeSubsection{\PAllBegin}{\PAllEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -87,21 +74,8 @@ The pattern \verb|-| in \listingref{semantics-pall} is well-typed.
 In \listingref{semantics-pall}, \texttt{match\_me} evaluates to \True,
 since \texttt{-} matches any value and \texttt{42} in particular.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vp$ is the pattern that matches everything, $\PatternAll$, and therefore
-    matches $\vv$;
-  \item $\vb$ is the native Boolean value \True;
-  \item $\newg$ is the empty graph.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}
-{
-  \evalpattern(\env, \Ignore, \PatternAll) \evalarrow \ResultPattern(\nvbool(\True), \emptygraph)
-}
-\end{mathpar}
+
+\RenderProseAndFormally{eval_pattern_PAll}
 \CodeSubsection{\EvalPAllBegin}{\EvalPAllEnd}{../Interpreter.ml}
 
 \section{Matching a Single Value\label{sec:MatchingASingleValue}}
@@ -130,106 +104,8 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 \listingref{typing-psingle-bad} shows an ill-typed single-expression pattern.
 \ASLListing{Ill-typed single-expression pattern}{typing-psingle-bad}{\typingtests/TypingRule.PSingle.bad.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vp$ is the pattern that matches the expression $\ve$, that is, $\PatternSingle(\ve)$;
-  \item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vses)$\ProseOrTypeError;
-  \item \Prosechecksymbolicallyevaluable{$\vses$};
-  \item obtaining the \underlyingtypeterm\ of $\vt$ yields $\vtstruct$\ProseOrTypeError;
-  \item obtaining the \underlyingtypeterm\ of $\vte$ yields $\vtestruct$\ProseOrTypeError;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{t\_bool, t\_real, t\_int, t\_string}
-    \begin{itemize}
-      \item the AST label of $\vtstruct$ is one of $\TBool$, $\TReal$, $\TInt$, or $\TString$;
-      \item checking that the labels of $\vtstruct$ and $\vtestruct$ are equal yields $\True$\ProseOrTypeError;
-    \end{itemize}
 
-    \item \AllApplyCase{t\_bits}
-    \begin{itemize}
-      \item the AST label of $\vtstruct$ is $\TBits$;
-      \item checking that the labels of $\vtstruct$ and $\vtestruct$ are equal yields $\True$\ProseOrTypeError;
-      \item determining whether the bitwidths of $\vtstruct$ and $\vtestruct$ are equal yields $\True$\ProseOrTypeError;
-    \end{itemize}
-
-    \item \AllApplyCase{t\_enum}
-    \begin{itemize}
-      \item the AST label of $\vtstruct$ is $\TEnum$;
-      \item checking that the labels of $\vtstruct$ and $\vtestruct$ are equal yields $\True$\ProseOrTypeError;
-      \item determining whether the lists of enumeration literals of $\vtstruct$ and $\vtestruct$ are equal yields $\True$\ProseOrTypeError;
-    \end{itemize}
-
-    \item \AllApplyCase{error}
-    \begin{itemize}
-      \item determining whether the labels of $\vtstruct$ and $\vtestruct$ are the same yields $\True$\ProseOrTypeError;
-      \item the label of $\vtstruct$ is not one of $\TBool$, $\TReal$, $\TInt$, $\TBits$, or $\TEnum$;
-      \item the result is a \typingerrorterm{} indicating that the types $\vt$ and $\vte$ are inappropriate for this pattern.
-    \end{itemize}
-  \end{itemize}
-  \item $\newp$ is the pattern that matches the expression $\vep$, that is, $\PatternSingle(\vep)$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[t\_bool, t\_real, t\_int, t\_string]{
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
-  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
-  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
-  \commonprefixline\\\\
-  \astlabel(\vtstruct) \in \{\TBool, \TReal, \TInt, \TString\}\\
-  \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError
-}{
-  \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow (\overname{\PatternSingle(\vep)}{\newp}, \vses)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[t\_bits]{
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
-  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
-  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
-  \commonprefixline\\\\
-  \astlabel(\vtstruct) = \TBits\\
-  \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError\\
-  \bitwidthequal(\tenv, \vtstruct, \vtestruct) \typearrow \vb\\
-  \techeck(\vb, \BadOperands) \typearrow \True \OrTypeError
-}{
-  \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow (\overname{\PatternSingle(\vep)}{\newp}, \vses)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[t\_enum]{
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
-  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
-  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
-  \commonprefixline\\\\
-  \astlabel(\vtstruct) = \TEnum\\
-  \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError\\
-  \vtstruct \eqname \TEnum(\vlione)\\
-  \vtestruct \eqname \TEnum(\vlitwo)\\
-  \techeck(\vlione = \vlitwo, \BadOperands) \typearrow \True \OrTypeError\\
-}{
-  \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow (\overname{\PatternSingle(\vep)}{\newp}, \vses)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[error]{
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
-  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
-  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
-  \commonprefixline\\\\
-  \techeck(\astlabel(\vtstruct) = \astlabel(\vtestruct), \BadOperands) \typearrow \True \OrTypeError\\
-  \astlabel(\vtstruct) \not\in \{\TBool, \TReal, \TInt, \TBits, \TEnum\}
-}{
-  \annotatepattern(\tenv, \vt, \overname{\PatternSingle(\ve)}{\vp}) \typearrow \TypeErrorVal{\UnexpectedType}
-}
-\end{mathpar}
+\RenderProseAndFormally{annotate_pattern_single}
 \CodeSubsection{\PSingleBegin}{\PSingleEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -239,25 +115,8 @@ In \listingref{semantics-psingle},
 \texttt{match\_true} evaluates to \True, since \texttt{42} matches \verb|{42}|, whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does not match \verb|{3}|.
 \ASLListing{Matching against a single value}{semantics-psingle}{\semanticstests/SemanticsRule.PSingle.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vp$ is the condition corresponding to being equal to the
-    side-effect-free expression $\ve$, $\PatternSingle(\ve)$;
-  \item the side-effect-free evaluation of $\ve$ in
-    environment $\env$ is \\ $\ResultExprSEF(\vvone, \newg)$\ProseOrDynErrorDiverging;
-  \item $\vb$ is the Boolean value corresponding to whether $\vv$
-    is equal to $\vvone$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
-  \evalbinop(\EQ, \vv, \vvone) \evalarrow \vb
-}{
-  \evalpattern(\env, \vv, \overname{\PatternSingle(\ve)}{\vp}) \evalarrow \ResultPattern(\vb, \newg)
-}
-\end{mathpar}
+
+\RenderProseAndFormally{eval_pattern_PSingle}
 \CodeSubsection{\EvalPSingleBegin}{\EvalPSingleEnd}{../Interpreter.ml}
 
 \section{Matching a Range of Integers\label{sec:MatchingARangeOfIntegers}}
@@ -290,44 +149,8 @@ In \listingref{semantics-psingle},
 \listingref{typing-prange-bad} shows ill-typed range patterns.
 \ASLListing{Ill-typed range patterns}{typing-prange-bad}{\typingtests/TypingRule.PRange.bad.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vp$ is the pattern that matches anything within the range given by
-  expressions $\veone$ and $\vetwo$, that is, $\PatternRange(\veone, \vetwo)$;
-  \item \Proseannotatesymbolicallyevaluableexpr{$\tenv$}{$\veone$}{$(\vteone, \veonep, \vsesone)$}\ProseOrTypeError;
-  \item \Proseannotatesymbolicallyevaluableexpr{$\tenv$}{$\vetwo$}{$(\vtetwo, \vetwop, \vsestwo)$}\ProseOrTypeError;
-  \item define $\vses$ as the union of $\vsesone$ and $\vsestwo$;
-  \item determining whether both $\veonep$ and $\vetwop$ are compile-time constant expressions yields $\True$\ProseOrTypeError;
-  \item obtaining the \underlyingtypeterm\ for $\vt$, $\vteone$, and $\vtetwo$ yields
-        $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$, respectively\ProseOrTypeError;
-  \item checking that the AST labels of $\vtstruct$, $\vteonestruct$, and $\vtetwostruct$ are all the same and are either
-        $\TInt$ or $\TReal$ yields $\True$. Otherwise, the result is a \typingerrorterm{}, which short-circuits the entire rule.
-        The \typingerrorterm{} indicates that the types of
-        $\veone$, $\vetwo$ and the type $\vt$ must be either of integer type or of \realtypeterm{}.
-  \item $\newp$ is a range pattern with bounds $\veonep$ and $\vetwop$ ($\PatternRange(\veonep, \vetwop)$).
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vp = \PatternRange(\veone, \vetwo)\\
-  \annotatesymbolicallyevaluableexpr(\tenv, \veone) \typearrow (\vteone, \veonep, \vsesone) \OrTypeError\\\\
-  \annotatesymbolicallyevaluableexpr(\tenv, \vetwo) \typearrow (\vtetwo, \vetwop, \vsestwo) \OrTypeError\\\\
-  \vses \eqdef \vsesone \cup \vsestwo\\
-  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vteone) \typearrow \vteonestruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vtetwo) \typearrow \vtetwostruct \OrTypeError\\\\
-  {
-    \begin{array}{rl}
-      \vb \eqdef& \astlabel(\vtstruct) = \astlabel(\vteonestruct) = \astlabel(\vtetwostruct)\ \land\\
-                & \astlabel(\vtstruct) \in \{\TInt, \TReal\}
-    \end{array}
-  }\\
-  \techeck(\vb, \BadOperands) \typearrow \True \OrTypeError
-}{
-  \annotatepattern(\tenv, \vt, \vp) \typearrow (\overname{\PatternRange(\veonep, \vetwop)}{\newp}, \vses)
-}
-\end{mathpar}
+
+\RenderProseAndFormally{annotate_pattern_range}
 \CodeSubsection{\PRangeBegin}{\PRangeEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -340,35 +163,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{1} is outside t
 range given by \texttt{3..42}.
 \ASLListing{Matching against a range of values}{semantics-prange}{\semanticstests/SemanticsRule.PRange.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vp$ is the condition corresponding to being greater than or equal
-    to $\veone$, and less than or equal to $\vetwo$, that is, $\PatternRange(\veone, \vetwo)$;
-  \item $\veone$ and $\vetwo$ are side-effect-free expressions;
-  \item the side-effect-free evaluation of $\veone$ in $\env$ is $\ResultExprSEF(\vvone, \vgone)$\ProseOrDynErrorDiverging;
-  \item the side-effect-free evaluation of $\vetwo$ in $\env$ is $\ResultExprSEF(\vvtwo, \vgtwo)$\ProseOrDynErrorDiverging;
-  \item $\vbone$ is the Boolean value corresponding to whether
-    $\vv$ is greater than or equal to $\vvone$;
-    \item $\vbtwo$ is the Boolean value corresponding to whether
-    $\vv$ is less than or equal to $\vvtwo$;
-  \item $\vb$ is the Boolean conjunction of $\vbone$ and
-  $\vbtwo$;
-  \item $\newg$ is the parallel composition of $\vgone$ and $\vgtwo$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\vvone, \vgone) \OrDynErrorDiverging\\\\
-  \evalbinop(\GE, \vv, \vvone) \evalarrow \vbone\\
-  \evalexprsef(\env, \vetwo) \evalarrow \ResultExprSEF(\vvtwo, \vgtwo) \OrDynErrorDiverging\\\\
-  \evalbinop(\LE, \vv, \vvtwo) \evalarrow \vbtwo\\
-  \evalbinop(\BAND, \vbone, \vbtwo) \evalarrow \vb\\
-  \newg \eqdef \vgone \parallelcomp \vgtwo
-}{
-  \evalpattern(\env, \vv, \PatternRange(\veone, \vetwo)) \evalarrow \ResultPattern(\vb, \newg)
-}
-\end{mathpar}
+
+\RenderProseAndFormally{eval_pattern_PRange}
 \CodeSubsection{\EvalPRangeBegin}{\EvalPRangeEnd}{../Interpreter.ml}
 
 \section{Matching an Upper Bounded Range of Integers\label{sec:MatchingAnUpperBoundedRangeOfIntegers}}
@@ -397,40 +193,8 @@ range given by \texttt{3..42}.
 \listingref{typing-pleq-bad} shows examples of ill-typed less-or-equal patterns.
 \ASLListing{Ill-typed less-or-equal patterns}{typing-pleq-bad}{\typingtests/TypingRule.PLeq.bad.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\vp$ is the pattern that matches anything less than or equal to an expression $\ve$,
-that is, $\PatternLeq(\ve)$;
-\item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vses)$\ProseOrTypeError;
-\item \Prosechecksymbolicallyevaluable{$\vses$};
-\item obtaining the \underlyingtypeterm\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
-\item obtaining the \underlyingtypeterm\ of $\vte$ in $\tenv$ yields $\vtestruct$\ProseOrTypeError;
-\item $\vb$ is true if and only if $\vtstruct$ and $\vtestruct$ are both integer types or both the \realtypeterm{};
-\item if $\vb$ is $\False$ a \typingerrorterm{} (\BadOperands) is returned (indicating that the types of $\vt$ and $\vte$
-      are inappropriate for the $\LE$ operator),
-      which short-circuits the entire rule;
-\item $\newp$ is the pattern that matches anything less than or equal to $\vep$.
-\end{itemize}
 
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
-  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
-  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
-  {
-    \begin{array}{rl}
-      \vb \eqdef& \astlabel(\vtstruct) = \astlabel(\vtestruct)\ \land\\
-                & \astlabel(\vtstruct) \in \{\TInt, \TReal\}
-    \end{array}
-  }\\
-  \techeck(\vb, \BadOperands) \typearrow \True \OrTypeError
-}{
-  \annotatepattern(\tenv, \vt, \overname{\PatternLeq(\ve)}{\vp}) \typearrow (\overname{\PatternLeq(\vep)}{\newp}, \vses)
-}
-\end{mathpar}
+\RenderProseAndFormally{annotate_pattern_leq}
 \CodeSubsection{\PLeqBegin}{\PLeqEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -441,26 +205,8 @@ In \listingref{semantics-pleq},
 whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less than or equal to \texttt{3}.
 \ASLListing{Matching against an upper bound value}{semantics-pleq}{\semanticstests/SemanticsRule.PLeq.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\vp$ is the condition corresponding to being less than or equal
-      to the side-effect-free expression $\ve$, $\PatternLeq(\ve)$;
-\item the side-effect-free evaluation of $\ve$ is
-      $\ResultExprSEF(\vvone, \newg)$\ProseOrDynErrorDiverging;
-\item $\vb$ is the Boolean value corresponding to whether $\vv$
-      is less than or equal to $\vvone$.
-\end{itemize}
 
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
-  \evalbinop(\LE, \vv, \vvone) \evalarrow \vb
-}{
-  \evalpattern(\env, \vv, \PatternLeq(\ve)) \evalarrow \ResultPattern(\vb, \newg)
-}
-\end{mathpar}
+\RenderProseAndFormally{eval_pattern_PLeq}
 \CodeSubsection{\EvalPLeqBegin}{\EvalPLeqEnd}{../Interpreter.ml}
 
 \section{Matching a Lower Bounded Range of Integers\label{sec:MatchingALowerBoundedRangeOfIntegers}}
@@ -489,39 +235,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \listingref{typing-pgeq-bad} shows examples of ill-typed greater-or-equal patterns.
 \ASLListing{Ill-typed greater-or-equal patterns}{typing-pgeq-bad}{\typingtests/TypingRule.PGeq.bad.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\vp$ is the pattern that matches anything greater than or equal to an expression $\ve$,
-      that is, $\PatternGeq(\ve)$;
-\item annotating the expression $\ve$ in $\tenv$ yields $(\vte, \vep, \vses)$\ProseOrTypeError;
-\item \Prosechecksymbolicallyevaluable{$\vses$};
-\item obtaining the \underlyingtypeterm\ of $\vt$ in $\tenv$ yields $\vtstruct$\ProseOrTypeError;
-\item obtaining the \underlyingtypeterm\ of $\vte$ in $\tenv$ yields $\vtestruct$\ProseOrTypeError;
-\item $\vb$ is true if and only if $\vtstruct$ and $\vtestruct$ are both integer types or both the \realtypeterm{};
-\item if $\vb$ is $\False$ a \typingerrorterm{} is returned (indicating that the types of $\vt$ and $\vte$
-      are inappropriate for the $\GE$ operator),
-      which short-circuits the entire rule;
-\item $\newp$ is the pattern that matches anything greater than or equal to $\vep$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotateexpr(\tenv, \ve) \typearrow (\vte, \vep, \vses) \OrTypeError\\\\
-  \checksymbolicallyevaluable(\vses) \typearrow \True \OrTypeError\\\\
-  \makeanonymous(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \makeanonymous(\tenv, \vte) \typearrow \vtestruct \OrTypeError\\\\
-  {
-    \begin{array}{rl}
-      \vb \eqdef& \astlabel(\vtstruct) = \astlabel(\vtestruct)\ \land\\
-                & \astlabel(\vtstruct) \in \{\TInt, \TReal\}
-    \end{array}
-  }\\
-  \techeck(\vb, \BadOperands) \typearrow \True \OrTypeError
-}{
-  \annotatepattern(\tenv, \vt, \overname{\PatternGeq(\ve)}{\vp}) \typearrow (\overname{\PatternGeq(\vep)}{\newp}, \vses)
-}
-\end{mathpar}
+
+\RenderProseAndFormally{annotate_pattern_geq}
 \CodeSubsection{\PGeqBegin}{\PGeqEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -532,26 +247,8 @@ In \listingref{semantics-pgeq},
 whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not greater than or equal to \texttt{42}.
 \ASLListing{Matching against a lower bound}{semantics-pgeq}{\semanticstests/SemanticsRule.PGeq.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\vp$ is the condition corresponding to being greater than or equal
-      than the side-effect-free expression $\ve$, $\PatternGeq(\ve)$;
-\item the side-effect-free evaluation of $\ve$ is
-      $\ResultExprSEF(\vvone, \newg)$\ProseOrDynErrorDiverging;
-\item $\vb$ is the Boolean value corresponding to whether $\vv$
-      is greater than or equal to $\vvone$.
-\end{itemize}
 
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\vvone, \newg) \OrDynErrorDiverging\\\\
-  \evalbinop(\GE, \vv, \vvone) \evalarrow \vb
-}{
-  \evalpattern(\env, \vv, \PatternGeq(\ve)) \evalarrow \ResultPattern(\vb, \newg)
-}
-\end{mathpar}
+\RenderProseAndFormally{eval_pattern_PGeq}
 \CodeSubsection{\EvalPGeqBegin}{\EvalPGeqEnd}{../Interpreter.ml}
 
 \section{Matching a Bitmask\label{sec:MatchingABitmask}}
@@ -583,29 +280,10 @@ and bit sequences in parentheses represent, don't-care values.
 \listingref{typing-pmask-bad} shows examples of ill-typed mask patterns.
 \ASLListing{An Ill-typed mask pattern}{typing-pmask-bad}{\typingtests/TypingRule.PMask.bad.asl}
 
-\ProseParagraph
-\AllApply
-  \begin{itemize}
-  \item $\vp$ is the pattern that matches a mask $\vm$, that is, $\PatternMask(\vm)$;
-  \item determining whether $\vt$ has the structure of a bitvector type yields $\True$\ProseOrTypeError;
-  \item $\vn$ is the length of mask $\vm$;
-  \item determining whether $\vt$ \typesatisfiesterm\ the bitvector type of length $\vn$ \\
-        (that is, $\TBits(\vn, \emptylist)$) yields $\True$\ProseOrTypeError;
-  \item $\newp$ is $\vp$;
-  \item define $\vses$ as the empty set.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \checkstructurelabel(\tenv, \vt, \TBits) \typearrow \True \OrTypeError\\\\
-  \vn \eqdef \listlen{\vm}\\
-  \checktypesatisfies(\tenv, \vt, \TBits(\vn, \emptylist)) \typearrow \True \OrTypeError
-}{
-  \annotatepattern(\tenv, \vt, \overname{\PatternMask(\vm)}{\vp}) \typearrow (\overname{\PatternMask(\vm)}{\newp}, \overname{\emptyset}{\vses})
-}
-\end{mathpar}
+
+\RenderProseAndFormally{annotate_pattern_mask}
 \CodeSubsection{\PMaskBegin}{\PMaskEnd}{../Typing.ml}
-\identi{VMKF}
+
 
 \subsection{Semantics}
 \SemanticsRuleDef{PMask}
@@ -616,35 +294,12 @@ whereas \texttt{match\_false} evaluates to \False, since
 \texttt{101010} does not match the bitmask \texttt{0x1010}.
 \ASLListing{Matching against a bitmask}{semantics-pmask}{\semanticstests/SemanticsRule.PMask.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\vp$ is an empty mask pattern, $\PatternMask(\emptylist)$ (with spaces removed);
-    \item $\vv$ is an empty native bitvector ($\nvbitvector(\emptylist)$);
-    \item \Proseeqdef{$\vb$}{$\True$};
-    \item $\newg$ is the empty graph.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item $\vp$ is a mask pattern, $\PatternMask(\vm)$,
-    of length $n$ (with spaces removed);
-    \item $\vv$ is a native bitvector of bits $\vu_{1..n}$;
-    \item $\vb$ is the native Boolean formed from the conjunction of Boolean values for each $i$,
-    where the bit $\vu_i$ is checked for matching the mask character $\vm_i$;
-    \item $\newg$ is the empty graph.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
 \RenderRelation{mask_match}
-It is defined by the following table:
+It is defined by the following table where the rows correspond to values of the bit and the columns correspond to mask values:
 \[
 \begin{array}{|c|c|c|c|}
   \hline
-  \maskmatch & 0 & 1 & \vx\\
+  \maskmatch & \zerobit & \onebit & \xbit\\
   \hline
   0 & \True & \False & \True\\
   \hline
@@ -653,21 +308,7 @@ It is defined by the following table:
 \end{array}
 \]
 
-\begin{mathpar}
-\inferrule[empty]{}{
-  \evalpattern(\env, \overname{\nvbitvector(\emptylist)}{\vv}, \PatternMask(\emptylist)) \evalarrow \ResultPattern(\True, \emptygraph)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  \vm = \vm_{1..n}\\
-  \vv = \nvbitvector(\vu_{1..n})\\
-  \vb \eqdef \nvbool(\bigwedge_{i=1..n} \maskmatch(\vm_i, \vu_i))
-}{
-  \evalpattern(\env, \vv, \PatternMask(\vm)) \evalarrow \ResultPattern(\vb, \emptygraph)
-}
-\end{mathpar}
+\RenderProseAndFormally{eval_pattern_PMask}
 \CodeSubsection{\EvalPMaskBegin}{\EvalPMaskEnd}{../Interpreter.ml}
 
 \section{Matching a Tuple of Patterns\label{sec:MatchingATupleOfPatterns}}
@@ -703,36 +344,8 @@ In contrast, the tuple patterns in \listingref{typing-ptuple-bad} and \listingre
 \ASLListing{Ill-typed tuple pattern due to order of elements}{typing-ptuple-bad}{\typingtests/TypingRule.PTuple.bad.asl}
 \ASLListing{Ill-typed tuple pattern due to number of elements}{typing-ptuple-bad2}{\typingtests/TypingRule.PTuple.bad2.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vp$ is the pattern that matches a tuple $\vli$, that is, $\PatternTuple(\vli)$;
-  \item obtaining the \structureterm\ of $\vt$ yields $\vtstruct$\ProseOrTypeError;
-  \item determining whether $\vtstruct$ is a \tupletypeterm{} yields $\True$\ProseTerminateAs{\UnexpectedType};
-  \item $\vtstruct$ is a \tupletypeterm{} with list of tuple types $\vts$;
-  \item determining whether $\vts$ is a list of the same size as $\vli$ yields $\True$\ProseTerminateAs{\UnexpectedType};
-  \item annotating each pattern in $\vli$ with the corresponding type in $\vts$ for each \Proselistrange{$i$}{$\vli$},
-        yields $(\vlip[i], \vxs_i)$\ProseOrTypeError;
-  \item $\newli$ is the list of annotated patterns $\vlip[\vi]$ at the same positions those of $\vli$;
-  \item $\newp$ is the pattern that matches the tuple $\newli$ ($\PatternTuple(\newli)$);
-  \item define $\vses$ as the union of all $\vxs_i$, for each \Proselistrange{$i$}{$\vli$}.
-\end{itemize}
 
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vp = \PatternTuple(\vli)\\
-  \tstruct(\tenv, \vt) \typearrow \vtstruct \OrTypeError\\\\
-  \techeck(\astlabel(\vtstruct) = \TTuple, \UnexpectedType) \typearrow \True \OrTypeError\\\\
-  \vtstruct \eqname \TTuple(\vts)\\
-  \techeck(\equallength(\vli, \vts), \UnexpectedType) \typearrow \True \OrTypeError\\\\
-  i\in\listrange(\vli): \annotatepattern(\tenv, \vts[i], \vli[i]) \typearrow (\vlip[i], \vxs_i) \OrTypeError\\\\
-  \newli \eqdef i\in\listrange(\vli): \vlip[i]\\
-  \vses \eqdef \bigcup_{i\in\listrange(\vli)} \vxs_i
-}{
-  \annotatepattern(\tenv, \vt, \vp) \typearrow (\overname{\PatternTuple(\newli)}{\newp}, \vses)
-}
-\end{mathpar}
+\RenderProseAndFormally{annotate_pattern_tuple}
 \CodeSubsection{\PTupleBegin}{\PTupleEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -747,28 +360,8 @@ whereas \\
 the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patterns \texttt{(>= 42, 'xx101010')}.
 \ASLListing{Matching against a tuple of patterns}{semantics-ptuple}{\semanticstests/SemanticsRule.PTuple.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vp$ is a list of patterns $\vps$ of length $k$, $\PatternTuple(\vps)$;
-  \item obtaining the value at index $\vi$ from $\vv$, for each $\vi=1..k$, yields $\vvs[i]$\ProseOrError;
-  \item evaluating the value $\vvs[i]$ against the pattern $\vp_i$ in environment $\env$,
-        for each $\vi=1..k$, yields the Boolean $\vb[i]$ and \executiongraphterm{} $\vg[i]$\ProseOrDynErrorDiverging;
-  \item $\vb$ is the conjunction of all Boolean values in $\vbs$;
-  \item $\vg$ is the parallel composition of all \executiongraphsterm{} in $\vg$.
-\end{itemize}
 
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  i=1..k: \getindex(i, \vv) \evalarrow \vvs[i]\OrDynError\\
-  i=1..k: \evalpattern(\env, \vvs[i], \vps[i]) \evalarrow \ResultPattern(\nvbool(\vbs[i]), \vg[i]) \OrDynErrorDiverging\\\\
-  \vb \eqdef \nvbool(\bigwedge_{i=1..k} \vbs[i])\\
-  \vg \eqdef \vg[1] \parallelcomp \ldots \parallelcomp \vg[k]
-}{
-  \evalpattern(\env, \vv, \overname{\PatternTuple(\vps)}{\vp}) \evalarrow \ResultPattern(\vb, \overname{\emptygraph}{\newg})
-}
-\end{mathpar}
+\RenderProseAndFormally{eval_pattern_PTuple}
 \CodeSubsection{\EvalPTupleBegin}{\EvalPTupleEnd}{../Interpreter.ml}
 
 \section{Matching Any Pattern in a Set of Patterns\label{sec:MatchingAnyPatternInASetOfPatterns}}
@@ -859,7 +452,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule{
-  \vl\in\vli: \annotatepattern(\tenv, \vt, \vl) \typearrow (\newl_\vl, \vxs_\vl) \OrTypeError\\\\
+  \vl\in\vli: \annotatepattern(\tenv, \vt, \vl) \typearrow (\newl_\vl, \vxs_\vl) \OrTypeError\hva\\\\
   \newli \eqdef [\vl\in\vli: \newl_\vl]\\
   \vses \eqdef \bigcup_{\vl\in\vli} \vxs_\vl
 }{
@@ -877,27 +470,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does not ma
 any pattern in \verb|{3, 4}|.
 \ASLListing{Matching against any pattern in a list of patterns}{semantics-pany}{\semanticstests/SemanticsRule.PAny.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vp$ is a list of patterns, $\PatternAny(\vps)$;
-  \item $\vps$ is $\vp_{1..k}$;
-  \item evaluating each pattern $\vp_i$ in $\env$ results in $\ResultPattern(\nvbool(\vb_i), \vg_i)$\ProseOrDynErrorDiverging;
-  \item $\vb$ is the native Boolean which is the disjunction of $\vb_i$, for $i=1..k$;
-  \item $\newg$ is the parallel composition of all execution graphs $\vg_i$, for $i=1..k$.
-\end{itemize}
 
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vps \eqname \vp_{1..k}\\
-  i=1..k : \evalpattern(\env, \vv, \vp_i) \evalarrow \ResultPattern(\nvbool(\vb_i), \vg_i) \OrDynErrorDiverging\\\\
-  \vb \eqdef \nvbool(\bigvee_{i=1..k} \vb_i)\\
-  \newg \eqdef \vg_1 \parallelcomp \ldots \parallelcomp \vg_k
-}{
-  \evalpattern(\env, \vv, \PatternAny(\vps)) \evalarrow \ResultPattern(\vb, \newg)
-}
-\end{mathpar}
+\RenderProseAndFormally{eval_pattern_PAny}
 \CodeSubsection{\EvalPAnyBegin}{\EvalPAnyEnd}{../Interpreter.ml}
 
 \section{Matching a Negated Pattern\label{sec:MatchingANegatedPattern}}
@@ -917,21 +491,8 @@ The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
 \TypingRuleDef{PNot}
 \listingref{semantics-pnot} shows an example of a well-typed Negated pattern.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vp$ is the pattern that matches the negation of a pattern $\vq$ ($\PatternNot(\vq)$);
-  \item annotating $\vq$ in $\tenv$ yields $(\newq, \vses)$\ProseOrTypeError;
-  \item $\newp$ is pattern which matches the negation of $\newq$ ($\PatternNot(\newq)$).
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \annotatepattern(\tenv, \vq) \typearrow (\newq, \vses) \OrTypeError
-}{
-  \annotatepattern(\tenv, \vt, \overname{\PatternNot(\vq)}{\vp}) \typearrow (\overname{\PatternNot(\newq)}{\newp}, \vses)
-}
-\end{mathpar}
+
+\RenderProseAndFormally{annotate_pattern_neg}
 \CodeSubsection{\PNotBegin}{\PNotEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -942,23 +503,8 @@ In \listingref{semantics-pnot},
 whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match the pattern \verb|{42}|.
 \ASLListing{Matching against a negated pattern}{semantics-pnot}{\semanticstests/SemanticsRule.PNot.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\vp$ is a negation pattern, $\PatternNot(\vpone)$;
-\item evaluating the pattern $\vpone$ in an environment $\env$ is \\
-      $\ResultPattern(\vbone, \newg)$\ProseOrDynErrorDiverging;
-\item $\vb$ is the Boolean negation of $\vbone$.
-\end{itemize}
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \evalexprsef(\env, \vpone) \evalarrow \ResultExprSEF(\vbone, \newg) \OrDynErrorDiverging\\\\
-  \evalunop(\BNOT, \vbone) \evalarrow \vb
-}{
-  \evalpattern(\env, \vv, \PatternNot(\vpone)) \evalarrow \ResultPattern(\vb, \newg)
-}
-\end{mathpar}
+
+\RenderProseAndFormally{eval_pattern_PNot}
 \CodeSubsection{\EvalPNotBegin}{\EvalPNotEnd}{../Interpreter.ml}
 
 \section{Pattern Expressions\label{sec:ASTRulesForPatternExpressions}}
@@ -979,7 +525,7 @@ we list them below.
 The type rules and dynamic semantics rules for both sets of expressions is the same,
 as the same AST is generated for both.
 
-Pattern expressions are side-effect-free, as guaranteed by the checks to \\
+Pattern expressions are \sideeffectfreeterm{}, as guaranteed by the checks to \\
 $\checksymbolicallyevaluable$, and thus in the dynamic semantics
 they are evaluated via $\evalexprsef$.
 

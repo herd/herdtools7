@@ -37,6 +37,16 @@ let mk_sym_tagloc s o =
 let mk_sym_tagloc_zero s = do_mk_sym_tagloc s 0
 
 let mk_lab (p,s) = mk_sym_virtual_label p s
+
+let mk_tag_mask t =
+  let mask =
+  List.fold_left
+  (fun m v -> match v with
+  | Tag t -> (1 lsl Misc.int_of_tag(t)) lor m
+  | _ -> raise Parsing.Parse_error
+  ) 0 t in
+  Concrete (string_of_int mask)
+
 %}
 
 %token EOF
@@ -101,6 +111,8 @@ reg:
 location_global:
 | NAME { Constant.mk_sym $1 }
 | TOK_PTE LPAR NAME RPAR { Constant.mk_sym_pte  $3 }
+| TOK_PTE LPAR proc=PROC COLON name=NAME RPAR
+    { Constant.mk_sym_pte (Constant.Symbol.pp (Constant.Symbol.Label (proc, name))) }
 | TOK_PTE LPAR TOK_PTE LPAR NAME RPAR RPAR { Constant.mk_sym_pte2 $5 }
 | TOK_PA LPAR NAME RPAR { Constant.mk_sym_pa $3 }
 | NAME COLON NAME { Constant.mk_sym_tag $1 $3 }
@@ -117,6 +129,8 @@ name_or_num:
 output_address:
 | name=NAME { OutputAddress.parse name }
 | TOK_PA LPAR name=NAME RPAR { OutputAddress.PHY name }
+| TOK_PA LPAR proc=PROC COLON name=NAME RPAR
+    { OutputAddress.PHY (Constant.Symbol.pp (Constant.Symbol.Label (proc, name))) }
 | TOK_PTE LPAR name=NAME RPAR { OutputAddress.PTE name }
 
 prop_tail:
@@ -150,6 +164,13 @@ addrregval_prop_head:
 addrregval:
 | TOK_PAR COLON LPAR addrregval=addrregval_prop_head RPAR { addrregval }
 
+maybev_tag:
+| COLON NAME  { Tag $2 }
+
+maybev_tag_list:
+| maybev_tag COMMA maybev_tag_list { $1::$3 }
+| maybev_tag { [$1] }
+
 maybev_notag:
 | NUM  { Concrete $1 }
 | VALUE { Concrete $1 }
@@ -167,7 +188,8 @@ maybev_amper:
 
 maybev:
 | maybev_notag { $1 }
-| COLON NAME  { Tag $2 }
+| maybev_tag { $1 }
+| LCURLY t=maybev_tag_list RCURLY { mk_tag_mask t }
 
 maybev_or_amper_or_label:
 | maybev { $1 }

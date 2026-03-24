@@ -1,0 +1,3 @@
+This places a requirement on the hardware that if the Explicit Memory Read
+Effect (a) appears in program order before the Explicit Memory Write Effect
+(b), then Effect (a) is not architecturally Allowed to Read-from Effect (b).

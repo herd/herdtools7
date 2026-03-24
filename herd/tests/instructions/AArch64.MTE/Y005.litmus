@@ -1,0 +1,13 @@
+AArch64 Y005
+(* IRG with all ones, forall *)
+{
+  int x;
+  0:X0=x:white;
+  int64_t 0:X2={:green,:red,:blue,:black,:white,:cyan,:yellow,:magenta};
+}
+
+P0            ;
+IRG X1,X0,X2  ;
+
+forall (0:X1=x:green)
+

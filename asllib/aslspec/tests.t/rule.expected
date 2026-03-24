@@ -8,7 +8,10 @@
 
 \newcommand\None[0]{ \hyperlink{constant-None}{\textsf{None}} } % Generated from None
 \newcommand\Num[0]{ \hyperlink{type-Num}{\textsf{Num}} } % Generated from Num
+\newcommand\FIELDf[0]{ \hyperlink{recordfield-f}{\textsf{f}} } % Generated from f
+\newcommand\FIELDg[0]{ \hyperlink{recordfield-g}{\textsf{g}} } % Generated from g
 \newcommand\r[0]{ \hyperlink{relation-r}{\textit{r}} } % Generated from r
+\newcommand\rec[0]{ \hyperlink{type-rec}{\textsf{rec}} } % Generated from rec
 
 % -------------------
 % Macros for elements
@@ -37,15 +40,49 @@
 
 \DefineType{Num}{\texthypertarget{type-Num}$\Num$} % EndDefineType
 
+\DefineType{rec}{
+\begin{flalign*}
+\rec\mathhypertarget{type-rec} \triangleq\ & \mathhypertarget{recordfield-f}\mathhypertarget{recordfield-g}\left\{
+\begin{array}{lcl}
+\FIELDf & : & \Num\\
+\FIELDg & : & \Num
+\end{array}\right\}
+\end{flalign*}} % EndDefineType
+
 \DefineRelation{r}{
 The relation
 \[
-\mathhypertarget{relation-r}\r\left(\overtext{\Num}{\texttt{a}}, \overtext{\Num}{\texttt{b}}\right) \bigtimes \overtext{\Num}{\texttt{c}}
+\mathhypertarget{relation-r}\r\left(\overtext{\Num}{\texttt{a}}, \overtext{\Num}{\texttt{b}}, \overtext{\rec}{\texttt{r}}\right) \bigtimes \left(\overtext{\Num}{\texttt{c}}, \overtext{\rec}{\texttt{r'}}\right)
 \]
 } % EndDefineRelation
 
-\DefineRule{r}{\begin{mathpar}
-\inferrule{}{
- { \r(\texttt{a}, \texttt{b}) \typearrow \overtext{\texttt{b}}{\texttt{c}} } 
+\DefineRule{r}{
+\begin{mathpar}
+\inferrule{ { { \texttt{res} \eqdef { \condop{\begin{array}{l}
+                                              { \condcase[H]{{ \texttt{a} \equal \texttt{b} }}{\texttt{a}} }, \\
+                                              { \condcase[H]{{ \texttt{a} \greaterthan \texttt{b} }}{{ \texttt{a}\numplus\texttt{b} }} }, \\
+                                              { \condcase[H]{{ \texttt{a} \lessthan \texttt{b} }}{\texttt{b}} }
+                                              \end{array}} } } } \hva\\
+ { { \texttt{y} \eqdef \left\{\begin{array}{lcl}
+                              \FIELDf & : & \texttt{a}\\
+                              \FIELDg & : & \texttt{b}
+                              \end{array}\right\} } } \hva\\
+ { { \texttt{r\_f} \eqdef { \texttt{r}.\FIELDf\numplus\texttt{r}.\FIELDg } } } \hva\\
+ { { \texttt{r'} \eqdef \texttt{r}\left\{\begin{array}{lcl}
+                                         \FIELDf & : & \texttt{res}
+                                         \end{array}\right\} } } }{
+ { \r(\texttt{a}, \texttt{b}, \texttt{r}) \typearrow (\overtext{\texttt{res}}{\texttt{c}}, \texttt{r'}) } 
 }
-\end{mathpar}} % EndDefineRule
+\end{mathpar}
+} % EndDefineRule
+
+\DefineProse{r}{
+\AllApply
+  \begin{itemize}
+    \item define \texttt{res} as  (1) if \texttt{a} is equal to \texttt{b} holds then \texttt{a},  (2) if \texttt{a} is greater than \texttt{b} holds then the sum of  (1) \texttt{a}, and  (2) \texttt{b}, and  (3) if \texttt{a} is less than \texttt{b} holds then \texttt{b};
+    \item define \texttt{y} as the rec record with $\Fieldf$ value \texttt{a} and $\Fieldg$ value \texttt{b};
+    \item define \texttt{r\_f} as the sum of  (1) the field $\FIELDf$ of \texttt{r}, and  (2) the field $\FIELDg$ of \texttt{r};
+    \item define \texttt{r'} as \texttt{r} with $\FIELDf$ updated to \texttt{res};
+    \item \textbf{the result is:} the pair consisting of \texttt{res} (for the output variable \texttt{c}) and \texttt{r'}.
+  \end{itemize}
+} % EndDefineProse

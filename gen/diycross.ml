@@ -14,7 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-open Misc
 open Printf
 
 module type Config = sig
@@ -74,7 +73,7 @@ module Make (Config:Config) (M:Builder.S) =
         let ess = List.map expand_edges ess in
         let ess = varatom_ess ess in
         D.all (gen ess)
-      with Fatal msg ->
+      with Misc.Fatal msg ->
         eprintf "Fatal error: %s\n" msg ;
         exit 2
   end

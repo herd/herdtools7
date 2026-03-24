@@ -1,0 +1,2 @@
+MP+tlbi-sync.ishaptedb1p+poa    Allowed
+MP+tlbi-sync.ishaptev1p+poa     Allowed

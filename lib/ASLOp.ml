@@ -219,12 +219,15 @@ let do_op op c1 c2 =
               | [10] ->
                   let af = ASLScalar.bit_of_bv s2 in
                   Constant.PteVal { pte with AArch64PteVal.af;} |> return
-              | [7] ->
-                  let db = 1-ASLScalar.bit_of_bv s2 in
-                  Constant.PteVal { pte with AArch64PteVal.db;} |> return
-              | _ ->
-                  set_slice positions c1 c2
-            end
+            | [7] ->
+                let db = 1-ASLScalar.bit_of_bv s2 in
+                Constant.PteVal { pte with AArch64PteVal.db;} |> return
+            | [54] ->
+                let x = ASLScalar.bit_of_bv s2 in
+                Constant.PteVal { pte with AArch64PteVal.x;} |> return
+            | _ ->
+                set_slice positions c1 c2
+          end
         | _ -> set_slice positions c1 c2
 
 let do_op1 op cst =

@@ -1,0 +1,7 @@
+If all of the following apply:
+* the Implicit Instruction Memory Read Effect (d) is Ordered-before
+  the Explicit Memory Write Effect (b) (given that Effect (d) is
+  Instruction-read-ordered-before the Explicit Memory Write Effect (a),
+  and the DMB ST Effect (i) appears in program order between Effect (a) and Effect (b)).
+* the Implicit Instruction Memory Read Effect (c) appears in program order before Effect (d).
+then Effect (c) is not architecturally Allowed to Read-from Effect (b).

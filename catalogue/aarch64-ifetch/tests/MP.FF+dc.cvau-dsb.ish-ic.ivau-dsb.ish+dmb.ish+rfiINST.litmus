@@ -1,4 +1,5 @@
 AArch64 MP.FF+dc.cvau-dsb.ish-ic.ivau-dsb.ish+dmb.ish+rfiINST
+Hash=fa0287428f933f6560f88886491d6cad
 {
  0:X1=instr:"NOP"; 0:X3=P1:m1;
  0:X10=z;
@@ -13,9 +14,9 @@ AArch64 MP.FF+dc.cvau-dsb.ish-ic.ivau-dsb.ish+dmb.ish+rfiINST
  DSB ISH       |  NOP           ;
  MOV W11,#1    |  B end         ;
  STR W11,[X10] | l0:            ;
-               |  MOV X9, #1    ;
+               |  MOV W9, #1    ;
                | m1:            ;
                |  B end         ;
-               |  MOV X9, #2    ;
+               |  MOV W9, #2    ;
                | end:           ;
 exists(1:X11=1 /\ 1:X9=1)
