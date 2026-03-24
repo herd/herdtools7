@@ -3,9 +3,8 @@
 /*                                                                          */
 /* Jade Alglave, University College London, UK.                             */
 /* Luc Maranget, INRIA Paris, France.                                       */
-/* Rémy Citérin, ARM Ltd, Cambridge, UK                                     */
 /*                                                                          */
-/* Copyright 2026-present Institut National de Recherche en Informatique et */
+/* Copyright 2025-present Institut National de Recherche en Informatique et */
 /* en Automatique and the authors. All rights reserved.                     */
 /*                                                                          */
 /* This software is governed by the CeCILL-B license under French law and   */

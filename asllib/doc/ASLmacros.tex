@@ -133,9 +133,6 @@
   % To visualize:
   % showframe
 ]{geometry}
-\input{ifempty}
-\input{ifcode}
-\input{control}
 
 \newcommand\aslrefterm[0]{\href{https://github.com/herd/herdtools7/tree/master/asllib}{aslref}}
 \newcommand\linuxbashshellterm[0]{Linux bash shell}
@@ -198,15 +195,6 @@
 \newcommand\ExampleDef[1]{\hypertarget{example-#1}{}\subsubsection{Example: #1}}
 \newcommand\ExampleRef[1]{\hyperlink{example-#1}{Example: #1}}
 
-\ifcode
-% First argument is \<rule>Begin, second is \<rule>End, third is the file name.
-% Example: for SemanticsRule.Lit, use the following:
-% \CodeSubsection{\LitBegin}{\LitEnd}{../Interpreter.ml}
-\newcommand\CodeSubsection[3]{\subsection{Code} \VerbatimInput[firstline=#1, lastline=#2]{#3}}
-\else
-\newcommand\CodeSubsection[3]{}
-\fi
-
 \definecolor{verylightgray}{rgb}{240,240,240}
 
 \newcommand\ASLListing[3]{
@@ -215,14 +203,10 @@
 \end{center}
 }
 
-\ifcode
 % First argument is \<rule>Begin, second is \<rule>End, third is the file name.
 % Example: for SemanticsRule.Lit, use the following:
 % \CodeSubsubsection{\LitBegin}{\LitEnd}{../Interpreter.ml}
-\newcommand\CodeSubsubsection[3]{\subsubsection{Code} \VerbatimInput[firstline=#1, lastline=#2]{#3}}
-\else
-\newcommand\CodeSubsubsection[3]{}
-\fi
+\newcommand\CodeSubsection[3]{}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Typesetting macros
