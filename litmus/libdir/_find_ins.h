@@ -20,3 +20,4 @@
 
 // Find index of some instruction in code, skipping 'skip' occurrences
 size_t find_ins(ins_t opcode,ins_t *p,int skip);
+#endif
