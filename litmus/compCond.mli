@@ -28,9 +28,15 @@ module Make: functor (O:Indent.S) -> functor (I:CompCondUtils.I) ->
       I.C.cond -> unit
 
     val fundef_onlog_prop :
-      string -> (I.Loc.t -> I.C.V.v -> I.C.V.v) -> I.C.prop -> unit
+      string ->
+      (I.Loc.t -> I.C.V.v -> I.C.V.v) ->
+      (I.Loc.t -> bool) -> (* check location is a pte value *)
+      I.C.prop -> unit
 
-    val fundef_onlog : (I.Loc.t -> I.C.V.v -> I.C.V.v) -> I.C.cond -> unit
+    val fundef_onlog :
+      (I.Loc.t -> I.C.V.v -> I.C.V.v) ->
+      (I.Loc.t -> bool) -> (* check location is a pte value *)
+      I.C.cond -> unit
 
     val funcall_prop :
       string -> I.C.prop ->

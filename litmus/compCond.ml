@@ -36,7 +36,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) =
          printing as a cascade of switch constructs
          has failed *)
 
-      let dump_v v = I.dump_value v
+      let dump_v oloc = I.dump_value oloc
       let dump_loc loc = I.Loc.dump (ConstrGen.Loc loc)
 
       let dump_vec loc vs =
@@ -170,13 +170,15 @@ module Make (O:Indent.S) (I:CompCondUtils.I) =
       (* Check proposition, presi case:
          all locations acccessible from a 'log_t' struct *)
 
-      let fundef_onlog_prop fname cast p =
+      let fundef_onlog_prop fname cast is_pte  p =
         let p = cast_prop cast p in
         O.f "inline static int %s(log_t *p) {" fname ;
         begin try
+          let rlocs = I.C.rlocations_prop p in
+          if I.C.RLocSet.exists is_pte rlocs then raise Exit;
           let switch_tree = S.compile p in
           S.dump Indent.indent switch_tree
-        with Switch.Cannot ->
+        with Switch.Cannot|Exit ->
           O.fprintf "%sreturn " (Indent.as_string Indent.indent) ;
           dump p ;
           O.output ";\n"
@@ -185,8 +187,8 @@ module Make (O:Indent.S) (I:CompCondUtils.I) =
         O.o "" ;
         ()
 
-      let fundef_onlog cast cond =
-        fundef_onlog_prop funname cast (ConstrGen.prop_of cond) ;
+      let fundef_onlog cast is_pte cond =
+        fundef_onlog_prop funname cast is_pte (ConstrGen.prop_of cond) ;
         dump_ok cond ;
         ()
 
