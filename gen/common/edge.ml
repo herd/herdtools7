@@ -50,7 +50,7 @@ module type S = sig
 
 (* edge proper *)
   type tedge =
-    | Rf of ie | Fr of ie | Ws of ie
+    | Rf of ie | Fr of ie | Ws of ie | Coms of ie
     | Po of sd*extr*extr | Fenced of fence*sd*extr*extr
     | Dp of dp*sd*extr
     | Leave of com (* Leave thread *)
@@ -198,6 +198,16 @@ and module RMW = A.RMW = struct
 
   type value = A.Value.v
 
+  let pre_parse_string s =
+    String.trim s
+    |> (fun s -> Lexing.from_string s)
+    |> Parser.main LexUtil.token
+    |> Ast.flatten
+    |> ( function
+      | [x] -> x
+      | _ ->
+        Warn.user_error "only accepts exactly one input cycle." )
+
   let compute_rmw rmw old operand =
     Value.from_int @@ RMW.compute_rmw rmw ~old:(Value.to_int old) ~operand:(Value.to_int operand)
 
@@ -227,7 +237,7 @@ and module RMW = A.RMW = struct
 
 (* edge proper *)
   type tedge =
-    | Rf of ie | Fr of ie | Ws of ie
+    | Rf of ie | Fr of ie | Ws of ie | Coms of ie
     | Po of sd*extr*extr | Fenced of fence*sd*extr*extr
     | Dp of dp*sd*extr
     | Leave of com
@@ -242,23 +252,23 @@ and module RMW = A.RMW = struct
 
   let is_id = function
     | Id -> true
-    | Store|Insert _|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Store|Insert _|Hat|Rmw _|Rf _|Fr _|Ws _|Coms _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
 
   let is_insert_store = function
     | Store|Insert _ -> true
-    | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Coms _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
 
   let is_node = function
     | Node _ -> true
-    | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Coms _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Insert _
     | Store -> false
 
   let is_non_pseudo = function
     | Store|Insert _ |Id|Node _-> false
-    | Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Hat|Rmw _|Rf _|Fr _|Ws _|Coms _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> true
 
   let is_dp_addr = function
@@ -298,6 +308,7 @@ and module RMW = A.RMW = struct
 
 
   let do_pp_tedge compat = function
+    | Coms ie -> sprintf "%sObs" (pp_ie_full ie)
     | Rf UnspecCom -> sprintf "Rf"
     | Fr UnspecCom -> sprintf "Fr"
     | Ws UnspecCom -> if compat then sprintf "Ws" else sprintf "Co"
@@ -377,6 +388,7 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Ws _|Fr _|Rmw _  -> Dir W
   | Leave c|Back c -> do_dir_tgt_com c
   | Id -> not_that e "do_dir_tgt"
+  | Coms _ -> Irr
   | Insert _ -> NoDir
   | Store -> Dir W
   | Node d -> Dir d
@@ -388,13 +400,14 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Ws _|Rf _ -> Dir W
   | Leave c|Back c -> do_dir_src_com c
   | Id -> not_that e "do_dir_src"
+  | Coms _ -> Irr
   | Insert _ -> NoDir
   | Store -> Dir W
   | Node d -> Dir d
 
   let do_loc_sd e = match e with
   | Po (sd,_,_) | Fenced (_,sd,_,_) | Dp (_,sd,_) -> sd
-  | Insert _|Store|Node _|Fr _|Ws _|Rf _|Hat|Rmw _|Id|Leave _|Back _ -> Same
+  | Insert _|Store|Node _|Fr _|Ws _|Rf _|Coms _|Hat|Rmw _|Id|Leave _|Back _ -> Same
 
   let do_is_diff e = Code.is_diff_loc @@ do_loc_sd e
 
@@ -407,6 +420,7 @@ let fold_tedges f r =
   let r = fold_ie wildcard (fun ie -> f (Rf ie)) r in
   let r = fold_ie wildcard (fun ie -> f (Fr ie)) r in
   let r = fold_ie wildcard (fun ie -> f (Ws ie)) r in
+  let r = if wildcard then fold_ie wildcard (fun ie -> f (Coms ie)) r else r in
   let r = RMW.fold_rmw wildcard (fun rmw -> f (Rmw rmw)) r in
   let r = fold_sd_extr_extr wildcard (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
   let r = F.fold_all_fences (fun fe -> f (Insert fe)) r in
@@ -560,15 +574,12 @@ let fold_tedges f r =
     with Not_found -> Warn.fatal "Bad atom: %s" s
 
   let parse_atoms xs =
-    try
-      List.fold_left
-        (fun k x ->
-          List.fold_left
-            (fun k s -> parse_atom s::k)
-            k (LexUtil.just_split x))
-        [] xs
-    with LexUtil.Error msg ->
-      Warn.fatal "bad atoms list (%s)" msg
+    List.map
+      ( fun x ->
+        pre_parse_string x
+        |> List.map parse_atom
+      ) xs
+    |> List.flatten
 
   let get_access_atom = A.get_access_atom
 
@@ -664,7 +675,8 @@ let fold_tedges f r =
     try Hashtbl.find t s
     with Not_found -> Warn.fatal "Bad edge: %s" s
 
-  let parse_edges s = List.map parse_edge (LexUtil.just_split s)
+  let parse_edges s =
+    pre_parse_string s |> List.map parse_edge
 
   let pp_edges es = String.concat " " (List.map pp_edge es)
 
@@ -672,14 +684,15 @@ let fold_tedges f r =
   | Po(sd,src,_) -> Po (sd,src,Dir d)
   | Fenced(f,sd,src,_) -> Fenced(f,sd,src,Dir d)
   | Dp (dp,sd,_) -> Dp (dp,sd,Dir d)
-  | Rf _ | Hat
-  | Insert _|Store|Id|Node _|Ws _|Fr _|Rmw _|Leave _|Back _-> e
+  | Rf _ |Ws _|Fr _| Coms _| Hat
+  | Insert _|Store|Id|Node _|Rmw _|Leave _|Back _-> e
 
   and do_set_src d e = match e with
   | Po(sd,_,tgt) -> Po(sd,Dir d,tgt)
   | Fenced(f,sd,_,tgt) -> Fenced(f,sd,Dir d,tgt)
-  | Fr _|Hat|Dp _
-  | Insert _|Store|Id|Node _|Ws _|Rf _|Rmw _|Leave _|Back _ -> e
+  | Rf _ |Ws _|Fr _| Coms _| Hat
+  | Dp _
+  | Insert _|Store|Id|Node _|Rmw _|Leave _|Back _ -> e
 
   let set_tgt d e = { e with edge = do_set_tgt d e.edge ; }
   and set_src d e = { e with edge = do_set_src d e.edge ; }
@@ -689,7 +702,7 @@ let fold_tedges f r =
 
   let get_ie e = match e.edge with
   | Id |Po _|Dp _|Fenced _|Rmw _ -> Int
-  | Rf ie|Fr ie|Ws ie -> ie
+  | Rf ie|Fr ie|Ws ie|Coms ie -> ie
   | Leave _|Back _|Hat -> Ext
   | Insert _|Store|Node _ -> Int
 
@@ -773,6 +786,12 @@ let fold_tedges f r =
     | Rf com -> expand_com com ( fun new_com -> f {e with edge = Rf(new_com)}) acc
     | Fr com -> expand_com com ( fun new_com -> f {e with edge = Fr(new_com)}) acc
     | Ws com -> expand_com com ( fun new_com -> f {e with edge = Ws(new_com)}) acc
+    | Coms com -> expand_com com
+      ( fun new_com acc ->
+          acc |> f {e with edge = Rf(new_com)}
+            |> f {e with edge = Fr(new_com)}
+            |> f {e with edge = Ws(new_com)}
+      ) acc
     | Rmw rmw ->
         let expand_rmw_list = A.RMW.expand_rmw rmw in
         List.fold_left ( fun acc new_rmw -> f {e with edge=Rmw(new_rmw);} acc) acc expand_rmw_list
