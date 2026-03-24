@@ -2123,10 +2123,10 @@ module Make
         O.o "/*************/" ;
         O.o "" ;
         if do_ascall then begin
-            List.iter
-              (dump_thread_code procs_user env)
-              test.T.code
-          end
+          List.iter
+            (dump_thread_code procs_user env)
+            test.T.code
+        end
 
       let dump_run_def  env test some_ptr stats procs_user =
         let faults = U.get_faults test in
