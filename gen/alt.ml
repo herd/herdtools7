@@ -317,9 +317,6 @@ module Make(C:Builder.S)
         | _ -> true
         end
 
-    (* List.is_empty only supports for ocaml 5.1 afterwards *)
-    let is_empty_list l = (l = [])
-
     let pp_ess ess =
       let list_sep = " " in
       let list_list_sep = " " in
@@ -328,6 +325,75 @@ module Make(C:Builder.S)
           es |> List.map (fun e -> pp_edge e)
              |> String.concat list_list_sep )
         |> String.concat list_sep
+
+    (* check if `list` starts with `expected` based on predicate `pred` *)
+    let rec starts_with pred list expected =
+      match list, expected with
+      | _, [] -> true
+      | [], _::_  -> false
+      | hd :: tail, hd_expected :: tail_expected ->
+          pred hd hd_expected
+          && starts_with pred tail tail_expected
+
+    (* check if `list` starts with `expected` based on predicate `pred` *)
+    let ends_with pred list expected =
+      starts_with pred (List.rev list) (List.rev expected)
+
+    (* Given `next = [....; after(..); after(..)]` and
+       `exist = [before(..); before(..); ....]`,
+       where `after` and `before` are optional,
+       function returns the new `next` and `exist` in Some(_),
+       where `next` and `exist` have been resolved in the following way:
+         - `before` merges with concrete if edge matches.
+         - `after` merges with concrete if edge matches.
+         - `before` pairing with `after` fails.
+       If the check fails, `None` returns. *)
+    let merge_predicate next exist =
+      (* Separate the tailing `after` predicate from `next` *)
+      let after,next_remain =
+        List.fold_right ( fun e (after,remain) ->
+          match remain, C.E.get_predicate e = Some C.E.After with
+          | _ :: _, _ | _, false -> after, e :: remain
+          | [], true -> e :: after, remain ) next ([],[]) in
+      (* Separate the beginning `before` predicate from `exist` *)
+      let before,exist_remain =
+        List.fold_left ( fun (before,remain) e ->
+          match remain, C.E.get_predicate e = Some C.E.Before with
+          | _ :: _, _ | _, false -> before, e :: remain
+          | [], true -> e :: before, remain ) ([],[]) exist
+        |> fun (l,r) -> List.rev l, List.rev r in
+      (* Merge `after` and `before` if find *)
+      match after, before with
+      | [], [] -> Some(next,exist)
+      | after, [] ->
+          if starts_with C.E.equal_edge_atoms exist after then
+            Some (next_remain,exist) else None
+      | [], before ->
+          if ends_with C.E.equal_edge_atoms next before then
+            Some (next,exist_remain) else None
+      (* error on `after` hits `before` predicate *)
+      | _, _ -> None
+
+    (* Merge potential predicate in `next` and `exist`,
+      then given the merged result, check whether `next` can precede `exist`. *)
+    let merge_predicate_and_check_compatibility safes po_safe next exist =
+      if O.verbose > 2 then
+        eprintf "next: %s, exists: %s\n" (pp_ess [next]) (pp_ess exist);
+      match exist with
+      (* Base case: there is no `exist` *)
+      | [] -> Some (next,[])
+      | (_,exist_hd) :: exist_tail ->
+        Option.bind
+        ( merge_predicate (snd next) exist_hd )
+        ( fun (new_next, new_exist_hd) ->
+            let next = (ERS new_next, new_next) in
+            let exist = (ERS new_exist_hd, new_exist_hd) :: exist_tail in
+            if can_precede safes po_safe next exist
+              then Some (next,exist) else None
+        )
+
+    (* List.is_empty only supports for ocaml 5.1 afterwards *)
+    let is_empty_list l = (l = [])
 
     let edges_ofs rs =
       List.map (fun r -> (r, edges_of r)) rs
@@ -402,40 +468,68 @@ module Make(C:Builder.S)
       let rsuff = List.split rsuff |> snd |> List.concat in
       not (List.exists (fun rl -> is_prefix rsuff rl) rl)
 
+    let rec update_last last = function
+      | [] -> []
+      | [_] -> [last]
+      | x :: tail -> x :: update_last last tail
 
     (* This function is used `zyva` *)
     let call_rec_base prefix f0 safes po_safe over n r suff f_rec k ?(reject=[])=
-      if
-        can_precede safes po_safe r suff &&
-        minprocs suff <= O.nprocs &&
-        minint (r::suff) <= O.max_ins-1 &&
-        check_cycle (r::suff) reject
-      then
-        let suff = r::suff
-        and n = n-sz r in
-        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess suff) ;
+      (* check if `r` is compatible with `suff` *)
+      match merge_predicate_and_check_compatibility safes po_safe r suff with
+      | None -> k
+      | Some (r,suff) ->
+        (* The next candidate cycle *)
+        let r_suff = r::suff in
+          if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess r_suff) ;
+        let is_continue_search =
+          (* Check procedure number *)
+          minprocs suff <= O.nprocs
+          (* Check instruction number *)
+          && minint r_suff <= O.max_ins-1
+          (* Check if the cycle is rejected by `reject` *)
+          && check_cycle r_suff reject in
+        (* size only decreases when there is at least one non-insert edge in `r` *)
+        let n = n-sz r in
+        (* update the accumulator `k`, if a posible candidate cycle
+           otherwise keep it the same as before *)
         let k =
-          if
-            over &&
-            (n = 0 || (n > 0 && O.upto)) &&
-            can_prefix prefix (can_precede safes po_safe) suff
-          then begin
-            let tr =  prefix@suff in
-            if O.verbose > 2 then
-            eprintf "TRY: '%s'\n"
-              (C.E.pp_edges (List.flatten (List.map snd tr))) ;
-            try f0 po_safe tr k
-            with  Misc.Exit -> k
-            | Misc.Fatal msg |Misc.UserError msg ->
-                eprintf "Marche pas: '%s'\n" msg ;
-                k
-            | e ->
-              eprintf "Exc in F0: '%s'\n" (Printexc.to_string e) ;
-              raise e
-          end else k in
-        if n <= 0 then k
-        else f_rec n suff k
-      else k
+        Option.bind
+        (* check if the tail `r_suff` is compatible with its head,
+           hence find a possible candidate cycle *)
+        ( merge_predicate_and_check_compatibility safes po_safe (Misc.last r_suff) r_suff )
+        (* check if the environment and configuration is compatible with
+           the candidate cycle *)
+        ( fun (last,r_suff) ->
+          let r_suff = update_last last r_suff in
+          if over
+            (* cycle size `n` is still within bound *)
+            && (n = 0 || (n > 0 && O.upto))
+            (* user-defined `prefix` can be added *)
+            && can_prefix prefix (can_precede safes po_safe) r_suff then
+              Some r_suff
+          else None )
+        (* find an candidate cycle, surfix with `prefix` and call engine `f0` *)
+        |> Option.map ( fun candidate_cycle ->
+          let tr = prefix @ candidate_cycle in
+          if O.verbose > 2 then
+          eprintf "TRY: '%s'\n"
+            (C.E.pp_edges (List.flatten (List.map snd tr))) ;
+          try f0 po_safe tr k
+          (* `f0` fails, however, surpresses some expected error *)
+          with Misc.Exit -> k
+          | Misc.Fatal msg |Misc.UserError msg ->
+              eprintf "Marche pas: '%s'\n" msg ;
+              k
+          | e ->
+            eprintf "Exc in F0: '%s'\n" (Printexc.to_string e) ;
+            raise e
+        )
+        (* Unwrap the new accumulator `k` *)
+        |> Option.value ~default:k in
+      (* recursive call *)
+        if is_continue_search && n > 0 then f_rec n r_suff k
+        else k
     (* END of call_rec_base *)
 
     module SdDir2Set =
