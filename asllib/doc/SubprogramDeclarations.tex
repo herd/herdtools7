@@ -259,11 +259,10 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{build-typedidentifier}{}
 The function
 \[
-\buildtypedidentifier(\overname{\parsenode{\Ntypedidentifier}}{\vparsednode}) \aslto \overname{(\Identifier \cartimes \ty)}{\vastnode}
+\buildtypedidentifier(\overname{\parsenode{\Ntypedidentifier}}{\vparsednode}) \aslto \overname{(\Identifier, \ty)}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_UNIMPORTED_RELATION
-
 
 \begin{mathpar}
 \inferrule{}{
@@ -276,11 +275,10 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{build-opttypedidentifier}{}
 The function
 \[
-\buildopttypedidentifier(\overname{\parsenode{\Nopttypedidentifier}}{\vparsednode}) \aslto \overname{(\Identifier \cartimes \Option{\ty})}{\vastnode}
+\buildopttypedidentifier(\overname{\parsenode{\Nopttypedidentifier}}{\vparsednode}) \aslto \overname{(\Identifier, \Option{\ty})}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_UNIMPORTED_RELATION
-
 
 \begin{mathpar}
 \inferrule{
@@ -320,7 +318,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
 \buildparamsopt(\overname{\parsenode{\Nparamsopt}}{\vparsednode}) \aslto
-  \overname{\KleeneStar{(\Identifier\cartimes\Option{\ty})}}{\vastnode}
+  \overname{\KleeneStar{(\Identifier, \Option{\ty})}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_UNIMPORTED_RELATION
@@ -349,7 +347,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The function
 \[
 \buildfuncargs(\overname{\parsenode{\Nfuncargs}}{\vparsednode}) \aslto
-  \overname{\KleeneStar{(\Identifier\cartimes\ty)}}{\vastnode}
+  \overname{\KleeneStar{(\Identifier, \ty)}}{\vastnode}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_UNIMPORTED_RELATION
@@ -462,7 +460,7 @@ The function
     \begin{array}{l}
     \overname{\overrideinfo}{\voverride} \aslsep \\
     \overname{\Identifier}{\name} \aslsep \\
-    \overname{\KleeneStar{(\Identifier \cartimes \Option{\ty})}}{\vparameters} \aslsep \\
+    \overname{\KleeneStar{(\Identifier, \Option{\ty})}}{\vparameters} \aslsep \\
     \overname{\KleeneStar{\typedidentifier}}{\vargs} \aslsep \\
     \overname{\Identifier}{\vsetterarg} \aslsep \\
     \overname{\ty}{\tty} \aslsep \\
