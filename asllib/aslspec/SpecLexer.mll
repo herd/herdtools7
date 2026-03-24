@@ -34,6 +34,7 @@ rule token = parse
     | "associative"         { ASSOCIATIVE }
     | "ast"                 { AST }
     | "case"                { CASE }
+    | "cond"                { COND }
     | "constant"            { CONSTANT }
     | "constants_set"       { CONSTANTS_SET }
     | "custom"              { CUSTOM }
@@ -42,7 +43,6 @@ rule token = parse
     | "in"                  { IN }
     | "INDEX"               { INDEX }
     | "else"                { ELSE }
-    | "latex"               { LATEX }
     | "lhs_hypertargets"    { LHS_HYPERTARGETS }
     | "list0"               { LIST0 }
     | "list1"               { LIST1 }
@@ -52,18 +52,19 @@ rule token = parse
     | "option"              { OPTION }
     | "operator"            { OPERATOR }
     | "fun"                 { FUN }
-    | "auto_name"           { AUTO_NAME }
     | "partial"             { PARTIAL }
     | "powerset"            { POWERSET }
     | "powerset_finite"     { POWERSET_FINITE }
     | "prose_application"   { PROSE_APPLICATION }
     | "prose_description"   { PROSE_DESCRIPTION }
+    | "prose_transition"    { PROSE_TRANSITION }
     | "relation"            { RELATION }
     | "render"              { RENDER }
     | "rule"                { RULE }
     | "semantics"           { SEMANTICS }
     | "short_circuit_macro" { SHORT_CIRCUIT_MACRO }
     | "then"                { THEN }
+    | "typecast"            { TYPECAST }
     | "typedef"             { TYPEDEF }
     | "typing"              { TYPING }
     | "variadic"            { VARIADIC }

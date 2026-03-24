@@ -8,7 +8,7 @@ Variant=mixed
  P0               | P1          ;
  MOV W2,#42       | STR W1,[X0] ;
  LDXRH W1,[X0]    |             ;
- STXRH W4,W1,[X0] |             ;
+ STXRH W4,W2,[X0] |             ;
  LDAR W3,[X0]     |             ;
 exists (0:X1=0xeeff /\ 0:X3=42 /\ 0:X4=0)
 

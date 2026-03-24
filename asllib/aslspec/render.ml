@@ -347,11 +347,8 @@ module Make (S : SPEC_VALUE) = struct
               match Spec.defining_node_for_id S.spec variant_name with
               | Node_TypeVariant def -> def
               | _ ->
-                  let msg =
-                    Format.asprintf "Can't find variant %s in %a" variant_name
-                      PP.pp_type_subset_pointer pointer
-                  in
-                  failwith msg)
+                  Format.kasprintf failwith "Can't find variant %s in %a"
+                    variant_name PP.pp_type_subset_pointer pointer)
             variant_names
       in
       pp_type_and_variants ~lhs_hypertargets ~is_first ~is_last fmt
@@ -380,15 +377,6 @@ module Make (S : SPEC_VALUE) = struct
   (** A module for rendering rules that comprise relation definitions.*)
   module RenderRule = struct
     open Rule
-
-    (** Renders the field path [path] with [fmt]. *)
-    let pp_field_path fmt = function
-      | [] -> assert false
-      | var :: [] -> pp_var fmt var
-      | var :: path ->
-          fprintf fmt "%a.%a" pp_var var
-            (PP.pp_sep_list ~sep:"." pp_field_name)
-            path
 
     (** Returns the macro for a given relation category and a default long right
         arrow for [None]. *)
@@ -423,23 +411,15 @@ module Make (S : SPEC_VALUE) = struct
     let rec pp_expr fmt (expr, layout) =
       let open Expr in
       match expr with
-      | NamedExpr (sub_expr, name) ->
-          pp_overtext fmt pp_expr (sub_expr, layout) pp_var name
+      | NamedExpr { expr = sub_expr; name; same_name } ->
+          if same_name then pp_expr fmt (sub_expr, layout)
+          else pp_overtext fmt pp_expr (sub_expr, layout) pp_var name
       | Var name -> (
           (* Constants/labels should render via their macros.
-          So do tuples and records with labels, since their label
-          itself may be used as a constant in the spec (configuration domain).
           Plain variables should be rendered as text. *)
           match Spec.defining_node_opt_for_id S.spec name with
-          | Some (Node_Constant _)
-          | Some
-              (Node_TypeVariant
-                 {
-                   term =
-                     ( Label _
-                     | Tuple { label_opt = Some _ }
-                     | Record { label_opt = Some _ } );
-                 }) ->
+          | Some (Node_Constant _) | Some (Node_TypeVariant { term = Label _ })
+            ->
               pp_id_as_macro fmt name
           | Some (Node_Type _)
           (* type names cannot be used as an expression so this case
@@ -447,7 +427,9 @@ module Make (S : SPEC_VALUE) = struct
           | _ ->
               pp_var fmt name)
       | Relation { name; is_operator; args } when is_operator ->
-          pp_operator name layout fmt args
+          (* operators often use custom macros, which might not mix well with arrays,
+             so it's better to put them inside braces. *)
+          fprintf fmt "{ %a }" (pp_operator name layout) args
       | Relation { args } | Tuple { args } | Map { args } ->
           let pp_lhs fmt lhs =
             match lhs with
@@ -468,9 +450,29 @@ module Make (S : SPEC_VALUE) = struct
             label_opt
             (pp_fields pp_field_name pp_expr)
             (fields, layout)
+      | RecordUpdate { record_expr; updates } ->
+          let layout =
+            horizontal_if_unspecified layout [ record_expr; record_expr ]
+          in
+          let record_layout, updates_layout =
+            match layout with
+            | Horizontal [ record_layout; updates_layout ]
+            | Vertical [ record_layout; updates_layout ] ->
+                (record_layout, updates_layout)
+            | _ ->
+                Format.kasprintf failwith
+                  "the layout for record update expression %a has an invalid \
+                   layout (%a)"
+                  PP.pp_expr expr PP.pp_layout layout
+          in
+          fprintf fmt "%a%a" pp_expr
+            (record_expr, record_layout)
+            (pp_fields pp_field_name pp_expr)
+            (updates, updates_layout)
       | ListIndex { list_var; index } ->
           fprintf fmt "%a[%a]" pp_var list_var pp_expr (index, layout)
-      | FieldAccess { var; fields } -> pp_field_path fmt (var :: fields)
+      | FieldAccess { base; field } ->
+          fprintf fmt "%a.%a" pp_expr (base, layout) pp_field_name field
       | Indexed { index; list_var; body } ->
           let pp_indexed_lhs fmt ((index, list_var), _layout) =
             fprintf fmt "%a \\in %a(%a)" pp_var index pp_macro
@@ -497,6 +499,12 @@ module Make (S : SPEC_VALUE) = struct
         [layout]. *)
     and pp_operator op_name layout fmt args =
       let op_macro = get_or_gen_math_macro op_name in
+      let layout =
+        if Spec.is_cond_operator_name S.spec op_name then
+          (* Special case for the 'cond' operator, which is always vertical. *)
+          vertical_if_unspecified layout args
+        else horizontal_if_unspecified layout args
+      in
       let operator = Spec.relation_for_id S.spec op_name in
       match operator.Relation.input with
       | [] ->
@@ -526,12 +534,9 @@ module Make (S : SPEC_VALUE) = struct
             match args with
             | [ lhs; rhs ] -> (lhs, rhs)
             | _ ->
-                let msg =
-                  Format.asprintf
-                    "Expected exactly two arguments for binary operator %s"
-                    op_name
-                in
-                failwith msg
+                Format.kasprintf failwith
+                  "Expected exactly two arguments for binary operator %s"
+                  op_name
           in
           pp_connect_pair ~alignment:"c" fmt pp_expr lhs_arg op_macro pp_expr
             rhs_arg layout
@@ -600,7 +605,7 @@ module Make (S : SPEC_VALUE) = struct
         pp_case_name_opt name_opt
         (pp_print_list
          (* The quadruple backslash means the next premise definitely starts on a new line. *)
-           ~pp_sep:(fun fmt () -> fprintf fmt {|\\\\@.|})
+           ~pp_sep:(fun fmt () -> fprintf fmt {|\hva\\@.|})
            pp_premise)
         premises pp_conclusion conclusion
 
@@ -634,16 +639,481 @@ module Make (S : SPEC_VALUE) = struct
       in
       pp_math_expanded_rules fmt expanded_subset
 
+    (** [prose_list parts] renders a list of prose parts [parts] as a single
+        string, with proper conjunctions and commas. For example: "the first,
+        the second, and the third". *)
+    let prose_list parts =
+      match parts with
+      | [] -> ""
+      | [ part ] -> part
+      | [ first; second ] -> first ^ " and " ^ second
+      | _ ->
+          let prefix, last = Utils.split_last parts in
+          let prefix_str = String.concat ", " prefix in
+          prefix_str ^ ", and " ^ last
+
+    (** [prose_numbered_list parts] renders a list of prose parts [parts] as a
+        numbered list, with proper conjunctions and commas. For example: "(1)
+        the first, (2) the second, and (3) the third".*)
+    let prose_numbered_list parts =
+      match parts with
+      | [] -> ""
+      | [ part ] -> part
+      | _ ->
+          let num_parts = List.length parts in
+          let numbered_parts =
+            List.mapi
+              (fun i part ->
+                let and_str = if i = num_parts - 1 then "and " else "" in
+                Format.asprintf "%s (%d) %s" and_str (i + 1) part)
+              parts
+          in
+          String.concat ", " numbered_parts
+
+    (** [prose_or_empty_message ~name prose] returns [prose] if it is not empty,
+        and a placeholder message using [name] otherwise, to help the user catch
+        missing prose templates. *)
+    let prose_or_empty_message ~name prose =
+      if Utils.string_is_empty prose then
+        Format.asprintf "``empty prose for %s''"
+          (Latex.spec_var_to_latex_var ~font_type:TextTT name)
+      else prose
+
+    (** [prose_or_math prose expr] returns [prose] if it is not empty, and a
+        math rendering of [expr] otherwise. *)
+    let prose_or_math prose expr =
+      if Utils.string_is_empty prose then
+        Format.asprintf "$%a$" pp_expr (expr, Unspecified)
+      else prose
+
+    (** [var_to_prose id] converts a variable [id] to its prose representation.
+    *)
+    let var_to_prose id = spec_var_to_latex_var ~font_type:TextTT id
+
+    (** [strip_names_from_expr expr] removes names from the expression [expr].
+    *)
+    let rec strip_names_from_expr expr =
+      let open Expr in
+      match expr with
+      | NamedExpr { expr = sub_expr } -> strip_names_from_expr sub_expr
+      | Var name -> Var name
+      | ListIndex { list_var; index } ->
+          ListIndex { list_var; index = strip_names_from_expr index }
+      | Tuple { label_opt; args } ->
+          Tuple { label_opt; args = List.map strip_names_from_expr args }
+      | Record { label_opt; fields } ->
+          Record
+            {
+              label_opt;
+              fields =
+                List.map
+                  (fun (field, field_expr) ->
+                    (field, strip_names_from_expr field_expr))
+                  fields;
+            }
+      | RecordUpdate { record_expr; updates } ->
+          RecordUpdate
+            {
+              record_expr = strip_names_from_expr record_expr;
+              updates =
+                List.map
+                  (fun (field, update_expr) ->
+                    (field, strip_names_from_expr update_expr))
+                  updates;
+            }
+      | FieldAccess { base; field } ->
+          FieldAccess { base = strip_names_from_expr base; field }
+      | Map { lhs; args } ->
+          Map
+            {
+              lhs = strip_names_from_expr lhs;
+              args = List.map strip_names_from_expr args;
+            }
+      | Relation { name; is_operator; args } ->
+          Relation
+            { name; is_operator; args = List.map strip_names_from_expr args }
+      | Transition { lhs; rhs; short_circuit } ->
+          Transition
+            {
+              lhs = strip_names_from_expr lhs;
+              rhs = strip_names_from_expr rhs;
+              short_circuit;
+            }
+      | Indexed { index; list_var; body } ->
+          Indexed { index; list_var; body = strip_names_from_expr body }
+      | UnresolvedApplication _ -> assert false
+
+    (** [is_compound_expr expr] returns [true] if [expr] is considered compound
+        for the purpose of rendering prose. *)
+    let is_compound_expr expr =
+      let open Expr in
+      match expr with
+      | Var _ | NamedExpr _ | ListIndex _ | RecordUpdate _ | FieldAccess _
+      | Map _ | Relation _ ->
+          false
+      | Tuple _ | Record _ -> true
+      | Transition _ | Indexed _ | UnresolvedApplication _ -> assert false
+
+    (** [expr_to_prose expr] converts an expression [expr] to its prose
+        representation. *)
+    let rec expr_to_prose expr =
+      let open Expr in
+      match expr with
+      | NamedExpr { expr = sub_expr; name } ->
+          (* We strip names from the sub-expression to avoid prose like
+            "... (for the output variable a) (for the output variable b)". *)
+          let stripped_sub_expr = strip_names_from_expr sub_expr in
+          let expr_prose = expr_to_prose stripped_sub_expr in
+          Format.asprintf "%s (for the output variable %s)" expr_prose
+            (var_to_prose name)
+      | Var name when String.equal name Spec.ignore_var ->
+          "some arbitrary value"
+      | Var name -> (
+          (* Constants/labels take their prose template from the prose_description attribute,
+              while plain variables are rendered as text. *)
+          match Spec.defining_node_opt_for_id S.spec name with
+          | Some (Node_Constant def) ->
+              let prose = Constant.prose_description def in
+              prose_or_math prose expr
+          | Some (Node_TypeVariant def) ->
+              let prose = TypeVariant.prose_description def in
+              prose_or_math prose expr
+          | Some (Node_Type _)
+          (* type names cannot be used as an expression so this case
+          corresponds to a variable that happens to share a name with a type. *)
+          | _ ->
+              var_to_prose name)
+      | ListIndex { list_var; index = Var _ as index } ->
+          (* An optimization of the prose for variable indices. *)
+          Format.asprintf "%s[%s]" (var_to_prose list_var) (expr_to_prose index)
+      | ListIndex { list_var; index } ->
+          Format.asprintf "the element of %s at %s" (var_to_prose list_var)
+            (expr_to_prose index)
+      | Tuple { label_opt = None; args = [ arg ] } -> expr_to_prose arg
+      | Tuple { label_opt = None; args } -> (
+          let args_prose = List.map expr_to_prose args in
+          match args with
+          | [] -> assert false
+          | [ _ ] -> assert false
+          | [ elem1; elem2 ] ->
+              (* The following is a small optimization to compound tuples,
+                 aiming to avoid nested "the pair consisting of: ..."
+                 as much as possible. *)
+              if is_compound_expr elem1 || is_compound_expr elem2 then
+                Format.asprintf "the pair consisting of: %s"
+                  (prose_numbered_list args_prose)
+              else
+                Format.asprintf "the pair consisting of %s and %s"
+                  (expr_to_prose elem1) (expr_to_prose elem2)
+          | _ ->
+              Format.asprintf "the tuple consisting of: %s"
+                (prose_numbered_list args_prose))
+      | Tuple { label_opt = Some name; args } ->
+          let variant, formal_args =
+            match Spec.defining_node_for_id S.spec name with
+            | Node_TypeVariant ({ term = Tuple { args = formal_args } } as def)
+              ->
+                (def, formal_args)
+            | _ -> assert false
+          in
+          let expr_prose =
+            TypeVariant.prose_description variant
+            |> prose_or_empty_message ~name
+          in
+          let args_prose = List.map expr_to_prose args in
+          let formal_arg_opts =
+            List.map (fun (arg_name_opt, _) -> arg_name_opt) formal_args
+          in
+          let formal_opt_prose_pairs =
+            List.combine formal_arg_opts args_prose
+          in
+          let formal_prose_pairs =
+            List.filter_map
+              (fun (opt_name, prose) ->
+                match opt_name with
+                | None -> None
+                | Some name -> Some (name, prose))
+              formal_opt_prose_pairs
+          in
+          substitute expr_prose formal_prose_pairs
+      | Record { label_opt; fields } ->
+          let variant = Spec.record_variant_for_expr S.spec expr in
+          let name =
+            match label_opt with
+            | Some name -> name
+            | None ->
+                Format.asprintf "unlabelled record with fields [%a]"
+                  (PP.pp_sep_list ~sep:", " pp_print_string)
+                  (List.map fst fields)
+          in
+          let expr_prose =
+            TypeVariant.prose_description variant
+            |> prose_or_empty_message ~name
+          in
+          let declared_fields =
+            match variant.term with
+            | Record { fields } -> fields
+            | _ -> assert false
+          in
+          (* A record expression is allowed to specify only a subset of the declared fields.
+             We figure those out, associate them with _, and append them to the explicitly
+             specified fields.
+          *)
+          let unspecified_defaults =
+            let declared_field_names =
+              List.map (fun field -> field.Term.name) declared_fields
+            in
+            let unspecified_fields =
+              Utils.string_list_difference declared_field_names
+                (List.map fst fields)
+            in
+            List.map
+              (fun field -> (field, Expr.Var Spec.ignore_var))
+              unspecified_fields
+          in
+          let field_to_prose =
+            List.map
+              (fun (field, field_expr) -> (field, expr_to_prose field_expr))
+              (fields @ unspecified_defaults)
+          in
+          substitute expr_prose field_to_prose
+      | RecordUpdate { record_expr; updates } ->
+          let record_prose = expr_to_prose record_expr in
+          let updates_prose =
+            List.map
+              (fun (field, update_expr) ->
+                let update_prose = expr_to_prose update_expr in
+                Format.asprintf "$%a$ updated to %s" pp_field_name field
+                  update_prose)
+              updates
+          in
+          Format.asprintf "%s with %s" record_prose (prose_list updates_prose)
+      | FieldAccess { base; field } ->
+          let base_prose = expr_to_prose base in
+          let field_def =
+            match Spec.defining_node_opt_for_id S.spec field with
+            | Some (Node_RecordField d) -> d
+            | _ -> assert false
+          in
+          let prose_template = Term.record_field_prose_description field_def in
+          let field_prose =
+            if Utils.string_is_empty prose_template then
+              (* Default prose. *)
+              Format.asprintf "the field $%a$" pp_field_name field_def.name
+            else prose_template
+          in
+          Format.asprintf "%s of %s" field_prose base_prose
+      | Map { lhs; args } ->
+          let lhs_prose = expr_to_prose lhs in
+          let args_prose = List.map expr_to_prose args in
+          Format.asprintf "the application of the function given by %s to %s"
+            lhs_prose (prose_list args_prose)
+      | Relation { name; args } ->
+          let relation = Spec.relation_for_id S.spec name in
+          let expr_prose =
+            Relation.prose_application relation |> prose_or_empty_message ~name
+          in
+          relation_expr_to_prose relation args expr_prose
+      | Transition { lhs = Relation { name; args }; rhs; short_circuit } ->
+          let relation = Spec.relation_for_id S.spec name in
+          let transition_prose =
+            Relation.prose_transition relation |> prose_or_empty_message ~name
+          in
+          let lhs_prose =
+            relation_expr_to_prose relation args transition_prose
+          in
+          let rhs_prose = expr_to_prose rhs in
+          let short_circuit_prose = short_circuit_to_prose name short_circuit in
+          Format.asprintf "%s %s%s" lhs_prose rhs_prose short_circuit_prose
+      | Indexed { index; list_var; body } ->
+          let body_prose = expr_to_prose body in
+          Format.asprintf "for each index %s into %s: %s" (var_to_prose index)
+            (var_to_prose list_var) body_prose
+      | Transition _ | UnresolvedApplication _ -> assert false
+
+    (** [relation_expr_to_prose relation args expr_prose] returns the prose
+        description for a relation expression [R(a1,...,an)]. *)
+    and relation_expr_to_prose relation args expr_prose =
+      let formal_args = relation.input in
+      if is_variadic_operator S.spec relation.name then
+        (* A variadic operator has just one formal argument that matches
+           the entire list of argument expression. *)
+        let args_prose =
+          List.map expr_to_prose args
+          |>
+          (* Compound arguments better be separated by numbered items,
+             whereas the prose for simple arguments is more natural as
+             one list. *)
+          if List.exists is_compound_expr args then prose_numbered_list
+          else prose_list
+        in
+        let formal_arg_opt_name = List.hd formal_args |> fst in
+        let formal_arg_name =
+          match formal_arg_opt_name with
+          | Some name -> name
+          | None ->
+              Format.kasprintf failwith
+                "Expected the variadic operator %s to have a formal argument \
+                 with a name, but it doesn't."
+                relation.name
+        in
+        let formal_prose_pair = [ (formal_arg_name, args_prose) ] in
+        substitute expr_prose formal_prose_pair
+      else
+        let formal_arg_pairs = List.combine formal_args args in
+        let formal_prose_pairs =
+          Utils.list_concat_map
+            (fun (opt_named_term, arg) ->
+              named_args_for_opt_named_term opt_named_term arg)
+            formal_arg_pairs
+        in
+        substitute expr_prose formal_prose_pairs
+
+    (** [short_circuit_to_prose relation_name short_circuit] returns the prose
+        for the short-circuit expressions added as superscripts. *)
+    and short_circuit_to_prose relation_name short_circuit =
+      match short_circuit with
+      | None ->
+          (* This case means we should automatically extract the short-circuit macros
+              from the relation's output types. *)
+          let { Relation.output } = Spec.relation_for_id S.spec relation_name in
+          let alternative_output_types = Utils.list_tail output in
+          let short_circuit_macros =
+            Utils.list_concat_map short_circuit_macros_for_type_term
+              alternative_output_types
+          in
+          if Utils.list_is_empty short_circuit_macros then ""
+          else
+            Format.asprintf "\\ProseTerminateAs{%s}"
+              (String.concat ", " short_circuit_macros)
+      | Some [] -> ""
+      | Some alternatives ->
+          let layout =
+            Horizontal (List.map (fun _ -> Unspecified) alternatives)
+          in
+          let terms_with_layouts = apply_layout_to_list layout alternatives in
+          Format.asprintf "\\ProseTerminateAs{%a}"
+            (PP.pp_sep_list ~sep:", " pp_expr)
+            terms_with_layouts
+
+    (** [named_args_for_opt_named_term (opt_name, term) expr] returns a list of
+        pairs of argument names and their corresponding prose for a given
+        optionally-named term and expression.
+
+        For example, given them term [a : (b: A, c: C)] and expression [(x, y)],
+        we need to bind [a] to the prose for [(x, y)], and then continue
+        recursively into [(b: A, c: C)] with [(x, y)] to bind [b] to the prose
+        for [x] and bind [c] to the prose for [y]. *)
+    and named_args_for_opt_named_term (opt_name, term) expr =
+      let top_level_pair =
+        match opt_name with
+        | None -> []
+        | Some name -> [ (name, expr_to_prose expr) ]
+      in
+      top_level_pair @ named_args_for_term term expr
+
+    (** [named_args_for_term term expr] returns a list of pairs of argument
+        names and their corresponding prose for a given term and expression. *)
+    and named_args_for_term term expr =
+      match (term, expr) with
+      | ( Term.Tuple { args = opt_named_term_args },
+          Expr.Tuple { args = expr_args } ) ->
+          Utils.list_concat_map
+            (fun (opt_named_term, arg) ->
+              named_args_for_opt_named_term opt_named_term arg)
+            (List.combine opt_named_term_args expr_args)
+      | _ -> []
+
+    (** [pp_prose_judgment fmt judgment] renders the prose for a single judgment
+        with the formatter [fmt]. *)
+    let pp_prose_judgment fmt { Rule.expr; is_output } =
+      let transition_to_output = function
+        | Expr.Transition { rhs } -> rhs
+        | _ -> assert false
+      in
+      if is_output then
+        let expr = transition_to_output expr in
+        Format.fprintf fmt "\\textbf{the result is:} %s." (expr_to_prose expr)
+      else Format.fprintf fmt "%s" (expr_to_prose expr)
+
+    (** [pp_prose_rule_element fmt element] renders the prose for a single
+        element of a rule with the formatter [fmt]. *)
+    let rec pp_prose_rule_element fmt element =
+      let pp_case fmt { name; elements } =
+        pp_prose_rule_elements fmt ~case_name:name elements
+      in
+      match element with
+      | Judgment judgment -> pp_prose_judgment fmt judgment
+      | Cases cases ->
+          fprintf fmt "\\OneApplies@;<0 0>%a" (pp_itemized_list pp_case) cases
+
+    (** [pp_prose_rule_elements fmt ~case_name_opt elements] renders the prose
+        for a list of rule elements [elements] with the formatter [fmt]. If
+        [case_name] is not empty, it is used to render an appropriate macro for
+        the case. *)
+    and pp_prose_rule_elements fmt ~case_name elements =
+      let case_name_for_latex = StringOps.escape_underscores case_name in
+      let pp_apply_macro fmt () =
+        if Utils.string_is_empty case_name then fprintf fmt {|\AllApply|}
+        else fprintf fmt {|\AllApplyCase{%s}|} case_name_for_latex
+      in
+      match elements with
+      | [ (Judgment _ as element) ] when Utils.string_is_empty case_name ->
+          (* An optimization for axioms. *)
+          pp_prose_rule_element fmt element
+      | [ (Judgment _ as element) ] ->
+          (* An optimization for cases with a single judgment. *)
+          fprintf fmt {|\SingleCase{%s} %a|} case_name_for_latex
+            pp_prose_rule_element element
+      | _ ->
+          fprintf fmt "%a@;<0 2>%a" pp_apply_macro ()
+            (pp_itemized_list pp_prose_rule_element)
+            elements
+
+    (** [pp_render_rule_prose fmt rule_render] renders the prose description of
+        the rules referenced by [rule_render] with the formatter [fmt]. *)
+    let pp_render_rule_prose fmt { RuleRender.relation_name; path } =
+      let relation = Spec.relation_for_id S.spec relation_name in
+      let rule_elements = Spec.filter_rule_for_path relation path in
+      (* The case name is empty, since we are rendering at the top-level and
+        don't want to start with an "all of the following apply" or
+        "one of the following applies". *)
+      pp_prose_rule_elements fmt ~case_name:"" rule_elements
+
+    (** [pp_render_rule_math_and_prose fmt def] renders both the mathematical
+        inference rules and the prose description of the rules referenced by
+        [def] with the formatter [fmt]. *)
+    let pp_render_rule_math_and_prose fmt def =
+      fprintf fmt "@.\\paragraph{Formally}@.%a@.@.\\paragraph{Prose}@.%a@.@."
+        pp_render_rule def pp_render_rule_prose def
+
     (** [pp_render_rule_macro fmt def] renders the LaTeX wrapper macro
         [\DefineRule{name}{...}] around the rendering of the mathematical
         inference rules referenced by [def] with the formatter [fmt]. *)
     let pp_render_rule_macro fmt def =
-      fprintf fmt {|\DefineRule{%s}{%a} %% EndDefineRule|} def.RuleRender.name
-        pp_render_rule def
+      fprintf fmt {|\DefineRule{%s}{@.%a@.} %% EndDefineRule|}
+        def.RuleRender.name pp_render_rule def
+
+    (** [pp_render_rule_prose_macro fmt def] renders the LaTeX wrapper macro
+        [\DefineProse{name}{...}] around the rendering of the prose description
+        of the rules referenced by [def] with the formatter [fmt]. *)
+    let pp_render_rule_prose_macro fmt def =
+      fprintf fmt {|\DefineProse{%s}{@.%a@.} %% EndDefineProse|}
+        def.RuleRender.name pp_render_rule_prose def
+
+    (** [pp_render_rule_math_and_prose_macros fmt def] renders both LaTeX
+        wrapper macros for the rendering of the mathematical inference rules and
+        the prose description of the rules referenced by [def] with the
+        formatter [fmt]. *)
+    let pp_render_rule_math_and_prose_macros fmt def =
+      pp_render_rule_macro fmt def;
+      fprintf fmt "@.@.";
+      pp_render_rule_prose_macro fmt def
   end
 
-  (** [pp_constant_definition fmt def] renders the definition of the constant
-      given by [def] with the formatter [fmt]. *)
+  (** [pp_constant_definition_macro fmt def] renders the LaTeX wrapper macro
+      [\DefineConstant{name}{...}] around the rendering of a constant definition
+      [def] with the formatter [fmt].*)
   let pp_constant_definition fmt
       ({ Constant.name; opt_value_and_attributes } as def) =
     match opt_value_and_attributes with
@@ -671,7 +1141,7 @@ module Make (S : SPEC_VALUE) = struct
     | Elem_Type def -> pp_type_definition fmt def
     | Elem_Relation def -> pp_relation_definition fmt def
     | Elem_RenderTypes def -> RenderTypeSubsets.pp_render_types fmt def
-    | Elem_RenderRule def -> RenderRule.pp_render_rule fmt def
+    | Elem_RenderRule def -> RenderRule.pp_render_rule_math_and_prose fmt def
 
   (** [pp_elem_definition_macro fmt elem] renders a macro definition for an
       element of the specification. *)
@@ -680,7 +1150,8 @@ module Make (S : SPEC_VALUE) = struct
     | Elem_Type def -> pp_type_definition_macro fmt def
     | Elem_Relation def -> pp_relation_definition_macro fmt def
     | Elem_RenderTypes def -> RenderTypeSubsets.pp_render_types_macro fmt def
-    | Elem_RenderRule def -> RenderRule.pp_render_rule_macro fmt def
+    | Elem_RenderRule def ->
+        RenderRule.pp_render_rule_math_and_prose_macros fmt def
 
   (** Renders a LaTeX document containing all of the elements in [S.spec]. A
       header and footer are added to enable compiling the generated file
@@ -690,7 +1161,7 @@ module Make (S : SPEC_VALUE) = struct
       fprintf fmt
         {|\documentclass{book}
 \input{ASLmacros.tex}
-\input{rendering_macros.tex}
+\usepackage{rendering_macros}
 \input{generated_macros.tex}
 \begin{document}@.|}
     in
@@ -702,28 +1173,9 @@ module Make (S : SPEC_VALUE) = struct
             Latex.spec_var_to_latex_var ~font_type:Latex.Text name
           in
           match elem with
-          | Elem_Constant _ ->
-              fprintf fmt {|
-\section*{%s}
-%a
-|} latex_name pp_elem elem
-          | Elem_Relation _ ->
-              if is_operator elem then ()
-              else fprintf fmt {|
-\section*{%s}
-%a
-|} latex_name pp_elem elem
-          | Elem_Type _ ->
-              fprintf fmt {|
-\section*{%s}
-%a
-|} latex_name pp_elem elem
-          | Elem_RenderTypes _ ->
-              fprintf fmt {|
-\section*{%s}
-%a
-|} latex_name pp_elem elem
-          | Elem_RenderRule _ ->
+          | Elem_Relation _ when is_operator elem -> ()
+          | Elem_Constant _ | Elem_Type _ | Elem_RenderTypes _
+          | Elem_RenderRule _ | Elem_Relation _ ->
               fprintf fmt {|
 \section*{%s}
 %a

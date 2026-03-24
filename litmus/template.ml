@@ -74,6 +74,8 @@ module type S = sig
         reg_env: (arch_reg * CType.t) list; (* Register typing [ARMv8] *)
         (* Jumps *)
         label:string option ;  branch : flow list ;
+        (* Memo contains align derective *)
+        align: bool;
         (* A la ARM conditional execution *)
         cond: bool ;
         comment: bool;
@@ -94,12 +96,14 @@ module type S = sig
       all_clobbers : arch_reg list;
       nrets : int ; (* number of return instruction in code *)
       nnops : int ; (* number of nop instruction in code *)
+      npagealign : int ;
       ty_env :  CType.t RegMap.t ;
       code_ty_env :  CType.t RegMap.t ;
     }
 
   val get_nrets : t -> int
   val get_nnops : t -> int
+  val get_npagealign : t -> int
   val has_asmhandler : t -> bool
   val get_addrs_only : t -> string list
   val get_phys_only : t -> string list
@@ -161,6 +165,7 @@ module Make(O:Config)(A:I) =
           reg_env: (arch_reg * CType.t) list; (* Register typing [ARMv8] *)
           (* Jumps *)
           label:string option ;  branch : flow list ;
+          align:bool;
           cond:bool ;
           comment:bool;
           clobbers: arch_reg list;
@@ -168,7 +173,7 @@ module Make(O:Config)(A:I) =
 
     let empty_ins =
       { memo="" ; inputs=[]; outputs=[]; reg_env=[];
-        label=None; branch=[Next]; cond=false; comment=false;
+        label=None; branch=[Next]; align=false; cond=false; comment=false;
         clobbers=[]; }
 
     let get_branch  ins = ins.branch
@@ -183,7 +188,7 @@ module Make(O:Config)(A:I) =
         fhandler : ins list ;
         name : Name.t ;
         all_clobbers : arch_reg list;
-        nrets : int ; nnops : int ;
+        nrets : int ; nnops : int ; npagealign : int ;
         ty_env : CType.t RegMap.t ;
         code_ty_env :  CType.t RegMap.t ;
       }
@@ -191,6 +196,7 @@ module Make(O:Config)(A:I) =
 
     let get_nrets t = t.nrets
     and get_nnops t = t.nnops
+    and get_npagealign t = t.npagealign
     and has_asmhandler t = Misc.consp t.fhandler
 
     (* Generic function to extract some symbols *)
@@ -473,8 +479,9 @@ module Make(O:Config)(A:I) =
       | { label=Some lbl0; _}::code ->
          if Label.equal lbl0 lbl then Ok k
          else find_offset_code lbl k code
-      | { label=None; _}::code ->
-         find_offset_code lbl (k+1) code
+      | { label=None; align; _}::code ->
+         let k = if align then k else k+1 in
+         find_offset_code lbl k code
 
     let find_offset lbl t =
       match find_offset_code lbl 0 t.code with

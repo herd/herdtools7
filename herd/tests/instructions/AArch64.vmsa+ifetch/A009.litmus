@@ -1,0 +1,15 @@
+AArch64 A009
+Variant=vmsa,ifetch
+{
+TTD(P0:Page0)=(oa:PA(P0:Page0),valid:1);
+TTD(P0:Page1)=(oa:PA(P0:Page1),valid:1);
+}
+P0          ;
+Page0:      ;
+ADD W0,W0,#1;
+.pagealign  ;
+Page1:      ;
+ADD W0,W0,#2;
+.pagealign  ;
+NOP         ;
+forall 0:X0=3

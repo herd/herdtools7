@@ -140,7 +140,7 @@ This order relies on the notion of \defusedependencyterm, which we formally defi
 \secref{Dependencies}.
 \secref{TopologicalOrdering} formally defines how to use the inferred \defusedependenciesterm\ to
 order the declarations such that false \typingerrorsterm{} are avoided.
-\identi{LWQQ}
+
 
 \TypingRuleDef{TypeCheckAST}
 \RenderRelation{type_check_ast}
@@ -207,49 +207,8 @@ mutually-recursive subprograms in this specification.
 The typechecker annotates each strongly-connected component listed above,
 and finally checks that the pragma \verb|pragma pragma1;| is well-typed, which it is.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item \Proseoverridesubprograms{} in $\decls$ yields $\declsp$;
-  \item splitting $\declsp$ into two sublists by testing each declaration to check whether
-        it is that of a pragma yields $\pragmas$ and $\others$, respectively;
-  \item \Prosebuilddependencies{\others}{$(\defs, \dependencies)$};
-  \item define $\reverseddependencies$ as the relation $\dependencies$ with its elements in reversed order.
-        That is, if $(a,b)$ is in $\dependencies$ then $\reverseddependencies$ contains $(b, a)$.
-        The reversal is necessary, since we want to check a declaration $b$ before any declaration $a$
-        that depends on it;
-  \item \ProseSCC{$\defs$}{$\reverseddependencies$}{$\comps$};
-  \item \Prosetopologicalorderingcomps{$\comps$}{$\reverseddependencies$}{$\orderedcomps$};
-  \item transforming each component, which is a set, into a list, yields $\compdecls$.
-        That is, $\compdecls$ is a list of lists where each sublist corresponds to one
-        strongly connected component;
-  \item \Proseannotatedeclcomps{$\genv$}{$\compdecls$}{$\newdecls$}{$\newtenv$\ProseOrTypeError}.
-  \item for each $\vd$ in $\pragmas$, \Prosecheckglobalpragma{$\newtenv$}{$\vd$}\ProseOrTypeError;
-  \item $\pragmas$ is ignored;
-\end{itemize}
+\RenderProseAndFormally{type_check_ast}
 \CodeSubsection{\TypeCheckASTBegin}{\TypeCheckASTEnd}{../Typing.ml}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \overridesubprograms(\decls) \typearrow \declsp \OrTypeError \\\\
-  \pragmas \eqdef [\ \vd \;|\; \vd \in \declsp\ \land \astlabel(\vd) = \DPragma\ ]\\
-  {
-  \others \eqdef \left[ \begin{array}{r|l}
-    \vd & \vd \in \declsp\ \land \astlabel(\vd) \neq \DPragma
-  \end{array}\right]
-  }\\
-  \builddependencies(\others) \typearrow (\defs, \dependencies)\\
-  \reverseddependencies \eqdef [(a,b) \in \dependencies: (b,a)]\\
-  \SCC(\defs, \reverseddependencies) = \comps\\
-  \orderedcomps \in \topologicalorderingcomps(\comps, \reverseddependencies)\\
-  \compdecls \eqdef [ \vc\in\orderedcomps: \listset(\vc) ]\\
-  \annotatedeclcomps(\genv, \compdecls) \typearrow (\newdecls, \newtenv) \OrTypeError \\\\
-  \vd\in\pragmas: \checkglobalpragma(\newtenv, \vd) \typearrow \True \OrTypeError
-}{
-  \typecheckast(\genv, \decls) \typearrow (\newdecls, \newtenv)
-}
-\end{mathpar}
 
 \TypingRuleDef{AnnotateDeclComps}
 \RenderRelation{annotate_decl_comps}
@@ -270,63 +229,7 @@ except for the component
 \{ \Subprogram(\rotatezero), \Subprogram(\rotateone) \} \enspace.
 \]
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\comps$ is the empty list;
-    \item define $\newgenv$ as $\tenv$;
-    \item define $\newdecls$ as the empty list.
-  \end{itemize}
-
-  \item \AllApplyCase{single}
-  \begin{itemize}
-    \item $\comps$ is a list with \head\ $\comp$ and \tail\ $\compsone$;
-    \item $\comp$ is a single declaration $\vd$;
-    \item applying $\typecheckdecl$ to $\vd$ in $\genv$ yields $(\vdone, \genvone)$\ProseOrTypeError;
-    \item applying $\annotatedeclcomps$ to $\compsone$ in $\genvone$ yields \\ $(\newgenv, \declsone)$\ProseOrTypeError;
-    \item define $\newdecls$ as the list with \head\ $\vdone$ and \tail\ $\declsone$.
-  \end{itemize}
-
-  \item \AllApplyCase{mutually\_recursive}
-  \begin{itemize}
-    \item $\comps$ is a list with \head\ $\comp$ and \tail\ $\compsone$;
-    \item $\comp$ is a list with more than one declaration (that is, a list of mutually-recursive declarations);
-    \item applying $\typecheckmutuallyrec$ to $\comp$ in $\genv$ yields \\ $(\declsone, \genvone)$\ProseOrTypeError;
-    \item applying $\annotatedeclcomps$ to $\compsone$ in $\genvone$ yields \\ $(\newgenv, \declstwo)$\ProseOrTypeError;
-    \item define $\newdecls$ as the concatenation of $\declsone$ and $\declstwo$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[empty]{}{
-  \annotatedeclcomps(\genv, \overname{\emptylist}{\comps}) \aslto (\overname{\genv}{\newgenv}, \overname{\emptylist}{\newdecls})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[single]{
-  \comp = [\vd]\\
-  \typecheckdecl(\genv, \vd) \typearrow (\vdone, \genvone) \OrTypeError\\\\
-  \annotatedeclcomps(\genvone, \compsone) \typearrow (\newgenv, \declsone) \OrTypeError
-}{
-  \annotatedeclcomps(\genv, \overname{[\comp] \concat \compsone}{\comps}) \aslto
-  (\newgenv, \overname{[\vdone] \concat \declsone}{\newdecls})
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[mutually\_recursive]{
-  |\comp| > 1\\
-  \typecheckmutuallyrec(\genv, \comp) \typearrow (\declsone, \genvone) \OrTypeError\\\\
-  \annotatedeclcomps(\genvone, \compsone) \typearrow (\newgenv, \declstwo) \OrTypeError
-}{
-  \annotatedeclcomps(\genv, \overname{[\comp] \concat \compsone}{\comps}) \aslto
-  (\newgenv, \overname{\declsone \concat \declstwo}{\newdecls})
-}
-\end{mathpar}
+\RenderProseAndFormally{annotate_decl_comps}
 
 \TypingRuleDef{TypeCheckMutuallyRec}
 \RenderRelation{type_check_mutually_rec}
@@ -353,50 +256,13 @@ The specification in \listingref{TypeCheckMutuallyRec-bad2} is ill-typed,
 since it contains recursive type declarations.
 \ASLListing{Illegal recursive type declarations}{TypeCheckMutuallyRec-bad2}{\typingtests/TypingRule.TypeCheckMutuallyRec.bad2.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item checking that each declaration in $\vd$ is a subprogram declaration yields $\True$\ProseTerminateAs{\BadDeclaration};
-  \item applying $\annotatefuncsig$ to each node $\vf$ in $\genv$, where $\DFunc(\vf)$ is a declaration in $\decls$,
-        yields $(\tenv_\vf, \vd_\vf, \vses_\vf)$\ProseOrTypeError;
-  \item define $\envandfsone$ as the list of pairs, each consisting of the local environment component of $\tenv_\vf$
-        the annotated subprogram $\vd_\vf$, and the \sideeffectsetterm\ $\vses_\vf$, for each subprogram declaration $\DFunc(\vf)$ in $\decls$;
-  \item applying $\declaresubprograms$ to $\genv$ and $\envandfsone$ yields \\
-        $(\genvtwo, \envandfstwo)$\ProseOrTypeError;
-  \item for tuple in $\envandfstwo$ consisting of a \localstaticenvironmentterm, an element of $\func$,
-        and a \sideeffectsetterm, $(\lenvtwo, \vf, \vses_\vf)$,
-        applying $\annotatesubprogram$ to $\vf$ and $\vses_\vf$ in the \staticenvironmentterm{} \\
-        $(\genvtwo, \lenvtwo)$ yields $(\vnew_\vf, \vsesp_\vf)$\ProseOrTypeError;
-  \item define $\newdecls$ as the list of $\DFunc(\vnew_\vf)$ for all $(\Ignore, \vf, \Ignore)$ in $\envandfstwo$;
-  \item define $\vsess$ as the list of $(\vnew_\vf, \vsesp_\vf)$ for all $(\Ignore, \vf, \Ignore)$ in $\envandfstwo$;
-  \item define $\tenvtwo$ as the environment with $\genvtwo$ as its static global environment
-        and an empty static local environment;
-  \item applying $\addsubprogramdecls$ to $\tenvtwo$ and $\vsess$ yields $\tenvthree$;
-  \item define $\newtenv$ as the \globalstaticenvironmentterm{} of $\tenvthree$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vd\in\decls: \techeck(\astlabel(\vd) = \DFunc, \BadDeclaration) \typearrow \True\OrTypeError\\\\
-  \DFunc(\vf)\in\decls: \annotatefuncsig(\genv, \vf) \typearrow (\tenv_\vf, \vd_\vf, \vses_\vf)\OrTypeError\\\\
-  \envandfsone \eqdef [\DFunc(\vf)\in\decls: ({\tenv_\vf}.\staticenvsL, \vd_\vf, \vses_\vf)]\\
-  \declaresubprograms(\genv, \envandfsone) \typearrow (\genvtwo, \envandfstwo) \OrTypeError\\\\
-  {
-    \begin{array}{r}
-  (\lenvtwo, \vf, \vses_\vf)\in\envandfstwo: \annotatesubprogram((\genvtwo, \lenvtwo), \vf, \vses_\vf) \typearrow \\
-      (\vnew_\vf, \vsesp_\vf) \OrTypeError
-    \end{array}
-  }\\\\
-  \newdecls \eqdef [(\Ignore, \vf, \Ignore)\in\envandfstwo: \DFunc(\vnew_\vf)]\\
-  \vsess \eqdef [(\Ignore, \vf, \Ignore)\in\envandfstwo: (\vnew_\vf, \vsesp_\vf)]\\
-  \tenvtwo \eqdef (\genvtwo, \emptyfunc)\\
-  \addsubprogramdecls(\tenvtwo, \vsess) \typearrow \tenvthree
-}{
-  \typecheckmutuallyrec(\genv, \decls) \typearrow (\newdecls, \overname{\tenvthree.\staticenvsG}{\newgenv})
-}
-\end{mathpar}
+\RenderProseAndFormally{type_check_mutually_rec}
 \CodeSubsection{\TypeCheckMutuallyRecBegin}{\TypeCheckMutuallyRecEnd}{../Typing.ml}
+
+\TypingRuleDef{FuncsOfDecls}
+\RenderRelation{funcs_of_decls}
+See \ExampleRef{Checking Mutually-recursive Declarations}.
+\RenderProseAndFormally{funcs_of_decls}
 
 \TypingRuleDef{DeclareSubprograms}
 \RenderRelation{declare_subprograms}
@@ -431,44 +297,7 @@ of the subprogram declarations.
 
 \ASLListing{Updating static environments for subprogram declarations}{DeclareSubprograms}{\typingtests/TypingRule.DeclareSubprograms.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\envandfs$ is the empty list;
-    \item define $\newgenv$ as $\genv$;
-    \item define $\newenvandfs$ as the empty list.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item $\envandfs$ is the list with \head\ $(\lenv, \vf, \vsesf)$ and \tail\ $\envandfsone$;
-    \item define $\tenv$ as the environment where the global environment component is $\genv$ and the local environment component is $\lenv$;
-    \item applying $\declareonefunc$ to $\vf$ in $\tenv$ yields $(\tenvone, \vfone)$\ProseOrTypeError;
-    \item applying $\declaresubprograms$ to the global environment of $\tenvone$ and \\
-          $\envandfsone$ yields $(\newgenv, \envandfstwo)$\ProseOrTypeError;
-    \item define $\newenvandfs$ as the list with \head\ $(\lenv, \vfone, \vsesf)$ and the \tail\ $\envandfstwo$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[empty]{}{
-  \declaresubprograms(\genv, \overname{\emptylist}{\envandfs}) \typearrow
-   (\overname{\genv}{\newgenv}, \overname{\emptylist}{\newenvandfs})
-}
-\and
-\inferrule[non\_empty]{
-  \envandfs = [(\lenv, \vf, \vsesf)]\concat\envandfsone\\
-  \tenv \eqname (\genv, \lenv)\\
-  \declareonefunc(\tenv, \vf) \typearrow (\tenvone, \vfone) \OrTypeError\\\\
-  \declaresubprograms(\tenvone.\staticenvsG, \envandfsone) \typearrow (\newgenv, \envandfstwo) \OrTypeError\\\\
-  \newenvandfs \eqdef [(\lenv, \vfone, \vsesf)] \concat \envandfstwo
-}{
-  \declaresubprograms(\genv, \envandfs) \typearrow (\overname{\genv}{\newgenv}, \newenvandfs)
-}
-\end{mathpar}
+\RenderProseAndFormally{declare_subprograms}
 
 \TypingRuleDef{AddSubprogramDecls}
 \RenderRelation{add_subprogram_decls}
@@ -481,39 +310,7 @@ The subprogram with the \integertypeterm{} argument is named \verb|increment|
 and the subprogram with the \realtypeterm{} argument is named \verb|increment-1|.
 \ASLListing{Adding subprogram declarations}{AddSubprogramDecls}{\typingtests/TypingRule.AddSubprogramDecls.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-  \begin{itemize}
-    \item $\vfuncs$ is the empty list;
-    \item $\newtenv$ is $\tenv$.
-  \end{itemize}
-
-  \item \AllApplyCase{non\_empty}
-  \begin{itemize}
-    \item $\vfuncs$ is the list with \head\ $(\vf, \vsesf)$ and \tail\ $\vfuncsone$;
-    \item applying $\addsubprogram$ to $\vf.\FIELDname$, $\vf$, and $\vsesf$ in $\tenv$ yields $\tenvone$;
-    \item applying $\addsubprogramdecls$ to $\tenvone$ and $\vfuncsone$ yields $\newtenv$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[empty]{}{
-  \addsubprogramdecls(\tenv, \overname{\emptylist}{\vfuncs}) \typearrow \overname{\tenv}{\newtenv}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  \addsubprogram(\tenv, \vf.\FIELDname, \vf, \vsesf) \typearrow \tenvone\\
-  \addsubprogramdecls(\tenvone, \vfuncsone) \typearrow \newtenv
-}{
-  \addsubprogramdecls(\tenv, \overname{[(\vf, \vsesf)] \concat \vfuncsone}{\vfuncs}) \typearrow
-  \newtenv
-}
-\end{mathpar}
+\RenderProseAndFormally{add_subprogram_decls}
 
 \section{Overriding Subprograms\label{sec:Overriding Subprograms}}
 This section defines how to override subprograms in a specification.
@@ -541,7 +338,7 @@ The definition of \verb|Foo| is overridden by a corresponding \Proseimplementati
 Subprograms marked with \texttt{implementation} are subject to the following restrictions.
 
 \RequirementDef{NonClashingImplementations}
-No two \Proseimplementationsubprograms{} can \\
+No two \Proseimplementationsubprograms{} can \linebreak[3]
 match each other according to \RequirementRef{OverridingMatch}.
 In \ExampleRef{Invalid Overriding}, the \verb|Foo| subprograms marked \texttt{implementation}
 match and are therefore invalid.
@@ -568,167 +365,31 @@ Implementations may wish to emit user-configurable warnings to check either:
 \RenderRelation{override_subprograms}
 See \ExampleRef{Overriding Subprograms} for an example of valid overriding.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item define $\vimpdefs$ as the sublist of \Proseimpdefsubprogram{} declarations in $\decls$;
-  \item define $\vimpls$ as the sublist of implementation subprogram declarations in $\decls$;
-  \item define $\vnormal$ as the sublist of remaining functions in $\decls$;
-  \item \Prosecheckimplementationsunique{$\vimpls$} yields $\True$\ProseOrTypeError;
-  \item \Proseprocessoverrides{$\vimpdefs$}{$\vimpls$} yields $\vimpdefsp$ and $\vdiscarded$\ProseOrTypeError;
-  \item \Proserenamesubprograms{$\vdiscarded$}{$\vrenameddiscarded$};
-  \item define $\voverridden$ as the concatenation of $\vimpdefsp$ and $\vimpls$;
-  \item $\declsp$ is the concatenation of subprogram declarations in $\voverridden$,\\ $\vrenameddiscarded$, and $\vnormal$.
-\end{itemize}
+\RenderProseAndFormally{override_subprograms}
 
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vimpdefs \eqdef [\vd : \DFunc(\vd) \in \decls \land \vd.\funcoverride = \Impdef] \\
-  \vimpls \eqdef [\vd : \DFunc(\vd) \in \decls \land \vd.\funcoverride = \Implementation] \\
-  \vnormal \eqdef [\vd : \DFunc(\vd) \in \decls \land \vd.\funcoverride \notin \{\Impdef, \Implementation\}] \\
-  \checkimplementationsunique(\vimpls) \typearrow \True \OrTypeError \\\\
-  \processoverrides(\vimpdefs, \vimpls) \typearrow (\vimpdefsp, \vdiscarded) \OrTypeError \\\\
-  \renamesubprograms(\vdiscarded) \typearrow \vrenameddiscarded \\
-  \voverridden \eqdef \vimpdefsp \concat \vimpls \\
-  {
-  \declsp \eqdef
-  \begin{array}{ll}
-  [ \DFunc(\vd) : \vd \in \voverridden ] & \concat\\
-  { [\DFunc(\vd) : \vd \in \vrenameddiscarded] } & \concat\\
-  \vnormal &
-  \end{array}
-  }
-}{
-  \overridesubprograms(\decls) \typearrow \declsp
-}
-\end{mathpar}
+\TypingRuleDef{OverrideDeclsSort}
+\RenderRelation{override_decls_sort}
+See \ExampleRef{Overriding Subprograms} for an example of valid overriding.
+
+\RenderProseAndFormally{override_decls_sort}
 
 \TypingRuleDef{CheckImplementationsUnique}
 \RenderRelation{check_implementations_unique}
 See \ExampleRef{Invalid Overriding} for an example of non-unique \Proseimplementationsubprograms{}.
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-    \begin{itemize}
-      \item \Proseemptylist{$\vimpls$};
-      \item the result is $\True$.
-    \end{itemize}
-  \item \AllApplyCase{non\_empty}
-    \begin{itemize}
-      \item $\vimpls$ is a \Proselist{$\vh$}{$\vt$};
-      \item for each \Proselistrange{$i$}{$\vt$}, \Prosesignaturesmatch{$\vh$}{$\vt[i]$} yields $\False$\ProseTerminateAs{\OverridingError};
-      \item \Prosecheckimplementationsunique{$\vt$} yields $\True$\ProseOrTypeError;
-      \item the result is $\True$.
-    \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[empty]{}{
-  \checkimplementationsunique(\overname{\emptylist}{\vimpls}) \typearrow \True
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  i \in \listrange(\vt): \signaturesmatch(\vh, \vt[i]) \typearrow \False \OrTypeError \\\\
-  \checkimplementationsunique(\vt) \typearrow \True \OrTypeError
-}{
-  \checkimplementationsunique(\overname{[\vh] \concat \vt}{\vimpls}) \typearrow \True
-}
-\end{mathpar}
+\RenderProseAndFormally{check_implementations_unique}
 
 \TypingRuleDef{SignaturesMatch}
 \RenderRelation{signatures_match}
 See \ExampleRef{Overriding Subprograms} for an example of matching signatures.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item checking that the names of $\vfuncone$ and $\vfunctwo$ are equal yields $\True$ \ProseTerminateAs{\False};
-  \item checking that the qualifiers of $\vfuncone$ and $\vfunctwo$ are equal yields $\True$ \ProseTerminateAs{\False};
-  \item checking that the declared arguments of $\vfuncone$ and $\vfunctwo$ are equal in both name and type yields $\True$ \ProseTerminateAs{\False};
-  \item checking that the declared parameters of $\vfuncone$ and $\vfunctwo$ are equal in both name and type yields $\True$ \ProseTerminateAs{\False};
-  \item checking that the return types of $\vfuncone$ and $\vfunctwo$ are equal yields $\True$ \ProseTerminateAs{\False}.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-  \inferrule{
-    \booltrans(\vfuncone.\FIELDname = \vfunctwo.\FIELDname) \booltransarrow \True \terminateas \False \\
-    \booltrans(\vfuncone.\funcqualifierfield = \vfunctwo.\funcqualifierfield) \booltransarrow \True \terminateas \False \\
-    \equallength(\vfuncone.\FIELDargs, \vfunctwo.\FIELDargs) \typearrow \True \terminateas \False \\
-    {
-    \begin{array}{r}
-      i \in \indices(\vfuncone.\FIELDargs),\;
-        \vfuncone.\FIELDargs[i] \eqname (\idone, \ttyone),\;
-        \vfunctwo.\FIELDargs[i] \eqname (\idtwo, \ttytwo): \\
-        \booltrans(\idone = \idtwo \land \ttyone = \ttytwo) \booltransarrow \vbone_{i}
-    \end{array}
-    } \\
-    \booltrans(\bigwedge_{i \in \indices(\vfuncone.\FIELDargs)} \vbone_{i}) \booltransarrow \True \terminateas \False \\
-    {
-    \begin{array}{r}
-      i \in \indices(\vfuncone.\FIELDparameters), \hfill \\
-        \vfuncone.\FIELDparameters[i] \eqname (\idone, \ttyone),\;
-        \vfunctwo.\FIELDparameters[i] \eqname (\idtwo, \ttytwo): \hfill \\
-        \booltrans(\idone = \idtwo \land \ttyone = \ttytwo) \booltransarrow \vbtwo_{i}
-    \end{array}
-    } \\
-    \booltrans(\bigwedge_{i \in \indices(\vfuncone.\FIELDparameters)} \vbtwo_{i}) \booltransarrow \True \terminateas \False \\
-    \booltrans(\vfuncone.\FIELDreturntype = \vfunctwo.\FIELDreturntype) \booltransarrow \True \terminateas \False
-  }{
-    \signaturesmatch(\vfuncone, \vfunctwo) \typearrow \True
-  }
-\end{mathpar}
+\RenderProseAndFormally{signatures_match}
 
 \TypingRuleDef{ProcessOverrides}
 \RenderRelation{process_overrides}
 See \ExampleRef{Overriding Subprograms} for an example of valid replacement of an \Proseimplementationsubprogram{}.
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-    \begin{itemize}
-      \item \Proseemptylist{$\vimpls$};
-      \item $\vimpdefsp$ is $\vimpdefs$;
-      \item $\vdiscarded$ is the empty list.
-    \end{itemize}
-  \item \AllApplyCase{non\_empty}
-    \begin{itemize}
-      \item $\vimpls$ is a \Proselist{$\vh$}{$\vt$};
-      \item for each \Proselistrange{$i$}{$\vimpdefs$}, \Prosesignaturesmatch{$\vh$}{$\vimpdefs[i]$} yields $\vb_i$;
-      \item define $\vmatching$ as the sublist of $\vimpdefs$ for which $\vb_i$ is $\True$;
-      \item define $\vnonmatching$ as the sublist of $\vimpdefs$ for which $\vb_i$ is $\False$;
-      \item \Prosetecheck{the length of $\vmatching$ is 1}{\OverridingError};
-      \item \Proseprocessoverrides{$\vimpls$}{$\vnonmatching$} yields $\vimpdefsp$ and \\ $\vdiscardedp$;
-      \item define $\vdiscarded$ as the concatenation of $\vmatching$ and $\vdiscardedp$.
-    \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[empty]{}{
-  \processoverrides(\vimpdefs, \overname{\emptylist}{\vimpls}) \typearrow (\overname{\vimpdefs}{\vimpdefsp}, \emptylist)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  i \in \listrange(\vimpdefs): \signaturesmatch(\vh, \vimpdefs[i]) \typearrow \vb_i \\
-  \vmatching \eqdef [\vimpdefs[i] \;|\; i \in \listrange(\vimpdefs) \land \vb_i = \True] \\
-  \vnonmatching \eqdef [\vimpdefs[i] \;|\; i \in \listrange(\vimpdefs) \land \vb_i = \False] \\
-  \techeck(\listlen{\vmatching} = 1, \OverridingError) \typearrow \True \terminateas \OverridingError \\\\
-  \processoverrides(\vnonmatching, \vt) \typearrow (\vimpdefsp, \vdiscardedp)\\
-  \vdiscarded \eqdef \vmatching \concat \vdiscardedp
-}{
-  \processoverrides(\vimpdefs, \overname{[\vh] \concat \vt}{\vimpls}) \typearrow (\vimpdefsp, \vdiscarded)
-}
-\end{mathpar}
+\RenderProseAndFormally{process_overrides}
 
 \TypingRuleDef{RenameSubprograms}
 \RenderRelation{rename_subprograms}
@@ -740,39 +401,7 @@ In particular, though the ill-typed subprogram is overridden and will not be use
 \typingerrorterm.
 \ASLListing{Typechecking an overridden subprogram}{RenameSubprograms}{\typingtests/TypingRule.RenameSubprograms.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{empty}
-    \begin{itemize}
-      \item \Proseemptylist{$\vdiscarded$};
-      \item the result is the empty list.
-    \end{itemize}
-  \item \AllApplyCase{non\_empty}
-    \begin{itemize}
-      \item $\vdiscarded$ is a \Proselist{$\vh$}{$\vt$};
-      \item \Proserenamesubprograms{$\vt$}{$\vtp$};
-      \item define $\vhp$ as $\vh$ with the $\FIELDname$ field updated to a fresh name;
-      \item the result is the concatenation of $\vhp$ and $\vtp$.
-    \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[empty]{}{
-  \renamesubprograms(\overname{\emptylist}{\vdiscarded}) \typearrow \overname{\emptylist}{\vrenameddiscarded}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  \renamesubprograms(\vt) \typearrow \vtp \\
-  \name \in \Identifier \text{ is fresh} \\
-  \vhp \eqdef \vh[\FIELDname \mapsto \name] \\
-}{
-  \renamesubprograms(\overname{[\vh] \concat \vt}{\vdiscarded}) \typearrow \overname{[\vhp] \concat \vtp}{\vrenameddiscarded}
-}
-\end{mathpar}
+\RenderProseAndFormally{rename_subprograms}
 
 \section{Defined-Used Dependencies for Global Declarations\label{sec:TopologicalOrdering}}
 This section defines how to construct a graph of \defusedependenciesterm\ between the identifiers associated
@@ -819,26 +448,7 @@ is as follows:
 \right)
 \]
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item define $\defs$ as the union of two sets:
-  \begin{enumerate}
-  \item the set of identifiers obtained by applying $\defdecl$ to each declaration in $\decls$;
-  \item the union of applying $\defenumlabels$ to each declaration in $\decls$.
-  \end{enumerate}
-  \item define $\dependencies$ as the union of applying $\decldependencies$ to each declaration in $\decls$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \defs \eqdef \{ \defdecl(\vd) \;|\; \vd \in \decls\} \cup \bigcup_{\vd\in\decls} \defenumlabels(\vd)\\
-  \dependencies \eqdef \bigcup_{\vd \in \decls} \decldependencies(\vd)
-}{
-  \builddependencies(\decls) \typearrow (\defs, \dependencies)
-}
-\end{mathpar}
+\RenderProseAndFormally{build_dependencies}
 
 \TypingRuleDef{DeclDependencies}
 \RenderRelation{decl_dependencies}
@@ -850,28 +460,7 @@ in comments appearing to the right of them or just above them.
 A dependency $(d_1,d_2)$ is depicted as \texttt{$d_1$ -> $d_2$}.
 \ASLListing{Dependencies of global declarations}{DeclDependencies}{\typingtests/TypingRule.DeclDependencies.asl}
 
-\ProseParagraph
-Define $\dependencies$ as the union of the following two sets of pairs:
-\begin{enumerate}
-  \item a pair $(\idone, \idtwo)$, where $\idone$ is the result of applying $\defdecl$ to $\vd$
-        and $\idtwo$ included in the result of applying $\defenumlabels$ to $\vd$; and
-  \item a pair $(\idone, \idtwo)$ ,where $\idone$ is the result of applying $\defdecl$ to $\vd$
-        and $\idtwo$ included in the result of applying $\usedecl$ to $\vd$.
-\end{enumerate}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  {
-    \begin{array}{rcll}
-  \dependencies & \eqdef  & \{ (\idone, \idtwo) \;|\; \idone = \defdecl(\vd) \land \idtwo \in \defenumlabels(\vd) \} & \cup\\
-                &         & \{ (\idone, \idtwo) \;|\; \idone = \defdecl(\vd) \land \idtwo \in \usedecl(\vd) \}  &
-    \end{array}
-  }
-}{
-  \decldependencies(\vd) \typearrow \dependencies
-}
-\end{mathpar}
+\RenderProseAndFormally{decl_dependencies}
 
 \TypingRuleDef{DefDecl}
 \RenderRelation{def_decl}
@@ -882,42 +471,7 @@ shows examples of global declarations and the identifiers they define,
 which appear in comments to their right.
 \ASLListing{Identifiers defined by global declarations}{DefDecl}{\typingtests/TypingRule.DefDecl.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{d\_func}
-  \begin{itemize}
-    \item $\vd$ declares a subprogram for the identifier $\id$;
-    \item $\name$ is $\Subprogram(\id)$.
-  \end{itemize}
-
-  \item \AllApplyCase{d\_globalstorage}
-  \begin{itemize}
-    \item $\vd$ declares a global storage element for the identifier $\id$;
-    \item $\name$ is $\Other(\id)$.
-  \end{itemize}
-
-  \item \AllApplyCase{d\_typedecl}
-  \begin{itemize}
-    \item $\vd$ declares a type for the identifier $\id$.
-    \item $\name$ is $\Other(\id)$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[d\_func]{}{
-  \defdecl(\overname{\DFunc(\FIELDname: \id, \ldots)}{\vd}) \typearrow \overname{\Subprogram(\id)}{\name}
-}
-\and
-\inferrule[d\_globalstorage]{}{
-  \defdecl(\overname{\DGlobalStorage(\GDname: \id, \ldots)}{\vd}) \typearrow \overname{\Other(\id)}{\name}
-}
-\and
-\inferrule[d\_typedecl]{}{
-  \defdecl(\overname{\DTypeDecl(\id, \Ignore, \Ignore)}{\vd}) \typearrow \overname{\Other(\id)}{\name}
-}
-\end{mathpar}
+\RenderProseAndFormally{def_decl}
 
 \TypingRuleDef{DefEnumLabels}
 \RenderRelation{def_enum_labels}
@@ -928,37 +482,7 @@ in \listingref{DefEnumLabels} is \\
 $\{\Other(\RED), \Other(\GREEN), \Other(\BLUE)\}$.
 \ASLListing{Identifiers defined by declaring an enumeration type}{DefEnumLabels}{\typingtests/TypingRule.DefEnumLabels.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{decl\_enum}
-  \begin{itemize}
-    \item $\vd$ is a declaration of an \enumerationtypeterm{} with labels $\vlabelsone$;
-    \item $\vlabels$ is the set consisting of $\Other(\vlabel)$ for each $\vlabel$ in $\vlabelsone$.
-  \end{itemize}
-
-  \item \AllApplyCase{other}
-  \begin{itemize}
-    \item $\vd$ is not a declaration of an \enumerationtypeterm{};
-    \item define $\vlabels$ as the empty set.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[decl\_enum]{
-  \vd = \DTypeDecl(\name, \TEnum(\vlabelsone, \Ignore)) \\
-  \vlabels \eqdef \{ \Other(\vlabel) \;|\; \vlabel \in \vlabelsone \}
-}{
-  \defenumlabels(\vd) \typearrow \vlabels
-}
-\and
-\inferrule[other]{
-  \vd \neq \DTypeDecl(\name, \TEnum(\Ignore, \Ignore))
-}{
-  \defenumlabels(\vd) \typearrow \overname{\emptyset}{\vlabels}
-}
-\end{mathpar}
+\RenderProseAndFormally{def_enum_labels}
 
 \TypingRuleDef{UseDecl}
 \RenderRelation{use_decl}
@@ -968,83 +492,9 @@ The specification in \listingref{UseDecl} shows the set of identifiers
 used by each global declaration via comments above it.
 \ASLListing{Identifiers used by global declarations}{UseDecl}{\typingtests/TypingRule.UseDecl.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{D\_TypeDecl}
-  \begin{itemize}
-    \item $\vd$ declares a type $\tty$ and fields $\fields$, that is,
-          $\DTypeDecl(\Ignore, \tty, \fields)$ (the first component is the name, which is being defined);
-    \item define $\ids$ as the union of applying $\usety$ to $\tty$ and applying $\usesubtypes$ to $\fields$.
-  \end{itemize}
-
-  \item \AllApplyCase{D\_GlobalStorage}
-  \begin{itemize}
-    \item $\vd$ declares a global storage element with initial value $\initialvalue$ and type $\tty$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\initialvalue$ and applying $\usety$ to $\tty$.
-  \end{itemize}
-
-  \item \AllApplyCase{D\_Func}
-  \begin{itemize}
-    \item $\vd$ declares a subprogram with arguments $\vargs$, \optionalterm\ return type \\
-          $\rettyopt$, parameters $\vparams$, body statement $\body$, and optional recursion limit expression $\vrecurselimit$;
-    \item define $\ids$ as the union of applying $\usety$ to each type of an argument in $\vargs$,
-          applying $\usety$ to $\rettyopt$, applying $\usety$ to each type of a parameter in $\vparams$,
-          applying $\usestmt$ to $\body$,
-          and applying $\useexpr$ to $\vrecurselimit$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[D\_TypeDecl]{}{
-  \usedecl(\overname{\DTypeDecl(\Ignore, \tty, \fields)}{\vd}) \typearrow \overname{\usety(\tty) \cup \usesubtypes(\fields)}{\ids}
-}
-\and
-\inferrule[D\_GlobalStorage]{
-  \ids \eqdef \useexpr(\initialvalue) \cup \usety(\tty)
-}{
-  \usedecl(\overname{\DGlobalStorage(\{
-    \GDinitialvalue: \initialvalue,
-    \GDty: \tty\ldots\})}{\vd})
-  \typearrow \ids
-}
-\and
-\inferrule[D\_Func]{
-  {
-    \begin{array}{rcll}
-  \ids &\eqdef& \{ (\Ignore, \vt) \in \vargs : \usety(\vt) \} &\cup\\
-  && \usety(\rettyopt) &\cup\\
-  && \{ (\Ignore, \vt) \in \vparams : \usety(\vt) \} &\cup \\
-  && \usestmt(\body) &\cup\\
-  && \useexpr(\vrecurselimit) &
-    \end{array}
-  }
-}{
-  {
-  \usedecl\left(\overname{
-    \DFunc\left(
-  \left\{
-    \begin{array}{l}
-    \funcbody: \body,\\
-    \FIELDargs: \vargs,\\
-    \FIELDreturntype: \rettyopt,\\
-    \FIELDparameters: \vparams,\\
-    \FIELDrecurselimit: \vrecurselimit,\\
-    \ldots\\
-    \end{array}
-  \right\}
-  \right)}{\vd}
-  \right)
-  \typearrow \ids
-  }
-}
-\end{mathpar}
+\RenderProseAndFormally{use_decl}
 
 \TypingRuleDef{UseTy}
-We define the following convenience type to allow handling both types and optional types uniformly:
-\RenderType{ty_or_opt}
-
 \RenderRelation{use_ty}
 
 \ExampleDef{The Identifiers Used by a Type}
@@ -1052,143 +502,7 @@ The specification in \listingref{UseTy} shows type annotations and the identifie
 used by them appearing as comments to their right.
 \ASLListing{The identifiers used by a type}{UseTy}{\typingtests/TypingRule.UseTy.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{none}
-  \begin{itemize}
-    \item $\vt$ is $\None$;
-    \item define $\ids$ as $\emptyset$.
-  \end{itemize}
-
-  \item \AllApplyCase{some}
-  \begin{itemize}
-    \item $\vt$ is $\some{\tty}$;
-    \item applying $\usety$ to $\tty$ yields $\ids$.
-  \end{itemize}
-
-  \item \AllApplyCase{simple}
-  \begin{itemize}
-    \item $\vt$ is one of the following types: enumeration, Boolean, real, or string;
-    \item define $\ids$ as the empty set.
-  \end{itemize}
-
-  \item \AllApplyCase{t\_named}
-  \begin{itemize}
-    \item $\vt$ is the named type for $\vs$;
-    \item define $\ids$ as the singleton set for $\Other(\vs)$.
-  \end{itemize}
-
-  \item \AllApplyCase{int\_no\_constraints}
-  \begin{itemize}
-    \item $\vt$ is either the unconstrained integer type or a \parameterizedintegertypeterm{} or a \pendingconstrainedintegertypeterm;
-    \item define $\ids$ as the empty set.
-  \end{itemize}
-
-  \item \AllApplyCase{int\_well\_constrained}
-  \begin{itemize}
-    \item $\vt$ is the well-constrained integer type with constraints $\vcs$;
-    \item define $\ids$ as the union of applying $\useconstraint$ to each constraint in $\vcs$.
-  \end{itemize}
-
-  \item \AllApplyCase{t\_tuple}
-  \begin{itemize}
-    \item $\vt$ is the \tupletypeterm{} with list of types $\vli$;
-    \item define $\ids$ as the union of applying $\useconstraint$ to each constraint in $\vcs$.
-  \end{itemize}
-
-  \item \AllApplyCase{structured}
-  \begin{itemize}
-    \item $\vt$ is a \structuredtypeterm\ with fields $\fields$;
-    \item define $\ids$ as the union of applying $\usety$ to each field type in $\fields$.
-  \end{itemize}
-
-  \item \AllApplyCase{array\_expr}
-  \begin{itemize}
-    \item $\vt$ is an array expression with length expression $\ve$ and element type $\vtp$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\ve$ and applying $\usety$ to $\vtp$.
-  \end{itemize}
-
-  \item \AllApplyCase{array\_enum}
-  \begin{itemize}
-    \item $\vt$ is an array expression with \enumerationtypeterm{} $\vs$ and element type $\vtp$;
-    \item define $\ids$ as the union of the singleton set for $\Other(\vs)$ and applying $\usety$ to $\vtp$.
-  \end{itemize}
-
-  \item \AllApplyCase{t\_bits}
-  \begin{itemize}
-    \item $\vt$ is a bitvector type with width expression $\ve$ and bitfields $\bitfields$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\ve$ and applying $\usebitfield$ to each field in $\bitfields$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[none]{}{
-  \usety(\overname{\None}{\vt}) \typearrow \overname{\emptyset}{\ids}
-}
-\and
-\inferrule[some]{
-  \usety(\tty) \typearrow \ids
-}{
-  \usety(\overname{\some{\tty}}{\vt}) \typearrow \ids
-}
-\and
-\inferrule[simple]{
-  \astlabel(\vt) \in \{\TEnum, \TBool, \TReal, \TString\}
-}{
-  \usety(\vt) \typearrow \overname{\emptyset}{\ids}
-}
-\and
-\inferrule[t\_named]{}{
-  \usety(\overname{\TNamed(\vs)}{\vt}) \typearrow \overname{\{\Other(\vs)\}}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[int\_no\_constraints]{
-  \astlabel(\vc) \in \{\Unconstrained, \Parameterized\}
-}{
-  \usety(\overname{\TInt(\vc)}{\vt}) \typearrow \overname{\emptyset}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[int\_well\_constrained]{}{
-  \usety(\overname{\TInt(\WellConstrained(\vcs))}{\vt}) \typearrow \overname{\bigcup_{\vc \in \vcs} \useconstraint(\vc)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[t\_tuple]{}{
-  \usety(\overname{\TTuple(\vli)}{\vt}) \typearrow \overname{\bigcup_{\vt \in \vli} \usety(\vt)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[structured]{
-  L \in \{\TRecord, \TException\}}{
-  \usety(\overname{L(\fields)}{\vt}) \typearrow \overname{\bigcup_{(\Ignore, \vt) \in \fields} \usety(\vt)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[array\_expr]{}{
-  \usety(\overname{\TArray(\ArrayLengthExpr(\ve), \vtp)}{\vt}) \typearrow \overname{\useexpr(\ve) \cup \usety(\vtp)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[array\_enum]{}{
-  \usety(\overname{\TArray(\ArrayLengthEnum(\vs, \Ignore), \vtp)}{\vt}) \typearrow \overname{\{\Other(\vs)\} \cup \usety(\vtp)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[t\_bits]{}{
-  \usety(\overname{\TBits(\ve, \bitfields)}{\vt}) \typearrow \overname{\useexpr(\ve) \cup \bigcup_{\vf \in\bitfields}\usebitfield(\vf)}{\ids}
-}
-\end{mathpar}
+\RenderProseAndFormally{use_ty}
 
 \TypingRuleDef{UseSubtypes}
 \RenderRelation{use_subtypes}
@@ -1198,40 +512,9 @@ In \listingref{UseDecl}, applying $\usesubtypes$ at
 the type declaration of \verb|MyRecord| yields \\
 $\{\ \Other(\RecordBase), \Other(\HalfWordBits)\ \}$.
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{none}
-  \begin{itemize}
-    \item $\fields$ is $\None$;
-    \item define $\ids$ as the empty set.
-  \end{itemize}
-
-  \item \AllApplyCase{some}
-  \begin{itemize}
-    \item $\fields$ is $\some{(\vx, \subfields)}$;
-    \item define $\ids$ as the union of the singleton set for $\Other(\vx)$ and the union of applying $\usety$
-          to each field type in $\subfields$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[none]{}{
-  \usesubtypes(\overname{\None}{\fields}) \typearrow \overname{\emptyset}{\ids}
-}
-\and
-\inferrule[some]{
-  \ids \eqdef \{\Other(\vx)\} \cup \bigcup_{(\Ignore, \vt) \in \subfields}\usety(\vt)
-}{
-  \usesubtypes(\overname{\some{(\vx, \subfields)}}{\fields}) \typearrow \ids
-}
-\end{mathpar}
+\RenderProseAndFormally{use_subtypes}
 
 \TypingRuleDef{UseExpr}
-We define the following convenience type to allow handling both expressions and optional expressions uniformly:
-\RenderType{expr_or_opt}
-
 \RenderRelation{use_expr}
 
 \ExampleDef{The Identifiers Used by Expressions}
@@ -1239,264 +522,7 @@ The specification in \listingref{UseExpr} shows the identifiers used
 by expressions on the right-hand-side of assignments in comments appearing to their right.
 \ASLListing{Identifiers used by expressions}{UseExpr}{\typingtests/TypingRule.UseExpr.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{none}
-  \begin{itemize}
-    \item $\ve$ is $\None$;
-    \item define $\ids$ as the empty set.
-  \end{itemize}
-
-  \item \AllApplyCase{some}
-  \begin{itemize}
-    \item $\ve$ is $\some{\veone}$;
-    \item applying $\useexpr$ to $\veone$ yields $\ids$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_literal}
-  \begin{itemize}
-    \item $\ve$ is a literal expression;
-    \item define $\ids$ as the empty set.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_atc}
-  \begin{itemize}
-    \item $\ve$ is the type assertion for expression $\ve$ and type $\tty$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\usety$ to $\tty$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_var}
-  \begin{itemize}
-    \item $\ve$ is the variable expression for identifier $\vx$;
-    \item define $\ids$ as the singleton set for $\Other(\vx)$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_getarray}
-  \begin{itemize}
-    \item $\ve$ is the \arrayaccessterm\ expression for base expression $\veone$ and index expression $\vetwo$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\useexpr$ to $\vetwo$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_getenumarray}
-  \begin{itemize}
-    \item $\ve$ is the \arrayaccessterm\ expression for base expression $\veone$ and enumeration-typed index expression $\vetwo$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\useexpr$ to $\vetwo$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_binop}
-  \begin{itemize}
-    \item $\ve$ is the binary operation expression over expressions $\veone$ and $\vetwo$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\useexpr$ to $\vetwo$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_unop}
-  \begin{itemize}
-    \item $\ve$ is the unary operation expression over any unary operation and an expression $\veone$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\veone$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_call}
-  \begin{itemize}
-    \item $\ve$ is the call expression of the subprogram named $\vx$ with argument expressions $\vargs$ and parameter expressions $\namedargs$;
-    \item define $\ids$ as the union of the singleton set for $\Subprogram(\vx)$, and the set obtained by applying $\useexpr$ to each expression in
-          $\vargs$ and each expression in $\namedargs$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_slice}
-  \begin{itemize}
-    \item $\ve$ is the slicing expression over expression $\veone$ and slices $\slices$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\useslice$ to each slice in $\slices$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_cond}
-  \begin{itemize}
-    \item $\ve$ is the conditional expression over expressions $\veone$, $\vetwo$, and $\vethree$;
-    \item define $\ids$ as the union of applying $\useexpr$ to each of $\veone$, $\vetwo$, and $\vethree$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_getitem}
-  \begin{itemize}
-    \item $\ve$ is the tuple access expression over expression $\veone$;
-    \item define $\ids$ as the application of $\useexpr$ to $\veone$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_getfield}
-  \begin{itemize}
-    \item $\ve$ is the field access expression over expression $\veone$;
-    \item define $\ids$ as the application of $\useexpr$ to $\veone$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_getfields}
-  \begin{itemize}
-    \item $\ve$ is the multiple field access expression over expression $\veone$;
-    \item define $\ids$ as the application of $\useexpr$ to $\veone$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_record}
-  \begin{itemize}
-    \item $\ve$ is the record construction expression of type $\tty$ and field initializations $\vli$;
-    \item define $\ids$ as the union of applying of $\usety$ to $\tty$ and applying $\usety$ to each field type in $\vli$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_tuple}
-  \begin{itemize}
-    \item $\ve$ is the tuple construction expression for the expressions $\ves$;
-    \item define $\ids$ as the union of applying of $\useexpr$ to each expression in $\ves$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_array}
-  \begin{itemize}
-    \item $\ve$ is the array construction expression for the length expression $\veone$ and value expression $\vetwo$,
-          that is, $\EArray\{\EArrayLength:\veone, \EArrayValue:\vetwo\}$;
-    \item define $\ids$ as the union of applying of $\useexpr$ to each of $\veone$ and $\vetwo$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_enumarray}
-  \begin{itemize}
-    \item $\ve$ is the array construction expression for the array with enumeration-typed index for the list of labels
-          $\vlabels$ and value expression $\vvalue$,
-          that is, \\
-          $\EEnumArray\{\EArrayLabels:\vlabels, \EArrayValue:\vvalue\}$;
-    \item define $\idsone$ as the set consisting of $\Other$ applied to each label in $\vlabels$;
-    \item define $\ids$ as the union $\idsone$ and the result of applying $\useexpr$ to $\vvalue$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_arbitrary}
-  \begin{itemize}
-    \item $\ve$ is the arbitrary expression with type $\vt$;
-    \item define $\ids$ as the application of $\usety$ to $\vt$.
-  \end{itemize}
-
-  \item \AllApplyCase{e\_pattern}
-  \begin{itemize}
-    \item $\ve$ is the pattern testing expression for subexpression $\veone$ and pattern $\vp$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\veone$ and applying $\usepattern$ to $\vp$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[none]{}{
-  \useexpr(\overname{\None}{\ve}) \typearrow \overname{\emptyset}{\ids}
-}
-\and
-\inferrule[some]{
-  \useexpr(\veone) \typearrow \ids
-}{
-  \useexpr(\overname{\some{\veone}}{\ve}) \typearrow \ids
-}
-\and
-\inferrule[e\_literal]{}{
-  \useexpr(\overname{\ELiteral(\Ignore)}{\ve}) \typearrow \overname{\emptyset}{\ids}
-}
-\and
-\inferrule[e\_atc]{}{
-  \useexpr(\overname{\EATC(\veone, \tty)}{\ve}) \typearrow \overname{\useexpr(\veone) \cup \usety(\tty)}{\ids}
-}
-\and
-\inferrule[e\_var]{}{
-  \useexpr(\overname{\EVar(\vx)}{\ve}) \typearrow \overname{\{\Other(\vx)\}}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_getarray]{}{
-  \useexpr(\overname{\EGetArray(\veone, \vetwo)}{\ve}) \typearrow \overname{\useexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_getenumarray]{}{
-  \useexpr(\overname{\EGetEnumArray(\veone, \vetwo)}{\ve}) \typearrow \overname{\useexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_binop]{}{
-  \useexpr(\overname{\EBinop(\Ignore, \veone, \vetwo)}{\ve}) \typearrow \overname{\useexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_unop]{}{
-  \useexpr(\overname{\EUnop(\Ignore, \veone)}{\ve}) \typearrow \overname{\useexpr(\veone)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_call]{
-  \ids \eqdef \{\Subprogram(\vx)\} \cup  \bigcup_{\veone\in\vargs}\useexpr(\veone) \cup \bigcup_{(\Ignore, \vt)\in\namedargs}\usety(\vt)
-}{
-  \useexpr(\overname{\ECall(\vx, \vargs, \namedargs)}{\ve}) \typearrow \ids
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_slice]{}{
-  \useexpr(\overname{\ESlice(\veone, \slices)}{\ve}) \typearrow \overname{\useexpr(\veone) \cup \bigcup_{\vs\in\slices}\useslice(\vs)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_cond]{}{
-  \useexpr(\overname{\ECond(\veone, \vetwo, \vethree)}{\ve}) \typearrow \overname{\useexpr(\veone) \cup \useexpr(\vetwo) \cup \useexpr(\vethree)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_getitem]{}{
-  \useexpr(\overname{\EGetItem(\veone, \Ignore)}{\ve}) \typearrow \overname{\useexpr(\veone)}{\ids}
-}
-\and
-\inferrule[e\_getfield]{}{
-  \useexpr(\overname{\EGetField(\veone, \Ignore)}{\ve}) \typearrow \overname{\useexpr(\veone)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_getfields]{}{
-  \useexpr(\overname{\EGetFields(\veone, \Ignore)}{\ve}) \typearrow \overname{\useexpr(\veone)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_record]{}{
-  \useexpr(\overname{\ERecord(\tty, \vli)}{\ve}) \typearrow \overname{\usety(\tty) \cup \bigcup_{(\Ignore, \vt)\in\vli}\usety(\vt)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_tuple]{}{
-  \useexpr(\overname{\ETuple(\ves)}{\ve}) \typearrow \overname{\bigcup_{\veone\in\ves}\useexpr(\veone)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_array]{}{
-  \useexpr(\overname{\EArray\{\EArrayLength:\veone, \EArrayValue:\vetwo\}}{\ve}) \typearrow \overname{\useexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_enumarray]{
-  \idsone \eqdef \bigcup_{\vlabel\in\vlabels}\Other(\vlabel)
-}{
-  \useexpr(\overname{\EEnumArray\{\EArrayLabels:\vlabels, \EArrayValue:\vvalue\}}{\ve}) \typearrow \overname{\{\vlabels\} \cup \useexpr(\vvalue)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_arbitrary]{}{
-  \useexpr(\overname{\EArbitrary(\vt)}{\ve}) \typearrow \overname{\usety(\vt)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_pattern]{}{
-  \useexpr(\overname{\EPattern(\veone, \vp)}{\ve}) \typearrow \overname{\useexpr(\veone) \cup \usepattern(\vp)}{\ids}
-}
-\end{mathpar}
+\RenderProseAndFormally{use_expr}
 
 \TypingRuleDef{UseLexpr}
 \RenderRelation{use_lexpr}
@@ -1506,104 +532,7 @@ The specification in \listingref{UseLexpr} shows the identifiers used
 by the assignable expressions on the left-hand-side of assignments in comments appearing to their right.
 \ASLListing{Identifiers used by assignable expressions}{UseLexpr}{\typingtests/TypingRule.UseLexpr.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{le\_var}
-  \begin{itemize}
-    \item $\vle$ is a left-hand-side variable expression for $\vx$;
-    \item define $\ids$ as the singleton set for $\Other(\vx)$.
-  \end{itemize}
-
-  \item \AllApplyCase{le\_destructuring}
-  \begin{itemize}
-    \item $\vle$ is a left-hand-side expression for assigning to a list of expressions $\vles$,
-          that is $\LEDestructuring(\vles)$;
-    \item define $\ids$ as the union of applying $\uselexpr$ to each expression in $\vles$.
-  \end{itemize}
-
-  \item \AllApplyCase{le\_discard}
-  \begin{itemize}
-    \item $\vle$ is a left-hand-side discard expression;
-    \item define $\ids$ as the empty set.
-  \end{itemize}
-
-  \item \AllApplyCase{le\_setarray}
-  \begin{itemize}
-    \item $\vle$ is a left-hand-side array update of the array given by the expression $\veone$ and index expression $\vetwo$;
-    \item define $\ids$ as the union of applying $\uselexpr$ to $\veone$ and applying $\useexpr$ to $\vetwo$.
-  \end{itemize}
-
-  \item \AllApplyCase{le\_setenumarray}
-  \begin{itemize}
-    \item $\vle$ is a left-hand-side array update of the array given by the expression $\veone$ and
-          the enumeration-typed index expression $\vetwo$;
-    \item define $\ids$ as the union of applying $\uselexpr$ to $\veone$ and applying $\useexpr$ to $\vetwo$.
-  \end{itemize}
-
-  \item \AllApplyCase{le\_setfield}
-  \begin{itemize}
-    \item $\vle$ is a left-hand-side field update of the record given by the expression $\veone$;
-    \item define $\ids$ as the application of $\uselexpr$ to $\veone$.
-  \end{itemize}
-
-  \item \AllApplyCase{le\_setfields}
-  \begin{itemize}
-    \item $\vle$ is a left-hand-side multiple field updates of the record given by the expression $\veone$;
-    \item define $\ids$ as the application of $\uselexpr$ to $\veone$.
-  \end{itemize}
-
-  \item \AllApplyCase{le\_slice}
-  \begin{itemize}
-    \item $\vle$ is a left-hand-side slicing of the expression $\veone$ by slices $\slices$;
-    \item define $\ids$ as the union of applying $\uselexpr$ to $\veone$ and applying $\useslice$ to each slice in $\slices$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[le\_var]{}{
-  \uselexpr(\overname{\LEVar(\vx)}{\vle}) \typearrow \overname{\Other(\vx)}{\ids}
-}
-\and
-\inferrule[le\_destructuring]{}{
-  \uselexpr(\overname{\LEDestructuring(\vles)}{\vle}) \typearrow \overname{\bigcup_{\ve\in\vles}\uselexpr(\ve)}{\ids}
-}
-\and
-\inferrule[le\_discard]{}{
-  \uselexpr(\overname{\LEDiscard}{\vle}) \typearrow \overname{\emptyset}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[le\_setarray]{}{
-  \uselexpr(\overname{\LESetArray(\veone, \vetwo)}{\vle}) \typearrow \overname{\uselexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[le\_setenumarray]{}{
-  \uselexpr(\overname{\LESetEnumArray(\veone, \vetwo)}{\vle}) \typearrow \overname{\uselexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[le\_setfield]{}{
-  \uselexpr(\overname{\LESetField(\veone, \Ignore)}{\vle}) \typearrow \overname{\uselexpr(\veone)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[le\_setfields]{}{
-  \uselexpr(\overname{\LESetFields(\veone, \Ignore)}{\vle}) \typearrow \overname{\uselexpr(\veone)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[le\_slice]{}{
-  \uselexpr(\overname{\LESlice(\veone, \slices)}{\vle}) \typearrow \overname{\uselexpr(\veone) \cup \bigcup_{\vs\in\slices}\useslice(\vs)}{\ids}
-}
-\end{mathpar}
+\RenderProseAndFormally{use_lexpr}
 
 \TypingRuleDef{UsePattern}
 \RenderRelation{use_pattern}
@@ -1613,108 +542,7 @@ The specification in \listingref{UsePattern} shows examples of patterns
 and the identifiers used by them, appearing in comments to their right.
 \ASLListing{Identifiers used by a pattern}{UsePattern}{\typingtests/TypingRule.UsePattern.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{mask\_all}
-  \begin{itemize}
-    \item $\vp$ is either a mask pattern ($\PatternMask$) or a match-all pattern \\ ($\PatternAll$);
-    \item define $\ids$ as the empty set.
-  \end{itemize}
-
-  \item \AllApplyCase{tuple}
-  \begin{itemize}
-    \item $\vp$ is a tuple pattern list of patterns $\vli$;
-    \item define $\ids$ as the union of the application of $\usepattern$ for each pattern in $\vli$.
-  \end{itemize}
-
-  \item \AllApplyCase{any}
-  \begin{itemize}
-    \item $\vp$ is a pattern for matching any of the patterns in the list of patterns $\vli$;
-    \item define $\ids$ as the union of the application of $\usepattern$ for each pattern in $\vli$.
-  \end{itemize}
-
-  \item \AllApplyCase{single}
-  \begin{itemize}
-    \item $\vp$ is a pattern for matching the expression $\ve$;
-    \item define $\ids$ as the application of $\useexpr$ to $\ve$.
-  \end{itemize}
-
-  \item \AllApplyCase{geq}
-  \begin{itemize}
-    \item $\vp$ is a pattern for testing greater-or-equal with respect to the expression $\ve$;
-    \item define $\ids$ as the application of $\useexpr$ to $\ve$.
-  \end{itemize}
-
-  \item \AllApplyCase{leq}
-  \begin{itemize}
-    \item $\vp$ is a pattern for testing less-than-or-equal with respect to the expression $\ve$;
-    \item define $\ids$ as the application of $\useexpr$ to $\ve$.
-  \end{itemize}
-
-  \item \AllApplyCase{not}
-  \begin{itemize}
-    \item $\vp$ is a pattern negating the pattern $\vpone$;
-    \item define $\ids$ as the application of $\usepattern$ to $\vpone$.
-  \end{itemize}
-
-  \item \AllApplyCase{range}
-  \begin{itemize}
-    \item $\vp$ is a pattern for testing the range of expressions from $\veone$ to $\vetwo$;
-    \item define $\ids$ as the union of the application of $\useexpr$ to both $\veone$ and $\vetwo$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[mask\_all]{
-  \astlabel(\vp) \in \{\PatternMask, \PatternAll\}
-}{
-  \usepattern(\vp) \typearrow \overname{\emptyset}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[tuple]{}{
-  \usepattern(\overname{\PatternTuple(\vli)}{\vp}) \typearrow \overname{\bigcup_{\vpone\in\vli}\usepattern(\vpone)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[any]{}{
-  \usepattern(\overname{\PatternAny(\vli)}{\vp}) \typearrow \overname{\bigcup_{\vpone\in\vli}\usepattern(\vpone)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[single]{}{
-  \usepattern(\overname{\PatternSingle(\ve)}{\vp}) \typearrow \overname{\useexpr(\ve)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[geq]{}{
-  \usepattern(\overname{\PatternGeq(\ve)}{\vp}) \typearrow \overname{\useexpr(\ve)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[leq]{}{
-  \usepattern(\overname{\PatternLeq(\ve)}{\vp}) \typearrow \overname{\useexpr(\ve)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[not]{}{
-  \usepattern(\overname{\PatternNot(\vpone)}{\vp}) \typearrow \overname{\usepattern(\vpone)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[range]{}{
-  \usepattern(\overname{\PatternRange(\veone, \vetwo)}{\vp}) \typearrow \overname{\useexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
-}
-\end{mathpar}
+\RenderProseAndFormally{use_pattern}
 
 \TypingRuleDef{UseSlice}
 \RenderRelation{use_slice}
@@ -1724,34 +552,7 @@ The specification in \listingref{UseSlice} shows slicing expressions
 and the identifiers they use, appearing in comments to their right.
 \ASLListing{Identifiers used by a slice}{UseSlice}{\typingtests/TypingRule.UseSlice.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{single}
-  \begin{itemize}
-    \item $\vs$ is the slice at the position given by the expression $\ve$;
-    \item define $\ids$ as the application of $\useexpr$ to $\ve$.
-  \end{itemize}
-
-  \item \AllApplyCase{start\_length\_range}
-  \begin{itemize}
-    \item $\vs$ is a slice given by the pair of expressions $\veone$ and $\vetwo$;
-    \item define $\ids$ as the union of applying $\useexpr$ to both $\veone$ and $\vetwo$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[single]{}{
-  \useslice(\overname{\SliceSingle(\ve)}{\vs}) \typearrow \overname{\useexpr(\ve)}{\ids}
-}
-\and
-\inferrule[start\_length\_range]{
-  L \in \{\SliceStar, \SliceLength, \SliceRange\}
-}{
-  \useslice(\overname{L(\veone, \vetwo)}{\vs}) \typearrow \overname{\useexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
-}
-\end{mathpar}
+\RenderProseAndFormally{use_slice}
 
 \TypingRuleDef{UseBitfield}
 \RenderRelation{use_bitfield}
@@ -1762,48 +563,7 @@ of bitfield declarations and the identifiers they use,
 appearing as comments to their right.
 \ASLListing{Identifiers used by a bitfield declaration}{UseBitfield}{\typingtests/TypingRule.UseBitfield.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{simple}
-  \begin{itemize}
-    \item $\vbf$ is the single field with slices $\slices$;
-    \item define $\ids$ as the union of applying $\useslice$ to each slice in $\slices$.
-  \end{itemize}
-
-  \item \AllApplyCase{nested}
-  \begin{itemize}
-    \item $\vbf$ is the nested bitfield with slices $\slices$ and bitfields $\bitfields$;
-    \item define $\ids$ as the union of applying $\useslice$ to each slice in $\slices$ and applying
-          $\usebitfield$ to each bitfield in $\bitfields$.
-  \end{itemize}
-
-  \item \AllApplyCase{type}
-  \begin{itemize}
-    \item $\vbf$ is the typed bitfield with slices $\slices$ and type $\tty$;
-    \item define $\ids$ as the union of applying $\useslice$ to each slice in $\slices$ and applying
-          $\usety$ to $\tty$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[simple]{}{
-  \usebitfield(\overname{\BitFieldSimple(\Ignore, \slices)}{\vbf}) \typearrow \overname{\bigcup_{\vs\in\slices}\useslice(\vs)}{\ids}
-}
-\and
-\inferrule[nested]{
-  \ids \eqdef \bigcup_{\bfone\in\bitfields}\usebitfield(\vs) \cup \bigcup_{\vs\in\slices}\useslice(\vs)
-}{
-  \usebitfield(\overname{\BitFieldNested(\Ignore, \slices, \bitfields)}{\vbf}) \typearrow \ids
-}
-\and
-\inferrule[type]{
-  \ids \eqdef \bigcup_{\vs\in\slices}\useslice(\vs) \cup \usety(\tty)
-}{
-  \usebitfield(\overname{\BitFieldType(\Ignore, \slices, \tty)}{\vbf}) \typearrow \ids
-}
-\end{mathpar}
+\RenderProseAndFormally{use_bitfield}
 
 \TypingRuleDef{UseConstraint}
 \RenderRelation{use_constraint}
@@ -1814,32 +574,7 @@ shows constraints in type annotations, and the identifiers they use,
 appearing in comments to their right.
 \ASLListing{Identifiers used by constraints}{UseConstraint}{\typingtests/TypingRule.UseConstraint.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{exact}
-  \begin{itemize}
-    \item $\vc$ is the single-value expression constraint with expression $\ve$;
-    \item define $\ids$ as the application of $\useexpr$ to $\ve$.
-  \end{itemize}
-
-  \item \AllApplyCase{range}
-  \begin{itemize}
-    \item $\vc$ is the range constraint with expressions $\veone$ and $\vetwo$;
-    \item define $\ids$ as the union of applying $\useexpr$ to both $\veone$ and $\vetwo$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[exact]{}{
-  \useconstraint(\overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{\useexpr(\ve)}{\ids}
-}
-\and
-\inferrule[range]{}{
-  \useconstraint(\overname{\ConstraintRange(\veone, \vetwo)}{\vc}) \typearrow \overname{\useexpr(\veone) \cup \useexpr(\vetwo)}{\ids}
-}
-\end{mathpar}
+\RenderProseAndFormally{use_constraint}
 
 \TypingRuleDef{UseLDI}
 \RenderRelation{use_ldi}
@@ -1849,35 +584,7 @@ The specification in \listingref{UseLDI} shows examples of local declaration ite
 and the identifiers used by them, appearing in the comments to their right.
 \ASLListing{Identifiers used by local declaration items}{UseLDI}{\typingtests/TypingRule.UseLDI.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{ldi\_var}
-    \begin{itemize}
-      \item $\vl$ is the declaration $\LDIVar(\vx)$ of a single local storage item $\vx$,
-      \item define $\ids$ as the singleton set for $\Other(\vx)$.
-    \end{itemize}
-  \item \AllApplyCase{ldi\_tuple}
-    \begin{itemize}
-      \item $\vl$ is the declaration $\LDITuple(\vli)$ of a tuple of storage items $\vli$,
-      \item define $\ids$ as the set containing $\Other(\vx)$ for all $\vx$ in $\vli$.
-    \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-  \inferrule[ldi\_var]{}{
-    \useldi(\overname{\LDIVar(\vx)}{\vl})
-     \typearrow
-     \overname{\{\Other(\vx)\}}{\ids}
-  }
-  \\
-  \inferrule[ldi\_tuple]{}{
-    \useldi(\overname{\LDITuple(\vli)}{\vl})
-    \typearrow
-    \{ \Other(\vx) \;|\; \vx \in \vli \}
-  }
-\end{mathpar}
+\RenderProseAndFormally{use_ldi}
 
 \TypingRuleDef{UseStmt}
 \RenderRelation{use_stmt}
@@ -1887,235 +594,21 @@ The specification in \listingref{UseStmt} shows examples of statements
 and the identifiers used by them, appearing in comments to their right.
 \ASLListing{Identifiers used by statements}{UseStmt}{\typingtests/TypingRule.UseStmt.asl}
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{pass\_return\_none}
-  \begin{itemize}
-    \item $\vs$ is either a pass statement ($\SPass$) or a return-nothing statement \\ ($\SReturn(\None)$);
-    \item define $\ids$ as the empty set.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_seq}
-  \begin{itemize}
-    \item $\vs$ is a sequencing statement for $\vsone$ and $\vstwo$;
-    \item define $\ids$ as the union of applying $\usestmt$ to both $\vsone$ and $\vstwo$.
-  \end{itemize}
-
-  \item \AllApplyCase{assert\_return\_some}
-  \begin{itemize}
-    \item $\vs$ is either an assertion with expression $\ve$ or a return statement with expression $\ve$;
-    \item define $\ids$ as the application of $\useexpr$ to $\ve$.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_assign}
-  \begin{itemize}
-    \item $\vs$ is an assignment statement with left-hand-side $\vle$ and right-hand-side $\ve$;
-    \item define $\ids$ as the union of applying $\uselexpr$ to $\vle$ and $\useexpr$ to $\ve$.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_call}
-  \begin{itemize}
-    \item $\vs$ is a call statement for the subprogram with name $\vx$, arguments $\vargs$, and list of
-          pairs consisting of a parameter identifier and associated expression $\namedargs$;
-    \item define $\ids$ as the union of the singleton set for $\Subprogram(\vx)$, applying $\useexpr$ to
-          every expression in $\vargs$ and applying $\useexpr$ to every expression associated with
-          a parameter in $\namedargs$.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_cond}
-  \begin{itemize}
-    \item $\vs$ is the conditional statement with expression $\ve$ and statements $\vsone$ and $\vstwo$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\ve$ and $\usestmt$ to both of $\vsone$ and $\vstwo$.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_for}
-  \begin{itemize}
-    \item $\vs$ is the for statement $\SFor\left\{\begin{array}{rcl}
-      \Forindexname &:& \vindexname\\
-      \Forstarte &:& \vstarte\\
-      \fordirection &:& \vdirection\\
-      \Forende &:& \vende\\
-      \Forbody &:& \vbody\\
-      \Forlimit &:& \vlimit
-    \end{array}\right\}$;
-    \item define $\ids$ as the union of $\vindexname$, and applying $\useexpr$ to $\vlimit$, $\vstarte$, and $\vende$ and applying $\usestmt$ to $\vsone$.
-  \end{itemize}
-
-  \item \AllApplyCase{while\_repeat}
-  \begin{itemize}
-    \item $\vs$ is either a while statement or repeat statement, each with expression $\ve$, body statement $\vsone$,
-          and optional limit expression $\vlimit$;
-    \item define $\ids$ as the union of applying $\useexpr$ to $\vlimit$ and to $\ve$, and applying $\usestmt$ to $\vsone$.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_decl}
-  \begin{itemize}
-    \item $\vs$ is a declaration statement with \localdeclarationitem{} $\ldi$,
-      \optionalterm{} type annotation $\vt$, and \optionalterm\ initialization
-      expression $\ve$;
-    \item define $\ids$ as the union of applying $\useldi$ to $\ldi$, $\usety$ to $\vt$, and $\useexpr$ to $\ve$.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_throw}
-  \begin{itemize}
-    \item $\vs$ is a \throwstatementsterm{} with an expression $\ve$;
-    \item \Proseeqdef{$\ids$}{the result of applying $\useexpr$ to $\ve$}.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_try}
-  \begin{itemize}
-    \item $\vs$ is a try statement with statement $\vsone$, catcher list $\catchers$, and otherwise statement $\vstwo$;
-    \item define $\ids$ as the union of applying $\usestmt$ to both $\vsone$ and $\vstwo$ and $\usecatcher$ to
-          every catcher in $\catchers$.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_print}
-  \begin{itemize}
-    \item $\vs$ is a print statement with list of expressions $\vargs$;
-    \item define $\ids$ as the union of applying $\useexpr$ to each expression in $\vargs$.
-  \end{itemize}
-
-  \item \AllApplyCase{s\_unreachable}
-  \begin{itemize}
-    \item $\vs$ is an \unreachablestatementterm{};
-    \item define $\ids$ as the empty set.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[pass\_return\_none]{
-  \vs = \SPass \lor \vs = \SReturn(\None)
-}{
-  \usestmt(\vs) \typearrow \overname{\emptyset}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_seq]{}{
-  \usestmt(\overname{\SSeq(\vsone, \vstwo)}{\vs}) \typearrow \overname{\usestmt(\vsone)\cup\usestmt(\vstwo)}{\ids}
-}
-\and
-\inferrule[assert\_return\_some]{
-  \vs = \SAssert(\ve) \lor \vs = \SReturn(\some{\ve})
-}{
-  \usestmt(\vs) \typearrow \overname{\useexpr(\ve)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-
-\inferrule[s\_assign]{}{
-  \usestmt(\overname{\SAssign(\vle, \ve)}{\vs}) \typearrow \overname{\uselexpr(\vle) \cup \useexpr(\ve)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_call]{
-  \ids \eqdef \{\Subprogram(\vx)\} \cup \bigcup_{\ve\in\vargs}\useexpr(\ve) \cup \bigcup_{(\Ignore, \ve)\in\namedargs} \useexpr(\ve)
-}{
-  \usestmt(\overname{\SCall(\vx, \vargs, \namedargs)}{\vs}) \typearrow \ids
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_cond]{}{
-  \usestmt(\overname{\SCond(\ve, \vsone, \vstwo)}{\vs}) \typearrow \overname{\useexpr(\ve) \cup \usestmt(\vsone) \cup \usestmt(\vstwo)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_for]{
-  {
-  \ids \eqdef
-  \begin{array}{ll}
-  \{ \vindexname \} & \cup\\
-  \useexpr(\vlimit) & \cup\\
-  \useexpr(\vstarte) & \cup\\
-  \useexpr(\vende) & \cup\\
-  \usestmt(\vbody) &
-  \end{array}
-  }
-}{
-  {
-  \usestmt\left(\overname{\SFor\left\{\begin{array}{rcl}
-    \Forindexname &:& \vindexname\\
-    \Forstarte &:& \vstarte\\
-    \fordirection &:& \vdirection\\
-    \Forende &:& \vende\\
-    \Forbody &:& \vbody\\
-    \Forlimit &:& \vlimit
-  \end{array}\right\}}{\vs}\right) \typearrow \ids
-  }
-}
-\and
-\inferrule[while\_repeat]{
-  \vs = \SWhile(\ve, \vlimit, \vs) \lor \vs = \SRepeat(\vs, \ve, \vlimit)
-}{
-  \usestmt(\vs) \typearrow \overname{\useexpr(\vlimit) \cup \useexpr(\ve) \cup \usestmt(\vsone)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_decl]{}{
-  \usestmt(\overname{\SDecl(\Ignore, \ldi, \vt, \ve)}{\vs})
-  \typearrow
-  \overname{\useldi(\ldi) \cup \usety(\vt) \cup \useexpr(\ve)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_throw]{}{
-  \usestmt(\overname{\SThrow(\ve)}{\vs}) \typearrow \overname{\useexpr(\ve)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_try]{
-  \ids \eqdef \usestmt(\vsone) \cup \bigcup_{\vc\in\catchers}\usecatcher(\vc) \cup \usestmt(\vstwo)
-}{
-  \usestmt(\overname{\STry(\vsone, \catchers, \vstwo)}{\vs}) \typearrow \ids
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_print]{}{
-  \usestmt(\overname{\SPrint(\vargs, \Ignore)}{\vs}) \typearrow \overname{\bigcup_{\ve\in\vargs}\useexpr(\ve)}{\ids}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[s\_unreachable]{}{
-  \usestmt(\overname{\SUnreachable}{\vs}) \typearrow \overname{\emptyset}{\ids}
-}
-\end{mathpar}
+\RenderProseAndFormally{use_stmt}
 
 \TypingRuleDef{UseCatcher}
 \RenderRelation{use_catcher}
 \ExampleDef{The Identifiers Used by a Catcher}
 The specification in \listingref{UseStmt} shows an example
-of a catcher clause (towards the end of \verb|main|)
+of a \catcherterm{} (towards the end of \verb|main|)
 and the identifiers used by it, appearing in comments to its right.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vc$ is a case alternative with type $\tty$ and statement $\vs$;
-  \item define $\ids$ as the union of applying $\usety$ to $\ty$ and applying $\usestmt$ to $\vs$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{}{
-  \usecatcher(\overname{(\Ignore, \tty, \vs)}{\vc}) \typearrow \overname{\usety(\tty) \cup \usestmt(\vs)}{\ids}
-}
-\end{mathpar}
+\RenderProseAndFormally{use_catcher}
 
 \section{Ordering Global Declarations via Defined-Used Dependencies\label{sec:Dependencies}}
 
 \begin{definition}[Strongly Connected Components]
-\hypertarget{def-scc}{}
+\hypertarget{relation-scc}{}
 Given a graph $G=(V, E)$, a \\ subset of its nodes $C \subseteq V$ is called
 a \emph{strongly connected component} of $G$ if
 every pair of nodes $u,v \in C$ reachable from one another.
@@ -2123,18 +616,18 @@ every pair of nodes $u,v \in C$ reachable from one another.
 The \emph{strongly connected components} of a graph $(V, E)$ uniquely partitions its set of
 nodes $V$ into a set of strongly connected components:
 \[
-\SCC(V, E) \triangleq \{ C \subseteq V \;|\; \forall u,v\in C.\ (u,v), (v,u) \in \graphtransitivereflexive{E} \} \enspace.
+\sccop[H]{V}{E} \triangleq \{ C \subseteq V \;|\; \forall u,v\in C.\ (u,v), (v,u) \in \graphtransitivereflexive{E} \} \enspace.
 \]
 \end{definition}
 
-\hypertarget{def-topologicalorderingcomps}{}
+\hypertarget{relation-topologicalorderingcomps}{}
 \begin{definition}[Topological Ordering of Components]
 For a non-empty graph \\
-$G=(V, E)$ and its strongly connected components $\comps \triangleq \SCC(V, E)$,
+$G=(V, E)$ and its strongly connected components $\comps \triangleq \sccop[H]{V}{E}$,
 a listing of $\comps$ ---
 $C_{1..k}$ --- is a \emph{topological ordering of components},
 denoted \\
-$C_{1..k} \in \topologicalorderingcomps(\comps, E)$, if the following condition holds:
+$C_{1..k} \in \topologicalorderingcomps[H]{\comps}{E}$, if the following condition holds:
 \[
   \forall 1 \leq i \leq j \leq k.\ \exists c_i\in C_i.\ c_j\in C_j.\ (c_i,c_j) \in \graphtransitivereflexive{E} \;\;\implies\;\;
   i \leq j \enspace .
@@ -2147,69 +640,13 @@ The semantics of specifications is defined via the relation $\evalspec$, which i
 \SemanticsRuleDef{EvalSpec}
 \RenderRelation{eval_spec}
 
-
 \ExampleRef{Returning a Value from the Entry Point} shows a specification
 whose evaluation results in returning the value $\nvint(0)$.
 
 \ExampleRef{An Uncaught Exception} shows a specification whose evaluation
 results in a \dynamicerrorterm.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item \Prosebuildgenv{$\tenv$}{$\spec$}{$\env$}{$\vg$}\ProseOrError;
-  \item the subprogram \verb|main() => integer| can be found in $\tenv$ via \\ $\subprogramforsignature$\ProseTerminateAs{\NoEntryPoint} with name $\namep$;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{normal}
-    \begin{itemize}
-      \item evaluating the subprogram $\namep$ with an empty list of actual arguments and empty list of parameters
-            in $\env$ yields \\
-            $\ResultCall([(\vv, \vgtwo)], \Ignore)$\ProseOrDynErrorDiverging;
-      \item $\vg$ is the ordered composition of $\vgone$ and $\vgtwo$ with the $\aslpo$ edge;
-      \item the result of the entire evaluation is $(\vv, \vg)$.
-    \end{itemize}
-
-    \item \AllApplyCase{throwing}
-    \begin{itemize}
-      \item evaluating the subprogram $\namep$ with an empty list of actual arguments and empty list of parameters
-            in $\env$ yields $\Throwing(\Ignore, \Ignore, \Ignore, \Ignore)$, which is an uncaught exception\ProseOrDynErrorDiverging;
-      \item the result of the entire evaluation is an error indicating that an exception was not caught.
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[normal]{
-  \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynErrorDiverging\\\\
-  {
-    \begin{array}{r}
-      \subprogramforsignature(\tenv, \vmain, \emptylist, \STFunction) \evalarrow \\
-      (\namep, \{\FIELDreturntype = \some{\TInt(\Unconstrained)}, \ldots\}, \Ignore)\;\terminateas \NoEntryPoint
-    \end{array}
-  }\\\\
-  \evalsubprogram(\env, \namep, \emptylist, \emptylist)\evalarrow \ResultCall([(\vv, \vgtwo)], \Ignore) \OrDynErrorDiverging\\\\
-  \vg \eqdef \ordered{\vgone}{\aslpo}{\vgtwo}
-}{
-  \evalspec(\tenv, \vspec) \evalarrow (\vv, \vg)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[throwing]{
-  \buildgenv(\tenv, \vspec) \evalarrow (\env, \vgone) \OrDynErrorDiverging\\\\
-  {
-    \begin{array}{r}
-      \subprogramforsignature(\tenv, \vmain, \emptylist, \STFunction) \evalarrow \\
-      (\namep, \{\FIELDreturntype = \some{\TInt(\Unconstrained)}, \ldots\}, \Ignore)\;\terminateas \NoEntryPoint
-    \end{array}
-  }\\\\
-  \evalsubprogram(\env, \namep, \emptylist, \emptylist) \evalarrow \Throwing(\Ignore, \Ignore, \Ignore, \Ignore) \OrDynErrorDiverging
-}{
-  \evalspec(\tenv, \vspec) \evalarrow \DynamicErrorVal{\UncaughtException}
-}
-\end{mathpar}
+\RenderProseAndFormally{eval_spec}
 \CodeSubsection{\EvalSpecBegin}{\EvalSpecEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{BuildGlobalEnv}
@@ -2221,22 +658,5 @@ to the \defusedependencyterm\ order
 
 See \ExampleRef{Evaluating a List of Global Declarations}.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item define the environment $\env$ as consisting of the \staticenvironmentterm{} $\tenv$ and the empty dynamic environment $\emptydenv$;
-  \item evaluating the global storage declarations in $\typedspec$ in $\env$ with the empty execution graph
-        is $(\newenv, \newg)$\ProseOrDynErrorDiverging.
-  \item the result of the entire evaluation is $(\newenv, \newg)$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \env \eqdef (\tenv, \emptydenv)\\
-  \evalglobals(\typedspec, (\env, \emptygraph)) \evalarrow (\newenv, \newg) \OrDynErrorDiverging
-}{
-  \buildgenv(\tenv, \typedspec) \evalarrow (\newenv, \newg)
-}
-\end{mathpar}
+\RenderProseAndFormally{build_genv}
 \CodeSubsection{\EvalBuildGlobalEnvBegin}{\EvalBuildGlobalEnvEnd}{../Interpreter.ml}

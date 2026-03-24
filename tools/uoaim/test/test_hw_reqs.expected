@@ -1,0 +1,19 @@
+req1.txt
+empty [Exp & R]; rf^-1 & po; [Exp & W]
+req2.txt
+empty [Exp & W]; ca^-1 & po; [Exp & W]
+req3.txt
+empty [W]; rf & (ca; [Exp & W]; po); [Exp & R]
+irreflexive [Exp & R]; rf^-1; [W]; ca; [Exp & W]; po; [Exp & R]
+req4.txt
+empty [Exp & R]; rf^-1 & (po; [Exp & R]; rf^-1; [W]; ca); [Exp & W]
+irreflexive [Exp & R]; po; [Exp & R]; rf^-1; [W]; ca; [Exp & W]; rf; [Exp & R]
+req6.txt
+empty [Imp & Instr & R]; rf^-1 & (po; [Imp & Instr & R]; IC-after; [IC]; po; [dsb.full]; po); [Exp & W]
+irreflexive [Imp & Instr & R]; po; [Imp & Instr & R]; IC-after; [IC]; po; [dsb.full]; po; [Exp & W]; rf; [Imp & Instr & R]
+req6bis.txt
+empty [Imp & Instr & R]; (po; [Imp & Instr & R]; ob & (Instr-read-ordered-before; [Exp & W]; po; [DMB.ST]; po)) & rf^-1; [Exp & W]
+irreflexive [Imp & Instr & R]; po; [Imp & Instr & R]; ob & (Instr-read-ordered-before; [Exp & W]; po; [DMB.ST]; po); [Exp & W]; rf; [Imp & Instr & R]
+req9.txt
+empty [R]; rf^-1 & (ob^-1 & same-loc; [R]; rf^-1; [W]; ca^-1); [W]
+irreflexive [R]; ob^-1 & same-loc; [R]; rf^-1; [W]; ca^-1; [W]; rf; [R]

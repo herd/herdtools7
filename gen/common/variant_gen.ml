@@ -35,7 +35,7 @@ type t =
 (* Morello C64 instruction set *)
   | Morello
 (* Explicit virtual memory *)
-  | KVM | FullKVM | NoFault
+  | KVM | NoFault
 (* Neon AArch64 extension *)
   | Neon
 (* Scalable Vector extension (AArch64) *)
@@ -48,8 +48,8 @@ type t =
 let tags =
   ["AsAmo";"ConstsInInit";
    "Mixed";"FullMixed";"MixedDisjoint"; "MixedStrictOverlap";
-   "Self"; "MemTag";
-   "NoVolatile"; "Morello"; "kvm"; "FullKvm"; "NoFault";
+   "Ifetch(Self)"; "MemTag";
+   "NoVolatile"; "Morello"; "VMSA(KVM)"; "NoFault";
    "Neon"; "ConstrainedUnpredictable"; ]
 
 let parse tag = match Misc.lowercase tag with
@@ -59,12 +59,11 @@ let parse tag = match Misc.lowercase tag with
 | "fullmixed" -> Some FullMixed
 | "mixeddisjoint"|"disjoint" -> Some MixedDisjoint
 | "mixedstrictoverlap"|"strictoverlap" -> Some MixedStrictOverlap
-| "self" -> Some Self
+| "ifetch" | "self" -> Some Self
 | "memtag" -> Some MemTag
 | "novolatile" -> Some NoVolatile
 | "morello" -> Some Morello
-| "kvm" -> Some KVM
-| "fullkvm" -> Some FullKVM
+| "kvm" | "vmsa" -> Some KVM
 | "nofault" -> Some NoFault
 | "neon" -> Some Neon
 | "sve" -> Some SVE
@@ -79,12 +78,11 @@ let pp = function
   | FullMixed -> "FullMixed"
   | MixedDisjoint -> "MixedDisjoint"
   | MixedStrictOverlap -> "MixedStrictOverlap"
-  | Self -> "Self"
+  | Self -> "Ifetch"
   | MemTag -> "MemTag"
   | NoVolatile -> "NoVolatile"
   | Morello -> "Morello"
-  | KVM -> "kvm"
-  | FullKVM -> "FullKvm"
+  | KVM -> "VMSA"
   | NoFault -> "NoFault"
   | Neon -> "Neon"
   | SVE -> "sve"
@@ -92,4 +90,4 @@ let pp = function
   | ConstrainedUnpredictable -> "ConstrainedUnpredictable"
 
 let is_mixed v = v Mixed || v FullMixed
-let is_kvm v = v KVM || v FullKVM
+let is_kvm v = v KVM

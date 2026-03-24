@@ -34,61 +34,8 @@ of the bitfield \verb|upper|, which fails the static evaluation of the expressio
 (as \verb|64| is not divisible by \verb|3|), which results in a \typingerrorterm.
 \ASLListing{Static evaluation of expressions}{static-eval-bad}{\typingtests/TypingRule.StaticEval.bad.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item applying $\staticenvtoenv$ to $\tenv$ yields $\env$;
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{normal\_literal}
-    \begin{itemize}
-      \item evaluating $\ve$ in $\env$ yields $\ResultExpr(\NVLiteral(\vv), \Ignore)$.
-    \end{itemize}
 
-    \item \AllApplyCase{normal\_non\_literal}
-    \begin{itemize}
-      \item evaluating $\ve$ in $\env$ yields $\ResultExpr((\vx, \Ignore), \Ignore)$
-            where $\vx$ is not a native value for a literal;
-      \item the result is a \typingerrorterm{} indicating that $\ve$ cannot be statically evaluated to a literal.
-    \end{itemize}
-
-    \item \AllApplyCase{abnormal}
-    \begin{itemize}
-      \item evaluating $\ve$ in $\env$ yields an abnormal configuration;
-      \item the result is a \typingerrorterm{} indicating that $\ve$ cannot be statically evaluated to a literal.
-    \end{itemize}
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[normal\_literal]{
-  \staticenvtoenv(\tenv) \typearrow \env\\
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\NVLiteral(\vv), \Ignore), \Ignore)
-}{
-  \staticeval(\tenv, \ve) \typearrow \vv
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[normal\_non\_literal]{
-  \staticenvtoenv(\tenv) \typearrow \env\\
-  \evalexpr(\env, \ve) \evalarrow \ResultExpr((\vx, \Ignore), \Ignore)\\
-  \vx \neq \NVLiteral(\Ignore)
-}{
-  \staticeval(\tenv, \ve) \typearrow \TypeErrorVal{\StaticEvaluationFailure}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[abnormal]{
-  \staticenvtoenv(\tenv) \typearrow \env\\
-  \evalexpr(\env, \ve) \evalarrow C\\
-  \configdomain{C} \in \{\Throwing, \DynamicError\}
-}{
-  \staticeval(\tenv, \ve) \typearrow \TypeErrorVal{\StaticEvaluationFailure}
-}
-\end{mathpar}
+\RenderProseAndFormally{static_eval}
 \CodeSubsection{\StaticEvalBegin}{\StaticEvalEnd}{../StaticInterpreter.ml}
 
 \TypingRuleDef{StaticEnvToEnv}
@@ -126,3 +73,5 @@ is transformed into the dynamic environment $\env$, defined as follows:
   \staticenvtoenv(\tenv) \typearrow \overname{(\tenv, \{\dynamicenvsG: \vglobal, \dynamicenvsL: \vlocal\})}{\env}
 }
 \end{mathpar}
+% TODO: re-translate once empty_func has been introduced.
+% \RenderProseAndFormally{static_env_to_env}

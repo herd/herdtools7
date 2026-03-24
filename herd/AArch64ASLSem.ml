@@ -215,9 +215,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let open Asllib.AST in
       let with_pos desc = Asllib.ASTUtils.add_dummy_annotation ~version:V0 desc in
       let ( ^= ) x e = S_Decl (LDK_Let, LDI_Var x, None, Some e) |> with_pos in
-      let ( ^^= ) x e =
-        let le_x = LE_Var x |> with_pos in
-        S_Assign (le_x, e) |> with_pos in
       let lit v = E_Literal v |> with_pos in
       let liti i = lit (L_Int (Z.of_int i)) in
       let litb b = lit (L_Bool b) in
@@ -249,7 +246,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                stmt
                  [
                    "offset" ^= litbv 64 off;
-                   "_PC" ^^= litbv 64 ii.A.addr; ])
+                   ])
       | I_CBZ (v,rt,lab)
       | I_CBNZ (v,rt,lab) as i
         ->
@@ -266,7 +263,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 "t" ^= reg rt;
                 "datasize" ^= variant v;
                 "offset" ^= litbv 64 off;
-                "_PC" ^^= litbv 64 ii.A.addr;
               ])
       | I_BC (c,lab)
         ->
@@ -277,7 +273,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               [
                 "offset" ^= litbv 64 off;
                 "condition" ^= cond c;
-                "_PC" ^^= litbv 64 ii.A.addr;
               ])
       | I_TBZ (v, rt, k, lab)
       | I_TBNZ (v, rt, k, lab) ->
@@ -296,7 +291,6 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 "offset" ^= litbv 64 offset;
                 "bit_pos" ^= liti k;
                 "datasize" ^= variant v;
-                "_PC" ^^= litbv 64 ii.A.addr;
               ])
 
       (* Atomic instructions *)
@@ -1126,9 +1120,13 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         not is_vmsa ||
         List.exists (Proc.equal ii.A.proc) TopConf.procs_user in
       let pstate_val, eqs = build_pstate_val is_el0 ii in
+      let pc_val =
+        ASLS.A.V.scalarToV (ASLScalar.bv_of_int_sized 64 ii.A.addr)
+      in
       let st =
         ASLS.A.state_empty
         |> state_add (global_loc "PSTATE") pstate_val
+        |> state_add (global_loc "_PC") pc_val
         |> List.fold_right add_arch_reg_if_present ASLBase.gregs
         |> add_reg_if_present AArch64Base.ResAddr (global_loc "RESADDR")
         |> add_reg_if_present AArch64Base.SP (global_loc "_SP_EL0")
@@ -1341,6 +1339,15 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             Printf.eprintf "tr_action %s\n%!"
               (ASLS.Act.pp_action act) in
         match act with
+        | ASLS.Act.Access
+            ( d,
+              ASLS.A.Location_reg (_proc, ASLBase.ArchReg AArch64Base.PC),
+              v,
+              _,
+              _ ) -> (
+            match d with
+            | Dir.W -> Some (Act.Commit (Act.Bcc, Some (V.pp true (tr_v v))))
+            | Dir.R -> None)
         | ASLS.Act.Access (dir, loc, v, sz, (a, exp, acc)) -> (
             match tr_loc ii loc with
             | None -> None
@@ -1407,7 +1414,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             match act with
             | Act.Access
                 (dir,A.Location_global loc,_,_,
-                 AArch64Explicit.Exp,_,Access.(PHY_PTE|PTE))
+                 AArch64Explicit.Exp,_,Access.(PHY_PTE|PTE DISide.Data))
               when dir_ok dir
               ->
                 Some loc
@@ -1542,35 +1549,22 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let bds = List.fold_left one_event [] event_list in
           let finals = get_cat_show  Misc.identity "AArch64_Finals" in
           let pc =
-            let n_pc = (* Count writes to PC *)
-              List.fold_left
-                (fun c (r,_) ->
-                  match r with
-                  | AArch64Base.PC -> c+1
-                  | _ -> c)
-                0 bds in
-            (* Branching instructions all generate one, initial,
-             * PC assignement and a second PC assignement
-             * that gives the branch target. This applies even
-             * for  non-taken conditional branches where
-             * the second assignment is to the next instruction.
-             * This second write event is the final write to PC.
-             * Non-branching instructions neither read nor
-             * write the PC, cf. case [None] below.
-             *)
-            if n_pc <= 1 then None
-            else
-              ESet.fold
-                (fun e r ->
-                  match e.ASLE.action with
-                  | ASLS.Act.Access
-                    (Dir.W,
-                     ASLS.A.Location_reg
-                       (_,
-                        ASLBase.ArchReg AArch64Base.PC), v, _, _) ->
-                     Some (tr_v v)
-                  | _ -> r)
-                finals None in
+            ESet.fold
+              (fun e r ->
+                match e.ASLE.action with
+                | ASLS.Act.Access
+                    ( Dir.W,
+                      ASLS.A.Location_reg (_, ASLBase.ArchReg AArch64Base.PC),
+                      v,
+                      _,
+                      _ ) ->
+                    if Option.is_some r then
+                      Warn.fatal
+                        "There are 2 direct writes to PC in this instruction.";
+                    Some (tr_v v)
+                | _ -> r)
+              finals None
+          in
           match Misc.seq_opt A.V.as_int pc with
           | Some v -> B.Jump (B.Addr v,bds)
           | None ->

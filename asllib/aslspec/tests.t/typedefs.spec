@@ -43,3 +43,7 @@ ast expr { prose_description = "expression" } =
     | Plus(lhs: expr, rhs: expr)
     { prose_description = "a binary expression for {lhs} and {rhs}" }
 ;
+
+typedef RefVariants =
+    | ( Number(Int) ) // reference a variant defined elsewhere.
+;

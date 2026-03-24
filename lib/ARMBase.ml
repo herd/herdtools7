@@ -243,7 +243,8 @@ type instruction = int kinstruction
 type parsedInstruction = MetaConst.k kinstruction
 
 let nop = Some I_NOP
-and is_nop = function
+let mk_imm_branch _ = None
+let is_nop = function
   | I_NOP -> true
   | _ -> false
 

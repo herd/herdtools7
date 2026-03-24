@@ -33,6 +33,9 @@ ASLREF                        = _build/default/asllib/aslref.exe
 CHECK_OBS                     = _build/default/internal/check_obs.exe
 all: build
 
+CATA_HERD_TEST_MODE := $(if $(ALL_TESTS), ,-fast)
+HERD_CATALOGUE_REGRESSION_TEST += $(CATA_HERD_TEST_MODE)
+
 .PHONY: Version.ml
 Version.ml:
 	sh ./version-gen.sh $(PREFIX)
@@ -83,12 +86,7 @@ dune-test:
 	@ echo
 	dune runtest --profile=$(DUNE_PROFILE)
 
-.PHONY: dune-no-missing-file-in-runt
-test:: dune-no-missing-file-in-runt
-dune-no-missing-file-in-runt:
-	asllib/tests/check-no-missing-file-in-run.sh ./
-
-test:: test.aarch64assumptions
+test-all:: test.aarch64assumptions
 test-local:: test.aarch64assumptions
 test.aarch64assumptions:
 	@ echo
@@ -684,6 +682,18 @@ test.vmsa+mte:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 VMSA+MTE instructions tests: OK"
 
+test:: test.vmsa+ifetch
+test-local:: test.vmsa+ifetch
+test.vmsa+ifetch:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.vmsa+ifetch \
+		-conf ./herd/tests/instructions/AArch64.vmsa+ifetch/vmsa+ifetch.cfg \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 VMSA+ifetch instructions tests: OK"
+
 ### Diy tests, includes
 ### - A `diy7` with `cycleonly` instance checks the cycle generations
 ### - Several `diycross7` + `herd7` instances, check if the generated litmus tests
@@ -978,6 +988,13 @@ type-check-asl: Version.ml
 	@ dune build -j $(J) --profile $(DUNE_PROFILE) $(ASLREF)
 	@ $(MAKE) $(MFLAGS) -C herd/libdir/asl-pseudocode type-check ASLREF=$(CURDIR)/$(ASLREF)
 	@ echo "ASLRef type-checking of published Arm ASL code: OK"
+
+.PHONY: dune-no-missing-file-in-runt
+test:: dune-no-missing-file-in-runt
+dune-no-missing-file-in-runt:
+	@ echo
+	asllib/tests/check-no-missing-file-in-run.sh ./
+	@ echo "no missing file in run.t"
 
 RUN_TESTS?=false
 $(V).SILENT:

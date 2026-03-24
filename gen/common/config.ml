@@ -58,6 +58,7 @@ let numeric = ref true
 let varatom = ref ([] : string list)
 let use_eieio = ref true
 let norm = ref false
+let filter_check = ref []
 
 let info = ref ([]:MiscParser.info)
 let add_info_line line = match LexScan.info line with
@@ -188,10 +189,6 @@ let common_specs () =
           | Mixed -> (* Special case: Mixed cancels FullMixed  *)
               (function
                | FullMixed -> false
-               |  v-> ov v)
-          | KVM ->  (* Special case: KVM cancels FullKVM  *)
-              (function
-               | FullKVM -> false
                |  v-> ov v)
           | _ -> ov in
         variant := (fun v -> v = v0 || ov v) ;
@@ -354,6 +351,11 @@ let diy_spec () =
    "<reject-list> specify a list of relaxation combinations to reject from generation")::
    stdout_spec false ::
    varatomspec ::
+     ("-filter-check", Arg.Tuple [
+          Arg.String (fun s -> filter_check := !filter_check @ [s]);
+          Arg.String (fun s -> filter_check := !filter_check @ [s]);
+        ],
+   "<lhs> <rhs> show whether the internal filter prohibits the two relaxations in the mode specified by `-mode` argument, however, all other constraints between <lhs> and <rhs>, such as edge compatibility, are ignored. Passing the internal filter is a necessary but not sufficient condition when sequence `<lhs> <rhs>` appears in the generated tests. This argument overrides other arguments but is overrided by `-show`.")::
    []
 
 let valid_stdout_flag is_diyone =

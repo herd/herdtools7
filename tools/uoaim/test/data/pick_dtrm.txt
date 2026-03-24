@@ -1,0 +1,6 @@
+There is a Pick dependency through registers and memory from an Effect E1 to an Effect E2 if one of the following applies:
+* There is a Dependency through registers and memory from E1 to E2.
+* There is an Intrinsic Control Dependency from E1 to E2.
+* All of the following apply:
+** There is a Pick dependency through registers and memory from E1 to E3.
+** There is a Pick dependency through registers and memory from E3 to E2.
