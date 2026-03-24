@@ -1122,6 +1122,7 @@ module Make
         some_ptr_pte
 
       let dump_cond_fun env test =
+
         let module DC =
           CompCond.Make(O)
             (struct
@@ -1169,15 +1170,22 @@ module Make
               end
             end) in
 
+        let is_pte loc =
+          U.find_rloc_type loc env |> CType.is_pte in
+
         begin match test.T.filter with
         | None -> ()
         | Some f ->
-            DC.fundef_onlog_prop "filter_cond" (U.cast_constant env) f ;
+            DC.fundef_onlog_prop
+              "filter_cond"
+              (U.cast_constant env)
+              is_pte
+              f ;
             O.o "" ;
             ()
         end ;
         let cond = test.T.condition in
-        DC.fundef_onlog (U.cast_constant env) cond ;
+        DC.fundef_onlog (U.cast_constant env) is_pte cond ;
         ()
 
       let dump_cond_def env test =
