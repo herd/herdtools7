@@ -1237,20 +1237,21 @@ module Check = struct
                  (fun { term = sub_term; _ } { term = super_term; _ } ->
                    subsumed_rec spec expanded_types sub_term super_term)
                  sub_fields super_fields
-        | ( Function { from_type = _, sub_from_term; to_type = _, sub_to_term },
+        | ( Function
+              {
+                from_type = _, sub_from_term;
+                to_type = _, sub_to_term;
+                total = sub_total;
+              },
             Function
-              { from_type = _, super_from_term; to_type = _, super_to_term } )
-          ->
-            (* Functions can be partial or total, which require different subsumption tests.
-             To make this simple, we require equivalence of the from-terms and to-terms,
-             which is sufficient for our needs.
-          *)
-            let equivalence_test term term' =
-              subsumed_rec spec expanded_types term term'
-              && subsumed_rec spec expanded_types term' term
-            in
-            equivalence_test sub_from_term super_from_term
-            && equivalence_test sub_to_term super_to_term
+              {
+                from_type = _, super_from_term;
+                to_type = _, super_to_term;
+                total = super_total;
+              } ) ->
+            ((not sub_total) || super_total) (* sub_total implies super_total *)
+            && subsumed_rec spec expanded_types super_from_term sub_from_term
+            && subsumed_rec spec expanded_types sub_to_term super_to_term
         | ConstantsSet sub_names, ConstantsSet super_names ->
             List.for_all (fun name -> List.mem name super_names) sub_names
         | _ ->

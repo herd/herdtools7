@@ -10266,8 +10266,18 @@ semantics function static_env_to_env(tenv: static_envs) ->
   \staticenvironmentterm{} {tenv} into an environment
   {env}.",
   prose_transition = "transforming the constants defined in {tenv} into an \environmentterm{} yields",
-};
-
+} =
+  constant_bindings := bindings(tenv.static_envs_G.constant_values);
+  constant_bindings =: list_combine(constant_ids, constant_literals);
+  constant_values := list_map(l, constant_literals, NV_Literal(l));
+  global_storage_bindings := list_combine(constant_ids, constant_values);
+  global_storage := bindings_to_map(global_storage_bindings);
+  empty_global := empty_denv.dynamic_envs_G;
+  new_global := empty_global(storage: global_storage);
+  new_denv := empty_denv(dynamic_envs_G: new_global);
+  --
+  (tenv, new_denv);
+;
 
 //////////////////////////////////////////////////
 // Relations for Subprogram Calls
@@ -13930,7 +13940,54 @@ typing function apply_binop_extremities(op: binop, c1: int_constraint, c2: int_c
   {op} yields a \dynamicerrorterm{}.",
   prose_application = "the range constraints for {c1} and {c2}",
   prose_transition = "computing the range constraints for {c1} and {c2} yields",
-};
+} =
+  case exact_exact {
+    c1 =: Constraint_Exact(a);
+    c2 =: Constraint_Exact(c);
+    --
+    make_singleton_list(Constraint_Exact(AbbrevEBinop(op, a, c)));
+  }
+
+  case range_exact {
+    c1 =: Constraint_Range(a, b);
+    c2 =: Constraint_Exact(c);
+    possible_extremities_left(op, a, b) -> extpairs;
+    extpairs =: list_combine(ext_a, ext_b);
+    ext_a_c := list_map(i, indices(extpairs), AbbrevEBinop(op, ext_a[i], c));
+    ext_b_c := list_map(i, indices(extpairs), AbbrevEBinop(op, ext_b[i], c));
+    new_cs := list_map(i, indices(extpairs), AbbrevConstraintRange(ext_a_c[i], ext_b_c[i]));
+    --
+    new_cs;
+  }
+
+  case exact_range {
+    c1 =: Constraint_Exact(a);
+    c2 =: Constraint_Range(c, d);
+    possible_extremities_right(op, c, d) -> extpairs;
+    extpairs =: list_combine(ext_c, ext_d);
+    ext_a_c := list_map(i, indices(extpairs), AbbrevEBinop(op, a, ext_c[i]));
+    ext_a_d := list_map(i, indices(extpairs), AbbrevEBinop(op, a, ext_d[i]));
+    new_cs := list_map(i, indices(extpairs), AbbrevConstraintRange(ext_a_c[i], ext_a_d[i]));
+    --
+    new_cs;
+  }
+
+  case range_range {
+    c1 =: Constraint_Range(a, b);
+    c2 =: Constraint_Range(c, d);
+    possible_extremities_left(op, a, b) -> extpairs_a_b;
+    possible_extremities_right(op, c, d) -> extpairs_c_d;
+    ext_cross := list_cross(extpairs_a_b, extpairs_c_d);
+    ext_cross =: list_combine(cross_a_b, cross_c_d);
+    cross_a_b =: list_combine(ext_a, ext_b);
+    cross_c_d =: list_combine(ext_c, ext_d);
+    new_a_c := list_map(i, indices(ext_cross), AbbrevEBinop(op, ext_a[i], ext_c[i]));
+    new_b_d := list_map(i, indices(ext_cross), AbbrevEBinop(op, ext_b[i], ext_d[i]));
+    new_cs := list_map(i, indices(ext_cross), AbbrevConstraintRange(new_a_c[i], new_b_d[i]));
+    --
+    new_cs;
+  }
+;
 
 typing function possible_extremities_left(op: binop, a: expr, b: expr) ->
          (extpairs: list0((expr, expr)))
