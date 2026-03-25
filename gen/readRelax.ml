@@ -41,10 +41,10 @@ module Top = struct
 
   module R = struct
 
-    type relax = string Ast.t
+    type relax = (string,string) Ast.t
     let parse r = r
 
-    let pp_relax = Ast.pp Fun.id
+    let pp_relax = Ast.pp Fun.id Fun.id
 
 
     module Set =
