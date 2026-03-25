@@ -1,5 +1,4 @@
 AArch64 S+shoot+ctrl_mmufault_db
-Hash=b5929ca3fd719c5457b000bc02971d9c
 Variant=vmsa,fatal
 {
  [PTE(x)]=(oa:PA(x), db:0);

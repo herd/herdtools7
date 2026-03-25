@@ -1,5 +1,4 @@
 AArch64 S+shoot+swpal-mmufault
-Hash=5dceef110581b87d26e2a0ac42f3578f
 Variant=vmsa,fatal
 {
  [PTE(x)]=(oa:PA(x), db:0);
