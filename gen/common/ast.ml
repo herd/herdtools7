@@ -1,19 +1,21 @@
-type t =
-  | One of string
-  | Opt of t
-  | Multi of t
-  | Seq of t list
-  | Choice of t list
+type 'prim t =
+  | One of 'prim
+  | Opt of 'prim t
+  | Multi of 'prim t
+  | Seq of 'prim t list
+  | Choice of 'prim t list
 
-let rec pp = function
-| One s -> Printf.sprintf "%s" s
-| Opt opt -> Printf.sprintf "(%s)?" (pp opt)
-| Seq ss ->
-    Printf.sprintf "(%s)" (String.concat "," (List.map pp ss))
-| Choice ss ->
-    Printf.sprintf "(%s)" (String.concat "|" (List.map pp ss))
-| Multi ss ->
-    Printf.sprintf "[%s]" (pp ss)
+let rec pp pp_prim ast =
+  let pp_with_prim = pp pp_prim in
+  match ast with
+  | One s -> Printf.sprintf "%s" (pp_prim s)
+  | Opt opt -> Printf.sprintf "(%s)?" (pp_with_prim opt)
+  | Seq ss ->
+      Printf.sprintf "(%s)" (String.concat "," (List.map pp_with_prim ss))
+  | Choice ss ->
+      Printf.sprintf "(%s)" (String.concat "|" (List.map pp_with_prim ss))
+  | Multi ss ->
+      Printf.sprintf "[%s]" (pp_with_prim ss)
 
 let list_cross_product_map f lhs rhs =
   List.map ( fun l ->
