@@ -383,7 +383,7 @@ in the \emph{local dynamic environment} of $\denv$.
 \begin{mathpar}
 \inferrule[t\_enum\_array]{
   \env \reverseeqdef (\tenv, \Ignore)\\
-  \tenv.\staticenvsG.\declaredtypes(\id) = \TEnum(\vl_{1..k})\\
+  \tenv.\staticenvsG.\declaredtypes(\id) = (\TEnum(\vl_{1..k}), \Ignore)\\
   \dynamicdomain(\env, \telem) = D_\telem
 }{
   {
@@ -408,7 +408,7 @@ in the \emph{local dynamic environment} of $\denv$.
 \begin{mathpar}
 \inferrule[t\_named]{
   \env \reverseeqdef (\tenv, \Ignore)\\
-  \tenv.\staticenvsG.\declaredtypes(\id)=\tty
+  \tenv.\staticenvsG.\declaredtypes(\id) = (\tty, \Ignore)
 }{
   \dynamicdomain(\env, \overname{\TNamed(\id)}{\vt}) = \overname{\dynamicdomain(\env, \tty)}{\vd}
 }

@@ -53,7 +53,6 @@ generate a \typedast.
     \item \secref{GlobalDeclarations} defines the AST for global declarations;
     \item \secref{Specifications} defines the AST for specifications;
   \end{itemize}
-  \item \secref{UntypedAbstractGrammar} defines the \untypedast;
   \item \secref{TypedAbstractSyntaxGrammar} defines the \typedast;
   \item \secref{BuildingAbstractSyntaxTrees} explains how we use inference rules to transform a parse tree into an \untypedast;
   \item \secref{BuildingParameterizedProductions} presents rules for building ASTs from parameterized productions;
@@ -337,7 +336,7 @@ for assignments whose left-hand-side variable is discarded ($\Tminus$).)
 
 \hypertarget{def-tbuilderror}{}
 \hypertarget{def-builderrorconfig}{}
-For each non-terminal $N \derives R_1 \;|\; \ldots R_k$, we define a builder function
+For each non-terminal $N \derives R_1 \;|\; \ldots \;|\; R_k$, we define a builder function
 $\textsf{build\_}N $ which takes a parse tree $\parsenode{N}$ and returns the corresponding
 AST or a \emph{build error configuration} $\BuildErrorConfig \in \TBuildError$.
 The builder function is defined in terms of one inference rule per alternative $R_i$.
@@ -486,7 +485,7 @@ to each of them --- $\vsymasts$.
   \buildclist[b](\vsymsone) \astarrow \vsymastsone
 }{
   \buildclist[b](\overname{
-    \ClistZero{N}(\namednode{\vv}{E}, \Tcomma, \namednode{\vsymsone}{\ClistOne{N}})
+    \ClistOne{N}(\namednode{\vv}{E}, \Tcomma, \namednode{\vsymsone}{\ClistOne{N}})
     }{\vsyms}) \astarrow \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
 }
 \end{mathpar}
@@ -505,7 +504,7 @@ to each of them --- $\vsymasts$.
 \inferrule{
   \buildclist[b](\vv) \astarrow \astversion{\vv}
 }{
-  \buildplist[b](\Tlpar, \namednode{\vv}{L}, \Trpar) \astarrow \astversion{\vv}
+  \buildplist[b](\Tlpar, \namednode{\vv}{\ClistZero{N}}, \Trpar) \astarrow \astversion{\vv}
 }
 \end{mathpar}
 
@@ -523,7 +522,7 @@ to each of them --- $\vsymasts$.
 \inferrule[empty]{
   b(\vv) \astarrow \astversion{\vv}
 }{
-  \buildtclist[b](\overname{\vv \parsesep \Option{\Tcomma}}{\vsyms}) \astarrow \overname{[\astversion{\vv}]}{\vsymasts}
+  \buildtclist[b](\overname{\vv \parsesep \some{\Tcomma}}{\vsyms}) \astarrow \overname{[\astversion{\vv}]}{\vsymasts}
 }
 \end{mathpar}
 
@@ -556,7 +555,7 @@ to the value if it exists --- $\vsymasts$.
 \inferrule[some]{
   b(\vv) \astarrow \astversion{\vv}
 }{
-  \buildoption[b](\overname{\namednode{\vv}{N}}{\vsym}) \astarrow \overname{\Option{\astversion{\vv}}}{\vsymast}
+  \buildoption[b](\overname{\namednode{\vv}{N}}{\vsym}) \astarrow \overname{\some{\astversion{\vv}}}{\vsymast}
 }
 \end{mathpar}
 

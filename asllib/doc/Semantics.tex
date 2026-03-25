@@ -176,7 +176,7 @@ are mutually exclusive.
 In the rest of this reference, we assume all dynamic environments
 are well-formed.
 
-\hypertarget{constant-emptydenv}{}
+\texthypertarget{constant-emptydenv}
 An empty dynamic environment $\emptydenv$ is defined as follows:
 \[
 \emptydenv \triangleq ([\storage \mapsto \emptyfunc, \pendingcalls \mapsto \emptyfunc], \emptyfunc) \enspace.
@@ -498,7 +498,8 @@ to an output \semanticsconfigurationterm{} with the value resulting from the cal
 We annotate subexpressions to allow referring to them.
 
 \texthypertarget{def-emptyenv}
-We define the empty environment $\emptyenv$ as $(\emptydenv, \emptytenv)$.
+We define the empty environment as follows:
+\RenderConstant{empty_env}
 
 Notice that, we have dropped the execution graph component and simplified pairs of the form $(\vv,\vg)$,
 where $\vv$ is a \nativevalueterm{}  and $\vg$ is an execution graph, to just $\vv$.
@@ -674,7 +675,6 @@ for the same macro rule:
   \ticklooplimit(\vlimitopt) \evalarrow \vlimitoptp\\
   \evalblock(\envone, \vbody) \evalarrow \Continuing(\vgtwo, \envtwo)\hva\\
   \evalloop(\envtwo, \iswhile, \vlimitoptp, \econd, \vbody) \evalarrow \DivergingConfig\\
-  \newg \eqdef \ordered{\ordered{\vgone}{\aslctrl}{\vgtwo}}{\aslpo}{\vgthree}
 }{
   \evalloop(\env, \iswhile, \vlimitopt, \econd, \vbody) \evalarrow \DivergingConfig
 }
@@ -695,10 +695,11 @@ $g = C \evalarrow D$ holds if and only if one of the following applies:
 
 To exemplify a diverging evaluation, consider the sequential semantics
 of the statement \verb|while TRUE do pass; end;| evaluated with
-an environment $\env$.
+an environment $\env$. That is, consider the rules where \executiongraphsterm{}
+and related judgments are omitted.
 The infinite \derivationtreeterm{} consists of vertices
 \[
-\{S_1, L_1, V_1\} \cup \{n \geq 2 \;|\; E_n, B_n, T_n, P_n, Q_n\} \enspace,
+\{S_1, L_1, V_1\} \cup \{n \geq 2 \;|\; E_n, B_n, T_n, P_n, Q_n, V_n\} \enspace,
 \]
 which we use to annotate the vertices of the \derivationtreeterm{} defined below
 (we inline aliasing equalities and deconstructing equalities,

@@ -348,7 +348,7 @@ the list $\vlone$ is a \emph{prefix} of the list $\vltwo$:
 \hypertarget{def-listrange}{}
 \begin{definition}[Indices of a List]
 The parametric function $\listrange(\KleeneStar{T}) \aslto \KleeneStar{\N}$ returns the ($1$-based) list of indices for a given list:
-\[\
+\[
     \begin{array}{rcl}
         \listrange(\emptylist) &\triangleq& \emptylist\\
         \listrange(v_{1..k}) &\triangleq& [1..k] \enspace.
@@ -536,17 +536,23 @@ For example, the rule \TypingRuleRef{ELit} has one premise:
 }
 \end{mathpar}
 
-and the rule \TypingRuleRef{EBinop} (somewhat simplified here) has four premises:
+and the rule \TypingRuleRef{EBinop} (somewhat simplified here) has four premises
+ (the notation used for the premises is explained further below):
 \begin{mathpar}
 \inferrule{
   \annotateexpr(\tenv, \veone) \typearrow (\vtone, \veonep, \vsesone)\\
   \annotateexpr(\tenv, \vetwo) \typearrow (\vttwo, \vetwop, \vsestwo)\\
-  \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt\\
+  \applybinoptypes(\tenv, \op, \vtone, \vttwo) \typearrow \vt\\\\
   \vses \eqdef \vsesone \cup \vsestwo
 }{
   \annotateexpr(\tenv, \EBinop(\op, \veone, \vetwo)) \typearrow (\vt, \EBinop(\op, \veonep, \vetwop), \vses)
 }
 \end{mathpar}
+
+Judgments of the form $R(a_1,\ldots,a_n) \longrightarrow r$ are used to uniformly denote
+both function applications and relation applications, where $R$ is either a function or a relation.
+When $R$ is a function, the judgment $R(a_1,\ldots,a_n) \longrightarrow r$ stands for $R(a_1,\ldots,a_n) = r$ and
+when $R$ is a relation, the judgment stands for $((a_1,\ldots,a_n), r) \in R$.
 
 The free variables appearing in the premises and conclusion are interpreted \underline{universally}.
 That is, the rules apply to any values (of the appropriate types) assigned to their free variables.
@@ -677,12 +683,10 @@ for a given transition.
 \hypertarget{def-configuration}{}
 \section{Configurations\label{sec:Configurations}}
 
-\hypertarget{def-configdomain}{}
 Our relations range over compound values. That is, values that often nest tuples and lists inside other tuples and lists.
 We refer to such values as \emph{\configurationsterm}. To make it easier to distinguish between different \configurationsterm{},
 we will sometimes attach labels to tuples using the OCaml-style notation discussed earlier.
 We refer to those labels as \emph{\configurationterm{} domains}.
-The domain of a \configurationterm{} $C=L(\ldots)$, denoted $\configdomain{C}$, is the label $L$.
 
 We refer to \configurationsterm{} at the origin of a transition as \emph{input \configurationsterm{}} and to the
 \configurationsterm{} at the destination of a transition as \emph{output \configurationsterm{}}.
@@ -691,9 +695,6 @@ For example, the conclusion of the rule \TypingRuleRef{ELit} has \\
 $\annotateexpr(\tenv, \ELiteral(\vv))$ as its input \configurationterm{}
 and \\
 $(\vt, \ELiteral(\vv), \emptyset)$ as its output \configurationterm{}.
-Further, \\
-$\configdomain{\annotateexpr(\tenv, \ELiteral(\vv))} = \annotateexpr$,
-while the output \configurationterm{} does not have a \configurationterm{} domain, since it is an unlabelled tuple.
 
 Our rules always make use of labelled input \configurationsterm{}. This makes it easier to ensure
 the mutual exclusion rule principle.
@@ -1168,7 +1169,6 @@ The notation $\wrappedline$ denotes that a line that is longer than the page wid
 \section{Rule Naming\label{sec:Rule Naming}}
 To name a rule, we place it in a section with its name.
 However, some relations are defined by a group of rules.
-\hypertarget{def-caserules}{}
 In such cases, we refer to the individual rules in a group as \emph{case rules},
 or simply \emph{cases}. We annotate case rules by names
 appearing above and to the left of the rule. The name of these case rules

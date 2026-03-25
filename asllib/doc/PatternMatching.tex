@@ -340,7 +340,7 @@ It is defined by the following table where the rows correspond to values of the 
 \ExampleDef{Typing Tuple Patterns}
 The tuple patterns in \listingref{semantics-ptuple} are well-typed.
 %
-In contrast, the tuple patterns in \listingref{typing-ptuple-bad} and \listingref{typing-ptuple-bad} are ill-typed.
+In contrast, the tuple patterns in \listingref{typing-ptuple-bad} and \listingref{typing-ptuple-bad2} are ill-typed.
 \ASLListing{Ill-typed tuple pattern due to order of elements}{typing-ptuple-bad}{\typingtests/TypingRule.PTuple.bad.asl}
 \ASLListing{Ill-typed tuple pattern due to number of elements}{typing-ptuple-bad2}{\typingtests/TypingRule.PTuple.bad2.asl}
 
@@ -595,9 +595,9 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
 
 \begin{mathpar}
   \inferrule[call]{
-    \buildplist[\buildexpr](\vargs) \astarrow \vexprasts
+    \buildcall(\vcall) \astarrow \astof{\vcall} \OrBuildError
   }{
-  \buildexprpattern(\Nexprpattern(\punnode{\Ncall})) \astarrow
+  \buildexprpattern(\Nexprpattern(\namednode{\vcall}{\Ncall})) \astarrow
   \overname{\ECall(\astof{\vcall})}{\vastnode}
 }
 \end{mathpar}
@@ -606,19 +606,19 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
   \inferrule[slice]{}{
     {
       \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \punnode{\Nslice})) \astarrow\\
-  \overname{\ESlice(\astof{\vexprpattern}, \astof{\vslice})}{\vastnode}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \punnode{\Nslices})) \astarrow\\
+  \overname{\ESlice(\astof{\vexprpattern}, \astof{\vslices})}{\vastnode}
       \end{array}
     }
 }
 \end{mathpar}
 
 \begin{mathpar}
-  \inferrule[set\_array]{}{
+  \inferrule[get\_array]{}{
     {
       \begin{array}{r}
   \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tllbracket, \punnode{\Nexpr}, \Trrbracket)) \astarrow\\
-  \overname{\LESetArray(\astof{\vexprpattern}, \astof{\vexpr})}{\vastnode}
+  \overname{\EGetArray(\astof{\vexprpattern}, \astof{\vexpr})}{\vastnode}
       \end{array}
     }
 }
@@ -628,8 +628,8 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
   \inferrule[get\_field]{}{
   {
     \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\Nexprpattern, \Tdot, \Tidentifier(\id))) \astarrow \\
-  \overname{\EGetField(\astof{\vexpr}, \id)}{\vastnode}
+  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tdot, \Tidentifier(\id))) \astarrow \\
+  \overname{\EGetField(\astof{\vexprpattern}, \id)}{\vastnode}
     \end{array}
   }
 }
@@ -728,7 +728,7 @@ transforms a pattern expression parse node $\vparsednode$ into a pattern AST nod
     \vparsednode = \Nexprpattern\left(
       \begin{array}{l}
       \Tidentifier(\vt), \Tlbrace, \\
-      \wrappedline\ \namednode{\vfieldassigns}{\ClistZero{\Nfieldassign}}, \\
+      \wrappedline\ \namednode{\vfieldassigns}{\ClistOne{\Nfieldassign}}, \\
       \wrappedline\ \Trbrace
       \end{array}
       \right)
