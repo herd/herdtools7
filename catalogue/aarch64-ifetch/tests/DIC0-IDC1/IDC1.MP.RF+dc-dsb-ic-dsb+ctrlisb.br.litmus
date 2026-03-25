@@ -1,9 +1,11 @@
 AArch64 IDC1.MP.RF+dc-dsb-ic-dsb+ctrlisb.br
+Hash=b81a91533b3ad436de3f6f067b22fb0c
 CacheType=IDC
 {
   [z]=P1:Lend;
   0:X0=NOP; 0:X1=P1:Lself; 0:X3=z;
   1:X2=P1:Lself; 1:X3=z; 1:X9=0;
+  ints_t *1:X1;
 }
 P0           | P1           ;
 STR W0,[X1]  |  LDR X1,[X3] ;
