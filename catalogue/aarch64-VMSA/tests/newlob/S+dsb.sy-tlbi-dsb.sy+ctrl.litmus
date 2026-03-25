@@ -15,4 +15,4 @@ Variant=vmsa
  MOV W2,#1       | L0:         |                ;
  STR W2,[X3]     |             |                ;
 
-exists (1:X2=1 /\ not (fault(P1,x,MMU:Permission)))
+exists (1:X2=1 /\ 1:X9=0)
