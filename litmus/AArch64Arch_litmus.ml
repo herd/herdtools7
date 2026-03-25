@@ -42,8 +42,8 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
     match t1,t2 with
     | Base ("ins_t"|"int"|"int32_t"|"uint32_t"
             |"int16_t"|"uint16_t"
-            |"int8_t"|"uint8_t"),
-      Base ("ins_t"|"int"|"int32_t"|"uint32_t") -> false
+            |"int8_t"|"uint8_t"|"pteval_t"),
+      Base ("ins_t"|"int"|"int32_t"|"uint32_t"|"pteval_t") -> false
     | (Base "int",_)|(_,Base "int") -> true
     | _ -> false
 
