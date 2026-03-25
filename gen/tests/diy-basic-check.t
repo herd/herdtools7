@@ -11,6 +11,10 @@ A test for no metadata, `-metadata false`
    LDR W3,[X2] | LDR W3,[X1] ;
   
   exists (0:X3=0 /\ 1:X3=0)
+A diy7 predicate reject cannot silently fall back to default relaxations
+  $ diy7 -arch AArch64 -safe '[@before([PodRW Rfe]) PodRW Rfe]' -reject '[@before([PodRW Rfe]) PodRW Rfe]' -size 2 -exact -stdout 2>&1
+  diy7: Fatal error: relaxations provided in safelist could not be used to generate cycles
+  [2]
 A VMSA test for a negated exists check, `-neg true`
   $ diyone7 -arch AArch64 -neg true -info "User-define=User-define" PodWR Fre PodWR Fre
   AArch64 SB
