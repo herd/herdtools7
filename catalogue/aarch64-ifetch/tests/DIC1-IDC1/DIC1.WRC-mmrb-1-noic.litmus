@@ -1,6 +1,7 @@
 AArch64 DIC1.WRC-mmrb-1-noic
 Stable=X9
 CacheType=DIC
+Hash=83449829896efa7ab5059bc9d8e8d5b0
 { 1:X0=NOP;
   0:X1=P0:mod; 1:X1=P0:mod; 2:X1=P0:mod;
   1:X3=x; 2:X3=x; }
@@ -10,7 +11,7 @@ CacheType=DIC
  B end       | MOV W2,#1   |  DSB SY      ;
 mod:         | STR W2,[X3] |  DC CVAU,X1  ;
  B l0        |             |              ;
- MOV X9,#1   |             |              ;
+ MOV W9,#1   |             |              ;
 l0:          |             |  DSB SY      ;
  RET         |             |  ISB         ;
 end:         |             |  BLR X1      ;

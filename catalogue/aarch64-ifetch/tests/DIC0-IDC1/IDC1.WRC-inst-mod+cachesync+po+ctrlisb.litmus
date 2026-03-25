@@ -1,4 +1,5 @@
 AArch64 IDC1.WRC-inst-mod+cachesync+po+ctrlisb
+Hash=48e75b3d1fd7e1316ec414b0b72e92b9
 CacheType=IDC
 Stable=X9
 { 0:X0=NOP;
@@ -15,7 +16,7 @@ Stable=X9
 B end       |              |              ;
 mod:         |              |              ;
  B l0        |              |              ;
- MOV X9,#1   |              |              ;
+ MOV W9,#1   |              |              ;
 l0:          |              |              ;
  RET         |              |              ;
 end:         |              |              ;

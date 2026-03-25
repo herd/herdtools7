@@ -1,4 +1,5 @@
 AArch64 IDC1.WRC-inst+cachesync+dsb.ish-isb
+Hash=e11ebb81d13004cf33c3775c1be43cf7
 CacheType=IDC
 Stable=X9
 { 0:X0=NOP;
@@ -14,7 +15,7 @@ Stable=X9
  B end       |              |              ;
 mod:         |              |              ;
  B l0        |              |              ;
- MOV X9,#1   |              |              ;
+ MOV W9,#1   |              |              ;
 l0:          |              |              ;
  RET         |              |              ;
 end:         |              |              ;

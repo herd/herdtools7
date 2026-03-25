@@ -1,9 +1,11 @@
 AArch64 MP+rel+blr
+Hash=a06e7661c6f8863f72e02f21cf3f9107
 Stable=X30
 {
   0:X0=instr:"B .+4"; 0:X1=P1:L0;
   0:X2=P1:tgt; 0:X3=y;
   1:X3=y; [y]=P1:L0;
+  ins_t *1:X30;
 }
   P0           | P1                ;
   STR W0,[X1]  | LDR X2,[X3]       ;

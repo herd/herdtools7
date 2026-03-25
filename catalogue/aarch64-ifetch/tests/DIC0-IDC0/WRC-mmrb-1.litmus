@@ -1,4 +1,5 @@
 AArch64 WRC-mmrb-1
+Hash=62178e8dc65798e2b5433ec7e9bb47a8
 Stable=X9
 { 1:X0=NOP;
   0:X1=P0:mod; 1:X1=P0:mod; 2:X1=P0:mod;
@@ -9,7 +10,7 @@ Stable=X9
  B end       | MOV W2,#1   |  DSB SY      ;
 mod:         | STR W2,[X3] |  DC CVAU,X1  ;
  B l0        |             |  DSB SY      ;
- MOV X9,#1   |             |  IC IVAU,X1  ;
+ MOV W9,#1   |             |  IC IVAU,X1  ;
 l0:          |             |  DSB SY      ;
  RET         |             |  ISB         ;
 end:         |             |  BLR X1      ;

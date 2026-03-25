@@ -1,4 +1,5 @@
 AArch64 IDC1.MP.RF+cachesync+switch-ctrlisb
+Hash=60d857c427ee683625f78ec9a49d9684
 (* switch table -- this one is forbidden *)
 (* Will suggests that compilers require that this test be forbidden iff the miniJit02 is forbidden *)
 CacheType=IDC
@@ -7,6 +8,7 @@ CacheType=IDC
 0:X0=NOP; 0:X1=P1:Lself; 0:X3=x;
 1:X3=x;
 1:X11=P1:Lself;
+ins_t *1:X1;
 }
  P0          | P1           ;
  STR W0,[X1] |  LDR X1,[X3] ;

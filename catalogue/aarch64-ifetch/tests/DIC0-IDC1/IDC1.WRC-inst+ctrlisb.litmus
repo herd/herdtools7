@@ -1,4 +1,5 @@
 AArch64 IDC1.WRC-inst+ctrlisb
+Hash=53d1094466f9b4b57b0aef334aaa5c8f
 CacheType=IDC
 Stable=X9
 { 0:X0=NOP;
@@ -9,7 +10,7 @@ Stable=X9
  B end       | MOV W2,#1   |  CBNZ W2,l2  ;
 mod:         | STR W2,[X3] | l2:          ;
  B l0        |             |  ISB         ;
- MOV X9,#1   |             |  BLR X1      ;
+ MOV W9,#1   |             |  BLR X1      ;
 l0:          |             |              ;
  RET         |             |              ;
 end:         |             |              ;
