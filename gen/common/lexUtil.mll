@@ -36,6 +36,7 @@ let is_singleton stack = List.length !stack = 1
 
 let blank = [' ''\t''\n''\r']
 let relexation = ['A'-'Z' 'a'-'z' '0'-'9' '-' '.' '*']+
+let predicate = ['A'-'Z' 'a'-'z' '0'-'9' '_']+
 
 (* The lexer consumes optional blanks around explicit syntax such as `[`, `]`,
    `,`, `|`, and `?`, because, for backward compatibility, standalone blanks
@@ -58,6 +59,15 @@ rule token has_previous_relaxation = parse
 | (relexation as lxm) {
   modify true has_previous_relaxation;
   RELAXATION lxm
+}
+| '@' (predicate as pred) blank* {
+  PREDICATE pred
+}
+| '(' blank* {
+  LEFT_BRACKET
+}
+| blank* ')' {
+  RIGHT_BRACKET
 }
 | blank+ {
   if peak has_previous_relaxation then COMMA
