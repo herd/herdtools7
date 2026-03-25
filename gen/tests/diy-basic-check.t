@@ -779,7 +779,7 @@ An `ABC` relax macro unfolds before raw edge parsing
 `diy7 -unfold-only` unfolds relaxations and drops invalid composites
   $ diy7 -arch AArch64 -relax '[Po,DpAddr?]' -unfold-only 2>&1
   ***relax***
-  PosWW PosWR [PosWR,DpAddrsW] [PosWR,DpAddrsR] [PosWR,DpAddrdW] [PosWR,DpAddrdR] PosRW PosRR [PosRR,DpAddrsW] [PosRR,DpAddrsR] [PosRR,DpAddrdW] [PosRR,DpAddrdR] PodWW PodWR [PodWR,DpAddrsW] [PodWR,DpAddrsR] [PodWR,DpAddrdW] [PodWR,DpAddrdR] PodRW PodRR [PodRR,DpAddrsW] [PodRR,DpAddrsR] [PodRR,DpAddrdW] [PodRR,DpAddrdR]
+  PosWW [PosWW,DpAddrsW] [PosWW,DpAddrsR] [PosWW,DpAddrdW] [PosWW,DpAddrdR] PosWR [PosWR,DpAddrsW] [PosWR,DpAddrsR] [PosWR,DpAddrdW] [PosWR,DpAddrdR] PosRW [PosRW,DpAddrsW] [PosRW,DpAddrsR] [PosRW,DpAddrdW] [PosRW,DpAddrdR] PosRR [PosRR,DpAddrsW] [PosRR,DpAddrsR] [PosRR,DpAddrdW] [PosRR,DpAddrdR] PodWW [PodWW,DpAddrsW] [PodWW,DpAddrsR] [PodWW,DpAddrdW] [PodWW,DpAddrdR] PodWR [PodWR,DpAddrsW] [PodWR,DpAddrsR] [PodWR,DpAddrdW] [PodWR,DpAddrdR] PodRW [PodRW,DpAddrsW] [PodRW,DpAddrsR] [PodRW,DpAddrdW] [PodRW,DpAddrdR] PodRR [PodRR,DpAddrsW] [PodRR,DpAddrsR] [PodRR,DpAddrdW] [PodRR,DpAddrdR]
   ***safe***
   
   ***reject***
@@ -794,7 +794,7 @@ An `ABC` relax macro unfolds before raw edge parsing
   
   $ diy7 -arch AArch64 -relax 'PodWR?' -unfold-only 2>&1
   ***relax***
-  PodWR
+  [] PodWR
   ***safe***
   
   ***reject***
@@ -834,7 +834,7 @@ An `ABC` relax macro unfolds before raw edge parsing
   ***relax***
   
   ***safe***
-  Fre
+  [] Fre
   ***reject***
   
   $ diy7 -arch AArch64 -safe '[PodWR Fre]' -unfold-only 2>&1

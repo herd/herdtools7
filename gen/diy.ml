@@ -33,78 +33,25 @@ module Make(C:Builder.S)(O:DiyConfig) = struct
 open C.E
 open C.R
 
-  let parse_argument_ast input =
-    String.trim input |> parse_ast Parser.main_top_level_choice
-
   (* Parse the `-cumul` argument, which should be a list of individual fences. *)
   let parse_fences input_fences =
     let ast = String.trim input_fences |> parse_ast Parser.cumul in
     (* Note that `parse_fence` might fail *)
     let fences = Ast.bind ast ( fun input -> Ast.One(C.E.parse_fence input) )
-    |> Ast.expand in
+    |> Ast.expand ( fun _ -> Warn.fatal "cumul input: %s contains predicate." input_fences ) in
     (* Each expanded alternative must contain exactly one fence. *)
     if List.for_all ( function [_] -> true | _ -> false ) fences then
       List.flatten fences
     else Warn.user_error "%s is not a list of fence" input_fences
 
-  let varatom_ess =
-    if C.A.bellatom then Misc.identity
-    else match O.varatom with
-    | [] -> Misc.identity
-    | ["all"] ->
-        let module Fold = struct
-          type atom = C.E.atom
-          let fold = C.E.fold_atomo
-        end in
-        let module V = VarAtomic.Make(C.E)(Fold) in
-        V.varatom_es
-    | atoms ->
-        let atoms = C.E.parse_atoms atoms in
-        let module Fold = struct
-          type atom = C.E.atom
-          let fold f k = C.E.fold_atomo_list atoms f k
-        end in
-        let module V = VarAtomic.Make(C.E)(Fold) in
-        V.varatom_es
-
-  (* Parse an input relaxation expression such as "[Po DpAddr] Fre".
-     In canonical form this is "[Po,DpAddr]|Fre": top-level whitespace denotes
-     a choice for backward compatibility. If an explicit top-level choice is
-     present, an explicit comma still keeps a sequence together. The result is
-     a list of unfolded relaxations, each represented as one or more edges in
-     sequence. *)
-  let parse_argument input_argument =
-    parse_argument_ast input_argument
-    |> parse_expand_relaxs ~ppo:C.ppo
-    |> varatom_ess
-    |> remove_invalid_relaxes
-
-  let parse_argument_list input_argument_list =
-    List.map parse_argument input_argument_list
-    |> List.flatten
-    |> remove_invalid_relaxes
-
   module AltConfig = struct
     include O
 
-    type relax = C.R.relax
     let mix = !Config.mix
     let max_relax = !Config.max_relax
     let min_relax = !Config.min_relax
 
-    let prefix =
-      (* Parse each `-prefix` argument separately, then combine them as one
-         top-level choice. Thus `-prefix A -prefix B` is interpreted as
-         `-prefix [A|B]`. *)
-      let prefixes =
-        List.map parse_argument_ast O.prefix
-        |> fun prefixes -> Ast.Choice prefixes
-        |> parse_expand_relaxs ~ppo:C.ppo
-        (* Wrap each relax into a list *)
-        |> List.map (fun prefix -> [prefix]) in
-      match prefixes with
-      | [] -> [[]] (* No prefix <=> one empty prefix *)
-      | prefixes -> prefixes
+    let prefix = O.prefix
 
     let variant = O.variant
 
@@ -121,28 +68,27 @@ open C.R
   end
 
 
-  module M =  Alt.Make(C)(AltConfig)
+  module M = Alt.Make(C)(AltConfig)
 
   let gen lr ls rl n =
     if O.verbose > 0 then begin
-      Printf.eprintf
-        "expanded relax=%s\n" (C.R.pp_relax_list lr)
+      let plain_relax = List.map M.plain lr in
+      Printf.eprintf "expanded relax=%s\n" (C.R.pp_relax_list plain_relax)
     end ;
     M.gen ~relax:lr ~safe:ls ~reject:rl n
 
-  let er e = [plain_edge e]
+  let er es = List.map (fun e -> M.lift [plain_edge e]) es
 
   let gen_thin n =
-    let lr = [er (Rf Int); er (Rf Ext)]
-    and ls = C.ppo Misc.cons [] in
+    let lr = er [Rf Int; Rf Ext]
+    and ls = List.map M.lift (C.ppo Misc.cons []) in
     M.gen ~relax:lr ~safe:ls n
 
 
   let gen_uni n =
-    let lr = [er (Rf Int); er (Rf Ext)]
+    let lr = er [Rf Int; Rf Ext]
     and ls =
-      [er (Ws Int); er (Ws Ext); er (Fr Int);
-       er (Fr Ext); er (Po (Same,Irr,Irr))] in
+      er [Ws Int; Ws Ext; Fr Int; Fr Ext; Po (Same,Irr,Irr)] in
     M.gen ~relax:lr ~safe:ls n
 
   let go n (*size*) orl olr ols (*relax and safe lists*) =
@@ -288,37 +234,33 @@ let () =
   in
   let module Builder = (val builder : Builder.S) in
   let module M = Make(Builder)(Co) in
+  let module Alt = M.M in
   try
     (* Parse inputs `relax` `safe` and `reject` *)
-    let r_nempty = Misc.consp !Config.relaxs in
-    let relax = M.parse_argument_list !Config.relaxs in
-    (* If the user supplied the `relax` argument,
-       raise an error when none expand to usable relaxations. *)
-    if Misc.nilp relax then if r_nempty then begin
-      Warn.fatal "relaxations provided in relaxlist could not be used to generate cycles"
-    end ;
-    let safe = M.parse_argument_list !Config.safes in
-    let reject = M.parse_argument_list !Config.rejects in
+    let relax,safe,reject =
+      Alt.parse_input ~relax:!Config.relaxs ~safe:!Config.safes ~reject:!Config.rejects in
     match !Config.filter_check with
     | [lhs;rhs] ->
-        let lhs_unfold = M.parse_argument lhs in
-        let rhs_unfold = M.parse_argument rhs in
+        let lhs_unfold = Alt.parse_argument lhs in
+        let rhs_unfold = Alt.parse_argument rhs in
         List.map ( fun l ->
           List.map ( fun r ->
-            l,r,M.M.filter_check ~relax ~safe l r
+            l,r,M.M.filter_check ~safe l r
           ) rhs_unfold
         ) lhs_unfold
         |> List.flatten
         |> List.iter ( fun (l, r, result) ->
             printf "Sequence `%s` `%s` %s the internal filter in mode `%s`\n"
-            (Builder.R.pp_relax l) (Builder.R.pp_relax r)
+            (Builder.R.pp_relax (Alt.plain l)) (Builder.R.pp_relax (Alt.plain r))
             ( if result then "passes" else "is prohibited in" )
             ( Code.pp_check Co.choice )
         )
     | _ -> (* The common path to generate tests *)
       if !Config.unfold_only then
         printf "***relax***\n%s\n***safe***\n%s\n***reject***\n%s\n"
-        (Builder.R.pp_relax_list relax) (Builder.R.pp_relax_list safe) (Builder.R.pp_relax_list reject)
+          (Alt.pp_predicate_relax_list relax)
+          (Alt.pp_predicate_relax_list safe)
+          (Alt.pp_predicate_relax_list reject)
       else
         M.go !Config.size reject relax safe;
     exit 0
