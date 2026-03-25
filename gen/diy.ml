@@ -22,7 +22,7 @@ module type DiyConfig = sig
   val choice : Code.check
   val variant : Variant_gen.t -> bool
   val prefix : string list
-  val cumul :   string Ast.t list Config.cumul
+  val cumul :   (string,string) Ast.t list Config.cumul
   val max_ins : int
   val upto : bool
   val varatom : string list
@@ -44,9 +44,7 @@ let parse_fence s k =  match s with
           | One s -> C.E.parse_fence s::k
           | _ -> assert false)
         fs k
-  | Opt _ -> assert false
-  | Choice _ -> assert false
-  | Multi _ -> assert false
+  | Opt _ | Choice _ | Multi _ | Predicate _ -> assert false
 
 let parse_fences fs = List.fold_right parse_fence fs []
 

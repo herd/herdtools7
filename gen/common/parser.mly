@@ -17,6 +17,8 @@ let mk_choice lhs rhs =
 
 %}
 
+%token <string> PREDICATE
+%token LEFT_BRACKET RIGHT_BRACKET
 %token <string> RELAXATION
 %token LEFT_SQUIRE RIGHT_SQUIRE
 %token COMMA
@@ -26,7 +28,7 @@ let mk_choice lhs rhs =
 %token EOF
 %token OPTION
 %left OPTION
-%start <string t> main
+%start <(string,string) t> main
 
 %%
 
@@ -40,3 +42,4 @@ relax:
   | lhs = relax CHOICE_BAR rhs = relax { mk_choice lhs rhs }
   | lhs = relax COMMA rhs = relax { mk_seq lhs rhs }
   | LEFT_SQUIRE r = relax RIGHT_SQUIRE { Multi r }
+  | pred = PREDICATE LEFT_BRACKET r = relax RIGHT_BRACKET { Predicate (pred,r) }

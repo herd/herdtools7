@@ -34,6 +34,7 @@ let modify t stack = match !stack with
 
 let blank = [' ''\t''\n''\r']
 let relexation = ['A'-'Z' 'a'-'z' '0'-'9' '-' '.' '*']+
+let predicate = ['A'-'Z' 'a'-'z' '0'-'9' '_']+
 
 rule token = parse
 | eof { EOF }
@@ -52,6 +53,15 @@ rule token = parse
 | (relexation as lxm) {
   modify true has_previous_relaxation;
   RELAXATION lxm
+}
+| '@' (predicate as pred) blank* {
+  PREDICATE pred
+}
+| '(' blank* {
+  LEFT_BRACKET
+}
+| blank* ')' {
+  RIGHT_BRACKET
 }
 | blank+ {
   if peak has_previous_relaxation then COMMA
