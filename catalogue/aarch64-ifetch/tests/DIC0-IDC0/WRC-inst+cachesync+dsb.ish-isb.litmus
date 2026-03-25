@@ -1,4 +1,5 @@
 AArch64 WRC-inst+cachesync+dsb.ish-isb
+Hash=ce504185ca2f882ca77a75f36af5f10b
 Stable=X9
 { 0:X0=NOP;
   0:X1=P0:mod; 1:X1=P0:mod; 2:X1=P0:mod;
@@ -13,7 +14,7 @@ Stable=X9
  B end       |              |              ;
 mod:         |              |              ;
  B l0        |              |              ;
- MOV X9,#1   |              |              ;
+ MOV W9,#1   |              |              ;
 l0:          |              |              ;
  RET         |              |              ;
 end:         |              |              ;

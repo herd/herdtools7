@@ -1,4 +1,5 @@
 AArch64 DIC1.S.RF-dsb-iccvau-dsb-isb
+Hash=fdb1c7c5db0516f0940ec85f4b6ac817
 CacheType=DIC
 Stable=X9
 {
@@ -10,7 +11,7 @@ Stable=X9
   B end       |  DSB SY      ;
 mod:          |  IC IVAU,X1  ;
   B l0        |  DSB SY      ;
-  MOV X9,#1   |  ISB         ;
+  MOV W9,#1   |  ISB         ;
 l0:           |  BLR X1      ;
   RET         |  CMP W0,W2   ;
 end:          |  CSET W8,EQ  ;

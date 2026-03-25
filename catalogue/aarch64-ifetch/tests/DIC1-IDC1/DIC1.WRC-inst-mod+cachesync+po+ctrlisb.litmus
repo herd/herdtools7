@@ -1,4 +1,5 @@
 AArch64 DIC1.WRC-inst-mod+cachesync+po+ctrlisb
+Hash=bdbc26ad46b487463c4686ddda4ef44b
 CacheType=DIC
 Stable=X9
 { 0:X0=NOP;
@@ -15,7 +16,7 @@ Stable=X9
 B end       |              |              ;
 mod:         |              |              ;
  B l0        |              |              ;
- MOV X9,#1   |              |              ;
+ MOV W9,#1   |              |              ;
 l0:          |              |              ;
  RET         |              |              ;
 end:         |              |              ;

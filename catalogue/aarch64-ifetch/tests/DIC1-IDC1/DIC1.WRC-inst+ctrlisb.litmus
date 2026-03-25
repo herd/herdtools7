@@ -1,4 +1,5 @@
 AArch64 DIC1.WRC-inst+ctrlisb
+Hash=20adb1c83fe5adb3640b5985d0c5ac16
 CacheType=DIC
 Stable=X9
 { 0:X0=NOP;
@@ -9,7 +10,7 @@ Stable=X9
  B end       | MOV W2,#1   |  CBNZ W2,l2  ;
 mod:         | STR W2,[X3] | l2:          ;
  B l0        |             |  ISB         ;
- MOV X9,#1   |             |  BLR X1      ;
+ MOV W9,#1   |             |  BLR X1      ;
 l0:          |             |              ;
  RET         |             |              ;
 end:         |             |              ;

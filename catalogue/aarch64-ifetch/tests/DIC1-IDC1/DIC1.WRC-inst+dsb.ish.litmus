@@ -1,4 +1,5 @@
 AArch64 DIC1.WRC-inst+dsb.ish
+Hash=9cdb4b9f2c873e4f0b518710f615c3a0
 CacheType=DIC
 Stable=X9
 { 0:X0=NOP;
@@ -9,7 +10,7 @@ Stable=X9
  B end       |  MOV W2,#1   |  DSB ISH     ;
 mod:         |  STR W2,[X3] |  BLR X1      ;
  B l0        |              |              ;
- MOV X9,#1   |              |              ;
+ MOV W9,#1   |              |              ;
 l0:          |              |              ;
  RET         |              |              ;
 end:         |              |              ;

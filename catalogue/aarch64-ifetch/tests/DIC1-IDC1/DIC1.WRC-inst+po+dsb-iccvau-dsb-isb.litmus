@@ -1,4 +1,5 @@
 AArch64 DIC1.WRC-inst+po+dsb-iccvau-dsb-isb
+Hash=881eb19f62416b9d23c843d3837f4006
 CacheType=DIC
 Stable=X9
 { 0:X0=NOP;
@@ -9,7 +10,7 @@ Stable=X9
  B end       | MOV W2,#1   |  DSB SY      ;
 mod:         | STR W2,[X3] |  IC IVAU,X1  ;
  B l0        |             |  DSB SY      ;
- MOV X9,#1   |             |  ISB         ;
+ MOV W9,#1   |             |  ISB         ;
 l0:          |             |  BLR X1      ;
  RET         |             |              ;
 end:         |             |              ;
