@@ -3,6 +3,7 @@ AArch64 MP.RF+dc-dsb-ic-dsb+ctrlisb.br
   [z]=P1:Lend;
   0:X0=NOP; 0:X1=P1:Lself; 0:X3=z;
   1:X2=P1:Lself; 1:X3=z; 1:X9=0;
+  ins_t *1:X1;
 }
 P0           | P1           ;
 STR W0,[X1]  |  LDR X1,[X3] ;
