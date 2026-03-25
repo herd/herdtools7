@@ -6,5 +6,5 @@ AArch64 LDR
 uint64_t x=1;
 }
 P0         ;
-LDR X2,[X1];
+LDR W2,[X1];
 exists(0:X2=1)

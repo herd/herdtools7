@@ -7,7 +7,7 @@ Variant=vmsa
  1:X3=y; 1:X1=x; 1:X8=z;
 }
  P0           | P1           | P1.F           ;
- MOV X7,#1    | LDR W2,[X3]  | ADR X9,L0      ;
+ MOV W7,#1    | LDR W2,[X3]  | ADR X9,L0      ;
  STR W7,[X8]  | MOV W0,#1    | MSR ELR_EL1,X9 ;
  STLR W7,[X3] | STLR W0,[X1] | LDR W10,[X8]   ;
               |              | ERET           ;
