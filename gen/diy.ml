@@ -41,7 +41,7 @@ open C.R
     let ast = String.trim input_fences |> parse_ast Parser.cumul in
     (* Note that `parse_fence` might fail *)
     let fences = Ast.bind ast ( fun input -> Ast.One(C.E.parse_fence input) )
-    |> Ast.expand in
+    |> Ast.expand ( fun _ -> Warn.user_error "cumul input: %s contains predicate." input_fences ) in
     (* Each expanded alternative must contain exactly one fence. *)
     if List.for_all ( function [_] -> true | _ -> false ) fences then
       List.flatten fences

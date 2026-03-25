@@ -50,6 +50,15 @@ let rec pp pp_pred pp_prim ast =
   | Predicate (pred,t) ->
       Printf.sprintf "%s(%s)" (pp_pred pred) (pp_wrap t)
 
+let rec map_predicate func ast =
+  let map_func = map_predicate func in
+  match ast with
+  | One s -> One s
+  | Opt opt -> Opt (map_func opt)
+  | Seq ss -> Seq (List.map map_func ss)
+  | Choice ss -> Choice (List.map map_func ss)
+  | Predicate (pred,t) -> Predicate(func pred, map_func t)
+
 let list_cross_product_map f lhs rhs =
   List.map ( fun l ->
     List.map ( fun r ->
@@ -58,15 +67,18 @@ let list_cross_product_map f lhs rhs =
   ) lhs
   |> List.flatten
 
-let rec expand t =
+let rec expand pred_func t =
+  let expand_pred = expand pred_func in
   let result = match t with
   | One str -> [[str]]
-  | Opt opt -> [] :: expand opt
+  | Opt opt -> [] :: expand_pred opt
   | Seq seq -> List.fold_left
     ( fun acc s ->
-      expand s
+      expand_pred s
       |> list_cross_product_map ( @ ) acc
     ) [[]] seq
-  | Choice choice -> List.map expand choice |> List.flatten
-  | Predicate _ -> Warn.fatal "Predicate must be resolved before expand" in
+  | Choice choice -> List.map expand_pred choice |> List.flatten
+  | Predicate (pred,t) ->
+      expand_pred t
+      |> List.map (List.map (fun e -> pred_func pred e)) in
   result

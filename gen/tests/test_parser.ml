@@ -28,7 +28,7 @@ let unit_test parser_grammar label input =
     Lexing.from_string input
     |> LexUtil.parse parser_grammar in
   Printf.printf "%s\n" (Ast.pp Fun.id Fun.id ast) ;
-  Ast.expand ast
+  Ast.expand ( fun pred prim -> Printf.sprintf "@%s(%s)" pred prim ) ast
   |> pp_list (pp_list Fun.id)
   |> Printf.printf "%s\n"
 

@@ -17,6 +17,7 @@ type ('pred,'prim) t =
   | Predicate of 'pred * ('pred,'prim) t
 
 val bind : ('pred,'prim) t -> ('prim -> ('pred,'new_prim) t) -> ('pred,'new_prim) t
+val map_predicate : ('pred -> 'new_pred) -> ('pred,'prim) t -> ('new_pred,'prim) t
 val pp : ('pred -> string) -> ('prim -> string) -> ('pred,'prim) t -> string
 
 (* Flatten the AST into the list of concrete sequences.
@@ -28,7 +29,8 @@ val pp : ('pred -> string) -> ('prim -> string) -> ('pred,'prim) t -> string
      If `A` expands to `[[X; Y]; [Z]]` and `B` to `[[K]; [M; N]]`,
      then `Seq [A; B]` expands to
      `[ [X; Y; K]; [X; Y; M; N]; [Z; K]; [Z; M; N] ]`.
-   - `Predicate` causes error, it must be resolved into `'prim` before calling.
+   - `Predicate (pred, t)` expands `t` first then calls the passed in
+      function to combine `pred` into the expanded `t`.
    A concrete example is
    `Seq [Choice [One x; One y]; Opt (Seq [One z; One k])]`,
    which expands to `[[x]; [x; z; k]; [y]; [y; z; k]]`, where:
@@ -37,4 +39,4 @@ val pp : ('pred -> string) -> ('prim -> string) -> ('pred,'prim) t -> string
    - `[y]` comes from `One y` followed by the empty alternative of `Opt`.
    - `[y; z; k]` comes from `One y` followed by `Seq [One z; One k]`.
    *)
-val expand : ('pred,'prim) t -> 'prim list list
+val expand : ('pred -> 'prim -> 'prim) -> ('pred,'prim) t -> 'prim list list

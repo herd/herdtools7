@@ -379,8 +379,13 @@ and type edge = E.edge
           |> relax_list_to_choice
 
           let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
+            (* Add the predicate to all the edges *)
+            let add_predicate pred = function
+              | ERS ls -> ERS (List.map ( fun r -> E.add_predicate pred r ) ls)
+              | PPO -> assert false in
             Ast.bind ast (parse_expand_relax ~ppo)
-              |> Ast.expand
+              |> Ast.map_predicate E.parse_predicate
+              |> Ast.expand add_predicate
               |> List.map ( fun e -> ERS (edges_of_relax_list e) )
 
 (********)
