@@ -6,6 +6,6 @@ AArch64 STR-db0-noHD
 pte_x=(db:0);
 }
 P0         ;
-MOV X1,#1  ;
-STR X1,[X2];
+MOV W1,#1  ;
+STR W1,[X2];
 exists(x=1)

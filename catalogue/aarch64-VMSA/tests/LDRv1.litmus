@@ -3,7 +3,7 @@ AArch64 LDRv1
 {
 uint64_t x=1;
 0:X1=x;
-0:X2=0;
+uint64_t 0:X2=0;
 pte_x=(valid:1);
 }
 P0         ;

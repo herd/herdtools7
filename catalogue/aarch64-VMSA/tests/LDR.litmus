@@ -2,7 +2,7 @@ AArch64 LDR
 (* LDR+32 is equivalent *)
 {
 0:X1=x;
-0:X2=0;
+uint64_t 0:X2=0;
 uint64_t x=1;
 }
 P0         ;
