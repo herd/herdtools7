@@ -1639,7 +1639,7 @@ typedef type_error_code { "type error code" } =
   | TE_NBV  { "No base value" }
   | TE_TAF  { "Type assertion failure" }
   | TE_SEF  { "Static evaluation failure" }
-  | TE_BO   { "Bad operands" }
+  | TE_BO   { "Bad operand(s)" }
   | TE_UT   { "Unexpected type" }
   | TE_BTI  { "Bad tuple index" }
   | TE_BS   { "Bad slices" }
@@ -1811,9 +1811,16 @@ render dynamic_envs_and_components = dynamic_envs(-), global_dynamic_envs(-), lo
 
 constant empty_denv : dynamic_envs
     {
-        "the \hyperlink{def-emptyenv}{empty dynamic environment}",
+        "the \hyperlink{constant-emptydenv}{empty dynamic environment}",
         math_macro = \emptydenv,
     }
+;
+
+constant empty_env : envs
+    {
+        "the \hyperlink{def-emptyenv}{empty environment}",
+        math_macro = \emptyenv,
+    } = (empty_tenv, empty_denv)
 ;
 
 typedef envs
@@ -2023,7 +2030,7 @@ typedef dynamic_error_code { "dynamic error code" } =
   | DE_DAF  { "Dynamic assertion failure" }
   | DE_TAF  { "Dynamic type assertion failure" }
   | DE_AET  { "ARBITRARY empty type" }
-  | DE_BO   { "Bad operands" }
+  | DE_BO   { "Bad operand(s)" }
   | DE_LE   { "Limit exceeded" }
   | DE_UE   { "Uncaught exception" }
   | DE_BI   { "Bad index" }
@@ -5851,7 +5858,7 @@ semantics function eval_unop(op: unop, v: native_value) ->
 
   case static_error {
     v =: NV_Literal(l);
-    unop_literals(op, l) -> TypeError(_) | ;
+    unop_literals(op, l) -> TypeError(TE_BO) | ;
     --
     DynamicError(DE_BO);
   }

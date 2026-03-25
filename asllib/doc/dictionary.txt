@@ -2257,6 +2257,7 @@ understanding
 undertaken
 unevaluated
 unexpected
+uniformly
 uninitialized
 unintended
 union

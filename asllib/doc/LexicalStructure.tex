@@ -14,6 +14,7 @@ either a list of \emph{tokens} or a lexical error.
   \item \secref{Integer Literals} defines integer literals,
   \item \secref{Rational Number Literals} defines rational number literals,
   \item \secref{Boolean Literals} defines Boolean literals,
+  \item \secref{Bitvector Literals} defines bitvector literals,
   \item \secref{Bitmasks} defines bitmasks,
   \item \secref{String Literals} defines string literals,
   \item \secref{LexicalIdentifiers} defines identifiers, and
@@ -70,7 +71,7 @@ Let $\REasciichar$ stand for any ASCII character:
 \hypertarget{def-reasciichar}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REasciichar$  &$\triangleq$& \ascii{0-255}
+$\REasciichar$  &$\triangleq$& \ascii{0-127}
 \end{tabular}
 \end{center}
 
@@ -179,7 +180,7 @@ $\REforbiddenrealremaining$ &$\triangleq$& $\REintlit$ \texttt{"."} $\REintlit$ 
 \section{Boolean Literals\label{sec:Boolean Literals}}
 Boolean literals are written using \texttt{TRUE} or \texttt{FALSE}.
 
-\section{Bitvector Literals\label{Bitvector Literals}}
+\section{Bitvector Literals\label{sec:Bitvector Literals}}
 Constant bitvectors are written using 1, 0 and spaces surrounded by single-quotes.
 
 We first define a regular expression for a bit character:
@@ -207,7 +208,7 @@ and the most significant bit (\ProseMSB) at the highest index.
 In terms of notation, the \ProseMSB{} is the leftmost bit and the
 \ProseLSB{} is the rightmost bit.
 % INLINED_EXAMPLE
-For example, in \verb|'10100'| the \ProseMSB{} \verb|1| is at index $4$,
+For example, in \verb|'10100'| the \ProseMSB{} is \verb|1| at index $4$,
 and the \ProseLSB{} is \verb|0| at index $0$.
 
 \section{Bitmasks\label{sec:Bitmasks}}
@@ -336,7 +337,7 @@ Lexical analysis, which is also referred to as \emph{scanning}, is defined via t
 \]
 \hypertarget{def-lexicalerrorresult}{}
 which takes a \emph{lexical specification} (explained soon), an ASL specification string
-(where characters are simply numbers representing ASCII characters)
+given by a sequence of ASCII characters (stored as 8-bit bytes)
 and returns a sequence of tokens (tokens are defined below) or a \emph{lexical error} $\LexicalErrorConfig$.
 
 Tokens have one of two forms:
@@ -425,7 +426,7 @@ The function $\aslscan$ is constructively defined via the following inference ru
 \begin{mathpar}
 \inferrule[token]{
   \maxmatches(R, s) = [(e_1,a_1),\ldots,(e_n,a_n)]\\
-  \remaxmatch(s, e_1) = (s_1, s_2)\\
+  \remaxmatch(e_1, s) = (s_1, s_2)\\
   a_1(s_1, s_2) \scanarrow \ts\OrLexicalError
 }{
   \aslscan(R, s) \scanarrow \ts
@@ -562,7 +563,7 @@ $\Tidentifier(s)$.
 \FormallyParagraph
 \[
   \toidentifier(s) = \begin{cases}
-    \LexicalError & \text{if }s = \underbracket{\texttt{ \_ } }\ \underbracket{\texttt{ \_ } } s'\\
+    \LexicalErrorConfig & \text{if }s = \underbracket{\texttt{ \_ } }\ \underbracket{\texttt{ \_ } } s'\\
     \Tidentifier(s) & \text{otherwise}
   \end{cases}
 \]
@@ -688,8 +689,8 @@ It is defined via the following rules:
 
 \begin{mathpar}
 \inferrule[char]{
-  \maxmatches(R, s) = [(e_1,a_1),\ldots,(e_n,a_n)]\\
-  \remaxmatch(s, e_1) = (s_1, s_2)\\
+  \maxmatches(\specstring, s) = [(e_1,a_1),\ldots,(e_n,a_n)]\\
+  \remaxmatch(e_1, s) = (s_1, s_2)\\
   a_1(s_1, s_2) = \Tstringchar(t)\\
   \scanstring(\buff \concat t, s_2) \scanarrow \tstwo\OrLexicalError
 }{
@@ -699,8 +700,8 @@ It is defined via the following rules:
 
 \begin{mathpar}
 \inferrule[end]{
-  \maxmatches(R, s) = [(e_1,a_1),\ldots,(e_n,a_n)]\\
-  \remaxmatch(s, e_1) = (s_1, s_2)\\
+  \maxmatches(\specstring, s) = [(e_1,a_1),\ldots,(e_n,a_n)]\\
+  \remaxmatch(e_1, s) = (s_1, s_2)\\
   a_1(s_1, s_2) = \Tstringend\\
   \aslscan(\spectoken, s_2) \scanarrow \tstwo\OrLexicalError
 }{

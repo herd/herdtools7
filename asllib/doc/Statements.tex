@@ -852,6 +852,15 @@ assigns \verb|'1101 111'| to the global variable \verb|g|.
 
 \hypertarget{def-conditionalstatementterm}{}
 \section{Conditional Statements\label{sec:ConditionalStatements}}
+
+A conditional statement evaluates its \texttt{then} statement list if the
+condition expression evaluates to $\True$. If the condition expression
+evaluates to $\False$ each \texttt{elsif} condition expression is evaluated
+sequentially until an \texttt{elsif} condition expression evaluates to $\True$;
+the conditional statement evaluates the corresponding \texttt{elsif}
+statement list. If no \texttt{elsif} condition expression evaluates to $\True$, the
+conditional statement evaluates the \texttt{else} statement list.
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \ & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse \parsesep \Tend \parsesep \Tsemicolon &\\
@@ -887,12 +896,11 @@ The function
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_UNIMPORTED_RELATION
 
-
 \begin{mathpar}
 \inferrule[elseif]{}{
   {
     \begin{array}{r}
-  \buildselse(\Nselse(\Telseif, \Nexpr, \Twhen, \Nstmtlist, \Nselse)) \astarrow \\
+  \buildselse(\Nselse(\Telseif, \Nexpr, \Tthen, \Nstmtlist, \Nselse)) \astarrow \\
   \overname{\SCond(\astof{\vexpr}, \astof{\vstmtlist}, \astof{\vselse})}{\vastnode}
     \end{array}
   }
@@ -1899,7 +1907,6 @@ the \trystatementsterm{} are all well-typed.
 \RenderProseAndFormally{annotate_stmt_STry}
 \CodeSubsection{\STryBegin}{\STryEnd}{../Typing.ml}
 
-
 \subsection{Semantics}
 \SemanticsRuleDef{STry}
 \ExampleDef{Evaluation of Try Statements}
@@ -1920,7 +1927,6 @@ does not result in any Assertion error, and the specification terminates with th
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_return}
-
 
 \ASTRuleDef{SReturn}
 \begin{mathpar}

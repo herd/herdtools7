@@ -125,10 +125,9 @@ In \listingref{typing-typesat1},
 checking whether \verb|(integer, T1)| \typesatisfiesterm{} \verb|pairT|
 for the assignment \verb|var pair: pairT = (1, dataT1)| yields $\True$.
 
-In \listingref{typing-typesat3}, checking whether \verb|(intege, T2)|
+In \listingref{typing-typesat3}, checking whether \verb|(integer, T2)|
 \typesatisfiesterm{} \verb|pairT| for the assignment \verb|pair = (1, dataT2);|
 yields a \typingerrorterm.
-
 
 \RenderProseAndFormally{check_type_satisfies}
 
@@ -205,7 +204,7 @@ applied to \constrainedintegerterm{} types.
 
 Importantly, note that there is no AST for applying binary operations on
 constraints.
-For example, given a range constraint \verb|A..B| and an exact constraint |2|,
+For example, given a range constraint \verb|A..B| and an exact constraint \verb|2|,
 there is no AST to express \verb|(A..B) * 2|. Therefore, the constraints for typing
 \verb|ab_times_2| approximate the set of values for \verb|(A..B) * 2| via four
 range constraints. More precisely, they are a superset of the values for \verb|(A..B) * 2|.
@@ -569,7 +568,7 @@ used by $\refineconstraintbysign$, the resulting $\None$ is also filtered out.
 
       \item \AllApplyCase{non\_empty\_none\_approx}
       \begin{itemize}
-        \item $\csonep$ is not the empty list;
+        \item $\csonep$ is the empty list;
         \item the result is $\CannotOverapproximate$ if $\vapprox$ is $\Over$ and $\CannotUnderapproximate$, otherwise.
       \end{itemize}
     \end{itemize}
@@ -587,7 +586,7 @@ used by $\refineconstraintbysign$, the resulting $\None$ is also filtered out.
 \FormallyParagraph
 \begin{mathpar}
 \inferrule[empty]{}{
-  \refineconstraints(\vapprox, \tenv, \vf, \overname{\emptylist}{\cs}) \typearrow \overname{\emptylist}{\newcs}
+  \refineconstraints(\vapprox, \vf, \overname{\emptylist}{\cs}) \typearrow \overname{\emptylist}{\newcs}
 }
 \end{mathpar}
 
@@ -644,7 +643,7 @@ Specifically, notice the following:
   \item the constraint for \verb|7..10| divided by \verb|2|
         effectively rounds up $7/2$ into \verb|3|,
   \item the constraint for \verb|14..17| divided by \verb|2| effectively rounds down
-        $17/2$ into \verb|16|, and
+        $17/2$ into \verb|8|, and
   \item the constraint for \verb|16..15| divided by \verb|2| is filtered away,
         since it is not a legal \rangeconstraintterm.
 \end{itemize}
@@ -812,7 +811,7 @@ In \listingref{GetWellConstrainedStructure},
 annotating the expression \verb|-N| involves obtaining the well-constrained structure of the
 type of \verb|N|, which yields \\
 $\TInt(\WellConstrained([\ConstraintExact(\EVar(\vN))]))$.
-Similarly, the for expression \verb|-x|,
+For the expression \verb|-x|,
 obtaining the well-constrained structure of the type for $\vx$ yields \\
 $\unconstrainedinteger$.
 \ASLListing{Obtaining the well constrained structure of a type}{GetWellConstrainedStructure}{\typingtests/TypingRule.GetWellConstrainedStructure.asl}

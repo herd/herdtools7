@@ -549,7 +549,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 \hypertarget{def-nfields}{}
 \begin{flalign*}
 \Nfields \derives \ & \Tlbrace \parsesep \Tminus \parsesep \Trbrace &\\
-                    & \Tlbrace \parsesep \TClistOne{\Ntypedidentifier} \parsesep \Trbrace &
+                  |\ & \Tlbrace \parsesep \TClistOne{\Ntypedidentifier} \parsesep \Trbrace &
 \end{flalign*}
 
 \hypertarget{def-nslices}{}
@@ -704,7 +704,7 @@ We denote the set of well-formed parse trees for a non-terminal symbol $S$ by $\
 \hypertarget{def-aslparse}{}
 A parser is a function
 \[
-\aslparse(\KleeneStar{\Token} \setminus \{\Terror\}) \aslto \parsenode{\Nspec} \cup \{\ParseErrorConfig\}
+\aslparse(\KleeneStar{(\Token \setminus \{\Terror\})}) \aslto \parsenode{\Nspec} \cup \{\ParseErrorConfig\}
 \]
 \hypertarget{def-parseerror}{}
 where $\ParseErrorConfig$ stands for a \emph{parse error}.
