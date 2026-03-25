@@ -158,7 +158,8 @@ let diycross_parser_syntax_doc =
 
 let diy7_parser_syntax_doc =
   parser_syntax_doc ^ "\n\
-   In `diy7`, top-level plain separators denote choice, so '[A B] C [D E]' has canonical form `[[A,B]|C|[D,E]]`."
+   In `diy7`, top-level plain separators denote choice, so '[A B] C [D E]' has canonical form `[[A,B]|C|[D,E]]`.\n\
+   `diy7` also accepts predicate decorators such as `@before(...)` and `@after(...)`; these are not accepted by the shared `diyone7` or `diycross7` parsers."
 
 let cumul_parser_syntax_doc =
   " `false` disables non-explicit fence cumulativity, `true` enables all fence cumulativity, and any other value is parsed as a set of fences.\n\
