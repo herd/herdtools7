@@ -6,5 +6,5 @@ x=1;
 pte_x=(af:0);
 }
 P0         ;
-LDR X2,[X1];
+LDR W2,[X1];
 exists(0:X2=1)
