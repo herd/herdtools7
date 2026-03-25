@@ -838,10 +838,10 @@ let fold_tedges f r =
           Some(set_a2 e1 a,set_a1 e2 a) in
     let input = (e1,e2) in
     let r = update_dir input
-        |> Option.fold ~none:(update_annotation input)
+        |> ( function
           (* Propagate result `f e` if changed *)
-          ~some:(fun e ->
-            Some(Option.value (update_annotation e) ~default:e)) in
+          | Some e -> Some(Option.value (update_annotation e) ~default:e)
+          | None -> update_annotation input ) in
     if dbg > 0 then begin
       let i1,i2 = input in
       let r1,r2 = Option.value ~default:input r in
@@ -854,7 +854,9 @@ let fold_tedges f r =
      merge annotations and direction from the head of `es`
      into `e` until no more possibility. *)
   let rec merge_left e es =
-    let is_default e = e = { edge=Id; a1=None; a2=None; } in
+    let is_default e = match e with
+      | { edge=Id; a1=None; a2=None; } -> true
+      | _ -> false in
     try
       let store_insert,next,rest = find_next_merge es in
       (* throw away a default annotation *)
@@ -907,11 +909,14 @@ let fold_tedges f r =
       List.rev es
       |> List.find ( fun e -> not @@ is_insert_store e.edge ) in
     List.fold_left (fun prev_annotation e ->
-      match is_insert_store e.edge, prev_annotation = e.a1 with
+      match is_insert_store e.edge, compare_atomo prev_annotation e.a1 with
       (* carry over the previous result if insert edges *)
       | true,_ -> prev_annotation
-      | false,false -> Warn.fatal "Annotations mismatch"
-      | false,true -> e.a2
+      | false,0 -> e.a2
+      | false,_ ->
+          Warn.fatal "Annotations mismatch between %s %s."
+          (pp_atom_option prev_annotation)
+          (pp_atom_option e.a1)
     ) last_non_insert_edge.a2 es
     |> ignore
 
