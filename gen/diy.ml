@@ -22,7 +22,7 @@ module type DiyConfig = sig
   val choice : Code.check
   val variant : Variant_gen.t -> bool
   val prefix : string list
-  val cumul :   Ast.t list Config.cumul
+  val cumul :   string Ast.t list Config.cumul
   val max_ins : int
   val upto : bool
   val varatom : string list
