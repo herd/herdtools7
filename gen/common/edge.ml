@@ -140,6 +140,12 @@ module type S = sig
 (* Resolve Irr directions and unspecified atom *)
   val resolve_edges : edge list -> edge list
 
+(* Add `predicate` to `edge` *)
+  val add_predicate : edge_predicate -> edge -> edge
+
+(* parse `predicate` *)
+  val parse_predicate : string -> edge_predicate
+
 (* Atomic variation over yet unspecified atoms *)
   val varatom : edge list -> (edge list -> 'a -> 'a) -> 'a -> 'a
 
@@ -205,7 +211,7 @@ and module RMW = A.RMW = struct
   let pre_parse_string s =
     let parsed_result = Lexing.from_string (String.trim s)
     |> LexUtil.parse Parser.main
-    |> Ast.expand in
+    |> Ast.expand (fun _ -> Warn.fatal "predicate should not exist.") in
     match parsed_result with
       | [x] -> x
       | _ ->
@@ -348,12 +354,19 @@ and module RMW = A.RMW = struct
       "{edge=%s, a1=%s, a2=%s}"
       (do_pp_tedge false e.edge) (pp_atom_option e.a1) (pp_atom_option e.a2)
 
+  let pp_predicate = function
+    | Before -> "before"
+    | After -> "after"
+
   let do_pp_edge compat pp_atom_functor e =
     let annotation = pp_atom_functor e.edge e.a1 e.a2 in
     let edge = match e.edge with
     | Id -> ""
     | _ -> do_pp_tedge compat e.edge in
-    edge ^ annotation
+    let edge_anno = edge ^ annotation in
+    match e.pred with
+    | None -> edge_anno
+    | Some pred -> sprintf "@%s(%s)" (pp_predicate pred) edge_anno
 
   let pp_edge_with_xx compat e = do_pp_edge compat pp_aa e
 
@@ -982,6 +995,13 @@ let fold_tedges f r =
     let es = if do_mixed then List.map replace_plain es else es in
     validate_edges es ;
     es
+
+  let add_predicate pred e = {e with pred = Some pred}
+
+  let parse_predicate = function
+    | "before" -> Before
+    | "after" -> After
+    | s -> Warn.user_error "predicate %s is not supported." s
 
 (********************)
 (* Atomic variation *)
