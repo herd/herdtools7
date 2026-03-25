@@ -64,6 +64,10 @@ module type S = sig
     | Hat
     | Rmw of RMW.rmw  (* Various sorts of read-modify-write *)
 
+  type edge_predicate =
+    | Before
+    | After
+
   val is_id : tedge -> bool
   val is_node : tedge -> bool
   val is_insert_store : tedge -> bool
@@ -72,7 +76,7 @@ module type S = sig
   val compute_rmw : RMW.rmw -> value -> value -> value
   val is_valid_rmw : RMW.rmw list -> bool
 
-  type edge = { edge: tedge;  a1:atom option; a2: atom option; }
+  type edge = { edge: tedge;  a1:atom option; a2: atom option; pred : edge_predicate option }
 
   val plain_edge : tedge -> edge
 
@@ -274,13 +278,17 @@ and module RMW = A.RMW = struct
     |Dp (dp, _, _) -> F.is_addr dp
     |_ -> false
 
-  type edge = { edge: tedge;  a1:atom option; a2: atom option; }
+  type edge_predicate =
+    | Before
+    | After
+
+  type edge = { edge: tedge;  a1:atom option; a2: atom option; pred : edge_predicate option }
 
   let can_merge e = not @@ is_insert_store e.edge
 
   open Printf
 
-  let plain_edge e = { a1=None; a2=None; edge=e; }
+  let plain_edge e = { a1=None; a2=None; edge=e; pred = None}
 
   let pp_as_a = A.pp_as_a
   let pp_plain = A.pp_plain
@@ -487,7 +495,7 @@ let fold_tedges f r =
                  match te with
                  | Rmw rmw -> (* Allowed source and target atomicity for rmw *)
                      if RMW.applies_atom_rmw rmw a1 a2 then begin
-                       let e =  {a1; a2; edge=te;} in
+                       let e =  {a1; a2; edge=te; pred = None} in
                        f e k
                      end else k
                  | Id -> begin
@@ -495,16 +503,16 @@ let fold_tedges f r =
                      | Some x1,Some x2 when
                          A.compare_atom x1 x2=0
                          && not (is_ifetch a1) ->
-                         f { a1; a2;edge=te; } k
+                         f { a1; a2;edge=te; pred = None} k
                      | None,None ->
-                         let e =  { a1; a2;edge=te; } in
+                         let e =  { a1; a2;edge=te; pred = None} in
                          f e k
                      | _,_ -> k
                  end
                  | Insert _|Node _|Store  ->
                      begin match a1,a2 with
                      | None,None ->
-                         let e =  { a1; a2;edge=te; } in
+                         let e =  { a1; a2;edge=te; pred = None} in
                          f e k
                      | _,_ -> k
                      end
@@ -518,10 +526,10 @@ let fold_tedges f r =
                         Misc.is_none (get_access_atom a2)||
                        ok_non_rmw te a1 a2)
                      then
-                       f {a1; a2; edge=te;} k
+                       f {a1; a2; edge=te;pred = None} k
                      else begin
                        if debug then
-                         eprintf "Not %s\n" (debug_edge  {a1; a2; edge=te;}) ;
+                         eprintf "Not %s\n" (debug_edge  {a1; a2; edge=te;pred = None}) ;
                        k
                      end ))))
 
@@ -638,10 +646,10 @@ let fold_tedges f r =
     if do_self && instr_atom != None then
       iter_ie
         (fun ie ->
-           add_lxm_edge (sprintf "Iff%s" (pp_ie ie)) { a1=None; a2=instr_atom; edge=(Rf ie); } ;
-           add_lxm_edge (sprintf "Irf%s" (pp_ie ie)) { a1=None; a2=instr_atom; edge=(Rf ie); } ;
-           add_lxm_edge (sprintf "Fif%s" (pp_ie ie)) { a1=instr_atom; a2=None; edge=(Fr ie); } ;
-           add_lxm_edge (sprintf "Ifr%s" (pp_ie ie)) { a1=instr_atom; a2=None; edge=(Fr ie); });
+           add_lxm_edge (sprintf "Iff%s" (pp_ie ie)) { a1=None; a2=instr_atom; edge=(Rf ie); pred = None} ;
+           add_lxm_edge (sprintf "Irf%s" (pp_ie ie)) { a1=None; a2=instr_atom; edge=(Rf ie); pred = None} ;
+           add_lxm_edge (sprintf "Fif%s" (pp_ie ie)) { a1=instr_atom; a2=None; edge=(Fr ie); pred = None} ;
+           add_lxm_edge (sprintf "Ifr%s" (pp_ie ie)) { a1=instr_atom; a2=None; edge=(Fr ie); pred = None});
     ()
 
   let fold_pp_edges f =
@@ -867,7 +875,7 @@ let fold_tedges f r =
      - `remaining` is the unconsumed suffix of `es`. *)
   let rec merge_left (e:edge) (es:edge list) : (bool * edge option * edge list) =
     let is_default e = match e with
-      | { edge=Id; a1=None; a2=None; } -> true
+      | { edge=Id; a1=None; a2=None; pred=None } -> true
       | _ -> false in
     try
       let store_insert,next,rest = find_next_merge es in
@@ -1108,7 +1116,7 @@ let fold_tedges f r =
             fold_atomo
               (fun ao k ->
                 if is_ifetch ao then k
-                else { edge=Id; a1=ao; a2=ao;}::k)
+                else { edge=Id; a1=ao; a2=ao;pred=None}::k)
               [] in
           List.iter
             (fun e -> eprintf " %s" (pp_edge e))

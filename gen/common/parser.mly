@@ -1,12 +1,14 @@
+%token <string> PREDICATE
+%token LEFT_BRACKET RIGHT_BRACKET
 %token <string> RELAXATION
 %token LEFT_SQUARE RIGHT_SQUARE
 %token COMMA
 %token CHOICE_BAR
 %token EOF
 %token OPTION
-%start <string Ast.t> main
-%start <string Ast.t> main_top_level_choice
-%start <string Ast.t> cumul
+%start <(string,string) Ast.t> main
+%start <(string,string) Ast.t> main_top_level_choice
+%start <(string,string) Ast.t> cumul
 
 %%
 
@@ -37,6 +39,7 @@ suffix:
   | opt = suffix OPTION { Ast.Opt opt }
   | r = RELAXATION { Ast.One r }
   | LEFT_SQUARE r = relax RIGHT_SQUARE { r }
+  | pred = PREDICATE LEFT_BRACKET r = relax RIGHT_BRACKET { Ast.Predicate (pred,r) }
 
 
 (* In `diy7 -cumul`,

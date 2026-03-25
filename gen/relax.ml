@@ -45,13 +45,13 @@ module type S = sig
   val po : relax list
 
   (* Parse the `input` to `Ast.t` using the input grammar *)
-  val parse_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> string Ast.t) -> string -> string Ast.t
+  val parse_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> (string,string) Ast.t) -> string -> (string,string) Ast.t
+  val parse_sequence_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> (string,string) Ast.t) -> string list -> (string,string) Ast.t
   (* Parse the input relaxation (or relaxations sequences), and expand the wildcard
      syntax into primitive edges and annotations *)
-  val parse_sequence_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> string Ast.t) -> string list -> string Ast.t
   val parse_expand_relaxs :
     ?ppo:((relax -> relax list -> relax list) -> relax list -> relax list)
-        -> string Ast.t -> relax list
+        -> (string,string) Ast.t -> relax list
 
   (* Remove invalid relax from the list *)
   val remove_invalid_relaxes : relax list -> relax list
@@ -144,18 +144,18 @@ and type edge = E.edge
           match r with
           | ERS [e] -> E.pp_edge e
           | ERS
-              [{edge=Rf Ext; a1=None;a2=None;};
-               {edge=Fenced _;a1=None; a2=None;} as e] when backward_compatibility ->
+              [{edge=Rf Ext; a1=None;a2=None;pred=None};
+               {edge=Fenced _;a1=None; a2=None;pred=None} as e] when backward_compatibility ->
                  sprintf "AC%s" (pp_edge e)
-          | ERS [{edge=Fenced _; a1=None;a2=None;} as e;
-                 {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
+          | ERS [{edge=Fenced _; a1=None;a2=None;pred=None} as e;
+                 {edge=Rf Ext; a1=None; a2=None;pred=None}] when backward_compatibility ->
                    sprintf "BC%s" (pp_edge e)
-          | ERS [{edge=Rf Ext; a1=None; a2=None;};
-                 {edge=Fenced _; a1=None; a2=None;} as e;
-                 {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
+          | ERS [{edge=Rf Ext; a1=None; a2=None;pred=None};
+                 {edge=Fenced _; a1=None; a2=None;pred=None} as e;
+                 {edge=Rf Ext; a1=None; a2=None;pred=None}] when backward_compatibility ->
                    sprintf "ABC%s" (pp_edge e)
-          | ERS [{edge=Dp _; a1=None; a2=None;} as e;
-                 {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
+          | ERS [{edge=Dp _; a1=None; a2=None;pred=None} as e;
+                 {edge=Rf Ext; a1=None; a2=None;pred=None}] when backward_compatibility ->
                    sprintf "BC%s" (pp_edge e)
           | ERS es ->
               sprintf "[%s]" (String.concat "," (List.map pp_edge es))
@@ -406,15 +406,15 @@ and type edge = E.edge
           let open E in
           match r with
           | ERS
-              [{edge=Rf Code.Ext; a1=None; a2=None;};
-               {edge=Fenced _; a1=None; a2=None;}]
+              [{edge=Rf Code.Ext; a1=None; a2=None;_};
+               {edge=Fenced _; a1=None; a2=None;_}]
           | ERS
-              [{edge=Fenced _; a1=None; a2=None;};
-               {edge=Rf Code.Ext; a1=None; a2=None;};]
+              [{edge=Fenced _; a1=None; a2=None;_};
+               {edge=Rf Code.Ext; a1=None; a2=None;_};]
           | ERS
-              [{edge=Rf Code.Ext; a1=None; a2=None;};
-               {edge=Fenced _; a1=None; a2=None;};
-               {edge=Rf Code.Ext; a1=None; a2=None;};]
+              [{edge=Rf Code.Ext; a1=None; a2=None;_};
+               {edge=Fenced _; a1=None; a2=None;_};
+               {edge=Rf Code.Ext; a1=None; a2=None;_};]
             -> true
           | _ -> false
 
