@@ -369,6 +369,7 @@ let tr_name s = match s with
 | x               -> IDENTIFIER x
 }
 
+let asl_chars = ['\r' '\n' ' '-'~'] (* ASCII 10, 13, 32-126 *)
 let digit = ['0'-'9']
 let digit_ = digit | '_'
 let int_lit = digit digit_*
@@ -379,7 +380,6 @@ let hex_lit = '0' 'x' hex_digit hex_digit_*
 let real_lit = int_lit '.' int_lit
 let alpha = ['a'-'z' 'A'-'Z']
 let alpha_ = alpha | '_'
-let string_lit = '"' [^ '"']* '"'
 let bit = ['0' '1' ' ']
 let bits = bit*
 let mask = (bit | 'x' | '(' bit+ ')')*
@@ -421,7 +421,7 @@ and string_lit acc = parse
   | '"'   { STRING_LIT (Buffer.contents acc) }
   | '\\'  { escaped_string_chars acc lexbuf }
   | '\n'  { Buffer.add_char acc '\n'; new_line lexbuf |> string_lit acc }
-  | [^ '"' '\\' '\n']+ as lxm { Buffer.add_string acc lxm; string_lit acc lexbuf }
+  | (asl_chars # ['"' '\\' '\n' '\r'])+ as lxm { Buffer.add_string acc lxm; string_lit acc lexbuf }
   | ""    { raise LexerError }
 
 (*
@@ -433,8 +433,8 @@ and c_comments = parse
   | "*/"          { token      lexbuf }
   | '*'           { c_comments lexbuf }
   | '\n'          { new_line lexbuf |> c_comments }
-  | [^ '*' '\n']+ { c_comments lexbuf }
-  | ""            { raise LexerError  }
+  | (asl_chars # ['*' '\n'])+ { c_comments lexbuf }
+  | _             { raise LexerError  }
 
 (*
    Lexing of ASL tokens
@@ -443,8 +443,8 @@ and c_comments = parse
 
 and token = parse
     | '\n'                     { new_line lexbuf |> token         }
-    | [' ''\t''\r']+           { token lexbuf                     }
-    | "//" [^'\n']*            { token lexbuf                     }
+    | [' ''\r']+               { token lexbuf                     }
+    | "//" (asl_chars # '\n')* { token lexbuf                     }
     | "/*"                     { c_comments lexbuf                }
     | int_lit as lxm           { INT_LIT(Z.of_string lxm)         }
     | hex_lit as lxm           { INT_LIT(Z.of_string lxm)         }

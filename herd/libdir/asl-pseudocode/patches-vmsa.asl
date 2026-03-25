@@ -461,7 +461,7 @@ end;
 
 // We override this function to treat CAS as writes for the purpose of
 // permissions, even no memory write will be performed.
-// Source in the Arm ARM (§C3.2.13.3):
+// Source in the Arm ARM (C3.2.13.3):
 //   For the purpose of permission checking, and for watchpoints, all of the
 //   Compare and Swap instructions are treated as performing both a load and a
 //   store.
