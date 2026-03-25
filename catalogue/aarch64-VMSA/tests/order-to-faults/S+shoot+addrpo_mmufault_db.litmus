@@ -1,5 +1,4 @@
 AArch64 S+shoot+addrpo_mmufault_db
-Hash=6a86d3c7fced391b105aa4b4384f9ba8
 Variant=vmsa,fatal
 {
  [PTE(x)]=(oa:PA(x), db:0);

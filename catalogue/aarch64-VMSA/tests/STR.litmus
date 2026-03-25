@@ -1,7 +1,7 @@
 AArch64 STR
 {
-uint64_t x;
-0:X1=1;
+int64_t x;
+int64_t 0:X1=1;
 0:X2=x;
 }
 P0         ;

@@ -1,5 +1,4 @@
 AArch64 R-via_fault_STR-mod1
-Hash=57e154c8d70f112d51214a1ab2a56aae
 Variant=vmsa
 {
  [PTE(x)]=(oa:PA(x), valid:0);
