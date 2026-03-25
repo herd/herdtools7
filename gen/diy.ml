@@ -34,14 +34,14 @@ open C.E
 open C.R
 
   let parse_argument_ast input =
-    String.trim input |> parse_ast Parser.main_top_level_choice
+    String.trim input |> parse_ast Parser.diy7
 
   (* Parse the `-cumul` argument, which should be a list of individual fences. *)
   let parse_fences input_fences =
     let ast = String.trim input_fences |> parse_ast Parser.cumul in
     (* Note that `parse_fence` might fail *)
     let fences = Ast.bind ast ( fun input -> Ast.One(C.E.parse_fence input) )
-    |> Ast.expand in
+    |> Ast.expand ( fun _ -> Warn.user_error "cumul input: %s contains predicate." input_fences ) in
     (* Each expanded alternative must contain exactly one fence. *)
     if List.for_all ( function [_] -> true | _ -> false ) fences then
       List.flatten fences
