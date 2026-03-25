@@ -1,9 +1,9 @@
 AArch64 LDRv1
 (* test LDRv1+32 is equivalent *)
 {
-uint64_t x=1;
+int64_t x=1;
 0:X1=x;
-0:X2=0;
+int64_t 0:X2=0;
 pte_x=(valid:1);
 }
 P0         ;

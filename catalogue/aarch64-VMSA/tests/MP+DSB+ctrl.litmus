@@ -4,8 +4,9 @@ AArch64 MP+DSB+ctrl
 pte_x=(valid:0);
 0:X1=pte_x;
 0:X0=(oa:phy_x,valid:1);
-uint64_t x;
-uint64_t y;
+int64_t x;
+int64_t y;
+int64_t 1:X1=0;
 0:X3=y; 1:X3=y;
 1:X4=x;
 }
