@@ -26,7 +26,7 @@ let mk_choice lhs rhs =
 %token EOF
 %token OPTION
 %left OPTION
-%start <t> main
+%start <string t> main
 
 %%
 
