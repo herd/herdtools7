@@ -9,7 +9,7 @@ Stable=X9
   B end       |  DSB SY      ;
 mod:          |  IC IVAU,X1  ;
   B l0        |  DSB SY      ;
-  MOV X9,#1   |  ISB         ;
+  MOV W9,#1   |  ISB         ;
 l0:           |  BLR X1      ;
   RET         |  CMP W0,W2   ;
 end:          |  CSET W8,EQ  ;
