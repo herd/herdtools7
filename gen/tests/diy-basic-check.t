@@ -15,6 +15,10 @@ A test for no metadata, `-metadata false`
    L00: LDR W4,[X3] ;
   
   exists (fault(P0:L00,x))
+A diy7 predicate reject cannot silently fall back to default relaxations
+  $ diy7 -arch AArch64 -safe '[@before([PodRW Rfe]) PodRW Rfe]' -reject '[@before([PodRW Rfe]) PodRW Rfe]' -size 2 -exact -stdout 2>&1
+  diy7: Fatal error: relaxations provided in safelist could not be used to generate cycles
+  [2]
 A VMSA test for a negated exists check, `-neg true`
   $ diyone7 -arch AArch64 -variant vmsa Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -neg true -info "User-define=User-define"
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0
@@ -857,7 +861,7 @@ An `ABC` relax macro unfolds before raw edge parsing
 `diy7 -unfold-only` unfolds relaxations and drops invalid composites
   $ diy7 -arch AArch64 -relax '[Po,DpAddr?]' -unfold-only 2>&1
   ***relax***
-  PosWW PosWR [PosWR,DpAddrsW] [PosWR,DpAddrsR] [PosWR,DpAddrdW] [PosWR,DpAddrdR] PosRW PosRR [PosRR,DpAddrsW] [PosRR,DpAddrsR] [PosRR,DpAddrdW] [PosRR,DpAddrdR] PodWW PodWR [PodWR,DpAddrsW] [PodWR,DpAddrsR] [PodWR,DpAddrdW] [PodWR,DpAddrdR] PodRW PodRR [PodRR,DpAddrsW] [PodRR,DpAddrsR] [PodRR,DpAddrdW] [PodRR,DpAddrdR]
+  PosWW [PosWW,DpAddrsW] [PosWW,DpAddrsR] [PosWW,DpAddrdW] [PosWW,DpAddrdR] PosWR [PosWR,DpAddrsW] [PosWR,DpAddrsR] [PosWR,DpAddrdW] [PosWR,DpAddrdR] PosRW [PosRW,DpAddrsW] [PosRW,DpAddrsR] [PosRW,DpAddrdW] [PosRW,DpAddrdR] PosRR [PosRR,DpAddrsW] [PosRR,DpAddrsR] [PosRR,DpAddrdW] [PosRR,DpAddrdR] PodWW [PodWW,DpAddrsW] [PodWW,DpAddrsR] [PodWW,DpAddrdW] [PodWW,DpAddrdR] PodWR [PodWR,DpAddrsW] [PodWR,DpAddrsR] [PodWR,DpAddrdW] [PodWR,DpAddrdR] PodRW [PodRW,DpAddrsW] [PodRW,DpAddrsR] [PodRW,DpAddrdW] [PodRW,DpAddrdR] PodRR [PodRR,DpAddrsW] [PodRR,DpAddrsR] [PodRR,DpAddrdW] [PodRR,DpAddrdR]
   ***safe***
   
   ***reject***
@@ -872,7 +876,7 @@ An `ABC` relax macro unfolds before raw edge parsing
   
   $ diy7 -arch AArch64 -relax 'PodWR?' -unfold-only 2>&1
   ***relax***
-  PodWR
+  [] PodWR
   ***safe***
   
   ***reject***
@@ -912,7 +916,7 @@ An `ABC` relax macro unfolds before raw edge parsing
   ***relax***
   
   ***safe***
-  Fre
+  [] Fre
   ***reject***
   
   $ diy7 -arch AArch64 -safe '[PodWR Fre]' -unfold-only 2>&1
