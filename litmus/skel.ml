@@ -1430,7 +1430,12 @@ module Make
             O.o "static size_t code_size(ins_t *p,int skip) { return find_ins(getret(),p,skip)+1; }" ;
             O.o ""
           end ;
-          ObjUtil.insert_lib_file O.o "_prelude_size.c" ;
+          let fname = "_prelude_size" in
+          ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname  ^ ".h>") ;
+          O.o "" ;
+          (* ObjUtil.insert_lib_file O.o "_prelude_size.c" ; *)
           ()
         end ;
         UD.dump_init_getinstrs test ;
