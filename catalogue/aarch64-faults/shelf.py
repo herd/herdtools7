@@ -20,6 +20,8 @@ illustrative_tests = [
     "tests/MP+dmb.st+ctrl-svc.exs1eis1.litmus",
     "tests/SVC-ifetch.exs1eis0.litmus",
     "tests/SVC-ifetch.exs1eis1.litmus",
+    "tests/SVC-ifetch.dic0idc0-exs1eis0.litmus",
+    "tests/SVC-ifetch.dic0idc0-exs1eis1.litmus",
     # "tests/SVC-pte.exs1eis0.litmus",
     # "tests/SVC-pte.exs1eis1.litmus",
 ]

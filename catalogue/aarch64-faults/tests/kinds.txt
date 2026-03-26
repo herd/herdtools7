@@ -11,3 +11,5 @@ SVC-pte.exs1eis0            Allowed
 SVC-pte.exs1eis1            Forbid
 SVC-ifetch.exs1eis0         Allowed
 SVC-ifetch.exs1eis1         Forbid
+SVC-ifetch.dic0idc0-exs1eis0 Allowed
+SVC-ifetch.dic0idc0-exs1eis1 Forbid

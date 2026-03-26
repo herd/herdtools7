@@ -9,5 +9,7 @@ MP+dmb.st+ctrl-svc.exs1eis0.litmus
 MP+dmb.st+ctrl-svc.exs1eis1.litmus
 SVC-ifetch.exs1eis0.litmus
 SVC-ifetch.exs1eis1.litmus
+SVC-ifetch.dic0idc0-exs1eis0.litmus
+SVC-ifetch.dic0idc0-exs1eis1.litmus
 SVC-pte.exs1eis0.litmus
 SVC-pte.exs1eis1.litmus
