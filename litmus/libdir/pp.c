@@ -1,9 +1,6 @@
 /****************************************************************************/
 /*                           the diy toolsuite                              */
 /*                                                                          */
-/* Jade Alglave, University College London, UK.                             */
-/* Luc Maranget, INRIA Paris-Rocquencourt, France.                          */
-/*                                                                          */
 /* Copyright 2026-present Institut National de Recherche en Informatique et */
 /* en Automatique and the authors. All rights reserved.                     */
 /*                                                                          */
@@ -13,9 +10,18 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-#ifndef INSTRUCTION_H
-#define INSTRUCTION_H
-#include <stdint.h>
+#include <pp.h>
+#include <libcflat.h>
 
-typedef uint32_t ins_t; /* Type of instructions */
-#endif
+void pp_faults(int nthreads, count_t *nfaults, char *doc_name) {
+  count_t total=0;
+  for (int k=0 ; k < nthreads; k++) { total += nfaults[k]; }
+  if (total > 0) {
+    printf("Faults %s %"PRIu32"",doc_name,total);
+    for (int k = 0 ; k < nthreads ; k++) {
+      count_t c = nfaults[k];
+      if (c > 0) printf(" P%d:%"PRIu32"",k,c);
+    }
+    printf("\n");
+  }
+}
