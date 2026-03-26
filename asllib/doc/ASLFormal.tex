@@ -97,7 +97,7 @@ We write ``$\ifthenelseop[H]{c}{v}{w}$'' to denote the value of $v$ if the condi
 \hypertarget{constant-equalsign}{}
 \RenderType{Sign}
 
-The function $\sign : \overname{\Q}{\vq} \rightarrow \overname{\Sign}{\vs}$ returns the sign of $\vq$:
+The function $\sign(\overname{\Q}{\vq}) \rightarrow \overname{\Sign}{\vs}$ returns the sign of $\vq$:
 \[
 \sign(\vq) \triangleq \begin{cases}
   \positivesign & \text{if }\vq > 0\\
@@ -141,18 +141,21 @@ The \emph{powerset} of a set $A$, denoted as $\pow{A}$, is the set of all subset
 \hypertarget{def-graphtransitive}{}
 \hypertarget{def-graphtransitivereflexive}{}
 \begin{definition}[Transitive Closure of a Relation]
-We denote the transitive closure of a relation $E = V \cartimes V$ by $\graphtransitive{E}$
+We denote the transitive closure of a relation $E \subseteq V \cartimes V$ by $\graphtransitive{E}$
 and the reflexive-transitive closure of $E$ by $\graphtransitivereflexive{E}$.
 \end{definition}
 
-\begin{definition}[Bottom Value]
-We use the symbol \RenderConstant{bot} to denote an undefined, or missing, value.
-\end{definition}
+\paragraph{Function and Relation Notations}
+We use a non-standard notation for functions and relations, which is more succinct.
+Specifically, we write $f(T_1,\ldots,T_n) \rightarrow R$ to denote a function from
+the argument types $T_1,\ldots,T_n$ to the result type $R$.
+%
+We write $f(T_1,\ldots,T_n) \aslrel{} R$ to denote a relation between the argument types $T_1,\ldots,T_n$ and the result type $R$.
 
 \hypertarget{def-partialfunc}{}
 \hypertarget{def-dom}{}
 \begin{definition}[Partial Function\label{def:PartialFunction}]
-  A \emph{partial function}, denoted $f : A \partialto B$, is a function from a \underline{subset} of $A$ to $B$.
+  A \emph{partial function}, denoted $f(A) \partialto B$, is a function from a \underline{subset} of $A$ to $B$.
   The \emph{domain} of a partial function $f$, denoted $\dom(f)$, is the subset of $A$ for which it is defined.
   We use expressions like $x \in \dom(f)$ and $x \not\in \dom(f)$ to check whether $x$ is in the domain of $f$
   or not in the domain of $f$, respectively.
@@ -195,7 +198,7 @@ The function with an empty domain is denoted as $\emptyfunc$.
 
 \begin{definition}[Function Restriction]
 \hypertarget{def-restrictfunc}{}
-The \emph{restriction} of a function $f : X \rightarrow Y$ to a subset of its domain
+The \emph{restriction} of a function $f(X) \rightarrow Y$ to a subset of its domain
 $A \subseteq \dom(f)$, denoted as $\restrictfunc{f}{A}$, is defined
 in terms of the set of input-output pairs:
 \[
@@ -210,7 +213,7 @@ This makes it convenient to refer to arguments by referring to the corresponding
 the expressions corresponding to the arguments.
 For example,
 \[
-\sign : \overname{\Q}{\vq} \rightarrow \overname{\Sign}{\vs}
+\sign(\overname{\Q}{\vq}) \rightarrow \overname{\Sign}{\vs}
 \]
 defines a function type and lets us refer to its argument as $\vq$
 and to the result as $\vs$.
@@ -286,7 +289,7 @@ lists the pairs of input-output values for a given partial function $f$ in arbit
 
 \hypertarget{relation-concat}{}
 \begin{definition}[List Concatenation]
-The parametric function $\concat : \KleeneStar{T} \cartimes \KleeneStar{T} \rightarrow \KleeneStar{T}$ concatenates two lists:
+The parametric function $\concat(\KleeneStar{T}, \KleeneStar{T}) \rightarrow \KleeneStar{T}$ concatenates two lists:
 \[
   L \concat{} M \triangleq
   \begin{cases}
@@ -322,7 +325,7 @@ denotes $[h] \concat t$, that is, the list formed by prepending the element $h$ 
 \begin{definition}[Equating List Lengths]
 The parametric function
 \[
-  \equallength : \overname{\KleeneStar{A}}{a} \cartimes \overname{\KleeneStar{B}}{b} \rightarrow \Bool
+  \equallength(\overname{\KleeneStar{A}}{a}, \overname{\KleeneStar{B}}{b}) \rightarrow \Bool
 \]
 compares the length of two lists:
 \[
@@ -332,7 +335,7 @@ compares the length of two lists:
 
 \hypertarget{def-listprefix}{}
 \begin{definition}[List Prefix]
-The parametric function $\listprefixname : \overname{\KleeneStar{T}}{\vlone} \cartimes \overname{\KleeneStar{T}}{\vltwo} \rightarrow \Bool$ checks whether
+The parametric function $\listprefixname(\overname{\KleeneStar{T}}{\vlone}, \overname{\KleeneStar{T}}{\vltwo}) \rightarrow \Bool$ checks whether
 the list $\vlone$ is a \emph{prefix} of the list $\vltwo$:
 \[
 \listprefixname(\vlone, \vltwo) \triangleq \exists \vlthree.\ \vltwo = \vlone \concat \vlthree \enspace.
@@ -341,7 +344,7 @@ the list $\vlone$ is a \emph{prefix} of the list $\vltwo$:
 
 \hypertarget{def-listrange}{}
 \begin{definition}[Indices of a List]
-The parametric function $\listrange : \KleeneStar{T} \rightarrow \KleeneStar{\N}$ returns the ($1$-based) list of indices for a given list:
+The parametric function $\listrange(\KleeneStar{T}) \rightarrow \KleeneStar{\N}$ returns the ($1$-based) list of indices for a given list:
 \[
     \begin{array}{rcl}
         \listrange(\emptylist) &\triangleq& \emptylist\\
@@ -370,7 +373,7 @@ filters a list of \optionalterm{} elements, removing those which are $\None$ and
 \begin{definition}[Extracting the First Components from a List of Pairs]
 The\\ parametric function
 \[
-\listfstname : \KleeneStar{(T_1 \cartimes T_2)} \rightarrow \KleeneStar{T_1}
+\listfstname(\KleeneStar{(T_1 \cartimes T_2)}) \rightarrow \KleeneStar{T_1}
 \]
 transforms a list of pairs into a lists of elements containing the first components of each pair:
 \[
@@ -385,7 +388,7 @@ transforms a list of pairs into a lists of elements containing the first compone
 \begin{definition}[Unzipping a List of Pairs]
 The parametric function
 \[
-\unziplist : \KleeneStar{(T_1 \cartimes T_2)} \rightarrow (\KleeneStar{T_1} \cartimes \KleeneStar{T_2})
+\unziplist(\KleeneStar{(T_1 \cartimes T_2)}) \rightarrow (\KleeneStar{T_1} \cartimes \KleeneStar{T_2})
 \]
 transforms a list of pairs into the corresponding pair of lists:
 \[
@@ -402,7 +405,7 @@ As a shorthand, we use the notation $\listcombine{a}{b} = c$ for $\unziplist(c) 
 \begin{definition}[Unzipping a List of Triples]
 The parametric function
 \[
-\unziplistthree : \KleeneStar{(T_1 \cartimes T_2 \cartimes T_3)} \rightarrow (\KleeneStar{T_1} \cartimes \KleeneStar{T_2} \cartimes \KleeneStar{T_3})
+\unziplistthree(\KleeneStar{(T_1 \cartimes T_2 \cartimes T_3)}) \rightarrow (\KleeneStar{T_1} \cartimes \KleeneStar{T_2} \cartimes \KleeneStar{T_3})
 \]
 transforms a list of triples into the corresponding triple of lists:
 \[
@@ -419,7 +422,7 @@ As a shorthand, we use the notation $\listcombinethree{a}{b}{c} = d$ for $\unzip
 \texthypertarget{relation-listcross}
 The parametric function
 \[
-\listcrossop : \KleeneStar{T_1} \cartimes \KleeneStar{T_2} \aslto \KleeneStar{(T_1 \cartimes T_2)}
+\listcrossop(\KleeneStar{T_1}, \KleeneStar{T_2}) \rightarrow \KleeneStar{(T_1 \cartimes T_2)}
 \]
 computes the cross-product of two lists:
 \[
@@ -445,7 +448,7 @@ or $\None$ if no such pair exists.
 The parametric function
 \hypertarget{def-unionlist}{}
 \[
-\unionlist : \KleeneStar{\pow{T}} \rightarrow \pow{T}
+\unionlist(\KleeneStar{\pow{T}}) \rightarrow \pow{T}
 \]
 takes the union of a list of sets:
 \[
@@ -457,7 +460,7 @@ takes the union of a list of sets:
 The parametric function
 \hypertarget{def-intersectionlist}{}
 \[
-\intersectionlist : \KleeneStar{\pow{T}} \rightarrow \pow{T}
+\intersectionlist(\KleeneStar{\pow{T}}) \rightarrow \pow{T}
 \]
 takes the intersection of a list of sets:
 \[
@@ -470,13 +473,13 @@ We write $\disjointunion$ to denote a union of pairwise disjoint sets.
 
 \subsection{Strings}
 \hypertarget{relation-stringconcat}{}
-The function $\concatstrings : \Strings \cartimes \Strings \rightarrow \Strings$
+The function $\concatstrings(\Strings, \Strings) \rightarrow \Strings$
 concatenates two strings. %
 We slightly abuse notation by using the same symbol $\concat$ for concatenating
 a string $S$ and an integer $n$, separated by a hyphen, for example, \verb|return-42|.
 
 \hypertarget{relation-stringofint}{}
-The function $\stringofintname : \Z \rightarrow \Strings$ converts an integer number
+The function $\stringofintname(\Z) \rightarrow \Strings$ converts an integer number
 to the corresponding decimal string.
 
 \subsection{OCaml-style Notations}
@@ -1110,10 +1113,10 @@ there is no need to consider the rest of the premises, and the function can simp
 Optional data types are prevalent in the AST.
 To facilitate transition judgments over optional data types,
 we introduce the following parametric relation,
-which accepts a one-argument relation (or function) $f : A \aslrel B$
+which accepts a one-argument relation (or function) $f(A) \aslrel B$
 and applies it to an optional value:
 \[
-\mapopt{\cdot} : \overname{\Option{A}}{\vvopt} \aslrel \overname{\Option{B}}{\vvoptnew}
+\mapopt{\cdot}(\overname{\Option{A}}{\vvopt}) \aslrel \overname{\Option{B}}{\vvoptnew}
 \]
 
 \ProseParagraph

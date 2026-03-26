@@ -27,8 +27,6 @@
 % Macros for elements
 % -------------------
 
-\DefineConstant{bot}{\texthypertarget{constant-bot}$\bot$} % EndDefineConstant
-
 \DefineConstant{None}{\texthypertarget{constant-None}$\None$} % EndDefineConstant
 
 \DefineConstant{empty_set}{\texthypertarget{constant-emptyset}$\emptyset$} % EndDefineConstant

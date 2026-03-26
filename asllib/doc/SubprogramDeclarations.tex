@@ -212,7 +212,7 @@ In particular, rather than directly building the abstract syntax for accessors, 
 \hypertarget{build-accessorbody}{}
 The relation
 \[
-  \buildaccessorbody : \overname{\parsenode{\Naccessorbody}}{\vparsednode} \;\aslrel\; \overname{\accessorpair}{\vaccessorpair}
+  \buildaccessorbody(\overname{\parsenode{\Naccessorbody}}{\vparsednode}) \;\aslrel\; \overname{\accessorpair}{\vaccessorpair}
 \]
 transforms a parse node $\vparsednode$ into an $\accessorpair$.
 } % END_OF_UNIMPORTED_RELATION
@@ -1010,7 +1010,7 @@ based on the dependency ordering \\
 In this case, there is no ordering between these two subprograms.
 Assuming $I$ is processed before $R$, adding $I$ to the
 \staticenvironmentterm{}, the \staticenvironmentterm{} has
-$\overloadedsubprograms(\addten) = \bot$
+$\addten \not\in \dom(\overloadedsubprograms)$
 and is then updated by binding $\addten$ to $\{\addten\}$ in $\overloadedsubprograms$.
 Then, processing $R$, results in
 binding $\addten$ to

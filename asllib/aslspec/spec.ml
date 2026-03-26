@@ -3460,7 +3460,7 @@ let make_spec_with_builtins ast =
   {
     ast;
     id_to_defining_node;
-    bottom_constant = get_constant "bot";
+    bottom_constant = Constant.make "bot" None None [];
     bottom_term = Label "bot";
     none_constant = get_constant "None";
     empty_set = get_constant "empty_set";
@@ -3476,6 +3476,19 @@ let make_spec_with_builtins ast =
     field_to_containing_variant = make_field_to_containing_variant ast;
   }
 
+(** [remove_bottom_constant spec] removes the bottom constant from [spec], since
+    it is only used for typechecking and should not be rendered. *)
+let remove_bottom_constant spec =
+  let ast =
+    List.filter
+      (function
+        | Elem_Constant { Constant.name; _ } when String.equal name "bot" ->
+            false
+        | _ -> true)
+      spec.ast
+  in
+  { spec with ast }
+
 let from_ast ast =
   let spec = make_spec_with_builtins ast in
   let () = Check.check_no_undefined_ids spec in
@@ -3490,4 +3503,5 @@ let from_ast ast =
   let spec = ExtendNames.extend spec in
   let () = Check.CheckRules.check spec in
   let spec = add_default_rule_renders spec in
+  let spec = remove_bottom_constant spec in
   spec
