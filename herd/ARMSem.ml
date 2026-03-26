@@ -514,7 +514,7 @@ module
 
           end
 
-      let spurious_setaf _ = assert false
+      include NoAF
 
     end
 

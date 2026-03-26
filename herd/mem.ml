@@ -778,32 +778,78 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         let r,e = es.E.po in
         (r,E.EventRel.transitive_closure e) in
 
-      let af0 = (* locations with initial spurious update *)
+      let add_setaf =
         if
           match C.dirty with
           | None -> false
           | Some t -> t.DirtyBit.some_ha || t.DirtyBit.some_hd
-        then begin (* One spurious update per observed pte (final load) *)
-            if C.variant Variant.PhantomOnLoad then
-              let look_pt rloc k = match rloc with
-                | ConstrGen.Loc (A.Location_global (V.Val c as vloc))
-                when Constant.is_pt c -> vloc::k
-                | _ -> k in
-              A.RLocSet.fold look_pt test.Test_herd.observed []
-            else (* One spurious update per variable not accessed initially *)
-              let add_setaf0 k (loc,v) =
-                match loc with
-                | A.Location_global (V.Val c as vloc) ->
-                   if Constant.is_pt c then
-                     match v with
-                     | V.Val (Constant.PteVal p)
-                           when not (V.Cst.PteVal.is_af p) ->
-                        vloc::k
-                     | _ -> k
-                   else k
-                | _ -> k in
-              List.fold_left add_setaf0 [] env0
-        end else [] in
+        then
+          fun (_,es) ->
+            let evts = E.EventSet.filter E.is_mem es.E.events in
+            let inv_iico_data_atomics =
+              lazy begin
+                  let atms =
+                    E.EventSet.filter E.is_atomic evts in
+                  E.EventRel.restrict_domains_to_sets
+                    atms atms es.E.intra_causality_data
+                  |> E.EventRel.inverse
+              end in
+            let locs =
+              E.EventSet.fold
+                (fun e k ->
+                   match SM.can_unset_af_loc e with
+                   | None -> k
+                   | Some loc ->
+                       let v = Misc.as_some @@ E.written_of e in
+                       if dbg then
+                         Printf.eprintf
+                           "loc=%s,v=%s\n%!" (V.pp_v loc) (V.pp_v v) ;
+                       let write_loaded =
+                         (* Special case where the value stored
+                          * has just been read. In such a case,
+                          * no supplementary HW update is necessary.
+                          *)
+                         E.is_atomic e &&
+                           begin
+                             try
+                               E.EventRel.succs
+                                 (Lazy.force inv_iico_data_atomics) e
+                               |>
+                               E.EventSet.exists
+                                 (fun er ->
+                                   assert (E.is_load er);
+                                   match
+                                     E.global_loc_of er,
+                                     E.read_of er
+                                   with
+                                   | Some loc_r,Some v_r
+                                     ->
+                                      V.equal loc loc_r && V.equal v v_r
+                                   | _,_ -> false)
+                             with Not_found -> false
+                           end in
+                       if write_loaded then k else loc::k)
+                evts []
+              |> Misc.group V.compare in
+            let om =
+              Misc.fold_suffix_cross_gen
+                (fun xs m ->
+                   List.fold_left
+                     (fun m x -> EM.(|||) (SM.spurious_setaf x) m)
+                     m xs)
+                (EM.unitT ())
+                locs
+                (fun m1 o2 ->
+                   (* Without this trick, the execution with
+                      no spurious update will present twice. *)
+                   match o2 with
+                   | None -> Some m1
+                   | Some m2 -> Some (EM.altT m1 m2))
+                None in
+            match om with
+            | None -> EM.unitT ()
+            | Some m -> m
+        else fun _ -> EM.unitT () in
 
       let rec index xs i = match xs with
       | [] ->
@@ -817,11 +863,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             { es with E.procs = procs; E.po = if do_deps then transitive_po es else es.E.po } in
           (i,vcl,es)::index xs (i+1) in
       let r =
-        Misc.fold_subsets_gen
-          (fun vloc -> EM.(|||) (SM.spurious_setaf vloc))
-          (EM.unitT ()) af0
-          (fun maf0 ->
-            EM.get_output (set_of_all_instr_events (EM.(|||) maf0)))
+        EM.get_output_check
+          add_setaf
+          (set_of_all_instr_events (EM.(|||) (EM.unitT ())))
           [] in
       let r = match C.maxphantom with
         | None -> r
@@ -896,7 +940,7 @@ struct
       else ambiguous_po e1 e2
   end)
 
-  let find_last_before e set =
+  let find_last_before set e =
     find_last_opt (fun e' -> is_before_strict e' e) set
 
   let find_first_after e set =
@@ -927,7 +971,7 @@ let match_reg_events add_eq es csn =
       List.fold_left
         (fun k load ->
           let rf =
-            match StoreSet.find_last_before load stores with
+            match StoreSet.find_last_before stores load with
             | Some store -> S.Store store
             | None -> S.Init
           in
@@ -1987,8 +2031,11 @@ let get_rf_value test read =
           if C.debug.Debug_herd.mem then begin
             eprintf "Observed locs: {%s}\n" (pp_locations observed_locs)
           end ;
-          U.LocEnv.filter
-            (fun loc _ ->  keep_observed_loc loc observed_locs)
+          U.LocEnv.filter_map
+            (fun loc ws ->
+              if keep_observed_loc loc observed_locs then
+                Some ws
+              else None)
             loc_stores
         else loc_stores in
 
