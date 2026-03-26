@@ -63,9 +63,14 @@ module Make
      and module FaultType = A.FaultType)
     (O:Indent.S)
     (Lang:Language.S with type t = A.Out.t)
+    (OO:ObjUtil.Config)
+    (Tar:Tar.S)
        : sig
       val dump : Name.t -> T.t -> unit
     end = struct
+
+(* ObjUtil (required for copying and pasting files to the relevant directory) *)
+  module Obj = ObjUtil.Make(OO)(Tar)
 
 (* Non valid mode for presi *)
   let () =
@@ -146,9 +151,9 @@ module Make
 
       let timebase_possible =
         if Cfg.is_kvm then
-          Insert.exists "kvm_timebase.c"
+          Insert.exists "kvm_timebase.h"
         else
-          Insert.exists "timebase.c"
+          Insert.exists "timebase.h"
 
       let have_timebase =
         Cfg.is_tb &&
@@ -166,7 +171,7 @@ module Make
 (* Utilities *)
 (*************)
 
-      let have_fault_handler = Cfg.is_kvm && Insert.exists "kvm_fault_handler.c"
+      let have_fault_handler = Cfg.is_kvm && Insert.exists "kvm_fault_handler.h"
 
       module UCfg = struct
         let memory = Memory.Direct
@@ -186,6 +191,17 @@ module Make
       module U = SkelUtil.Make(UCfg)(P)(A)(T)
       module UD = U.Dump(O)(EPF)
       module PU = SkelUtil.PteValUtil(A.V.PteVal)
+
+      let arch_dir = 
+        match UCfg.sysarch with
+        | `AArch64 -> "_aarch64/"
+        | `ARM     -> "_arm/"
+        | `MIPS    -> "_mips/"
+        | `PPC     -> "_ppc/"
+        | `X86     -> "_x86/"
+        | `RISCV   -> "_riscv/"
+        | `X86_64  -> "_x86_64/"
+        | _        -> ""
 
       let find_addr_type a env = U.find_type (A.location_of_addr a) env
       let see_faults test = Misc.consp (U.get_faults test)
@@ -287,6 +303,21 @@ module Make
         O.o "" ;
         ()
 
+(********************)
+(* Get Instructions *)
+(********************)
+
+
+      let dump_getinstrs test =
+        if has_instruction_ptr then begin
+          let fname = "instruction" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname ^ ".h>") ;
+          O.o ""
+        end ;
+        UD.dump_getinstrs test
+
+
 (**********)
 (* Delays *)
 (**********)
@@ -311,10 +342,10 @@ module Make
           O.o "#define HAVE_TIMEBASE 1" ;
           O.o "typedef uint64_t tb_t ;" ;
           O.o "#define PTB PRIu64" ;
-          Insert.insert O.o
-            (if Cfg.is_kvm && Insert.exists "kvm_timebase.c" then
-              "kvm_timebase.c"
-            else "timebase.c")
+          let fname = if Cfg.is_kvm && Insert.exists "kvm_timebase.h" then "kvm_timebase" else "timebase" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname ^ ".h>") ;
+          O.o ""
         end
 
 (* Memory barrier *)
@@ -330,16 +361,21 @@ module Make
           || do_precise
           || do_label_init in
         if dump_find_ins then begin
-          ObjUtil.insert_lib_file O.o "_find_ins.c" ;
+          let fname = "_find_ins" in
+          ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname ^ ".h>") ;
           O.o ""
         end ;
         if do_self then begin
-          Insert.insert O.o "self.c" ;
+          let fname = "self" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
           O.o "" ;
-          if Cfg.is_kvm then
-            Insert.insert O.o "kvm-self.c"
-          else
-            Insert.insert O.o "presi-self.c" ;
+          let fname = if Cfg.is_kvm then "kvm-self" else "presi-self" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname ^ ".h>") ;
           O.o "" ;
         end ;
         if CfgLoc.need_prelude then begin
@@ -388,7 +424,9 @@ module Make
                  O.o "static who_t whoami[AVAIL];"
                end ;
              O.o "" ;
-             Insert.insert O.o "instruction.h" ;
+             let fname = "instruction" in
+             ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+             O.o ("#include <" ^ fname ^ ".h>") ;
              O.o "" ;
              begin
                let open Fault.Handling in
@@ -404,7 +442,10 @@ module Make
 
              let insert_ins_ops () =
                if not find_ins_inserted then begin
-                 ObjUtil.insert_lib_file O.o "_find_ins.c" ;
+                 let fname =  "_find_ins" in
+                 ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c") ;
+                 ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
+                 O.o ("#include <" ^ fname ^ ".h>") ;
                  O.o ""
                end in
 
@@ -473,7 +514,9 @@ module Make
              O.fi "return 0;" ;
              O.o "}" ;
              O.o "" ;
-             Insert.insert O.o "kvm_fault_handler.c" ;
+             let fname = "kvm_fault_handler" in
+             ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+             O.o ("#include <" ^ fname ^ ".h>") ;
              O.o "" ;
              if not (T.has_asmhandler test) then begin
                O.o "static void pp_faults(void) {" ;
@@ -495,8 +538,10 @@ module Make
              begin match ok with
              | [] -> ()
              | _::_ ->
-                Insert.insert O.o "instruction.h";
-                O.o ""
+                let fname = "instruction" in
+                ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+                O.o ("#include <" ^ fname ^ ".h>") ;
+                O.o "" 
              end ;
           end ;
           let procs_user = ProcsUser.get test.T.info in
@@ -513,7 +558,10 @@ module Make
                     (ProcsUser.is procs_user p)
                     (sprintf "%d" p) (sprintf "asm_handler%d" p))
              no ;
-          Insert.insert O.o "asmhandler.c" ;
+          let fname = "asmhandler" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname ^ ".h>") ;
           O.o "" ;
           let no_ok,no_no =
             List.partition
@@ -555,15 +603,20 @@ module Make
       let dump_user_stacks procs_user = match procs_user with
         | [] -> ()
         | _::_ ->
-            Insert.insert O.o "kvm_user_stacks.c" ;
+            let fname = "kvm_user_stacks" in
+            ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+            O.o ("#include <" ^ fname ^ ".h>") ;
             O.o ""
 
 (* Synchronisation barrier *)
       let lab_ext = if Cfg.numeric_labels then "" else "_lab"
 
       let dump_barrier_def () =
-        let fname =  sprintf "barrier%s.c" lab_ext in
-        Insert.insert O.o fname
+        let fname =  sprintf "barrier%s" lab_ext in
+        ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c") ;
+        ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+        O.o "#include <barrier.h>" ;
+        O.o ""
 
 (**************)
 (* Topologies *)
@@ -691,8 +744,8 @@ module Make
       let data_zero =  SkelUtil.data_symb_id pp_data_zero
 
       let dump_data_indices test =
-        O.f "#define %-25s 0" data_unknown ;
-        O.f "#define %-25s 1" data_zero ;
+        O.f "#define %-25s  0" data_unknown ;
+        O.f "#define %-25s  1" data_zero ;
         (* Define indices for data *)
         List.iteri
           (fun k (a,_) ->
@@ -741,7 +794,15 @@ module Make
         if see_faults test || U.ptr_in_outs env test then
           dump_data_indices test ;
         if see_faults test then
-          Insert.insert O.o  "kvm_fault_type.c"
+          let fname = "kvm_fault_define" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname ^ ".h>") ;
+          O.o "static bool fault_reported[NTHREADS][MAX_FAULTS_PER_THREAD];" ;
+          let fname = "kvm_fault_type" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname ^ ".h>") ;
+          O.o ""
 
 (* Collected locations *)
 
@@ -1017,7 +1078,7 @@ module Make
                 EPF.fi ~out:"chan" (sprintf "%s%s=%s;" prf p1 p2) arg)
           fmt args ;
         if List.length faults > 0 then
-          O.fi "pp_log_faults_init();";
+          O.fi "pp_log_faults_init(NTHREADS, fault_reported);";
         List.iter (fun f ->
             let ((p, lbl), loc, ft) = f in
             let lbl = match lbl with
@@ -1030,9 +1091,10 @@ module Make
               | None -> "Unknown"
               | Some ft -> A.FaultType.pp ft
             in
-            O.fi "pp_log_faults(chan, &p->th_faults[%d], %d, %s, %s, %s);" p p
-              (SkelUtil.instr_symb_id lbl) (SkelUtil.data_symb_id loc) (SkelUtil.fault_id ft)
-          ) faults;
+            O.fi "pp_log_faults(chan, &p->th_faults[%d], %d, %s, %s, %s, %s, %s, %s);" p p
+              (SkelUtil.instr_symb_id lbl) (SkelUtil.data_symb_id loc) (SkelUtil.fault_id ft) 
+              "fault_reported" "instr_symb_name" "data_symb_name"
+          ) faults ;
         O.o "}" ;
         O.o "" ;
         let locs = A.RLocSet.elements rlocs in (* Now use lists *)
@@ -1055,7 +1117,7 @@ module Make
         | _ -> do_eq rloc suf in
         let do_eq_faults = function
           | [] -> O.oii "1;"
-          | _ -> O.oii "eq_faults(p->th_faults, q->th_faults);"
+          | _ -> O.oii "eq_faults(p->th_faults, q->th_faults, NTHREADS);"
         in
         let rec do_rec = function
           | [] -> do_eq_faults faults
@@ -1348,7 +1410,12 @@ module Make
         let hashsz = 1+List.fold_left (fun k _ -> 2*k) hashsz faults in
         O.f "#define HASHSZ %i" hashsz ;
         O.o "" ;
-        ObjUtil.insert_lib_file O.o "_hash.c" ;
+        let fname = "_hash" in
+        ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
+        O.o ("#include <" ^ fname ^ ".h>") ;
+        O.o "" ;
+        O.o "static entry_t main_hash[HASHSZ];" ;
+        O.o "static entry_t instance_hash[NEXE][HASHSZ];" ;
         O.o "" ;
         O.o "static void pp_entry(FILE *out,entry_t *p, int verbose, const char **group) {" ;
         let fmt = "%-6PCTR%c>" in
@@ -1559,7 +1626,9 @@ module Make
           ()
         end ;
         O.o "" ;
-        ObjUtil.insert_lib_file O.o "_instance.c" ;
+        let fname = "_instance" in
+        ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
+        O.o ("#include <" ^ fname ^ ".h>") ;
         O.o "" ;
         ()
 
@@ -2022,10 +2091,10 @@ module Make
         O.o "/*************/" ;
         O.o "" ;
         if do_ascall then begin
-            List.iter
-              (dump_thread_code procs_user env)
-              test.T.code
-          end
+          List.iter
+            (dump_thread_code procs_user env)
+            test.T.code
+        end
 
       let dump_run_def  env test some_ptr stats procs_user =
         let faults = U.get_faults test in
@@ -2400,7 +2469,7 @@ module Make
         and procs_user = ProcsUser.get test.T.info in
         ObjUtil.insert_lib_file O.o "header.txt" ;
         dump_header test ;
-        UD.dump_getinstrs test ;
+        dump_getinstrs test ;
         dump_delay_def () ;
         dump_read_timebase () ;
         let find_ins_inserted = dump_mbar_def () in
