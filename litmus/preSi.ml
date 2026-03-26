@@ -63,9 +63,14 @@ module Make
      and module FaultType = A.FaultType)
     (O:Indent.S)
     (Lang:Language.S with type t = A.Out.t)
+    (OO:ObjUtil.Config)
+    (Tar:Tar.S)
        : sig
       val dump : Name.t -> T.t -> unit
     end = struct
+
+(* ObjUtil (required for copying and pasting files to the relevant directory) *)
+  module Obj = ObjUtil.Make(OO)(Tar)
 
 (* Non valid mode for presi *)
   let () =
@@ -146,9 +151,9 @@ module Make
 
       let timebase_possible =
         if Cfg.is_kvm then
-          Insert.exists "kvm_timebase.c"
+          Insert.exists "kvm_timebase.h"
         else
-          Insert.exists "timebase.c"
+          Insert.exists "timebase.h"
 
       let have_timebase =
         Cfg.is_tb &&
@@ -166,7 +171,7 @@ module Make
 (* Utilities *)
 (*************)
 
-      let have_fault_handler = Cfg.is_kvm && Insert.exists "kvm_fault_handler.c"
+      let have_fault_handler = Cfg.is_kvm && Insert.exists "kvm_fault_handler.h"
 
       module UCfg = struct
         let memory = Memory.Direct
@@ -186,6 +191,17 @@ module Make
       module U = SkelUtil.Make(UCfg)(P)(A)(T)
       module UD = U.Dump(O)(EPF)
       module PU = SkelUtil.PteValUtil(A.V.PteVal)
+
+      let arch_dir = 
+        match UCfg.sysarch with
+        | `AArch64 -> "_aarch64/"
+        | `ARM     -> "_arm/"
+        | `MIPS    -> "_mips/"
+        | `PPC     -> "_ppc/"
+        | `X86     -> "_x86/"
+        | `RISCV   -> "_riscv/"
+        | `X86_64  -> "_x86_64/"
+        | _        -> ""
 
       let find_addr_type a env = U.find_type (A.location_of_addr a) env
       let see_faults test = Misc.consp (U.get_faults test)
@@ -276,7 +292,11 @@ module Make
         end;
         O.o "#include \"cache.h\"" ;
         O.o "" ;
-        O.o "typedef uint32_t count_t;" ;
+        let fname = "count" in
+        ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
+        O.o ("#include <" ^ fname ^ ".h>") ;
+        O.o "" ;
+        (*O.o "typedef uint32_t count_t;" ;*)
         O.o "#define PCTR PRIu32" ;
         O.o "" ;
         begin match Cfg.timelimit with
@@ -286,6 +306,21 @@ module Make
         end ;
         O.o "" ;
         ()
+
+(********************)
+(* Get Instructions *)
+(********************)
+
+
+      let dump_getinstrs test =
+        if has_instruction_ptr then begin
+          let fname = "instruction" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname ^ ".h>") ;
+          O.o ""
+        end ;
+        UD.dump_getinstrs test
+
 
 (**********)
 (* Delays *)
@@ -311,10 +346,10 @@ module Make
           O.o "#define HAVE_TIMEBASE 1" ;
           O.o "typedef uint64_t tb_t ;" ;
           O.o "#define PTB PRIu64" ;
-          Insert.insert O.o
-            (if Cfg.is_kvm && Insert.exists "kvm_timebase.c" then
-              "kvm_timebase.c"
-            else "timebase.c")
+          let fname = if Cfg.is_kvm && Insert.exists "kvm_timebase.h" then "kvm_timebase" else "timebase" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname ^ ".h>") ;
+          O.o ""
         end
 
 (* Memory barrier *)
@@ -330,16 +365,21 @@ module Make
           || do_precise
           || do_label_init in
         if dump_find_ins then begin
-          ObjUtil.insert_lib_file O.o "_find_ins.c" ;
+          let fname = "_find_ins" in
+          ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname ^ ".h>") ;
           O.o ""
         end ;
         if do_self then begin
-          Insert.insert O.o "self.c" ;
+          let fname = "self" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
           O.o "" ;
-          if Cfg.is_kvm then
-            Insert.insert O.o "kvm-self.c"
-          else
-            Insert.insert O.o "presi-self.c" ;
+          let fname = if Cfg.is_kvm then "kvm-self" else "presi-self" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname ^ ".h>") ;
           O.o "" ;
         end ;
         if CfgLoc.need_prelude then begin
@@ -388,7 +428,9 @@ module Make
                  O.o "static who_t whoami[AVAIL];"
                end ;
              O.o "" ;
-             Insert.insert O.o "instruction.h" ;
+             let fname = "instruction" in
+             ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+             O.o ("#include <" ^ fname ^ ".h>") ;
              O.o "" ;
              begin
                let open Fault.Handling in
@@ -404,7 +446,10 @@ module Make
 
              let insert_ins_ops () =
                if not find_ins_inserted then begin
-                 ObjUtil.insert_lib_file O.o "_find_ins.c" ;
+                 let fname =  "_find_ins" in
+                 ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c") ;
+                 ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
+                 O.o ("#include <" ^ fname ^ ".h>") ;
                  O.o ""
                end in
 
@@ -473,7 +518,9 @@ module Make
              O.fi "return 0;" ;
              O.o "}" ;
              O.o "" ;
-             Insert.insert O.o "kvm_fault_handler.c" ;
+             let fname = "kvm_fault_handler" in
+             ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+             O.o ("#include <" ^ fname ^ ".h>") ;
              O.o "" ;
              if not (T.has_asmhandler test) then begin
                O.o "static void pp_faults(void) {" ;
@@ -495,8 +542,10 @@ module Make
              begin match ok with
              | [] -> ()
              | _::_ ->
-                Insert.insert O.o "instruction.h";
-                O.o ""
+                let fname = "instruction" in
+                ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+                O.o ("#include <" ^ fname ^ ".h>") ;
+                O.o "" 
              end ;
           end ;
           let procs_user = ProcsUser.get test.T.info in
@@ -513,7 +562,10 @@ module Make
                     (ProcsUser.is procs_user p)
                     (sprintf "%d" p) (sprintf "asm_handler%d" p))
              no ;
-          Insert.insert O.o "asmhandler.c" ;
+          let fname = "asmhandler" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname ^ ".h>") ;
           O.o "" ;
           let no_ok,no_no =
             List.partition
@@ -555,15 +607,20 @@ module Make
       let dump_user_stacks procs_user = match procs_user with
         | [] -> ()
         | _::_ ->
-            Insert.insert O.o "kvm_user_stacks.c" ;
+            let fname = "kvm_user_stacks" in
+            ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+            O.o ("#include <" ^ fname ^ ".h>") ;
             O.o ""
 
 (* Synchronisation barrier *)
       let lab_ext = if Cfg.numeric_labels then "" else "_lab"
 
       let dump_barrier_def () =
-        let fname =  sprintf "barrier%s.c" lab_ext in
-        Insert.insert O.o fname
+        let fname =  sprintf "barrier%s" lab_ext in
+        ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c") ;
+        ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+        O.o "#include <barrier.h>" ;
+        O.o ""
 
 (**************)
 (* Topologies *)
@@ -691,8 +748,8 @@ module Make
       let data_zero =  SkelUtil.data_symb_id pp_data_zero
 
       let dump_data_indices test =
-        O.f "#define %-25s 0" data_unknown ;
-        O.f "#define %-25s 1" data_zero ;
+        O.f "#define %-25s  0" data_unknown ;
+        O.f "#define %-25s  1" data_zero ;
         (* Define indices for data *)
         List.iteri
           (fun k (a,_) ->
@@ -741,7 +798,15 @@ module Make
         if see_faults test || U.ptr_in_outs env test then
           dump_data_indices test ;
         if see_faults test then
-          Insert.insert O.o  "kvm_fault_type.c"
+          let fname = "kvm_fault_define" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname ^ ".h>") ;
+          O.o "static bool fault_reported[NTHREADS][MAX_FAULTS_PER_THREAD];" ;
+          let fname = "kvm_fault_type" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname ^ ".h>") ;
+          O.o ""
 
 (* Collected locations *)
 
@@ -798,7 +863,11 @@ module Make
         O.o "" ;
         UD.dump_vars_types false test ;
         UD.dump_array_typedefs test ;
-        O.o "typedef struct {" ;
+        let fname = "log" in
+        ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
+        O.o ("#include <" ^ fname ^ ".h>") ;
+        O.o "" ;
+        O.o "struct log_t {" ;
         let fields =
           A.RLocSet.fold
             (fun loc k -> (U.find_rloc_type loc env,loc)::k)
@@ -833,7 +902,7 @@ module Make
            O.fi "th_faults_info_t th_faults[NTHREADS];"
         end ;
         if pad  then O.oi "uint32_t _pad;" ;
-        O.o "} log_t;" ;
+        O.o "};" ;
         O.o "" ;
 (* There are some pointers in log *)
         let some_ptr_pte =  U.ptr_pte_in_outs env test in
@@ -1017,7 +1086,7 @@ module Make
                 EPF.fi ~out:"chan" (sprintf "%s%s=%s;" prf p1 p2) arg)
           fmt args ;
         if List.length faults > 0 then
-          O.fi "pp_log_faults_init();";
+          O.fi "pp_log_faults_init(NTHREADS, fault_reported);";
         List.iter (fun f ->
             let ((p, lbl), loc, ft) = f in
             let lbl = match lbl with
@@ -1030,9 +1099,10 @@ module Make
               | None -> "Unknown"
               | Some ft -> A.FaultType.pp ft
             in
-            O.fi "pp_log_faults(chan, &p->th_faults[%d], %d, %s, %s, %s);" p p
-              (SkelUtil.instr_symb_id lbl) (SkelUtil.data_symb_id loc) (SkelUtil.fault_id ft)
-          ) faults;
+            O.fi "pp_log_faults(chan, &p->th_faults[%d], %d, %s, %s, %s, %s, %s, %s);" p p
+              (SkelUtil.instr_symb_id lbl) (SkelUtil.data_symb_id loc) (SkelUtil.fault_id ft) 
+              "fault_reported" "instr_symb_name" "data_symb_name"
+          ) faults ;
         O.o "}" ;
         O.o "" ;
         let locs = A.RLocSet.elements rlocs in (* Now use lists *)
@@ -1055,7 +1125,7 @@ module Make
         | _ -> do_eq rloc suf in
         let do_eq_faults = function
           | [] -> O.oii "1;"
-          | _ -> O.oii "eq_faults(p->th_faults, q->th_faults);"
+          | _ -> O.oii "eq_faults(p->th_faults, q->th_faults, NTHREADS);"
         in
         let rec do_rec = function
           | [] -> do_eq_faults faults
@@ -1238,7 +1308,9 @@ module Make
         let v_tags = get_tag_vars test
         and d_tags = get_tag_delays test
         and c_tags = get_tag_caches test in
-        let all_tags = "part"::v_tags@d_tags@c_tags in
+        let all_tags_except_part = v_tags@d_tags@c_tags in
+        let all_tags = "part"::all_tags_except_part in
+        let all_tags_macro = List.map (fun tag -> "TAG_" ^ String.uppercase tag) all_tags_except_part in
 
         O.o "/**************/" ;
         O.o "/* Parameters */" ;
@@ -1247,19 +1319,32 @@ module Make
 (* Define *)
         O.o "typedef enum { cignore, cflush, ctouch, cmax, } dir_t;" ;
         O.o "" ;
-        O.o "typedef struct {" ;
+        let fname = "param" in
+        ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
+        O.o ("#include <" ^ fname ^ ".h>") ;
+        O.o "" ;
+        O.f "#define TAG_LENGTH %d" (List.length all_tags_except_part) ;
+        List.iteri (fun i t ->
+          O.f "#define %s %d" t i) all_tags_macro ;
+        O.o "" ;
+        (*O.o "typedef struct {" ;
         O.oi "int part;" ;
-        let pp_tags t = function
+        O.oi "int *tags;" ;
+        (*let pp_tags t = function
           | [] -> ()
           | tags -> O.fi "%s %s;" t (String.concat "," tags) in
         pp_tags "int" v_tags ;
         pp_tags "int" d_tags ;
-        pp_tags "int" c_tags ;
+        pp_tags "int" c_tags ;*)
         O.o "} param_t;" ;
-        O.o "" ;
-        O.f "static param_t param = {%s};"
+        O.o "" ;*)
+        O.f "static int param_tags[] = {%s};" 
+          (String.concat " " 
+             (List.map (fun _ -> "-1,") all_tags_except_part)) ;
+        O.o "static param_t param = {-1, param_tags};" ;
+        (*O.f "static param_t param = {-1, param_tags};"
           (String.concat " "
-             (List.map (fun _ -> "-1,") all_tags)) ;
+             (List.map (fun _ -> "-1,") all_tags_except_part)) ;*)
         O.o "" ;
         O.o "static int id(int x) { return x; }" ;
         if have_timebase && T.get_nprocs test > 1 then
@@ -1270,16 +1355,16 @@ module Make
         let pp_tags f =
           List.iter (fun tag -> O.fi "%s," (f tag)) in
         pp_tags
-          (fun tag -> sprintf "{\"%s\",&param.%s,id,NVARS}" tag tag)
-          v_tags ;
+          (fun tag -> sprintf "{\"%s\",&param_tags[%s],id,NVARS}" tag tag)
+          (List.map (fun tag -> "TAG_" ^ String.uppercase tag) v_tags) ;
         pp_tags
-          (fun tag -> sprintf "{\"%s\",&param.%s,addnsteps,NSTEPS}" tag tag)
-          d_tags ;
+          (fun tag -> sprintf "{\"%s\",&param_tags[%s],addnsteps,NSTEPS}" tag tag)
+          (List.map (fun tag -> "TAG_" ^ String.uppercase tag) d_tags) ;
         pp_tags
-          (fun tag -> sprintf "{\"%s\",&param.%s,id,cmax}" tag tag)
-          c_tags ;
+          (fun tag -> sprintf "{\"%s\",&param_tags[%s],id,cmax}" tag tag)
+          (List.map (fun tag -> "TAG_" ^ String.uppercase tag) c_tags) ;
         O.o "};" ;
-        O.o "";
+        O.o "" ;
         O.o "#define PARSESZ (sizeof(parse)/sizeof(parse[0]))" ;
         O.o "";
 (* Print *)
@@ -1296,9 +1381,18 @@ module Make
             List.map
               (fun tag ->
                 sprintf
-                  (if is_delay tag then "p->%s-NSTEPS2" else "p->%s")
+                  (if is_delay tag then
+                     (if tag = "part" then 
+                       "p->%s-NSTEPS2"
+                     else 
+                       "p->tags[%s]-NSTEPS2")
+                   else 
+                     (if tag = "part" then
+                       "p->%s"
+                     else
+                       "p->tags[%s]"))
                   tag)
-              all_tags  in
+              ("part"::all_tags_macro)  in
           EPF.fi fmt params ;
           O.o "}" ;
           O.o "" ;
@@ -1348,12 +1442,25 @@ module Make
         let hashsz = 1+List.fold_left (fun k _ -> 2*k) hashsz faults in
         O.f "#define HASHSZ %i" hashsz ;
         O.o "" ;
-        ObjUtil.insert_lib_file O.o "_hash.c" ;
+        let fname = "_hash" in
+        ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c") ;
+        ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
+        O.o ("#include <" ^ fname ^ ".h>") ;
+        O.o "" ;
+        O.o "static entry_t main_hash[HASHSZ];" ;
+        O.o "static log_t main_hash_log[HASHSZ];" ;
+        O.o "static entry_t instance_hash[NEXE][HASHSZ];" ;
+        O.o "static log_t instance_hash_log[NEXE][HASHSZ];" ;
+        if do_stats then begin
+          O.o "static int hash_main_tags[HASHSZ][TAG_LENGTH];" ;
+          O.o "static int hash_instance_tags[NEXE][HASHSZ][TAG_LENGTH];" ;
+        end ;
+        O.o "static int instance_tags[NEXE][TAG_LENGTH];" ;
         O.o "" ;
         O.o "static void pp_entry(FILE *out,entry_t *p, int verbose, const char **group) {" ;
         let fmt = "%-6PCTR%c>" in
         EPF.fi fmt ["p->c";"p->ok ? '*' : ':'";] ;
-        O.oi "pp_log(out,&p->key);" ;
+        O.oi "pp_log(out,p->key);" ;
         if do_stats then begin
           O.oi "if (verbose) {" ;
           EPF.fii " # " [] ;
@@ -1559,7 +1666,9 @@ module Make
           ()
         end ;
         O.o "" ;
-        ObjUtil.insert_lib_file O.o "_instance.c" ;
+        let fname = "_instance" in
+        ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
+        O.o ("#include <" ^ fname ^ ".h>") ;
         O.o "" ;
         ()
 
@@ -1736,10 +1845,10 @@ module Make
         O.oii "barrier_wait(_b);" ;
         List.iter
           (fun addr ->
-             O.fii "if (_p->%s == ctouch) cache_touch((void *)%s);"
-               (pctag (proc,addr)) addr ;
-             O.fii "else if (_p->%s == cflush) cache_flush((void *)%s);"
-               (pctag (proc,addr)) addr)
+             O.fii "if (_p->tags[%s] == ctouch) cache_touch((void *)%s);"
+               ("TAG_" ^ String.uppercase (pctag (proc,addr))) addr ;
+             O.fii "else if (_p->tags[%s] == cflush) cache_flush((void *)%s);"
+               ("TAG_" ^ String.uppercase (pctag (proc,addr))) addr)
           addrs ;
         begin match tag_init with
         | [] -> ()
@@ -1989,8 +2098,8 @@ module Make
               Indent.indent3 in
           O.ox id "int _cond = final_ok(final_cond(_log));" ;
           (* recorded outcome *)
-          O.fx id "int _added = hash_add(&_ctx->t,_log%s,1,_cond);"
-            (if do_stats then ",_p" else "") ;
+          O.fx id "int _added = hash_add(&_ctx->t,_log%s,1,_cond, eq_log, sizeof(log_t));" ",_p" ;
+            (*(if do_stats then ",_p" else "") ;*)
           O.ox id "if (!_added && _g->hash_ok) _g->hash_ok = 0; // Avoid writing too much." ;
           (* Result and stats *)
           O.ox id "if (_cond) {" ;
@@ -2022,10 +2131,10 @@ module Make
         O.o "/*************/" ;
         O.o "" ;
         if do_ascall then begin
-            List.iter
-              (dump_thread_code procs_user env)
-              test.T.code
-          end
+          List.iter
+            (dump_thread_code procs_user env)
+            test.T.code
+        end
 
       let dump_run_def  env test some_ptr stats procs_user =
         let faults = U.get_faults test in
@@ -2149,11 +2258,11 @@ module Make
                   try
                     let pos = get_param_pos a in
                     (* Must come first [raises Not_found] *)
-                    let tag = pvtag a in
+                    let tag = "TAG_" ^ String.uppercase (pvtag a) in
                     O.fiii
-                      "ctx->p.%s = comp_param(&c->seed,&q->%s,NVARS,0);"
+                      "ctx->p.tags[%s] = comp_param(&c->seed,&q->tags[%s],NVARS,0);"
                       tag tag ;
-                    O.fiii "_vars->%s = _mem + LINESZ*ctx->p.%s + %i*VOFFSZ;"
+                    O.fiii "_vars->%s = _mem + LINESZ*ctx->p.tags[%s] + %i*VOFFSZ;"
                       a tag pos
                   with Not_found ->
                     O.fiii "_vars->%s = _mem;" a)
@@ -2165,8 +2274,9 @@ module Make
 (* Standard parameters *)
             List.iter
               (fun (tag,max) ->
+                let macro_tag = "TAG_" ^ String.uppercase tag in 
                 O.fiii
-                  "ctx->p.%s = comp_param(&c->seed,&q->%s,%s,0);" tag tag max ;)
+                  "ctx->p.tags[%s] = comp_param(&c->seed,&q->tags[%s],%s,0);" macro_tag macro_tag max ;)
               ps ;
 (* Cache parameters*)
             List.iter
@@ -2176,25 +2286,25 @@ module Make
                     try
                       let prx = get_param_prefix v in
                       let tsts =
-                        sprintf " && ctx->p.%s != 0" (pvtag v)::
+                        sprintf " && ctx->p.tags[%s] != 0" ("TAG_" ^ String.uppercase (pvtag v))::
                         List.map
                           (fun w ->
-                            sprintf " && ctx->p.%s != ctx->p.%s"
-                              (pvtag v) (pvtag w))
+                            sprintf " && ctx->p.tags[%s] != ctx->p.tags[%s]"
+                              ("TAG_" ^ String.uppercase (pvtag v)) ("TAG_" ^ String.uppercase (pvtag w)))
                           prx in
                       String.concat "" tsts
                     with Not_found -> "" in
                   O.fiii "if (c->act->%s%s) {"
                     (Topology.active_tag p) more_test ;
-                  let tag = pctag p in
-                  O.fiv "ctx->p.%s = comp_param(&c->seed,&q->%s,cmax,1);"
+                  let tag = "TAG_" ^ String.uppercase (pctag p) in
+                  O.fiv "ctx->p.tags[%s] = comp_param(&c->seed,&q->tags[%s],cmax,1);"
                     tag tag ;
                   O.oiii "} else {" ;
-                  O.fiv "ctx->p.%s = cignore;" tag ;
+                  O.fiv "ctx->p.tags[%s] = cignore;" tag ;
                   O.oiii "}"
                 end else begin
-                  let tag = pctag p in
-                  O.fiii "ctx->p.%s = comp_param(&c->seed,&q->%s,cmax,1);"
+                  let tag = "TAG_" ^ String.uppercase (pctag p) in
+                  O.fiii "ctx->p.tags[%s] = comp_param(&c->seed,&q->tags[%s],cmax,1);"
                     tag tag
                 end)
               cs ;
@@ -2400,7 +2510,7 @@ module Make
         and procs_user = ProcsUser.get test.T.info in
         ObjUtil.insert_lib_file O.o "header.txt" ;
         dump_header test ;
-        UD.dump_getinstrs test ;
+        dump_getinstrs test ;
         dump_delay_def () ;
         dump_read_timebase () ;
         let find_ins_inserted = dump_mbar_def () in
