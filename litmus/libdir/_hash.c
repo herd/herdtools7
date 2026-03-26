@@ -16,24 +16,10 @@
 
 /* Notice: this file contains public domain code by Bob Jenkins */
 
-typedef struct {
-  log_t key ;
-#ifdef STATS
-  param_t p ;
-#endif
-  count_t c ;
-  int ok ;
-} entry_t ;
+#include <_hash.h>
 
-static void pp_entry(FILE *out,entry_t *p, int verbose, const char **group) ;
-
-typedef struct {
-  int nhash ;
-  entry_t t[HASHSZ] ;
-} hash_t ;
-
-static void pp_hash(FILE *fp,hash_t *t,int verbose,const char **group) {
-  for (int k = 0 ; k < HASHSZ ; k++) {
+void pp_hash(FILE *fp,hash_t *t,int verbose,const char **group, void (*pp_entry)(FILE *, entry_t *, int, const char **)) {
+  for (int k = 0 ; k < t->hashsz ; k++) {
     entry_t *p = t->t+k ;
     if (p->c > 0) {
       pp_entry(fp,p,verbose,group) ;
@@ -42,26 +28,28 @@ static void pp_hash(FILE *fp,hash_t *t,int verbose,const char **group) {
 }
 
 #if 0
-static void pp_hash_ok(FILE *fp,hash_t *t,char **group) {
-  for (int k = 0 ; k < HASHSZ ; k++) {
+void pp_hash_ok(FILE *fp,hash_t *t,char **group) {
+  for (int k = 0 ; k < t->hashsz ; k++) {
     entry_t *p = t->t+k ;
     if (p->c > 0 && p->ok) pp_entry(fp,p,1,group) ;
   }
 }
 #endif
 
-static void log_init(log_t *p) {
+void log_init(log_t *p, size_t log_t_size) {
   uint32_t *q = (uint32_t *)p ;
 
-  for (int k = sizeof(log_t)/sizeof(uint32_t) ; k > 0 ; k--)
+  for (int k = log_t_size/sizeof(uint32_t) ; k > 0 ; k--)
     *q++ = -1 ;
 }
 
-static void hash_init(hash_t *t) {
+void hash_init(hash_t *t, int hashsz, entry_t *hash, size_t log_t_size) {
   t->nhash = 0 ;
-  for (int k = 0 ; k < HASHSZ ; k++) {
+  t->hashsz = hashsz ;
+  t->t = hash;
+  for (int k = 0 ; k < hashsz ; k++) {
     t->t[k].c = 0 ;
-    log_init(&t->t[k].key) ;
+    log_init(t->t[k].key, log_t_size) ;
   }
 }
 
@@ -127,48 +115,38 @@ size_t          length)              /* the length of the key, in uint32_ts */
   return c;
 }
 
-static uint32_t hash_log (log_t *key) {
-  return hashword((uint32_t *)key,sizeof(log_t)/sizeof(uint32_t)) ;
+uint32_t hash_log (log_t *key, size_t log_t_size) {
+  return hashword((uint32_t *)key,log_t_size/sizeof(uint32_t)) ;
 }
 
-#ifdef STATS
-static int hash_add(hash_t *t,log_t *key, param_t *v,count_t c,int ok) {
-#else
-static int hash_add(hash_t *t,log_t *key, count_t c,int ok) {
-#endif
-  uint32_t h = hash_log(key) ;
-  h = h % HASHSZ ;
-  for (int k = 0 ; k < HASHSZ ;  k++) {
+int hash_add(hash_t *t,log_t *key, param_t *v,count_t c,int ok, int (*eq_log)(log_t *, log_t *), size_t log_t_size) {
+  uint32_t h = hash_log(key, log_t_size) ;
+  h = h % t->hashsz ;
+  for (int k = 0 ; k < t->hashsz ;  k++) {
     entry_t *p = t->t + h ;
     if (p->c == 0) { /* New entry */
-      p->key = *key ;
-#ifdef STATS
+      p->key = key ;
       p->p = *v ;
-#endif
       p->c = c ;
       p->ok = ok ;
       t->nhash++ ;
       return 1 ;
-    } else if (eq_log(key,&p->key)) {
+    } else if (eq_log(key,p->key)) {
       p->c += c ;
       return 1;
     }
     h++ ;
-    h %= HASHSZ ;
+    h %= t->hashsz ;
   }
   return 0;
 }
 
-static int hash_adds(hash_t *t, hash_t *f) {
+int hash_adds(hash_t *t, hash_t *f, int (*eq_log)(log_t *, log_t *), size_t log_t_size) {
   int r = 1;
-  for (int k = 0 ; k < HASHSZ ; k++) {
+  for (int k = 0 ; k < t->hashsz ; k++) {
     entry_t *p = f->t+k ;
     if (p->c > 0) {
-#ifdef STATS
-      int rloc = hash_add(t,&p->key,&p->p,p->c,p->ok) ;
-#else
-      int rloc = hash_add(t,&p->key,p->c,p->ok) ;
-#endif
+      int rloc = hash_add(t,p->key,&p->p,p->c,p->ok, eq_log, log_t_size) ;
       r = r && rloc;
     }
   }

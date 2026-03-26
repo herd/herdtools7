@@ -778,7 +778,7 @@ end
           end
 
         let dump_label_defs lbls =
-          O.f "#define %-25s 0" (instr_symb_id "UNKNOWN") ;
+          O.f "#define %-25s  0" (instr_symb_id "UNKNOWN") ;
           (* Define indices for labels *)
           List.iteri
             (fun i (p,lbl) ->
@@ -905,7 +905,7 @@ end
               O.oi "just_dump_outcomes(out,hist);"
           | Mode.PreSi|Mode.Kvm ->
               pp_nstates "hash->nhash" ;
-              O.oi "pp_hash(out,hash,g->verbose > 1,g->group);" ;
+              O.oi "pp_hash(out,hash,g->verbose > 1,g->group, pp_entry);" ;
               ()
           end ;
 (* Print condition and witnesses *)
@@ -1086,9 +1086,10 @@ end
        (* Dump opcode of relevant instructions *)
 
         let dump_getinstrs t =
-          let module I = ObjUtil.Insert(Cfg) in
+          (* Insertion of this code is now done by the caller and not this function. *)
+          (*let module I = ObjUtil.Insert(Cfg) in
           I.insert_when_exists O.o "instruction.h" ; (* Always insert *)
-          O.o "" ;
+          O.o "" ;*)
           let module D = A.GetInstr.Make(O) in
           let lbl2instr,is = all_instrs t in
           if

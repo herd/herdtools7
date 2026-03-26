@@ -34,6 +34,21 @@ int RUN(int argc,char **argv,FILE *out) {
   if (!feature_check()) {
     return -1;
   }
+  for (int k = 0; k < HASHSZ; k++) {
+    main_hash[k].key = &main_hash_log[k];
+#ifdef STATS
+    main_hash[k].p.tags = hash_main_tags[k];
+#endif
+  }
+
+  for (int k = 0; k < NEXE; k++) {
+    for (int j = 0; j < HASHSZ; j++) {
+       instance_hash[k][j].key = &instance_hash_log[k][j];
+#ifdef STATS
+       instance_hash[k][j].p.tags = hash_instance_tags[k][j];
+#endif
+    }
+  }
 #ifdef DYNALLOC
 #ifdef HAVE_FAULT_HANDLER
   alloc_fault_handler();
@@ -51,6 +66,7 @@ int RUN(int argc,char **argv,FILE *out) {
   global_t *glo_ptr = &global;
   glo_ptr->mem = mem;
 #endif
+  glo_ptr->hash.t = main_hash;
   init_getinstrs();
   init_global(glo_ptr);
 #ifdef OUT
@@ -113,9 +129,9 @@ int RUN(int argc,char **argv,FILE *out) {
   for (int id=0; id < AVAIL ; id++) join(&th[id]);
 #endif
   int nexe = glo_ptr->nexe ;
-  hash_init(&glo_ptr->hash) ;
+  hash_init(&glo_ptr->hash, HASHSZ, main_hash, sizeof(log_t)) ;
   for (int k=0 ; k < nexe ; k++) {
-    glo_ptr->hash_ok = hash_adds(&glo_ptr->hash,&glo_ptr->ctx[k].t) && glo_ptr->hash_ok ;
+    glo_ptr->hash_ok = hash_adds(&glo_ptr->hash,&glo_ptr->ctx[k].t, eq_log, sizeof(log_t)) && glo_ptr->hash_ok ;
   }
 #ifdef OUT
   tsc_t total = timeofday()-start;

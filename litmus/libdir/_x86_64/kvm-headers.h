@@ -13,7 +13,8 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-
+#ifndef KVM_HEADERS_H
+#define KVM_HEADERS_H 1
 
 #include<libcflat.h>
 #include <vmalloc.h>
@@ -54,3 +55,4 @@ static inline void litmus_flush_tlb(void *_p) {
 static inline pteval_t litmus_set_pte_safe(void *q,pteval_t *p,pteval_t x) {
   return litmus_set_pte(p,x);
 }
+#endif

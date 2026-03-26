@@ -4,7 +4,7 @@
 /* Jade Alglave, University College London, UK.                             */
 /* Luc Maranget, INRIA Paris-Rocquencourt, France.                          */
 /*                                                                          */
-/* Copyright 2019-present Institut National de Recherche en Informatique et */
+/* Copyright 2026-present Institut National de Recherche en Informatique et */
 /* en Automatique and the authors. All rights reserved.                     */
 /*                                                                          */
 /* This software is governed by the CeCILL-B license under French law and   */
@@ -17,8 +17,13 @@
 /***********************************/
 /* Support for self-modifying code */
 /***********************************/
+#include <stdlib.h>
+#include <self.h>
+#include <../utils.h>
 
-static uint32_t getcachelinesize(void) {
+uint32_t cache_line_size;
+
+uint32_t getcachelinesize(void) {
   uint64_t csz;
   asm __volatile__ (
                     "mrs %[r],CTR_EL0"
@@ -32,19 +37,17 @@ static uint32_t getcachelinesize(void) {
   return (1 << x) * 4 ;
 }
 
-static uint32_t cache_line_size;
-
-inline static void selfbar(void *p) {
+void selfbar(void *p) {
   asm __volatile__
     ("dc cvau,%[p]\n\t" "dsb ish\n\t" "ic ivau,%[p]\n\t" "dsb ish\n\t" "isb"
      ::[p]"r"(p): "memory");
 }
 
-inline static void isync(void) {
+void isync(void) {
   asm __volatile__ ("isb" ::: "memory");
 }
 
-inline static void check_dic_idc(int need_dic, int need_idc) {
+void check_dic_idc(int need_dic, int need_idc) {
   uint64_t ctr_el0;
   asm volatile ("mrs %0, ctr_el0" : "=r" (ctr_el0));
   int idc = (ctr_el0 >> 28) & 1;

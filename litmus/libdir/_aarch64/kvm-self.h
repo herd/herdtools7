@@ -13,9 +13,19 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-#ifndef INSTRUCTION_H
-#define INSTRUCTION_H
-#include <stdint.h>
+#ifndef KVM_SELF_H
+#define KVM_SELF_H 1
 
-typedef uint32_t ins_t; /* Type of instructions */
+#include <stdint.h>
+#include <stddef.h>
+#include <instruction.h>
+#include <self.h>
+
+void litmus_icache_sync(uintptr_t vaddr, uintptr_t vaddr_end);
+
+size_t code_size(ins_t *p,int skip);
+
+void litmus_pte_unset_el0(uintptr_t vaddr, uintptr_t vaddr_end);
+
+void code_init(void *code, void *src, size_t sz);
 #endif
