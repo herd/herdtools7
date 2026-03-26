@@ -1,6 +1,6 @@
 (** A module for parsing aslspec specifications. *)
 
-exception ParseError of string
+exception ParseError of { loc : AST.source_location; msg : string }
 
 val parse_spec_from_file : string -> AST.t
 (** [parse_spec_from_file filename] parses a specification from the file
