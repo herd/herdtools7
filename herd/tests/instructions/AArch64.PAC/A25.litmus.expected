@@ -1,0 +1,10 @@
+Test A25 Required
+States 5
+0:X1=42;  ~Fault(P0);
+Ok
+Witnesses
+Positive: 5 Negative: 0
+Condition forall (0:X1=42 /\ not (fault(P0)))
+Observation A25 Always 5 0
+Hash=f6dd6893b56590912d6cbfb0e3b41bca
+

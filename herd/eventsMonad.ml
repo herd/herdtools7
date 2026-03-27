@@ -687,13 +687,23 @@ Monad type:
             let (),cl_wrs,es_wrs = Evt.as_singleton_nospecul write_rs in
             let eiid,branch = branch a eiid in
             let (),cl_br,es_br =  Evt.as_singleton_nospecul branch in
-            let eiid,nem = rne ov cv eiid in
-            let (),cl_ne,eseq =  Evt.as_singleton_nospecul nem in
-            assert (E.is_empty_event_structure eseq) ;
-            let es =
-              E.aarch64_cas is_physical `No es_rn es_rs E.empty_event_structure es_wrs es_rm es_wm es_br in
-            let cls = cl_a@cl_cv@cl_rm@cl_wm@cl_wrs@cl_br@cl_ne  in
-            eiid,Evt.add ((),cls,es) acts)
+            let eiid,(acts_n,spec_n) = rne ov cv eiid in
+            assert (Misc.is_none spec_n) ;
+            Evt.fold
+              (fun ((),cl_ne,eseq) (eiid,acts) ->
+                assert (E.is_empty_event_structure eseq);
+                let es =
+                  E.aarch64_cas
+                    is_physical
+                    `No
+                    es_rn es_rs
+                    E.empty_event_structure
+                    es_wrs
+                    es_rm
+                    es_wm
+                    es_br in
+                let cls = cl_a@cl_cv@cl_rm@cl_wm@cl_wrs@cl_br@cl_ne  in
+                eiid,Evt.add ((),cls,es) acts) acts_n (eiid,acts))
           acts_rn (eiid,Evt.empty) in
       eiid,(acts, None)
 
@@ -1710,7 +1720,6 @@ Monad type:
         (fun () -> VC.Terop (op,v1,v2,v3))
 
     let add =  op Op.Add
-
 
 (* Add an inequality constraint *)
 

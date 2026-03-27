@@ -31,7 +31,7 @@ module type S =
     module E : Event.S
     with module Act.A = A
 
-    module VC    : Valconstraint.S
+    module VC : Valconstraint.S with type solver_state = A.CS.arch_solver_state
     with type atom = A.V.v
     and type cst = A.V.Cst.v
     and type solution = A.V.solution
@@ -39,6 +39,7 @@ module type S =
     and type state = A.state
     and type arch_op1 = A.V.arch_op1
     and type arch_op = A.V.arch_op
+    and type arch_pred = A.CS.arch_pred
 
     type 'a t
 

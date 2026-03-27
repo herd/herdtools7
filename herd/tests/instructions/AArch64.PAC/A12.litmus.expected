@@ -1,10 +1,11 @@
-Test A12 Required
-States 1
-0:X1=53;
+Test A12 Allowed
+States 2
+0:X3=0;
+0:X3=42;
 Ok
 Witnesses
-Positive: 1 Negative: 0
-Condition forall (0:X1=53)
-Observation A12 Always 1 0
-Hash=cc4de507083bc36b4d82f02925b527b6
+Positive: 1 Negative: 1
+Condition exists (0:X3=42)
+Observation A12 Sometimes 1 1
+Hash=1393d78de410e877ef3f8558f05699bf
 
