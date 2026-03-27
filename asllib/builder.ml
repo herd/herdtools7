@@ -55,7 +55,8 @@ let from_lexbuf ast_type parser_config version (lexbuf : lexbuf) =
     fatal_here lexbuf.lex_start_p lexbuf.lex_curr_p (CannotParse msg)
   in
   let unknown_symbol lexbuf =
-    fatal_here lexbuf.lex_start_p lexbuf.lex_curr_p UnknownSymbol
+    let lexeme = Lexing.lexeme lexbuf in
+    fatal_here lexbuf.lex_start_p lexbuf.lex_curr_p (UnknownSymbol lexeme)
   in
   match version with
   | `ASLv1 -> (

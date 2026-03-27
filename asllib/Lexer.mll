@@ -422,7 +422,8 @@ and string_lit acc = parse
   | '\\'  { escaped_string_chars acc lexbuf }
   | '\n'  { Buffer.add_char acc '\n'; new_line lexbuf |> string_lit acc }
   | (asl_chars # ['"' '\\' '\n' '\r'])+ as lxm { Buffer.add_string acc lxm; string_lit acc lexbuf }
-  | ""    { raise LexerError }
+  | eof   { raise LexerError }
+  | _     { raise LexerError }
 
 (*
    Lexing of c-style comments
@@ -497,7 +498,7 @@ and token = parse
     | forbidden_real_remaining { raise LexerError                 }
     | forbidden_hex_first      { raise LexerError                 }
     | forbidden_hex_remaining  { raise LexerError                 }
-    | ""                       { raise LexerError                 }
+    | _                        { raise LexerError                 }
 {
 end
 }
