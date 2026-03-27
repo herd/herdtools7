@@ -460,51 +460,60 @@ module Make(C:Builder.S)
 
     (* This function is used `zyva` *)
     let call_rec_base prefix f0 safes po_safe over n r suff f_rec k ?(reject=[])=
-      (* compute potentially overlap between `r` and `suff`, or
-         whether `r` can precede `suff` otherwise. *)
+      (* check if `r` is compatible with `suff` *)
       match merge_predicate_and_check_compatibility safes po_safe r suff with
       | None -> k
       | Some (r,suff) ->
-      let r_suff = r::suff in
-      if
-        minprocs suff <= O.nprocs &&
-        minint r_suff <= O.max_ins-1 &&
-        check_cycle r_suff reject
-      then begin
+        (* The next candidate cycle *)
+        let r_suff = r::suff in
+          if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess r_suff) ;
+        let is_continue_search =
+          (* Check procedure number *)
+          minprocs suff <= O.nprocs
+          (* Check instruction number *)
+          && minint r_suff <= O.max_ins-1
+          (* Check if the cycle is rejected by `reject` *)
+          && check_cycle r_suff reject in
         (* size only decreases when there is at least one non-insert edge in `r` *)
         let n = n-sz r in
-        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess r_suff) ;
+        (* update the accumulator `k`, if a posible candidate cycle
+           otherwise keep it the same as before *)
         let k =
-          if
-            over &&
-            (n = 0 || (n > 0 && O.upto)) &&
-            can_prefix prefix (can_precede safes po_safe) r_suff
-          then begin
-            (* merge the last relax to the from of `r_suff`. *)
-            match merge_predicate_and_check_compatibility safes po_safe (Misc.last r_suff) r_suff with
-            | None -> k
-            | Some (_,r_suff) ->
-              (* find a cycle candidate `r_suff`, call the `f0`.
-                For example, `f0` is the test generator. *)
-              let tr =  prefix@r_suff in
-              if O.verbose > 2 then
-              eprintf "TRY: '%s'\n"
-                (C.E.pp_edges (List.flatten (List.map snd tr))) ;
-              try f0 po_safe tr k
-              with  Misc.Exit -> k
-              | Misc.Fatal msg |Misc.UserError msg ->
-                  eprintf "Marche pas: '%s'\n" msg ;
-                  k
-              | e ->
-                eprintf "Exc in F0: '%s'\n" (Printexc.to_string e) ;
-                raise e
-          end else k in
-        (* recursive call if the size `n` is still positive *)
-        if n <= 0 then k
-        else f_rec n r_suff k
-      end
-      (* `r` and `suff` does not compatible so further search stops *)
-      else k
+        Option.bind
+        (* check if the tail `r_suff` is compatible with the head,
+           hence a possible candidate cycle *)
+        ( merge_predicate_and_check_compatibility safes po_safe (Misc.last r_suff) r_suff )
+        (* check if the environment and configuration is compatible with
+           the candidate cycle *)
+        ( fun (_,e) ->
+          if over
+            (* cycle size `n` is still within bound *)
+            && (n = 0 || (n > 0 && O.upto))
+            (* user-defined `prefix` can be added *)
+            && can_prefix prefix (can_precede safes po_safe) r_suff then
+              Some e
+          else None )
+        (* find an candidate cycle, surfix with `prefix` and call engine `f0` *)
+        |> Option.map ( fun candidate_cycle ->
+          let tr = prefix @ candidate_cycle in
+          if O.verbose > 2 then
+          eprintf "TRY: '%s'\n"
+            (C.E.pp_edges (List.flatten (List.map snd tr))) ;
+          try f0 po_safe tr k
+          (* `f0` fails, however, surpresses some expected error *)
+          with Misc.Exit -> k
+          | Misc.Fatal msg |Misc.UserError msg ->
+              eprintf "Marche pas: '%s'\n" msg ;
+              k
+          | e ->
+            eprintf "Exc in F0: '%s'\n" (Printexc.to_string e) ;
+            raise e
+        )
+        (* Unwrap the new accumulator `k` *)
+        |> Option.value ~default:k in
+      (* recursive call *)
+        if is_continue_search && n > 0 then f_rec n r_suff k
+        else k
     (* END of call_rec_base *)
 
     module SdDir2Set =
