@@ -1,0 +1,11 @@
+Test ROP02 Allowed
+States 2
+  ~Fault(P0,PacCheck:IA);
+ Fault(P0,PacCheck:IA);
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (fault(P0,PacCheck:IA))
+Observation ROP02 Sometimes 1 1
+Hash=9db377da493868ce2e6d0db305a46c4c
+

@@ -1,0 +1,10 @@
+Test I05 Required
+States 2
+  ~Fault(P0);
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall (not (fault(P0)))
+Observation I05 Always 2 0
+Hash=10202aac494d559b0aebd87adf71c25b
+

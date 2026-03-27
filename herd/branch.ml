@@ -31,8 +31,8 @@ module type S = sig
   type t =
     (* continue in sequence, setting registers *)
     | Next of bds
-    (* jump to arg *)
-    | Jump of tgt * bds
+    (* jump to arg; optional override carries PAC-tagged target value *)
+    | Jump of tgt * bds * v option
     (* if v is one, jump to address, otherwise continue in sequence *)
     | CondJump of v * tgt
     (* Indirect Jump, with potential targets *)
@@ -77,8 +77,8 @@ module Make(M:Monad.S) = struct
   type t =
     (* continue in sequence *)
     | Next of bds
-    (* jump to arg *)
-    | Jump of tgt * bds
+    (* jump to arg; optional override carries PAC-tagged target value *)
+    | Jump of tgt * bds * v option
     (* if v is one, jump to address, otherwise continue in sequence *)
     | CondJump of v * tgt
     (* Indirect Jump, with potential targets *)
@@ -100,7 +100,7 @@ module Make(M:Monad.S) = struct
   let next4T ((((),()),()), ()) = nextT
   let nextSetT r v = M.unitT (Next [r,v])
   let nextBdsT bds = M.unitT (Next bds)
-  let branchT tgt = M.unitT (Jump (Lbl tgt,[]))
+  let branchT tgt = M.unitT (Jump (Lbl tgt,[],None))
   let indirectBranchT v lbls bds = M.unitT (IndirectJump (v,lbls,bds))
   let bccT v lbl = M.unitT (CondJump (v,Lbl lbl))
   let faultRetT tgt = M.unitT (FaultRet tgt)

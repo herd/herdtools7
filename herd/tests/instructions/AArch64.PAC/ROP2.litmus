@@ -1,0 +1,15 @@
+AArch64 ROP02
+Variant=pauth2,fpac,ifetch
+
+{
+ 0:SP=0;
+}
+ P0              ;
+ ADR X30,Lret    ;
+ PACIASP         ;
+ ADD SP,SP,#16   ;
+ AUTIASP         ;
+ BR X30          ;
+ Lret: MOV W0,#1 ;
+
+exists (fault(P0,PacCheck:IA))

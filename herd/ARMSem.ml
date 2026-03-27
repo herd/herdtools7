@@ -74,7 +74,7 @@ module
 
       let do_indirect_jump test bds i v =
       match  v2tgt v with
-      | Some tgt -> M.unitT (B.Jump (tgt,bds))
+      | Some tgt -> M.unitT (B.Jump (tgt,bds,None))
       | None ->
          match v with
          | M.A.V.Var(_) as v ->

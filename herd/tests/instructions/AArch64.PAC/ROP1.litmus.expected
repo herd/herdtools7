@@ -1,0 +1,10 @@
+Test ROP Required
+States 1
+0:X0=1;  ~Fault(P0);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1 /\ not (fault(P0)))
+Observation ROP Always 1 0
+Hash=0767a898edb23e0db93844e84b414c63
+

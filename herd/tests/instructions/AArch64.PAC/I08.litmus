@@ -1,0 +1,15 @@
+AArch64 I08
+Variant=pauth2,ifetch
+
+{
+ 0:SP=0;
+}
+ P0            ;
+ ADR X2,L0     ;
+ PACIZA X2     ;
+ AUTIB X2, SP  ;
+ BR X2         ;
+ L0:           ;
+ MOV W0,#2     ;
+
+exists (fault(P0,I-MMU:Translation))

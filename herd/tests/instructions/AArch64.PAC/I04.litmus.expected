@@ -1,0 +1,11 @@
+Test I04 Allowed
+States 2
+  ~Fault(P0,I-MMU:Translation);
+ Fault(P0:L0,label:"P0:L0",I-MMU:Translation);
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (fault(P0,I-MMU:Translation))
+Observation I04 Sometimes 1 1
+Hash=0ff231944d64f87c61743d46d741c608
+

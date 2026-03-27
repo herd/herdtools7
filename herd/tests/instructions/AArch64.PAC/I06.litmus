@@ -1,0 +1,14 @@
+AArch64 I06
+Variant=pauth2,ifetch
+
+{
+ 0:X30=0:L0; 0:SP=0;
+}
+ P0            ;
+ PACIASP       ;
+ XPACI X30     ;
+ BR X30        ;
+ MOV W0,#2     ;
+ L0:           ;
+
+forall (not (fault(P0)))

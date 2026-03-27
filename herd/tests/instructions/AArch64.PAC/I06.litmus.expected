@@ -1,0 +1,10 @@
+Test I06 Required
+States 1
+  ~Fault(P0);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (not (fault(P0)))
+Observation I06 Always 1 0
+Hash=726a1242c088226fb97f930021221685
+

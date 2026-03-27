@@ -1,0 +1,10 @@
+Test I07 Required
+States 1
+  ~Fault(P0);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (not (fault(P0)))
+Observation I07 Always 1 0
+Hash=7c812e31741f9f6c8fe6e268becd468a
+

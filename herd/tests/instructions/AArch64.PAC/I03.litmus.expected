@@ -1,0 +1,12 @@
+Test I03 Allowed
+States 2
+  ~Fault(P0,I-MMU:Translation);
+ Fault(P0:L0,label:"P0:L0",I-MMU:Translation);
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Flag combining-vmsa-and-ifetch-is-not-supported
+Condition exists (fault(P0,I-MMU:Translation))
+Observation I03 Sometimes 1 1
+Hash=5eee7fc1ceef10a14236a3eb7fc9b736
+

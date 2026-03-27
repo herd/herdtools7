@@ -1,0 +1,10 @@
+Test F004 Required
+States 1
+ Fault(P0:L0,x:red,TagCheck); Fault(P0:L1,y:red,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0:L0) /\ fault(P0:L1))
+Observation F004 Always 1 0
+Hash=425ed381b2be128b6de7e3c14f3505ec
+

@@ -1,0 +1,20 @@
+AArch64 I10
+Variant=pauth2,ifetch
+
+{
+ 0:X1=x; 0:X3=y; 0:SP=0;
+ 1:X5=1:L0; 1:X1=x; 1:X3=y; 1:SP=0;
+}
+ P0          | P1                ;
+ MOV W0,#1   | LDR W2,[X3]       ;
+ STR W0,[X1] | EOR W4,W2,W2      ;
+ DMB ST      | ADD X5,X5,W4,SXTW ;
+ MOV W2,#1   | MOV X30,X5        ;
+ STR W2,[X3] | PACIASP           ;
+             | AUTIASP           ;
+             | BR X30            ;
+             | L0:               ;
+             | MOV W0,#2         ;
+             | STR W0,[X1]       ;
+
+forall (not (fault(P1)))

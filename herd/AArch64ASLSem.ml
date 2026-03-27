@@ -1567,7 +1567,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               finals None
           in
           match Misc.seq_opt A.V.as_int pc with
-          | Some v -> B.Jump (B.Addr v,bds)
+          | Some v -> B.Jump (B.Addr v,bds,None)
           | None ->
               (* All ASL Faults are faults, no SVC interruption for now *)
               let is_fault =  List.exists ASLE.is_fault event_list in
@@ -1577,7 +1577,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           if _dbg then
             match branch with
             | B.Next (_::_ as bds)
-            | B.Jump (_,(_::_ as bds))
+            | B.Jump (_,(_::_ as bds),_)
             | B.Fault (_,(_::_ as bds))
               ->
                 let pp =

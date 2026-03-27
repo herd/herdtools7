@@ -383,7 +383,8 @@ let normalize s solver =
         vs;
       Buffer.add_char b '}';
       Buffer.contents b
-  | Symbolic (Virtual {name=Symbol.Label(p,lbl);_}) -> pp_label p lbl
+  | Symbolic (Virtual {name=Symbol.Label(p,lbl); pac; offset; _}) ->
+      PAC.pp pac (pp_label p lbl) offset
   | Symbolic sym -> pp_symbol sym
   | Tag s -> sprintf ":%s" s
   | PteVal p -> pp_pteval p

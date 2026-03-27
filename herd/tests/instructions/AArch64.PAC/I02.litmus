@@ -1,0 +1,13 @@
+AArch64 I02
+Variant=pauth2,ifetch
+
+{
+}
+ P0        ;
+ ADR X0,L0 ;
+ PACIZA X0 ;
+ BR X0     ;
+ L0:       ;
+ MOV W0,#2 ;
+
+exists (fault(P0,I-MMU:Translation))

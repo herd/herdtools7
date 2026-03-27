@@ -636,6 +636,11 @@ module Make
         if mixed then fun _sz -> write_reg
         else write_reg_sz
 
+      let set_elr_el1 v ii =
+        write_reg AArch64Base.elr_el1 v ii
+      and set_esr_el1 v ii =
+        write_reg AArch64Base.esr_el1 v ii
+
 (* Emit commit event *)
       let commit_bcc ii = M.mk_singleton_es (Act.Commit (Act.Bcc,None)) ii
       and commit_pred_txt txt ii =
@@ -903,10 +908,50 @@ module Make
         if is_branching || morello then do_insert_commit_to_fault m1 m2 txt ii
         else m1 >>*= m2 (* Direct control dependency to fault *)
 
+(* Return if a PAC field is canonical *)
+      let check_canonical a =
+        M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical) a >>= fun a_canon ->
+        is_eq a a_canon
+
+(* Check if the virtual address is out of range, raise a MMU:Translation fault
+   overwise. An address may be out of range if it contains a non-canonical PAC
+   field, this functions also make the address syntactically canonical in case of
+   a hash collision to construct the corect read-from map, if the address is not
+   virtual, it just return `mok ma` *)
+      let check_va_range mok ma mfault ii domain =
+        let open FaultType.AArch64 in
+        let ft = Some (MMU (domain, Translation)) in
+        let mok ma = mok (ma >>= M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical)) in
+        let ma_with_commit ma =
+          do_append_commit ma (Some "va range") ii
+        in
+        let mcheck ma =
+          M.delay_kont "range check" ma (fun a ma ->
+            check_canonical a >>= fun c ->
+            M.choiceT c (mok (ma_with_commit ma)) (mfault ma a ft))
+        in
+        M.delay_kont "check address is virtual" ma (fun a ma ->
+          M.op1 Op.IsVirtual a >>= fun virt ->
+          M.choiceT virt (mcheck ma) (mok ma)
+        )
+
 
 (************)
 (* Branches *)
 (************)
+      let get_link_addr test ii =
+        let lbl =
+          let a = ii.A.addr + 4 in
+          let lbls = test.Test_herd.entry_points a in
+          Label.norm lbls in
+        match lbl with
+        | Some l -> ii.A.addr2v ii.A.proc l
+        | None ->  V.intToV (ii.A.addr + 4)
+
+      let get_instr_label proc ii =
+        match Label.norm ii.A.labels with
+        | Some hd -> ii.A.addr2v proc hd
+        | None -> V.intToV ii.A.addr
 
       let v2tgt =
         let open Constant in
@@ -919,7 +964,7 @@ module Make
         match  v2tgt v with
         | Some tgt ->
           commit_bcc ii
-          >>= fun () -> M.unitT (B.Jump (tgt,bds))
+          >>= fun () -> M.unitT (B.Jump (tgt,bds,Some v))
         | None ->
            match v with
            | M.A.V.Var(_) as v ->
@@ -937,19 +982,6 @@ module Make
             "illegal argument for the indirect branch instruction %s \
             (must be a label)" (AArch64.dump_instruction i)
 
-      let get_link_addr test ii =
-        let lbl =
-          let a = ii.A.addr + 4 in
-          let lbls = test.Test_herd.entry_points a in
-          Label.norm lbls in
-        match lbl with
-        | Some l -> ii.A.addr2v ii.A.proc l
-        | None ->  V.intToV (ii.A.addr + 4)
-
-      let get_instr_label proc ii =
-        match Label.norm ii.A.labels with
-        | Some hd -> ii.A.addr2v proc hd
-        | None -> V.intToV ii.A.addr
 
 (******************)
 (* Checking flags *)
@@ -1007,12 +1039,6 @@ module Make
        * check perfomed early in standard
        * (ie non-pte2) mode.
        *)
-       
-
-      let set_elr_el1 v ii =
-        write_reg AArch64Base.elr_el1 v ii
-      and set_esr_el1 v ii =
-        write_reg AArch64Base.esr_el1 v ii
 
       (* Emit fault event and set link register. *)
       let emit_fault a ma dir an ft msg ii =
@@ -1048,33 +1074,6 @@ module Make
         | L|XL -> L
         | X|N -> N
         | NoRet|S|NTA -> N
-
-      (* Return if a PAC field is canonical *)
-      let check_canonical a =
-        M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical) a >>= fun a_canon ->
-        is_eq a a_canon
-
-(* Check if the virtual address is out of range, raise a MMU:Translation fault
-   overwise. An address may be out of range if it contains a non-canonical PAC
-   field, this functions also make the address syntactically canonical in case of
-   a hash collision to construct the corect read-from map, if the address is not
-   virtual, it just return `mok ma` *)
-      let check_va_range mok ma mfault ii domain =
-        let open FaultType.AArch64 in
-        let ft = Some (MMU (domain, Translation)) in
-        let mok ma = mok (ma >>= M.op1 (Op.ArchOp1 AArch64Op.MakeCanonical)) in
-        let ma_with_commit ma =
-          do_append_commit ma (Some "va range") ii
-        in
-        let mcheck ma =
-          M.delay_kont "range check" ma (fun a ma ->
-            check_canonical a >>= fun c ->
-            M.choiceT c (mok (ma_with_commit ma)) (mfault ma a ft))
-        in
-        M.delay_kont "check address is virtual" ma (fun a ma ->
-          M.op1 Op.IsVirtual a >>= fun virt ->
-          M.choiceT virt (mcheck ma) (mok ma)
-        )
 
       let check_ptw_kont proc dir updatedb is_tag a_virt ma an ii mdirect mok mfault domain =
 
@@ -1598,8 +1597,7 @@ module Make
  * +iico_data dependency between the event `ma` and `mop` or `mfault`, and an
  * iico_data dependency between `mv` and `mop` in case of a success.
  *)
-      let lift_pac_virt mop ma dir an ii domain =
-        let mok ma = mop ma >>= M.ignore >>= B.next1T in
+      let do_lift_pac_virt mok ma dir an ii domain =
         (* Addresses of memory operations must be canonical for the construction
          * of the rf, co and fr maps... *)
         let lbl_v = get_instr_label ii.A.proc ii in
@@ -1610,6 +1608,10 @@ module Make
           >>! B.fault [AArch64Base.elr_el1, lbl_v]
         in
         check_va_range mok ma mfault ii domain
+
+      let lift_pac_virt mop ma dir an ii domain =
+        let mok ma = mop ma >>= M.ignore >>= B.next1T in
+        do_lift_pac_virt mok ma dir an ii domain
 
 
       let lift_memtag_phy dir mop ma an ii mphy =
@@ -3767,7 +3769,7 @@ Arguments:
         (* Branches *)
         | I_B l ->
            M.mk_singleton_es (Act.NoAction) ii
-           >>= fun () -> M.unitT (B.Jump (tgt2tgt ii l,[]))
+           >>= fun () -> M.unitT (B.Jump (tgt2tgt ii l,[],None))
         | I_BC(c,l)->
            condition_holds ii c
            >>= fun v -> commit_bcc ii
@@ -3775,7 +3777,7 @@ Arguments:
         | I_BL l ->
            let v_ret = get_link_addr test ii in
            let write_linkreg = write_reg AArch64Base.linkreg v_ret ii in
-           let branch () = M.unitT (B.Jump (tgt2tgt ii l,[AArch64Base.linkreg,v_ret])) in
+           let branch () = M.unitT (B.Jump (tgt2tgt ii l,[AArch64Base.linkreg,v_ret],None)) in
            M.bind_order write_linkreg branch
 
         | I_BR r as i ->
@@ -4806,8 +4808,6 @@ Arguments:
         | I_XPACI r | I_XPACD r ->
             check_pac inst;
             do_xpac r ii
-(*  Cannot handle *)
-        (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
         | (I_STG _|I_ST2G _|I_STZG _|I_STZ2G _
         | I_OP3_SIMD _ | I_OP3_SV _
         | I_LDR_SIMD _| I_STR_SIMD _
@@ -4991,8 +4991,23 @@ Arguments:
       let build_semantics test ii =
         M.addT (A.next_po_index ii.A.program_order_index)
           begin
-            if self then check_self test ii
-            else do_build_semantics test ii.A.inst ii
+            let do_sem =
+              if self then check_self test ii
+              else do_build_semantics test ii.A.inst ii
+            in
+            if pac && not self then
+              let a_v = get_instr_label ii.A.fetch_proc ii in
+              let ma = M.unitT a_v in
+              let dir = Dir.R in
+              let an = Annot.N in
+              let domain = DISide.Instr in
+              let mok ma = ma >>= fun _ -> do_sem in
+              M.op1 Op.IsVirtual a_v >>= fun is_virt ->
+              M.choiceT is_virt
+                (do_lift_pac_virt mok ma dir an ii domain)
+                do_sem
+            else
+              do_sem
           end
 
       let spurious_setaf v =

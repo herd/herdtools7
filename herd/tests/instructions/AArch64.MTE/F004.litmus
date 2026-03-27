@@ -1,0 +1,12 @@
+AArch64 F004
+variant=mte,async
+{
+    0:X1=x:red;
+    0:X3=y:red;
+}
+P0           ;
+L0:
+ STR W0,[X1] ;
+L1:
+ STR W2,[X3] ;
+forall(fault(P0:L0) /\ fault(P0:L1))

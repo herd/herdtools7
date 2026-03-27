@@ -1,0 +1,13 @@
+Test I09 Allowed
+States 5
+1:X2=0; [x]=1;
+1:X2=0; [x]=2;
+1:X2=1; [x]=1;
+1:X2=1; [x]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 4
+Condition exists (1:X2=1 /\ [x]=1)
+Observation I09 Sometimes 1 4
+Hash=54a8494ed9ac57b32a68a7f5f0644f0c
+

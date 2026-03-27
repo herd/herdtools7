@@ -1,0 +1,24 @@
+AArch64 ROP
+Variant=pauth2,ifetch
+
+{
+ int64_t s[8]={0,0,0,0,0,0,0,0};
+ 0:SP=s; 0:X0=0; 0:X30=0:Lret;
+}
+ P0                   ;
+ ADD SP,SP,#32        ;
+ PACIASP              ;
+ SUB SP,SP,#32        ;
+ STP X29,X30,[SP,#16] ;
+ ADD X29,SP,#16       ;
+ STR X0,[SP,#8]       ;
+ LDR X0,[SP,#8]       ;
+ BL bar               ;
+ LDP X29,X30,[SP,#16] ;
+ ADD SP,SP,#32        ;
+ AUTIASP              ;
+ RET                  ;
+ bar: RET             ;
+ Lret: MOV W0,#1      ;
+
+forall (0:X0=1 /\ not (fault(P0)))

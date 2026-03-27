@@ -616,8 +616,13 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                       s
                 | e -> raise e in
 
+          let addr2v_use addr2v_pac =
+            match addr2v_pac with
+            | Some v_pac -> v_pac
+            | None -> addr2v in
+
 (* Call instruction semantics proper *)
-        let wrap re_exec fetch_proc proc (code_instr : I.t) addr env m poi =
+        let wrap re_exec fetch_proc proc (code_instr : I.t) addr env addr2v_pac m poi =
           profile "build semantics" @@ fun () ->
         let static_poi = code_instr.I.static_poi in
         let inst = code_instr.I.instr in
@@ -628,7 +633,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
              labels = labels_of_instr addr;
              lbl2addr = prog;
              addr = addr;
-             addr2v=addr2v;
+             addr2v=addr2v_pac;
              rel_addr = (addr2va addr);
              env = env;
              in_handler = re_exec;
@@ -644,8 +649,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         m ii in
 
       let  sem_instr =  SM.build_semantics test in
-      let rec add_next_instr re_exec fetch_proc proc env seen addr (code_instr : I.t) nexts =
-        wrap re_exec fetch_proc proc code_instr addr env sem_instr >>> fun branch ->
+      let rec add_next_instr re_exec fetch_proc proc env seen addr (code_instr : I.t) nexts addr2v_pac =
+        wrap re_exec fetch_proc proc code_instr addr env (addr2v_use addr2v_pac) sem_instr
+        >>> fun branch ->
           let inst = code_instr.I.instr in
           let { A.regs=env; lx_sz=szo; fh_code } = env in
           let env = A.kill_regs (A.killed inst) env
@@ -657,7 +663,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             | Ld sz -> Some sz in
           let env =
             match branch with
-            | S.B.Next bds|S.B.Jump (_,bds)|S.B.IndirectJump (_,_,bds)
+            | S.B.Next bds|S.B.Jump (_,bds,_)|S.B.IndirectJump (_,_,bds)
             | B.Fault (_,bds) ->
                 List.fold_right
                   (fun (r,v) -> A.set_reg r v)
@@ -667,15 +673,21 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             re_exec code_instr fetch_proc proc { A.regs=env; lx_sz=szo; fh_code}
             seen addr nexts branch
 
-      and add_code re_exec fetch_proc proc env seen nexts = match nexts with
+      and add_code re_exec fetch_proc proc env seen nexts addr2v_pac = match nexts with
       | [] -> EM.unitcodeT true
       | (addr,inst)::nexts ->
-          add_next_instr re_exec fetch_proc proc env seen addr inst nexts
+          add_next_instr re_exec fetch_proc proc env seen addr inst nexts addr2v_pac
 
       and add_lbl re_exec check_back proc env seen addr_jmp lbl =
-        add_tgt re_exec check_back proc env seen addr_jmp (B.Lbl lbl)
+        add_tgt re_exec check_back proc env seen addr_jmp (B.Lbl lbl) None
 
-      and add_tgt re_exec check_back proc env seen addr_jmp tgt =
+      and add_tgt re_exec check_back proc env seen addr_jmp tgt v_pac =
+        let addr2v_pac =
+          match v_pac,tgt with
+          | Some v, B.Lbl lbl ->
+              Some (fun proc lbl' ->
+                if Label.compare lbl' lbl = 0 then v else addr2v proc lbl')
+          | _ -> None in
         match fetch_code check_back seen proc addr_jmp tgt with
         | No (tgt_proc,(addr,inst)::_) ->
             let m ii =
@@ -683,9 +695,10 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                 (A.next_po_index ii.A.program_order_index)
                 (EM.cutoffT (tgt2lbl tgt) ii (S.B.Next [])) in
             wrap
-              re_exec tgt_proc proc inst addr env m >>> fun _ -> EM.unitcodeT true
+              re_exec tgt_proc proc inst addr env (addr2v_use addr2v_pac) m
+            >>> fun _ -> EM.unitcodeT true
         | No (_,[]) -> assert false (* Backward jump cannot be to end of code *)
-        | Ok ((tgt_proc,code),seen) -> add_code re_exec tgt_proc proc env seen code
+        | Ok ((tgt_proc,code),seen) -> add_code re_exec tgt_proc proc env seen code addr2v_pac
         | Segfault addr ->
           let msg = Printf.sprintf
             "Segmentation fault (kidding, address 0x%x does not point to code)"
@@ -698,7 +711,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
            let e = "Fault inside a fault handler" in
            EM.warncodeT e true
         | Some fh_code, false ->
-           add_code true fetch_proc proc env seen fh_code
+           add_code true fetch_proc proc env seen fh_code None
         | None, true ->
            EM.unitcodeT false
         | None, false ->
@@ -709,31 +722,31 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                EM.unitcodeT true
            | Skip ->
                (* Execute next instruction *)
-               add_code false fetch_proc proc env seen nexts
+               add_code false fetch_proc proc env seen nexts None
            | Handled ->
                (* "Natural" behaviour, differs between syscalls and faults *)
                if syscall then
                  (* Execute instruction *)
-                 add_code false fetch_proc proc env seen nexts
+                 add_code false fetch_proc proc env seen nexts None
                else (* execute  again the same instruction *)
-                 add_next_instr true fetch_proc proc env seen addr inst nexts
+                 add_next_instr true fetch_proc proc env seen addr inst nexts None
 
       and next_instr re_exec (code_instr : I.t) fetch_proc proc env seen addr nexts b =
         match b with
       | S.B.Exit -> EM.unitcodeT true
       | S.B.Next _ ->
-          add_code re_exec fetch_proc proc env seen nexts
-      | S.B.Jump (tgt,_) ->
-          add_tgt re_exec true proc env seen addr tgt
+          add_code re_exec fetch_proc proc env seen nexts None
+      | S.B.Jump (tgt,_,v_pac) ->
+          add_tgt re_exec true proc env seen addr tgt v_pac
       | S.B.Fault (syscall,_) ->
           add_fault re_exec code_instr fetch_proc proc env seen addr syscall nexts
       | S.B.FaultRet tgt ->
-          add_tgt false true proc env seen addr tgt
+          add_tgt false true proc env seen addr tgt None
       | S.B.CondJump (v,tgt) ->
           EM.condJumpT v
             (add_tgt re_exec (not (V.is_var_determined v))
-               proc env seen addr tgt)
-            (add_code re_exec fetch_proc proc env seen nexts)
+               proc env seen addr tgt None)
+            (add_code re_exec fetch_proc proc env seen nexts None)
       | S.B.IndirectJump (v,lbls,_) ->
          EM.indirectJumpT v lbls
            (add_lbl re_exec true proc env seen addr)
@@ -742,7 +755,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
 (* Code monad returns a boolean. When false the code must be discarded.
    See also add_instr in eventsMonad.ml *)
       let jump_start proc env code =
-        add_code false proc proc env IntMap.empty code in
+        add_code false proc proc env IntMap.empty code None in
 
 (* As name suggests, add events of one thread *)
       let add_events_for_a_processor env (proc,code,fh_code) evts =

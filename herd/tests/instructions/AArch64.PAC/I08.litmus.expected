@@ -1,0 +1,11 @@
+Test I08 Allowed
+States 2
+  ~Fault(P0,I-MMU:Translation);
+ Fault(P0:L0,label:"P0:L0",I-MMU:Translation);
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (fault(P0,I-MMU:Translation))
+Observation I08 Sometimes 1 1
+Hash=76147eaecf96db94df6ea744d4085ee5
+
