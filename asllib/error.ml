@@ -48,7 +48,7 @@ type error_desc =
   | ConflictingTypes of type_desc list * ty
   | AssertionFailed of expr
   | CannotParse of string option
-  | UnknownSymbol
+  | UnknownSymbol of string
   | NoCallCandidate of string * ty list
   | BadTypesForBinop of binop * ty * ty
   | CircularDeclarations of string
@@ -167,7 +167,7 @@ let error_label = function
   | ConflictingTypes _ -> "ConflictingTypes"
   | AssertionFailed _ -> "AssertionFailed"
   | CannotParse _ -> "CannotParse"
-  | UnknownSymbol -> "UnknownSymbol"
+  | UnknownSymbol _ -> "UnknownSymbol"
   | NoCallCandidate _ -> "NoCallCandidate"
   | BadTypesForBinop _ -> "BadTypesForBinop"
   | CircularDeclarations _ -> "CircularDeclarations"
@@ -415,7 +415,14 @@ module PPrint = struct
         match s with
         | None -> pp_err parse "Cannot parse."
         | Some s -> pp_err parse "Cannot parse.@ %a" pp_print_text s)
-    | UnknownSymbol -> pp_err lexical "Unknown symbol."
+    | UnknownSymbol s ->
+        let codes = List.map Char.code (List.of_seq (String.to_seq s)) in
+        let not_printable code = code < 33 || code > 126 in
+        if List.exists not_printable codes then
+          pp_err lexical "Unknown symbol (ASCII code points: %a)."
+            (pp_comma_list pp_print_int)
+            codes
+        else pp_err lexical "Unknown symbol."
     | NoCallCandidate (name, types) ->
         pp_err typing
           "No subprogram declaration matches the invocation:@ %s(%a)." name

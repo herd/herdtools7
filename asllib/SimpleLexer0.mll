@@ -303,7 +303,8 @@ rule token = parse
     | _
       {
         let p1 = Lexing.lexeme_start_p lexbuf and p2 = Lexing.lexeme_end_p lexbuf in
-        Error.fatal_here p1 p2 Error.UnknownSymbol
+        let lexeme = Lexing.lexeme lexbuf in
+        Error.fatal_here p1 p2 (Error.UnknownSymbol lexeme)
       }
 
 and comment depth = parse

@@ -490,28 +490,28 @@ Required tests:
   $ aslref --no-exec accessor-overloading-1.asl
   $ aslref atc-tuple.asl
   $ aslref no-tabs.asl
-  File no-tabs.asl, line 3, character 2:
+  File no-tabs.asl, line 3, characters 2 to 3:
     	// <-- this is a tab character
-    
-  ASL Lexical error: Unknown symbol.
+    ^
+  ASL Lexical error: Unknown symbol (ASCII code points: 9).
   [1]
   $ aslref no-tabs-in-line-comments.asl
-  File no-tabs-in-line-comments.asl, line 3, character 4:
+  File no-tabs-in-line-comments.asl, line 3, characters 4 to 5:
     //	<-- this is a tab character
-      
-  ASL Lexical error: Unknown symbol.
+      ^
+  ASL Lexical error: Unknown symbol (ASCII code points: 9).
   [1]
   $ aslref no-tabs-in-block-comments.asl
   File no-tabs-in-block-comments.asl, line 3, characters 4 to 5:
     /*	<-- this is a tab character*/
       ^
-  ASL Lexical error: Unknown symbol.
+  ASL Lexical error: Unknown symbol (ASCII code points: 9).
   [1]
   $ aslref no-tabs-in-strings.asl
-  File no-tabs-in-strings.asl, line 3, character 11:
+  File no-tabs-in-strings.asl, line 3, characters 11 to 12:
     let x = "	"; // this string contains a tab character
-             
-  ASL Lexical error: Unknown symbol.
+             ^
+  ASL Lexical error: Unknown symbol (ASCII code points: 9).
   [1]
   $ aslref accessor-overloading-2.asl
   nullary setter
