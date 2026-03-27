@@ -184,25 +184,6 @@ and module Value := I.Value
 
   type init = (location * initval option) list
 
-  (* convert to `Some`, if input `s`
-     is not a pteval nor a number *)
-  let as_virtual s = match Misc.tr_pte s with
-  | Some _ -> None
-  | None ->
-      if LexScan.is_num s then None else Some s
-
-  (* convert to `Some`, if input `s`
-     is neither a pteval or a physical location *)
-  let refers_virtual s = match Misc.tr_pte s with
-  | Some _ as r -> r
-  | None -> match Misc.tr_physical s with
-    | Some _ as r -> r
-    | None -> None
-
-  let add_some x xs = match x with
-  | None -> xs
-  | Some x -> StringSet.add x xs
-
   let ppo = function
     | None -> "-"
     | Some v -> pp_initval v
@@ -212,7 +193,6 @@ and module Value := I.Value
        (List.map (fun (loc,v) -> pp_location loc ^ "->" ^ ppo v) env)
 
   let complete_init hexa iv i =
-    let i =
       (* Add the locs `loc` and values `v` inside `iv` to `i` *)
       List.fold_left
         (fun env (loc,v) ->
@@ -220,45 +200,7 @@ and module Value := I.Value
           (* Do not include if the value is default zero *)
           else if Value.to_int v = 0 then env
           else (Loc loc,Some (S (Value.pp_v ~hexa:hexa v)))::env
-        ) i iv in
-    let already_here =
-      List.fold_left
-        (fun k (loc,v) ->
-          let k = match loc with
-          (* Add Loc `s` into `k` if `s` is not a pte address nor a number *)
-          | Loc s -> add_some (as_virtual s) k
-          (* No process on register *)
-          | Reg _  -> k in
-          let k = match v with
-          (* Add value `s` into `k` if `s` is not a pte nor a number *)
-          | Some (S s) -> add_some (as_virtual s) k
-          | _ -> k in
-          k)
-        StringSet.empty i in
-    let refer =
-      List.fold_left
-        (fun k (loc,v) ->
-          let k = match loc with
-          (* Add Loc `s` into `k` if `s` is a pte or physical address *)
-          | Loc s -> add_some (refers_virtual s) k
-          (* No process on register *)
-          | Reg _ -> k in
-          let k = match v with
-          (* Add value `s` into `k` if `s` is a pte or physical address *)
-          | Some (S s) -> add_some (refers_virtual s) k
-          (* Add the associated physical address in a pteval `p` into `k` *)
-          | Some (P p) -> add_some (Value.refers_virtual p) k
-          | None -> k in
-          k)
-        StringSet.empty i in
-    (* If a `refer` exist but there is no entry,
-       then add it into init state `i` *)
-    let i =
-      StringSet.fold
-        (fun x i -> (Loc x,None)::i)
-        (StringSet.diff refer already_here)
-        i in
-    i
+          ) i iv
 
   module RegMap =
     MyMap.Make
