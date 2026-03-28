@@ -1,0 +1,16 @@
+AArch64 LB+NExpExp+Faults
+Variant=vmsa
+{
+int x=1;
+int a=1;
+0:X0=x; 0:X3=PTE(a);
+0:X2=(oa:PA(a),valid:0);
+1:X3=a; 1:X0=PTE(x);
+1:X2=(oa:PA(x),valid:0);
+}
+ P0          | P1          | P0.F           | P1.F           ;
+ LDR W1,[X0] | LDR W1,[X3] | ADR X6,L0      | ADR X6,L1      ;
+L0:          |L1:          | MSR ELR_EL1,X6 | MSR ELR_EL1,X6 ;
+ STR X2,[X3] | STR X2,[X0] | ERET           | ERET           ;
+
+exists (0:X1=0 /\ 1:X1=0)

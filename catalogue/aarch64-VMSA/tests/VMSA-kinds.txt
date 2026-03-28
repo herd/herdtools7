@@ -986,3 +986,6 @@ R-via_fault_STR-mod2                   Forbid
 R-via_fault_STR-mod3                   Allow
 R-via_fault_STR-with-DSB               Forbid
 SB+dmb.sy+po-mmufault_db-po            Allow
+2+2WNExpExp+NExpNExp+po+DMBST          Forbid
+LB+NExpExp+Faults                      Forbid
+LB+NExpExp+pos                         Forbid
