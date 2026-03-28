@@ -1,0 +1,14 @@
+AArch64 CoWR0+tlbi-sync.ishsptev0p-fripptev0
+{
+  pteval_t 0:X0=(oa:PA(x), valid:0); 0:X1=PTE(x);
+  0:X2=x;
+}
+ P0              ;
+ STR X0,[X1]     ;
+ DSB ISH         ;
+ LSR X4,X2,#12   ;
+ TLBI VAAE1IS,X4 ;
+ DSB ISH         ;
+L0:              ;
+ LDR W3,[X2]     ;
+exists (~Fault(P0:L0,x,MMU:Translation))
