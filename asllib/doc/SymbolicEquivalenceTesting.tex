@@ -171,7 +171,6 @@ See \ExampleRef{Adding a List of Polynomials}
     \begin{array}{ll}
       \vfone(\vm) & \text{if } \vm \in \dom(\vfone) \setminus \dom(\vftwo)\\
       \vftwo(\vm) & \text{if } \vm \in \dom(\vftwo) \setminus \dom(\vfone)\\
-      \bot        & \text{if } \vm \in \dom(\vfone) \cap \dom(\vftwo) \text{ and } \vfone(\vm)+\vftwo(\vm) = 0\\
       \vfone(\vm)+\vftwo(\vm) & \text{if } \vm \in \dom(\vfone) \cap \dom(\vftwo) \text{ and } \vfone(\vm)+\vftwo(\vm) \neq 0\\
     \end{array}
     \right.
@@ -181,11 +180,15 @@ See \ExampleRef{Adding a List of Polynomials}
   \addpolynomials(\overname{\vfone}{\vpone}, \overname{\vftwo}{\vptwo}) \typearrow \overname{\vf}{\vp}
 }
 \end{mathpar}
+Notice that if $\vfone$ and $\vftwo$ map the same monomial $\vm$ to factors that sum to zero
+(that is, $\vm \in \dom(\vfone) \cap \dom(\vftwo)$ and $\vfone(\vm) + \vftwo(\vm) = 0$),
+then $\vf$ does not map $\vm$ to any factor, which corresponds to the fact that the monomial
+$\vm$ does not appear in the resulting polynomial.
 
 \TypingRuleDef{AddPolynomialList}
 The overloaded function
 \[
-  \addpolynomials : \KleeneStar{\polynomial} \rightarrow \polynomial
+  \addpolynomials(\KleeneStar{\polynomial}) \aslto \polynomial
 \]
 adds a list of polynomials.
 

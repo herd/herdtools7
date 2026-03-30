@@ -54,7 +54,7 @@ That is, if $\annotatetype(\tenv, \vt) \typearrow \TypeErrorConfig$.
 As part of the definition, we also associate dynamic domains to integer constraints
 by overloading $\dynamicdomain$:
 \[
-  \dynamicdomain : \overname{\envs}{\env} \cartimes \overname{\intconstraint}{\vc}
+  \dynamicdomain(\overname{\envs}{\env}, \overname{\intconstraint}{\vc})
   \partialto \overname{\pow{\nativevalue}}{\vd}
 \]
 
@@ -383,7 +383,7 @@ in the \emph{local dynamic environment} of $\denv$.
 \begin{mathpar}
 \inferrule[t\_enum\_array]{
   \env \reverseeqdef (\tenv, \Ignore)\\
-  \tenv.\staticenvsG.\declaredtypes(\id) = \TEnum(\vl_{1..k})\\
+  \tenv.\staticenvsG.\declaredtypes(\id) = (\TEnum(\vl_{1..k}), \Ignore)\\
   \dynamicdomain(\env, \telem) = D_\telem
 }{
   {
@@ -408,7 +408,7 @@ in the \emph{local dynamic environment} of $\denv$.
 \begin{mathpar}
 \inferrule[t\_named]{
   \env \reverseeqdef (\tenv, \Ignore)\\
-  \tenv.\staticenvsG.\declaredtypes(\id)=\tty
+  \tenv.\staticenvsG.\declaredtypes(\id) = (\tty, \Ignore)
 }{
   \dynamicdomain(\env, \overname{\TNamed(\id)}{\vt}) = \overname{\dynamicdomain(\env, \tty)}{\vd}
 }
@@ -441,5 +441,3 @@ The dynamic domain of a subprogram parameter \texttt{N: integer} is the (singlet
 the native integer value $c$,
 which is assigned to \texttt{N} by a given dynamic environment. The static domain of that parameter
 is the infinite set of all native integer values.
-
-

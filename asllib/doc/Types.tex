@@ -5,7 +5,7 @@ ASL allows specifying types for storage elements such as variables, constants, f
 and they are used to define the set of their allowed values.
 %
 The type system infers types for expressions, which are represented by \typedast{} nodes derived
-from the non-terminal $\ty$.
+from the AST symbol $\ty$.
 
 \ExampleDef{Types}
 \listingref{Types} shows some examples of types.
@@ -119,7 +119,7 @@ Formally:
 \inferrule{
   \buildty(\vt) \astarrow \astversion{\vt}
 } {
-  \buildasty(\Tcolon, \namednode{\vt}{\Nty}) \astarrow \astversion{\vt}
+  \buildasty(\Nasty(\Tcolon, \namednode{\vt}{\Nty})) \astarrow \astversion{\vt}
 }
 \end{mathpar}
 
@@ -700,7 +700,7 @@ In other words, we ignore the parenthesis.
 \ASTRuleDef{ParenType}
 \begin{mathpar}
   \inferrule{}{
-  \buildexpr(\overname{\Nty(\Tlpar, \punnode{\Nty}, \Trpar)}{\vparsednode}) \astarrow
+  \buildty(\overname{\Nty(\Tlpar, \punnode{\Nty}, \Trpar)}{\vparsednode}) \astarrow
   \overname{\astof{\tty}}{\vastnode}
 }
 \end{mathpar}
@@ -1013,8 +1013,8 @@ See \listingref{checkisnotcollection} for an ill-typed specification.
 }
 \hva\and
 \inferrule{}{
-  \buildtyorcollection(\Ntyorcollection(\Nty)) \astarrow
-  \overname{\astof{\Nty}}{\vastnode}
+  \buildtyorcollection(\Ntyorcollection(\punnode{\Nty})) \astarrow
+  \overname{\astof{\tty}}{\vastnode}
 }
 \end{mathpar}
 

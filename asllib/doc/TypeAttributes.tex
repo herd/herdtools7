@@ -42,10 +42,9 @@ must be declared and associated with a named type.
 
 \ExampleDef{Named Types}
 In the specification
-\begin{lstlisting}
-type ticks of integer;
-\end{lstlisting}
-\texttt{ticks} is a named type.
+
+In \listingref{named-types2},
+\texttt{qualifiedData} and \texttt{DatawithFlag} both define named types.
 
 \RenderProseAndFormally{is_named}
 \CodeSubsection{\NamedBegin}{\NamedEnd}{../types.ml}
@@ -68,12 +67,9 @@ of anonymous types as permitted by \TypingRuleRef{TypeSatisfaction}.
 \RenderRelation{is_singular}
 
 \ExampleDef{Singular types}
-In the following example, the types \texttt{A}, \texttt{B}, and \texttt{C} are all singular types:
-\begin{lstlisting}
-type A of integer;
-type B of A;
-type C of B;
-\end{lstlisting}
+In \listingref{SingularType}, the types \texttt{A}, \texttt{B}, and \texttt{C} are all singular types:
+
+\ASLListing{Singular types}{SingularType}{\typingtests/TypingRule.SingularType.asl}
 
 \RenderProseAndFormally{is_singular}
 \CodeSubsection{\SingularBegin}{\SingularEnd}{../types.ml}
@@ -88,15 +84,11 @@ exception types.
 \RenderRelation{is_structured}
 
 \ExampleDef{Structured Types}
-In the following example, the types \texttt{SyntaxException} and \texttt{PointRecord}
-are each an example of a \structuredtypeterm:
-\begin{lstlisting}
-type SyntaxException of exception {message: string };
-type PointRecord of Record {x : real, y: real, z: real};
-\end{lstlisting}
+In \listingref{StructuredTypes}, the types \texttt{SyntaxException} and \texttt{PointRecord}
+are each an example of a \structuredtypeterm{}.
+\ASLListing{Structure types}{StructuredTypes}{\typingtests/TypingRule.StructuredType.asl}
 
 \RenderProseAndFormally{is_structured}
-
 
 \TypingRuleDef{Structure}
 \RenderRelation{get_structure}
@@ -118,20 +110,13 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
 \RenderRelation{make_anonymous}
 
 \ExampleDef{The Underlying Type of a Type}
-Consider the following example:
-\begin{lstlisting}
-type T1 of integer;
-type T2 of T1;
-type T3 of (integer, T2);
-\end{lstlisting}
+\ASLListing{Anonymous types}{MakeAnonymous}{\typingtests/TypingRule.MakeAnonymous.asl}
 
-The \underlyingtypesterm\ of \texttt{integer}, \texttt{T1}, and \texttt{T2} is \texttt{integer}.
-
-The \underlyingtypeterm{} of \texttt{(integer, T2)} and \texttt{T3} is
+In \listingref{MakeAnonymous}, the \underlyingtypesterm\ of \texttt{integer}, \texttt{T1}, and \texttt{T2} is \texttt{integer}.
+Further, the \underlyingtypeterm{} of \texttt{(integer, T2)} and \texttt{T3} is
 \texttt{(integer, T2)}.  Notice how the \underlyingtypeterm{} does not replace
 \texttt{T2} with its own \underlyingtypeterm, in contrast to the \structureterm{} of
 \texttt{T2}, which is \texttt{(integer, integer)}.
-
 
 \RenderProseAndFormally{make_anonymous}
 \CodeSubsection{\MakeAnonymousBegin}{\MakeAnonymousEnd}{../types.ml}

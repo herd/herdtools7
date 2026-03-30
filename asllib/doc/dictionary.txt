@@ -2067,6 +2067,7 @@ successful
 successfully
 successive
 successor
+succinct
 succinctly
 such
 sufficient
@@ -2256,6 +2257,7 @@ understanding
 undertaken
 unevaluated
 unexpected
+uniformly
 uninitialized
 unintended
 union

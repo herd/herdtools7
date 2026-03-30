@@ -327,7 +327,7 @@ builds a sequence of statements to read from the getter invocation $\vcall.\call
 \begin{mathpar}
 \inferrule{
   \setcalltype(\vcall, \STGetter) \aslto \vgetter \hva\\\\
-  \vread \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \some{\ECall(\vgetter)}) \hva\\\\
+  \vread \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \none, \some{\ECall(\vgetter)}) \hva\\\\
   \makesetter(\vcall, \EVar(\vx)) \aslto \vsetter\\
   \news \eqdef \SSeq (\SSeq(\vread, \vmodify), \SCall(\vsetter))
 }{
@@ -428,7 +428,7 @@ As given by applying the relevant rules to the desugared AST.
   \begin{array}{r}
     \buildstmt(\overname{\Nstmt(\Tvar, \Ndeclitem, \punnode{\Nasty}, \Tsemicolon)}{\vparsednode})
     \astarrow \\
-    \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \astof{\vasty}, \None)}{\vastnode}
+    \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \astof{\vasty}, \none)}{\vastnode}
   \end{array}
   }
 }
@@ -438,7 +438,7 @@ As given by applying the relevant rules to the desugared AST.
 \inferrule[multi\_var]{
   \buildclist[\buildidentity](\vids) \astarrow \astversion{\vids}\\
   \buildasty(\vt) \astarrow \astversion{\vt} \hva\\
-  \vstmts \eqdef [\vx\in\astversion{\vids}: \SDecl(\LDKVar, \vx, \astversion{\vt}, \None)]\\
+  \vstmts \eqdef [\vx\in\astversion{\vids}: \SDecl(\LDKVar, \vx, \astversion{\vt}, \none)]\\
   \stmtfromlist(\vstmts) \astarrow \vastnode
 }{
   \buildstmt(\overname{\Nstmt(\Tvar, \namednode{\vids}{\Clisttwo{\Tidentifier}}, \namednode{\vt}{\Nasty}, \Tsemicolon)}{\vparsednode})
@@ -852,6 +852,15 @@ assigns \verb|'1101 111'| to the global variable \verb|g|.
 
 \hypertarget{def-conditionalstatementterm}{}
 \section{Conditional Statements\label{sec:ConditionalStatements}}
+
+A conditional statement evaluates its \texttt{then} statement list if the
+condition expression evaluates to $\True$. If the condition expression
+evaluates to $\False$ each \texttt{elsif} condition expression is evaluated
+sequentially until an \texttt{elsif} condition expression evaluates to $\True$;
+the conditional statement evaluates the corresponding \texttt{elsif}
+statement list. If no \texttt{elsif} condition expression evaluates to $\True$, the
+conditional statement evaluates the \texttt{else} statement list.
+
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \ & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nstmtlist \parsesep \Nselse \parsesep \Tend \parsesep \Tsemicolon &\\
@@ -887,12 +896,11 @@ The function
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_UNIMPORTED_RELATION
 
-
 \begin{mathpar}
 \inferrule[elseif]{}{
   {
     \begin{array}{r}
-  \buildselse(\Nselse(\Telseif, \Nexpr, \Twhen, \Nstmtlist, \Nselse)) \astarrow \\
+  \buildselse(\Nselse(\Telseif, \Nexpr, \Tthen, \Nstmtlist, \Nselse)) \astarrow \\
   \overname{\SCond(\astof{\vexpr}, \astof{\vstmtlist}, \astof{\vselse})}{\vastnode}
     \end{array}
   }
@@ -1212,7 +1220,7 @@ compound conditional statement (see \listingref{ast-case2} for an example):
 \inferrule[non\_var]{
   \astlabel(\vezero) \neq \EVar\\
   \vx \in \Identifier \text{ is fresh}\hva\\
-  \vdeclx \reverseeqdef \SDecl(\LDKLet, \LDIVar(\vx), \None, \some{\vezero})\\
+  \vdeclx \reverseeqdef \SDecl(\LDKLet, \LDIVar(\vx), \none, \some{\vezero})\\
   \casestocond(\EVar(\vx), \vcases, \votherwise) \typearrow \vscond
 }{
   \desugarcasestmt(\vezero, \vcases, \votherwise) \astarrow \overname{\SSeq(\vdeclx, \vscond)}{\news}
@@ -1424,7 +1432,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule[no\_limit]{}{
   \buildlooplimit\left(\overname{\Nlooplimit(\emptysentence)}{\vparsednode}\right)
   \astarrow
-  \overname{\None}{\vastnode}
+  \overname{\none}{\vastnode}
 }
 \end{mathpar}
 
@@ -1880,7 +1888,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[empty]{}{
-  \buildotherwiseopt(\overname{\Notherwiseopt(\emptysentence)}{\vparsednode}) \astarrow \None
+  \buildotherwiseopt(\overname{\Notherwiseopt(\emptysentence)}{\vparsednode}) \astarrow \none
 }
 \end{mathpar}
 
@@ -1896,82 +1904,8 @@ In
 \listingref{semantics-stry},
 the \trystatementsterm{} are all well-typed.
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\vs$ is a try statement with statement $\vsp$, list of catchers $\catchers$ and an \optionalterm\ \texttt{otherwise} block;
-  \item annotating the statement $\vsp$ as a block statement yields $(\vspp, \vsesone)$\ProseOrTypeError;
-  \item annotating each catcher $\catchers[\vi]$, for each $\vi$ in $\listrange(\catchers)$ in $\tenv$ yields $\vc\_\vi$
-        and $\vxs_i$\ProseOrTypeError;
-  \item $\catchersp$ is the list of annotated catchers $\vc\_\vi$ for each $\vi\in\listrange(\catchers)$;
-  \item \Proseeqdef{$\vsescatchers$}{the union of all $\vxs_\vi$, for \Proselistrange{$\vi$}{$\catchers$}};
-  \item \OneApplies
-  \begin{itemize}
-    \item \AllApplyCase{no\_otherwise}
-    \begin{itemize}
-      \item there is no \texttt{otherwise} statement;
-      \item $\news$ is a try statement with statement $\vspp$, list catchers $\catchersp$ and no \texttt{otherwise} statement,
-            that is $\STry(\vspp, \catchersp, \None)$;
-      \item \Proseeqdef{$\vsesotherwise$}{the empty set};
-      \item \Proseeqdef{$\vsesthree$}{$\vsestwo$}.
-    \end{itemize}
-
-    \item \AllApplyCase{otherwise}
-    \begin{itemize}
-      \item there is an \texttt{otherwise} statement $\vblock$;
-      \item annotating the statement $\vblock$ as a block statement in $\tenv$ yields $\vblockp$\ProseOrTypeError;
-      \item \Proseeqdef{$\otherwisep$}{$\some{\vblockp}$};
-      \item $\news$ is a try statement with statement $\vspp$, list catchers $\catchersp$ and \texttt{otherwise} statement
-            $\otherwisep$\\ ($\STry(\vspp, \catchersp, \otherwisep)$);
-      \item \Proseeqdef{$\vsesotherwise$}{$\vsesblock$};
-      \item \Proseeqdef{$\vsesthree$}{$\vsestwo$}.
-    \end{itemize}
-
-    \item \Proseeqdef{$\vses$}{the union of $\vsesthree$, $\vsescatchers$, and $\vsesotherwise$}.
-  \end{itemize}
-  \item $\newtenv$ is $\tenv$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[no\_otherwise]{
-  \vs = \STry(\vsp, \catchers, \None)\\
-  \annotateblock(\tenv, \vsp) \typearrow (\vspp, \vsesone) \OrTypeError\hva\\\\
-  {\begin{array}{r}\vi\in\listrange(\catchers): \annotatecatcher(\tenv, \catchers[\vi]) \typearrow \\(\vc_\vi, \vxs_\vi) \OrTypeError\end{array}}\hva\\\\
-  \catchersp \eqdef [\vi\in\listrange(\catchers) : \vc_\vi]\hva\\\\
-  \vsescatchers \eqdef \bigcup_{\vi\in\listrange(\catchers)} \vxs_\vi\hva\\\\
-  \commonprefixline\hva\\\\
-  \news \eqdef \STry(\vspp, \catchersp, \None)\\
-  \vsesotherwise \eqdef \emptyset\\
-  \vsesthree \eqdef \vsestwo\hva\\\\
-  \commonsuffixline\hva\\\\
-  \vses \eqdef \vsesthree \cup \vsescatchers \cup \vsesotherwise
-}{
-  \annotatestmt(\tenv, \vs) \typearrow (\news, \overname{\tenv}{\newtenv}, \vses)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[otherwise]{
-  \vs = \STry(\vsp, \catchers, \some{\otherwise})\\
-  \annotateblock(\tenv, \vsp) \typearrow (\vspp, \vsesone) \OrTypeError\hva\\\\
-  {\begin{array}{r}\vi\in\listrange(\catchers): \annotatecatcher(\tenv, \catchers[\vi]) \typearrow \\(\vc_\vi, \vxs_\vi) \OrTypeError\end{array}}\hva\\\\
-  \catchersp \eqdef [\vi\in\listrange(\catchers) : \vc_\vi]\hva\\\\
-  \vsescatchers \eqdef \bigcup_{\vi\in\listrange(\catchers)} \vxs_\vi\hva\\\\
-  \commonprefixline\hva\\\\
-  \annotateblock(\tenv, \otherwise) \typearrow (\otherwisep, \vsesblock) \OrTypeError\hva\\\\
-  \news \eqdef \STry(\vspp, \catchersp, \otherwise')\\
-  \vsesotherwise \eqdef \vsesblock\\
-  \vsesthree \eqdef \vsestwo \hva\\\\
-  \commonsuffixline\hva\\\\
-  \vses \eqdef \vsescatchers \cup \vsesotherwise
-}{
-  \annotatestmt(\tenv, \vs) \typearrow (\news, \overname{\tenv}{\newtenv}, \vses)
-}
-\end{mathpar}
-%\RenderProseAndFormally{annotate_stmt_STry}
+\RenderProseAndFormally{annotate_stmt_STry}
 \CodeSubsection{\STryBegin}{\STryEnd}{../Typing.ml}
-
 
 \subsection{Semantics}
 \SemanticsRuleDef{STry}
@@ -1993,7 +1927,6 @@ does not result in any Assertion error, and the specification terminates with th
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{stmt_return}
-
 
 \ASTRuleDef{SReturn}
 \begin{mathpar}

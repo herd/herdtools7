@@ -3486,9 +3486,9 @@ let make_spec_with_builtins ast =
   {
     ast;
     id_to_defining_node;
-    bottom_constant = get_builtin_constant "bot";
+    bottom_constant = Constant.make missing_location "bot" None None [];
     bottom_term = Label { loc = missing_location; label = "bot" };
-    none_constant = get_builtin_constant "None";
+    none_constant = get_builtin_constant "none";
     empty_set = get_builtin_constant "empty_set";
     empty_list = get_builtin_constant "empty_list";
     bool = get_builtin_type "Bool";
@@ -3501,6 +3501,19 @@ let make_spec_with_builtins ast =
     variant_id_to_containing_type = make_variant_id_to_containing_type ast;
     field_to_containing_variant = make_field_to_containing_variant ast;
   }
+
+(** [remove_bottom_constant spec] removes the bottom constant from [spec], since
+    it is only used for typechecking and should not be rendered. *)
+let remove_bottom_constant spec =
+  let ast =
+    List.filter
+      (function
+        | Elem_Constant { Constant.name; _ } when String.equal name "bot" ->
+            false
+        | _ -> true)
+      spec.ast
+  in
+  { spec with ast }
 
 let from_ast ast =
   let spec = make_spec_with_builtins ast in
@@ -3516,4 +3529,5 @@ let from_ast ast =
   let spec = ExtendNames.extend spec in
   let () = Check.CheckRules.check spec in
   let spec = add_default_rule_renders spec in
+  let spec = remove_bottom_constant spec in
   spec

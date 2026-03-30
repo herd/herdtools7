@@ -126,7 +126,7 @@ This rule defines the cases for $\builddecl$ for global storage declarations.
       \GDkeyword&:& \GDKVar,\\
       \GDname&:& \name,\\
       \GDty&:& \some{\astof{\Nasty}},\\
-      \GDinitialvalue&:& \None
+      \GDinitialvalue&:& \none
     \end{array}
     \right\}\right)\right]}{\vastnode}
 }
@@ -143,7 +143,7 @@ This rule defines the cases for $\builddecl$ for global storage declarations.
       \GDkeyword&:& \GDKVar,\\
       \GDname&:& \vidasts[i],\\
       \GDty&:& \some{\astof{\vasty}},\\
-      \GDinitialvalue&:& \None
+      \GDinitialvalue&:& \none
   \end{array}\right\}\right)
   \end{array}} \hva\\
   \vastnode \eqdef [i \in \listrange(\vidasts): \vdecl[i]]
@@ -379,7 +379,7 @@ of an ill-typed global storage declaration due to precision loss.
 
 See \ExampleRef{Declaring Global Storage}.
 
-The case where both $\tyopt$ and $\initialvalue$ are $\None$ is considered a syntax error.
+The case where both $\tyopt$ and $\initialvalue$ are $\none$ is considered a syntax error.
 
 \RenderProseAndFormally{annotate_ty_opt_initial_value}
 

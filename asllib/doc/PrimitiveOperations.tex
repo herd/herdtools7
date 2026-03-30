@@ -783,7 +783,7 @@ translates the resulting \typingerrorterm{} into the corresponding \dynamicerror
 \inferrule{
   \unopliterals(\NEG, \LBool(\True)) \typearrow \TypeErrorVal{\BadOperands}
 }{
-  \evalunop(\NEG, \nvint(\True)) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
+  \evalunop(\NEG, \nvbool(\True)) \evalarrow \DynamicErrorVal{\DynamicBadOperands}
 }
 \end{mathpar}
 

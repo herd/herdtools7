@@ -16,11 +16,8 @@ variadic operator cond_op[T](cases: list1(T)) -> T
   prose_application = "\begin{itemize}{cases}\end{itemize}",
 };
 
-// This constant is for internal use only.
-constant bot { "bottom", math_macro = \bot };
-
-constant None {
-  "the  \hyperlink{constant-None}{empty} \optionalterm{}"
+constant none {
+  "the  \hyperlink{constant-none}{empty} \optionalterm{}"
 };
 
 constant empty_set

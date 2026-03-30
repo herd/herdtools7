@@ -1257,4 +1257,6 @@ ASL Typing Tests / annotating types:
   [1]
 
   $ aslref --no-exec TypingRule.UseLDI.asl
-
+  $ aslref --no-exec TypingRule.StructuredType.asl
+  $ aslref --no-exec TypingRule.SingularType.asl
+  $ aslref --no-exec TypingRule.MakeAnonymous.asl

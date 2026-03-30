@@ -93,8 +93,8 @@ The intuitive meaning of each field appearing above is as follows:
   \item $\overloadedsubprograms$ associates names of subprograms to the set of overloading
   subprograms ---  $\func$ AST nodes that share the same name;
   \hypertarget{def-returntype}{}
-  \item $\returntype$ contains the name of the type that a subprogram declares, if it is
-  a function or a getter.
+  \item $\returntype$ contains the optional return type that a subprogram declares,
+        if it is a function or a getter.
 \end{itemize}
 
 \texthypertarget{constant-emptytenv}
@@ -119,7 +119,7 @@ The \emph{empty \staticenvironmentterm{}}, \\ denoted as $\emptytenv$, is define
 \begin{array}{lcl}
   \localstoragetypes    &\mapsto& \emptyfunc,\\
   \exprequiv            &\mapsto& \emptyfunc,\\
-  \returntype           &\mapsto& \None
+  \returntype           &\mapsto& \none
 \end{array}
 \right]}{\localstaticenvs}
 \right)
@@ -131,7 +131,6 @@ We use the notation $\tenv.\staticenvsG.m$ and $\tenv.\staticenvsL.m$ to access 
 
 To update a function component $f$ (e.g., $\declaredtypes$) of a global or local environment $E$
 with a new mapping $x \mapsto v$, we use the notation $E.f[x \mapsto v]$ to stand for $E[f \mapsto E.f[x \mapsto v]]$.
-
 
 \section{Typing Rule Configurations\label{sec:Typing Rule Configurations}}
 The output configurations of type system assertions have two flavors:
@@ -150,10 +149,6 @@ The output configurations of type system assertions have two flavors:
   the category of error (see \chapref{Errors} for the list of all error codes organized by category).
 \end{description}
 
-
 \hypertarget{type-TypeErrorconfig}{}
 We define the shorthand $\TypeErrorConfig \triangleq \TypeError(\vc)$ for \typingerrorterm{} configurations
 with any type-error code $\vc \in \typeerrorcode$.
-
-When several \hyperlink{def-caserules}{case rules} for the same function use the same short-circuiting transition assertion,
-we do not repeat the\ProseOrTypeError, but rather include it only in the first rule.

@@ -70,7 +70,7 @@ transforms a parse node for a slice $\vparsednode$ into an AST node for a slice 
 
 \begin{mathpar}
 \inferrule[single]{}{
-  \buildslices(\Nslice(\punnode{\Nexpr})) \astarrow
+  \buildslice(\Nslice(\punnode{\Nexpr})) \astarrow
   \overname{\SliceSingle(\astof{\vexpr})}{\vastnode}
 }
 \end{mathpar}
@@ -80,7 +80,7 @@ transforms a parse node for a slice $\vparsednode$ into an AST node for a slice 
   \buildexpr(\veone) \astarrow \astversion{\veone}\\
   \buildexpr(\vetwo) \astarrow \astversion{\vetwo}
 }{
-  \buildslices(\Nslice(\namednode{\veone}{\Nexpr}, \Tcolon, \namednode{\vetwo}{\Nexpr})) \astarrow
+  \buildslice(\Nslice(\namednode{\veone}{\Nexpr}, \Tcolon, \namednode{\vetwo}{\Nexpr})) \astarrow
   \overname{\SliceRange(\astversion{\veone}, \astversion{\vetwo})}{\vastnode}
 }
 \end{mathpar}
@@ -90,7 +90,7 @@ transforms a parse node for a slice $\vparsednode$ into an AST node for a slice 
   \buildexpr(\veone) \astarrow \astversion{\veone}\\
   \buildexpr(\vetwo) \astarrow \astversion{\vetwo}
 }{
-  \buildslices(\Nslice(\namednode{\veone}{\Nexpr}, \Tpluscolon, \namednode{\vetwo}{\Nexpr})) \astarrow
+  \buildslice(\Nslice(\namednode{\veone}{\Nexpr}, \Tpluscolon, \namednode{\vetwo}{\Nexpr})) \astarrow
   \overname{\SliceLength(\astversion{\veone}, \astversion{\vetwo})}{\vastnode}
 }
 \end{mathpar}
@@ -100,14 +100,14 @@ transforms a parse node for a slice $\vparsednode$ into an AST node for a slice 
   \buildexpr(\veone) \astarrow \astversion{\veone}\\
   \buildexpr(\vetwo) \astarrow \astversion{\vetwo}
 }{
-  \buildslices(\Nslice(\namednode{\veone}{\Nexpr}, \Tstarcolon, \namednode{\vetwo}{\Nexpr})) \astarrow
+  \buildslice(\Nslice(\namednode{\veone}{\Nexpr}, \Tstarcolon, \namednode{\vetwo}{\Nexpr})) \astarrow
   \overname{\SliceStar(\astversion{\veone}, \astversion{\vetwo})}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[width]{}{
-  \buildslices(\Nslice(\Tcolon, \punnode{\Nexpr})) \astarrow
+  \buildslice(\Nslice(\Tcolon, \punnode{\Nexpr})) \astarrow
   \overname{\SliceLength(\ELiteral(\LInt(0)), \astof{\vexpr})}{\vastnode}
 }
 \end{mathpar}
@@ -218,7 +218,7 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \SyntaxDef{Lists of Bitvector Slices}
 \begin{flalign*}
-\Nslices \derives \ & \Tlbracket \parsesep \ClistZero{\Nslice} \parsesep \Trbracket &
+\Nslices \derives \ & \Tlbracket \parsesep \ClistOne{\Nslice} \parsesep \Trbracket &
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -248,7 +248,7 @@ transforms a parse node for a list of slices $\vparsednode$ into an AST node for
 \TypingRuleDef{Slices}
 \RenderRelation{annotate_slices}
 
-See \ExampleRef{Bitvector Slices} for example of well-typed bitvector slices.
+See \ExampleRef{Bitvector Slices} for examples of well-typed bitvector slices.
 
 \ExampleDef{An Ill-typed Bitvector Slice}
 In \listingref{ImpureBitvectorSlice}, the bit vector slice on \verb|x| is ill-typed, since the expression \\

@@ -13,5 +13,11 @@ begin
     assert bv == bv[:6];
     assert bv[3:0] == bv[:4];
     assert bv == bv[5:5] :: bv[4:4] :: bv[3:3] :: bv[2:2] :: bv[1:1] :: bv[0:0];
+
+    // Formally, [j:i] is interpreted as a slice of bits
+    // from index i of length (j-i)+1.
+    // So the slice below starts at index 0 and has length (-1-0)+1 = 0.
+    // That is, an empty slice.
+    assert bv[-1:0] == '';
     return 0;
 end;
