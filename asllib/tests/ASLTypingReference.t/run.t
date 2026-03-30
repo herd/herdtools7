@@ -496,7 +496,7 @@ ASL Typing Tests / annotating types:
                     ^
   ASL Grammar error: Cannot parse. Declarations using `let` must have
     initialising expressions.
-
+    
   [1]
   $ aslref TypingRule.SAssert.bad.asl
   File TypingRule.SAssert.bad.asl, line 11, characters 10 to 23:
@@ -768,7 +768,7 @@ ASL Typing Tests / annotating types:
   ASL Grammar error: Cannot parse. A `config` declaration must introduce a
     single name, and have both a type annotation and initialising expression:
       config name : type = initial_expression;
-
+    
   [1]
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.non_config.asl
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.non_config.bad.asl

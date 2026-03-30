@@ -1,14 +1,54 @@
 # Basic tests
   $ aslspec hello.spec --render; diff -w generated_macros.tex hello.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  11c11
+  < \newcommand\none[0]{ \hyperlink{constant-none}{\textsf{none}} } % Generated from none
+  ---
+  > \newcommand\None[0]{ \hyperlink{constant-None}{\textsf{None}} } % Generated from None
+  19c19
+  < \DefineConstant{none}{\texthypertarget{constant-none}$\none$} % EndDefineConstant
+  ---
+  > \DefineConstant{None}{\texthypertarget{constant-None}$\None$} % EndDefineConstant
   $ aslspec typedefs.spec --render; diff -w generated_macros.tex typedefs.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  12a13
+  > \newcommand\None[0]{ \hyperlink{constant-None}{\textsf{None}} } % Generated from None
+  24d24
+  < \newcommand\none[0]{ \hyperlink{constant-none}{\textsf{none}} } % Generated from none
+  30c30
+  < \DefineConstant{none}{\texthypertarget{constant-none}$\none$} % EndDefineConstant
+  ---
+  > \DefineConstant{None}{\texthypertarget{constant-None}$\None$} % EndDefineConstant
   $ aslspec relations.spec --render; diff -w generated_macros.tex relations.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  9a10
+  > \newcommand\None[0]{ \hyperlink{constant-None}{\textsf{None}} } % Generated from None
+  18d18
+  < \newcommand\none[0]{ \hyperlink{constant-none}{\textsf{none}} } % Generated from none
+  26c26
+  < \DefineConstant{none}{\texthypertarget{constant-none}$\none$} % EndDefineConstant
+  ---
+  > \DefineConstant{None}{\texthypertarget{constant-None}$\None$} % EndDefineConstant
   $ aslspec rule.spec --render; diff -w generated_macros.tex rule.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  8a9
+  > \newcommand\None[0]{ \hyperlink{constant-None}{\textsf{None}} } % Generated from None
+  12d12
+  < \newcommand\none[0]{ \hyperlink{constant-none}{\textsf{none}} } % Generated from none
+  20c20
+  < \DefineConstant{none}{\texthypertarget{constant-none}$\none$} % EndDefineConstant
+  ---
+  > \DefineConstant{None}{\texthypertarget{constant-None}$\None$} % EndDefineConstant
   $ aslspec operators.spec --render; diff -w generated_macros.tex operators.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  10a11
+  > \newcommand\None[0]{ \hyperlink{constant-None}{\textsf{None}} } % Generated from None
+  12d12
+  < \newcommand\none[0]{ \hyperlink{constant-none}{\textsf{none}} } % Generated from none
+  18c18
+  < \DefineConstant{none}{\texthypertarget{constant-none}$\none$} % EndDefineConstant
+  ---
+  > \DefineConstant{None}{\texthypertarget{constant-None}$\None$} % EndDefineConstant
   $ aslspec type_name.bad
   Syntax Error: type_name.bad:1:9: illegal element-defining identifier: t2
   [1]

@@ -74,7 +74,7 @@ This helper function is defined as follows:
   \fieldtype(\fields, \id) \triangleq
   \begin{cases}
   \some{\vt}  & \text{ if }\{ \vtp \;|\; (\id,\vtp) \in \fields\} = \{\vt\}\\
-  \None & \text{ otherwise}
+  \none & \text{ otherwise}
   \end{cases}
 \]
 
@@ -360,14 +360,14 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
     \item $\vc$ is an exact constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
     \item applying $\reducetozopt$ to $\ve$ in $\tenv$, in order to symbolically simplify $\ve$ to an integer,
           yields $\some{\vz}$;
-    \item $\vcopt$ is $\some{\vc}$ if $\vp$ holds for $\vz$ and $\None$ otherwise.
+    \item $\vcopt$ is $\some{\vc}$ if $\vp$ holds for $\vz$ and $\none$ otherwise.
   \end{itemize}
 
   \item \AllApplyCase{exact\_does\_not\_reduce\_to\_z}
   \begin{itemize}
     \item $\vc$ is an exact constraint for the expression $\ve$, that is, $\ConstraintExact(\ve)$;
     \item applying $\reducetozopt$ to $\ve$ in $\tenv$, in order to symbolically simplify $\ve$ to an integer,
-          yields $\None$;
+          yields $\none$;
     \item $\vcopt$ is $\some{\vc}$.
   \end{itemize}
 
@@ -388,7 +388,7 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
       \item if $\vp$ is $\True$ for $\vzone$ and $\False$ for $\vztwo$, define $\vcopt$ as the optional range constraint
             where the bottom expression is $\veone$ and the top expression is the literal expression for $0$ if $\vp$ holds for $0$
             and the literal expression for $-1$ otherwise;
-      \item if $\vp$ is $\False$ for both $\vzone$ and $\vztwo$, define $\vcopt$ as $\None$.
+      \item if $\vp$ is $\False$ for both $\vzone$ and $\vztwo$, define $\vcopt$ as $\none$.
     \end{itemize}
   \end{itemize}
 
@@ -399,7 +399,7 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
     \item applying $\reducetozopt$ to $\veone$ in $\tenv$, in order to symbolically simplify $\veone$ to an integer,
           yields $\some{\vzone}$;
     \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$, in order to symbolically simplify $\vetwo$ to an integer,
-          yields $\None$;
+          yields $\none$;
     \item \OneApplies{} (defining $\vcopt$):
     \begin{itemize}
       \item if $\vp$ is $\True$ for $\vzone$, define $\vcopt$ as $\some{\vc}$;
@@ -414,7 +414,7 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
     \item $\vc$ is a range constraint for the expressions $\veone$ and $\vetwo$, that is, \\
           $\ConstraintRange(\veone, \vetwo)$;
     \item applying $\reducetozopt$ to $\veone$ in $\tenv$, in order to symbolically simplify $\veone$ to an integer,
-          yields $\None$;
+          yields $\none$;
     \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$, in order to symbolically simplify $\vetwo$ to an integer,
           yields $\some{\vztwo}$;
     \item One of the following applies (defining $\vcopt$):
@@ -430,9 +430,9 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
     \item $\vc$ is a range constraint for the expressions $\veone$ and $\vetwo$, that is, \\
           $\ConstraintRange(\veone, \vetwo)$;
     \item applying $\reducetozopt$ to $\veone$ in $\tenv$, in order to symbolically simplify $\veone$ to an integer,
-          yields $\None$;
+          yields $\none$;
     \item applying $\reducetozopt$ to $\vetwo$ in $\tenv$, in order to symbolically simplify $\vetwo$ to an integer,
-          yields $\None$;
+          yields $\none$;
     \item \Proseeqdef{$\vcopt$}{$\vc$}.
   \end{itemize}
 \end{itemize}
@@ -441,7 +441,7 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
 \begin{mathpar}
 \inferrule[exact\_reduces\_to\_z]{
   \reducetozopt(\tenv, \ve) \typearrow \some{\vz}\\
-  \vcopt \eqdef \ifthenelseop[H]{\vp(\vz)}{\some{\vc}}{\None}
+  \vcopt \eqdef \ifthenelseop[H]{\vp(\vz)}{\some{\vc}}{\none}
 }{
   \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \vcopt
 }
@@ -449,7 +449,7 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
 
 \begin{mathpar}
 \inferrule[exact\_does\_not\_reduce\_to\_z]{
-  \reducetozopt(\tenv, \ve) \typearrow \None
+  \reducetozopt(\tenv, \ve) \typearrow \none
 }{
   \refineconstraintbysign(\tenv, \vp, \overname{\ConstraintExact(\ve)}{\vc}) \typearrow \overname{\some{\vc}}{\vcopt}
 }
@@ -468,7 +468,7 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
     \some{\vc}& \text{if }\vp(\vzone) \land \vp(\vztwo)\\
     \some{\vrangezeroorone}& \text{if }\neg\vp(\vzone) \land \vp(\vztwo)\\
     \some{\vrangezeroorminusone}& \text{if }\vp(\vzone) \land \neg\vp(\vztwo)\\
-    \None& \text{if }\neg\vp(\vzone) \land \neg\vp(\vztwo)\\
+    \none& \text{if }\neg\vp(\vzone) \land \neg\vp(\vztwo)\\
   \end{cases}
   }
 }{
@@ -480,7 +480,7 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
 \inferrule[only\_e1\_reduces\_to\_z]{
   \vc = \ConstraintRange(\veone, \vetwo)\\
   \reducetozopt(\tenv, \veone) \typearrow \some{\vzone}\\
-  \reducetozopt(\tenv, \vetwo) \typearrow \None\hva\\
+  \reducetozopt(\tenv, \vetwo) \typearrow \none\hva\\
   \vzeroorone \eqdef \ifthenelseop[H]{\vp(0)}{\ELInt{0}}{\ELInt{1}}\\
   \vrangezeroorone \eqdef \ConstraintRange(\vzeroorone, \vetwo)\\
   {
@@ -497,7 +497,7 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
 \begin{mathpar}
 \inferrule[only\_e2\_reduces\_to\_z]{
   \vc = \ConstraintRange(\veone, \vetwo)\\
-  \reducetozopt(\tenv, \veone) \typearrow \None\\
+  \reducetozopt(\tenv, \veone) \typearrow \none\\
   \reducetozopt(\tenv, \vetwo) \typearrow \some{\vztwo}\\
   \vzeroorminusone \eqdef \ifthenelseop[H]{\vp(0)}{\ELInt{0}}{\ELInt{-1}}\hva\\
   \vrangezeroorminusone \eqdef \ConstraintRange(\veone, \vzeroorminusone)\\
@@ -515,8 +515,8 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
 \begin{mathpar}
 \inferrule[none\_reduce\_to\_z]{
   \vc = \ConstraintRange(\veone, \vetwo)\\
-  \reducetozopt(\tenv, \veone) \typearrow \None\\
-  \reducetozopt(\tenv, \vetwo) \typearrow \None
+  \reducetozopt(\tenv, \veone) \typearrow \none\\
+  \reducetozopt(\tenv, \vetwo) \typearrow \none
 }{
   \refineconstraintbysign(\tenv, \vp, \vc) \typearrow \overname{\vc}{\vcopt}
 }
@@ -528,7 +528,7 @@ that tests whether an integer is positive: $\lambda x.\ x > 0$.
 \ExampleDef{Reducing Expressions to Optional Integers}
 The specification in \listingref{ReduceToZOpt} shows two examples of expressions
 where one can be reduced into an integer constant, which is then returned in an optional,
-and one that cannot be reduced into an integer constant, which yields $\None$.
+and one that cannot be reduced into an integer constant, which yields $\none$.
 \ASLListing{Reducing expressions to optional integers}{ReduceToZOpt}{\typingtests/TypingRule.ReduceToZOpt.asl}
 
 
@@ -542,7 +542,7 @@ The specification in \listingref{RefineConstraintBySign}
 shows how certain constraints are filtered out.
 For example, $\AbbrevConstraintExact{\AbbrevEBinop{\DIV}{\AbbrevEVar{\vA}}{\ELInt{0}}}$.
 Similarly, since both expressions in the constraint \verb|-4..-3| fail the sign predicate
-used by $\refineconstraintbysign$, the resulting $\None$ is also filtered out.
+used by $\refineconstraintbysign$, the resulting $\none$ is also filtered out.
 
 \ProseParagraph
 \OneApplies
@@ -556,7 +556,7 @@ used by $\refineconstraintbysign$, the resulting $\None$ is also filtered out.
   \item \AllApply
   \begin{itemize}
     \item $\cs$ is the list with $\vc$ as its \head\ and $\csone$ as its \tail;
-    \item applying $\vf$ to $\vc$ yields $\None$;
+    \item applying $\vf$ to $\vc$ yields $\none$;
     \item applying $\refineconstraints$ to $\vapprox$, $\vf$ and $\csone$ yields $\csonep$;
     \item \OneApplies
     \begin{itemize}
@@ -592,7 +592,7 @@ used by $\refineconstraintbysign$, the resulting $\None$ is also filtered out.
 
 \begin{mathpar}
 \inferrule[non\_empty\_none\_precise]{
-  \vf(\vc) \typearrow \None\\
+  \vf(\vc) \typearrow \none\\
   \refineconstraints(\vapprox, \vf, \csone) \typearrow \csonep\\
   \csonep \neq \emptylist
 }{
@@ -602,7 +602,7 @@ used by $\refineconstraintbysign$, the resulting $\None$ is also filtered out.
 
 \begin{mathpar}
 \inferrule[non\_empty\_none\_approx]{
-  \vf(\vc) \typearrow \None\\
+  \vf(\vc) \typearrow \none\\
   \refineconstraints(\vapprox, \vf, \csone) \typearrow \csonep\\
   \csonep = \emptylist
 }{
@@ -663,7 +663,7 @@ for generating the constraints for \verb|z|:
 \begin{array}{rcl}
 \getliteraldivopt(\AbbrevEBinop{\DIV}{\ELInt{14}}{\ELInt{2}}) &\typearrow& \some{(14, 2)}\\
 \getliteraldivopt(\AbbrevEBinop{\DIV}{\ELInt{7}}{\ELInt{2}}) &\typearrow& \some{(7, 2)}\\
-\getliteraldivopt(\AbbrevEBinop{\DIV}{\AbbrevEVar{\vA}}{\ELInt{2}}) &\typearrow& \None\\
+\getliteraldivopt(\AbbrevEBinop{\DIV}{\AbbrevEVar{\vA}}{\ELInt{2}}) &\typearrow& \none\\
 \end{array}
 \]
 
@@ -678,7 +678,7 @@ The following are examples of $\makeconstraintrangeopt$ applications:
 \begin{array}{rcl}
 \makeconstraintrangeopt(42, 42) &\typearrow& \some{\AbbrevConstraintExact{\ELInt{42}}}\\
 \makeconstraintrangeopt(0, 42) &\typearrow& \some{\AbbrevConstraintRange{\ELInt{0}}{\ELInt{42}}}\\
-\makeconstraintrangeopt(42, 0) &\typearrow& \None\\
+\makeconstraintrangeopt(42, 0) &\typearrow& \none\\
 \end{array}
 \]
 

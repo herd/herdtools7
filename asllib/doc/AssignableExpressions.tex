@@ -271,7 +271,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[discard]{}{
-  \builddiscardorbasiclexpr(\Ndiscardorbasiclexpr(\Tminus)) \astarrow \overname{\None}{\vastnode}
+  \builddiscardorbasiclexpr(\Ndiscardorbasiclexpr(\Tminus)) \astarrow \overname{\none}{\vastnode}
 }
 \end{mathpar}
 
@@ -299,7 +299,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[none]{}{
-  \builddiscardoridentifier(\Ndiscardoridentifier(\Tminus)) \astarrow \overname{\None}{\vastnode}
+  \builddiscardoridentifier(\Ndiscardoridentifier(\Tminus)) \astarrow \overname{\none}{\vastnode}
 }
 \end{mathpar}
 
@@ -321,7 +321,7 @@ They are used to build $\lexpr$ abstract syntax.
 \begin{itemize}
   \item $\desugarlhsaccess$, which desugars a pair consisting of an $\Identifier$ and an $\lhsaccess$ into an $\lexpr$.
   \item $\desugarlhstuple$, which desugars a tuple of optional $\lhsaccess$ elements into an $\lexpr$.
-        This represents a multi-assignment of a tuple value, where $\None$ means that element of the tuple is discarded.
+        This represents a multi-assignment of a tuple value, where $\none$ means that element of the tuple is discarded.
   \item $\desugarlhsfieldstuple$, which desugars a multi-assignment of a tuple value to multiple fields of an identifier.
 \end{itemize}
 
@@ -397,7 +397,7 @@ is defined via the following rules:
 \begin{mathpar}
 \inferrule[none]{}
 {
-  \desugarlhsaccessopt(\overname{\None}{\vlhsaccessopt}) \astarrow \overname{\LEDiscard}{\vlexpr}
+  \desugarlhsaccessopt(\overname{\none}{\vlhsaccessopt}) \astarrow \overname{\LEDiscard}{\vlexpr}
 }
 \end{mathpar}
 
@@ -442,7 +442,7 @@ is defined via the following rules:
 \begin{mathpar}
 \inferrule[none]{}
 {
-  \desugarlhsfieldopt(\id, \overname{\None}{\fieldopt}) \astarrow \overname{\LEDiscard}{\vlexpr}
+  \desugarlhsfieldopt(\id, \overname{\none}{\fieldopt}) \astarrow \overname{\LEDiscard}{\vlexpr}
 }
 \end{mathpar}
 

@@ -71,7 +71,7 @@ In an ASL abstract syntax tree, a node is one of the following data types:
 \item[List Node.] A list of~$0$ or more children nodes, denoted as~$\emptylist$
       when the list is empty and~$[n_1,\ldots,n_k]$ for non-empty lists;
 \item[Optional.] An optional node stands for a set of 0 or 1 occurrences of a sub-node $n$.
-      We denote an empty optional by $\None$ and the non-empty optional by $\some{n}$;
+      We denote an empty optional by $\none$ and the non-empty optional by $\some{n}$;
 \item[Record Node.] A record node, denoted as $\{\text{name}_1 : n_1,\ldots,\text{name}_k : n_k\}$, where
       $\text{name}_1 \ldots \text{name}_k$ are names, which associates names with corresponding nodes.
 \end{description}
@@ -320,7 +320,7 @@ binary operations over well-constrained integer types (see \TypingRuleRef{Interv
 
 In the \untypedast, the $\globaldecl$ child node in the abstract syntax nodes of the form $\DGlobalStorage(\globaldecl)$
 contains an optional expression field assigned to the $\GDinitialvalue$ field. In the \typedast, this field
-always contains an expression (that is, it is never $\None$).
+always contains an expression (that is, it is never $\none$).
 
 Global pragma declarations $\DPragma$ are removed from the \untypedast\ once their expressions have been typechecked and do not appear in the \typedast.
 
@@ -373,7 +373,7 @@ We also employ the following rule:
   \begin{array}{r}
     \buildstmt(\Nstmt(\Twhile, \namednode{\ve}{\Nexpr}, \Tdo, \namednode{\vstmtlist}{\Nstmtlist}, \Tend, \Tsemicolon))
     \astarrow\\
-    \SWhile(\astversion{\ve}, \None, \astversion{\vstmtlist})
+    \SWhile(\astversion{\ve}, \none, \astversion{\vstmtlist})
   \end{array}
   }
 }
@@ -411,7 +411,7 @@ In our example, this results in the abbreviated rule notation
 \begin{array}{r}
   \buildstmt(\Nstmt(\Twhile, \punnode{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend, \Tsemicolon))
   \astarrow\\
-  \SWhile(\astof{\vexpr}, \None, \astof{\vstmtlist})
+  \SWhile(\astof{\vexpr}, \none, \astof{\vstmtlist})
   \end{array}
 }
 }
@@ -522,7 +522,7 @@ to each of them --- $\vsymasts$.
 \inferrule[empty]{
   b(\vv) \astarrow \astversion{\vv}
 }{
-  \buildtclist[b](\overname{\vv \parsesep \some{\Tcomma}}{\vsyms}) \astarrow \overname{[\astversion{\vv}]}{\vsymasts}
+  \buildtclist[b](\overname{\vv, \some{\Tcomma}}{\vsyms}) \astarrow \overname{[\astversion{\vv}]}{\vsymasts}
 }
 \end{mathpar}
 
@@ -547,7 +547,7 @@ to the value if it exists --- $\vsymasts$.
 
 \begin{mathpar}
 \inferrule[none]{}{
-  \buildoption[b](\overname{\emptysentence}{\vsym}) \astarrow \overname{\None}{\vsymast}
+  \buildoption[b](\overname{\emptysentence}{\vsym}) \astarrow \overname{\none}{\vsymast}
 }
 \end{mathpar}
 
