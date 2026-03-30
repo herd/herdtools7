@@ -16,14 +16,9 @@
 /**********************/
 /* User level barrier */
 /**********************/
+#include "barrier.h"
 
-
-typedef struct {
-  volatile int c,sense;
-  int n ;
-} sense_t;
-
-static void barrier_init (sense_t *p,int n) {
+void barrier_init (sense_t *p,int n) {
   p->n = p->c = n;
   p->sense = 0;
 }
@@ -53,7 +48,7 @@ barrier_wait:
 	dmb	ish
 	ret
 */
-static void barrier_wait(sense_t *p) {
+void barrier_wait(sense_t *p) {
   int sense = p->sense ;
   int r1,r3 ;
 asm __volatile (
@@ -87,7 +82,7 @@ asm __volatile (
 }
 #if 0
 /* C version */
-static void barrier_wait(sense_t *p) {
+void barrier_wait(sense_t *p) {
   int sense = p->sense ;
   __sync_synchronize() ;
   int rem = __sync_add_and_fetch(&p->c,-1) ;

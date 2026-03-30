@@ -84,7 +84,9 @@ module Make
      type instruction = A.instruction and
      type P.code = P.code and module A = A and module FaultType = A.FaultType)
     (O:Indent.S)
-    (Lang:Language.S with type t = A.Out.t) : sig
+    (Lang:Language.S with type t = A.Out.t)
+    (OO:ObjUtil.Config)
+    (Tar:Tar.S) : sig
       val dump : Name.t -> T.t -> unit
     end = struct
   module MakeLoc
@@ -98,6 +100,9 @@ module Make
       module C = T.C
       open Constant
       open CType
+
+(* ObjUtil (required for copying and pasting files to the relevant directory) *)
+      module Obj = ObjUtil.Make(OO)(Tar)
 
 (* Shared configuration *)
       module Param = SkelUtil.Param(Cfg)
@@ -300,7 +305,18 @@ module Make
 
       module Insert = ObjUtil.Insert(Cfg)
 
-      let have_timebase = Insert.exists "timebase.c"
+      let arch_dir = 
+        match UCfg.sysarch with
+        | `AArch64 -> "_aarch64/"
+        | `ARM     -> "_arm/"
+        | `MIPS    -> "_mips/"
+        | `PPC     -> "_ppc/"
+        | `X86     -> "_x86/"
+        | `RISCV   -> "_riscv/"
+        | `X86_64  -> "_x86_64/"
+        | _        -> ""
+
+      let have_timebase = Insert.exists "timebase.h"
 
       (* Location utilities *)
       let get_global_names t = List.map fst t.T.globals
@@ -553,12 +569,21 @@ module Make
         O.o "}" ;
         O.o ""
 
+      let dump_getinstrs test = 
+        if Insert.exists "instruction.h" then begin
+          let fname = "instruction" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname  ^ ".h>") ;
+          O.o "" ;
+        end ;
+        UD.dump_getinstrs test
+
       let dump_read_timebase () =
         if (do_verbose_barrier || do_timebase) && have_timebase then begin
           O.o "/* Read timebase */" ;
           O.o "typedef uint64_t tb_t ;" ;
           O.o "#define PTB PRIu64" ;
-          Insert.insert O.o "timebase.c"
+          Insert.insert O.o "timebase.h"
         end
 
       let lab_ext = if do_numeric_labels then "" else "_lab"
@@ -672,8 +697,11 @@ module Make
           O.o ""
         end ;
         if do_self then begin
-          Insert.insert O.o "self.c" ;
-          O.o ""
+          let fname = "self" in
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy ~sub:arch_dir [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname  ^ ".h>") ;
+          O.o "" ;
         end
 
 
@@ -1393,13 +1421,21 @@ module Make
             O.fx indent "_a->%s = %s(_a->%s,sizeof(*_a->%s));" a alg a a
         in
         if do_self || CfgLoc.need_prelude || U.label_in_outs env test then begin
-          ObjUtil.insert_lib_file O.o "_find_ins.c" ;
+          let fname = "_find_ins" in
+          ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname  ^ ".h>") ;
           O.o "" ;
           if do_self then begin
             O.o "static size_t code_size(ins_t *p,int skip) { return find_ins(getret(),p,skip)+1; }" ;
             O.o ""
           end ;
-          ObjUtil.insert_lib_file O.o "_prelude_size.c" ;
+          let fname = "_prelude_size" in
+          ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c") ;
+          ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
+          O.o ("#include <" ^ fname  ^ ".h>") ;
+          O.o "" ;
+          (* ObjUtil.insert_lib_file O.o "_prelude_size.c" ; *)
           ()
         end ;
         UD.dump_init_getinstrs test ;
@@ -2933,7 +2969,7 @@ module Make
         dump_header test ;
         if U.label_in_outs env test then
           UD.dump_label_defs (T.all_labels test) ;
-        UD.dump_getinstrs test ;
+        dump_getinstrs test ;
         dump_read_timebase () ;
         dump_threads test ;
         dump_topology doc test ;

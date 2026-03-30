@@ -1,8 +1,6 @@
 /****************************************************************************/
 /*                           the diy toolsuite                              */
 /*                                                                          */
-/* Jade Alglave, University College London, UK.                             */
-/* Luc Maranget, INRIA Paris-Rocquencourt, France.                          */
 /*                                                                          */
 /* Copyright 2026-present Institut National de Recherche en Informatique et */
 /* en Automatique and the authors. All rights reserved.                     */
@@ -13,9 +11,9 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-#ifndef INSTRUCTION_H
-#define INSTRUCTION_H
-#include <stdint.h>
+#ifndef PP_H
+#define PP_H
+#include <count.h>
 
-typedef uint32_t ins_t; /* Type of instructions */
+void pp_faults(int nthreads, count_t *nfaults, char *doc_name);
 #endif

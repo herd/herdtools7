@@ -17,6 +17,9 @@
 /************/
 /* Instance */
 /************/
+#ifndef _INSTANCE_H
+#define _INSTANCE_H 1
+#include <_hash.h>
 
 typedef struct {
   int id ;
@@ -42,10 +45,11 @@ typedef struct {
 static void instance_init(ctx_t *p, int id, intmax_t *mem) {
   p->id = id;
   p->mem = mem;
-  hash_init(&p->t);
-  log_init(&p->out);
+  hash_init(&p->t, HASHSZ, instance_hash[id], sizeof(log_t));
+  log_init(&p->out, sizeof(log_t));
   barrier_init(&p->b,N);
   interval_init((int *)&p->ind,N);
+  p->p.tags = instance_tags[id];
   p->stop_now = 0;
 #ifdef SOME_VARS
   vars_init(&p->v,mem);
@@ -210,3 +214,4 @@ static void set_role(global_t *g,thread_ctx_t *c,int part) {
 #endif
   barrier_wait(&g->gb) ;
 }
+#endif
