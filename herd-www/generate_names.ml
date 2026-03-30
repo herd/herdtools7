@@ -1,1 +1,106 @@
-generate_includes.ml
+(****************************************************************************)
+(*                           the diy toolsuite                              *)
+(*                                                                          *)
+(* Jade Alglave, University College London, UK.                             *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(*                                                                          *)
+(* Copyright 2019-present Institut National de Recherche en Informatique et *)
+(* en Automatique and the authors. All rights reserved.                     *)
+(*                                                                          *)
+(* This software is governed by the CeCILL-B license under French law and   *)
+(* abiding by the rules of distribution of free software. You can use,      *)
+(* modify and/ or redistribute the software under the terms of the CeCILL-B *)
+(* license as circulated by CEA, CNRS and INRIA at the following URL        *)
+(* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
+(****************************************************************************)
+
+let prog = Sys.argv.(0)
+
+module StringMap = Map.Make(String)
+
+let file_ok f =
+  Filename.check_suffix f ".cat" ||
+  Filename.check_suffix f ".bell" ||
+  Filename.check_suffix f ".def" ||
+  Filename.check_suffix f ".cfg" ||
+  Filename.check_suffix f ".opn" ||
+  Filename.check_suffix f ".asl"
+
+let read_file f =
+  let chan = open_in f in
+  let len = in_channel_length chan in
+  let cts = really_input_string chan len in
+  close_in chan ;
+  cts
+
+let same_file d1 d2 f =
+  let f1 = Filename.concat d1 f
+  and f2 = Filename.concat d2 f in
+  read_file f1 = read_file f2
+
+let rec all_files do_rec m path d =
+  assert (Sys.is_directory(d)) ;
+  let fs = Sys.readdir d in
+  let mr = ref m in
+  for k=0 to Array.length fs-1 do
+    let f = fs.(k) in
+    let true_f = Filename.concat d f in
+    if do_rec && Sys.is_directory true_f then
+      mr := all_files do_rec !mr  (Filename.concat path f) true_f
+    else if file_ok f then begin
+      let key = Filename.concat path f in
+      if not (StringMap.mem key !mr) then
+        mr := StringMap.add key d !mr
+      else
+        let old = StringMap.find key !mr in
+        if not (same_file old d f) then
+          Printf.eprintf "%s ignored (%s already here)\n"
+            (Filename.concat d f)  (Filename.concat old f)
+    end
+  done ;
+  !mr
+
+let bind d f =
+  let g = Filename.concat d (Filename.basename f) in
+  f,read_file g
+
+let _ =
+  let do_rec = ref false in
+  let envs = ref [] in
+  let mr = ref StringMap.empty in
+  let dirs = ref [] in
+
+  let options = [
+    ("-rec", Arg.Unit (fun () -> do_rec := true), "recurse into directories");
+    ("-norec", Arg.Unit (fun () -> do_rec := false), "do not recurse");
+    ("-env", Arg.String (fun s ->
+      match String.split_on_char '=' s with
+      | [name; dir] -> envs := (name, dir) :: !envs
+      | _ -> Printf.eprintf "Error: -env expects name=dir arguments.\n"; exit 2
+    ), "<name=path> self contained environments of cat models")
+  ] in
+
+  let arg_handler dir = dirs := dir :: !dirs in
+  let () = Arg.parse options arg_handler
+    (Printf.sprintf "Usage: %s [options] dirnames" prog) in
+
+  let dirs = List.rev !dirs in
+  let envs = List.rev !envs in
+
+  List.iter
+    (fun d -> mr := all_files !do_rec !mr "" d)
+    dirs ;
+  List.iter
+    (fun (name, d) -> mr := all_files !do_rec !mr name d)
+    envs ;
+
+  let files =
+    StringMap.fold
+      (fun key d k ->
+        let src = Filename.concat d (Filename.basename key) in
+        (key, src) :: k)
+      !mr [] in
+  List.iter
+    (fun (key, src) -> Printf.printf "%s\t%s\n" key src)
+    files;
+  ()
