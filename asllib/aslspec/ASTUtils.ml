@@ -36,7 +36,7 @@ and vars_of_opt_named_type_terms opt_named_terms =
 
 let variant_to_label_opt { TypeVariant.term } =
   match term with
-  | Label label -> Some label
+  | Label { label } -> Some label
   | Tuple { label_opt } | Record { label_opt } -> label_opt
   | _ -> None
 

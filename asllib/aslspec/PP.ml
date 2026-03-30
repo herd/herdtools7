@@ -53,7 +53,7 @@ let type_operator_to_token =
 let rec pp_type_term fmt =
   let open Term in
   function
-  | Label name -> pp_print_string fmt name
+  | Label { label } -> pp_print_string fmt label
   | TypeOperator { op; term } ->
       fprintf fmt "%s(%a)"
         (type_operator_to_token op |> tok_str)
@@ -65,10 +65,10 @@ let rec pp_type_term fmt =
   | Record { label_opt; fields } ->
       let label = Option.value label_opt ~default:"" in
       fprintf fmt "%s[%a]" label pp_record_fields fields
-  | ConstantsSet constants ->
+  | ConstantsSet { labels } ->
       fprintf fmt "%s(%a)" (tok_str CONSTANTS_SET)
         (pp_sep_list ~sep:"," pp_print_string)
-        constants
+        labels
   | Function { from_type; to_type; total } ->
       let keyword = if total then tok_str FUN else tok_str PARTIAL in
       fprintf fmt "%s %a -> %a" keyword pp_opt_named_type_term from_type
@@ -108,7 +108,7 @@ let pp_output_opt fmt is_output = if is_output then fprintf fmt "--@," else ()
 let rec pp_expr fmt =
   let open Expr in
   function
-  | Var name -> pp_print_string fmt name
+  | Var { id } -> pp_print_string fmt id
   | UnresolvedApplication { lhs; args } ->
       fprintf fmt "%a(%a)" pp_expr lhs (pp_comma_list pp_expr) args
   | Tuple { label_opt; args } ->
