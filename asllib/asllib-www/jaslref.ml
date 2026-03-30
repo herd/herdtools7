@@ -67,13 +67,13 @@ let run_asl code version exec =
       Js_of_ocaml.Sys_js.update_file ~name:"web-input.asl" ~content:_code
   in
 
-  try
-    run_with argv;
-    if not _exec then Printf.printf "ASL: type-check completed.\n%!"
-  with
+  try run_with argv with
   | Asllib.Error.ASLException e ->
       Printf.eprintf "%s\n%!" (Asllib.Error.error_to_string e)
-  | Exit _ -> ()
+  | Exit code ->
+      if not _exec then Printf.printf "ASL: parse/type-check completed.\n%!"
+      else
+        Printf.printf "ASL: interpretation completed (exit code %n).\n%!" code
 
 (* Expose to JavaScript *)
 let () = Js.Unsafe.global##.runAsl := Js.wrap_callback run_asl
