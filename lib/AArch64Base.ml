@@ -1363,6 +1363,8 @@ type 'k kinstruction =
   | I_TBZ of variant * reg * 'k * lbl
   | I_BL of lbl | I_BLR of reg
   | I_RET of reg option
+  | I_RETAA
+  | I_RETAB
   | I_ERET
   | I_SVC of 'k
 (* Load and Store *)
@@ -2128,6 +2130,10 @@ let do_pp_instruction m =
       "RET"
   | I_RET (Some r) ->
       sprintf "RET %s" (pp_xreg r)
+  | I_RETAA ->
+      "RETAA"
+  | I_RETAB ->
+      "RETAB"
   | I_ERET ->
      "ERET"
   | I_SVC k ->
@@ -2616,7 +2622,8 @@ let fold_regs (f_regs,f_sregs) =
     | Reg (r,_) -> fold_reg r c in
 
   fun c ins -> match ins with
-  | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None | I_ERET | I_SVC _
+  | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None | I_RETAA
+  | I_RETAB | I_ERET | I_SVC _
   | I_UDF _ |  I_SMSTART (None) | I_SMSTOP (None)
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
@@ -2767,6 +2774,8 @@ let map_regs f_reg f_symb =
   | I_FENCE _
   | I_BL _
   | I_RET None
+  | I_RETAA
+  | I_RETAB
   | I_ERET
   | I_SVC _
   | I_UDF _
@@ -3140,7 +3149,7 @@ let get_next =
   | I_TBZ (_,_,_,lbl)
   | I_BL lbl
     -> tgt_cons Label.Next lbl
-  | I_BLR _|I_BR _|I_RET _ |I_ERET -> [Label.Any]
+  | I_BLR _|I_BR _|I_RET _ |I_RETAA |I_RETAB |I_ERET -> [Label.Any]
   | I_NOP
   | I_LDR _
   | I_LDRSW _
@@ -3566,6 +3575,8 @@ module PseudoI = struct
         | I_BL _
         | I_BLR _
         | I_RET _
+        | I_RETAA
+        | I_RETAB
         | I_ERET
         | I_LDAR _
         | I_LDARBH _
@@ -3760,6 +3771,8 @@ module PseudoI = struct
         | I_B _ | I_BR _
         | I_BL _ | I_BLR _
         | I_RET _
+        | I_RETAA
+        | I_RETAB
         | I_ERET
         | I_SVC _
         | I_BC _
@@ -3908,6 +3921,8 @@ let is_branch = function
   | I_TBZ _
   | I_BL _ | I_BLR _
   | I_RET _
+  | I_RETAA
+  | I_RETAB
   | I_ERET
   | I_SVC _ -> true
   | _ -> false

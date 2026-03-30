@@ -114,7 +114,7 @@ type t =
   | OOTA
 (* Pointer Authentication Code *)
   | PacVersion of [`PAuth1|`PAuth2]
-(* Disable a key for Pointer Authentication Code *)
+(* Disable a key for Pointer Authentication Code; equivalent to SCTLR_Elx.En<key> *)
   | NoPacKey of PAC.key
 (* Fault generation with Pointer authentication code *)
   | FPac

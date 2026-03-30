@@ -1,0 +1,15 @@
+AArch64 I12
+Variant=pauth2,fpac,ifetch
+{
+0:X0=0;
+1:X0=0;
+0:SP=0;
+1:SP=0;
+}
+P0            | P1           ;
+  ADR X30, L0 | ADR X30, L1  ;
+  PACIBSP     | PACIBSP      ;
+  RETAA       | RETAB        ;
+L0:           | L1:          ;
+  MOV W0, #1  | MOV W0, #1   ;
+exists (Fault(P0,PacCheck:IA) /\ ~Fault(P1))

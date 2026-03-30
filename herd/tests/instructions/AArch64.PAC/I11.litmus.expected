@@ -1,0 +1,11 @@
+Test I11 Allowed
+States 2
+  ~Fault(P1,I-MMU:Translation); ~Fault(P0);
+ Fault(P1:L1,label:"P1:L1",I-MMU:Translation); ~Fault(P0);
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (not (fault(P0)) /\ fault(P1,I-MMU:Translation))
+Observation I11 Sometimes 1 1
+Hash=380e322792340fc9716b345b2d7682e2
+

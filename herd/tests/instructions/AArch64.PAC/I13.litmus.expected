@@ -1,0 +1,10 @@
+Test I13 Required
+States 1
+0:X0=1;  ~Fault(P0);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1 /\ not (fault(P0)))
+Observation I13 Always 1 0
+Hash=afd6577fa18bc9d049a1ae80106eb89b
+

@@ -1,0 +1,11 @@
+Test I12 Allowed
+States 2
+  ~Fault(P1); ~Fault(P0,PacCheck:IA);
+ Fault(P0,PacCheck:IA); ~Fault(P1);
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (fault(P0,PacCheck:IA) /\ not (fault(P1)))
+Observation I12 Sometimes 1 1
+Hash=03a9e6dc4dca14797e7655adf87f4553
+

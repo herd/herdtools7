@@ -3706,18 +3706,18 @@ Arguments:
           )
         )
 
+      let pac_check_fault key ii =
+        let (>>!) = M.(>>!) in
+        let lbl_v = get_instr_label ii.A.proc ii in
+        set_elr_el1 lbl_v ii >>|
+        mk_fault None Dir.R Annot.N ii
+          (Some (FaultType.AArch64.PacCheck key))
+          None
+        >>! B.fault [AArch64Base.elr_el1, lbl_v]
+
       let do_aut key rd rn ii =
         if key_enable key then begin
-          let (>>!) = M.(>>!) in
-
-          let lbl_v = get_instr_label ii.A.proc ii in
-          let mfault =
-              set_elr_el1 lbl_v ii >>|
-              mk_fault None Dir.R Annot.N ii
-                (Some (FaultType.AArch64.PacCheck key))
-                None
-              >>! B.fault [AArch64Base.elr_el1, lbl_v]
-          in
+          let mfault = pac_check_fault key ii in
 
           let mop ma =
             ma >>= fun v ->
@@ -3733,6 +3733,24 @@ Arguments:
           read_reg_ord rd ii >>= fun v ->
           write_reg_dest rd v ii >>= fun v ->
           B.nextSetT rd v
+
+      let do_reta key test i ii =
+        (* authenticates the address that is held in LR *)
+        let r = AArch64Base.linkreg in
+        (* uses SP as the modifier *)
+        let modifier = AArch64Base.SP in
+        if pac && key_enable key then
+          let mfault = pac_check_fault key ii in
+          let mop ma =
+            ma >>= do_indirect_jump test [] i ii
+          in
+          authenticate
+            (read_reg_ord r ii)
+            (read_reg_ord modifier ii)
+            key ii mop mfault
+        else
+          read_reg_ord r ii
+          >>= do_indirect_jump test [] i ii
 
       let do_xpac r ii =
         read_reg_ord r ii >>= fun v ->
@@ -3797,6 +3815,12 @@ Arguments:
             | Some r -> r in
             read_reg_ord r ii
             >>= do_indirect_jump test [] i ii
+
+        | I_RETAA as i ->
+           do_reta PAC.IA test i ii
+
+        | I_RETAB as i ->
+           do_reta PAC.IB test i ii
 
         | I_ERET ->
            let eret_to_addr v =

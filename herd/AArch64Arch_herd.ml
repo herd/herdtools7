@@ -95,6 +95,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_ADDV _| I_DUP _ | I_MOV_FG _| I_MOV_S _| I_MOV_TG _| I_MOV_V _| I_MOV_VE _| I_MOVI_S _
     | I_MOVI_V _| I_MOVK _| I_MOVZ _| I_MOVN _| I_MRS _| I_MSR _| I_OP3 _| I_RBIT _
     | I_RET _
+    | I_RETAA
+    | I_RETAB
     | I_SBFM _| I_SC _| I_SEAL _| I_ST1 _| I_STL1 _| I_ST1M _| I_ST2 _| I_ST2M _| I_ST3 _
     | I_ST3M _| I_ST4 _| I_ST4M _| I_STCT _| I_STG _| I_STLR _| I_STLRBH _| I_STOP _
     | I_STOPBH _| I_STP _| I_STP_SIMD _| I_STR _ | I_STLUR_SIMD _
@@ -291,7 +293,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDOPBH (_,v,_,_,_,_) | I_STOPBH (_,v,_,_,_) ->
           Some (bh_to_sz v)
       | I_NOP|I_B _|I_BR _|I_BC (_, _)|I_CBZ (_, _, _)
-      | I_CBNZ (_, _, _)|I_BL _|I_BLR _|I_RET _|I_ERET| I_SVC _ | I_LDAR (_, _, _, _)
+      | I_CBNZ (_, _, _)|I_BL _|I_BLR _|I_RET _|I_RETAA|I_RETAB|I_ERET| I_SVC _
+      | I_LDAR (_, _, _, _)
       | I_TBNZ(_,_,_,_) | I_TBZ (_,_,_,_) | I_MOVZ (_,_,_,_) | I_MOVK(_,_,_,_)
       | I_MOVN _
       | I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _)
@@ -350,7 +353,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_FENCE _
       | I_IC _|I_DC _|I_TLBI _ | I_AT _
       | I_NOP|I_TBZ _|I_TBNZ _
-      | I_BL _ | I_BLR _ | I_RET _ | I_ERET | I_SVC _ | I_UDF _
+      | I_BL _ | I_BLR _ | I_RET _ | I_RETAA | I_RETAB | I_ERET | I_SVC _ | I_UDF _
       | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
       | I_ST1SPT _ | I_CTERM _
         -> [] (* For -variant self only ? *)
@@ -451,7 +454,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_STXR _|I_STXRBH _ | I_STXP _ -> MachSize.St
       | I_LDAR (_, (AA|AQ), _, _)|I_LDARBH (_, (AA|AQ), _, _)
       | I_NOP|I_B _|I_BR _|I_BC _|I_CBZ _|I_CBNZ _
-      | I_TBNZ _|I_TBZ _|I_BL _|I_BLR _|I_RET _|I_ERET | I_SVC _
+      | I_TBNZ _|I_TBZ _|I_BL _|I_BLR _|I_RET _|I_RETAA|I_RETAB|I_ERET | I_SVC _
       | I_UBFM _ | I_SBFM _
       | I_LDR _|I_LDRSW _|I_LDRS _|I_LDUR _|I_LD1 _|I_LDAP1 _
       | I_LD1M _|I_LD1R _|I_LD2 _|I_LD2M _

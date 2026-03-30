@@ -1,0 +1,12 @@
+AArch64 I13
+Variant=pauth2,no-key-ib,ifetch
+{
+0:X0=0;
+0:X30=P0:L0;
+0:SP=0;
+}
+P0;
+  RETAB          ;
+L0:              ;
+  MOV W0, #1     ;
+forall (0:X0=1 /\ ~Fault(P0))

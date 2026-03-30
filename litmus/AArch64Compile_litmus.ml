@@ -1775,6 +1775,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_BLR r -> blr r::k
     | I_RET None -> { empty_ins with memo="ret"; }::k
     | I_RET (Some r) -> ret r::k
+    | I_RETAA -> { empty_ins with memo="retaa"; }::k
+    | I_RETAB -> { empty_ins with memo="retab"; }::k
     | I_ERET -> { empty_ins with memo="eret"; }::k
     | I_BC (c,lbl) -> bcc tr_lab c lbl::k
     | I_CBZ (v,r,lbl) -> cbz tr_lab "cbz" v r lbl::k

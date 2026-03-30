@@ -94,7 +94,7 @@ let check_op3 op e =
 %token TOK_EQ TOK_NE TOK_GE TOK_GT TOK_LE TOK_LT
 %token TOK_CS TOK_CC TOK_MI TOK_PL TOK_VS TOK_VC TOK_HI TOK_LS TOK_AL
 %token BEQ BNE BGE BGT BLE BLT BCS BCC BMI BPL BVS BVC BHI BLS BAL
-%token BL BLR RET ERET
+%token BL BLR RET RETAA RETAB ERET
 %token SVC
 %token LDR LDRSW LDP LDNP LDPSW LDIAPP STP STNP STILP
 %token LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
@@ -667,6 +667,8 @@ instr:
 | BLR xreg { I_BLR $2 }
 | RET  { I_RET None }
 | RET xreg { I_RET (Some $2) }
+| RETAA { I_RETAA }
+| RETAB { I_RETAB }
 | ERET { I_ERET }
 | BEQ label_addr { I_BC (EQ, $2) }
 | BNE label_addr { I_BC (NE, $2) }

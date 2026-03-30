@@ -1,0 +1,19 @@
+AArch64 ROP03
+Variant=pauth2,fpac,ifetch
+
+{
+ int64_t x=0;
+ 0:X1=x; 0:SP=0; 0:X30=0:Lret;
+ 1:X1=x; 1:SP=0; 1:X2=0:Lret;
+}
+ P0            | P1          ;
+ PACIASP       | STR X2,[X1] ;
+ STR X30,[X1]  |             ;
+ BL bar        |             ;
+ bar:          |             ;
+ LDR X30,[X1]  |             ;
+ RETAA         |             ;
+ Lret:         |             ;
+ MOV W0,#1     |             ;
+
+exists (fault(P0,PacCheck:IA))
