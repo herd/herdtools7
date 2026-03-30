@@ -514,10 +514,10 @@ and cons_seqs (fs:exp list) (es:exp list) =
          Some
            (Item
               (makeuppercase @@ sprintf "\\notthecase{%s}" txt))
-      | List (op,intro_txt,sep_txt,es) ->
+      | List (_,intro_txt,sep_txt,es) ->
           Some
             (List
-               (op,
+               (Diff,
                 makeuppercase @@ sprintf "\\notthecase{%s}" intro_txt,
                 sep_txt,es))
       | DiffPair _|IfCond _ ->
