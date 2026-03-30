@@ -3488,7 +3488,7 @@ let make_spec_with_builtins ast =
     id_to_defining_node;
     bottom_constant = Constant.make missing_location "bot" None None [];
     bottom_term = Label { loc = missing_location; label = "bot" };
-    none_constant = get_builtin_constant "None";
+    none_constant = get_builtin_constant "none";
     empty_set = get_builtin_constant "empty_set";
     empty_list = get_builtin_constant "empty_list";
     bool = get_builtin_type "Bool";

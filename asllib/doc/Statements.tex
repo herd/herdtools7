@@ -327,7 +327,7 @@ builds a sequence of statements to read from the getter invocation $\vcall.\call
 \begin{mathpar}
 \inferrule{
   \setcalltype(\vcall, \STGetter) \aslto \vgetter \hva\\\\
-  \vread \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \None, \some{\ECall(\vgetter)}) \hva\\\\
+  \vread \eqdef \SDecl(\LDKVar, \LDIVar(\vx), \none, \some{\ECall(\vgetter)}) \hva\\\\
   \makesetter(\vcall, \EVar(\vx)) \aslto \vsetter\\
   \news \eqdef \SSeq (\SSeq(\vread, \vmodify), \SCall(\vsetter))
 }{
@@ -428,7 +428,7 @@ As given by applying the relevant rules to the desugared AST.
   \begin{array}{r}
     \buildstmt(\overname{\Nstmt(\Tvar, \Ndeclitem, \punnode{\Nasty}, \Tsemicolon)}{\vparsednode})
     \astarrow \\
-    \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \astof{\vasty}, \None)}{\vastnode}
+    \overname{\SDecl(\LDKVar, \astof{\vdeclitem}, \astof{\vasty}, \none)}{\vastnode}
   \end{array}
   }
 }
@@ -438,7 +438,7 @@ As given by applying the relevant rules to the desugared AST.
 \inferrule[multi\_var]{
   \buildclist[\buildidentity](\vids) \astarrow \astversion{\vids}\\
   \buildasty(\vt) \astarrow \astversion{\vt} \hva\\
-  \vstmts \eqdef [\vx\in\astversion{\vids}: \SDecl(\LDKVar, \vx, \astversion{\vt}, \None)]\\
+  \vstmts \eqdef [\vx\in\astversion{\vids}: \SDecl(\LDKVar, \vx, \astversion{\vt}, \none)]\\
   \stmtfromlist(\vstmts) \astarrow \vastnode
 }{
   \buildstmt(\overname{\Nstmt(\Tvar, \namednode{\vids}{\Clisttwo{\Tidentifier}}, \namednode{\vt}{\Nasty}, \Tsemicolon)}{\vparsednode})
@@ -1220,7 +1220,7 @@ compound conditional statement (see \listingref{ast-case2} for an example):
 \inferrule[non\_var]{
   \astlabel(\vezero) \neq \EVar\\
   \vx \in \Identifier \text{ is fresh}\hva\\
-  \vdeclx \reverseeqdef \SDecl(\LDKLet, \LDIVar(\vx), \None, \some{\vezero})\\
+  \vdeclx \reverseeqdef \SDecl(\LDKLet, \LDIVar(\vx), \none, \some{\vezero})\\
   \casestocond(\EVar(\vx), \vcases, \votherwise) \typearrow \vscond
 }{
   \desugarcasestmt(\vezero, \vcases, \votherwise) \astarrow \overname{\SSeq(\vdeclx, \vscond)}{\news}
@@ -1432,7 +1432,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule[no\_limit]{}{
   \buildlooplimit\left(\overname{\Nlooplimit(\emptysentence)}{\vparsednode}\right)
   \astarrow
-  \overname{\None}{\vastnode}
+  \overname{\none}{\vastnode}
 }
 \end{mathpar}
 
@@ -1888,7 +1888,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[empty]{}{
-  \buildotherwiseopt(\overname{\Notherwiseopt(\emptysentence)}{\vparsednode}) \astarrow \None
+  \buildotherwiseopt(\overname{\Notherwiseopt(\emptysentence)}{\vparsednode}) \astarrow \none
 }
 \end{mathpar}
 

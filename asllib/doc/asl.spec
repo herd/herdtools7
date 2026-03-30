@@ -38,7 +38,7 @@ operator restrict_map[A,B](f: partial A -> B, dom: powerset(A)) -> (partial A ->
   prose_application = "the \hyperlink{def-restrictfunc}{restriction} of {f} to {dom}",
 };
 
-constant None { "the empty \optionalterm{}" };
+constant none { "the empty \optionalterm{}" };
 
 typedef CheckResult
 {
@@ -233,7 +233,7 @@ operator list_filter[T](bound_variable: T, elements: list0(T), condition: Bool) 
 operator filter_option_list[T](elements: list0(option(T))) -> (new_elements: list0(T))
 {
   math_macro = \filteroptionlist,
-  prose_application = "the non-$\None$ elements of {elements} in the order of appearance",
+  prose_application = "the non-$\none$ elements of {elements} in the order of appearance",
 };
 
 // Constructs a list out of a finite number of arguments.
@@ -2313,7 +2313,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
           (t, E_GetField(e2, field_name), ses1);
         }
         case error {
-          assoc_opt(fields, field_name) = None;
+          assoc_opt(fields, field_name) = none;
           --
           TypeError(TE_BF);
         }
@@ -2328,7 +2328,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
           { math_layout = [_] };
         }
         case error {
-          assoc_opt(fields, field_name) = None;
+          assoc_opt(fields, field_name) = none;
           --
           TypeError(TE_BF);
         }
@@ -2364,7 +2364,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
         (t, new_e, ses_new);
       }
       case error {
-        find_bitfield_opt(field_name, bitfields) -> None;
+        find_bitfield_opt(field_name, bitfields) -> none;
         --
         TypeError(TE_BF);
       }
@@ -2569,7 +2569,7 @@ typing relation annotate_field_init(
   math_layout = [_,_],
 } =
   annotate_expr(tenv, e') -> (t', e'', ses);
-  te_check(field_type(field_types, name) != None, TE_BF) -> True;
+  te_check(field_type(field_types, name) != none, TE_BF) -> True;
   field_type(field_types, name) =: some(t_spec');
   check_type_satisfies(tenv, t', t_spec') -> True;
   --
@@ -2630,7 +2630,7 @@ typing function get_bitfield_width(tenv: static_envs, name: Identifier, tfields:
   }
 
   case error {
-    assoc_opt(tfields, name) = None;
+    assoc_opt(tfields, name) = none;
     --
     TypeError(TE_BF);
   }
@@ -3224,7 +3224,7 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
       t_le1_anon =: make_structured(L, fields);
       L in make_set(label_T_Exception, label_T_Record);
       assoc_opt(fields, field_name) =: t_opt;
-      te_check(t_opt != None, TE_BF) -> True;
+      te_check(t_opt != none, TE_BF) -> True;
       t_opt =: some(t_field);
       check_type_satisfies(tenv, t_e, t_field) -> True;
       --
@@ -3235,7 +3235,7 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
       t_le1_anon =: T_Collection(fields);
       le2 =: LE_Var(collection_var_name);
       assoc_opt(fields, field_name) =: t_opt;
-      te_check(t_opt != None, TE_BF) -> True;
+      te_check(t_opt != none, TE_BF) -> True;
       t_opt =: some(t);
       check_type_satisfies(tenv, t_e, t) -> True;
       get_bitvector_const_width(tenv, t) -> n;
@@ -3275,7 +3275,7 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
       }
 
       case missing {
-        bitfield_opt = None;
+        bitfield_opt = none;
         --
         TypeError(TE_BF);
       }
@@ -3664,7 +3664,7 @@ typing function fold_bitvector_fields(tenv: static_envs, base_fields: list0(fiel
     le_fields =: concat(le_fields1, match_singleton_list(field));
     fold_bitvector_fields(tenv, base_fields, le_fields1) -> (start, slices1);
     assoc_opt(base_fields, field) =: ty_opt;
-    te_check(ty_opt != None, TE_BF) -> True;
+    te_check(ty_opt != none, TE_BF) -> True;
     ty_opt =: some(t_field);
     get_bitvector_const_width(tenv, t_field) -> field_width;
     length := start + field_width;
@@ -3733,7 +3733,7 @@ typing function base_value(tenv: static_envs, t: ty) ->
 
   case t_bits_non_static {
     t =: T_Bits(e, _);
-    reduce_to_z_opt(tenv, e) -> None;
+    reduce_to_z_opt(tenv, e) -> none;
     e_init := E_Slice(ELint(zero), make_singleton_list(Slice_Length(ELint(zero), e)));
     --
     e_init;
@@ -3833,7 +3833,7 @@ typing function constraint_abs_min(tenv: static_envs, c: int_constraint) ->
   case exact {
     c =: Constraint_Exact(e);
     reduce_to_z_opt(tenv, e) -> z_opt;
-    te_check(z_opt != None, TE_NBV) -> True;
+    te_check(z_opt != none, TE_NBV) -> True;
     z_opt =: some(z);
     --
     make_singleton_list(z);
@@ -3842,10 +3842,10 @@ typing function constraint_abs_min(tenv: static_envs, c: int_constraint) ->
   case range {
     c =: Constraint_Range(e1, e2);
     reduce_to_z_opt(tenv, e1) -> z_opt1;
-    te_check(z_opt1 != None, TE_NBV) -> True;
+    te_check(z_opt1 != none, TE_NBV) -> True;
     z_opt1 =: some(v1);
     reduce_to_z_opt(tenv, e2) -> z_opt2;
-    te_check(z_opt2 != None, TE_NBV) -> True;
+    te_check(z_opt2 != none, TE_NBV) -> True;
     z_opt2 =: some(v2);
     zs := cond(
             v1 > v2                 : empty_list,
@@ -4103,7 +4103,7 @@ typing function bitfield_slice_to_positions(tenv: static_envs, is_static: Bool, 
   "returns the set of integers defined by the bitfield
   slice {slice} in {positions}, if it can be determined
   via static evaluation or normalization, depending on
-  {is_static}, and $\None$ if it cannot be determined.
+  {is_static}, and $\none$ if it cannot be determined.
   \ProseOtherwiseTypeError",
   prose_transition = "converting the {slice} in {tenv} with the flag {is_static} yields",
 } =
@@ -4120,7 +4120,7 @@ semantics relation eval_slice_expr(tenv: static_envs, is_static: Bool, e: expr) 
 {
   "attempts to transform the expression {e} into a
   constant integer in the \staticenvironmentterm{}
-  {tenv}, yielding the result in {z_opt}, where $\None$
+  {tenv}, yielding the result in {z_opt}, where $\none$
   indicates it could not be transformed into a constant
   integer. If {is_static} is $\True$, then {e} is known
   to be \staticallyevaluableterm, and the transformation
@@ -4360,11 +4360,11 @@ typing relation annotate_catcher(tenv: static_envs, ses_in: powerset(TSideEffect
   math_layout = [_,_],
 } =
   case none {
-    c =: (None, ty, stmt);
+    c =: (none, ty, stmt);
     annotate_type(False, tenv, ty) -> (ty', ses_ty);
     check_structure_label(tenv, ty', label_T_Exception) -> True;
     annotate_block(tenv, stmt) -> (new_stmt, ses_block);
-    new_catcher := (None, ty', new_stmt);
+    new_catcher := (none, ty', new_stmt);
     ses := union(ses_block, ses_ty);
     --
     (ses_in, (new_catcher, ses));
@@ -4401,7 +4401,7 @@ semantics relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_
     s_m =: Throwing(v, v_ty, sg, env_throw);
     env =: (tenv, denv);
     env_throw =: (tenv1, denv_throw);
-    find_catcher(tenv, v_ty, catchers) -> some((None, _, s));
+    find_catcher(tenv, v_ty, catchers) -> some((none, _, s));
     eval_block(env_throw, s) -> C | DynErrorConfig(), DivergingConfig();
     new_g := ordered_po(sg, graph_of(C));
     --
@@ -4429,7 +4429,7 @@ semantics relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_
     otherwise_opt =: some(s);
     env =: (tenv, denv);
     env_throw =: (_, denv_throw);
-    find_catcher(tenv, v_ty, catchers) -> None;
+    find_catcher(tenv, v_ty, catchers) -> none;
     eval_block(env_throw, s) -> C | DynErrorConfig(), DivergingConfig();
     new_g := ordered_po(s_g, graph_of(C));
     --
@@ -4438,9 +4438,9 @@ semantics relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_
 
   case catch_none {
     s_m =: Throwing(v, v_ty, sg, env_throw);
-    otherwise_opt = None;
+    otherwise_opt = none;
     env =: (tenv, denv);
-    find_catcher(tenv, v_ty, catchers) -> None;
+    find_catcher(tenv, v_ty, catchers) -> none;
     --
     Throwing(v, v_ty, sg, env_throw)
     { [_] };
@@ -4471,14 +4471,14 @@ semantics function find_catcher(tenv: static_envs, v_ty: ty, catchers: list0(cat
   (catcher_opt: option(catcher))
 {
   "returns the first \catcherterm{} in {catchers} that matches the type {v_ty} in {catcher_opt}, if one exists.
-  Otherwise, it returns $\None$",
+  Otherwise, it returns $\none$",
   prose_application = "the first \catcherterm{} in {catchers} that matches {v_ty} in {tenv}",
   prose_transition = "finding the first \catcherterm{} in {catchers} that matches {v_ty} in {tenv} yields",
 } =
   case empty {
     catchers = empty_list;
     --
-    None;
+    none;
   }
 
   case match {
@@ -4601,7 +4601,7 @@ typing relation annotate_ty_opt_initial_value(
 
   case some_none {
     ty_opt' =: some(t);
-    initial_value = None;
+    initial_value = none;
     annotate_type(False, tenv, t) -> (t', ses_t);
     te_check(binary_or(not_single(must_be_pure), ses_is_pure(ses_t)), TE_SEV) -> True;
     base_value(tenv, t') -> e';
@@ -4612,14 +4612,14 @@ typing relation annotate_ty_opt_initial_value(
   }
 
   case none_some {
-    ty_opt' = None;
+    ty_opt' = none;
     initial_value =: some(e);
     annotate_expr(tenv, e) -> (t_e, e', ses_e);
     check_no_precision_loss(t_e) -> True;
     typed_e := (e', t_e, ses_e);
     te_check(binary_or(not_single(must_be_pure), ses_is_pure(ses_e)), TE_SEV) -> True;
     --
-    (typed_e, None, t_e)
+    (typed_e, none, t_e)
     { ([_], [_]) };
   }
 ;
@@ -4665,7 +4665,7 @@ typing relation update_global_storage(
 
   case let_non_normalizable {
     gdk = GDK_Let;
-    normalize_opt(tenv, initial_value') -> None;
+    normalize_opt(tenv, initial_value') -> none;
     --
     tenv;
   }
@@ -6056,20 +6056,20 @@ typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) 
 // The rule for this function isn't used. Instead a direct latex definition is used.
 typing function field_type(fields: list0((name: Identifier, type: ty)), id: Identifier) -> (ty_opt: option(ty))
 {
-  "returns the type associated with {id} in {fields}, if there exists a unique one, and $\None$, otherwise.",
+  "returns the type associated with {id} in {fields}, if there exists a unique one, and $\none$, otherwise.",
   prose_application = "the unique type associated with {id} in {fields}",
   prose_transition = "finding the unique type associated with {id} in {fields} yields",
 } =
   case empty {
     fields = empty_list;
     --
-    None;
+    none;
   }
 
   case found_unique {
     fields =: match_cons((field_id, t), rest);
     field_id = id;
-    field_type(rest, id) -> None;
+    field_type(rest, id) -> none;
     --
     some(t);
   }
@@ -6079,7 +6079,7 @@ typing function field_type(fields: list0((name: Identifier, type: ty)), id: Iden
     field_id = id;
     field_type(rest, id) -> some(_);
     --
-    None;
+    none;
   }
 
   case not_found {
@@ -6174,7 +6174,7 @@ typing relation lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (ty: 
     t =: T_Named(name_s);
     s =: T_Named(name_t);
     type_equal(tenv, t, s) -> False;
-    named_lowest_common_ancestor(tenv, name_s, name_t) -> None;
+    named_lowest_common_ancestor(tenv, name_s, name_t) -> none;
     make_anonymous(tenv, s) -> s_anon;
     make_anonymous(tenv, t) -> t_anon;
     lowest_common_ancestor(tenv, t_anon, s_anon) -> ty;
@@ -6551,7 +6551,7 @@ typing function named_lowest_common_ancestor(tenv: static_envs, t: Identifier, s
     s not_in t_supers;
     s not_in dom(tenv.static_envs_G.subtypes);
     --
-    None;
+    none;
   }
 ;
 
@@ -6660,7 +6660,7 @@ typing relation refine_constraint_by_sign(tenv: static_envs, p: fun Z -> Bool, c
   conservatively means that the new constraint may
   represent a superset of the values that a more precise
   reasoning may yield. If the set of those values is
-  empty the result is $\None$.",
+  empty the result is $\none$.",
   prose_transition = "refining {c} using {p} in {tenv} yields",
 };
 
@@ -6669,13 +6669,13 @@ typing function reduce_to_z_opt(tenv: static_envs, e: expr) ->
 {
   "returns an integer inside an optional if {e} can be
   symbolically simplified into an integer in {tenv} and
-  $\None$ otherwise. The expression {e} is assumed not
+  $\none$ otherwise. The expression {e} is assumed not
   to yield a \typingerrorterm{} when applying
   $\normalize$ to it.",
   prose_transition = "symbolically simplifying {e} to an integer in {tenv} yields",
 } =
   normalize(tenv, e) -> e_normalized;
-  z_opt := if e_normalized =: ELint(z) then some(z) else None
+  z_opt := if e_normalized =: ELint(z) then some(z) else none
   { (_, [_]) };
   --
   z_opt;
@@ -6691,7 +6691,7 @@ typing relation refine_constraints(
   "refines a list of constraints {cs} by applying the
   refinement function {f} to each constraint and
   retaining the constraints that do not refine to
-  $\None$. The resulting list of constraints is given in
+  $\none$. The resulting list of constraints is given in
   {new_cs}. If the list is empty, the result is either
   $\CannotUnderapproximate$ or $\CannotOverapproximate$,
   based on {approx} (this function is invoked in the
@@ -6743,7 +6743,7 @@ typing relation refine_constraint_for_div(approx: constants_set(Over,Under), op:
 typing relation filter_reduce_constraint_div(c: int_constraint) ->
          (c_opt: option(int_constraint))
 {
-  "returns $\None$ if {c} is an exact constraint for a
+  "returns $\none$ if {c} is an exact constraint for a
   \binopexpressionterm{} for dividing two integer
   literals where the denominator does not divide the
   numerator, and an optional containing {c} otherwise.
@@ -6755,34 +6755,34 @@ typing relation filter_reduce_constraint_div(c: int_constraint) ->
 } =
   case exact_literal {
     c =: Constraint_Exact(e);
-    get_literal_div_opt(e) -> some((z1, z2)) | None;
-    c_opt := if z2 > zero && is_not_integer(fraction(z1, z2)) then None else some(c);
+    get_literal_div_opt(e) -> some((z1, z2)) | none;
+    c_opt := if z2 > zero && is_not_integer(fraction(z1, z2)) then none else some(c);
     --
     c_opt;
   }
 
   case exact_not_literal {
     c =: Constraint_Exact(e);
-    get_literal_div_opt(e) -> None;
+    get_literal_div_opt(e) -> none;
     --
-    None;
+    none;
   }
 
   case range {
     c =: Constraint_Range(e1, e2);
     get_literal_div_opt(e1) -> e1_opt;
     get_literal_div_opt(e2) -> e2_opt;
-    z1_opt := if (e1_opt =: some((z1, z2))) && z2 > zero then some(round_up(fraction(z1, z2))) else None
+    z1_opt := if (e1_opt =: some((z1, z2))) && z2 > zero then some(round_up(fraction(z1, z2))) else none
     { (_, [_]) };
-    z2_opt := if (e2_opt =: some((z3, z4))) && z4 > zero then some(round_down(fraction(z3, z4))) else None
+    z2_opt := if (e2_opt =: some((z3, z4))) && z4 > zero then some(round_down(fraction(z3, z4))) else none
     { (_, [_]) };
     // Build result constraint based on z1_opt and z2_opt
     c_opt :=
     cond(
       binary_and((z1_opt =: some(z5a)), (z2_opt =: some(z6a)))  : make_constraint_range_opt(z5a, z6a),
-      binary_and((z1_opt =: some(z5d)), (z2_opt = None))        : some(AbbrevConstraintRange(ELint(z5d), e2)),
-      binary_and((z1_opt = None), (z2_opt =: some(z6e)))        : some(AbbrevConstraintRange(e1, ELint(z6e))),
-      binary_and((z1_opt = None), (z2_opt = None))              : some(c)
+      binary_and((z1_opt =: some(z5d)), (z2_opt = none))        : some(AbbrevConstraintRange(ELint(z5d), e2)),
+      binary_and((z1_opt = none), (z2_opt =: some(z6e)))        : some(AbbrevConstraintRange(e1, ELint(z6e))),
+      binary_and((z1_opt = none), (z2_opt = none))              : some(c)
     )
     { (_, [c1[_, [_]], c2[_, [_]], c3[_, [_]],_]) };
     --
@@ -6798,11 +6798,11 @@ typing function get_literal_div_opt(e: expr) ->
   integer expressions. If {e} matches this pattern, the
   result {range_opt} is an optional containing the pair
   of integers appearing in the operand expressions.
-  Otherwise, the result is $\None$.",
+  Otherwise, the result is $\none$.",
   prose_application = "the literal-division operands of {e}",
   prose_transition = "extracting the operands of {e} when it is a literal division yields",
 } =
-  range_opt := if e =: AbbrevEBinop(DIV, ELint(z1), ELint(z2)) then some((z1, z2)) else None
+  range_opt := if e =: AbbrevEBinop(DIV, ELint(z1), ELint(z2)) then some((z1, z2)) else none
   { (_, [_]) };
   --
   range_opt;
@@ -6829,7 +6829,7 @@ typing function make_constraint_range_opt(z1: Z, z2: Z) -> option(int_constraint
   case invalid {
     z1 > z2;
     --
-    None;
+    none;
   }
 ;
 
@@ -6906,7 +6906,7 @@ typing function explode_constraint(tenv: static_envs, c: int_constraint) ->
     c =: Constraint_Range(a, b);
     reduce_to_z_opt(tenv, a) -> z_a_opt;
     reduce_to_z_opt(tenv, b) -> z_b_opt;
-    binary_or(z_a_opt = None, z_b_opt = None);
+    binary_or(z_a_opt = none, z_b_opt = none);
     --
     (make_singleton_list(c), Precision_Full);
   }
@@ -6965,7 +6965,7 @@ typing function mem_bfs(tenv: static_envs, bfs2: list0(bitfield), bf1: bitfield)
 } =
   case none {
     bitfield_get_name(bf1) -> name;
-    find_bitfield_opt(name, bfs2) -> None;
+    find_bitfield_opt(name, bfs2) -> none;
     --
     False;
   }
@@ -7731,7 +7731,7 @@ typing function ses_for_subprogram(qualifier: option(func_qualifier)) ->
   prose_transition = "computing the \sideeffectsetterm{} for {qualifier} yields",
 } =
   case none_or_noreturn {
-    binary_or(qualifier = None, qualifier = some(Noreturn));
+    binary_or(qualifier = none, qualifier = some(Noreturn));
     s := make_set(GlobalEffect(SE_Impure), Immutability(False));
     --
     s;
@@ -8264,7 +8264,7 @@ typing function override_decls_sort(
     }
 
     case other {
-      binary_or(d != D_Func(_), (d =: D_Func(f)) && f.override = None);
+      binary_or(d != D_Func(_), (d =: D_Func(f)) && f.override = none);
       --
       (impdefs_tail, impls_tail, cons(d, normals_tail));
     }
@@ -8590,7 +8590,7 @@ typing function use_subtypes(fields: option((x: Identifier, subfields: list0(fie
     consisting of the identifier {x} (the type being subtyped) and fields {subfields}> yields",
 } =
   case none {
-    fields = None;
+    fields = none;
     --
     empty_set;
   }
@@ -8992,7 +8992,7 @@ typing function use_stmt(s: stmt) ->
   math_macro = \usestmt
 } =
   case pass_return_none {
-    binary_or(s = S_Pass, s = S_Return(None));
+    binary_or(s = S_Pass, s = S_Return(none));
     --
     empty_set;
   }
@@ -9202,12 +9202,12 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
       (new_s, tenv1, ses);
     }
 
-    case None {
-      s =: S_Decl(LDK_Var, ldi, ty_opt, None);
+    case none {
+      s =: S_Decl(LDK_Var, ldi, ty_opt, none);
       te_check(ty_opt =: some(t), TE_BD) -> True;
       annotate_type(False, tenv, t) -> (t', ses_t');
       base_value(tenv, t') -> e_init;
-      annotate_local_decl_item(tenv, t', LDK_Var, None, ldi) -> new_tenv;
+      annotate_local_decl_item(tenv, t', LDK_Var, none, ldi) -> new_tenv;
       new_s := S_Decl(LDK_Var, ldi, some(t'), some(e_init));
       --
       (new_s, new_tenv, ses_t');
@@ -9225,7 +9225,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
 
   case SCall {
     s =: S_Call(call);
-    annotate_call(tenv, call) -> (call', None, ses);
+    annotate_call(tenv, call) -> (call', none, ses);
     --
     (S_Call(call'), tenv, ses);
   }
@@ -9333,8 +9333,8 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     { math_layout =  ([_,_]) };
     ses_catchers := union_list(xs);
     case No_Otherwise {
-      otherwise = None;
-      otherwise' := None;
+      otherwise = none;
+      otherwise' := none;
       ses_otherwise := empty_set;
     }
 
@@ -9353,17 +9353,17 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   case SReturn {
     case Error {
       s =: S_Return(e_opt);
-      b := (tenv.static_envs_L.local_return_type = None) <=> (e_opt = None);
+      b := (tenv.static_envs_L.local_return_type = none) <=> (e_opt = none);
       b = False;
       --
       TypeError(TE_BSPD);
     }
 
-    case None {
-      s = S_Return(None);
-      tenv.static_envs_L.local_return_type = None;
+    case none {
+      s = S_Return(none);
+      tenv.static_envs_L.local_return_type = none;
       --
-      (S_Return(None), tenv, empty_set);
+      (S_Return(none), tenv, empty_set);
     }
 
     case Some {
@@ -9441,11 +9441,11 @@ typing relation annotate_local_decl_type_annot(
   math_layout = [input[_,_,_,_,_,_], _],
 } =
   case none {
-    ty_opt = None;
+    ty_opt = none;
     check_no_precision_loss(t_e) -> True;
     annotate_local_decl_item(tenv, t_e, ldk, some(typed_e), ldi) -> new_tenv;
     --
-    (new_tenv, None, empty_set)
+    (new_tenv, none, empty_set)
     { [_] };
   }
 
@@ -9568,9 +9568,9 @@ typing relation annotate_limit_expr(tenv: static_envs, e: option(expr)) ->
   math_layout = [_,_],
 } =
   case none {
-    e = None;
+    e = none;
     --
-    (None, empty_set);
+    (none, empty_set);
   }
 
   case some {
@@ -9879,7 +9879,7 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
 
   case SReturn {
     case none {
-      s = S_Return(None);
+      s = S_Return(none);
       --
       Returning((empty_list, empty_graph), env);
     }
@@ -10118,8 +10118,8 @@ semantics relation eval_limit(env: envs, e_limit_opt: option(expr)) -> (v_opt: o
  prose_transition = "evaluating {e_limit_opt} in {env} yields"
 } =
   case none {
-    e_limit_opt = None;
-    v_opt := None;
+    e_limit_opt = none;
+    v_opt := none;
     g := empty_graph;
     --
     (v_opt, g);
@@ -10141,9 +10141,9 @@ semantics relation tick_loop_limit(v_opt: option(N)) -> (v_opt': option(N)) | TD
  prose_transition = "decrementing {v_opt} yields"
 } =
   case none {
-    v_opt = None;
+    v_opt = none;
     --
-    None;
+    none;
   }
 
   case some_ok {
@@ -10555,7 +10555,7 @@ typing function subst_expr(tenv: static_envs, substs: list0((Identifier, expr)),
 
   case e_var_not_in_substs {
     e =: E_Var(s);
-    assoc_opt(substs, s) = None;
+    assoc_opt(substs, s) = none;
     --
     e;
   }
@@ -10769,13 +10769,13 @@ typing relation annotate_ret_ty(tenv: static_envs, call_type: subprogram_type, f
 
   case procedure_or_setter {
     call_type in make_set(ST_Procedure, ST_Setter);
-    func_sig_ret_ty_opt = None;
+    func_sig_ret_ty_opt = none;
     --
-    None;
+    none;
   }
 
   case ret_type_mismatch {
-    not((call_type in make_set(ST_Procedure, ST_Setter)) <=> (func_sig_ret_ty_opt = None))
+    not((call_type in make_set(ST_Procedure, ST_Setter)) <=> (func_sig_ret_ty_opt = none))
     { [_] };
     --
     TypeError(TE_BC)
@@ -11150,7 +11150,7 @@ semantics relation check_recurse_limit(env: envs, name: Identifier, e_limit_opt:
   prose_transition = "checking whether {e_limit_opt} has reached the limit associated with {name} in {env} yields",
 } =
   case none {
-    eval_limit(env, e_limit_opt) -> (None, _);
+    eval_limit(env, e_limit_opt) -> (none, _);
     --
     empty_graph;
   }
@@ -11308,7 +11308,7 @@ typing relation annotate_one_param(
   math_layout = [_,_],
 } =
   case type_parameterized {
-    binary_or(ty_opt = None, (ty_opt =: some(unconstrained_integer)));
+    binary_or(ty_opt = none, (ty_opt =: some(unconstrained_integer)));
     ty' := T_Int(Parameterized(x));
     annotate_type(False, tenv, ty') -> (ty, ses_ty);
     check_var_not_in_env(new_tenv, x) -> True;
@@ -11608,9 +11608,9 @@ typing relation annotate_return_type(
   math_layout = [_,_],
 } =
   case no_return_type {
-    return_type = None;
+    return_type = none;
     --
-    (tenv_with_args, None, ses_in)
+    (tenv_with_args, none, ses_in)
     { ([_], [_]) };
   }
 
@@ -11637,7 +11637,7 @@ typing function check_subprogram_purity(qualifier: option(func_qualifier), ses: 
   math_layout = [_,_],
 } =
   case none_or_noreturn {
-    binary_or(qualifier = None, qualifier = some(Noreturn));
+    binary_or(qualifier = none, qualifier = some(Noreturn));
     --
     True;
   }
@@ -11836,14 +11836,14 @@ typing function allowed_abs_configs(f: func) ->
 
   case returning_proc {
     f.qualifier != some(Noreturn);
-    f.return_type = None;
+    f.return_type = none;
     --
     make_set(Abs_Abnormal, Abs_Continuing, Abs_Returning);
   }
 
   case func {
     f.qualifier != some(Noreturn);
-    f.return_type != None;
+    f.return_type != none;
     --
     make_set(Abs_Abnormal, Abs_Returning);
   }
@@ -11962,7 +11962,7 @@ typing function approx_stmt(tenv: static_envs, s: stmt) ->
   }
 
   case s_try_none {
-    s =: S_Try(body, catchers, None);
+    s =: S_Try(body, catchers, none);
     approx_stmt(tenv, body) -> bodyconfigs;
     catchers =: list_combine_three(catch_pats, catch_tys, catch_stmts);
     INDEX(i, catch_stmts: approx_stmt(tenv, catch_stmts[i]) -> catch_config_list[i]);
@@ -12005,7 +12005,7 @@ typing function normalize(tenv: static_envs, e: expr) ->
   }
 
   case not_normalizable {
-    to_ir(tenv, e) -> None;
+    to_ir(tenv, e) -> none;
     --
     e;
   }
@@ -12057,7 +12057,7 @@ typing function to_ir(tenv: static_envs, e: expr) ->
   cannot be represented by a symbolic expression
   (because, for example, it contains operations that are
   not available in \symbolicexpressionsterm{}), the
-  result is $\None$.",
+  result is $\none$.",
   prose_transition = "transforming {e} in the context of {tenv}
     into a \symbolicexpressionsterm{} yields",
 } =
@@ -12072,7 +12072,7 @@ typing function to_ir(tenv: static_envs, e: expr) ->
     e =: E_Literal(v);
     ast_label(v) != label_L_Int;
     --
-    None;
+    none;
   }
 
   case evar_constant_int {
@@ -12085,17 +12085,17 @@ typing function to_ir(tenv: static_envs, e: expr) ->
 
   case evar_immutable_expr {
     e =: E_Var(s);
-    lookup_constant(tenv, s) -> None;
+    lookup_constant(tenv, s) -> none;
     lookup_immutable_expr(tenv, s) -> some(e');
-    to_ir(tenv, e') -> some(p) | None;
+    to_ir(tenv, e') -> some(p) | none;
     --
     some(p);
   }
 
   case evar_exact_constraint {
     e =: E_Var(s);
-    lookup_constant(tenv, s) -> None;
-    lookup_immutable_expr(tenv, s) -> None;
+    lookup_constant(tenv, s) -> none;
+    lookup_immutable_expr(tenv, s) -> none;
     type_of(tenv, s) -> t;
     make_anonymous(tenv, t) -> t1;
     case int {
@@ -12116,15 +12116,15 @@ typing function to_ir(tenv: static_envs, e: expr) ->
       case evar_non_int {
         ast_label(t1) != label_T_Int;
         --
-        None;
+        none;
       }
     }
   }
 
   case ebinop_plus {
     e =: E_Binop(ADD, e1, e2);
-    to_ir(tenv, e1) -> some(p1) | None;
-    to_ir(tenv, e2) -> some(p2) | None;
+    to_ir(tenv, e1) -> some(p1) | none;
+    to_ir(tenv, e2) -> some(p2) | none;
     add_polynomials(p1, p2) -> p;
     --
     some(p);
@@ -12159,8 +12159,8 @@ typing function to_ir(tenv: static_envs, e: expr) ->
     e =: E_Binop(MUL, e1, e2);
     is_div_binop(e1) -> False;
     is_div_binop(e2) -> False;
-    to_ir(tenv, e1) -> some(p1) | None;
-    to_ir(tenv, e2) -> some(p2) | None;
+    to_ir(tenv, e1) -> some(p1) | none;
+    to_ir(tenv, e2) -> some(p2) | none;
     mul_polynomials(p1, p2) -> p;
     --
     some(p);
@@ -12168,7 +12168,7 @@ typing function to_ir(tenv: static_envs, e: expr) ->
 
   case ebinop_div_int_denominator {
     e =: E_Binop(DIV, e1, E_Literal(L_Int(i2)));
-    to_ir(tenv, e1) -> some(p1) | None;
+    to_ir(tenv, e1) -> some(p1) | none;
     f2 := fraction(one, i2);
     scale_polynomial(p1, f2) -> p;
     --
@@ -12177,8 +12177,8 @@ typing function to_ir(tenv: static_envs, e: expr) ->
 
   case ebinop_div_monomial_denominator {
     e =: E_Binop(DIV, e1, e2);
-    to_ir(tenv, e1) -> some(p1) | None;
-    to_ir(tenv, e2) -> some(p2) | None;
+    to_ir(tenv, e1) -> some(p1) | none;
+    to_ir(tenv, e2) -> some(p2) | none;
     bindings(p2) =: match_singleton_list((m, factor));
     polynomial_divide_by_term(p1, m, factor) -> p_opt;
     --
@@ -12188,29 +12188,29 @@ typing function to_ir(tenv: static_envs, e: expr) ->
   case ebinop_div_non_monomial_denominator {
     e =: E_Binop(DIV, e1, e2);
     to_ir(tenv, e1) -> _;
-    to_ir(tenv, e2) -> some(p2) | None;
+    to_ir(tenv, e2) -> some(p2) | none;
     not(bindings(p2) = match_singleton_list(_));
     --
-    None;
+    none;
   }
 
   case ebinop_shl_non_lint_exponent {
     e =: E_Binop(SHL, _, e2);
     not(e2 = ELint(_));
     --
-    None;
+    none;
   }
 
   case ebinop_shl_neg_shift {
     e =: E_Binop(SHL, _, E_Literal(L_Int(i2)));
     i2 < zero;
     --
-    None;
+    none;
   }
 
   case ebinop_shl_okay {
     e =: E_Binop(SHL, e1, E_Literal(L_Int(i2)));
-    to_ir(tenv, e1) -> some(p1) | None;
+    to_ir(tenv, e1) -> some(p1) | none;
     i2 >= zero;
     f2 := as_rational(num_exponent(two, i2));
     scale_polynomial(p1, f2) -> p;
@@ -12223,7 +12223,7 @@ typing function to_ir(tenv: static_envs, e: expr) ->
     op not_in make_set(ADD, DIV, MUL, SHL, SUB);
     binary_or(e1 != E_Literal(_), e2 != E_Literal(_));
     --
-    None;
+    none;
   }
 
   case ebinop_other_literals_non_int_result {
@@ -12232,7 +12232,7 @@ typing function to_ir(tenv: static_envs, e: expr) ->
     binop_literals(op, v1, v2) -> v;
     ast_label(v) != label_L_Int;
     --
-    None;
+    none;
   }
 
   case ebinop_other_literals_int_result {
@@ -12255,7 +12255,7 @@ typing function to_ir(tenv: static_envs, e: expr) ->
     e =: E_Unop(op, _);
     op != NEG;
     --
-    None;
+    none;
   }
 
   case atc {
@@ -12268,7 +12268,7 @@ typing function to_ir(tenv: static_envs, e: expr) ->
   case other {
     ast_label(e) not_in make_set(label_E_ATC, label_E_Binop, label_E_Literal, label_E_Unop, label_E_Var);
     --
-    None;
+    none;
   }
 ;
 
@@ -12356,7 +12356,7 @@ typing function expr_equal_norm(tenv: static_envs, e1: expr, e2: expr) ->
   }
 
   case some_unsupported {
-    binary_or(ir1_opt = None, ir2_opt = None);
+    binary_or(ir1_opt = none, ir2_opt = none);
     --
     False;
   }
@@ -12969,7 +12969,7 @@ typing function polynomial_divide_by_term(p1: polynomial, m: unitary_monomial, f
   (p_opt: option(polynomial))
 {
   "returns the result of dividing the polynomial {p1} by the unitary monomial {m} multiplied by {f}.
-  If the division can be performed, the result is a polynomial, and otherwise it is $\None$.",
+  If the division can be performed, the result is a polynomial, and otherwise it is $\none$.",
   prose_transition = "returning the result of dividing {p1} by {m} multiplied by {f} yields",
   math_layout = ([_,_,_], _),
 }; // This function is expressed directly in LaTeX; no rule needed.
@@ -13265,11 +13265,11 @@ typing function normalize_opt(tenv: static_envs, e: expr) ->
          (new_e_opt: option(expr)) | type_error
 {
   "is similar to $\normalize$, except that it returns
-  $\None$ when {e} is not an expression that can be
+  $\none$ when {e} is not an expression that can be
   symbolically simplified. \ProseOtherwiseTypeError",
   prose_transition = "normalizing {e} in the context of {tenv} yields",
 } =
-  to_ir(tenv, e) -> some(p) | None, TypeErrorConfig();
+  to_ir(tenv, e) -> some(p) | none, TypeErrorConfig();
   // to_ir(tenv, e) -> CannotBeTransformed;
   normalize(tenv, e) -> new_e;
   --
@@ -13526,7 +13526,7 @@ typing function symdom_subset(tenv: static_envs, cd1: symdom, cd2: symdom) ->
   case constrained_finite_top {
     cd1 =: ConstrainedDom(c1);
     cd2 = Finite(_);
-    approx_constraints(tenv, Over, make_singleton_list(c1)) -> None;
+    approx_constraints(tenv, Over, make_singleton_list(c1)) -> none;
     --
     False;
   }
@@ -13553,16 +13553,16 @@ typing function approx_constraints(tenv: static_envs, approx: constants_set(Over
   case non_empty_fail {
     cs != empty_list;
     s_opts := list_map(c, cs, approx_constraint(tenv, approx, c));
-    list_exists(s_opt, s_opts, s_opt = None);
+    list_exists(s_opt, s_opts, s_opt = none);
     --
-    None;
+    none;
   }
 
   case over {
     approx = Over;
     cs != empty_list;
     s_opts := list_map(c, cs, approx_constraint(tenv, approx, c));
-    list_forall(s_opt, s_opts, s_opt != None);
+    list_forall(s_opt, s_opts, s_opt != none);
     s_sets := list_map(i, indices(s_opts), if s_opts[i] =: some(s1) then s1 else empty_set);
     --
     some(union_list_finite(s_sets));
@@ -13572,7 +13572,7 @@ typing function approx_constraints(tenv: static_envs, approx: constants_set(Over
     approx = Under;
     cs != empty_list;
     s_opts := list_map(c, cs, approx_constraint(tenv, approx, c));
-    list_forall(s_opt, s_opts, s_opt != None);
+    list_forall(s_opt, s_opts, s_opt != none);
     s_sets := list_map(i, indices(s_opts), if s_opts[i] =: some(s1) then s1 else empty_set);
     --
     some(union_list_finite(s_sets));
@@ -13589,7 +13589,7 @@ typing function approx_constraint(tenv: static_envs, approx: constants_set(Over,
   either overapproximation or underapproximation, based
   on the \approximationdirectionterm{} {approx}.
   If {c} can be approximated, the result is the approximating set in an optional.
-  Otherwise, the result is $\None$.",
+  Otherwise, the result is $\none$.",
   prose_application = "a conservative approximation of {c} by a set of integers",
   prose_transition = "conservatively approximating {c} by a set of integers yields",
 } =
@@ -13603,8 +13603,8 @@ typing function approx_constraint(tenv: static_envs, approx: constants_set(Over,
   case range_over_interval {
     approx = Over;
     c =: Constraint_Range(e1, e2);
-    approx_expr_min(tenv, e1) -> some(z1) | None;
-    approx_expr_max(tenv, e2) -> some(z2) | None;
+    approx_expr_min(tenv, e1) -> some(z1) | none;
+    approx_expr_max(tenv, e2) -> some(z2) | none;
     make_interval(Over, z1, z2) -> s_interval_opt;
     --
     s_interval_opt;
@@ -13616,7 +13616,7 @@ typing function approx_constraint(tenv: static_envs, approx: constants_set(Over,
     approx_expr_max(tenv, e1) -> some(z1);
     approx_expr_min(tenv, e2) -> some(z2);
     make_interval(Under, z1, z2) -> s_interval_opt;
-    s := if (s_interval_opt =: some(s_interval)) then some(s_interval) else None;
+    s := if (s_interval_opt =: some(s_interval)) then some(s_interval) else none;
     --
     s;
   }
@@ -13626,9 +13626,9 @@ typing function approx_constraint(tenv: static_envs, approx: constants_set(Over,
     c =: Constraint_Range(e1, e2);
     approx_expr_max(tenv, e1) -> z1_opt;
     approx_expr_min(tenv, e2) -> z2_opt;
-    binary_or(z1_opt = None, z2_opt = None);
+    binary_or(z1_opt = none, z2_opt = none);
     --
-    None;
+    none;
   }
 ;
 
@@ -13660,12 +13660,12 @@ typing function approx_expr_min(tenv: static_envs, e: expr) ->
   "approximates the minimal integer represented by the
   expression {e} in any environment consisting of the
   \staticenvironmentterm{} {tenv}.
-  The result is an integer, or $\None$ if approximation fails.",
+  The result is an integer, or $\none$ if approximation fails.",
   prose_application = "a conservative approximation of the minimal integer represented by {e} in {tenv}",
   prose_transition = "approximating the minimal integer represented by {e} in any environment consisting
     of {tenv} yields",
 } =
-  approx_expr(tenv, Over, e) -> some(s) | None;
+  approx_expr(tenv, Over, e) -> some(s) | none;
   --
   some(set_min(s));
 ;
@@ -13676,12 +13676,12 @@ typing function approx_expr_max(tenv: static_envs, e: expr) ->
   "approximates the maximal integer represented by the
   expression {e} in any environment consisting of the
   \staticenvironmentterm{} {tenv}.
-  The result is an integer, or $\None$ if approximation fails.",
+  The result is an integer, or $\none$ if approximation fails.",
   prose_application = "a conservative approximation of the maximal integer represented by {e} in {tenv}",
   prose_transition = "approximating the maximal integer represented by {e} in any environment consisting
     of {tenv} yields",
 } =
-  approx_expr(tenv, Over, e) -> some(s) | None;
+  approx_expr(tenv, Over, e) -> some(s) | none;
   --
   some(set_max(s));
 ;
@@ -13690,9 +13690,9 @@ typing function approx_bottom_top(approx: constants_set(Under,Over)) ->
          (s_opt: option(powerset_finite(Z)))
 {
   "returns either the empty set in an optional, if {approx} is $\Under$,
-  and $\None$ otherwise.",
-  prose_application = "either the empty set or $\None$, depending on {approx}",
-  prose_transition = "returning either the empty set or $\None$, depending on {approx} yields",
+  and $\none$ otherwise.",
+  prose_application = "either the empty set or $\none$, depending on {approx}",
+  prose_transition = "returning either the empty set or $\none$, depending on {approx} yields",
 } =
   case under {
     --
@@ -13702,7 +13702,7 @@ typing function approx_bottom_top(approx: constants_set(Under,Over)) ->
   case over {
     approx = Over;
     --
-    None;
+    none;
   }
 ;
 
@@ -13770,7 +13770,7 @@ typing function approx_expr(tenv: static_envs, approx: constants_set(Over,Under)
 
   case unop {
     e =: E_Unop(op, e1);
-    approx_expr(tenv, approx, e1) -> some(s1) | None;
+    approx_expr(tenv, approx, e1) -> some(s1) | none;
     zs := list_set(s1);
     INDEX(i, zs: unop_literals(op, L_Int(zs[i])) -> L_Int(zs'[i]));
     --
@@ -13779,11 +13779,11 @@ typing function approx_expr(tenv: static_envs, approx: constants_set(Over,Under)
 
   case binop_precise {
     e =: E_Binop(op, e1, e2);
-    approx_expr(tenv, approx, e1) -> some(s1) | None;
-    approx_expr(tenv, approx, e2) -> some(s2) | None;
+    approx_expr(tenv, approx, e1) -> some(s1) | none;
+    approx_expr(tenv, approx, e2) -> some(s2) | none;
     cs1 := intset_to_constraints(s1);
     cs2 := intset_to_constraints(s2);
-    approx_constraint_binop(tenv, approx, op, cs1, cs2) -> some((cs, plf)) | None
+    approx_constraint_binop(tenv, approx, op, cs1, cs2) -> some((cs, plf)) | none
     { [_] };
     binary_or(plf = Precision_Full, (plf = Precision_Lost && approx = Under));
     approx_constraints(tenv, approx, cs) -> s_approx;
@@ -13797,17 +13797,17 @@ typing function approx_expr(tenv: static_envs, approx: constants_set(Over,Under)
     approx_expr(tenv, approx, e2) -> some(s2);
     cs1 := intset_to_constraints(s1);
     cs2 := intset_to_constraints(s2);
-    approx_constraint_binop(tenv, approx, op, cs1, cs2) -> some((cs_unused, plf)) | None
+    approx_constraint_binop(tenv, approx, op, cs1, cs2) -> some((cs_unused, plf)) | none
     { [_] };
     plf = Precision_Lost && approx = Over;
     --
-    None;
+    none;
   }
 
   case e_cond {
     e =: E_Cond(test, e2, e3);
-    approx_expr(tenv, approx, e2) -> some(s2) | None;
-    approx_expr(tenv, approx, e3) -> some(s3) | None;
+    approx_expr(tenv, approx, e2) -> some(s2) | none;
+    approx_expr(tenv, approx, e3) -> some(s3) | none;
     s := if approx = Over then union_finite(s2, s3) else intersect_finite(s2, s3);
     --
     some(s);
@@ -13829,7 +13829,7 @@ typing function approx_constraint_binop(tenv: static_envs, approx: constants_set
   \approximationdirectionterm{} {approx} in the context
   of the static environment {tenv}, resulting in the
   list of constraints and \precisionlossindicatorterm{},
-  or $\None$ if the result could not be overapproximated.",
+  or $\none$ if the result could not be overapproximated.",
   prose_application = "a conservative approximation of applying {op} to {s1} and {s2}",
   prose_transition = "approximating the application of {op} to
     {s1} and
@@ -13849,7 +13849,7 @@ typing function approx_constraint_binop(tenv: static_envs, approx: constants_set
     approx = Over;
     annotate_constraint_binop(Over, tenv, op, s1, s2) -> CannotOverapproximate;
     --
-    None;
+    none;
   }
 
   case under_precise {
@@ -14391,9 +14391,9 @@ typing relation annotate_extra_fields(tenv: static_envs, name: Identifier, ty: t
   math_layout = [_,_],
 } =
   case none {
-    s = None;
+    s = none;
     --
-    (tenv, ty, None);
+    (tenv, ty, none);
   }
 
   case empty_fields {
@@ -14620,7 +14620,7 @@ typing relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
     }
 
     case expr_not_enum {
-      get_variable_enum(tenv, e) -> None;
+      get_variable_enum(tenv, e) -> none;
       annotate_symbolic_constrained_integer(tenv, e) -> (e', ses_index);
       index' := ArrayLength_Expr(e');
     }
@@ -14719,7 +14719,7 @@ typing function get_variable_enum(tenv: static_envs, e: expr) ->
   of an \enumerationtypeterm{}. If so, the result is
   the \optionalterm{} pair consisting of the name of the variable {x} and the list of labels
   {labels}, declared for the \enumerationtypeterm{}.
-  Otherwise, the result is $\None$.",
+  Otherwise, the result is $\none$.",
   prose_application = "the \optionalterm{} for the enumeration identifier and labels
     for the {e}, if it a variable of an enumerationtypeterm{}",
   prose_transition = "testing whether {e} represents a variable of an \enumerationtypeterm{} yields",
@@ -14727,14 +14727,14 @@ typing function get_variable_enum(tenv: static_envs, e: expr) ->
   case not_evar {
     ast_label(e) != label_E_Var;
     --
-    None;
+    none;
   }
 
   case undeclared {
     e =: E_Var(x);
     x not_in dom(tenv.static_envs_G.declared_types);
     --
-    None;
+    none;
   }
 
   case declared_enum {
@@ -14752,7 +14752,7 @@ typing function get_variable_enum(tenv: static_envs, e: expr) ->
     make_anonymous(tenv, t) -> t1;
     ast_label(t1) != label_T_Enum;
     --
-    None;
+    none;
   }
 ;
 
@@ -14817,7 +14817,7 @@ typing function find_bitfield_opt(name: Identifier, bitfields: list0(bitfield)) 
 {
   "returns the bitfield associated with the name {name}
   in the list of bitfields {bitfields}, if there is one.
-  Otherwise, the result is $\None$.",
+  Otherwise, the result is $\none$.",
   prose_application = "the bitfield associated with {name} in {bitfields}",
   prose_transition = "finding the bitfield associated with {name} in {bitfields} yields",
 } =
@@ -14841,7 +14841,7 @@ typing function find_bitfield_opt(name: Identifier, bitfields: list0(bitfield)) 
   case empty {
     bitfields = empty_list;
     --
-    None;
+    none;
   }
 ;
 
@@ -14971,7 +14971,7 @@ typing function lookup_constant(tenv: static_envs, s: Identifier) ->
 {
   "looks up the \staticenvironmentterm{} {tenv} for a constant
   associated with an identifier {s}. The result is
-  $\None$ if {s} is not associated with any constant.",
+  $\none$ if {s} is not associated with any constant.",
   prose_application = "the \optionalterm{} constant associated with {s} in {tenv}",
   prose_transition = "looking up {tenv} for a constant associated with {s} yields",
 } =
@@ -14985,7 +14985,7 @@ typing function lookup_constant(tenv: static_envs, s: Identifier) ->
   case does_not_exist {
     s not_in dom(tenv.static_envs_G.constant_values);
     --
-    None;
+    none;
   }
 ;
 
@@ -15008,7 +15008,7 @@ typing function lookup_immutable_expr(tenv: static_envs, x: Identifier) ->
 {
   "looks up the \staticenvironmentterm{} {tenv} for an
   immutable expression associated with the identifier
-  {x}. The result is \None if no such expression exists.",
+  {x}. The result is \none if no such expression exists.",
   prose_application = "the \optionalterm{} immutable expression associated with {x} in {tenv}",
   prose_transition = "looking up {tenv} for an immutable expression
     associated with {x} yields",
@@ -15032,7 +15032,7 @@ typing function lookup_immutable_expr(tenv: static_envs, x: Identifier) ->
     x not_in dom(tenv.static_envs_L.local_expr_equiv);
     x not_in dom(tenv.static_envs_G.global_expr_equiv);
     --
-    None;
+    none;
   }
 ;
 
@@ -15135,7 +15135,7 @@ typing function add_immutable_expression(
 
   case skip_none {
     ldk = LDK_Let;
-    e_opt = None;
+    e_opt = none;
     --
     tenv;
   }
@@ -15144,7 +15144,7 @@ typing function add_immutable_expression(
     ldk = LDK_Let;
     e_opt =: some((e1, ses_e1));
     should_remember_immutable_expression(ses_e1) -> True;
-    normalize_opt(tenv, e1) -> None;
+    normalize_opt(tenv, e1) -> none;
     --
     tenv;
   }

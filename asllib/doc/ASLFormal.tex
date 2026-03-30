@@ -362,11 +362,11 @@ The parametric function
 \[
   \filteroptionlist{\KleeneStar{\Option{ T }}} \aslto \KleeneStar{T}
 \]
-filters a list of \optionalterm{} elements, removing those which are $\None$ and unwrapping those which are $\some{ v }$ to $v$:
+filters a list of \optionalterm{} elements, removing those which are $\none$ and unwrapping those which are $\some{ v }$ to $v$:
 \[
 \filteroptionlist{L} \triangleq \begin{cases}
   \emptylist & \text{if }L = \emptylist\\
-  \filteroptionlist{L'} & \text{if }L = \None \cons L'\\
+  \filteroptionlist{L'} & \text{if }L = \none \cons L'\\
   v \cons \filteroptionlist{L'} & \text{if }L = \some{v} \cons L' \enspace.
 \end{cases}
 \]
@@ -444,7 +444,7 @@ The function
   \assocopt{\overname{\KleeneStar{(\Identifier, T)}}{\vli}}{\overname{\Identifier}{\id}} \aslto \Option{\overname{T}{\vv}}
 \]
 returns $\some{\vv}$ for the first pair $(\id, \vv)$ in the list of pairs $\vli$,
-or $\None$ if no such pair exists.
+or $\none$ if no such pair exists.
 \end{definition}
 
 \begin{definition}[Taking the union of a list of sets]
@@ -500,10 +500,10 @@ $\{ L(v_{1..k}) \;|\; v_1\in T_1,\ldots,v_k\in T_k \}$.
 The notation $\some{x} \triangleq \{x\}$ stands for a singleton
 set containing $x$.
 %
-The constant \RenderConstant{None} is an alias for the empty
+The constant \RenderConstant{none} is an alias for the empty
 set. It is used in places where either the empty set or a singleton set is expected.
 %
-The type $\Option{T} \triangleq \{ \None \} \cup \{ \some{x} \;|\; x\in T\}$ denotes
+The type $\Option{T} \triangleq \{ \none \} \cup \{ \some{x} \;|\; x\in T\}$ denotes
 all singleton sets of elements from $T$ as well as the empty set.
 %
 We refer to $\Option{T}$ as the \emph{optional data type for the parameter
@@ -1135,8 +1135,8 @@ and applies it to an optional value:
 
   \item \AllApplyCase{None}
   \begin{itemize}
-    \item $\vvopt$ is $\None$;
-    \item \Proseeqdef{$\vvoptnew$}{$\None$}.
+    \item $\vvopt$ is $\none$;
+    \item \Proseeqdef{$\vvoptnew$}{$\none$}.
   \end{itemize}
 \end{itemize}
 
@@ -1149,7 +1149,7 @@ and applies it to an optional value:
 }
 \hva\and
 \inferrule[None]{}{
-  \mapopt{f}(\overname{\None}{\vvopt}) \longrightarrow \overname{\None}{\vvoptnew}
+  \mapopt{f}(\overname{\none}{\vvopt}) \longrightarrow \overname{\none}{\vvoptnew}
 }
 \end{mathpar}
 

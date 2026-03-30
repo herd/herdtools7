@@ -163,7 +163,7 @@ In particular, rather than directly building the abstract syntax for accessors, 
    \FIELDparameters &:& \astof{\vparamsopt},\\
    \FIELDargs &:& \astof{\vfuncargs},\\
    \funcbody &:& \astof{\vfuncbody},\\
-   \FIELDreturntype &:& \None,\\
+   \FIELDreturntype &:& \none,\\
    \funcsubprogramtype &:& \STProcedure,\\
    \FIELDrecurselimit &:& \astof{\vrecurselimit}\\
    \funcbuiltin &:& \False\\
@@ -250,7 +250,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule[no\_limit]{}{
   \buildrecurselimit\left(\overname{\Nrecurselimit(\emptysentence)}{\vparsednode}\right)
   \astarrow
-  \overname{\None}{\vastnode}
+  \overname{\none}{\vastnode}
 }
 \end{mathpar}
 
@@ -474,7 +474,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule{
-  \vqualifier \eqdef \ifthenelseop[H]{\vaccessorpair.\accessorpairisreadonly}{\some{\Readonly}}{\None} \hva\\\\
+  \vqualifier \eqdef \ifthenelseop[H]{\vaccessorpair.\accessorpairisreadonly}{\some{\Readonly}}{\none} \hva\\\\
   {
   \vgetter \eqdef
       \DFunc\left\{
@@ -485,7 +485,7 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
         \funcbody &:& \vaccessorpair.\accessorpairgetter,\\
         \FIELDreturntype &:& \some{\tty},\\
         \funcsubprogramtype &:& \STGetter,\\
-        \FIELDrecurselimit   &:& \None\\
+        \FIELDrecurselimit   &:& \none\\
         \funcbuiltin &:& \False\\
         \funcqualifierfield &:& \vqualifier\\
         \funcoverride &:& \voverride
@@ -501,11 +501,11 @@ transforms an $\accessorpair$ into an AST node $\vastnode$.
         \FIELDparameters &:& \vparameters,\\
         \FIELDargs &:& \vsetterargs,\\
         \funcbody &:& \vaccessorpair.\accessorpairsetter,\\
-        \FIELDreturntype &:& \None,\\
+        \FIELDreturntype &:& \none,\\
         \funcsubprogramtype &:& \STSetter,\\
-        \FIELDrecurselimit   &:& \None\\
+        \FIELDrecurselimit   &:& \none\\
         \funcbuiltin &:& \False\\
-        \funcqualifierfield &:& \None\\
+        \funcqualifierfield &:& \none\\
         \funcoverride &:& \voverride
       \end{array}
       \right\}
@@ -542,7 +542,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[none]{}{
-  \buildqualifier(\overname{\Nqualifier(\emptysentence)}{\vparsednode}) \astarrow \None
+  \buildqualifier(\overname{\Nqualifier(\emptysentence)}{\vparsednode}) \astarrow \none
 }
 \end{mathpar}
 
@@ -602,7 +602,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
 \begin{mathpar}
 \inferrule[none]{}{
-  \buildoverride(\overname{\Noverride(\emptysentence)}{\vparsednode}) \astarrow \None
+  \buildoverride(\overname{\Noverride(\emptysentence)}{\vparsednode}) \astarrow \none
 }
 \end{mathpar}
 
@@ -891,7 +891,7 @@ as \collectiontypesterm.
 
 \ExampleDef{Annotating Subprogram Return Types}
 In \listingref{MatchFuncRes}, the subprogram \verb|proc| has no return type.
-Annotating its return type does not modify the \staticenvironmentterm{}, and the optional annotated return type is $\None$.
+Annotating its return type does not modify the \staticenvironmentterm{}, and the optional annotated return type is $\none$.
 In contrast, the subprogram \verb|returns_value| updates the \staticenvironmentterm{} by
 binding $\FIELDreturntype$ to $\unconstrainedinteger$ and returning $\unconstrainedinteger$
 as the optional return type.

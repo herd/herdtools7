@@ -710,12 +710,12 @@ The root of the infinite \derivationtreeterm{} is the following one:
 \inferrule{
   {
   \begin{array}{rc}
-  L_1:& \evallimit(\env, \None) \evalarrow \None\\
-  V_1:& \evalloop(\env, \True, \None, \ETrue, \SPass) \evalarrow \Diverging
+  L_1:& \evallimit(\env, \none) \evalarrow \none\\
+  V_1:& \evalloop(\env, \True, \none, \ETrue, \SPass) \evalarrow \Diverging
   \end{array}
   }
 }{
-  S_1: \evalstmt(\env, \SWhile(\ETrue, \None, \SPass)) \evalarrow \Diverging
+  S_1: \evalstmt(\env, \SWhile(\ETrue, \none, \SPass)) \evalarrow \Diverging
 }
 \end{mathpar}
 
@@ -726,13 +726,13 @@ and the rest of the \derivationtreeterm{} is given as:
   \begin{array}{rc}
   E_{n+1}:& \evalexpr(\env, \ETrue) \evalarrow \ResultExpr(\nvbool(\vb), \env)\\
   B_{n+1}:& \vb = \True\\
-  T_{n+1}:& \ticklooplimit(\None) \evalarrow \None\\
+  T_{n+1}:& \ticklooplimit(\none) \evalarrow \none\\
           & \left(\inferrule{Q_{n+1}:\evalstmt(\env, \SPass)\evalarrow \Continuing(\env)}{P_{n+1}: \evalblock(\env, \SPass) \evalarrow \Continuing(\env)}\right)\\
-  V_{n+1}:& \evalloop(\env, \True, \None, \ETrue, \SPass) \evalarrow \Diverging
+  V_{n+1}:& \evalloop(\env, \True, \none, \ETrue, \SPass) \evalarrow \Diverging
   \end{array}
   }
 }{
-  V_n: \evalloop(\env, \True, \None, \ETrue, \SPass) \evalarrow \Diverging
+  V_n: \evalloop(\env, \True, \none, \ETrue, \SPass) \evalarrow \Diverging
 }
 \end{mathpar}
 
@@ -744,19 +744,19 @@ which visually looks like the following:
   \begin{array}{rc}
   E_{n+1}:& \evalexpr(\env, \ETrue) \evalarrow \ResultExpr(\nvbool(\vb), \env)\\
   B_{n+1}:& \vb = \True\\
-  T_{n+1}:& \ticklooplimit(\None) \evalarrow \None\\
+  T_{n+1}:& \ticklooplimit(\none) \evalarrow \none\\
   & \left(\inferrule{Q_{n+1}:\evalstmt(\env, \SPass)\evalarrow \Continuing(\env)}{P_{n+1}: \evalblock(\env, \SPass) \evalarrow \Continuing(\env)}\right)\\
   &
   \left(
   \inferrule{
     E_{n+2}\\ B_{n+2}\\ T_{n+2}\\ P_{n+2}\\ V_{n+2}\\ \inferrule{\vdots}{V_{n+2}}
   }{
-    V_{n+1}: \evalloop(\env, \True, \None, \ETrue, \SPass) \evalarrow \Diverging
+    V_{n+1}: \evalloop(\env, \True, \none, \ETrue, \SPass) \evalarrow \Diverging
   }
   \right)
   \end{array}
   }
 }{
-  V_n: \evalloop(\env, \True, \None, \ETrue, \SPass) \evalarrow \Diverging
+  V_n: \evalloop(\env, \True, \none, \ETrue, \SPass) \evalarrow \Diverging
 }
 \end{mathpar}
