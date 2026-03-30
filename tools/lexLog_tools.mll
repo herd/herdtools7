@@ -128,7 +128,7 @@ let new_loc =
 | ("tag" ' '* '(' ' '* (name ' '* ')'))
 let name_off = name ['-''+'] (num|hexanum)
 let instr = "instr:" '"' [^'"']* '"'
-let fault_type = alpha+ (':' alpha+)?
+let fault_type = alpha+ '-'? alpha+ ':'? alpha+
 let blank = [' ' '\t']
 let testname  = (alpha|digit|'_' | '/' | '.' | '-' | '+' | '[' | ']' | ':')+
 let nl = '\n'|"\r\n"
