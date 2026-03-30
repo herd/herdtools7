@@ -522,7 +522,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
          Some (Item txt)
       | List ({ intro_txt; _ } as l) ->
           let intro_txt =  makeuppercase @@ sprintf "\\notthecase{%s}" intro_txt in
-          Some (List { l with intro_txt })
+          Some (List { l with intro_txt; flattenable=false; })
       | DiffPair _|IfCond _ ->
          None
 
