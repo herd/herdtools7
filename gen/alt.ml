@@ -281,6 +281,7 @@ module Make(C:Builder.S)
       val parse_input :
         relax:string list -> safe:string list ->
         reject:string list -> predicate_relax list * predicate_relax list * predicate_relax list
+      val remove_invalid_relaxes : predicate_relax list -> predicate_relax list
       val pp_predicate_relax_list : predicate_relax list -> string
       val filter_check: safe:predicate_relax list -> predicate_relax -> predicate_relax -> bool
     end
@@ -392,6 +393,41 @@ module Make(C:Builder.S)
           let compare = compare_predicate_relax
         end)
 
+    let remove_invalid_relaxes relaxes =
+      let valid_relaxes =
+        List.map plain relaxes
+        |> C.R.remove_invalid_relaxes
+        |> C.R.Set.of_list in
+      (* Predicate-only edges are only meaningful at relaxation boundaries:
+         `before(...)` predicates must form a leading prefix, and `after(...)`
+         predicates must form a trailing suffix. Once a plain edge appears,
+         no later `before(...)` is valid; once an `after(...)` appears, only
+         more `after(...)` predicates may follow. *)
+      let leading_before_trailing_after_predicate list =
+        let valid,_,_ =
+          List.fold_left
+            (fun (valid, leading_before, trailing_after) edge ->
+              match valid, leading_before, trailing_after, edge.pred with
+              | false, _, _, _ -> false, leading_before, trailing_after
+              | true, true, _, pred ->
+                  true, pred = Some Before, pred = Some After
+              | true, false, trailing_after, Some Before ->
+                  false, false, trailing_after
+              | true, false, false, pred ->
+                  true, false, pred = Some After
+              | true, false, true, pred ->
+                  pred = Some After, false, true)
+            (true,true,false) list in
+        valid in
+      let has_plain_edge =
+        List.exists (fun edge -> edge.pred = None) in
+      List.filter
+        (fun relax ->
+          has_plain_edge relax
+          && C.R.Set.mem (plain relax) valid_relaxes
+          && leading_before_trailing_after_predicate relax)
+        relaxes
+
     let parse_argument_ast_expanded ast =
       let add_predicate pred edge =
         { edge with pred = Some (parse_predicate pred) } in
@@ -408,6 +444,7 @@ module Make(C:Builder.S)
     let parse_arguments input_argument_list =
       List.map parse_argument input_argument_list
       |> List.flatten
+      |> remove_invalid_relaxes
       |> List.sort_uniq compare_predicate_relax
 
     let pp_ess ess =
