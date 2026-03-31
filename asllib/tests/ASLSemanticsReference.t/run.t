@@ -72,6 +72,14 @@ ASL Semantics Tests:
      end;
   ASL Dynamic error: loop limit reached.
   [1]
+  $ aslref SemanticsRule.SWhile.negative_limit.asl
+  File SemanticsRule.SWhile.negative_limit.asl, line 4, character 2 to line 6,
+    character 6:
+    while TRUE looplimit -1 do
+      println "This should not be printed";
+    end;
+  ASL Dynamic error: loop limit reached.
+  [1]
   $ aslref SemanticsRule.SRepeat.asl
   File SemanticsRule.SRepeat.asl, line 24, character 4 to line 31, character 17:
       repeat
