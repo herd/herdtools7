@@ -85,14 +85,20 @@ let () =
 module TestAArch64 = AutoArch.Make(AArch64Arch_gen.Make(AArch64Arch_gen.Config))
 
 let remove_invalid_relaxes_inputs = [
-  "[Po,Rfe]";
-  "[Rfe,Rfe]";
-  "[Rfe,Fre]";
+  Parser.main, "[Po,Rfe]";
+  Parser.main, "[Rfe,Rfe]";
+  Parser.main, "[Rfe,Fre]";
+  Parser.diy7, "[PodRW @before(Rfe)]";
+  Parser.diy7, "[@after(PodRW) Rfe]";
+  Parser.diy7, "[PodRW @before(Rfe) @before(Fre)]";
+  Parser.diy7, "[@after(PodRW) @after(Rfe) Fre]";
+  Parser.diy7, "[PodRW @after(Rfe) Fre]";
+  Parser.diy7, "[PodRW @before([Rfe Fre])]";
 ]
 
-let remove_invalid_relaxes_test input =
+let remove_invalid_relaxes_test parser_grammar input =
   Printf.printf "remove_invalid_relaxes test (AArch64): %s\n" input ;
-  let ast = TestAArch64.R.parse_ast Parser.main input in
+  let ast = TestAArch64.R.parse_ast parser_grammar input in
   let filtered =
     TestAArch64.R.parse_expand_relaxs ast
     |> TestAArch64.R.remove_invalid_relaxes in
@@ -100,7 +106,7 @@ let remove_invalid_relaxes_test input =
 
 let () =
   List.iter
-    (fun input ->
-      remove_invalid_relaxes_test input;
+    (fun (parser_grammar,input) ->
+      remove_invalid_relaxes_test parser_grammar input;
       Printf.printf "\n")
     remove_invalid_relaxes_inputs

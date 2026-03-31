@@ -387,13 +387,32 @@ and type edge = E.edge
                     for_all_adjacent_concrete_edge predicate (rhs :: list)
                 | false, false ->
                     for_all_adjacent_concrete_edge predicate list in
+          let leading_before_trailing_after_predicate list =
+            let valid,_,_ = List.fold_left
+            ( fun ( valid, leading_before, trailing_after ) l ->
+              match valid, leading_before, trailing_after, E.get_predicate l with
+              (* Propagate invalid flag *)
+              | false, _, _,_ -> (false, leading_before, trailing_after)
+              (* Process the leading edges while they are before predicates,
+                 until the first non-before edge. *)
+              | true, true, _, pred -> true, pred = Some E.Before, pred = Some E.After
+              (* A before predicate in the middle of the list *)
+              | true, false, trailing_after, pred when pred = Some E.Before ->
+                  false, false, trailing_after
+              (* Until find the first after predicate *)
+              | true, false, false, pred -> true, false, pred = Some E.After
+              (* Once trailing after predicates start, only after predicates may follow. *)
+              | true, false, true, pred -> pred = Some E.After, false, true
+            ) (true,true,false) list in
+            valid in
           List.filter
             (fun relax ->
               (* Drop empty alternatives introduced by `?`; they do not
                  describe an actual relaxation. *)
               relax <> []
-              && for_all_adjacent_concrete_edge E.can_precede relax)
-            relaxes
+              && for_all_adjacent_concrete_edge E.can_precede relax
+              && leading_before_trailing_after_predicate relax
+            ) relaxes
           |> List.sort_uniq compare
 
 (********)
