@@ -320,16 +320,18 @@ module Make
 (* Memory barrier *)
       let dump_mbar_def () =
         O.o "" ;
-(*
         O.o "/* Full memory barrier */" ;
         UD.dump_mbar_def () ;
-*)
-        let dump_find_ins =
+        ()
+
+(* Find insruction position in code *)
+      let dump_find_ins () =
+        let do_dump_find_ins =
           do_self
           || CfgLoc.need_prelude
           || do_precise
           || do_label_init in
-        if dump_find_ins then begin
+        if do_dump_find_ins then begin
           ObjUtil.insert_lib_file O.o "_find_ins.c" ;
           O.o ""
         end ;
@@ -345,7 +347,7 @@ module Make
         if CfgLoc.need_prelude then begin
           ObjUtil.insert_lib_file O.o "_prelude_size.c"
         end ;
-        dump_find_ins
+        do_dump_find_ins
 
 
       (* Fault handler *)
@@ -2403,7 +2405,8 @@ module Make
         UD.dump_getinstrs test ;
         dump_delay_def () ;
         dump_read_timebase () ;
-        let find_ins_inserted = dump_mbar_def () in
+        dump_mbar_def () ;
+        let find_ins_inserted = dump_find_ins () in
         dump_barrier_def () ;
         dump_topology doc test ;
         dump_user_stacks procs_user ;
