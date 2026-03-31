@@ -6,10 +6,10 @@
 % Macros for symbols
 % ------------------
 
-\newcommand\None[0]{ \hyperlink{constant-None}{\textsf{None}} } % Generated from None
 \newcommand\Num[0]{ \hyperlink{type-Num}{\textsf{Num}} } % Generated from Num
 \newcommand\FIELDf[0]{ \hyperlink{recordfield-f}{\textsf{f}} } % Generated from f
 \newcommand\FIELDg[0]{ \hyperlink{recordfield-g}{\textsf{g}} } % Generated from g
+\newcommand\none[0]{ \hyperlink{constant-none}{\textsf{none}} } % Generated from none
 \newcommand\r[0]{ \hyperlink{relation-r}{\textit{r}} } % Generated from r
 \newcommand\rec[0]{ \hyperlink{type-rec}{\textsf{rec}} } % Generated from rec
 
@@ -17,7 +17,7 @@
 % Macros for elements
 % -------------------
 
-\DefineConstant{None}{\texthypertarget{constant-None}$\None$} % EndDefineConstant
+\DefineConstant{none}{\texthypertarget{constant-none}$\none$} % EndDefineConstant
 
 \DefineConstant{empty_set}{\texthypertarget{constant-emptyset}$\emptyset$} % EndDefineConstant
 

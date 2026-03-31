@@ -8,14 +8,14 @@
 
 \newcommand\Bool[0]{ \hyperlink{type-Bool}{\textsf{Bool}} } % Generated from Bool
 \newcommand\N[0]{ \hyperlink{type-N}{\textsf{N}} } % Generated from N
-\newcommand\None[0]{ \hyperlink{constant-None}{\textsf{None}} } % Generated from None
 \newcommand\f[0]{ \hyperlink{relation-f}{\textit{f}} } % Generated from f
+\newcommand\none[0]{ \hyperlink{constant-none}{\textsf{none}} } % Generated from none
 
 % -------------------
 % Macros for elements
 % -------------------
 
-\DefineConstant{None}{\texthypertarget{constant-None}$\None$} % EndDefineConstant
+\DefineConstant{none}{\texthypertarget{constant-none}$\none$} % EndDefineConstant
 
 \DefineConstant{empty_set}{\texthypertarget{constant-emptyset}$\emptyset$} % EndDefineConstant
 

@@ -7,7 +7,6 @@
 % ------------------
 
 \newcommand\Int[0]{ \hyperlink{ast-Int}{\textsc{Int}} } % Generated from Int
-\newcommand\None[0]{ \hyperlink{constant-None}{\textsf{None}} } % Generated from None
 \newcommand\Num[0]{ \hyperlink{type-Num}{\textsf{Num}} } % Generated from Num
 \newcommand\Number[0]{ \hyperlink{ast-Number}{\textsc{Number}} } % Generated from Number
 \newcommand\Plus[0]{ \hyperlink{ast-Plus}{\textsc{Plus}} } % Generated from Plus
@@ -16,6 +15,7 @@
 \newcommand\annotateplus[0]{ \hyperlink{relation-annotateplus}{\textit{annotate\_plus}} } % Generated from annotate_plus
 \newcommand\evalplus[0]{ \hyperlink{relation-evalplus}{\textit{eval\_plus}} } % Generated from eval_plus
 \newcommand\expr[0]{ \hyperlink{ast-expr}{\textsf{expr}} } % Generated from expr
+\newcommand\none[0]{ \hyperlink{constant-none}{\textsf{none}} } % Generated from none
 \newcommand\type[0]{ \hyperlink{ast-type}{\textsf{type}} } % Generated from type
 \newcommand\typeerror[0]{ \hyperlink{type-typeerror}{\textsf{type\_error}} } % Generated from type_error
 
@@ -23,7 +23,7 @@
 % Macros for elements
 % -------------------
 
-\DefineConstant{None}{\texthypertarget{constant-None}$\None$} % EndDefineConstant
+\DefineConstant{none}{\texthypertarget{constant-none}$\none$} % EndDefineConstant
 
 \DefineConstant{empty_set}{\texthypertarget{constant-emptyset}$\emptyset$} % EndDefineConstant
 
