@@ -10,7 +10,7 @@ CacheType=DIC
  B end       | MOV W2,#1   |  DSB SY      ;
 mod:         | STR W2,[X3] |  DC CVAU,X1  ;
  B l0        |             |              ;
- MOV X9,#1   |             |              ;
+ MOV W9,#1   |             |              ;
 l0:          |             |  DSB SY      ;
  RET         |             |  ISB         ;
 end:         |             |  BLR X1      ;

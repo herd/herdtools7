@@ -8,7 +8,7 @@ Stable=X9
  B end       |  MOV W2,#1   |  DSB ISH     ;
 mod:         |  STR W2,[X3] |  ISB         ;
  B l0        |              |  BLR X1      ;
- MOV X9,#1   |              |              ;
+ MOV W9,#1   |              |              ;
 l0:          |              |              ;
  RET         |              |              ;
 end:         |              |              ;

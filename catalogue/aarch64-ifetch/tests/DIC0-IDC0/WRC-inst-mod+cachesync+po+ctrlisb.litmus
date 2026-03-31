@@ -14,7 +14,7 @@ Stable=X9
 B end       |              |              ;
 mod:         |              |              ;
  B l0        |              |              ;
- MOV X9,#1   |              |              ;
+ MOV W9,#1   |              |              ;
 l0:          |              |              ;
  RET         |              |              ;
 end:         |              |              ;

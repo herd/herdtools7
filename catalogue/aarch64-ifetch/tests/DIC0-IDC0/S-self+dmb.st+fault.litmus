@@ -4,6 +4,7 @@ AArch64 S-self+dmb.st+fault
 0:X2=0; (*any invalid instruction value*)
 0:X3=P1:m0;
 1:X3=x;
+ins_t *1:X9;
 }
  P0          | P1   | P1.F           ;
  MOV W0,#1   |m0:   | MOV W2,#2      ;
