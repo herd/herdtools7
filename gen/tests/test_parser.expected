@@ -406,3 +406,21 @@ remove_invalid_relaxes test (AArch64): [Rfe,Rfe]
 remove_invalid_relaxes test (AArch64): [Rfe,Fre]
 [[Rfe,Fre]]
 
+remove_invalid_relaxes test (AArch64): [PodRW @before(Rfe)]
+[]
+
+remove_invalid_relaxes test (AArch64): [@after(PodRW) Rfe]
+[]
+
+remove_invalid_relaxes test (AArch64): [PodRW @before(Rfe) @before(Fre)]
+[]
+
+remove_invalid_relaxes test (AArch64): [@after(PodRW) @after(Rfe) Fre]
+[]
+
+remove_invalid_relaxes test (AArch64): [PodRW @after(Rfe) Fre]
+[]
+
+remove_invalid_relaxes test (AArch64): [PodRW @before([Rfe Fre])]
+[]
+
