@@ -1,5 +1,4 @@
 AArch64 DIC1.WRC-inst+cachesync+dsb.ish
-Hash=230da03bdbd98da8d964f7b445de2205
 CacheType=DIC
 Stable=X9
 { 0:X0=NOP;

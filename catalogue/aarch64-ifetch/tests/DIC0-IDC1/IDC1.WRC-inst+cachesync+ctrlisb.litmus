@@ -1,5 +1,4 @@
 AArch64 IDC1.WRC-inst+cachesync+ctrlisb
-Hash=ba02f9bdcf86e412389183cebfd4202a
 CacheType=IDC
 Stable=X9
 { 0:X0=NOP;

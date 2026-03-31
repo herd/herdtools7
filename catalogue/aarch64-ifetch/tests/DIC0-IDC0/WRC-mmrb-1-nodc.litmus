@@ -1,5 +1,4 @@
 AArch64 WRC-mmrb-1-nodc
-Hash=70f9ebf2c4ca287cd3213a2018643c2e
 Stable=X9
 { 1:X0=NOP;
   0:X1=P0:mod; 1:X1=P0:mod; 2:X1=P0:mod;
