@@ -1,5 +1,4 @@
 AArch64 IDC1.MP.RF+cachesync+switch-ctrlisb
-Hash=60d857c427ee683625f78ec9a49d9684
 (* switch table -- this one is forbidden *)
 (* Will suggests that compilers require that this test be forbidden iff the miniJit02 is forbidden *)
 CacheType=IDC

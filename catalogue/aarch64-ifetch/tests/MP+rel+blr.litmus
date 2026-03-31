@@ -1,5 +1,4 @@
 AArch64 MP+rel+blr
-Hash=a06e7661c6f8863f72e02f21cf3f9107
 Stable=X30
 {
   0:X0=instr:"B .+4"; 0:X1=P1:L0;

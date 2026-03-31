@@ -1,5 +1,4 @@
 AArch64 MP.RF+cachesync+switch-ctrl
-Hash=6319cdacf8d9276fce801d15c883acd7
 (* switch table -- this one is allowed *)
 (* Will suggests that compilers require that this test be allowed iff the miniJit01 is allowed *)
 {

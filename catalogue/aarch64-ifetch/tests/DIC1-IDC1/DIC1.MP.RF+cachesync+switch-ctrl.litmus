@@ -1,5 +1,4 @@
 AArch64 DIC1.MP.RF+cachesync+switch-ctrl
-Hash=f04633c6d9d397bb9ee242d29cf49011
 (* switch table -- this one is allowed *)
 (* Will suggests that compilers require that this test be allowed iff the miniJit01 is allowed *)
 CacheType=DIC

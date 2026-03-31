@@ -1,5 +1,4 @@
 AArch64 DIC1.MP.RF+cachesync+switch-ctrlisb
-Hash=b113c1aacf68920de8a0c24dca8b4efe
 (* switch table -- this one is forbidden *)
 (* Will suggests that compilers require that this test be forbidden iff the miniJit02 is forbidden *)
 CacheType=DIC

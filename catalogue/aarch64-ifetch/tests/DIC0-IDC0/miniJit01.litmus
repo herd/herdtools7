@@ -1,5 +1,4 @@
 AArch64 miniJit01
-Hash=d3d1710fc058878e5818dc35f79560cf
 Variant=self
 {
 [x] = P1:L0 ;

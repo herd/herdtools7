@@ -1,5 +1,4 @@
 AArch64 S-self+dmb.st+fault
-Hash=20c53bed0175ae545392c7631a4ad471
 {
 0:X1=x;
 0:X2=0; (*any invalid instruction value*)

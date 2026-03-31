@@ -1,5 +1,4 @@
 AArch64 MP.RF+cachesync+switch-ctrlisb
-Hash=453c2373bfaf0de1acbab7308a8e830f
 (* switch table -- this one is forbidden *)
 (* Will suggests that compilers require that this test be forbidden iff the miniJit02 is forbidden *)
 {
