@@ -283,6 +283,7 @@ module Make(C:Builder.S)
         relax:string list -> safe:string list ->
         reject:string list ->
         predicate_relax list * predicate_relax list * predicate_relax list
+      val remove_invalid_relaxes : predicate_relax list -> predicate_relax list
       val pp_ess : predicate_relax list -> string
       val filter_check:
         safe:predicate_relax list -> predicate_relax -> predicate_relax -> bool
@@ -417,6 +418,34 @@ module Make(C:Builder.S)
           |> List.map (reattach_predicates predicate_relax))
         predicate_relaxes
 
+    let remove_invalid_relaxes relaxes =
+      let valid_relaxes =
+        List.map to_relax relaxes
+        |> C.R.remove_invalid_relaxes
+        |> C.R.Set.of_list in
+      (* Predicate-only edges are only meaningful at relaxation boundaries:
+         `before(...)` predicates must form a leading prefix, and `after(...)`
+         predicates must form a trailing suffix. Once a plain edge appears,
+         no later `before(...)` is valid; once an `after(...)` appears, only
+         more `after(...)` predicates may follow. *)
+      let rec leading_before_trailing_after_predicate = function
+        | Before _::rest ->
+            leading_before_trailing_after_predicate rest
+        | rest -> plain_then_after rest
+      and plain_then_after = function
+        | [] -> true
+        | Plain _::rest -> plain_then_after rest
+        | After _::rest -> List.for_all (function After _ -> true | _ -> false) rest
+        | Before _::_ -> false in
+      let has_plain_edge =
+        List.exists (function Plain _ -> true | _ -> false) in
+      List.filter
+        (fun relax ->
+          has_plain_edge relax
+          && C.R.Set.mem (to_relax relax) valid_relaxes
+          && leading_before_trailing_after_predicate relax)
+        relaxes
+
     let parse_argument_ast_expanded ast =
       let parse_one str =
         C.R.parse_expand_relaxs_ast ~ppo:C.ppo (Ast.One str)
@@ -436,6 +465,7 @@ module Make(C:Builder.S)
     let parse_arguments input_argument_list =
       List.map parse_argument input_argument_list
       |> List.flatten
+      |> remove_invalid_relaxes
       |> List.sort_uniq compare_predicate_relax
 
     let pp_ess ess = String.concat " " (List.map pp_predicate_relax ess)
