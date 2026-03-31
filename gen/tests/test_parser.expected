@@ -447,3 +447,29 @@ remove_invalid_relaxes test (AArch64): [Q,PodWR]
 remove_invalid_relaxes test (AArch64): [Q,PodRR]
 [[Q,PodRR]]
 
+remove_invalid_relaxes test (AArch64): [@before(PodRW) Fre]
+[]
+
+remove_invalid_relaxes test (AArch64): [PodRW @after(Fre)]
+[]
+
+remove_invalid_relaxes test (AArch64): [PodRW @before(Rfe)]
+[]
+
+remove_invalid_relaxes test (AArch64): [@after(PodRW) Rfe]
+[]
+
+remove_invalid_relaxes test (AArch64): [PodRW @before(Rfe) @before(Fre)]
+[]
+
+remove_invalid_relaxes test (AArch64): [@after(PodRW) @after(Rfe) Fre]
+[]
+
+remove_invalid_relaxes test (AArch64): [PodRW @after(Rfe) Fre]
+[]
+
+remove_invalid_relaxes test (AArch64): [PodRW @before([Rfe Fre])]
+[]
+
+remove_invalid_relaxes test (AArch64): [@before([Rfe PodRW])]
+UserError: predicate before cannot be used without a relaxation.
