@@ -417,8 +417,39 @@ module Make(C:Builder.S)
           List.map to_relax relaxes
           |> C.R.remove_invalid_relaxes
           |> C.R.Set.of_list in
+        (* Predicate-only edges are only meaningful at relaxation boundaries:
+           `before(...)` predicates must form a leading prefix, and `after(...)`
+           predicates must form a trailing suffix. Once a plain edge appears,
+           no later `before(...)` is valid; once an `after(...)` appears, only
+           more `after(...)` predicates may follow. *)
+        let rec leading_before_trailing_after_predicate = function
+          | Before _::rest ->
+              leading_before_trailing_after_predicate rest
+          | rest -> plain_then_after rest
+        and plain_then_after = function
+          | [] -> true
+          | Plain _::rest -> plain_then_after rest
+          | After _::rest ->
+              List.for_all (function After _ -> true | _ -> false) rest
+          | Before _::_ -> false in
+        let has_plain_edge =
+          List.exists (function Plain _ -> true | _ -> false) in
+        let require_plain_edge relax =
+          if has_plain_edge relax then true
+          else match relax with
+          | Before _::_ ->
+              Warn.user_error
+                "predicate before cannot be used without a relaxation."
+          | After _::_ ->
+              Warn.user_error
+                "predicate after cannot be used without a relaxation."
+          | [] -> false
+          | Plain _::_ -> assert false in
         List.filter
-          (fun relax -> C.R.Set.mem (to_relax relax) valid_relaxes)
+          (fun relax ->
+            require_plain_edge relax
+            && C.R.Set.mem (to_relax relax) valid_relaxes
+            && leading_before_trailing_after_predicate relax)
           relaxes
 
       let parse_argument_ast_expanded ast =

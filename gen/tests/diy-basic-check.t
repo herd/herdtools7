@@ -11,6 +11,16 @@ A test for no metadata, `-metadata false`
    LDR W3,[X2] | LDR W3,[X1] ;
   
   exists (0:X3=0 /\ 1:X3=0)
+A diy7 test for repeated nested predicates
+  $ diy7 -arch AArch64 -relax '[@before(@before(Po)) PodRW]' -unfold-only 2>&1 | grep -v '^$'
+  ***relax***
+  [@before(PosWR),PodRW] [@before(PosRR),PodRW] [@before(PodWR),PodRW] [@before(PodRR),PodRW]
+  ***safe***
+  ***reject***
+A diy7 test for conflicting nested predicates
+  $ diy7 -arch AArch64 -relax '[@before(@after(Po)) PodRW]' -unfold-only 2>&1
+  diy7: before and after predicates cannot apply to the same edge
+  [2]
 A diy7 predicate reject cannot silently fall back to default relaxations
   $ diy7 -arch AArch64 -safe '[@before([PodRW Rfe]) PodRW Rfe]' -reject '[@before([PodRW Rfe]) PodRW Rfe]' -size 2 -exact -stdout 2>&1
   diy7: Fatal error: relaxations provided in safelist could not be used to generate cycles
