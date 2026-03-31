@@ -51,6 +51,7 @@ int RUN(int argc,char **argv,FILE *out) {
   global_t *glo_ptr = &global;
   glo_ptr->mem = mem;
 #endif
+  glo_ptr->hash.t = main_hash;
   init_getinstrs();
   init_global(glo_ptr);
 #ifdef OUT
@@ -113,7 +114,7 @@ int RUN(int argc,char **argv,FILE *out) {
   for (int id=0; id < AVAIL ; id++) join(&th[id]);
 #endif
   int nexe = glo_ptr->nexe ;
-  hash_init(&glo_ptr->hash) ;
+  hash_init(&glo_ptr->hash, HASHSZ, main_hash) ;
   for (int k=0 ; k < nexe ; k++) {
     glo_ptr->hash_ok = hash_adds(&glo_ptr->hash,&glo_ptr->ctx[k].t) && glo_ptr->hash_ok ;
   }

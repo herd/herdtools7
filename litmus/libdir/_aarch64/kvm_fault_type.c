@@ -1,31 +1,22 @@
-#define MAX_FAULTS_PER_THREAD 8
+/****************************************************************************/
+/*                           the diy toolsuite                              */
+/*                                                                          */
+/* Jade Alglave, University College London, UK.                             */
+/* Luc Maranget, INRIA Paris, France.                                       */
+/* Rémy Citérin, ARM Ltd, Cambridge, UK                                     */
+/*                                                                          */
+/* Copyright 2025-present Institut National de Recherche en Informatique et */
+/* en Automatique and the authors. All rights reserved.                     */
+/*                                                                          */
+/* This software is governed by the CeCILL-B license under French law and   */
+/* abiding by the rules of distribution of free software. You can use,      */
+/* modify and/ or redistribute the software under the terms of the CeCILL-B */
+/* license as circulated by CEA, CNRS and INRIA at the following URL        */
+/* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
+/****************************************************************************/
+#include <kvm_fault_type.h>
 
-enum fault_type_t {
-  FaultUndefinedInstruction,
-  FaultSupervisorCall,
-  FaultPacCheckIA,
-  FaultPacCheckIB,
-  FaultPacCheckDA,
-  FaultPacCheckDB,
-  FaultMMUAddressSize,
-  FaultMMUTranslation,
-  FaultMMUAccessFlag,
-  FaultMMUPermission,
-  FaultDMMUTranslation,
-  FaultDMMUAccessFlag,
-  FaultDMMUPermission,
-  FaultDMMUExclusive,
-  FaultIMMUTranslation,
-  FaultIMMUAccessFlag,
-  FaultIMMUPermission,
-  FaultIMMUExclusive,
-  FaultTagCheck,
-  FaultUnsupported,
-  FaultUnknown,
-  FaultTypes,
-};
-
-static const char *fault_type_names[] = {
+const char *fault_type_names[] = {
   "UndefinedInstruction",
   "SupervisorCall",
   "PacCheck:IA",
@@ -48,9 +39,7 @@ static const char *fault_type_names[] = {
   "Unsupported",
 };
 
-#define ESR_EL1_EC_PAC 0b011100
-
-static enum fault_type_t get_fault_type(unsigned long esr)
+enum fault_type_t get_fault_type(unsigned long esr)
 {
   unsigned int ec = esr >> ESR_EL1_EC_SHIFT;
   unsigned int fsc;
@@ -105,18 +94,7 @@ static enum fault_type_t get_fault_type(unsigned long esr)
   }
 }
 
-typedef struct {
-  int instr_symb;
-  int data_symb;
-  enum fault_type_t type;
-} fault_info_t;
-
-typedef struct {
-  fault_info_t faults[MAX_FAULTS_PER_THREAD];
-  int n;
-} th_faults_info_t;
-
-static void th_faults_info_init(th_faults_info_t *th_flts)
+void th_faults_info_init(th_faults_info_t *th_flts)
 {
   for (int i = 0; i < MAX_FAULTS_PER_THREAD; i++) {
     fault_info_t *f = &th_flts->faults[i];
@@ -127,7 +105,7 @@ static void th_faults_info_init(th_faults_info_t *th_flts)
   th_flts->n = 0;
 }
 
-static int th_faults_info_compare(th_faults_info_t *th_flts1, th_faults_info_t *th_flts2)
+int th_faults_info_compare(th_faults_info_t *th_flts1, th_faults_info_t *th_flts2)
 {
   if (th_flts1->n != th_flts2->n)
     return 0;
@@ -150,7 +128,7 @@ static int th_faults_info_compare(th_faults_info_t *th_flts1, th_faults_info_t *
   return 1;
 }
 
-static void pp_fault(int proc, int instr_symb, int data_symb, int ftype)
+void pp_fault(int proc, int instr_symb, int data_symb, int ftype, const char *instr_symb_name[], const char *data_symb_name[])
 {
   if (instr_symb != INSTR_SYMB_ID_UNKNOWN)
     printf("fault(P%s", instr_symb_name[instr_symb]);
@@ -163,19 +141,18 @@ static void pp_fault(int proc, int instr_symb, int data_symb, int ftype)
   printf(");");
 }
 
-static bool fault_reported[NTHREADS][MAX_FAULTS_PER_THREAD];
 
-static void pp_log_faults_init(void)
+void pp_log_faults_init(int nthreads, bool (*fault_reported)[MAX_FAULTS_PER_THREAD])
 {
-  for (int i = 0; i < NTHREADS; i++) {
+  for (int i = 0; i < nthreads; i++) {
     for (int j = 0; j < MAX_FAULTS_PER_THREAD; j++) {
       fault_reported[i][j] = false;
     }
   }
 }
 
-static void pp_log_faults(FILE *chan, th_faults_info_t *th_flts, int proc, int instr_symb,
-                          int data_symb, int ftype)
+void pp_log_faults(FILE *chan, th_faults_info_t *th_flts, int proc, int instr_symb,
+                   int data_symb, int ftype, bool (*fault_reported)[MAX_FAULTS_PER_THREAD], const char *instr_symb_name[], const char *data_symb_name[])
 {
   int found = 0;
   for (int i = 0; i < th_flts->n; i++) {
@@ -195,27 +172,27 @@ static void pp_log_faults(FILE *chan, th_faults_info_t *th_flts, int proc, int i
       printf(" ");
 
       if (!fault_reported[proc][i]) {
-        pp_fault(proc, flt->instr_symb, flt->data_symb, flt->type);
+        pp_fault(proc, flt->instr_symb, flt->data_symb, flt->type, instr_symb_name, data_symb_name);
         fault_reported[proc][i] = true;
       }
     }
   }
   if (!found) {
     printf(" ~");
-    pp_fault(proc, instr_symb, data_symb, ftype);
+    pp_fault(proc, instr_symb, data_symb, ftype, instr_symb_name, data_symb_name);
   }
 }
 
-static int eq_faults(th_faults_info_t *th_flts1, th_faults_info_t *th_flts2)
+int eq_faults(th_faults_info_t *th_flts1, th_faults_info_t *th_flts2, int nthreads)
 {
-  for (int i = 0; i < NTHREADS; i++) {
+  for (int i = 0; i < nthreads; i++) {
     if (!th_faults_info_compare(&th_flts1[i], &th_flts2[i]))
       return 0;
   }
   return 1;
 }
 
-static int exists_fault(th_faults_info_t *th_flts, int instr_symb, int data_symb, int ftype)
+int exists_fault(th_faults_info_t *th_flts, int instr_symb, int data_symb, int ftype)
 {
   for (int i = 0; i < th_flts->n; i++) {
     fault_info_t *flt = &th_flts->faults[i];
