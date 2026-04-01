@@ -6,8 +6,8 @@ States 4
 0:X3=(oa:PA(x)); [PTE(x)]=(oa:PA(y));
 Ok
 Witnesses
-Positive: 2 Negative: 6
+Positive: 1 Negative: 5
 Condition exists (0:X3=(oa:PA(x)) /\ [PTE(x)]=(oa:PA(y)))
-Observation A032 Sometimes 2 6
+Observation A032 Sometimes 1 5
 Hash=4d4ebbbbd741d64b8bb4bcece91ef26d
 

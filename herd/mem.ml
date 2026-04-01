@@ -828,14 +828,16 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                                    | _,_ -> false)
                              with Not_found -> false
                            end in
-                       if write_loaded then k else loc::k)
+                       if write_loaded then k else (loc,v)::k)
                 evts []
-              |> Misc.group V.compare in
+              |> Misc.group (fun (loc1,_) (loc2,_) -> V.compare loc1 loc2) in
             let om =
-              Misc.fold_suffix_cross_gen
+              Misc.fold_subsets_cross_gen
                 (fun xs m ->
                    List.fold_left
-                     (fun m x -> EM.(|||) (SM.spurious_setaf x) m)
+                     (fun m (x,v) ->
+                       EM.(|||)
+                         (SM.spurious_setaf v x) m)
                      m xs)
                 (EM.unitT ())
                 locs
