@@ -106,7 +106,7 @@ module Make
     module Mixed(SZ:ByteSize.S) : sig
       val build_semantics : test -> A.inst_instance_id -> (proc * branch) M.t
       val can_unset_af_loc : event -> V.v option
-      val spurious_setaf : V.v -> unit M.t
+      val spurious_setaf : V.v -> V.v -> unit M.t
     end = struct
 
       module Mixed = M.Mixed(SZ)
@@ -751,17 +751,17 @@ module Make
         | DB -> AArch64Op.SetDB
         | IFetch|Other|AFDB -> assert false
 
-      let do_test_and_set_bit combine cond set a_pte iiid domain =
+      let do_test_and_set_bit v combine cond set a_pte iiid domain =
         let nexp = AArch64Explicit.NExp set in
         mextract_whole_pte_val Annot.X nexp a_pte iiid domain >>= fun pte_v ->
-        cond pte_v >>*= fun c ->
+        (M.eqT pte_v v >>| cond pte_v) >>*= fun ((),c) ->
         combine c
             (arch_op1 (op_of_set set) pte_v >>= fun v ->
              write_whole_pte_val Annot.X nexp a_pte v iiid domain)
             (M.unitT ())
 
-      let test_and_set_bit_succeeds cond =
-        do_test_and_set_bit (fun c m _ -> M.assertT c m) cond
+      let test_and_set_bit_succeeds v cond =
+        do_test_and_set_bit v (fun c m _ -> M.assertT c m) cond
 
       let bit_is_zero op v = arch_op1 op v >>= is_zero
       let bit_is_not_zero op v = arch_op1 op v >>= is_not_zero
@@ -784,8 +784,8 @@ module Make
         m_op Op.And
           (bit_is_zero AArch64Op.AF v) (bit_is_not_zero AArch64Op.Valid v)
 
-      let test_and_set_af_succeeds =
-        test_and_set_bit_succeeds cond_af AArch64Explicit.AF
+      let test_and_set_af_succeeds value =
+        test_and_set_bit_succeeds value cond_af AArch64Explicit.AF
 
       let mextract_pte_vals pte_v =
         (extract_oa pte_v >>|
@@ -4891,8 +4891,8 @@ Arguments:
             end
         | _ -> None
 
-      let spurious_setaf v =
-        test_and_set_af_succeeds v E.IdSpurious DISide.Data
+      let spurious_setaf value loc =
+        test_and_set_af_succeeds value loc E.IdSpurious DISide.Data
 
     end
 
