@@ -388,12 +388,15 @@ module Make(C:Builder.S)
       match exist with
       (* Base case: there is no `exist` *)
       | [] -> Some (next,[])
-      | (_,exist_hd) :: exist_tail ->
+      (* We ONLY update the second projection, namely the
+         unwrapped list of edges, while keep the orginal relax
+         untouched for checking `-mix true` purpose *)
+      | (exist_original_relax,exist_edges) :: exist_tail ->
         Option.bind
-        ( merge_predicate (snd next) exist_hd )
-        ( fun (new_next, new_exist_hd) ->
-            let next = (ERS new_next, new_next) in
-            let exist = (ERS new_exist_hd, new_exist_hd) :: exist_tail in
+        ( merge_predicate (snd next) exist_edges )
+        ( fun (new_next_edges, new_exist_edges) ->
+            let next = (fst next, new_next_edges) in
+            let exist = (exist_original_relax, new_exist_edges) :: exist_tail in
             if can_precede safes po_safe next exist
               then Some (next,exist) else None
         )
