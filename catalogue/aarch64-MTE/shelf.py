@@ -378,6 +378,7 @@ illustrative_tests = [
     "tests/LB+dsb.sytt+datatp.litmus",
     "tests/LB+dsb.sytt+datatt.litmus",
     "tests/LB+dsb.sytts.litmus",
+    "tests/LB+posat+amo.cas.litmus",
     "tests/MP+dmb.st+addr.litmus",
     "tests/MP+dmb.st+addrpt.litmus",
     "tests/MP+dmb.st+addrtp.litmus",

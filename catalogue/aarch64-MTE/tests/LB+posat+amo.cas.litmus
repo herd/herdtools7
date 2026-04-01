@@ -1,0 +1,12 @@
+AArch64 LB+posat+amo.cas
+variant=mte
+{
+0:X0=x:red;
+1:X0=x:red; 1:X2=x:green;
+}
+ P0             | P1           ;
+ MOV W1,#0      | LDAR W1,[X2] ; 
+ MOV W2,#1      | STG X0,[X2]  ;
+ L00:           |              ;
+ CAS W1,W2,[X0] |              ;
+exists (~Fault(P0:L00,x) /\ 1:X1=1)
