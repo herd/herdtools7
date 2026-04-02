@@ -1,5 +1,4 @@
 AArch64 S+shoot+pickaddr_mmufault_db
-Hash=d57b0891dbc1f159c1be01e92c027f03
 Variant=vmsa,fatal
 {
  [PTE(x)]=(oa:PA(x), db:0);

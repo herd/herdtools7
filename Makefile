@@ -618,7 +618,7 @@ test-all:: vmsa-test
 vmsa-test:
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
-		-j $(J) \
+		-j $(J) -verbose \
 		-herd-path $(HERD) \
 		-herd-timeout $(TIMEOUT) \
 		-libdir-path ./herd/libdir \

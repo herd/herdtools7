@@ -8,10 +8,11 @@ uint64_t x;
 uint64_t y;
 0:X3=y; 1:X3=y;
 1:X4=x;
+uint64_t 1:X1;
 }
  P0          | P1           ;
-             | LDR W1,[X3]  ;
- STR X0,[X1] | CBNZ W1,LC00 ;
+             | LDR X1,[X3]  ;
+ STR X0,[X1] | CBNZ X1,LC00 ;
  DSB ISH     | LC00:        ;
  MOV X2,#1   | MOV X2,#1    ;
  STR X2,[X3] | L1: STR X2,[X4]  ;

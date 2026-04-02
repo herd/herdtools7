@@ -5,5 +5,5 @@ uint64_t x;
 0:X2=x;
 }
 P0         ;
-STR W1,[X2];
+STR X1,[X2];
 exists(x=1)

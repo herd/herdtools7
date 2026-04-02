@@ -1,5 +1,4 @@
 AArch64 MP+shoot+datalrs-mmufault_af
-Hash=a9e56b13f2777ee190aa29404684c57d
 Variant=vmsa,fatal
 {
  [x]=1;

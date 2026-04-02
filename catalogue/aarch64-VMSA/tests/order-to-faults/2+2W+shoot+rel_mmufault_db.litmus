@@ -1,5 +1,4 @@
 AArch64 2+2W+shoot+rel_mmufault_db
-Hash=d31837393e61ad17726d2bbcb98e02a5
 Variant=vmsa,fatal
 {
  [PTE(x)]=(oa:PA(x), db:0);
