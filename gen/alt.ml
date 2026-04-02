@@ -223,7 +223,24 @@ struct
     | (None,_)|(_,(Irr|NoDir)) -> true
     | Some a,(Dir d) -> C.A.applies_atom a d
 
-    let pair_ok safes po_safe xs ys e1 e2 = match e1.edge,e2.edge with
+    let rec hd_non_insert = function
+      | [] -> assert false
+      | [x] -> x
+      | x::xs ->
+          if C.E.is_insert_store x.C.E.edge then hd_non_insert xs
+          else x
+    let last_non_insert xs = hd_non_insert (List.rev xs)
+
+    (* Check whether relaxation list `xs` can precede relaxation list `ys`.
+       This uses the effective boundary edges of the two sequences,
+       ignoring insert/store pseudo-edges when necessary, and checks:
+       - whether the boundary edges are compatible via `Edge.can_precede`
+       - whether the mode-specific rule holds *)
+    let can_precede safes po_safe xs ys =
+      let e1 = last_non_insert xs in
+      let e2 = hd_non_insert ys in
+      C.E.can_precede e1 e2
+      && match e1.edge,e2.edge with
 (*
   First reject some of hb' ; hb'
  *)
@@ -255,8 +272,6 @@ module Make(C:Builder.S)
 
     =
   struct
-    let mixed = Variant_gen.is_mixed O.variant
-    let do_kvm = Variant_gen.is_kvm  O.variant
     module D = DumpAll.Make(O) (C)
     module FilterImpl = Filter(C)(O)
     module RelaxSet = C.R.Set
@@ -270,52 +285,9 @@ module Make(C:Builder.S)
     | Ext -> false
     | UnspecCom -> assert false
 
-    let check_mixed =
-      if mixed then
-        fun e1 e2 -> match  e1.edge,e2.edge with
-        | Id,Id -> false
-        | (_,Id)|(Id,_) -> true
-        | _,_ -> false
-      else fun _ _ -> true
-
-    let rec hd_non_insert = function
-      | [] -> assert false
-      | [x] -> x
-      | x::xs ->
-          if C.E.is_insert_store x.C.E.edge then hd_non_insert xs
-          else x
-    let last_non_insert xs = hd_non_insert (List.rev xs)
-
-    let do_compat safes po_safe xs ys =
-      let x = Misc.last xs and y = List.hd ys in
-      let r =
-        C.E.can_precede x y
-        && check_mixed x y
-        && FilterImpl.pair_ok safes po_safe xs ys x y
-        &&
-          begin
-            if do_kvm then
-              C.E.can_precede (hd_non_insert xs) (last_non_insert ys)
-            else true
-          end in
-      if O.verbose > 2 then begin
-        eprintf "do_compat '%s' '%s' = %b\n"
-          (C.E.pp_edges xs)
-          (C.E.pp_edges ys) r
-      end ;
-      r
-
-
     let can_precede safes po_safe (_,xs) k = match k with
     | [] -> true
-    | (_,ys)::_ ->
-        do_compat safes po_safe xs ys &&
-        begin match k with
-        | (_,[{edge=Id;_}])::(_,y::_)::_ when mixed ->
-            let x = Misc.last xs in
-            C.E.can_precede x y
-        | _ -> true
-        end
+    | (_,ys)::_ -> FilterImpl.can_precede safes po_safe xs ys
 
     (* List.is_empty only supports for ocaml 5.1 afterwards *)
     let is_empty_list l = (l = [])
@@ -798,7 +770,5 @@ module Make(C:Builder.S)
       let safe,_,_ = parse_input ~relax ~safe ~reject:[] in
       let safe_set = C.R.Set.of_list safe in
       let po_safe = edges_ofs safe |> extract_po in
-      let last = Misc.last lhs in
-      let first = List.hd rhs in
-      FilterImpl.pair_ok safe_set po_safe lhs rhs last first
+      FilterImpl.can_precede safe_set po_safe lhs rhs
   end
