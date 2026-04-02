@@ -2,11 +2,11 @@ vmsa-neg-exists
   $ diyone7 -arch AArch64 -variant kvm Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -neg true -info "User-define=User-define"
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0
   Variant=vmsa
+  TTHM=HD
   Generator=diyone7 (version 7.58+1)
   Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
   Com=Rf Rf
   Orig=Amo.Cas TLBI-sync.ISHdWWPPteOA.V1.AF0 RfePteOA.V1.AF0Pte PodRWPtePteHD RfePteHDP
-  TTHM=HD
   User-define=User-define
   "Amo.Cas TLBI-sync.ISHdWWPPteOA.V1.AF0 RfePteOA.V1.AF0Pte PodRWPtePteHD RfePteHDP"
   {
@@ -32,11 +32,11 @@ vmsa-forall
   $ diyone7 -arch AArch64 -variant kvm Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -info "User-define=User-define" -cond observe
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0
   Variant=vmsa
+  TTHM=HD
   Generator=diyone7 (version 7.58+1)
   Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
   Com=Rf Rf
   Orig=Amo.Cas TLBI-sync.ISHdWWPPteOA.V1.AF0 RfePteOA.V1.AF0Pte PodRWPtePteHD RfePteHDP
-  TTHM=HD
   User-define=User-define
   "Amo.Cas TLBI-sync.ISHdWWPPteOA.V1.AF0 RfePteOA.V1.AF0Pte PodRWPtePteHD RfePteHDP"
   {
@@ -63,11 +63,11 @@ vmsa-location
   $ diyone7 -arch AArch64 -variant kvm Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -info "User-define=User-define" -cond unicond
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0
   Variant=vmsa
+  TTHM=HD
   Generator=diyone7 (version 7.58+1)
   Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
   Com=Rf Rf
   Orig=Amo.Cas TLBI-sync.ISHdWWPPteOA.V1.AF0 RfePteOA.V1.AF0Pte PodRWPtePteHD RfePteHDP
-  TTHM=HD
   User-define=User-define
   "Amo.Cas TLBI-sync.ISHdWWPPteOA.V1.AF0 RfePteOA.V1.AF0Pte PodRWPtePteHD RfePteHDP"
   {

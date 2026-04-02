@@ -962,7 +962,7 @@ let max_set = IntSet.max_elt
           BellInfo.levels = None;
         })] in
     let core_dumper_t = {
-      MiscParser.info = if O.metadata then t.info else [] ;
+      MiscParser.info = t.info ;
       MiscParser.init = State.init_type_env_to_states t.init t.env ;
       MiscParser.prog = add_proc_to_prog t.prog ;
       filter = None ;
@@ -1008,24 +1008,23 @@ let tr_labs m init =
       | _ -> bd)
     init
 
-let basic_info scope prefetch com_edges cycle_description =
-  let convert_to_option_pair key value =
-    match key,value with "",_ | _,"" -> None | _ -> Some(key, value) in
-  (* extract all the unique variants *)
-  let variants =
+let variant_info =
     List.filter_map
     ( fun t -> if O.variant t then Variant_gen.pp_herd_variant t else None)
     Variant_gen.all_t
-    |> StringSet.of_list
-    |> StringSet.pp_id " " in
+    |> ( function
+      | [] -> None
+      | l -> Some ("Variant", StringSet.pp_id " " (StringSet.of_list l)) )
+let basic_info scope prefetch com_edges cycle_description =
+  let convert_to_option_pair key value =
+    match key,value with "",_ | _,"" -> None | _ -> Some(key, value) in
   (* Some internal metadata might be empty, if the string value is "".
      We covert to option type then filter_map *)
   List.filter_map Fun.id
-    ( ( convert_to_option_pair "Variant" variants )
-    :: ( convert_to_option_pair "Generator" O.generator )
+    ( ( convert_to_option_pair "Generator" O.generator )
     :: ( Option.map ( fun value -> ("Scopes", BellInfo.pp_scopes value) ) scope )
     (* Prefetch surpress in instruction fetch, `ifetch`, test cases *)
-    :: ( if O.variant Variant_gen.Self then None else Some("Prefetch",prefetch) )
+    :: ( if O.variant Variant_gen.Self then None else convert_to_option_pair "Prefetch" prefetch )
     :: ( convert_to_option_pair "Com" com_edges )
     :: ( convert_to_option_pair "Orig" cycle_description )
     :: [] )
@@ -1055,8 +1054,15 @@ let test_of_cycle name
   let m_labs = num_labels prog in
   let init = tr_labs m_labs init in
   let coms = String.concat " " coms in
+  (* We still print out `variant` and `archinfo` even when metadata is false *)
+  let mandatory_info =
+    match variant_info with
+    | None -> Comp.get_archinfo c
+    | Some variant -> variant :: Comp.get_archinfo c in
   let info =
-    merge_to_left ((basic_info scope prf coms com) @ Comp.get_archinfo c) info in
+    if O.metadata then
+      merge_to_left ( mandatory_info @ (basic_info scope prf coms com) ) info
+    else mandatory_info in
 
   { name=name ; info=info; com=com ;  edges = es ;
     init=init ; prog=prog ; scopes = scope; final=final ; env=env; obs=obs}
