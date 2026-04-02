@@ -975,7 +975,7 @@ let expand_dp_dir (dir,_) = D.expand_dp_dir dir
 
 (* Read-Modify-Write *)
 module RMW = struct
-type rmw =  LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas | AllAmo
+type rmw =  LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas | AllAmo | SafeAmo
 
 type nonrec atom = atom
 
@@ -988,10 +988,20 @@ let pp_rmw compat = function
   | LdOp op -> sprintf "Amo.Ld%s" (pp_aop op)
   | StOp op -> sprintf "Amo.St%s" (pp_aop op)
   | AllAmo -> sprintf "Amo"
+  (* Unfold to `Amo.*` that gives distinct values.
+     That is, (1) given an initial value `a`, (2) given the current
+     operand `b` via the picking strategy, i.e., a linear counter
+     from 1,2 and so on, the result value of `a Amo.* b` should be
+     distinct from the initial value `a`. Hence we can distinct
+     if `Amo.*` takes effects by checking the value, therefore safe
+     to be used to generate tests.
+     An counter example here is `LdOp A_CLR`, or `Amo.LdClr`, where
+     `0 Amo.LdClr 1` = `0`. *)
+  | SafeAmo -> sprintf "Amo.Safe"
 
 let is_one_instruction = function
   | LrSc -> false
-  | LdOp _ | StOp _ | Swp | Cas | AllAmo -> true
+  | LdOp _ | StOp _ | Swp | Cas | AllAmo | SafeAmo -> true
 
 let fold_aop f r =
   let r = f A_ADD r in
@@ -1006,7 +1016,7 @@ let fold_rmw wildcard f r =
   let r = f Cas r in
   let r = fold_aop (fun op r -> f (LdOp op) r) r in
   let r = fold_aop (fun op r -> f (StOp op) r) r in
-  let r = if wildcard then f AllAmo r else r in
+  let r = if wildcard then f AllAmo r |> f SafeAmo else r in
   r
 
 let all_concrete_rmw =
@@ -1016,6 +1026,7 @@ let all_concrete_rmw =
 let expand_rmw rmw = match rmw with
   | LrSc | Swp | Cas | LdOp _ | StOp _ -> [rmw]
   | AllAmo -> all_concrete_rmw
+  | SafeAmo -> [Swp; Cas; LdOp A_ADD; StOp A_ADD]
 
 let fold_rmw_compat f r = f LrSc r
 
@@ -1041,7 +1052,7 @@ let same_mixed (a1:atom option) (a2:atom option) =
 let applies_atom_rmw rmw ar aw = match rmw with
   | LrSc ->
      ok_rw ar aw && (do_cu || same_mixed ar aw)
-  | Swp|Cas|LdOp _| AllAmo ->
+  | Swp|Cas|LdOp _ | AllAmo | SafeAmo ->
      ok_rw ar aw && same_mixed ar aw
   | StOp _ ->
      ok_w ar aw && same_mixed ar aw
@@ -1049,7 +1060,7 @@ let applies_atom_rmw rmw ar aw = match rmw with
 let show_rmw_reg = function
 | StOp _ -> false
 | LdOp _|Cas|Swp|LrSc -> true
-| AllAmo -> assert false
+| AllAmo | SafeAmo -> assert false
 
 let compute_rmw r ~old ~operand =
     match r with
@@ -1069,7 +1080,7 @@ let compute_rmw r ~old ~operand =
         | A_CLR -> old land (lnot operand)
     end
     | LrSc | Swp | Cas  -> operand
-    | AllAmo -> assert false
+    | AllAmo | SafeAmo -> assert false
 
 (* Rule out `rmw_list` that contains the same type of atomic operation for a location. *)
 let is_valid_rmw rmw_list =
