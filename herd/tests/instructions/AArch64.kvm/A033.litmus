@@ -1,0 +1,16 @@
+AArch64 A033
+Variant=vmsa
+{
+int x=1;
+int y=2;
+int a=1;
+int b=2;
+0:X0=x; 0:X3=PTE(a);
+0:X2=(oa:PA(b));
+1:X3=a; 1:X0=PTE(x);
+1:X2=(oa:PA(y));
+}
+ P0          | P1          ;
+ LDR W1,[X0] | LDR W1,[X3] ;
+ STR X2,[X3] | STR X2,[X0] ;
+exists (0:X1=2 /\ 1:X1=2)
