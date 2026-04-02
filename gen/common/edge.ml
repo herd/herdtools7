@@ -50,7 +50,7 @@ module type S = sig
 
 (* edge proper *)
   type tedge =
-    | Rf of ie | Fr of ie | Ws of ie
+    | Rf of ie | Fr of ie | Ws of ie | Coms of ie
     | Po of sd*extr*extr | Fenced of fence*sd*extr*extr
     | Dp of dp*sd*extr
     | Leave of com (* Leave thread *)
@@ -64,6 +64,10 @@ module type S = sig
     | Hat
     | Rmw of RMW.rmw  (* Various sorts of read-modify-write *)
 
+  type edge_predicate =
+    | Before
+    | After
+
   val is_id : tedge -> bool
   val is_node : tedge -> bool
   val is_insert_store : tedge -> bool
@@ -72,7 +76,7 @@ module type S = sig
   val compute_rmw : RMW.rmw -> value -> value -> value
   val is_valid_rmw : RMW.rmw list -> bool
 
-  type edge = { edge: tedge;  a1:atom option; a2: atom option; }
+  type edge = { edge: tedge;  a1:atom option; a2: atom option; pred : edge_predicate option }
 
   val plain_edge : tedge -> edge
 
@@ -94,6 +98,8 @@ module type S = sig
   val parse_atom : string -> atom option
   val parse_atoms : string list -> atom option list
   val get_access_atom: atom option -> MachMixed.t option
+
+  val equal_edge_atoms : edge -> edge -> bool
 
   val parse_fence : string -> fence
   val parse_edge : string -> edge
@@ -135,6 +141,11 @@ module type S = sig
 
 (* Resolve Irr directions and unspecified atom *)
   val resolve_edges : edge list -> edge list
+
+  (* Predicate assicoated with the relaxation *)
+  val add_predicate : edge_predicate -> edge -> edge
+  val parse_predicate : string -> edge_predicate
+  val get_predicate : edge -> edge_predicate option
 
 (* Atomic variation over yet unspecified atoms *)
   val varatom : edge list -> (edge list -> 'a -> 'a) -> 'a -> 'a
@@ -198,6 +209,16 @@ and module RMW = A.RMW = struct
 
   type value = A.Value.v
 
+  let pre_parse_string s =
+    String.trim s
+    |> (fun s -> Lexing.from_string s)
+    |> Parser.main LexUtil.token
+    |> Ast.flatten (fun _ -> Warn.fatal "predicate should not exist.")
+    |> ( function
+      | [x] -> x
+      | _ ->
+        Warn.user_error "only accepts exactly one input cycle." )
+
   let compute_rmw rmw old operand =
     Value.from_int @@ RMW.compute_rmw rmw ~old:(Value.to_int old) ~operand:(Value.to_int operand)
 
@@ -227,7 +248,7 @@ and module RMW = A.RMW = struct
 
 (* edge proper *)
   type tedge =
-    | Rf of ie | Fr of ie | Ws of ie
+    | Rf of ie | Fr of ie | Ws of ie | Coms of ie
     | Po of sd*extr*extr | Fenced of fence*sd*extr*extr
     | Dp of dp*sd*extr
     | Leave of com
@@ -242,34 +263,38 @@ and module RMW = A.RMW = struct
 
   let is_id = function
     | Id -> true
-    | Store|Insert _|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Store|Insert _|Hat|Rmw _|Rf _|Fr _|Ws _|Coms _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
 
   let is_insert_store = function
     | Store|Insert _ -> true
-    | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Coms _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
 
   let is_node = function
     | Node _ -> true
-    | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Coms _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Insert _
     | Store -> false
 
   let is_non_pseudo = function
     | Store|Insert _ |Id|Node _-> false
-    | Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Hat|Rmw _|Rf _|Fr _|Ws _|Coms _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> true
 
   let is_dp_addr = function
     |Dp (dp, _, _) -> F.is_addr dp
     |_ -> false
 
-  type edge = { edge: tedge;  a1:atom option; a2: atom option; }
+  type edge_predicate =
+    | Before
+    | After
+
+  type edge = { edge: tedge;  a1:atom option; a2: atom option; pred : edge_predicate option }
 
   open Printf
 
-  let plain_edge e = { a1=None; a2=None; edge=e; }
+  let plain_edge e = { a1=None; a2=None; edge=e; pred = None}
 
   let pp_as_a = A.pp_as_a
   let pp_plain = A.pp_plain
@@ -298,6 +323,7 @@ and module RMW = A.RMW = struct
 
 
   let do_pp_tedge compat = function
+    | Coms ie -> sprintf "%sObs" (pp_ie_full ie)
     | Rf UnspecCom -> sprintf "Rf"
     | Fr UnspecCom -> sprintf "Fr"
     | Ws UnspecCom -> if compat then sprintf "Ws" else sprintf "Co"
@@ -329,12 +355,19 @@ and module RMW = A.RMW = struct
       "{edge=%s, a1=%s, a2=%s}"
       (do_pp_tedge false e.edge) (pp_atom_option e.a1) (pp_atom_option e.a2)
 
+  let pp_predicate = function
+    | Before -> "before"
+    | After -> "after"
+
   let do_pp_edge compat pp_atom_functor e =
     let annotation = pp_atom_functor e.edge e.a1 e.a2 in
     let edge = match e.edge with
     | Id -> ""
     | _ -> do_pp_tedge compat e.edge in
-    edge ^ annotation
+    let edge_anno = edge ^ annotation in
+    match e.pred with
+    | None -> edge_anno
+    | Some pred -> sprintf "@%s(%s)" (pp_predicate pred) edge_anno
 
   let pp_edge_with_xx compat e = do_pp_edge compat pp_aa e
 
@@ -377,6 +410,7 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Ws _|Fr _|Rmw _  -> Dir W
   | Leave c|Back c -> do_dir_tgt_com c
   | Id -> not_that e "do_dir_tgt"
+  | Coms _ -> Irr
   | Insert _ -> NoDir
   | Store -> Dir W
   | Node d -> Dir d
@@ -388,13 +422,14 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Ws _|Rf _ -> Dir W
   | Leave c|Back c -> do_dir_src_com c
   | Id -> not_that e "do_dir_src"
+  | Coms _ -> Irr
   | Insert _ -> NoDir
   | Store -> Dir W
   | Node d -> Dir d
 
   let do_loc_sd e = match e with
   | Po (sd,_,_) | Fenced (_,sd,_,_) | Dp (_,sd,_) -> sd
-  | Insert _|Store|Node _|Fr _|Ws _|Rf _|Hat|Rmw _|Id|Leave _|Back _ -> Same
+  | Insert _|Store|Node _|Fr _|Ws _|Rf _|Coms _|Hat|Rmw _|Id|Leave _|Back _ -> Same
 
   let do_is_diff e = Code.is_diff_loc @@ do_loc_sd e
 
@@ -407,6 +442,7 @@ let fold_tedges f r =
   let r = fold_ie wildcard (fun ie -> f (Rf ie)) r in
   let r = fold_ie wildcard (fun ie -> f (Fr ie)) r in
   let r = fold_ie wildcard (fun ie -> f (Ws ie)) r in
+  let r = if wildcard then fold_ie wildcard (fun ie -> f (Coms ie)) r else r in
   let r = RMW.fold_rmw wildcard (fun rmw -> f (Rmw rmw)) r in
   let r = fold_sd_extr_extr wildcard (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
   let r = F.fold_all_fences (fun fe -> f (Insert fe)) r in
@@ -444,6 +480,9 @@ let fold_tedges f r =
 
   let get_access_atom = A.get_access_atom
 
+  let equal_edge_atoms lhs rhs =
+    lhs.edge = rhs.edge && lhs.a1 = rhs.a1 && lhs.a2 = rhs.a2
+
   let same_access_atoms a1 a2 =
     Misc.opt_eq MachMixed.equal (get_access_atom a1) (get_access_atom a2)
 
@@ -480,7 +519,7 @@ let fold_tedges f r =
                  match te with
                  | Rmw rmw -> (* Allowed source and target atomicity for rmw *)
                      if RMW.applies_atom_rmw rmw a1 a2 then begin
-                       let e =  {a1; a2; edge=te;} in
+                       let e =  {a1; a2; edge=te; pred = None} in
                        f e k
                      end else k
                  | Id -> begin
@@ -488,16 +527,16 @@ let fold_tedges f r =
                      | Some x1,Some x2 when
                          A.compare_atom x1 x2=0
                          && not (is_ifetch a1) ->
-                         f { a1; a2;edge=te; } k
+                         f { a1; a2;edge=te; pred = None} k
                      | None,None ->
-                         let e =  { a1; a2;edge=te; } in
+                         let e =  { a1; a2;edge=te; pred = None} in
                          f e k
                      | _,_ -> k
                  end
                  | Insert _|Node _|Store  ->
                      begin match a1,a2 with
                      | None,None ->
-                         let e =  { a1; a2;edge=te; } in
+                         let e =  { a1; a2;edge=te; pred = None} in
                          f e k
                      | _,_ -> k
                      end
@@ -511,10 +550,10 @@ let fold_tedges f r =
                         Misc.is_none (get_access_atom a2)||
                        ok_non_rmw te a1 a2)
                      then
-                       f {a1; a2; edge=te;} k
+                       f {a1; a2; edge=te;pred = None} k
                      else begin
                        if debug then
-                         eprintf "Not %s\n" (debug_edge  {a1; a2; edge=te;}) ;
+                         eprintf "Not %s\n" (debug_edge  {a1; a2; edge=te;pred = None}) ;
                        k
                      end ))))
 
@@ -560,15 +599,12 @@ let fold_tedges f r =
     with Not_found -> Warn.fatal "Bad atom: %s" s
 
   let parse_atoms xs =
-    try
-      List.fold_left
-        (fun k x ->
-          List.fold_left
-            (fun k s -> parse_atom s::k)
-            k (LexUtil.just_split x))
-        [] xs
-    with LexUtil.Error msg ->
-      Warn.fatal "bad atoms list (%s)" msg
+    List.map
+      ( fun x ->
+        pre_parse_string x
+        |> List.map parse_atom
+      ) xs
+    |> List.flatten
 
   let get_access_atom = A.get_access_atom
 
@@ -637,10 +673,10 @@ let fold_tedges f r =
     if do_self && instr_atom != None then
       iter_ie
         (fun ie ->
-           add_lxm_edge (sprintf "Iff%s" (pp_ie ie)) { a1=None; a2=instr_atom; edge=(Rf ie); } ;
-           add_lxm_edge (sprintf "Irf%s" (pp_ie ie)) { a1=None; a2=instr_atom; edge=(Rf ie); } ;
-           add_lxm_edge (sprintf "Fif%s" (pp_ie ie)) { a1=instr_atom; a2=None; edge=(Fr ie); } ;
-           add_lxm_edge (sprintf "Ifr%s" (pp_ie ie)) { a1=instr_atom; a2=None; edge=(Fr ie); });
+           add_lxm_edge (sprintf "Iff%s" (pp_ie ie)) { a1=None; a2=instr_atom; edge=(Rf ie); pred = None} ;
+           add_lxm_edge (sprintf "Irf%s" (pp_ie ie)) { a1=None; a2=instr_atom; edge=(Rf ie); pred = None} ;
+           add_lxm_edge (sprintf "Fif%s" (pp_ie ie)) { a1=instr_atom; a2=None; edge=(Fr ie); pred = None} ;
+           add_lxm_edge (sprintf "Ifr%s" (pp_ie ie)) { a1=instr_atom; a2=None; edge=(Fr ie); pred = None});
     ()
 
   let fold_pp_edges f =
@@ -664,7 +700,8 @@ let fold_tedges f r =
     try Hashtbl.find t s
     with Not_found -> Warn.fatal "Bad edge: %s" s
 
-  let parse_edges s = List.map parse_edge (LexUtil.just_split s)
+  let parse_edges s =
+    pre_parse_string s |> List.map parse_edge
 
   let pp_edges es = String.concat " " (List.map pp_edge es)
 
@@ -672,14 +709,15 @@ let fold_tedges f r =
   | Po(sd,src,_) -> Po (sd,src,Dir d)
   | Fenced(f,sd,src,_) -> Fenced(f,sd,src,Dir d)
   | Dp (dp,sd,_) -> Dp (dp,sd,Dir d)
-  | Rf _ | Hat
-  | Insert _|Store|Id|Node _|Ws _|Fr _|Rmw _|Leave _|Back _-> e
+  | Rf _ |Ws _|Fr _| Coms _| Hat
+  | Insert _|Store|Id|Node _|Rmw _|Leave _|Back _-> e
 
   and do_set_src d e = match e with
   | Po(sd,_,tgt) -> Po(sd,Dir d,tgt)
   | Fenced(f,sd,_,tgt) -> Fenced(f,sd,Dir d,tgt)
-  | Fr _|Hat|Dp _
-  | Insert _|Store|Id|Node _|Ws _|Rf _|Rmw _|Leave _|Back _ -> e
+  | Rf _ |Ws _|Fr _| Coms _| Hat
+  | Dp _
+  | Insert _|Store|Id|Node _|Rmw _|Leave _|Back _ -> e
 
   let set_tgt d e = { e with edge = do_set_tgt d e.edge ; }
   and set_src d e = { e with edge = do_set_src d e.edge ; }
@@ -689,7 +727,7 @@ let fold_tedges f r =
 
   let get_ie e = match e.edge with
   | Id |Po _|Dp _|Fenced _|Rmw _ -> Int
-  | Rf ie|Fr ie|Ws ie -> ie
+  | Rf ie|Fr ie|Ws ie|Coms ie -> ie
   | Leave _|Back _|Hat -> Ext
   | Insert _|Store|Node _ -> Int
 
@@ -773,6 +811,12 @@ let fold_tedges f r =
     | Rf com -> expand_com com ( fun new_com -> f {e with edge = Rf(new_com)}) acc
     | Fr com -> expand_com com ( fun new_com -> f {e with edge = Fr(new_com)}) acc
     | Ws com -> expand_com com ( fun new_com -> f {e with edge = Ws(new_com)}) acc
+    | Coms com -> expand_com com
+      ( fun new_com acc ->
+          acc |> f {e with edge = Rf(new_com)}
+            |> f {e with edge = Fr(new_com)}
+            |> f {e with edge = Ws(new_com)}
+      ) acc
     | Rmw rmw ->
         let expand_rmw_list = A.RMW.expand_rmw rmw in
         List.fold_left ( fun acc new_rmw -> f {e with edge=Rmw(new_rmw);} acc) acc expand_rmw_list
@@ -1011,6 +1055,15 @@ let fold_tedges f r =
       check_mixed es ;
       es
 
+  let add_predicate pred e = {e with pred = Some pred}
+
+  let parse_predicate = function
+    | "before" -> Before
+    | "after" -> After
+    | s -> Warn.user_error "predicate %s is not supported." s
+
+  let get_predicate e = e.pred
+
 (********************)
 (* Atomic variation *)
 (********************)
@@ -1144,7 +1197,7 @@ let fold_tedges f r =
             fold_atomo
               (fun ao k ->
                 if is_ifetch ao then k
-                else { edge=Id; a1=ao; a2=ao;}::k)
+                else { edge=Id; a1=ao; a2=ao;pred=None}::k)
               [] in
           List.iter
             (fun e -> eprintf " %s" (pp_edge e))

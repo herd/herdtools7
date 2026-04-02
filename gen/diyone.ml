@@ -123,11 +123,18 @@ module Make(O:Config) (M:Builder.S) =
 (********)
     let do_zyva name_opt pp_rs =
       try begin
-        let es = List.map LexUtil.split pp_rs
-          |> List.concat
-          |> List.map M.R.parse_relax
-          |> List.map M.R.edges_of
-          |> List.flatten in
+        let es =
+          List.map ( fun segment ->
+            Lexing.from_string segment
+            |> Parser.main LexUtil.token
+          ) pp_rs
+          |> fun e -> Ast.Seq e
+          |> M.R.parse_expand_relaxs ~ppo:M.ppo
+          |> ( function
+            | [x] -> x
+            | _ ->
+              Warn.user_error "`diyone7` only accepts exactly one input cycle." )
+          |> M.R.edges_of in
         if O.verbose > 0 then
           Printf.eprintf
             "Parsed edges: %s\n" (M.E.pp_edges es) ;
@@ -179,7 +186,9 @@ let pp_es = ref []
 let () =
   Util.parse_cmdline
     (Config.diyone_spec ())
-    (fun x -> pp_es := x :: !pp_es) ;
+    (fun x ->
+      let segment = String.trim x in
+      if segment <> "" then pp_es := segment :: !pp_es);
     Config.valid_stdout_flag true
 
 let pp_es = List.rev !pp_es
