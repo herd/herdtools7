@@ -1,0 +1,17 @@
+AArch64 A032
+Variant=vmsa
+{
+int x=1;
+0:X1=PTE(x);
+[PTE(x)]=(x:0);
+pteval_t 0:X0;
+
+int y=2;
+0:X3=PTE(y);
+[PTE(y)]=(x:1);
+pteval_t 0:X2;
+}
+  P0         ;
+ LDR X0,[X1] ;
+ LDR X2,[X3] ;
+forall 0:X0=(oa:PA(x),x:0) /\ 0:X2=(oa:PA(y),x:1)
