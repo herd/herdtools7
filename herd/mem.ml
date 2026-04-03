@@ -837,7 +837,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                    List.fold_left
                      (fun m (x,v) ->
                        EM.(|||)
-                         (SM.spurious_setaf v x) m)
+                         (SM.spurious_setaf ~value:v ~location:x) m)
                      m xs)
                 (EM.unitT ())
                 locs

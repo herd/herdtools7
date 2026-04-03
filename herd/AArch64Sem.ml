@@ -106,7 +106,7 @@ module Make
     module Mixed(SZ:ByteSize.S) : sig
       val build_semantics : test -> A.inst_instance_id -> (proc * branch) M.t
       val can_unset_af_loc : event -> V.v option
-      val spurious_setaf : V.v -> V.v -> unit M.t
+      val spurious_setaf : value:V.v -> location:V.v -> unit M.t
     end = struct
 
       module Mixed = M.Mixed(SZ)
@@ -4891,8 +4891,8 @@ Arguments:
             end
         | _ -> None
 
-      let spurious_setaf value loc =
-        test_and_set_af_succeeds value loc E.IdSpurious DISide.Data
+      let spurious_setaf ~value ~location =
+        test_and_set_af_succeeds value location E.IdSpurious DISide.Data
 
     end
 
