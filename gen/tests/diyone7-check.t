@@ -1,3 +1,20 @@
+metadata-false
+  $ diyone7 -arch AArch64 -variant vmsa PteOA PosWW PteOA PteV1 PteAF0 PosWR PteHA Fri -oneloc -metadata false
+  AArch64 CoWR0+posWpteoapteoa.v1.af0-pospteoa.v1.af0pteha-friptehapteoa
+  Variant=vmsa
+  TTHM=HA
+  {
+   [x]=1;
+   [PTE(x)]=(oa:PA(x), af:0, valid:0);
+   [y]=5;
+   0:X0=PTE(x); 0:X1=(oa:PA(y), af:0, valid:0); 0:X2=(oa:PA(y)); 0:X3=x;
+  }
+   P0               ;
+   STR X1,[X0]      ;
+   STR X2,[X0]      ;
+   L00: LDR W4,[X3] ;
+  
+  exists (fault(P0:L00,x))
 vmsa-neg-exists
   $ diyone7 -arch AArch64 -variant kvm Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -neg true -info "User-define=User-define"
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0
