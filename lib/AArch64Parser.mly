@@ -98,6 +98,7 @@ let check_op3 op e =
 %token SVC
 %token LDR LDRSW LDP LDNP LDPSW LDIAPP STP STNP STILP
 %token LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
+%token LDAP STLP
 %token LDRSB LDRSH
 %token LD1 LD1R LDAP1 LD2 LD2R LD3 LD3R LD4 LD4R STL1 ST1 ST2 ST3 ST4 STUR /* Neon load/store */
 %token ADDV DUP FMOV LDAPUR STLUR
@@ -569,6 +570,8 @@ ldp_instr:
   { (fun v r1 r2 (r3,idx) -> I_LDP ((`Pa),v,r1,r2,r3,idx)) }
 | LDNP
   { (fun v r1 r2 (r3,idx) -> I_LDP ((`PaN),v,r1,r2,r3,idx)) }
+| LDAP
+  { (fun v r1 r2 (r3,idx) -> I_LDP ((`PaA),v,r1,r2,r3,idx)) }
 | LDIAPP
   {
    (fun v r1 r2 (r3,idx) ->
@@ -592,6 +595,8 @@ stp_instr:
   { (fun v r1 r2 (r3,idx) -> I_STP ((`Pa),v,r1,r2,r3,idx)) }
 | STNP
   { (fun v r1 r2 (r3,idx) -> I_STP ((`PaN),v,r1,r2,r3,idx)) }
+| STLP
+  { (fun v r1 r2 (r3,idx) -> I_STP ((`PaL),v,r1,r2,r3,idx)) }
 | STILP
     {
      (fun v r1 r2 (r3,idx) ->

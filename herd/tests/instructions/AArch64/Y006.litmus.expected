@@ -1,0 +1,14 @@
+Test Y006 Allowed
+States 5
+1:X3=0; 1:X4=0; 1:X5=0;
+1:X3=0; 1:X4=0; 1:X5=1;
+1:X3=0; 1:X4=99; 1:X5=1;
+1:X3=1; 1:X4=0; 1:X5=1;
+1:X3=1; 1:X4=99; 1:X5=1;
+No
+Witnesses
+Positive: 0 Negative: 5
+Condition exists (1:X3=1 /\ 1:X4=99 /\ 1:X5=0)
+Observation Y006 Never 0 5
+Hash=bca78e0617eea4b1c2d22dd057fca71e
+
