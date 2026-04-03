@@ -527,7 +527,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let next_reg_sz st p sz =
       let r,st = next_reg st in
-      let loc = A.Reg (p,r) in
+      let loc = A.of_reg p r in
       let st = A.add_type loc (type_of_sz sz) st in
       r,st
 
@@ -943,7 +943,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let do_emit_mov_sz emit_mov_sz sz st p init v =
       let rA,init,csi,st = emit_mov_sz sz st p init v in
       let st =
-        let loc = A.Reg (p,rA) in
+        let loc = A.of_reg p rA in
         let t = type_of_sz sz in
         A.add_type loc t st in
       rA,init,csi,st

@@ -51,6 +51,10 @@ module type S = sig
 (* Bind keys to list of values *)
   val accumulate : key -> 'a -> 'a list t -> 'a list t
 
+(* `to_list` and `of_list` are only supported since 5.1 *)
+  val to_list : 'a t -> (key * 'a) list
+  val of_list : (key * 'a) list -> 'a t
+
 end
 
 module Make(O:Set.OrderedType) : S with type key = O.t =
@@ -108,5 +112,8 @@ module Make(O:Set.OrderedType) : S with type key = O.t =
          | None -> Some [v]
          | Some vs -> Some (v::vs))
         m
+
+    let to_list m = M.to_seq m |> List.of_seq
+    let of_list m = List.to_seq m |> M.of_seq
 
   end
