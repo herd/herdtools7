@@ -1226,22 +1226,24 @@ let tr_simd_variant = function
 let simd_variant_nbytes v = tr_simd_variant v |> MachSize.nbytes
 
 type temporal = TT | NT
-type pair_opt = [`Pa | `PaN | `PaIQ | `PaIL]
-type ld_pair_opt = [`Pa | `PaN | `PaIQ]
-type st_pair_opt = [`Pa | `PaN | `PaIL]
+type pair_opt = [`Pa | `PaN | `PaIQ | `PaIL | `PaA | `PaL]
+type ld_pair_opt = [`Pa | `PaN | `PaIQ | `PaA]
+type st_pair_opt = [`Pa | `PaN | `PaIL | `PaL]
 
 let ld_pair_opt_eq (a: ld_pair_opt) (b: ld_pair_opt) : bool =
   match (a, b) with
   | (`Pa, `Pa)
   | (`PaN, `PaN)
-  | (`PaIQ, `PaIQ) -> true
+  | (`PaIQ, `PaIQ)
+  | (`PaA, `PaA) -> true
   | _ -> false
 
 let st_pair_opt_eq (a: st_pair_opt) (b: st_pair_opt) : bool =
   match (a, b) with
   | (`Pa, `Pa)
   | (`PaN, `PaN)
-  | (`PaIL, `PaIL) -> true
+  | (`PaIL, `PaIL) 
+  | (`PaL, `PaL) -> true
   | _ -> false
 
 type ld_type = AA | XX | AX | AQ
@@ -1262,11 +1264,13 @@ let ldp_memo = function
   | `Pa -> "LDP"
   | `PaN -> "LDNP"
   | `PaIQ -> "LDIAPP"
+  | `PaA -> "LDAP"
 
 let stp_memo = function
   | `Pa -> "STP"
   | `PaN -> "STNP"
   | `PaIL -> "STILP"
+  | `PaL -> "STLP"
 
 type st_type = YY | LY
 
