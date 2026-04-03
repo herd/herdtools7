@@ -6,6 +6,7 @@ pte_x=(valid:0);
 0:X0=(oa:phy_x,valid:1);
 uint64_t x;
 uint64_t y;
+uint64_t 1:X1=0;
 0:X3=y; 1:X3=y;
 1:X4=x;
 }

@@ -1,7 +1,7 @@
 AArch64 LDRaf0-noHA
 {
 0:X1=x;
-0:X2=0;
+uint64_t 0:X2=0;
 x=1;
 pte_x=(af:0);
 }

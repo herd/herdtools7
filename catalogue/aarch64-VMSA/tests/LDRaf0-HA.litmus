@@ -3,7 +3,7 @@ TTHM=P0:HA
 (* LDRaf0-HA+32 is equivalent *)
 {
 0:X1=x;
-0:X2=0;
+uint64_t 0:X2=0;
 uint64_t x=1;
 pte_x=(af:0);
 }
