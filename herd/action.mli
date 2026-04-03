@@ -39,7 +39,7 @@ module type S = sig
 (**************************************)
 (* Access to sub_components of events *)
 (**************************************)
-
+  val access_of : action -> Access.t option
   val value_of : action -> A.V.v option
   val read_of : action -> A.V.v option
   val written_of : action -> A.V.v option

@@ -481,7 +481,7 @@ module
                 (PPC.dump_instruction ii.A.inst)
           end
 
-      let spurious_setaf _ = assert false
+      include NoAF
 
     end
   end

@@ -193,13 +193,10 @@ Monad type:
                     eprintf "Delay %s output is %a\n" tag E.debug_output es
                   end ;
                let delayed : 'a t =
-                  fun eiid -> eiid,(Evt.singleton (v,[],es),None) in
+                  fun eiid -> eiid,(Evt.singleton (v,cls,es),None) in
                 let eiid,(acts2,specs) = kont v delayed eiid in
                 assert (specs=None) ;
-                let acts =
-                  Evt.fold
-                    (fun (v,cls2,es) acts -> Evt.add (v,cls@cls2,es) acts)
-                    acts2 acts in
+                let acts = Evt.union acts acts2 in
                 eiid,acts)
               acts (eiid,Evt.empty) in
           eiid,(acts,None)
@@ -1730,11 +1727,25 @@ Monad type:
     type evt_struct = E.event_structure
     type output = VC.cnstrnts * evt_struct
 
-    let get_output et k =
-      let (_,(es,_)) = et (0,0) in
+    let get_output_check check et k =
+      let ((_,eiid),(es,_)) = et (0,0) in
       List.fold_left
-        (fun k (_,vcl,evts) -> (vcl,evts)::k)
-        k (Evt.elements es)
+        (fun (eiid,k) (_,vcl,evts) ->
+           let m = check (vcl,evts) in
+           let eiid,(acts,_) = m eiid in
+           let k =
+             Evt.fold
+               (fun (_,cls0,es0) k ->
+                  let evts = E.union_comp es0 evts
+                  and vcl = cls0@vcl in
+                  (vcl,evts)::k)
+               acts k in
+           eiid,k)
+        ({ id=eiid; sub=0; },k)
+        (Evt.elements es)
+      |> snd
+
+    let get_output et k = get_output_check (fun _ -> unitT ()) et k
 
     let force_once (m : 'a t) : 'a t =
       let res = ref None in

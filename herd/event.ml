@@ -279,6 +279,7 @@ val same_instance : event -> event -> bool
 (*************************************)
 (* Access to sub_components of events *)
 (*************************************)
+  val access_of : event -> Access.t option
   val value_of : event -> A.V.v option (* Warning: fails on RMW actions *)
   val read_of : event -> A.V.v option
   val written_of : event -> A.V.v option
@@ -314,6 +315,10 @@ val same_instance : event -> event -> bool
   val inst_code_comp_spec :
      event_structure -> event_structure -> event_structure -> event_structure
 
+(******************)
+(* Standard union *)
+(******************)
+  val union_comp : event_structure -> event_structure -> event_structure
 
 (************************)
 (* Parallel composition *)
@@ -578,6 +583,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         "(eeid=%s action=%s)" (pp_eiid e) (pp_action e)
 
 (* Utility functions to pick out components *)
+    let access_of e = Act.access_of e.action
     let value_of e = Act.value_of e.action
     let read_of e = Act.read_of e.action
     let written_of e = Act.written_of e.action
@@ -1320,6 +1326,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         fun es _ -> es.speculated
 
 (* Standard union of two structures, specific fields to be completed *)
+
     let union es1 es2 =
       { procs = [];
         events = EventSet.union es1.events es2.events ;
@@ -1350,6 +1357,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
        mem_accesses = EventSet.union es1.mem_accesses es2.mem_accesses ;
        aligned = es1.aligned @ es2.aligned ;
       }
+
+    let union_comp es1 es2 = union es1 es2
 
 (* Parallel composition *)
 
