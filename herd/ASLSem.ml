@@ -153,7 +153,7 @@ module Make (Conf : Config) = struct
   module Mixed (SZ : ByteSize.S) : sig
     val build_semantics : test -> A.inst_instance_id -> (proc * branch) M.t
     val can_unset_af_loc : event -> A.V.v option
-    val spurious_setaf : A.V.v -> unit M.t
+    val spurious_setaf : value:A.V.v -> location:A.V.v -> unit M.t
   end = struct
     module Mixed = M.Mixed (SZ)
 

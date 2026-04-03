@@ -292,6 +292,13 @@ val fold_suffix_cross : 'a list list -> ('a list list -> 'b -> 'b) -> 'b -> 'b
 val fold_suffix_cross_gen :
   ('a list -> 'c -> 'c) -> 'c -> 'a list list -> ('c -> 'b -> 'b) -> 'b -> 'b
 
+(* Similar, except that subsets are selected *)
+
+val fold_subsets_cross : 'a list list -> ('a list list -> 'b -> 'b) -> 'b -> 'b
+
+val fold_subsets_cross_gen :
+  ('a list -> 'c -> 'c) -> 'c -> 'a list list -> ('c -> 'b -> 'b) -> 'b -> 'b
+
 (*******************)
 (* Simple bindings *)
 (*******************)
