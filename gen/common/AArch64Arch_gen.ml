@@ -480,11 +480,13 @@ let is_tthm fields =
      | `Pa -> "L"
      | `PaN -> "LN"
      | `PaIQ -> "LIQ"
+     | `PaA -> "LA"
 
    let pp_st_pair_opt = function
      | `Pa -> "S"
      | `PaN -> "SN"
      | `PaIL -> "SIL"
+     | `PaL -> "SL"
 
    and pp_pair_idx = function
      | UnspecLoc -> ""

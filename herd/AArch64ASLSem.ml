@@ -873,6 +873,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           | `Pa -> "ldstpair_post/LDP_32_ldstpair_post.opn"
           | `PaIQ -> "ldiappstilp/LDIAPP_32LE_ldiappstilp.opn"
           | `PaN -> "ldstnapair_offs/LDNP_32_ldstnapair_offs.opn"
+          | `PaA -> "ldiappstilp/LDAP_64_ldiappstilp.opn"
         and acqrel = pa = `PaIQ && rt != ZR && rt2 != ZR
         and offset = if pa = `PaIQ then liti k else litbv 64 k in
         Some
@@ -900,6 +901,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         | `Pa -> "ldstpair_post/STP_32_ldstpair_post.opn"
         | `PaIL -> "ldiappstilp/STILP_32SE_ldiappstilp.opn"
         | `PaN -> "ldstnapair_offs/STNP_32_ldstnapair_offs.opn"
+        | `PaL -> "ldiappstilp/STLP_64_ldiappstilp.opn"
       and acqrel = false
       and offset = if pa = `PaIL then liti k else litbv 64 k in
   Some
