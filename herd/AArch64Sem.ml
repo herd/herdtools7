@@ -1919,6 +1919,7 @@ Arguments:
               let open Annot in
               match tnt with
               | (`PaIQ) -> Q
+              | (`PaA) -> A
               | (`Pa) -> N
               | (`PaN) -> NTA in
             let open AArch64 in
@@ -2062,14 +2063,14 @@ Arguments:
           let open AArch64 in
           let open Annot in
           match tnt with
-          | (`PaIL) -> L
+          | (`PaIL) | (`PaL) -> L
           | (`Pa) -> N
           | (`PaN) -> NTA in
         match md with
         | AArch64.Idx ->
             let (>>|) =
               match tnt with
-              | AArch64.(`Pa|`PaN) -> (>>|)
+              | AArch64.(`Pa|`PaN|`PaL) -> (>>|)
               | AArch64.(`PaIL) -> M.seq_mem in
             let (>>>) = M.data_input_next in
             do_str rd
