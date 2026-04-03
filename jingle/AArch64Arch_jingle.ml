@@ -189,12 +189,12 @@ include Arch.MakeArch(struct
         add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2')]
 
     | I_LDP (t,a,r1,r2,r3,idx),I_LDP (t',a',r1',r2',r3',idx')
-        when ld_pair_opt_eq t t' && a=a'
+         when ld_pair_opt_eq t t' && a=a'
       ->
        match_idx idx idx' subs >>>
        add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg (sr_name r3,r3')]
     | I_STP (t,a,r1,r2,r3,idx),I_STP (t',a',r1',r2',r3',idx')
-        when st_pair_opt_eq t t' && a=a'
+         when st_pair_opt_eq t t' && a=a'
       ->
        match_idx idx idx' subs >>>
        add_subs [Reg(sr_name r1,r1'); Reg(sr_name r2,r2'); Reg (sr_name r3,r3')]

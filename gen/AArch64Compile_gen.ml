@@ -1472,6 +1472,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           match ar with
           | Pair ((`Pa),_),None -> XP
           | Pair ((`PaIQ),_),None -> AXP
+          | Pair ((`PaA),_),None -> AXP
           | _ ->
              Warn.fatal
                "Illegal %s annotaton on load exclusive pair" (pp_atom ar)  in
@@ -1487,6 +1488,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           match aw with
           | Pair ((`Pa),_),_ -> YY
           | Pair ((`PaIL),_),_ -> LY
+          | Pair ((`PaL),_),_ -> LY
           | _ ->
              Warn.fatal
                "Illegal %s annotaton on store exclusive pair" (pp_atom aw)  in
@@ -1867,12 +1869,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             Some r,init,cs,st
         | R,Some (Neon _,Some _) -> assert false
         | R,Some (Pair (opt,idx),None) ->
-          let ld_opt = match opt with
-            | `Pa -> `Pa | `PaN -> `PaN | `PaIQ -> `PaIQ
-            | `PaIL -> assert false
-          in
-    let r,init,cs,st = emit_ldp ld_opt idx st p init loc in
-    Some r,init,cs,st
+          let r,init,cs,st = emit_ldp (pair_opt_to_ld opt) idx st p init loc in
+          Some r,init,cs,st
         | R,Some (Pair _,Some _) -> assert false
         | W,None ->
             let init,cs,st =
@@ -1912,12 +1910,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let init,cs,st = STG.emit_store st p init e in
             None,init,cs,st
         | W,Some (Pair (opt,idx),None) ->
-            let st_opt = match opt with
-              | `Pa -> `Pa | `PaN -> `PaN | `PaIL -> `PaIL
-              | `PaIQ -> assert false
-            in
-    let init,cs,st = emit_stp st_opt idx st p init loc e in
-    None,init,cs,st
+          let init,cs,st = emit_stp (pair_opt_to_st opt) idx st p init loc e in
+          None,init,cs,st
         | W,Some (Pair _,Some _) -> assert false
         | (R|W), Some (Instr, _) -> Warn.fatal "Instr annotation did not create code location %s" (C.debug_evt e)
         | R,Some (Pte (Read|ReadAcq|ReadAcqPc as rk),None) ->
@@ -2556,7 +2550,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let ar,_ = tr_none er.C.atom
       and aw,_ = tr_none ew.C.atom in
       match ar,aw with
-      | (Pair _,Pair _) ->
+      | (Pair _,Pair _)->
          emit_exch_dep_addr22 csel vdep st p init er ew rd
       | (Pair _,_) ->
          check_cu (not A64.do_cu);
