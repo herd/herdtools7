@@ -32,6 +32,6 @@ module type Semantics =
       val build_semantics :
         test -> A.inst_instance_id -> (A.program_order_index * branch) M.t
       val can_unset_af_loc : event -> A.V.v option
-      val spurious_setaf : A.V.v -> A.V.v -> unit M.t
+      val spurious_setaf : value:A.V.v -> location:A.V.v -> unit M.t
     end
   end
