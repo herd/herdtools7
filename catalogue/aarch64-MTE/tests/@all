@@ -325,6 +325,7 @@ LB+dsb.sytt+datapt.litmus
 LB+dsb.sytt+datatp.litmus
 LB+dsb.sytt+datatt.litmus
 LB+dsb.sytts.litmus
+LB+posat+amo.cas.litmus
 LDR-STZG1.litmus
 LDR-STZG2.litmus
 MP+dmb.st+addr.litmus

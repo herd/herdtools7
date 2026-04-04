@@ -374,6 +374,7 @@ LB+dsb.sytt+datapt                   Forbidden
 LB+dsb.sytt+datatp                   Allowed
 LB+dsb.sytt+datatt                   Forbidden
 LB+dsb.sytts                         Forbidden
+LB+posat+amo.cas                     Forbidden
 MP+dmb.st+addr                       Forbidden
 MP+dmb.st+addrpt                     Allowed
 MP+dmb.st+addrtp                     Allowed
