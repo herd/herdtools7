@@ -1226,7 +1226,24 @@ let tr_simd_variant = function
 let simd_variant_nbytes v = tr_simd_variant v |> MachSize.nbytes
 
 type temporal = TT | NT
-type pair_opt = Pa | PaN | PaI
+type ld_pair_opt = [`Pa | `PaN | `PaIQ | `PaA]
+type st_pair_opt = [`Pa | `PaN | `PaIL | `PaL]
+
+let ld_pair_opt_eq (a: ld_pair_opt) (b: ld_pair_opt) : bool =
+  match (a, b) with
+  | (`Pa, `Pa)
+  | (`PaN, `PaN)
+  | (`PaIQ, `PaIQ)
+  | (`PaA, `PaA) -> true
+  | _ -> false
+
+let st_pair_opt_eq (a: st_pair_opt) (b: st_pair_opt) : bool =
+  match (a, b) with
+  | (`Pa, `Pa)
+  | (`PaN, `PaN)
+  | (`PaIL, `PaIL) 
+  | (`PaL, `PaL) -> true
+  | _ -> false
 
 type ld_type = AA | XX | AX | AQ
 
@@ -1243,14 +1260,16 @@ let ldxp_memo = function
   | AXP -> "LDAXP"
 
 let ldp_memo = function
-  | Pa -> "LDP"
-  | PaN -> "LDNP"
-  | PaI -> "LDIAPP"
+  | `Pa -> "LDP"
+  | `PaN -> "LDNP"
+  | `PaIQ -> "LDIAPP"
+  | `PaA -> "LDAP"
 
 let stp_memo = function
-  | Pa -> "STP"
-  | PaN -> "STNP"
-  | PaI -> "STILP"
+  | `Pa -> "STP"
+  | `PaN -> "STNP"
+  | `PaIL -> "STILP"
+  | `PaL -> "STLP"
 
 type st_type = YY | LY
 
@@ -1414,16 +1433,18 @@ type 'k kinstruction =
   | I_ADD_SIMD of reg * reg * reg
   | I_ADD_SIMD_S of reg * reg * reg
   (* More loads *)
-  | I_LDP of pair_opt * variant * reg * reg * reg * 'k idx
+  | I_LDP of ld_pair_opt * variant * reg * reg * reg * 'k idx
   | I_LDPSW of reg * reg * reg * 'k idx
   | I_LDAR of variant * ld_type * reg * reg
   | I_LDXP of variant * ldxp_type * reg * reg * reg
+  | I_LDAP of variant * reg * reg * reg
   (* Stores *)
   | I_STR of variant * reg * reg * 'k MemExt.ext
-  | I_STP of pair_opt * variant * reg * reg * reg * 'k idx
+  | I_STP of st_pair_opt * variant * reg * reg * reg * 'k idx
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
   | I_STXP of variant * st_type * reg * reg * reg * reg
+  | I_STLP of variant * reg * reg * reg
 (* Scalable Vector Extension*)
   (* PTRUE <Pd>.<T>{, <pattern>} *)
   | I_PTRUE of reg * pattern
@@ -2154,6 +2175,8 @@ let do_pp_instruction m =
       pp_mem (ldrbh_memo bh t)  V32 r1 r2 m.k0
   | I_LDXP (v,t,r1,r2,r3) ->
       pp_ldxp (ldxp_memo t) v r1 r2 r3
+  | I_LDAP (_, r1, r2, a) -> 
+      sprintf "LDAP %s,%s,[%s]" (pp_reg r1) (pp_reg r2) (pp_reg a)
   | I_STR (v,r1,r2,idx) ->
       pp_mem_ext "STR" v r1 r2 idx
   | I_STLR (v,r1,r2) ->
@@ -2162,6 +2185,8 @@ let do_pp_instruction m =
       pp_stxr (str_memo t) v r1 r2 r3
   | I_STXP (v,t,r1,r2,r3,r4) ->
      pp_stxp (stxp_memo t) v r1 r2 r3 r4
+  | I_STLP (_, r1, r2, a) -> 
+      sprintf "STLP %s,%s,[%s]" (pp_reg r1) (pp_reg r2) (pp_reg a)
   | I_LDRBH (bh,r1,r2,idx) ->
       pp_mem_ext ("LDR"^pp_bh bh) V32 r1 r2 idx
   | I_STRBH (bh,r1,r2,idx) ->
@@ -2636,6 +2661,8 @@ let fold_regs (f_regs,f_sregs) =
     -> fold_reg r c
   | I_MOV (_,r1,kr)
     -> fold_reg r1 (fold_kr kr c)
+  | I_LDAP (_, r1, r2, a) | I_STLP (_, r1, r2, a) ->
+      fold_reg r1 (fold_reg r2 (fold_reg a c))
   | I_LDAR (_,_,r1,r2) | I_STLR (_,r1,r2) | I_STLRBH (_,r1,r2)
   | I_SXTW (r1,r2) | I_LDARBH (_,_,r1,r2)
   | I_SBFM (_,r1,r2,_,_) | I_UBFM (_,r1,r2,_,_)
@@ -2808,6 +2835,8 @@ let map_regs f_reg f_symb =
      I_LDARBH (bh,t,map_reg r1,map_reg r2)
   | I_LDXP (v,t,r1,r2,r3) ->
      I_LDXP (v,t,map_reg r1,map_reg r2,map_reg r3)
+  | I_LDAP (v, r1, r2, a) ->
+     I_LDAP (v, map_reg r1, map_reg r2, map_reg a)
   | I_STR (v,r1,r2,idx) ->
       I_STR (v,map_reg r1,map_reg r2,map_idx idx)
   | I_STRBH (v,r1,r2,idx) ->
@@ -2822,6 +2851,8 @@ let map_regs f_reg f_symb =
       I_STXRBH (bh,t,map_reg r1,map_reg r2,map_reg r3)
   | I_STXP (v,t,r1,r2,r3,r4) ->
      I_STXP (v,t,map_reg r1,map_reg r2,map_reg r3,map_reg r4)
+  | I_STLP (v, r1, r2, a) ->
+     I_STLP (v, map_reg r1, map_reg r2, map_reg a)
 (* Neon Extension Loads and Stores *)
   | I_LD1 (rs,i,r2,kr) ->
       I_LD1 (List.map map_reg rs, i, map_reg r2, map_kr kr)
@@ -3152,6 +3183,8 @@ let get_next =
   | I_STR _
   | I_LDAR _
   | I_LDARBH _
+  | I_LDAP _
+  | I_STLP _
   | I_STLR _
   | I_STLRBH _
   | I_STXR _
@@ -3573,6 +3606,8 @@ module PseudoI = struct
         | I_STLRBH _
         | I_STXR _
         | I_STXRBH _
+        | I_LDAP _
+        | I_STLP _
         | I_SXTW _
         | I_FENCE _
         | I_CSEL _
@@ -3753,6 +3788,7 @@ module PseudoI = struct
         | I_CASP _
           -> 3
         | I_LDCT _ | I_STCT _
+        | I_LDAP _ | I_STLP _
         | I_LD4 _ | I_LD4R _
         | I_ST4 _ | I_STZ2G _
           -> 4

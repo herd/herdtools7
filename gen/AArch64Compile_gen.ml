@@ -1470,8 +1470,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let load ar (r1,r2) rA =
         let a =
           match ar with
-          | Pair (Pa,_),None -> XP
-          | Pair (PaI,_),None -> AXP
+          | Ld_Pair ((`Pa),_),None -> XP
+          | Ld_Pair ((`PaIQ),_),None -> AXP
           | _ ->
              Warn.fatal
                "Illegal %s annotaton on load exclusive pair" (pp_atom ar)  in
@@ -1485,8 +1485,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let store aw r (r1,r2) rA =
         let a =
           match aw with
-          | Pair (Pa,_),_ -> YY
-          | Pair (PaI,_),_ -> LY
+          | St_Pair ((`Pa),_),_ -> YY
+          | St_Pair ((`PaIL),_),_ -> LY
           | _ ->
              Warn.fatal
                "Illegal %s annotaton on store exclusive pair" (pp_atom aw)  in
@@ -1704,7 +1704,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          | _ -> LDN.emit_load n
        in
        emit_load
-    | Code.Pair -> emit_ldp Pa UnspecLoc
+    | Code.Pair -> emit_ldp (`Pa) UnspecLoc
 
 
     let emit_obs_not_value = OBS.emit_load_not_value
@@ -1866,10 +1866,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
            let r,init,cs,st = emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (Neon _,Some _) -> assert false
-        | R,Some (Pair (opt,idx),None) ->
+        | R,Some (Ld_Pair (opt,idx),None) ->
           let r,init,cs,st = emit_ldp opt idx st p init loc in
           Some r,init,cs,st
-        | R,Some (Pair _,Some _) -> assert false
+        | R,Some (Ld_Pair _,Some _) -> assert false
+        | W,Some (Ld_Pair _,_) -> assert false
         | W,None ->
             let init,cs,st =
               STR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
@@ -1907,10 +1908,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Tag,None) ->
             let init,cs,st = STG.emit_store st p init e in
             None,init,cs,st
-        | W,Some (Pair (opt,idx),None) ->
+        | W,Some (St_Pair (opt,idx),None) ->
             let init,cs,st = emit_stp opt idx st p init loc e in
             None,init,cs,st
-        | W,Some (Pair _,Some _) -> assert false
+        | W,Some (St_Pair _,Some _) -> assert false
+        | R,Some (St_Pair _,_) -> assert false
         | (R|W), Some (Instr, _) -> Warn.fatal "Instr annotation did not create code location %s" (C.debug_evt e)
         | R,Some (Pte (Read|ReadAcq|ReadAcqPc as rk),None) ->
             let emit = match rk with
@@ -2064,19 +2066,24 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_exch12 = do_emit_exch12 emit_addr_simple
 
-    let emit_exch st p init er ew =
-      let ar,_ = tr_none er.C.atom
-      and aw,_ = tr_none ew.C.atom in
-      match ar,aw with
-      | (Pair _,Pair _) ->
+   let emit_exch st p init er ew =
+     let ar,_ = tr_none er.C.atom
+     and aw,_ = tr_none ew.C.atom in
+     match ar,aw with
+     | (Ld_Pair _,Ld_Pair _)
+     | (Ld_Pair _,St_Pair _)
+     | (St_Pair _,Ld_Pair _)
+     | (St_Pair _,St_Pair _) ->
          emit_exch22 st p init er ew
-      | (Pair _,_) ->
+     | (Ld_Pair _,_)
+     | (St_Pair _,_) ->
          check_cu (not A64.do_cu) ;
          emit_exch21 st p init er ew
-      | (_,Pair _) ->
+     | (_,Ld_Pair _)
+     | (_,St_Pair _) ->
          check_cu (not A64.do_cu) ;
          emit_exch12 st p init er ew
-      | _,_ ->
+     | _,_ ->
          emit_exch1 st p init er ew
 
     let do_sz sz1 sz2 =
@@ -2363,11 +2370,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               in
               let rB,init,cs,st = emit_load_idx vdep st p init loc r2 in
               Some rB,init,pseudo cs0@cs,st
-          | R,Some (Pair (opt,idx),None) ->
-              let r,init,cs,st =
-                emit_ldp_idx_var opt idx vdep st p init loc r2 in
-              Some r,init, pseudo cs0@cs,st
-          | R,Some ((Neon _|Pair _),Some _) -> assert false
+          | R,Some (Ld_Pair (opt,idx),None) ->
+                      let r,init,cs,st =
+            emit_ldp_idx_var opt idx vdep st p init loc r2 in
+            Some r,init, pseudo cs0@cs,st
+          | R,Some (St_Pair _,None) -> assert false
+          | R,Some ((Neon _|Ld_Pair _|St_Pair _),Some _) -> assert false
           | W,None ->
               let module STR =
                 STORE
@@ -2446,11 +2454,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (Tag, None) ->
               let init,cs,st = STG.emit_store_idx vdep st p init e r2 in
               None,init,pseudo cs0@cs,st
-          | W,Some (Pair (opt,idx),None) ->
-              let init,cs,st =
-                emit_stp_idx_var opt idx vdep st p init loc e r2 in
-              None,init, pseudo cs0@cs,st
-          | W,Some (Pair _,_) -> assert false
+          | W,Some (St_Pair (opt,idx),None) ->
+                      let init,cs,st =
+            emit_stp_idx_var opt idx vdep st p init loc e r2 in
+            None,init, pseudo cs0@cs,st
+          | W,Some (Ld_Pair _,_) -> assert false
+          | W,Some (St_Pair _,_) -> assert false
           | (W,(Some (Pte (Set _),None))) ->
               let init,cs,st =
                 emit_set_pteval_idx false vdep r2 st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
@@ -2545,19 +2554,24 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         st p init er ew
 
     let emit_exch_dep_addr csel vdep st p init er ew rd =
-      let ar,_ = tr_none er.C.atom
-      and aw,_ = tr_none ew.C.atom in
-      match ar,aw with
-      | (Pair _,Pair _)->
-         emit_exch_dep_addr22 csel vdep st p init er ew rd
-      | (Pair _,_) ->
-         check_cu (not A64.do_cu);
-         emit_exch_dep_addr21 csel vdep st p init er ew rd
-      | (_,Pair _) ->
-         check_cu (not A64.do_cu);
-         emit_exch_dep_addr12 csel vdep st p init er ew rd
-      | _,_ ->
-         emit_exch_dep_addr1 csel vdep st p init er ew rd
+          let ar,_ = tr_none er.C.atom
+          and aw,_ = tr_none ew.C.atom in
+          match ar,aw with
+          | (Ld_Pair _,Ld_Pair _)
+          | (Ld_Pair _,St_Pair _)
+          | (St_Pair _,Ld_Pair _)
+          | (St_Pair _,St_Pair _) ->
+              emit_exch_dep_addr22 csel vdep st p init er ew rd
+          | (Ld_Pair _,_)
+          | (St_Pair _,_) ->
+              check_cu (not A64.do_cu);
+              emit_exch_dep_addr21 csel vdep st p init er ew rd
+          | (_,Ld_Pair _)
+          | (_,St_Pair _) ->
+              check_cu (not A64.do_cu);
+              emit_exch_dep_addr12 csel vdep st p init er ew rd
+          | _,_ ->
+              emit_exch_dep_addr1 csel vdep st p init er ew rd
 
     let emit_access_dep_data csel vdep st p init e  r1 =
       let atom = match e.C.atom with
@@ -2721,12 +2735,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              let init,cs,st = emit_store_dep r2 st init rA (Value.to_int e.C.v) in
              None,init,cs2@cs,st
           | Some (Neon _,Some _) -> assert false
-          | Some (Pair (opt,idx),None) ->
-             let init,cs,st = stp_emit_store_reg opt idx st p init loc r2 in
-             None,init,cs2@cs,st
-          | Some (Pair _,Some _) -> assert false
+          | Some (St_Pair (opt,idx),None) ->
+            let init,cs,st = stp_emit_store_reg opt idx st p init loc r2 in
+            None,init,cs2@cs,st
+          | Some (Ld_Pair _,_) -> assert false
+          | Some (St_Pair _,Some _) -> assert false
           end
-      (* END of `Some W` *)
+          (* END of `Some W` *)
       | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e) in
     regs,inits,(add_label_to_last_instructions e cs),st
     (* END of emit_access_dep_data *)
