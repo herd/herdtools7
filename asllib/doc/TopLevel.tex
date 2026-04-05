@@ -116,15 +116,7 @@ The rest of this section consists of functions that recursively transform an
 untyped AST, renaming local storage elements accordingly.
 
 \ASTRuleDef{RenameLocals}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocals}{}
-The function
-\[
-\renamelocals(\overname{\KleeneStar{\decl}}{\vdecls}) \aslto \overname{\KleeneStar{\decl}}{\vnewdecls}
-\]
-renames the local storage elements appearing in $\vdecls$,
-yielding the list of declarations $\vnewdecls$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{rename_locals}
 
 
 \ProseParagraph
@@ -147,15 +139,7 @@ yielding the list of declarations $\vnewdecls$.
 \CodeSubsection{\RenameLocalsBegin}{\RenameLocalsEnd}{../ASTUtils.ml}
 
 \ASTRuleDef{RenameLocalsDecl}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocalsdecl}{}
-The function
-\[
-\renamelocalsdecl(\overname{\decl}{\vdecl}) \aslto \overname{\KleeneStar{\decl}}{\vnewdecl}
-\]
-renames the local storage elements appearing in $\vdecl$,
-yielding the declaration $\vnewdecl$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{rename_locals_decl}
 
 
 \ProseParagraph
@@ -194,15 +178,7 @@ yielding the declaration $\vnewdecl$.
 \end{mathpar}
 
 \ASTRuleDef{RenameLocalsFunc}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocalsfunc}{}
-The function
-\[
-\renamelocalsfunc(\overname{\func}{\vf}) \aslto \overname{\func}{\vnewf}
-\]
-renames the local storage elements appearing in the subprogram description $\vf$,
-yielding the subprogram description $\vnewf$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{rename_locals_func}
 
 
 \ProseParagraph
@@ -273,16 +249,7 @@ yielding the subprogram description $\vnewf$.
 \end{mathpar}
 
 \ASTRuleDef{RenameLocalsArgs}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocalsargs}{}
-The function
-\[
-\renamelocalsargs(\overname{\KleeneStar{(\Identifier, \ty)}}{\args}) \aslto
-\overname{\KleeneStar{(\Identifier, \ty)}}{\newargs}
-\]
-renames the local storage elements appearing in the list of arguments
-$\args$, yielding the list of arguments $\newargs$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{rename_locals_args}
 
 
 \ProseParagraph
@@ -322,16 +289,7 @@ $\args$, yielding the list of arguments $\newargs$.
 \end{mathpar}
 
 \ASTRuleDef{RenameLocalsNamedArgs}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocalsnamedargs}{}
-The function
-\[
-\renamelocalsnamedargs(\overname{\KleeneStar{(\Identifier, \Option{\ty})}}{\params}) \aslto
-\overname{\KleeneStar{(\Identifier, \Option{\ty})}}{\newparams}
-\]
-renames the local storage elements appearing in the list of parameters $\params$,
-yielding the list of parameters $\newparams$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{rename_locals_named_args}
 
 \ProseParagraph
 \OneApplies
@@ -371,15 +329,7 @@ yielding the list of parameters $\newparams$.
 \end{mathpar}
 
 \ASTRuleDef{RenameLocalsTy}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocalsty}{}
-The function
-\[
-\renamelocalsty(\overname{\ty}{\tty}) \aslto \overname{\ty}{\newty}
-\]
-renames the local storage elements appearing in the type $\tty$,
-yielding the type $\newty$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{rename_locals_ty}
 
 
 \ProseParagraph
@@ -509,15 +459,7 @@ yielding the type $\newty$.
 \end{mathpar}
 
 \ASTRuleDef{RenameLocalsStmt}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocalsstmt}{}
-The function
-\[
-\renamelocalsstmt(\overname{\stmt}{\vs}) \aslto \overname{\stmt}{\news}
-\]
-renames the local storage elements appearing in the statement $\vs$,
-yielding the statement $\news$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{rename_locals_stmt}
 
 
 \ProseParagraph
@@ -860,15 +802,7 @@ yielding the statement $\news$.
 \CodeSubsection{\RenameLocalsStmtBegin}{\RenameLocalsStmtEnd}{../ASTUtils.ml}
 
 \ASTRuleDef{RenameLocalsExpr}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocalsexpr}{}
-The function
-\[
-\renamelocalsexpr(\overname{\expr}{\ve}) \aslto \overname{\expr}{\newe}
-\]
-renames the local storage elements appearing in the expression $\ve$,
-yielding the expression $\newe$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{rename_locals_expr}
 
 
 \ProseParagraph
@@ -1180,15 +1114,7 @@ yielding the expression $\newe$.
 \CodeSubsection{\RenameLocalsExprBegin}{\RenameLocalsExprEnd}{../ASTUtils.ml}
 
 \ASTRuleDef{RenameLocalsLexpr}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocalslexpr}{}
-The function
-\[
-\renamelocalslexpr(\overname{\lexpr}{\vle}) \aslto \overname{\lexpr}{\newle}
-\]
-renames the local storage elements appearing in the \assignableexpression\ $\vle$,
-yielding the \assignableexpression\ $\newle$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{rename_locals_lexpr}
 
 
 \ProseParagraph
@@ -1303,15 +1229,7 @@ yielding the \assignableexpression\ $\newle$.
 \end{mathpar}
 
 \ASTRuleDef{RenameLocalsLDI}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocalsldi}{}
-The function
-\[
-\renamelocalsldi(\overname{\localdeclitem}{\ldi}) \aslto \overname{\localdeclitem}{\newldi}
-\]
-renames the local storage elements appearing in the local declaration item $\ldi$,
-yielding the local declaration item $\newldi$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{rename_locals_ldi}
 
 
 \ProseParagraph
@@ -1348,15 +1266,7 @@ yielding the local declaration item $\newldi$.
 \end{mathpar}
 
 \ASTRuleDef{RenameLocalsConstraint}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocalsconstraint}{}
-The function
-\[
-\renamelocalsconstraint(\overname{\intconstraint}{\vc}) \aslto \overname{\intconstraint}{\newc}
-\]
-renames the local storage elements appearing in the constraint $\vc$,
-yielding the constraint $\newc$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{rename_locals_constraint}
 
 
 \ProseParagraph
@@ -1398,15 +1308,7 @@ yielding the constraint $\newc$.
 \end{mathpar}
 
 \ASTRuleDef{RenameLocalsSlice}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocalsslice}{}
-The function
-\[
-\renamelocalsslice(\overname{\slice}{\vslice}) \aslto \overname{\slice}{\vnewslice}
-\]
-renames the local storage elements appearing in the slice $\vslice$,
-yielding $\vnewslice$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{rename_locals_slice}
 
 
 \ProseParagraph
@@ -1449,15 +1351,7 @@ yielding $\vnewslice$.
 \end{mathpar}
 
 \ASTRuleDef{RenameLocalsName}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocalsname}{}
-The function
-\[
-\renamelocalsname(\overname{\Identifier}{\name}) \aslto \overname{\Identifier}{\newname}
-\]
-renames the local identifier $\name$,
-yielding the identifier $\newname$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{rename_locals_name}
 
 
 \ProseParagraph
@@ -1471,15 +1365,7 @@ yielding the identifier $\newname$.
 \end{mathpar}
 
 \ASTRuleDef{RenameLocalsArrayIndex}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocalsarrayindex}{}
-The function
-\[
-\renamelocalsarrayindex(\overname{\arrayindex}{\vindex}) \aslto \overname{\arrayindex}{\newindex}
-\]
-renames the identifiers corresponding to local storage elements that appear in the
-array index $\vindex$, yielding the array index $\newindex$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{rename_locals_array_index}
 
 
 \ProseParagraph
@@ -1522,15 +1408,7 @@ array index $\vindex$, yielding the array index $\newindex$.
 \end{mathpar}
 
 \ASTRuleDef{RenameLocalsPattern}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocalspattern}{}
-The function
-\[
-\renamelocalspattern(\overname{\pattern}{\vp}) \aslto \overname{\pattern}{\newp}
-\]
-renames the identifiers corresponding to local storage elements that appear in the
-pattern $\vp$, yielding the pattern $\newp$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{rename_locals_pattern}
 
 
 \ProseParagraph
@@ -1607,15 +1485,7 @@ pattern $\vp$, yielding the pattern $\newp$.
 \end{mathpar}
 
 \ASTRuleDef{RenameLocalsCatcher}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocalscatcher}{}
-The function
-\[
-\renamelocalscatcher(\overname{\catcher}{\vc}) \aslto \overname{\catcher}{\newc}
-\]
-renames the identifiers corresponding to local storage elements that appear in the
-\catcherterm{} $\vc$, yielding the \catcherterm{} $\newc$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{rename_locals_catcher}
 
 
 \ProseParagraph
@@ -1651,18 +1521,7 @@ renames the identifiers corresponding to local storage elements that appear in t
 \section{Marking Standard Library Functions\label{sec:Marking Standard Library Functions}}
 
 \ASTRuleDef{SetBuiltin}
-\NotImportedToASLSpecYet{
-\hypertarget{def-setbuiltin}{}
-The function
-\[
-  \setbuiltin(\overname{\decl}{\vdecl}) \aslto
-  \overname{\decl}{\vdeclp}
-  \cup \overname{\TBuildError}{\BuildErrorConfig}
-\]
-sets the $\funcbuiltin$ flag of a top-level function declaration $\decl$,
-which is used to identify standard library functions in \TypingRuleRef{InsertStdlibParam}.
-It produces a build error when $\decl$ is not a function.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{set_builtin}
 
 \ProseParagraph
 \AllApply

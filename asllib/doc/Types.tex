@@ -60,58 +60,22 @@ and types that must be declared and named are grammatically derived from $\Ntyde
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Types}
-\NotImportedToASLSpecYet{
-\hypertarget{build-ty}{}
-The function
-\[
-  \buildty(\overname{\parsenode{\Nty}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
-  \cup \overname{\TBuildError}{\BuildErrorConfig}
-\]
-transforms an anonymous type parse node $\vparsednode$ into the corresponding AST node $\vastnode$.
-\ProseOtherwiseBuildError
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_ty}
 
 
 We define $\buildty$ per type in the following sections.
 
-\NotImportedToASLSpecYet{
-\hypertarget{build-tydecl}{}
-The function
-\[
-  \buildtydecl(\overname{\parsenode{\Ntydecl}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
-  \cup \overname{\TBuildError}{\BuildErrorConfig}
-\]
-transforms a \namedtype\ parse node $\vparsednode$ into an AST node $\vastnode$.
-\ProseOtherwiseBuildError
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_ty_decl}
 
 
 We define $\buildtydecl$ per the corresponding type in the following sections.
 
-\NotImportedToASLSpecYet{
-\hypertarget{build-tyorcollection}{}
-The function
-\[
-  \buildtyorcollection(\overname{\parsenode{\Ntyorcollection}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
-  \cup \overname{\TBuildError}{\BuildErrorConfig}
-\]
-transforms a type annotation parse node $\vparsednode$ into a type AST node $\vastnode$.
-\ProseOtherwiseBuildError
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_ty_or_collection}
 
 
 We define $\buildtyorcollection$ per the corresponding type in the following sections.
 
-\NotImportedToASLSpecYet{
-\hypertarget{build-as-ty}{}
-The function
-\[
-  \buildasty(\overname{\parsenode{\Nasty}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
-  \cup \overname{\TBuildError}{\BuildErrorConfig}
-\]
-transforms a type annotation parse node $\vparsednode$ into a type AST node $\vastnode$.
-\ProseOtherwiseBuildError
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_as_ty}
 
 
 Formally:
@@ -224,14 +188,7 @@ is a parameterized integer type, \underline{not} an unconstrained integer type.
 \end{mathpar}
 
 \ASTRuleDef{IntConstraintsOpt}
-\NotImportedToASLSpecYet{
-\hypertarget{build-constraintkindopt}{}
-The function
-\[
-  \buildconstraintkindopt(\overname{\parsenode{\Nconstraintkindopt}}{\vparsednode}) \;\aslto\; \overname{\constraintkind}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_constraint_kind_opt}
 
 
 \begin{mathpar}
@@ -253,14 +210,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \subsection{ASTRule.IntConstraints\label{sec:ASTRule.IntConstraints}}
-\NotImportedToASLSpecYet{
-\hypertarget{build-constraintkind}{}
-The function
-\[
-  \buildconstraintkind(\overname{\parsenode{\Nconstraintkind}}{\vparsednode}) \;\aslto\; \overname{\constraintkind}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_constraint_kind}
 
 
 \begin{mathpar}
@@ -284,14 +234,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{IntConstraint}
-\NotImportedToASLSpecYet{
-\hypertarget{build-intconstraint}{}
-The function
-\[
-  \buildintconstraint(\overname{\parsenode{\Nintconstraint}}{\vparsednode}) \;\aslto\; \overname{\intconstraint}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_int_constraint}
 
 
 \begin{mathpar}

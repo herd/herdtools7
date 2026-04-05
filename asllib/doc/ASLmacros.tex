@@ -165,6 +165,7 @@
 
 % Not imported here means, it is not yet considered for auto-generation.
 \newcommand\NotImportedToASLSpecYet[1]{#1}
+\newcommand\BackupRule[1]{}
 
 \newcommand\ChapterOutline[0]{\paragraph{Outline} The rest of this chapter is organized as follows:}
 \newcommand\FormalRelationsDef[1]{\section{Formal Relations for #1\label{sec:Formal Relations for #1}}}
@@ -679,7 +680,6 @@
 \newcommand\booltrans[0]{\hyperlink{relation-booltransition}{\textfunc{bool\_transition}}} % SPECIFIED
 \newcommand\booltransarrow[0]{\longrightarrow}
 \newcommand\Prosebecheck[2]{\hyperlink{relation-becheck}{checking} #1 yields $\True$\ProseTerminateAs{#2}}
-\newcommand\becheck[0]{\hyperlink{relation-becheck}{\textfunc{be\_check}}} % SPECIFICATION_DEFERRED
 
 \newcommand\termx[0]{\mathit{tx}}
 \newcommand\termy[0]{\mathit{ty}}
@@ -697,6 +697,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Syntax macros
+\newcommand\dummyrulelabel[1]{}
 \newcommand\nonterminal[1]{\texttt{#1}}
 \newcommand\terminal[1]{\mathtt{\mathbf{#1}}}
 \newcommand\verbatimterminal[2]{\texttt{"}\texttt{#2}\texttt{"}} % Grammar terminals
@@ -979,83 +980,38 @@
 \newcommand\buildtclist[0]{\hyperlink{build-tclist}{\textfunc{build\_tclist}}} % SPECIFICATION_DEFERRED
 \newcommand\buildoption[0]{\hyperlink{build-option}{\textfunc{build\_option}}} % SPECIFICATION_DEFERRED
 
-\newcommand\Prosebuildast[2]{\hyperlink{build-ast}{building} an untyped AST from the parse tree #1 yields #2}
-\newcommand\buildast[0]{\hyperlink{build-ast}{\textfunc{build\_ast}}} % SPECIFICATION_DEFERRED
-\newcommand\builddecl[0]{\hyperlink{build-decl}{\textfunc{build\_decl}}} % SPECIFICATION_DEFERRED
-\newcommand\builddeclitem[0]{\hyperlink{build-declitem}{\textfunc{build\_decl\_item}}} % SPECIFICATION_DEFERRED
-\newcommand\makesetter[0]{\hyperlink{def-makesetter}{\textfunc{make\_setter}}} % SPECIFICATION_DEFERRED
-\newcommand\desugarsetter[0]{\hyperlink{def-desugarsetter}{\textfunc{desugar\_setter}}} % SPECIFICATION_DEFERRED
-\newcommand\desugarsettersetfields[0]{\hyperlink{def-desugarsettersetfields}{\textfunc{desugar\_setter\_setfields}}} % SPECIFICATION_DEFERRED
-\newcommand\readmodifywrite[0]{\hyperlink{def-readmodifywrite}{\textfunc{read\_modify\_write}}} % SPECIFICATION_DEFERRED
-\newcommand\desugaraccessorpair[0]{\hyperlink{def-desugaraccessorpair}{\textfunc{desugar\_accessor\_pair}}} % SPECIFICATION_DEFERRED
-\newcommand\buildlooplimit[0]{\hyperlink{build-looplimit}{\textfunc{build\_looplimit}}} % SPECIFICATION_DEFERRED
-\newcommand\buildrecurselimit[0]{\hyperlink{build-recurselimit}{\textfunc{build\_recurselimit}}} % SPECIFICATION_DEFERRED
-\newcommand\desugarelidedparameter[0]{\hyperlink{def-desugarelidedparameter}{\textfunc{desugar\_elided\_parameter}}} % SPECIFICATION_DEFERRED
-\newcommand\buildstmt[0]{\hyperlink{build-stmt}{\textfunc{build\_stmt}}} % SPECIFICATION_DEFERRED
-\newcommand\buildexpr[0]{\hyperlink{build-expr}{\textfunc{build\_expr}}} % SPECIFICATION_DEFERRED
-\newcommand\buildlexpr[0]{\hyperlink{build-lexpr}{\textfunc{build\_lexpr}}} % SPECIFICATION_DEFERRED
-\newcommand\buildbasiclexpr[0]{\hyperlink{build-basiclexpr}{\textfunc{build\_basic\_lexpr}}} % SPECIFICATION_DEFERRED
-\newcommand\builddiscardorbasiclexpr[0]{\hyperlink{build-discardorbasiclexpr}{\textfunc{build\_discard\_or\_basic\_lexpr}}} % SPECIFICATION_DEFERRED
-\newcommand\buildaccess[0]{\hyperlink{build-access}{\textfunc{build\_access}}} % SPECIFICATION_DEFERRED
-\newcommand\builddiscardoridentifier[0]{\hyperlink{build-discardoridentifier}{\textfunc{build\_discard\_or\_identifier}}} % SPECIFICATION_DEFERRED
 \newcommand\desugarlhsaccess[0]{\hyperlink{def-desugarlhsaccess}{\textfunc{desugar\_lhs\_access}}} % SPECIFICATION_DEFERRED
 \newcommand\desugarlhsaccessopt[0]{\hyperlink{def-desugarlhsaccessopt}{\textfunc{desugar\_lhs\_access\_opt}}} % SPECIFICATION_DEFERRED
 \newcommand\desugarlhstuple[0]{\hyperlink{def-desugarlhstuple}{\textfunc{desugar\_lhs\_tuple}}} % SPECIFICATION_DEFERRED
 \newcommand\desugarlhsfieldopt[0]{\hyperlink{def-desugarlhsfieldopt}{\textfunc{desugar\_lhs\_field\_opt}}} % SPECIFICATION_DEFERRED
 \newcommand\desugarlhsfieldstuple[0]{\hyperlink{def-desugarlhsfieldstuple}{\textfunc{desugar\_lhs\_fields\_tuple}}} % SPECIFICATION_DEFERRED
-\newcommand\buildparamsopt[0]{\hyperlink{build-paramsopt}{\textfunc{build\_params\_opt}}} % SPECIFICATION_DEFERRED
-\newcommand\buildfuncargs[0]{\hyperlink{build-funcargs}{\textfunc{build\_func\_args}}} % SPECIFICATION_DEFERRED
-\newcommand\buildcall[0]{\hyperlink{build-call}{\textfunc{build\_call}}} % SPECIFICATION_DEFERRED
-\newcommand\buildelidedparamcall[0]{\hyperlink{build-elided-param-call}{\textfunc{build\_elided\_param\_call}}} % SPECIFICATION_DEFERRED
 \newcommand\setcalltype[0]{\hyperlink{def-setcalltype}{\textfunc{set\_call\_type}}} % SPECIFICATION_DEFERRED
-\newcommand\buildreturntype[0]{\hyperlink{build-returntype}{\textfunc{build\_return\_type}}} % SPECIFICATION_DEFERRED
-\newcommand\buildfuncbody[0]{\hyperlink{build-funcbody}{\textfunc{build\_func\_body}}} % SPECIFICATION_DEFERRED
-\newcommand\buildaccessorbody[0]{\hyperlink{build-accessorbody}{\textfunc{build\_accessor\_body}}} % SPECIFICATION_DEFERRED
-\newcommand\buildaccessors[0]{\hyperlink{build-accessors}{\textfunc{build\_accessors}}} % SPECIFICATION_DEFERRED
-\newcommand\buildisreadonly[0]{\hyperlink{build-isreadonly}{\textfunc{build\_is\_readonly}}} % SPECIFICATION_DEFERRED
-\newcommand\buildqualifier[0]{\hyperlink{build-qualifier}{\textfunc{build\_func\_qualifier}}} % SPECIFICATION_DEFERRED
-\newcommand\buildoverride[0]{\hyperlink{build-override}{\textfunc{build\_override}}} % SPECIFICATION_DEFERRED
-\newcommand\buildtypedidentifier[0]{\hyperlink{build-typedidentifier}{\textfunc{build\_typed\_identifier}}} % SPECIFICATION_DEFERRED
-\newcommand\buildopttypedidentifier[0]{\hyperlink{build-opttypedidentifier}{\textfunc{build\_opt\_typed\_identifier}}} % SPECIFICATION_DEFERRED
-\newcommand\buildtydecl[0]{\hyperlink{build-tydecl}{\textfunc{build\_ty\_decl}}} % SPECIFICATION_DEFERRED
-\newcommand\buildtyorcollection[0]{\hyperlink{build-tyorcollection}{\textfunc{build\_ty\_or\_collection}}} % SPECIFICATION_DEFERRED
-\newcommand\buildsubtype[0]{\hyperlink{build-subtype}{\textfunc{build\_subtype}}} % SPECIFICATION_DEFERRED
-\newcommand\buildsubtypeopt[0]{\hyperlink{build-subtypeopt}{\textfunc{build\_subtype\_opt}}} % SPECIFICATION_DEFERRED
-\newcommand\buildglobaldeclkeywordnonconfig[0]{\hyperlink{build-globaldeclkeywordnonconfig}{\textfunc{build\_global\_keyword\_non\_config}}} % SPECIFICATION_DEFERRED
-\newcommand\buildglobaldeclkeyword[0]{\hyperlink{build-globaldeclkeyword}{\textfunc{build\_global\_keyword}}} % SPECIFICATION_DEFERRED
-\newcommand\builddirection[0]{\hyperlink{build-direction}{\textfunc{build\_direction}}} % SPECIFICATION_DEFERRED
-\newcommand\buildcasealt[0]{\hyperlink{build-casealt}{\textfunc{build\_case\_alt}}} % SPECIFICATION_DEFERRED
-\newcommand\buildcasealtlist[0]{\hyperlink{build-casealtlist}{\textfunc{build\_case\_alt\_list}}} % SPECIFICATION_DEFERRED
-\newcommand\buildotherwiseopt[0]{\hyperlink{build-otherwiseopt}{\textfunc{build\_otherwise\_opt}}} % SPECIFICATION_DEFERRED
-\newcommand\buildcatcher[0]{\hyperlink{build-catcher}{\textfunc{build\_catcher}}} % SPECIFICATION_DEFERRED
-\newcommand\buildasty[0]{\hyperlink{build-as-ty}{\textfunc{build\_as\_ty}}} % SPECIFICATION_DEFERRED
-\newcommand\buildignoredoridentifier[0]{\hyperlink{build-ignoredoridentifier}{\textfunc{build\_ignored\_or\_identifier}}} % SPECIFICATION_DEFERRED
-\newcommand\buildlocaldeclkeyword[0]{\hyperlink{build-localdeclkeyword}{\textfunc{build\_local\_decl\_keyword}}} % SPECIFICATION_DEFERRED
-\newcommand\buildstmtlist[0]{\hyperlink{build-stmtlist}{\textfunc{build\_stmt\_list}}} % SPECIFICATION_DEFERRED
-\newcommand\buildselse[0]{\hyperlink{build-selse}{\textfunc{build\_s\_else}}} % SPECIFICATION_DEFERRED
-\newcommand\buildconstraintkind[0]{\hyperlink{build-constraintkind}{\textfunc{build\_constraint\_kind}}} % SPECIFICATION_DEFERRED
-\newcommand\buildconstraintkindopt[0]{\hyperlink{build-constraintkindopt}{\textfunc{build\_constraint\_kind\_opt}}} % SPECIFICATION_DEFERRED
-\newcommand\buildintconstraint[0]{\hyperlink{build-intconstraint}{\textfunc{build\_int\_constraint}}} % SPECIFICATION_DEFERRED
-\newcommand\buildexprpattern[0]{\hyperlink{build-exprpattern}{\textfunc{build\_expr\_pattern}}} % SPECIFICATION_DEFERRED
-\newcommand\buildfieldassign[0]{\hyperlink{build-fieldassign}{\textfunc{build\_field\_assign}}} % SPECIFICATION_DEFERRED
-\newcommand\buildpatternset[0]{\hyperlink{build-patternset}{\textfunc{build\_pattern\_set}}} % SPECIFICATION_DEFERRED
-\newcommand\buildpatternlist[0]{\hyperlink{build-patternlist}{\textfunc{build\_pattern\_list}}} % SPECIFICATION_DEFERRED
-\newcommand\buildpattern[0]{\hyperlink{build-pattern}{\textfunc{build\_pattern}}} % SPECIFICATION_DEFERRED
-\newcommand\buildfields[0]{\hyperlink{build-fields}{\textfunc{build\_fields}}} % SPECIFICATION_DEFERRED
-\newcommand\buildslices[0]{\hyperlink{build-slices}{\textfunc{build\_slices}}} % SPECIFICATION_DEFERRED
-\newcommand\buildslice[0]{\hyperlink{build-slice}{\textfunc{build\_slice}}} % SPECIFICATION_DEFERRED
-\newcommand\buildbitfields[0]{\hyperlink{build-bitfields}{\textfunc{build\_bitfields}}} % SPECIFICATION_DEFERRED
-\newcommand\buildbitfield[0]{\hyperlink{build-bitfield}{\textfunc{build\_bitfield}}} % SPECIFICATION_DEFERRED
-\newcommand\buildty[0]{\hyperlink{build-ty}{\textfunc{build\_ty}}} % SPECIFICATION_DEFERRED
-\newcommand\buildvalue[0]{\hyperlink{build-value}{\textfunc{build\_value}}} % SPECIFICATION_DEFERRED
-\newcommand\buildunop[0]{\hyperlink{build-unop}{\textfunc{build\_unop}}} % SPECIFICATION_DEFERRED
-\newcommand\buildbinop[0]{\hyperlink{build-binop}{\textfunc{build\_binop}}} % SPECIFICATION_DEFERRED
+\newcommand\buildqualifier[0]{\hyperlink{relation-buildqualifier}{\textfunc{build\_func\_qualifier}}} % SPECIFICATION_DEFERRED
+\newcommand\Prosebuildast[2]{\hyperlink{relation-buildast}{building} an untyped AST from the parse tree #1 yields #2}
+\newcommand\Proserenamelocalsname[2]{\hyperlink{relation-renamelocalsname}{renaming}
+  the identifier #1 yields the identifier #2}
+\newcommand\Proserenamelocalsdecl[2]{\hyperlink{relation-renamelocalsdecl}{renaming}
+  the local storage elements in declaration #1 yields the declaration #2}
+\newcommand\Proserenamelocalsfunc[2]{\hyperlink{relation-renamelocalsfunc}{renaming}
+  the local storage elements in subprogram description #1 yields the function description #2}
+\newcommand\Proserenamelocalsargs[2]{\hyperlink{relation-renamelocalsargs}{renaming}
+  the list of local arguments #1 yields the list of arguments #2}
+\newcommand\Proserenamelocalsnamedargs[2]{\hyperlink{relation-renamelocalsnamedargs}{renaming}
+  the local storage elements in the list of parameters #1 yields the list of parameters #2}
+\newcommand\Proserenamelocalsstmt[2]{\hyperlink{relation-renamelocalsstmt}{renaming}
+  the local storage elements in the statement #1 yields the statement #2}
+\newcommand\Proserenamelocalsexpr[2]{\hyperlink{relation-renamelocalsexpr}{renaming}
+  the local storage elements in the expression #1 yields the expression #2}
+\newcommand\Proserenamelocalslexpr[2]{\hyperlink{relation-renamelocalslexpr}{renaming}
+  the local storage elements in the assignable expression #1 yields the
+  assignable expression #2}
+\newcommand\Proserenamelocalsldi[2]{\hyperlink{relation-renamelocalsldi}{renaming}
+  the local storage elements in the local declaration item #1 yields
+  the local declaration item #2}
+\newcommand\Proserenamelocalsty[2]{\hyperlink{relation-renamelocalsty}{renaming}
+  the local storage elements in the type #1 yields the type #2}
 
 \newcommand\binopprec[0]{\hyperlink{build-binopprec}{\textfunc{binop\_prec}}} % SPECIFICATION_DEFERRED
-\newcommand\checknotsameprec[0]{\hyperlink{build-checknotsameprec}{\textfunc{check\_not\_same\_prec}}} % SPECIFICATION_DEFERRED
-
-\newcommand\stmtfromlist[0]{\hyperlink{def-stmtfromlist}{\textfunc{stmt\_from\_list}}} % SPECIFICATION_DEFERRED
-\newcommand\sequencestmts[0]{\hyperlink{def-sequencestmts}{\textfunc{sequence\_stmts}}} % SPECIFICATION_DEFERRED
 
 \newcommand\eof[0]{\hyperlink{def-eof}{\textsf{eof}}}
 
@@ -1290,9 +1246,6 @@
 \newcommand\ProseOrDynErrorDiverging[0]{\ProseTerminateAs{\DynErrorConfig, \DivergingConfig}}
 
 \newcommand\Proseevalspec[3]{\hyperlink{relation-evalspec}{evaluating} the typed AST #1 in the static environment #2 yields #3}
-\newcommand\desugarcasestmt[0]{\hyperlink{def-desugarcasestmt}{\textfunc{desugar\_case\_stmt}}} % SPECIFICATION_DEFERRED
-\newcommand\casestocond[0]{\hyperlink{def-casestocond}{\textfunc{cases\_to\_cond}}} % SPECIFICATION_DEFERRED
-\newcommand\casetocond[0]{\hyperlink{def-casetocond}{\textfunc{case\_to\_cond}}} % SPECIFICATION_DEFERRED
 
 \newcommand\DynamicError[0]{\hyperlink{type-DynamicError}{\textsf{DynError}}}
 \newcommand\DynamicErrorConfigurationTerm[0]{\hyperlink{type-DynamicError}{dynamic error configuration}}
@@ -1432,46 +1385,6 @@
 %% Top level macros
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand\checkandinterpret[0]{\hyperlink{def-checkandinterpret}{\textfunc{check\_and\_interpret}}} % SPECIFICATION_DEFERRED
-\newcommand\setbuiltin[0]{\hyperlink{def-setbuiltin}{\textfunc{set\_builtin}}} % SPECIFICATION_DEFERRED
-
-\newcommand\renamelocals[0]{\hyperlink{def-renamelocals}{\textfunc{rename\_locals}}} % SPECIFICATION_DEFERRED
-\newcommand\renamelocalsname[0]{\hyperlink{def-renamelocalsname}{\textfunc{rename\_locals\_name}}} % SPECIFICATION_DEFERRED
-\newcommand\Proserenamelocalsname[2]{\hyperlink{def-renamelocalsname}{renaming}
-  the identifier #1 yields the identifier #2}
-\newcommand\renamelocalsdecl[0]{\hyperlink{def-renamelocalsdecl}{\textfunc{rename\_locals\_decl}}} % SPECIFICATION_DEFERRED
-\newcommand\Proserenamelocalsdecl[2]{\hyperlink{def-renamelocalsdecl}{renaming}
-  the local storage elements in declaration #1 yields the declaration #2}
-\newcommand\renamelocalsfunc[0]{\hyperlink{def-renamelocalsfunc}{\textfunc{rename\_locals\_func}}} % SPECIFICATION_DEFERRED
-\newcommand\Proserenamelocalsfunc[2]{\hyperlink{def-renamelocalsfunc}{renaming}
-  the local storage elements in subprogram description #1 yields the function description #2}
-\newcommand\renamelocalsargs[0]{\hyperlink{def-renamelocalsargs}{\textfunc{rename\_locals\_args}}} % SPECIFICATION_DEFERRED
-\newcommand\Proserenamelocalsargs[2]{\hyperlink{def-renamelocalsargs}{renaming}
-  the list of local arguments #1 yields the list of arguments #2}
-\newcommand\renamelocalsnamedargs[0]{\hyperlink{def-renamelocalsnamedargs}{\textfunc{rename\_locals\_named\_args}}} % SPECIFICATION_DEFERRED
-\newcommand\Proserenamelocalsnamedargs[2]{\hyperlink{def-renamelocalsnamedargs}{renaming}
-  the local storage elements in the list of parameters #1 yields the list of parameters #2}
-\newcommand\renamelocalsstmt[0]{\hyperlink{def-renamelocalsstmt}{\textfunc{rename\_locals\_stmt}}} % SPECIFICATION_DEFERRED
-\newcommand\Proserenamelocalsstmt[2]{\hyperlink{def-renamelocalsstmt}{renaming}
-  the local storage elements in the statement #1 yields the statement #2}
-\newcommand\renamelocalsexpr[0]{\hyperlink{def-renamelocalsexpr}{\textfunc{rename\_locals\_expr}}} % SPECIFICATION_DEFERRED
-\newcommand\Proserenamelocalsexpr[2]{\hyperlink{def-renamelocalsexpr}{renaming}
-  the local storage elements in the expression #1 yields the expression #2}
-\newcommand\renamelocalslexpr[0]{\hyperlink{def-renamelocalslexpr}{\textfunc{rename\_locals\_lexpr}}} % SPECIFICATION_DEFERRED
-\newcommand\Proserenamelocalslexpr[2]{\hyperlink{def-renamelocalslexpr}{renaming}
-  the local storage elements in the assignable expression #1 yields the
-  assignable expression #2}
-\newcommand\renamelocalsldi[0]{\hyperlink{def-renamelocalsldi}{\textfunc{rename\_locals\_ldi}}} % SPECIFICATION_DEFERRED
-\newcommand\Proserenamelocalsldi[2]{\hyperlink{def-renamelocalsldi}{renaming}
-  the local storage elements in the local declaration item #1 yields
-  the local declaration item #2}
-\newcommand\renamelocalsty[0]{\hyperlink{def-renamelocalsty}{\textfunc{rename\_locals\_ty}}} % SPECIFICATION_DEFERRED
-\newcommand\Proserenamelocalsty[2]{\hyperlink{def-renamelocalsty}{renaming}
-  the local storage elements in the type #1 yields the type #2}
-\newcommand\renamelocalsslice[0]{\hyperlink{def-renamelocalsslice}{\textfunc{rename\_locals\_slice}}} % SPECIFICATION_DEFERRED
-\newcommand\renamelocalsconstraint[0]{\hyperlink{def-renamelocalsconstraint}{\textfunc{rename\_locals\_constraint}}} % SPECIFICATION_DEFERRED
-\newcommand\renamelocalsarrayindex[0]{\hyperlink{def-renamelocalsarrayindex}{\textfunc{rename\_locals\_array\_index}}} % SPECIFICATION_DEFERRED
-\newcommand\renamelocalspattern[0]{\hyperlink{def-renamelocalspattern}{\textfunc{rename\_locals\_pattern}}} % SPECIFICATION_DEFERRED
-\newcommand\renamelocalscatcher[0]{\hyperlink{def-renamelocalscatcher}{\textfunc{rename\_locals\_catcher}}} % SPECIFICATION_DEFERRED
 
 \newcommand\stdliblocalprefix[0]{\texttt{\_\_stdlib\_local\_}}
 

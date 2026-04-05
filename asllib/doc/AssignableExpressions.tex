@@ -124,12 +124,7 @@ which we then desugar into abstract syntax in \secref{AssignableExpressionsDesug
 \end{flalign*}
 
 \ASTRuleDef{LExpr}
-\hypertarget{build-lexpr}{}
-The function
-\[
-  \buildlexpr(\overname{\parsenode{\Nlexpr}}{\vparsednode}) \;\aslto\; \overname{\lexpr}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+\RenderRelation{build_lexpr}
 
 \begin{mathpar}
 \inferrule[discard]{}{
@@ -187,12 +182,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{BasicLexpr}
-\hypertarget{build-basiclexpr}{}
-The function
-\[
-  \buildbasiclexpr(\overname{\parsenode{\Nbasiclexpr}}{\vparsednode}) \;\aslto\; (\overname{\Identifier}{\vbase} \aslsep \overname{\lhsaccess}{\vlhsaccess})
-\]
-transforms a parse node $\vparsednode$ into a pair of AST nodes, $\vbase$ and $\vlhsaccess$.
+\RenderRelation{build_basic_lexpr}
 
 \begin{mathpar}
 \inferrule[no\_slices]{
@@ -229,14 +219,7 @@ transforms a parse node $\vparsednode$ into a pair of AST nodes, $\vbase$ and $\
 \end{mathpar}
 
 \ASTRuleDef{Access}
-
-\hypertarget{build-access}{}
-The function
-\[
-  \buildaccess(\overname{\parsenode{\Naccess}}{\vparsednode}) \;\aslto
-  \overname{\KleeneStar{\fieldorarrayaccess}}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+\RenderRelation{build_access}
 
 \begin{mathpar}
 \inferrule[empty]{}{
@@ -259,15 +242,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{DiscardOrBasicLexpr}
-\hypertarget{build-discardorbasiclexpr}{}
-The function
-\[
-\begin{array}{r}
-  \builddiscardorbasiclexpr(\overname{\parsenode{\Ndiscardorbasiclexpr}}{\vparsednode}) \;\aslto\\
-  \overname{\Option{(\Identifier, \lhsaccess)}}{\vastnode}
-\end{array}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+\RenderRelation{build_discard_or_basic_lexpr}
 
 \begin{mathpar}
 \inferrule[discard]{}{
@@ -287,15 +262,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{DiscardOrIdentifier}
-\hypertarget{build-discardoridentifier}{}
-The function
-\[
-\begin{array}{r}
-  \builddiscardoridentifier(\overname{\parsenode{\Ndiscardoridentifier}}{\vparsednode}) \;\aslto
-  \overname{\Option{\Identifier}}{\vastnode}
-\end{array}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+\RenderRelation{build_discard_or_identifier}
 
 \begin{mathpar}
 \inferrule[none]{}{

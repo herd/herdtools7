@@ -58,14 +58,7 @@ as exemplified in \listingref{PrefixSlice}. It is \desugared{} by \\
 \RenderTypes[remove_hypertargets]{untyped_slice}
 
 \ASTRuleDef{Slice}
-\NotImportedToASLSpecYet{
-\hypertarget{build-slice}{}
-The function
-\[
-  \buildslice(\overname{\parsenode{\Nslice}}{\vparsednode}) \;\aslto\; \overname{\slice}{\vastnode}
-\]
-transforms a parse node for a slice $\vparsednode$ into an AST node for a slice $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_slice}
 
 
 \begin{mathpar}
@@ -224,14 +217,7 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Lists of Bitvector Slices}
 \ASTRuleDef{Slices}
-\NotImportedToASLSpecYet{
-\hypertarget{build-slices}{}
-The function
-\[
-  \buildslices(\overname{\parsenode{\Nslices}}{\vparsednode}) \;\aslto\; \overname{\KleenePlus{\slice}}{\vastnode}
-\]
-transforms a parse node for a list of slices $\vparsednode$ into an AST node for a list of slices $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_slices}
 
 
 \begin{mathpar}

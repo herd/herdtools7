@@ -73,14 +73,7 @@ This rule defines the cases for $\builddecl$ for type declarations.
 \end{mathpar}
 
 \ASTRuleDef{Subtype}
-\NotImportedToASLSpecYet{
-\hypertarget{build-subtype}{}
-The function
-\[
-  \buildsubtype(\overname{\parsenode{\Nsubtype}}{\vparsednode}) \aslto \overname{(\Identifier, \KleeneStar{(\Identifier, \ty)})}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_subtype}
 
 
 \begin{mathpar}
@@ -107,15 +100,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{Subtypeopt}
-\NotImportedToASLSpecYet{
-\hypertarget{build-subtypeopt}{}
-The function
-\[
-   \buildsubtypeopt(\overname{\parsenode{\Nsubtypeopt}}{\vparsednode}) \aslto
-    \overname{\Option{(\Identifier, \Option{\KleeneStar{(\Identifier, \ty)}})}}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_subtype_opt}
 
 
 \begin{mathpar}
@@ -127,14 +112,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{Fields}
-\NotImportedToASLSpecYet{
-\hypertarget{build-fields}{}
-The function
-\[
-  \buildfields(\overname{\parsenode{\Nfields}}{\vparsednode}) \;\aslto\; \overname{\KleeneStar{\field}}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_fields}
 
 
 \begin{mathpar}

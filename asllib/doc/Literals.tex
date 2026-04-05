@@ -49,16 +49,9 @@ and their corresponding types in comments:
 \RenderType[remove_hypertargets]{literal}
 
 \subsection{ASTRule.Value \label{sec:ASTRule.Value}}
-\NotImportedToASLSpecYet{
-\hypertarget{build-value}{}
-The function
-\[
-  \buildvalue(\overname{\parsenode{\Nvalue}}{\vparsednode}) \;\aslto\; \overname{\literal}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ for $\Nvalue$, except for enumeration labels,
-into an AST node $\vastnode$ for $\literal$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_value}
 
+\BackupRule{
 \begin{mathpar}
 \inferrule[integer]{}{
   \buildvalue(\Nvalue(\Tintlit(\vi))) \astarrow
@@ -93,6 +86,8 @@ into an AST node $\vastnode$ for $\literal$.
   \overname{\LString(\vs)}{\vastnode}
 }
 \end{mathpar}
+} % END_OF_BACKUP
+\RenderProseAndFormally{build_value}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Literals}

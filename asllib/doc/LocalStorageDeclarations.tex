@@ -74,15 +74,7 @@ All the local storage declarations in \listingref{local-storage-discards} are il
 \ASLListing{Illegal local storage declarations that discard all storage elements}{local-storage-discards}{\syntaxtests/GuideRule.DiscardingLocalStorageDeclarations.asl}
 
 \ASTRuleDef{LocalDeclKeyword}
-\NotImportedToASLSpecYet{
-\hypertarget{build-localdeclkeyword}{}
-The function
-\[
-\buildlocaldeclkeyword(\overname{\parsenode{\Nlocaldeclkeyword}}{\vparsednode}) \;\aslto\;
-  \overname{\localdeclkeyword}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_local_decl_keyword}
 
 
 % Transliteration note: simplify this when `--allow-local-constants' is removed.
@@ -100,14 +92,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{DeclItem}
-\NotImportedToASLSpecYet{
-\hypertarget{build-declitem}{}
-The function
-\[
-  \builddeclitem(\overname{\parsenode{\Ndeclitem}}{\vparsednode}) \;\aslto\; \overname{\localdeclitem}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_decl_item}
 
 
 \begin{mathpar}
@@ -133,15 +118,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{IgnoredOrIdentifier}
-\NotImportedToASLSpecYet{
-\hypertarget{build-ignoredoridentifier}{}
-The relation
-\[
-\buildfuncargs(\overname{\parsenode{\Nignoredoridentifier}}{\vparsednode}) \;\aslrel\;
-  \overname{\Identifier}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_ignored_or_identifier}
 
 
 \begin{mathpar}

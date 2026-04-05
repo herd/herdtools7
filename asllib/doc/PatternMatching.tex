@@ -29,13 +29,7 @@ matches a value specified by the \emph{pattern} $p$.
 
 \paragraph{Abstract Syntax:} Patterns are derived in the abstract grammar from $\pattern$
   and generated from $\buildpattern$.
-  \hypertarget{build-pattern}{}
-  The function
-\[
-  \buildpattern(\overname{\parsenode{\Npattern}}{\vparsednode}) \;\aslto\;
-  \overname{\pattern}{\vastnode}
-\]
-transforms a pattern parse node $\vparsednode$ into a pattern AST node $\vastnode$.
+\RenderRelation{build_pattern}
 
 \paragraph{Typing:} Patterns are annotated by $\annotatepattern$.
 \RenderRelation{annotate_pattern}
@@ -378,14 +372,7 @@ the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patt
 
 
 \ASTRuleDef{PatternSet}
-\NotImportedToASLSpecYet{
-\hypertarget{build-patternset}{}
-The function
-\[
-  \buildpatternset(\overname{\parsenode{\Npatternset}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_pattern_set}
 
 
 \begin{mathpar}
@@ -407,14 +394,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 \ASTRuleDef{PatternList}
-\NotImportedToASLSpecYet{
-\hypertarget{build-patternlist}{}
-The function
-\[
-  \buildpatternlist(\overname{\parsenode{\Npatternlist}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_pattern_list}
 
 
 \begin{mathpar}
@@ -530,14 +510,7 @@ $\checksymbolicallyevaluable$, and thus in the dynamic semantics
 they are evaluated via $\evalexprsef$.
 
 \subsection{ASTRule.ExprPattern\label{sec:ASTRule.ExprPattern}}
-\NotImportedToASLSpecYet{
-\hypertarget{build-exprpattern}{}
-The function
-\[
-  \buildexprpattern(\overname{\parsenode{\Nexprpattern}}{\vparsednode}) \;\aslto\; \overname{\expr}{\vastnode}
-\]
-transforms a pattern expression parse node $\vparsednode$ into a pattern AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_expr_pattern}
 
 
 \begin{mathpar}

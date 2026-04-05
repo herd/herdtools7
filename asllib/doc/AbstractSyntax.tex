@@ -422,13 +422,14 @@ In our example, this results in the abbreviated rule notation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 This section defines builder relations for the
 subset of macro productions in \secref{ParametricProductions}
-that are not inlined:
+that are not inlined as well as helper builder relations:
 \begin{itemize}
   \item \ASTRuleRef{List}
   \item \ASTRuleRef{CList}
   \item \ASTRuleRef{PList}
   \item \ASTRuleRef{NTCList}
   \item \ASTRuleRef{Option}
+  \item \ASTRuleRef{Identifier}
 \end{itemize}
 
 We also define \ASTRuleRef{Identity},
@@ -583,6 +584,10 @@ to terminals.
   \buildidentity(x) \astarrow x
 }
 \end{mathpar}
+
+\ASTRuleDef{Identifier}
+\RenderRelation{build_identifier_token}
+\RenderProseAndFormally{build_identifier_token}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Transforming Assignable Expressions\label{sec:LeftToRight}}

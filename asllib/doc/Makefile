@@ -22,7 +22,7 @@ ASLReference.pdf: generated_spec *.tex *.bib
 	python3 doclint.py --console_macros --aslref $(ASLREF)
 
 generated_spec: asl.spec
-	dune exec -- aslspec asl.spec --render;
+	dune exec -- aslspec ./*.spec --render;
 
 .PHONY: clean
 clean:
