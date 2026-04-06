@@ -34,11 +34,12 @@ $(WWW_CATALOGUE)/$1/:
 .PHONY:: $(WWW_CATALOGUE)/$1/
 endef
 tst:
-	ocaml generate_names.ml $(CATINCLUDES)
+	ocaml generate_names.ml -norec $(ENV_PAIRS) $(CATINCLUDES) | \
+	while read a b; do echo "rel=($$a), src=($$b)" ; done
 weblib:
 	@echo '** INSTALL ' $(WWW_LIB) && mkdir -p $(WWW_LIB)
 	@ocaml generate_names.ml -norec $(ENV_PAIRS) $(CATINCLUDES) | \
-		while IFS=$$'\t' read -r rel src; do \
+		while IFS="$$(printf '\t')" read -r rel src; do \
 			mkdir -p "$(WWW_LIB)/$$(dirname "$$rel")" && \
 			cp "$$src" "$(WWW_LIB)/$$rel" && \
 			$(CAT2HTML7) "$(WWW_LIB)/$$rel" ; \
