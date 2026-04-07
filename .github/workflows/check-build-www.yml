@@ -3,9 +3,10 @@ name: Check Build WWW
 on:
   pull_request:
     paths:
-      - '.github/workflows/check-build-www.yml'
-      - 'asllib/aslref.ml'
-      - 'asllib/asllib-www'
+      - ".github/workflows/check-build-www.yml"
+      - "asllib/aslref.ml"
+      - "asllib/asllib-www"
+      - "herd-www"
   workflow_dispatch:
     inputs:
       pr_number:
@@ -13,7 +14,7 @@ on:
         required: false
         type: string
   schedule:
-      - cron: '0 8 * * 0'
+    - cron: "0 8 * * 0"
 
 jobs:
   build:
