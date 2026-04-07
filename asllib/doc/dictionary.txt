@@ -602,6 +602,7 @@ desugar
 desugared
 desugaring
 desugars
+detail
 detailed
 details
 detect
@@ -1151,6 +1152,7 @@ intersection
 interval
 intervals
 into
+intricate
 introduce
 introduced
 introduces

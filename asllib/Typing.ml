@@ -1401,7 +1401,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* Begin AnnotateSymbolicallyEvaluableExpr *)
   and annotate_symbolically_evaluable_expr env e =
     let t, e', ses = annotate_expr env e in
-    let+ () = check_symbolically_evaluable e ses in
+    (* We check whether the normalized expression is symbolically evaluable,
+       since it allows eliminating mutable variables that do not affect
+       the result, we but return the un-normalized expression and its type,
+       since the eliminated variables may affect further analysis. *)
+    let normalized_e' = StaticModel.try_normalize env e' in
+    let _, _, ses_normalized = annotate_expr env normalized_e' in
+    let+ () = check_symbolically_evaluable e ses_normalized in
     (t, e', ses)
   (* End *)
 

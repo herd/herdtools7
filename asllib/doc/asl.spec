@@ -12092,32 +12092,22 @@ typing function to_ir(tenv: static_envs, e: expr) ->
     some(p);
   }
 
-  case evar_exact_constraint {
+  case evar_mutable {
     e =: E_Var(s);
     lookup_constant(tenv, s) -> none;
     lookup_immutable_expr(tenv, s) -> none;
     type_of(tenv, s) -> t;
     make_anonymous(tenv, t) -> t1;
-    case int {
-      case exact {
-        ast_label(t1) = label_T_Int;
-        t1 =: T_Int(WellConstrained(make_singleton_list(Constraint_Exact(e1))));
-        to_ir(tenv, e1) -> p_opt;
-        --
-        p_opt;
-      }
-      case not_exact {
-        ast_label(t1) = label_T_Int;
-        not(t1 = T_Int(WellConstrained(make_singleton_list(Constraint_Exact(_)))));
-        polynomial_of_var(s) -> p;
-        --
-        some(p);
-      }
-      case evar_non_int {
-        ast_label(t1) != label_T_Int;
-        --
-        none;
-      }
+    case evar_int {
+      ast_label(t1) = label_T_Int;
+      polynomial_of_var(s) -> p;
+      --
+      some(p);
+    }
+    case evar_non_int {
+      ast_label(t1) != label_T_Int;
+      --
+      none;
     }
   }
 
@@ -14768,7 +14758,9 @@ typing relation annotate_symbolically_evaluable_expr(tenv: static_envs, e: expr)
   math_layout = [_,_],
 } =
   annotate_expr(tenv, e) -> (t, e', ses);
-  check_symbolically_evaluable(ses) -> True;
+  normalize(tenv, e') -> normalized_e';
+  annotate_expr(tenv, normalized_e') -> (_, _, ses_normalized);
+  check_symbolically_evaluable(ses_normalized) -> True;
   --
   (t, e', ses);
 ;

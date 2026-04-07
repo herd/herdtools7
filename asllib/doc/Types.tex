@@ -878,12 +878,22 @@ See \ExampleRef{Annotating Symbolically Evaluable Expressions}.
 \TypingRuleDef{AnnotateSymbolicallyEvaluableExpr}
 \RenderRelation{annotate_symbolically_evaluable_expr}
 
+An intricate detail of this rule is that the check for whether an expression is \symbolicallyevaluableterm{}
+is performed on the \normalizedexpressionterm{}.
+This is exemplified by \ExampleRef{Checking Symbolically Evaluability of Normalized Expressions} below.
+
 \ExampleDef{Annotating Symbolically Evaluable Expressions}
 \listingref{typing-annotatesymbolicallyevaluableexpr} shows examples of
 expressions and classifies them as either \symbolicallyevaluableterm{} or not.
 \ASLListing{Annotating symbolically evaluable Expressions}{typing-annotatesymbolicallyevaluableexpr}
 {\typingtests/TypingRule.AnnotateSymbolicallyEvaluableExpr.asl}
 
+\ExampleDef{Checking Symbolically Evaluability of Normalized Expressions}
+\listingref{typing-annotatesymbolicallyevaluableexpr2} shows how the determination
+of whether the length of a slice is \symbolicallyevaluableterm{}, involves normalization,
+which reasons away the mutable variable \verb|chunk_index|.
+\ASLListing{Annotating symbolically evaluable Expressions}{typing-annotatesymbolicallyevaluableexpr2}
+{\typingtests/TypingRule.AnnotateSymbolicallyEvaluableExpr2.asl}
 
 \RenderProseAndFormally{annotate_symbolically_evaluable_expr}
 \CodeSubsection{\AnnotateSymbolicallyEvaluableExprBegin}{\AnnotateSymbolicallyEvaluableExprEnd}{../Typing.ml}
