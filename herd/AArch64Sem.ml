@@ -3650,6 +3650,13 @@ Arguments:
         match inst with
         | I_NOP ->(* Instructions nop and branch below do not generate events, use a placeholder *)
            !(M.mk_singleton_es (Act.NoAction) ii)
+        (* Event Register Instructions *)
+        | I_WFE ->
+           !(M.mk_singleton_es (Act.NoAction) ii)
+        | I_SEV ->
+           !(M.mk_singleton_es (Act.NoAction) ii)
+        | I_SEVL ->
+           !(M.mk_singleton_es (Act.NoAction) ii)
         (* Branches *)
         | I_B l ->
            M.mk_singleton_es (Act.NoAction) ii
