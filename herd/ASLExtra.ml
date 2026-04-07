@@ -31,6 +31,7 @@ module Make (B : ArchBaseHerd) (C : Arch_herd.Config) (V : Value.S) = struct
   include NoSemEnv
   include NoLevelNorTLBI
 
+  let is_wfe _ = false
   let pp_barrier_short = pp_barrier
   let reject_mixed = false
   let mem_access_size _ = None

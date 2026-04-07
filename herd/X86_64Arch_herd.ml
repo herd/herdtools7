@@ -20,6 +20,7 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
   struct
     include X86_64Base
 
+    let is_wfe _ = false
     let pp_barrier_short = pp_barrier
     let reject_mixed = false
 
