@@ -3656,7 +3656,13 @@ Arguments:
         | I_SEV ->
            !(M.mk_singleton_es (Act.NoAction) ii)
         | I_SEVL ->
-           !(M.mk_singleton_es (Act.NoAction) ii)
+          let thread_id = ii.A.proc in
+           let sym_val = Constant.mk_sym_virtual (Printf.sprintf "ev%d" thread_id) in
+           let loc = A.Location_global (V.Val sym_val) in
+           let nexp = AArch64Explicit.NExp AArch64Explicit.Other in
+           let v = V.intToV 1 in
+           !(M.mk_singleton_es (
+                Act.Access (Dir.W, loc, v, Annot.N, nexp, MachSize.Quad, Access.VIR)) ii)
         (* Branches *)
         | I_B l ->
            M.mk_singleton_es (Act.NoAction) ii
