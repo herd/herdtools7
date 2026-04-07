@@ -495,16 +495,19 @@ module Make(C:Config) (I:I) : S with module I = I
           (* | (System (TAG,s1),System (TAG,s2)) *)
            -> Misc.string_eq s1 s2
 (* One id allowed, the other on forbidden, does not match *)
-          | (Virtual _,(System ((PTE|TLB|PTE2),_)|Physical _|TagAddr _))
-          | ((TagAddr _|Physical _|System ((PTE|TLB|PTE2),_)),Virtual _)
+          | (Virtual _,(System ((PTE|TLB|PTE2),_)|Physical _|TagAddr _|EventReg _))
+          | ((TagAddr _|Physical _|System ((PTE|TLB|PTE2),_)|EventReg _),Virtual _)
           | (System (PTE,_),System ((TLB|PTE2),_))
           | (System ((TLB|PTE2),_),System (PTE,_))
-          | ((Physical _|TagAddr _),System (PTE,_))
-          | (System (PTE,_),(TagAddr _|Physical _))
+          | ((Physical _|TagAddr _|EventReg _),System (PTE,_))
+          | (System (PTE,_),(TagAddr _|Physical _|EventReg _))
+          | (EventReg _, (System _|Physical _|TagAddr _))
+          | ((System _|Physical _|TagAddr _), EventReg _)
             -> false
 (* Both forbidden, failure *)
           | (TagAddr _|Physical _|System ((TLB|PTE2),_)),
             (TagAddr _|Physical _|System ((TLB|PTE2),_))
+          | (EventReg _),(EventReg _)
             ->
               Warn.fatal
                 "Illegal id (%s or %s) in fault"
@@ -860,6 +863,11 @@ module Make(C:Config) (I:I) : S with module I = I
                 (pp_location loc)
           | Location_global (I.V.Val (Symbolic (Virtual _|Physical _)))
           | Location_reg _ -> reg_default_value
+          | Location_global (I.V.Val (Symbolic (EventReg _)))
+            ->
+              Warn.user_error
+                "No default value defined for location %s\n"
+                (pp_location loc)
 
       let get_of_val st a = State.safe_find I.V.zero (Location_global a) st
 

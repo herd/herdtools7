@@ -74,6 +74,7 @@ type symbol =
   | Physical of string * int       (* symbol, index *)
   | TagAddr of tagkind * string * int
   | System of syskind * string     (* System memory *)
+  | EventReg of string             (* Event register *)
 
 val get_index : symbol -> int option
 val pp_symbol_old : symbol -> string
@@ -153,6 +154,7 @@ val mk_sym_virtual_label : Proc.t -> Label.t -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_virtual_label_with_offset : Proc.t -> Label.t -> offset -> ('scalar,'pte,'addrreg,'instr) t
 val unmk_sym_virtual_label_with_offset : ('scalar,'pte,'addrreg,'instr) t -> Proc.t * Label.t * offset
 val mk_sym_virtual : string -> ('scalar,'pte,'addrreg,'instr) t
+val mk_ev_reg : string -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym : string -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_with_index : string -> int -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_pte : string -> ('scalar,'pte,'addrreg,'instr) t
