@@ -87,6 +87,7 @@ module Make(A:Arch_herd.S) =
           | Physical (name, _) -> StringSet.add name acc
           | TagAddr (_, name, _) -> StringSet.add name acc
           | System (_, name) -> StringSet.add name acc
+          | EventReg name -> StringSet.add name acc
         end
       | PteVal p ->
           let open ParsedPteVal in
@@ -269,6 +270,15 @@ module Make(A:Arch_herd.S) =
         fun addr -> IntMap.safe_find Label.Set.empty addr instr2labels in
       let type_env = A.build_type_env init in
       let init_state = A.build_state type_env init in
+      (* Initialize event registers for each thread *)
+      let init_state =
+        List.fold_left
+          (fun env (proc, _, _) ->
+            let loc = A.Location_global
+              (A.V.cstToV (Constant.mk_ev_reg (string_of_int proc))) in
+            let v = A.V.intToV 0 in
+            A.state_add env loc v)
+        init_state starts in
       let flocs,ffaults = LocationsItem.locs_and_faults locs in
       let displayed =
         let flocs = A.RLocSet.of_list flocs in
