@@ -761,3 +761,378 @@ $\Tbor$, $\Tband$, $\Tbimpl$, $\Tbeq$, $\Tas$                                  &
 $\Telse$                                                                      & $\nonassoc$
 \end{tabular}
 \end{center}
+
+
+\section{Parsing Examples\label{sec:ParsingExamples}}
+
+\ExampleDef{Shift-Reduce Parsing with Binary Operators and Priority}
+The \assignmentstatementterm{} \texttt{x = y + 5 * 7;}
+is transformed by the lexical analysis into:
+\[
+\Tidentifier(x) \parsesep \Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon
+\]
+
+A corresponding shift-reduce parsing run is as follows:
+\begin{center}
+\begin{footnotesize}
+\begin{tabular}{rll}
+\textbf{\#} & \fbox{\textbf{Stack}} \textbf{Input} & \textbf{Action}\\
+1 & \fbox{$\emptysentence$} $\Tidentifier(x) \parsesep \Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & shift\\
+2 & \fbox{$\Tidentifier(x)$} $\Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & reduce $\Naccess$\\
+3 & \fbox{$\Tidentifier(x) \parsesep \Naccess$} $\Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & reduce $\Nbasiclexpr$\\
+4 & \fbox{$\Nbasiclexpr$} $\Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & reduce $\Nlexpr$\\
+5 & \fbox{$\Nlexpr$} $\Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & shift\\
+6 & \fbox{$\Nlexpr \parsesep \Teq$} $\Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & shift\\
+7 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Tidentifier(y)$} $\Tplus \parsesep \Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & reduce $\Nexpr$\\
+8 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr$} $\Tplus \parsesep \Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & shift\\
+9 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus$} $\Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & shift\\
+10 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Tintlit(5)$} $\Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & reduce $\Nexpr$\\
+11 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Nexpr$} $\Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & shift\\
+12 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Nexpr \parsesep \Tmul$} $\Tintlit(7) \parsesep \Tsemicolon$ & shift\\
+13 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Nexpr \parsesep \Tmul \parsesep \Tintlit(7)$} $\Tsemicolon$ & reduce $\Nexpr$\\
+14 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Nexpr \parsesep \Tmul \parsesep \Nexpr$} $\Tsemicolon$ & reduce $\Nexpr$\\
+15 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Nexpr$} $\Tsemicolon$ & reduce $\Nexpr$\\
+16 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr$} $\Tsemicolon$ & shift\\
+17 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon$} $\emptysentence$ & reduce $\Nstmt$\\
+18 & \fbox{$\Nstmt$} $\emptysentence$ & accept
+\end{tabular}
+\end{footnotesize}
+\end{center}
+
+A corresponding parse tree for the expanded grammar is shown below.
+A node is created for each reduction step in the table above
+for non-terminal being reduced, using the content stack content
+as the children of the node:
+\begin{center}
+\begin{footnotesize}
+\begin{adjustbox}{max width=\textwidth}
+\Tree
+[.$\Nstmt$
+  [.$\Nlexpr$
+    [.$\Nbasiclexpr$
+      $\Tidentifier(x)$
+      [.$\Naccess$ $\epsilonnode$ ]
+    ]
+  ]
+  $\Teq$
+  [.$\Nexpr$
+    [.$\Nexpr$ $\Tidentifier(y)$ ]
+    $\Tplus$
+    [.$\Nexpr$
+      [.$\Nexpr$ $\Tintlit(5)$ ]
+      $\Tmul$
+      [.$\Nexpr$ $\Tintlit(7)$ ]
+    ]
+  ]
+  $\Tsemicolon$
+]
+\end{adjustbox}
+\end{footnotesize}
+\end{center}
+
+\paragraph{Observation:}
+Notice that there is no reduction to $\Nbinop$ in the table above.
+This is because $\Nbinop$ is defined by an inlined derivation, so after expanding the grammar,
+we have the grammar rules
+$\Nexpr \derives \Nexpr \parsesep \Tplus \parsesep \Nexpr$ and
+$\Nexpr \derives \Nexpr \parsesep \Tmul \parsesep \Nexpr$.
+
+\paragraph{Observation:}
+Step 11 shows how the parser resolves the potential ambiguity in
+$\Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7)$.
+At that point the stack contains
+$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Nexpr$
+and the next token is $\Tmul$.
+The parser shifts $\Tmul$ instead of reducing
+$\Nexpr \parsesep \Tplus \parsesep \Nexpr$ immediately,
+thereby allowing the higher-priority multiplication subexpression
+$\Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7)$ to be formed first.
+This is how the priority of $\Tmul$ over $\Tplus$ is enforced.
+
+The table above corresponds to the following rightmost derivation in the expanded grammar
+(the underline indicates the rightmost non-terminal that is reduced at each step):
+\[
+\begin{array}{rl}
+\Nstmt & \derives\ \Nlexpr \parsesep \Teq \parsesep \underline{\Nexpr} \parsesep \Tsemicolon\\
+       & \derives\ \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \underline{\Nexpr} \parsesep \Tsemicolon\\
+       & \derives\ \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Nexpr \parsesep \Tmul \parsesep \underline{\Nexpr} \parsesep \Tsemicolon\\
+       & \derives\ \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Nexpr \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+       & \derives\ \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \underline{\Nexpr} \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+       & \derives\ \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+       & \derives\ \Nlexpr \parsesep \Teq \parsesep \underline{\Nexpr} \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+       & \derives\ \underline{\Nlexpr} \parsesep \Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+       & \derives\ \underline{\Nbasiclexpr} \parsesep \Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+       & \derives\ \Tidentifier(x) \parsesep \underline{\Naccess} \parsesep \Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+       & \derives\ \Tidentifier(x) \parsesep \Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tmul \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+\end{array}
+\]
+Notice that the derivation corresponds perfectly to the concatenation of the stack
+and input, read bottom-up in the table above, with the rightmost non-terminal
+being the one that is reduced at each step.
+
+\ExampleDef{Shift-Reduce Parsing with Left Associativity}
+The \assignmentstatementterm{} \texttt{x = y + 5 + 7;}
+is transformed by the lexical analysis into:
+\[
+\Tidentifier(x) \parsesep \Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon
+\]
+
+A corresponding shift-reduce parsing run is as follows:
+\begin{center}
+\begin{footnotesize}
+\begin{tabular}{rll}
+\textbf{\#} & \fbox{\textbf{Stack}} \textbf{Input} & \textbf{Action}\\
+1 & \fbox{$\emptysentence$} $\Tidentifier(x) \parsesep \Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & shift\\
+2 & \fbox{$\Tidentifier(x)$} $\Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & reduce $\Naccess$\\
+3 & \fbox{$\Tidentifier(x) \parsesep \Naccess$} $\Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & reduce $\Nbasiclexpr$\\
+4 & \fbox{$\Nbasiclexpr$} $\Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & reduce $\Nlexpr$\\
+5 & \fbox{$\Nlexpr$} $\Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & shift\\
+6 & \fbox{$\Nlexpr \parsesep \Teq$} $\Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & shift\\
+7 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Tidentifier(y)$} $\Tplus \parsesep \Tintlit(5) \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & reduce $\Nexpr$\\
+8 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr$} $\Tplus \parsesep \Tintlit(5) \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & shift\\
+9 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus$} $\Tintlit(5) \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & shift\\
+10 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Tintlit(5)$} $\Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & reduce $\Nexpr$\\
+11 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Nexpr$} $\Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & reduce $\Nexpr$\\
+12 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr$} $\Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon$ & shift\\
+13 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus$} $\Tintlit(7) \parsesep \Tsemicolon$ & shift\\
+14 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Tintlit(7)$} $\Tsemicolon$ & reduce $\Nexpr$\\
+15 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Nexpr$} $\Tsemicolon$ & reduce $\Nexpr$\\
+16 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr$} $\Tsemicolon$ & shift\\
+17 & \fbox{$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon$} $\emptysentence$ & reduce $\Nstmt$\\
+18 & \fbox{$\Nstmt$} $\emptysentence$ & accept
+\end{tabular}
+\end{footnotesize}
+\end{center}
+
+A corresponding parse tree for the expanded grammar is:
+\begin{center}
+\begin{footnotesize}
+\begin{adjustbox}{max width=\textwidth}
+\Tree
+[.$\Nstmt$
+  [.$\Nlexpr$
+    [.$\Nbasiclexpr$
+      $\Tidentifier(x)$
+      [.$\Naccess$ $\epsilonnode$ ]
+    ]
+  ]
+  $\Teq$
+  [.$\Nexpr$
+    [.$\Nexpr$
+      [.$\Nexpr$ $\Tidentifier(y)$ ]
+      $\Tplus$
+      [.$\Nexpr$ $\Tintlit(5)$ ]
+    ]
+    $\Tplus$
+    [.$\Nexpr$ $\Tintlit(7)$ ]
+  ]
+  $\Tsemicolon$
+]
+\end{adjustbox}
+\end{footnotesize}
+\end{center}
+
+As explained in the previous example, there is no reduction to $\Nbinop$,
+since $\Nbinop$ is an inlined non-terminal.
+
+\paragraph{Observation:}
+At step 11 the stack contains
+$\Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Nexpr$
+and the next token is again $\Tplus$.
+The parser reduces
+$\Nexpr \parsesep \Tplus \parsesep \Nexpr$
+to $\Nexpr$ instead of shifting the second $\Tplus$.
+This is how the ambiguity is resolved using the fact that $\Tplus$
+is declared $\leftassoc$:
+when the competing actions have the same priority, left associativity chooses
+reduce rather than shift.
+As a result, the input is parsed as $(y + 5) + 7$, not as $y + (5 + 7)$.
+
+The table above corresponds to the following rightmost derivation in the expanded grammar
+(the underline indicates the rightmost non-terminal that is reduced at each step):
+\[
+\begin{array}{rl}
+\Nstmt & \derives\ \Nlexpr \parsesep \Teq \parsesep \underline{\Nexpr} \parsesep \Tsemicolon\\
+       & \derives\ \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \underline{\Nexpr} \parsesep \Tsemicolon\\
+       & \derives\ \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+       & \derives\ \Nlexpr \parsesep \Teq \parsesep \underline{\Nexpr} \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+       & \derives\ \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \underline{\Nexpr} \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+       & \derives\ \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+       & \derives\ \Nlexpr \parsesep \Teq \parsesep \underline{\Nexpr} \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+       & \derives\ \underline{\Nlexpr} \parsesep \Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+       & \derives\ \underline{\Nbasiclexpr} \parsesep \Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+       & \derives\ \Tidentifier(x) \parsesep \underline{\Naccess} \parsesep \Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+       & \derives\ \Tidentifier(x) \parsesep \Teq \parsesep \Tidentifier(y) \parsesep \Tplus \parsesep \Tintlit(5) \parsesep \Tplus \parsesep \Tintlit(7) \parsesep \Tsemicolon\\
+\end{array}
+\]
+
+\ExampleDef{Shift-Reduce Parsing with Unary Operators and Priority}
+The expression \texttt{-1 - 2}
+is transformed by the lexical analysis into:
+\[
+\Tminus \parsesep \Tintlit(1) \parsesep \Tminus \parsesep \Tintlit(2)
+\]
+
+A corresponding shift-reduce parsing run is as follows:
+\begin{center}
+\begin{small}
+\begin{tabular}{rll}
+\textbf{Step} & \fbox{\textbf{Stack}} \textbf{Input} & \textbf{Action}\\
+1 & \fbox{$\emptysentence$} $\Tminus \parsesep \Tintlit(1) \parsesep \Tminus \parsesep \Tintlit(2)$ & shift\\
+2 & \fbox{$\Tminus$} $\Tintlit(1) \parsesep \Tminus \parsesep \Tintlit(2)$ & shift\\
+3 & \fbox{$\Tminus \parsesep \Tintlit(1)$} $\Tminus \parsesep \Tintlit(2)$ & reduce $\Nexpr$\\
+4 & \fbox{$\Tminus \parsesep \Nexpr$} $\Tminus \parsesep \Tintlit(2)$ & reduce $\Nexpr$\\
+5 & \fbox{$\Nexpr$} $\Tminus \parsesep \Tintlit(2)$ & shift\\
+6 & \fbox{$\Nexpr \parsesep \Tminus$} $\Tintlit(2)$ & shift\\
+7 & \fbox{$\Nexpr \parsesep \Tminus \parsesep \Tintlit(2)$} $\emptysentence$ & reduce $\Nexpr$\\
+8 & \fbox{$\Nexpr \parsesep \Tminus \parsesep \Nexpr$} $\emptysentence$ & reduce $\Nexpr$\\
+9 & \fbox{$\Nexpr$} $\emptysentence$ & accept
+\end{tabular}
+\end{small}
+\end{center}
+
+A corresponding parse tree for the expanded grammar is:
+\begin{center}
+\begin{footnotesize}
+\begin{adjustbox}{max width=\textwidth}
+\Tree
+[.$\Nexpr$
+  [.$\Nexpr$
+    $\Tminus$
+    [.$\Nexpr$ $\Tintlit(1)$ ]
+  ]
+  $\Tminus$
+  [.$\Nexpr$ $\Tintlit(2)$ ]
+]
+\end{adjustbox}
+\end{footnotesize}
+\end{center}
+
+As explained in the previous example, there are no reductions to $\Nunop$ or $\Nbinop$,
+since they are inlined non-terminals.
+
+\paragraph{Observation:}
+At step 4, stack contains $\Tminus \parsesep \Nexpr$ and the next token is again $\Tminus$.
+The parser reduces $\Tminus \parsesep \Nexpr$ to $\Nexpr$ instead of shifting the second $\Tminus$.
+This is exactly the precedence rule for unary minus:
+the production $\Nexpr \derives \Tminus \parsesep \Nexpr$ has priority $\Tunops$,
+which is higher than the binary-operator priority of $\Tminus$.
+As a result, the input is parsed as $(-1) - 2$, not as $-(1 - 2)$.
+
+The table above corresponds to the following rightmost derivation in the expanded grammar
+(the underline indicates the rightmost non-terminal that is reduced at each step):
+\[
+\begin{array}{rl}
+\Nexpr & \derives\ \underline{\Nexpr} \parsesep \Tminus \parsesep \Nexpr\\
+       & \derives\ \underline{\Nexpr} \parsesep \Tminus \parsesep \Tintlit(2)\\
+       & \derives\ \Tminus \parsesep \underline{\Nexpr} \parsesep \Tminus \parsesep \Tintlit(2)\\
+       & \derives\ \Tminus \parsesep \Tintlit(1) \parsesep \Tminus \parsesep \Tintlit(2)\\
+\end{array}
+\]
+
+\ExampleDef{Shift-Reduce Parsing with Parametric Productions}
+The expression \texttt{b[c,d,e]}
+is transformed by the lexical analysis into:
+\[
+\Tidentifier(b) \parsesep \Tlbracket \parsesep \Tidentifier(c) \parsesep \Tcomma \parsesep \Tidentifier(d) \parsesep \Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket
+\]
+
+\texthypertarget{def-clistoneslice}
+To emphasize the role of parametric productions, let $\clistoneslice$
+be the unique symbol introduced when expanding $\ClistOne{\Nslice}$.
+The relevant expansion is
+\[
+\clistoneslice \derives \Nslice \;|\; \Nslice \parsesep \Tcomma \parsesep \clistoneslice
+\]
+and the derivation for $\Nslices$ becomes
+\[
+\Nslices \derives \Tlbracket \parsesep \clistoneslice \parsesep \Trbracket \enspace.
+\]
+
+A corresponding shift-reduce parsing run is as follows:
+\begin{center}
+\begin{small}
+\begin{tabular}{rll}
+\textbf{Step} & \fbox{\textbf{Stack}} \textbf{Input} & \textbf{Action}\\
+1 & \fbox{$\emptysentence$} $\Tidentifier(b) \parsesep \Tlbracket \parsesep \Tidentifier(c) \parsesep \Tcomma \parsesep \Tidentifier(d) \parsesep \Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket$ & shift\\
+2 & \fbox{$\Tidentifier(b)$} $\Tlbracket \parsesep \Tidentifier(c) \parsesep \Tcomma \parsesep \Tidentifier(d) \parsesep \Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket$ & reduce $\Nexpr$\\
+3 & \fbox{$\Nexpr$} $\Tlbracket \parsesep \Tidentifier(c) \parsesep \Tcomma \parsesep \Tidentifier(d) \parsesep \Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket$ & shift\\
+4 & \fbox{$\Nexpr \parsesep \Tlbracket$} $\Tidentifier(c) \parsesep \Tcomma \parsesep \Tidentifier(d) \parsesep \Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket$ & shift\\
+5 & \fbox{$\Nexpr \parsesep \Tlbracket \parsesep \Tidentifier(c)$} $\Tcomma \parsesep \Tidentifier(d) \parsesep \Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket$ & reduce $\Nexpr$\\
+6 & \fbox{$\Nexpr \parsesep \Tlbracket \parsesep \Nexpr$} $\Tcomma \parsesep \Tidentifier(d) \parsesep \Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket$ & reduce $\Nslice$\\
+7 & \fbox{$\Nexpr \parsesep \Tlbracket \parsesep \Nslice$} $\Tcomma \parsesep \Tidentifier(d) \parsesep \Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket$ & shift\\
+8 & \fbox{$\Nexpr \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma$} $\Tidentifier(d) \parsesep \Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket$ & shift\\
+9 & \fbox{$\Nexpr \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma \parsesep \Tidentifier(d)$} $\Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket$ & reduce $\Nexpr$\\
+10 & \fbox{$\Nexpr \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma \parsesep \Nexpr$} $\Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket$ & reduce $\Nslice$\\
+11 & \fbox{$\Nexpr \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma \parsesep \Nslice$} $\Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket$ & shift\\
+12 & \fbox{$\Nexpr \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma \parsesep \Nslice \parsesep \Tcomma$} $\Tidentifier(e) \parsesep \Trbracket$ & shift\\
+13 & \fbox{$\Nexpr \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma \parsesep \Nslice \parsesep \Tcomma \parsesep \Tidentifier(e)$} $\Trbracket$ & reduce $\Nexpr$\\
+14 & \fbox{$\Nexpr \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma \parsesep \Nslice \parsesep \Tcomma \parsesep \Nexpr$} $\Trbracket$ & reduce $\Nslice$\\
+15 & \fbox{$\Nexpr \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma \parsesep \Nslice \parsesep \Tcomma \parsesep \Nslice$} $\Trbracket$ & reduce $\clistoneslice$\\
+16 & \fbox{$\Nexpr \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma \parsesep \Nslice \parsesep \Tcomma \parsesep \clistoneslice$} $\Trbracket$ & reduce $\clistoneslice$\\
+17 & \fbox{$\Nexpr \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma \parsesep \clistoneslice$} $\Trbracket$ & reduce $\clistoneslice$\\
+18 & \fbox{$\Nexpr \parsesep \Tlbracket \parsesep \clistoneslice$} $\Trbracket$ & shift\\
+19 & \fbox{$\Nexpr \parsesep \Tlbracket \parsesep \clistoneslice \parsesep \Trbracket$} $\emptysentence$ & reduce $\Nslices$\\
+20 & \fbox{$\Nexpr \parsesep \Nslices$} $\emptysentence$ & reduce $\Nexpr$\\
+21 & \fbox{$\Nexpr$} $\emptysentence$ & accept
+\end{tabular}
+\end{small}
+\end{center}
+
+A corresponding parse tree for the expanded grammar is:
+\begin{center}
+\begin{footnotesize}
+\begin{adjustbox}{max width=\textwidth}
+\Tree
+[.$\Nexpr$
+  [.$\Nexpr$ $\Tidentifier(b)$ ]
+  [.$\Nslices$
+    $\Tlbracket$
+    [.$\clistoneslice$
+      [.$\Nslice$
+        [.$\Nexpr$ $\Tidentifier(c)$ ]
+      ]
+      $\Tcomma$
+      [.$\clistoneslice$
+        [.$\Nslice$
+          [.$\Nexpr$ $\Tidentifier(d)$ ]
+        ]
+        $\Tcomma$
+        [.$\clistoneslice$
+          [.$\Nslice$
+            [.$\Nexpr$ $\Tidentifier(e)$ ]
+          ]
+        ]
+      ]
+    ]
+    $\Trbracket$
+  ]
+]
+\end{adjustbox}
+\end{footnotesize}
+\end{center}
+
+\paragraph{Observation:}
+Notice that there is no reduction to $\ClistOne{\Nslice}$ itself in the table above.
+This is because parametric productions are expanded before parsing.
+The parser therefore reduces to the unique symbol $\clistoneslice$
+that stands for this particular instantiation of $\ClistOne{x}$.
+
+The table above corresponds to the following rightmost derivation in the expanded grammar
+(the underline indicates the rightmost non-terminal that is reduced at each step):
+\[
+\begin{array}{rl}
+\Nexpr & \derives\ \underline{\Nexpr} \parsesep \Nslices\\
+       & \derives\ \underline{\Nexpr} \parsesep \Tlbracket \parsesep \clistoneslice \parsesep \Trbracket\\
+       & \derives\ \underline{\Nexpr} \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma \parsesep \underline{\clistoneslice} \parsesep \Trbracket\\
+       & \derives\ \underline{\Nexpr} \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma \parsesep \Nslice \parsesep \Tcomma \parsesep \underline{\clistoneslice} \parsesep \Trbracket\\
+       & \derives\ \underline{\Nexpr} \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma \parsesep \Nslice \parsesep \Tcomma \parsesep \Nslice \parsesep \Trbracket\\
+       & \derives\ \underline{\Nexpr} \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma \parsesep \Nslice \parsesep \Tcomma \parsesep \Nexpr \parsesep \Trbracket\\
+       & \derives\ \underline{\Nexpr} \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma \parsesep \Nslice \parsesep \Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket\\
+       & \derives\ \underline{\Nexpr} \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma \parsesep \Nexpr \parsesep \Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket\\
+       & \derives\ \underline{\Nexpr} \parsesep \Tlbracket \parsesep \Nslice \parsesep \Tcomma \parsesep \Tidentifier(d) \parsesep \Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket\\
+       & \derives\ \underline{\Nexpr} \parsesep \Tlbracket \parsesep \Nexpr \parsesep \Tcomma \parsesep \Tidentifier(d) \parsesep \Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket\\
+       & \derives\ \underline{\Nexpr} \parsesep \Tlbracket \parsesep \Tidentifier(c) \parsesep \Tcomma \parsesep \Tidentifier(d) \parsesep \Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket\\
+       & \derives\ \Tidentifier(b) \parsesep \Tlbracket \parsesep \Tidentifier(c) \parsesep \Tcomma \parsesep \Tidentifier(d) \parsesep \Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket\\
+\end{array}
+\]
