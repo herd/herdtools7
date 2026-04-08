@@ -302,7 +302,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       List.map ( fun (loc, value_set) ->
         VSet.elements value_set
           |> List.map ( fun value -> Atom(LV(Loc loc, value)))
-          |> fun prop -> Or( prop )
+          |> fun prop -> if VSet.cardinal value_set = 1 then (List.hd prop) else Or( prop )
       ) f
       |> fun prop -> And( prop )
 
