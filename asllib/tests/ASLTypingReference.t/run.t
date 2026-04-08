@@ -160,9 +160,9 @@ ASL Typing Tests / annotating types:
 
   $ aslref TypingRule.TBits.asl
   $ aslref TypingRule.TBits.bad.asl
-  File TypingRule.TBits.bad.asl, line 3, characters 16 to 17:
-      var R: bits(I); // illegal: I is unconstrained.
-                  ^
+  File TypingRule.TBits.bad.asl, line 7, characters 17 to 31:
+      var bv: bits(immutable_size);
+                   ^^^^^^^^^^^^^^
   ASL Type error: constrained integer expected, provided integer.
   [1]
   $ aslref TypingRule.TTuple.asl
@@ -1035,6 +1035,13 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref --no-exec TypingRule.SESForSubprogram.asl
   $ aslref --no-exec TypingRule.SESIsSymbolicallyEvaluable.asl
+  $ aslref --no-exec TypingRule.SESIsSymbolicallyEvaluable.bad.asl
+  File TypingRule.SESIsSymbolicallyEvaluable.bad.asl, line 12,
+    characters 38 to 39:
+      var bv: bits(x) = ARBITRARY: bits(x);
+                                        ^
+  ASL Type error: expected a symbolically evaluable expression/subprogram.
+  [1]
   $ aslref TypingRule.SliceEqual.asl
   $ aslref TypingRule.SlicesEqual.asl
   $ aslref TypingRule.BitwidthEqual.asl
