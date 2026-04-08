@@ -1,0 +1,11 @@
+AArch64 MP+popl+amo.swpazrp-po
+{
+0:X1=x; 0:X3=y;
+1:X3=y; 1:X1=x;
+}
+ P0           | P1               ;
+ MOV W0,#1    | MOV W2,#2        ;
+ STR W0,[X1]  | SWPA W2,WZR,[X3] ;
+ MOV W2,#1    | LDR W4,[X1]      ;
+ STLR W2,[X3] |                  ;
+exists ([y]=2 /\ 1:X4=0)
