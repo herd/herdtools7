@@ -34,6 +34,7 @@ achieves
 across
 act
 action
+actions
 actively
 actual
 actually
@@ -56,6 +57,7 @@ aesthetically
 affect
 affecting
 after
+again
 against
 aggregate
 agree
@@ -81,6 +83,7 @@ alternative
 alternatives
 although
 always
+ambiguity
 ambiguous
 among
 amongst
@@ -387,6 +390,7 @@ comparison
 comparisons
 compatibility
 compatible
+competing
 compile
 compiler
 compilers
@@ -525,6 +529,7 @@ cover
 covered
 covers
 create
+created
 creates
 creating
 creation
@@ -1543,6 +1548,7 @@ pattern
 patterns
 pending
 per
+perfectly
 performed
 performing
 performs
@@ -1720,8 +1726,10 @@ red
 redefining
 reduce
 reduced
+reduces
 reducing
 reduction
+reductions
 refer
 reference
 references
@@ -1805,6 +1813,7 @@ resemble
 reserved
 resolve
 resolved
+resolves
 resolving
 respect
 respected
@@ -1918,6 +1927,8 @@ share
 shared
 shares
 shift
+shifting
+shifts
 short
 shortens
 shortest
@@ -2249,6 +2260,7 @@ underapproximated
 underapproximates
 underapproximating
 underapproximation
+underline
 underlying
 underscore
 underscores
