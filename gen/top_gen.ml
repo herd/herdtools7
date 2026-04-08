@@ -900,8 +900,7 @@ let max_set = IntSet.max_elt
       let locs = List.split inits |> fst |> A.LocSet.of_list in
       let extra_type_declaration =
         A.LocMap.filter ( fun k _ -> not @@ A.LocSet.mem k locs ) env
-        (* to_list only exists after ocaml 5 *)
-          |> A.LocMap.to_seq |> List.of_seq
+          |> A.LocMap.to_list
           (* give default 0 value *)
           |> List.map ( fun (loc, t) -> (loc, (typ_to_testtype t, A.S "0")) ) in
       List.sort (fun (l, _) (r, _) -> A.location_compare l r) (type_inits @ extra_type_declaration)
