@@ -68,8 +68,8 @@ struct
   Also notice that we are more tolerant for Rfi.
  *)
 (* Assuming Dp is safe *)
-    | Rf Int,Dp _ | Dp _,Rf Int -> true
-    | Dp (_,sd,_),Ws Int | Dp (_,sd,_),Fr Int ->
+    | (Rf Int|Po(Same,Dir W,Dir R)), Dp _ | Dp _, (Rf Int|Po(Same,Dir W,Dir R)) -> true
+    | Dp (_, sd, _), (Ws Int|Po(Same,Dir W,Dir W)|Fr Int|Po(Same,Dir R,Dir W)) ->
         not (po_safe sd (dir_src e1) (dir_tgt e2))
     | Po (sd1,_,_), Dp (_,sd2,_) ->
         not (po_safe sd1 (dir_src e1) (dir_tgt e1)) &&
@@ -77,15 +77,15 @@ struct
     | Dp (_,sd1,_),Po (sd2,_,_) ->
         not (po_safe sd2 (dir_src e2) (dir_tgt e2)) &&
         not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
-(* Check Po is safe *)
-    | Po (sd1,_,_),Po (sd2,_,_) ->
-        not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
-    | Rf Int,Po (sd,_,_) ->
+    | (Rf Int|Po(Same,Dir W,Dir R)), Po (sd, _, _) ->
         po_safe sd (dir_src e2) (dir_tgt e2) &&
         not (po_safe sd (dir_src e1) (dir_tgt e2))
-    | Po (sd,_,_),Rf Int ->
+    | Po (sd, _, _), (Rf Int|Po(Same,Dir W,Dir R)) ->
         po_safe sd (dir_src e1) (dir_tgt e1) &&
         not (po_safe sd (dir_src e1) (dir_tgt e2))
+    (* Check Po is safe *)
+    | Po (sd1, _, _), Po (sd2, _, _) ->
+        not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
 (* Allow Rmw *)
     | (Rmw _,_)|(_,Rmw _) -> true
 (* Added *)
@@ -103,12 +103,18 @@ struct
 (*
   Now accept some internal with internal composition
  *)
-      | (Ws Int|Rf Int|Fr Int|Insert _),(Dp (_,_,_)|Po (Diff,_,_))
-      | (Dp (_,_,_)|Po (Diff,_,_)),(Ws Int|Rf Int|Fr Int|Insert _)
+      | (Ws Int | Po(Same,Dir W,Dir W)
+        | Rf Int | Po(Same,Dir W,Dir R)
+        | Fr Int | Po(Same,Dir R,Dir W) | Insert _)
+        , (Dp (_, _, _) | Po (Diff, _, _))
+      | (Dp (_, _, _) | Po (Diff, _, _))
+        , (Ws Int | Po(Same,Dir W,Dir W)
+          | Rf Int | Po(Same,Dir W,Dir R)
+          | Fr Int | Po(Same,Dir R,Dir W) | Insert _)
       | Dp (_,Diff,_),Po (Diff,_,_)
       | Po (Diff,_,_),Dp (_,Diff,_)
-      | Rf Int,Po (Same,_,_)
-      | Po (Same,_,_),Rf Int
+      | (Rf Int|Po(Same,Dir W,Dir R)), Po (Same, _, _)
+      | Po (Same, _, _), (Rf Int|Po(Same,Dir W,Dir R))
       | (Rmw _,_)|(_,Rmw _) -> true
       | _,_ ->
           (* Reject other internal followed by internal sequences *)
@@ -317,9 +323,6 @@ module Make(C:Builder.S)
         | _ -> true
         end
 
-    (* List.is_empty only supports for ocaml 5.1 afterwards *)
-    let is_empty_list l = (l = [])
-
     let pp_ess ess =
       let list_sep = " " in
       let list_list_sep = " " in
@@ -328,6 +331,65 @@ module Make(C:Builder.S)
           es |> List.map (fun e -> pp_edge e)
              |> String.concat list_list_sep )
         |> String.concat list_sep
+
+    let merge_predicate_and_check_compatibility safes po_safe next exist =
+      if O.verbose > 2 then
+        eprintf "next: %s, exists: %s\n" (pp_ess [next]) (pp_ess exist);
+      (* Given `lhs = [after(..); after(..);....]` and
+         `rhs = [before(..); before(..); ....]`,
+         helper function returns the new `lhs` and `rhs` in two
+         segaments respectively, hence `Some (lhs_1, lhs_2, rhs_1, rhs_2)`
+         The `before` and `after` will be checked and erased:
+           - `before` merges with concrete if edge matches.
+           - `after` merges with concrete if edge matches.
+           - `before` pairing with `after` fails.
+           - concrete pairing concrete leads to further `can_precede` check.
+         If the check fails, `None` returns. *)
+      let rec do_rec lhs rhs =
+        match lhs,rhs with
+        | [],r -> Some ([],[],[],r)
+        | l,[] -> Some ([],l,[],[])
+        | (lhs_hd :: lhs_tail as lhs), (rhs_hd :: rhs_tail as rhs) ->
+            let lhs_predicate = C.E.get_predicate lhs_hd in
+            let rhs_predicate = C.E.get_predicate rhs_hd in
+            match lhs_predicate, rhs_predicate with
+            (* Nothing needs to be merged, TODO check if can_precede??  *)
+            | None, None -> Some ([], lhs, [], rhs)
+            | Some l, None when l = C.E.After && C.E.equal_edge_atoms lhs_hd rhs_hd ->
+                do_rec lhs_tail rhs_tail
+                |> Option.map ( fun (lhs_1, lhs_2, rhs_1, rhs_2) ->
+                  (lhs_1, lhs_2, rhs_1 @ [rhs_hd], rhs_2)
+                )
+            | None, Some r when r = C.E.Before && C.E.equal_edge_atoms lhs_hd rhs_hd ->
+                do_rec lhs_tail rhs_tail
+                |> Option.map ( fun (lhs_1, lhs_2, rhs_1, rhs_2) ->
+                  (lhs_1 @ [lhs_hd], lhs_2, rhs_1, rhs_2)
+                )
+            | _, _ -> None in
+      let no_predicate_in_hd = function
+        | []
+        | {pred = None; _} :: _ -> true
+        | _ -> false in
+      match exist with
+      (* Base case: there is no `exist` *)
+      | [] -> Some (next,[])
+      | (_,exist_hd) :: exist_tail ->
+          match do_rec (List.rev (snd next)) exist_hd with
+          | None -> None
+          | Some (lhs_1, lhs_2, rhs_1, rhs_2) ->
+            let lhs = List.rev (lhs_1 @ lhs_2) in
+            let next = (ERS lhs, lhs) in
+            let rhs = rhs_1 @ rhs_2 in
+            let exist = (ERS rhs, rhs) :: exist_tail in
+            (* Ensure both `lhs` and `rhs` merged completely *)
+            if no_predicate_in_hd lhs_2
+              && no_predicate_in_hd rhs_2
+              && can_precede safes po_safe next exist then
+              Some (next,exist)
+            else None
+
+    (* List.is_empty only supports for ocaml 5.1 afterwards *)
+    let is_empty_list l = (l = [])
 
     let edges_ofs rs =
       List.map (fun r -> (r, edges_of r)) rs
@@ -373,18 +435,16 @@ module Make(C:Builder.S)
     let minint suff = c_minint 0 suff
 
 (* Prefix *)
-    let prefix_expanded = List.flatten (List.map C.R.expand_relax_seq O.prefix)
-
     let () =
       if O.verbose > 0 && O.prefix <> [] then begin
         eprintf "Prefixes:\n" ;
         List.iter
           (fun rs ->
             eprintf "  %s\n" (C.R.pp_relax_list rs))
-          prefix_expanded
+          O.prefix
       end
 
-    let prefixes = List.map edges_ofs prefix_expanded
+    let prefixes = List.map edges_ofs O.prefix
 
     let rec mk_can_prefix = function
       | [] -> (fun _ _ -> true)
@@ -404,40 +464,62 @@ module Make(C:Builder.S)
       let rsuff = List.split rsuff |> snd |> List.concat in
       not (List.exists (fun rl -> is_prefix rsuff rl) rl)
 
-
     (* This function is used `zyva` *)
     let call_rec_base prefix f0 safes po_safe over n r suff f_rec k ?(reject=[])=
-      if
-        can_precede safes po_safe r suff &&
-        minprocs suff <= O.nprocs &&
-        minint (r::suff) <= O.max_ins-1 &&
-        check_cycle (r::suff) reject
-      then
-        let suff = r::suff
-        and n = n-sz r in
-        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess suff) ;
+      (* check if `r` is compatible with `suff` *)
+      match merge_predicate_and_check_compatibility safes po_safe r suff with
+      | None -> k
+      | Some (r,suff) ->
+        (* The next candidate cycle *)
+        let r_suff = r::suff in
+          if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess r_suff) ;
+        let is_continue_search =
+          (* Check procedure number *)
+          minprocs suff <= O.nprocs
+          (* Check instruction number *)
+          && minint r_suff <= O.max_ins-1
+          (* Check if the cycle is rejected by `reject` *)
+          && check_cycle r_suff reject in
+        (* size only decreases when there is at least one non-insert edge in `r` *)
+        let n = n-sz r in
+        (* update the accumulator `k`, if a posible candidate cycle
+           otherwise keep it the same as before *)
         let k =
-          if
-            over &&
-            (n = 0 || (n > 0 && O.upto)) &&
-            can_prefix prefix (can_precede safes po_safe) suff
-          then begin
-            let tr =  prefix@suff in
-            if O.verbose > 2 then
-            eprintf "TRY: '%s'\n"
-              (C.E.pp_edges (List.flatten (List.map snd tr))) ;
-            try f0 po_safe tr k
-            with  Misc.Exit -> k
-            | Misc.Fatal msg |Misc.UserError msg ->
-                eprintf "Marche pas: '%s'\n" msg ;
-                k
-            | e ->
-              eprintf "Exc in F0: '%s'\n" (Printexc.to_string e) ;
-              raise e
-          end else k in
-        if n <= 0 then k
-        else f_rec n suff k
-      else k
+        Option.bind
+        (* check if the tail `r_suff` is compatible with the head,
+           hence a possible candidate cycle *)
+        ( merge_predicate_and_check_compatibility safes po_safe (Misc.last r_suff) r_suff )
+        (* check if the environment and configuration is compatible with
+           the candidate cycle *)
+        ( fun (_,e) ->
+          if over
+            (* cycle size `n` is still within bound *)
+            && (n = 0 || (n > 0 && O.upto))
+            (* user-defined `prefix` can be added *)
+            && can_prefix prefix (can_precede safes po_safe) r_suff then
+              Some e
+          else None )
+        (* find an candidate cycle, surfix with `prefix` and call engine `f0` *)
+        |> Option.map ( fun candidate_cycle ->
+          let tr = prefix @ candidate_cycle in
+          if O.verbose > 2 then
+          eprintf "TRY: '%s'\n"
+            (C.E.pp_edges (List.flatten (List.map snd tr))) ;
+          try f0 po_safe tr k
+          (* `f0` fails, however, surpresses some expected error *)
+          with Misc.Exit -> k
+          | Misc.Fatal msg |Misc.UserError msg ->
+              eprintf "Marche pas: '%s'\n" msg ;
+              k
+          | e ->
+            eprintf "Exc in F0: '%s'\n" (Printexc.to_string e) ;
+            raise e
+        )
+        (* Unwrap the new accumulator `k` *)
+        |> Option.value ~default:k in
+      (* recursive call *)
+        if is_continue_search && n > 0 then f_rec n r_suff k
+        else k
     (* END of call_rec_base *)
 
     module SdDir2Set =
@@ -718,9 +800,6 @@ module Make(C:Builder.S)
 
     let parse_input ~relax ~safe ~reject =
       let r_nempty = Misc.consp relax in
-      let relax = expand_relaxs C.ppo relax
-      and safe = expand_relaxs C.ppo safe
-      and reject = expand_relaxs C.ppo reject in
       if Misc.nilp relax then if r_nempty then begin
         Warn.fatal "relaxations provided in relaxlist could not be used to generate cycles"
       end ;
