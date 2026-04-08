@@ -158,10 +158,19 @@ and their corresponding \sideeffectdescriptorsetsterm{} (in comments).
 See \ExampleRef{Checking Whether Expressions are Symbolically Evaluable}.
 
 \ExampleDef{Why Symbolically Evaluability Matters}
+
+The specification in \listingref{SESIsSymbolicallyEvaluable-bad} is ill-typed.
+Specifically, it shows that when an expression is not \symbolicallyevaluableterm{},
+it cannot be used to express the type of a bitvector. This is because the value
+of the expression might change at runtime.
+
+\ASLListing{Why symbolic evaluability matters}{SESIsSymbolicallyEvaluable-bad}{\typingtests/TypingRule.SESIsSymbolicallyEvaluable.bad.asl}
+
+\ExampleDef{Symbolically Evaluability for Equivalence Testing}
 The specification in \listingref{SESIsSymbolicallyEvaluable} is well-typed.
 Specifically, it shows how the fact that an expression is \symbolicallyevaluableterm{}
 is used to reason about the equivalence of bitwidth expressions.
-\ASLListing{Why symbolic evaluability matters}{SESIsSymbolicallyEvaluable}{\typingtests/TypingRule.SESIsSymbolicallyEvaluable.asl}
+\ASLListing{Symbolically evaluable expressions}{SESIsSymbolicallyEvaluable}{\typingtests/TypingRule.SESIsSymbolicallyEvaluable.asl}
 
 \RenderProseAndFormally{is_symbolically_evaluable}
 
