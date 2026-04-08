@@ -1,0 +1,18 @@
+AArch64 SB+tlbi-sync.ishptev0p+dsb.syptev0p
+Variant=vmsa
+{ 
+  [PTE(y)]=(valid:0);
+  pteval_t 0:X0=(oa:PA(x), valid:0); 0:X1=PTE(x);
+  pteval_t 1:X5=(oa:PA(y), valid:1); 1:X3=PTE(y); 
+  0:X4=x; 1:X4=x;
+  0:X2=y; 
+}
+ P0              | P1          ;
+ STR X0,[X1]     | STR X5,[X3] ;
+ DSB ISH         | DMB SY      ;
+ LSR X5,X4,#12   |L1:          ;
+ TLBI VAAE1IS,X5 | LDR W6,[X4] ;
+ DSB ISH         |             ;
+L0:              |             ;
+ LDR W3,[X2]     |             ;
+exists (fault(P0:L0,y) /\ ~fault(P1:L1,x))
