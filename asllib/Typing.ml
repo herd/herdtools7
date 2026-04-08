@@ -1210,11 +1210,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let rec annotate_bitfield ~loc env width bitfield : bitfield * SES.t =
     match bitfield with
     | BitField_Simple (name, slices) ->
-        let slices1, ses_slices = annotate_slices ~loc env slices in
+        let slices1, ses_slices =
+          annotate_slices ~is_rhs:true ~loc env slices
+        in
         let+ () = check_slices_in_width ~loc env width slices1 in
         (BitField_Simple (name, slices1), ses_slices) |: TypingRule.TBitField
     | BitField_Nested (name, slices, bitfields') ->
-        let slices1, ses_slices = annotate_slices ~loc env slices in
+        let slices1, ses_slices =
+          annotate_slices ~is_rhs:true ~loc env slices
+        in
         let diet = disjoint_slices_to_positions ~loc ~static:true env slices1 in
         let+ () = check_diet_in_width ~loc slices1 width diet in
         let width' = Diet.Int.cardinal diet |> expr_of_int in
@@ -1226,7 +1230,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         |: TypingRule.TBitField
     | BitField_Type (name, slices, ty) ->
         let ty', ses_ty = annotate_type ~loc env ty in
-        let slices1, ses_slices = annotate_slices ~loc env slices in
+        let slices1, ses_slices =
+          annotate_slices ~is_rhs:true ~loc env slices
+        in
         let diet = disjoint_slices_to_positions ~loc ~static:true env slices1 in
         let+ () = check_diet_in_width ~loc slices1 width diet in
         let width' = Diet.Int.cardinal diet |> expr_of_int in
@@ -1424,13 +1430,20 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (Constraint_Range (e1', e2'), ses)
   (* End *)
 
-  and annotate_slices env ~loc =
-    (* Rule:
-      The width of a bitslice must be any non-negative,
-      symbolically evaluable integer expression (including zero).
+  (** [annotate_slices env ~is_rhs ~loc slices] annotates [slices] in the
+      context of [env]. The [is_rhs] flag is true when the slices are on the
+      right-hand side of an assignment. *)
+  and annotate_slices env ~is_rhs ~loc slices =
+    (* Rules:
+      - The width of a bitslice must be a non-negative integer expression, including zero.
+      - The width of a bitslice must be constrained.
+      - If the bitslice is on the right-hand side of an assignment, then the width must be
+        symbolically evaluable, and if it is on the left-hand side, the normalized expression
+        must be symbolically evaluable.
     *)
+
     (* Begin Slice *)
-    let rec annotate_slice s =
+    let rec annotate_slice ~is_rhs s =
       let () =
         if false then
           Format.eprintf "Annotating slice %a@." PP.pp_slice_list [ s ]
@@ -1440,11 +1453,30 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           (* Rule:
              The notation b[i] is syntactic sugar for b[i +: 1].
           *)
-          annotate_slice (Slice_Length (i, one_expr)) |: TypingRule.Slice
+          annotate_slice ~is_rhs (Slice_Length (i, one_expr))
+          |: TypingRule.Slice
       | Slice_Length (offset, length) ->
-          let t_offset, offset', ses_offset = annotate_expr env offset
-          and length', ses_length =
-            annotate_symbolic_constrained_integer ~loc env length
+          let t_offset, offset', ses_offset = annotate_expr env offset in
+          let length', ses_length =
+            if is_rhs then annotate_symbolic_constrained_integer ~loc env length
+            else
+              (* This case is similar to the one above, except that check
+                whether the length is symbolically evaluable is performed
+                on the normalized expression. *)
+              let t_length, length_annot, ses_length =
+                annotate_expr env length
+              in
+              let normalized_length =
+                StaticModel.try_normalize env length_annot
+              in
+              let _, _, normalized_length_ses =
+                annotate_expr env normalized_length
+              in
+              let+ () =
+                check_symbolically_evaluable length normalized_length_ses
+              in
+              let+ () = check_constrained_integer ~loc env t_length in
+              (normalized_length, ses_length)
           in
           let+ () = check_is_readonly offset ses_offset in
           let+ () = check_is_readonly length ses_length in
@@ -1456,19 +1488,19 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
              The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
           *)
           let length = binop `SUB j i |> binop `ADD !$1 in
-          annotate_slice (Slice_Length (i, length)) |: TypingRule.Slice
+          annotate_slice ~is_rhs (Slice_Length (i, length)) |: TypingRule.Slice
       | Slice_Star (factor, length) ->
           (* Rule:
              The notation b[i *: n] is syntactic sugar for b[i*n +: n]
           *)
           let offset = binop `MUL factor length in
-          annotate_slice (Slice_Length (offset, length)) |: TypingRule.Slice
+          annotate_slice ~is_rhs (Slice_Length (offset, length))
+          |: TypingRule.Slice
       (* End *)
     in
-    fun slices ->
-      let slices, sess = list_map_split annotate_slice slices in
-      let ses = ses_non_conflicting_unions ~loc sess in
-      (slices, ses)
+    let slices, sess = list_map_split (annotate_slice ~is_rhs) slices in
+    let ses = ses_non_conflicting_unions ~loc sess in
+    (slices, ses)
 
   and annotate_pattern ~loc env t p =
     let here = add_pos_from ~loc:p in
@@ -2083,7 +2115,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 *)
                 let slices', ses2 =
                   best_effort (slices, SES.empty) (fun _ ->
-                      annotate_slices env slices ~loc)
+                      annotate_slices env ~is_rhs:true ~loc slices)
                 in
                 let w = slices_width env slices' in
                 let ses = SES.union ses1 ses2 in
@@ -2552,7 +2584,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let le2, ses1 = annotate_lexpr env le1 t_le1 in
             let slices_annotated, ses_slices =
               best_effort (slices, SES.empty) @@ fun _ ->
-              annotate_slices env slices ~loc
+              annotate_slices env ~is_rhs:false slices ~loc
             in
             let+ () =
              fun () ->

@@ -2274,7 +2274,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
     case okay {
       ast_label(struct_t_e') in make_set(label_T_Bits, label_T_Int);
       te_check(slices != empty_list, TE_BS) -> True;
-      annotate_slices(tenv, slices) -> (slices', ses2);
+      annotate_slices(tenv, True, slices) -> (slices', ses2);
       slices_width(tenv, slices) -> w;
       ses := union(ses1, ses2);
       --
@@ -3202,7 +3202,7 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
     make_anonymous(tenv, t_le1) -> t_le1_anon;
     te_check(ast_label(t_le1_anon) = label_T_Bits, TE_UT) -> True;
     annotate_lexpr(tenv, le1, t_le1) -> (le2, ses1);
-    annotate_slices(tenv, slices) -> (slices_annot, ses_slices);
+    annotate_slices(tenv, False, slices) -> (slices_annot, ses_slices);
     slices_width(tenv, slices_annot) -> e_w;
     normalize(tenv, e_w) -> v_w;
     t := T_Bits(v_w, empty_list);
@@ -3993,7 +3993,7 @@ typing relation annotate_bitfield(tenv: static_envs, width: Z, field: bitfield) 
 } =
   case simple {
     field =: BitField_Simple(name, slices);
-    annotate_slices(tenv, slices) -> (slices1, ses_slices);
+    annotate_slices(tenv, True, slices) -> (slices1, ses_slices);
     check_slices_in_width(tenv, width, slices1) -> True;
     --
     (BitField_Simple(name, slices1), ses_slices)
@@ -4002,7 +4002,7 @@ typing relation annotate_bitfield(tenv: static_envs, width: Z, field: bitfield) 
 
   case nested {
     field =: BitField_Nested(name, slices, bitfields');
-    annotate_slices(tenv, slices) -> (slices1, ses_slices);
+    annotate_slices(tenv, True, slices) -> (slices1, ses_slices);
     disjoint_slices_to_positions(tenv, True, slices1) -> positions;
     check_positions_in_width(width, positions) -> True;
     width' := ELint(cardinality(positions));
@@ -4016,7 +4016,7 @@ typing relation annotate_bitfield(tenv: static_envs, width: Z, field: bitfield) 
 
   case type {
     field =: BitField_Type(name, slices, t);
-    annotate_slices(tenv, slices) -> (slices1, ses_slices);
+    annotate_slices(tenv, True, slices) -> (slices1, ses_slices);
     annotate_type(False, tenv, t) -> (t', ses_ty);
     check_slices_in_width(tenv, width, slices1) -> True;
     disjoint_slices_to_positions(tenv, True, slices1) -> positions;
@@ -7755,29 +7755,42 @@ typing function ses_for_subprogram(qualifier: option(func_qualifier)) ->
 //////////////////////////////////////////////////
 // Relations for Slicing
 
-typing relation annotate_slice(tenv: static_envs, s: slice) -> (s': slice, ses: powerset(TSideEffect)) | type_error
+typing relation annotate_slice(tenv: static_envs, is_rhs: Bool, s: slice) -> (s': slice, ses: powerset(TSideEffect)) | type_error
 {
-  "annotates a single slice {s} in the \staticenvironmentterm{} {tenv},
+  "annotates a single slice {s} in the \staticenvironmentterm{} {tenv} with the flag {is_rhs},
   resulting in an annotated slice {s'} and a \sideeffectsetterm{}
   {ses}. \ProseOtherwiseTypeError",
-  prose_transition = "annotating {s} in the context of {tenv} yields"
+  prose_transition = "annotating {s} in the context of {tenv} with flag {is_rhs} yields"
 } =
   case single {
     s =: Slice_Single(i);
-    annotate_slice(tenv, Slice_Length(i, ELint(one))) -> (s', ses);
+    annotate_slice(tenv, is_rhs, Slice_Length(i, ELint(one))) -> (s', ses);
   }
 
   case range {
     s =: Slice_Range(j, i);
     length' := AbbrevEBinop(SUB, j, i);
     length  := AbbrevEBinop(ADD, length', ELint(one));
-    annotate_slice(tenv, Slice_Length(i, length)) -> (s', ses);
+    annotate_slice(tenv, is_rhs, Slice_Length(i, length)) -> (s', ses);
   }
 
   case length {
     s =: Slice_Length(offset, length);
     annotate_expr(tenv, offset) -> (t_offset, offset', ses_offset);
-    annotate_symbolic_constrained_integer(tenv, length) -> (length', ses_length) { math_layout = [_] };
+    case rhs {
+      annotate_symbolic_constrained_integer(tenv, length) ->
+        (length', ses_length) { math_layout = [_] };
+    }
+    case lhs {
+      annotate_expr(tenv, length) -> (t_length, length_annot, ses_length)
+      { math_layout = [_] };
+      normalize(tenv, length_annot) -> normalized_length;
+      annotate_expr(tenv, normalized_length) -> (_, _, normalized_length_ses)
+      { math_layout = [_] };
+      check_symbolically_evaluable(normalized_length_ses) -> True;
+      check_constrained_integer(tenv, t_length) -> True;
+      length' := normalized_length;
+    }
     te_check(ses_is_readonly(ses_offset), TE_SEV) -> True;
     te_check(ses_is_readonly(ses_length), TE_SEV) -> True;
     check_underlying_integer(tenv, t_offset) -> True;
@@ -7788,7 +7801,7 @@ typing relation annotate_slice(tenv: static_envs, s: slice) -> (s': slice, ses: 
   case scaled {
     s =: Slice_Star(factor, length);
     offset := AbbrevEBinop(MUL, factor, length);
-    annotate_slice(tenv, Slice_Length(offset, length)) -> (s', ses);
+    annotate_slice(tenv, is_rhs, Slice_Length(offset, length)) -> (s', ses);
   }
   --
   (s', ses);
@@ -7869,18 +7882,20 @@ typing relation annotate_symbolic_constrained_integer(tenv: static_envs, e: expr
   (e'', ses);
 ;
 
-typing relation annotate_slices(tenv: static_envs, slices: list0(slice)) ->
-         (slices': list0(slice), ses: powerset(TSideEffect))
+typing relation annotate_slices(tenv: static_envs, is_rhs: Bool, slices: list0(slice)) ->
+         (slices': list0(slice), ses: powerset(TSideEffect)) | type_error
 {
   "annotates a list of slices {slices} in the
-  \staticenvironmentterm{} {tenv}, yielding a list of
+  \staticenvironmentterm{} {tenv} with flag {is_rhs}, yielding a list of
   annotated slices (that is, slices in the \typedast)
   and a \sideeffectsetterm{} {ses}.
+  The flag {is_rhs} indicates whether {slices} appear in a \rhsexpression{} ($\True$)
+  or in an \assignableexpression{} ($\False$).
   \ProseOtherwiseTypeError",
-  prose_application = "the annotated slices for {slices} in {tenv}",
-  prose_transition = "annotating {slices} in the context of {tenv} yields",
+  prose_application = "the annotated slices for {slices} in {tenv} with {is_rhs}",
+  prose_transition = "annotating {slices} in the context of {tenv} with {is_rhs} yields",
 } =
-  INDEX(i, slices: annotate_slice(tenv, slices[i]) -> (slices'[i], xs[i]));
+  INDEX(i, slices: annotate_slice(tenv, is_rhs, slices[i]) -> (slices'[i], xs[i]));
   ses := union_list(xs);
   --
   (slices', ses);

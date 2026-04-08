@@ -1231,6 +1231,7 @@ ASL Typing Tests / annotating types:
               ^^^^^^^^^^^^^^^^
   ASL Type error: expected a readonly expression/subprogram.
   [1]
+  $ aslref --no-exec TypingRule.AnnotateSlices_lhs.asl
   $ aslref --no-exec TypingRule.AddNewFunc.bad1.asl
   File TypingRule.AddNewFunc.bad1.asl, line 8, character 0 to line 11,
     character 4:
