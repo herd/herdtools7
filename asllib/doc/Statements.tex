@@ -1540,6 +1540,11 @@ In \listingref{semantics-swhile}, the loop limit value
 starts at $\nvint(4)$ and decrements towards $\nvint(0)$,
 stopping at $\nvint(1)$ on the last iteration of the loop.
 
+\ExampleDef{Negative Loop Limit Values}
+In \listingref{semantics-swhile-negative-limit}, the loop limit value starts at $\nvint(-1)$
+so the loop limit is immediately reached, resulting in a \dynamicerrorterm{} without executing the loop body at all.
+(The same would happen if the loop limit value started at $\nvint(0)$.)
+\ASLListing{A \texttt{while} statement with a negative loop limit}{semantics-swhile-negative-limit}{\semanticstests/SemanticsRule.SWhile.negative_limit.asl}
 
 \RenderProseAndFormally{tick_loop_limit}
 

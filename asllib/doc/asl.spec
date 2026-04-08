@@ -10147,14 +10147,17 @@ semantics relation tick_loop_limit(v_opt: option(N)) -> (v_opt': option(N)) | TD
   }
 
   case some_ok {
-    v_opt =: some(v);
-    v > zero;
+    v_opt =: some(limit);
+    new_limit := limit - one;
+    new_limit >= zero;
     --
-    some(v - one);
+    some(new_limit);
   }
 
   case some_error {
-    v_opt =: some(zero);
+    v_opt =: some(limit);
+    new_limit := limit - one;
+    new_limit < zero;
     --
     DynamicError(DE_LE);
   }
