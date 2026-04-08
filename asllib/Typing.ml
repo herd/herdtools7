@@ -406,7 +406,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       that different slices do not overlap and that slices are not defined in
       reverse. Determining the set of positions requires evaluating the
       expressions comprising the slices. [static] indicates that the expressions
-      defining the slices must be statically evaluable, in which case they are
+      defining the slices must be symbolically evaluable, in which case they are
       statically evaluated to accurately determine the set of positions.
       Otherwise, normalization is used in an attempt to reduce them to literals.
       Slices for which the expressions cannot be reduced to literals do not
@@ -1199,7 +1199,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       let width = get_bitvector_width ~loc env (List.hd arg_types) in
       let param_type = integer_exact' width |> add_pos_from ~loc:width in
       let ses_param =
-        (* This is enough as the bitvector width is statically evaluable and
+        (* This is enough as the bitvector width is symbolically evaluable and
            its timeframe is earlier than the argument itself. *)
         SES.empty
       in
@@ -1270,7 +1270,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin TNamed *)
     | T_Named x ->
         let ses =
-          (* As expression on which types depend are statically evaluable,
+          (* As expression on which types depend are symbolically evaluable,
              using a named type is as reading a global immutable storage
              element. *)
           let time_frame =
@@ -1425,9 +1425,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   and annotate_slices env ~loc =
-    (* Rules:
-       - Rule WZCS: The width of a bitslice must be any non-negative,
-         statically evaluable integer expression (including zero).
+    (* Rule:
+      The width of a bitslice must be any non-negative,
+      symbolically evaluable integer expression (including zero).
     *)
     (* Begin Slice *)
     let rec annotate_slice s =
@@ -1437,7 +1437,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       in
       match s with
       | Slice_Single i ->
-          (* LRM R_GXKG:
+          (* Rule:
              The notation b[i] is syntactic sugar for b[i +: 1].
           *)
           annotate_slice (Slice_Length (i, one_expr)) |: TypingRule.Slice
@@ -1452,13 +1452,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let ses = SES.union ses_length ses_offset in
           (Slice_Length (offset', length'), ses |: TypingRule.Slice)
       | Slice_Range (j, i) ->
-          (* LRM R_GXKG:
+          (* Rule:
              The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
           *)
           let length = binop `SUB j i |> binop `ADD !$1 in
           annotate_slice (Slice_Length (i, length)) |: TypingRule.Slice
       | Slice_Star (factor, length) ->
-          (* LRM R_GXQG:
+          (* Rule:
              The notation b[i *: n] is syntactic sugar for b[i*n +: n]
           *)
           let offset = binop `MUL factor length in
@@ -1480,7 +1480,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | Pattern_Any li ->
         let new_li, sess = list_map_split (annotate_pattern ~loc env t) li in
         let ses =
-          (* They can't be conflicting because they are statically evaluable *)
+          (* They can't be conflicting because they are symbolically evaluable *)
           SES.unions sess
         in
         (Pattern_Any new_li |> here, ses) |: TypingRule.PAny
@@ -1544,7 +1544,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t_e1, e1', ses1 = annotate_symbolically_evaluable_expr env e1
         and t_e2, e2', ses2 = annotate_symbolically_evaluable_expr env e2 in
         let ses =
-          (* They can't be conflicting because they are statically evaluable *)
+          (* They can't be conflicting because they are symbolically evaluable *)
           SES.union ses1 ses2
         in
         let+ () =
@@ -1636,7 +1636,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         @@ Error.BadArity
              (Static, name, List.length func_sig.args, List.length args)
     in
-    (* Check that call parameters are statically evaluable and type-satisfy the
+    (* Check that call parameters are symbolically evaluable and type-satisfy the
        declaration parameters *)
     let () =
       (* CheckParamsTypeSat( *)
@@ -1996,10 +1996,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | E_Array _ -> fatal_from ~loc UnrespectedParserInvariant
     (* Begin ERecord *)
     | E_Record (ty, fields) ->
-        (* Rule WBCQ: The identifier in a record expression must be a named type
+        (* Rule: The identifier in a record expression must be a named type
            with the structure of a record type, and whose fields have the values
            given in the field_assignment_list.
-           Rule WZWC: The identifier in a exception expression must be a named
+           Rule: The identifier in a exception expression must be a named
            type with the structure of an exception type, and whose fields have
            the values given in the field_assignment_list.
         *)
@@ -2013,7 +2013,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_Exception fields | T_Record fields | T_Collection fields -> fields
           | _ -> conflict ~loc [ T_Record [] ] ty
         in
-        (* Rule DYQZ: A record expression shall assign every field of the record. *)
+        (* Rule: A record expression shall assign every field of the record. *)
         let () =
           if
             List.for_all
@@ -2077,7 +2077,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   fatal_from ~loc Error.EmptySlice
                 in
                 (* TODO: check that:
-                   - Rule SNQJ: An expression or subexpression which
+                   - Rule: An expression or subexpression which
                      may result in a zero-length bitvector must not be
                      side-effecting.
                 *)
@@ -2271,8 +2271,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin EPattern *)
     | E_Pattern (e1, pat) ->
         (*
-         Rule ZNDL states that
-
+         Rule:
          The IN operator is equivalent to testing its first operand for
          equality against each value in the (possibly infinite) set denoted
          by the second operand, and taking the logical OR of the result.
@@ -2807,7 +2806,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     match ldi with
     (* Begin LDVar *)
     | LDI_Var x ->
-        (* Rule LCFD: A ~local declaration shall not declare an identifier
+        (* Rule: A local declaration shall not declare an identifier
            which is already in scope at the point of declaration. *)
         let+ () = check_is_not_collection ~loc env ty in
         let+ () = check_var_not_in_env ~loc env x in
@@ -2917,9 +2916,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* End *)
     (* Begin SReturn *)
     | S_Return e_opt ->
-        (* Rule NYWH: A return statement appearing in a setter or procedure must
+        (* Rule: A return statement appearing in a setter or procedure must
            have no return value expression. *)
-        (* Rule PHNZ: A return statement appearing in a getter or function
+        (* Rule: A return statement appearing in a getter or function
            requires a return value expression that type-satisfies the return
            type of the subprogram. *)
         (match (env.local.return_type, e_opt) with
