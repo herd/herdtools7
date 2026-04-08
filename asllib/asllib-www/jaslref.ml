@@ -5,6 +5,8 @@ open Js_of_ocaml
 
 let dbg = false
 
+(* Some comment to test github action; will be removed *)
+
 (* Redirect OCaml’s stdout/stderr into the web page *)
 let install_channel_flushers () =
   let out s =
