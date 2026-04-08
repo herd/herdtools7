@@ -135,7 +135,7 @@ and module Value := I.Value
       type arch_global = string
       let pp_global loc =
         if Misc.tr_pte loc <> None then
-          sprintf "[%s]" (pp_symbol loc)
+          sprintf "%s" (pp_symbol loc)
         else loc
       let global_compare lhs rhs =
         (* Order `x` > `tag(x)` > `pte(x)` > `y`.

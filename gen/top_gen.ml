@@ -88,8 +88,6 @@ module Make (O:Config) (Comp:XXXCompile_gen.S) : Builder.S
     let pp = BellInfo.pp_scopes sc in
     { t with scopes = Some sc; info = ("Scopes",pp)::t.info; }
 
-  let do_add_info key v k = match v with "" -> k | _ -> (key,v)::k
-  let add_info t k i =  { t with info = do_add_info k i t.info; }
   let extract_edges {edges=es; _} = es
 
 (* Utilities *)
@@ -868,25 +866,16 @@ let max_set = IntSet.max_elt
   type t = state_atom list
 
   let dump_state_atom state =
-    let is_global = ( fun _ -> false ) in
+    let is_global = ( function A.Location.Location_global _ -> true | _ -> false ) in
     MiscParser.dump_state_atom
       is_global A.pp_location A.pp_initval state
 
     (* split the `state_atom list` to `state_atom list list`
        by grouping location for the same procedure *)
     let states_list states =
-      List.fold_left
-        ( fun (acc, prev_loc) (loc,v) ->
-          let new_acc = match prev_loc,loc with
-            | Some (A.Location.Location_reg (p1,_)),A.Location.Location_reg (p2,_) when p1 = p2 ->
-              begin match acc with
-                | [] -> assert false
-                | hd :: tail -> ((loc,v) :: hd) :: tail
-              end
-            | _ -> [(loc,v)] :: acc in
-          (new_acc, Some loc)
-        ) ([],None) states
-      |> fst
+      Misc.group_by_int
+      (function A.Location.Location_global _ -> None | A.Location.Location_reg (i,_) -> Some i)
+      states
 
     let dump_state states = DumpUtils.dump_state dump_state_atom (states_list states)
 
@@ -915,7 +904,7 @@ let max_set = IntSet.max_elt
           |> A.LocMap.to_seq |> List.of_seq
           (* give default 0 value *)
           |> List.map ( fun (loc, t) -> (loc, (typ_to_testtype t, A.S "0")) ) in
-      List.sort (fun (l, _) (r, _) -> A.location_compare r l) (type_inits @ extra_type_declaration)
+      List.sort (fun (l, _) (r, _) -> A.location_compare l r) (type_inits @ extra_type_declaration)
           |> List.filter_map ( fun (loc, (typ, value)) ->
               match typ,value with
               (* expand the array initial value from a single value `v` to
@@ -963,7 +952,7 @@ let max_set = IntSet.max_elt
       Name.name = t.name;
       Name.file = "";
       Name.texname = "";
-      Name.doc = t.com;
+      Name.doc = if O.metadata then t.com else "";
     } in
     let extra_data = match t.scopes with
       | None -> []
@@ -1020,25 +1009,61 @@ let tr_labs m init =
       | _ -> bd)
     init
 
-let do_self =  O.variant Variant_gen.Self
+let variant_info =
+    List.filter_map
+    ( fun t -> if O.variant t then Variant_gen.pp_herd_variant t else None)
+    Variant_gen.all_t
+    |> ( function
+      | [] -> None
+      | l -> Some ("Variant", StringSet.pp_id " " (StringSet.of_list l)) )
+let basic_info scope prefetch com_edges cycle_description =
+  let convert_to_option_pair key value =
+    match key,value with "",_ | _,"" -> None | _ -> Some(key, value) in
+  (* Some internal metadata might be empty, if the string value is "".
+     We covert to option type then filter_map *)
+  List.filter_map Fun.id
+    ( ( convert_to_option_pair "Generator" O.generator )
+    :: ( Option.map ( fun value -> ("Scopes", BellInfo.pp_scopes value) ) scope )
+    (* Prefetch surpress in instruction fetch, `ifetch`, test cases *)
+    :: ( if O.variant Variant_gen.Self then None else convert_to_option_pair "Prefetch" prefetch )
+    :: ( convert_to_option_pair "Com" com_edges )
+    :: ( convert_to_option_pair "Orig" cycle_description )
+    :: [] )
+
+(* Merge user specified `info` with internal defined `info`.
+  The key is case inssensitive. Yet the final output result will
+  capitalise the first letter. If there is overlap between `lhs`
+  and `rhs`. The value in the `rhs` will be concatenated to the one
+  in the `lhs` *)
+let merge_to_left lhs rhs =
+  let rec update_if_match list key value =
+    let key = String.capitalize_ascii key in
+    match list with
+    (* do not find, so append *)
+    | [] -> [(key,value)]
+    | (k,v) :: tail when String.capitalize_ascii k = key ->
+        (key, v ^ " " ^ value) :: tail
+    | kv :: tail -> kv :: update_if_match tail key value in
+  List.fold_left
+    ( fun lhs (k,v) -> update_if_match lhs k v )
+    lhs rhs
 
 let test_of_cycle name
   ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) es c =
   let com = match com with None -> E.pp_edges es | Some com -> com in
   let (init,prog,final,env,obs),(prf,coms) = compile_cycle check init c in
-  let archinfo = Comp.get_archinfo c in
   let m_labs = num_labels prog in
   let init = tr_labs m_labs init in
   let coms = String.concat " " coms in
+  (* We still print out `variant` and `archinfo` even when metadata is false *)
+  let mandatory_info =
+    match variant_info with
+    | None -> Comp.get_archinfo c
+    | Some variant -> variant :: Comp.get_archinfo c in
   let info =
-    let myinfo =
-      (if do_self then fun k -> k else do_add_info "Prefetch" prf)
-        (do_add_info "Com" coms (do_add_info "Orig" com [])) in
-    let myinfo = match scope with
-    | None -> myinfo
-    | Some st -> ("Scopes",BellInfo.pp_scopes st)::myinfo in
-    let myinfo = ("Generator",O.generator)::myinfo in
-    info@myinfo@archinfo in
+    if O.metadata then
+      merge_to_left ( mandatory_info @ (basic_info scope prf coms com) ) info
+    else mandatory_info in
 
   { name=name ; info=info; com=com ;  edges = es ;
     init=init ; prog=prog ; scopes = scope; final=final ; env=env; obs=obs}
