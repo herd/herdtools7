@@ -922,6 +922,43 @@ let check_cycle c =
 
   let tr_value e v = E.tr_value e.atom v
 
+  let sync_physical_address st n =
+    if do_kvm then n.evt <- { n.evt with pa=CoSt.get_physical_address st; }
+
+  let fresh_physical_address env next_value st n =
+    match n.evt.loc with
+    | Code.Data _ ->
+        let address = make_variable () in
+        (* Leave a small gap so remapped locations are easier to distinguish
+           from the original stream, even after a few +1 writes. *)
+        let next_value = next_value + 4 in
+        let env = (address,Value.from_int next_value)::env in
+        let st = CoSt.add_physical_address st (Code.Data address) next_value n in
+        env,next_value,st,address
+    | Code.Code _ -> Warn.fatal "Code location has no pte value."
+
+  let set_pte_write_val env next_value st n check_value =
+    let env = ref env
+    and next_value = ref next_value
+    and st = ref st in
+    let pte_val = CoSt.get_pte_value !st in
+    let pte_val =
+      E.set_pteval n.evt.atom pte_val
+        (* Callback used to initialize a new physical address.
+           It is only called when necessary, hence the `()` argument. *)
+        (fun () ->
+          let new_env,new_next_value,new_st,address =
+            fresh_physical_address !env !next_value !st n in
+          env := new_env ;
+          next_value := new_next_value ;
+          st := new_st ;
+          address) in
+    let check_fault = Value.need_check_fault n.evt.atom in
+    let st = CoSt.set_pte_value !st check_fault pte_val in
+    let v = Value.from_pte pte_val in
+    n.evt <- { n.evt with v; pa=CoSt.get_physical_address st; check_value } ;
+    !env,!next_value,st
+
   let set_write_val_ord st n =
     let st = CoSt.next_co st Ord in
     let v = CoSt.get_co st Ord in
@@ -980,7 +1017,7 @@ let check_cycle c =
                 if do_morello then None, st
                 else fault_update_without_rmw st in
               n.evt <- { n.evt with check_fault; check_value; };
-              if do_kvm then n.evt <- { n.evt with pa=CoSt.get_physical_address st; };
+              sync_physical_address st n ;
               (env, new_variable_value, st)
             | Pair ->
               (* Same code as for Ord, however notice that
@@ -991,7 +1028,7 @@ let check_cycle c =
               let st = CoSt.next_co st Ord in (* Pre-increment *)
               let st = set_write_val_ord st n in
               let check_fault, st = fault_update_without_rmw st in
-              if do_kvm then n.evt <- { n.evt with pa=CoSt.get_physical_address st; };
+              sync_physical_address st n ;
               n.evt <- { n.evt with check_fault; check_value; };
               (env, new_variable_value, st)
             | Tag ->
@@ -1027,39 +1064,7 @@ let check_cycle c =
                   | _ -> assert false in
               n.evt <- { n.evt with vecreg; cell; v; check_value; } ;
               (env, new_variable_value, st)
-            | Pte ->
-              (* Wrap the environment which might
-                 be updated in the `next_loc` function call. *)
-              let wrapped_env = ref env in
-              let wrapped_new_value = ref new_variable_value in
-              let wrapped_st = ref st in
-              (* get the previous `pte_value` *)
-              let pte_val = CoSt.get_pte_value st in
-              (* update the pte value in kvm variant *)
-              let pte_val =
-                let next_loc () =
-                  let open CoSt in
-                  match n.evt.loc with
-                  (* Pick a new variable for physical address change *)
-                  | Code.Data _ ->
-                    let new_address = make_variable () in
-                    let physical_address = Code.Data new_address in
-                    (* We always pick a value with `+4` gap for the new physical address,
-                       because it reduces the chance of value collision.
-                       That is, the value being read can distinguish the new physical address
-                       from the original one, taking into account that the values
-                       in both new and original address might change by +1 several times. *)
-                    wrapped_new_value := (!wrapped_new_value + 4);
-                    wrapped_env := ((new_address,Value.from_int !wrapped_new_value)::!wrapped_env);
-                    wrapped_st := CoSt.add_physical_address !wrapped_st physical_address !wrapped_new_value n;
-                    new_address
-                  | Code.Code _ -> Warn.fatal "Code location has no pte value." in
-                E.set_pteval n.evt.atom pte_val next_loc in
-              let check_fault = Value.need_check_fault n.evt.atom in
-              let st = CoSt.set_pte_value !wrapped_st check_fault pte_val in
-              let v = Value.from_pte pte_val in
-              n.evt <- { n.evt with v;  pa=CoSt.get_physical_address st; check_value } ;
-              (!wrapped_env, !wrapped_new_value, st)
+            | Pte -> set_pte_write_val env new_variable_value st n check_value
             end (* END of match bank *)
           | Code _ ->
             n.evt <- { n.evt with check_value; } ;
@@ -1201,14 +1206,14 @@ let do_set_read_v init =
             else if n.evt.rmw then CoSt.fault_update st W
             else CoSt.fault_update st R in
           n.evt <- { n.evt with check_fault };
-          if do_kvm then n.evt <- { n.evt with pa=CoSt.get_physical_address st; };
+          sync_physical_address st n ;
           st
         | Pair ->
           let st = CoSt.implicit_pte_update st R in
           set_read_pair_v n cell check_value;
           let check_fault, st = CoSt.fault_update st R in
           n.evt <- { n.evt with check_fault };
-          if do_kvm then n.evt <- { n.evt with pa=CoSt.get_physical_address st; };
+          sync_physical_address st n ;
           st
         | VecReg a ->
           let st = CoSt.implicit_pte_update st R in
