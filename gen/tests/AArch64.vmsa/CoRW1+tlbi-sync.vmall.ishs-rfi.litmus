@@ -2,7 +2,6 @@
 AArch64 CoRW1+tlbi-sync.vmall.ishs-rfi
 Variant=vmsa
 {
- [x]=1;
  0:X0=x;
 }
  P0             ;
@@ -10,7 +9,7 @@ Variant=vmsa
  DSB ISH        ;
  TLBI VMALLE1IS ;
  DSB ISH        ;
- MOV W2,#2      ;
+ MOV W2,#1      ;
  STR W2,[X0]    ;
 
-exists (0:X1=2)
+exists (0:X1=1)
