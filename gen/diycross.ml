@@ -37,9 +37,19 @@ module Make (Config:Config) (M:Builder.S) =
 
 (* ALL *)
     let parse_edges s =
-(*      let rs = parse_relaxs s in *)
-      let rs = M.R.expand_relax_macros (LexUtil.split s) in
-      List.fold_right (fun r k -> M.R.edges_of r :: k) rs []
+      let rs = String.trim s
+      |> (fun s -> Lexing.from_string s)
+      |> LexUtil.parse Parser.main
+      (* for backward compatibility,
+         convert each segment of `Seq` to `Choice`,
+         this means input segment `Po,DpAddr` is converted
+         to new syntax `Po|DpAddr` *)
+      |> ( function
+          | Ast.Seq seq -> Ast.Choice seq
+          | s -> s )
+      |> Ast.expand
+      |> List.map M.R.expand_relax_macros in
+      List.fold_right (fun r k -> M.R.edges_ofs r :: k) rs []
 
 
 
