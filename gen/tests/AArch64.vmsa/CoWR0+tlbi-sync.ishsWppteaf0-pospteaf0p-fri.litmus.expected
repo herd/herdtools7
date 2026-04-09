@@ -1,0 +1,11 @@
+Test CoWR0+tlbi-sync.ishsWppteaf0-pospteaf0p-fri Allowed
+States 2
+0:X4=0; Fault(P0:L01,x,D-MMU:AccessFlag); ~Fault(P0:L00,x);
+0:X4=1;  ~Fault(P0:L01,x); ~Fault(P0:L00,x);
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (0:X4=0 /\ not (fault(P0:L00,x)) /\ not (fault(P0:L01,x)))
+Observation CoWR0+tlbi-sync.ishsWppteaf0-pospteaf0p-fri Never 0 3
+Hash=b809c54a5fd3bda699da9a16f53dd490
+
