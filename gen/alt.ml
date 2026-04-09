@@ -231,10 +231,16 @@ struct
           else x
     let last_non_insert xs = hd_non_insert (List.rev xs)
 
-    let pair_ok safes po_safe xs ys =
+    (* Check whether relaxation list `xs` can precede relaxation list `ys`.
+       This uses the effective boundary edges of the two sequences,
+       ignoring insert/store pseudo-edges when necessary, and checks:
+       - whether the boundary edges are compatible via `Edge.can_precede`
+       - whether the mode-specific rule holds *)
+    let can_precede safes po_safe xs ys =
       let e1 = last_non_insert xs in
       let e2 = hd_non_insert ys in
-      match e1.edge,e2.edge with
+      C.E.can_precede e1 e2
+      && match e1.edge,e2.edge with
 (*
   First reject some of hb' ; hb'
  *)
@@ -279,22 +285,9 @@ module Make(C:Builder.S)
     | Ext -> false
     | UnspecCom -> assert false
 
-    let do_compat safes po_safe xs ys =
-      let x = FilterImpl.last_non_insert xs and y = FilterImpl.hd_non_insert ys in
-      let r =
-        C.E.can_precede x y
-        && FilterImpl.pair_ok safes po_safe xs ys in
-      if O.verbose > 2 then begin
-        eprintf "do_compat '%s' '%s' = %b\n"
-          (C.E.pp_edges xs)
-          (C.E.pp_edges ys) r
-      end ;
-      r
-
-
     let can_precede safes po_safe (_,xs) k = match k with
     | [] -> true
-    | (_,ys)::_ -> do_compat safes po_safe xs ys
+    | (_,ys)::_ -> FilterImpl.can_precede safes po_safe xs ys
 
     (* List.is_empty only supports for ocaml 5.1 afterwards *)
     let is_empty_list l = (l = [])
@@ -777,5 +770,5 @@ module Make(C:Builder.S)
       let safe,_,_ = parse_input ~relax ~safe ~reject:[] in
       let safe_set = C.R.Set.of_list safe in
       let po_safe = edges_ofs safe |> extract_po in
-      FilterImpl.pair_ok safe_set po_safe lhs rhs
+      FilterImpl.can_precede safe_set po_safe lhs rhs
   end
