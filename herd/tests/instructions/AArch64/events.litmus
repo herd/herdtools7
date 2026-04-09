@@ -1,0 +1,9 @@
+AArch64 test-wfe
+{}
+
+P0          ;
+WFE         ;
+SEV         ;
+SEVL        ;
+
+exists (true)

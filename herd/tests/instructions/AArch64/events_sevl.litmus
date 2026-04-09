@@ -1,0 +1,7 @@
+AArch64 test-sevl-basic
+{}
+
+P0    ;
+SEVL  ;
+
+exists (true)
