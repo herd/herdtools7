@@ -964,6 +964,37 @@ let check_cycle c =
   let sync_physical_address st n =
     if do_kvm then n.evt <- {n.evt with pa=CoSt.get_physical_address st;}
 
+  let fresh_physical_address init_env next_value st n =
+    match n.evt.loc with
+    | Code.Data _ ->
+        let address = make_variable () in
+        let next_value = next_value+4 in
+        let init_env = (address,Value.from_int next_value)::init_env in
+        let st =
+          CoSt.add_physical_address st (Code.Data address) next_value n in
+        init_env,next_value,st,address
+    | Code.Code _ -> Warn.fatal "Code location has no pte value."
+
+  let set_pte_write_val init_env next_value st n check_value =
+    let init_env = ref init_env
+    and next_value = ref next_value
+    and st = ref st in
+    let pte_val = CoSt.get_pte_value !st in
+    let pte_val =
+      E.set_pteval n.evt.atom pte_val
+        (fun () ->
+          let new_env,new_next_value,new_st,address =
+            fresh_physical_address !init_env !next_value !st n in
+          init_env := new_env;
+          next_value := new_next_value;
+          st := new_st;
+          address) in
+    let check_fault = Value.need_check_fault n.evt.atom in
+    let st = CoSt.set_pte_value !st check_fault pte_val in
+    let v = Value.from_pte pte_val in
+    n.evt <- {n.evt with v; pa=CoSt.get_physical_address st; check_value};
+    !init_env,!next_value,st
+
   let set_write_val_ord st n =
     let st = CoSt.next_co st Ord in
     let v = CoSt.get_co st Ord in
@@ -1093,28 +1124,10 @@ let check_cycle c =
         n.evt <- { n.evt with vecreg; cell; v; check_value; } ;
         (next_x_ok, st)
       | Data _,Some W,Pte ->
-        let st_ref = ref st in
-        let pte_val = CoSt.get_pte_value st in
-        let pte_val =
-          E.set_pteval n.evt.atom pte_val
-            (fun () ->
-              match n.evt.loc with
-              | Code.Data _ ->
-                  let address = make_variable () in
-                  next_value := !next_value+4;
-                  init_env :=
-                    (address,Value.from_int !next_value)::!init_env;
-                  st_ref :=
-                    CoSt.add_physical_address !st_ref (Code.Data address)
-                      !next_value n;
-                  address
-              | Code.Code _ ->
-                  Warn.fatal "Code location has no pte value.") in
-        let check_fault = Value.need_check_fault n.evt.atom in
-        let st = CoSt.set_pte_value !st_ref check_fault pte_val in
-        let v = Value.from_pte pte_val in
-        n.evt <-
-          { n.evt with v; pa=CoSt.get_physical_address st; check_value };
+        let new_env,new_next_value,st =
+          set_pte_write_val !init_env !next_value st n check_value in
+        init_env := new_env;
+        next_value := new_next_value;
         (next_x_ok,st)
       | Code _,Some W,Instr ->
         Warn.fatal "not letting instr write happen"
