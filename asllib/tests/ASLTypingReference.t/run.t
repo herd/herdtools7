@@ -180,6 +180,7 @@ ASL Typing Tests / annotating types:
   ASL Type error: constrained integer expected, provided integer.
   [1]
   $ aslref TypingRule.AnnotateSymbolicallyEvaluableExpr.asl
+  $ aslref --no-exec TypingRule.AnnotateSymbolicallyEvaluableExpr2.asl
   $ aslref --no-exec TypingRule.TEnumDecl.asl
   $ aslref --no-exec TypingRule.TEnumDecl.subtypes.asl
   $ aslref --no-exec TypingRule.TEnumDecl.bad.asl
