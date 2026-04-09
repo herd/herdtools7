@@ -2,7 +2,6 @@
 AArch64 CoRW1+pospptev1.dbm0-rfiptev1.dbm0p
 Variant=vmsa
 {
- [x]=1;
  [PTE(x)]=(oa:PA(x), dbm:1, valid:0);
  0:X0=x; 0:X2=PTE(x); 0:X3=(oa:PA(x));
 }
