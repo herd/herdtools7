@@ -61,8 +61,8 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
     let cons r rs = r (fun r -> r::rs)
 
-    let single f r = f (ERS [plain_edge r])
-    let seq rs f = f (ERS (List.map plain_edge rs))
+    let single f r = f [plain_edge r]
+    let seq rs f = f (List.map plain_edge rs)
 
     let do_ppo f k =
       let k = dp (single f) k in
@@ -88,9 +88,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
       do_ppo f
         (if ppoext then
           do_ppo
-            (fun r k -> match r with
-            | ERS rs -> f (ERS (rs@[plain_edge (Rf Ext)])) k
-            | PPO -> assert false)
+            (fun rs k -> f (rs@[plain_edge (Rf Ext)]) k)
             k
         else k)
 
