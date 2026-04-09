@@ -14,15 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-{
-let split s = Lexing.from_string s
-               |> LexUtil.parse Parser.main
-               |> ( function
-                 | Ast.One _ as a -> [a]
-                 | Ast.Seq l -> l
-                 | _ -> assert false )
-}
-
 let digit = [ '0'-'9' ]
 let num = digit+
 let hexa = ['0'-'9' 'a'-'f' 'A'-'F' ]
@@ -46,10 +37,8 @@ rule main add env = parse
        match v with
        | "Ok" -> true | "No" -> false
        | _ -> assert false in
-     let relaxs = split rem in
-     let safes = match safes with
-     | None -> []
-     | Some rem -> split rem in
+     let relaxs = rem in
+     let safes = safes in
      let cycle = match cycle with
      | None -> ""
      | Some cy -> cy in

@@ -22,7 +22,7 @@ module type DiyConfig = sig
   val choice : Code.check
   val variant : Variant_gen.t -> bool
   val prefix : string list
-  val cumul :   string Ast.t list Config.cumul
+  val cumul : string Config.cumul
   val max_ins : int
   val upto : bool
   val varatom : string list
@@ -32,23 +32,57 @@ module Make(C:Builder.S)(O:DiyConfig) = struct
 
 open C.E
 open C.R
-open Ast
 
-let parse_fence s k =  match s with
-  | One f -> C.E.parse_fence f::k
-  | Seq [] -> k
-  | Seq (fs) ->
-      List.fold_right
-        (fun s k ->
-          match s with
-          | One s -> C.E.parse_fence s::k
-          | _ -> assert false)
-        fs k
-  | Opt _ -> assert false
-  | Choice _ -> assert false
+  let parse_argument_ast input =
+    String.trim input |> parse_ast Parser.main_top_level_choice
 
-let parse_fences fs = List.fold_right parse_fence fs []
+  (* Parse the `-cumul` argument, which should be a list of individual fences. *)
+  let parse_fences input_fences =
+    let ast = String.trim input_fences |> parse_ast Parser.cumul in
+    (* Note that `parse_fence` might fail *)
+    let fences = Ast.bind ast ( fun input -> Ast.One(C.E.parse_fence input) )
+    |> Ast.expand in
+    (* Each expanded alternative must contain exactly one fence. *)
+    if List.for_all ( function [_] -> true | _ -> false ) fences then
+      List.flatten fences
+    else Warn.user_error "%s is not a list of fence" input_fences
 
+  let varatom_ess =
+    if C.A.bellatom then Misc.identity
+    else match O.varatom with
+    | [] -> Misc.identity
+    | ["all"] ->
+        let module Fold = struct
+          type atom = C.E.atom
+          let fold = C.E.fold_atomo
+        end in
+        let module V = VarAtomic.Make(C.E)(Fold) in
+        V.varatom_es
+    | atoms ->
+        let atoms = C.E.parse_atoms atoms in
+        let module Fold = struct
+          type atom = C.E.atom
+          let fold f k = C.E.fold_atomo_list atoms f k
+        end in
+        let module V = VarAtomic.Make(C.E)(Fold) in
+        V.varatom_es
+
+  (* Parse an input relaxation expression such as "[Po DpAddr] Fre".
+     In canonical form this is "[Po,DpAddr]|Fre": top-level whitespace denotes
+     a choice for backward compatibility. The result is
+     a list of unfolded relaxations, each wrapped in `ERS` and containing one
+     or more edges in sequence. *)
+  let parse_argument input_argument =
+    parse_argument_ast input_argument
+    |> parse_expand_relaxs ~ppo:C.ppo
+    |> List.map edges_of
+    |> varatom_ess
+    |> List.map ( fun edges -> ERS edges )
+    |> remove_invalid_relaxes
+
+  let parse_argument_list input_argument_list =
+    List.map parse_argument input_argument_list
+    |> List.flatten
 
   module AltConfig = struct
     include O
@@ -59,17 +93,18 @@ let parse_fences fs = List.fold_right parse_fence fs []
     let min_relax = !Config.min_relax
 
     let prefix =
-      List.map ( fun segment ->
-        String.trim segment
-        |> (fun s -> Lexing.from_string s)
-        |> LexUtil.parse Parser.main
-        |> Ast.expand
-      ) O.prefix
-      |> List.flatten
-      |> List.map C.R.parse_relaxs
-      |> ( function
-        | [] -> [[]]
-        | l -> l )
+      (* Parse each `-prefix` argument separately, then combine them as one
+         top-level choice. Thus `-prefix A -prefix B` is interpreted as
+         `-prefix [A|B]`. *)
+      let prefixes =
+        List.map parse_argument_ast O.prefix
+        |> fun prefixes -> Ast.Choice prefixes
+        |> parse_expand_relaxs ~ppo:C.ppo
+        (* Wrap each relax into a list *)
+        |> List.map (fun prefix -> [prefix]) in
+      match prefixes with
+      | [] -> [[]] (* No prefix <=> one empty prefix *)
+      | prefixes -> prefixes
 
     let variant = O.variant
 
@@ -88,66 +123,7 @@ let parse_fences fs = List.fold_right parse_fence fs []
 
   module M =  Alt.Make(C)(AltConfig)
 
-  let var_relax fold rs = function
-    | PPO as r -> r::rs
-    | ERS es ->
-        let ess = fold es in
-        List.fold_left
-          (fun k es -> ERS es::k) rs ess
-
-  let to_relax_list parsed_list =
-    eprintf "%s\n" (String.concat ";" parsed_list);
-    let relax_list = C.R.expand_relax_macros parsed_list
-                     |> C.R.remove_invalid_relaxes in
-    match C.A.bellatom, O.varatom with
-    | true, _
-    | false, [] -> relax_list
-    | false, ["all"] ->
-        let module Fold = struct
-          type atom = C.E.atom
-          let fold = C.E.fold_atomo
-        end in
-        let module V = VarAtomic.Make(C.E)(Fold) in
-        List.fold_left
-          (var_relax V.varatom_one) [] relax_list
-    | false, atoms ->
-        let atoms = C.E.parse_atoms atoms in
-        let module Fold = struct
-          type atom = C.E.atom
-          let fold f k = C.E.fold_atomo_list atoms f k
-        end in
-        let module V = VarAtomic.Make(C.E)(Fold) in
-        List.fold_left
-          (var_relax V.varatom_one) [] relax_list
-
-  (* Parse a string such as "[Po DpAddr] Fre"
-     which is "[Po,DpAddr]|Fre" in canonical form.
-     That is the top level white space become Choice.
-     The result is a list of relaxation that has been unfolded.
-     Each relaxation contains, wrapped in `ERS`,
-     one or several edges in sequence. *)
-  let parse_argument input_argument =
-    let input = String.trim input_argument in
-    if input = "" then []
-    else
-      Lexing.from_string input
-      |> LexUtil.parse Parser.main
-      (* Manually convert the top level to Choice *)
-      |> ( function
-        | Seq sq -> Choice sq
-        | ast -> ast
-      )
-      |> Ast.expand
-      |> List.map
-        ( fun flatten_relax ->
-          to_relax_list flatten_relax
-          |> C.R.edges_ofs
-          |> ( fun e -> C.R.ERS e ) )
-
   let gen lr ls rl n =
-    let lr = parse_argument lr
-    and ls = parse_argument ls
-    and rl = parse_argument rl in
     if O.verbose > 0 then begin
       Printf.eprintf
         "expanded relax=%s\n" (C.R.pp_relax_list lr)
@@ -169,27 +145,18 @@ let parse_fences fs = List.fold_right parse_fence fs []
        er (Fr Ext); er (Po (Same,Irr,Irr))] in
     M.gen ~relax:lr ~safe:ls n
 
-  let orl_opt = function
-    | None -> ""
-    | Some xs -> xs
-
   let go n (*size*) orl olr ols (*relax and safe lists*) =
-    let orl = orl_opt orl in
     match O.choice with
     | Default|Sc|Critical|Free|Ppo|Transitive|Total|MixedCheck ->
         begin match olr,ols with
-        | None,None -> M.gen n
-        | None,Some ls -> gen "" ls orl n
-        | Some lr,None -> gen lr "" orl n
-        | Some lr,Some ls -> gen lr ls orl n
+        | [],[] -> M.gen n
+        | _ -> gen olr ols orl n
         end
     | Thin -> gen_thin n
     | Uni ->
         begin match olr,ols with
-        | None,None -> gen_uni n
-        | None,Some ls -> gen "" ls orl n
-        | Some lr,None -> gen lr "" orl n
-        | Some lr,Some ls -> gen lr ls orl n
+        | [],[] -> gen_uni n
+        | _ -> gen olr ols orl n
         end
 end
 
@@ -217,11 +184,6 @@ let exec_conf s =
   ignore (Unix.execvp prog (Array.of_list (prog::conf@cmd))) ;
   ()
 
-let split_cands xs =
-  if xs = [] then None
-  else (Some (String.concat " " xs))
-
-
 let () =
   Arg.parse (Config.diy_spec ()) get_arg Config.usage_msg;
   begin
@@ -230,10 +192,6 @@ let () =
   | Some s -> exec_conf s
   end;
   Config.valid_stdout_flag false ;
-  let relax_list = split_cands !Config.relaxs
-  and safe_list = split_cands !Config.safes
-  and reject_list = !Config.rejects
-  and filter_list = split_cands !Config.filter_check in
 
   let cpp = match !Config.arch with `CPP -> true  |  _ -> false in
 
@@ -265,15 +223,7 @@ let () =
     let choice = !Config.mode
     let prefix = !Config.prefix
     let variant = !Config.variant
-    let cumul = match !Config.cumul with
-    | Empty -> Empty
-    | All -> All
-    | Set s -> Set ( Lexing.from_string s
-                     |> LexUtil.parse Parser.main
-                     |> ( function
-                       | Ast.One _ as a -> [a]
-                       | Ast.Seq l -> l
-                       | _ -> assert false ) )
+    let cumul = !Config.cumul
     let upto = !Config.upto
     let varatom = !varatom
     let max_ins = !Config.max_ins
@@ -335,34 +285,41 @@ let () =
   let module Builder = (val builder : Builder.S) in
   let module M = Make(Builder)(Co) in
   try
-    match filter_list with
-    | Some filter_list ->
-        begin
-        match M.parse_argument filter_list with
-        | [lhs;rhs] ->
-            let lhs_unfold = Builder.R.expand_relaxs Builder.ppo [lhs] in
-            let rhs_unfold = Builder.R.expand_relaxs Builder.ppo [rhs] in
-            let relax = Option.value ~default:"" relax_list |> M.parse_argument in
-            let safe = Option.value ~default:"" safe_list |> M.parse_argument in
-            List.map ( fun l ->
-              List.map ( fun r ->
-                l,r,M.M.filter_check ~relax ~safe (Builder.R.edges_of l) (Builder.R.edges_of r)
-              ) rhs_unfold
-            ) lhs_unfold
-            |> List.flatten
-            |> List.iter ( fun (l, r, result) ->
-                printf "Sequence `%s` `%s` %s the internal filter in mode `%s`\n"
-                (Builder.R.pp_relax l) (Builder.R.pp_relax r)
-                ( if result then "passes" else "is prohibited in" )
-                ( Code.pp_check Co.choice )
-
-            )
-        | _ -> Warn.user_error "Please input exactly two relaxations"
-        end
-    | None -> (* The common path to generate tests *)
-       M.go !Config.size reject_list relax_list safe_list;
+    (* Parse inputs `relax` `safe` and `reject` *)
+    let r_nempty = Misc.consp !Config.relaxs in
+    let relax = M.parse_argument_list !Config.relaxs in
+    (* If the user supplied the `relax` argument,
+       raise an error when none expand to usable relaxations. *)
+    if Misc.nilp relax then if r_nempty then begin
+      Warn.fatal "relaxations provided in relaxlist could not be used to generate cycles"
+    end ;
+    let safe = M.parse_argument_list !Config.safes in
+    let reject = match !Config.rejects with
+            | None -> []
+            | Some r -> M.parse_argument r in
+    match !Config.filter_check with
+    | [lhs;rhs] ->
+        let lhs_unfold = M.parse_argument lhs in
+        let rhs_unfold = M.parse_argument rhs in
+        List.map ( fun l ->
+          List.map ( fun r ->
+            l,r,M.M.filter_check ~relax ~safe (Builder.R.edges_of l) (Builder.R.edges_of r)
+          ) rhs_unfold
+        ) lhs_unfold
+        |> List.flatten
+        |> List.iter ( fun (l, r, result) ->
+            printf "Sequence `%s` `%s` %s the internal filter in mode `%s`\n"
+            (Builder.R.pp_relax l) (Builder.R.pp_relax r)
+            ( if result then "passes" else "is prohibited in" )
+            ( Code.pp_check Co.choice )
+        )
+    | _ -> (* The common path to generate tests *)
+      M.go !Config.size reject relax safe;
     exit 0
   with
-  | Misc.Fatal msg | Misc.UserError msg->
+  | Misc.Fatal msg ->
     eprintf "%s: Fatal error: %s\n" Config.prog msg ;
+    exit 2
+  | Misc.UserError msg->
+    eprintf "%s: %s\n" Config.prog msg ;
     exit 2
