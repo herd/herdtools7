@@ -249,3 +249,305 @@ C-forall
   }
   
   forall (true /\ ([y]=1 /\ ([x]=2 /\ (1:r0=1 \/ 1:r0=0) \/ [x]=1 /\ (1:r0=1 \/ 1:r0=0))))
+valid-cycle-with-duplicate-annotations
+  $ diyone7 -arch AArch64 PodWR A A Fre PodWR Fre
+  AArch64 SB+po+popa
+  Generator=diyone7 (version 7.58+1)
+  Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+  Com=Fr Fr
+  Orig=PodWRPA FreAP PodWR Fre
+  "PodWRPA FreAP PodWR Fre"
+  {
+   0:X1=x; 0:X2=y;
+   1:X1=x; 1:X2=y;
+  }
+   P0           | P1          ;
+   MOV W0,#1    | MOV W0,#1   ;
+   STR W0,[X1]  | STR W0,[X2] ;
+   LDAR W3,[X2] | LDR W3,[X1] ;
+  
+  exists (0:X3=0 /\ 1:X3=0)
+  $ diyone7 -arch AArch64 PodWR A A A Fre PodWR Fre
+  AArch64 SB+po+popa
+  Generator=diyone7 (version 7.58+1)
+  Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+  Com=Fr Fr
+  Orig=PodWRPA FreAP PodWR Fre
+  "PodWRPA FreAP PodWR Fre"
+  {
+   0:X1=x; 0:X2=y;
+   1:X1=x; 1:X2=y;
+  }
+   P0           | P1          ;
+   MOV W0,#1    | MOV W0,#1   ;
+   STR W0,[X1]  | STR W0,[X2] ;
+   LDAR W3,[X2] | LDR W3,[X1] ;
+  
+  exists (0:X3=0 /\ 1:X3=0)
+C-neg-exists
+  $ diyone7 -arch C FencedWW Rfe DpAddrdW Coe
+  Warning: optimised conditions are not supported by C arch
+  C S+fencesc+addr
+  "FenceScdWW Rfe DpAddrdW Coe"
+  Generator=diyone7 (version 7.58+1)
+  Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+  Com=Rf Co
+  Orig=FenceScdWW Rfe DpAddrdW Coe
+  
+  {}
+  
+  P0 (volatile int* y,volatile int* x) {
+    *x = 2;
+    atomic_thread_fence(memory_order_seq_cst);
+    *y = 1;
+  }
+  
+  P1 (volatile int* y,volatile int* x) {
+    int r0 = *y;
+    *(x + (r0 & 128)) = 1;
+  }
+  
+  exists ([x]=2 /\ 1:r0=1)
+C-forall
+  $ diyone7 -arch C FencedWW Sc Rfe Acq PodRW Coe -cond unicond
+  Warning: optimised conditions are not supported by C arch
+  C S+fencescnasc+poacqna
+  "FenceScdWWNaSc RfeScAcq PodRWAcqNa Coe"
+  Generator=diyone7 (version 7.58+1)
+  Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
+  Com=Rf Co
+  Orig=FenceScdWWNaSc RfeScAcq PodRWAcqNa Coe
+  
+  {}
+  
+  P0 (atomic_int* y,volatile int* x) {
+    *x = 2;
+    atomic_thread_fence(memory_order_seq_cst);
+    atomic_store_explicit(y,1,memory_order_seq_cst);
+  }
+  
+  P1 (atomic_int* y,volatile int* x) {
+    int r0 = atomic_load_explicit(y,memory_order_acquire);
+    *x = 1;
+  }
+  
+  forall (true /\ ([y]=1 /\ ([x]=2 /\ (1:r0=1 \/ 1:r0=0) \/ [x]=1 /\ (1:r0=1 \/ 1:r0=0))))
+valid-cycle-with-p-annotation
+  $ diyone7 -arch AArch64 PodWR P Fre PodWR Fre
+  AArch64 SB
+  Generator=diyone7 (version 7.58+1)
+  Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+  Com=Fr Fr
+  Orig=PodWR Fre PodWR Fre
+  "PodWR Fre PodWR Fre"
+  {
+   0:X1=x; 0:X2=y;
+   1:X1=x; 1:X2=y;
+  }
+   P0          | P1          ;
+   MOV W0,#1   | MOV W0,#1   ;
+   STR W0,[X1] | STR W0,[X2] ;
+   LDR W3,[X2] | LDR W3,[X1] ;
+  
+  exists (0:X3=0 /\ 1:X3=0)
+valid-cycle-with-wraparound-annotation
+  $ diyone7 -arch AArch64 L PodWR Fre PodWR Fre
+  AArch64 SB+po+polp
+  Generator=diyone7 (version 7.58+1)
+  Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+  Com=Fr Fr
+  Orig=PodWRLP Fre PodWR FrePL
+  "PodWRLP Fre PodWR FrePL"
+  {
+   0:X1=x; 0:X2=y;
+   1:X1=x; 1:X2=y;
+  }
+   P0           | P1          ;
+   MOV W0,#1    | MOV W0,#1   ;
+   STLR W0,[X1] | STR W0,[X2] ;
+   LDR W3,[X2]  | LDR W3,[X1] ;
+  
+  exists (0:X3=0 /\ 1:X3=0)
+valid-cycle-with-duplicate-wraparound-annotations
+  $ diyone7 -arch AArch64 L L PodWR Fre PodWR Fre
+  AArch64 SB+po+polp
+  Generator=diyone7 (version 7.58+1)
+  Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+  Com=Fr Fr
+  Orig=PodWRLP Fre PodWR FrePL
+  "PodWRLP Fre PodWR FrePL"
+  {
+   0:X1=x; 0:X2=y;
+   1:X1=x; 1:X2=y;
+  }
+   P0           | P1          ;
+   MOV W0,#1    | MOV W0,#1   ;
+   STLR W0,[X1] | STR W0,[X2] ;
+   LDR W3,[X2]  | LDR W3,[X1] ;
+  
+  exists (0:X3=0 /\ 1:X3=0)
+invalid-cycle-with-wraparound-mismatch
+  $ diyone7 -arch AArch64 L PodWR Fre PodWR Fre A
+  diyone7: Fatal error: Annotations mismatch between A L.
+  [2]
+valid-cycle-with-duplicate-annotations
+  $ diyone7 -arch AArch64 PodWR A A Fre PodWR Fre
+  AArch64 SB+po+popa
+  Generator=diyone7 (version 7.58+1)
+  Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+  Com=Fr Fr
+  Orig=PodWRPA FreAP PodWR Fre
+  "PodWRPA FreAP PodWR Fre"
+  {
+   0:X1=x; 0:X2=y;
+   1:X1=x; 1:X2=y;
+  }
+   P0           | P1          ;
+   MOV W0,#1    | MOV W0,#1   ;
+   STR W0,[X1]  | STR W0,[X2] ;
+   LDAR W3,[X2] | LDR W3,[X1] ;
+  
+  exists (0:X3=0 /\ 1:X3=0)
+  $ diyone7 -arch AArch64 PodWR A A A Fre PodWR Fre
+  AArch64 SB+po+popa
+  Generator=diyone7 (version 7.58+1)
+  Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+  Com=Fr Fr
+  Orig=PodWRPA FreAP PodWR Fre
+  "PodWRPA FreAP PodWR Fre"
+  {
+   0:X1=x; 0:X2=y;
+   1:X1=x; 1:X2=y;
+  }
+   P0           | P1          ;
+   MOV W0,#1    | MOV W0,#1   ;
+   STR W0,[X1]  | STR W0,[X2] ;
+   LDAR W3,[X2] | LDR W3,[X1] ;
+  
+  exists (0:X3=0 /\ 1:X3=0)
+invalid-cycle-with-incorrect-annotations
+  $ diyone7 -arch AArch64 PodWR A L Fre PodWR Fre
+  diyone7: Fatal error: Annotations mismatch between A L.
+  [2]
+  $ diyone7 -arch AArch64 PodWR L A Fre PodWR Fre
+  diyone7: Fatal error: Annotations mismatch between L A.
+  [2]
+  $ diyone7 -arch AArch64 PodWR L Fre PodWR Fre
+  diyone7: Fatal error: Test SB+po+popl [PodWRPL FreLP PodWR Fre] failed:
+  annotation mismatch on edge FreLP, annotation 'L' on R
+  [2]
+  $ diyone7 -arch AArch64 PodWR A L A Fre PodWR Fre
+  diyone7: Fatal error: Invalid extra annotation L
+  [2]
+valid-cycle-with-annotations-and-insert
+  $ diyone7 -arch AArch64 PodWR A ISB P A DMB.SY Fre PodWR Fre
+  AArch64 SB+po+popa-[isb]-[dmb.sy]
+  Generator=diyone7 (version 7.58+1)
+  Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+  Com=Fr Fr
+  Orig=PodWRPA ISB DMB.SY FreAP PodWR Fre
+  "PodWRPA ISB DMB.SY FreAP PodWR Fre"
+  {
+   0:X1=x; 0:X2=y;
+   1:X1=x; 1:X2=y;
+  }
+   P0           | P1          ;
+   MOV W0,#1    | MOV W0,#1   ;
+   STR W0,[X1]  | STR W0,[X2] ;
+   ISB          | LDR W3,[X1] ;
+   DMB SY       |             ;
+   LDAR W3,[X2] |             ;
+  
+  exists (0:X3=0 /\ 1:X3=0)
+valid-cycle-with-annotation-after-insert
+  $ diyone7 -arch AArch64 PodWR ISB A Fre PodWR Fre
+  AArch64 SB+po+popa-[isb]
+  Generator=diyone7 (version 7.58+1)
+  Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+  Com=Fr Fr
+  Orig=PodWRPA ISB FreAP PodWR Fre
+  "PodWRPA ISB FreAP PodWR Fre"
+  {
+   0:X1=x; 0:X2=y;
+   1:X1=x; 1:X2=y;
+  }
+   P0           | P1          ;
+   MOV W0,#1    | MOV W0,#1   ;
+   STR W0,[X1]  | STR W0,[X2] ;
+   ISB          | LDR W3,[X1] ;
+   LDAR W3,[X2] |             ;
+  
+  exists (0:X3=0 /\ 1:X3=0)
+valid-cycle-with-duplicate-annotations-around-insert
+  $ diyone7 -arch AArch64 PodWR A ISB A Fre PodWR Fre
+  AArch64 SB+po+popa-[isb]
+  Generator=diyone7 (version 7.58+1)
+  Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+  Com=Fr Fr
+  Orig=PodWRPA ISB FreAP PodWR Fre
+  "PodWRPA ISB FreAP PodWR Fre"
+  {
+   0:X1=x; 0:X2=y;
+   1:X1=x; 1:X2=y;
+  }
+   P0           | P1          ;
+   MOV W0,#1    | MOV W0,#1   ;
+   STR W0,[X1]  | STR W0,[X2] ;
+   ISB          | LDR W3,[X1] ;
+   LDAR W3,[X2] |             ;
+  
+  exists (0:X3=0 /\ 1:X3=0)
+invalid-cycle-with-annotation-and-insert
+  $ diyone7 -arch AArch64 PodWR A ISB P L A DMB.SY Fre PodWR Fre
+  diyone7: Fatal error: Invalid extra annotation L
+  [2]
+invalid-cycle-with-mismatch-around-insert
+  $ diyone7 -arch AArch64 PodWR L ISB A Fre PodWR Fre
+  diyone7: Fatal error: Annotations mismatch between L A.
+  [2]
+valid-cycle-with-annotations-and-store
+  $ diyone7 -arch AArch64 L Store PodWR Fre PodWR Fre
+  AArch64 SB+po+store-polp
+  Generator=diyone7 (version 7.58+1)
+  Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+  Com=Fr Fr
+  Orig=Store PodWRLP Fre PodWR FrePL
+  "Store PodWRLP Fre PodWR FrePL"
+  {
+   0:X1=x; 0:X2=y;
+   1:X1=x; 1:X2=y;
+  }
+   P0           | P1          ;
+   MOV W4,#1    | MOV W0,#1   ;
+   STR W4,[X1]  | STR W0,[X2] ;
+   MOV W0,#2    | LDR W3,[X1] ;
+   STLR W0,[X1] |             ;
+   LDR W3,[X2]  |             ;
+  
+  exists ([x]=2 /\ 0:X3=0 /\ 1:X3=0)
+invalid-cycle-with-annotations-and-store
+  $ diyone7 -arch AArch64 A Store PodWR Fre PodWR Fre
+  diyone7: Fatal error: Test SB+po+store-poap [Store PodWRAP Fre PodWR FrePA] failed:
+  annotation mismatch on edge PodWRAP, annotation 'A' on W
+  [2]
+valid-cycle-with-duplicate-wraparound-annotations-and-insert-store
+  $ diyone7 -arch AArch64 L L Store PodWR ISB A A Fre PodWR Fre
+  AArch64 SB+po+store-pola-[isb]
+  Generator=diyone7 (version 7.58+1)
+  Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
+  Com=Fr Fr
+  Orig=Store PodWRLA ISB FreAP PodWR FrePL
+  "Store PodWRLA ISB FreAP PodWR FrePL"
+  {
+   0:X1=x; 0:X2=y;
+   1:X1=x; 1:X2=y;
+  }
+   P0           | P1          ;
+   MOV W4,#1    | MOV W0,#1   ;
+   STR W4,[X1]  | STR W0,[X2] ;
+   MOV W0,#2    | LDR W3,[X1] ;
+   STLR W0,[X1] |             ;
+   ISB          |             ;
+   LDAR W3,[X2] |             ;
+  
+  exists ([x]=2 /\ 0:X3=0 /\ 1:X3=0)
