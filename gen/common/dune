@@ -1,5 +1,8 @@
 (ocamllex lexUtil)
 
+(menhir
+ (modules parser))
+
 (rule
  (copy ../../Version.ml Version.ml))
 

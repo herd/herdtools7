@@ -15,49 +15,62 @@
 (****************************************************************************)
 
 {
-
-exception Error of string
-let error msg = raise (Error msg)
-
-type t =
-  | One of string
-  | Seq of string list
-
-let pp = function
-| One s -> Printf.sprintf "One(%s)" s
-| Seq ss ->
-  Printf.sprintf "Seq(%s)" (String.concat "," ss)
+open Parser
+exception Eof
+(* Track whether the current scope has already seen an operand.
+   Whitespace after an operand is treated as a sequence separator. *)
+let has_previous_relaxation = ref [false]
+let push t stack = stack := (t :: !stack)
+let pop stack = match !stack with
+      | [] -> Warn.fatal "error in has_previous_relaxation in lexer.\n"
+      | hd :: tail -> stack := tail; hd
+let peak stack = match !stack with
+      | [] -> Warn.fatal "error in has_previous_relaxation in lexer.\n"
+      | hd :: _ -> hd
+let modify t stack = match !stack with
+      | [] -> Warn.fatal "error in has_previous_relaxation in lexer.\n"
+      | _ :: tail -> stack := t :: tail
 }
-let blank = [','' ''\t''\n''\r']
-let not_blank = [^','' ''\t''\n''\r' '[' ']']
 
-rule main = parse
-| eof { [] }
-| '['
-{
- let seq = pseq lexbuf in
- Seq seq::main lexbuf
+let blank = [' ''\t''\n''\r']
+let relexation = ['A'-'Z' 'a'-'z' '0'-'9' '-' '.' '*']+
+
+rule token = parse
+| eof { EOF }
+(* - operands consumes necessary blanks
+   - `[....]` create a seperate scope
+     hence a separate `has_previous_relaxation`. *)
+| '[' blank* { push false has_previous_relaxation; LEFT_SQUIRE }
+| blank* ']' {
+  ignore (pop has_previous_relaxation);
+  modify true has_previous_relaxation;
+  RIGHT_SQUIRE
 }
-| blank+ { main lexbuf }
-| not_blank+ as lxm { One lxm :: main lexbuf }
-| "" { error "main" }
-
-and pseq = parse
-| eof { failwith "] missing" }
-| ']' { [] }
-| blank+ { pseq lexbuf }
-| not_blank+ as lxm { lxm :: pseq lexbuf }
-| "" { error "pseq" }
-
-and just_split = parse
-| eof { [] }
-| blank+ { just_split lexbuf }
-| not_blank+ as lxm { lxm :: just_split lexbuf }
-| "" { error "just_split" }
+| blank* '?' { OPTION }
+| blank* ',' blank* { COMMA }
+| blank* '|' blank* { CHOICE_BAR }
+| (relexation as lxm) {
+  modify true has_previous_relaxation;
+  RELAXATION lxm
+}
+| blank+ {
+  if peak has_previous_relaxation then COMMA
+  else token lexbuf
+}
 {
 
-
-let split s = main (Lexing.from_string s)
-let just_split s = just_split (Lexing.from_string s)
+(* The lexer keeps per-parse scope state to decide when whitespace should be
+   treated as a separator. Reset that state for each new parse, and restore the
+   previous value afterwards so nested or repeated parses do not interfere. *)
+let parse parser lexbuf =
+  let saved_state = !has_previous_relaxation in
+  has_previous_relaxation := [false];
+  try
+    let result = parser token lexbuf in
+    has_previous_relaxation := saved_state;
+    result
+  with exn ->
+    has_previous_relaxation := saved_state;
+    raise exn
 
 }
