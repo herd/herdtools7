@@ -420,6 +420,19 @@ Valid cycles with duplicate annotations
    LDAR W3,[X2] | LDR W3,[X1] ;
   
   exists (0:X3=0 /\ 1:X3=0)
+An invalid `diyone7` input that expands to several cycles
+  $ diyone7 -arch AArch64 'PodWR|Fre'
+  diyone7: Fatal error: `diyone7` only accepts exactly one input cycle.
+  [2]
+  $ diyone7 -arch AArch64 '[PodWR|Fre]'
+  diyone7: Fatal error: `diyone7` only accepts exactly one input cycle.
+  [2]
+  $ diyone7 -arch AArch64 'PodWR?'
+  diyone7: Fatal error: `diyone7` only accepts exactly one input cycle.
+  [2]
+  $ diyone7 -arch AArch64 'PodWR|[Fre,PodWR]'
+  diyone7: Fatal error: `diyone7` only accepts exactly one input cycle.
+  [2]
 Invalid cycles with incorrect annotations
   $ diyone7 -arch AArch64 L PodWR Fre PodWR Fre A
   diyone7: Fatal error: Annotations mismatch between A L.
@@ -548,3 +561,45 @@ A valid cycle with duplicate wraparound annotations plus insert and store edges
    LDAR W3,[X2] |             ;
   
   exists ([x]=2 /\ 0:X3=0 /\ 1:X3=0)
+
+Alignment filter behaviour between local `Pos**` and internal communication in `diy7` in `default` mode
+  $ diy7 -arch AArch64 -filter-check Rfi DpAddrdW
+  Sequence `Rfi` `DpAddrdW` passes the internal filter in mode `default`
+  $ diy7 -arch AArch64 -filter-check PosWR DpAddrdW
+  Sequence `PosWR` `DpAddrdW` passes the internal filter in mode `default`
+  $ diy7 -arch AArch64 -filter-check DpAddrdR Fri
+  Sequence `DpAddrdR` `Fri` passes the internal filter in mode `default`
+  $ diy7 -arch AArch64 -filter-check DpAddrdR PosRW
+  Sequence `DpAddrdR` `PosRW` passes the internal filter in mode `default`
+  $ diy7 -arch AArch64 -filter-check DpAddrdW Coi
+  Sequence `DpAddrdW` `Coi` passes the internal filter in mode `default`
+  $ diy7 -arch AArch64 -filter-check DpAddrdW PosWW
+  Sequence `DpAddrdW` `PosWW` passes the internal filter in mode `default`
+
+Alignment filter behaviour between local `Pos**` and internal communication in `diy7` in `free` mode
+  $ diy7 -arch AArch64 -mode free -filter-check Rfi DpAddrdW
+  Sequence `Rfi` `DpAddrdW` passes the internal filter in mode `free`
+  $ diy7 -arch AArch64 -mode free -filter-check PosWR DpAddrdW
+  Sequence `PosWR` `DpAddrdW` passes the internal filter in mode `free`
+  $ diy7 -arch AArch64 -mode free -filter-check DpAddrdR Fri
+  Sequence `DpAddrdR` `Fri` passes the internal filter in mode `free`
+  $ diy7 -arch AArch64 -mode free -filter-check DpAddrdR PosRW
+  Sequence `DpAddrdR` `PosRW` passes the internal filter in mode `free`
+  $ diy7 -arch AArch64 -mode free -filter-check DpAddrdW Coi
+  Sequence `DpAddrdW` `Coi` passes the internal filter in mode `free`
+  $ diy7 -arch AArch64 -mode free -filter-check DpAddrdW PosWW
+  Sequence `DpAddrdW` `PosWW` passes the internal filter in mode `free`
+
+Alignment filter behaviour between local `Pos**` and internal communication in `diy7` in `sc` mode
+  $ diy7 -arch AArch64 -mode sc -filter-check Rfi DpAddrdW
+  Sequence `Rfi` `DpAddrdW` passes the internal filter in mode `sc`
+  $ diy7 -arch AArch64 -mode sc -filter-check PosWR DpAddrdW
+  Sequence `PosWR` `DpAddrdW` passes the internal filter in mode `sc`
+  $ diy7 -arch AArch64 -mode sc -filter-check DpAddrdR Fri
+  Sequence `DpAddrdR` `Fri` passes the internal filter in mode `sc`
+  $ diy7 -arch AArch64 -mode sc -filter-check DpAddrdR PosRW
+  Sequence `DpAddrdR` `PosRW` passes the internal filter in mode `sc`
+  $ diy7 -arch AArch64 -mode sc -filter-check DpAddrdW Coi
+  Sequence `DpAddrdW` `Coi` passes the internal filter in mode `sc`
+  $ diy7 -arch AArch64 -mode sc -filter-check DpAddrdW PosWW
+  Sequence `DpAddrdW` `PosWW` passes the internal filter in mode `sc`
