@@ -5,6 +5,15 @@ type 'prim t =
   | Seq of 'prim t list
   | Choice of 'prim t list
 
+let rec bind func ast =
+  let bind_func = bind func in
+  match ast with
+  | One s -> func s
+  | Opt opt -> Opt (bind_func opt)
+  | Seq ss -> Seq (List.map bind_func ss)
+  | Choice ss -> Choice (List.map bind_func ss)
+  | Multi ss -> Multi (bind_func ss)
+
 let rec pp pp_prim ast =
   let pp_with_prim = pp pp_prim in
   match ast with
@@ -31,6 +40,16 @@ let rec to_list = function
   | Seq l | Choice l -> l
   | Multi multi -> [ multi ]
 
+(* Legacy `diy7` parsing interprets a plain top-level sequence as a choice for
+   backward compatibility. If the top-level sequence already mixes in an
+   explicit `Choice`, keep the sequence structure so that `A|B,C` means
+   `(A|B),C` rather than `A|B|C`. *)
+let seq_as_choice = function
+  | Seq seq as ast when List.exists (function Choice _ -> true | _ -> false) seq
+    -> ast
+  | Seq seq -> Choice seq
+  | ast -> ast
+
 let rec flatten t =
   let result = match t with
   | One str -> [[str]]
@@ -43,4 +62,3 @@ let rec flatten t =
     ) [[]] seq
   | Choice choice -> List.map flatten choice |> List.flatten in
   result
-
