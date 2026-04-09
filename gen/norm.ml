@@ -73,7 +73,14 @@ module Make(Co:Config)(F:Fence.S)(A:Atom.S) = struct
     try
       let rs =
         relaxs
-        |> Util.List.concat_map LexUtil.split
+        |> String.concat " "
+        |> ( fun s -> Lexing.from_string s )
+        |> LexUtil.parse Parser.main
+        |> Ast.expand
+        |> ( function
+          | [x] -> x
+          | _ ->
+            Warn.user_error "`norm7` only accepts exactly one input cycle" )
         |> List.map R.parse_relax
       in
       let es = Util.List.concat_map R.edges_of rs in
