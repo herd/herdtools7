@@ -1,0 +1,13 @@
+Test CoWR0+tlbi-sync.ishsWpteoapteaf0-pospteaf0p-frippteoa Allowed
+States 3
+0:X4=0;  ~Fault(P0:L00,x);
+0:X4=0; Fault(P0:L00,x,D-MMU:AccessFlag);
+0:X4=4;  ~Fault(P0:L00,x);
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Flag requires-BBM
+Condition exists (0:X4=0 /\ not (fault(P0:L00,x)))
+Observation CoWR0+tlbi-sync.ishsWpteoapteaf0-pospteaf0p-frippteoa Sometimes 1 3
+Hash=408f69dff405b472e1c2609978da2346
+
