@@ -1,4 +1,4 @@
-metadata-false
+A test for no metadata, `-metadata false`
   $ diyone7 -arch AArch64 -variant vmsa PteOA PosWW PteOA PteV1 PteAF0 PosWR PteHA Fri -oneloc -metadata false
   AArch64 CoWR0+posWpteoapteoa.v1.af0-pospteoa.v1.af0pteha-friptehapteoa
   Variant=vmsa
@@ -15,8 +15,8 @@ metadata-false
    L00: LDR W4,[X3] ;
   
   exists (fault(P0:L00,x))
-vmsa-neg-exists
-  $ diyone7 -arch AArch64 -variant kvm Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -neg true -info "User-define=User-define"
+A VMSA test for a negated exists check, `-neg true`
+  $ diyone7 -arch AArch64 -variant vmsa Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -neg true -info "User-define=User-define"
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0
   Variant=vmsa
   TTHM=HD
@@ -45,8 +45,8 @@ vmsa-neg-exists
    STR X4,[X3]         |                  ;
   
   ~exists ([x]=3 /\ 0:X1=2 /\ 1:X1=(oa:PA(x), af:0) /\ not (fault(P0:L01,x)) /\ not (fault(P1:L00,x)))
-vmsa-forall
-  $ diyone7 -arch AArch64 -variant kvm Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -info "User-define=User-define" -cond observe
+A VMSA test for observing locations, `-cond observe`
+  $ diyone7 -arch AArch64 -variant vmsa Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -info "User-define=User-define" -cond observe
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0
   Variant=vmsa
   TTHM=HD
@@ -76,8 +76,8 @@ vmsa-forall
   
   locations [x; 0:X1; 1:X1; fault(P0:L01,x); fault(P1:L00,x);]
   forall (true)
-vmsa-location
-  $ diyone7 -arch AArch64 -variant kvm Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -info "User-define=User-define" -cond unicond
+A VMSA test for a forall check, `-cond unicond`
+  $ diyone7 -arch AArch64 -variant vmsa Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -info "User-define=User-define" -cond unicond
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0
   Variant=vmsa
   TTHM=HD
@@ -106,7 +106,7 @@ vmsa-location
    STR X4,[X3]         |                  ;
   
   forall (not (fault(P0:L01,x)) /\ not (fault(P1:L00,x)) /\ ([y]=(oa:PA(x), af:0) /\ (0:X1=2 /\ ([x]=3 /\ (1:X1=(oa:PA(x), af:0) \/ 1:X1=0)) \/ 0:X1=0 /\ (1:X1=(oa:PA(x), af:0) /\ ([x]=3 \/ [x]=2) \/ 1:X1=0 /\ ([x]=3 \/ [x]=2)))))
-memtag
+A memtag generation test with `Variant` duplicated in metadata, because of (1) `-info "Variant=memtag"` and (2) automatically generated `Variant=memtag`
   $ diyone7 -arch AArch64 -variant memtag DpDatadW T PosWW T Rfe PodRW Rfe T -info "Variant=memtag"
   AArch64 LB+po+dataWtt-postt
   Variant=memtag memtag
@@ -128,7 +128,7 @@ memtag
    STG X6,[X3]       |                  ;
   
   exists ([tag(y)]=:blue /\ 0:X0=x:green /\ 1:X0=0 /\ not (fault(P1:L00,y)))
-ifetch
+An ifetch generation test
   $ diyone7 -arch AArch64 -variant ifetch CacheSyncStrongIsbdWRPI FreIP PodWR Fre
   AArch64 SB+cachesyncstrongisbpi+po
   Variant=ifetch
@@ -154,7 +154,7 @@ ifetch
    MOV W2,#1       |             ;
   
   exists (0:X2=1 /\ 1:X2=0)
-base-int64-and-array
+A base test with int64 arrays
   $ diyone7 -arch AArch64 -type int64_t X PodWW Coe PodWR Pa Fre
   AArch64 R+poxp+poppa
   Generator=diyone7 (version 7.58+1)
@@ -178,7 +178,7 @@ base-int64-and-array
    STR X4,[X5]     |                ;
   
   exists (x={1,0} /\ [y]=2 /\ 0:X2=0 /\ 1:X2=0)
-C-exists
+A C test for exists
   $ diyone7 -arch C PodWW Coe PodWR Fre
   Warning: optimised conditions are not supported by C arch
   C R
@@ -201,7 +201,7 @@ C-exists
   }
   
   exists ([y]=2 /\ 1:r0=0)
-C-neg-exists
+A C test for negated exists
   $ diyone7 -arch C FencedWW Rfe DpAddrdW Coe
   Warning: optimised conditions are not supported by C arch
   C S+fencesc+addr
@@ -225,7 +225,7 @@ C-neg-exists
   }
   
   exists ([x]=2 /\ 1:r0=1)
-C-forall
+A C test for forall
   $ diyone7 -arch C FencedWW Sc Rfe Acq PodRW Coe -cond unicond
   Warning: optimised conditions are not supported by C arch
   C S+fencescnasc+poacqna
@@ -249,7 +249,7 @@ C-forall
   }
   
   forall (true /\ ([y]=1 /\ ([x]=2 /\ (1:r0=1 \/ 1:r0=0) \/ [x]=1 /\ (1:r0=1 \/ 1:r0=0))))
-valid-cycle-with-duplicate-annotations
+A valid cycle with duplicate annotations
   $ diyone7 -arch AArch64 PodWR A A Fre PodWR Fre
   AArch64 SB+po+popa
   Generator=diyone7 (version 7.58+1)
@@ -284,7 +284,7 @@ valid-cycle-with-duplicate-annotations
    LDAR W3,[X2] | LDR W3,[X1] ;
   
   exists (0:X3=0 /\ 1:X3=0)
-C-neg-exists
+A C test for negated exists
   $ diyone7 -arch C FencedWW Rfe DpAddrdW Coe
   Warning: optimised conditions are not supported by C arch
   C S+fencesc+addr
@@ -308,7 +308,7 @@ C-neg-exists
   }
   
   exists ([x]=2 /\ 1:r0=1)
-C-forall
+A repeated C test for forall
   $ diyone7 -arch C FencedWW Sc Rfe Acq PodRW Coe -cond unicond
   Warning: optimised conditions are not supported by C arch
   C S+fencescnasc+poacqna
@@ -332,7 +332,7 @@ C-forall
   }
   
   forall (true /\ ([y]=1 /\ ([x]=2 /\ (1:r0=1 \/ 1:r0=0) \/ [x]=1 /\ (1:r0=1 \/ 1:r0=0))))
-valid-cycle-with-p-annotation
+A valid cycle with a default annotation, `P`
   $ diyone7 -arch AArch64 PodWR P Fre PodWR Fre
   AArch64 SB
   Generator=diyone7 (version 7.58+1)
@@ -350,7 +350,7 @@ valid-cycle-with-p-annotation
    LDR W3,[X2] | LDR W3,[X1] ;
   
   exists (0:X3=0 /\ 1:X3=0)
-valid-cycle-with-wraparound-annotation
+A valid cycle with the annotation `L`
   $ diyone7 -arch AArch64 L PodWR Fre PodWR Fre
   AArch64 SB+po+polp
   Generator=diyone7 (version 7.58+1)
@@ -368,7 +368,7 @@ valid-cycle-with-wraparound-annotation
    LDR W3,[X2]  | LDR W3,[X1] ;
   
   exists (0:X3=0 /\ 1:X3=0)
-valid-cycle-with-duplicate-wraparound-annotations
+Valid cycles with duplicate annotations
   $ diyone7 -arch AArch64 L L PodWR Fre PodWR Fre
   AArch64 SB+po+polp
   Generator=diyone7 (version 7.58+1)
@@ -386,11 +386,6 @@ valid-cycle-with-duplicate-wraparound-annotations
    LDR W3,[X2]  | LDR W3,[X1] ;
   
   exists (0:X3=0 /\ 1:X3=0)
-invalid-cycle-with-wraparound-mismatch
-  $ diyone7 -arch AArch64 L PodWR Fre PodWR Fre A
-  diyone7: Fatal error: Annotations mismatch between A L.
-  [2]
-valid-cycle-with-duplicate-annotations
   $ diyone7 -arch AArch64 PodWR A A Fre PodWR Fre
   AArch64 SB+po+popa
   Generator=diyone7 (version 7.58+1)
@@ -425,7 +420,10 @@ valid-cycle-with-duplicate-annotations
    LDAR W3,[X2] | LDR W3,[X1] ;
   
   exists (0:X3=0 /\ 1:X3=0)
-invalid-cycle-with-incorrect-annotations
+Invalid cycles with incorrect annotations
+  $ diyone7 -arch AArch64 L PodWR Fre PodWR Fre A
+  diyone7: Fatal error: Annotations mismatch between A L.
+  [2]
   $ diyone7 -arch AArch64 PodWR A L Fre PodWR Fre
   diyone7: Fatal error: Annotations mismatch between A L.
   [2]
@@ -439,7 +437,7 @@ invalid-cycle-with-incorrect-annotations
   $ diyone7 -arch AArch64 PodWR A L A Fre PodWR Fre
   diyone7: Fatal error: Invalid extra annotation L
   [2]
-valid-cycle-with-annotations-and-insert
+A valid cycle with annotations and insert edges
   $ diyone7 -arch AArch64 PodWR A ISB P A DMB.SY Fre PodWR Fre
   AArch64 SB+po+popa-[isb]-[dmb.sy]
   Generator=diyone7 (version 7.58+1)
@@ -459,7 +457,7 @@ valid-cycle-with-annotations-and-insert
    LDAR W3,[X2] |             ;
   
   exists (0:X3=0 /\ 1:X3=0)
-valid-cycle-with-annotation-after-insert
+A valid cycle with an annotation after an insert edge
   $ diyone7 -arch AArch64 PodWR ISB A Fre PodWR Fre
   AArch64 SB+po+popa-[isb]
   Generator=diyone7 (version 7.58+1)
@@ -478,7 +476,7 @@ valid-cycle-with-annotation-after-insert
    LDAR W3,[X2] |             ;
   
   exists (0:X3=0 /\ 1:X3=0)
-valid-cycle-with-duplicate-annotations-around-insert
+A valid cycle with duplicate annotations around an insert edge
   $ diyone7 -arch AArch64 PodWR A ISB A Fre PodWR Fre
   AArch64 SB+po+popa-[isb]
   Generator=diyone7 (version 7.58+1)
@@ -497,15 +495,14 @@ valid-cycle-with-duplicate-annotations-around-insert
    LDAR W3,[X2] |             ;
   
   exists (0:X3=0 /\ 1:X3=0)
-invalid-cycle-with-annotation-and-insert
+Invalid cycles with annotations and insert edges
   $ diyone7 -arch AArch64 PodWR A ISB P L A DMB.SY Fre PodWR Fre
   diyone7: Fatal error: Invalid extra annotation L
   [2]
-invalid-cycle-with-mismatch-around-insert
   $ diyone7 -arch AArch64 PodWR L ISB A Fre PodWR Fre
   diyone7: Fatal error: Annotations mismatch between L A.
   [2]
-valid-cycle-with-annotations-and-store
+A valid cycle with annotations and a store edge
   $ diyone7 -arch AArch64 L Store PodWR Fre PodWR Fre
   AArch64 SB+po+store-polp
   Generator=diyone7 (version 7.58+1)
@@ -525,12 +522,12 @@ valid-cycle-with-annotations-and-store
    LDR W3,[X2]  |             ;
   
   exists ([x]=2 /\ 0:X3=0 /\ 1:X3=0)
-invalid-cycle-with-annotations-and-store
+An invalid cycle with annotations and a store edge
   $ diyone7 -arch AArch64 A Store PodWR Fre PodWR Fre
   diyone7: Fatal error: Test SB+po+store-poap [Store PodWRAP Fre PodWR FrePA] failed:
   annotation mismatch on edge PodWRAP, annotation 'A' on W
   [2]
-valid-cycle-with-duplicate-wraparound-annotations-and-insert-store
+A valid cycle with duplicate wraparound annotations plus insert and store edges
   $ diyone7 -arch AArch64 L L Store PodWR ISB A A Fre PodWR Fre
   AArch64 SB+po+store-pola-[isb]
   Generator=diyone7 (version 7.58+1)
