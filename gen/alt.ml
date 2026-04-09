@@ -266,8 +266,6 @@ module Make(C:Builder.S)
 
     =
   struct
-    let mixed = Variant_gen.is_mixed O.variant
-    let do_kvm = Variant_gen.is_kvm  O.variant
     module D = DumpAll.Make(O) (C)
     module FilterImpl = Filter(C)(O)
     module RelaxSet = C.R.Set
@@ -281,26 +279,11 @@ module Make(C:Builder.S)
     | Ext -> false
     | UnspecCom -> assert false
 
-    let check_mixed =
-      if mixed then
-        fun e1 e2 -> match  e1.edge,e2.edge with
-        | Id,Id -> false
-        | (_,Id)|(Id,_) -> true
-        | _,_ -> false
-      else fun _ _ -> true
-
     let do_compat safes po_safe xs ys =
-      let x = Misc.last xs and y = List.hd ys in
+      let x = FilterImpl.last_non_insert xs and y = FilterImpl.hd_non_insert ys in
       let r =
         C.E.can_precede x y
-        && check_mixed x y
-        && FilterImpl.pair_ok safes po_safe xs ys
-        &&
-          begin
-            if do_kvm then
-              C.E.can_precede (FilterImpl.hd_non_insert xs) (FilterImpl.last_non_insert ys)
-            else true
-          end in
+        && FilterImpl.pair_ok safes po_safe xs ys in
       if O.verbose > 2 then begin
         eprintf "do_compat '%s' '%s' = %b\n"
           (C.E.pp_edges xs)
@@ -311,14 +294,7 @@ module Make(C:Builder.S)
 
     let can_precede safes po_safe (_,xs) k = match k with
     | [] -> true
-    | (_,ys)::_ ->
-        do_compat safes po_safe xs ys &&
-        begin match k with
-        | (_,[{edge=Id;_}])::(_,y::_)::_ when mixed ->
-            let x = Misc.last xs in
-            C.E.can_precede x y
-        | _ -> true
-        end
+    | (_,ys)::_ -> do_compat safes po_safe xs ys
 
     (* List.is_empty only supports for ocaml 5.1 afterwards *)
     let is_empty_list l = (l = [])
