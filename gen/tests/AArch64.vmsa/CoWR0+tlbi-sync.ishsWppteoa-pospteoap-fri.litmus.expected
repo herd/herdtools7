@@ -1,0 +1,11 @@
+Test CoWR0+tlbi-sync.ishsWppteoa-pospteoap-fri Allowed
+States 2
+0:X4=1; [y]=4;
+0:X4=4; [y]=4;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists ([y]=4 /\ 0:X4=0)
+Observation CoWR0+tlbi-sync.ishsWppteoa-pospteoap-fri Never 0 3
+Hash=2074da46cc227bb713fda2c9e2566390
+
