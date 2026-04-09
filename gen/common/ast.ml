@@ -63,4 +63,3 @@ let rec expand t =
     ) [[]] seq
   | Choice choice -> List.map expand choice |> List.flatten in
   result
-
