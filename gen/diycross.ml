@@ -27,32 +27,14 @@ module Make (Config:Config) (M:Builder.S) =
     open M.E
 
     let gen ess kont r =
-      Misc.fold_cross ess
-        (fun es r ->
-          let es = List.flatten es in
+      List.fold_left
+        (fun r es ->
           kont es D.no_info D.no_name D.no_scope r)
-        r
+        r ess
 
     open Code
 
 (* ALL *)
-    let parse_edges s =
-      let rs = String.trim s
-      |> (fun s -> Lexing.from_string s)
-      |> LexUtil.parse Parser.main
-      (* for backward compatibility,
-         convert each segment of `Seq` to `Choice`,
-         this means input segment `Po,DpAddr` is converted
-         to new syntax `Po|DpAddr` *)
-      |> ( function
-          | Ast.Seq seq -> Ast.Choice seq
-          | s -> s )
-      |> Ast.expand
-      |> List.map M.R.expand_relax_macros in
-      List.fold_right (fun r k -> M.R.edges_ofs r :: k) rs []
-
-
-
     let varatom_ess =
       if M.A.bellatom then Misc.identity
       else match Config.varatom with
@@ -63,7 +45,7 @@ module Make (Config:Config) (M:Builder.S) =
             let fold = M.E.fold_atomo
           end in
           let module V = VarAtomic.Make(M.E)(Fold)  in
-          List.map V.varatom_es
+          V.varatom_es
       | atoms ->
           let atoms = M.E.parse_atoms atoms in
           let module Fold = struct
@@ -71,17 +53,22 @@ module Make (Config:Config) (M:Builder.S) =
             let fold f k = M.E.fold_atomo_list atoms f k
           end in
           let module V = VarAtomic.Make(M.E)(Fold)  in
-          List.map V.varatom_es
+          V.varatom_es
 
-    let expand_edge es = M.E.expand_edges es Misc.cons
-    let expand_edges ess =
-      List.flatten (List.map (fun e -> expand_edge e []) ess)
+    let parse_edges input =
+      (* Each command-line argument in `input` denotes one segment of the
+         `diycross` cycle. Parse those arguments separately, then rebuild one
+         top-level `Seq` before expansion. For example, `diycross7 A 'B|C' D` is
+         treated as `A,(B|C),D`. *)
+      List.map (M.R.parse_ast Parser.main_top_level_choice) input
+      |> fun e -> Ast.Seq e
+      |> M.R.parse_expand_relaxs ~ppo:M.ppo
+      |> List.map M.R.edges_of
+      |> varatom_ess
 
     let zyva pp_rs =
       try
-        let ess = List.map parse_edges pp_rs in
-        let ess = List.map expand_edges ess in
-        let ess = varatom_ess ess in
+        let ess = parse_edges pp_rs in
         D.all (gen ess)
       with Misc.Fatal msg ->
         eprintf "Fatal error: %s\n" msg ;
@@ -93,7 +80,9 @@ let pp_es = ref []
 let () =
   Util.parse_cmdline
     (Config.diycross_spec ())
-    (fun x -> pp_es := x :: !pp_es);
+    (fun x ->
+      let segment = String.trim x in
+      if segment <> "" then pp_es := segment :: !pp_es);
   Config.valid_stdout_flag false
 
 let pp_es = List.rev !pp_es
