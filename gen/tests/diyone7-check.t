@@ -4,17 +4,17 @@ A test for no metadata, `-metadata false`
   Variant=vmsa
   TTHM=HA
   {
-   [x]=1;
    [PTE(x)]=(oa:PA(x), af:0, valid:0);
-   [y]=5;
-   0:X0=PTE(x); 0:X1=(oa:PA(y), af:0, valid:0); 0:X2=(oa:PA(y)); 0:X3=x;
+   [y]=4;
+   [z]=8;
+   0:X0=PTE(x); 0:X1=(oa:PA(y), af:0, valid:0); 0:X2=(oa:PA(z)); 0:X3=x;
   }
    P0               ;
    STR X1,[X0]      ;
    STR X2,[X0]      ;
    L00: LDR W4,[X3] ;
   
-  exists (fault(P0:L00,x))
+  exists ([y]=4 /\ [z]=8 /\ 0:X4=0 /\ fault(P0:L00,x))
 A VMSA test for a negated exists check, `-neg true`
   $ diyone7 -arch AArch64 -variant vmsa Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -neg true -info "User-define=User-define"
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0
@@ -27,16 +27,15 @@ A VMSA test for a negated exists check, `-neg true`
   User-define=User-define
   "Amo.Cas TLBI-sync.ISHdWWPPteOA.V1.AF0 RfePteOA.V1.AF0Pte PodRWPtePteHD RfePteHDP"
   {
-   [x]=1;
    [PTE(x)]=(oa:PA(x), db:0, dbm:1);
-   [y]=5;
    [PTE(y)]=(oa:PA(y), valid:0);
-   0:X0=x; 0:X3=PTE(y); 0:X4=(oa:PA(x), af:0);
+   [z]=4;
+   0:X0=x; 0:X3=PTE(y); 0:X4=(oa:PA(z), af:0);
    1:X0=x; pteval_t 1:X1=0; 1:X3=PTE(y);
   }
    P0                  | P1               ;
-   MOV W1,#2           | LDR X1,[X3]      ;
-   MOV W2,#3           | MOV W2,#2        ;
+   MOV W1,#1           | LDR X1,[X3]      ;
+   MOV W2,#2           | MOV W2,#1        ;
    L01: CAS W1,W2,[X0] | L00: STR W2,[X0] ;
    DSB ISH             |                  ;
    LSR X5,X0,#12       |                  ;
@@ -44,7 +43,7 @@ A VMSA test for a negated exists check, `-neg true`
    DSB ISH             |                  ;
    STR X4,[X3]         |                  ;
   
-  ~exists ([x]=3 /\ 0:X1=2 /\ 1:X1=(oa:PA(x), af:0) /\ not (fault(P0:L01,x)) /\ not (fault(P1:L00,x)))
+  ~exists ([x]=2 /\ [z]=4 /\ 0:X1=1 /\ 1:X1=(oa:PA(z), af:0) /\ not (fault(P0:L01,x)) /\ not (fault(P1:L00,x)))
 A VMSA test for observing locations, `-cond observe`
   $ diyone7 -arch AArch64 -variant vmsa Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -info "User-define=User-define" -cond observe
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0
@@ -57,16 +56,15 @@ A VMSA test for observing locations, `-cond observe`
   User-define=User-define
   "Amo.Cas TLBI-sync.ISHdWWPPteOA.V1.AF0 RfePteOA.V1.AF0Pte PodRWPtePteHD RfePteHDP"
   {
-   [x]=1;
    [PTE(x)]=(oa:PA(x), db:0, dbm:1);
-   [y]=5;
    [PTE(y)]=(oa:PA(y), valid:0);
-   0:X0=x; 0:X3=PTE(y); 0:X4=(oa:PA(x), af:0);
+   [z]=4;
+   0:X0=x; 0:X3=PTE(y); 0:X4=(oa:PA(z), af:0);
    1:X0=x; pteval_t 1:X1=0; 1:X3=PTE(y);
   }
    P0                  | P1               ;
-   MOV W1,#2           | LDR X1,[X3]      ;
-   MOV W2,#3           | MOV W2,#2        ;
+   MOV W1,#1           | LDR X1,[X3]      ;
+   MOV W2,#2           | MOV W2,#1        ;
    L01: CAS W1,W2,[X0] | L00: STR W2,[X0] ;
    DSB ISH             |                  ;
    LSR X5,X0,#12       |                  ;
@@ -74,7 +72,7 @@ A VMSA test for observing locations, `-cond observe`
    DSB ISH             |                  ;
    STR X4,[X3]         |                  ;
   
-  locations [x; 0:X1; 1:X1; fault(P0:L01,x); fault(P1:L00,x);]
+  locations [x; z; 0:X1; 1:X1; fault(P0:L01,x); fault(P1:L00,x);]
   forall (true)
 A VMSA test for a forall check, `-cond unicond`
   $ diyone7 -arch AArch64 -variant vmsa Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -info "User-define=User-define" -cond unicond
@@ -88,16 +86,15 @@ A VMSA test for a forall check, `-cond unicond`
   User-define=User-define
   "Amo.Cas TLBI-sync.ISHdWWPPteOA.V1.AF0 RfePteOA.V1.AF0Pte PodRWPtePteHD RfePteHDP"
   {
-   [x]=1;
    [PTE(x)]=(oa:PA(x), db:0, dbm:1);
-   [y]=5;
    [PTE(y)]=(oa:PA(y), valid:0);
-   0:X0=x; 0:X3=PTE(y); 0:X4=(oa:PA(x), af:0);
+   [z]=4;
+   0:X0=x; 0:X3=PTE(y); 0:X4=(oa:PA(z), af:0);
    1:X0=x; pteval_t 1:X1=0; 1:X3=PTE(y);
   }
    P0                  | P1               ;
-   MOV W1,#2           | LDR X1,[X3]      ;
-   MOV W2,#3           | MOV W2,#2        ;
+   MOV W1,#1           | LDR X1,[X3]      ;
+   MOV W2,#2           | MOV W2,#1        ;
    L01: CAS W1,W2,[X0] | L00: STR W2,[X0] ;
    DSB ISH             |                  ;
    LSR X5,X0,#12       |                  ;
@@ -105,7 +102,7 @@ A VMSA test for a forall check, `-cond unicond`
    DSB ISH             |                  ;
    STR X4,[X3]         |                  ;
   
-  forall (not (fault(P0:L01,x)) /\ not (fault(P1:L00,x)) /\ ([y]=(oa:PA(x), af:0) /\ (0:X1=2 /\ ([x]=3 /\ (1:X1=(oa:PA(x), af:0) \/ 1:X1=0)) \/ 0:X1=0 /\ (1:X1=(oa:PA(x), af:0) /\ ([x]=3 \/ [x]=2) \/ 1:X1=0 /\ ([x]=3 \/ [x]=2)))))
+  forall (not (fault(P0:L01,x)) /\ not (fault(P1:L00,x)) /\ ([y]=(oa:PA(z), af:0) /\ (0:X1=1 /\ ([x]=2 /\ (1:X1=(oa:PA(z), af:0) \/ 1:X1=0)) \/ 0:X1=0 /\ (1:X1=(oa:PA(z), af:0) /\ ([x]=2 \/ [x]=1) \/ 1:X1=0 /\ ([x]=2 \/ [x]=1)))))
 A memtag generation test with `Variant` duplicated in metadata, because of (1) `-info "Variant=memtag"` and (2) automatically generated `Variant=memtag`
   $ diyone7 -arch AArch64 -variant memtag DpDatadW T PosWW T Rfe PodRW Rfe T -info "Variant=memtag"
   AArch64 LB+po+dataWtt-postt

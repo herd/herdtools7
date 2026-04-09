@@ -67,7 +67,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
            (String.concat "," (List.map pp_v (Array.to_list t)))
 
     let pp_coherence cos0 =
-      eprintf "COHERENCE: " ;
+      eprintf "COHERENCE (from physical addresses to ordered lists of pairs of values and observable processes):\n" ;
       Misc.pp_list stderr ""
         (fun chan (x,vs) ->
           fprintf chan "<%s:%a>" x
