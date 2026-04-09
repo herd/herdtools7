@@ -10,4 +10,4 @@ Variant=vmsa
  L00: LDR W1,[X0] ;
  STR X3,[X2]      ;
 
-exists (fault(P0:L00,x))
+exists (0:X1=5 /\ fault(P0:L00,x))

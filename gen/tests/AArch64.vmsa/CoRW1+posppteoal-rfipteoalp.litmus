@@ -10,4 +10,4 @@ Variant=vmsa
  LDR W1,[X0]  ;
  STLR X3,[X2] ;
 
-exists (true)
+exists (0:X1=5)
