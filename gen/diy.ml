@@ -34,6 +34,16 @@ open C.E
 open C.R
 open Ast
 
+  let parse_input_ast input =
+    String.trim input |> parse_ast
+
+  (* For backward compatibility, plain top-level sequences such as
+     `-safe "DpAddr DpCtrl"` are treated as a choice. If an explicit top-level
+     choice is already present, keep the sequence structure so that
+     `A|B,C` means `(A|B),C`. *)
+  let parse_argument_ast input =
+    parse_input_ast input |> Ast.seq_as_choice
+
 let parse_fence s k =  match s with
   | One f -> C.E.parse_fence f::k
   | Seq [] -> k
@@ -50,6 +60,39 @@ let parse_fence s k =  match s with
 
 let parse_fences fs = List.fold_right parse_fence fs []
 
+  let varatom_ess =
+    if C.A.bellatom then Misc.identity
+    else match O.varatom with
+    | [] -> Misc.identity
+    | ["all"] ->
+        let module Fold = struct
+          type atom = C.E.atom
+          let fold = C.E.fold_atomo
+        end in
+        let module V = VarAtomic.Make(C.E)(Fold) in
+        V.varatom_es
+    | atoms ->
+        let atoms = C.E.parse_atoms atoms in
+        let module Fold = struct
+          type atom = C.E.atom
+          let fold f k = C.E.fold_atomo_list atoms f k
+        end in
+        let module V = VarAtomic.Make(C.E)(Fold) in
+        V.varatom_es
+
+  (* Parse an input relaxation expression such as "[Po DpAddr] Fre".
+     In canonical form this is "[Po,DpAddr]|Fre": top-level whitespace denotes
+     a choice for backward compatibility. If an explicit top-level choice is
+     present, an explicit comma still keeps a sequence together. The result is
+     a list of unfolded relaxations, each wrapped in `ERS` and containing one
+     or more edges in sequence. *)
+  let parse_argument input_argument =
+    parse_argument_ast input_argument
+    |> parse_expand_relaxs ~ppo:C.ppo
+    |> List.map edges_of
+    |> varatom_ess
+    |> List.map ( fun edges -> ERS edges )
+    |> remove_invalid_relaxes
 
   module AltConfig = struct
     include O
@@ -61,16 +104,15 @@ let parse_fences fs = List.fold_right parse_fence fs []
 
     let prefix =
       List.map ( fun segment ->
-        String.trim segment
-        |> (fun s -> Lexing.from_string s)
-        |> LexUtil.parse Parser.main
-        |> Ast.flatten
+        parse_input_ast segment
       ) O.prefix
-      |> List.flatten
-      |> List.map C.R.parse_relaxs
+      |> fun e -> Ast.Choice e
+      |> parse_expand_relaxs ~ppo:C.ppo
+      |> List.map (fun l -> [l])
       |> ( function
-        | [] -> [[]]
-        | l -> l )
+        | [] -> [[]] (* No prefix <=> one empty prefix *)
+        | pss -> pss
+      )
 
     let variant = O.variant
 
@@ -89,66 +131,13 @@ let parse_fences fs = List.fold_right parse_fence fs []
 
   module M =  Alt.Make(C)(AltConfig)
 
-  let var_relax fold rs = function
-    | PPO as r -> r::rs
-    | ERS es ->
-        let ess = fold es in
-        List.fold_left
-          (fun k es -> ERS es::k) rs ess
-
-  let to_relax_list parsed_list =
-    eprintf "%s\n" (String.concat ";" parsed_list);
-    let relax_list = C.R.expand_relax_macros parsed_list
-                     |> C.R.remove_invalid_relaxes in
-    match C.A.bellatom, O.varatom with
-    | true, _
-    | false, [] -> relax_list
-    | false, ["all"] ->
-        let module Fold = struct
-          type atom = C.E.atom
-          let fold = C.E.fold_atomo
-        end in
-        let module V = VarAtomic.Make(C.E)(Fold) in
-        List.fold_left
-          (var_relax V.varatom_one) [] relax_list
-    | false, atoms ->
-        let atoms = C.E.parse_atoms atoms in
-        let module Fold = struct
-          type atom = C.E.atom
-          let fold f k = C.E.fold_atomo_list atoms f k
-        end in
-        let module V = VarAtomic.Make(C.E)(Fold) in
-        List.fold_left
-          (var_relax V.varatom_one) [] relax_list
-
-  (* Parse a string such as "[Po DpAddr] Fre"
-     which is "[Po,DpAddr]|Fre" in canonical form.
-     That is the top level white space become Choice.
-     The result is a list of relaxation that has been unfolded.
-     Each relaxation contains, wrapped in `ERS`,
-     one or several edges in sequence. *)
-  let parse_argument input_argument =
-    let input = String.trim input_argument in
-    if input = "" then []
-    else
-      Lexing.from_string input
-      |> LexUtil.parse Parser.main
-      (* Manually convert the top level to Choice *)
-      |> ( function
-        | Seq sq -> Choice sq
-        | ast -> ast
-      )
-      |> Ast.flatten
-      |> List.map
-        ( fun flatten_relax ->
-          to_relax_list flatten_relax
-          |> C.R.edges_ofs
-          |> ( fun e -> C.R.ERS e ) )
-
   let gen lr ls rl n =
-    let lr = parse_argument lr
-    and ls = parse_argument ls
-    and rl = parse_argument rl in
+    let parse_argument_opt argument =
+      Option.map parse_argument argument
+      |> Option.value ~default:[] in
+    let lr = parse_argument_opt lr
+    and ls = parse_argument_opt ls
+    and rl = parse_argument_opt rl in
     if O.verbose > 0 then begin
       Printf.eprintf
         "expanded relax=%s\n" (C.R.pp_relax_list lr)
@@ -170,27 +159,18 @@ let parse_fences fs = List.fold_right parse_fence fs []
        er (Fr Ext); er (Po (Same,Irr,Irr))] in
     M.gen ~relax:lr ~safe:ls n
 
-  let orl_opt = function
-    | None -> ""
-    | Some xs -> xs
-
   let go n (*size*) orl olr ols (*relax and safe lists*) =
-    let orl = orl_opt orl in
     match O.choice with
     | Default|Sc|Critical|Free|Ppo|Transitive|Total|MixedCheck ->
         begin match olr,ols with
         | None,None -> M.gen n
-        | None,Some ls -> gen "" ls orl n
-        | Some lr,None -> gen lr "" orl n
-        | Some lr,Some ls -> gen lr ls orl n
+        | _ -> gen olr ols orl n
         end
     | Thin -> gen_thin n
     | Uni ->
         begin match olr,ols with
         | None,None -> gen_uni n
-        | None,Some ls -> gen "" ls orl n
-        | Some lr,None -> gen lr "" orl n
-        | Some lr,Some ls -> gen lr ls orl n
+        | _ -> gen olr ols orl n
         end
 end
 
@@ -234,7 +214,7 @@ let () =
   let relax_list = split_cands !Config.relaxs
   and safe_list = split_cands !Config.safes
   and reject_list = !Config.rejects
-  and filter_list = split_cands !Config.filter_check in
+  and filter_list = !Config.filter_check in
 
   let cpp = match !Config.arch with `CPP -> true  |  _ -> false in
 
@@ -334,31 +314,25 @@ let () =
   let module M = Make(Builder)(Co) in
   try
     match filter_list with
-    | Some filter_list ->
-        begin
-        match M.parse_argument filter_list with
-        | [lhs;rhs] ->
-            let lhs_unfold = Builder.R.expand_relaxs Builder.ppo [lhs] in
-            let rhs_unfold = Builder.R.expand_relaxs Builder.ppo [rhs] in
-            let relax = Option.value ~default:"" relax_list |> M.parse_argument in
-            let safe = Option.value ~default:"" safe_list |> M.parse_argument in
-            List.map ( fun l ->
-              List.map ( fun r ->
-                l,r,M.M.filter_check ~relax ~safe (Builder.R.edges_of l) (Builder.R.edges_of r)
-              ) rhs_unfold
-            ) lhs_unfold
-            |> List.flatten
-            |> List.iter ( fun (l, r, result) ->
-                printf "Sequence `%s` `%s` %s the internal filter in mode `%s`\n"
-                (Builder.R.pp_relax l) (Builder.R.pp_relax r)
-                ( if result then "passes" else "is prohibited in" )
-                ( Code.pp_check Co.choice )
-
-            )
-        | _ -> Warn.user_error "Please input exactly two relaxations"
-        end
-    | None -> (* The common path to generate tests *)
-       M.go !Config.size reject_list relax_list safe_list;
+    | [lhs;rhs] ->
+        let lhs_unfold = M.parse_argument lhs in
+        let rhs_unfold = M.parse_argument rhs in
+        let relax = Option.map M.parse_argument relax_list |> Option.value ~default:[] in
+        let safe = Option.map M.parse_argument safe_list |> Option.value ~default:[] in
+        List.map ( fun l ->
+          List.map ( fun r ->
+            l,r,M.M.filter_check ~relax ~safe (Builder.R.edges_of l) (Builder.R.edges_of r)
+          ) rhs_unfold
+        ) lhs_unfold
+        |> List.flatten
+        |> List.iter ( fun (l, r, result) ->
+            printf "Sequence `%s` `%s` %s the internal filter in mode `%s`\n"
+            (Builder.R.pp_relax l) (Builder.R.pp_relax r)
+            ( if result then "passes" else "is prohibited in" )
+            ( Code.pp_check Co.choice )
+        )
+    | _ -> (* The common path to generate tests *)
+      M.go !Config.size reject_list relax_list safe_list;
     exit 0
   with
   | Misc.Fatal msg | Misc.UserError msg->

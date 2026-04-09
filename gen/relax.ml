@@ -41,21 +41,16 @@ module type S = sig
   val edges_of : relax -> edge list
   val edges_ofs : relax list -> edge list
 
-(* Replace Irr directions in par expansion to W and R *)
-  val expand_relaxs :
-      ((relax -> relax list -> relax list) -> relax list -> relax list) ->
-        relax list -> relax list
-  val expand_relax_seq : relax list -> relax list list
   val com : relax list
   val po : relax list
 
-(* parsing *)
-  val parse_relax : string -> relax
-  val parse_relaxs : string list -> relax list
-(* parsing, with macro expansion *)
-  val expand_relax_macro : string -> relax list
- (* NB use for set of relaxations only *)
-  val expand_relax_macros : string list -> relax list
+  (* Parse the input relaxation (or relaxations sequences), and expand the wildcard
+     syntax into primitive edges and annotations *)
+  val parse_ast : string -> string Ast.t
+  val parse_sequence_ast : string list -> string Ast.t
+  val parse_expand_relaxs :
+    ?ppo:((relax -> relax list -> relax list) -> relax list -> relax list)
+        -> string Ast.t -> relax list
 
   (* Remove invalid relax from the list *)
   val remove_invalid_relaxes : relax list -> relax list
@@ -113,8 +108,8 @@ and type edge = E.edge
         let edges_of r = match r with
         | ERS es -> es
         | PPO -> assert false
-        let edges_ofs = Util.List.concat_map edges_of
 
+        let edges_ofs = Util.List.concat_map edges_of
 
         let rec compare_edges es1 es2 = match es1,es2 with
         | [],[] -> 0
@@ -221,14 +216,6 @@ and type edge = E.edge
               Hashtbl.add t pp e);
           ()
 
-        let do_parse_relax s =
-          try ERS [E.parse_edge s] (* Because some edges have special parsing *)
-          with _ ->
-            try Hashtbl.find t s
-            with Not_found ->
-              Warn.fatal "Bad relax: %s" s
-
-
 (*************************************************************)
 (* Expansion of irrelevant direction specifications in edges *)
 (*************************************************************)
@@ -236,31 +223,9 @@ and type edge = E.edge
         | ERS es -> E.expand_edges es (fun es -> f (ERS es))
         | PPO  -> ppo (fun r -> do_expand_relax ppo r f)
 
-
         let expand_relaxs ppo rs =
-          let expand_relax r =  do_expand_relax ppo r Misc.cons in
+          let expand_relax r = do_expand_relax ppo r Misc.cons in
           List.fold_right expand_relax rs []
-
-        let rec cross_cons rs rss = match rs with
-        | [] -> []
-        | r::rs ->
-            List.fold_right (fun rs k -> (r::rs)::k)
-              rss
-              (cross_cons rs rss)
-
-        let expand_relax_seq rs =
-
-          let rec expn rs = match rs with
-          | [] -> [[]]
-          | PPO ::_-> Warn.fatal "PPO in expand_relax_seq"
-          | ERS es::rem ->
-              let rs =
-                E.expand_edges es (fun es k -> ERS es::k) [] in
-              let rss = expn rem in
-              cross_cons rs rss in
-
-          expn rs
-
 
         let er e = ERS [E.plain_edge e]
         let ers es = ERS (List.map E.plain_edge es)
@@ -291,10 +256,6 @@ and type edge = E.edge
 
         open Ast
 
-        let parse_relax = do_parse_relax
-
-        let parse_relaxs = List.map parse_relax
-
 (* Expand relax macros *)
         let er e = ERS [E.plain_edge e]
 
@@ -305,6 +266,13 @@ and type edge = E.edge
         let some_fences sd d1 d2 =
           F.fold_some_fences
             (fun f k -> er (E.Fenced (f,sd,Dir d1,Dir d2))::k)
+
+        let relax_list_to_choice relax_list =
+          List.map (fun relax -> Ast.One relax) relax_list
+            |> ( function
+              | [] -> assert false
+              | [relax] -> relax
+              | relax_list -> Ast.Choice relax_list )
 
 (* Limited variations *)
         let app_def_dp o f r = match o with
@@ -317,10 +285,12 @@ and type edge = E.edge
             (match d with R -> F.ddr_default | W -> F.ddw_default)
             (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
             (some_fences sd R d [])
+          |> relax_list_to_choice
 
         let someW sd d =
           er (E.Po (sd,Dir W,Dir d))::
           (some_fences sd W d [])
+          |> relax_list_to_choice
 
 
 (* ALL *)
@@ -329,10 +299,12 @@ and type edge = E.edge
           (match d with R -> F.fold_dpr | W -> F.fold_dpw)
             (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
             (all_fences sd R d [])
+          |> relax_list_to_choice
 
         let allW sd d =
           er (E.Po (sd,Dir W,Dir d))::
           (all_fences sd W d [])
+          |> relax_list_to_choice
 
         let atoms_key = "atoms"
 
@@ -348,6 +320,13 @@ and type edge = E.edge
             try Some (E.parse_edge suf)
             with _ -> None
           else None
+
+        let parse_ast s =
+          Lexing.from_string s
+          |> LexUtil.parse Parser.main
+
+        let parse_sequence_ast segments =
+          Ast.Seq (List.map parse_ast segments)
 
         let remove_invalid_relaxes relaxes =
           let rec for_all_adjacent_concrete_edge predicate = function
@@ -370,7 +349,9 @@ and type edge = E.edge
               if is_valid then Some relax else None
           ) relaxes
 
-        let expand_relax_macro = function
+        let parse_expand_relax ?(ppo=(fun _ k -> k)) str =
+          match str with
+          (* Directly unfold macro *)
           | "allRR" -> allR Diff R
           | "allRW" -> allR Diff W
           | "allWR" -> allW Diff R
@@ -379,12 +360,21 @@ and type edge = E.edge
           | "someRW" -> someR Diff W
           | "someWR" -> someW Diff R
           | "someWW" -> someW Diff W
-          | s ->  [do_parse_relax s]
+          | str ->
+            let relax = try ERS ([E.parse_edge str])
+            (* For backward compatibility, also accept the legacy pretty-printed
+               names recorded in the special table `t`. *)
+            with _ -> try Hashtbl.find t str
+            with Not_found -> Warn.fatal "Bad relax: %s" str in
+            [relax]
+          (* expand the wildcard edges and annotations *)
+          |> expand_relaxs ppo
+          |> relax_list_to_choice
 
-        let expand_relax_macros lus =
-          List.map expand_relax_macro lus
-          |> List.flatten
-
+          let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
+            Ast.bind (parse_expand_relax ~ppo) ast
+              |> Ast.flatten
+              |> List.map ( fun e -> ERS (edges_ofs e) )
 
 (********)
 (* Sets *)
