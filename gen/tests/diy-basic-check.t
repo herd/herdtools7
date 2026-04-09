@@ -420,6 +420,19 @@ Valid cycles with duplicate annotations
    LDAR W3,[X2] | LDR W3,[X1] ;
   
   exists (0:X3=0 /\ 1:X3=0)
+An invalid `diyone7` input that expands to several cycles
+  $ diyone7 -arch AArch64 'PodWR|Fre'
+  diyone7: Fatal error: `diyone7` only accepts exactly one input cycle.
+  [2]
+  $ diyone7 -arch AArch64 '[PodWR|Fre]'
+  diyone7: Fatal error: `diyone7` only accepts exactly one input cycle.
+  [2]
+  $ diyone7 -arch AArch64 'PodWR?'
+  diyone7: Fatal error: `diyone7` only accepts exactly one input cycle.
+  [2]
+  $ diyone7 -arch AArch64 'PodWR|[Fre,PodWR]'
+  diyone7: Fatal error: `diyone7` only accepts exactly one input cycle.
+  [2]
 Invalid cycles with incorrect annotations
   $ diyone7 -arch AArch64 L PodWR Fre PodWR Fre A
   diyone7: Fatal error: Annotations mismatch between A L.
