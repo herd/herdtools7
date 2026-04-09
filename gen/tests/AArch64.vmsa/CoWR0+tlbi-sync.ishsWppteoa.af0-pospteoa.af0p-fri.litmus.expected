@@ -1,0 +1,11 @@
+Test CoWR0+tlbi-sync.ishsWppteoa.af0-pospteoa.af0p-fri Allowed
+States 2
+0:X4=0; [x]=1; Fault(P0:L01,x,D-MMU:AccessFlag); ~Fault(P0:L00,x);
+0:X4=1; [x]=1;  ~Fault(P0:L01,x); ~Fault(P0:L00,x);
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists ([x]=1 /\ 0:X4=0 /\ not (fault(P0:L00,x)) /\ not (fault(P0:L01,x)))
+Observation CoWR0+tlbi-sync.ishsWppteoa.af0-pospteoa.af0p-fri Never 0 3
+Hash=edf9eaa0b7840dd52975a5d1c8af61ea
+
