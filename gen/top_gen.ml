@@ -672,6 +672,7 @@ let max_set = IntSet.max_elt
     else []
 
   let do_memtag = O.variant Variant_gen.MemTag
+  let do_async = O.variant Variant_gen.Async
   let do_morello = O.variant Variant_gen.Morello
   let do_kvm = Variant_gen.is_kvm O.variant
 
@@ -812,8 +813,8 @@ let max_set = IntSet.max_elt
           (* TODO: the `if-else` pattern on flags is not a good idea as it may short circuit *)
            if O.variant Variant_gen.NoFault then
              F.FaultAtomSet.empty,F.FaultAtomSet.empty
-           else if do_memtag || do_kvm || do_morello then
-             List.fold_left
+            else if do_memtag || do_kvm || do_morello then begin
+             let pos_flts,neg_flts = List.fold_left
                (fun (pos_flts,neg_flts) n ->
                   let e = n.C.evt in
                   match e.C.check_fault,e.C.loc,e.C.bank with
@@ -825,7 +826,14 @@ let max_set = IntSet.max_elt
                        or `neg_flts` for checking `~Fault(...)`. *)
                     if do_fault then F.FaultAtomSet.add flt pos_flts,neg_flts
                     else pos_flts,F.FaultAtomSet.add flt neg_flts
-                  | _ -> (pos_flts,neg_flts)) (F.FaultAtomSet.empty,F.FaultAtomSet.empty) ns
+                  | _ -> (pos_flts,neg_flts)) (F.FaultAtomSet.empty,F.FaultAtomSet.empty) ns in
+            (* Remove location and label information if we are in `async` *)
+             if do_async then
+               let remove_location_label set =
+                 F.FaultAtomSet.map (fun ((proc, _), _, doc) -> ((proc, None), None, doc)) set in
+               (remove_location_label pos_flts, remove_location_label neg_flts)
+             else (pos_flts,neg_flts)
+           end
            else (* no fault-related flag *)
              F.FaultAtomSet.empty,F.FaultAtomSet.empty
           in
