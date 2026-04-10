@@ -903,6 +903,8 @@ diy-test-mte::
 		-diycross-arg AArch64 \
 		-diycross-arg -variant \
 		-diycross-arg memtag \
+		-diycross-arg -variant \
+		-diycross-arg async \
 		-diycross-arg DMB.SYd*W \
 		-diycross-arg T,P \
 		-diycross-arg Rfe \
