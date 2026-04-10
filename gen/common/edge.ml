@@ -547,20 +547,20 @@ let fold_tedges f r =
 
   let iter_atom = Misc.fold_to_iter fold_atomo
 
-  let ta = Hashtbl.create  37
+  let annotation_lookup_table = Hashtbl.create 37
 
   let add_lxm_atom lxm a =
     if dbg > 1 then eprintf "ATOM: %s\n" lxm ;
     try
-      let old = Hashtbl.find ta lxm in
+      let old = Hashtbl.find annotation_lookup_table lxm in
       assert (compare_atomo old a = 0) ;
     with Not_found ->
-      if not (is_ifetch a) then Hashtbl.add ta lxm a
+      if not (is_ifetch a) then Hashtbl.add annotation_lookup_table lxm a
 
   let () = iter_atom (fun a -> add_lxm_atom (pp_atom_option a) a)
 
   let parse_atom s =
-    try Hashtbl.find ta s
+    try Hashtbl.find annotation_lookup_table s
     with Not_found -> Warn.fatal "Bad atom: %s" s
 
   let parse_atoms xs =
@@ -581,12 +581,12 @@ let fold_tedges f r =
   let iter_edges = Misc.fold_to_iter fold_edges
 
 
-  let t = Hashtbl.create 40000
+  let edge_lookup_table = Hashtbl.create 40000
 
   let add_lxm_edge lxm e =
     if dbg > 1 then eprintf "LXM: %s\n" lxm ;
     try
-      let old = Hashtbl.find t lxm in
+      let old = Hashtbl.find edge_lookup_table lxm in
       if compare old e <> 0 then begin
         Warn.warn_always "ambiguous lexeme: %s" lxm ;
         eprintf "%s\n%s\n" (debug_edge old) (debug_edge e) ;
@@ -594,7 +594,7 @@ let fold_tedges f r =
       end
 
     with Not_found ->
-      Hashtbl.add t lxm e
+      Hashtbl.add edge_lookup_table lxm e
 
 (* Fill lexeme table *)
   let iter_ie = Misc.fold_to_iter (fold_ie wildcard)
@@ -607,6 +607,10 @@ let fold_tedges f r =
       | ((Some _ as a),None) when a = pp_as_a ->
           add_lxm_edge (pp_edge_with_a compat e) e
       | _,_ -> ())
+
+  let iter_tedges compat fold =
+    Misc.fold_to_iter fold
+      (fun te -> add_lxm_edge (pp_tedge_compat compat te) (plain_edge te))
 
   let () =
    four_times_iter_edges false iter_edges;
@@ -629,10 +633,10 @@ let fold_tedges f r =
         fill_opt "Dp" F.ddw_default sd (Dir W) ;
         fill_opt "Ctrl" F.ctrlw_default sd (Dir W) ;
         ()) () ;
-    if not (Hashtbl.mem t "R") then add_lxm_edge "R" (plain_edge (Node R)) ;
-    if not (Hashtbl.mem t "W") then add_lxm_edge "W" (plain_edge (Node W)) ;
+    add_lxm_edge "R" (plain_edge (Node R)) ;
+    add_lxm_edge "W" (plain_edge (Node W)) ;
 (*Co aka Ws and LxSx aka Rmw*)
-   four_times_iter_edges true (Misc.fold_to_iter (do_fold_edges fold_tedges_compat));
+   iter_tedges true fold_tedges_compat;
 (* Backward compatibility *)
     let instr_atom = A.instr_atom in
     if do_self && instr_atom != None then
@@ -650,7 +654,7 @@ let fold_tedges f r =
         if e.a1=None && e.a2=None && e.edge <> Id then
           f s k
         else k)
-      t
+      edge_lookup_table
 
   let fences_pp =
     F.fold_all_fences
@@ -661,9 +665,67 @@ let fold_tedges f r =
     try List.assoc s fences_pp
     with Not_found -> Warn.fatal "%s is not a fence" s
 
-  let parse_edge s =
-    try Hashtbl.find t s
-    with Not_found -> Warn.fatal "Bad edge: %s" s
+  (* Explore prefixes from longest to shortest until `func` returns `Some ..`.
+     For example, given the input `"PosWRPA"`, it applies
+     `func "PosWRPA"`, then `func "PosWRP"`, and so on, until `func`
+     returns `Some result`. The helper then returns that result together
+     with the untouched suffix, for example `Some (result, "PA")`. *)
+  let fold_prefixes func string =
+    let rec do_rec i =
+      if i <= 0 then None
+      else
+        let prefix = String.sub string 0 i in
+        match func prefix with
+        | Some x -> Some (x, (String.sub string i (String.length string - i)))
+        | None -> do_rec (i - 1)
+    in
+    do_rec (String.length string)
+
+  let lookup_edge_prefix string =
+    fold_prefixes (fun prefix -> Hashtbl.find_opt edge_lookup_table prefix) string
+
+  let lookup_atom_prefix string =
+    fold_prefixes (fun prefix -> Hashtbl.find_opt annotation_lookup_table prefix) string
+
+  let annotation_edge a = { a1=a; a2=a; edge=Id }
+
+  let parse_annotation input =
+    match lookup_atom_prefix input with
+    | Some (annotation, "") -> Some annotation
+    | _ -> None
+
+  (* Parse two edge annotations, for example `AL`. *)
+  let parse_edge_annotations string =
+    match lookup_atom_prefix string with
+    | None -> None
+    | Some (left_annotation, suffix) ->
+        match lookup_atom_prefix suffix with
+        | Some (right_annotation, "") ->
+            Some (left_annotation, right_annotation)
+        | _ -> None
+
+  (* Parse `input`.
+     - For an edge-only input such as `PosWW`, return the edge.
+     - For an annotation-only input such as `L`, return an annotated `Id` edge.
+     - For a composite input such as `PosWWLA`, attach `L` and `A` as
+       the edge annotations.
+     - Otherwise, fail. *)
+  let parse_edge input =
+    let parse_annotation_only () =
+      match parse_annotation input with
+      | Some annotation -> annotation_edge annotation
+      | None -> Warn.fatal "Bad edge: %s" input in
+    match lookup_edge_prefix input with
+    | None -> parse_annotation_only ()
+    | Some (edge, "") -> edge
+    (* If there is a suffix, it must parse as two annotations. Otherwise,
+       try parsing the whole input as an annotation-only edge, for annotation
+       names that start with an edge prefix. *)
+    | Some (edge, suffix) ->
+        begin match parse_edge_annotations suffix with
+        | Some (a1, a2) -> {edge with a1; a2}
+        | _ -> parse_annotation_only ()
+        end
 
   let parse_edges s =
     pre_parse_string s |> List.map parse_edge
