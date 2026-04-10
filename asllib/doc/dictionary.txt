@@ -84,6 +84,7 @@ always
 ambiguous
 among
 amongst
+amount
 an
 analysis
 analyze
@@ -191,6 +192,8 @@ away
 axiom
 axiomatically
 back
+backend
+backends
 background
 backslash
 badly
@@ -305,6 +308,7 @@ causes
 cell
 certain
 chance
+change
 changed
 changes
 changing
@@ -1301,6 +1305,7 @@ matches
 matching
 material
 mathematical
+matter
 matters
 maximal
 maximum
