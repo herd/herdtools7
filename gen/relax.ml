@@ -144,7 +144,6 @@ and type edge = E.edge
 (* Fold over all relaxations *)
 
         let fold_relax wildcard f k =
-          let k = E.fold_edges (fun e -> f [e]) k in
           let k =
             F.fold_cumul_fences
               (fun fe k ->
@@ -315,6 +314,33 @@ and type edge = E.edge
           | [relax] -> relax
           | relax_list -> Ast.Choice relax_list
 
+        (* Apply an annotation suffix parsed from a macro name such as `PodW*LA`
+           to each singleton expansion of that macro. *)
+        let add_macro_annotations a1 a2 =
+          List.map
+            (function
+              | [e] -> [{e with E.a1; E.a2}]
+              | relax -> relax)
+
+        (* Find the longest prefix that is a macro.  Since the search starts
+           from the full string length, this also covers exact macro names. *)
+        let rec find_macro_prefix str i =
+          if i <= 0 then None
+          else
+            let prefix = String.sub str 0 i in
+            (* Macro table lookup. *)
+            match Hashtbl.find_opt macro_lookup_table prefix with
+            | Some relax ->
+                let suffix = String.sub str i (String.length str - i) in
+                if String.length suffix = 0 then Some relax
+                else
+                  (* If there is a suffix, try to parse it as two annotations. *)
+                  begin match E.parse_edge_annotations suffix with
+                  | Some (a1,a2) -> Some (add_macro_annotations a1 a2 relax)
+                  | None -> find_macro_prefix str (i - 1)
+                  end
+            | None -> find_macro_prefix str (i - 1)
+
         let parse_expand_relax ?(ppo=(fun _ k -> k)) str =
           let unfold_ppo () =
             let relaxs = ppo Misc.cons [] in
@@ -326,12 +352,13 @@ and type edge = E.edge
           | "PPO" -> unfold_ppo ()
           | str ->
               (* Macro lookup *)
-              match Hashtbl.find_opt macro_lookup_table str with
+              begin match find_macro_prefix str (String.length str) with
               | Some relax -> relax
-              (* Parse primitive edge *)
               | None ->
+                  (* Parse primitive edge *)
                   try [[E.parse_edge str]]
-                  with _ -> Warn.fatal "Bad relax: %s" str in
+                  with _ -> Warn.fatal "Bad relax: %s" str
+              end in
           (* expand the wildcard edges and annotations *)
           expand_relaxs parsed_edges
           |> relax_list_to_choice
