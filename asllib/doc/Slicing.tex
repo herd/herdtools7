@@ -126,6 +126,15 @@ The slices in
 \listingref{semantics-scaledfromzero}
 are all well-typed.
 
+\ExampleDef{Annotating Left-hand Side Slices}
+\listingref{typing-annotatelhsslices} shows an example of annotating a slice
+on the left-hand side of an assignment.
+The slice is well-typed because the normalized length expression of the slice
+is symbolically evaluable.
+
+\ASLListing{Annotating left-hand side slices}{typing-annotatelhsslices}
+{\typingtests/TypingRule.AnnotateSlices_lhs.asl}
+
 \RenderProseAndFormally{annotate_slice}
 
 \TypingRuleDef{SlicesWidth}

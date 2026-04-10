@@ -406,7 +406,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       that different slices do not overlap and that slices are not defined in
       reverse. Determining the set of positions requires evaluating the
       expressions comprising the slices. [static] indicates that the expressions
-      defining the slices must be statically evaluable, in which case they are
+      defining the slices must be symbolically evaluable, in which case they are
       statically evaluated to accurately determine the set of positions.
       Otherwise, normalization is used in an attempt to reduce them to literals.
       Slices for which the expressions cannot be reduced to literals do not
@@ -1199,7 +1199,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       let width = get_bitvector_width ~loc env (List.hd arg_types) in
       let param_type = integer_exact' width |> add_pos_from ~loc:width in
       let ses_param =
-        (* This is enough as the bitvector width is statically evaluable and
+        (* This is enough as the bitvector width is symbolically evaluable and
            its timeframe is earlier than the argument itself. *)
         SES.empty
       in
@@ -1210,11 +1210,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let rec annotate_bitfield ~loc env width bitfield : bitfield * SES.t =
     match bitfield with
     | BitField_Simple (name, slices) ->
-        let slices1, ses_slices = annotate_slices ~loc env slices in
+        let slices1, ses_slices =
+          annotate_slices ~is_rhs:true ~loc env slices
+        in
         let+ () = check_slices_in_width ~loc env width slices1 in
         (BitField_Simple (name, slices1), ses_slices) |: TypingRule.TBitField
     | BitField_Nested (name, slices, bitfields') ->
-        let slices1, ses_slices = annotate_slices ~loc env slices in
+        let slices1, ses_slices =
+          annotate_slices ~is_rhs:true ~loc env slices
+        in
         let diet = disjoint_slices_to_positions ~loc ~static:true env slices1 in
         let+ () = check_diet_in_width ~loc slices1 width diet in
         let width' = Diet.Int.cardinal diet |> expr_of_int in
@@ -1226,7 +1230,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         |: TypingRule.TBitField
     | BitField_Type (name, slices, ty) ->
         let ty', ses_ty = annotate_type ~loc env ty in
-        let slices1, ses_slices = annotate_slices ~loc env slices in
+        let slices1, ses_slices =
+          annotate_slices ~is_rhs:true ~loc env slices
+        in
         let diet = disjoint_slices_to_positions ~loc ~static:true env slices1 in
         let+ () = check_diet_in_width ~loc slices1 width diet in
         let width' = Diet.Int.cardinal diet |> expr_of_int in
@@ -1270,7 +1276,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin TNamed *)
     | T_Named x ->
         let ses =
-          (* As expression on which types depend are statically evaluable,
+          (* As expression on which types depend are symbolically evaluable,
              using a named type is as reading a global immutable storage
              element. *)
           let time_frame =
@@ -1424,27 +1430,53 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (Constraint_Range (e1', e2'), ses)
   (* End *)
 
-  and annotate_slices env ~loc =
+  (** [annotate_slices env ~is_rhs ~loc slices] annotates [slices] in the
+      context of [env]. The [is_rhs] flag is true when the slices are on the
+      right-hand side of an assignment. *)
+  and annotate_slices env ~is_rhs ~loc slices =
     (* Rules:
-       - Rule WZCS: The width of a bitslice must be any non-negative,
-         statically evaluable integer expression (including zero).
+      - The width of a bitslice must be a non-negative integer expression, including zero.
+      - The width of a bitslice must be constrained.
+      - If the bitslice is on the right-hand side of an assignment, then the width must be
+        symbolically evaluable, and if it is on the left-hand side, the normalized expression
+        must be symbolically evaluable.
     *)
+
     (* Begin Slice *)
-    let rec annotate_slice s =
+    let rec annotate_slice ~is_rhs s =
       let () =
         if false then
           Format.eprintf "Annotating slice %a@." PP.pp_slice_list [ s ]
       in
       match s with
       | Slice_Single i ->
-          (* LRM R_GXKG:
+          (* Rule:
              The notation b[i] is syntactic sugar for b[i +: 1].
           *)
-          annotate_slice (Slice_Length (i, one_expr)) |: TypingRule.Slice
+          annotate_slice ~is_rhs (Slice_Length (i, one_expr))
+          |: TypingRule.Slice
       | Slice_Length (offset, length) ->
-          let t_offset, offset', ses_offset = annotate_expr env offset
-          and length', ses_length =
-            annotate_symbolic_constrained_integer ~loc env length
+          let t_offset, offset', ses_offset = annotate_expr env offset in
+          let length', ses_length =
+            if is_rhs then annotate_symbolic_constrained_integer ~loc env length
+            else
+              (* This case is similar to the one above, except that check
+                whether the length is symbolically evaluable is performed
+                on the normalized expression. *)
+              let t_length, length_annot, ses_length =
+                annotate_expr env length
+              in
+              let normalized_length =
+                StaticModel.try_normalize env length_annot
+              in
+              let _, _, normalized_length_ses =
+                annotate_expr env normalized_length
+              in
+              let+ () =
+                check_symbolically_evaluable length normalized_length_ses
+              in
+              let+ () = check_constrained_integer ~loc env t_length in
+              (normalized_length, ses_length)
           in
           let+ () = check_is_readonly offset ses_offset in
           let+ () = check_is_readonly length ses_length in
@@ -1452,23 +1484,23 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let ses = SES.union ses_length ses_offset in
           (Slice_Length (offset', length'), ses |: TypingRule.Slice)
       | Slice_Range (j, i) ->
-          (* LRM R_GXKG:
+          (* Rule:
              The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
           *)
           let length = binop `SUB j i |> binop `ADD !$1 in
-          annotate_slice (Slice_Length (i, length)) |: TypingRule.Slice
+          annotate_slice ~is_rhs (Slice_Length (i, length)) |: TypingRule.Slice
       | Slice_Star (factor, length) ->
-          (* LRM R_GXQG:
+          (* Rule:
              The notation b[i *: n] is syntactic sugar for b[i*n +: n]
           *)
           let offset = binop `MUL factor length in
-          annotate_slice (Slice_Length (offset, length)) |: TypingRule.Slice
+          annotate_slice ~is_rhs (Slice_Length (offset, length))
+          |: TypingRule.Slice
       (* End *)
     in
-    fun slices ->
-      let slices, sess = list_map_split annotate_slice slices in
-      let ses = ses_non_conflicting_unions ~loc sess in
-      (slices, ses)
+    let slices, sess = list_map_split (annotate_slice ~is_rhs) slices in
+    let ses = ses_non_conflicting_unions ~loc sess in
+    (slices, ses)
 
   and annotate_pattern ~loc env t p =
     let here = add_pos_from ~loc:p in
@@ -1480,7 +1512,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | Pattern_Any li ->
         let new_li, sess = list_map_split (annotate_pattern ~loc env t) li in
         let ses =
-          (* They can't be conflicting because they are statically evaluable *)
+          (* They can't be conflicting because they are symbolically evaluable *)
           SES.unions sess
         in
         (Pattern_Any new_li |> here, ses) |: TypingRule.PAny
@@ -1544,7 +1576,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t_e1, e1', ses1 = annotate_symbolically_evaluable_expr env e1
         and t_e2, e2', ses2 = annotate_symbolically_evaluable_expr env e2 in
         let ses =
-          (* They can't be conflicting because they are statically evaluable *)
+          (* They can't be conflicting because they are symbolically evaluable *)
           SES.union ses1 ses2
         in
         let+ () =
@@ -1636,7 +1668,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         @@ Error.BadArity
              (Static, name, List.length func_sig.args, List.length args)
     in
-    (* Check that call parameters are statically evaluable and type-satisfy the
+    (* Check that call parameters are symbolically evaluable and type-satisfy the
        declaration parameters *)
     let () =
       (* CheckParamsTypeSat( *)
@@ -1996,10 +2028,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | E_Array _ -> fatal_from ~loc UnrespectedParserInvariant
     (* Begin ERecord *)
     | E_Record (ty, fields) ->
-        (* Rule WBCQ: The identifier in a record expression must be a named type
+        (* Rule: The identifier in a record expression must be a named type
            with the structure of a record type, and whose fields have the values
            given in the field_assignment_list.
-           Rule WZWC: The identifier in a exception expression must be a named
+           Rule: The identifier in a exception expression must be a named
            type with the structure of an exception type, and whose fields have
            the values given in the field_assignment_list.
         *)
@@ -2013,7 +2045,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_Exception fields | T_Record fields | T_Collection fields -> fields
           | _ -> conflict ~loc [ T_Record [] ] ty
         in
-        (* Rule DYQZ: A record expression shall assign every field of the record. *)
+        (* Rule: A record expression shall assign every field of the record. *)
         let () =
           if
             List.for_all
@@ -2077,13 +2109,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   fatal_from ~loc Error.EmptySlice
                 in
                 (* TODO: check that:
-                   - Rule SNQJ: An expression or subexpression which
+                   - Rule: An expression or subexpression which
                      may result in a zero-length bitvector must not be
                      side-effecting.
                 *)
                 let slices', ses2 =
                   best_effort (slices, SES.empty) (fun _ ->
-                      annotate_slices env slices ~loc)
+                      annotate_slices env ~is_rhs:true ~loc slices)
                 in
                 let w = slices_width env slices' in
                 let ses = SES.union ses1 ses2 in
@@ -2271,8 +2303,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin EPattern *)
     | E_Pattern (e1, pat) ->
         (*
-         Rule ZNDL states that
-
+         Rule:
          The IN operator is equivalent to testing its first operand for
          equality against each value in the (possibly infinite) set denoted
          by the second operand, and taking the logical OR of the result.
@@ -2553,7 +2584,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let le2, ses1 = annotate_lexpr env le1 t_le1 in
             let slices_annotated, ses_slices =
               best_effort (slices, SES.empty) @@ fun _ ->
-              annotate_slices env slices ~loc
+              annotate_slices env ~is_rhs:false slices ~loc
             in
             let+ () =
              fun () ->
@@ -2807,7 +2838,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     match ldi with
     (* Begin LDVar *)
     | LDI_Var x ->
-        (* Rule LCFD: A ~local declaration shall not declare an identifier
+        (* Rule: A local declaration shall not declare an identifier
            which is already in scope at the point of declaration. *)
         let+ () = check_is_not_collection ~loc env ty in
         let+ () = check_var_not_in_env ~loc env x in
@@ -2917,9 +2948,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* End *)
     (* Begin SReturn *)
     | S_Return e_opt ->
-        (* Rule NYWH: A return statement appearing in a setter or procedure must
+        (* Rule: A return statement appearing in a setter or procedure must
            have no return value expression. *)
-        (* Rule PHNZ: A return statement appearing in a getter or function
+        (* Rule: A return statement appearing in a getter or function
            requires a return value expression that type-satisfies the return
            type of the subprogram. *)
         (match (env.local.return_type, e_opt) with
