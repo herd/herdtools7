@@ -181,24 +181,9 @@ and type edge = E.edge
   so as to build a table of recognized relaxations.
  *)
 
-(* Lexeme table *)
-        let t = Hashtbl.create 101
-
-(* Fill up lexeme table *)
-        let () =
-          iter_relax E.wildcard
-            (fun e ->
-              let pp = internal_pp_relax true e in
-              Hashtbl.add t pp e);
-          ()
-
 (*************************************************************)
 (* Expansion of irrelevant direction specifications in edges *)
 (*************************************************************)
-        let expand_relaxs rs =
-          let expand_relax r = E.expand_edges r Misc.cons in
-          List.fold_right expand_relax rs []
-
         let er e = [E.plain_edge e]
         let ers es = List.map E.plain_edge es
         let com =
@@ -237,14 +222,6 @@ and type edge = E.edge
           F.fold_some_fences
             (fun f k -> er (E.Fenced (f,sd,Dir d1,Dir d2))::k)
 
-        let relax_list_to_choice relax_list =
-          let ast_relax_list =
-            List.map (fun relax -> Ast.One relax) relax_list in
-          match ast_relax_list with
-              | [] -> assert false
-              | [relax] -> relax
-              | relax_list -> Ast.Choice relax_list
-
 (* Limited variations *)
         let app_def_dp o f r = match o with
         | None -> r
@@ -256,12 +233,10 @@ and type edge = E.edge
             (match d with R -> F.ddr_default | W -> F.ddw_default)
             (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
             (some_fences sd R d [])
-          |> relax_list_to_choice
 
         let someW sd d =
           er (E.Po (sd,Dir W,Dir d))::
           (some_fences sd W d [])
-          |> relax_list_to_choice
 
 
 (* ALL *)
@@ -270,12 +245,10 @@ and type edge = E.edge
           (match d with R -> F.fold_dpr | W -> F.fold_dpw)
             (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
             (all_fences sd R d [])
-          |> relax_list_to_choice
 
         let allW sd d =
           er (E.Po (sd,Dir W,Dir d))::
           (all_fences sd W d [])
-          |> relax_list_to_choice
 
         let atoms_key = "atoms"
 
@@ -303,6 +276,70 @@ and type edge = E.edge
         let parse_sequence_ast parser_grammar segments =
           Ast.Seq (List.map (parse_ast parser_grammar) segments)
 
+(* Macro lookup table. *)
+        let macro_lookup_table = Hashtbl.create 101
+
+(* Build the macro lookup table. *)
+        let () =
+          iter_relax E.wildcard
+            (fun e ->
+              let pp = internal_pp_relax true e in
+              Hashtbl.add macro_lookup_table pp [e]) ;
+          List.iter
+            (fun (name, macro) -> Hashtbl.add macro_lookup_table name macro)
+            [
+              "allRR", allR Diff R;
+              "allRW", allR Diff W;
+              "allWR", allW Diff R;
+              "allWW", allW Diff W;
+              "someRR", someR Diff R;
+              "someRW", someR Diff W;
+              "someWR", someW Diff R;
+              "someWW", someW Diff W;
+            ]
+
+        let expand_relaxs rs =
+          let expand_relax r = E.expand_edges r Misc.cons in
+          List.fold_right expand_relax rs []
+
+        let relax_to_sequence relax = match relax with
+        | [] -> Warn.fatal "Relax is parsed incorrectly."
+        | [edge] -> Ast.One edge
+        | edges -> Ast.Seq (List.map (fun edge -> Ast.One edge) edges)
+
+        let relax_list_to_choice relax_list =
+          let ast_relax_list =
+            List.map relax_to_sequence relax_list in
+          match ast_relax_list with
+          | [] -> assert false
+          | [relax] -> relax
+          | relax_list -> Ast.Choice relax_list
+
+        let parse_expand_relax ?(ppo=(fun _ k -> k)) str =
+          let unfold_ppo () =
+            let relaxs = ppo Misc.cons [] in
+            match relaxs with
+            | [] -> Warn.fatal "Bad relax: PPO"
+            | r -> r in
+          let parsed_edges = match str with
+          (* Directly unfold macro *)
+          | "PPO" -> unfold_ppo ()
+          | str ->
+              (* Macro lookup *)
+              match Hashtbl.find_opt macro_lookup_table str with
+              | Some relax -> relax
+              (* Parse primitive edge *)
+              | None ->
+                  try [[E.parse_edge str]]
+                  with _ -> Warn.fatal "Bad relax: %s" str in
+          (* expand the wildcard edges and annotations *)
+          expand_relaxs parsed_edges
+          |> relax_list_to_choice
+
+          let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
+            Ast.bind ast (parse_expand_relax ~ppo)
+              |> Ast.expand
+
         (* After wildcard and macro expansion, remove invalid relaxations
            whose adjacent concrete edges cannot appear consecutively.
            Pseudo-edges (annotations and insert edge) are ignored in the check.
@@ -329,42 +366,6 @@ and type edge = E.edge
               && for_all_adjacent_concrete_edge E.can_precede relax)
             relaxes
           |> List.sort_uniq compare
-
-        let parse_expand_relax ?(ppo=(fun _ k -> k)) str =
-          let unfold_ppo () =
-            let relaxs = ppo Misc.cons [] in
-            begin match relaxs with
-            | [] -> Warn.fatal "Bad relax: PPO"
-            | _ -> ()
-            end ;
-            expand_relaxs relaxs
-            |> relax_list_to_choice in
-          match str with
-          (* Directly unfold macro *)
-          | "PPO" -> unfold_ppo ()
-          | "allRR" -> allR Diff R
-          | "allRW" -> allR Diff W
-          | "allWR" -> allW Diff R
-          | "allWW" -> allW Diff W
-          | "someRR" -> someR Diff R
-          | "someRW" -> someR Diff W
-          | "someWR" -> someW Diff R
-          | "someWW" -> someW Diff W
-          | str ->
-            let relax = try [E.parse_edge str]
-            (* For backward compatibility, also accept the legacy pretty-printed
-               names recorded in the special table `t`. *)
-            with _ -> try Hashtbl.find t str
-            with Not_found -> Warn.fatal "Bad relax: %s" str in
-            [relax]
-          (* expand the wildcard edges and annotations *)
-          |> expand_relaxs
-          |> relax_list_to_choice
-
-          let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
-            Ast.bind ast (parse_expand_relax ~ppo)
-              |> Ast.expand
-              |> List.map edges_of_relax_list
 
 (********)
 (* Sets *)
