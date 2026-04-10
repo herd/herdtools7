@@ -686,6 +686,12 @@ let fold_suffix_cross_gen madd start xss kont r =
 
 let fold_suffix_cross xss = fold_suffix_cross_gen cons [] xss
 
+let fold_subsets_cross_gen  madd start xss kont r =
+  let fold f r xs = fold_subsets xs (fun xs r -> f r xs) r in
+  fold_cross_gen2 fold madd start xss kont r
+
+let fold_subsets_cross xss = fold_subsets_cross_gen cons [] xss
+
 (*******************)
 (* Simple bindings *)
 (*******************)
