@@ -194,6 +194,7 @@ let () =
   | None -> ()
   | Some s -> exec_conf s
   end;
+  Config.validate_variant ();
   Config.valid_stdout_flag false ;
 
   let cpp = match !Config.arch with `CPP -> true  |  _ -> false in

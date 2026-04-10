@@ -36,6 +36,8 @@ type t =
   | Morello
 (* Explicit virtual memory *)
   | KVM | NoFault
+(* Synchronisation mode *)
+  | Sync | Async
 (* Neon AArch64 extension *)
   | Neon
 (* Scalable Vector extension (AArch64) *)
@@ -50,12 +52,12 @@ let tags =
    "Mixed";"FullMixed";"MixedDisjoint"; "MixedStrictOverlap";
    "Ifetch(Self)"; "MemTag";
    "NoVolatile"; "Morello"; "VMSA(KVM)"; "NoFault";
-   "Neon"; "ConstrainedUnpredictable"; ]
+   "Sync"; "Async"; "Neon"; "ConstrainedUnpredictable"; ]
 
 let all_t =
   [ AsAmo ; ConstsInInit ; Mixed ; FullMixed ; MixedDisjoint ; MixedStrictOverlap ;
     Self ; MemTag ; NoVolatile ; Morello ; KVM ; NoFault ;
-    Neon ; SVE ; SME ; ConstrainedUnpredictable ]
+    Sync ; Async ; Neon ; SVE ; SME ; ConstrainedUnpredictable ]
 
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
@@ -70,6 +72,8 @@ let parse tag = match Misc.lowercase tag with
 | "morello" -> Some Morello
 | "kvm" | "vmsa" -> Some KVM
 | "nofault" -> Some NoFault
+| "sync" -> Some Sync
+| "async" -> Some Async
 | "neon" -> Some Neon
 | "sve" -> Some SVE
 | "sme" -> Some SME
@@ -89,6 +93,8 @@ let pp = function
   | Morello -> "Morello"
   | KVM -> "VMSA"
   | NoFault -> "NoFault"
+  | Sync -> "Sync"
+  | Async -> "Async"
   | Neon -> "Neon"
   | SVE -> "sve"
   | SME -> "sme"
@@ -102,9 +108,15 @@ let pp_herd_variant = function
   | Mixed | FullMixed | MixedDisjoint | MixedStrictOverlap -> Some "mixed"
   | Self -> Some "ifetch"
   | MemTag -> Some "memtag"
+  | Sync -> Some "sync"
+  | Async -> Some "async"
   | Morello -> Some "morello"
   | KVM  -> Some "vmsa"
   | ConstrainedUnpredictable -> Some "ConstrainedUnpredictable"
 
 let is_mixed v = v Mixed || v FullMixed
 let is_kvm v = v KVM
+
+let validate v =
+  if (v Sync || v Async) && not (v MemTag) then
+    Warn.user_error "variants `Sync` and `Async` must be used with `MemTag`"

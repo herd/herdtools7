@@ -38,6 +38,8 @@ type t =
   | KVM
 (* Do not  observe faults, in KVM mode *)
   | NoFault
+(* Synchronisation mode *)
+  | Sync | Async
 (* Neon AArch64 extension *)
   | Neon
 (* SVE AArch64 extension *)
@@ -58,3 +60,4 @@ val pp_herd_variant : t -> string option
 
 val is_mixed : (t -> bool) -> bool
 val is_kvm : (t -> bool) -> bool
+val validate : (t -> bool) -> unit

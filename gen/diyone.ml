@@ -186,6 +186,7 @@ let () =
     (fun x ->
       let segment = String.trim x in
       if segment <> "" then pp_es := segment :: !pp_es);
+    Config.validate_variant ();
     Config.valid_stdout_flag true
 
 let pp_es = List.rev !pp_es

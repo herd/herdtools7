@@ -399,6 +399,8 @@ let valid_stdout_flag is_diyone =
       || ( !cycleonly || !tarfile <> None ) )
   then Warn.user_error "-stdout will be ignored."
 
+let validate_variant () = Variant_gen.validate !variant
+
 let prog = if Array.length Sys.argv > 0 then Sys.argv.(0) else "XXX"
 let baseprog = sprintf "%s (version %s)" (Filename.basename prog) (Version.version)
 
