@@ -34,31 +34,27 @@ let list_cross_product_map f lhs rhs =
   ) lhs
   |> List.flatten
 
-let rec to_list = function
+let rec node = function
   | One _ as one -> [ one ]
-  | Opt t -> to_list t
+  | Opt t -> node t
   | Seq l | Choice l -> l
   | Multi multi -> [ multi ]
 
-(* Legacy `diy7` parsing interprets a plain top-level sequence as a choice for
-   backward compatibility. If the top-level sequence already mixes in an
-   explicit `Choice`, keep the sequence structure so that `A|B,C` means
-   `(A|B),C` rather than `A|B|C`. *)
 let seq_as_choice = function
-  | Seq seq as ast when List.exists (function Choice _ -> true | _ -> false) seq
-    -> ast
-  | Seq seq -> Choice seq
+  | Seq seq as ast ->
+      if List.exists (function Choice _ -> true | _ -> false) seq
+      then ast else Choice seq
   | ast -> ast
 
-let rec flatten t =
+let rec to_list t =
   let result = match t with
   | One str -> [[str]]
-  | Opt opt -> [] :: flatten opt
-  | Multi multi -> flatten multi
+  | Opt opt -> [] :: to_list opt
+  | Multi multi -> to_list multi
   | Seq seq -> List.fold_left
     ( fun acc s ->
-      flatten s
+      to_list s
       |> list_cross_product_map ( @ ) acc
     ) [[]] seq
-  | Choice choice -> List.map flatten choice |> List.flatten in
+  | Choice choice -> List.map to_list choice |> List.flatten in
   result

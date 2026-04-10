@@ -19,7 +19,6 @@ open Parser
 exception Eof
 (* Track whether the current scope has already seen an operand.
    Whitespace after an operand is treated as a sequence separator. *)
-let has_previous_relaxation = ref [false]
 let push t stack = stack := (t :: !stack)
 let pop stack = match !stack with
       | [] -> Warn.fatal "error in has_previous_relaxation in lexer.\n"
@@ -35,18 +34,19 @@ let modify t stack = match !stack with
 let blank = [' ''\t''\n''\r']
 let relexation = ['A'-'Z' 'a'-'z' '0'-'9' '-' '.' '*']+
 
-rule token = parse
+(* The lexer consumes optional blanks around explicit syntax such as `[`, `]`,
+   `,`, `|`, and `?`, because, for backward compatibility, standalone blanks
+   are interpreted as `COMMA` after an concreate relax. *)
+rule token has_previous_relaxation = parse
 | eof { EOF }
-(* - operands consumes necessary blanks
-   - `[....]` create a seperate scope
-     hence a separate `has_previous_relaxation`. *)
-| '[' blank* { push false has_previous_relaxation; LEFT_SQUIRE }
+| '[' blank* { push false has_previous_relaxation; LEFT_SQUARE }
 | blank* ']' {
   ignore (pop has_previous_relaxation);
   modify true has_previous_relaxation;
-  RIGHT_SQUIRE
+  RIGHT_SQUARE
 }
 | blank* '?' { OPTION }
+| blank* ',' blank* eof { EOF }
 | blank* ',' blank* { COMMA }
 | blank* '|' blank* { CHOICE_BAR }
 | (relexation as lxm) {
@@ -55,22 +55,15 @@ rule token = parse
 }
 | blank+ {
   if peak has_previous_relaxation then COMMA
-  else token lexbuf
+  else token has_previous_relaxation lexbuf
 }
 {
 
 (* The lexer keeps per-parse scope state to decide when whitespace should be
-   treated as a separator. Reset that state for each new parse, and restore the
-   previous value afterwards so nested or repeated parses do not interfere. *)
+   treated as a separator. Keep that state local to each parse so nested or
+   repeated parses do not interfere. *)
 let parse parser lexbuf =
-  let saved_state = !has_previous_relaxation in
-  has_previous_relaxation := [false];
-  try
-    let result = parser token lexbuf in
-    has_previous_relaxation := saved_state;
-    result
-  with exn ->
-    has_previous_relaxation := saved_state;
-    raise exn
+  let has_previous_relaxation = ref [false] in
+  parser (token has_previous_relaxation) lexbuf
 
 }

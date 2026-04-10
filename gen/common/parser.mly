@@ -18,25 +18,32 @@ let mk_choice lhs rhs =
 %}
 
 %token <string> RELAXATION
-%token LEFT_SQUIRE RIGHT_SQUIRE
+%token LEFT_SQUARE RIGHT_SQUARE
 %token COMMA
 %token CHOICE_BAR
-%right COMMA
-%right CHOICE_BAR
 %token EOF
 %token OPTION
-%left OPTION
 %start <string t> main
 
 %%
 
 main:
   | r = relax EOF { r }
-  | r = relax COMMA EOF { r }
 
+(* Explicit precedence, from highest to lowest:
+   - `suffix` handles postfix `?` and atomic terms such as `[..]`,
+   - `choice` handles `|`,
+   - `relax` handles `,`.
+   For example, `A|B,C|[D,E]?` parses as `(A|B),(C|([D,E]?))`. *)
 relax:
+  | lhs = choice COMMA rhs = relax { mk_seq lhs rhs }
+  | r = choice { r }
+
+choice:
+  | lhs = suffix CHOICE_BAR rhs = choice { mk_choice lhs rhs }
+  | r = suffix { r }
+
+suffix:
+  | opt = suffix OPTION { Opt opt }
   | r = RELAXATION { One r }
-  | opt = relax OPTION { Opt opt }
-  | lhs = relax CHOICE_BAR rhs = relax { mk_choice lhs rhs }
-  | lhs = relax COMMA rhs = relax { mk_seq lhs rhs }
-  | LEFT_SQUIRE r = relax RIGHT_SQUIRE { Multi r }
+  | LEFT_SQUARE r = relax RIGHT_SQUARE { Multi r }
