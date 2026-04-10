@@ -12,13 +12,13 @@ To summarise, given two primitive relaxations, `lhs` and `rhs`, the following ca
 |-------|-------|
 | internal communication edge or insert edge | dependency edge or program order edge between different locations such as `PodWR` |
 | dependency edge or program order edge between different locations such as `PodWR` | internal communication edge or insert edge |
-| dependency edge between different locations such as `DpAddrdW` | program order edge between different locations such as `PodWR` |
+| dependency edge between different locations such as `DpAddrdW` | program order edge between different locations such as `PodWR`, or same-location write edge such as `PosWW`, which is treated like `Coi` |
+| dependency edge between different locations such as `DpAddrdR` | same-location read edge such as `PosRW`, which is treated like `Fri` |
 | program order edge between different locations such as `PodWR` | dependency edge between different locations such as `DpAddrdW` |
-| internal read-from edge `Rfi` | program order edge between the same location such as `PosWR` |
-| program order edge between the same location such as `PosWR` | internal read-from edge `Rfi` |
+| same-location write-read edge such as `PosWR`, treated like `Rfi` | dependency edge between different locations such as `DpAddrdW` |
 | RMW edge | any edge |
 | any edge | RMW edge |
 | external edge | any edge |
 | any edge | external edge |
 
-The command `diy7 -filter <lhs> <rhs>` provides the filter result between `<lhs>` and `<rhs>`.
+The command `diy7 -filter-check <lhs> <rhs>` provides the filter result between `<lhs>` and `<rhs>`.
