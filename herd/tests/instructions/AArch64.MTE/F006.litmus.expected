@@ -1,0 +1,10 @@
+Test F006 Required
+States 1
+ Fault(P0,TagCheck:Async);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0))
+Observation F006 Always 1 0
+Hash=3064c6d470f8ec2e10bf42ef86b951aa
+

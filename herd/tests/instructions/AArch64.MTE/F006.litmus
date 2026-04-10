@@ -1,0 +1,12 @@
+AArch64 F006
+Variant=mte,async
+
+{
+ 0:X1=x:red; 0:X2=y:red;
+}
+ P0              ;
+ MOV W0,#1       ;
+ L0: STR W0,[X1] ;
+ L1: STR W0,[X2] ;
+
+forall (fault(P0))
