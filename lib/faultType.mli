@@ -32,9 +32,13 @@ module type AArch64Sig = sig
     | Permission  (* db: 0 *)
     | Exclusive   (* memattr <> sharedWB *)
 
+  type mte_t =
+    | Sync
+    | Async
+
   type t =
     | MMU of DISide.t * mmu_t
-    | TagCheck
+    | TagCheck of mte_t
     | UndefinedInstruction
     | SupervisorCall
     | PacCheck of PAC.key
