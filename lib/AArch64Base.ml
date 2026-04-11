@@ -1226,7 +1226,25 @@ let tr_simd_variant = function
 let simd_variant_nbytes v = tr_simd_variant v |> MachSize.nbytes
 
 type temporal = TT | NT
-type pair_opt = Pa | PaN | PaI
+type pair_opt = [`Pa | `PaN | `PaIQ | `PaIL | `PaA | `PaL]
+type ld_pair_opt = [`Pa | `PaN | `PaIQ | `PaA]
+type st_pair_opt = [`Pa | `PaN | `PaIL | `PaL]
+
+let ld_pair_opt_eq (a: ld_pair_opt) (b: ld_pair_opt) : bool =
+  match (a, b) with
+  | (`Pa, `Pa)
+  | (`PaN, `PaN)
+  | (`PaIQ, `PaIQ)
+  | (`PaA, `PaA) -> true
+  | _ -> false
+
+let st_pair_opt_eq (a: st_pair_opt) (b: st_pair_opt) : bool =
+  match (a, b) with
+  | (`Pa, `Pa)
+  | (`PaN, `PaN)
+  | (`PaIL, `PaIL) 
+  | (`PaL, `PaL) -> true
+  | _ -> false
 
 type ld_type = AA | XX | AX | AQ
 
@@ -1243,14 +1261,16 @@ let ldxp_memo = function
   | AXP -> "LDAXP"
 
 let ldp_memo = function
-  | Pa -> "LDP"
-  | PaN -> "LDNP"
-  | PaI -> "LDIAPP"
+  | `Pa -> "LDP"
+  | `PaN -> "LDNP"
+  | `PaIQ -> "LDIAPP"
+  | `PaA -> "LDAP"
 
 let stp_memo = function
-  | Pa -> "STP"
-  | PaN -> "STNP"
-  | PaI -> "STILP"
+  | `Pa -> "STP"
+  | `PaN -> "STNP"
+  | `PaIL -> "STILP"
+  | `PaL -> "STLP"
 
 type st_type = YY | LY
 
@@ -1414,13 +1434,13 @@ type 'k kinstruction =
   | I_ADD_SIMD of reg * reg * reg
   | I_ADD_SIMD_S of reg * reg * reg
   (* More loads *)
-  | I_LDP of pair_opt * variant * reg * reg * reg * 'k idx
+  | I_LDP of ld_pair_opt * variant * reg * reg * reg * 'k idx
   | I_LDPSW of reg * reg * reg * 'k idx
   | I_LDAR of variant * ld_type * reg * reg
   | I_LDXP of variant * ldxp_type * reg * reg * reg
   (* Stores *)
   | I_STR of variant * reg * reg * 'k MemExt.ext
-  | I_STP of pair_opt * variant * reg * reg * reg * 'k idx
+  | I_STP of st_pair_opt * variant * reg * reg * reg * 'k idx
   | I_STLR of variant * reg * reg
   | I_STXR of variant * st_type * reg * reg * reg
   | I_STXP of variant * st_type * reg * reg * reg * reg
