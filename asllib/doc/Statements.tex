@@ -498,7 +498,7 @@ below.
 The type of the right-hand-side (\texttt{a * a}) is imprecise because the multiplication of two
 constant types would result in more than $\maxconstraintsize$ elements, see
 \TypingRuleRef{ApplyBinopTypes}.
-\ASLListing{Type-checking a declaration with an imprecise type}{typing-imprecisetype}{\typingtests/TypingRule.CheckNoPrecisionLoss.asl}
+\ASLListing{Typechecking a declaration with an imprecise type}{typing-imprecisetype}{\typingtests/TypingRule.CheckNoPrecisionLoss.asl}
 
 
 \RenderProseAndFormally{check_no_precision_loss}
@@ -518,7 +518,7 @@ See \ExampleRef{Type-satisfaction Examples}.
 Notice that \TypingRuleRef{SDecl} ensures that a typed \declarationstatementterm{}
 has an initializing expression.
 % The implementation still handles the case where there is no initializing expression,
-% for cases where type-checking is skipped.
+% for cases where typechecking is skipped.
 
 \ExampleDef{Declaration With an Initializing Value}
 In \listingref{semantics-sdeclsome},
