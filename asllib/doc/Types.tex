@@ -539,6 +539,14 @@ In \listingref{BitvectorWidthBounds}, any number can be used instead of \verb|2^
 The width of a \bitvectortypeterm{} can be either \staticallyevaluableterm{}
 or \emph{constrained}. That is, a \symbolicallyevaluableterm{} \constrainedintegerterm{}.
 
+Intuitively, the width of bitvectors need to be \symbolicallyevaluableterm{} in order
+to ensure that the types of bitvectors can be statically expressed.
+See \ExampleRef{Why Symbolically Evaluability Matters}.
+
+Intuitively, the widths of bitvectors are constrained to help provide an upper bound
+on their representations when translating ASL to other languages.
+See \ExampleRef{Why Constrained Bitvector Widths Matter}.
+
 \ExampleDef{Symbolic and Constrained Bitwidth}
 \listingref{symbolicbitwidth} shows an example of a bitvector whose width
 is symbolic --- \verb|2 * N| and a bitvector whose width is determined
@@ -602,8 +610,11 @@ bv=0x14, rotated twice=0x05
 In \listingref{typing-tbits}, all the uses of bitvector types are well-typed.
 \ASLListing{Well-typed Bitvector types}{typing-tbits}{\typingtests/TypingRule.TBits.asl}
 
+\ExampleDef{Why Constrained Bitvector Widths Matter}
 The specification in \listingref{typing-tbits-bad} is ill-typed, since widths need
 to be \constrainedintegersterm.
+If the requirement for constrained widths were not in place, this subprogram could generate
+bitvectors of unbounded width.
 \ASLListing{An ill-typed Bitvector type}{typing-tbits-bad}{\typingtests/TypingRule.TBits.bad.asl}
 
 \ExampleRef{A bitvector type with bitfields} shows a well-typed \bitvectortypeterm{} with bitfields.
