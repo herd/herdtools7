@@ -31,7 +31,7 @@ These are known as \purities{}.
 \RenderType{TPurity}
 
 \begin{description}
-\item[\SEPure] describes the evaluation of a \pureterm{} construct --- one that can be evaluated during type-checking.
+\item[\SEPure] describes the evaluation of a \pureterm{} construct --- one that can be evaluated during typechecking.
 
 \item[\SEReadonly] describes the evaluation of a \readonlyterm{} construct --- one that can read mutable global storage elements but not modify them.
 
@@ -73,7 +73,7 @@ We now define a few helper functions over \sideeffectdescriptorsterm.
 \TypingRuleDef{SideEffectIsPure}
 \RenderRelation{side_effect_is_pure}
 Intuitively, a \emph{\pureterm} \sideeffectdescriptorterm\ helps to establish that
-an expression can be evaluated during type-checking.
+an expression can be evaluated during typechecking.
 
 \ExampleDef{Pure, Read-only, and Symbolically Evaluable Side Effect Descriptors}
 The table below shows all possible \sideeffectdescriptorsterm{} and whether they are \pureterm{}, \readonlyterm{}, and \symbolicallyevaluableterm{}.
