@@ -17,7 +17,7 @@
 {
 let split s = Lexing.from_string s
                |> LexUtil.parse Parser.main
-               |> Ast.to_list
+               |> Ast.node
 }
 
 let digit = [ '0'-'9' ]

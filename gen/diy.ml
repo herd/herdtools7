@@ -251,7 +251,7 @@ let () =
     | All -> All
     | Set s -> Set ( Lexing.from_string s
                      |> LexUtil.parse Parser.main
-                     |> Ast.to_list )
+                     |> Ast.node )
     let upto = !Config.upto
     let varatom = !varatom
     let max_ins = !Config.max_ins

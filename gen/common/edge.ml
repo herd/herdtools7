@@ -202,7 +202,7 @@ and module RMW = A.RMW = struct
     String.trim s
     |> (fun s -> Lexing.from_string s)
     |> LexUtil.parse Parser.main
-    |> Ast.flatten
+    |> Ast.to_list
     |> ( function
       | [x] -> x
       | _ ->
