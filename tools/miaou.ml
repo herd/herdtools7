@@ -341,25 +341,12 @@ and cons_seqs (fs:exp list) (es:exp list) =
       and b = tr b in
       DiffPair (a,b)
 
-    let tr_diff tr tr_not tr_id a b =
-      match a,b with
-      | Var (loc1,id1),Op (_,Seq,[c;Var (_,id2);])
-           when String.equal id1 id2
-        ->
-        begin
-          match tr_not c with
-          | None -> do_tr_diff tr a b
-          | Some c ->
-             mk_list Inter [tr_id loc1 id1 ;c]
-        end
-      | _,_ ->
-         begin
-           match tr_not b with
-           | None ->
-              do_tr_diff tr a b
-           | Some c ->
-              mk_list Inter [tr a; c;]
-         end
+    let tr_diff tr tr_not a b =
+      match tr_not b with
+      | None ->
+        do_tr_diff tr a b
+      | Some c ->
+        mk_list Inter [tr a; c;]
 
     let flatten_if_not =
       if O.flatten then Fun.id
@@ -485,7 +472,6 @@ and cons_seqs (fs:exp list) (es:exp list) =
       tr_diff
         (fun e -> tr_rel e1 e2 e)
         (fun e -> tr_rel_not e1 e2 e)
-        (fun loc id -> tr_rel_id e1 e2 loc id)
         a b
 
     and tr_seq e1 e2 = function
@@ -581,7 +567,6 @@ and cons_seqs (fs:exp list) (es:exp list) =
       tr_diff
         (fun e -> tr_evts e1 e)
         (fun e -> tr_evts_not e1 e)
-        (fun loc id -> tr_evts_id e1 loc id)
         a b
 
     let tr_rel e1 e2 e = tr_rel e1 e2 @@ norm_rel e
