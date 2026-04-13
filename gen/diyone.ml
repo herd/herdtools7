@@ -123,14 +123,14 @@ module Make(O:Config) (M:Builder.S) =
 (********)
     let do_zyva name_opt pp_rs =
       try begin
-        let es =
+        let parsed_cycle =
           M.R.parse_sequence_ast pp_rs
-          |> M.R.parse_expand_relaxs ~ppo:M.ppo
-          |> ( function
-            | [x] -> x
+          |> M.R.parse_expand_relaxs ~ppo:M.ppo in
+        let es =
+          match parsed_cycle with
+            | [x] -> M.R.edges_of x
             | _ ->
-              Warn.user_error "`diyone7` only accepts exactly one input cycle." )
-          |> M.R.edges_of in
+              Warn.user_error "`diyone7` only accepts exactly one input cycle." in
         if O.verbose > 0 then
           Printf.eprintf
             "Parsed edges: %s\n" (M.E.pp_edges es) ;

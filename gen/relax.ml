@@ -39,7 +39,7 @@ module type S = sig
   val pp_relax : relax -> string
   val pp_relax_list : relax list -> string
   val edges_of : relax -> edge list
-  val edges_ofs : relax list -> edge list
+  val edges_of_relax_list : relax list -> edge list
 
   val com : relax list
   val po : relax list
@@ -109,7 +109,7 @@ and type edge = E.edge
         | ERS es -> es
         | PPO -> assert false
 
-        let edges_ofs = Util.List.concat_map edges_of
+        let edges_of_relax_list = Util.List.concat_map edges_of
 
         let rec compare_edges es1 es2 = match es1,es2 with
         | [],[] -> 0
@@ -254,8 +254,6 @@ and type edge = E.edge
             []
 
 
-        open Ast
-
 (* Expand relax macros *)
         let er e = ERS [E.plain_edge e]
 
@@ -268,11 +266,12 @@ and type edge = E.edge
             (fun f k -> er (E.Fenced (f,sd,Dir d1,Dir d2))::k)
 
         let relax_list_to_choice relax_list =
-          List.map (fun relax -> Ast.One relax) relax_list
-            |> ( function
+          let ast_relax_list =
+            List.map (fun relax -> Ast.One relax) relax_list in
+          match ast_relax_list with
               | [] -> assert false
               | [relax] -> relax
-              | relax_list -> Ast.Choice relax_list )
+              | relax_list -> Ast.Choice relax_list
 
 (* Limited variations *)
         let app_def_dp o f r = match o with
@@ -328,6 +327,9 @@ and type edge = E.edge
         let parse_sequence_ast segments =
           Ast.Seq (List.map parse_ast segments)
 
+        (* After wildcard and macro expansion, remove invalid relaxations
+           whose adjacent concrete edges cannot appear consecutively.
+           Pseudo-edges (annotations and insert edge) are ignoredin the check. *)
         let remove_invalid_relaxes relaxes =
           let rec for_all_adjacent_concrete_edge predicate = function
             | [] | [_] -> true
@@ -374,7 +376,7 @@ and type edge = E.edge
           let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
             Ast.bind (parse_expand_relax ~ppo) ast
               |> Ast.to_list
-              |> List.map ( fun e -> ERS (edges_ofs e) )
+              |> List.map ( fun e -> ERS (edges_of_relax_list e) )
 
 (********)
 (* Sets *)

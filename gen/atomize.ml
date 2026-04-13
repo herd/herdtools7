@@ -88,10 +88,8 @@ module Make (F:Fence.S)(A:Atom.S) =
         done with End_of_file -> ()
 
       let zyva_argv es =
-        E.parse_edges es
-        |> atomize
-        |> pp_edges
-        |> printf "%s\n"
+        let es = E.parse_edges es |> atomize in
+        printf "%s\n" (pp_edges es)
 
       let zyva = function
         | [] -> zyva_stdin ()

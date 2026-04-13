@@ -32,7 +32,6 @@ module Make(C:Builder.S)(O:DiyConfig) = struct
 
 open C.E
 open C.R
-open Ast
 
   let parse_input_ast input =
     String.trim input |> parse_ast
@@ -44,7 +43,9 @@ open Ast
   let parse_argument_ast input =
     parse_input_ast input |> Ast.seq_as_choice
 
-let parse_fence s k =  match s with
+let parse_fence s k =
+  let open Ast in
+  match s with
   | One f -> C.E.parse_fence f::k
   | Seq [] -> k
   | Seq (fs) ->
@@ -103,16 +104,18 @@ let parse_fences fs = List.fold_right parse_fence fs []
     let min_relax = !Config.min_relax
 
     let prefix =
-      List.map ( fun segment ->
-        parse_input_ast segment
-      ) O.prefix
-      |> fun e -> Ast.Choice e
-      |> parse_expand_relaxs ~ppo:C.ppo
-      |> List.map (fun l -> [l])
-      |> ( function
-        | [] -> [[]] (* No prefix <=> one empty prefix *)
-        | pss -> pss
-      )
+      (* Parse each `-prefix` argument separately, then combine them as one
+         top-level choice. Thus `-prefix A -prefix B` is interpreted as
+         `-prefix [A|B]`. *)
+      let prefixes =
+        List.map parse_input_ast O.prefix
+        |> fun prefixes -> Ast.Choice prefixes
+        |> parse_expand_relaxs ~ppo:C.ppo
+        (* Wrap each relax into a list *)
+        |> List.map (fun prefix -> [prefix]) in
+      match prefixes with
+      | [] -> [[]] (* No prefix <=> one empty prefix *)
+      | prefixes -> prefixes
 
     let variant = O.variant
 
@@ -133,8 +136,9 @@ let parse_fences fs = List.fold_right parse_fence fs []
 
   let gen lr ls rl n =
     let parse_argument_opt argument =
-      Option.map parse_argument argument
-      |> Option.value ~default:[] in
+      match argument with
+      | Some argument -> parse_argument argument
+      | None -> [] in
     let lr = parse_argument_opt lr
     and ls = parse_argument_opt ls
     and rl = parse_argument_opt rl in
