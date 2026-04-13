@@ -270,13 +270,14 @@ and cons_seqs (fs:exp list) (es:exp list) =
           op : AST.op2;
           intro_txt : string;
           sep_txt : string * string;
+          flattenable : bool;
           items : t list;
         }
       | DiffPair of t * t
       | IfCond of string * t * t
 
-    let mk_list op items =
-      List { op; intro_txt = intro op; sep_txt = sep op; items; }
+    let mk_list ?(flattenable=true) op items =
+      List { op; intro_txt = intro op; sep_txt = sep op; flattenable; items; }
 
     type atom = Pos of string | Neg of string
 
@@ -376,7 +377,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | Op (_,(Union|Inter as op),es) ->
          tr_op e1 e2 op es
       | Op (_,(Seq as op),es) ->
-         List { op; intro_txt = intro op; sep_txt = sep op; items = tr_seq e1 e2 es; }
+         mk_list op (tr_seq e1 e2 es)
       | Op (_,Diff,[a;b]) ->
          tr_rel_diff e1 e2 a b
       | Op (_,Cartesian,[a;b;]) ->
@@ -427,8 +428,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
          let top = List.map (tr_rel e1 e3) es in
          let bottom = List.map (tr_rel e3 e2) es in
          let items = top @ [tr_evts e3 evts] @ bottom in
-         (* Use Union to prevent flattening into surrounding Inter list, so the intro text survives. *)
-         List { op = Union; intro_txt = intro op; sep_txt = sep op; items; }
+         mk_list ~flattenable:false op items
       | App (_,Var (locf,("intervening-write" as f)),Var (loc,id)) ->
          let txt1 = do_pp_rel_id e1 e2 (pp_id locf f) in
          let txt2 = sprintf "{\\%s}" (pp_id loc id) in
@@ -547,7 +547,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
            |> pp_id loc in
          Item (sprintf "\\%s{%s}" id (pp_evt e1))
       | Op (_,(Union|Inter as op),es) ->
-          List { op; intro_txt = intro op; sep_txt = sep op; items = List.map (tr_evts e1) es; }
+          mk_list op (List.map (tr_evts e1) es)
       | Op (_,Diff,[a;b;]) ->
          tr_evts_diff e1 a b
       | If (_,VariantCond vc,Konst (_,Empty _),e) ->
@@ -597,7 +597,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | _,_ -> false
 
     let rec flatten_out = function
-      | List ({ op = (Inter|Union|Seq as op); items; _ } as lst)
+      | List ({ op = (Inter|Union|Seq as op); flattenable = true; items; _ } as lst)
         ->
          List { lst with items = flatten_op op items; }
       | List ({ items; _ } as lst) ->
@@ -613,7 +613,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | e::es ->
          begin
            match flatten_out e with
-           | List { op = op0; items; _ } when same_op op op0
+           | List { flattenable = true; op = op0; items; _ } when same_op op op0
              ->
               items @ flatten_op op es
            | t ->
@@ -688,6 +688,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
               op = op2;
               intro_txt = txt1 ^ " except when " ^ Misc.uncapitalize txt2;
               sep_txt = s2;
+              flattenable = true;
               items = ts2;
             })
       | DiffPair (t1,t2) ->
@@ -701,6 +702,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
                  op = op2;
                  intro_txt = "Except when " ^ Misc.uncapitalize txt2;
                  sep_txt = s2;
+                 flattenable = true;
                  items = ts2;
                }]
            | _ ->
@@ -710,6 +712,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
                 op = Diff;
                 intro_txt = "The following applies";
                 sep_txt = ("","");
+                flattenable = true;
                 items = ts;
               })
       | IfCond (txt,a,b) ->
@@ -720,6 +723,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
               op = Inter;
               intro_txt = txt;
               sep_txt = ("","");
+              flattenable = true;
               items = ts;
             })
 
