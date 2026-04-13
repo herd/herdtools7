@@ -218,8 +218,6 @@ module Make
       let some_labels test =
         do_precise || do_label_init || see_faults test
 
-      let need_symbols env test = see_faults test || U.label_in_outs env test
-
 (***************)
 (* File header *)
 (***************)
@@ -795,8 +793,11 @@ module Make
           O.o "} labels_t;" ;
           O.o ""
         end ;
-        if need_symbols env test then begin
-          UD.dump_label_defs CfgLoc.all_labels ;
+        let pp_faults =  see_faults test
+        and pp_labels = U.label_in_outs env test in
+        let need_symbols = pp_faults || pp_labels in
+        if need_symbols then begin
+          UD.dump_label_defs ~pp_faults ~pp_labels CfgLoc.all_labels ;
           UD.dump_label_funcs do_self CfgLoc.all_labels (T.get_nprocs test)
         end ;
         if see_faults test || U.ptr_in_outs env test then
@@ -814,7 +815,7 @@ module Make
           (fun t -> match Compile.get_fmt Cfg.hexa t with
           | CType.Direct fmt|CType.Macro fmt ->
               if Cfg.hexa then "0x%" ^ fmt else "%" ^ fmt)
-          {|label:"P%s"|} locs env
+          locs env
 
       let some_test_vars test = Misc.consp test.T.globals
       let some_vars test = some_test_vars test || some_labels test
@@ -1003,7 +1004,7 @@ module Make
             (fun rloc -> match U.find_rloc_type rloc env with
             | Pointer _ when U.is_rloc_label rloc env ->
                 None,
-                ([sprintf "instr_symb_name[p->%s]" (dump_rloc_tag_coded rloc)], [])
+                ([sprintf "instr_symb_label[p->%s]" (dump_rloc_tag_coded rloc)], [])
             | Pointer _  when U.is_rloc_tag_ptr rloc env ->
                 None,
                 ([sprintf "pretty_addr[untagged(p->%s)]" (dump_rloc_tag_coded rloc);

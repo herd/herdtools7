@@ -159,7 +159,7 @@ module Make
 (* Some dumping stuff *)
       val register_type : 'loc ->  CType.t -> CType.t
       val fmt_outcome_as_list :
-        T.t -> (CType.base -> string) -> string -> A.RLocSet.t -> env
+        T.t -> (CType.base -> string) -> A.RLocSet.t -> env
         -> (string * string list) list
       val fmt_outcome : T.t -> (CType.base -> string) -> A.RLocSet.t -> env -> string
       val fmt_faults : (A.V.v, A.FaultType.t) Fault.atom list -> string
@@ -224,7 +224,9 @@ module Make
         val define_label_offsets : env -> T.t -> unit
 
         (* Dump definitions relating to labels in the post-condition *)
-        val dump_label_defs : Label.Full.full list -> unit
+        val dump_label_defs :
+          pp_faults:bool -> pp_labels:bool ->
+          Label.Full.full list -> unit
 
         (* Dump functions relating to labels in the post-condition *)
         val dump_label_funcs : bool -> Label.Full.full list -> int -> unit
@@ -421,10 +423,10 @@ end
 
       let register_type _loc t = t (* Systematically follow given type *)
 
-      let fmt_outcome_as_list test pp_fmt_base fmt_label rlocs env =
+      let fmt_outcome_as_list test pp_fmt_base rlocs env =
         let tr_out = tr_out test in
         let rec pp_fmt t = match t with
-        | CType.Pointer t when CType.is_ins_t t -> [fmt_label]
+        | CType.Pointer t when CType.is_ins_t t -> ["%s";]
         | CType.Pointer t when CType.is_tag t -> ["%s";"%s"]
         | CType.Pointer _ -> ["%s"]
         | CType.Base "pteval_t" ->
@@ -448,7 +450,7 @@ end
          rlocs
 
       let fmt_outcome test pp_fmt_base locs env =
-        let pps = fmt_outcome_as_list test pp_fmt_base {|label:\"P%s\"|} locs env in
+        let pps = fmt_outcome_as_list test pp_fmt_base locs env in
         String.concat " "
           (List.map
              (fun (p1,p2) -> sprintf "%s=%s;" p1 (String.concat "" p2))
@@ -777,20 +779,36 @@ end
             O.o ""
           end
 
-        let dump_label_defs lbls =
-          O.f "#define %-25s  0" (instr_symb_id "UNKNOWN") ;
+        let dump_label_defs ~pp_faults ~pp_labels lbls =
+          O.f "#define %-25s  0" (instr_symb_id "NULL") ;
           (* Define indices for labels *)
           List.iteri
             (fun i (p,lbl) ->
                let flbl = OutUtils.fmt_lbl_var p lbl in
                O.f "#define %-25s  %d" (instr_symb_id flbl) (i + 1))
             lbls ;
+          O.f "#define %-25s  %d"
+            (instr_symb_id "UNKNOWN")
+            (List.length lbls+1) ;
           O.o "" ;
-          O.f "static const char *instr_symb_name[] = {" ;
-          O.oi "\"UNKNOWN\"," ;
-          (* Define names for inst symbols *)
-          List.iter (fun (p,lbl) -> O.fi "\"%d:%s\","p lbl) lbls ;
-          O.o "};" ;
+          (* Define names for code pointers in faults *)
+          if pp_faults then begin
+            O.f "static const char *instr_symb_name[] = {" ;
+            O.oi "\"NULL\"," ;
+            List.iter (fun (p,lbl) -> O.fi "\"%d:%s\","p lbl) lbls ;
+            O.oi "\"UNKNOWN\"," ;
+            O.o "};" ;
+            O.o ""
+          end ;
+        (* Define names for code pointers in outcome *)
+          if pp_labels then begin
+            O.f "static const char *instr_symb_label[] = {" ;
+            O.oi "\"0\"," ;
+            List.iter
+              (fun (p,lbl) -> O.fi "\"label:\\\"P%d:%s\\\"\"," p lbl) lbls ;
+            O.oi "\"UNKNOWN\"," ;
+            O.o "};"
+          end ;
           O.o ""
 
         let dump_label_funcs_skel do_self lbls nprocs =
@@ -798,6 +816,7 @@ end
             O.o "static int get_instr_symb_id(ctx_t *ctx, ins_t* ins, int i) {"
           else
             O.o "static int get_instr_symb_id(ctx_t *ctx, ins_t* ins) {" ;
+          O.fi "if (!ins) return %s;" (instr_symb_id "NULL") ;
           for p=0 to nprocs - 1 do
             if List.exists (fun (p1,_) -> p = p1) lbls then begin
               let code = OutUtils.fmt_code p in
@@ -825,6 +844,7 @@ end
 
         let dump_label_funcs_presi _do_self lbls _nprocs =
           O.o "static int get_instr_symb_id(labels_t *lbls, ins_t* pc) {" ;
+          O.fi "if (!pc) return %s;" (instr_symb_id "NULL") ;
           List.iter
             (fun (p,lbl) ->
                let flbl = (OutUtils.fmt_lbl_var p lbl) in

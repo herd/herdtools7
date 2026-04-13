@@ -1097,7 +1097,7 @@ module Make
                  let sloc = A.dump_rloc_tag rloc in
                  match U.find_rloc_type rloc env with
                  | Pointer t when CType.is_ins_t t ->
-                   sprintf " instr_symb_name[o[%s_f]]" sloc
+                   sprintf " instr_symb_label[o[%s_f]]" sloc
                  | Pointer _ -> sprintf "pretty_addr[o[%s_f]]" sloc
                  | Array (t,sz) ->
                      let rec pp_rec k =
@@ -2963,8 +2963,9 @@ module Make
         let env = U.build_env test in
         dump_header test ;
         if U.label_in_outs env test then
-          UD.dump_label_defs (T.all_labels test) ;
-        dump_getinstrs test ;
+          UD.dump_label_defs ~pp_labels:true ~pp_faults:false
+            (T.all_labels test) ;
+        UD.dump_getinstrs test ;
         dump_read_timebase () ;
         dump_threads test ;
         dump_topology doc test ;
