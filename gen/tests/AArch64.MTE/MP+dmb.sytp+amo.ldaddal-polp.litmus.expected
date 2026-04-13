@@ -1,15 +1,15 @@
 Test MP+dmb.sytp+amo.ldaddal-polp Allowed
 States 6
-1:X2=0; 1:X5=0; [y]=1;  ~Fault(P1:L00,x);
-1:X2=0; 1:X5=0; [y]=1; Fault(P1:L00,x:green,TagCheck);
-1:X2=1; 1:X5=0; [y]=1;  ~Fault(P1:L00,x);
-1:X2=1; 1:X5=0; [y]=1; Fault(P1:L00,x:green,TagCheck);
-1:X2=1; 1:X5=0; [y]=3;  ~Fault(P1:L00,x);
-1:X2=1; 1:X5=0; [y]=3; Fault(P1:L00,x:green,TagCheck);
+1:X2=0; 1:X5=0; [y]=1;  ~Fault(P1);
+1:X2=0; 1:X5=0; [y]=1; Fault(P1,TagCheck:Async);
+1:X2=1; 1:X5=0; [y]=1;  ~Fault(P1);
+1:X2=1; 1:X5=0; [y]=1; Fault(P1,TagCheck:Async);
+1:X2=1; 1:X5=0; [y]=3;  ~Fault(P1);
+1:X2=1; 1:X5=0; [y]=3; Fault(P1,TagCheck:Async);
 Ok
 Witnesses
 Positive: 1 Negative: 5
-Condition exists ([y]=3 /\ 1:X2=1 /\ 1:X5=0 /\ not (fault(P1:L00,x)))
+Condition exists ([y]=3 /\ 1:X2=1 /\ 1:X5=0 /\ not (fault(P1)))
 Observation MP+dmb.sytp+amo.ldaddal-polp Sometimes 1 5
-Hash=6c1d336ed0e74e6342a786104193f393
+Hash=12e16f132c49a2d5f8f57c934eabd623
 

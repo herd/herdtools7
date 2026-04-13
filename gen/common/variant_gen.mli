@@ -30,6 +30,8 @@ type t =
   | Self
 (* MTE = Memory tagging *)
   | MemTag
+(* This will change the default sync memtag to async memtag *)
+  | Async
 (* C: Prevents the use of Volatile to capture bugs in compilation *)
   | NoVolatile
 (* Morello C64 instruction set *)
