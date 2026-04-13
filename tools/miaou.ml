@@ -266,11 +266,18 @@ and cons_seqs (fs:exp list) (es:exp list) =
 
     type t =
       | Item of string
-      | List of AST.op2 * string * (string * string) * t list
+      | List of {
+          op : AST.op2;
+          intro_txt : string;
+          sep_txt : string * string;
+          flattenable : bool;
+          items : t list;
+        }
       | DiffPair of t * t
       | IfCond of string * t * t
 
-    let mk_list op itms = List (op,intro op,sep op,itms)
+    let mk_list ?(flattenable=true) op items =
+      List { op; intro_txt = intro op; sep_txt = sep op; flattenable; items; }
 
     type atom = Pos of string | Neg of string
 
@@ -334,25 +341,12 @@ and cons_seqs (fs:exp list) (es:exp list) =
       and b = tr b in
       DiffPair (a,b)
 
-    let tr_diff tr tr_not tr_id a b =
-      match a,b with
-      | Var (loc1,id1),Op (_,Seq,[c;Var (_,id2);])
-           when String.equal id1 id2
-        ->
-        begin
-          match tr_not c with
-          | None -> do_tr_diff tr a b
-          | Some c ->
-             mk_list Inter [tr_id loc1 id1 ;c]
-        end
-      | _,_ ->
-         begin
-           match tr_not b with
-           | None ->
-              do_tr_diff tr a b
-           | Some c ->
-              mk_list Inter [tr a; c;]
-         end
+    let tr_diff tr tr_not a b =
+      match tr_not b with
+      | None ->
+        do_tr_diff tr a b
+      | Some c ->
+        mk_list Inter [tr a; c;]
 
     let flatten_if_not =
       if O.flatten then Fun.id
@@ -370,7 +364,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | Op (_,(Union|Inter as op),es) ->
          tr_op e1 e2 op es
       | Op (_,(Seq as op),es) ->
-         List (op,intro op,sep op,tr_seq e1 e2 es)
+         List { op; intro_txt = intro op; sep_txt = sep op; flattenable = true; items = tr_seq e1 e2 es; }
       | Op (_,Diff,[a;b]) ->
          tr_rel_diff e1 e2 a b
       | Op (_,Cartesian,[a;b;]) ->
@@ -422,7 +416,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
          let bottom = List.map (tr_rel e3 e2) es in
          let items = top @ [tr_evts e3 evts] @ bottom in
          (* Use Union to prevent flattening into surrounding Inter list, so the intro text survives. *)
-         List (Union,intro op,sep op,items)
+         List { op = Union; intro_txt = intro op; sep_txt = sep op; flattenable = true; items; }
       | App (_,Var (locf,("intervening-write" as f)),Var (loc,id)) ->
          let txt1 = do_pp_rel_id e1 e2 (pp_id locf f) in
          let txt2 = sprintf "{\\%s}" (pp_id loc id) in
@@ -479,7 +473,6 @@ and cons_seqs (fs:exp list) (es:exp list) =
       tr_diff
         (fun e -> tr_rel e1 e2 e)
         (fun e -> tr_rel_not e1 e2 e)
-        (fun loc id -> tr_rel_id e1 e2 loc id)
         a b
 
     and tr_seq e1 e2 = function
@@ -511,15 +504,11 @@ and cons_seqs (fs:exp list) (es:exp list) =
 
     and notItem = function
       | Item txt ->
-         Some
-           (Item
-              (makeuppercase @@ sprintf "\\notthecase{%s}" txt))
-      | List (op,intro_txt,sep_txt,es) ->
-          Some
-            (List
-               (op,
-                makeuppercase @@ sprintf "\\notthecase{%s}" intro_txt,
-                sep_txt,es))
+        let txt =  makeuppercase @@ sprintf "\\notthecase{%s}" txt in
+         Some (Item txt)
+      | List ({ intro_txt; _ } as l) ->
+          let intro_txt =  makeuppercase @@ sprintf "\\notthecase{%s}" intro_txt in
+          Some (List { l with intro_txt; flattenable=false; })
       | DiffPair _|IfCond _ ->
          None
 
@@ -545,7 +534,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
            |> pp_id loc in
          Item (sprintf "\\%s{%s}" id (pp_evt e1))
       | Op (_,(Union|Inter as op),es) ->
-          List (op,intro op,sep op,List.map (tr_evts e1) es)
+          mk_list op (List.map (tr_evts e1) es)
       | Op (_,Diff,[a;b;]) ->
          tr_evts_diff e1 a b
       | If (_,VariantCond vc,Konst (_,Empty _),e) ->
@@ -564,7 +553,8 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | App (_,Var (_,"range"), Op (loc2,Seq,es)) ->
         let e3 = Next.next () in
         begin match tr_rel e3 e1 (Op (loc2,Seq,es)) with
-        | List (op,intro_txt,sep_txt,es) -> List (op,intro_txt,sep_txt,List.rev es)
+        | List ({ items; _ } as l) ->
+           List { l with items = List.rev items; }
         | _ as i -> i
         end
       | App (_,Var (_,"range"),Var (_,"lxsx")) ->
@@ -578,7 +568,6 @@ and cons_seqs (fs:exp list) (es:exp list) =
       tr_diff
         (fun e -> tr_evts e1 e)
         (fun e -> tr_evts_not e1 e)
-        (fun loc id -> tr_evts_id e1 loc id)
         a b
 
     let tr_rel e1 e2 e = tr_rel e1 e2 @@ norm_rel e
@@ -594,11 +583,11 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | _,_ -> false
 
     let rec flatten_out = function
-      | List ((Inter|Union|Seq as op),intro_txt,sep_txt,ts)
+      | List ({ op = (Inter|Union|Seq as op); flattenable = true; items; _ } as lst)
         ->
-         List (op,intro_txt,sep_txt,(flatten_op op ts))
-      | List (op,txt,s,ts) ->
-         List (op,txt,s,List.map flatten_out ts)
+         List { lst with items = flatten_op op items; }
+      | List ({ items; _ } as lst) ->
+         List { lst with items = List.map flatten_out items; }
       | DiffPair (e1,e2) ->
          DiffPair (flatten_out e1,flatten_out e2)
       | IfCond (txt,e1,e2) ->
@@ -610,19 +599,16 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | e::es ->
          begin
            match flatten_out e with
-           | List (op0,_,_,ts) when same_op op op0
+           | List { flattenable = true; op = op0; items; _ } when same_op op op0
              ->
-              ts@flatten_op op es
+              items @ flatten_op op es
            | t ->
               t::flatten_op op es
          end
 
     let rec rm_dups = function
-      | List ((Inter|Union|Seq as op),intro_txt,sep_txt,ts)
-        ->
-         List (op,intro_txt,sep_txt,rm_dups_args ts)
-      | List (op,txt,s,ts) ->
-         List (op,txt,s,List.map rm_dups ts)
+      | List ({ items; _ } as lst) ->
+         List { lst with items = rm_dups_args items; }
       | DiffPair (e1,e2) ->
          DiffPair (rm_dups e1,rm_dups e2)
       | IfCond (txt,e1,e2) ->
@@ -655,7 +641,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
     let rec pp_def pref s = function
       | Item txt ->
          printf "%s %s%s\n" pref txt s
-      | List (_,txt,(s1,s2),ts) ->
+      | List { intro_txt = txt; sep_txt = (s1,s2); items = ts; _ } ->
          printf "%s %s:\n" pref txt ;
          printf "\\begin{itemize}\n" ;
          pp_txts "" s1 s2 s ts ;
@@ -672,9 +658,9 @@ and cons_seqs (fs:exp list) (es:exp list) =
 
     and pp_txt indent s = function
       | Item txt
-      | List (_,_,_,[Item txt]) ->
+      | List { items = [Item txt]; _ } ->
          printf "%s\\item %s%s\n" indent txt s
-      | List (_,txt,(s1,s2),txts) ->
+      | List { intro_txt = txt; sep_txt = (s1,s2); items = txts; _ } ->
          printf "%s\\item %s:\n" indent (Misc.capitalize txt) ;
          let indent = next_indent indent in
          printf "%s\\begin{itemize}\n" indent ;
@@ -682,33 +668,50 @@ and cons_seqs (fs:exp list) (es:exp list) =
          printf "%s\\end{itemize}\n" indent
       | DiffPair (Item txt1,Item txt2) ->
          printf "%s\\item %s except when %s%s\n" indent txt1 txt2 s
-      | DiffPair (Item txt1,List (op2,txt2,s2,ts2)) ->
+      | DiffPair (Item txt1,List { op = op2; intro_txt = txt2; sep_txt = s2; items = ts2; _ }) ->
          pp_txt indent s
-           (List
-              (op2,txt1 ^ " except when " ^ Misc.uncapitalize txt2,
-               s2,ts2))
+           (List {
+              op = op2;
+              intro_txt = txt1 ^ " except when " ^ Misc.uncapitalize txt2;
+              sep_txt = s2;
+              flattenable = true;
+              items = ts2;
+            })
       | DiffPair (t1,t2) ->
          let ts =
            match t2 with
            | Item txt2 ->
               [t1;Item ("Except when " ^ txt2)]
-            | List (op2,txt2,s2,ts2) ->
-               [t1;
-                List
-                  (op2,
-                   "Except when " ^ Misc.uncapitalize txt2,
-                   s2,ts2)]
-            | _ ->
-               [t1;Item "Except when";t2;] in
-            pp_txt indent s
-              (List
-              (Diff,
-               "The following applies",("",""),
-               ts))
+           | List { op = op2; intro_txt = txt2; sep_txt = s2; items = ts2; _ } ->
+              [t1;
+                List {
+                 op = op2;
+                 intro_txt = "Except when " ^ Misc.uncapitalize txt2;
+                 sep_txt = s2;
+                 flattenable = true;
+                 items = ts2;
+               }]
+           | _ ->
+              [t1;Item "Except when";t2;] in
+           pp_txt indent s
+             (List {
+                op = Diff;
+                intro_txt = "The following applies";
+                sep_txt = ("","");
+                flattenable = true;
+                items = ts;
+              })
       | IfCond (txt,a,b) ->
          let txt = sprintf "When %s" txt
          and ts = [a; Item "Otherwise"; b;] in
-         pp_txt indent s (List (Inter,txt,("",""),ts))
+         pp_txt indent s
+           (List {
+              op = Inter;
+              intro_txt = txt;
+              sep_txt = ("","");
+              flattenable = true;
+              items = ts;
+            })
 
         and pp_txts indent s1 s2 s3 = function
       | [] -> ()
