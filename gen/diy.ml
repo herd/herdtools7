@@ -193,7 +193,10 @@ let exec_conf s =
   ()
 
 let () =
-  Arg.parse (Config.diy_spec ()) get_arg Config.usage_msg;
+  Util.parse_cmdline
+    ~usage_suffix:Config.parser_syntax_doc
+    (Config.diy_spec ())
+    get_arg;
   begin
   match !Config.conf with
   | None -> ()

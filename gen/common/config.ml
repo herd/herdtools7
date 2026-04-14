@@ -141,6 +141,20 @@ let parse_cumul = function
   | "true" -> All
   | s -> Set s
 
+let parser_syntax_doc =
+  "Parser syntax: whitespace or ',' for sequence, '|' for choice, '?' for optional, and '[...]' for grouping, for examples:\n\
+    - 'A B' means the sequence A,B.\n\
+    - 'A|B,C' and '[A|B] C' both mean the choice between A and B, then the sequence with C.\n\
+    - '[A,B]?' means either the group '[A,B]' or the empty '[]'.\n\
+    - 'A|B,C|[D,E]?' parses as '(A|B),(C|([D,E]?))'.\n\
+   Depending on the tool and context, a sequence may be interpreted either as a 'followed-by' relation between relaxations or as a choice between inputs."
+
+let with_parser_syntax_doc doc =
+  doc ^ " " ^ parser_syntax_doc
+
+let with_top_level_choice_doc doc =
+  doc ^ " At the top level, a plain sequence such as '[A B] C [D E]' is interpreted as a choice, '[A,B]|C|[D,E]'."
+
 
 (* Helpers *)
 
@@ -316,7 +330,8 @@ let diy_spec () =
       (Code.pp_check !mode)
    )::
    ("-cumul", Arg.String (fun b -> cumul := parse_cumul b),
-    "<s> allow non-explicit fence cumulativity for specified fenced (default all)")::
+    with_top_level_choice_doc
+      "<s> allow non-explicit fence cumulativity for specified fenced (default all)")::
    ("-conf", Arg.String (fun s -> conf := Some s), "<file> read configuration file")::
    ("-size", Arg.Int (fun n -> size := n),
     sprintf
@@ -333,9 +348,9 @@ let diy_spec () =
    ("-one", Arg.Unit (fun _ -> one := true),
     "<relax-list> specify a sole cycle")::
   ("-prefix", Arg.String (fun s -> prefix := s :: !prefix),
-    "<relax-list> specify a prefix for cycles, can be repeated")::
+    with_top_level_choice_doc "<relax-list> specify a prefix for cycles, can be repeated")::
    ("-relax", Arg.String (fun s -> relaxs := !relaxs @ [s]),
-    "<relax-list> specify a relax list")::
+    with_top_level_choice_doc "<relax-list> specify a relax list")::
    ("-mix", Arg.Bool (fun b -> mix := b),
     sprintf
       "<bool> mix relaxations when several are given (default %b)" !mix)::
@@ -344,9 +359,9 @@ let diy_spec () =
    ("-minrelax",   Arg.Int (fun n -> mix := true ; min_relax := n),
     sprintf "<n> test relaxations considering <n> or more different relaxations (default %i). Implies -mix true." !min_relax)::
    ("-safe", Arg.String (fun s -> safes := !safes @ [s]),
-    "<relax-list> specify a safe list")::
+    with_top_level_choice_doc "<relax-list> specify a safe list")::
    ("-relaxlist", Arg.String (fun s -> safes := !safes @[s]),
-    "<relax-list> specify a list of relaxations of interest (alias for -safe)")::
+    with_top_level_choice_doc "<relax-list> specify a list of relaxations of interest (alias for -safe)")::
    ("-rejectlist", Arg.String (fun s -> rejects := Some s),
    "<reject-list> specify a list of relaxation combinations to reject from generation")::
    stdout_spec false ::
