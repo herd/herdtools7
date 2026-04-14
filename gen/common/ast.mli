@@ -7,7 +7,6 @@ type 'prim t =
 
 val bind : ('a -> 'b t) -> 'a t -> 'b t
 val pp : ('a -> string) -> 'a t -> string
-val node : 'a t -> 'a t list
 
 (* Legacy `diy7` parsing interprets a plain top-level sequence as a choice
    for backward compatibility. If the top-level sequence already mixes in an

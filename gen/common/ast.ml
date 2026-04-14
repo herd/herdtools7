@@ -34,12 +34,6 @@ let list_cross_product_map f lhs rhs =
   ) lhs
   |> List.flatten
 
-let rec node = function
-  | One _ as one -> [ one ]
-  | Opt t -> node t
-  | Seq l | Choice l -> l
-  | Multi multi -> [ multi ]
-
 let seq_as_choice = function
   | Seq seq as ast ->
       if List.exists (function Choice _ -> true | _ -> false) seq
