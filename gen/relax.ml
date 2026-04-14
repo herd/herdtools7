@@ -319,44 +319,6 @@ and type edge = E.edge
             with _ -> None
           else None
 
-        let remove_invalid_relaxes relaxes =
-          let rec for_all_adjacent_concrete_edge predicate = function
-            | [] | [_] -> true
-            | lhs :: rhs :: list ->
-                match E.is_non_pseudo lhs.E.edge, E.is_non_pseudo rhs.E.edge with
-                | true, true ->
-                    predicate lhs rhs
-                    && for_all_adjacent_concrete_edge predicate (rhs :: list)
-                | true, false ->
-                    for_all_adjacent_concrete_edge predicate (lhs :: list)
-                | false, true ->
-                    for_all_adjacent_concrete_edge predicate (rhs :: list)
-                | false, false ->
-                    for_all_adjacent_concrete_edge predicate list in
-          let start_before_end_after_predicate list =
-            let valid,_,_ = List.fold_left
-            ( fun ( valid, start_before, end_after ) l ->
-              match valid, start_before, end_after, E.get_predicate l with
-              (* Propagate invalid flag *)
-              | false, _, _,_ -> (false, start_before, end_after)
-              (* Process the heads if there are before predicates or until find the first after predicate *)
-              | true, true, _, pred -> true, pred = Some E.Before, pred = Some E.After
-              (* A before predicate in the middle of the list *)
-              | true, false, end_after, pred when pred = Some E.Before -> false, false, end_after
-              (* Until find the first after predicate *)
-              | true, false, false, pred -> true, false, pred = Some E.After
-              (* After find the first after predicate *)
-              | true, false, true, pred -> pred = Some E.After, false, true
-            ) (true,true,false) list in
-            valid in
-          List.filter_map
-          ( fun relax ->
-              let edges = edges_of relax in
-              if for_all_adjacent_concrete_edge E.can_precede edges
-                 && start_before_end_after_predicate edges
-                then Some relax else None
-          ) relaxes
-
         let parse_expand_relax ?(ppo=(fun _ k -> k)) str =
           match str with
           (* Directly unfold macro *)
@@ -406,6 +368,45 @@ and type edge = E.edge
             (fun chan r -> fprintf chan "%s" (pp_relax r))
             t ;
           fprintf chan "}"
+
+        let remove_invalid_relaxes relaxes =
+          let rec for_all_adjacent_concrete_edge predicate = function
+            | [] | [_] -> true
+            | lhs :: rhs :: list ->
+                match E.is_non_pseudo lhs.E.edge, E.is_non_pseudo rhs.E.edge with
+                | true, true ->
+                    predicate lhs rhs
+                    && for_all_adjacent_concrete_edge predicate (rhs :: list)
+                | true, false ->
+                    for_all_adjacent_concrete_edge predicate (lhs :: list)
+                | false, true ->
+                    for_all_adjacent_concrete_edge predicate (rhs :: list)
+                | false, false ->
+                    for_all_adjacent_concrete_edge predicate list in
+          let start_before_end_after_predicate list =
+            let valid,_,_ = List.fold_left
+            ( fun ( valid, start_before, end_after ) l ->
+              match valid, start_before, end_after, E.get_predicate l with
+              (* Propagate invalid flag *)
+              | false, _, _,_ -> (false, start_before, end_after)
+              (* Process the heads if there are before predicates or until find the first after predicate *)
+              | true, true, _, pred -> true, pred = Some E.Before, pred = Some E.After
+              (* A before predicate in the middle of the list *)
+              | true, false, end_after, pred when pred = Some E.Before -> false, false, end_after
+              (* Until find the first after predicate *)
+              | true, false, false, pred -> true, false, pred = Some E.After
+              (* After find the first after predicate *)
+              | true, false, true, pred -> pred = Some E.After, false, true
+            ) (true,true,false) list in
+            valid in
+          List.filter
+            (fun relax ->
+              let edges = edges_of relax in
+              for_all_adjacent_concrete_edge E.can_precede edges
+              && start_before_end_after_predicate edges)
+            relaxes
+          |> Set.of_list
+          |> Set.elements
 
         let is_cumul r =
           let open E in
