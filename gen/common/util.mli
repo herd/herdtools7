@@ -30,7 +30,8 @@ val parse_tags :
 val arch_opt : Archs.t ref -> spec
 
 
-val parse_cmdline : spec list -> (string -> unit) -> unit
+val parse_cmdline :
+  ?usage_suffix:string -> spec list -> (string -> unit) -> unit
 
 module List : sig
   (** [concat_map f l] gives the same result as [List.concat (List.map f l)].

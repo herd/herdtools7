@@ -48,8 +48,13 @@ module Make(R:I) : S with type relax = R.relax
     }
 
   let parse_relaxs input =
-    let parsed_input = Lexing.from_string input
-    |> LexUtil.parse Parser.main in
+    let parsed_input =
+      try
+        Lexing.from_string input
+        |> LexUtil.parse Parser.main
+      with
+      | Parser.Error ->
+          Warn.user_error "Bad relax syntax: %s" input in
     (* Sanity check: the input must be a singleton list *)
     let open Ast in
     let parsed_list = match parsed_input with
