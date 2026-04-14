@@ -47,8 +47,17 @@ build-release: Version.ml
 
 build: check-deps | just-build
 
-install:
+install-herdtools:
 	sh ./dune-install.sh $(PREFIX)
+
+build-aslref:
+	dune build -p aslref --profile $(DUNE_PROFILE)
+
+install-aslref: build-aslref
+	# There are no lib files for aslref so we don't need dune-install.sh
+	dune install aslref --prefix $(PREFIX)
+
+install: install-herdtools install-aslref
 
 uninstall:
 	sh ./dune-uninstall.sh $(PREFIX)
