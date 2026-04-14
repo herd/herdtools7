@@ -378,7 +378,7 @@ let run_with (args : args) : unit =
         (pp_print_list ~pp_sep:pp_print_cut Instrumentation.SemanticsRule.pp)
         used_rules
   in
-  if exit_code != 0 then raise (Exit exit_code)
+  raise (Exit exit_code)
 
 let () =
   try
