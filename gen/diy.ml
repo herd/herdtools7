@@ -22,7 +22,7 @@ module type DiyConfig = sig
   val choice : Code.check
   val variant : Variant_gen.t -> bool
   val prefix : string list
-  val cumul :   string Ast.t list Config.cumul
+  val cumul : string Config.cumul
   val max_ins : int
   val upto : bool
   val varatom : string list
@@ -43,23 +43,16 @@ open C.R
   let parse_argument_ast input =
     parse_input_ast input |> Ast.seq_as_choice
 
-let parse_fence s k =
-  let open Ast in
-  match s with
-  | One f -> C.E.parse_fence f::k
-  | Seq [] -> k
-  | Seq (fs) ->
-      List.fold_right
-        (fun s k ->
-          match s with
-          | One s -> C.E.parse_fence s::k
-          | _ -> assert false)
-        fs k
-  | Opt _ -> assert false
-  | Choice _ -> assert false
-  | Multi _ -> assert false
-
-let parse_fences fs = List.fold_right parse_fence fs []
+  (* Parse the `-cumul` argument, which should be a list of individual fences. *)
+  let parse_fences input_fences =
+    let ast = parse_argument_ast input_fences in
+    (* Note that `parse_fence` might fail *)
+    let fences = Ast.bind ( fun input -> Ast.One(C.E.parse_fence input) ) ast
+    |> Ast.to_list in
+    (* Each expanded alternative must contain exactly one fence. *)
+    if List.for_all ( function [_] -> true | _ -> false ) fences then
+      List.flatten fences
+    else Warn.user_error "%s is not a list of fence" input_fences
 
   let varatom_ess =
     if C.A.bellatom then Misc.identity
@@ -238,12 +231,7 @@ let () =
     let choice = !Config.mode
     let prefix = !Config.prefix
     let variant = !Config.variant
-    let cumul = match !Config.cumul with
-    | Empty -> Empty
-    | All -> All
-    | Set s -> Set ( Lexing.from_string s
-                     |> LexUtil.parse Parser.main
-                     |> Ast.node )
+    let cumul = !Config.cumul
     let upto = !Config.upto
     let varatom = !varatom
     let max_ins = !Config.max_ins
