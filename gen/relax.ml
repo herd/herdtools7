@@ -327,7 +327,8 @@ and type edge = E.edge
 
         (* After wildcard and macro expansion, remove invalid relaxations
            whose adjacent concrete edges cannot appear consecutively.
-           Pseudo-edges (annotations and insert edge) are ignoredin the check. *)
+           Pseudo-edges (annotations and insert edge) are ignored in the check.
+           Duplications are removed as well. *)
         let remove_invalid_relaxes relaxes =
           let rec for_all_adjacent_concrete_edge predicate = function
             | [] | [_] -> true
@@ -342,12 +343,15 @@ and type edge = E.edge
                     for_all_adjacent_concrete_edge predicate (rhs :: list)
                 | false, false ->
                     for_all_adjacent_concrete_edge predicate list in
-          List.filter_map
+          List.filter
           ( fun relax ->
-              let is_valid = edges_of relax
-                  |> for_all_adjacent_concrete_edge E.can_precede in
-              if is_valid then Some relax else None
+            let edges = edges_of relax in
+            (* Drop empty alternatives introduced by `?`; they do not
+               describe an actual relaxation. *)
+            edges <> []
+            && for_all_adjacent_concrete_edge E.can_precede edges
           ) relaxes
+          |> List.sort_uniq compare
 
         let parse_expand_relax ?(ppo=(fun _ k -> k)) str =
           match str with

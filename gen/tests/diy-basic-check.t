@@ -622,7 +622,7 @@ Alignment filter behaviour between local `Pos**` and internal communication in `
   
   $ diy7 -arch AArch64 -relax 'PodWR?' -unfold-only 2>&1
   ***relax***
-  [] PodWR
+  PodWR
   ***safe***
   
   ***reject***
@@ -662,7 +662,7 @@ Alignment filter behaviour between local `Pos**` and internal communication in `
   ***relax***
   
   ***safe***
-  [] Fre
+  Fre
   ***reject***
   
   $ diy7 -arch AArch64 -safe '[PodWR Fre]' -unfold-only 2>&1
