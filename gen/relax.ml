@@ -325,49 +325,6 @@ and type edge = E.edge
         let parse_sequence_ast parser_grammar segments =
           Ast.Seq (List.map (parse_ast parser_grammar) segments)
 
-        (* After wildcard and macro expansion, remove invalid relaxations
-           whose adjacent concrete edges cannot appear consecutively.
-           Pseudo-edges (annotations and insert edge) are ignoredin the check. *)
-        let remove_invalid_relaxes relaxes =
-          let rec for_all_adjacent_concrete_edge predicate = function
-            | [] | [_] -> true
-            | lhs :: rhs :: list ->
-                match E.is_non_pseudo lhs.E.edge, E.is_non_pseudo rhs.E.edge with
-                | true, true ->
-                    predicate lhs rhs
-                    && for_all_adjacent_concrete_edge predicate (rhs :: list)
-                | true, false ->
-                    for_all_adjacent_concrete_edge predicate (lhs :: list)
-                | false, true ->
-                    for_all_adjacent_concrete_edge predicate (rhs :: list)
-                | false, false ->
-                    for_all_adjacent_concrete_edge predicate list in
-          let leading_before_trailing_after_predicate list =
-            let valid,_,_ = List.fold_left
-            ( fun ( valid, leading_before, trailing_after ) l ->
-              match valid, leading_before, trailing_after, E.get_predicate l with
-              (* Propagate invalid flag *)
-              | false, _, _,_ -> (false, leading_before, trailing_after)
-              (* Process the leading edges while they are before predicates,
-                 until the first non-before edge. *)
-              | true, true, _, pred -> true, pred = Some E.Before, pred = Some E.After
-              (* A before predicate in the middle of the list *)
-              | true, false, trailing_after, pred when pred = Some E.Before ->
-                  false, false, trailing_after
-              (* Until find the first after predicate *)
-              | true, false, false, pred -> true, false, pred = Some E.After
-              (* Once trailing after predicates start, only after predicates may follow. *)
-              | true, false, true, pred -> pred = Some E.After, false, true
-            ) (true,true,false) list in
-            valid in
-          List.filter_map
-          ( fun relax ->
-              let edges = edges_of relax in
-              if for_all_adjacent_concrete_edge E.can_precede edges
-                 && leading_before_trailing_after_predicate edges
-                then Some relax else None
-          ) relaxes
-
         let parse_expand_relax ?(ppo=(fun _ k -> k)) str =
           match str with
           (* Directly unfold macro *)
@@ -418,6 +375,55 @@ and type edge = E.edge
             (fun chan r -> fprintf chan "%s" (pp_relax r))
             t ;
           fprintf chan "}"
+
+        (* After wildcard and macro expansion, remove invalid relaxations
+           whose adjacent concrete edges cannot appear consecutively.
+           Pseudo-edges (annotations and insert edge) are ignored in the check.
+           Duplications are removed as well. *)
+        let remove_invalid_relaxes relaxes =
+          let rec for_all_adjacent_concrete_edge predicate = function
+            | [] | [_] -> true
+            | lhs :: rhs :: list ->
+                match E.is_non_pseudo lhs.E.edge, E.is_non_pseudo rhs.E.edge with
+                | true, true ->
+                    predicate lhs rhs
+                    && for_all_adjacent_concrete_edge predicate (rhs :: list)
+                | true, false ->
+                    for_all_adjacent_concrete_edge predicate (lhs :: list)
+                | false, true ->
+                    for_all_adjacent_concrete_edge predicate (rhs :: list)
+                | false, false ->
+                    for_all_adjacent_concrete_edge predicate list in
+          let leading_before_trailing_after_predicate list =
+            let valid,_,_ = List.fold_left
+            ( fun ( valid, leading_before, trailing_after ) l ->
+              match valid, leading_before, trailing_after, E.get_predicate l with
+              (* Propagate invalid flag *)
+              | false, _, _,_ -> (false, leading_before, trailing_after)
+              (* Process the leading edges while they are before predicates,
+                 until the first non-before edge. *)
+              | true, true, _, pred -> true, pred = Some E.Before, pred = Some E.After
+              (* A before predicate in the middle of the list *)
+              | true, false, trailing_after, pred when pred = Some E.Before ->
+                  false, false, trailing_after
+              (* Until find the first after predicate *)
+              | true, false, false, pred -> true, false, pred = Some E.After
+              (* Once trailing after predicates start, only after predicates may follow. *)
+              | true, false, true, pred -> pred = Some E.After, false, true
+            ) (true,true,false) list in
+            valid in
+          List.filter_map
+          ( fun relax ->
+            let edges = edges_of relax in
+            (* Drop empty alternatives introduced by `?`; they do not
+               describe an actual relaxation. *)
+            if edges <> []
+               && for_all_adjacent_concrete_edge E.can_precede edges
+               && leading_before_trailing_after_predicate edges
+              then Some relax else None
+          ) relaxes
+          |> Set.of_list
+          |> Set.elements
 
         let is_cumul r =
           let open E in
