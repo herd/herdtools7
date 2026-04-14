@@ -95,6 +95,10 @@ let parse_fences fs = List.fold_right parse_fence fs []
     |> List.map ( fun edges -> ERS edges )
     |> remove_invalid_relaxes
 
+  let parse_argument_list input_argument_list =
+    List.map parse_argument input_argument_list
+    |> List.flatten
+
   module AltConfig = struct
     include O
 
@@ -135,13 +139,6 @@ let parse_fences fs = List.fold_right parse_fence fs []
   module M =  Alt.Make(C)(AltConfig)
 
   let gen lr ls rl n =
-    let parse_argument_opt argument =
-      match argument with
-      | Some argument -> parse_argument argument
-      | None -> [] in
-    let lr = parse_argument_opt lr
-    and ls = parse_argument_opt ls
-    and rl = parse_argument_opt rl in
     if O.verbose > 0 then begin
       Printf.eprintf
         "expanded relax=%s\n" (C.R.pp_relax_list lr)
@@ -167,13 +164,13 @@ let parse_fences fs = List.fold_right parse_fence fs []
     match O.choice with
     | Default|Sc|Critical|Free|Ppo|Transitive|Total|MixedCheck ->
         begin match olr,ols with
-        | None,None -> M.gen n
+        | [],[] -> M.gen n
         | _ -> gen olr ols orl n
         end
     | Thin -> gen_thin n
     | Uni ->
         begin match olr,ols with
-        | None,None -> gen_uni n
+        | [],[] -> gen_uni n
         | _ -> gen olr ols orl n
         end
 end
@@ -202,11 +199,6 @@ let exec_conf s =
   ignore (Unix.execvp prog (Array.of_list (prog::conf@cmd))) ;
   ()
 
-let split_cands xs =
-  if xs = [] then None
-  else (Some (String.concat " " xs))
-
-
 let () =
   Arg.parse (Config.diy_spec ()) get_arg Config.usage_msg;
   begin
@@ -215,10 +207,6 @@ let () =
   | Some s -> exec_conf s
   end;
   Config.valid_stdout_flag false ;
-  let relax_list = split_cands !Config.relaxs
-  and safe_list = split_cands !Config.safes
-  and reject_list = !Config.rejects
-  and filter_list = !Config.filter_check in
 
   let cpp = match !Config.arch with `CPP -> true  |  _ -> false in
 
@@ -317,12 +305,16 @@ let () =
   let module Builder = (val builder : Builder.S) in
   let module M = Make(Builder)(Co) in
   try
-    match filter_list with
+    (* Parse inputs `relax` `safe` and `reject` *)
+    let relax = M.parse_argument_list !Config.relaxs in
+    let safe = M.parse_argument_list !Config.safes in
+    let reject = match !Config.rejects with
+            | None -> []
+            | Some r -> M.parse_argument r in
+    match !Config.filter_check with
     | [lhs;rhs] ->
         let lhs_unfold = M.parse_argument lhs in
         let rhs_unfold = M.parse_argument rhs in
-        let relax = Option.map M.parse_argument relax_list |> Option.value ~default:[] in
-        let safe = Option.map M.parse_argument safe_list |> Option.value ~default:[] in
         List.map ( fun l ->
           List.map ( fun r ->
             l,r,M.M.filter_check ~relax ~safe (Builder.R.edges_of l) (Builder.R.edges_of r)
@@ -336,7 +328,7 @@ let () =
             ( Code.pp_check Co.choice )
         )
     | _ -> (* The common path to generate tests *)
-      M.go !Config.size reject_list relax_list safe_list;
+      M.go !Config.size reject relax safe;
     exit 0
   with
   | Misc.Fatal msg | Misc.UserError msg->
