@@ -42,7 +42,8 @@ The following steps have been tested on Unix.
   ]}
 + Build and install into a location [$PREFIX]:
   {@bash[
-    $ make build install PREFIX=$PREFIX
+    $ make build-aslref # optional
+    $ make install-aslref PREFIX=$PREFIX
   ]}
 
 It's done!
