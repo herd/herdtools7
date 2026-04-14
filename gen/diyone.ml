@@ -181,6 +181,7 @@ let pp_es = ref []
 
 let () =
   Util.parse_cmdline
+    ~usage_suffix:Config.diyone_parser_syntax_doc
     (Config.diyone_spec ())
     (fun x ->
       let segment = String.trim x in
