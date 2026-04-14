@@ -348,7 +348,7 @@ let diy_spec () =
    ("-one", Arg.Unit (fun _ -> one := true),
     "<relax-list> specify a sole cycle")::
   ("-prefix", Arg.String (fun s -> prefix := s :: !prefix),
-    with_top_level_choice_doc "<relax-list> specify a prefix for cycles, can be repeated")::
+    "<relax-list> specify a prefix for cycles, can be repeated")::
    ("-relax", Arg.String (fun s -> relaxs := !relaxs @ [s]),
     with_top_level_choice_doc "<relax-list> specify a relax list")::
    ("-mix", Arg.Bool (fun b -> mix := b),
