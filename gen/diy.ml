@@ -83,6 +83,7 @@ open C.R
   let parse_argument_list input_argument_list =
     List.map parse_argument input_argument_list
     |> List.flatten
+    |> remove_invalid_relaxes
 
   module AltConfig = struct
     include O
