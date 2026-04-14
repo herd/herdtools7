@@ -56,10 +56,12 @@ let arch_opt arch =
     | Some a -> arch := a ; true)
     Archs.tags (sprintf "specify architecture, default %s" (Archs.pp d))
 
-let parse_cmdline options get_cmd_arg =
+let parse_cmdline ?(usage_suffix="") options get_cmd_arg =
   Arg.parse options
     get_cmd_arg
-    (sprintf "Usage %s [options] [arg]*\noptions are:" Sys.argv.(0))
+    (sprintf "Usage %s [options] [arg]*%s\noptions are:"
+       Sys.argv.(0)
+       (if usage_suffix = "" then "" else "\n" ^ usage_suffix))
 
 module List = struct
   let uniq ~eq l =

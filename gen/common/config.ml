@@ -141,6 +141,36 @@ let parse_cumul = function
   | "true" -> All
   | s -> Set s
 
+let parser_syntax_doc =
+  "For the input cycle or cycle segments: '[...]' groups expressions, '|' means choice, and '?' makes the preceding expression optional.\n\
+   Inside '[...]', both whitespace and ',' mean sequence, so '[A B,C]' and '[A,B C]' all have canonical form '[A,B,C]'."
+
+let diyone_parser_syntax_doc =
+  parser_syntax_doc ^ "\n\
+   In `diyone7`, each argument denotes one unique relaxation, and the full command line has canonical form as one top-level sequence.\n\
+   For example, `diyone7 A '[B C]' D` has canonical form `[A,[B,C],D]` and eventually denotes the single cycle `A,B,C,D`.\n\
+   After expansion, the input must denote exactly one concrete cycle, so using `|` or `?` leads to a user error."
+
+let diycross_parser_syntax_doc =
+  parser_syntax_doc ^ "\n\
+   In `diycross7`, each argument denotes a group of relaxations, and the full command line has canonical form as one top-level sequence.\n\
+   For example, `diycross7 A 'B,[C D E?]'` and `diycross7 A 'B [C D E?]'` have canonical form `[A,[B|[C,D,E?]]]`, which expands to the cycles `A,B`, `A,C,D`, and `A,C,D,E`."
+
+let diy7_parser_syntax_doc =
+  parser_syntax_doc ^ "\n\
+   In `diy7`, top-level plain separators denote choice, so '[A B] C [D E]' has canonical form `[[A,B]|C|[D,E]]`."
+
+let cumul_parser_syntax_doc =
+  " `false` disables non-explicit fence cumulativity, `true` enables all fence cumulativity, and any other value is parsed as a set of fences.\n\
+    In that set, '[...]' groups expressions, '|', whitespace, and ',' all mean choice, and '?' makes the preceding expression optional.\n\
+    For example, `-cumul 'A [B,C]'` has canonical form `[A|[B|C]]`, which expands to the fences `A`, `B`, and `C`."
+
+let with_parser_syntax_doc doc =
+  doc ^ " " ^ parser_syntax_doc
+
+let with_top_level_choice_doc doc =
+  doc ^ " At top level, plain separators denote choice, so '[A B] C [D E]' has canonical form '[[A,B]|C|[D,E]]'."
+
 
 (* Helpers *)
 
@@ -316,7 +346,8 @@ let diy_spec () =
       (Code.pp_check !mode)
    )::
    ("-cumul", Arg.String (fun b -> cumul := parse_cumul b),
-    "<s> allow non-explicit fence cumulativity for specified fenced (default all)")::
+    "<s> allow non-explicit fence cumulativity for specified fences (default all)." ^
+    cumul_parser_syntax_doc)::
    ("-conf", Arg.String (fun s -> conf := Some s), "<file> read configuration file")::
    ("-size", Arg.Int (fun n -> size := n),
     sprintf
@@ -335,7 +366,7 @@ let diy_spec () =
   ("-prefix", Arg.String (fun s -> prefix := s :: !prefix),
     "<relax-list> specify a prefix for cycles, can be repeated")::
    ("-relax", Arg.String (fun s -> relaxs := !relaxs @ [s]),
-    "<relax-list> specify a relax list")::
+    with_top_level_choice_doc "<relax-list> specify a relax list")::
    ("-mix", Arg.Bool (fun b -> mix := b),
     sprintf
       "<bool> mix relaxations when several are given (default %b)" !mix)::
@@ -344,9 +375,9 @@ let diy_spec () =
    ("-minrelax",   Arg.Int (fun n -> mix := true ; min_relax := n),
     sprintf "<n> test relaxations considering <n> or more different relaxations (default %i). Implies -mix true." !min_relax)::
    ("-safe", Arg.String (fun s -> safes := !safes @ [s]),
-    "<relax-list> specify a safe list")::
+    with_top_level_choice_doc "<relax-list> specify a safe list")::
    ("-relaxlist", Arg.String (fun s -> safes := !safes @[s]),
-    "<relax-list> specify a list of relaxations of interest (alias for -safe)")::
+    with_top_level_choice_doc "<relax-list> specify a list of relaxations of interest (alias for -safe)")::
    ("-rejectlist", Arg.String (fun s -> rejects := Some s),
    "<reject-list> specify a list of relaxation combinations to reject from generation")::
    stdout_spec false ::
