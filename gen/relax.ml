@@ -321,8 +321,12 @@ and type edge = E.edge
           else None
 
         let parse_ast s =
-          Lexing.from_string s
-          |> LexUtil.parse Parser.main
+          try
+            Lexing.from_string s
+            |> LexUtil.parse Parser.main
+          with
+          | Parser.Error ->
+              Warn.user_error "Bad relax syntax: %s" s
 
         let parse_sequence_ast segments =
           Ast.Seq (List.map parse_ast segments)
