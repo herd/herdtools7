@@ -1,6 +1,7 @@
 type 'prim t =
   | One of 'prim
   | Opt of 'prim t
+(* Multi is for bracket. *)
   | Multi of 'prim t
   | Seq of 'prim t list
   | Choice of 'prim t list
