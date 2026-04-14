@@ -319,6 +319,9 @@ let () =
       M.go !Config.size reject relax safe;
     exit 0
   with
-  | Misc.Fatal msg | Misc.UserError msg->
+  | Misc.Fatal msg ->
     eprintf "%s: Fatal error: %s\n" Config.prog msg ;
+    exit 2
+  | Misc.UserError msg->
+    eprintf "%s: User error: %s\n" Config.prog msg ;
     exit 2

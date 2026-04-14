@@ -83,8 +83,12 @@ module Make(Co:Config)(F:Fence.S)(A:Atom.S) = struct
       let base,es,_ = Norm.normalise_family (E.resolve_edges es) in
       let name =  N.mk_name base ?scope:None es in
       Printf.printf "%s: %s\n" name (E.pp_edges es)
-    with Misc.Fatal msg | Misc.UserError msg ->
+    with
+    | Misc.Fatal msg ->
       eprintf "Fatal error: %s\n" msg ;
+      exit 2
+    | Misc.UserError msg ->
+      eprintf "User error: %s\n" msg ;
       exit 2
 
 end
