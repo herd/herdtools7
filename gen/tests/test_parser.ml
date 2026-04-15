@@ -30,7 +30,7 @@ let () =
         |> LexUtil.parse Parser.main in
       Printf.printf "%s\n" input ;
       Printf.printf "%s\n" (Ast.pp Fun.id ast) ;
-      Ast.to_list ast
+      Ast.expand ast
       |> pp_list (pp_list Fun.id)
       |> Printf.printf "%s\n" ;
       Printf.printf "\n")
