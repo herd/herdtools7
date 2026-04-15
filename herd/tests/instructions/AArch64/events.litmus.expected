@@ -1,0 +1,8 @@
+Test test-wfe Allowed
+States 1
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (true)
+Observation test-wfe Always 1 0
+Hash=97557c37d3bcbe865084873ca2eb059b

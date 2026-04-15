@@ -1,0 +1,8 @@
+Test test-sevl-basic Allowed
+States 1
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (true)
+Observation test-sevl-basic Always 1 0
+Hash=5dbccf419fe6920a118801133a85f9b3
