@@ -16,9 +16,11 @@
 
 {
 open Parser
-exception Eof
-(* Track whether the current scope has already seen an operand.
-   Whitespace after an operand is treated as a sequence separator. *)
+
+(* The stack records, for each scope, whether the lexer has consumed a
+   relaxation string. Scopes are either top-level or inside square brackets.
+   This is because whitespace after a relaxation in the same scope is
+   treated as a sequence separator. *)
 let push t stack = stack := (t :: !stack)
 let pop stack = match !stack with
       | [] -> Warn.fatal "error in has_previous_relaxation in lexer.\n"

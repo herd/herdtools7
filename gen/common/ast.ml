@@ -1,7 +1,6 @@
 type 'prim t =
   | One of 'prim
   | Opt of 'prim t
-(* Multi is for bracket. *)
   | Multi of 'prim t
   | Seq of 'prim t list
   | Choice of 'prim t list
@@ -41,15 +40,15 @@ let seq_as_choice = function
       then ast else Choice seq
   | ast -> ast
 
-let rec to_list t =
+let rec expand t =
   let result = match t with
   | One str -> [[str]]
-  | Opt opt -> [] :: to_list opt
-  | Multi multi -> to_list multi
+  | Opt opt -> [] :: expand opt
+  | Multi multi -> expand multi
   | Seq seq -> List.fold_left
     ( fun acc s ->
-      to_list s
+      expand s
       |> list_cross_product_map ( @ ) acc
     ) [[]] seq
-  | Choice choice -> List.map to_list choice |> List.flatten in
+  | Choice choice -> List.map expand choice |> List.flatten in
   result
