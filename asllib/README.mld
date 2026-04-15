@@ -56,12 +56,9 @@ If [$PREFIX] is in your [$PATH], the following command should return a similar o
     aslref version 7.56+03 rev 7aa9d1f3cee2598ec64f14372f210e008ac5510f
   ]}
 
-Please note that building herdtools7 depends on the installation path
-[$PREFIX]. If you want to move your installation from [$OLD_PREFIX] to
-[$NEW_PREFIX], please use:
+To uninstall, you can remove the binaries from [$PREFIX]. You can also run:
   {@bash[
-    make uninstall PREFIX=$OLD_PREFIX
-    make build install PREFIX=$NEW_PREFIX
+    $ make uninstall-aslref PREFIX=$PREFIX
   ]}
 
 {1 Running}
