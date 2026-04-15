@@ -199,14 +199,13 @@ and module RMW = A.RMW = struct
   type value = A.Value.v
 
   let pre_parse_string s =
-    String.trim s
-    |> (fun s -> Lexing.from_string s)
+    let parsed_result = Lexing.from_string (String.trim s)
     |> LexUtil.parse Parser.main
-    |> Ast.expand
-    |> ( function
+    |> Ast.expand in
+    match parsed_result with
       | [x] -> x
       | _ ->
-        Warn.user_error "only accepts exactly one input cycle." )
+        Warn.user_error "only accepts exactly one input cycle."
 
   let compute_rmw rmw old operand =
     Value.from_int @@ RMW.compute_rmw rmw ~old:(Value.to_int old) ~operand:(Value.to_int operand)

@@ -326,5 +326,5 @@ let () =
     eprintf "%s: Fatal error: %s\n" Config.prog msg ;
     exit 2
   | Misc.UserError msg->
-    eprintf "%s: User error: %s\n" Config.prog msg ;
+    eprintf "%s: %s\n" Config.prog msg ;
     exit 2
