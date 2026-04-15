@@ -379,7 +379,7 @@ and type edge = E.edge
 
           let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
             Ast.bind (parse_expand_relax ~ppo) ast
-              |> Ast.to_list
+              |> Ast.expand
               |> List.map ( fun e -> ERS (edges_of_relax_list e) )
 
 (********)

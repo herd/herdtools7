@@ -48,7 +48,7 @@ open C.R
     let ast = parse_argument_ast input_fences in
     (* Note that `parse_fence` might fail *)
     let fences = Ast.bind ( fun input -> Ast.One(C.E.parse_fence input) ) ast
-    |> Ast.to_list in
+    |> Ast.expand in
     (* Each expanded alternative must contain exactly one fence. *)
     if List.for_all ( function [_] -> true | _ -> false ) fences then
       List.flatten fences
