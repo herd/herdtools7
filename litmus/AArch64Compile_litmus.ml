@@ -1785,6 +1785,8 @@ module Make(V:Constant.S)(C:Config) =
     | I_TBZ (v,r,k2,lbl) -> tbz tr_lab "tbz" v r k2 lbl::k
 (* Load and Store *)
     | I_LDR (v,r1,r2,idx) -> load "ldr" v r1 r2 idx::k
+    | I_LDRAA (r1,r2,idx) -> load "ldraa" V64 r1 r2 idx::k
+    | I_LDRAB (r1,r2,idx) -> load "ldrab" V64 r1 r2 idx::k
     | I_LDRSW (r1,r2,idx) -> load "ldrsw" V64 r1 r2 idx::k
     | I_LDUR (v,r1,r2,k') -> load "ldur" v r1 r2 (MemExt.k2idx k')::k
     | I_LDP (t,v,r1,r2,r3,idx) ->

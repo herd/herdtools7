@@ -1,0 +1,10 @@
+Test I15 Allowed
+States 1
+ Fault(P0,PacCheck:IB);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (fault(P0,PacCheck:IB))
+Observation I15 Always 1 0
+Hash=f6d472d1e71cf1878232ad50553f73c7
+

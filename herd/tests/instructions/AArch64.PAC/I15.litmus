@@ -1,0 +1,16 @@
+AArch64 I15
+Variant=pauth2,fpac,ifetch
+
+{
+ int64_t x=0;
+ 0:X1=x;
+}
+ P0            ;
+ ADR X2,L0     ;
+ PACIZA X2     ;
+ LDRAB X3,[X2] ;
+ BR X3         ;
+ L0:           ;
+ MOV W0,#1     ;
+
+exists (fault(P0,PacCheck:IB))

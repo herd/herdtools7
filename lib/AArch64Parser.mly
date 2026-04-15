@@ -97,6 +97,7 @@ let check_op3 op e =
 %token BL BLR RET RETAA RETAB ERET
 %token SVC
 %token LDR LDRSW LDP LDNP LDPSW LDIAPP STP STNP STILP
+%token LDRAA LDRAB
 %token LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
 %token LDRSB LDRSH
 %token LD1 LD1R LDAP1 LD2 LD2R LD3 LD3R LD4 LD4R STL1 ST1 ST2 ST3 ST4 STUR /* Neon load/store */
@@ -696,6 +697,10 @@ instr:
   { let (v,r)   = $2 and (ra,ext) = $4 in I_LDR (v,r,ra,ext) }
 | LDR creg COMMA mem_ea
   { let (ra,ext) = $4 in I_LDR (V128,$2,ra,ext) }
+| LDRAA xreg COMMA LBRK cxreg k0 RBRK
+  { I_LDRAA ($2,$5,MemExt.k2idx $6) }
+| LDRAB xreg COMMA LBRK cxreg k0 RBRK
+  { I_LDRAB ($2,$5,MemExt.k2idx $6) }
 | LDRSW xreg COMMA mem_ea
   { let r = $2 and (ra,ext) = $4 in I_LDRSW (r,ra,ext) }
 | LDRSB reg COMMA mem_ea

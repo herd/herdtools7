@@ -421,6 +421,16 @@ include Arch.MakeArch(struct
         conv_reg r2 >> fun r2 ->
         MemExt.expl e >! fun e ->
         I_LDR(a,r1,r2,e)
+    | I_LDRAA(r1,r2,e) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        MemExt.expl e >! fun e ->
+        I_LDRAA(r1,r2,e)
+    | I_LDRAB(r1,r2,e) ->
+        conv_reg r1 >> fun r1 ->
+        conv_reg r2 >> fun r2 ->
+        MemExt.expl e >! fun e ->
+        I_LDRAB(r1,r2,e)
     | I_LDRSW(r1,r2,e) ->
         conv_reg r1 >> fun r1 ->
         conv_reg r2 >> fun r2 ->

@@ -3758,6 +3758,29 @@ Arguments:
         write_reg_dest r v ii >>= fun v ->
         B.nextSetT r v
 
+      let do_ldr_aut key op sz rd rs e ii =
+        let open AArch64Base in
+        let open MemExt in
+        let mop ac a =
+          do_read_mem_op op sz Annot.N aexp ac rd a ii in
+        if pac && key_enable key then
+          let mfault = pac_check_fault key ii in
+          (* LDRAA and LDRAB use a modifier of zero *)
+          let modifier = M.unitT V.zero in
+          let mop_auth ma =
+            match e with
+            | Imm (k,Idx) ->
+                let ma =
+                  ma >>= fun base ->
+                  M.add base (V.intToV k)
+                in
+                do_ldr rs sz Annot.N mop ma ii
+            | _ -> assert false
+          in
+          authenticate (read_reg_addr rs ii) modifier key ii mop_auth mfault
+        else
+          ldr0 op sz rd rs e ii
+
 (********************)
 (* Main entry point *)
 (********************)
@@ -3876,6 +3899,10 @@ Arguments:
         | I_LDR(var,rd,rs,e) ->
             let sz = tr_variant var in
             ldr sz rd rs e ii
+        | I_LDRAA(rd,rs,e) ->
+            do_ldr_aut PAC.IA (uxt_op MachSize.Quad) MachSize.Quad rd rs e ii
+        | I_LDRAB(rd,rs,e) ->
+            do_ldr_aut PAC.IB (uxt_op MachSize.Quad) MachSize.Quad rd rs e ii
         | I_LDRSW(rd,rs,e) ->
             ldrsw rd rs e ii
         | I_LDRBH (bh, rd, rs, e) ->

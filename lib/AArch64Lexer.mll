@@ -47,6 +47,8 @@ match name with
 | "retaa" | "RETAA" -> RETAA
 | "retab" | "RETAB" -> RETAB
 | "eret"  | "ERET" -> ERET
+| "ldraa" | "LDRAA" -> LDRAA
+| "ldrab" | "LDRAB" -> LDRAB
 | "ne"  | "NE"  -> TOK_NE
 | "eq"  | "EQ"  -> TOK_EQ
 | "ge"  | "GE"  -> TOK_GE

@@ -88,7 +88,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_CHKTGD _| I_CLRTAG _| I_CPYTYPE _| I_CPYVALUE _| I_CSEAL _| I_CSEL _| I_DC _
     | I_OP3_SIMD _| I_ERET| I_FENCE _| I_GC _| I_IC _| I_LD1 _| I_LD1M _| I_LD1R _ | I_LDAP1 _
     | I_LD2 _| I_LD2M _| I_LD2R _| I_LD3 _| I_LD3M _| I_LD3R _| I_LD4 _| I_LD4M _
-    | I_LD4R _| I_LDAR _| I_LDARBH _| I_LDCT _| I_LDG _| I_LDOP _| I_LDOPBH _
+    | I_LD4R _| I_LDAR _| I_LDRAA _| I_LDRAB _| I_LDARBH _
+    | I_LDCT _| I_LDG _| I_LDOP _| I_LDOPBH _
     | I_LDP _| I_LDP_SIMD _| I_LDPSW _| I_LDR _
     | I_LDRSW _ | I_LDR_SIMD _ | I_LDAPUR_SIMD _
     | I_LDRBH _| I_LDRS _| I_LDUR _| I_LDUR_SIMD _| I_LDXP _| I_MOV _ | I_FMOV_TG _
@@ -295,6 +296,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_NOP|I_B _|I_BR _|I_BC (_, _)|I_CBZ (_, _, _)
       | I_CBNZ (_, _, _)|I_BL _|I_BLR _|I_RET _|I_RETAA|I_RETAB|I_ERET| I_SVC _
       | I_LDAR (_, _, _, _)
+      | I_LDRAA (_, _, _)
+      | I_LDRAB (_, _, _)
       | I_TBNZ(_,_,_,_) | I_TBZ (_,_,_,_) | I_MOVZ (_,_,_,_) | I_MOVK(_,_,_,_)
       | I_MOVN _
       | I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _)
@@ -369,6 +372,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
         ->
           r::nzcv_regs
       | I_LDR (_,r,_,_)
+      | I_LDRAA (r,_,_)
+      | I_LDRAB (r,_,_)
       | I_LDRSW (r,_,_)
       | I_LDRBH (_,r,_,_)
       | I_LDRS (_,r,_,_)
@@ -456,7 +461,9 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_NOP|I_B _|I_BR _|I_BC _|I_CBZ _|I_CBNZ _
       | I_TBNZ _|I_TBZ _|I_BL _|I_BLR _|I_RET _|I_RETAA|I_RETAB|I_ERET | I_SVC _
       | I_UBFM _ | I_SBFM _
-      | I_LDR _|I_LDRSW _|I_LDRS _|I_LDUR _|I_LD1 _|I_LDAP1 _
+      | I_LDR _|I_LDRSW _|I_LDRS _|I_LDUR _
+      | I_LDRAA _ | I_LDRAB _
+      | I_LD1 _|I_LDAP1 _
       | I_LD1M _|I_LD1R _|I_LD2 _|I_LD2M _
       | I_LD2R _|I_LD3 _|I_LD3M _|I_LD3R _
       | I_LD4 _|I_LD4M _|I_LD4R _|I_ST1 _|I_STL1 _

@@ -1,0 +1,10 @@
+Test I14 Allowed
+States 1
+ Fault(P0,PacCheck:IA);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (fault(P0,PacCheck:IA))
+Observation I14 Always 1 0
+Hash=25a092f3f5f181edd4b1ce6dd768da4d
+
