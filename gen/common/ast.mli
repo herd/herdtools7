@@ -13,7 +13,7 @@ type 'prim t =
   | Seq of 'prim t list
   | Choice of 'prim t list
 
-val bind : ('a -> 'b t) -> 'a t -> 'b t
+val bind : 'a t -> ('a -> 'b t) -> 'b t
 val pp : ('a -> string) -> 'a t -> string
 
 (* Legacy `diy7` parsing interprets a plain top-level sequence as a choice

@@ -378,7 +378,7 @@ and type edge = E.edge
           |> relax_list_to_choice
 
           let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
-            Ast.bind (parse_expand_relax ~ppo) ast
+            Ast.bind ast (parse_expand_relax ~ppo)
               |> Ast.expand
               |> List.map ( fun e -> ERS (edges_of_relax_list e) )
 

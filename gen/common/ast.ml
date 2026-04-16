@@ -5,8 +5,8 @@ type 'prim t =
   | Seq of 'prim t list
   | Choice of 'prim t list
 
-let rec bind func ast =
-  let bind_func = bind func in
+let rec bind ast func =
+  let bind_func ast = bind ast func in
   match ast with
   | One s -> func s
   | Opt opt -> Opt (bind_func opt)
