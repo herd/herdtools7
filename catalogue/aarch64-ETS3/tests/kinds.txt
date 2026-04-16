@@ -1,0 +1,3 @@
+ETS3.MP+dmb.sttp                Forbidden
+ETS3.S+tlbi-sync.ishptedb1p+po  Forbidden
+ETS3.S+tlbi-sync.ishpteel01p+po Forbidden

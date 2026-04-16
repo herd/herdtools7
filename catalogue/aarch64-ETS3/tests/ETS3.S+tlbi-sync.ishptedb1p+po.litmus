@@ -1,0 +1,17 @@
+AArch64 ETS3.S+tlbi-sync.ishptedb1p+po
+Variant=vmsa,ets3
+{
+ [PTE(x)]=(oa:PA(x), db:0);
+ 0:X0=PTE(x); 0:X1=(oa:PA(x)); 0:X3=y; 0:X4=x;
+ 1:X3=y; 1:X4=x;
+}
+ P0              | P1               ;
+ STR X1,[X0]     | LDR W2,[X3]      ;
+ DSB ISH         | MOV W5,#1        ;
+ LSR X5,X4,#12   | L00: STR W5,[X4] ;
+ TLBI VAAE1IS,X5 |                  ;
+ DSB ISH         |                  ;
+ MOV W2,#1       |                  ;
+ STR W2,[X3]     |                  ;
+
+exists (1:X2=1 /\ fault(P1:L00,x))
