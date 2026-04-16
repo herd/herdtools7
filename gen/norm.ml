@@ -71,9 +71,7 @@ module Make(Co:Config)(F:Fence.S)(A:Atom.S) = struct
 
   let zyva relaxs =
     try
-      let parsed_relax =
-        R.parse_sequence_ast relaxs
-        |> R.parse_expand_relaxs in
+      let parsed_relax = R.parse_expand_relaxs (R.parse_sequence_ast relaxs) in
       let es = match parsed_relax with
         | [x] -> R.edges_of x
         | _ ->
