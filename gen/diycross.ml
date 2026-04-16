@@ -79,7 +79,7 @@ let pp_es = ref []
 
 let () =
   Util.parse_cmdline
-    ~usage_suffix:Config.parser_syntax_doc
+    ~usage_suffix:Config.diycross_parser_syntax_doc
     (Config.diycross_spec ())
     (fun x ->
       let segment = String.trim x in

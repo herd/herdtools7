@@ -142,18 +142,26 @@ let parse_cumul = function
   | s -> Set s
 
 let parser_syntax_doc =
-  "Parser syntax: whitespace or ',' for sequence, '|' for choice, '?' for optional, and '[...]' for grouping, for examples:\n\
-    - 'A B' means the sequence A,B.\n\
-    - 'A|B,C' and '[A|B] C' both mean the choice between A and B, then the sequence with C.\n\
-    - '[A,B]?' means either the group '[A,B]' or the empty '[]'.\n\
-    - 'A|B,C|[D,E]?' parses as '(A|B),(C|([D,E]?))'.\n\
-   Depending on the tool and context, a sequence may be interpreted either as a 'followed-by' relation between relaxations or as a choice between inputs."
+  "For the input cycle or cycle segments: '[...]' groups expressions, '|' means choice, and '?' makes the preceding expression optional.\n\
+   Inside '[...]', both whitespace and ',' mean sequence, so '[A B,C]' and '[A,B C]' all have canonical form '[A,B,C]'.\n\
+   At top level, plain whitespace and ',' may denote either choice or sequence, depending on the context."
+
+let diyone_parser_syntax_doc =
+  parser_syntax_doc ^ "\n\
+   In `diyone7`, each argument denotes one unique relaxation, and the full command line has canonical form as one top-level sequence.\n\
+   For example, `diyone7 A '[B C]' D` has canonical form `[A,[B,C],D]` and eventually denotes the single cycle `A,B,C,D`.\n\
+   After expansion, the input must denote exactly one concrete cycle, so using `|` or `?` leads to a user error."
+
+let diycross_parser_syntax_doc =
+  parser_syntax_doc ^ "\n\
+   In `diycross7`, each argument denotes a group of relaxations, and the full command line has canonical form as one top-level sequence.\n\
+   For example, `diycross7 A 'B,[C D E?]'` and `diycross7 A 'B [C D E?]'` have canonical form `[A,[B|[C,D,E?]]]`, which expands to the cycles `A,B`, `A,C,D`, and `A,C,D,E`."
 
 let with_parser_syntax_doc doc =
   doc ^ " " ^ parser_syntax_doc
 
 let with_top_level_choice_doc doc =
-  doc ^ " At the top level, a plain sequence such as '[A B] C [D E]' is interpreted as a choice, '[A,B]|C|[D,E]'."
+  doc ^ " At top level, plain separators denote choice, so '[A B] C [D E]' has canonical form '[[A,B]|C|[D,E]]'."
 
 
 (* Helpers *)
