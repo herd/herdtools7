@@ -31,6 +31,7 @@ let peak stack = match !stack with
 let modify t stack = match !stack with
       | [] -> Warn.fatal "error in has_previous_relaxation in lexer.\n"
       | _ :: tail -> stack := t :: tail
+let is_singleton stack = List.length !stack = 1
 }
 
 let blank = [' ''\t''\n''\r']
@@ -39,7 +40,7 @@ let relexation = ['A'-'Z' 'a'-'z' '0'-'9' '-' '.' '*']+
 (* The lexer consumes optional blanks around explicit syntax such as `[`, `]`,
    `,`, `|`, and `?`, because, for backward compatibility, standalone blanks
    are interpreted as `COMMA` after an concreate relax. *)
-rule token has_previous_relaxation = parse
+rule token is_backward_compatible has_previous_relaxation = parse
 | eof { EOF }
 | '[' blank* { push false has_previous_relaxation; LEFT_SQUARE }
 | blank* ']' {
@@ -49,23 +50,29 @@ rule token has_previous_relaxation = parse
 }
 | blank* '?' { OPTION }
 | blank* ',' blank* eof { EOF }
-| blank* ',' blank* { COMMA }
+| blank* ',' blank* {
+  if is_backward_compatible && is_singleton has_previous_relaxation
+  then CHOICE_BAR else COMMA
+}
 | blank* '|' blank* { CHOICE_BAR }
 | (relexation as lxm) {
   modify true has_previous_relaxation;
   RELAXATION lxm
 }
 | blank+ {
-  if peak has_previous_relaxation then COMMA
-  else token has_previous_relaxation lexbuf
+  if peak has_previous_relaxation then begin
+    if is_backward_compatible && is_singleton has_previous_relaxation
+    then CHOICE_BAR else COMMA
+  end
+  else token is_backward_compatible has_previous_relaxation lexbuf
 }
 {
 
 (* The lexer keeps per-parse scope state to decide when whitespace should be
    treated as a separator. Keep that state local to each parse so nested or
    repeated parses do not interfere. *)
-let parse parser lexbuf =
+let parse ?(is_backward_compatible=true) parser lexbuf =
   let has_previous_relaxation = ref [false] in
-  parser (token has_previous_relaxation) lexbuf
+  parser (token is_backward_compatible has_previous_relaxation) lexbuf
 
 }

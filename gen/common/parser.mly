@@ -46,4 +46,4 @@ choice:
 suffix:
   | opt = suffix OPTION { Opt opt }
   | r = RELAXATION { One r }
-  | LEFT_SQUARE r = relax RIGHT_SQUARE { Multi r }
+  | LEFT_SQUARE r = relax RIGHT_SQUARE { r }
