@@ -25,13 +25,20 @@ let test_cases =
 let () =
   List.iter
     (fun input ->
-      let ast =
-        Lexing.from_string input
-        |> LexUtil.parse Parser.main in
       Printf.printf "%s\n" input ;
-      Printf.printf "%s\n" (Ast.pp Fun.id ast) ;
-      Ast.expand ast
-      |> pp_list (pp_list Fun.id)
-      |> Printf.printf "%s\n" ;
+      List.iter
+        (fun (label, is_backward_compatible) ->
+          let ast =
+            Lexing.from_string input
+            |> LexUtil.parse ~is_backward_compatible Parser.main in
+          Printf.printf "%s\n" label ;
+          Printf.printf "%s\n" (Ast.pp Fun.id ast) ;
+          Ast.expand ast
+          |> pp_list (pp_list Fun.id)
+          |> Printf.printf "%s\n" )
+        [
+          "backward_compatibility=true", true;
+          "backward_compatibility=false", false;
+        ] ;
       Printf.printf "\n")
     test_cases
