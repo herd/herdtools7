@@ -3,6 +3,7 @@
 \usepackage{amsmath}  % Classic math package
 \usepackage{mathtools}  % Additional math package
 \usepackage{amssymb}  % Classic math package
+\usepackage{qtree}  % Parse trees
 \usepackage{url}  % Automatically escapes urls
 \usepackage[final]{microtype} % Helps with breaking links across lines to reduce overfull hboxes
 \usepackage{hyperref}  % Insert links inside pdfs
@@ -893,6 +894,9 @@
 \newcommand\Nfieldassign[0]{\hyperlink{def-nfieldassign}{\nonterminal{field\_assign}}}
 \newcommand\Nlooplimit[0]{\hyperlink{def-nlooplimit}{\nonterminal{loop\_limit}}}
 \newcommand\Nrecurselimit[0]{\hyperlink{def-nrecurselimit}{\nonterminal{recurse\_limit}}}
+
+% Example non-terminals
+\newcommand\clistoneslice[0]{\hyperlink{def-clistoneslice}{\nonterminal{clist1\_slice}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Macros for defining associativity
