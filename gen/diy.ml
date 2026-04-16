@@ -33,15 +33,8 @@ module Make(C:Builder.S)(O:DiyConfig) = struct
 open C.E
 open C.R
 
-  let parse_input_ast input =
-    String.trim input |> parse_ast
-
-  (* For backward compatibility, plain top-level sequences such as
-     `-safe "DpAddr DpCtrl"` are treated as a choice. If an explicit top-level
-     choice is already present, keep the sequence structure so that
-     `A|B,C` means `(A|B),C`. *)
   let parse_argument_ast input =
-    parse_input_ast input |> Ast.seq_as_choice
+    String.trim input |> parse_ast
 
   (* Parse the `-cumul` argument, which should be a list of individual fences. *)
   let parse_fences input_fences =
@@ -76,8 +69,7 @@ open C.R
 
   (* Parse an input relaxation expression such as "[Po DpAddr] Fre".
      In canonical form this is "[Po,DpAddr]|Fre": top-level whitespace denotes
-     a choice for backward compatibility. If an explicit top-level choice is
-     present, an explicit comma still keeps a sequence together. The result is
+     a choice for backward compatibility. The result is
      a list of unfolded relaxations, each wrapped in `ERS` and containing one
      or more edges in sequence. *)
   let parse_argument input_argument =
@@ -105,7 +97,7 @@ open C.R
          top-level choice. Thus `-prefix A -prefix B` is interpreted as
          `-prefix [A|B]`. *)
       let prefixes =
-        List.map parse_input_ast O.prefix
+        List.map parse_argument_ast O.prefix
         |> fun prefixes -> Ast.Choice prefixes
         |> parse_expand_relaxs ~ppo:C.ppo
         (* Wrap each relax into a list *)

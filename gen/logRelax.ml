@@ -59,7 +59,6 @@ module Make(R:I) : S with type relax = R.relax
     let open Ast in
     let parsed_list = match parsed_input with
     | Ast.One s -> [Ast.One s]
-    | Ast.Multi s -> [s]
     | Ast.Seq l -> l
     | _ ->
         Warn.user_error "input is not a singleton list: %s" input in

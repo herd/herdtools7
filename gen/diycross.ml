@@ -55,15 +55,12 @@ module Make (Config:Config) (M:Builder.S) =
           let module V = VarAtomic.Make(M.E)(Fold)  in
           V.varatom_es
 
-    let parse_segment segment =
-      M.R.parse_ast segment |> Ast.seq_as_choice
-
     let parse_edges input =
       (* Each command-line argument in `input` denotes one segment of the
          `diycross` cycle. Parse those arguments separately, then rebuild one
          top-level `Seq` before expansion. For example, `diycross7 A 'B|C' D` is
          treated as `A,(B|C),D`. *)
-      List.map parse_segment input
+      List.map M.R.parse_ast input
       |> fun e -> Ast.Seq e
       |> M.R.parse_expand_relaxs ~ppo:M.ppo
       |> List.map M.R.edges_of
