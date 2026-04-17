@@ -4,13 +4,14 @@ aarch64-VMSA: Catalogue with the semantics of Armv8-A VMSA
 This catalogue contains artifacts from the work on the VMSA semantics
 of the AArch64 memory model. The tests in this catalogue execute
 concurrently:
+
 - Instructions that update Translation Table Descriptors, and
 - Memory instructions that use the same Translation Table Descriptors.
 
 Simulating with herd7
 ---------------------
 
-    % herd7 -variant vmsa,fatal -kinds tests/VMSA-kinds.txt tests/@all
+    % herd7 -variant vmsa,fatal -kinds tests/kinds.txt tests/@all
 
 Running with litmus7
 --------------------
@@ -26,7 +27,7 @@ source](https://gitlab.com/kvm-unit-tests/kvm-unit-tests/-/blob/master/README.md
 in the folder `${KUT_DIR}`:
 
     % mkdir ${KUT_DIR}/litmus
-    % litmus7 -mach kvm-aarch64 -a 2 -o ${KUT_DIR}/litmus -kinds tests/VMSA-kinds.txt tests/@armv8-a
+    % litmus7 -mach kvm-aarch64 -a 2 -o ${KUT_DIR}/litmus -kinds tests/kinds.txt tests/@armv8-a
     % cd ${KUT_DIR}/litmus
     % make
     % cd ..
