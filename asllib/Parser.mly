@@ -278,6 +278,7 @@ let expr :=
     | ~=call;                                                     < e_call               >
     | e=expr; ~=slices;                                       < E_Slice              >
     | e1=expr; LLBRACKET; e2=expr; RRBRACKET;                 < E_GetArray           >
+    | e1=expr; LLLBRACKET; coord=clist1(expr); RRRBRACKET;    < E_GetTensor           >
     | e=expr; DOT; x=IDENTIFIER;                              < E_GetField           >
     | e=expr; DOT; fs=bracketed(clist1(IDENTIFIER));          < E_GetFields          >
 
@@ -331,6 +332,7 @@ let expr_pattern :=
     | ~=call;                                                     < e_call               >
     | e=expr_pattern; ~=slices;                                       < E_Slice              >
     | e1=expr_pattern; LLBRACKET; e2=expr; RRBRACKET;                 < E_GetArray           >
+    | e1=expr_pattern; LLLBRACKET; coord=clist1(expr); RRRBRACKET;          < E_GetTensor           >
     | e=expr_pattern; DOT; x=IDENTIFIER;                              < E_GetField           >
     | e=expr_pattern; DOT; fs=bracketed(clist1(IDENTIFIER));          < E_GetFields          >
 
@@ -404,6 +406,7 @@ let ty :=
     | ~=plist2(ty);                                     < T_Tuple      >
     | name=IDENTIFIER;                                  < T_Named      >
     | ARRAY; LLBRACKET; e=expr; RRBRACKET; OF; t=ty;    { T_Array (ArrayLength_Expr e, t) }
+    | TENSOR; LLLBRACKET; dimensions=clist1(expr); RRRBRACKET; OF; t=ty;    { T_Tensor (dimensions, t) }
   )
 
 let ty_decl := ty |
@@ -455,6 +458,7 @@ let access :=
   | { [] }
   | DOT; h=annotated(IDENTIFIER); t=access; { FieldAccess h :: t }
   | LLBRACKET; idx=expr; RRBRACKET; t=access; { ArrayAccess idx :: t }
+  | LLLBRACKET; coord=clist1(expr); RRRBRACKET; t=access; { TensorAccess coord :: t }
 
 let basic_lexpr :=
   | base=annotated(IDENTIFIER); ~=access;

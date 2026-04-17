@@ -138,6 +138,7 @@ let token_of_string =
  | "SUBTYPES"           -> s SUBTYPES
  | "THEN"               -> s THEN
  | "THROW"              -> s THROW
+ | "TENSOR"             -> s TENSOR
  | "TO"                 -> s TO
  | "TRY"                -> s TRY
  | "TYPE"               -> s TYPE
@@ -151,6 +152,8 @@ let token_of_string =
  | "WITH"               -> s WITH
  | "LLBRACKET"          -> s LLBRACKET
  | "RRBRACKET"          -> s RRBRACKET
+ | "LLLBRACKET"         -> s LLLBRACKET
+ | "RRRBRACKET"         -> s RRRBRACKET
  | _ -> None
 
 (** Convert a lexical token to the symbol it lexes *)
@@ -164,6 +167,7 @@ let token_to_symbol = function
   | SHL                -> "<<"
   | RBRACKET           -> "]"
   | RRBRACKET          -> "]]"
+  | RRRBRACKET         -> "]]]"
   | RPAR               -> ")"
   | SLICING            -> ".."
   | EQ                 -> "="
@@ -173,6 +177,7 @@ let token_to_symbol = function
   | BEQ                -> "<=>"
   | LBRACKET           -> "["
   | LLBRACKET          -> "[["
+  | LLLBRACKET         -> "[[["
   | LPAR               -> "("
   | DOT                -> "."
   | LE                -> "<="
@@ -247,6 +252,7 @@ let token_to_symbol = function
   | SETTER             -> "setter"
   | STRING             -> "string"
   | SUBTYPES           -> "subtypes"
+  | TENSOR             -> "tensor"
   | THEN               -> "then"
   | THROW              -> "throw"
   | TO                 -> "to"
@@ -348,6 +354,7 @@ let tr_name s = match s with
 | "setter"        -> SETTER
 | "string"        -> STRING
 | "subtypes"      -> SUBTYPES
+| "tensor"        -> TENSOR
 | "then"          -> THEN
 | "throw"         -> THROW
 | "to"            -> TO
@@ -463,6 +470,7 @@ and token = parse
     | "<<"                     { SHL                              }
     | ']'                      { RBRACKET                         }
     | "]]"                     { RRBRACKET                        }
+    | "]]]"                    { RRRBRACKET                       }
     | ')'                      { RPAR                             }
     | ".."                     { SLICING                          }
     | '='                      { EQ                               }
@@ -473,6 +481,7 @@ and token = parse
     | "<=>"                    { BEQ                              }
     | '['                      { LBRACKET                         }
     | "[["                     { LLBRACKET                        }
+    | "[[["                    { LLLBRACKET                       }
     | '('                      { LPAR                             }
     | '.'                      { DOT                              }
     | "<="                     { LE                              }

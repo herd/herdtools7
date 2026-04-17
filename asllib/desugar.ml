@@ -72,7 +72,11 @@ let desugar_elided_parameter ty (call : call annotated) =
    ------------------------------------------------------------------------- *)
 
 type lhs_field = identifier annotated
-type field_or_array_access = FieldAccess of lhs_field | ArrayAccess of expr
+
+type field_or_array_access =
+  | FieldAccess of lhs_field
+  | ArrayAccess of expr
+  | TensorAccess of expr list
 
 type lhs_access = {
   access : field_or_array_access list;  (** empty means no accesses *)
@@ -87,7 +91,8 @@ let desugar_lhs_access (base, { access; slices }) =
         match x with
         | FieldAccess field ->
             LE_SetField (acc, field.desc) |> add_pos_from field
-        | ArrayAccess idx -> LE_SetArray (acc, idx) |> add_pos_from idx)
+        | ArrayAccess idx -> LE_SetArray (acc, idx) |> add_pos_from idx
+        | TensorAccess coords -> LE_SetTensor (acc, coords) |> add_pos_from base)
       var access
   in
   let with_slices =

@@ -42,6 +42,7 @@ module SemanticsRule = struct
     | ECall
     | EGetArray
     | EGetEnumArray
+    | EGetTensor
     | ESliceError
     | ERecord
     | EGetBitField
@@ -51,6 +52,7 @@ module SemanticsRule = struct
     | ETuple
     | EArray
     | EEnumArray
+    | ETensor
     | EArbitrary
     | EPattern
     | LEDiscard
@@ -138,9 +140,11 @@ module SemanticsRule = struct
     | ETuple -> "ETuple"
     | EArray -> "EArray"
     | EEnumArray -> "EEnumArray"
+    | ETensor -> "ETensor"
     | ECondSimple -> "ECondSimple"
     | EGetArray -> "EGetArray"
     | EGetEnumArray -> "EGetEnumArray"
+    | EGetTensor -> "EGetTensor"
     | ESliceError -> "ESliceError"
     | EArbitrary -> "EArbitrary"
     | EPattern -> "EPattern"
@@ -227,6 +231,7 @@ module SemanticsRule = struct
       ECall;
       EGetArray;
       EGetEnumArray;
+      EGetTensor;
       ESliceError;
       ERecord;
       EGetBitField;
@@ -236,6 +241,7 @@ module SemanticsRule = struct
       ETuple;
       EArray;
       EEnumArray;
+      ETensor;
       EArbitrary;
       EPattern;
       LEDiscard;
@@ -359,6 +365,7 @@ module TypingRule = struct
     | ECall
     | ESetter
     | EGetArray
+    | EGetTensor
     | ESliceError
     | ERecord
     | EGetRecordField
@@ -386,6 +393,7 @@ module TypingRule = struct
     | LESetBitField
     | LESetBadField
     | LESetFields
+    | LESetTensor
     | LEConcat
     | Slice
     | PAll
@@ -442,6 +450,7 @@ module TypingRule = struct
     | TBits
     | TTuple
     | TArray
+    | TTensor
     | TEnumDecl
     | TStructuredDecl
     | TNonDecl
@@ -510,6 +519,7 @@ module TypingRule = struct
     | CheckCommonBitfieldsAlign
     | AnnotateFieldInit
     | AnnotateGetArray
+    | AnnotateGetCoord
     | AnnotateSetArray
     | GetBitvectorWidth
     | GetBitvectorConstWidth
@@ -560,6 +570,7 @@ module TypingRule = struct
     | ETuple -> "ETuple"
     | ECondSimple -> "ECondSimple"
     | EGetArray -> "EGetArray"
+    | EGetTensor -> "EGetTensor"
     | ESliceError -> "ESliceError"
     | EArbitrary -> "EArbitrary"
     | EPattern -> "EPattern"
@@ -572,6 +583,7 @@ module TypingRule = struct
     | LESetBitField -> "LESetBitField"
     | LESetBadField -> "LESetBadField"
     | LESetFields -> "LESetFields"
+    | LESetTensor -> "LESetTensor"
     | LEConcat -> "LEConcat"
     | LEDestructuring -> "LEDestructuring"
     | LEUndefIdentV0 -> "LEUndefIdentV0"
@@ -631,6 +643,7 @@ module TypingRule = struct
     | TBits -> "TBits"
     | TTuple -> "TTuple"
     | TArray -> "TArray"
+    | TTensor -> "TTensor"
     | TEnumDecl -> "TEnumDecl"
     | TStructuredDecl -> "TStructuredDecl"
     | TNonDecl -> "TNonDecl"
@@ -699,6 +712,7 @@ module TypingRule = struct
     | CheckCommonBitfieldsAlign -> "CheckCommonBitfieldsAlign"
     | AnnotateFieldInit -> "AnnotateFieldInit"
     | AnnotateGetArray -> "AnnotateGetArray"
+    | AnnotateGetCoord -> "AnnotateGetCoord"
     | AnnotateSetArray -> "AnnotateSetArray"
     | GetBitvectorWidth -> "GetBitvectorWidth"
     | GetBitvectorConstWidth -> "GetBitvectorConstWidth"
@@ -765,6 +779,7 @@ module TypingRule = struct
       LESetBadField;
       LESetFields;
       LESetFields;
+      LESetTensor;
       LEDestructuring;
       LEConcat;
       Slice;
@@ -804,6 +819,7 @@ module TypingRule = struct
       TBits;
       TTuple;
       TArray;
+      TTensor;
       TEnumDecl;
       TStructuredDecl;
       TNonDecl;
@@ -872,6 +888,7 @@ module TypingRule = struct
       CheckCommonBitfieldsAlign;
       AnnotateFieldInit;
       AnnotateGetArray;
+      AnnotateGetCoord;
       AnnotateSetArray;
       GetBitvectorWidth;
       GetBitvectorConstWidth;

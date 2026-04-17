@@ -74,6 +74,7 @@ let rec get_structure (env : env) (ty : ty) : ty =
     | T_Int _ | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ -> ty
     | T_Tuple tys -> T_Tuple (List.map (get_structure env) tys) |> with_pos
     | T_Array (e, t) -> T_Array (e, (get_structure env) t) |> with_pos
+    | T_Tensor (dims, t) -> T_Tensor (dims, get_structure env t) |> with_pos
     | T_Collection fields ->
         let fields' =
           assoc_map (get_structure env) fields |> canonical_fields
@@ -100,6 +101,7 @@ let is_builtin_singular ty =
     | T_Real | T_String | T_Bool | T_Bits _ | T_Enum _ | T_Int _ -> true
     | T_Tuple _
     | T_Array (_, _)
+    | T_Tensor (_, _)
     | T_Collection _ | T_Record _ | T_Exception _ | T_Named _ ->
         false)
   |: TypingRule.BuiltinSingularType
@@ -202,7 +204,7 @@ module Domain = struct
     | T_Int (WellConstrained (constraints, _)) ->
         Subdomains (List.map (symdom_of_constraint env) constraints)
     | T_Int PendingConstrained
-    | T_Bool | T_String | T_Real | T_Bits _ | T_Enum _ | T_Array _
+    | T_Bool | T_String | T_Real | T_Bits _ | T_Enum _ | T_Array _ | T_Tensor _
     | T_Collection _ | T_Exception _ | T_Record _ | T_Tuple _ | T_Named _ ->
         assert false
   (* T_Named is impossible here, because of the make_anonymous above. *)
@@ -491,6 +493,14 @@ and subtype_satisfies env t s =
           Domain.symdom_subset_unions env t_width_domain s_width_domain
         in
         bitfields_subtype && widths_subtype
+    | T_Tensor (dims_s, t_s), T_Tensor (dims_t, t_t) ->
+        type_equal env t_s t_t
+        && list_equal
+             (fun d_s d_t ->
+               Domain.symdom_subset_unions env
+                 (Domain.symdom_of_width_expr d_t)
+                 (Domain.symdom_of_width_expr d_s))
+             dims_s dims_t
     (* If S has the structure of an array type with elements of type E then
      T must have the structure of an array type with elements of type E,
      and T must have the same element indices as S. *)
@@ -545,6 +555,9 @@ and type_satisfies env t s =
   match (t.desc, (get_structure env s).desc) with
   | T_Bits (width_t, []), T_Bits (width_s, _) ->
       bitwidth_equal env width_t width_s
+  | T_Tensor (dims1, t1), T_Tensor (dims2, t2) ->
+      type_equal env t1 t2
+      && list_equal (fun d1 d2 -> bitwidth_equal env d1 d2) dims1 dims2
   | _ -> false)
   |: TypingRule.TypeSatisfaction
 (* End *)
@@ -580,6 +593,7 @@ let rec type_clashes env t s =
       true
   | T_Enum li_s, T_Enum li_t -> list_equal String.equal li_s li_t
   | T_Array (_, ty_s), T_Array (_, ty_t) -> type_clashes env ty_s ty_t
+  | T_Tensor (_, t1), T_Tensor (_, t2) -> type_clashes env t1 t2
   | T_Tuple li_s, T_Tuple li_t ->
       List.compare_lengths li_s li_t = 0
       && List.for_all2 (type_clashes env) li_s li_t
@@ -674,6 +688,11 @@ let rec lowest_common_ancestor ~loc env s t =
     | T_Bits (e_s, _), T_Bits (e_t, _) when expr_equal env e_s e_t ->
         (* We forget the bitfields if they are not equal. *)
         Some (T_Bits (e_s, []) |> here)
+    | T_Tensor (dims_s, ty_s), T_Tensor (dims_t, ty_t)
+      when List.compare_lengths dims_s dims_t = 0
+           && List.for_all2 (bitwidth_equal env) dims_s dims_t ->
+        let+ t = lowest_common_ancestor ~loc env ty_s ty_t in
+        T_Tensor (dims_s, t) |> here
     | T_Array (width_s, ty_s), T_Array (width_t, ty_t)
       when array_length_equal env width_s width_t ->
         let+ t = lowest_common_ancestor ~loc env ty_s ty_t in
