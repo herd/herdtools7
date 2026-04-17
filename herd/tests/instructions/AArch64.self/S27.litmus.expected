@@ -1,12 +1,12 @@
-Test S27 Required
+Test S27 Allowed
 States 2
-0:X5=instr:"ADR X3,.+0"; 0:X6=0;
-0:X5=instr:"ADR X3,.+0"; 0:X6=1;
+0:X3=0; 0:X6=1;
+0:X3=label:"P0:L1"; 0:X6=2;
 Ok
 Witnesses
-Positive: 2 Negative: 0
+Positive: 1 Negative: 1
 Flag violates-CMODX-requirements
-Condition forall (true)
-Observation S27 Always 2 0
-Hash=dafd07478617c823bca682aaa6e8d197
+Condition exists (0:X3=label:"P0:L1" /\ 0:X6=2)
+Observation S27 Sometimes 1 1
+Hash=ac6e31c410e40a1bd8437812340e7e03
 
