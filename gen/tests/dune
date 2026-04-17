@@ -4,4 +4,4 @@
 
 (cram
  (package herdtools7)
- (deps %{bin:diyone7}))
+ (deps %{bin:diy7} %{bin:diyone7}))
