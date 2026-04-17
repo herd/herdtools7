@@ -4,6 +4,27 @@ type 'prim t =
   | Seq of 'prim t list
   | Choice of 'prim t list
 
+let rec normalise ast =
+  let normalise_seq_items items =
+    List.fold_right
+      (fun item acc ->
+        match normalise item with
+        | Seq nested -> nested @ acc
+        | item -> item :: acc)
+      items [] in
+  let normalise_choice_items items =
+    List.fold_right
+      (fun item acc ->
+        match normalise item with
+        | Choice nested -> nested @ acc
+        | item -> item :: acc)
+      items [] in
+  match ast with
+  | One _ -> ast
+  | Opt opt -> Opt (normalise opt)
+  | Seq ss -> Seq (normalise_seq_items ss)
+  | Choice ss -> Choice (normalise_choice_items ss)
+
 let rec bind ast func =
   let bind_func ast = bind ast func in
   match ast with

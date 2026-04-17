@@ -11,6 +11,8 @@ type 'prim t =
   | Seq of 'prim t list
   | Choice of 'prim t list
 
+(* Flatten nested `Seq` and `Choice` nodes recursively to a canonical n-ary form.. *)
+val normalise : 'a t -> 'a t
 val bind : 'a t -> ('a -> 'b t) -> 'b t
 val pp : ('a -> string) -> 'a t -> string
 

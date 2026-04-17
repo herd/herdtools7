@@ -1,29 +1,10 @@
-%{
-open Ast
-
-let mk_seq lhs rhs =
-  match lhs,rhs with
-  | Seq lhs, Seq rhs -> Seq (lhs @ rhs)
-  | lhs, Seq rhs -> Seq (lhs :: rhs)
-  | Seq lhs, rhs -> Seq (lhs @ [rhs])
-  | lhs, rhs -> Seq [lhs ; rhs]
-
-let mk_choice lhs rhs =
-  match lhs,rhs with
-  | Choice lhs, Choice rhs -> Choice (lhs @ rhs)
-  | lhs, Choice rhs -> Choice (lhs :: rhs)
-  | Choice lhs, rhs -> Choice (lhs @ [rhs])
-  | lhs, rhs -> Choice [lhs ; rhs]
-
-%}
-
 %token <string> RELAXATION
 %token LEFT_SQUARE RIGHT_SQUARE
 %token COMMA
 %token CHOICE_BAR
 %token EOF
 %token OPTION
-%start <string t> main
+%start <string Ast.t> main
 
 %%
 
@@ -36,14 +17,14 @@ main:
    - `relax` handles `,`.
    For example, `A|B,C|[D,E]?` parses as `(A|B),(C|([D,E]?))`. *)
 relax:
-  | lhs = choice COMMA rhs = relax { mk_seq lhs rhs }
+  | lhs = choice COMMA rhs = relax { Ast.Seq [lhs ; rhs] }
   | r = choice { r }
 
 choice:
-  | lhs = suffix CHOICE_BAR rhs = choice { mk_choice lhs rhs }
+  | lhs = suffix CHOICE_BAR rhs = choice { Ast.Choice [lhs ; rhs] }
   | r = suffix { r }
 
 suffix:
-  | opt = suffix OPTION { Opt opt }
-  | r = RELAXATION { One r }
+  | opt = suffix OPTION { Ast.Opt opt }
+  | r = RELAXATION { Ast.One r }
   | LEFT_SQUARE r = relax RIGHT_SQUARE { r }

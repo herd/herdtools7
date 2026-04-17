@@ -74,5 +74,6 @@ rule token is_backward_compatible has_previous_relaxation = parse
 let parse ?(is_backward_compatible=true) parser lexbuf =
   let has_previous_relaxation = ref [false] in
   parser (token is_backward_compatible has_previous_relaxation) lexbuf
+  |> Ast.normalise
 
 }
