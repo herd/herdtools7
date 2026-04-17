@@ -146,6 +146,9 @@ let rec pp_expr f e =
   | E_GetArray (e1, e2) -> fprintf f "@[<hov 2>%a[[%a]]@]" pp_expr e1 pp_expr e2
   | E_GetEnumArray (e1, e2) ->
       fprintf f "@[<hov 2>%a[[%a]]@]" pp_expr e1 pp_expr e2
+  | E_GetTensor (e_base, coords) ->
+      fprintf f "@[<hov 2>%a[[[%a]]]@]" pp_expr e_base (pp_comma_list pp_expr)
+        coords
   | E_Cond (e1, e2, e3) ->
       fprintf f "@[<hv>@[<h>if %a@ then@]@;<1 2>%a@ else@;<1 2>%a@]" pp_expr e1
         pp_expr e2 pp_expr e3
@@ -163,6 +166,9 @@ let rec pp_expr f e =
       fprintf f "@[<hv 2>array[[%a]] of %a@]" pp_expr length pp_expr value
   | E_EnumArray { enum; value } ->
       fprintf f "@[<hv 2>array[[%s]] of %a@]" enum pp_expr value
+  | E_Tensor { dimensions; value } ->
+      fprintf f "@[<hv 2>tensor[[[%a]]] of %a@]" (pp_comma_list pp_expr)
+        dimensions pp_expr value
   | E_Arbitrary ty -> fprintf f "@[<h>ARBITRARY :@ %a@]" pp_ty ty
   | E_Pattern (e, p) -> fprintf f "@[<hv 2>%a@ IN %a@]" pp_expr e pp_pattern p
 
@@ -210,6 +216,9 @@ and pp_ty f t =
   | T_Tuple ty_list -> fprintf f "@[(%a)@]" (pp_comma_list pp_ty) ty_list
   | T_Array (length, elt_type) ->
       fprintf f "@[array [[%a]] of %a@]" pp_array_index length pp_ty elt_type
+  | T_Tensor (dimensions, elt_type) ->
+      fprintf f "@[tensor [[[%a]]] of %a@]" (pp_comma_list pp_expr) dimensions
+        pp_ty elt_type
   | T_Collection record_ty -> pp_record_like f "collection" record_ty
   | T_Record record_ty -> pp_record_like f "record" record_ty
   | T_Exception record_ty -> pp_record_like f "exception" record_ty
@@ -262,6 +271,8 @@ let rec pp_lexpr f le =
   | LE_Slice (le, args) -> fprintf f "%a[%a]" pp_lexpr le pp_slice_list args
   | LE_SetArray (le, e) -> fprintf f "%a[[%a]]" pp_lexpr le pp_expr e
   | LE_SetEnumArray (le, e) -> fprintf f "%a[[%a]]" pp_lexpr le pp_expr e
+  | LE_SetTensor (le, es) ->
+      fprintf f "%a[[[%a]]]" pp_lexpr le (pp_comma_list pp_expr) es
   | LE_SetField (le, x) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
   | LE_SetCollectionFields (x, fields, _) ->
       fprintf f "@[%s@,.[@[%a@]]@]" x (pp_comma_list pp_print_string) fields

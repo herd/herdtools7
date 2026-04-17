@@ -334,6 +334,10 @@ let rec expr_equal eq e1 e2 =
   | E_GetEnumArray (e11, e21), E_GetEnumArray (e12, e22) ->
       expr_equal eq e11 e12 && expr_equal eq e21 e22
   | E_GetEnumArray _, _ | _, E_GetEnumArray _ -> false
+  | E_GetTensor (e_base1, coord1s), E_GetTensor (e_base2, coord2s) ->
+      expr_equal eq e_base1 e_base2
+      && list_equal (expr_equal eq) coord1s coord2s
+  | E_GetTensor _, _ | _, E_GetTensor _ -> false
   | E_GetField (e1', f1), E_GetField (e2', f2) ->
       String.equal f1 f2 && expr_equal eq e1' e2'
   | E_GetField _, _ | _, E_GetField _ -> false
@@ -367,6 +371,10 @@ let rec expr_equal eq e1 e2 =
       E_EnumArray { labels = l2; value = v2 } ) ->
       list_equal String.equal l1 l2 && expr_equal eq v1 v2
   | E_EnumArray _, _ | _, E_EnumArray _ -> false
+  | ( E_Tensor { dimensions = d1; value = v1 },
+      E_Tensor { dimensions = d2; value = v2 } ) ->
+      list_equal (expr_equal eq) d1 d2 && expr_equal eq v1 v2
+  | E_Tensor _, _ | _, E_Tensor _ -> false
   | E_ATC (e1, t1), E_ATC (e2, t2) -> expr_equal eq e1 e2 && type_equal eq t1 t2
   | E_ATC _, _ | _, E_ATC _ -> false
   | E_Unop (o1, e1), E_Unop (o2, e2) -> o1 = o2 && expr_equal eq e1 e2
@@ -552,6 +560,7 @@ let expr_of_lexpr : lexpr -> expr =
     | LE_Slice (le, args) -> E_Slice (map_desc aux le, args)
     | LE_SetArray (le, e) -> E_GetArray (map_desc aux le, e)
     | LE_SetEnumArray (le, e) -> E_GetEnumArray (map_desc aux le, e)
+    | LE_SetTensor (le, coords) -> E_GetTensor (map_desc aux le, coords)
     | LE_SetField (le, x) -> E_GetField (map_desc aux le, x)
     | LE_SetFields (le, x, _) -> E_GetFields (map_desc aux le, x)
     | LE_SetCollectionFields (x, fields, _) -> E_GetCollectionFields (x, fields)
@@ -662,6 +671,7 @@ let rec subst_expr substs e =
         }
   | E_GetArray (e1, e2) -> E_GetArray (tr e1, tr e2)
   | E_GetEnumArray (e1, e2) -> E_GetEnumArray (tr e1, tr e2)
+  | E_GetTensor (e, coords) -> E_GetTensor (tr e, List.map tr coords)
   | E_GetField (e, x) -> E_GetField (tr e, x)
   | E_GetFields (e, fields) -> E_GetFields (tr e, fields)
   | E_GetCollectionFields _ -> failwith "No collection should be used here"
@@ -676,6 +686,8 @@ let rec subst_expr substs e =
       E_Array { length = tr length; value = tr value }
   | E_EnumArray { enum; labels; value } ->
       E_EnumArray { enum; labels; value = tr value }
+  | E_Tensor { dimensions; value } ->
+      E_Tensor { dimensions = List.map tr dimensions; value = tr value }
   | E_ATC (e, t) -> E_ATC (tr e, t)
   | E_Arbitrary _ -> e.desc
   | E_Unop (op, e) -> E_Unop (op, tr e)
@@ -689,6 +701,10 @@ let rec is_simple_expr e =
   | E_GetEnumArray (e1, e2)
   | E_Binop (_, e1, e2) ->
       is_simple_expr e1 && is_simple_expr e2
+  | E_Tensor { dimensions; value } ->
+      List.for_all is_simple_expr dimensions && is_simple_expr value
+  | E_GetTensor (e, coords) ->
+      is_simple_expr e && List.for_all is_simple_expr coords
   | E_EnumArray { value = e }
   | E_ATC (e, _)
   | E_GetFields (e, _)
@@ -755,6 +771,7 @@ let rename_locals map_name ast =
     | E_Cond (e1, e2, e3) -> E_Cond (map_e e1, map_e e2, map_e e3)
     | E_GetArray (e1, e2) -> E_GetArray (map_e e1, map_e e2)
     | E_GetEnumArray (e1, e2) -> E_GetEnumArray (map_e e1, map_e e2)
+    | E_GetTensor (e1, coords) -> E_GetTensor (map_e e1, List.map map_e coords)
     | E_GetField (e1, f) -> E_GetField (map_e e1, f)
     | E_GetFields (e1, li) -> E_GetFields (map_e e1, li)
     | E_GetCollectionFields (x, li) -> E_GetCollectionFields (map_name x, li)
@@ -765,6 +782,8 @@ let rename_locals map_name ast =
         E_Array { length = map_e length; value = map_e value }
     | E_EnumArray { enum; labels; value } ->
         E_EnumArray { enum; labels; value = map_e value }
+    | E_Tensor { dimensions; value } ->
+        E_Tensor { dimensions = List.map map_e dimensions; value = map_e value }
     | E_Pattern (e1, p) -> E_Pattern (map_e e1, map_pattern p)
   (* End *)
   and map_es li = List.map map_e li
@@ -788,6 +807,8 @@ let rename_locals map_name ast =
     | T_Bits (e, bitfields) -> T_Bits (map_e e, bitfields)
     | T_Tuple li -> T_Tuple (List.map map_t li)
     | T_Array (index, elem_ty) -> T_Array (map_array_index index, map_t elem_ty)
+    | T_Tensor (dimensions, elem_ty) ->
+        T_Tensor (List.map map_e dimensions, map_t elem_ty)
     | T_Collection li -> T_Collection (List.map (fun (f, t) -> (f, map_t t)) li)
     | T_Record li -> T_Record (List.map (fun (f, t) -> (f, map_t t)) li)
     | T_Exception li -> T_Exception (List.map (fun (f, t) -> (f, map_t t)) li)
@@ -843,6 +864,8 @@ let rename_locals map_name ast =
     | LE_Slice (le1, slices) -> LE_Slice (map_le le1, map_slices slices)
     | LE_SetArray (le1, i) -> LE_SetArray (map_le le1, map_e i)
     | LE_SetEnumArray (le, i) -> LE_SetEnumArray (map_le le, map_e i)
+    | LE_SetTensor (le1, coords) ->
+        LE_SetTensor (map_le le1, List.map map_e coords)
     | LE_SetField (le1, f) -> LE_SetField (map_le le1, f)
     | LE_SetFields (le1, fl, annot) -> LE_SetFields (map_le le1, fl, annot)
     | LE_SetCollectionFields _ as le -> le (* No collection is local *)

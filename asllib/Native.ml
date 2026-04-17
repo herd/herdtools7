@@ -413,6 +413,7 @@ let rec unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef ty =
               labels
           in
           NV_Record (IMap.of_list fields))
+  | T_Tensor _ -> failwith "Unknown of tensor type is not supported yet"
   | T_Record fields | T_Exception fields ->
       fields
       |> List.map (fun (field_name, t) -> (field_name, unknown_of_type t))
@@ -455,6 +456,7 @@ module DeterministicBackend = struct
         | NV_Literal (L_Int n) ->
             NV_Literal (L_BitVector (Bitvector.zeros (Z.to_int n)))
         | _ -> (* Bad types *) assert false)
+    | T_Tensor _ -> failwith "Unknown of tensor type is not supported yet"
     | T_Enum _ | T_Tuple _ | T_Array _ | T_Record _ | T_Exception _
     | T_Collection _ | T_Named _
     | T_Int PendingConstrained ->
