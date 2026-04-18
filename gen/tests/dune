@@ -1,3 +1,7 @@
+(tests
+ (names test_parser)
+ (libraries gen_common))
+
 (cram
  (package herdtools7)
- (deps %{bin:diyone7}))
+ (deps %{bin:diy7} %{bin:diyone7}))

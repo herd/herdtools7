@@ -420,6 +420,19 @@ Valid cycles with duplicate annotations
    LDAR W3,[X2] | LDR W3,[X1] ;
   
   exists (0:X3=0 /\ 1:X3=0)
+An invalid `diyone7` input that expands to several cycles
+  $ diyone7 -arch AArch64 'PodWR|Fre'
+  diyone7: Fatal error: `diyone7` only accepts exactly one input cycle.
+  [2]
+  $ diyone7 -arch AArch64 '[PodWR|Fre]'
+  diyone7: Fatal error: `diyone7` only accepts exactly one input cycle.
+  [2]
+  $ diyone7 -arch AArch64 'PodWR?'
+  diyone7: Fatal error: `diyone7` only accepts exactly one input cycle.
+  [2]
+  $ diyone7 -arch AArch64 'PodWR|[Fre,PodWR]'
+  diyone7: Fatal error: `diyone7` only accepts exactly one input cycle.
+  [2]
 Invalid cycles with incorrect annotations
   $ diyone7 -arch AArch64 L PodWR Fre PodWR Fre A
   diyone7: Fatal error: Annotations mismatch between A L.
@@ -548,3 +561,34 @@ A valid cycle with duplicate wraparound annotations plus insert and store edges
    LDAR W3,[X2] |             ;
   
   exists ([x]=2 /\ 0:X3=0 /\ 1:X3=0)
+`diy7 -filter-check` removes invalid composite relaxations after expansion
+  $ diy7 -arch AArch64 -filter-check '[Po,DpAddr?]' Fre | grep -F '[PosWW,Dp'
+  [1]
+  $ diy7 -arch AArch64 -filter-check '[Po,DpAddr?]' Fre | grep -F '[PodWW,Dp'
+  [1]
+  $ diy7 -arch AArch64 -filter-check '[Po,DpAddr?]' Fre | grep -F 'Sequence `[PodWR,DpAddrdR]` `Fre` passes the internal filter in mode `default`'
+  Sequence `[PodWR,DpAddrdR]` `Fre` passes the internal filter in mode `default`
+`diy7 -filter-check` respects `-cumul`
+  $ diy7 -arch AArch64 -cumul false -filter-check Rfe DMB.SYdRR
+  Sequence `Rfe` `DMB.SYdRR` is prohibited in the internal filter in mode `default`
+  $ diy7 -arch AArch64 -cumul DMB.SY -filter-check Rfe DMB.SYdRR
+  Sequence `Rfe` `DMB.SYdRR` passes the internal filter in mode `default`
+  $ diy7 -arch AArch64 -cumul false -filter-check Rfe DSB.SYdRR
+  Sequence `Rfe` `DSB.SYdRR` is prohibited in the internal filter in mode `default`
+  $ diy7 -arch AArch64 -cumul 'DMB.SY DSB.SY' -filter-check Rfe DSB.SYdRR
+  Sequence `Rfe` `DSB.SYdRR` passes the internal filter in mode `default`
+  $ diy7 -arch AArch64 -cumul 'DMB.SY DSB.SY' -filter-check Rfe DMB.SYdRR
+  Sequence `Rfe` `DMB.SYdRR` passes the internal filter in mode `default`
+  $ diy7 -arch AArch64 -cumul 'DMB.SY|DSB.SY' -filter-check Rfe DMB.SYdRR
+  Sequence `Rfe` `DMB.SYdRR` passes the internal filter in mode `default`
+  $ diy7 -arch AArch64 -cumul 'DMB.SY DSB.SY' -filter-check Rfe DSB.SYdRR
+  Sequence `Rfe` `DSB.SYdRR` passes the internal filter in mode `default`
+  $ diy7 -arch AArch64 -cumul 'DMB.SY|DSB.SY' -filter-check Rfe DSB.SYdRR
+  Sequence `Rfe` `DSB.SYdRR` passes the internal filter in mode `default`
+  $ diy7 -arch AArch64 -cumul 'DMB.SY DSB.SY?' -filter-check Rfe DMB.SYdRR
+  Fatal error: exception Misc.UserError("DMB.SY DSB.SY? is not a list of fence")
+  [2]
+  $ diy7 -arch AArch64 -cumul '[DMB.SY,DSB.SY]' -filter-check Rfe DMB.SYdRR
+  Fatal error: exception Misc.UserError("[DMB.SY,DSB.SY] is not a list of fence")
+  [2]
+

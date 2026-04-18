@@ -15,49 +15,65 @@
 (****************************************************************************)
 
 {
+open Parser
 
-exception Error of string
-let error msg = raise (Error msg)
-
-type t =
-  | One of string
-  | Seq of string list
-
-let pp = function
-| One s -> Printf.sprintf "One(%s)" s
-| Seq ss ->
-  Printf.sprintf "Seq(%s)" (String.concat "," ss)
+(* The stack records, for each scope, whether the lexer has consumed a
+   relaxation string. Scopes are either top-level or inside square brackets.
+   This is because whitespace after a relaxation in the same scope is
+   treated as a sequence separator. *)
+let push t stack = stack := (t :: !stack)
+let pop stack = match !stack with
+      | [] -> Warn.fatal "error in has_previous_relaxation in lexer.\n"
+      | hd :: tail -> stack := tail; hd
+let peak stack = match !stack with
+      | [] -> Warn.fatal "error in has_previous_relaxation in lexer.\n"
+      | hd :: _ -> hd
+let modify t stack = match !stack with
+      | [] -> Warn.fatal "error in has_previous_relaxation in lexer.\n"
+      | _ :: tail -> stack := t :: tail
+let is_singleton stack = List.length !stack = 1
 }
-let blank = [','' ''\t''\n''\r']
-let not_blank = [^','' ''\t''\n''\r' '[' ']']
 
-rule main = parse
-| eof { [] }
-| '['
-{
- let seq = pseq lexbuf in
- Seq seq::main lexbuf
+let blank = [' ''\t''\n''\r']
+let relexation = ['A'-'Z' 'a'-'z' '0'-'9' '-' '.' '*']+
+
+(* The lexer consumes optional blanks around explicit syntax such as `[`, `]`,
+   `,`, `|`, and `?`, because, for backward compatibility, standalone blanks
+   are interpreted as `COMMA` after an concreate relax. *)
+rule token is_backward_compatible has_previous_relaxation = parse
+| eof { EOF }
+| '[' blank* { push false has_previous_relaxation; LEFT_SQUARE }
+| blank* ']' {
+  ignore (pop has_previous_relaxation);
+  modify true has_previous_relaxation;
+  RIGHT_SQUARE
 }
-| blank+ { main lexbuf }
-| not_blank+ as lxm { One lxm :: main lexbuf }
-| "" { error "main" }
-
-and pseq = parse
-| eof { failwith "] missing" }
-| ']' { [] }
-| blank+ { pseq lexbuf }
-| not_blank+ as lxm { lxm :: pseq lexbuf }
-| "" { error "pseq" }
-
-and just_split = parse
-| eof { [] }
-| blank+ { just_split lexbuf }
-| not_blank+ as lxm { lxm :: just_split lexbuf }
-| "" { error "just_split" }
+| blank* '?' { OPTION }
+| blank* ',' blank* eof { EOF }
+| blank* ',' blank* {
+  if is_backward_compatible && is_singleton has_previous_relaxation
+  then CHOICE_BAR else COMMA
+}
+| blank* '|' blank* { CHOICE_BAR }
+| (relexation as lxm) {
+  modify true has_previous_relaxation;
+  RELAXATION lxm
+}
+| blank+ {
+  if peak has_previous_relaxation then begin
+    if is_backward_compatible && is_singleton has_previous_relaxation
+    then CHOICE_BAR else COMMA
+  end
+  else token is_backward_compatible has_previous_relaxation lexbuf
+}
 {
 
-
-let split s = main (Lexing.from_string s)
-let just_split s = just_split (Lexing.from_string s)
+(* The lexer keeps per-parse scope state to decide when whitespace should be
+   treated as a separator. Keep that state local to each parse so nested or
+   repeated parses do not interfere. *)
+let parse ?(is_backward_compatible=true) parser lexbuf =
+  let has_previous_relaxation = ref [false] in
+  parser (token is_backward_compatible has_previous_relaxation) lexbuf
+  |> Ast.normalise
 
 }

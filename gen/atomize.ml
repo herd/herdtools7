@@ -25,6 +25,7 @@ let opts = [Util.arch_opt arch]
 module Make (F:Fence.S)(A:Atom.S) =
     struct
       module E = Edge.Make(Edge.Config)(F)(A)
+      module Relax = Relax.Make(F)(E)
       module Namer = Namer.Make(F)(A)(E)
       module Normer =
         Normaliser.Make(struct let lowercase = false end)(E)
@@ -87,13 +88,12 @@ module Make (F:Fence.S)(A:Atom.S) =
         done with End_of_file -> ()
 
       let zyva_argv es =
-        let es = List.map E.parse_edge es in
-        let es = atomize es in
+        let es = E.parse_edges es |> atomize in
         printf "%s\n" (pp_edges es)
 
       let zyva = function
         | [] -> zyva_stdin ()
-        | es ->  zyva_argv es
+        | es ->  String.concat "," es |> zyva_argv
     end
 
 let pp_es = ref []
@@ -101,7 +101,9 @@ let pp_es = ref []
 let () =
   Util.parse_cmdline
     opts
-    (fun x -> pp_es := x :: !pp_es)
+    (fun x ->
+      let segment = String.trim x in
+      if segment <> "" then pp_es := segment :: !pp_es)
 
 let pp_es = List.rev !pp_es
 
