@@ -224,6 +224,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let variant v = AArch64Base.variant_raw v |> liti in
       let cond c = tr_cond c |> litbv 4 in
       let stmt = Asllib.ASTUtils.stmt_from_list in
+      let pass = with_pos S_Pass in
       let open AArch64Base in
       let reg = function
         (* To use with caution, sometimes it doesn't work. *)
@@ -866,42 +867,66 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "rt_unknown" ^= litb false;
                   "wb_unknown" ^= litb false;
                 ] )
-      | I_LDP (pa, v, rt, rt2, rn, (k, idx))
-      | I_STP (pa, v, rt, rt2, rn, (k, idx))
-        ->
-          let wback, postindex = decode_wback_postindex idx in
-          let fname =
-            match pa, ii.A.inst with
-            | Pa, I_LDP _ -> "ldstpair_post/LDP_32_ldstpair_post.opn"
-            | Pa, I_STP _ -> "ldstpair_post/STP_32_ldstpair_post.opn"
-            | PaI, I_LDP _ -> "ldiappstilp/LDIAPP_32LE_ldiappstilp.opn"
-            | PaI, I_STP _ -> "ldiappstilp/STILP_32SE_ldiappstilp.opn"
-            | PaN, I_LDP _ -> "ldstnapair_offs/LDNP_32_ldstnapair_offs.opn"
-            | PaN, I_STP _ -> "ldstnapair_offs/STNP_32_ldstnapair_offs.opn"
-            | _ -> assert false
-          and acqrel =
-            match ii.A.inst with
-            | I_LDP _ -> pa = PaI && rt != ZR && rt2 != ZR
-            | _ -> false
-          and offset = if pa = PaI then liti k else litbv 64 k in
-          Some
-            ( "ldst/" ^ fname,
-              stmt
-                [
-                  "wback" ^= litb wback;
-                  "postindex" ^= litb postindex;
-                  "ispair" ^= litb true;
-                  "t" ^= reg rt;
-                  "t2" ^= reg rt2;
-                  "n" ^= reg rn;
-                  "datasize" ^= variant v;
-                  "nontemporal" ^= litb (pa = PaN);
-                  "offset" ^= offset;
-                  "tagchecked" ^= litb (wback || rn <> SP);
-                  "acqrel" ^= litb acqrel;
-                  "rt_unknown" ^= litb false;
-                  "wb_unknown" ^= litb false;
-                ])
+      | I_LDP (pa, v, rt, rt2, rn, (k, idx)) ->
+        let wback, postindex = decode_wback_postindex idx in
+        let fname =
+          match pa with
+          | `Pa -> "ldstpair_post/LDP_32_ldstpair_post.opn"
+          | `PaIQ -> "ldiappstilp/LDIAPP_32LE_ldiappstilp.opn"
+          | `PaN -> "ldstnapair_offs/LDNP_32_ldstnapair_offs.opn"
+          | `PaA -> "ldiappstilp/LDAP_64_ldiappstilp.opn"
+        and offset = if pa = `PaIQ then liti k else litbv 64 k in
+        Some
+          ( "ldst/" ^ fname,
+            stmt
+              [
+                "wback" ^= litb wback;
+                "postindex" ^= litb postindex;
+                "ispair" ^= litb true;
+                "t" ^= reg rt;
+                "t2" ^= reg rt2;
+                "n" ^= reg rn;
+                "datasize" ^= variant v;
+                "nontemporal" ^= litb (pa = `PaN);
+                "offset" ^= offset;
+                "tagchecked" ^= litb (wback || rn <> SP);
+                (match pa with
+                  | `Pa | `PaN -> pass
+                  | (`PaA) -> "acquire" ^= litb (rt != ZR && rt2 != ZR)
+                  | (`PaIQ) -> "acqrel" ^= litb (rt != ZR && rt2 != ZR));
+                "rt_unknown" ^= litb false;
+                "wb_unknown" ^= litb false;
+              ])
+      | I_STP (pa, v, rt, rt2, rn, (k, idx)) ->
+        let wback, postindex = decode_wback_postindex idx in
+        let fname =
+          match pa with
+          | `Pa -> "ldstpair_post/STP_32_ldstpair_post.opn"
+          | `PaIL -> "ldiappstilp/STILP_32SE_ldiappstilp.opn"
+          | `PaN -> "ldstnapair_offs/STNP_32_ldstnapair_offs.opn"
+          | `PaL -> "ldiappstilp/STLP_64_ldiappstilp.opn"
+        and offset = if pa = `PaIL then liti k else litbv 64 k in
+        Some
+          ( "ldst/" ^ fname,
+            stmt
+              [
+                "wback" ^= litb wback;
+                "postindex" ^= litb postindex;
+                "ispair" ^= litb true;
+                "t" ^= reg rt;
+                "t2" ^= reg rt2;
+                "n" ^= reg rn;
+                "datasize" ^= variant v;
+                "nontemporal" ^= litb (pa = `PaN);
+                "offset" ^= offset;
+                "tagchecked" ^= litb (wback || rn <> SP);
+                (match pa with
+                  | `Pa | `PaN -> pass
+                  | (`PaL) -> "acquire" ^= litb (rt != ZR && rt2 != ZR)
+                  | (`PaIL) -> "acqrel" ^= litb (rt != ZR && rt2 != ZR));
+                "rt_unknown" ^= litb false;
+                "wb_unknown" ^= litb false;
+              ])
       | I_LDRS ((v, bh), rt, rn, MemExt.Reg (_vm, rm, e, s)) ->
           let fname =
             match bh with
