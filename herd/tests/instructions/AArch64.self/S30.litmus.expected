@@ -1,0 +1,11 @@
+Test S30 Allowed
+States 2
+0:X1=1; 0:X3=NOP;
+0:X1=3; 0:X3=NOP;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (0:X3=NOP /\ 0:X1=3)
+Observation S30 Sometimes 1 1
+Hash=6180f61ca45d616cf867dd1481ec4e20
+
