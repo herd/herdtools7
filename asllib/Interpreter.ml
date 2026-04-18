@@ -678,6 +678,15 @@ module Make (B : Backend.S) (C : Config) = struct
         let* v = B.get_field label v_array in
         return_normal (v, new_env) |: SemanticsRule.EGetEnumArray
     (* End *)
+    (* Begin EvalEGetCoord *)
+    | E_GetTensor (_e_base, _coords) ->
+        failwith "E_GetTensor is not yet supported"
+    (* let*^ m_base, env1 = eval_expr env e_base in
+        let*^ m_coords, new_env = eval_expr_list env1 coords in
+        let* v_base = m_base and* v_coords = m_coords in
+        let* v = B.get_coord v_base v_coords in
+        return_normal (v, new_env) |: SemanticsRule.EGetTensor *)
+    (* End *)
     (* Begin EvalEGetTupleItem *)
     | E_GetItem (e_tuple, index) ->
         let** v_tuple, new_env = eval_expr env e_tuple in
@@ -730,6 +739,9 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         let* v = B.create_vector (List.init n_length (Fun.const v_value)) in
         return_normal (v, new_env) |: SemanticsRule.EArray
+    (* End *)
+    (* Begin EvalETensor *)
+    | E_Tensor _ -> failwith "E_Tensor is not yet supported"
     (* End *)
     (* Begin EvalEEnumArray *)
     | E_EnumArray { labels; value = e_value } ->
@@ -923,6 +935,9 @@ module Make (B : Backend.S) (C : Config) = struct
           B.set_field label v rv_array
         in
         eval_lexpr ver re_array env2 m1 |: SemanticsRule.LESetEnumArray
+    (* End *)
+    (* Begin EvalLESetTensor *)
+    | LE_SetTensor _ -> failwith "LE_SetTensor is not yet supported"
     (* End *)
     (* Begin EvalLESetField *)
     | LE_SetField (re_record, field_name) ->

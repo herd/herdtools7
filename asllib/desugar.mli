@@ -55,6 +55,7 @@ type lhs_field = identifier annotated
 type field_or_array_access =
   | FieldAccess of lhs_field
   | ArrayAccess of expr  (** An access of a single field or array index. *)
+  | TensorAccess of expr list  (** An access of a single tensor coordinate. *)
 
 type lhs_access = {
   access : field_or_array_access list;  (** empty means no accesses *)

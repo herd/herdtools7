@@ -78,6 +78,7 @@
 %token LE
 %token LET
 %token LLBRACKET
+%token LLLBRACKET
 %token LOOPLIMIT
 %token LPAR
 %token LT
@@ -110,6 +111,7 @@
 %token RETURN
 %token RPAR
 %token RRBRACKET
+%token RRRBRACKET
 %token SEMI_COLON
 %token SETTER
 %token SHL
@@ -120,6 +122,7 @@
 %token SUBTYPES
 %token THEN
 %token THROW
+%token TENSOR
 %token TO
 %token TRY
 %token TYPE
@@ -209,6 +212,6 @@
 %nonassoc IN
 
 (* DOT, brackets, etc. *)
-%left DOT LBRACKET LLBRACKET
+%left DOT LBRACKET LLBRACKET LLLBRACKET
 
 %%

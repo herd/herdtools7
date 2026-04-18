@@ -96,6 +96,10 @@ let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
     match ty.desc with
     | T_Bits (e, fields) ->
         T_Bits (subst_expr_normalize env eqs e, fields) |> here
+    | T_Tensor (dims, t_scalar) ->
+        (* t_scalar is not expected to be parameterized so no renaming needed. *)
+        T_Tensor (List.map (subst_expr_normalize env eqs) dims, t_scalar)
+        |> here
     | T_Int (WellConstrained (constraints, precision)) ->
         let constraints = subst_constraints env eqs constraints in
         well_constrained ~loc ~precision constraints
@@ -705,6 +709,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | (`EQ | `NE), (T_Bits (w1, _), T_Bits (w2, _))
         when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
           T_Bool |> here
+      | (`EQ | `NE), (T_Tensor (dims1, _), T_Tensor (dims2, _))
+        when list_equal
+               (fun d1 d2 ->
+                 bitwidth_equal (StaticModel.equal_in_env env) d1 d2)
+               dims1 dims2 ->
+          T_Bool |> here
       | (`EQ | `NE), (T_Enum li1, T_Enum li2)
         when list_equal String.equal li1 li2 ->
           T_Bool |> here
@@ -773,7 +783,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     if Types.type_equal env t1 t2 then ok
     else
       match (t1.desc, t2.desc) with
-      | T_Int _, T_Int _ | T_Bits _, T_Bits _ -> ok
+      | T_Int _, T_Int _ | T_Bits _, T_Bits _ | T_Tensor _, T_Tensor _ -> ok
       | T_Tuple l1, T_Tuple l2 when List.compare_lengths l1 l2 = 0 ->
           check_all2 l1 l2 (check_atc ~fail env)
       | T_Named _, _ | _, T_Named _ -> assert false
@@ -1350,6 +1360,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         in
         let ses = SES.union ses_t ses_index in
         (T_Array (index', t') |> here, ses) |: TypingRule.TArray
+    | T_Tensor (dims, t) ->
+        let t', ses_t = annotate_type ~loc env t in
+        let dims', ses_dims =
+          list_map_split (annotate_symbolic_constrained_integer ~loc env) dims
+        in
+        let ses = SES.union ses_t (SES.unions ses_dims) in
+        (T_Tensor (dims', t') |> here, ses) |: TypingRule.TTensor
     (* Begin TStructuredDecl *)
     | T_Record fields | T_Exception fields | T_Collection fields -> (
         let+ () =
@@ -1994,6 +2011,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (T_Tuple ts |> here, E_Tuple es |> here, ses) |: TypingRule.ETuple
     (* End *)
     | E_Array _ -> fatal_from ~loc UnrespectedParserInvariant
+    | E_Tensor _ -> fatal_from ~loc UnrespectedParserInvariant
     (* Begin ERecord *)
     | E_Record (ty, fields) ->
         (* Rule WBCQ: The identifier in a record expression must be a named type
@@ -2318,6 +2336,30 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | _ -> conflict ~loc [ default_array_ty ] t_base |: TypingRule.EGetArray
         )
     (* End *)
+    (* Begin EGetTensor *)
+    | E_GetTensor (e_base, coords) ->
+        let t_base, e_base', ses_base = annotate_expr env e_base in
+        let t_anon_base = Types.make_anonymous env t_base in
+        let declared_elem_ty =
+          match t_anon_base.desc with
+          | T_Tensor (_, t_elem) -> t_elem
+          | _ -> conflict ~loc [] t_base |: TypingRule.EGetTensor
+        in
+        let coord_tys, coord_exprs, ses_coord =
+          List.map (annotate_expr env) coords |> list_split3
+        in
+        let () =
+          List.iter
+            (fun t_coord -> check_type_satisfies ~loc env t_coord integer ())
+            coord_tys
+        in
+        let ses =
+          ses_non_conflicting_union ~loc ses_base
+            (ses_non_conflicting_unions ~loc ses_coord)
+        in
+        let e_annotated = E_GetTensor (e_base', coord_exprs) |> here in
+        (declared_elem_ty, e_annotated, ses) |: TypingRule.EGetTensor
+    (* End *)
     | E_GetItem _ | E_EnumArray _ | E_GetEnumArray _ | E_GetCollectionFields _
       ->
         assert false
@@ -2439,6 +2481,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | ArrayLength_Enum (enum, labels) ->
             E_EnumArray { enum; labels; value } |> here
         | ArrayLength_Expr length -> E_Array { length; value } |> here)
+    | T_Tensor (dimensions, ty) ->
+        let value = base_value_v1 ~loc env ty in
+        E_Tensor { dimensions; value } |> here
   (* End *)
 
   let rec base_value_v0 ~loc env t : expr =
@@ -2470,6 +2515,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Named _id ->
         let t = Types.make_anonymous env t in
         base_value_v0 ~loc env t
+    | T_Tensor _ -> failwith "base_value_v0: tensors not supported"
 
   (** [base_value ~loc env e] is [base_value_v1 ~loc env e] if running for
       ASLv1, or [base_value_v0 ~loc env e] if running for ASLv0. *)
@@ -2712,6 +2758,32 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             annotate_set_array ~loc env (size, t_elem) t_e
               (e_base', ses_base, e_index)
         | _ -> conflict ~loc [ default_array_ty ] t_base)
+    (* End *)
+    (* Begin LESetArray *)
+    | LE_SetTensor (e_base, coords) ->
+        let t_base, _, _ = expr_of_lexpr e_base |> annotate_expr env in
+        let t_anon_base = Types.make_anonymous env t_base in
+        let le_base', ses_base =
+          match t_anon_base.desc with
+          | T_Tensor _ ->
+              let e_base', ses_base = annotate_lexpr env e_base t_base in
+              (e_base', ses_base)
+          | _ -> conflict ~loc [] t_base |: TypingRule.LESetTensor
+        in
+        let coord_tys, annotated_coords, ses_coord =
+          List.map (annotate_expr env) coords |> list_split3
+        in
+        let () =
+          List.iter
+            (fun t_coord -> check_type_satisfies ~loc env t_coord integer ())
+            coord_tys
+        in
+        let ses =
+          ses_non_conflicting_union ~loc ses_base
+            (ses_non_conflicting_unions ~loc ses_coord)
+        in
+        let e_annotated = LE_SetTensor (le_base', annotated_coords) |> here in
+        (e_annotated, ses)
     (* End *)
     | LE_SetFields (_, _, _ :: _) | LE_SetEnumArray _ | LE_SetCollectionFields _
       ->
@@ -3352,7 +3424,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let ses = SES.union ses_call ses_e in
           Some (S_Call call |> here, ses)
         else None
-    | LE_SetArray _ | LE_SetEnumArray _ | LE_SetCollectionFields _ ->
+    | LE_SetArray _ | LE_SetEnumArray _ | LE_SetTensor _
+    | LE_SetCollectionFields _ ->
         assert false
 
   (** [func_sig_types f] returns a list of the types in the signature [f]. The
@@ -3393,6 +3466,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let rec parameters_of_ty ~env ty =
       match ty.desc with
       | T_Bits (e, _) -> parameters_of_expr ~env e
+      | T_Tensor (dims, _t_scalar) ->
+          list_concat_map (parameters_of_expr ~env) dims
+          (* For now, we don't allow tensor scalars to be parameterized. *)
       | T_Tuple tys -> list_concat_map (parameters_of_ty ~env) tys
       | T_Int (WellConstrained (cs, Precision_Full)) ->
           list_concat_map (parameters_of_constraint ~env) cs

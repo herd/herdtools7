@@ -165,6 +165,9 @@ type expr_desc =
   | E_GetEnumArray of expr * expr
       (** Access an array with an enumeration index. This constructor is only
           part of the typed AST. *)
+  | E_GetTensor of expr * expr list
+      (** [E_GetTensor base indices] represents an access to a tensor given by
+          the expression [base] at the coordinates given by [indices]. *)
   | E_GetField of expr * identifier
   | E_GetFields of expr * identifier list
   | E_GetCollectionFields of identifier * identifier list
@@ -177,14 +180,20 @@ type expr_desc =
           each array cell.
 
           This expression constructor is only part of the typed AST, i.e. it is
-          only built by the type-checker, not any parser. *)
+          only built by the type-checker, not by any parser. *)
   | E_EnumArray of { enum : identifier; labels : identifier list; value : expr }
       (** Initial value for an array where the index is the enumeration [enum],
           which declares the list of labels [labels], and the content of each
           cell is given by [value]. [enum] is only used for pretty-printing.
 
           This expression constructor is only part of the typed AST, i.e. it is
-          only built by the type-checker, not any parser. *)
+          only built by the type-checker, not by any parser. *)
+  | E_Tensor of { dimensions : expr list; value : expr }
+      (** Initial value for a tensor of dimensions given by [dimensions] and of
+          content [value] at each coordinate.
+
+          This expression constructor is only part of the typed AST, i.e. it is
+          only built by the type-checker, not by any parser. *)
   | E_Arbitrary of ty
   | E_Pattern of expr * pattern
 
@@ -243,6 +252,7 @@ and type_desc =
   | T_Enum of identifier list
   | T_Tuple of ty list
   | T_Array of array_index * ty
+  | T_Tensor of expr list * ty
   | T_Record of field list
   | T_Exception of field list
   | T_Collection of field list
@@ -315,6 +325,9 @@ type lexpr_desc =
   | LE_SetEnumArray of lexpr * expr
       (** Represents a write to an array with an enumeration index. This
           constructor is only part of the typed AST. *)
+  | LE_SetTensor of lexpr * expr list
+      (** [LE_SetTensor base indices] represents a write to a tensor given by
+          the expression [base] at the coordinates given by [indices]. *)
   | LE_SetField of lexpr * identifier
   | LE_SetFields of lexpr * identifier list * (int * int) list
       (** [LE_SetFields (le, fields, _)] unpacks the various fields. Third

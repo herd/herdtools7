@@ -172,6 +172,8 @@ let rec of_expr_desc x =
     | E_Cond (x, y, z) -> [ key "E_COND"; of_expr x; of_expr y; of_expr z ]
     | E_GetArray (x, y) -> [ key "E_GETARRAY"; of_expr x; of_expr y ]
     | E_GetEnumArray (x, y) -> [ key "E_GETENUMARRAY"; of_expr x; of_expr y ]
+    | E_GetTensor (x, coords) ->
+        [ key "E_GETCOORD"; of_expr x; of_list_map of_expr coords ]
     | E_GetField (x, i) -> [ key "E_GETFIELD"; of_expr x; of_identifier i ]
     | E_GetFields (x, i) ->
         [ key "E_GETFIELDS"; of_expr x; of_list_map of_identifier i ]
@@ -198,6 +200,8 @@ let rec of_expr_desc x =
           of_list_map of_identifier labels;
           of_expr value;
         ]
+    | E_Tensor { dimensions; value } ->
+        [ key "E_TENSOR"; of_list_map of_expr dimensions; of_expr value ]
     | E_Arbitrary t -> [ key "E_ARBITRARY"; of_ty t ]
     | E_Pattern (x, p) -> [ key "E_PATTERN"; of_expr x; of_pattern p ])
 
@@ -252,6 +256,8 @@ and of_type_desc x =
     | T_Enum i -> [ key "T_ENUM"; of_list_map of_identifier i ]
     | T_Tuple t -> [ key "T_TUPLE"; of_list_map of_ty t ]
     | T_Array (i, t) -> [ key "T_ARRAY"; of_array_index i; of_ty t ]
+    | T_Tensor (dimensions, t) ->
+        [ key "T_TENSOR"; of_list_map of_expr dimensions; of_ty t ]
     | T_Record f -> [ key "T_RECORD"; of_list_map of_field f ]
     | T_Exception f -> [ key "T_EXCEPTION"; of_list_map of_field f ]
     | T_Collection f -> [ key "T_COLLECTION"; of_list_map of_field f ]
@@ -324,6 +330,8 @@ let rec of_lexpr_desc x =
     | LE_SetArray (lx, x) -> [ key "LE_SETARRAY"; of_lexpr lx; of_expr x ]
     | LE_SetEnumArray (lx, x) ->
         [ key "LE_SETENUMARRAY"; of_lexpr lx; of_expr x ]
+    | LE_SetTensor (lx, xs) ->
+        [ key "LE_SETTENSOR"; of_lexpr lx; of_list_map of_expr xs ]
     | LE_SetField (lx, i) -> [ key "LE_SETFIELD"; of_lexpr lx; of_identifier i ]
     | LE_SetFields (lx, i, pairs) ->
         [
