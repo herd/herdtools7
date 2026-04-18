@@ -12,7 +12,7 @@ ins_t* 0:X3;
  LDR W4,[X0]  ;
  ADD W6,W6,#2 ;
  B .+8        ;
-L0:           ;              
+L0:           ;
  ADR X3,L0    ;
  STR W4,[X1]  ;
 L1:           ;
@@ -20,5 +20,5 @@ L1:           ;
  LDR W5,[X1]  ;
 locations [0:X3;0:X6;]
 exists 0:X3=label:"P0:L1" /\ 0:X6=2
- 
+
 
