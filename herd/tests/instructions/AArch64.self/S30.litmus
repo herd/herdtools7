@@ -1,0 +1,14 @@
+AArch64 S30
+(* Executing and reading as data may differ *)
+{
+0:X0=P0:L0;
+0:X2=NOP;
+}
+  P0          ;
+ ADD W1,W1,#1 ;
+ STR W2,[X0]  ;
+L0:           ;
+ B .+8        ;
+ ADD W1,W1,#2 ;
+ LDR W3,[X0]  ;
+exists 0:X3=NOP /\ 0:X1=3
