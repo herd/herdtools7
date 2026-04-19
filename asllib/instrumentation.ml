@@ -63,6 +63,7 @@ module SemanticsRule = struct
     | LESlice
     | LESetArray
     | LESetEnumArray
+    | LESetTensor
     | LESetField
     | LESetFields
     | LEDestructuring
@@ -154,6 +155,7 @@ module SemanticsRule = struct
     | LESlice -> "LESlice"
     | LESetArray -> "LESetArray"
     | LESetEnumArray -> "LESetEnumArray"
+    | LESetTensor -> "LESetTensor"
     | LESetField -> "LESetField"
     | LESetFields -> "LESetFields"
     | LEDestructuring -> "LEDestructuring"
@@ -252,6 +254,7 @@ module SemanticsRule = struct
       LESlice;
       LESetArray;
       LESetEnumArray;
+      LESetTensor;
       LESetField;
       LESetFields;
       LEDestructuring;

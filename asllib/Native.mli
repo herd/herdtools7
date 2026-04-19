@@ -26,6 +26,7 @@ type native_value =
   | NV_Literal of AST.literal
   | NV_Vector of native_value list
   | NV_Record of native_value ASTUtils.IMap.t
+  | NV_Tensor of native_value Tensor.t
 
 module NoScope : Backend.SCOPE with type t = unit
 

@@ -39,6 +39,7 @@ type native_value =
   | NV_Literal of AST.literal
   | NV_Vector of native_value list
   | NV_Record of native_value ASTUtils.IMap.t
+  | NV_Tensor of native_value Tensor.t
 
 let nv_literal l = NV_Literal l
 
@@ -50,6 +51,10 @@ let rec pp_native_value f =
   | NV_Vector li ->
       fprintf f "@[[%a]@]" (pp_print_list ~pp_sep:pp_comma pp_native_value) li
   | NV_Record map -> IMap.pp_print pp_native_value f map
+  | NV_Tensor t ->
+      fprintf f "@[[Tensor with dims %a]@]"
+        (pp_print_list pp_print_int)
+        (Tensor.dims t)
 
 let native_value_to_string = Format.asprintf "%a" pp_native_value
 
@@ -150,6 +155,17 @@ module NativeBackend (C : Config) = struct
         else list_update i (Fun.const v) li |> v_tuple
     | v -> non_tuple_exception v
 
+  let get_coord coords tensor =
+    match tensor with
+    | NV_Tensor t -> Tensor.get t coords |> return
+    | v -> non_tuple_exception v (* TODO: fix this. *)
+
+  let set_coord coords v tensor =
+    match tensor with
+    | NV_Tensor t ->
+        Tensor.set t coords v |> fun new_t -> return (NV_Tensor new_t)
+    | v -> non_tuple_exception v (* TODO: fix this. *)
+
   let get_field name record =
     match record with
     | NV_Record map -> IMap.find name map
@@ -163,6 +179,10 @@ module NativeBackend (C : Config) = struct
   let create_vector = v_tuple
   let create_record = v_record
   let create_exception = v_exception
+
+  let create_tensor dims value =
+    let tensor = Tensor.create dims value in
+    return (NV_Tensor tensor)
 
   let as_bitvector = function
     | NV_Literal (L_BitVector bits) -> bits

@@ -118,6 +118,11 @@ module type S = sig
   val create_vector : value list -> value m
   (** Creates a vector with this values. *)
 
+  val create_tensor : int list -> value -> value m
+  (** [create_tensor dims value] creates a tensor with the given dimensions,
+      initialized with [value]. This function assumes that all dimensions are
+      positive. *)
+
   val create_record : (AST.identifier * value) list -> value m
   (** Creates a record, with the indicated names. *)
 
@@ -129,6 +134,14 @@ module type S = sig
 
   val set_index : int -> value -> value -> value m
   (** [set_i i v vec] returns [vec] with index [i] replaced by [v].*)
+
+  val get_coord : int list -> value -> value m
+  (** [get_coord coords tensor] returns the value at the given coordinates in
+      the tensor. *)
+
+  val set_coord : int list -> value -> value -> value m
+  (** [set_coord coords v tensor] returns [tensor] with the value at the given
+      coordinates replaced by [v]. *)
 
   val get_field : string -> value -> value m
   (** [get_field "foo" v] is the value mapped by "foo" in the record [v]. *)

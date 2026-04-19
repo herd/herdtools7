@@ -679,13 +679,13 @@ module Make (B : Backend.S) (C : Config) = struct
         return_normal (v, new_env) |: SemanticsRule.EGetEnumArray
     (* End *)
     (* Begin EvalEGetCoord *)
-    | E_GetTensor (_e_base, _coords) ->
-        failwith "E_GetTensor is not yet supported"
-    (* let*^ m_base, env1 = eval_expr env e_base in
-        let*^ m_coords, new_env = eval_expr_list env1 coords in
+    | E_GetTensor (e_base, e_coords) ->
+        let*^ m_base, env1 = eval_expr env e_base in
+        let*^ m_coords, new_env = eval_expr_list env1 e_coords in
         let* v_base = m_base and* v_coords = m_coords in
-        let* v = B.get_coord v_base v_coords in
-        return_normal (v, new_env) |: SemanticsRule.EGetTensor *)
+        let coords = List.map (v_to_int ~loc:e) v_coords in
+        let* v = B.get_coord coords v_base in
+        return_normal (v, new_env) |: SemanticsRule.EGetTensor
     (* End *)
     (* Begin EvalEGetTupleItem *)
     | E_GetItem (e_tuple, index) ->
@@ -741,7 +741,24 @@ module Make (B : Backend.S) (C : Config) = struct
         return_normal (v, new_env) |: SemanticsRule.EArray
     (* End *)
     (* Begin EvalETensor *)
-    | E_Tensor _ -> failwith "E_Tensor is not yet supported"
+    | E_Tensor { dimensions; value = e_value } ->
+        let** v_value, new_env = eval_expr env e_value in
+        (* The dimension expressions are side-effect-free so we drop their environment.
+          TODO: create a list version of [eval_expr_sef] to avoid the need to drop the environment.
+        *)
+        let** v_dimensions, _ = eval_expr_list env dimensions in
+        let n_dimensions =
+          List.map
+            (fun v_dim ->
+              let n_dim = v_to_int ~loc:e v_dim in
+              if n_dim <= 0 then
+                (* TODO: add an error type for tensors. *)
+                fatal_from e env (Error.NegativeArrayLength (e, n_dim))
+              else v_to_int ~loc:e v_dim)
+            v_dimensions
+        in
+        let* v = B.create_tensor n_dimensions v_value in
+        return_normal (v, new_env) |: SemanticsRule.ETensor
     (* End *)
     (* Begin EvalEEnumArray *)
     | E_EnumArray { labels; value = e_value } ->
@@ -924,6 +941,19 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         eval_lexpr ver re_array env2 m1 |: SemanticsRule.LESetArray
     (* End *)
+    (* Begin EvalLESetTensor *)
+    | LE_SetTensor (re_tensor, e_coords) ->
+        let*^ rm_tensor, env1 = expr_of_lexpr re_tensor |> eval_expr env in
+        let*^ m_coords, new_env = eval_expr_list env1 e_coords in
+        let* rv_tensor = rm_tensor and* v_coords = m_coords in
+        let coords = List.map (v_to_int ~loc:(List.hd e_coords)) v_coords in
+        let m1 =
+          let* v = m in
+          B.set_coord coords v rv_tensor
+        in
+        eval_lexpr ver re_tensor new_env m1 |: SemanticsRule.LESetTensor
+    (* failwith "LE_SetTensor is not yet supported" *)
+    (* End *)
     (* Begin EvalLESetEnumArray *)
     | LE_SetEnumArray (re_array, e_index) ->
         let*^ rm_array, env1 = expr_of_lexpr re_array |> eval_expr env in
@@ -935,9 +965,6 @@ module Make (B : Backend.S) (C : Config) = struct
           B.set_field label v rv_array
         in
         eval_lexpr ver re_array env2 m1 |: SemanticsRule.LESetEnumArray
-    (* End *)
-    (* Begin EvalLESetTensor *)
-    | LE_SetTensor _ -> failwith "LE_SetTensor is not yet supported"
     (* End *)
     (* Begin EvalLESetField *)
     | LE_SetField (re_record, field_name) ->

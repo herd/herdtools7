@@ -885,6 +885,10 @@ module Make (Conf : Config) = struct
         let unop = unop
         let ternary = ternary
         let create_vector = create_vector
+        let create_tensor _ _ = failwith "Tensors are not supported yet in ASLSem."
+        let get_coord _ _ = failwith "Tensors are not supported yet in ASLSem."
+        let set_coord _ _ _ = failwith "Tensors are not supported yet in ASLSem."
+
         let create_record = create_record
         let create_exception = create_exception
         let get_index = get_index
