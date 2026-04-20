@@ -48,8 +48,10 @@ let run_asl code version exec =
   in
 
   try Runner.run_with argv with
-  | Asllib.Error.ASLException e ->
-      Printf.eprintf "%s\n%!" (Asllib.Error.error_to_string e)
+  | Asllib.Error.ASLException _ ->
+      (* Unreachable due to the use of [or_exit] in Runner.ml:
+         any [ASLException] is intercepted and re-raised as an [Exit]. *)
+      assert false
   | Runner.Exit code ->
       if not _exec then Printf.printf "ASL: parse/type-check completed.\n%!"
       else
