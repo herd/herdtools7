@@ -1,6 +1,6 @@
 (* asllib-www/jaslref.ml *)
 
-open Aslref
+open Asllib
 open Js_of_ocaml
 
 let dbg = false
@@ -32,33 +32,13 @@ let run_asl code version exec =
   and _version = Js.to_string version
   and _exec = Js.to_bool exec in
 
-  let argv : args =
-    {
-      exec = _exec;
-      files =
-        [
-          ( (if String.equal _version "v0" then NormalV0 else NormalV1),
-            "web-input.asl" );
-        ];
-      opn = None;
-      (* … rest of the boolean flags left to their defaults … *)
-      print_ast = false;
-      print_lisp = false;
-      print_serialized = false;
-      print_serialized_typed = false;
-      print_typed = false;
-      show_rules = false;
-      strictness = (if String.equal _version "v0" then Silence else TypeCheck);
-      output_format = Asllib.Error.HumanReadable;
-      use_field_getter_extension = false;
-      use_fine_grained_side_effects = false;
-      use_conflicting_side_effects_extension = false;
-      override_mode = Permissive;
-      no_primitives = false;
-      no_stdlib = false;
-      no_stdlib0 = false;
-      v0_use_split_chunks = false;
-    }
+  let argv : Runner.args =
+    Runner.
+      {
+        default_args with
+        exec = _exec;
+        files = [ (NormalV1, "web-input.asl") ];
+      }
   in
 
   let () =
@@ -67,10 +47,10 @@ let run_asl code version exec =
       Js_of_ocaml.Sys_js.update_file ~name:"web-input.asl" ~content:_code
   in
 
-  try run_with argv with
+  try Runner.run_with argv with
   | Asllib.Error.ASLException e ->
       Printf.eprintf "%s\n%!" (Asllib.Error.error_to_string e)
-  | Exit code ->
+  | Runner.Exit code ->
       if not _exec then Printf.printf "ASL: parse/type-check completed.\n%!"
       else
         Printf.printf "ASL: interpretation completed (exit code %n).\n%!" code
