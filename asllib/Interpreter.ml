@@ -632,7 +632,7 @@ module Make (B : Backend.S) (C : Config) = struct
               (fun () -> eval_expr_sef env1 e1)
               (fun () -> eval_expr_sef env1 e2)
           in
-          return_normal (v, env1) |: SemanticsRule.ECondSimple
+          return_normal (v, env1)
         else
           choice_with_branch_effect env1 m_cond e_cond e1 e2 (fun (env, v) ->
               eval_expr env v)
