@@ -51,7 +51,8 @@ To uninstall, simply run
 + Install dependencies:
   {@bash[
     $ cd herdtools7
-    $ opam install asllib --deps-only
+    $ opam exec -- dune build asllib/aslref.opam
+    $ opam install ./asllib --deps-only
   ]}
 + Build and install into a location [$PREFIX]:
   {@bash[
