@@ -991,8 +991,7 @@ clean-asl-pseudocode:
 	@ $(MAKE) -C herd/libdir/asl-pseudocode clean
 
 .PHONY: asldoc
-asldoc: Version.ml
-	@ dune build -j $(J) --profile $(DUNE_PROFILE) $(ASLREF)
+asldoc: Version.ml build-aslref
 	@ $(MAKE) $(MFLAGS) -C asllib/doc all ASLREF=$(CURDIR)/$(ASLREF)
 
 .PHONY: clean-asldoc
@@ -1000,9 +999,8 @@ clean-asldoc:
 	@ $(MAKE) $(MFLAGS) -C asllib/doc clean
 
 .PHONY: type-check-asl
-type-check-asl: Version.ml
+type-check-asl: Version.ml build-aslref
 	@ echo
-	@ dune build -j $(J) --profile $(DUNE_PROFILE) $(ASLREF)
 	@ $(MAKE) $(MFLAGS) -C herd/libdir/asl-pseudocode type-check ASLREF=$(CURDIR)/$(ASLREF)
 	@ echo "ASLRef type-checking of published Arm ASL code: OK"
 
