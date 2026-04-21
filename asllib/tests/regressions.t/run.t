@@ -722,3 +722,7 @@ Bounds checks
   ASL Dynamic error: Mismatch type:
     value 100 does not belong to type integer {0..3}.
   [1]
+
+If test environment reversion bug
+  $ aslref if-test-env-updated.asl
+

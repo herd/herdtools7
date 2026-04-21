@@ -36,7 +36,6 @@ module SemanticsRule = struct
     | BinopOr
     | BinopImpl
     | Unop
-    | ECondSimple
     | ECond
     | ESlice
     | ECall
@@ -138,7 +137,6 @@ module SemanticsRule = struct
     | ETuple -> "ETuple"
     | EArray -> "EArray"
     | EEnumArray -> "EEnumArray"
-    | ECondSimple -> "ECondSimple"
     | EGetArray -> "EGetArray"
     | EGetEnumArray -> "EGetEnumArray"
     | ESliceError -> "ESliceError"
@@ -221,7 +219,6 @@ module SemanticsRule = struct
       BinopOr;
       BinopImpl;
       Unop;
-      ECondSimple;
       ECond;
       ESlice;
       ECall;
@@ -353,7 +350,6 @@ module TypingRule = struct
     | EVar
     | Binop
     | Unop
-    | ECondSimple
     | ECond
     | ESlice
     | ECall
@@ -558,7 +554,6 @@ module TypingRule = struct
     | EGetFields -> "EGetFields"
     | EConcat -> "EConcat"
     | ETuple -> "ETuple"
-    | ECondSimple -> "ECondSimple"
     | EGetArray -> "EGetArray"
     | ESliceError -> "ESliceError"
     | EArbitrary -> "EArbitrary"
@@ -752,7 +747,6 @@ module TypingRule = struct
       EPattern;
       EGetArray;
       ESliceError;
-      ECondSimple;
       EConcat;
       ETuple;
       LEDiscard;
