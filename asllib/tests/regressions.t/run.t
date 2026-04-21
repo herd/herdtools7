@@ -725,4 +725,4 @@ Bounds checks
 
 If test environment reversion bug
   $ aslref if-test-env-updated.asl
-  myglob: 1
+

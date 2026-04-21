@@ -7,6 +7,6 @@ end;
 func main () => integer
 begin
   var test = if mytest() then 0 else 1;
-  println "myglob: ", myglob;
-  return test;
+  assert myglob == 1;
+  return 0;
 end;
