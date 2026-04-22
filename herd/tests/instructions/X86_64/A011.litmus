@@ -1,0 +1,9 @@
+X86_64 A011
+{
+  int y;
+}
+  P0         |  P1            ;
+ movl $1,(y) | movl $2,%eax   ;
+             | xchgl (y),%eax ;
+~exists 1:rax=1 /\ [y]=1
+
