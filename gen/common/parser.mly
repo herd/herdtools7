@@ -5,11 +5,20 @@
 %token EOF
 %token OPTION
 %start <string Ast.t> main
+%start <string Ast.t> main_top_level_choice
+%start <string Ast.t> cumul
 
 %%
 
 main:
   | r = relax EOF { r }
+
+  (* In `diycross7`, `diy7`,
+     the top level `,` and whitespace should be treated as `Choice`
+     rather than the default `Seq` *)
+main_top_level_choice:
+  | r = choice EOF { r }
+  | lhs = choice COMMA rhs = main_top_level_choice { Ast.Choice [lhs ; rhs] }
 
 (* Explicit precedence, from highest to lowest:
    - `suffix` handles postfix `?` and atomic terms such as `[..]`,
@@ -28,3 +37,23 @@ suffix:
   | opt = suffix OPTION { Ast.Opt opt }
   | r = RELAXATION { Ast.One r }
   | LEFT_SQUARE r = relax RIGHT_SQUARE { r }
+
+
+(* In `diy7 -cumul`,
+   ALL `,` and whitespace should be treated as `Choice`
+   rather than the default `Seq` *)
+cumul:
+  | r = cumul_relax EOF { r }
+
+cumul_relax:
+  | lhs = cumul_choice COMMA rhs = cumul_relax { Ast.Choice [lhs ; rhs] }
+  | r = cumul_choice { r }
+
+cumul_choice:
+  | lhs = cumul_suffix CHOICE_BAR rhs = cumul_choice { Ast.Choice [lhs ; rhs] }
+  | r = cumul_suffix { r }
+
+cumul_suffix:
+  | opt = cumul_suffix OPTION { Ast.Opt opt }
+  | r = RELAXATION { Ast.One r }
+  | LEFT_SQUARE r = cumul_relax RIGHT_SQUARE { r }

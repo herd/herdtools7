@@ -40,7 +40,7 @@ let relexation = ['A'-'Z' 'a'-'z' '0'-'9' '-' '.' '*']+
 (* The lexer consumes optional blanks around explicit syntax such as `[`, `]`,
    `,`, `|`, and `?`, because, for backward compatibility, standalone blanks
    are interpreted as `COMMA` after an concreate relax. *)
-rule token is_backward_compatible has_previous_relaxation = parse
+rule token has_previous_relaxation = parse
 | eof { EOF }
 | '[' blank* { push false has_previous_relaxation; LEFT_SQUARE }
 | blank* ']' {
@@ -51,8 +51,8 @@ rule token is_backward_compatible has_previous_relaxation = parse
 | blank* '?' { OPTION }
 | blank* ',' blank* eof { EOF }
 | blank* ',' blank* {
-  if is_backward_compatible && is_singleton has_previous_relaxation
-  then CHOICE_BAR else COMMA
+  if peak has_previous_relaxation then COMMA
+  else token has_previous_relaxation lexbuf
 }
 | blank* '|' blank* { CHOICE_BAR }
 | (relexation as lxm) {
@@ -60,20 +60,15 @@ rule token is_backward_compatible has_previous_relaxation = parse
   RELAXATION lxm
 }
 | blank+ {
-  if peak has_previous_relaxation then begin
-    if is_backward_compatible && is_singleton has_previous_relaxation
-    then CHOICE_BAR else COMMA
-  end
-  else token is_backward_compatible has_previous_relaxation lexbuf
+  if peak has_previous_relaxation then COMMA
+  else token has_previous_relaxation lexbuf
 }
 {
 
 (* The lexer keeps per-parse scope state to decide when whitespace should be
    treated as a separator. Keep that state local to each parse so nested or
    repeated parses do not interfere. *)
-let parse ?(is_backward_compatible=true) parser lexbuf =
+let parse parser lexbuf =
   let has_previous_relaxation = ref [false] in
-  parser (token is_backward_compatible has_previous_relaxation) lexbuf
-  |> Ast.normalise
-
+  parser (token has_previous_relaxation) lexbuf
 }
