@@ -351,10 +351,19 @@ module Make
           (if O.wide_po then
              E.EventRel.filter_nodes relevant
            else
-             E.EventRel.restrict_rel
-               (fun e1 e2 ->
-                  relevant e1 && relevant e2
-                  && not (E.same_instance e1 e2)))
+             fun po ->
+               let po =
+                 E.EventRel.restrict_rel
+                   (fun e1 e2 ->
+                     relevant e1 && relevant e2
+                     && (not (E.same_instance e1 e2)))
+                   po in
+               if catdep then po
+               else
+                 (* Non-catdep models do not explicit include
+                    rmw into po where appropriate,
+                    for instance in their internal check. *)
+                 E.EventRel.union conc.S.atomic_load_store po)
           conc.S.po in
       let partial_po =
         lazy begin
