@@ -34,11 +34,11 @@ open C.E
 open C.R
 
   let parse_argument_ast input =
-    String.trim input |> parse_ast
+    String.trim input |> parse_ast Parser.main_top_level_choice
 
   (* Parse the `-cumul` argument, which should be a list of individual fences. *)
   let parse_fences input_fences =
-    let ast = parse_argument_ast input_fences in
+    let ast = String.trim input_fences |> parse_ast Parser.cumul in
     (* Note that `parse_fence` might fail *)
     let fences = Ast.bind ast ( fun input -> Ast.One(C.E.parse_fence input) )
     |> Ast.expand in

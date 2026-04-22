@@ -124,7 +124,7 @@ module Make(O:Config) (M:Builder.S) =
     let do_zyva name_opt pp_rs =
       try begin
         let parsed_cycle =
-          M.R.parse_sequence_ast pp_rs
+          M.R.parse_sequence_ast Parser.main pp_rs
           |> M.R.parse_expand_relaxs ~ppo:M.ppo in
         let es =
           match parsed_cycle with

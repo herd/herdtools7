@@ -44,10 +44,11 @@ module type S = sig
   val com : relax list
   val po : relax list
 
+  (* Parse the `input` to `Ast.t` using the input grammar *)
+  val parse_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> string Ast.t) -> string -> string Ast.t
   (* Parse the input relaxation (or relaxations sequences), and expand the wildcard
      syntax into primitive edges and annotations *)
-  val parse_ast : string -> string Ast.t
-  val parse_sequence_ast : string list -> string Ast.t
+  val parse_sequence_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> string Ast.t) -> string list -> string Ast.t
   val parse_expand_relaxs :
     ?ppo:((relax -> relax list -> relax list) -> relax list -> relax list)
         -> string Ast.t -> relax list
@@ -320,16 +321,16 @@ and type edge = E.edge
             with _ -> None
           else None
 
-        let parse_ast s =
+        let parse_ast parser_grammar s =
           try
             Lexing.from_string s
-            |> LexUtil.parse Parser.main
+            |> LexUtil.parse parser_grammar
           with
           | Parser.Error ->
               Warn.user_error "Bad relax syntax: %s" s
 
-        let parse_sequence_ast segments =
-          Ast.Seq (List.map parse_ast segments)
+        let parse_sequence_ast parser_grammar segments =
+          Ast.Seq (List.map (parse_ast parser_grammar) segments)
 
         (* After wildcard and macro expansion, remove invalid relaxations
            whose adjacent concrete edges cannot appear consecutively.
