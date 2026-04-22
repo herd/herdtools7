@@ -35,6 +35,7 @@ let rec bind ast func =
 
 let rec pp pp_prim ast =
   let pp_with_prim = pp pp_prim in
+  let ast = normalise ast in
   match ast with
   | One s -> Printf.sprintf "%s" (pp_prim s)
   | Opt opt -> Printf.sprintf "%s?" (pp_with_prim opt)
