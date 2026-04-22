@@ -717,21 +717,6 @@ diy-baseline-cycleonly::
 		$(REGRESSION_TEST_MODE)
 	@ echo "diy7 baseline configuration test: OK"
 
-diy-test:: diy-safe-syntax-cycleonly
-diy-safe-syntax-cycleonly::
-	@ echo
-	$(DIY_REGRESSION_TEST) \
-		-diy-path $(DIY) \
-		-conf ./gen/tests/diy-safe-old.conf \
-		-expected ./gen/tests/diy-syntax-equivalance.expected \
-		$(REGRESSION_TEST_MODE)
-	$(DIY_REGRESSION_TEST) \
-		-diy-path $(DIY) \
-		-conf ./gen/tests/diy-safe-new.conf \
-		-expected ./gen/tests/diy-syntax-equivalance.expected \
-		$(REGRESSION_TEST_MODE)
-	@ echo "diy7 old/new safe syntax equivalence test: OK"
-
 diy-test:: diy-ifetch-cycleonly
 diy-ifetch-cycleonly::
 	@ echo
@@ -744,24 +729,6 @@ diy-ifetch-cycleonly::
 
 LDS:="Amo.Cas,Amo.LdAdd,Amo.LdClr,Amo.LdEor,Amo.LdSet"
 LDSPLUS:="LxSx",$(LDS)
-
-diy-test:: diycross-syntax
-diycross-syntax:
-	@ echo
-	$(HERD_DIYCROSS_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-diycross-path $(DIYCROSS) \
-		-libdir-path ./herd/libdir \
-		-expected-dir ./gen/tests/AArch64 \
-		-diycross-arg -arch \
-		-diycross-arg AArch64 \
-		-diycross-arg 'A|L|P' \
-		-diycross-arg 'Pod**|Fenced**|DSB.SYd**|ISBd**|[Amo.Cas,Pod**]|[Amo.Swp,Pod**]|[Amo.StAdd,Pod**]|[LxSx,Pod**]' \
-		-diycross-arg 'Rfe|Fre|Coe' \
-		-diycross-arg 'DpAddrdR|DpAddrdW|DpDatadW|CtrldR|CtrldW|DpAddrCseldR|DpAddrCseldW|DpDataCseldW|DpCtrlCseldR|DpCtrlCseldW|[DpCtrldR,ISB]|[DpCtrldW,ISB]' \
-		-diycross-arg 'Rfe|Fre|Coe|Hat' \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 diycross7 syntax tests: OK"
 
 diy-test:: diy-test-aarch64
 diy-test-aarch64:

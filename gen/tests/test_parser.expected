@@ -1,136 +1,179 @@
-A|B,C|[D,E]?
-backward_compatibility=true
-[A|B|C|[D,E]?]
-[[A];[B];[C];[];[D;E]]
-backward_compatibility=false
-[[A|B],[C|[D,E]?]]
-[[A;C];[A];[A;D;E];[B;C];[B];[B;D;E]]
+default parser (for diyone7): A|B,C|[D,[E,F]?,G]?
+[[A|B],[C|[D,[E,F]?,G]?]]
+[[A;C];[A];[A;D;G];[A;D;E;F;G];[B;C];[B];[B;D;G];[B;D;E;F;G]]
+top level choice parser (for diycross7 and diy7): A|B,C|[D,[E,F]?,G]?
+[A|B|C|[D,[E,F]?,G]?]
+[[A];[B];[C];[];[D;G];[D;E;F;G]]
 
-A|B?
-backward_compatibility=true
+default parser (for diyone7): A|B?
 [A|B?]
 [[A];[];[B]]
-backward_compatibility=false
+top level choice parser (for diycross7 and diy7): A|B?
 [A|B?]
 [[A];[];[B]]
 
-A|B,C
-backward_compatibility=true
-[A|B|C]
-[[A];[B];[C]]
-backward_compatibility=false
+default parser (for diyone7): A|B,C
 [[A|B],C]
 [[A;C];[B;C]]
-
-[A|B],C
-backward_compatibility=true
+top level choice parser (for diycross7 and diy7): A|B,C
 [A|B|C]
 [[A];[B];[C]]
-backward_compatibility=false
+
+default parser (for diyone7): [A|B],C
 [[A|B],C]
 [[A;C];[B;C]]
+top level choice parser (for diycross7 and diy7): [A|B],C
+[A|B|C]
+[[A];[B];[C]]
 
-A,B?
-backward_compatibility=true
-[A|B?]
-[[A];[];[B]]
-backward_compatibility=false
+default parser (for diyone7): A,B?
 [A,B?]
 [[A];[A;B]]
+top level choice parser (for diycross7 and diy7): A,B?
+[A|B?]
+[[A];[];[B]]
 
-A,[B,C]
-backward_compatibility=true
+default parser (for diyone7): A,[B,C]
+[A,B,C]
+[[A;B;C]]
+top level choice parser (for diycross7 and diy7): A,[B,C]
 [A|[B,C]]
 [[A];[B;C]]
-backward_compatibility=false
-[A,B,C]
-[[A;B;C]]
 
-[A|B]?
-backward_compatibility=true
+default parser (for diyone7): [A|B]?
 [A|B]?
 [[];[A];[B]]
-backward_compatibility=false
+top level choice parser (for diycross7 and diy7): [A|B]?
 [A|B]?
 [[];[A];[B]]
 
-[A,B]?
-backward_compatibility=true
-[A,B]?
-[[];[A;B]]
-backward_compatibility=false
+default parser (for diyone7): [A,B]?
 [A,B]?
 [[];[A;B]]
+top level choice parser (for diycross7 and diy7): [A,B]?
+[A,B]?
+[[];[A;B]]
 
-[A B]
-backward_compatibility=true
+default parser (for diyone7): [A B]
 [A,B]
 [[A;B]]
-backward_compatibility=false
-[A,B]
-[[A;B]]
-
-[A,B]
-backward_compatibility=true
-[A,B]
-[[A;B]]
-backward_compatibility=false
+top level choice parser (for diycross7 and diy7): [A B]
 [A,B]
 [[A;B]]
 
-[A B C]
-backward_compatibility=true
+default parser (for diyone7): [A,B]
+[A,B]
+[[A;B]]
+top level choice parser (for diycross7 and diy7): [A,B]
+[A,B]
+[[A;B]]
+
+default parser (for diyone7): [A B C]
 [A,B,C]
 [[A;B;C]]
-backward_compatibility=false
+top level choice parser (for diycross7 and diy7): [A B C]
 [A,B,C]
 [[A;B;C]]
 
-[A,B,C]
-backward_compatibility=true
-[A,B,C]
-[[A;B;C]]
-backward_compatibility=false
+default parser (for diyone7): [A,B,C]
 [A,B,C]
 [[A;B;C]]
-
-[A,B C]
-backward_compatibility=true
-[A,B,C]
-[[A;B;C]]
-backward_compatibility=false
+top level choice parser (for diycross7 and diy7): [A,B,C]
 [A,B,C]
 [[A;B;C]]
 
-[A B,C]
-backward_compatibility=true
+default parser (for diyone7): [A,B C]
 [A,B,C]
 [[A;B;C]]
-backward_compatibility=false
+top level choice parser (for diycross7 and diy7): [A,B C]
 [A,B,C]
 [[A;B;C]]
 
-[A|B|C]
-backward_compatibility=true
+default parser (for diyone7): [A B,C]
+[A,B,C]
+[[A;B;C]]
+top level choice parser (for diycross7 and diy7): [A B,C]
+[A,B,C]
+[[A;B;C]]
+
+default parser (for diyone7): [A|B|C]
 [A|B|C]
 [[A];[B];[C]]
-backward_compatibility=false
+top level choice parser (for diycross7 and diy7): [A|B|C]
 [A|B|C]
 [[A];[B];[C]]
 
-[A|B C]
-backward_compatibility=true
+default parser (for diyone7): [A|B C]
 [[A|B],C]
 [[A;C];[B;C]]
-backward_compatibility=false
+top level choice parser (for diycross7 and diy7): [A|B C]
 [[A|B],C]
 [[A;C];[B;C]]
 
-A,
-backward_compatibility=true
+default parser (for diyone7): A,
 A
 [[A]]
-backward_compatibility=false
+top level choice parser (for diycross7 and diy7): A,
 A
 [[A]]
+
+equivalent syntax test for (diycross7 and diy7): A [B C] D
+[A|[B,C]|D]
+[[A];[B;C];[D]]
+
+equivalent syntax test for (diycross7 and diy7): A,[B C] D
+[A|[B,C]|D]
+[[A];[B;C];[D]]
+
+equivalent syntax test for (diycross7 and diy7): A [B C] D
+[A|[B,C]|D]
+[[A];[B;C];[D]]
+
+equivalent syntax test for (diycross7 and diy7): A,[B,C] D
+[A|[B,C]|D]
+[[A];[B;C];[D]]
+
+equivalent syntax test for (diycross7 and diy7): A [B C],D
+[A|[B,C]|D]
+[[A];[B;C];[D]]
+
+equivalent syntax test for (diycross7 and diy7): A,[B C],D
+[A|[B,C]|D]
+[[A];[B;C];[D]]
+
+equivalent syntax test for (diycross7 and diy7): A [B,C],D
+[A|[B,C]|D]
+[[A];[B;C];[D]]
+
+equivalent syntax test for (diycross7 and diy7): A,[B,C],D
+[A|[B,C]|D]
+[[A];[B;C];[D]]
+
+cumul parser (for -cumul in diy7): A B
+[A|B]
+[[A];[B]]
+
+cumul parser (for -cumul in diy7): A,B
+[A|B]
+[[A];[B]]
+
+cumul parser (for -cumul in diy7): [A,B]
+[A|B]
+[[A];[B]]
+
+cumul parser (for -cumul in diy7): [A,[B]]
+[A|B]
+[[A];[B]]
+
+cumul parser (for -cumul in diy7): A B C
+[A|B|C]
+[[A];[B];[C]]
+
+cumul parser (for -cumul in diy7): A,[B,C]
+[A|B|C]
+[[A];[B];[C]]
+
+cumul parser (for -cumul in diy7): [A,[B,C]]
+[A|B|C]
+[[A];[B];[C]]
 
