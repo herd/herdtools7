@@ -129,6 +129,15 @@ module Make(A:Arch_herd.S) =
             | Some c -> add_constant_symbols acc c) in
       ConstrGen.fold_constr add_atom constr acc
 
+    let locs_in_ins =
+      A.pseudo_fold
+        (A.fold_addrs
+           (fun v acc -> add_constant_symbols acc v))
+
+    let locs_in_code =
+       List.fold_left
+          (fun locs (_,code) -> List.fold_left locs_in_ins locs code)
+
     let check_post_condition_symbols_exist test =
       let { MiscParser.init; condition; prog; _ } = test in
       let init_symbols =
@@ -137,10 +146,11 @@ module Make(A:Arch_herd.S) =
             let acc = add_location_symbols loc acc in
             add_constant_symbols acc v)
           StringSet.empty init in
+      let code_symbols = locs_in_code init_symbols prog in
       let prog_init_symbols =
         List.fold_left
           (fun acc lbl -> StringSet.add (Label.Full.pp lbl) acc)
-           init_symbols (A.all_labels prog) in
+           code_symbols (A.all_labels prog) in
       let postcondition_symbols =
         add_postcondition_symbols condition StringSet.empty in
       let unexpected_symbols =
@@ -246,7 +256,7 @@ module Make(A:Arch_herd.S) =
         match v with
         | A.V.Val (Symbolic (Virtual {name=Symbol.Label(p,s); _}))
           -> begin
-          if not (Label.Map.mem s prog) then 
+          if not (Label.Map.mem s prog) then
             Warn.user_error
               "Label %s not found on P%d, yet it is used in the initialization list" s p end
         | _ -> ()) init ;
