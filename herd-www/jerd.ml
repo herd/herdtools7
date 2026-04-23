@@ -107,6 +107,13 @@ let run_herd bell cat litmus cfg cat_label =
   (* web options *)
   set_defaults ();
   load_config cfg_fname;
+  begin match !restrict with
+  | Restrict.No | Restrict.Observed -> ()
+  | restrict ->
+      Warn.user_error
+        "restrict=%s is not supported"
+        (Restrict.pp restrict)
+  end;
   (* Do not overide default or config settings by default arguments *)
   begin match cat with
   | "" -> ()
@@ -177,12 +184,9 @@ let run_herd bell cat litmus cfg cat_label =
   let conds = LR.read_from_files !conds (fun s -> Some s) in
 
   let module Config = struct
-    let timeout = !timeout
     let candidates = !candidates
     let nshow = !nshow
     let restrict = !restrict
-    let showkind = !showkind
-    let shortlegend = !shortlegend
     let model = model
     let archcheck = !archcheck
     let through = !through
@@ -231,8 +235,6 @@ let run_herd bell cat litmus cfg cat_label =
     let dumpallfaults = !dumpallfaults
     let byte = !byte
     let endian = !endian
-    let outputdir = !outputdir
-    let suffix = !suffix
     let dumpes = !dumpes
 
     module PC = struct
@@ -242,6 +244,8 @@ let run_herd bell cat litmus cfg cat_label =
       let dotcom = !PP.dotcom
       let view = !PP.view
       let showevents = !PP.showevents
+      let showkind = !PP.showkind
+      let shortlegend = !PP.shortlegend
       let texmacros = !PP.texmacros
       let tikz = !PP.tikz
       let hexa = !PP.hexa
@@ -332,14 +336,16 @@ let run_herd bell cat litmus cfg cat_label =
       let bi = R.read fname in
       Some (fname,bi) in
 
-  let from_file =
-    let module T =
-      ParseTest.Top
-        (struct
-          include GenParser.DefaultConfig
-          let bell_model_info = bi
-          include Config end) in
-    T.from_file in
+  let module T =
+    WebRun.Make
+      (struct
+        include GenParser.DefaultConfig
+        let bell_model_info = bi
+        include Config end) in
+
+  let from_file f =
+    SymbValue.reset_gensym () ;
+    T.from_file f in
 
 
 (* Just go *)

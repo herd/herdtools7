@@ -38,7 +38,7 @@ module type S = sig
  *)
 
   val dump_legend :
-      out_channel ->S.test -> string ->
+      out_channel -> Model.t -> S.test -> PrettyConf.show ->
         S.concrete -> ?sets : S.set_pp -> S.rel_pp -> unit
 
 (* Simpler function, just to dump event structures with and without rfmaps *)
@@ -1572,7 +1572,45 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 
 
 
-  let dump_legend chan test legend conc ?(sets=StringMap.empty) vbs =
+  let dump_legend chan model test show_mode conc ?(sets=StringMap.empty) vbs =
+    let cstr = test.Test_herd.cond in
+    let legend =
+      let pp_flag =
+        match show_mode with
+        | PrettyConf.ShowFlag f -> sprintf ", flag %s" f
+        | _ -> "" in
+      let name = Test_herd.readable_name test in
+      let pp_model = sprintf "%s" (Model.pp model) in
+      if PC.shortlegend then name
+      else if PC.showkind then
+        if PC.texmacros then
+          sprintf
+            "\\mylegendkind{%s}{%s}{%s}"
+            name
+            (S.Cons.dump_as_kind cstr)
+            pp_model
+        else
+          sprintf "Test %s%s%s%s"
+            name
+            (sprintf ": %s" (S.Cons.dump_as_kind cstr))
+            (match pp_model with
+            | "" -> ""
+            | _ -> sprintf " (%s)" pp_model)
+            pp_flag
+      else begin
+        if PC.texmacros then
+          sprintf
+            "\\mylegend{%s}{%s}"
+            name
+            pp_model
+        else
+          sprintf "Test %s%s%s" name
+            (match pp_model with
+            | "" -> ""
+            | _ -> sprintf ", %s" pp_model)
+            pp_flag
+      end
+    in
     pp_dot_event_structure
       chan test (if PC.showlegend then Some legend else None)
       conc.S.str conc.S.rfmap sets vbs S.conc_zero

@@ -68,6 +68,8 @@ module type S = sig
   val view : View.t option
   val dotmode : dotmode
   val showevents : showevents
+  val showkind : bool
+  val shortlegend : bool
   val texmacros : bool
   val tikz : bool
   val hexa : bool
