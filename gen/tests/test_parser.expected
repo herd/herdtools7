@@ -177,3 +177,12 @@ cumul parser (for -cumul in diy7): [A,[B,C]]
 [A|B|C]
 [[A];[B];[C]]
 
+remove_invalid_relaxes test (AArch64): [Po,Rfe]
+[[PosWW,Rfe];[PodWW,Rfe];[PosRW,Rfe];[PodRW,Rfe]]
+
+remove_invalid_relaxes test (AArch64): [Rfe,Rfe]
+[]
+
+remove_invalid_relaxes test (AArch64): [Rfe,Fre]
+[[Rfe,Fre]]
+

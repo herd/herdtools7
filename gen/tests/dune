@@ -1,6 +1,6 @@
 (tests
  (names test_parser)
- (libraries gen_common))
+ (libraries gen_common gen_library))
 
 (cram
  (package herdtools7)

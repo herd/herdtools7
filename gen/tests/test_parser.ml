@@ -81,60 +81,25 @@ let () =
       Printf.printf "\n")
     cumul_tests
 
-(*
-module DefaultConfig = struct
-  let verbose = 0
-  let generator = "test_parser"
-  let debug = Debug_gen.none
-  let hout = Hint.none
-  let cond = Config.Cycle
-  let neg = false
-  let nprocs = 2
-  let eprocs = false
-  let do_observers = Config.Avoid
-  let obs_type = Config.Straight
-  let optcond = true
-  let overload = None
-  let poll = false
-  let optcoherence = false
-  let docheck = false
-  let typ = TypBase.Int
-  let hexa = false
-  let variant _ = false
-  let cycleonly = false
-  let metadata = false
-  let show = None
-  let same_loc = false
-  let unrollatomic = None
-  let allow_back = false
-  let moreedges = false
-  let realdep = false
-  let wildcard = true
-  let family = None
-  let canonical_only = false
-  let fmt = 2
-  let no = []
-  let tarfile = None
-  let sufname = None
-  let addnum = false
-  let numeric = false
-  let lowercase = false
-  let cpp = false
-  let scope = Scope.No
-  let info = ([] : MiscParser.info)
-  let stdout = true
-  let choice = Code.Default
-  let prefix = []
-  let cumul = Config.Empty
-  let max_ins = 2
-  let upto = true
-  let varatom = []
-end
+module TestAArch64 = AutoArch.Make(AArch64Arch_gen.Make(AArch64Arch_gen.Config))
 
-module TestAArch64Builder =
-  Top_gen.Make(DefaultConfig)(AArch64Compile_gen.Make(DefaultConfig))
+let remove_invalid_relaxes_inputs = [
+  "[Po,Rfe]";
+  "[Rfe,Rfe]";
+  "[Rfe,Fre]";
+]
 
-module TestAArch64Diy = Diy.Make(TestAArch64Builder)(DefaultConfig)
+let remove_invalid_relaxes_test input =
+  Printf.printf "remove_invalid_relaxes test (AArch64): %s\n" input ;
+  let ast = TestAArch64.R.parse_ast Parser.main input in
+  let filtered =
+    TestAArch64.R.parse_expand_relaxs ast
+    |> TestAArch64.R.remove_invalid_relaxes in
+  Printf.printf "%s\n" (pp_list TestAArch64.R.pp_relax filtered)
 
-let () = ignore TestAArch64Diy.parse_argument_list
-*)
+let () =
+  List.iter
+    (fun input ->
+      remove_invalid_relaxes_test input;
+      Printf.printf "\n")
+    remove_invalid_relaxes_inputs
