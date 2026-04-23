@@ -1,0 +1,14 @@
+AArch64 LB+dsb.ldpptehd+popteap
+Variant=vmsa,ets2
+TTHM=HD
+{
+ [PTE(y)]=(oa:PA(y), db:0, dbm:1);
+ 0:X1=x; 0:X3=y;
+ 1:X1=x; 1:X5=PTE(y);
+}
+ P0          | P1           ;
+ LDR W0,[X1] | LDAR X4,[X5] ;
+ DSB LD      | MOV W0,#1    ;
+ MOV W2,#1   | STR W0,[X1]  ;
+ STR W2,[X3] |              ;
+exists (0:X0=1 /\ 1:X4=(oa:PA(y), dbm:1))

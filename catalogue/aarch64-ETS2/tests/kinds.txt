@@ -1,0 +1,7 @@
+CoWR0+posptev1p-fripptev1		            Forbidden
+CoWR0+tlbi-sync.ishsptev0p-fripptev0		Forbidden
+CoWW+tlbi-sync.ishsptedb1p-coipptedb1		Forbidden
+MP+dsb.stpptehd+popteap		              Forbidden
+MP+poptev1l+po		                      Forbidden
+SB+dsb.sy+dmb.syptev1p               	  Forbidden
+LB+dsb.ldpptehd+popteap                 Forbidden

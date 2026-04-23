@@ -1,0 +1,15 @@
+AArch64 SB+dsb.sy+dmb.syptev1p
+Variant=vmsa,ets2
+{
+ [PTE(y)]=(oa:PA(y), valid:0);
+ 0:X1=x; 0:X2=y;
+ 1:X1=x; 
+ 1:X3=(oa:PA(y)); 1:X0=PTE(y); 
+}
+ P0               | P1          ;
+ MOV W0,#1        | STR X3,[X0] ;
+ STR W0,[X1]      | DMB SY      ;
+ DSB SY           | LDR W4,[X1] ;
+ L00: LDR W3,[X2] |             ;
+
+exists (fault(P0:L00,y) /\ 1:X4=0)
