@@ -17,7 +17,13 @@
 (** Run a test from source file, dispatch on tests architecture *)
 
 module Top :
-  functor (C : RunTest.Config) ->
+  functor (C : sig
+    include RunTest.Config
+    val collect_graph_data : bool
+    (** Whether callers intend to consume execution graph data.
+        Used as optimization. *)
+  end) ->
   sig
-    val from_file : string -> TestHash.env -> TestHash.env
+    val from_string : filename:string option -> contents:string -> TestHash.env -> TestHash.env * (module RunTest.Outcome) option
+    val from_file : string -> TestHash.env -> TestHash.env * (module RunTest.Outcome) option
   end

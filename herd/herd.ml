@@ -755,7 +755,7 @@ let () =
 
   let from_file f =
     let module T =
-      ParseTest.Top
+      Cli.Make
         (struct
           include GenParser.DefaultConfig
           let bell_model_info = bi
