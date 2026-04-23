@@ -1,0 +1,7 @@
+X86_64 A012
+(* Implicit initialsation of int x=0; *)
+{ }
+  P0         ;
+ movl $1,(x) ;
+forall [x]=1
+
