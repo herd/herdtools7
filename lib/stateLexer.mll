@@ -79,12 +79,16 @@ rule token = parse
 | "PA"  { TOK_PA }
 (* PAR_EL1 *)
 | "parel1_t"|"PAREL1_T" { TOK_PAR }
+(* Shadow Stack keywords *)
+| "SS" { TOK_SS }
+| "SSCap"  { TOK_SSCAP }
 (* Typing *)
 | "_Atomic" { ATOMIC }
 | "ATOMIC_INIT" { ATOMICINIT }
 | "instr:" '"' ([^'"']+ as i) '"' { INSTR i }
 | "label:" '"' 'P'? (decimal as p) ':' ([^'"']+ as l)  '"' { LABEL ((int_of_string p), l) }
 | '`' ([^'`']+ as i) '`' { VALUE i }
+| "ssval_t:"  { TOK_SSVAL }
 (*for GPU*)
 | ".reg" {PTX_REG_DEC}
 | ".s32" as x
