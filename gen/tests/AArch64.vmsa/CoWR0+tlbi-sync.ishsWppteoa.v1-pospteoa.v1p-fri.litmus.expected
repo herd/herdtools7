@@ -1,0 +1,10 @@
+Test CoWR0+tlbi-sync.ishsWppteoa.v1-pospteoa.v1p-fri Allowed
+States 1
+0:X4=0; [y]=4; Fault(P0:L00,x,D-MMU:Translation); ~Fault(P0:L01,x);
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition exists ([y]=4 /\ 0:X4=0 /\ fault(P0:L00,x) /\ fault(P0:L01,x))
+Observation CoWR0+tlbi-sync.ishsWppteoa.v1-pospteoa.v1p-fri Never 0 1
+Hash=e94f6f3de939d0b4c6a6637c095281ed
+
