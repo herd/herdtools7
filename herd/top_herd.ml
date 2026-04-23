@@ -56,10 +56,7 @@ module Make(O:Config)(M:XXXMem.S) =
     module T = Test_herd.Make(A)
     module W = Warn.Make(O)
 
-    let memtag = O.variant Variant.MemTag
-    let morello = O.variant Variant.Morello
     let showcutoff = O.variant Variant.CutOff
-    let kvm = O.variant Variant.VMSA
 
 (* Utilities *)
     open Restrict
