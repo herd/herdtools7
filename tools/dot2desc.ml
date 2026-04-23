@@ -672,7 +672,7 @@ module DotGraph = struct
     [CAS X0, X1, [X2]] in their label, and [instr] is [CAS Xs, Xt, [Xn]]. The map
     will contain the entries [X0] -> [Xs], [X1] -> [Xt] and [X2] -> [Xn]. *)
   let get_param_maps stmts instr =
-    let regex = Str.regexp {|\([A-Z]+\)\( \([][,a-zA-Z0-9\._]+\)\)?|} in
+    let regex = Str.regexp {|\([A-Z]+\)\( \([][, a-zA-Z0-9\._]+\)\)?$|} in
     if not (check_regex regex instr) then
       Warn.fatal "Instr validation did not work. %s is malformed" instr;
     let instr_mnemonic = Str.matched_group 1 instr in
@@ -680,6 +680,7 @@ module DotGraph = struct
       let params = Str.matched_group 3 instr in
       String.split_on_char ',' params
     with Not_found -> [] in
+    let instr_params = List.map String.trim instr_params in
     let gpreg_regex = Str.regexp {|\[?\([BHWXQ]\)\([a-z0-9]+\)\]?|} in
     let md_instr_params = List.map (fun param ->
       if check_regex gpreg_regex param then
@@ -692,7 +693,7 @@ module DotGraph = struct
       else param
     ) instr_params in
 
-    let str = instr_mnemonic ^ {|\( \([][,a-zA-Z0-9\._]+\)\)?|} in
+    let str = instr_mnemonic ^ {|\( \([][, a-zA-Z0-9\._]+\)\)?$|} in
     let regex = Str.regexp str in
     let stmt = try List.find (function
       | ParsedStmt.Node n ->
@@ -715,6 +716,7 @@ module DotGraph = struct
       let params = Str.matched_group 2 value in
       String.split_on_char ',' params
     with Not_found -> [] in
+    let read_params = List.map String.trim read_params in
     let gpreg_regex = Str.regexp {|\[?[BHWXQ]\([0-9]+\)\]?|} in
     let read_params = List.map (fun param ->
       if check_regex gpreg_regex param then
@@ -1041,11 +1043,11 @@ let () =
     begin match !instr with
     | None -> ()
     | Some s ->
-      let instr_regex = Str.regexp {|\([A-Z]+\)\( \([][a-zA-Z0-9\._]+\)\)?\(,\([][a-zA-Z0-9\._]+\)\)*$|} in
+      let instr_regex = Str.regexp {|\([A-Z]+\)\( \([][a-zA-Z0-9\._]+\)\(, *\([][a-zA-Z0-9\._]+\)\)*\)?$|} in
       if not (Str.string_match instr_regex s 0) then
         invalid_arg "Invalid format for command. Command must have arguments separated by \
-        commas, and with no whitespaces between them. The mnemonic and the first argument \
-        are separated by exactly one space (eg. LDR Xn,[Xm])"
+        commas. The mnemonic and the first argument are separated by exactly one \
+        space (eg. LDR Xn,[Xm])"
     end;
 
     let module Run = Make(struct
