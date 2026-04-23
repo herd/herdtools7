@@ -301,7 +301,7 @@ module Make(C:Builder.S)
              |> String.concat list_list_sep )
         |> String.concat list_sep
 
-    let edges_ofs rs =
+    let edges_of_relax_list rs =
       List.map (fun r -> (r, edges_of r)) rs
 
 (* Functional for recursive call of generators *)
@@ -345,18 +345,16 @@ module Make(C:Builder.S)
     let minint suff = c_minint 0 suff
 
 (* Prefix *)
-    let prefix_expanded = List.flatten (List.map C.R.expand_relax_seq O.prefix)
-
     let () =
       if O.verbose > 0 && O.prefix <> [] then begin
         eprintf "Prefixes:\n" ;
         List.iter
           (fun rs ->
             eprintf "  %s\n" (C.R.pp_relax_list rs))
-          prefix_expanded
+          O.prefix
       end
 
-    let prefixes = List.map edges_ofs prefix_expanded
+    let prefixes = List.map edges_of_relax_list O.prefix
 
     let rec mk_can_prefix = function
       | [] -> (fun _ _ -> true)
@@ -443,8 +441,8 @@ module Make(C:Builder.S)
 
     let zyva prefix aset relax safe reject n f =
 (*      let safes = C.R.Set.of_list safe in *)
-      let relax = edges_ofs relax in
-      let safe = edges_ofs safe in
+      let relax = edges_of_relax_list relax in
+      let safe = edges_of_relax_list safe in
       let po_safe = extract_po safe in
 
       (* ********************************** *)
@@ -690,9 +688,6 @@ module Make(C:Builder.S)
 
     let parse_input ~relax ~safe ~reject =
       let r_nempty = Misc.consp relax in
-      let relax = expand_relaxs C.ppo relax
-      and safe = expand_relaxs C.ppo safe
-      and reject = expand_relaxs C.ppo reject in
       if Misc.nilp relax then if r_nempty then begin
         Warn.fatal "relaxations provided in relaxlist could not be used to generate cycles"
       end ;
@@ -769,6 +764,6 @@ module Make(C:Builder.S)
     let filter_check ~relax ~safe lhs rhs =
       let safe,_,_ = parse_input ~relax ~safe ~reject:[] in
       let safe_set = C.R.Set.of_list safe in
-      let po_safe = edges_ofs safe |> extract_po in
+      let po_safe = edges_of_relax_list safe |> extract_po in
       FilterImpl.can_precede safe_set po_safe lhs rhs
   end
