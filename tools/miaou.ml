@@ -549,15 +549,15 @@ and cons_seqs (fs:exp list) (es:exp list) =
          and a = tr_evts e1 a
          and b =  tr_evts e1 b in
          IfCond (c,a,b)
-      | App (_,Var (_,"range"), Op (loc2,Seq,es)) ->
+      | App (_,Var (_,"range"),Var (_,"lxsx")) ->
+         pp_evts_id e1 "rangelxsx"
+      | App (_,Var (_,"range"), rel) ->
         let e3 = Next.next () in
-        begin match tr_rel e3 e1 (Op (loc2,Seq,es)) with
+        begin match tr_rel e3 e1 rel with
         | List ({ items; _ } as l) ->
            List { l with items = List.rev items; }
         | _ as i -> i
         end
-      | App (_,Var (_,"range"),Var (_,"lxsx")) ->
-         pp_evts_id e1 "rangelxsx"
       | e ->
          Item (fail (ASTUtils.exp2loc e) "ignoring expression")
 
