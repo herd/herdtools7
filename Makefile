@@ -703,7 +703,8 @@ diy-test:: diyone-basic-test
 diyone-basic-test:
 	@ echo
 	dune test gen/tests
-	@ echo "diyone7 basic test: OK"
+	@ echo "diy* basic test: OK"
+
 diy-test:: diy-baseline-cycleonly
 diy-baseline-cycleonly::
 	@ echo
