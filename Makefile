@@ -612,6 +612,18 @@ ifetch-test:
 		$(REGRESSION_TEST_MODE)
 		@ echo "herd7 catalogue aarch64-ifetch tests: OK"
 
+cata-test:: x86_64-test
+x86_64-test:
+	@ echo
+	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		-herd-timeout $(TIMEOUT) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-kinds-path catalogue/x86_64/kinds.txt \
+		-shelf-path catalogue/x86_64/shelf.py \
+		$(REGRESSION_TEST_MODE)
+		@ echo "herd7 catalogue x86_64 tests: OK"
 
 # Not in cata-test, too-long
 test-all:: vmsa-test
