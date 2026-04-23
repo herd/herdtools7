@@ -1,0 +1,11 @@
+Test A011 Forbidden
+States 2
+1:rax=0; [y]=1;
+1:rax=1; [y]=2;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition ~exists (1:rax=1 /\ [y]=1)
+Observation A011 Never 0 2
+Hash=49bac67e78712413113b7c93e987b364
+
