@@ -364,7 +364,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | Op (_,(Union|Inter as op),es) ->
          tr_op e1 e2 op es
       | Op (_,(Seq as op),es) ->
-         List { op; intro_txt = intro op; sep_txt = sep op; flattenable = true; items = tr_seq e1 e2 es; }
+         mk_list op (tr_seq e1 e2 es)
       | Op (_,Diff,[a;b]) ->
          tr_rel_diff e1 e2 a b
       | Op (_,Cartesian,[a;b;]) ->
@@ -415,8 +415,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
          let top = List.map (tr_rel e1 e3) es in
          let bottom = List.map (tr_rel e3 e2) es in
          let items = top @ [tr_evts e3 evts] @ bottom in
-         (* Use Union to prevent flattening into surrounding Inter list, so the intro text survives. *)
-         List { op = Union; intro_txt = intro op; sep_txt = sep op; flattenable = true; items; }
+         mk_list ~flattenable:false op items
       | App (_,Var (locf,("intervening-write" as f)),Var (loc,id)) ->
          let txt1 = do_pp_rel_id e1 e2 (pp_id locf f) in
          let txt2 = sprintf "{\\%s}" (pp_id loc id) in
