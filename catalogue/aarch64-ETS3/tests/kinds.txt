@@ -1,0 +1,3 @@
+MP+dmb.sttp+isb            Forbidden
+S+tlbi-sync.ishptedb1p+po  Forbidden
+S+tlbi-sync.ishpteel01p+po Forbidden
