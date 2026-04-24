@@ -61,3 +61,33 @@ jobs:
           opam pin asllib
           opam install .
 
+  aslref:
+    name: Install ASLRef on OCaml v5
+
+    runs-on: ubuntu-latest
+
+    env:
+      DUNE_CACHE: 'enabled-except-user-rules'
+
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Set-up OCaml 5
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 5
+          dune-cache: true
+
+      - name: Install dependencies
+        run: |
+          opam exec -- dune build asllib/aslref.opam
+          opam install ./asllib --deps-only --yes
+
+      - name: Build and install ASLRef
+        run: |
+          opam exec -- make build-aslref
+          opam exec -- make install-aslref
+
+      - name: Check ASLRef installed
+        run: opam exec -- aslref --version
