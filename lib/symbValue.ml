@@ -92,12 +92,6 @@ module
        Val (Constant.map_scalar Cst.Scalar.printable c)
     | v -> v
 
-  let equalityPossible v1 v2 =
-    match (v1,v2) with
-    | Val x1,Val x2 -> Cst.compare x1 x2 = 0
-    | (Var _,_)
-    | (_,Var _) -> true  (* WARNING: May want to optimize later *)
-
   let compare v1 v2 =
     match v1,v2 with
     | Val i1,Val i2 -> Cst.compare i1 i2
@@ -923,15 +917,15 @@ module
     | CheckSymbolic -> check_symbolic_v
     | ArchOp1 op ->
         (function
-         | Var _ -> raise Undetermined
-         | Val c as v ->
-             begin
-               match ArchOp.do_op1 op c with
-               | None ->
-                   Warn.user_error "Illegal arch operation %s on %s"
-                     (ArchOp.pp_op1 true op) (pp_v v)
-               | Some c -> Val c
-             end)
+          | Var _ -> raise Undetermined
+          | Val c as v ->
+              begin
+                match ArchOp.do_op1 op c with
+                | None ->
+                      Warn.user_error "Illegal arch operation %s on %s"
+                      (ArchOp.pp_op1 true op) (pp_v v)
+                | Some c -> Val c
+              end)
 
   let op op = match op with
   | Add -> add
@@ -993,11 +987,11 @@ module
         match (v1, v2) with
         | Var _, _ | _, Var _ -> raise Undetermined
         | Val c1, Val c2 -> (
-            match ArchOp.do_op o c1 c2 with
-            | Some c -> Val c
-            | None ->
-                Warn.user_error "Illegal operation %s on %s and %s"
-                  (ArchOp.pp_op o) (pp_v v1) (pp_v v2)))
+          match ArchOp.do_op o c1 c2 with
+          | Some c -> Val c
+          | None ->
+              Warn.user_error "Illegal operation %s on %s and %s"
+                (ArchOp.pp_op o) (pp_v v1) (pp_v v2)))
 
   let op3 If v1 v2 v3 = match v1 with
   | Val (Concrete x) -> if scalar_to_bool x then v2 else v3
@@ -1047,7 +1041,6 @@ module
     | _ -> v
 
   (* Convenience *)
-
 
   let map_const f v =
     match v with
