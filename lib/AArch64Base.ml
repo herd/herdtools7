@@ -1354,6 +1354,10 @@ let pp_imm n = "#" ^ string_of_int n
 
 type 'k kinstruction =
   | I_NOP
+  (* Event Register Instructions *)
+  | I_SEV  
+  | I_SEVL
+  | I_WFE
 (* Branches *)
   | I_B of lbl | I_BR of reg
   | I_BC of condition * lbl
@@ -2105,6 +2109,10 @@ let do_pp_instruction m =
 
   fun i -> match i with
   | I_NOP -> "NOP"
+  (* Event Register Instructions *)
+  | I_WFE -> "WFE"
+  | I_SEV -> "SEV"
+  | I_SEVL -> "SEVL"
 (* Branches *)
   | I_B lbl ->
       sprintf "B %s" (pp_label lbl)
@@ -2617,7 +2625,7 @@ let fold_regs (f_regs,f_sregs) =
 
   fun c ins -> match ins with
   | I_NOP | I_B _ | I_BC _ | I_BL _ | I_FENCE _ | I_RET None | I_ERET | I_SVC _
-  | I_UDF _ |  I_SMSTART (None) | I_SMSTOP (None)
+  | I_UDF _ |  I_SMSTART (None) | I_SMSTOP (None) | I_WFE | I_SEV | I_SEVL
     -> c
   | I_CBZ (_,r,_) | I_CBNZ (_,r,_) | I_BLR r | I_BR r | I_RET (Some r)
   | I_MOVZ (_,r,_,_) | I_MOVN (_,r,_,_) | I_MOVK (_,r,_,_)
@@ -2761,7 +2769,11 @@ let map_regs f_reg f_symb =
 
   fun ins -> match ins with
   | I_NOP
-(* Branches *)
+  (* Event Register Instructions *)
+  | I_WFE 
+  | I_SEV 
+  | I_SEVL
+  (* Branches *)
   | I_B _
   | I_BC _
   | I_FENCE _
@@ -3142,6 +3154,7 @@ let get_next =
     -> tgt_cons Label.Next lbl
   | I_BLR _|I_BR _|I_RET _ |I_ERET -> [Label.Any]
   | I_NOP
+  | I_WFE | I_SEV | I_SEVL
   | I_LDR _
   | I_LDRSW _
   | I_LDRS _
@@ -3558,6 +3571,9 @@ module PseudoI = struct
 
       let parsed_tr i = match i with
         | I_NOP
+        | I_WFE
+        | I_SEV
+        | I_SEVL
         | I_B _
         | I_BR _
         | I_BC _
@@ -3757,6 +3773,9 @@ module PseudoI = struct
         | I_ST4 _ | I_STZ2G _
           -> 4
         | I_NOP
+        | I_WFE
+        | I_SEV
+        | I_SEVL
         | I_B _ | I_BR _
         | I_BL _ | I_BLR _
         | I_RET _

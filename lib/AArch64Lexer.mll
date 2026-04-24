@@ -34,6 +34,10 @@ let check_name name =
 if O.debug then Printf.eprintf "Check: '%s'\n"  name ;
 match name with
 | "nop"|"NOP" -> NOP
+(* Event Register Instructions *)
+| "wfe"|"WFE" -> WFE
+| "sev"|"SEV" -> SEV
+| "sevl"|"SEVL" -> SEVL
 (* Hints are NOPS in AArch64 *)
 | "hint"|"HINT" -> HINT
 (* Halt instructions are used by Debug mode, not needed here - NOP *)

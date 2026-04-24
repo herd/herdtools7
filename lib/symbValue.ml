@@ -338,7 +338,7 @@ module
     Val (Symbolic (Virtual {s with offset=i+k}))
   | Val (Symbolic (Physical (s,i))) -> Val (Symbolic (Physical (s,i+k)))
   | Val (ConcreteVector _|ConcreteRecord _
-       | Symbolic ((TagAddr _|System _))
+       | Symbolic ((TagAddr _|System _|EventReg _))
        |Tag _|PteVal _|AddrReg _|Instruction _|Frozen _ as c) ->
       Warn.user_error "Illegal addition on constants %s +%d" (Cst.pp_v c) k
   | Var _ -> raise Undetermined
@@ -508,7 +508,7 @@ module
 
   let op_tagged op_op op v = match v with
   |  Val (Symbolic (Virtual ({offset=o;_} as a))) -> Val (op a o)
-  |  Val (Symbolic (Physical _|TagAddr _|System _)
+  |  Val (Symbolic (Physical _|TagAddr _|System _|EventReg _)
           |Concrete _
           |Tag _|ConcreteRecord _|ConcreteVector _
           |PteVal _|AddrReg _|Instruction _
@@ -531,7 +531,7 @@ module
        Val (Symbolic (TagAddr (PHY,a,MachSize.granule_align o)))
     | Val
         (Concrete _|ConcreteRecord _|ConcreteVector _
-         |Symbolic ((TagAddr _|System _))
+         |Symbolic ((TagAddr _|System _|EventReg _))
          |Tag _|PteVal _|AddrReg _
          |Instruction _|Frozen _)
       ->
@@ -540,7 +540,7 @@ module
 
   let check_ctag = function
     | Val (Symbolic (Virtual {name=s;_})) -> Misc.check_ctag (Symbol.pp s)
-    | Val (Symbolic (Physical _|System _|TagAddr _)) -> false
+    | Val (Symbolic (Physical _|System _|TagAddr _|EventReg _)) -> false
     | Var _
     | Val
         (Concrete _|ConcreteRecord _|ConcreteVector _
