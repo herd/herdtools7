@@ -1,0 +1,8 @@
+AArch64 wait-flag
+{
+   0:X0=x; 1:X0=x;
+}
+   P0          | P1          ;
+   MOV W1,#1   |L0:          ;
+   STR W1,[X0] | LDR W1,[X0] ;
+               | CBZ W1,L0   ;

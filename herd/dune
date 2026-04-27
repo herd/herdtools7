@@ -1,4 +1,4 @@
-(dirs :standard \ tests libdir)
+(dirs :standard \ tests/instructions libdir)
 
 (rule
  (copy ../Version.ml Version.ml))
