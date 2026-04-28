@@ -286,6 +286,7 @@ test-local:: test.kvm
 test.kvm:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
+		-j $(J) \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-litmus-dir ./herd/tests/instructions/AArch64.kvm \
