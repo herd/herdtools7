@@ -172,6 +172,25 @@ litmus-cata-aarch64-ifetch-test-kvm: litmus-aarch64-dep
 	$(RM) -r $(KUT_DIR_AARCH64)/kvm-unit-tests/t
 	@ echo "litmus7 in -mode kvm catalogue aarch64-ifetch tests: OK"
 
+litmus-aarch64-run:: litmus-cata-aarch64-faults-test-kvm
+litmus-cata-aarch64-faults-test-kvm: litmus-aarch64-dep
+	mkdir $(KUT_DIR_AARCH64)/kvm-unit-tests/t
+	$(LITMUS)					         \
+		-set-libdir $(LITMUS_LIB_DIR)	                 \
+		-o $(KUT_DIR_AARCH64)/kvm-unit-tests/t	         \
+		-mach kvm-armv8.1 -a 4 -s 10 -r 10			     \
+					-nonames LDRredF,SVC-pte.exs1eis0,SVC-pte.exs1eis1,SVC-ifetch.exs1eis0,SVC-ifetch.exs1eis1 \
+                -driver C -ascall true		                \
+                -outnames $(KUT_NAMES)                  	\
+		catalogue/aarch64-faults/tests/@all
+	cd $(KUT_DIR_AARCH64)/kvm-unit-tests/t; make $(SILENTOPT) -j $(J)
+	if $(RUN_TESTS); then                                       \
+          ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests && sh t/run.sh ) | \
+          $(CHECK_OBS) -verbose $(KUT_NAMES)                      ; \
+        fi
+	$(RM) -r $(KUT_DIR_AARCH64)/kvm-unit-tests/t
+	@ echo "litmus7 in -mode kvm catalogue aarch64-faults tests: OK"
+
 # MTE capabale HW is still rare, cannot run
 litmus-aarch64-norun:: litmus-cata-aarch64-MTE-test-kvm
 litmus-cata-aarch64-MTE-test-kvm: litmus-aarch64-dep
