@@ -18,7 +18,7 @@
 /****************************************************************************/
 #include <kvm-self.h>
 #include <find_ins.h>
-#include <kvm-headers.h>
+#include <../kvm-headers.h>
 
 static ins_t getret(void) {
   ins_t *x1;

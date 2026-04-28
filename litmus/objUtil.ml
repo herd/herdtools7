@@ -273,8 +273,8 @@ module Make(O:Config)(Tar:Tar.S) =
         if flags.Flags.memtag then
           begin
             let sub = dir_of_sysarch O.sysarch in
-            let fnames = cpy ~sub:sub fnames "memtag" ".c" in
-            let fnames = cpy ~sub:sub fnames "memtag" ".h" in
+            let fnames = do_cpy ~sub:sub fnames "memtag" "memtag" ".c" in
+            let fnames = do_cpy ~sub:sub fnames "memtag" "memtag" ".h" in
             fnames
           end
         else fnames in
