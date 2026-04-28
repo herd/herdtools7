@@ -148,12 +148,14 @@ type symbol =
   | Physical of string * int                (* symbol, index *)
   | TagAddr of tagkind * string * int
   | System of syskind * string              (* System memory *)
+  | EventReg of string                      (* Event register *)
 
 let get_index = function
   | Virtual s -> Some s.offset
   | Physical (_,o)|TagAddr (_,_,o) -> Some o
   | System ((PTE|PTE2), _) -> Some 0
   | System (TLB, _) -> None
+  | EventReg _ -> None
 
 let pp_physical s = sprintf "PA(%s)" s
 
@@ -179,6 +181,7 @@ let pp_symbol_old = function
   | System (TLB,s) -> Misc.add_tlb s
   | System (PTE,s) -> Misc.add_pte s
   | System (PTE2,s) -> Misc.add_pte (Misc.add_pte s)
+  | EventReg s -> sprintf "ev(%s)" s
 
 
 let pp_symbol = function
@@ -188,6 +191,7 @@ let pp_symbol = function
   | System (TLB,s) -> sprintf "TLB(%s)" s
   | System (PTE,s) -> sprintf "PTE(%s)" s
   | System (PTE2,s) -> sprintf "PTE(PTE(%s))" s
+  | EventReg s -> sprintf "ev(%s)" s
 
 let pp_symbol_init = function
   | Virtual s -> pp_index_init (pp_symbolic_data s) s.offset
@@ -200,6 +204,7 @@ let compare_id_offset s1 o1 s2 o2 =
 
 let compare_symbol sym1 sym2 = match sym1,sym2 with
 | Virtual s1,Virtual s2 -> compare_symbolic_data s1 s2
+| EventReg s1, EventReg s2 -> String.compare s1 s2
 | (Physical (s1,o1),Physical (s2,o2))
   ->
    compare_id_offset s1 o1 s2 o2
@@ -215,13 +220,15 @@ let compare_symbol sym1 sym2 = match sym1,sym2 with
     | 0 -> String.compare s1 s2
     | r -> r
     end
-| (Virtual _,(Physical _|TagAddr _|System _ ))
-| (Physical _,(TagAddr _|System _))
-| (TagAddr _,System _)
+| (Virtual _,(Physical _|TagAddr _|System _|EventReg _))
+| (Physical _,(TagAddr _|System _|EventReg _))
+| (TagAddr _,(System _|EventReg _))
+| (System _,EventReg _)
   -> -1
-| ((Physical _|TagAddr _|System _),Virtual _)
-| ((TagAddr _|System _),Physical _)
-| (System _,TagAddr _)
+| ((Physical _|TagAddr _|System _|EventReg _),Virtual _)
+| ((TagAddr _|System _|EventReg _),Physical _)
+| ((System _|EventReg _),TagAddr _)
+| (EventReg _,System _)
   -> 1
 
 let id_offset_eq s1 o1 s2 o2 =
@@ -229,16 +236,18 @@ let id_offset_eq s1 o1 s2 o2 =
 
 let symbol_eq s1 s2 = match s1,s2 with
   | Virtual s1,Virtual s2 -> symbolic_data_eq s1 s2
+  | EventReg s1, EventReg s2 -> Misc.string_eq s1 s2
   | (Physical (s1,o1),Physical (s2,o2)) ->
      id_offset_eq s1 o1 s2 o2
   | (TagAddr (t1,s1,o1),TagAddr (t2,s2,o2))  ->
      t1=t2 && id_offset_eq s1 o1 s2 o2
   | System (k1,s1),System (k2,s2) ->
       k1=k2 && Misc.string_eq s1 s2
-  | (Virtual _,(Physical _|TagAddr _|System _))
-  | (Physical _,(Virtual _|TagAddr _|System _))
-  | (System _,(Virtual _|TagAddr _|Physical _))
-  | (TagAddr _,(Virtual _|System _|Physical _))
+  | (Virtual _,(Physical _|TagAddr _|System _|EventReg _))
+  | (Physical _,(Virtual _|TagAddr _|System _|EventReg _))
+  | (System _,(Virtual _|TagAddr _|Physical _|EventReg _))
+  | (TagAddr _,(Virtual _|System _|Physical _|EventReg _))
+  | (EventReg _,(Virtual _|Physical _|TagAddr _|System _))
     -> false
 
 let as_address = function
@@ -454,6 +463,7 @@ let unmk_sym_virtual_label_with_offset = function
   | _ -> assert false
 
 let mk_sym_virtual s = Symbolic (do_mk_virtual s)
+let mk_ev_reg s = Symbolic (EventReg s)
 let mk_sym s = Symbolic (do_mk_sym s)
 
 let mk_sym_with_index s i =
@@ -532,6 +542,7 @@ let is_non_mixed_symbol = function
   | TagAddr (_,_,idx)
     -> idx=0
   | System _ -> true
+  | EventReg _ -> true
 
 let default_tag = Tag "green"
 

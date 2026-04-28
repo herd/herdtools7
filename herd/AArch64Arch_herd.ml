@@ -103,6 +103,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | I_SWP _| I_SWPBH _| I_SXTW _| I_TLBI _ | I_AT _ | I_UBFM _
     | I_UDF _| I_UNSEAL _ | I_ADDSUBEXT _ | I_ABS _ | I_REV _ | I_EXTR _
     | I_MOPL _ | I_MOP _
+    | I_WFE | I_SEV | I_SEVL
     | I_WHILELT _ | I_WHILELE _ | I_WHILELO _ | I_WHILELS _
     | I_UADDV _
     | I_LD1SP _ | I_LD2SP _ | I_LD3SP _ | I_LD4SP _
@@ -290,7 +291,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_CASBH (v,_,_,_,_) | I_SWPBH (v,_,_,_,_)
       | I_LDOPBH (_,v,_,_,_,_) | I_STOPBH (_,v,_,_,_) ->
           Some (bh_to_sz v)
-      | I_NOP|I_B _|I_BR _|I_BC (_, _)|I_CBZ (_, _, _)
+      | I_NOP | I_WFE | I_SEV | I_SEVL
+      | I_B _|I_BR _|I_BC (_, _)|I_CBZ (_, _, _)
       | I_CBNZ (_, _, _)|I_BL _|I_BLR _|I_RET _|I_ERET| I_SVC _ | I_LDAR (_, _, _, _)
       | I_TBNZ(_,_,_,_) | I_TBZ (_,_,_,_) | I_MOVZ (_,_,_,_) | I_MOVK(_,_,_,_)
       | I_MOVN _
@@ -350,6 +352,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_FENCE _
       | I_IC _|I_DC _|I_TLBI _ | I_AT _
       | I_NOP|I_TBZ _|I_TBNZ _
+      | I_WFE | I_SEV | I_SEVL
       | I_BL _ | I_BLR _ | I_RET _ | I_ERET | I_SVC _ | I_UDF _
       | I_ST1SP _ | I_ST2SP _ | I_ST3SP _ | I_ST4SP _
       | I_ST1SPT _ | I_CTERM _
@@ -450,7 +453,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_LDARBH (bh,(XX|AX),_,_) -> MachSize.Ld (bh_to_sz bh)
       | I_STXR _|I_STXRBH _ | I_STXP _ -> MachSize.St
       | I_LDAR (_, (AA|AQ), _, _)|I_LDARBH (_, (AA|AQ), _, _)
-      | I_NOP|I_B _|I_BR _|I_BC _|I_CBZ _|I_CBNZ _
+      | I_NOP | I_WFE | I_SEV | I_SEVL
+      |I_B _|I_BR _|I_BC _|I_CBZ _|I_CBNZ _
       | I_TBNZ _|I_TBZ _|I_BL _|I_BLR _|I_RET _|I_ERET | I_SVC _
       | I_UBFM _ | I_SBFM _
       | I_LDR _|I_LDRSW _|I_LDRS _|I_LDUR _|I_LD1 _|I_LDAP1 _

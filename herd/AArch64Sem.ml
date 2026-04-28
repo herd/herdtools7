@@ -560,6 +560,16 @@ module Make
         if mixed then fun _sz -> write_reg
         else write_reg_sz
 
+(* Create a symbolic event register for a given proc id `proc_id` *)
+      let ev_loc proc_id =
+        A.Location_global (V.Val (Constant.mk_ev_reg (Printf.sprintf "%d" proc_id)))
+
+(* Write to the event register of a given proc id `proc_id`, a given value `v` *)
+      let set_ev proc_id v ii =
+        M.write_loc
+        (mk_write quad Annot.N aexp Access.VIR (V.intToV v))
+        (ev_loc proc_id) ii
+
 (* Emit commit event *)
       let commit_bcc ii = M.mk_singleton_es (Act.Commit (Act.Bcc,None)) ii
       and commit_pred_txt txt ii =
@@ -3650,6 +3660,32 @@ Arguments:
         match inst with
         | I_NOP ->(* Instructions nop and branch below do not generate events, use a placeholder *)
            !(M.mk_singleton_es (Act.NoAction) ii)
+        (* Event Register Instructions *)
+        | I_WFE ->
+            let loc = ev_loc ii.A.proc in
+            let read_ev = M.read_loc Port.No (mk_read quad Annot.N aexp) loc ii in
+            let rec wfe_loop n =
+            if n <= 0 then M.zeroT
+            else
+              M.altT
+                (* Read 1: clear and proceed *)
+                (M.seq_mem
+                  (read_ev >>= fun v -> M.eqT v (V.intToV 1))
+                  (set_ev ii.A.proc 0 ii)
+                >>= fun ((), ()) -> M.unitT ())
+                (* Read 0: loop *)
+                (M.seq_mem
+                  (read_ev >>= fun v -> M.eqT v (V.intToV 0))
+                  (wfe_loop (n-1))
+                >>= fun ((), ()) -> M.unitT ())
+            in
+          !(wfe_loop 3)
+        | I_SEV ->
+           let all_procs = List.map (fun (p, _, _) -> p) test.Test_herd.start_points in
+           let writes = List.map (fun p -> set_ev p 1 ii) all_procs in
+           !!!(List.fold_right (>>::) writes (M.unitT []) >>| M.unitT ())
+        | I_SEVL ->
+           !(set_ev ii.A.proc 1 ii)
         (* Branches *)
         | I_B l ->
            M.mk_singleton_es (Act.NoAction) ii
@@ -3691,8 +3727,9 @@ Arguments:
            let commit_eret ii =
              M.mk_singleton_es (Act.Commit (Act.ExcReturn,None)) ii in
            commit_eret ii >>=
-             fun () -> read_reg_ord AArch64.elr_el1 ii >>=
-             eret_to_addr
+             fun () ->
+              (set_ev ii.A.proc 1 ii >>| read_reg_ord AArch64.elr_el1 ii)
+             >>= fun ((), v) -> eret_to_addr v
 
         | I_SVC imm ->
           let (>>!) = M.(>>!) in
