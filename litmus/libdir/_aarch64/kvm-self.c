@@ -17,8 +17,8 @@
 /* Nikos Nikoleris, Arm Limited.                                            */
 /****************************************************************************/
 #include <kvm-self.h>
-#include <_find_ins.h>
-#include <../kvm-headers.h>
+#include <find_ins.h>
+#include <kvm-headers.h>
 
 static ins_t getret(void) {
   ins_t *x1;

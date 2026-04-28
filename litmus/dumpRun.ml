@@ -131,7 +131,7 @@ end = struct
         | Mode.Std | Mode.PreSi ->
            fprintf chan "SRCDIR = $(CURDIR)\n"
       end ;
-      fprintf chan "SHARED_SRC_DIR = $(CURDIR)/lib\n" ;
+      fprintf chan "SHARED_SRC_DIR = $(CURDIR)/litmus\n" ;
       fprintf chan "GCCOPTS += -I $(SHARED_SRC_DIR)\n\n"
     end ;
     begin

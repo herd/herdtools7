@@ -13,7 +13,7 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-#include <_find_ins.h>
+#include <find_ins.h>
 
 // Find index of some instruction in code, skipping 'skip' occurrences
 size_t find_ins(ins_t opcode,ins_t *p,int skip) {

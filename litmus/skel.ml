@@ -1421,7 +1421,7 @@ module Make
             O.fx indent "_a->%s = %s(_a->%s,sizeof(*_a->%s));" a alg a a
         in
         if do_self || CfgLoc.need_prelude || U.label_in_outs env test then begin
-          let fname = "_find_ins" in
+          let fname = "find_ins" in
           ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c") ;
           ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
           O.o ("#include <" ^ fname  ^ ".h>") ;

@@ -159,7 +159,7 @@ module Make(O:Config)(Tar:Tar.S) =
       fnames
 
 (* Reference to the shared library *)
-    let libdir = "lib/"
+    let libdir = "litmus/"
 
 (* Copy lib file *)
     let cpy ?sub ?prf fnames name ext =

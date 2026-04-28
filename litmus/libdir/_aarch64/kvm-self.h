@@ -16,7 +16,6 @@
 #ifndef KVM_SELF_H
 #define KVM_SELF_H 1
 
-#include <stdint.h>
 #include <stddef.h>
 #include <instruction.h>
 #include <self.h>

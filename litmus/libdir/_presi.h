@@ -31,6 +31,7 @@ typedef void FILE;
 #else
 #include <pthread.h>
 #include <string.h>
+#include <stdio.h>
 #endif
 
 /********/
