@@ -1,0 +1,11 @@
+Test A264 Forbidden
+States 2
+1:X1=0; [y]=1;
+1:X1=1; [y]=2;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition ~exists ([y]=1 /\ 1:X1=1)
+Observation A264 Never 0 2
+Hash=8ec24d4aa48ba8b0bb75b0fad6e50f4f
+
