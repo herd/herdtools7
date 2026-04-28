@@ -24,6 +24,7 @@
 
 module type CommonConfig = sig
   val verbose : int
+  val hexa : bool
   val optace : OptAce.t
   val unroll : int option
   val speedcheck : Speed.t
@@ -183,10 +184,14 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       | None -> Opts.unroll_default A.arch
       | Some u -> u
 
-    let speedcheck =
+    let do_speedcheck =
       match C.speedcheck with
       | Speed.False -> false
       | Speed.True | Speed.Fast -> true
+
+    let do_optcheck test =
+      do_speedcheck ||
+      (C.check_filter && Option.is_some test.Test_herd.filter)
 
   let _profile = C.debug.Debug_herd.profile_mem
   let start_profile = if _profile then Sys.time else fun () -> 0.
@@ -1014,26 +1019,43 @@ let get_rf_value test read =
     let debug_solver = C.debug.Debug_herd.solver > 0
 
     let wanted_final_value test =
+      let add_check loc v m =
+        A.LocMap.update loc
+          (function
+           | None -> Some v
+           | Some v0 ->
+               if A.V.equal v0 v then  Some v0
+               else
+                 Warn.user_error
+                   "Incompatible constraint on location %s (%s vs. %s)"
+                   (A.pp_location loc)
+                   (A.V.pp C.hexa v0)
+                   (A.V.pp C.hexa v))
+          m in
+      let rec loop acc =
+        let open ConstrGen in
+        function
+        | Atom (LV (Loc (A.Location_reg _ as loc), v)) ->
+            add_check loc v acc
+        | And li -> List.fold_left loop acc li
+        | Or [ x ] -> loop acc x
+        | _ -> acc in
+
       let map =
-        let rec loop acc =
-          let open ConstrGen in
-          function
-          | Atom (LV (Loc (A.Location_reg _ as loc), v)) -> A.LocMap.add loc v acc
-          | And li -> List.fold_left loop acc li
-          | Or [ x ] -> loop acc x
-          | _ -> acc
-        in
         match test.Test_herd.cond with
-        | ConstrGen.ExistsState prop -> loop A.LocMap.empty prop
-        | _ -> A.LocMap.empty
-      in
+        | ConstrGen.ExistsState prop when do_speedcheck ->
+            loop A.LocMap.empty prop
+        | _ -> A.LocMap.empty in
+      let map = match test.Test_herd.filter with
+        | Some p when C.check_filter -> loop map p
+        | _ -> map in
       fun loc -> A.LocMap.find_opt loc map
 
     (* Add the equations given by one read-from register pairing *)
     let add_eq_for_rf_reg test wanted_final_values es rfm wt rf csn =
       match wt with
       | S.Final loc -> (
-          if not speedcheck then csn
+          if not (do_optcheck test) then csn
           else
             match (wanted_final_values loc, rf) with
             | Some v_wanted, S.Store store ->
@@ -1062,7 +1084,7 @@ let get_rf_value test read =
     let do_solve_regs test es csn =
       profile "do_solve_regs" @@ fun () ->
       let wanted_final_values =
-        if speedcheck then wanted_final_value test else Fun.const None
+        if do_optcheck test then wanted_final_value test else Fun.const None
       in
       try
         let rfm, csn =
@@ -1213,8 +1235,8 @@ let get_rf_value test read =
 
     let is_spec es e = E.EventSet.mem e es.E.speculated
 
-    let check_values solver_state store load =
-      if not speedcheck then true else
+    let check_values optcheck solver_state store load =
+      if not optcheck then true else
         let v_written = get_written store and v_read = get_read load in
         match VC.Hint.hint_solve_one solver_state v_read v_written with
         | VC.NoSolns -> false
@@ -1238,7 +1260,10 @@ let get_rf_value test read =
         | OptAce.Iico ->
            let iico = U.iico es in
            fun load store -> not (E.EventRel.mem (load,store) iico) in
-      let solver_state = if speedcheck then VC.Hint.make_solver_state cns else VC.Hint.make_solver_state [] in
+      let optcheck = do_optcheck test in
+      let solver_state =
+        if optcheck then VC.Hint.make_solver_state cns
+        else VC.Hint.make_solver_state [] in
       let m =
         E.EventSet.fold
           (fun store map_load ->
@@ -1248,7 +1273,7 @@ let get_rf_value test read =
                   compat_locs store load &&
                   check_speculation es store load &&
                   ok load store &&
-                  check_values solver_state store load
+                  check_values optcheck solver_state store load
                 then
                   load,S.Store store::stores
                 else c)
@@ -1280,7 +1305,7 @@ let get_rf_value test read =
          point, from the final condition of the test. There is then a check
          when constructing a rfm that the values are compatible.
       *)
-      if not do_deps && not asl && not speedcheck then begin
+      if not do_deps && not asl && not optcheck then begin
         List.iter
           (fun (load,stores) ->
             match stores with
