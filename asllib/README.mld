@@ -1,20 +1,17 @@
 {0 Getting started with ASLRef}
 
 {1 Disclaimer}
-This material covers:
+This material covers ASL1, the latest version of Architecture Specification
+Language (ASL). ASL appears in the Arm Architecture Reference Manual:
+{:https://developer.arm.com/documentation/ddi0487/latest}.
+In addition to making contributions to this repository, Arm officially
+maintains and regularly releases the ASL Reference, the formal language
+definition for ASL1, available at
+{:https://developer.arm.com/Architectures/Architecture%20Specification%20Language}.
 
-- ASLv0, viz the existing ASL pseudocode language which appears in the Arm Architecture Reference Manual:
-{:https://developer.arm.com/documentation/ddi0487/latest}
-- ASLv1, a new, experimental, and as yet unreleased version of ASL. In addition to making contributions to
-this repository, Arm officially maintains and regularly releases the ASL Reference Specification for ASLv1 at
-{:https://developer.arm.com/Architectures/Architecture%20Specification%20Language}
-
-This material is work in progress, more precisely at Alpha quality as
-per Arm’s quality standards. In particular, this means that it would be
-premature to base any production tool development on this material.
-
-We welcome feedback, questions, and feature requests — please contact us by writing
-to {{:mailto:atg-formal@arm.com}atg-formal@arm.com} or raise issues and pull requests to the herdtools7 GitHub repository.
+We welcome feedback, questions, and feature requests — please contact us by
+writing to {{:mailto:atg-formal@arm.com}atg-formal@arm.com} or raise issues and
+pull requests to the herdtools7 GitHub repository.
 
 {1 Installation}
 
