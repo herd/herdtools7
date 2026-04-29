@@ -151,7 +151,7 @@ A memtag `LxSx` oneloc comparison test
    STXR W4,W3,[X1]   ;
    CBNZ W4,Loop00    ;
   
-  exists (0:X2=0 /\ not (fault(P0:L00,x)))
+  exists ([tag(x)]=:red /\ 0:X2=0 /\ not (fault(P0:L00,x)))
 
   $ diyone7 -arch AArch64 -variant memtag,store-only -oneloc T PosWR LxSx Coi
   AArch64 CoWW+postp-rmw-coipt
@@ -171,7 +171,7 @@ A memtag `LxSx` oneloc comparison test
    L00: STXR W4,W3,[X1] ;
    CBNZ W4,Loop00       ;
   
-  exists (0:X2=0 /\ not (fault(P0:L00,x)))
+  exists ([tag(x)]=:red /\ 0:X2=0 /\ not (fault(P0:L00,x)))
 
 A memtag `PosRW` oneloc comparison test
   $ diyone7 -arch AArch64 -variant memtag -oneloc T PosWR PosRW Coi
@@ -190,7 +190,7 @@ A memtag `PosRW` oneloc comparison test
    MOV W3,#1        ;
    L00: STR W3,[X1] ;
   
-  exists (0:X2=1 /\ not (fault(P0:L00,x)) /\ not (fault(P0:L01,x)))
+  exists ([tag(x)]=:red /\ 0:X2=1 /\ not (fault(P0:L00,x)) /\ not (fault(P0:L01,x)))
 
   $ diyone7 -arch AArch64 -variant memtag,store-only -oneloc T PosWR PosRW Coi
   AArch64 CoWW+posRtp-pos-coipt
@@ -208,7 +208,7 @@ A memtag `PosRW` oneloc comparison test
    MOV W3,#1        ;
    L00: STR W3,[X1] ;
   
-  exists (0:X2=1 /\ not (fault(P0:L00,x)))
+  exists ([tag(x)]=:red /\ 0:X2=1 /\ not (fault(P0:L00,x)))
 
 An ifetch generation test
   $ diyone7 -arch AArch64 -variant ifetch CacheSyncStrongIsbdWRPI FreIP PodWR Fre
