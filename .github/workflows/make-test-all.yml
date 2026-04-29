@@ -68,7 +68,6 @@ jobs:
 
     env:
       DUNE_CACHE: 'enabled-except-user-rules'
-      INSTALL_DIR: ${{ runner.tmp }}/prefix
 
     steps:
       - name: Checkout tree
@@ -92,6 +91,10 @@ jobs:
         run: |
           opam exec -- make build-aslref PREFIX=$INSTALL_DIR
           opam exec -- make install-aslref PREFIX=$INSTALL_DIR
+        env:
+          INSTALL_DIR: ${{ runner.tmp }}/prefix
 
       - name: Check ASLRef installed
         run: $INSTALL_DIR/aslref --version
+        env:
+          INSTALL_DIR: ${{ runner.tmp }}/prefix
