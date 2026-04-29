@@ -71,7 +71,7 @@ To uninstall, you can remove the binaries from [$PREFIX]. You can also run:
 
 {2 Checking}
 
-If [$PREFIX] is in your [$PATH], the following command should return a similar output:
+If [$PREFIX/bin] is in your [$PATH], the following command should return a similar output:
   {@bash[
     $ aslref --version
     aslref version 7.56+03 rev 7aa9d1f3cee2598ec64f14372f210e008ac5510f
