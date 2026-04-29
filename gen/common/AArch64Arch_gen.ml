@@ -380,6 +380,12 @@ module Value = struct
       | Pte f,None -> do_setpteval f p
       | _ -> Warn.user_error "Atom is not a pteval write"
 
+    let get_physical_address p =
+      match AArch64PteVal.as_physical p with
+      | Some loc -> loc
+      | None -> Warn.user_error "No physical address."
+
+
     let can_fault dir pte_val =
       let open AArch64PteVal in
       pte_val.valid = 0 || pte_val.af = 0 || (dir = Code.W && pte_val.db = 0)
@@ -632,12 +638,15 @@ let is_tthm fields =
      else r
 
    let worth_final (a,_) = match a with
-     | Atomic _ -> true
-     | Acq _|AcqPc _|Rel _|Plain _|Tag|Instr
-     | CapaTag|CapaSeal
-     | Pte _|Neon _
-     | Pair _
-       -> false
+   | Pte (Set fields|SetRel fields) ->
+       WPTESet.mem WPTE.OA fields
+   | Atomic _ ->
+       true
+   | Acq _|AcqPc _|Rel _|Plain _|Tag|Instr
+   | CapaTag|CapaSeal
+   | Pte _|Neon _
+   | Pair _ ->
+       false
 
 
 
