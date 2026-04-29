@@ -31,21 +31,46 @@ The following steps have been tested on Unix.
 
 {2 Building}
 
+{3 The released version}
+
+If you want to use the last released version in opam, simply use:
+  {@bash[
+    $ opam install aslref
+  ]}
+
+To uninstall, simply run
+  {@bash[
+    $ opam remove aslref
+  ]}
+
+{3 From sources}
+
 + Clone herdtools7:
   {@bash[
     $ git clone https://github.com/herd/herdtools7.git
   ]}
++ Ensure the opam environment is up-to-date. For example for bash:
+  {@bash[
+    $ eval $(opam env)
+  ]}
 + Install dependencies:
   {@bash[
     $ cd herdtools7
-    $ opam install . --deps-only
+    $ dune build asllib/aslref.opam
+    $ opam install ./asllib --deps-only
   ]}
 + Build and install into a location [$PREFIX]:
   {@bash[
-    $ make build install PREFIX=$PREFIX
+    $ make build-aslref # optional
+    $ make install-aslref PREFIX=$PREFIX
   ]}
 
 It's done!
+
+To uninstall, you can remove the binaries from [$PREFIX]. You can also run:
+  {@bash[
+    $ make uninstall-aslref PREFIX=$PREFIX
+  ]}
 
 {2 Checking}
 
@@ -53,14 +78,6 @@ If [$PREFIX] is in your [$PATH], the following command should return a similar o
   {@bash[
     $ aslref --version
     aslref version 7.56+03 rev 7aa9d1f3cee2598ec64f14372f210e008ac5510f
-  ]}
-
-Please note that building herdtools7 depends on the installation path
-[$PREFIX]. If you want to move your installation from [$OLD_PREFIX] to
-[$NEW_PREFIX], please use:
-  {@bash[
-    make uninstall PREFIX=$OLD_PREFIX
-    make build install PREFIX=$NEW_PREFIX
   ]}
 
 {1 Running}
