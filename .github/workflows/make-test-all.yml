@@ -68,7 +68,6 @@ jobs:
 
     env:
       DUNE_CACHE: 'enabled-except-user-rules'
-      INSTALL_DIR: ${{ runner.tmp }}/prefix
 
     steps:
       - name: Checkout tree
@@ -85,6 +84,9 @@ jobs:
           opam exec -- dune build asllib/aslref.opam
           opam install ./asllib --deps-only --yes
 
+      - name: Define installation directory
+        run: echo "INSTALL_DIR=${{ runner.temp }}/prefix" >> "$GITHUB_ENV"
+
       - name: Create installation directory
         run: mkdir $INSTALL_DIR
 
@@ -94,4 +96,4 @@ jobs:
           opam exec -- make install-aslref PREFIX=$INSTALL_DIR
 
       - name: Check ASLRef installed
-        run: $INSTALL_DIR/aslref --version
+        run: $INSTALL_DIR/bin/aslref --version
