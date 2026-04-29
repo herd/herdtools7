@@ -32,7 +32,7 @@ module type S = sig
 
   (* TODO can be parametric by dir *)
   type event =
-      { loc : loc ; ord : int;
+      { loc : loc ; pa : loc; ord : int;
         (* TODO morello related value, fold into value *)
         tag : int ;
         (* morello *)
@@ -170,7 +170,7 @@ module Make (O:Config) (E:Edge.S) :
   module RMW = E.RMW
 
   type event =
-      { loc : loc ; ord : int; tag : int;
+      { loc : loc ; pa : loc; ord : int; tag : int;
         ctag : int; cseal : int; dep : int;
         v   : Value.v ;
         vecreg: Value.v list list ;
@@ -194,7 +194,7 @@ module Make (O:Config) (E:Edge.S) :
     Value.pte_compare pte rhs = 0
 
   let evt_null =
-    { loc=Code.loc_none ; ord=0; tag=0;
+    { loc=Code.loc_none ; pa=Code.loc_none; ord=0; tag=0;
       ctag=0; cseal=0; dep=0;
       vecreg= [];
       v=Value.no_value; dir=None; proc=(-1); atom=None; rmw=false;
@@ -255,11 +255,12 @@ module Make (O:Config) (E:Edge.S) :
     String.concat ", " @@ List.map debug_val @@ Array.to_list v
 
   let debug_evt e =
-    sprintf "#[%d] %s%s %s %s %s%s%s%s%s fault_check:%s value_check:%s"
+    sprintf "#[%d] %s%s %s(%s) %s %s%s%s%s%s fault_check:%s value_check:%s"
       e.idx
       (debug_dir e.dir)
       (debug_atom e.atom)
       (Code.pp_loc e.loc)
+      (Code.pp_loc e.pa)
       ( if e.rmw then "rmw" else "" )
       ( match debug_vec e.cell with | "" -> "" | s -> "cell=[" ^ s ^"] ")
       (debug_val e.v) (debug_tag e) (debug_morello e) (debug_vector e)
@@ -289,12 +290,6 @@ module Make (O:Config) (E:Edge.S) :
 
   let str_node n = sprintf "%s -%s->" (debug_evt n.evt) (debug_edge n.edge)
 
-  let debug_nodes chan ns =
-    let rec iter chan = function
-      | [] -> ()
-      | [n] -> debug_node chan n
-      | n::ns -> fprintf chan "%a,%a" debug_node n iter ns in
-    iter chan ns
   let debug_cycle chan n =
     let rec do_rec m =
       fprintf chan "%a\n" debug_node m ;
@@ -483,26 +478,21 @@ let find_non_pseudo_prev m = find_edge_prev non_pseudo m
 
 module Env = Map.Make(String)
 
-let locs,next_x =
-  let t = Array.make 26 "" in
-  t.(0) <- "x" ;
-  t.(1) <- "y" ;
-  t.(2) <- "z" ;
-  for k=0 to (26-3)-1 do
-    t.(k+3) <- String.make 1 (Char.chr (Char.code 'a' + k))
-  done ;
-  t,t.(1)
+let variable_counter = ref 0
 
-let locs_len = Array.length locs
+let make_variable () =
+  let new_loc = match !variable_counter with
+  | n when n <= 2 -> String.make 1 (Char.chr (Char.code 'x' + n))
+  | n when n < 26 -> String.make 1 (Char.chr (Char.code 'a' + n - 3))
+  | n -> sprintf "x%02i" (n - 26) in
+  incr variable_counter;
+  new_loc
 
-let make_loc n =
-  if n < locs_len then locs.(n)
-  else Printf.sprintf "x%02i" (n-locs_len)
+let reset_variable_counter () = variable_counter := 0
 
-let next_loc e ((loc0,lab0),vs) = match E.is_fetch e with
-| true -> Code (sprintf "Lself%02i" lab0),((loc0,lab0+1),vs)
-| _ ->
-  Code.Data (make_loc loc0),((loc0+1,lab0),vs)
+let next_loc e (lab0,vs) = match E.is_fetch e with
+| true -> Code (sprintf "Lself%02i" lab0),(lab0+1,vs)
+| _ -> Code.Data (make_variable ()),(lab0,vs)
 
 let same_loc e = Code.is_same_loc @@ E.loc_sd e
 
@@ -818,11 +808,11 @@ let set_diff_loc st n0 =
             (fun n -> (if not (same_loc n.edge) then raise Not_found); E.is_ifetch n.edge.E.a2 ) m.prev
         with Not_found ->  m in
       next_loc n1.edge st in
-    m.evt <- { m.evt with loc=loc ; bank=E.atom_to_bank m.evt.atom; } ;
+    m.evt <- { m.evt with loc=loc; pa=loc; bank=E.atom_to_bank m.evt.atom; } ;
 (*    eprintf "LOC SET: %a [p=%a]\n%!" debug_node m debug_node p; *)
     if m.store != nil then begin
       m.store.evt <-
-        { m.store.evt with loc=loc ; bank=Ord; }
+        { m.store.evt with loc=loc; pa=loc; bank=Ord; }
     end ;
     if m.next != n0 then do_rec st p.next m.next
     else begin
@@ -842,10 +832,10 @@ let set_same_loc st n0 =
     with Not_found -> n0 in
   let loc,st = next_loc n1.edge st in
   let rec do_rec m =
-    m.evt <- { m.evt with loc=loc; bank=E.atom_to_bank m.evt.atom; } ;
+    m.evt <- { m.evt with loc=loc; pa=loc; bank=E.atom_to_bank m.evt.atom; } ;
     if m.store != nil then begin
       m.store.evt <-
-        { m.store.evt with loc=loc; bank=Ord; }
+        { m.store.evt with loc=loc; pa=loc; bank=Ord; }
     end ;
     if m.next != n0 then do_rec m.next in
   do_rec n0 ;
@@ -971,6 +961,9 @@ let check_cycle c =
 
   let tr_value e v = E.tr_value e.atom v
 
+  let sync_physical_address st n =
+    if do_kvm then n.evt <- {n.evt with pa=CoSt.get_physical_address st;}
+
   let set_write_val_ord st n =
     let st = CoSt.next_co st Ord in
     let v = CoSt.get_co st Ord in
@@ -1051,6 +1044,7 @@ let check_cycle c =
           if do_morello then None, st
           else fault_update_without_rmw st in
         n.evt <- { n.evt with check_fault; check_value; };
+        sync_physical_address st n;
         (next_x_ok, st)
       | Data _,Some W,Pair ->
         (* Same code as for Ord, however notice that
@@ -1062,6 +1056,7 @@ let check_cycle c =
         let st = set_write_val_ord st n in
         let check_fault, st = fault_update_without_rmw st in
         n.evt <- { n.evt with check_fault; check_value; };
+        sync_physical_address st n;
         (next_x_ok, st)
       | Data _,Some W,Tag ->
         let st = CoSt.next_co st bank |> CoSt.set_check_fault in
@@ -1118,7 +1113,8 @@ let check_cycle c =
         let check_fault = Value.need_check_fault n.evt.atom in
         let st = CoSt.set_pte_value !st_ref check_fault pte_val in
         let v = Value.from_pte pte_val in
-        n.evt <- { n.evt with v; check_value } ;
+        n.evt <-
+          { n.evt with v; pa=CoSt.get_physical_address st; check_value };
         (next_x_ok,st)
       | Code _,Some W,Instr ->
         Warn.fatal "not letting instr write happen"
@@ -1145,12 +1141,14 @@ let check_cycle c =
             | _ -> CoSt.fault_update st W
           else CoSt.fault_update st R in
         n.evt <- { n.evt with check_fault };
+        sync_physical_address st n;
         (next_x_ok, st)
       | _,Some R,Pair ->
         let st = CoSt.implicit_pte_update st R in
         set_read_pair_v n cell check_value;
         let check_fault, st = CoSt.fault_update st R in
         n.evt <- { n.evt with check_fault };
+        sync_physical_address st n;
         (next_x_ok, st)
       | _,Some R,VecReg a ->
         let st = CoSt.implicit_pte_update st R in
@@ -1320,7 +1318,7 @@ let set_dep_v nss =
 
 let finish n =
   Label.reset ();
-  let st = (0,0),Env.empty in
+  reset_variable_counter ();
 (* Set locations *)
   let sd,n =
     let no =
@@ -1344,6 +1342,7 @@ let finish n =
     | None -> Same,n in
 
   let _nv,_st =
+    let st = 0,Env.empty in
     match sd with
     | Diff -> set_diff_loc st n
     | Same -> set_same_loc st n
@@ -1592,6 +1591,9 @@ let merge_changes n nss =
   let get_tag_locs (loc,n) =
     (to_tagloc loc,n)
 
+  let coherence_by_physical_address nodes =
+    List.map (fun (_,node) -> node.evt.pa,node) nodes |> by_loc
+
   let get_observers n =
     let e = n.evt in
     assert (e.dir = Some W) ;
@@ -1603,57 +1605,33 @@ let merge_changes n nss =
     k
 
   let coherence n =
-    let r = match find_change n with
-    | Some n ->
-        let ord_ws = get_ord_writes n in
+    let start_node,changes_location =
+      match find_change n,O.same_loc with
+      | Some start_node,_ -> start_node,true
+      | None,true -> n,false
+      | None,false -> Warn.fatal "Unique location" in
+    let ordinary_writes = get_ord_writes start_node in
+    let write_set =
+        let ord_ws = coherence_by_physical_address ordinary_writes in
         (* MTE locations shadow normal locations, so we need
          * to track them separately. As we may be interested
          * in the same graph nodes, lets just duplicate and
          * label accordingly. *)
-        let tag_ws = if do_memtag then
-          List.map get_tag_locs (get_ord_writes n) else [] in
-        let ws = ord_ws@tag_ws in
-        if O.debug.Debug_gen.cycle then
-          List.iter
-            (fun (loc,n) ->
-              eprintf "LOC=%s, node=%a\n" (Code.pp_loc loc) debug_node n)
-            ws ;
-        let r = by_loc ws in
-        List.fold_right
-          (fun (loc,ws) k -> match ws with
-          | [] -> k
-          | [ns] ->
-             if O.debug.Debug_gen.cycle then
-               Printf.eprintf "Standard write sequence on %s: %s\n"
-                 (Code.pp_loc loc)
-                 (String.concat " "
-                    (List.map str_node ns)) ;
-             (loc,ws)::k
-          | _ ->
-              (* Assume there is no consecutive writes to the same location *)
-              List.iter
-                (fun ns -> eprintf "[%a]\n" debug_nodes ns)
-                ws ;
-              assert false)
-          r []
-    | None ->
-        if O.same_loc then
-          match get_ord_writes n with
-          | [] -> []
-          | (loc,_)::_ as xs ->
-              [loc,[List.map snd xs]]
-        else
-          Warn.fatal "Unique location" in
-    List.fold_right
-      (fun (loc,ns) k ->
+        let tag_ws =
+          if do_memtag && changes_location then
+            ordinary_writes |> List.map get_tag_locs |> by_loc
+          else [] in
+        tag_ws@ord_ws in
+    List.filter_map
+      (fun (loc,ns) ->
         match loc with
         | Data loc ->
-            (loc,
+            Some (loc,
             List.map
               (List.map (fun n -> n,get_observers n))
-              ns)::k
-        | Code _ ->  k)
-      r []
+              ns)
+        | Code _ -> None)
+      write_set
 
   let last_ptes n =
     match find_change n with
