@@ -1,0 +1,18 @@
+AArch64 MP.V2I+dsb.ish-tlbi.vaae1is-dsh.ish+dsb.ish-isb
+
+{
+ [PTE(x)]=(oa:PA(x), valid:1);
+ pteval_t 0:X6=(oa:PA(x), valid:0); 0:X7=PTE(x);
+ 0:X3=x; 0:X1=z;
+ 1:X1=z; 1:X3=x;
+}
+ P0              | P1              ;
+ STR X6,[X7]     | LDR W0,[X1]     ;
+ DSB ISH         | DSB SY          ;
+ LSR X9,X3,#12   | ISB             ;
+ TLBI VAAE1IS,X9 | L0: LDR W2,[X3] ;
+ DSB ISH         |                 ;
+ MOV W0,#1       |                 ;
+ STR W0,[X1]     |                 ;
+
+exists (1:X0=1 /\ not (fault(P1:L0,MMU:Translation)))

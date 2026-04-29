@@ -1,0 +1,11 @@
+AArch64 RWC 
+{ 
+0:X1=x; 
+1:X1=x; 1:X2=y; 
+2:X2=y; 2:X1=x; 
+} 
+ P0          | P1          | P2          ; 
+ MOV W0,#1   | LDR W3,[X1] | MOV W0,#1   ; 
+ STR W0,[X1] | LDR W4,[X2] | STR W0,[X2] ; 
+             |             | LDR W3,[X1] ; 
+exists (1:X3=1 /\ 1:X4=0 /\ 2:X3=0) 

@@ -1,5 +1,5 @@
 CAT2HTML7=$(if $(shell which cat2html7), cat2html7, ../_build/default/tools/cat2html.exe)
-AARCH64_BOOKS= aarch64 aarch64-ifetch aarch64-mixed aarch64-MTE aarch64-MTE-mixed aarch64-VMSA aarch64-ETS2 aarch64-faults
+AARCH64_BOOKS= aarch64 aarch64-ifetch aarch64-mixed aarch64-MTE aarch64-MTE-mixed aarch64-VMSA aarch64-ETS2 aarch64-faults readers-guide
 BOOKS= $(AARCH64_BOOKS) bpf x86 linux
 WWW_CATALOGUE=www/catalogue
 HERD_CATALOGUE=../catalogue
