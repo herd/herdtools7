@@ -1,0 +1,17 @@
+AArch64 CoWR+tlbi-sync.ishsptev0p
+Variant=vmsa
+{
+ [x]=1;
+ [PTE(z)]=(oa:PA(x));
+ 0:X0=PTE(x); pteval_t 0:X1=(oa:PA(x), valid:0); 0:X2=x; 0:X3=z;
+ 1:X2=x;
+}
+ P0              | P1          ;
+ STR X1,[X0]     | MOV W3,#2   ;
+ DSB ISH         | STR W3,[X2] ;
+ LSR X5,X2,#12   |             ;
+ TLBI VAAE1IS,X5 |             ;
+ DSB ISH         |             ;
+ LDR W4,[X3]     |             ;
+
+exists ([x]=2 /\ 0:X4=1)
