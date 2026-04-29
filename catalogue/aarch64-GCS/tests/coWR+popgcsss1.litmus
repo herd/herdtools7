@@ -1,0 +1,20 @@
+AArch64 coWR+popgcsss1
+variant=shadowstack,vmsa
+{
+  uint64_t z=0;
+
+  SS(x,1);
+  SS(y,1);
+
+  [PTE(z)]=(oa:PA(y)); (* Alias z to y, otherwise STR would fault *)
+
+  0:GCSPR_EL1=&x[1];
+  0:X0=y;
+  0:X2=z;
+}
+P0           ;
+ADD X1,X0,#1 ; (* Syntesize "valid" cap *)
+STR X1,[X2]  ; (* Memory (Write) effect *)
+GCSSS1 X0    ; (* GCSSS1 Memory effect  *)
+
+forall ~fault(P0,GCS:SS1)
