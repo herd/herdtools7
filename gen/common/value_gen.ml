@@ -23,6 +23,7 @@ module type PteType = sig
   val init_pte : string -> atom list -> pte
   val pte_compare : pte -> pte -> int
   val set_pteval : atom -> pte -> (unit -> string) -> pte
+  val get_physical_address : pte -> string
   (* Implicitly set pte value. Return indicates fault check and new pte vaule,
      This is for a case where a memory event `Code:dir` to `x` rather than `Pte(x)`,
      when certain machine features present `StringSet.t`, might update
@@ -99,6 +100,7 @@ module NoPte(A:sig type arch_atom end) = struct
     let init_pte s _atom_list = default_pte s
     let pte_compare _ _ = 0
     let set_pteval _ p _ = p
+    let get_physical_address _ = "[nopte]"
     let implicitly_set_pteval _ _ _ = None
     let can_fault _dir _t = false
     let refers_virtual _ = None
