@@ -1,5 +1,5 @@
 AArch64 MP.V2I+dsb.ish-tlbi.vaae1is-dsh.ish+dsb.ish-isb
-
+Variant=vmsa
 {
  [PTE(x)]=(oa:PA(x), valid:1);
  pteval_t 0:X6=(oa:PA(x), valid:0); 0:X7=PTE(x);
