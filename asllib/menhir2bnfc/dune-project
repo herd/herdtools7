@@ -3,4 +3,5 @@
 (using menhir 2.0)
 (cram enable)
 (package
- (name menhir2bnfc))
+ (name menhir2bnfc)
+ (allow_empty))
