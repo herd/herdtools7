@@ -293,6 +293,7 @@ cata-test:: test.herd.cata.aarch64-ifetch
 cata-test-all:: test.herd.cata.aarch64-cas
 cata-test-all:: test.herd.cata.aarch64-VMSA
 cata-test-all:: test.herd.cata.aarch64-ETS2
+cata-test:: test.herd.cata.aarch64-ETS3
 
 cata-test:: test.herd.cata.bpf
 cata-test:: test.herd.cata.x86_64
