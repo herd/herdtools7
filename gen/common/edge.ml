@@ -990,22 +990,22 @@ let fold_tedges f r =
 
 
   let varatom es f r =
-    let rec var_rec ves es r = match es with
-    | [] -> f (resolve_edges (List.rev ves)) r
+    let rec var_rec ves es k = match es with
+    | [] -> f (List.rev ves) k
     | e::es ->
         var_fence e
-          (fun e r -> match e.a1 with
-          | Some _ -> var_rec (e::ves) es r
+          (fun e k -> match e.a1 with
+          | Some _ -> var_rec (e::ves) es k
           | None ->
               begin match dir_src e with
               | Dir d ->
                   A.varatom_dir d
-                    (fun a r -> var_rec ({e with a1=a}::ves)  es r)
-                    r
-              | NoDir ->  var_rec (e::ves) es r
+                    (fun a k -> var_rec ({e with a1=a}::ves)  es k)
+                    k
+              | NoDir ->  var_rec (e::ves) es k
               | Irr ->  assert false (* resolved at this step *)
               end)
-          r in
+          k in
     var_rec [] es r
 
 
