@@ -1,4 +1,4 @@
-.PHONY: check-deps
+.PHONY: check-deps test.herd.inst
 
 OS := $(shell uname)
 PREFIX=$$HOME
@@ -108,31 +108,63 @@ test.aarch64assumptions:
 		-assumptions-path ./tools/libdir/aarch64assumptions.cat
 	@ echo "cat2table AArch64 assumptions: OK"
 
-test:: test.aarch64
-test-local:: test.aarch64
-test.aarch64:
+test.herd.inst.%:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
-		-j $(J) \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64 \
+		-litmus-dir ./herd/tests/instructions/$* \
+		-conf ./herd/tests/instructions/$*/ci.cfg \
 		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 instructions tests: OK"
+	@ echo "herd7 $* instructions tests: OK"
 
-test:: test.aarch64.asl
-test-all-asl:: test.aarch64.asl
-test.aarch64.asl: asl-pseudocode
+test.herd.inst:: test.herd.inst.AArch64
+test.herd.inst:: test.herd.inst.AArch64.mixed
+test.herd.inst:: test.herd.inst.AArch64.PAC
+test.herd.inst:: test.herd.inst.AArch64.kvm
+test.herd.inst:: test.herd.inst.AArch64.self
+test.herd.inst:: test.herd.inst.AArch64.MTE
+test.herd.inst:: test.herd.inst.AArch64.vmsa+mte
+test.herd.inst:: test.herd.inst.AArch64.vmsa+ifetch
+test.herd.inst:: test.herd.inst.AArch64.neon
+test.herd.inst:: test.herd.inst.AArch64.sve
+test.herd.inst:: test.herd.inst.AArch64.sme
+test.herd.inst:: test.herd.inst.AArch64.gcs
+
+test.herd.inst:: test.herd.inst.AArch32
+test.herd.inst:: test.herd.inst.ARM
+test.herd.inst:: test.herd.inst.PPC
+test.herd.inst:: test.herd.inst.MIPS
+test.herd.inst:: test.herd.inst.X86_64
+test.herd.inst:: test.herd.inst.RISCV
+test.herd.inst:: test.herd.inst.C
+
+test:: test.herd.inst
+test-local:: test.herd.inst
+
+test.herd-asl.inst.%: asl-pseudocode
 	@ echo
 	$(HERD_REGRESSION_TEST) \
 		-j $(J) \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64 \
-		-conf ./herd/tests/instructions/AArch64/asl.cfg \
+		-litmus-dir ./herd/tests/instructions/$* \
+		-conf ./herd/tests/instructions/$*/asl.cfg \
 		-checkstates \
 		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 instructions tests (ASL): OK"
+	@ echo "herd7 $* instructions tests (ASL): OK"
+
+test:: test.herd-asl.inst.AArch64
+test:: test.herd-asl.inst.AArch64.sve
+test:: test.herd-asl.inst.AArch64.kvm
+
+test-local:: test.herd-asl.inst.AArch64.sve
+
+test-all-asl:: test.herd-asl.inst.AArch64
+test-all-asl:: test.herd-asl.inst.AArch64.sve
+test-all-asl:: test.herd-asl.inst.AArch64.kvm
+
+test-all-vmsa:: test.herd-asl.inst.AArch64.kvm
 
 test-all-asl:: test.aarch64.asl.with.vmsa
 test.aarch64.asl.with.vmsa: asl-pseudocode
@@ -146,190 +178,6 @@ test.aarch64.asl.with.vmsa: asl-pseudocode
 		-checkstates \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 instructions tests (ASL with VMSA): OK"
-
-test:: test.riscv
-test-local:: test.riscv
-test.riscv:
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/RISCV \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 RISCV instructions tests: OK"
-
-test:: test.x86_64
-test-local:: test.x86_64
-test.x86_64:
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/X86_64 \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 X86_64 instructions tests: OK"
-
-test:: test.mixed
-test-local:: test.mixed
-test.mixed:
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64.mixed \
-		-conf ./herd/tests/instructions/AArch64.mixed/mixed.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 mixed instructions tests: OK"
-
-test:: test.mips
-test-local:: test.mips
-test.mips:
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/MIPS \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 MIPS instructions tests: OK"
-
-test:: test.neon
-test-local:: test.neon
-test.neon::
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64.neon \
-		-variant neon \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 NEON instructions tests: OK"
-
-test:: test.sve
-test-local:: test.sve
-test.sve::
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64.sve \
-		-variant sve \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 SVE instructions tests: OK"
-
-test:: test.asl.sve
-test-local:: test.asl.sve
-test-all-asl:: test.asl.sve
-test.asl.sve: asl-pseudocode
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64.sve \
-		-variant sve \
-		-conf  ./herd/tests/instructions/AArch64.sve/asl.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 ASL SVE instructions tests: OK"
-
-test:: test.sme
-test-local:: test.sme
-test.sme::
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64.sme \
-		-variant sme \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 SME instructions tests: OK"
-
-test:: test.mte
-test-local:: test.mte
-test.mte::
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64.MTE \
-		-conf ./herd/tests/instructions/AArch64.MTE/mte.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 MTE instructions tests: OK"
-
-test:: test.self
-test-local:: test.self
-test.self:
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64.self \
-		-conf ./herd/tests/instructions/AArch64.self/self.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 variant -self instructions tests: OK"
-
-test:: test.gcs
-test-local:: test.gcs
-test.gcs::
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64.gcs \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 GCS instructions tests: OK"
-
-test:: test.kvm
-test-local:: test.kvm
-test.kvm:
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64.kvm \
-		-conf ./herd/tests/instructions/AArch64.kvm/kvm.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 KVM instructions tests: OK"
-
-test:: test-asl-vmsa
-test-asl-vmsa:: test.kvm.asl
-test-all-asl:: test.kvm.asl
-test.kvm.asl: asl-pseudocode
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64.kvm \
-		-conf ./herd/tests/instructions/AArch64.kvm/asl-vmsa.cfg \
-		-checkstates \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 KVM (ASL) instructions tests: OK"
-
-test:: test-c
-test-local:: test-c
-test-c:
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/C \
-		-conf ./herd/tests/instructions/C/c.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 C instructions tests: OK"
-
-test:: test-ppc
-test-local:: test-ppc
-test-ppc:
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/PPC \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 PPC instructions tests: OK"
 
 test:: test-asl
 test-local:: test-asl
@@ -409,325 +257,86 @@ test-aarch64-noasl-mixed:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64+NOASL+MIXED instructions tests: OK"
 
-test:: arm-test
-test-local:: arm-test
-
-arm-test::
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/ARM \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 ARM instructions tests: OK"
-
-test::aarch32-test
-test-local::aarch32-test
-aarch32-test::
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch32 \
-		-conf ./herd/tests/instructions/AArch32/aarch32.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch32 instructions tests: OK"
-
 test-bnfc:
 	@ echo
 	dune runtest asllib/menhir2bnfc
 	@ echo "BNFC tests: OK"
 
-test:: test.pac
-test-local:: test.pac
-test.pac::
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64.PAC \
-		-conf ./herd/tests/instructions/AArch64.PAC/pac.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 PAC instructions tests: OK"
-
-
 ### CATALOGUE testing, catalogue must be here
 CATATEST := $(shell if test -d catalogue; then echo cata-test; fi)
+CATATESTALL := $(shell if test -d catalogue; then echo cata-test-all; fi)
 
 test:: $(CATATEST)
 test-local:: $(CATATEST)
 
-test-all:: cata-test cata-test-asl
+test-all:: cata-test cata-test-asl $(CATATESTALL)
 test-all-asl:: cata-test-asl
 
-cata-test:: cata-bpf-test
-cata-bpf-test:
+test.herd.cata.%:
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
 		-j $(J) \
-		-herd-timeout $(TIMEOUT) \
 		-herd-path $(HERD) \
+		-herd-timeout $(TIMEOUT) \
 		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/bpf/tests/kinds.txt \
-		-shelf-path catalogue/bpf/shelf.py \
+		-kinds-path catalogue/$*/tests/kinds.txt \
+		-shelf-path catalogue/$*/ci-shelf.py \
 		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 catalogue bpf tests: OK"
+	@ echo "herd7 catalogue $* tests: OK"
 
-cata-test:: cata-aarch64-test
-cata-aarch64-test:
+cata-test:: test.herd.cata.aarch64
+cata-test:: test.herd.cata.aarch64-mixed
+cata-test:: test.herd.cata.aarch64-pick
+cata-test:: test.herd.cata.aarch64-faults
+cata-test:: test.herd.cata.aarch64-MTE
+cata-test:: test.herd.cata.aarch64-ifetch
+cata-test-all:: test.herd.cata.aarch64-cas
+cata-test-all:: test.herd.cata.aarch64-VMSA
+cata-test-all:: test.herd.cata.aarch64-ETS2
+cata-test:: test.herd.cata.aarch64-ETS3
+
+cata-test:: test.herd.cata.bpf
+cata-test:: test.herd.cata.x86_64
+
+test.herd-mixed.cata.%:
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
 		-j $(J) \
-		-herd-timeout $(TIMEOUT) \
 		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64/tests/kinds.txt \
-		-shelf-path catalogue/aarch64/shelf.py \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 catalogue aarch64 tests: OK"
-
-cata-test-asl:: cata-aarch64-test-asl
-cata-aarch64-test-asl: asl-pseudocode
-	@ echo
-	$(HERD_CATALOGUE_REGRESSION_TEST) \
-		-j $(J) \
-		-variant asl \
-		-variant strict \
 		-herd-timeout $(TIMEOUT) \
-		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64/tests/kinds.txt \
-		-shelf-path catalogue/aarch64/shelf.py \
-		-conf-path catalogue/aarch64/cfgs/asl.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 catalogue aarch64 tests (ASL): OK"
-
-cata-test-asl:: cata-aarch64-cas-test-asl
-cata-aarch64-cas-test-asl: asl-pseudocode
-	@ echo
-	$(HERD_CATALOGUE_REGRESSION_TEST) \
-		-j $(J) \
-		-variant asl \
-		-variant strict \
-		-herd-timeout $(TIMEOUT) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64-cas/tests/kinds.txt \
-		-shelf-path catalogue/aarch64-cas/shelf.py \
-		-conf-path catalogue/aarch64-cas/cfgs/asl.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 catalogue aarch64-cas tests (ASL): OK"
-
-cata-test:: aarch64-test-mixed
-aarch64-test-mixed:
-	@ echo
-	$(HERD_CATALOGUE_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-timeout $(TIMEOUT) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64/tests/kinds.txt \
-		-shelf-path catalogue/aarch64/shelf.py \
+		-kinds-path catalogue/$*/tests/kinds.txt \
+		-shelf-path catalogue/$*/ci-shelf.py \
 		-variant mixed \
 		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 catalogue aarch64 tests (mixed mode): OK"
+	@ echo "herd7 catalogue $* (mixed mode) tests: OK"
 
+cata-test:: test.herd-mixed.cata.aarch64
+cata-test:: test.herd-mixed.cata.aarch64-pick
 
-cata-test:: mixed-test
-mixed-test:
+test.herd-asl.cata.%: asl-pseudocode
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64-mixed/tests/kinds.txt \
-		-shelf-path catalogue/aarch64-mixed/shelf.py \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 catalogue aarch64-mixed tests: OK"
-
-cata-test:: pick-test
-pick-test:
-	@ echo
-	$(HERD_CATALOGUE_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64-pick/tests/desired-kinds.txt \
-		-shelf-path catalogue/aarch64-pick/shelf.py \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 catalogue aarch64-pick tests: OK"
-
-cata-test-asl:: pick-test-asl
-pick-test-asl:  asl-pseudocode
-	@ echo
-	$(HERD_CATALOGUE_REGRESSION_TEST) \
+		$(EXTRA_OPTS) \
 		-j $(J) \
 		-variant asl \
 		-variant strict \
 		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64-pick/tests/desired-kinds.txt \
-		-shelf-path catalogue/aarch64-pick/shelf.py \
-		-conf-path catalogue/aarch64-pick/cfgs/asl.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 catalogue aarch64-pick tests (ASL): OK"
-
-cata-test:: faults-test
-faults-test:
-	@ echo
-	$(HERD_CATALOGUE_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64-faults/tests/kinds.txt \
-		-shelf-path catalogue/aarch64-faults/shelf.py \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 catalogue aarch64-faults tests: OK"
-
-cata-test-asl:: asl-faults-test
-asl-faults-test: asl-pseudocode
-	@ echo
-	$(HERD_CATALOGUE_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64-faults/tests/kinds.txt \
-		-shelf-path catalogue/aarch64-faults/shelf.py \
-		-conf-path  catalogue/aarch64-faults/cfgs/asl.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 catalogue aarch64-faults tests (ASL): OK"
-
-cata-test:: pick-test-mixed
-pick-test-mixed:
-	@ echo
-	$(HERD_CATALOGUE_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
 		-herd-timeout $(TIMEOUT) \
 		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64-pick/tests/desired-kinds.txt \
-		-shelf-path catalogue/aarch64-pick/shelf.py \
-		-variant mixed \
+		-kinds-path catalogue/$*/tests/kinds.txt \
+		-shelf-path catalogue/$*/ci-shelf.py \
+		-conf-path catalogue/$*/cfgs/asl.cfg \
 		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 catalogue aarch64-pick tests (mixed mode): OK"
+		@ echo "herd7 catalogue $* tests (ASL): OK"
 
-cata-test:: mte-test
-mte-test:
-	@ echo
-	$(HERD_CATALOGUE_REGRESSION_TEST) \
-		-herd-timeout $(TIMEOUT) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64-MTE/tests/kinds.txt \
-		-shelf-path catalogue/aarch64-MTE/shelf.py \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 catalogue aarch64-MTE tests: OK"
-
-cata-test:: ifetch-test
-ifetch-test:
-	@ echo
-	$(HERD_CATALOGUE_REGRESSION_TEST) \
-		-herd-timeout $(TIMEOUT) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64-ifetch/kinds.txt \
-		-shelf-path catalogue/aarch64-ifetch/shelf-test.py \
-		$(REGRESSION_TEST_MODE)
-		@ echo "herd7 catalogue aarch64-ifetch tests: OK"
-
-cata-test:: x86_64-test
-x86_64-test:
-	@ echo
-	$(HERD_CATALOGUE_REGRESSION_TEST) \
-		-herd-timeout $(TIMEOUT) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/x86_64/kinds.txt \
-		-shelf-path catalogue/x86_64/shelf.py \
-		$(REGRESSION_TEST_MODE)
-		@ echo "herd7 catalogue x86_64 tests: OK"
-
-# Not in cata-test, too-long
-test-all:: vmsa-test
-vmsa-test:
-	@ echo
-	$(HERD_CATALOGUE_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-herd-timeout $(TIMEOUT) \
-		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64-VMSA/tests/VMSA-kinds.txt \
-		-shelf-path catalogue/aarch64-VMSA/shelf.py \
-		$(REGRESSION_TEST_MODE)
-		@ echo "herd7 catalogue aarch64-VMSA tests: OK"
-
-
+cata-test-asl:: test.herd-asl.cata.aarch64
+cata-test-asl:: test.herd-asl.cata.aarch64-cas
+cata-test-asl:: test.herd-asl.cata.aarch64-pick
+cata-test-asl:: test.herd-asl.cata.aarch64-faults
 #Too long to include in `make test-all`. Add -verbose option to reassure us that something is running
-test-all-asl:: cata-asl-vmsa-test
-cata-asl-vmsa-test: asl-pseudocode
-	@ echo
-	$(HERD_CATALOGUE_REGRESSION_TEST) \
-		-verbose \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-herd-timeout $(TIMEOUT) \
-		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64-VMSA/tests/VMSA-kinds.txt \
-		-shelf-path catalogue/aarch64-VMSA/shelf.py \
-		-conf-path catalogue/aarch64-VMSA/cfgs/asl.cfg \
-		$(REGRESSION_TEST_MODE)
-		@ echo "herd7 catalogue aarch64-VMSA tests: OK"
-
-test-all:: cata-aarch64-cas-test
-cata-aarch64-cas-test:
-	@ echo
-	$(HERD_CATALOGUE_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-herd-timeout $(TIMEOUT) \
-		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64-cas/tests/kinds.txt \
-		-shelf-path catalogue/aarch64-cas/shelf.py \
-		$(REGRESSION_TEST_MODE)
-		@ echo "herd7 catalogue aarch64-cas tests: OK"
-
-test-all:: ets2-test
-ets2-test:
-	@ echo
-	$(HERD_CATALOGUE_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-herd-timeout $(TIMEOUT) \
-		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64-ETS2/tests/VMSA-ETS2-kinds.txt \
-		-shelf-path catalogue/aarch64-ETS2/shelf.py \
-		$(REGRESSION_TEST_MODE)
-		@ echo "herd7 catalogue aarch64-ETS2 tests: OK"
-
-test-all:: test.vmsa+mte
-test.vmsa+mte:
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64.vmsa+mte \
-		-conf ./herd/tests/instructions/AArch64.vmsa+mte/vmsa+mte.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 VMSA+MTE instructions tests: OK"
-
-test:: test.vmsa+ifetch
-test-local:: test.vmsa+ifetch
-test.vmsa+ifetch:
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/AArch64.vmsa+ifetch \
-		-conf ./herd/tests/instructions/AArch64.vmsa+ifetch/vmsa+ifetch.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 VMSA+ifetch instructions tests: OK"
+test.herd-asl.cata.aarch64-VMSA:: EXTRA_OPTS=-verbose
+test-all-asl:: test.herd-asl.cata.aarch64-VMSA
 
 ### Diy tests, includes
 ### - A `diyone7` generated syntax check
