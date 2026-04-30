@@ -729,7 +729,7 @@ module Make(C:Builder.S)
                      let pss = Misc.cuts max_sz le in
                      not (substring_spanp rej pss) in
                 if ok then
-                  let mk_info _es =
+                  let mk_info =
                     let ss = build_safe rs res in
                     let info =
                       [
