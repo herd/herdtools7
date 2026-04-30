@@ -647,7 +647,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             (Label.Set.pp_str ","  Label.pp ii.A.labels) ;
         m ii in
 
-      let  sem_instr =  SM.build_semantics test in
+      let sem_instr =  SM.build_semantics test in
       let rec add_next_instr re_exec fetch_proc proc env seen addr (code_instr : I.t) nexts =
         wrap re_exec fetch_proc proc code_instr addr env sem_instr >>> fun branch ->
           let inst = code_instr.I.instr in
@@ -1035,7 +1035,7 @@ let get_rf_value test read =
       let rec loop acc =
         let open ConstrGen in
         function
-        | Atom (LV (Loc (A.Location_reg _ as loc), v)) ->
+        | Atom (LV (Loc (A.Location_reg _|A.Location_global _ as loc), v)) ->
             add_check loc v acc
         | And li -> List.fold_left loop acc li
         | Or [ x ] -> loop acc x
@@ -1081,11 +1081,8 @@ let get_rf_value test read =
             let () = PP.show_es_rfm test es rfm in
             assert false)
 
-    let do_solve_regs test es csn =
+    let do_solve_regs test wanted_final_values es csn =
       profile "do_solve_regs" @@ fun () ->
-      let wanted_final_values =
-        if do_optcheck test then wanted_final_value test else Fun.const None
-      in
       try
         let rfm, csn =
           match_reg_events
@@ -1106,7 +1103,7 @@ let get_rf_value test read =
 
     let solve_regs test es csn =
       profile "solve_regs" @@ fun () ->
-      match do_solve_regs test es csn with
+      match do_solve_regs test (Fun.const None) es csn with
       | Some (es, rfm, cns) as r ->
           if debug_solver && C.verbose > 0 then begin
             let module PP = Pretty.Make (S) in
@@ -2019,7 +2016,7 @@ let get_rf_value test read =
 
     let pp_locations = A.LocSet.pp_str " " A.pp_location
 
-    let all_finals_non_mixed test es =
+    let all_finals_non_mixed test wanted_final_values es =
       let loc_stores = U.remove_spec_from_map es (U.collect_mem_stores es) in
       let loc_stores =
         if C.observed_finals_only then
@@ -2060,6 +2057,26 @@ let get_rf_value test read =
           end ;
           U.LocEnv.filter
             (fun loc _ -> keep_observed_loc loc observed_locs)
+            loc_stores
+        else loc_stores in
+
+      let loc_stores =
+        if do_optcheck test then
+          U.LocEnv.filter_map
+            (fun loc evts ->
+               match wanted_final_values loc with
+               | None -> Some evts
+               | Some v0 ->
+                   let evts =
+                     List.filter
+                       (fun e ->
+                         match E.written_of e with
+                         | Some v1 -> V.equal v1 v0
+                         | None -> assert false)
+                       evts in
+                   match evts with
+                   | [] -> None
+                   | evts -> Some evts)
             loc_stores
         else loc_stores in
 
@@ -2113,7 +2130,7 @@ let get_rf_value test read =
         end)
 
 
-    let all_finals_mixed test es =
+    let all_finals_mixed test  es =
       assert  C.observed_finals_only ;
       let locs = S.observed_locations test in
       let locs =  A.LocSet.filter A.is_global locs in
@@ -2163,14 +2180,14 @@ let get_rf_value test read =
 
     let fold_left_left f = List.fold_left (List.fold_left f)
 
-    let all_finals test es =
+    let all_finals test wanted_final_values es =
       try
         if mixed && not C.debug.Debug_herd.mixed then
           all_finals_mixed test es
         else
-          all_finals_non_mixed test es
+          all_finals_non_mixed test wanted_final_values es
       with CannotSca ->
-        all_finals_non_mixed test es
+        all_finals_non_mixed test wanted_final_values es
 
     let some_same_rf_rmw rfm rmw =
       let loads = U.partition_events (E.EventRel.domain rmw) in
@@ -2185,7 +2202,8 @@ let get_rf_value test read =
           Misc.exists_pair S.read_from_equal rfs)
         loads
 
-    let fold_mem_finals test es rfm ofail atomic_load_store kont res =
+    let fold_mem_finals
+        test wanted_finals es rfm ofail atomic_load_store kont res =
       (* We can build those now *)
       let evts = es.E.events in
       let po_iico = U.po_iico es in
@@ -2194,7 +2212,7 @@ let get_rf_value test read =
       let store_load_vbf = store_load rfm
       and init_load_vbf = init_load es rfm in
 (* Now generate final stores *)
-      let possible_finals = all_finals test es in
+      let possible_finals = all_finals test wanted_finals es in
       if C.debug.Debug_herd.mem then begin
         eprintf "Possible finals:\n" ;
         List.iter
@@ -2449,7 +2467,10 @@ let get_rf_value test read =
       ) stores
 
     let calculate_rf_with_cnstrnts test owls es cs kont res =
-      match do_solve_regs test es cs with
+      let wanted_final_values =
+        if do_optcheck test then wanted_final_value test
+        else Fun.const None in
+      match do_solve_regs test wanted_final_values es cs with
       | None -> res
       | Some (es,rfm,cs) ->
           if debug_solver && C.verbose > 0 then begin
@@ -2523,7 +2544,7 @@ let get_rf_value test read =
                       end ;
                       res
                       end else
-                      fold_mem_finals test es
+                      fold_mem_finals test wanted_final_values es
                         rfm ofail atomic_load_store kont res
                   else  res)
             res
