@@ -1,0 +1,12 @@
+Test A036 Allowed
+States 2
+0:X0=2; 0:X1=1; [y]=1;
+0:X0=2; 0:X1=1; [y]=2;
+Ok
+Witnesses
+Positive: 8 Negative: 0
+Flag Shareability-argument-for-DMB-is-deprecated
+Condition exists (0:X0=2 /\ 0:X1=1)
+Observation A036 Always 8 0
+Hash=cfe50b9b0465b36af5f17bad83823a0b
+
