@@ -148,7 +148,7 @@ module type S = sig
   val get_predicate : edge -> edge_predicate option
 
 (* Atomic variation over yet unspecified atoms *)
-  val varatom : edge list -> (edge list -> 'a -> 'a) -> 'a -> 'a
+  val varatom : edge list -> edge list list
 
 (* Possible interpretation of edge sequence as an edge *)
   val compact_sequence : edge list -> edge list -> edge -> edge -> edge list list
@@ -1039,24 +1039,24 @@ let fold_tedges f r =
 
 
 
-  let varatom es f r =
-    let rec var_rec ves es r = match es with
-    | [] -> f (resolve_edges (List.rev ves)) r
+  let varatom es =
+    let rec var_rec ves es k = match es with
+    | [] -> List.rev ves::k
     | e::es ->
         var_fence e
-          (fun e r -> match e.a1 with
-          | Some _ -> var_rec (e::ves) es r
+          (fun e k -> match e.a1 with
+          | Some _ -> var_rec (e::ves) es k
           | None ->
               begin match dir_src e with
               | Dir d ->
                   A.varatom_dir d
-                    (fun a r -> var_rec ({e with a1=a}::ves)  es r)
-                    r
-              | NoDir ->  var_rec (e::ves) es r
+                    (fun a k -> var_rec ({e with a1=a}::ves)  es k)
+                    k
+              | NoDir ->  var_rec (e::ves) es k
               | Irr ->  assert false (* resolved at this step *)
               end)
-          r in
-    var_rec [] es r
+          k in
+    var_rec [] es []
 
 
 (* compact *)
