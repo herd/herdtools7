@@ -3,12 +3,11 @@
 ## Disclaimer
 
 This material covers ASL1, the latest version of Architecture Specification
-Language (ASL). ASL appears in the Arm Architecture Reference Manual:
-[developer.arm.com/documentation/ddi0487/latest](https://developer.arm.com/documentation/ddi0487/latest).
+Language (ASL). ASL appears in the [Arm Architecture Reference Manual](https://developer.arm.com/documentation/ddi0487/latest).
 In addition to making contributions to this repository, Arm officially
 maintains and regularly releases the ASL Reference, the formal language
-definition for ASL1, available at
-[developer.arm.com/Architectures/Architecture Specification Language](https://developer.arm.com/Architectures/Architecture%20Specification%20Language).
+definition for ASL1, available on
+[Arm Developer](https://developer.arm.com/Architectures/Architecture%20Specification%20Language).
 
 We welcome feedback, questions, and feature requests — please contact us by
 writing to [atg-formal@arm.com](mailto:atg-formal@arm.com) or raise issues and
@@ -20,7 +19,7 @@ pull requests to the herdtools7 GitHub repository.
 
 The following steps have been tested on Unix.
 
-1. Install ocaml and opam (ocaml package manager), see
+Install ocaml and opam (ocaml package manager), see
    [the manual](https://ocaml.org/docs/up-and-running#installing-ocaml). For
    example on MacOS:
    ```bash
