@@ -30,7 +30,8 @@ HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regressi
 HERD_ASSUMPTIONS_TEST		  = _build/default/internal/herd_assumptions_test.exe
 ASLREF                        = _build/default/asllib/aslref.exe
 CHECK_OBS                     = _build/default/internal/check_obs.exe
-all: build
+
+all: build build-aslref
 
 CATA_HERD_TEST_MODE := $(if $(ALL_TESTS), ,-fast)
 HERD_CATALOGUE_REGRESSION_TEST += $(CATA_HERD_TEST_MODE)

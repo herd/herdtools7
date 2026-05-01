@@ -18,6 +18,9 @@ We provide the following tools:
 
 herdtools7 is the successor of the diy tool suite.
 
+For the aslref tool documentation, see
+[`asllib/README.md`](./asllib/README.md).
+
 Home
 ====
 
