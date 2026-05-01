@@ -75,33 +75,11 @@ aslref version 7.56+03 rev 7aa9d1f3cee2598ec64f14372f210e008ac5510f
 
 ## Usage
 
-### Basics
-
-If `my-test.asl` contains a valid ASL specification returning 0, the tool `aslref`
-does not print anything and exits with code 0.
+If `my-test.asl` contains a valid ASL specification returning 0, the tool
+`aslref` executes `my-test.asl` and exits with code 0.
 ```bash
 $ aslref my-test.asl
 ```
 
-### Version and type-checking flags
-
 For a complete reference of arguments, see `aslref --help`.
-
-#### ASL Version
-
-To use the ASLv0 parser, use the `-0` flag.
-
-The default parser is the ASLv1, but you can still specify it with `-1`.
-
-#### Type-checking
-
-There are currently three possible type-checking settings, listed here from the
-strongest to the weakest:
-1. `--type-check-strict` fails on the first error encountered while
-   type-checking the specification. This is the default setting for ASLv1.
-2. `--type-check-warn` logs every error on the standard error output, but does
-   not fail on any of them. The specification might not be able to run through
-   the interpreter if the type-checking phase failed.
-3. `--no-type-check` only performs minimal type-inference. Tries to fail as
-   little as possible. This is the default for ASLv0.
 
