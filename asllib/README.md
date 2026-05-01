@@ -17,14 +17,12 @@ pull requests to the herdtools7 GitHub repository.
 
 ### Pre-requisites
 
-The following steps have been tested on Unix.
-
 Install ocaml and opam (ocaml package manager), see
-   [the manual](https://ocaml.org/docs/up-and-running#installing-ocaml). For
-   example on MacOS:
-   ```bash
-   $ brew install opam
-   ```
+[the manual](https://ocaml.org/docs/up-and-running#installing-ocaml). For
+example on MacOS:
+```bash
+$ brew install opam
+```
 
 ### Installing the release version
 
@@ -80,7 +78,7 @@ aslref version 7.56+03 rev 7aa9d1f3cee2598ec64f14372f210e008ac5510f
 ### Basics
 
 If `my-test.asl` contains a valid ASL specification returning 0, the tool `aslref`
-does not print anything and exit with code 0.
+does not print anything and exits with code 0.
 ```bash
 $ aslref my-test.asl
 ```
@@ -107,48 +105,3 @@ strongest to the weakest:
 3. `--no-type-check` only performs minimal type-inference. Tries to fail as
    little as possible. This is the default for ASLv0.
 
-### Examples
-
-You can find examples of ASLv1 specifications that `aslref` supports in
-[`herdtools7/asllib/tests/asl/required`](./tests/asl/required).
-
-### Contributing examples and regression tests
-
-We welcome new examples to add to the ASL Reference Document.
-We use those examples as regression tests also. Therefore, please
-make sure that each example which appears in an ASL Reference Document also
-appears in the corresponding asllib test suite, as follows.
-
-#### Contributing dynamic semantics examples to the ASL Reference document and regression suite
-
-In [`asllib/tests/ASLSemanticsReference.t`](./tests/ASLSemanticsReference.t):
-
-- add a new example `SemanticsRule.MyNewTest.asl`;
-- edit `run.t` to mention `SemanticsRule.MyNewTest.asl`.
-
-In `herdtools7`:
-
-- do: `dune runtest asllib`
-- if the tests pass, do: `dune promote`
-
-In [`asllib/ASLSemanticsReference.mld`](./ASLSemanticsReference.mld):
-
-- add a new section titled `SemanticsRule.MyNewTest.asl`;
-- add a comment about how the test should behave and why.
-
-#### Contributing typing examples to the ASL Reference document and regression suite
-
-In [`asllib/tests/ASLTypingReference.t`](./tests/ASLTypingReference.t):
-
-- add a new example `TypingRule.MyNewTest.asl`;
-- edit `run.t` to mention `TypingRule.MyNewTest.asl`.
-
-In `herdtools7`:
-
-- do: `dune runtest asllib`
-- if the tests pass, do: `dune promote`
-
-In [`asllib/ASLTypingReference.mld`](./ASLSemanticsReference.mld):
-
-- add a new section titled `TypingRule.MyNewTest.asl`;
-- add a comment about how the test should behave and why.

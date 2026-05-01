@@ -32,7 +32,7 @@ Make's parallel build capability is very useful to speed this up;
 e.g., `make -j 8`.
 
 To run examples, aslref must also be built and installed in your PATH --
-see the README.mld in the parent directory.
+see [`README.md`](../../asllib/README.md) in `asllib`.
 
 Usage
 -----
