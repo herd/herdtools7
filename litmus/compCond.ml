@@ -52,6 +52,14 @@ module Make (O:Indent.S) (I:CompCondUtils.I) =
             begin match v with
             | Constant.ConcreteVector vs ->
                 O.fprintf "(%s)" (dump_vec loc vs)
+            | Constant.(Symbolic (Virtual { name = Symbol.Label _; _ })) ->
+                O.fprintf "%s == %s"
+                  (I.Loc.dump loc)
+                  (dump_v (Some (ConstrGen.loc_of_rloc loc)) v)
+            | Constant.(Symbolic (Virtual { tag = Some _; _ })) ->
+                O.fprintf "%s == %s"
+                  (I.Loc.dump loc)
+                  (dump_v (Some (ConstrGen.loc_of_rloc loc)) v)
             | Constant.Symbolic _ when I.use_symbolic ->
                 O.fprintf "symbolic_equal(%s, %s)"
                   (I.Loc.dump loc)
@@ -74,7 +82,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) =
            | None -> "Unknown"
            | Some ft -> I.C.FaultType.pp ft in
            O.fprintf "exists_fault(&p->th_faults[%d], %s, %s, %s)"
-             proc (SkelUtil.instr_symb_id lbl) (SkelUtil.data_symb_id loc) (SkelUtil.fault_id ft) ;
+             proc (SkelUtil.instr_symb_id lbl) (SkelUtil.data_symb loc) (SkelUtil.fault_id ft) ;
         | Not p ->
             O.output "!(" ;
             dump_prop p ;

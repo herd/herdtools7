@@ -458,27 +458,27 @@ module Make
                     O.o "static vars_t *vars_ptr[NEXE];"
                   end ;
                 O.o "" ;
+                O.o "static inline int log_fault(int proc, int instr_symb, symb_t data_symb, int ftype)" ;
+                O.o "{" ;
+                List.iter (fun f ->
+                    let ((p, lbl), loc, ftype) = f in
+                    let lbl_cond = match lbl with
+                      | None -> ""
+                      | Some s -> sprintf " && instr_symb == %s" (SkelUtil.instr_symb_id (OutUtils.fmt_lbl_var p s))
+                    and loc_cond = match loc with
+                      | None -> ""
+                      | Some s -> sprintf " && symbolic_equal(data_symb, %s)" (SkelUtil.data_symb (A.V.pp_v_old s))
+                    and ftype_cond = match ftype with
+                      | None -> ""
+                      | Some s -> sprintf " && ftype == %s" (SkelUtil.fault_id (A.FaultType.pp s))
+                    in
+                    O.fi "if (proc==%d%s%s%s)" p lbl_cond loc_cond ftype_cond;
+                    O.fii "return 1;" ;
+                  ) faults;
+                O.fi "return 0;" ;
+                O.o "}" ;
+                O.o "" ;
              end ;
-             O.o "static inline int log_fault(int proc, int instr_symb, int data_symb, int ftype)" ;
-             O.o "{" ;
-             List.iter (fun f ->
-                 let ((p, lbl), loc, ftype) = f in
-                 let lbl_cond = match lbl with
-                   | None -> ""
-                   | Some s -> sprintf " && instr_symb == %s" (SkelUtil.instr_symb_id (OutUtils.fmt_lbl_var p s))
-                 and loc_cond = match loc with
-                   | None -> ""
-                   | Some s -> sprintf " && data_symb == %s" (SkelUtil.data_symb_id (A.V.pp_v_old s))
-                 and ftype_cond = match ftype with
-                   | None -> ""
-                   | Some s -> sprintf " && ftype == %s" (SkelUtil.fault_id (A.FaultType.pp s))
-                 in
-                 O.fi "if (proc==%d%s%s%s)" p lbl_cond loc_cond ftype_cond;
-                 O.fii "return 1;" ;
-               ) faults;
-             O.fi "return 0;" ;
-             O.o "}" ;
-             O.o "" ;
              Insert.insert O.o "kvm_fault_handler.c" ;
              O.o "" ;
              if not (T.has_asmhandler test) then begin
@@ -723,6 +723,12 @@ module Make
           test.T.globals ;
         O.o "};" ;
         Insert.insert O.o "kvm_symb.c" ;
+        (* UNKNOWN and 0 are special values, so the symbols
+           need to be defined separately. *)
+        O.f "#define %-25s  symbolic_of_id(%-25s)"
+          (SkelUtil.data_symb pp_data_unknown) data_unknown ;
+        O.f "#define %-25s  symbolic_of_id(%-25s)"
+          (SkelUtil.data_symb pp_data_zero) data_zero ;
         (* Define global variables symbols *)
         List.iter
           (fun (a,_) ->
@@ -837,8 +843,13 @@ module Make
         List.iter
           (fun (t,rloc) ->
             if CType.is_ptr t then
+              let ty =
+                if U.is_rloc_label rloc env || U.is_rloc_tag_ptr rloc env then
+                  CType.dump (CType.pointer_type t)
+                else
+                  "symb_t" in
               O.fi "%s %s;"
-                (CType.dump (CType.pointer_type t)) (*todo: this might need more work*)
+                ty
                 (dump_loc_tag_coded (ConstrGen.loc_of_rloc rloc))
             else match rloc with
             | ConstrGen.Loc (A.Location_global a as loc) ->
@@ -921,7 +932,10 @@ module Make
             then begin
           List.iteri
             (fun k (a,_) ->
-              O.f "static const int %s = %i;" (SkelUtil.data_symb_id (Misc.add_physical a)) k)
+              O.f "static const int %s = %i;" (SkelUtil.data_symb_id (Misc.add_physical a)) k ;
+              O.f "#define %-25s  %s"
+                (SkelUtil.data_symb (Misc.add_physical a))
+                (SkelUtil.data_symb_id (Misc.add_physical a)))
             test.T.globals ;
           O.o "" ;
           if U.pte_in_outs env test then begin
@@ -966,11 +980,11 @@ module Make
                 ([sprintf "instr_symb_label[p->%s]" (dump_rloc_tag_coded rloc)], [])
             | Pointer _  when U.is_rloc_tag_ptr rloc env ->
                 None,
-                ([sprintf "pretty_addr[untagged(p->%s)]" (dump_rloc_tag_coded rloc);
+                ([sprintf "data_symb_name[untagged(p->%s)]" (dump_rloc_tag_coded rloc);
                  sprintf "pretty_tag(tag_of(p->%s))" (dump_rloc_tag_coded rloc)], [])
             | Pointer _ ->
                 None,
-                ([sprintf "pp_symbolic[p->%s.id]" (dump_rloc_tag_coded rloc)], [])
+                ([sprintf "pp_symbolic(p->%s)" (dump_rloc_tag_coded rloc)], [])
             | Array (_,sz) ->
                 let tag = A.dump_rloc_tag rloc in
                 let rec pp_rec k =
@@ -1055,7 +1069,7 @@ module Make
               | Some ft -> A.FaultType.pp ft
             in
             O.fi "pp_log_faults(chan, &p->th_faults[%d], %d, %s, %s, %s);" p p
-              (SkelUtil.instr_symb_id lbl) (SkelUtil.data_symb_id loc) (SkelUtil.fault_id ft)
+              (SkelUtil.instr_symb_id lbl) (SkelUtil.data_symb loc) (SkelUtil.fault_id ft)
           ) faults;
         O.o "}" ;
         O.o "" ;
@@ -1076,7 +1090,7 @@ module Make
                 pp_rec (k+1)
               end in
             pp_rec 0
-        | Pointer _ when not (U.is_rloc_label rloc env) ->
+        | Pointer _ when not (U.is_rloc_label rloc env || U.is_rloc_tag_ptr rloc env) ->
             let loc = choose_dump_rloc_tag rloc env in
             O.fii "symbolic_equal(p->%s, q->%s)%s" loc loc suf
         | _ -> do_eq rloc suf in
@@ -1113,7 +1127,7 @@ module Make
               | Constant.(Symbolic (Virtual { name = Symbol.Label(p, lbl); _ }))
                    -> SkelUtil.instr_symb_id (OutUtils.fmt_lbl_var p lbl)
               | Constant.(Symbolic (Virtual { name = Symbol.Data s; tag=Some(t); _})) ->
-                  sprintf "tagged((tag_t)%s,%d)" (SkelUtil.data_symb s) (Misc.int_of_tag t)
+                  sprintf "tagged((tag_t)%s,%d)" (SkelUtil.data_symb_id s) (Misc.int_of_tag t)
               | Constant.Symbolic _ -> SkelUtil.data_symb (T.C.V.pp O.hexa v)
               | Constant.PteVal p ->
                  A.V.PteVal.dump_pack SkelUtil.data_symb p
@@ -1994,7 +2008,9 @@ module Make
                    (OutUtils.fmt_presi_ptr_index (A.dump_rloc_tag rloc))
                else if U.is_rloc_tag_ptr rloc env then
                  let src = OutUtils.fmt_presi_ptr_index (A.dump_rloc_tag rloc) in
-                 O.fii "%s = tagged((tag_t)idx_addr((intmax_t *)%s,_vars),tag_of(%s));"
+                 (* Tagged symbolic values are stored as one tagged value,
+                 so only the base symbol id is kept, not the offset. *)
+                 O.fii "%s = tagged((tag_t)idx_addr((intmax_t *)%s,_vars).id,tag_of(%s));"
                   (OutUtils.fmt_presi_index (dump_rloc_tag_coded rloc)) src src
                else if U.is_rloc_ptr rloc env then
                  O.fii "%s = idx_addr((intmax_t *)%s,_vars);"

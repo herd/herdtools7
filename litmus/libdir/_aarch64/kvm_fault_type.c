@@ -158,7 +158,7 @@ static void pp_fault(int proc, int instr_symb, symb_t data_symb, int ftype)
     printf("fault(P%d", proc);
   if (!symbolic_equal(data_symb, symbolic_of_id(DATA_SYMB_ID_UNKNOWN))) {
     puts(","); puts(pp_symbolic(data_symb));
-  } if (ftype != FaultUnknown)
+  } if (ftype != FaultUnknown)
     printf(",%s", fault_type_names[ftype]);
   printf(");");
 }
