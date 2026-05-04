@@ -165,11 +165,11 @@ end = struct
 
   let makefile_clean chan extra =
     fprintf chan "clean:\n" ;
-    fprintf chan "\t/bin/rm -f *.o *.s *.t *%s *~%s\n"
+    fprintf chan "\t/bin/rm -f litmus/* *.o *.s *.t *%s *~%s\n"
       (Mode.exe Cfg.mode) extra ;
     fprintf chan "\n" ;
     fprintf chan "cleansource:\n" ;
-    fprintf chan "\t/bin/rm -f *.o *.c *.h *.s *~\n" ;
+    fprintf chan "\t/bin/rm -f litmus/* *.o *.c *.h *.s *~\n" ;
     fprintf chan "\n" ;
     ()
 

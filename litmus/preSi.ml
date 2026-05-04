@@ -442,7 +442,7 @@ module Make
 
              let insert_ins_ops () =
                if not find_ins_inserted then begin
-                 let fname =  "_find_ins" in
+                 let fname =  "find_ins" in
                  ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".c") ;
                  ignore(Obj.do_cpy [] fname (Obj.libdir ^ fname) ".h") ;
                  O.o ("#include <" ^ fname ^ ".h>") ;
