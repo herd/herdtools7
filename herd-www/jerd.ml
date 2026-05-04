@@ -214,6 +214,7 @@ let run_herd bell cat litmus cfg cat_label =
     let debug = !debug
     let debuglexer = debug.Debug_herd.lexer
     let verbose = !verbose
+    let hexa = !PP.hexa
     let unroll = !unroll
     let speedcheck = !speedcheck
     let optace = match !optace with
