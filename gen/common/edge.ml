@@ -135,6 +135,7 @@ module type S = sig
 
 (* Can e1 target event direction be the same as e2 source event? *)
   val can_precede : edge -> edge -> bool
+  val can_precede_dirs: edge -> edge -> bool
 
 (* Expansion of Irr directions *)
   val expand_edges : edge list -> (edge list -> 'a -> 'a) -> 'a -> 'a
