@@ -1,4 +1,4 @@
-.PHONY: check-deps
+.DEFAULT_GOAL = all
 
 OS := $(shell uname)
 PREFIX=$$HOME
@@ -31,7 +31,7 @@ HERD_ASSUMPTIONS_TEST		  = _build/default/internal/herd_assumptions_test.exe
 ASLREF                        = _build/default/asllib/aslref.exe
 CHECK_OBS                     = _build/default/internal/check_obs.exe
 
-all: build build-aslref
+all: build
 
 CATA_HERD_TEST_MODE := $(if $(ALL_TESTS), ,-fast)
 HERD_CATALOGUE_REGRESSION_TEST += $(CATA_HERD_TEST_MODE)
@@ -78,6 +78,7 @@ versions: Version.ml
 
 # Dependencies.
 
+.PHONY: check-deps
 check-deps::
 	$(if $(shell which ocaml),,$(error "Could not find ocaml in PATH"))
 	$(if $(shell which menhir),,$(error "Could not find menhir in PATH; it can be installed with `opam install menhir`."))
