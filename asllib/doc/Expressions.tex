@@ -158,44 +158,81 @@ applies the rule \SemanticsRuleRef{EVar}.GLOBAL.
 \subsubsection{Comments}
 When a global variable, $\vx$, exists, the type system
 forbids having $\vx$ as a local variable.
-This is enforced by \TypingRuleRef{LDVar} in the Chapter ``Typing of Local Declarations'',
-and
-\TypingRuleRef{DeclareGlobalStorage} and \TypingRuleRef{DeclareOneFunc},
-both in the Chapter ``Typing of Global Declarations''.
+This is enforced by \TypingRuleRef{LDVar},
+\TypingRuleRef{DeclareGlobalStorage}, and \TypingRuleRef{DeclareOneFunc}.
 
 \hypertarget{def-binopexpressionterm}{}
 \section{Binary Expressions\label{sec:BinaryExpressions}}
 Binary expressions apply a binary operator to two sub-expressions.
 
-\RequirementDef{OperatorPrecedence}
-Operator precedence is used to disambiguate binary expressions.
+\RequirementDef{OperatorPriority}
+Expressions with multiple binary operators are disambiguated by the priority
+and parsing associativity definitions given in
+\secref{PriorityAndAssociativity}. That is, given two binary operators
+\opone{} and \optwo{}, an expression of the form
+$\texttt{x \opone{} y \optwo{} z}$ is parsed as follows:
+\begin{itemize}
+  \item $\texttt{(x \opone{} y) \optwo{} z}$ if \opone{} has higher priority than
+        \optwo{}, and
+  \item $\texttt{x \opone{} (y \optwo{} z)}$ if \opone{} has lower priority than
+        \optwo{}.
+\end{itemize}
 
-Given two binary operators $\opone$ and $\optwo$, an expression of the form
-$x\ \opone\ y\ \optwo\ z$, is interpreted as
-$(x\ \opone\ y)\ \optwo\ z$
-if $\opone$ has higher precedence than $\optwo$ and as $x\ \opone\ (y\ \optwo\ z)$ if $\opone$ has lower precedence than $\optwo$.
-If $\opone$ is associative and $\opone$ = $\optwo$ then the expression may be interpreted as either
-$(x\ \opone\ y)\ \optwo\ z$ or as $x\ \opone\ (y\ \optwo\ z)$ since there is no difference.
-Otherwise it is a static operator precedence error (\BinopPrecedence).
+However, the rules in this section further ensure that if \opone{} and \optwo{}
+are of the same priority, then:
+\begin{itemize}
+  \item if $\opone{} \neq \optwo{}$, then a static operator priority error
+        ($\BinopPriority$) is produced.
+  \item if $\opone{} = \optwo{}$ then:
+    \begin{itemize}
+      \item if the operator is defined as mathematically associative below,
+            then the bracketing is as per the parsing associativities given
+            in \secref{PriorityAndAssociativity}.
+            All mathematically associative operators in ASL have a parsing
+            associativity of $\leftassoc$, so they will be parsed as
+            $\texttt{(x \opone{} y) \optwo{} z}$.
+      \item otherwise, a static operator priority error ($\BinopPriority$)
+           is produced.
+    \end{itemize}
+\end{itemize}
+
+The mathematically associative operators are:
+$\ADD$, $\MUL$, $\BAND$, $\BOR$, $\AND$, $\OR$, $\XOR$, $\BEQ$, $\BVCONCAT$,
+and $\STRCONCAT$.
+Note the distinction between parsing associativity
+(as given in \secref{PriorityAndAssociativity})
+and mathematical associativity (the operators listed above).
+
+Intuitively, the above rules ensure that an arithmetic expression in ASL is
+human-readable: the expression follows normal operator priority rules
+of exponentiation before multiply/divide before add/subtract. However:
+\begin{itemize}
+  \item Potentially unclear examples such as \texttt{3 - 2 - 1} cause static
+        errors unless parenthesised to clarify between \texttt{(3 - 2) - 1 = 0}
+        and \texttt{3 - (2 - 1) = 2}.
+  \item Unnecessary parentheses are minimised in examples such as
+        \texttt{1 + 2 + 3}, as both bracketings \texttt{(1 + 2) + 3} and
+        \texttt{1 + (2 + 3)} can be considered identical to a reader.
+\end{itemize}
+
 See \ASTRuleRef{EBinop} for the formal details.
 
-The operator classes and precedence order are defined by the following table
-(a subset of the table in \secref{PriorityAndAssociativity},
-which contains tokens that are not operators, but are needed for parsing disambiguation):
+For convenience, we duplicate here the parsing priority and associativity table
+from \secref{PriorityAndAssociativity}, keeping only those rows that contain
+binary operators.
 
 \begin{center}
 \begin{tabular}{lll}
 \hline
-\textbf{Precedence} & \textbf{Class} & \textbf{Operators}\\
+\textbf{Priority} & \textbf{Class} & \textbf{Operators}\\
 \hline
-7 (Highest) & \textbf{Membership} & \Tin\\
-6 & \textbf{Unary}                & \Tminus, \Tnot, \Tbnot\\
-5 & \textbf{Power}                & \Tpow\\
-4 & \textbf{Mul--Div--Shift}      & \Tmul, \Tdiv, \Tdivrm, \Trdiv, \Tmod, \Tshl, \Tshr\\
-3 & \textbf{Add--Sub--Logic}      & \Tplus, \Tminus, \Tor, \Tand, \Txor, \Tcoloncolon, \Tplusplus\\
-2 & \textbf{Relational}           & \Tgt, \Tgeq, \Tlt, \Tleq\\
-1 & \textbf{(In-)Equality}        & \Teqop, \Tneq\\
-0 & \textbf{Boolean}              & \Tbor, \Tband, \Tbimpl, \Tbeq\\
+7 & \textbf{Unary}                & \Tminus, \Tnot, \Tbnot\\
+6 & \textbf{Power}                & \Tpow\\
+5 & \textbf{Mul--Div--Shift}      & \Tmul, \Tdiv, \Tdivrm, \Trdiv, \Tmod, \Tshl, \Tshr\\
+4 & \textbf{Add--Sub--Logic}      & \Tplus, \Tminus, \Tor, \Tand, \Txor, \Tcoloncolon, \Tplusplus\\
+3 & \textbf{Relational}           & \Tgt, \Tgeq, \Tlt, \Tleq\\
+2 & \textbf{(In-)Equality}        & \Teqop, \Tneq\\
+1 & \textbf{Boolean}              & \Tbor, \Tband, \Tbimpl, \Tbeq\\
 \hline
 \end{tabular}
 \end{center}
@@ -213,8 +250,8 @@ $\BVCONCAT$,
 $\STRCONCAT$.
 
 The specification in \listingref{BinaryExpressions} shows examples of binary expressions
-and the effect of operator precedence.
-\ASLListing{Binary expressions and operator precedence}{BinaryExpressions}{\definitiontests/Guide.OperatorPrecedence.asl}
+and the effect of operator priority.
+\ASLListing{Binary expressions and operator priority}{BinaryExpressions}{\definitiontests/Guide.OperatorPriority.asl}
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -227,10 +264,10 @@ and the effect of operator precedence.
 \ASTRuleDef{EBinop}
 The following rule constructs a binary expression AST from a parse tree,
 which possibly contains parentheses,
-ensuring that \RequirementRef{OperatorPrecedence} holds.
+ensuring that \RequirementRef{OperatorPriority} holds.
 
 The specification in \listingref{BinaryExpressions}
-shows examples where \RequirementRef{OperatorPrecedence} holds.
+shows examples where \RequirementRef{OperatorPriority} holds.
 %
 The specifications in
 \listingref{EBinop-bad1},
@@ -238,13 +275,13 @@ The specifications in
 \listingref{EBinop-bad3},
 \listingref{EBinop-bad4}, and
 \listingref{EBinop-bad5}
-show examples that violate \RequirementRef{OperatorPrecedence},
+show examples that violate \RequirementRef{OperatorPriority},
 which results in a \builderrorterm.
-\ASLListing{Violation of operator precedence}{EBinop-bad1}{\syntaxtests/ASTRule.EBinop.bad1.asl}
-\ASLListing{Violation of operator precedence}{EBinop-bad2}{\syntaxtests/ASTRule.EBinop.bad2.asl}
-\ASLListing{Violation of operator precedence}{EBinop-bad3}{\syntaxtests/ASTRule.EBinop.bad3.asl}
-\ASLListing{Violation of operator precedence}{EBinop-bad4}{\syntaxtests/ASTRule.EBinop.bad4.asl}
-\ASLListing{Violation of operator precedence}{EBinop-bad5}{\syntaxtests/ASTRule.EBinop.bad5.asl}
+\ASLListing{Violation of operator priority}{EBinop-bad1}{\syntaxtests/ASTRule.EBinop.bad1.asl}
+\ASLListing{Violation of operator priority}{EBinop-bad2}{\syntaxtests/ASTRule.EBinop.bad2.asl}
+\ASLListing{Violation of operator priority}{EBinop-bad3}{\syntaxtests/ASTRule.EBinop.bad3.asl}
+\ASLListing{Violation of operator priority}{EBinop-bad4}{\syntaxtests/ASTRule.EBinop.bad4.asl}
+\ASLListing{Violation of operator priority}{EBinop-bad5}{\syntaxtests/ASTRule.EBinop.bad5.asl}
 
 \begin{mathpar}
   \inferrule{
@@ -262,13 +299,13 @@ which results in a \builderrorterm.
 }
 \end{mathpar}
 
-\ASTRuleDef{CheckNotSamePrec}
+\ASTRuleDef{CheckNotSamePriority}
 \hypertarget{build-binopprec}{}
 We define the helper function
 \[
   \binopprec(\overname{\binop}{\op}) \aslto \N
 \]
-which assigns a precedence level to each binary operator, $\op$, as defined below:
+which assigns a priority level to each binary operator, $\op$, as defined below:
 \begin{mathpar}
 \inferrule{}{
   {
@@ -297,7 +334,7 @@ The function
 \checknotsameprec(\overname{\binop}{\op} \aslsep \overname{\expr}{\ve})
 \aslto \{\True\} \cup \overname{\TBuildError}{\BuildErrorConfig}
 \]
-checks whether the expression AST node $\ve$ is a binary operator, either with a different operator to $\op$ but the same \emph{precedence}, or the same non-associative operator $\op$.
+checks whether the expression AST node $\ve$ is a binary operator, either with a different operator to $\op$ but the same \emph{priority}, or the same non-associative operator $\op$.
 In either case, it is considered an error.
 Surrounding $\ve$ by parenthesis fixes the error.
 } % END_OF_UNIMPORTED_RELATION
@@ -307,7 +344,7 @@ For example, \texttt{a + b + c} is considered legal, since the same binary opera
 is used, whereas \texttt{a - b - c} and \texttt{a + b - c} are considered illegal.
 For the first, this is because $\SUB$ is not associative.
 For the second, this is because $\ADD$ and $\SUB$ have the
-same precedence ($3$). To fix these, we can surround one of the subexpressions with parenthesis,
+same priority ($3$). To fix these, we can surround one of the subexpressions with parenthesis,
 for example: \texttt{(a - b) - c} and \texttt{(a + b) - c}.
 
 \ProseParagraph
@@ -323,14 +360,14 @@ for example: \texttt{(a - b) - c} and \texttt{(a + b) - c}.
   \begin{itemize}
     \item $\ve$ is a binary operation expression for the operator $\opp$;
     \item $\opp$ is the same operator as $\op$;
-    \item checking whether $\op$ is an associative operator yields $\True$\ProseTerminateAs{\BinopPrecedence}.
+    \item checking whether $\op$ is an associative operator yields $\True$\ProseTerminateAs{\BinopPriority}.
   \end{itemize}
 
   \item \AllApplyCase{binop\_different}
   \begin{itemize}
     \item $\ve$ is a binary operation expression for the operator $\opp$;
     \item $\opp$ is not the same operator as $\op$;
-    \item checking whether $\op$ and $\opp$ have different precedence levels yields $\True$\ProseTerminateAs{\BinopPrecedence}.
+    \item checking whether $\op$ and $\opp$ have different priority levels yields $\True$\ProseTerminateAs{\BinopPriority}.
   \end{itemize}
 \end{itemize}
 
@@ -363,7 +400,7 @@ for example: \texttt{(a - b) - c} and \texttt{(a + b) - c}.
     \right\}
   } \\
   {
-  \techeck(\op \in \vassociativeoperators, \BinopPrecedence) \typearrow \True \OrBuildError
+  \techeck(\op \in \vassociativeoperators, \BinopPriority) \typearrow \True \OrBuildError
   }
 }{
   \checknotsameprec(\op, \overname{\EBinop(\opp, \Ignore, \Ignore)}{\ve}) \astarrow \True
@@ -373,7 +410,7 @@ for example: \texttt{(a - b) - c} and \texttt{(a + b) - c}.
 \begin{mathpar}
 \inferrule[binop\_different]{
   \op \neq \opp \\
-  \becheck(\binopprec(\op) \neq \binopprec(\opp), \BinopPrecedence) \astarrow \True \OrBuildError
+  \becheck(\binopprec(\op) \neq \binopprec(\opp), \BinopPriority) \astarrow \True \OrBuildError
 }{
   \checknotsameprec(\op, \overname{\EBinop(\opp, \Ignore, \Ignore)}{\ve}) \astarrow \True
 }
@@ -1549,7 +1586,7 @@ the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
 A single expression inside parentheses is not considered to be a tuple, but rather the element
 inside the parenthesis.
 Parenthesizing an expression can be used to improve readability, enforce a bracketing
-of operations, and avoid binary operator precedence errors (see \ASTRuleRef{CheckNotSamePrec}).
+of operations, and avoid binary operator priority errors (see \ASTRuleRef{CheckNotSamePriority}).
 
 Note that parenthesising of expressions and ASL1.0's defined evaluation order
 (see \secref{EvaluationOrder}) are distinct concepts.
@@ -1565,7 +1602,7 @@ ASL's AST, and then evaluation order is defined with respect to ASL's AST.
 
 \subsection{Abstract Syntax}
 We represent a parenthesized expression as a single element tuple for the technical
-reason of enabling \ASTRuleRef{CheckNotSamePrec} by distinguishing parenthesized
+reason of enabling \ASTRuleRef{CheckNotSamePriority} by distinguishing parenthesized
 expressions from non-parenthesized expressions. However, upon typing such expressions,
 we ignore the parenthesis (see \TypingRuleRef{ETuple}.\textsc{PARENTHESIZED}).
 

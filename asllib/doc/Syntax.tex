@@ -2,32 +2,119 @@
 \chapter{Syntax\label{chap:Syntax}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-This chapter defines the grammar of ASL. The grammar is presented via two extensions
-to context-free grammars --- \emph{inlined derivations} and \emph{parametric productions},
-inspired by the Menhir Parser Generator~\cite{MenhirManual} for the OCaml language.
-Those extensions can be viewed as macros over context-free grammars, which can be
-expanded to yield a standard context-free grammar.
+This chapter defines the grammar of \ASLvOneterm{}.
+The grammar is presented as a context-free grammar~\cite{HU79} with the help of
+two shorthands --- \emph{inlined derivations} and \emph{parametric productions} ---
+inspired  by the Menhir Parser Generator~\cite{MenhirManual} for the
+\href{https://ocaml.org/}{OCaml language}.
+These shorthands can be considered as macros over standard context-free grammar
+notation, which can be expanded away to yield a standard context-free grammar.
 
-Our definition of the grammar and description of the parsing mechanism heavily relies
-on the theory of parsing via LR(1) grammars and LR(1) parser generators.
-%
-See ``Compilers: Principles, Techniques, and Tools''~\cite{ASU86} for a detailed
-definition of LR(1) grammars and parser construction.
+\section*{Ambiguities and LR(1) grammars}
 
-The expanded context-free grammar is an LR(1) grammar, modulo shift-reduce
-conflicts that are resolved via appropriate precedence definitions.
-That is, given a list of tokens, returned from $\aslscan$, it is possible to apply
-an LR(1) parser to obtain a parse tree if the list of tokens is in the formal language
-of the grammar and return a parse error otherwise.
+In most cases, \ASLvOneterm{}'s context-free grammar is unambiguous.
+This means that for any given text, either:
+\begin{itemize}
+  \item It cannot be derived from the grammar. The text is therefore invalid
+        ASL syntax, and causes a parse error. An example is \texttt{1 + * 3},
+        which cannot be derived
+        from the grammar in \secref{ASLGrammar} (intuitively, because \texttt{+}
+        and \texttt{*} are binary operators that require two sub-expressions).
+        See \ExampleRef{Failing to Parse an Invalid Expression}.
+  \item There is exactly one way to derive it from the grammar. The text is
+        valid ASL syntax, and the derivation from the grammar describes how it
+        should be bracketed.
+\end{itemize}
+
+In some cases, there are ambiguities in \ASLvOneterm{}'s context-free grammar.
+For example, the expression \texttt{1 + 2 * 3} can be derived with two different bracketings:
+\begin{itemize}
+  \item \texttt{(1 + 2) * 3}, which would evaluate to 9.
+  \item \texttt{1 + (2 * 3)}, which would evaluate to 7.
+\end{itemize}
+
+To disambiguate these cases, \ASLvOneterm{} relies on the concept of an LR(1)
+grammar~\cite{ASU86}.
+In brief, an LR(1) grammar can be considered both a subcategory of context-free
+grammars  and a specific kind of shift-reduce parsing algorithm.
+Use of an LR(1) grammar ensures that the grammar of \ASLvOneterm{}:
+\begin{itemize}
+  \item can be parsed deterministically in a single pass
+        (that is, with no backtracking).
+  \item can be concisely, precisely, and fully specified in both a
+        machine-readable and formal way.
+  \item permits use of a variety of parser generators to automatically produce
+        a grammar-compliant parser from the machine-readable specification
+        of the grammar.
+  \item Follows common practices in the parsing of programming languages.
+\end{itemize}
+
+We emphasize that the use of an LR(1) parsing algorithm never affects the
+validity of a given input text. That is, an LR(1) parsing algorithm will
+accept a given input text if and only if it can be derived from the grammar,
+and will reject it otherwise.
+
+\section*{Resolving ambiguities: conflicts, token priorities, and associativities}
+
+To precisely define the correct resolution of ambiguities in the \ASLvOneterm{} grammar
+(such as the \texttt{1 + 2 * 3} example above), we rely on the shift-reduce parsing
+algorithm associated with LR(1) grammars. This is a left-to-right scan of the input
+text that keeps track of the stack of already-parsed text, and looks only at the
+following token. Based on this token, it chooses to:
+\begin{description}
+  \item[Shift:] add the token to the stack.
+  \item[Reduce:] reorganise the top of the stack (the most recently read elements)
+according to a rule of the grammar.
+\end{description}
+
+\hypertarget{def-shiftreduceconflict}{}
+In cases where the grammar seems ambiguous, it is not clear whether to shift or
+reduce. This is called a ``\emph{\shiftreduceconflictterm}''. For the \texttt{1 + 2 * 3} example,
+on reading \texttt{*}, it is not clear whether to:
+\begin{description}
+  \item[Shift:] this would favour the bracketing $\texttt{1 + (2 * 3)}$, as it
+  consumes more of the input before performing a bracketing.
+  \item[Reduce:] this would favour the bracketing $\texttt{(1 + 2) * 3}$, as it
+  reduces (that is, brackets) the existing stack of $\texttt{expr \Tplus{} expr}$ to just
+  $\texttt{expr}$ .
+\end{description}
+
+To resolve this, we need a relative priority of the existing stack
+($\texttt{expr \Tplus{} expr}$) vs. the next token ($\Tmul$).
+We use a standard approach here:
+\begin{itemize}
+\item Assign the existing stack the priority of its rightmost ``terminal''
+      (that is, non-symbolic token, in this case $\Tplus$).
+\item Assign the next token a priority.
+\item Resolve the \shiftreduceconflictterm{} based on priorities:
+  \begin{itemize}
+  \item If the next token has higher priority, then shift (this is the case for this
+        example in ASL, so multiplication is bracketed more tightly than addition).
+  \item If the next token has lower priority, then reduce.
+  \item Otherwise, the two tokens have the same priority, and the \shiftreduceconflictterm{} is resolved
+        by assigning each priority an associativity:
+        \begin{itemize}
+        \item If the priority of the two tokens has left-associativity, reduce
+        (favouring the left-associated bracketing).
+        \item If the priority of the two tokens has right-associativity, shift
+        (favouring the right-associated bracketing).
+        \item Otherwise, the tokens are non-associative, and a parsing error is produced.
+        \end{itemize}
+  \end{itemize}
+\end{itemize}
 
 \ChapterOutline
 \begin{itemize}
   \item \secref{InlinedDerivations} defines \emph{inlined derivations};
   \item \secref{ParametricProductions} defines \emph{parametric productions};
-  \item \secref{ASLParametricProductions} introduces the parametric productions used for the ASL grammar;
-  \item \secref{ASLGrammar} defines the ASL grammar;
-  \item \secref{ParseTrees} defines parse trees; and
-  \item \secref{PriorityAndAssociativity} defines the priority and associativity of operators.
+  \item \secref{ASLParametricProductions} introduces the parametric productions
+        used for the ASL grammar;
+  \item \secref{ASLGrammar} defines the ASL grammar in terms of derivations rules;
+  \item \secref{ParseTrees} defines parse trees;
+  \item \secref{PriorityAndAssociativity} defines the priority and associativity
+        of tokens; and
+  \item \secref{ParsingExamples} presents examples showing how the grammar and
+        the priority and associativity rules are used to parse ASL text.
 \end{itemize}
 
 \section{Inlined Derivations\label{sec:InlinedDerivations}}
@@ -60,8 +147,8 @@ coupled with the derivation
                       |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon \;|\; \Tplusplus
 \end{flalign*}
 
-A grammar containing these two derivations results in shift-reduce conflicts.
-Resolving these conflicts is done by associating priority levels to each of the binary operators
+A grammar containing these two derivations results in \shiftreduceconflictsterm{}.
+Resolving these \shiftreduceconflictsterm{} is done by associating priority levels to each of the binary operators
 and creating a version of the first derivation for each binary operator:
 \begin{flalign*}
 \Nexpr \derives\ & \Nexpr \parsesep \Tand \parsesep \Nexpr & \\
@@ -194,8 +281,8 @@ Those parse trees must be rejected in a later phase.
 
 \hypertarget{def-tunops}{}
 Notice that two of the derivations (for $\Nexprpattern$ and for $\Nexpr$) end with
-$\precedence{\Tunops}$.
-This is a precedence annotation, which is not part of the right-hand-side sentence, and is explained in \secref{PriorityAndAssociativity}
+$\priority{\Tunops}$.
+This is a priority annotation, which is not part of the right-hand-side sentence, and is explained in \secref{PriorityAndAssociativity}
 and can be ignored upon first reading.
 
 For brevity, tokens are presented via their label only, dropping their associated value.
@@ -505,7 +592,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 \Nexprpattern \derives\ & \Nvalue &\\
                     |\  & \Tidentifier &\\
                     |\  & \Nexprpattern \parsesep \Nbinop \parsesep \Nexpr &\\
-                    |\  & \Nunop \parsesep \Nexpr & \precedence{\Tunops}\\
+                    |\  & \Nunop \parsesep \Nexpr & \priority{\Tunops}\\
                     |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Telse \parsesep \Nexpr &\\
                     |\  & \Ncall &\\
                     |\  & \Nexprpattern \parsesep \Nslices &\\
@@ -615,7 +702,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 \Nexpr \derives\  & \Nvalue &\\
                     |\  & \Tidentifier &\\
                     |\  & \Nexpr \parsesep \Nbinop \parsesep \Nexpr &\\
-                    |\  & \Nunop \parsesep \Nexpr & \precedence{\Tunops}\\
+                    |\  & \Nunop \parsesep \Nexpr & \priority{\Tunops}\\
                     |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Telse \parsesep \Nexpr &\\
                     |\  & \Ncall &\\
                     |\  & \Nexpr \parsesep \Nslices &\\
@@ -719,45 +806,427 @@ The \emph{language of a grammar} $G$ is defined as follows:
 \]
 
 \section{Priority and Associativity\label{sec:PriorityAndAssociativity}}
-A context-free grammar $G$ is \emph{ambiguous} if there can be more than one parse tree for a given list of tokens
-$\ts \in \Lang{G}$.
-Indeed the expanded ASL grammar is ambiguous, for example, due to its definition of binary operation expressions.
-To allow assigning a unique parse tree to each sequence of tokens in the language of the ASL grammar,
-we utilize the standard technique of associating priority levels to productions and using them to resolve
-any shift-reduce conflicts in the LR(1) parser associated with our grammar (our grammar does not have any
-reduce-reduce conflicts).
+As described in the introduction to \chapref{Syntax}, tokens that may cause a
+\shiftreduceconflictterm{} are assigned a priority, and each priority is
+assigned an associativity. Tokens that cannot cause \shiftreduceconflictsterm{}
+are not assigned priorities
 
-The priority of a grammar derivation is defined as the priority of its rightmost token.
-Derivations that do not contain tokens do not require a priority as they do not induce shift-reduce conflicts.
+The table below assigns priorities to tokens in descending order, starting from
+the highest priority (for $\Tdot$) to the lowest priority (for $\Telse$).
+Each priority is assigned an associativity among $\leftassoc$, $\rightassoc$,
+and $\nonassoc$.
 
-The table below assigns priorities to tokens in descending order, starting from the highest priority (for $\Tdot$)
-to the lowest priority (for $\Telse$).
-When a shift-reduce conflict arises during the LR(1) grammar construction
-it resolve in favor of the action (shift or reduce) associated with the derivation that has the higher priority.
-If two derivations have the same priority due to them both having the same rightmost token,
-the conflict is resolved based on the associativity associated with the token below:
-reduce for $\leftassoc$, shift for $\rightassoc$, and a parsing error for $\nonassoc$.
-
-The two rules involving a unary minus operation are not assigned the priority level of $\Tminus$,
-but rather the priority level $\Tunops$, as denoted by the notation \\
-$\precedence{\Tunops}$
-appearing to their right. This is a standard way of dealing with a unary minus operation
-in many programming languages, which involves defining an artificial token $\Tunops$,
-which is never returned by the scanner.
+The rules involving unary operations ($\Nunop$) are not assigned the priority
+level of the token corresponding to the unary operation, but rather the priority
+level $\Tunops$, as denoted by the notation priority: $\Tunops$ appearing to
+their right.
+This is a standard way of dealing with unary operations in many programming
+languages, which involves defining an artificial token $\Tunops$, which is
+never returned by the parser. Note that the $\nonassoc$ associativity of $\Tunops$
+does not mean that unary operations cannot be nested. Rather, ASL's grammar cannot
+give rise to a \shiftreduceconflictterm{} in which both relevant tokens are
+unary operations.
+Therefore, no associativity is specified for this impossible case, but for
+example \texttt{!!TRUE} still parses as \texttt{!(!TRUE)}.
 
 \begin{center}
-\begin{tabular}{ll}
-\textbf{Tokens} & \textbf{Associativity}\\
+\begin{tabular}{lll}
+\textbf{Priority level} & \textbf{Tokens} & \textbf{Associativity}\\
 \hline
-$\Tdot$, $\Tlbracket$, $\Tllbracket$                                          & $\leftassoc$\\
-$\Tin$                                                                        & $\nonassoc$\\
-$\Tunops$                                                                     & $\nonassoc$\\
-$\Tpow$                                                                       & $\leftassoc$\\
-$\Tmul$, $\Tdiv$, $\Tdivrm$, $\Trdiv$, $\Tmod$, $\Tshl$, $\Tshr$              & $\leftassoc$\\
-$\Tplus$, $\Tminus$, $\Tor$, $\Tand$, $\Txor$, $\Tcoloncolon$, $\Tplusplus$   & $\leftassoc$\\
-$\Tgt$, $\Tgeq$, $\Tlt$, $\Tleq$                                              & $\nonassoc$\\
-$\Teqop$, $\Tneq$                                                             & $\leftassoc$\\
-$\Tbor$, $\Tband$, $\Tbimpl$, $\Tbeq$, $\Tas$                                  & $\leftassoc$\\
-$\Telse$                                                                      & $\nonassoc$
+9 & $\Tdot$, $\Tlbracket$, $\Tllbracket$                                          & $\leftassoc$\\
+8 & $\Tin$                                                                        & $\nonassoc$\\
+7 & $\Tunops$                                                                     & $\nonassoc$\\
+6 & $\Tpow$                                                                       & $\leftassoc$\\
+5 & $\Tmul$, $\Tdiv$, $\Tdivrm$, $\Trdiv$, $\Tmod$, $\Tshl$, $\Tshr$              & $\leftassoc$\\
+4 & $\Tplus$, $\Tminus$, $\Tor$, $\Tand$, $\Txor$, $\Tcoloncolon$, $\Tplusplus$   & $\leftassoc$\\
+3 & $\Tgt$, $\Tgeq$, $\Tlt$, $\Tleq$                                              & $\nonassoc$\\
+2 & $\Teqop$, $\Tneq$                                                             & $\leftassoc$\\
+1 & $\Tbor$, $\Tband$, $\Tbimpl$, $\Tbeq$, $\Tas$                                  & $\leftassoc$\\
+0 & $\Telse$                                                                      & $\nonassoc$
 \end{tabular}
 \end{center}
+
+
+\section{Parsing Examples\label{sec:ParsingExamples}}
+
+\ExampleDef{Derivation of a Valid Expression}
+The expression \texttt{1 + 3}
+is transformed by the lexical analysis into:
+\[
+\Tintlit(1) \parsesep \Tplus \parsesep \Tintlit(3)
+\]
+
+The corresponding derivation is:
+\[
+\begin{array}{rl}
+\Nexpr & \derives\ \Nexpr \parsesep \Tplus \parsesep \underline{\Nexpr}\\
+       & \derives\ \Nexpr \parsesep \Tplus \parsesep \Tintlit(3)\\
+       & \derives\ \underline{\Nexpr} \parsesep \Tplus \parsesep \Tintlit(3)\\
+       & \derives\ \Tintlit(1) \parsesep \Tplus \parsesep \Tintlit(3)\\
+\end{array}
+\]
+
+This expression has the unique parse tree shown below.
+\begin{center}
+\begin{footnotesize}
+\begin{adjustbox}{max width=\textwidth}
+\Tree
+[.$\Nexpr$
+  [.$\Nexpr$ $\Tintlit(1)$ ]
+  $\Tplus$
+  [.$\Nexpr$ $\Tintlit(3)$ ]
+]
+\end{adjustbox}
+\end{footnotesize}
+\end{center}
+
+\ExampleDef{Failing to Parse an Invalid Expression}
+The expression \texttt{1 + * 3}
+is transformed by the lexical analysis into:
+\[
+\Tintlit(1) \parsesep \Tplus \parsesep \Tmul \parsesep \Tintlit(3)
+\]
+
+An attempted derivation gets stuck as follows:
+\[
+\begin{array}{rl}
+\Nexpr & \derives\ \Nexpr \parsesep \Tplus \parsesep \underline{\Nexpr}\\
+       & \not\derives\ \Nexpr \parsesep \Tplus \parsesep \Tmul \parsesep \Tintlit(3)
+\end{array}
+\]
+because there is no derivation for $\Nexpr$ whose first token is $\Tmul$.
+
+\ExampleDef{Shift-Reduce Parsing with Binary Operators and Priority}
+The expression \texttt{1 + 2 * 3}
+is transformed by the lexical analysis into:
+\[
+\Tintlit(1) \parsesep \Tplus \parsesep \Tintlit(2) \parsesep \Tmul \parsesep \Tintlit(3)
+\]
+
+Since the derivation rules for expressions are ambiguous, this expression has
+two possible parse trees:
+\begin{center}
+\begin{footnotesize}
+\begin{tabular}{c|c}
+\begin{adjustbox}{max width=0.45\textwidth}
+\Tree
+[.$\Nexpr$
+  [.$\Nexpr$ $\Tintlit(1)$ ]
+  $\Tplus$
+  [.$\Nexpr$
+    [.$\Nexpr$ $\Tintlit(2)$ ]
+    $\Tmul$
+    [.$\Nexpr$ $\Tintlit(3)$ ]
+  ]
+]
+\end{adjustbox}
+&
+\begin{adjustbox}{max width=0.45\textwidth}
+\Tree
+[.$\Nexpr$
+  [.$\Nexpr$
+    [.$\Nexpr$ $\Tintlit(1)$ ]
+    $\Tplus$
+    [.$\Nexpr$ $\Tintlit(2)$ ]
+  ]
+  $\Tmul$
+  [.$\Nexpr$ $\Tintlit(3)$ ]
+]
+\end{adjustbox}\\
+\\
+(a) intended parse tree.
+&
+(b) unintended parse tree.
+\end{tabular}
+\end{footnotesize}
+\end{center}
+
+Parse tree (a) is the intended parse tree, which reflects the fact
+that $\Tmul$ has higher priority than $\Tplus$.
+
+We show a run of a shift-reduce parser that produces the intended
+parse tree (a) using the priority and associativity rules defined above.
+%
+Note that a shift-reduce parser stack is
+represented by a box, where the bottom of the stack is on the left
+and the top of the stack is on the right, and the input is represented by
+a list of tokens.
+%
+An empty stack is represented by \fbox{$\emptysentence$}.
+%
+A node is created for each reduction step
+for the non-terminal being reduced, using the stack content
+as the children of the node.
+
+\begin{center}
+\begin{footnotesize}
+\begin{tabular}{rll}
+\textbf{\#} & \fbox{\textbf{Stack}} \textbf{Input} & \textbf{Action}\\
+1 & \fbox{$\emptysentence$} $\Tintlit(1) \parsesep \Tplus \parsesep \Tintlit(2) \parsesep \Tmul \parsesep \Tintlit(3)$ & shift\\
+2 & \fbox{$\Tintlit(1)$} $\Tplus \parsesep \Tintlit(2) \parsesep \Tmul \parsesep \Tintlit(3)$ & reduce $\Nexpr$\\
+3 & \fbox{$\Nexpr$} $\Tplus \parsesep \Tintlit(2) \parsesep \Tmul \parsesep \Tintlit(3)$ & shift\\
+4 & \fbox{$\Nexpr \parsesep \Tplus$} $\Tintlit(2) \parsesep \Tmul \parsesep \Tintlit(3)$ & shift\\
+5 & \fbox{$\Nexpr \parsesep \Tplus \parsesep \Tintlit(2)$} $\Tmul \parsesep \Tintlit(3)$ & reduce $\Nexpr$\\
+6 & \fbox{$\Nexpr \parsesep \Tplus \parsesep \Nexpr$} $\Tmul \parsesep \Tintlit(3)$ & shift\\
+7 & \fbox{$\Nexpr \parsesep \Tplus \parsesep \Nexpr \parsesep \Tmul$} $\Tintlit(3)$ & shift\\
+8 & \fbox{$\Nexpr \parsesep \Tplus \parsesep \Nexpr \parsesep \Tmul \parsesep \Tintlit(3)$} $\emptysentence$ & reduce $\Nexpr$\\
+9 & \fbox{$\Nexpr \parsesep \Tplus \parsesep \Nexpr \parsesep \Tmul \parsesep \Nexpr$} $\emptysentence$ & reduce $\Nexpr$\\
+10 & \fbox{$\Nexpr \parsesep \Tplus \parsesep \Nexpr$} $\emptysentence$ & reduce $\Nexpr$\\
+11 & \fbox{$\Nexpr$} $\emptysentence$ & accept
+\end{tabular}
+\end{footnotesize}
+\end{center}
+
+\paragraph{Observation:}
+Notice that there is no reduction to $\Nbinop$ in the table above.
+This is because $\Nbinop$ is defined by an inlined derivation, so after expanding the grammar,
+we have the grammar rules
+$\Nexpr \derives \Nexpr \parsesep \Tplus \parsesep \Nexpr$ and
+$\Nexpr \derives \Nexpr \parsesep \Tmul \parsesep \Nexpr$.
+
+\paragraph{Observation:}
+Step 6 shows how the parser resolves the ambiguity in\\
+$\Tintlit(1) \parsesep \Tplus \parsesep \Tintlit(2) \parsesep \Tmul \parsesep \Tintlit(3)$.
+At that point the stack contains
+$\Nexpr \parsesep \Tplus \parsesep \Nexpr$
+and the next token is $\Tmul$.
+The parser shifts $\Tmul$ instead of reducing
+$\Nexpr \parsesep \Tplus \parsesep \Nexpr$ immediately,
+thereby allowing the higher-priority multiplication subexpression
+$\Tintlit(2) \parsesep \Tmul \parsesep \Tintlit(3)$ to be formed first.
+This is how the priority of $\Tmul$ over $\Tplus$ is enforced.
+
+The table above corresponds to the following derivation in the expanded grammar
+(the underline indicates the non-terminal that is reduced at each step):
+\[
+\begin{array}{rl}
+\Nexpr & \derives\ \Nexpr \parsesep \Tplus \parsesep \underline{\Nexpr}\\
+       & \derives\ \Nexpr \parsesep \Tplus \parsesep \Nexpr \parsesep \Tmul \parsesep \underline{\Nexpr}\\
+       & \derives\ \Nexpr \parsesep \Tplus \parsesep \Nexpr \parsesep \Tmul \parsesep \Tintlit(3)\\
+       & \derives\ \Nexpr \parsesep \Tplus \parsesep \underline{\Nexpr} \parsesep \Tmul \parsesep \Tintlit(3)\\
+       & \derives\ \Nexpr \parsesep \Tplus \parsesep \Tintlit(2) \parsesep \Tmul \parsesep \Tintlit(3)\\
+       & \derives\ \underline{\Nexpr} \parsesep \Tplus \parsesep \Tintlit(2) \parsesep \Tmul \parsesep \Tintlit(3)\\
+       & \derives\ \Tintlit(1) \parsesep \Tplus \parsesep \Tintlit(2) \parsesep \Tmul \parsesep \Tintlit(3)\\
+\end{array}
+\]
+Notice that the derivation corresponds perfectly to the concatenation of the stack
+and input, read bottom-up in the table above, with the rightmost non-terminal
+being the one that is reduced at each step.
+
+\ExampleDef{Shift-Reduce Parsing with Left Associativity}
+The expression \texttt{1 + 2 + 3}
+is transformed by the lexical analysis into:
+\[
+\Tintlit(1) \parsesep \Tplus \parsesep \Tintlit(2) \parsesep \Tplus \parsesep \Tintlit(3)
+\]
+
+A corresponding shift-reduce parsing run is as follows:
+\begin{center}
+\begin{small}
+\begin{tabular}{rll}
+\textbf{Step} & \fbox{\textbf{Stack}} \textbf{Input} & \textbf{Action}\\
+1 & \fbox{$\emptysentence$} $\Tintlit(1) \parsesep \Tplus \parsesep \Tintlit(2) \parsesep \Tplus \parsesep \Tintlit(3)$ & shift\\
+2 & \fbox{$\Tintlit(1)$} $\Tplus \parsesep \Tintlit(2) \parsesep \Tplus \parsesep \Tintlit(3)$ & reduce $\Nexpr$\\
+3 & \fbox{$\Nexpr$} $\Tplus \parsesep \Tintlit(2) \parsesep \Tplus \parsesep \Tintlit(3)$ & shift\\
+4 & \fbox{$\Nexpr \parsesep \Tplus$} $\Tintlit(2) \parsesep \Tplus \parsesep \Tintlit(3)$ & shift\\
+5 & \fbox{$\Nexpr \parsesep \Tplus \parsesep \Tintlit(2)$} $\Tplus \parsesep \Tintlit(3)$ & reduce $\Nexpr$\\
+6 & \fbox{$\Nexpr \parsesep \Tplus \parsesep \Nexpr$} $\Tplus \parsesep \Tintlit(3)$ & reduce $\Nexpr$\\
+7 & \fbox{$\Nexpr$} $\Tplus \parsesep \Tintlit(3)$ & shift\\
+8 & \fbox{$\Nexpr \parsesep \Tplus$} $\Tintlit(3)$ & shift\\
+9 & \fbox{$\Nexpr \parsesep \Tplus \parsesep \Tintlit(3)$} $\emptysentence$ & reduce $\Nexpr$\\
+10 & \fbox{$\Nexpr \parsesep \Tplus \parsesep \Nexpr$} $\emptysentence$ & reduce $\Nexpr$\\
+11 & \fbox{$\Nexpr$} $\emptysentence$ & accept
+\end{tabular}
+\end{small}
+\end{center}
+
+\paragraph{Observation:}
+As explained in the previous example, there is no reduction to $\Nbinop$,
+since $\Nbinop$ is an inlined non-terminal.
+At step 6 the stack contains
+$\Nexpr \parsesep \Tplus \parsesep \Nexpr$
+and the next token is again $\Tplus$.
+The parser reduces
+$\Nexpr \parsesep \Tplus \parsesep \Nexpr$
+to $\Nexpr$ instead of shifting the second $\Tplus$.
+This is how the ambiguity is resolved using the fact that $\Tplus$
+is declared $\leftassoc$:
+when the competing actions have the same priority, left associativity chooses
+reduce rather than shift.
+As a result, the input is parsed as $(1 + 2) + 3$, not as $1 + (2 + 3)$.
+
+The table above corresponds to the following derivation in the expanded grammar
+(the underline indicates the non-terminal that is reduced at each step):
+\[
+\begin{array}{rl}
+\Nexpr & \derives\ \Nexpr \parsesep \Tplus \parsesep \underline{\Nexpr}\\
+       & \derives\ \Nexpr \parsesep \Tplus \parsesep \Tintlit(3)\\
+       & \derives\ \underline{\Nexpr} \parsesep \Tplus \parsesep \Tintlit(3)\\
+       & \derives\ \Nexpr \parsesep \Tplus \parsesep \underline{\Nexpr} \parsesep \Tplus \parsesep \Tintlit(3)\\
+       & \derives\ \Nexpr \parsesep \Tplus \parsesep \Tintlit(2) \parsesep \Tplus \parsesep \Tintlit(3)\\
+       & \derives\ \underline{\Nexpr} \parsesep \Tplus \parsesep \Tintlit(2) \parsesep \Tplus \parsesep \Tintlit(3)\\
+       & \derives\ \Tintlit(1) \parsesep \Tplus \parsesep \Tintlit(2) \parsesep \Tplus \parsesep \Tintlit(3)\\
+\end{array}
+\]
+
+\ExampleDef{Shift-Reduce Parsing with Unary Operators}
+The expression \texttt{- - 1}
+is transformed by the lexical analysis into:
+\[
+\Tminus \parsesep \Tminus \parsesep \Tintlit(1)
+\]
+
+The unique parse tree for this expression in the expanded grammar is:
+\begin{center}
+\begin{footnotesize}
+\begin{adjustbox}{max width=\textwidth}
+\Tree
+[.$\Nexpr$
+  $\Tminus$
+  [.$\Nexpr$
+    $\Tminus$
+    [.$\Nexpr$ $\Tintlit(1)$ ]
+  ]
+]
+\end{adjustbox}
+\end{footnotesize}
+\end{center}
+
+A corresponding shift-reduce parsing run is as follows:
+\begin{center}
+\begin{small}
+\begin{tabular}{rll}
+\textbf{Step} & \fbox{\textbf{Stack}} \textbf{Input} & \textbf{Action}\\
+1 & \fbox{$\emptysentence$} $\Tminus \parsesep \Tminus \parsesep \Tintlit(1)$ & shift\\
+2 & \fbox{$\Tminus$} $\Tminus \parsesep \Tintlit(1)$ & shift\\
+3 & \fbox{$\Tminus \parsesep \Tminus$} $\Tintlit(1)$ & shift\\
+4 & \fbox{$\Tminus \parsesep \Tminus \parsesep \Tintlit(1)$} $\emptysentence$ & reduce $\Nexpr$\\
+5 & \fbox{$\Tminus \parsesep \Tminus \parsesep \Nexpr$} $\emptysentence$ & reduce $\Nexpr$\\
+6 & \fbox{$\Tminus \parsesep \Nexpr$} $\emptysentence$ & reduce $\Nexpr$\\
+7 & \fbox{$\Nexpr$} $\emptysentence$ & accept
+\end{tabular}
+\end{small}
+\end{center}
+
+As explained in the previous examples, there is no reduction to $\Nunop$,
+since it is an inlined non-terminal.
+
+\paragraph{Observation:}
+This example shows the parser building a nested unary expression.
+After step 4, the stack suffix $\Tminus \parsesep \Tminus \parsesep \Nexpr$
+matches the right-hand side obtained by expanding two applications of the unary-minus production.
+The parser therefore performs two successive reductions of the form
+$\Tminus \parsesep \Nexpr$ to $\Nexpr$,
+which yields the parse $-(-1)$.
+
+The table above corresponds to the following derivation in the expanded grammar
+(the underline indicates the non-terminal that is reduced at each step):
+\[
+\begin{array}{rl}
+\Nexpr & \derives\ \Tminus \parsesep \underline{\Nexpr}\\
+       & \derives\ \Tminus \parsesep \Tminus \parsesep \underline{\Nexpr}\\
+       & \derives\ \Tminus \parsesep \Tminus \parsesep \Tintlit(1)\\
+\end{array}
+\]
+
+
+\ExampleDef{Shift-Reduce Parsing with Unary Operators and Priority}
+The expression \texttt{-1 - 2}
+is transformed by the lexical analysis into:
+\[
+\Tminus \parsesep \Tintlit(1) \parsesep \Tminus \parsesep \Tintlit(2)
+\]
+
+A corresponding pair of parse trees for the expanded grammar is:
+\begin{center}
+\begin{footnotesize}
+\begin{tabular}{c|c}
+\begin{adjustbox}{max width=0.45\textwidth}
+\Tree
+[.$\Nexpr$
+  [.$\Nexpr$
+    $\Tminus$
+    [.$\Nexpr$ $\Tintlit(1)$ ]
+  ]
+  $\Tminus$
+  [.$\Nexpr$ $\Tintlit(2)$ ]
+]
+\end{adjustbox}
+&
+\begin{adjustbox}{max width=0.45\textwidth}
+\Tree
+[.$\Nexpr$
+  $\Tminus$
+  [.$\Nexpr$
+    [.$\Nexpr$ $\Tintlit(1)$ ]
+    $\Tminus$
+    [.$\Nexpr$ $\Tintlit(2)$ ]
+  ]
+]
+\end{adjustbox}
+\\
+(a) intended parse tree. &
+(b) unintended parse tree.
+\end{tabular}
+\end{footnotesize}
+\end{center}
+
+A corresponding shift-reduce parsing run that produces the intended parse tree
+is as follows:
+\begin{center}
+\begin{small}
+\begin{tabular}{rll}
+\textbf{Step} & \fbox{\textbf{Stack}} \textbf{Input} & \textbf{Action}\\
+1 & \fbox{$\emptysentence$} $\Tminus \parsesep \Tintlit(1) \parsesep \Tminus \parsesep \Tintlit(2)$ & shift\\
+2 & \fbox{$\Tminus$} $\Tintlit(1) \parsesep \Tminus \parsesep \Tintlit(2)$ & shift\\
+3 & \fbox{$\Tminus \parsesep \Tintlit(1)$} $\Tminus \parsesep \Tintlit(2)$ & reduce $\Nexpr$\\
+4 & \fbox{$\Tminus \parsesep \Nexpr$} $\Tminus \parsesep \Tintlit(2)$ & reduce $\Nexpr$\\
+5 & \fbox{$\Nexpr$} $\Tminus \parsesep \Tintlit(2)$ & shift\\
+6 & \fbox{$\Nexpr \parsesep \Tminus$} $\Tintlit(2)$ & shift\\
+7 & \fbox{$\Nexpr \parsesep \Tminus \parsesep \Tintlit(2)$} $\emptysentence$ & reduce $\Nexpr$\\
+8 & \fbox{$\Nexpr \parsesep \Tminus \parsesep \Nexpr$} $\emptysentence$ & reduce $\Nexpr$\\
+9 & \fbox{$\Nexpr$} $\emptysentence$ & accept
+\end{tabular}
+\end{small}
+\end{center}
+
+As explained in the previous example, there are no reductions to $\Nunop$ or $\Nbinop$,
+since they are inlined non-terminals.
+
+\paragraph{Observation:}
+At step 4, stack contains $\Tminus \parsesep \Nexpr$ and the next token is again $\Tminus$.
+The parser reduces $\Tminus \parsesep \Nexpr$ to $\Nexpr$ instead of shifting the second $\Tminus$.
+This is exactly the priority rule for unary minus:
+the production $\Nexpr \derives \Tminus \parsesep \Nexpr$ has priority $\Tunops$,
+which is higher than the binary-operator priority of $\Tminus$.
+As a result, the input is parsed as $(-1) - 2$, not as $-(1 - 2)$.
+
+The table above corresponds to the following derivation in the expanded grammar
+(the underline indicates the non-terminal that is reduced at each step):
+\[
+\begin{array}{rl}
+\Nexpr & \derives\ \underline{\Nexpr} \parsesep \Tminus \parsesep \Nexpr\\
+       & \derives\ \underline{\Nexpr} \parsesep \Tminus \parsesep \Tintlit(2)\\
+       & \derives\ \Tminus \parsesep \underline{\Nexpr} \parsesep \Tminus \parsesep \Tintlit(2)\\
+       & \derives\ \Tminus \parsesep \Tintlit(1) \parsesep \Tminus \parsesep \Tintlit(2)\\
+\end{array}
+\]
+
+\ExampleDef{Parsing with Parametric Productions}
+The expression \texttt{b[c,d,e]}
+is transformed by the lexical analysis into:
+\[
+\Tidentifier(b) \parsesep \Tlbracket \parsesep \Tidentifier(c) \parsesep \Tcomma \parsesep \Tidentifier(d) \parsesep \Tcomma \parsesep \Tidentifier(e) \parsesep \Trbracket
+\]
+
+\texthypertarget{def-clistoneslice}
+To emphasize the role of parametric productions, let $\clistoneslice$
+be the unique symbol introduced when expanding $\ClistOne{\Nslice}$.
+The relevant expansion is
+\[
+\clistoneslice \derives \Nslice \;|\; \Nslice \parsesep \Tcomma \parsesep \clistoneslice
+\]
+and the derivation for $\Nslices$ becomes
+\[
+\Nslices \derives \Tlbracket \parsesep \clistoneslice \parsesep \Trbracket \enspace.
+\]

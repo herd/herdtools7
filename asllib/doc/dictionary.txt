@@ -34,6 +34,7 @@ achieves
 across
 act
 action
+actions
 actively
 actual
 actually
@@ -55,13 +56,16 @@ advised
 aesthetically
 affect
 affecting
+affects
 after
+again
 against
 aggregate
 agree
 aid
 aim
 aims
+algorithm
 alias
 aliases
 aliasing
@@ -81,6 +85,8 @@ alternative
 alternatives
 although
 always
+ambiguities
+ambiguity
 ambiguous
 among
 amongst
@@ -164,6 +170,7 @@ associates
 associating
 association
 associative
+associativities
 associativity
 assume
 assumed
@@ -177,6 +184,7 @@ atc
 atcs
 attach
 attempt
+attempted
 attempting
 attempts
 authoritative
@@ -255,6 +263,7 @@ bounds
 braces
 bracketed
 bracketing
+bracketings
 branch
 branches
 brands
@@ -335,6 +344,7 @@ circuited
 circuiting
 circuits
 circular
+clarify
 clash
 clashes
 clashing
@@ -348,6 +358,7 @@ classify
 classifying
 clause
 clauses
+clear
 clearly
 closed
 closer
@@ -392,6 +403,7 @@ comparison
 comparisons
 compatibility
 compatible
+competing
 compile
 compiler
 compilers
@@ -400,6 +412,7 @@ complete
 completes
 complex
 complexity
+compliant
 complies
 component
 components
@@ -481,6 +494,7 @@ constructing
 construction
 constructively
 constructs
+consumes
 contact
 contain
 contained
@@ -530,6 +544,7 @@ cover
 covered
 covers
 create
+created
 creates
 creating
 creation
@@ -636,6 +651,7 @@ dimensional
 directive
 directly
 disambiguate
+disambiguated
 discard
 discarded
 discarding
@@ -816,6 +832,7 @@ expanding
 expands
 expansion
 expected
+expecting
 expects
 explain
 explained
@@ -860,6 +877,7 @@ false
 familiarity
 far
 favor
+favour
 feasible
 feasibly
 feature
@@ -945,6 +963,7 @@ generate
 generated
 generates
 generating
+generators
 generic
 gets
 getter
@@ -1010,6 +1029,7 @@ holds
 hosting
 how
 however
+human
 hyperlinks
 hyphen
 hyphens
@@ -1047,6 +1067,7 @@ implied
 implies
 important
 impose
+impossible
 imprecise
 improve
 impure
@@ -1160,6 +1181,7 @@ introduce
 introduced
 introduces
 introducing
+introduction
 intuition
 intuitive
 intuitively
@@ -1194,6 +1216,8 @@ judgments
 just
 justified
 keep
+keeping
+keeps
 key
 keys
 keyword
@@ -1276,6 +1300,7 @@ loss
 lost
 lower
 lowest
+machine
 macro
 macros
 made
@@ -1306,6 +1331,7 @@ matches
 matching
 material
 mathematical
+mathematically
 matter
 matters
 maximal
@@ -1331,6 +1357,7 @@ merges
 meta
 might
 minimal
+minimised
 minimum
 minus
 mirroring
@@ -1524,6 +1551,7 @@ parameters
 parametric
 parentheses
 parenthesis
+parenthesised
 parenthesising
 parenthesized
 parenthesizing
@@ -1531,6 +1559,7 @@ parlance
 parse
 parsed
 parser
+parses
 parsing
 part
 partial
@@ -1550,6 +1579,7 @@ pattern
 patterns
 pending
 per
+perfectly
 performed
 performing
 performs
@@ -1589,10 +1619,10 @@ potentially
 power
 powerset
 practice
+practices
 pragma
 pragmas
 pre
-precedence
 preceding
 precise
 precisely
@@ -1702,6 +1732,7 @@ reachable
 reached
 read
 readability
+readable
 readers
 reading
 reads
@@ -1710,6 +1741,7 @@ reals
 reason
 reasoning
 recall
+recently
 recognise
 recognize
 recognized
@@ -1727,8 +1759,10 @@ red
 redefining
 reduce
 reduced
+reduces
 reducing
 reduction
+reductions
 refer
 reference
 references
@@ -1751,6 +1785,7 @@ registered
 regular
 regulations
 reinterpreted
+reject
 rejected
 relate
 related
@@ -1782,6 +1817,7 @@ rename
 renamed
 renames
 renaming
+reorganise
 repeat
 repeated
 repeating
@@ -1792,6 +1828,7 @@ replaces
 replacing
 report
 reported
+reports
 repository
 represent
 representation
@@ -1810,8 +1847,10 @@ requires
 requiring
 resemble
 reserved
+resolution
 resolve
 resolved
+resolves
 resolving
 respect
 respected
@@ -1850,6 +1889,7 @@ rewritten
 right
 rightmost
 rights
+rise
 role
 root
 rotating
@@ -1925,10 +1965,13 @@ share
 shared
 shares
 shift
+shifting
+shifts
 short
 shortens
 shortest
 shorthand
+shorthands
 shortly
 should
 show
@@ -2042,6 +2085,7 @@ style
 styles
 sub
 sub-node
+subcategory
 subexpression
 subexpressions
 subject
@@ -2168,6 +2212,7 @@ throwing
 thrown
 thus
 ties
+tightly
 time
 times
 titled
@@ -2249,6 +2294,7 @@ unbound
 unbounded
 uncaught
 unchanging
+unclear
 unconstrained
 undeclared
 undefined
@@ -2257,6 +2303,7 @@ underapproximated
 underapproximates
 underapproximating
 underapproximation
+underline
 underlying
 underscore
 underscores
@@ -2278,6 +2325,7 @@ unlabelled
 unless
 unlike
 unnamed
+unnecessary
 unordered
 unpredictable
 unprintable
@@ -2326,6 +2374,7 @@ variables
 variant
 variations
 varies
+variety
 various
 vector
 vectors

@@ -173,7 +173,7 @@ Examples used in ASL High-level Definition:
              ^^^^^^
   ASL Dynamic error: recursion limit reached.
   [1]
-  $ aslref --no-exec Guide.OperatorPrecedence.asl
+  $ aslref --no-exec Guide.OperatorPriority.asl
   $ aslref --no-exec TupleExpressions.asl
   $ aslref --no-exec LocalStorageDeclarations.asl
   $ aslref CatchingExceptions.asl
