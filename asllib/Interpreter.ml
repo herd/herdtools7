@@ -668,16 +668,6 @@ module Make (B : Backend.S) (C : Config) = struct
         let* v = B.get_index i_index v_array in
         return_normal (v, new_env) |: SemanticsRule.EGetArray
     (* End *)
-    (* Begin EvalEGetEnumArray *)
-    | E_GetEnumArray (e_array, e_index) ->
-        let*^ m_array, env1 = eval_expr env e_array in
-        let*^ m_index, new_env = eval_expr env1 e_index in
-        let* v_array = m_array and* v_index = m_index in
-        (* an enumerated array is represented by a record value. *)
-        let label = B.v_to_label v_index in
-        let* v = B.get_field label v_array in
-        return_normal (v, new_env) |: SemanticsRule.EGetEnumArray
-    (* End *)
     (* Begin EvalEGetTupleItem *)
     | E_GetItem (e_tuple, index) ->
         let** v_tuple, new_env = eval_expr env e_tuple in
@@ -730,13 +720,6 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         let* v = B.create_vector (List.init n_length (Fun.const v_value)) in
         return_normal (v, new_env) |: SemanticsRule.EArray
-    (* End *)
-    (* Begin EvalEEnumArray *)
-    | E_EnumArray { labels; value = e_value } ->
-        let** v_value, new_env = eval_expr env e_value in
-        let field_inits = List.map (fun l -> (l, v_value)) labels in
-        let* v = B.create_record field_inits in
-        return_normal (v, new_env) |: SemanticsRule.EEnumArray
     (* End *)
     (* Begin EvalEArbitrary *)
     | E_Arbitrary t ->
@@ -911,18 +894,6 @@ module Make (B : Backend.S) (C : Config) = struct
           B.set_index (v_to_int ~loc:e_index v_index) v rv_array
         in
         eval_lexpr ver re_array env2 m1 |: SemanticsRule.LESetArray
-    (* End *)
-    (* Begin EvalLESetEnumArray *)
-    | LE_SetEnumArray (re_array, e_index) ->
-        let*^ rm_array, env1 = expr_of_lexpr re_array |> eval_expr env in
-        let*^ m_index, env2 = eval_expr env1 e_index in
-        let m1 =
-          let* v = m and* v_index = m_index and* rv_array = rm_array in
-          (* an enumerated array is represented by a record value. *)
-          let label = B.v_to_label v_index in
-          B.set_field label v rv_array
-        in
-        eval_lexpr ver re_array env2 m1 |: SemanticsRule.LESetEnumArray
     (* End *)
     (* Begin EvalLESetField *)
     | LE_SetField (re_record, field_name) ->

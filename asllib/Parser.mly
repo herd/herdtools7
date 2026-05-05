@@ -403,7 +403,7 @@ let ty :=
     | BITS; ~=pared(expr); ~=bitfields_opt;             < T_Bits       >
     | ~=plist2(ty);                                     < T_Tuple      >
     | name=IDENTIFIER;                                  < T_Named      >
-    | ARRAY; LLBRACKET; e=expr; RRBRACKET; OF; t=ty;    { T_Array (ArrayLength_Expr e, t) }
+    | ARRAY; LLBRACKET; e=expr; RRBRACKET; OF; t=ty;    { T_Array (e, t) }
   )
 
 let ty_decl := ty |

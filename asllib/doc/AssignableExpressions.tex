@@ -596,30 +596,20 @@ and \ExampleRef{Multi-assignments}.
 \hypertarget{def-setarraylexprterm}{}
 \section{Array Assignment Expressions\label{sec:ArrayAssignmentExpressions}}
 This section details the syntax, abstract syntax, semantics, and typing of array write expressions.
-In the untyped AST, a write to either an integer-indexed array or an enumeration-indexed array is represented
-the same way. The type system infers the kind of array and outputs a typed AST node differentiating
-the two kinds of arrays, either a $\LESetArray$ or a $\LESetEnumArray$, via \TypingRuleRef{LESetArray}.
-The semantics utilizes a rule matching the corresponding type of array ---
-\SemanticsRuleRef{LESetArray} for integer-indexed arrays and
-\SemanticsRuleRef{LESetEnumArray} for enumeration-indexed arrays.
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_setarray_and_typed}
 
-
 \subsection{Typing}
 \TypingRuleDef{LESetArray}
-The assignable expressions in
-\listingref{semantics-lesetarray} and \listingref{semantics-lesetenumarray}
-are well-typed.
-
+The assignable expressions in \listingref{semantics-lesetarray} are well-typed.
 
 \RenderProseAndFormally{annotate_lexpr_LESetArray}
 \CodeSubsection{\LESetArrayBegin}{\LESetArrayEnd}{../Typing.ml}
 
 \TypingRuleDef{AnnotateSetArray}
 \RenderRelation{annotate_set_array}
-See \listingref{semantics-lesetarray} and \listingref{semantics-lesetenumarray}
+See \listingref{semantics-lesetarray}
 for examples of well-typed assignable array expressions.
 
 
@@ -642,24 +632,12 @@ via \TypingRuleRef{LESetArray}.
 
 See \SyntacticSugarRef{SetterFieldAssignment}.
 
-\SemanticsRuleDef{LESetEnumArray}
-\ExampleDef{Enumeration-indexed Array Update Assignments}
-In \listingref{semantics-lesetenumarray}, the assignment \verb|my_array[[RED]] = 53;| binds the \verb|RED|
-cell of
-\texttt{my\_array} to the value \texttt{53}.
-\ASLListing{Assignment to an enumeration-indexed array cell}{semantics-lesetenumarray}{\semanticstests/SemanticsRule.LESetEnumArray.asl}
-
-
-\RenderProseAndFormally{eval_lexpr_LESetEnumArray}
-\CodeSubsection{\EvalLESetEnumArrayBegin}{\EvalLESetEnumArrayEnd}{../Interpreter.ml}
-
 \hypertarget{def-slicelexprterm}{}
 \section{Bitvector Slice Assignment Expressions\label{sec:BitvectorSliceAssignmentExpressions}}
 \ASLListing{Assignable slice expressions}{semantics-leslice}{\semanticstests/SemanticsRule.LESlice.asl}
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_slice}
-
 
 \subsection{Typing}
 \TypingRuleDef{LESlice}
@@ -754,7 +732,6 @@ since \verb|x| is not a \bitvectortypeterm{} nor a \structuredtypeterm.
 \ASLListing{Assigning a field in an inappropriate type}{typing-lesetbadfield}{\typingtests/TypingRule.LESetBadField.asl}
 
 See \RequirementRef{TupleImmutability} for an example of assigning to a tuple type.
-
 
 \RenderProseAndFormally{annotate_lexpr_LESetBadField_error}
 \CodeSubsection{\LESetBadFieldBegin}{\LESetBadFieldEnd}{../Typing.ml}

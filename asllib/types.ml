@@ -37,7 +37,6 @@ let undefined_identifier pos x =
 let thing_equal astutil_equal env = astutil_equal (StaticModel.equal_in_env env)
 let expr_equal = thing_equal expr_equal
 let type_equal = thing_equal type_equal
-let array_length_equal = thing_equal array_length_equal
 let bitwidth_equal = thing_equal bitwidth_equal
 let slices_equal = thing_equal slices_equal
 let bitfield_equal = thing_equal bitfield_equal
@@ -494,17 +493,8 @@ and subtype_satisfies env t s =
     (* If S has the structure of an array type with elements of type E then
      T must have the structure of an array type with elements of type E,
      and T must have the same element indices as S. *)
-    | T_Array (length_s, ty_s), T_Array (length_t, ty_t) -> (
-        type_equal env ty_s ty_t
-        &&
-        match (length_s, length_t) with
-        | ArrayLength_Expr length_expr_s, ArrayLength_Expr length_expr_t ->
-            expr_equal env length_expr_s length_expr_t
-        | ArrayLength_Enum (name_s, _), ArrayLength_Enum (name_t, _) ->
-            String.equal name_s name_t
-        | ArrayLength_Enum (_, _), ArrayLength_Expr _
-        | ArrayLength_Expr _, ArrayLength_Enum (_, _) ->
-            false)
+    | T_Array (length_s, ty_s), T_Array (length_t, ty_t) ->
+        type_equal env ty_s ty_t && expr_equal env length_s length_t
     (* If S has the structure of a tuple type then T must have the
      structure of a tuple type with same number of elements as S,
      and each element in T must type-satisfy the corresponding
@@ -675,7 +665,7 @@ let rec lowest_common_ancestor ~loc env s t =
         (* We forget the bitfields if they are not equal. *)
         Some (T_Bits (e_s, []) |> here)
     | T_Array (width_s, ty_s), T_Array (width_t, ty_t)
-      when array_length_equal env width_s width_t ->
+      when expr_equal env width_s width_t ->
         let+ t = lowest_common_ancestor ~loc env ty_s ty_t in
         T_Array (width_s, t) |> here
     | T_Tuple li_s, T_Tuple li_t when List.compare_lengths li_s li_t = 0 ->

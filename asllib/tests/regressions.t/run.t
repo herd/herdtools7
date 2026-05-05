@@ -359,9 +359,6 @@ Parameterized integers:
 
   $ aslref slice-width-shorthand.asl
 
-Arrays indexed by enumerations
-  $ aslref enum-array.asl
-
   $ aslref array-lca.asl
   $ aslref array-index-error.asl
   ASL Dynamic error: Mismatch type:
@@ -419,7 +416,6 @@ Parameters bugs:
 
 Required tests:
   $ aslref anonymous-types-example-success.asl
-  $ aslref array-with-enums.asl
   $ aslref array.asl
   $ aslref -0 assign-v0.asl
   $ aslref -0 asl0-patterns.asl
@@ -725,4 +721,3 @@ Bounds checks
 
 If test environment reversion bug
   $ aslref if-test-env-updated.asl
-

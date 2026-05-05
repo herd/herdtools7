@@ -7,7 +7,6 @@ This chapter defines functions and relations used by the type system.
   \item \TypingRuleRef{CheckNoDuplicates} enables checking for the absence of duplicate elements in a list;
   \item \TypingRuleRef{Sort} allows sorting a list;
   \item \TypingRuleRef{FindBitfieldOpt} recursively looks up a bitfield in a list of bitfields;
-  \item \TypingRuleRef{TypeOfArrayLength} returns the type associated with an array index;
   \item \TypingRuleRef{WithEmptyLocal} constructs a \staticenvironmentterm{} from a \globalstaticenvironmentterm;
   \item \TypingRuleRef{CheckVarNotInEnv} ensures that a variable is not in the \staticenvironmentterm{};
   \item \TypingRuleRef{CheckVarNotInGEnv} ensures that a variable is not in the \globalstaticenvironmentterm;
@@ -116,36 +115,7 @@ In contrast, in \listingref{eget-bad-bitfield}, annotating the expression \verb|
 requires finding the bitfield \verb|undeclared_identifier| in the \verb|Packet| \bitvectortypeterm,
 which does not exist.
 
-
 \RenderProseAndFormally{find_bitfield_opt}
-
-\TypingRuleDef{TypeOfArrayLength}
-\RenderRelation{type_of_array_length}
-
-\ExampleDef{Retrieving the Type of an Array from an Array Index}
-
-In \listingref{typing-tarray}, annotating the expression \verb|int_arr[[3]]|
-yields \\
-$\ArrayLengthExpr(\ELInt{3})$, and
-\[
-\begin{array}{r}
-\typeofarraylength(\ArrayLengthExpr(\ELInt{3})) \typearrow \\
-\unconstrainedinteger
-\end{array}
-\]
-
-Annotating the expression \verb|big_little_arr[[LITTLE]]| yields\\
-$\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
-\[
-\begin{array}{r}
-\typeofarraylength(\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])) \typearrow \\
-\TNamed(\BitsArray) \enspace.
-\end{array}
-\]
-
-
-\RenderProseAndFormally{type_of_array_length}
-\CodeSubsection{\TypeOfArrayLengthBegin}{\TypeOfArrayLengthEnd}{../types.ml}
 
 \section{Static Environment Utilities}
 

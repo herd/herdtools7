@@ -1142,7 +1142,6 @@
 \newcommand\dynamicenvsG[0]{\hyperlink{recordfield-dynamicenvsG}{\textsf{G}}}
 \newcommand\dynamicenvsL[0]{\hyperlink{recordfield-dynamicenvsL}{\textsf{L}}}
 \newcommand\arrayvalue[0]{\hyperlink{recordfield-arrayvalue}{\textsf{value}}}
-\newcommand\enumarrayvalue[0]{\hyperlink{recordfield-enumarrayvalue}{\textsf{value}}}
 \newcommand\casealtpattern[0]{\hyperlink{recordfield-casealtpattern}{\textsf{pattern}}}
 \newcommand\casealtstmt[0]{\hyperlink{recordfield-casealtstmt}{\textsf{stmt}}}
 \newcommand\globaldeclname[0]{\hyperlink{recordfield-globaldeclname}{\textsf{name}}}
@@ -1170,8 +1169,6 @@
 \newcommand\Forbody[0]{\textsf{body}}
 \newcommand\Forlimit[0]{\textsf{limit}}
 \newcommand\EArrayLength[0]{\textsf{length}}
-\newcommand\EArrayEnum[0]{\textsf{enum}}
-\newcommand\EArrayLabels[0]{\textsf{labels}}
 \newcommand\EArrayValue[0]{\textsf{value}}
 \newcommand\callname[0]{\hyperlink{recordfield-callname}{\textsf{name}}}
 \newcommand\callparams[0]{\textsf{params}}
@@ -1422,8 +1419,6 @@
 \newcommand\AbbrevConstraintRangeOp[3][H]{\overbracket{#2..#3}^{\hyperlink{def-abbrevconstraintrange}{\abbrevfont{Constraint\_Range}}}}
 \newcommand\AbbrevConstraintExactOp[1]{\overbracket{#1}^{\hyperlink{def-abbrevconstraintexact}{\abbrevfont{Constraint\_Exact}}}}
 \newcommand\AbbrevTArray[2]{\overbracket{\texttt{array }[#1]\texttt{ of }#2}^{\hyperlink{def-abbrevtarray}{\abbrevfont{T\_Array}}}}
-\newcommand\AbbrevTArrayLengthExpr[2]{\overbracket{\texttt{array [[}#1\texttt{]] of }#2}^{\hyperlink{def-abbrevtarraylengthexpr}{\abbrevfont{T\_Array(ArrayLength\_Expr)}}}}
-\newcommand\AbbrevTArrayLengthEnum[3]{\overbracket{\texttt{array [[}#1 \# #2\texttt{]] of }#3}^{\hyperlink{def-abbrevtarraylengthenum}{\abbrevfont{T\_Array(Array\_Length\_Enum)}}}}
 \newcommand\AbbrevEVar[1]{\overbracket{#1}^{\hyperlink{def-abbrevevar}{\abbrevfont{E\_Var}}}}
 
 \newcommand\TIntWellConstrainedInt[1]{\TInt(\WellConstrained(#1))}
@@ -1469,7 +1464,6 @@
   the local storage elements in the type #1 yields the type #2}
 \newcommand\renamelocalsslice[0]{\hyperlink{def-renamelocalsslice}{\textfunc{rename\_locals\_slice}}} % SPECIFICATION_DEFERRED
 \newcommand\renamelocalsconstraint[0]{\hyperlink{def-renamelocalsconstraint}{\textfunc{rename\_locals\_constraint}}} % SPECIFICATION_DEFERRED
-\newcommand\renamelocalsarrayindex[0]{\hyperlink{def-renamelocalsarrayindex}{\textfunc{rename\_locals\_array\_index}}} % SPECIFICATION_DEFERRED
 \newcommand\renamelocalspattern[0]{\hyperlink{def-renamelocalspattern}{\textfunc{rename\_locals\_pattern}}} % SPECIFICATION_DEFERRED
 \newcommand\renamelocalscatcher[0]{\hyperlink{def-renamelocalscatcher}{\textfunc{rename\_locals\_catcher}}} % SPECIFICATION_DEFERRED
 
@@ -1554,11 +1548,6 @@
 \newcommand\tupletypesterm[0]{\hyperlink{tupletypeterm}{tuple types}}
 \newcommand\Tupletypesterm[0]{\hyperlink{tupletypeterm}{Tuple types}}
 \newcommand\arraytypeterm[0]{\hyperlink{arraytypeterm}{array type}}
-\newcommand\intarraysterm[0]{\hyperlink{intarraytypeterm}{integer-indexed arrays}}
-\newcommand\intarraytypeterm[0]{\hyperlink{intarraytypeterm}{integer-indexed array type}}
-\newcommand\Intarraytypeterm[0]{\hyperlink{intarraytypeterm}{Integer-indexed array type}}
-\newcommand\enumarraysterm[0]{\hyperlink{enumarraytypeterm}{Enumeration-indexed arrays}}
-\newcommand\Enumarraytypeterm[0]{\hyperlink{enumarraytypeterm}{Enumeration-indexed array type}}
 \newcommand\namedtypeterm[0]{\hyperlink{namedtypeterm}{named type}}
 \newcommand\namedtypesterm[0]{\hyperlink{namedtypeterm}{named types}}
 \newcommand\recordtypeterm[0]{\hyperlink{recordtypeterm}{record type}}
@@ -1656,8 +1645,6 @@
 \newcommand\arrayaccessexpressionsterm[0]{\hyperlink{def-arrayaccessexpressionsterm}{array access expressions}}
 \newcommand\getarrayexpression[2]{\hyperlink{def-getarrayexpressionterm}
   {array read expression} for the array base expression #1 and index expression #2}
-\newcommand\getenumarrayexpression[2]{\hyperlink{def-getenumarrayexpression}
-{array read expression} for the array base expression #1 and enumeration-typed index expression #2}
 \newcommand\getfieldexpression[2]{\hyperlink{def-getfieldexpressionterm}
   {field read expression} for the record base expression #1 and field identifier #2}
 \newcommand\getfieldsexpression[2]{\hyperlink{def-getfieldsexpressionterm}

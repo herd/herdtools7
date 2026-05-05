@@ -40,7 +40,6 @@ module SemanticsRule = struct
     | ESlice
     | ECall
     | EGetArray
-    | EGetEnumArray
     | ESliceError
     | ERecord
     | EGetBitField
@@ -49,7 +48,6 @@ module SemanticsRule = struct
     | EConcat
     | ETuple
     | EArray
-    | EEnumArray
     | EArbitrary
     | EPattern
     | LEDiscard
@@ -59,7 +57,6 @@ module SemanticsRule = struct
     | LEUndefIdentV1
     | LESlice
     | LESetArray
-    | LESetEnumArray
     | LESetField
     | LESetFields
     | LEDestructuring
@@ -136,9 +133,7 @@ module SemanticsRule = struct
     | EConcat -> "EConcat"
     | ETuple -> "ETuple"
     | EArray -> "EArray"
-    | EEnumArray -> "EEnumArray"
     | EGetArray -> "EGetArray"
-    | EGetEnumArray -> "EGetEnumArray"
     | ESliceError -> "ESliceError"
     | EArbitrary -> "EArbitrary"
     | EPattern -> "EPattern"
@@ -147,7 +142,6 @@ module SemanticsRule = struct
     | LEMultiAssign -> "LEMultiAssign"
     | LESlice -> "LESlice"
     | LESetArray -> "LESetArray"
-    | LESetEnumArray -> "LESetEnumArray"
     | LESetField -> "LESetField"
     | LESetFields -> "LESetFields"
     | LEDestructuring -> "LEDestructuring"
@@ -223,7 +217,6 @@ module SemanticsRule = struct
       ESlice;
       ECall;
       EGetArray;
-      EGetEnumArray;
       ESliceError;
       ERecord;
       EGetBitField;
@@ -232,7 +225,6 @@ module SemanticsRule = struct
       EConcat;
       ETuple;
       EArray;
-      EEnumArray;
       EArbitrary;
       EPattern;
       LEDiscard;
@@ -242,7 +234,6 @@ module SemanticsRule = struct
       LEUndefIdentV1;
       LESlice;
       LESetArray;
-      LESetEnumArray;
       LESetField;
       LESetFields;
       LEDestructuring;

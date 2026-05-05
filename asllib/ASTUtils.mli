@@ -305,10 +305,6 @@ val constraints_equal :
   (expr -> expr -> bool) -> int_constraint list -> int_constraint list -> bool
 
 val type_equal : (expr -> expr -> bool) -> ty -> ty -> bool
-
-val array_length_equal :
-  (expr -> expr -> bool) -> array_index -> array_index -> bool
-
 val bitfield_equal : (expr -> expr -> bool) -> bitfield -> bitfield -> bool
 val bitwidth_equal : (expr -> expr -> bool) -> expr -> expr -> bool
 val qualifier_equal : func_qualifier option -> func_qualifier option -> bool

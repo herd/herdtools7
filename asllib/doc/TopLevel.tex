@@ -425,7 +425,7 @@ yielding the type $\newty$.
   \item \AllApplyCase{t\_array}
   \begin{itemize}
     \item $\tty$ is the \arraytypeterm{} with index $\vindex$ and element type $\elemty$;
-    \item applying $\renamelocalsarrayindex$ to $\vindex$ yields $\newindex$;
+    \item applying $\renamelocalsexpr$ to $\vindex$ yields $\newindex$;
     \item applying $\renamelocalsty$ to $\elemty$ yields $\newty$;
     \item \Proseeqdef{$\newty$}{the \arraytypeterm{} with index $\newindex$ and element type $\newty$}.
   \end{itemize}
@@ -491,7 +491,7 @@ yielding the type $\newty$.
 
 \begin{mathpar}
 \inferrule[t\_array]{
-  \renamelocalsarrayindex(\vindex) \astarrow \newindex\\
+  \renamelocalsexpr(\vindex) \astarrow \newindex\\
   \renamelocalsty(\elemty) \astarrow \newty
 }{
   \renamelocalsty(\TArray(\vindex, \elemty)) \astarrow
@@ -950,14 +950,6 @@ yielding the expression $\newe$.
     \item \Proseeqdef{$\newe$}{the \getarrayexpression{$\veonep$}{$\vetwop$}}.
   \end{itemize}
 
-  \item \AllApplyCase{e\_getenumarray}
-  \begin{itemize}
-    \item $\ve$ is an \getenumarrayexpression{$\veone$}{$\vetwo$};
-    \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
-    \item \Proserenamelocalsexpr{$\vetwo$}{$\vetwop$};
-    \item \Proseeqdef{$\newe$}{the \getenumarrayexpression{$\veonep$}{$\vetwop$}}.
-  \end{itemize}
-
   \item \AllApplyCase{e\_getfield}
   \begin{itemize}
     \item $\ve$ is a \getfieldexpression{$\veone$}{$\vf$};
@@ -1115,15 +1107,6 @@ yielding the expression $\newe$.
   \renamelocalsexpr(\vetwo) \astarrow \vetwop
 }{
   \renamelocalsexpr(\overname{\EGetArray(\veone, \vetwo)}{\ve}) \astarrow \overname{\EGetArray(\veonep, \vetwop)}{\newe}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[e\_getenumarray]{
-  \renamelocalsexpr(\veone) \astarrow \veonep\\
-  \renamelocalsexpr(\vetwo) \astarrow \vetwop
-}{
-  \renamelocalsexpr(\overname{\EGetEnumArray(\veone, \vetwo)}{\ve}) \astarrow \overname{\EGetEnumArray(\veonep, \vetwop)}{\newe}
 }
 \end{mathpar}
 
@@ -1459,7 +1442,6 @@ renames the local identifier $\name$,
 yielding the identifier $\newname$.
 } % END_OF_UNIMPORTED_RELATION
 
-
 \ProseParagraph
 \Proseeqdef{$\newname$}{the string concatenation of $\stdliblocalprefix$ and $\name$}.
 
@@ -1467,57 +1449,6 @@ yielding the identifier $\newname$.
 \begin{mathpar}
 \inferrule{}{
   \renamelocalsname(\name) \astarrow \overname{\stdliblocalprefix\ \concatstrings\ \name}{\newname}
-}
-\end{mathpar}
-
-\ASTRuleDef{RenameLocalsArrayIndex}
-\NotImportedToASLSpecYet{
-\hypertarget{def-renamelocalsarrayindex}{}
-The function
-\[
-\renamelocalsarrayindex(\overname{\arrayindex}{\vindex}) \aslto \overname{\arrayindex}{\newindex}
-\]
-renames the identifiers corresponding to local storage elements that appear in the
-array index $\vindex$, yielding the array index $\newindex$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{enum}
-  \begin{itemize}
-    \item $\vindex$ is an index of an enumeration-indexed array type;
-    \item \Proseeqdef{$\newindex$}{$\vindex$}.
-  \end{itemize}
-
-  \item \AllApplyCase{expr}
-  \begin{itemize}
-    \item $\vindex$ is an index of an integer-indexed array type with length expression $\elength$;
-    \item \Proserenamelocalsexpr{$\elength$}{$\newelength$};
-    \item \Proseeqdef{$\newindex$}{index of an integer-indexed array type with length expression $\newelength$}.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule[enum]{
-  \astlabel(\vindex) = \ArrayLengthEnum
-}{
-  \renamelocalsarrayindex(\vindex) \astarrow \overname{\vindex}{\newindex}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[expr]{
-  \renamelocalsexpr(\elength) \astarrow \newelength
-}{
-  {
-  \begin{array}{r}
-  \renamelocalsarrayindex(\overname{\ArrayLengthExpr(\elength)}{\vindex}) \astarrow \\
-  \overname{\ArrayLengthExpr(\newelength)}{\newindex}
-  \end{array}
-  }
 }
 \end{mathpar}
 

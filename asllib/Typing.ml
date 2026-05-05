@@ -659,12 +659,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | `STR_CONCAT | `BIC ->
         false
 
-  (* Begin TypeOfArrayLength *)
-  let type_of_array_length ~loc = function
-    | ArrayLength_Enum (s, _) -> T_Named s |> add_pos_from ~loc
-    | ArrayLength_Expr _ -> integer |: TypingRule.TypeOfArrayLength
-  (* End *)
-
   (* Begin ApplyBinopTypes *)
   let rec apply_binop_types ~loc env op t1 t2 : ty =
     let () =
@@ -790,19 +784,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let check_var_not_in_genv ~loc genv x () =
     if is_global_undefined x genv then () |: TypingRule.CheckVarNotInGEnv
     else fatal_from ~loc (Error.AlreadyDeclaredIdentifier x)
-  (* End *)
-
-  (* Begin GetVariableEnum *)
-  let get_variable_enum' env e =
-    match e.desc with
-    | E_Var x -> (
-        match IMap.find_opt x env.global.declared_types with
-        | Some (t, _) -> (
-            match (Types.make_anonymous env t).desc with
-            | T_Enum labels -> Some (x, labels)
-            | _ -> None)
-        | None -> None)
-    | _ -> None
   (* End *)
 
   (* Begin CheckIsNotCollection *)
@@ -1334,19 +1315,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Array (index, t) ->
         let t', ses_t = annotate_type ~loc env t
         and index', ses_index =
-          match index with
-          | ArrayLength_Expr e -> (
-              match get_variable_enum' env e with
-              | Some (s, labels) -> (ArrayLength_Enum (s, labels), SES.empty)
-              | None ->
-                  let e', ses =
-                    annotate_symbolic_constrained_integer ~loc env e
-                  in
-                  (ArrayLength_Expr e', ses))
-          | ArrayLength_Enum (_, _) ->
-              assert
-                (* Enumerated indices only exist in the typed AST. *)
-                false
+          let e', ses = annotate_symbolic_constrained_integer ~loc env index in
+          (e', ses)
         in
         let ses = SES.union ses_t ses_index in
         (T_Array (index', t') |> here, ses) |: TypingRule.TArray
@@ -2318,21 +2288,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | _ -> conflict ~loc [ default_array_ty ] t_base |: TypingRule.EGetArray
         )
     (* End *)
-    | E_GetItem _ | E_EnumArray _ | E_GetEnumArray _ | E_GetCollectionFields _
-      ->
-        assert false
+    | E_GetItem _ | E_GetCollectionFields _ -> assert false
 
   (* Begin AnnotateGetArray *)
-  and annotate_get_array ~loc env (size, t_elem) (e_base, ses_base, e_index) =
+  and annotate_get_array ~loc env (_size, t_elem) (e_base, ses_base, e_index) =
     let t_index', e_index', ses_index = annotate_expr env e_index in
-    let wanted_t_index = type_of_array_length ~loc size in
-    let+ () = check_type_satisfies ~loc env t_index' wanted_t_index in
+    let+ () = check_type_satisfies ~loc env t_index' integer in
     let ses = ses_non_conflicting_union ~loc ses_index ses_base in
-    let new_e =
-      match size with
-      | ArrayLength_Enum _ -> E_GetEnumArray (e_base, e_index')
-      | ArrayLength_Expr _ -> E_GetArray (e_base, e_index')
-    in
+    let new_e = E_GetArray (e_base, e_index') in
     (t_elem, new_e |> add_pos_from ~loc, ses) |: TypingRule.AnnotateGetArray
   (* End *)
 
@@ -2433,12 +2396,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Tuple li ->
         let exprs = List.map (base_value_v1 ~loc env) li in
         E_Tuple exprs |> here
-    | T_Array (index, ty) -> (
+    | T_Array (e_length, ty) ->
         let value = base_value_v1 ~loc env ty in
-        match index with
-        | ArrayLength_Enum (enum, labels) ->
-            E_EnumArray { enum; labels; value } |> here
-        | ArrayLength_Expr length -> E_Array { length; value } |> here)
+        E_Array { length = e_length; value } |> here
   (* End *)
 
   let rec base_value_v0 ~loc env t : expr =
@@ -2461,12 +2421,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             fields
         in
         E_Record (t, fields) |> here
-    | T_Array (length, ty) -> (
+    | T_Array (e_length, ty) ->
         let value = base_value_v0 ~loc env ty in
-        match length with
-        | ArrayLength_Enum (enum, labels) ->
-            E_EnumArray { enum; labels; value } |> here
-        | ArrayLength_Expr length -> E_Array { length; value } |> here)
+        E_Array { length = e_length; value } |> here
     | T_Named _id ->
         let t = Types.make_anonymous env t in
         base_value_v0 ~loc env t
@@ -2479,18 +2436,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | V1 -> base_value_v1 ~loc env e
 
   (* Begin AnnotateSetArray *)
-  let annotate_set_array ~loc env (size, t_elem) rhs_ty
+  let annotate_set_array ~loc env (_size, t_elem) rhs_ty
       (e_base, ses_base, e_index) =
     let+ () = check_type_satisfies ~loc env rhs_ty t_elem in
     let t_index', e_index', ses_index = annotate_expr env e_index in
-    let wanted_t_index = type_of_array_length ~loc:e_base size in
-    let+ () = check_type_satisfies ~loc env t_index' wanted_t_index in
+    let+ () = check_type_satisfies ~loc env t_index' integer in
     let ses = ses_non_conflicting_union ~loc ses_base ses_index in
-    let new_le =
-      match size with
-      | ArrayLength_Enum _ -> LE_SetEnumArray (e_base, e_index')
-      | ArrayLength_Expr _ -> LE_SetArray (e_base, e_index')
-    in
+    let new_le = LE_SetArray (e_base, e_index') in
     (new_le |> add_pos_from ~loc, ses) |: TypingRule.AnnotateSetArray
   (* End *)
 
@@ -2713,9 +2665,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               (e_base', ses_base, e_index)
         | _ -> conflict ~loc [ default_array_ty ] t_base)
     (* End *)
-    | LE_SetFields (_, _, _ :: _) | LE_SetEnumArray _ | LE_SetCollectionFields _
-      ->
-        assert false
+    | LE_SetFields (_, _, _ :: _) | LE_SetCollectionFields _ -> assert false
 
   (* Begin CheckCanBeInitializedWith *)
   let can_be_initialized_with env s t =
@@ -3352,8 +3302,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let ses = SES.union ses_call ses_e in
           Some (S_Call call |> here, ses)
         else None
-    | LE_SetArray _ | LE_SetEnumArray _ | LE_SetCollectionFields _ ->
-        assert false
+    | LE_SetArray _ | LE_SetCollectionFields _ -> assert false
 
   (** [func_sig_types f] returns a list of the types in the signature [f]. The
       return type is first, followed by the argument types in order. *)

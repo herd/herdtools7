@@ -182,7 +182,7 @@ by overloading $\dynamicdomain$:
 
   \item \AllApply
   \begin{itemize}
-    \item $\vt$ is an integer-indexed array type with length expression $\ve$ and element type $\telem$, $\TArray(\ArrayLengthExpr(\ve), \telem)$;
+    \item $\vt$ is an integer-indexed array type with length expression $\ve$ and element type $\telem$, $\TArray(\ve, \telem)$;
     \item \OneApplies
       \begin{itemize}
       \item \AllApplyCase{t\_array\_dynamic\_error}
@@ -206,17 +206,6 @@ by overloading $\dynamicdomain$:
         \item $\vd$ is the set of all native vectors of $k$ values taken from $D_\telem$.
       \end{itemize}
     \end{itemize}
-  \end{itemize}
-
-  \item \AllApplyCase{t\_enum\_array}
-  \begin{itemize}
-    \item $\vt$ is an enumeration-indexed array type with for the enumeration $\id$ with $k$ labels and element type $\telem$,\\
-          ($\TArray(\ArrayLengthEnum(\id, k), \telem)$);
-    \item view $\env$ as the pair consisting of the \staticenvironmentterm{} $\tenv$ and a dynamic environment;
-    \item the type bound to $\id$ in the $\declaredtypes$ map of the \staticenvironmentterm{} of $\tenv$ is the \enumerationtypeterm{}
-          for the labels $\vl_{1..k}$, that is, $\TEnum(\vl_{1..k})$;
-    \item the dynamic domain of $\telem$ in $\env$ is $D_\telem$;
-    \item $\vd$ is the set of all native records where each $\vl_i$ is mapped to a value taken from $D_\telem$, for $i=1..k$.
   \end{itemize}
 
   \item \AllApplyCase{t\_structured}
@@ -351,7 +340,7 @@ in the \emph{local dynamic environment} of $\denv$.
 
 \begin{mathpar}
 \inferrule[t\_array\_abnormal]{
-  \vt = \TArray(\ArrayLengthExpr(\ve), \telem)\\
+  \vt = \TArray(\ve, \telem)\\
   \evalexprsef(\env, \ve) \evalarrow C\\
   C \in \TDynError \cup \TDiverging
 }{
@@ -364,34 +353,19 @@ in the \emph{local dynamic environment} of $\denv$.
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
   k < 0
 }{
-  \dynamicdomain(\env, \overname{\TArray(\ArrayLengthExpr(\ve), \telem)}{\vt}) = \overname{\emptyset}{\vd}
+  \dynamicdomain(\env, \overname{\TArray(\ve, \telem)}{\vt}) = \overname{\emptyset}{\vd}
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[t\_array\_okay]{
-  \vt = \TArray(\ArrayLengthExpr(\ve), \telem)\\
+  \vt = \TArray(\ve, \telem)\\
   \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
   k \geq 0\\
   \dynamicdomain(\env, \telem) = D_\telem
 }{
   \dynamicdomain(\env, \vt) =
   \overname{\{ \NVVector(\vv_{1..k}) \;|\; \vv_{1..k} \in D_{\telem} \}}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[t\_enum\_array]{
-  \env \reverseeqdef (\tenv, \Ignore)\\
-  \tenv.\staticenvsG.\declaredtypes(\id) = (\TEnum(\vl_{1..k}), \Ignore)\\
-  \dynamicdomain(\env, \telem) = D_\telem
-}{
-  {
-  \begin{array}{c}
-    \dynamicdomain(\env, \overname{\TArray(\ArrayLengthEnum(\id, k), \telem)}{\vt}) =\\
-    \overname{\{ \NVRecord(\{i=1..k: \vl_i\mapsto \vv_i\}) \;|\; \vv_i \in D_\telem \}}{\vd}
-  \end{array}
-  }
 }
 \end{mathpar}
 

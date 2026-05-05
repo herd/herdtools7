@@ -285,7 +285,6 @@ We employ the following rules:
   \item \TypingRuleRef{ConstraintEqual}
   \item \TypingRuleRef{SlicesEqual}
   \item \TypingRuleRef{SliceEqual}
-  \item \TypingRuleRef{ArrayLengthEqual}
 \end{itemize}
 
 \TypingRuleDef{Normalize}
@@ -495,20 +494,6 @@ of \verb|Foo| and the overridden version of \verb|Foo| are equivalent.
 
 
 \RenderProseAndFormally{slice_equal}
-
-\TypingRuleDef{ArrayLengthEqual}
-\RenderRelation{array_length_equal}
-
-\ExampleDef{Array Length Expression Equivalence}
-See \ExampleRef{Expression Equivalence} for examples of equivalent array length expressions.
-
-The specification in \listingref{ArrayLengthEqual-bad} is ill-typed since the array length
-expressions are of different kinds (\integertypeterm{} and \enumerationtypeterm),
-even though they both contain three elements each.
-\ASLListing{Non-equivalent array length expressions}{ArrayLengthEqual-bad}{\typingtests/TypingRule.ArrayLengthEqual.bad.asl}
-
-
-\RenderProseAndFormally{array_length_equal}
 
 \TypingRuleDef{PolynomialToExpr}
 \RenderRelation{polynomial_to_expr}

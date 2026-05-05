@@ -805,24 +805,16 @@ Arrays are sequences of values of a single given type.
 The syntax \verb|array [[expr]] of ty| declares a single-dimensional array of type \texttt{ty}
 with an index type derived from the expression \texttt{expr}.
 %
-ASL offers two kinds of arrays:
-\hypertarget{intarraytypeterm}{}
-\hypertarget{enumarraytypeterm}{}
-\begin{description}
-  \item[\Intarraytypeterm] represents a consecutive list of elements at positions $0$ to the size
-      specified for the array. The array elements can be accessed via an \integertypeterm{}
-      that specifies the $0$-based position of the element to read/update.
-  \item[\Enumarraytypeterm] represents a dictionary-like data type where the keys are defined
-      by a given \enumerationtypeterm{}. The array elements can be accessed via values of the
-      \enumerationtypeterm{} specified for the array type.
-\end{description}
+An array type represents a consecutive list of elements at positions $0$ to the size
+specified for the array. The array elements can be accessed via an \integertypeterm{}
+that specifies the $0$-based position of the element to read/update.
 
 \RequirementDef{ArrayLengthImmutable}
 The length of an array cannot be modified.
 % NO_EXAMPLE
 
 \RequirementDef{ArrayLengthExpression}
-The length expression of an \intarraytypeterm{} must be a \symbolicallyevaluableterm{}
+The length expression of an array type must be a \symbolicallyevaluableterm{}
 expression whose \underlyingtypeterm{} is an \integertypeterm{} .
 
 \ExampleDef{Well-typed Array Types}
@@ -838,15 +830,13 @@ In \listingref{typing-tarray}, all the uses of array types are well-typed.
 \RenderTypes[remove_hypertargets]{ty_array}
 
 
-\RenderType[remove_hypertargets]{array_index}
-
 \ASTRuleDef{Ty.TArray}
 \begin{mathpar}
 \inferrule{}{
   {
   \begin{array}{r}
     \buildty(\Nty(\Tarray, \Tllbracket, \punnode{\Nexpr}, \Trrbracket, \Tof, \punnode{\Nty})) \astarrow\\
-    \overname{\TArray(\ArrayLengthExpr(\astof{\vexpr}), \astof{\tty})}{\vastnode}
+    \overname{\TArray(\astof{\vexpr}, \astof{\tty})}{\vastnode}
   \end{array}
   }
 }

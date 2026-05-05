@@ -8,14 +8,6 @@ type MyRecord of record {
 
 func main() => integer
 begin
-    var color_to_int: array[[Color]] of integer;
-    color_to_int[[RED]] = 0;
-    color_to_int[[GREEN]] = 1;
-    color_to_int[[BLUE]] = 2;
-    assert color_to_int[[RED]] == 0;
-    assert color_to_int[[GREEN]] == 1;
-    assert color_to_int[[BLUE]] == 2;
-
     var r: MyRecord = MyRecord{RED = 0, GREEN = 1, BLUE = 2};
     assert r.RED == 0;
     assert r.GREEN == 1;

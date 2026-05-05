@@ -49,10 +49,5 @@ begin
         integer_array_base[[1]], ", ",
         integer_array_base[[2]], ", ",
         integer_array_base[[3]], "]]";
-    var enumeration_array_base: array[[Color]] of integer;
-    println "enumeration_array_base = [[",
-        RED, "=", enumeration_array_base[[RED]], ", ",
-        GREEN, "=", enumeration_array_base[[GREEN]], ", ",
-        BLUE, "=", enumeration_array_base[[BLUE]], "]]";
     return 0;
 end;

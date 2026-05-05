@@ -18,10 +18,5 @@ begin
     // Legal as `f(z+z)` is equivalent to `f(2*z)`.
     x2 = y2;
 
-    var x3 : array[[Color]] of integer;
-    var y3 : array[[Color]] of integer;
-    // Legal as the same enumeration is used.
-    x3 = y3;
-
     return 0;
 end;

@@ -928,14 +928,6 @@ ast expr { "expression" } =
         array_value: expr { math_macro = \arrayvalue }
       ]
     { "the array construction expression for an array of length given by {length} and all cells initialized by {array_value}" }
-    | E_EnumArray[
-        enum: Identifier,
-        labels: list1(Identifier),
-        enum_array_value: expr { math_macro = \enumarrayvalue }
-      ]
-    { "the array construction expression for an array associating each label in {labels} with the value given by {enum_array_value}" }
-    | E_GetEnumArray(base: expr, key: expr)
-    { "the enumeration-indexed array read expression for the array expression given by {base} and key expression given by {key}" }
     | E_GetCollectionFields(collection_name: Identifier, field_names: list0(Identifier))
     { "the multi-field read expression for the collection variable named {collection_name} and fields given by {field_names}" }
 ;
@@ -974,8 +966,8 @@ render expr_tuple = expr(E_Tuple);
 render expr_arbitrary = expr(E_Arbitrary);
 render expr_pattern = expr(E_Pattern);
 
-render typed_expr { lhs_hypertargets = false } = expr(E_GetItem, E_Array, E_EnumArray, E_GetEnumArray, E_GetCollectionFields);
-render expr_array = expr(E_Array, E_EnumArray);
+render typed_expr { lhs_hypertargets = false } = expr(E_GetItem, E_Array, E_GetCollectionFields);
+render expr_array = expr(E_Array);
 
 constant zero_bit : Bit
 { "\texttt{0}", math_macro = \zerobit };
@@ -1065,7 +1057,7 @@ ast ty { "type" } =
     { "the \bitvectortypeterm{} with bitwidth given by {width} and bitfields given by {bitfields}" }
     | T_Tuple(component_types: list0(ty))
     { "the \tupletypeterm{} with component types given by {component_types}" }
-    | T_Array(index: array_index, element_type: ty)
+    | T_Array(index: expr, element_type: ty)
     { "the \arraytypeterm{} with index given by {index} and element type given by {element_type}" }
     | T_Named(type_name: Identifier)
     { "the \namedtypeterm{} with name {type_name}" }
@@ -1164,22 +1156,7 @@ constant label_BitField_Simple : ASTLabels { math_macro = \BitFieldSimple };
 constant label_BitField_Nested : ASTLabels { math_macro = \BitFieldNested };
 constant label_BitField_Type : ASTLabels { math_macro = \BitFieldType };
 
-ast array_index { "array index" } =
-//////////////////////////////////////////////////
-// Untyped AST
-//////////////////////////////////////////////////
-    ArrayLength_Expr(length: expr)
-    { "the integer length expression {length}" }
-
-//////////////////////////////////////////////////
-// Typed AST
-//////////////////////////////////////////////////
-    | ArrayLength_Enum(enumeration_name: Identifier, enumeration_labels: list1(Identifier))
-    { "the index for the enumeration with name given by {enumeration_name} and labels given by {enumeration_labels}" }
-;
-
 constant label_E_Arbitrary : ASTLabels { math_macro = \EArbitrary };
-constant label_ArrayLength_Expr : ASTLabels { math_macro = \ArrayLengthExpr };
 constant label_E_Call : ASTLabels { math_macro = \ECall };
 constant label_E_Literal : ASTLabels { math_macro = \ELiteral };
 constant label_E_Var : ASTLabels { math_macro = \EVar };
@@ -1188,9 +1165,6 @@ constant label_E_Binop : ASTLabels { math_macro = \EBinop };
 constant label_E_Unop : ASTLabels { math_macro = \EUnop };
 constant label_E_Cond : ASTLabels { math_macro = \ECond };
 constant label_E_Tuple : ASTLabels { math_macro = \ETuple };
-
-render untyped_array_index = array_index(ArrayLength_Expr);
-render typed_array_index = array_index(ArrayLength_Enum);
 
 ast field { "field" } =
     (name: Identifier, type: ty)
@@ -1225,8 +1199,6 @@ ast lexpr { "\assignableexpression{}" } =
 // Typed AST
 ////////////////////////////////////////////////
 
-    | LE_SetEnumArray(base: lexpr, index: expr)
-    { "the array write \assignableexpression{} for the enumeration-indexed array {base} at the index given by {index}" }
     | LE_SetCollectionFields(collection_name: Identifier, field_names: list0(Identifier), slices: list0((Z, Z)))
     { "the multi-field write \assignableexpression{} for the collection named {collection_name}, field names given by {field_names}, and inferred slices given by {slices}", }
     | typed_LE_SetFields(base: lexpr, field_names: list0(Identifier), slices: list0((Z, Z)))
@@ -1249,7 +1221,7 @@ render untyped_lexpr = lexpr(
     LE_SetFields,
     LE_Destructuring,
 );
-render typed_lexpr { lhs_hypertargets = false } = lexpr(LE_SetEnumArray, LE_SetCollectionFields, typed_LE_SetFields);
+render typed_lexpr { lhs_hypertargets = false } = lexpr(LE_SetCollectionFields, typed_LE_SetFields);
 
 render lexpr_discard = lexpr(LE_Discard);
 render lexpr_var = lexpr(LE_Var);
@@ -1258,7 +1230,7 @@ render lexpr_setarray = lexpr(LE_SetArray);
 render lexpr_setfield = lexpr(LE_SetField);
 render lexpr_setfields = lexpr(LE_SetFields);
 render lexpr_destructuring = lexpr(LE_Destructuring);
-render lexpr_setarray_and_typed = lexpr(LE_SetArray, LE_SetEnumArray);
+render lexpr_setarray_and_typed = lexpr(LE_SetArray);
 
 render pattern_all = pattern(Pattern_All);
 render pattern_single = pattern(Pattern_Single);
@@ -2578,7 +2550,7 @@ typing relation annotate_field_init(
 
 typing relation annotate_get_array(
         tenv: static_envs,
-        (size: array_index, t_elem: ty),
+        (size: expr, t_elem: ty),
         (e_base: expr, ses_base: powerset(TSideEffect), e_index: expr)) ->
         (t: ty, new_e: expr, ses: powerset(TSideEffect))
 {
@@ -2599,15 +2571,9 @@ typing relation annotate_get_array(
   math_layout = [(_,(_,_),[_,_,_]),_],
 } =
   annotate_expr(tenv, e_index) -> (t_index', e_index', ses_index);
-  type_of_array_length(size) -> wanted_t_index;
-  check_type_satisfies(tenv, t_index', wanted_t_index) -> True;
+  check_type_satisfies(tenv, t_index', unconstrained_integer) -> True;
   ses := union(ses_index, ses_base);
-  new_e :=
-    if ast_label(size) = label_ArrayLength_Expr then
-      E_GetArray(e_base, e_index')
-    else
-      E_GetEnumArray(e_base, e_index')
-  { math_layout = (lhs, [_]) };
+  new_e := E_GetArray(e_base, e_index');
   --
   (t_elem, new_e, ses)
   { math_layout = [_] };
@@ -2832,17 +2798,6 @@ semantics relation eval_expr(env: envs, e: expr) ->
     ResultExpr((v, g), new_env);
   }
 
-  case EGetEnumArray {
-    e =: E_GetEnumArray(e_array, e_index);
-    eval_expr(env, e_array) -> ResultExpr((v_array, g1), env1);
-    eval_expr(env1, e_index) -> ResultExpr((v_index, g2), new_env);
-    v_index =: NV_Literal(L_Label(label));
-    get_field(label, v_array) -> v;
-    g := parallel(g1, g2);
-    --
-    ResultExpr((v, g), new_env);
-  }
-
   case EGetTupleItem {
     e =: E_GetItem(e_tuple, index);
     eval_expr(env, e_tuple) -> ResultExpr((v_tuple, g), new_env);
@@ -2903,16 +2858,6 @@ semantics relation eval_expr(env: envs, e: expr) ->
     );
     v := NV_Vector(values);
     g := parallel(g1, g2);
-    --
-    ResultExpr((v, g), new_env);
-  }
-
-  case EEnumArray {
-    e =: E_EnumArray[ enum: _, labels: labels, enum_array_value: e_value ];
-    eval_expr(env, e_value) -> ResultExpr((value, g), new_env);
-    label_value_pairs := list_map(l, labels, (l, value));
-    field_map := bindings_to_map(label_value_pairs);
-    v := NV_Record(field_map);
     --
     ResultExpr((v, g), new_env);
   }
@@ -2988,14 +2933,12 @@ render rule eval_expr_ECond = eval_expr(ECond);
 render rule eval_expr_ECall = eval_expr(ECall);
 render rule eval_expr_ESlice = eval_expr(ESlice);
 render rule eval_expr_EGetArray = eval_expr(EGetArray);
-render rule eval_expr_EGetEnumArray = eval_expr(EGetEnumArray);
 render rule eval_expr_EGetTupleItem = eval_expr(EGetTupleItem);
 render rule eval_expr_ERecord = eval_expr(ERecord);
 render rule eval_expr_EGetField = eval_expr(EGetField);
 render rule eval_expr_EGetFields = eval_expr(EGetFields);
 render rule eval_expr_ETuple = eval_expr(ETuple);
 render rule eval_expr_EArray = eval_expr(EArray);
-render rule eval_expr_EEnumArray = eval_expr(EEnumArray);
 render rule eval_expr_EArbitrary = eval_expr(EArbitrary);
 render rule eval_expr_EPattern = eval_expr(EPattern);
 render rule eval_expr_EGetCollectionFields = eval_expr(EGetCollectionFields);
@@ -3429,21 +3372,6 @@ semantics relation eval_lexpr(env: envs, le: lexpr, m: (native_value, XGraphs)) 
     ResultLexpr(new_g, new_env);
   }
 
-  case LESetEnumArray {
-    le =: LE_SetEnumArray(re_array, e_index);
-    m =: (v, g);
-    eval_expr(env, rexpr(re_array)) -> ResultExpr(rm_array, env1);
-    eval_expr(env1, e_index) -> ResultExpr(m_index, env2);
-    m_index =: (index, g1);
-    index =: NV_Literal(L_Label(l));
-    rm_array =: (rv_array, g2);
-    set_field(l, v, rv_array) -> v1;
-    m1 := (v1, ordered_data(g, parallel(g1, g2)));
-    eval_lexpr(env2, re_array, m1) -> ResultLexpr(new_g, new_env);
-    --
-    ResultLexpr(new_g, new_env);
-  }
-
   case LESetField {
     le =: LE_SetField(re_record, field_name);
     m =: (v, g);
@@ -3491,7 +3419,6 @@ render rule eval_lexpr_LEDiscard = eval_lexpr(LEDiscard);
 render rule eval_lexpr_LEVar = eval_lexpr(LEVar);
 render rule eval_lexpr_LEDestructuring = eval_lexpr(LEDestructuring);
 render rule eval_lexpr_LESetArray = eval_lexpr(LESetArray);
-render rule eval_lexpr_LESetEnumArray = eval_lexpr(LESetEnumArray);
 render rule eval_lexpr_LESlice = eval_lexpr(LESlice);
 render rule eval_lexpr_LESetField = eval_lexpr(LESetField);
 render rule eval_lexpr_LESetFields = eval_lexpr(LESetFields);
@@ -3561,7 +3488,7 @@ semantics relation protected_multi_assign(env: envs, lelist: list0(lexpr), vmlis
 
 typing relation annotate_set_array(
   tenv: static_envs,
-  (size: array_index, t_elem: ty),
+  (size: expr, t_elem: ty),
   rhs_ty: ty,
   (e_base: lexpr, ses_base: powerset(TSideEffect), e_index: expr)
   ) ->
@@ -3579,14 +3506,9 @@ typing relation annotate_set_array(
 } =
   check_type_satisfies(tenv, rhs_ty, t_elem) -> True;
   annotate_expr(tenv, e_index) -> (t_index', e_index', ses_index);
-  type_of_array_length(size) -> wanted_t_index;
-  check_type_satisfies(tenv, t_index', wanted_t_index) -> True;
+  check_type_satisfies(tenv, t_index', unconstrained_integer) -> True;
   ses := union(ses_base, ses_index);
-  new_le := if_then_else(
-    equal(ast_label(size), label_ArrayLength_Expr),
-    LE_SetArray(e_base, e_index'),
-    LE_SetEnumArray(e_base, e_index')
-  ) { (_, [_]) };
+  new_le := LE_SetArray(e_base, e_index');
   --
   (new_le, ses) { ([_], _) };
 ;
@@ -3805,18 +3727,11 @@ typing function base_value(tenv: static_envs, t: ty) ->
     E_Tuple(match_non_empty_list(es));
   }
 
-  case t_array_enum {
-    t =: T_Array(ArrayLength_Enum(enum, labels), ty);
-    base_value(tenv, ty) -> value;
-    --
-    E_EnumArray [ enum : enum, labels : labels, enum_array_value : value ];
-  }
-
   case t_array_expr {
-    t =: T_Array(ArrayLength_Expr(length), ty);
+    t =: T_Array(e_length, ty);
     base_value(tenv, ty) -> value;
     --
-    E_Array[ length : length, array_value : value ];
+    E_Array[ length : e_length, array_value : value ];
   }
 ;
 
@@ -6003,22 +5918,9 @@ typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) 
     make_anonymous(tenv, t) -> T_Array(length_t, ty_t);
     type_equal(tenv, ty_s, ty_t) -> True | False;
     bool_transition(ast_label(length_s) = ast_label(length_t)) -> True | False;
-    length_s =: ArrayLength_Expr(length_expr_s);
-    length_t =: ArrayLength_Expr(length_expr_t);
-    expr_equal(tenv, length_expr_s, length_expr_t) -> b;
+    expr_equal(tenv, length_s, length_t) -> b;
     --
     b;
-  }
-
-  case t_array_enum {
-    make_anonymous(tenv, s) -> T_Array(length_s, ty_s);
-    make_anonymous(tenv, t) -> T_Array(length_t, ty_t);
-    type_equal(tenv, ty_s, ty_t) -> True;
-    bool_transition(ast_label(length_s) = ast_label(length_t)) -> True | False;
-    length_s =: ArrayLength_Enum(name_s, _);
-    length_t =: ArrayLength_Enum(name_t, _);
-    --
-    name_s = name_t;
   }
 
   case t_tuple {
@@ -6260,7 +6162,7 @@ typing relation lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (ty: 
     t =: T_Array(width_t, ty_t);
     s =: T_Array(width_s, ty_s);
     type_equal(tenv, t, s) -> False;
-    array_length_equal(tenv, width_t, width_s) -> b_equal_length;
+    expr_equal(tenv, width_t, width_s) -> b_equal_length;
     te_check(b_equal_length, TE_LCA) -> True;
     lowest_common_ancestor(tenv, ty_t, ty_s) -> ty1;
     --
@@ -8557,15 +8459,8 @@ typing function use_ty(t: ty) -> (ids: powerset(def_use_name))
   }
 
   case array_expr {
-    t =: T_Array(ArrayLength_Expr(e), ty);
+    t =: T_Array(e, ty);
     ids := union(use_expr(e), use_ty(ty));
-    --
-    ids;
-  }
-
-  case array_enum {
-    t =: T_Array(ArrayLength_Enum(enum, _), ty);
-    ids := union(make_set(Other(enum)), use_ty(ty));
     --
     ids;
   }
@@ -8633,12 +8528,6 @@ typing function use_expr(e: expr) -> (ids: powerset(def_use_name))
 
   case e_getarray {
     e =: E_GetArray(e1, e2);
-    --
-    union(use_expr(e1), use_expr(e2));
-  }
-
-  case e_getenumarray {
-    e =: E_GetEnumArray(e1, e2);
     --
     union(use_expr(e1), use_expr(e2));
   }
@@ -8716,14 +8605,6 @@ case e_array {
   union(use_expr(e1), use_expr(e2));
 }
 
-  case e_enumarray {
-    e =: E_EnumArray[enum: enum_id, labels: labels, enum_array_value: v];
-    label_ids := list_map(l, labels, make_set(Other(l)));
-    ids := union(make_set(Other(enum_id)), union_list(label_ids), use_expr(v));
-    --
-    ids;
-  }
-
   case e_arbitrary {
     e =: E_Arbitrary(ty);
     --
@@ -8773,13 +8654,6 @@ typing function use_lexpr(le: lexpr) ->
 
   case le_setarray {
     le =: LE_SetArray(le1, e1);
-    ids := union(use_lexpr(le1), use_expr(e1));
-    --
-    ids;
-  }
-
-  case le_setenumarray {
-    le =: LE_SetEnumArray(le1, e1);
     ids := union(use_lexpr(le1), use_expr(e1));
     --
     ids;
@@ -10606,14 +10480,6 @@ typing function subst_expr(tenv: static_envs, substs: list0((Identifier, expr)),
     E_GetArray(e1', e2');
   }
 
-  case e_getenumarray {
-    e =: E_GetEnumArray(e1, e2);
-    subst_expr(tenv, substs, e1) -> e1';
-    subst_expr(tenv, substs, e2) -> e2';
-    --
-    E_GetEnumArray(e1', e2');
-  }
-
   case e_getfield {
     e =: E_GetField(e1, field);
     subst_expr(tenv, substs, e1) -> e1';
@@ -10673,13 +10539,6 @@ typing function subst_expr(tenv: static_envs, substs: list0((Identifier, expr)),
     subst_expr(tenv, substs, value) -> value';
     --
     E_Array[length: length', array_value: value'];
-  }
-
-  case e_enumarray {
-    e =: E_EnumArray[enum: enum_id, labels: labels, enum_array_value: value];
-    subst_expr(tenv, substs, value) -> value';
-    --
-    E_EnumArray[enum: enum_id, labels: labels, enum_array_value: value'];
   }
 
   case e_atc {
@@ -12683,7 +12542,7 @@ typing function type_equal(tenv: static_envs, t1: ty, t2: ty) ->
   case tarray {
     t1 =: T_Array(l1, ty1);
     t2 =: T_Array(l2, ty2);
-    array_length_equal(tenv, l1, l2) -> b1;
+    expr_equal(tenv, l1, l2) -> b1;
     type_equal(tenv, ty1, ty2) -> b2;
     --
     b1 && b2;
@@ -12913,36 +12772,6 @@ typing function slice_equal(tenv: static_envs, slice1: slice, slice2: slice) ->
     ast_label(slice1) != ast_label(slice2);
     --
     False;
-  }
-;
-
-typing function array_length_equal(tenv: static_envs, l1: array_index, l2: array_index) ->
-         (b: Bool) | type_error
-{
-  "tests whether the array lengths {l1} and {l2} are
-  equivalent and yields the result in {b}.
-  \ProseOtherwiseTypeError",
-  prose_transition = "testing whether {l1} and {l2} are equivalent yields",
-} =
-  case different_labels {
-    ast_label(l1) != ast_label(l2);
-    --
-    False;
-  }
-
-  case expr_expr {
-    l1 =: ArrayLength_Expr(e1);
-    l2 =: ArrayLength_Expr(e2);
-    expr_equal(tenv, e1, e2) -> b;
-    --
-    b;
-  }
-
-  case enum_enum {
-    l1 =: ArrayLength_Enum(enum1, _);
-    l2 =: ArrayLength_Enum(enum2, _);
-    --
-    enum1 = enum2;
   }
 ;
 
@@ -14613,23 +14442,12 @@ typing relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
   }
 
   case t_array {
-    ty =: T_Array(index, t);
+    ty =: T_Array(e_length, t);
     annotate_type(False, tenv, t) -> (t', ses_t);
-    index =: ArrayLength_Expr(e);
-    case expr_is_enum {
-      get_variable_enum(tenv, e) -> some((s, labels));
-      index' := ArrayLength_Enum(s, labels);
-      ses_index := empty_set;
-    }
-
-    case expr_not_enum {
-      get_variable_enum(tenv, e) -> none;
-      annotate_symbolic_constrained_integer(tenv, e) -> (e', ses_index);
-      index' := ArrayLength_Expr(e');
-    }
+    annotate_symbolic_constrained_integer(tenv, e_length) -> (e', ses_index);
     ses := union(ses_t, ses_index);
     --
-    (T_Array(index', t'), ses)
+    (T_Array(e', t'), ses)
     { [_] };
   }
 
@@ -14845,25 +14663,6 @@ typing function find_bitfield_opt(name: Identifier, bitfields: list0(bitfield)) 
     bitfields = empty_list;
     --
     none;
-  }
-;
-
-typing function type_of_array_length(size: array_index) ->
-         (t: ty)
-{
-  "returns the type {t} for the array length {size}.",
-  prose_transition = "returning the type of {size} yields",
-} =
-  case enum {
-    size =: ArrayLength_Enum(name, _);
-    --
-    T_Named(name);
-  }
-
-  case expr {
-    size = ArrayLength_Expr(_);
-    --
-    unconstrained_integer;
   }
 ;
 

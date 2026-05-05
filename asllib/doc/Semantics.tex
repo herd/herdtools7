@@ -127,9 +127,8 @@ To formalize this, we define the set of \emph{\nativevaluesterm} as follows
 
 Specifically:
 \begin{itemize}
-  \item $\NVLiteral(\vv)$ represents integer literal, real literal, Boolean literal, string literals, and bitvector literals;
-  \item $\NVVector(\vl)$ represents tuples and \intarraysterm{}; and
-  \item $\NVRecord(\vr)$ represents records and \enumarraysterm{}.
+  \item $\NVLiteral(\vv)$ represents integer literal, real literal, Boolean literal, string literals, and bitvector literals; and
+  \item $\NVVector(\vl)$ represents tuples and arrays.
 \end{itemize}
 
 We define the following shorthand notations for \nativevalueterm{} literals:
@@ -578,7 +577,7 @@ These are:
   \item arguments and parameters to a function call (\SemanticsRuleRef{ECall} and \SemanticsRuleRef{SCall});
   \item tuple expressions (\SemanticsRuleRef{ETuple} and \SemanticsRuleRef{LEDestructuring});
   \item non-short-circuiting binary operations (\SemanticsRuleRef{Binop});
-  \item array-indexing (\SemanticsRuleRef{EGetArray}, \SemanticsRuleRef{EGetEnumArray}) --- in particular, for \verb|arr[[idx]]| whether \verb|arr| or \verb|idx| is evaluated first;
+  \item array-indexing (\SemanticsRuleRef{EGetArray}) --- in particular, for \verb|arr[[idx]]| whether \verb|arr| or \verb|idx| is evaluated first;
   \item slicing expressions (\SemanticsRuleRef{ESlice} and \SemanticsRuleRef{LESlice});
   \item record construction expressions (\SemanticsRuleRef{ERecord});
   \item arguments to \verb|print| and \verb|println| (\SemanticsRuleRef{SPrint});

@@ -54,7 +54,6 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.EPattern.asl
   $ aslref SemanticsRule.LELocalVar.asl
   $ aslref SemanticsRule.LESetArray.asl
-  $ aslref SemanticsRule.LESetEnumArray.asl
   $ aslref SemanticsRule.SReturnNone.asl
   $ aslref SemanticsRule.SCond.asl
   $ aslref SemanticsRule.SCase.asl
@@ -238,7 +237,6 @@ ASL Semantics Tests:
   [1]
   $ aslref SemanticsRule.SCond4.asl
   $ aslref SemanticsRule.STry.asl
-  $ aslref SemanticsRule.EGetEnumArray.asl
   $ aslref SemanticsRule.CheckNonOverlappingSlices.asl
   $ aslref SemanticsRule.CheckNonOverlappingSlices.bad.asl
   ASL Dynamic error: overlapping slices (N - 2)+:2, 0+:1.
