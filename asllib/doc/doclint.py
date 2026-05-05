@@ -713,6 +713,7 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\begin\{Verbatim\}.*?\\end\{Verbatim\}",
         r"\\begin\{verbatim\}.*?\\end\{verbatim\}",
         r"\\begin{tabular}.*?\\end{tabular}",
+        r"\\begin{adjustbox}.*?\\end{adjustbox}",
         r"subsubsection",
         r"\\verb\|.*?\|",
         r"\\stdlibfunc{.*?}",

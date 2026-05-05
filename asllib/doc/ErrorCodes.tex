@@ -152,7 +152,7 @@ The following table summarises all error codes.
   $\LexicalError$                & Lexical error                  & Build         \\
   $\ParseError$                  & Parse error                    & "             \\
   $\ReservedIdentifier$          & Reserved identifier            & "             \\
-  $\BinopPrecedence$             & Binary operation precedence    & "             \\
+  $\BinopPriority$               & Binary operation priority    & "             \\
   $\BuildBadDeclaration$         & Bad declaration                & "             \\
   \hline
   $\UndefinedIdentifier$         & Undefined identifier           & Typing        \\
@@ -207,11 +207,11 @@ The following table summarises all error codes.
     A reserved identifier was used. \\
     See \LexicalRuleRef{ReservedIdentifiers}.
 
-  \hypertarget{def-binopprecedence}{}
-  \item[$\BinopPrecedence$]
-    \textit{Binary operation precedence.}
-    A compound \binopexpressionterm{} consisting of two associative binary operators of the same precedence was used without sufficient parentheses.
-    See \ASTRuleRef{CheckNotSamePrec}.
+  \hypertarget{def-binoppriority}{}
+  \item[$\BinopPriority$]
+    \textit{Binary operation priority.}
+    A compound \binopexpressionterm{} consisting of two associative binary operators of the same priority was used without sufficient parentheses.
+    See \ASTRuleRef{CheckNotSamePriority}.
 
   \hypertarget{def-buildbaddeclaration}{}
   \item[$\BuildBadDeclaration$]
