@@ -37,6 +37,7 @@ module InterpConf = struct
   let display_call_stack_on_error = false
   let track_symbolic_path = false
   let bit_clear_optimisation = false
+  let return_evt = true
 end
 
 module SB = Native.StaticBackend
