@@ -55,7 +55,7 @@ jobs:
       - name: Install opam dependencies
         run: opam install . --deps-only --yes --with-test
 
-      - run: opam exec -- make build DUNE_PROFILE=dev
+      - run: opam exec -- make all DUNE_PROFILE=dev
 
       - run: opam exec -- make test DUNE_PROFILE=dev
 
