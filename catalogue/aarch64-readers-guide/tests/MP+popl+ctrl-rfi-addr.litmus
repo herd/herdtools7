@@ -1,4 +1,4 @@
-AArch64 PPOCA
+AArch64 MP+popl+ctrl-rfi-addr
 {
 0:X1=x; 0:X3=y;
 1:X3=y; 1:X4=z; 1:X1=x;
