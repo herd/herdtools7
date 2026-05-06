@@ -86,6 +86,10 @@ Examples used in ASL High-level Definition:
   12
   Print statements:
   12341234
+  $ aslref EvaluationOrderAndParenthesis.asl
+  123
+  123
+  123
   $ aslref --no-exec GuideRule.BitvectorWidthBounds.asl
   $ aslref GuideRule.TupleLength.asl
   $ aslref GuideRule.TupleElementAccess.asl

@@ -1548,8 +1548,15 @@ the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
 \section{Parenthesized Expressions\label{sec:ParenthesizedExpressions}}
 A single expression inside parentheses is not considered to be a tuple, but rather the element
 inside the parenthesis.
-Parenthesizing an expression can be used to improve readability, enforce an order of evaluation,
-and avoid binary operator precedence errors (see \ASTRuleRef{CheckNotSamePrec}).
+Parenthesizing an expression can be used to improve readability, enforce a bracketing
+of operations, and avoid binary operator precedence errors (see \ASTRuleRef{CheckNotSamePrec}).
+
+Note that parenthesising of expressions and ASL1.0's defined evaluation order
+(see \secref{EvaluationOrder}) are distinct concepts.
+In particular, \listingref{evaluation-order-and-parenthesis}
+demonstrates how parenthesising of expressions does not affect ordering
+of side-effects. More precisely, parentheses affect how text is parsed into
+ASL's AST, and then evaluation order is defined with respect to ASL's AST.
 
 \subsection{Syntax}
 \begin{flalign*}
