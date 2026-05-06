@@ -254,6 +254,7 @@ bounded
 bounds
 braces
 bracketed
+bracketing
 branch
 branches
 brands
@@ -1523,6 +1524,7 @@ parameters
 parametric
 parentheses
 parenthesis
+parenthesising
 parenthesized
 parenthesizing
 parlance
