@@ -1,9 +1,4 @@
 AArch64 IRIW+dmb.lds
-"Rfe DMB.LDdRR Fre Rfe DMB.LDdRR Fre"
-Generator=diyone7 (version 7.57+1)
-Prefetch=1:x=F,1:y=T,3:y=F,3:x=T
-Com=Rf Fr Rf Fr
-Orig=Rfe DMB.LDdRR Fre Rfe DMB.LDdRR Fre
 {
 0:X1=x;
 1:X1=x; 1:X2=y;
