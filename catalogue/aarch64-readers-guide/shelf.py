@@ -1,4 +1,4 @@
-record = "Concurrency Readers' Guide"
+record = "AArch64 Readers' Guide"
 
 cats = [
     "cats/aarch64.cat",
