@@ -297,9 +297,7 @@ let () =
       Warn.fatal "relaxations provided in relaxlist could not be used to generate cycles"
     end ;
     let safe = M.parse_argument_list !Config.safes in
-    let reject = match !Config.rejects with
-            | None -> []
-            | Some r -> M.parse_argument r in
+    let reject = M.parse_argument_list !Config.rejects in
     match !Config.filter_check with
     | [lhs;rhs] ->
         let lhs_unfold = M.parse_argument lhs in

@@ -700,10 +700,11 @@ module Make(C:Builder.S)
         debug_rs stderr safe
       end ;
       let relax_set = C.R.Set.of_list relax
-      and safe_set = C.R.Set.of_list safe in
+      and safe_set = C.R.Set.of_list safe
+      and reject_set = C.R.Set.of_list reject in
       let relax = C.R.Set.elements relax_set
       and safe = C.R.Set.elements (C.R.Set.diff safe_set relax_set)
-(*      and reject = C.R.Set.elements reject_set *)in
+      and reject = C.R.Set.elements reject_set in
       if O.verbose > 0 then begin
         eprintf "** Relax **\n" ;
         debug_rs stderr relax ;
