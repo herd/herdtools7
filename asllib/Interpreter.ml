@@ -78,6 +78,7 @@ module type Config = sig
   val display_call_stack_on_error : bool
   val track_symbolic_path : bool
   val bit_clear_optimisation : bool
+  val return_evt : bool
 end
 
 module Make (B : Backend.S) (C : Config) = struct
@@ -200,6 +201,12 @@ module Make (B : Backend.S) (C : Config) = struct
   let ( let*= ) = B.bind_ctrl
   let ( >>*= ) = B.bind_ctrl
 
+  (* Sequential bind, except if return events are deactivated.
+
+     Note for documentation: because by default, return events are considered,
+     this can be transliterated to bind_seq. *)
+  let bind_return = if C.return_evt then B.bind_seq else B.bind_data
+
   (* Choice *)
   let choice ~pos env m v1 v2 =
     let next (res, decision, v) =
@@ -255,6 +262,9 @@ module Make (B : Backend.S) (C : Config) = struct
   let ( let**| ) = bind_exception_seq
   let bind_exception_data m f = bind_exception B.bind_data m f
   let ( let** ) = bind_exception_data
+
+  (* Note for documentation: this can be transliterated as bind_exception_seq *)
+  let bind_exception_return m f = bind_exception bind_return m f
 
   (* Continue *)
   (* [bind_continue m f] executes [f] on [m] only if [m] is [Normal (Continuing _)] *)
@@ -476,6 +486,10 @@ module Make (B : Backend.S) (C : Config) = struct
     return v |: SemanticsRule.ReadValueFrom
   (* End *)
 
+  (* Note for documentation: this can be considered to be [read_value_from]. *)
+  let read_value_from_call ((v, _, _) as value_read_from) =
+    if C.return_evt then read_value_from value_read_from else return v
+
   let big_op default op =
     let folder m_acc m =
       let* acc = m_acc and* v = m in
@@ -649,7 +663,8 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalECall *)
     | E_Call { name; params; args } ->
         (* pass [params] and [args] as labelled arguments to avoid confusion *)
-        let**| ms, new_env = eval_call (to_pos e) name env ~params ~args in
+        bind_exception_return (eval_call (to_pos e) name env ~params ~args)
+        @@ fun (ms, new_env) ->
         let* v =
           match ms with
           | [ m ] -> m
@@ -1172,7 +1187,7 @@ module Make (B : Backend.S) (C : Config) = struct
         return_continue new_env |: SemanticsRule.SAssign
     (* End *)
     (* Begin EvalSReturn *)
-    | S_Return (Some { desc = E_Tuple es; _ }) ->
+    | S_Return (Some { desc = E_Tuple es; _ }) when C.return_evt ->
         let**| ms, new_env = eval_expr_list_m env es in
         let scope = IEnv.get_scope new_env in
         let folder acc m =
@@ -1186,7 +1201,9 @@ module Make (B : Backend.S) (C : Config) = struct
     | S_Return (Some e) ->
         let** v, env1 = eval_expr env e in
         let* () =
-          B.on_write_identifier (return_identifier 0) (IEnv.get_scope env1) v
+          if C.return_evt then
+            B.on_write_identifier (return_identifier 0) (IEnv.get_scope env1) v
+          else return ()
         in
         return_return env1 [ v ] |: SemanticsRule.SReturn
     | S_Return None -> return_return env [] |: SemanticsRule.SReturn
@@ -1484,13 +1501,13 @@ module Make (B : Backend.S) (C : Config) = struct
     let* vargs = vargs and* vparams = vparams in
     let genv = IEnv.incr_pending_calls ~pos name env2.global in
     let res = eval_subprogram genv name pos ~params:vparams ~args:vargs in
-    B.bind_seq res @@ function
+    bind_return res @@ function
     | Throwing (v, v_ty, env_throw) ->
         let genv2 = IEnv.decr_pending_calls name env_throw.global in
         let new_env = IEnv.{ local = env2.local; global = genv2 } in
         return (Throwing (v, v_ty, new_env)) |: SemanticsRule.Call
     | Normal (values_read_from, global) ->
-        let ms2 = List.map read_value_from values_read_from in
+        let ms2 = List.map read_value_from_call values_read_from in
         let genv2 = IEnv.decr_pending_calls name global in
         let new_env = IEnv.{ local = env2.local; global = genv2 } in
         return_normal (ms2, new_env) |: SemanticsRule.Call
@@ -1522,19 +1539,23 @@ module Make (B : Backend.S) (C : Config) = struct
           List.fold_right
             (fun m (i, acc) ->
               let x = return_identifier i in
-              let m' =
-                let*| v =
+              let acc' =
+                let m' =
                   let* v = m in
-                  let* () = B.on_write_identifier x scope v in
+                  let* () =
+                    if C.return_evt then B.on_write_identifier x scope v
+                    else return ()
+                  in
                   return (v, x, scope)
-                and* vs = acc in
+                in
+                bind_return (B.prod_par m' acc) @@ fun (v, vs) ->
                 return (v :: vs)
               in
-              (i + 1, m'))
+              (i + 1, acc'))
             ms
             (0, return [])
         in
-        let*| vs = vsm in
+        bind_return vsm @@ fun vs ->
         return_normal (vs, genv) |: SemanticsRule.FPrimitive
     (* End *)
     (* Begin EvalFBadArity *)
@@ -1580,7 +1601,7 @@ module Make (B : Backend.S) (C : Config) = struct
          in
          let param_names = List.map fst param_decls in
          let*| env3 = List.fold_left2 declare_arg env2 param_names params in
-         let**| res = eval_stmt env3 body in
+         bind_exception_return (eval_stmt env3 body) @@ fun res ->
          let () =
            if false then Format.eprintf "Finished evaluating %s.@." name
          in
@@ -1637,7 +1658,7 @@ module Make (B : Backend.S) (C : Config) = struct
       eval_subprogram env main_name dummy_annotated ~params:[] ~args:[]
     in
     (match res with
-      | Normal ([ v ], _genv) -> read_value_from v
+      | Normal ([ v ], _genv) -> read_value_from_call v
       | Normal _ ->
           Error.(
             fatal_unknown_pos
