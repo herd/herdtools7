@@ -1,4 +1,5 @@
 AArch64 DIC1.MP.FF+dmb.st+po
+Variant=ifetch
 CacheType=DIC
 {
 0:X0=NOP; 0:X1=P1:Lself00; 0:X2=P1:Lself01;
