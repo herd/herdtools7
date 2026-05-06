@@ -292,9 +292,7 @@ let () =
     (* Parse inputs `relax` `safe` and `reject` *)
     let relax = M.parse_argument_list !Config.relaxs in
     let safe = M.parse_argument_list !Config.safes in
-    let reject = match !Config.rejects with
-            | None -> []
-            | Some r -> M.parse_argument r in
+    let reject = M.parse_argument_list !Config.rejects in
     match !Config.filter_check with
     | [lhs;rhs] ->
         let lhs_unfold = M.parse_argument lhs in

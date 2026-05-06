@@ -50,7 +50,7 @@ let optcoherence = ref false
 let bell = ref None
 let scope = ref Scope.No
 let variant = ref (fun (_:Variant_gen.t) -> false)
-let rejects = ref None
+let rejects = ref ([] : string list)
 let stdout = ref false
 let cycleonly = ref false
 let unfold_only = ref false
@@ -371,8 +371,10 @@ let diy_spec () =
     with_top_level_choice_doc "<relax-list> specify a safe list")::
    ("-relaxlist", Arg.String (fun s -> safes := !safes @[s]),
     with_top_level_choice_doc "<relax-list> specify a list of relaxations of interest (alias for -safe)")::
-   ("-rejectlist", Arg.String (fun s -> rejects := Some s),
+   ("-rejectlist", Arg.String (fun s -> rejects := !rejects @ [s]),
    "<reject-list> specify a list of relaxation combinations to reject from generation")::
+   ("-reject", Arg.String (fun s -> rejects := !rejects @ [s]),
+   "<reject-list> alias for -rejectlist")::
    stdout_spec false ::
    varatomspec ::
      ("-filter-check", Arg.Tuple [

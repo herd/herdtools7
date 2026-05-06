@@ -673,3 +673,81 @@ A valid cycle with duplicate wraparound annotations plus insert and store edges
   Fre
   ***reject***
   
+`diy7 -unfold-only` also unfolds `-rejectlist`
+  $ diy7 -arch AArch64 -rejectlist 'Fre|Coe' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  
+  ***reject***
+  Fre Coe
+  $ diy7 -arch AArch64 -rejectlist 'Fre?' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  
+  ***reject***
+  [] Fre
+  $ diy7 -arch AArch64 -rejectlist '[PodWR Fre]' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  
+  ***reject***
+  [PodWR,Fre]
+  $ diy7 -arch AArch64 -rejectlist 'Fre Coe' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  
+  ***reject***
+  Fre Coe
+  $ diy7 -arch AArch64 -rejectlist '@after(PodWR|Fre)' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  
+  ***reject***
+  @after(Fre) @after(PodWR)
+  $ diy7 -arch AArch64 -rejectlist '@before(PodWR?)' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  
+  ***reject***
+  [] @before(PodWR)
+
+`diy7 -unfold-only` removes duplicate reject edges after unfolding
+  $ diy7 -arch AArch64 -rejectlist 'Fre|Fre' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  
+  ***reject***
+  Fre
+
+`diy7 -unfold-only` accumulates repeated `-rejectlist`
+  $ diy7 -arch AArch64 -rejectlist 'PodWW' -rejectlist 'Fre' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  
+  ***reject***
+  Fre PodWW
+
+`diy7 -reject` is an alias for `-rejectlist`
+  $ diy7 -arch AArch64 -reject 'PodWW' -rejectlist 'Fre' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  
+  ***reject***
+  Fre PodWW
+
+  $ diy7 -arch AArch64 -rejectlist 'PodWW' -rejectlist 'Fre' -rejectlist 'PodWW' -unfold-only 2>&1
+  ***relax***
+  
+  ***safe***
+  
+  ***reject***
+  Fre PodWW
