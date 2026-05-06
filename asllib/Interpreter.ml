@@ -1353,7 +1353,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | None -> check_recurse_cutoff pending_calls
     | Some limit ->
         if limit < pending_calls then
-          fatal_from pos env Error.RecursionLimitReached
+          fatal_from pos env (Error.RecursionLimitReached C.error_handling_time)
         else check_recurse_cutoff pending_calls
 
   and tick_loop_limit loc env limit_opt =

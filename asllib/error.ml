@@ -83,7 +83,7 @@ type error_desc =
   | UnexpectedATC
   | UnreachableReached
   | LoopLimitReached
-  | RecursionLimitReached
+  | RecursionLimitReached of error_handling_time
   | EmptyConstraints
   | UnexpectedPendingConstrained
   | BitfieldsDontAlign of {
@@ -198,7 +198,7 @@ let error_label = function
   | UnexpectedATC -> "UnexpectedATC"
   | UnreachableReached -> "UnreachableReached"
   | LoopLimitReached -> "LoopLimitReached"
-  | RecursionLimitReached -> "RecursionLimitReached"
+  | RecursionLimitReached _ -> "RecursionLimitReached"
   | EmptyConstraints -> "EmptyConstraints"
   | UnexpectedPendingConstrained -> "UnexpectedPendingConstrained"
   | BitfieldsDontAlign _ -> "BitfieldsDontAlign"
@@ -524,7 +524,8 @@ module PPrint = struct
     | NoreturnViolation name ->
         pp_err typing "the@ function %S@ %a." name pp_print_text
           "is qualified with noreturn but may return on some control flow path"
-    | RecursionLimitReached -> pp_err dynamic "recursion limit reached."
+    | RecursionLimitReached t ->
+        pp_err (error_handling_time_to_string t) "recursion limit reached."
     | LoopLimitReached -> pp_err dynamic "loop limit reached."
     | ConflictingSideEffects (s1, s2) ->
         pp_err typing "conflicting side effects %a and %a" SideEffect.pp_print

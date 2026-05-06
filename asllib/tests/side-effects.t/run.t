@@ -496,7 +496,7 @@
   File constant-rec.asl, line 12, characters 10 to 17:
     let r = foo (1);
             ^^^^^^^
-  ASL Dynamic error: recursion limit reached.
+  ASL Static error: recursion limit reached.
   [1]
   $ aslref rec-local-type.asl
   File rec-local-type.asl, line 12, characters 10 to 24:
