@@ -54,11 +54,11 @@ install-herdtools:
 build-aslref:
 	dune build -p aslref --profile $(DUNE_PROFILE)
 
-install-aslref: build-aslref
+install-aslref:
 	# There are no lib files for aslref so we don't need dune-install.sh
 	dune install aslref --prefix $(PREFIX)
 
-install: install-herdtools install-aslref
+install: install-herdtools
 
 uninstall:
 	sh ./dune-uninstall.sh $(PREFIX)
