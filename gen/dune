@@ -1,10 +1,44 @@
 (ocamllex lexLog_gen lexConf_gen autoLex)
 
-(rule
- (copy ../Version.ml Version.ml))
+(library
+ (name gen_library)
+ (wrapped false)
+ (libraries herdtools unix gen_common)
+ (modules_without_implementation
+  archLoc
+  archRun
+  arch_gen
+  autoInterpret
+  builder
+  XXXCompile_gen)
+ (modules
+  (:standard
+   \
+   readRelax
+   atoms
+   diycross
+   mexpand
+   atomize
+   diyone
+   nexts
+   classify
+   diy
+   norm
+   critical)))
 
 (executables
  (names
+  readRelax
+  atoms
+  diycross
+  mexpand
+  atomize
+  diyone
+  nexts
+  classify
+  diy
+  norm)
+ (modules
   readRelax
   atoms
   diycross
@@ -26,11 +60,4 @@
   classify7
   diy7
   norm7)
- (libraries herdtools unix gen_common)
- (modules_without_implementation
-  archLoc
-  archRun
-  arch_gen
-  autoInterpret
-  builder
-  XXXCompile_gen))
+ (libraries gen_library))
