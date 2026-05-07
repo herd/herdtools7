@@ -107,7 +107,7 @@ static enum fault_type_t get_fault_type(unsigned long esr)
 
 typedef struct {
   int instr_symb;
-  symb_t data_symb;
+  data_symb_t data_symb;
   enum fault_type_t type;
 } fault_info_t;
 
@@ -150,7 +150,7 @@ static int th_faults_info_compare(th_faults_info_t *th_flts1, th_faults_info_t *
   return 1;
 }
 
-static void pp_fault(int proc, int instr_symb, symb_t data_symb, int ftype)
+static void pp_fault(int proc, int instr_symb, data_symb_t data_symb, int ftype)
 {
   if (instr_symb != INSTR_SYMB_ID_UNKNOWN)
     printf("fault(P%s", instr_symb_name[instr_symb]);
@@ -175,7 +175,7 @@ static void pp_log_faults_init(void)
 }
 
 static void pp_log_faults(FILE *chan, th_faults_info_t *th_flts, int proc, int instr_symb,
-                          symb_t data_symb, int ftype)
+                          data_symb_t data_symb, int ftype)
 {
   int found = 0;
   for (int i = 0; i < th_flts->n; i++) {
@@ -215,7 +215,7 @@ static int eq_faults(th_faults_info_t *th_flts1, th_faults_info_t *th_flts2)
   return 1;
 }
 
-static int exists_fault(th_faults_info_t *th_flts, int instr_symb, symb_t data_symb, int ftype)
+static int exists_fault(th_faults_info_t *th_flts, int instr_symb, data_symb_t data_symb, int ftype)
 {
   for (int i = 0; i < th_flts->n; i++) {
     fault_info_t *flt = &th_flts->faults[i];

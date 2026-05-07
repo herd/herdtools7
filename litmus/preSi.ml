@@ -458,7 +458,7 @@ module Make
                     O.o "static vars_t *vars_ptr[NEXE];"
                   end ;
                 O.o "" ;
-                O.o "static inline int log_fault(int proc, int instr_symb, symb_t data_symb, int ftype)" ;
+                O.o "static inline int log_fault(int proc, int instr_symb, data_symb_t data_symb, int ftype)" ;
                 O.o "{" ;
                 List.iter (fun f ->
                     let ((p, lbl), loc, ftype) = f in
@@ -847,7 +847,7 @@ module Make
                 if U.is_rloc_label rloc env || U.is_rloc_tag_ptr rloc env then
                   CType.dump (CType.pointer_type t)
                 else
-                  "symb_t" in
+                  "data_symb_t" in
               O.fi "%s %s;"
                 ty
                 (dump_loc_tag_coded (ConstrGen.loc_of_rloc rloc))
@@ -903,8 +903,8 @@ module Make
                   (SkelUtil.data_symb_id (Misc.add_pte s))
               end in
             begin
-              O.o "static symb_t idx_addr(intmax_t *v_addr,vars_t *p) {" ;
-              O.oi "symb_t ret = { .id = -1, .offset = 0 };" ;
+              O.o "static data_symb_t idx_addr(intmax_t *v_addr,vars_t *p) {" ;
+              O.oi "data_symb_t ret = { .id = -1, .offset = 0 };" ;
               if Cfg.variant Variant_litmus.Pac then
                 O.oi "v_addr = (intmax_t*) strip_pauth_data((void*) v_addr);" ;
               if Cfg.variant Variant_litmus.MemTag then
