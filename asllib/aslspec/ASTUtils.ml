@@ -16,7 +16,7 @@ let rec vars_of_type_term term =
     | TypeOperator { term } -> opt_named_term_to_var_list term
     | Tuple { args } -> vars_of_opt_named_type_terms args
     | Record { fields } ->
-        Utils.list_concat_map
+        List.concat_map
           (fun { name; term } -> name :: vars_of_type_term term)
           fields
     | Function { from_type; to_type } ->
@@ -32,7 +32,7 @@ and opt_named_term_to_var_list (var, t) =
   Option.to_list var @ vars_of_type_term t
 
 and vars_of_opt_named_type_terms opt_named_terms =
-  Utils.list_concat_map opt_named_term_to_var_list opt_named_terms
+  List.concat_map opt_named_term_to_var_list opt_named_terms
 
 let variant_to_label_opt { TypeVariant.term } =
   match term with

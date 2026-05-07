@@ -87,7 +87,7 @@ let vars_of_node = function
   | Node_TypeVariant { TypeVariant.term } -> vars_of_type_term term
   | Node_Relation { Relation.input; output; _ } ->
       vars_of_opt_named_type_terms input
-      @ Utils.list_concat_map vars_of_type_term output
+      @ List.concat_map vars_of_type_term output
   | Node_RecordField { name; term } -> name :: vars_of_type_term term
 
 (** [is_constant id_to_defining_node id] is true if and only if [id] is either
@@ -735,7 +735,7 @@ module ExpandRules = struct
       product concatenation of two lists of expanded rules, [expanded_prefix]
       and [expanded_suffix], returning a list of expanded rules. *)
   let product_concat expanded_prefix expanded_suffix =
-    Utils.list_concat_map
+    List.concat_map
       (fun expanded_suffix_rule ->
         List.map
           (fun expanded_case_rule ->
@@ -766,9 +766,7 @@ module ExpandRules = struct
             in
             product_concat judgment_as_expanded_rule_list suffix_expanded
         | Cases cases ->
-            let cases_as_expanded_rule =
-              Utils.list_concat_map expand_case cases
-            in
+            let cases_as_expanded_rule = List.concat_map expand_case cases in
             product_concat cases_as_expanded_rule suffix_expanded)
       elements
       [ { name_opt = None; judgments = [] } ]
@@ -866,7 +864,7 @@ module Check = struct
     | TypeOperator { term = _, t } -> referenced_ids t
     | Tuple { label_opt; args } -> (
         let component_ids =
-          List.map snd args |> Utils.list_concat_map referenced_ids
+          List.map snd args |> List.concat_map referenced_ids
         in
         match label_opt with
         | None -> component_ids
@@ -874,7 +872,7 @@ module Check = struct
     | Record { label_opt; fields } -> (
         let fields_ids =
           List.map (fun { Term.term } -> term) fields
-          |> Utils.list_concat_map referenced_ids
+          |> List.concat_map referenced_ids
         in
         match label_opt with
         | None -> fields_ids
@@ -887,7 +885,7 @@ module Check = struct
       [spec.ast] are keys in [spec.id_to_defining_node]. *)
   let check_no_undefined_ids { ast; id_to_defining_node } =
     let check_no_undefined_ids_in_elem id_to_defining_node elem =
-      let referenced_ids_for_list = Utils.list_concat_map referenced_ids in
+      let referenced_ids_for_list = List.concat_map referenced_ids in
       let ids_referenced_by_elem =
         match elem with
         | Elem_Constant { Constant.opt_type = Some c_term } ->
@@ -900,7 +898,7 @@ module Check = struct
             let input_terms = List.map snd input in
             referenced_ids_for_list (input_terms @ output)
         | Elem_RenderTypes { pointers } ->
-            Utils.list_concat_map
+            List.concat_map
               (fun { TypesRender.type_name; variant_names } ->
                 type_name :: variant_names)
               pointers
@@ -1439,10 +1437,7 @@ module Check = struct
                   } ->
                   let field_names = List.map field_name fields in
                   let def_field_names = List.map field_name def_fields in
-                  if
-                    not
-                      (Utils.list_is_equal String.equal field_names
-                         def_field_names)
+                  if not (List.equal String.equal field_names def_field_names)
                   then
                     Error.record_instantiation_failure_different_fields term
                       def_term
@@ -2030,9 +2025,7 @@ module Check = struct
             in
             let () =
               if
-                not
-                  (Utils.list_is_equal String.equal formal_field_names
-                     arg_field_names)
+                not (List.equal String.equal formal_field_names arg_field_names)
               then
                 Error.type_instantiation_length_failure formal_type arg_type
                   ~expected_length:(List.length formal_fields)
@@ -2253,7 +2246,7 @@ module Check = struct
             when is_type_name spec.id_to_defining_node label -> (
               match defining_node_for_id spec label with
               | Node_Type { Type.variants } ->
-                  Utils.list_concat_map
+                  List.concat_map
                     (fun { TypeVariant.term = variant } ->
                       list_structured_terms_for_one_term spec variant)
                     variants
@@ -2264,7 +2257,7 @@ module Check = struct
               [ term ]
           | _ -> [ term ]
         in
-        Utils.list_concat_map (list_structured_terms_for_one_term spec) terms
+        List.concat_map (list_structured_terms_for_one_term spec) terms
 
       (** [is_structured_assignable_expr expr] checks if [expr] is an assignable
           expression that has structure that can be used to narrow down the set

@@ -364,7 +364,7 @@ let tr_name s = match s with
 | "with"          -> WITH
 (* Reserved identifiers *)
 | x when is_reserved_keyword x -> reserved_err x
-| x when ASTUtils.string_starts_with ~prefix:"__" x -> reserved_err x
+| x when String.starts_with ~prefix:"__" x -> reserved_err x
 (* End of reserved identifiers *)
 | x               -> IDENTIFIER x
 }

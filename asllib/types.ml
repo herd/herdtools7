@@ -474,7 +474,7 @@ and subtype_satisfies env t s =
     (* If S has the structure of an enumeration type then T must have
      the structure of an enumeration type with exactly the same
      enumeration literals. *)
-    | T_Enum li_s, T_Enum li_t -> list_equal String.equal li_s li_t
+    | T_Enum li_s, T_Enum li_t -> List.equal String.equal li_s li_t
     (*
       • If S has the structure of a bitvector type then T must have the
         structure of a bitvector type of the same width.
@@ -578,7 +578,7 @@ let rec type_clashes env t s =
   | T_Bits _, T_Bits _
   | T_Bool, T_Bool ->
       true
-  | T_Enum li_s, T_Enum li_t -> list_equal String.equal li_s li_t
+  | T_Enum li_s, T_Enum li_t -> List.equal String.equal li_s li_t
   | T_Array (_, ty_s), T_Array (_, ty_t) -> type_clashes env ty_s ty_t
   | T_Tuple li_s, T_Tuple li_t ->
       List.compare_lengths li_s li_t = 0
