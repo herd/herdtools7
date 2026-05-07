@@ -31,10 +31,10 @@ jobs:
       - name: Checkout tree
         uses: actions/checkout@v4
 
-      - name: Set-up OCaml 4.08
+      - name: Set-up OCaml 4.14
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: 4.08.1
+          ocaml-compiler: 4.14.0
       - run: |
           opam install . --deps-only --with-test --solver=builtin-mccs+glpk --criteria="-new"
           opam exec -- make build test install DUNE_PROFILE=dev

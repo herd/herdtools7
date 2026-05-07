@@ -20,7 +20,7 @@
  (depends
    (ocaml (>= 4.08))
    dune
-   (menhir (>= 20220210))
+   (menhir (>= 20231231))
    (zarith (>= 1.13)))
  (depopts
    (qcheck :with-test)
@@ -38,4 +38,3 @@ For more details, and for a downloadable version of the ASL language reference
 document, please see
 https://developer.arm.com/Architectures/Architecture%20Specification%20Language
 "))
-

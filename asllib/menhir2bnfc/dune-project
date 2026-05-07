@@ -4,4 +4,6 @@
 (cram enable)
 (package
  (name menhir2bnfc)
- (allow_empty))
+ (allow_empty)
+ (depends
+  (menhir (>= 20231231))))

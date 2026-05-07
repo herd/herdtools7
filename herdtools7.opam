@@ -15,9 +15,9 @@ install: [make "install-herdtools" "PREFIX=%{prefix}%"]
 # @todo Add "build-doc" field
 # @todo Add "build-test" field
 depends: [
-  "ocaml" {>= "4.08.0"}
+  "ocaml" {>= "4.14.0"}
   "dune"  {>= "3.10.0" }
-  "menhir" {>= "20220210"}
+  "menhir" {>= "20231231"}
   "zarith" {>= "1.13"}
   "conf-which"
   "logs"
