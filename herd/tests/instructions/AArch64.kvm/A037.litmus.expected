@@ -1,0 +1,10 @@
+Test A037 Required
+States 1
+0:X0=x+4;
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition forall (0:X0=x)
+Observation A037 Never 0 1
+Hash=e75d267d4f8af2c3ffbd03e1c2799441
+
