@@ -1,5 +1,5 @@
 AArch64 Marc03
-Variant=imprecise
+Variant=vmsa,imprecise
 EL0=P0,P2
 {
  int x=1; (* oldpage *)
