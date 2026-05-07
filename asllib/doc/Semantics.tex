@@ -616,6 +616,29 @@ Print statements:
 \end{Verbatim}
 % CONSOLE_END
 
+\ExampleDef{Evaluation Order and Parenthesis}
+
+Evaluation order and parenthesis are separate concepts. More precisely,
+parentheses affect how text is parsed into ASL's AST, and then evaluation
+order is defined with respect to ASL's AST.
+
+For example, \listingref{evaluation-order-and-parenthesis},
+which is followed by output to the console from running the specification,
+shows a \verb|main()|
+function with three statements, each parenthesised differently.
+However, the order of side-effects is the same
+across all three statements, due to ASL's defined evaluation order.
+In particular, each line prints \verb|123| when executed.
+
+\ASLListing{Evaluation order and parenthesis}{evaluation-order-and-parenthesis}{\definitiontests/EvaluationOrderAndParenthesis.asl}
+% CONSOLE_BEGIN aslref \definitiontests/EvaluationOrderAndParenthesis.asl
+\begin{Verbatim}[fontsize=\footnotesize, frame=single]
+123
+123
+123
+\end{Verbatim}
+% CONSOLE_END
+
 \section{Semantics of Diverging Specifications\label{sec:Semantics of Diverging Specifications}}
 While typical specifications are intended to always terminate,
 diverging specifications can be potentially useful.
