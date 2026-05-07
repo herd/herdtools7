@@ -7,7 +7,7 @@
  (name aslspec)
  (synopsis "Architecture Specification Language Semantics Specification Tool")
  (depends
-   (ocaml (>= 4.08))
+   (ocaml (>= 4.14))
    dune
    (menhir (>= 20231231))
    (conf-python-3 (= 9.0.0))))

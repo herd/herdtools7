@@ -511,7 +511,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     assert C.use_field_getter_extension;
     match (Types.make_anonymous env ty).desc with
     | T_Bits (_, bf) -> (
-        try Some (name, list_concat_map (field_to_single env bf) fields)
+        try Some (name, List.concat_map (field_to_single env bf) fields)
         with NoSingleField -> None)
     | _ -> None
   (* End *)
@@ -706,7 +706,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         when bitwidth_equal (StaticModel.equal_in_env env) w1 w2 ->
           T_Bool |> here
       | (`EQ | `NE), (T_Enum li1, T_Enum li2)
-        when list_equal String.equal li1 li2 ->
+        when List.equal String.equal li1 li2 ->
           T_Bool |> here
       | (#StaticOperations.int3_binop as op), (T_Int c1, T_Int c2) -> (
           match (c1, c2) with
@@ -905,7 +905,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       safe_range (min hi1 hi2, max lo1 lo2)
 
     let shift_range (hi, lo) amount = (hi + amount, lo + amount)
-    let ranges_equal ranges1 ranges2 = list_equal range_equal ranges1 ranges2
+    let ranges_equal ranges1 ranges2 = List.equal range_equal ranges1 ranges2
 
     (** Returns the range [(i+w-1, i)], corresponding to
         [slice = Slice_Length (i, , w)]. *)
@@ -1000,7 +1000,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         selected elements of ranges are then [7, 6, 5, 4], which can be
         represented by the single range [(7, 4)]. *)
     let select_indices_by_slices ~absolute_indices ~slices =
-      list_concat_map (select_indices_by_slice absolute_indices) slices
+      List.concat_map (select_indices_by_slice absolute_indices) slices
       |> coalesce_ranges
 
     (** [either_prefix list1 list2] is true if either [list1] is a prefix of
@@ -1048,7 +1048,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         given that [absolute_parent] is the absolute bitfield where [bitfields]
         are declared. The order of the absolute fields is unimportant. *)
     and bitfields_to_absolute env bitfields absolute_parent =
-      list_concat_map
+      List.concat_map
         (fun bf -> bitfield_to_absolute env bf absolute_parent)
         bitfields
 
@@ -1506,7 +1506,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               ()
           | T_Bits _, T_Bits _ ->
               check_bits_equal_width ~loc env t_struct t_e_struct ()
-          | T_Enum li1, T_Enum li2 when list_equal String.equal li1 li2 -> ()
+          | T_Enum li1, T_Enum li2 when List.equal String.equal li1 li2 -> ()
           | _ -> fatal_from ~loc (Error.BadPattern (p, t))
         in
         (Pattern_Single e' |> here, ses) |: TypingRule.PSingle
@@ -2227,7 +2227,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                       fatal_from ~loc (Error.BadField (field, t_base_annot))
                   | Some slices -> slices
                 in
-                E_Slice (e_base, list_concat_map one_field fields)
+                E_Slice (e_base, List.concat_map one_field fields)
                 |> here |> annotate_expr env |: TypingRule.EGetFields
             | T_Record base_fields | T_Exception base_fields ->
                 let get_bitfield_width name =
@@ -2654,7 +2654,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             in
             let le_slice =
               LE_Slice
-                (le_base_annot, list_concat_map slices_of_bitfield le_fields)
+                (le_base_annot, List.concat_map slices_of_bitfield le_fields)
               |> here
             in
             annotate_lexpr env le_slice t_e |: TypingRule.LESetFields
@@ -3095,7 +3095,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | S_Try (s', catchers, otherwise) ->
         let s'', ses1 = try_annotate_block env s' in
         let ses2, catchers_and_ses =
-          list_fold_left_map (annotate_catcher ~loc env) ses1 catchers
+          List.fold_left_map (annotate_catcher ~loc env) ses1 catchers
         in
         let () =
           if false then
@@ -3393,9 +3393,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let rec parameters_of_ty ~env ty =
       match ty.desc with
       | T_Bits (e, _) -> parameters_of_expr ~env e
-      | T_Tuple tys -> list_concat_map (parameters_of_ty ~env) tys
+      | T_Tuple tys -> List.concat_map (parameters_of_ty ~env) tys
       | T_Int (WellConstrained (cs, Precision_Full)) ->
-          list_concat_map (parameters_of_constraint ~env) cs
+          List.concat_map (parameters_of_constraint ~env) cs
       | T_Int (WellConstrained (_, Precision_Lost _))
       | T_Int UnConstrained
       | T_Real | T_String | T_Bool | T_Array _ | T_Named _ ->
@@ -3403,7 +3403,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | _ -> Error.fatal_from (to_pos ty) (Error.UnsupportedTy (Static, ty))
     in
     let types = func_sig_types func_sig in
-    let all_parameters = list_concat_map (parameters_of_ty ~env) types in
+    let all_parameters = List.concat_map (parameters_of_ty ~env) types in
     uniq all_parameters
 
   (** The set of variables which could define a parameter in a function
@@ -3426,7 +3426,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let inferred_parameters = extract_parameters ~env func_sig in
     let declared_parameters = List.map fst func_sig.parameters in
     let all_parameters_declared =
-      list_equal String.equal inferred_parameters declared_parameters
+      List.equal String.equal inferred_parameters declared_parameters
     in
     check_true all_parameters_declared @@ fun () ->
     fatal_from ~loc
@@ -3468,7 +3468,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         and ses = SES.union new_ses ses_ty in
         ((new_env', ses), (x, Some ty))
       in
-      list_fold_left_map declare_parameter (env, ses_recurse_limit)
+      List.fold_left_map declare_parameter (env, ses_recurse_limit)
         func_sig.parameters
       |: TypingRule.AnnotateParams
       (* AnnotateParams) *)
@@ -3485,7 +3485,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         and ses = SES.union new_ses ses_ty in
         ((new_env, ses), (x, ty))
       in
-      list_fold_left_map declare_argument
+      List.fold_left_map declare_argument
         (env_with_params, ses_with_params)
         func_sig.args
     in
@@ -3544,7 +3544,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         and new_env = add_local x ty LDK_Let new_env in
         ((new_env, new_ses), (x, ty))
       in
-      list_fold_left_map declare_parameter (env, ses_with_limit)
+      List.fold_left_map declare_parameter (env, ses_with_limit)
         inferred_parameters
     in
     let parameters = List.map (fun (x, ty) -> (x, Some ty)) typed_parameters in
@@ -3562,7 +3562,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             and new_env = add_local x ty LDK_Let new_env in
             ((new_env, new_ses), (x, ty))
       in
-      list_fold_left_map declare_argument
+      List.fold_left_map declare_argument
         (env_with_params, ses_with_params)
         func_sig.args
     in
@@ -4211,7 +4211,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     (* DeclareSubprograms( *)
     let genv2, env_and_fs2 =
-      list_fold_left_map
+      List.fold_left_map
         (fun genv (lenv, f, ses_f, loc) ->
           let env = { global = genv; local = lenv } in
           let env1, f1 = declare_one_func ~loc f ses_f env in
@@ -4264,12 +4264,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       let ty_equal = type_equal (fun _ _ -> false) in
       let qualifiers_match = qualifier_equal func1.qualifier func2.qualifier in
       let args_match =
-        list_equal
+        List.equal
           (fun (id1, t1) (id2, t2) -> String.equal id1 id2 && ty_equal t1 t2)
           func1.args func2.args
       in
       let parameters_match =
-        list_equal
+        List.equal
           (fun (id1, ty_opt1) (id2, ty_opt2) ->
             String.equal id1 id2 && Option.equal ty_equal ty_opt1 ty_opt2)
           func1.parameters func2.parameters

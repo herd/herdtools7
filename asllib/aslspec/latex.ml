@@ -42,7 +42,7 @@ let pp_one_arg_macro macro_name pp_arg fmt arg =
     with a backslash. *)
 let pp_macro fmt macro_name =
   let macro, macro_name =
-    if Utils.string_starts_with ~prefix:"\\" macro_name then
+    if String.starts_with ~prefix:"\\" macro_name then
       (macro_name, String.sub macro_name 1 (String.length macro_name - 1))
     else ("\\" ^ macro_name, macro_name)
   in

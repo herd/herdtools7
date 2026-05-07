@@ -1,4 +1,4 @@
-(** Utility functions for functions that are not available in 4.08. *)
+(** Utility functions for functions that are not available in 4.14. *)
 
 module StringSet = Set.Make (String)
 
@@ -24,10 +24,6 @@ let list_tl_or_empty list = match list with [] -> [] | _ :: t -> t
     the last element, assuming the list is non-empty. *)
 let split_last lst =
   match List.rev lst with [] -> assert false | x :: xs -> (List.rev xs, x)
-
-(** [list_concat_map f l] gives the same result as List.concat (List.map f l).
-*)
-let list_concat_map f l = List.concat (List.map f l)
 
 (** [list_tail list] returns the tail of [list], or raises an [Invalid_argument]
     exception if [list] is empty. *)
@@ -79,24 +75,6 @@ let string_list_difference lst1 lst2 =
 (***************************************
  String-related utilities.
 ***************************************)
-
-(** [string_exists p s] checks if at least one character of [s] satisfies the
-    predicate [p]. *)
-let string_exists p s =
-  let len = String.length s in
-  let rec check_from_index i =
-    if i >= len then false
-    else if p s.[i] then true
-    else check_from_index (i + 1)
-  in
-  check_from_index 0
-
-(** [string_starts_with ~prefix s] checks if string [s] starts with [prefix]. *)
-let string_starts_with ~prefix s =
-  let prefix_len = String.length prefix in
-  let s_len = String.length s in
-  if prefix_len > s_len then false
-  else String.equal (String.sub s 0 prefix_len) prefix
 
 (** [string_replace_all regexp f s] replaces all matches of [regexp] in [s] by
     the result of applying [f] to each matched substring. *)

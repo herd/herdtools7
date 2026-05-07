@@ -230,7 +230,7 @@ module ASTFold = struct
   let fold fold ast =
     let { nodes; succs; decls } = build ast in
     let folder nodes acc =
-      let ds = ASTUtils.list_concat_map (Tbl.find decls) nodes in
+      let ds = List.concat_map (Tbl.find decls) nodes in
       match ds with
       | [] -> acc (* Can happen for phantom dependencies. *)
       | [ d ] -> fold (Single d) acc
