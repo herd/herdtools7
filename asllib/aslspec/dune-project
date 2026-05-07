@@ -9,6 +9,5 @@
  (depends
    (ocaml (>= 4.08))
    dune
-   (menhir (>= 20220210))
+   (menhir (>= 20231231))
    (conf-python-3 (= 9.0.0))))
-
