@@ -1,6 +1,12 @@
 \newcommand{\notthecase}[1]{it is not the case that #1}
-\newcommand{\Variant}[1]{#1 is implemented}
-\newcommand{\NotVariant}[1]{it is not the case that #1 is implemented}
+\newcommand{\ETSTwo}{FEAT_ETS2 is implemented}
+\newcommand{\NotETSTwo}{\notthecase{\ETSTwo{}}}
+\newcommand{\ETSThree}{FEAT_ETS3 is implemented}
+\newcommand{\NotETSThree}{\notthecase{\ETSThree{}}}
+\newcommand{\DIC}{The Effective value of DIC is 1}
+\newcommand{\NotDIC}{The Effective value of DIC is 0}
+\newcommand{\IDC}{The Effective value of IDC is 1}
+\newcommand{\NotIDC}{The Effective value of IDC is 0}
 \newcommand{\flag}[1]{By construction, #1}
 \newcommand{\assert}[1]{By construction, #1}
 %
@@ -42,7 +48,6 @@
 \newcommand{\M}[1]{#1 is a \ME{}}
 \newcommand{\W}[1]{#1 is a \MWE{}}
 \newcommand{\R}[1]{#1 is a \MRE{}}
-\renewcommand{\_}{any Effect}
 \newcommand{\B}[1]{#1 is a Branching Effect}
 \newcommand{\IntrBranching}[1]{the Intrinsic Branching Effect which checks #1}
 \newcommand{\BccBranching}{the Branching Effect of the instruction}

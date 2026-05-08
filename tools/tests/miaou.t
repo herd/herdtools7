@@ -108,7 +108,7 @@
     \end{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \Variant{ETS2} or \Variant{ETS3}.
+    \item \ETSTwo{} or \ETSThree{}.
     \item One of the following applies:
       \begin{itemize}
       \item \M{E\textsubscript{1}}.
@@ -143,7 +143,7 @@
     \end{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \Variant{ETS2} or \Variant{ETS3}.
+    \item \ETSTwo{} or \ETSThree{}.
     \item \ExpR{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\notthecase{\NoRet{E\textsubscript{1}}}}.
     \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
@@ -165,7 +165,7 @@
     \end{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \Variant{ETS2} or \Variant{ETS3}.
+    \item \ETSTwo{} or \ETSThree{}.
     \item \ExpW{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \DSBST{E\textsubscript{3}}.
@@ -198,7 +198,8 @@
   \begin{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \NotVariant{DIC} and \NotVariant{IDC}.
+    \item \NotDIC{}.
+    \item \NotIDC{}.
     \item \IC{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\ICafter{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \ImpInstrR{E\textsubscript{3}}.
@@ -209,7 +210,8 @@
     \end{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \NotVariant{DIC} and \Variant{IDC}.
+    \item \NotDIC{}.
+    \item \IDC{}.
     \item \IC{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\ICafter{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \ImpInstrR{E\textsubscript{3}}.
@@ -218,7 +220,8 @@
     \end{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \Variant{DIC} and \Variant{IDC}.
+    \item \DIC{}.
+    \item \IDC{}.
     \item \ImpInstrR{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\ca{E\textsubscript{1}}{E\textsubscript{2}}}.
     \item \W{E\textsubscript{2}}.
@@ -275,7 +278,7 @@
     \end{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \Variant{DIC}.
+    \item \DIC{}.
     \item \expandafter{\MakeUppercase\ca{E\textsubscript{1}}{E\textsubscript{2}}}.
     \end{itemize}
   \end{itemize}
@@ -1001,7 +1004,7 @@
   \begin{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \Variant{ETS2}.
+    \item \ETSTwo{}.
     \item \ExpM{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \TLBUncacheableFAULT{E\textsubscript{3}}.
@@ -1010,7 +1013,7 @@
     \end{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \Variant{ETS3}.
+    \item \ETSThree{}.
     \item \ExpM{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \MMUFAULT{E\textsubscript{3}}.
@@ -1019,7 +1022,7 @@
     \end{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \Variant{ETS3}.
+    \item \ETSThree{}.
     \item \ExpM{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \TagCheckEXCENTRY{E\textsubscript{3}}.
