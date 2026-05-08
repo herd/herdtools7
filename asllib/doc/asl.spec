@@ -9895,7 +9895,7 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
     case tuple {
       s =: S_Return(some(E_Tuple(es)));
       eval_expr_list_m(env, es) -> ResultExprListM(ms, new_env);
-      write_folder(ms) -> (vs, new_g);
+      write_folder(ms, zero) -> (vs, new_g);
       --
       Returning((vs, new_g), new_env);
     }
@@ -10193,7 +10193,9 @@ semantics relation eval_expr_list_m(env: envs, es: list0(expr)) ->
   }
 ;
 
-semantics relation write_folder(vms: list0((native_value, XGraphs))) ->
+semantics relation write_folder(
+  vms: list0((native_value, XGraphs)),
+  index: N) ->
          (vs: list0(native_value), new_g: XGraphs)
 {
   "concatenates the input values in {vms} and generates
@@ -10210,9 +10212,9 @@ semantics relation write_folder(vms: list0((native_value, XGraphs))) ->
   case non_empty {
     vms =: match_cons(vm, vms1);
     vm =: (v, g);
-    id := fresh_identifier();
+    id := numbered_identifier(return_var_prefix, index);
     write_identifier(id, v) -> g1;
-    write_folder(vms1) -> (vs1, g2);
+    write_folder(vms1, index + one) -> (vs1, g2);
     vs := match_cons(v, vs1);
     g1_g2 := ordered_data(g1, g2);
     new_g := ordered_po(g, g1_g2);
@@ -11759,8 +11761,7 @@ typing relation add_new_func(
 
   case name_exists {
     tenv.static_envs_G.overloaded_subprograms(name) =: other_names;
-    k := cardinality(other_names);
-    new_name := numbered_identifier(name, k);
+    new_name := fresh_identifier();
     formals =: list_combine(formal_names, formal_types);
     othernames_list := list_set(other_names);
     ( INDEX(i, othernames_list:
