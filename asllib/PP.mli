@@ -29,10 +29,6 @@ open AST
 type 'a printer = Format.formatter -> 'a -> unit
 (** A general pretty-printer type. *)
 
-(* Available from 4.12.0 *)
-val pp_print_seq : ?pp_sep:unit printer -> 'a printer -> 'a Seq.t printer
-(** Re-exported from stdlib 4.12, print q sequence from its elements. *)
-
 val pp_pos : 'a annotated printer
 val pp_pos_str : 'a annotated -> string
 

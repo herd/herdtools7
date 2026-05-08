@@ -56,14 +56,12 @@ module PPEnv = struct
     let pp_one f (key, elt) =
       fprintf f "@[<h 2>%s |-> @[%a@]@]" key pp_elt elt
     in
-    fprintf f "@[<hv 2>{@ %a}@]"
-      (PP.pp_print_seq ~pp_sep pp_one)
-      (IMap.to_seq m)
+    fprintf f "@[<hv 2>{@ %a}@]" (pp_print_seq ~pp_sep pp_one) (IMap.to_seq m)
 
   let pp_iset f s =
     let pp_sep f () = fprintf f ",@ " in
     fprintf f "@[<hv 2>{@ %a}@]"
-      (PP.pp_print_seq ~pp_sep pp_print_string)
+      (pp_print_seq ~pp_sep pp_print_string)
       (ISet.to_seq s)
 
   let pp_local f { storage_types; return_type; expr_equiv } =

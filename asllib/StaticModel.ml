@@ -73,7 +73,7 @@ end = struct
       else (
         Q.pp_print f factor;
         pp_sep f ());
-      PP.pp_print_seq ~pp_sep
+      pp_print_seq ~pp_sep
         (fun f (x, p) ->
           pp_print_string f x;
           match p with
@@ -165,8 +165,7 @@ end = struct
     else (
       pp_open_hvbox f 2;
       let pp_sep f () = fprintf f "@ + " in
-      PP.pp_print_seq ~pp_sep Monomial.pp_with_factor f
-        (MonomialMap.to_seq poly);
+      pp_print_seq ~pp_sep Monomial.pp_with_factor f (MonomialMap.to_seq poly);
       pp_close_box f ())
 end
 
