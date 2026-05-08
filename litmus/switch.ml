@@ -42,18 +42,14 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
     module S = struct
       type t = switch_node
 
-      let rec equal_cases cs1 cs2 = match cs1,cs2 with
-      | ([],_::_)|(_::_,[]) -> false
-      | [],[] -> true
-      | (i1,j1)::cs1,(i2,j2)::cs2 ->
-          Scalar.compare i1 i2 = 0 &&
-          Misc.int_eq j1 j2 &&
-          equal_cases cs1 cs2
+      let equal_cases cs1 cs2 =
+        List.equal
+          (fun (i1,j1) (i2,j2) ->
+             Scalar.compare i1 i2 = 0 && Misc.int_eq j1 j2)
+          cs1 cs2
 
-      let rec equal_rhs rhs1 rhs2 = match rhs1,rhs2 with
-      | ([],_::_)|(_::_,[]) -> false
-      | [],[] -> true
-      | r1::rhs1,r2::rhs2 -> r1 == r2 && equal_rhs rhs1 rhs2
+      let equal_rhs rhs1 rhs2 =
+        List.equal ( == ) rhs1 rhs2
 
       let equal s1 s2 = match s1,s2 with
       | (Return _,Switch _)|(Switch _,Return _) -> false

@@ -162,7 +162,7 @@ struct
           do_compare_pairs (op1, e1) (op2, e2) compare do_compare_expr
       | Op (_, op1, es1), Op (_, op2, es2) ->
           do_compare_pairs (op1, es1) (op2, es2) compare
-            (Misc.list_compare do_compare_expr)
+            (List.compare do_compare_expr)
       | App (_, e11, e12), App (_, e21, e22) ->
           do_compare_expr_pairs (e11, e12) (e21, e22)
       | Try (_, e11, e12), Try (_, e21, e22) ->

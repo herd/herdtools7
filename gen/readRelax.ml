@@ -49,15 +49,8 @@ module Top = struct
       | One r -> r
       | Seq rs -> "[" ^ String.concat "," rs ^ "]"
 
-    let rec lex_str r1 r2 = match r1,r2 with
-    | [],[] -> 0
-    | _::_,[] -> 1
-    | [],_::_ -> -1
-    | r1::rs1,r2::rs2 ->
-        let c = String.compare r1 r2 in
-        match c with
-        | 0 -> lex_str rs1 rs2
-        | _ -> c
+    let lex_str r1 r2 =
+      List.compare String.compare r1 r2
 
     let compare r1 r2 = match r1,r2 with
     | One r1,Seq [r2]

@@ -111,15 +111,8 @@ and type edge = E.edge
         | PPO -> assert false
 
 
-        let rec compare_edges es1 es2 = match es1,es2 with
-        | [],[] -> 0
-        | [],_::_ -> -1
-        | _::_,[] -> 1
-        | e1::es1,e2::es2 ->
-            begin match E.compare e1 e2 with
-            | 0 -> compare_edges es1 es2
-            | r -> r
-            end
+        let compare_edges es1 es2 =
+          List.compare E.compare es1 es2
 
         let compare r1 r2 = match r1,r2 with
         | PPO,PPO -> 0

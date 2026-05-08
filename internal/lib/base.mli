@@ -43,11 +43,6 @@ end
 module List : sig
   include module type of List
 
-  (** [compare c xs ys] compares lists [xs] and [ys], first by length, then by
-   *  comparing each pair of elements of [xs] and [ys] with compare function [c]
-   *  until a pair differs. *)
-  val compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
-
   (** [to_ocaml_string f xs] returns an OCaml syntax form of [xs], applying [f]
    *  to each element of [xs]. For example,
    *  [to_ocaml_string String.to_ocaml_string ["a"; "b"]] returns
@@ -64,24 +59,9 @@ module String : sig
 end
 
 module Option : sig
+  include module type of Option
+
   type 'a t = 'a option
-
-  (** [get o] is [v] if [o] is [Some v].
-   *  It raises [Invalid_argument] if [o] is [None]. *)
-  val get : 'a t -> 'a
-
-  (** [value o ~default] is [v] if [o] is [Some v] and [default] otherwise. *)
-  val value : 'a option -> default:'a -> 'a
-
-  (** [map f o] is [None] if [o] is [None] and [Some (f v)] if [o] is [Some v]. *)
-  val map : ('a -> 'b) -> 'a option -> 'b option
-
-  (** [is_none o] is [true] iff [o] is [None]. *)
-  val is_none : 'a option -> bool
-
-  (** [compare c x y] compares [x] and [y]. [None] is smaller than [Some _]. If
-   *  they are both [Some _] their elements are compared with function [c]. *)
-  val compare : ('a -> 'a -> int) -> 'a option -> 'a option -> int
 
   (** [to_ocaml_string f x] returns an OCaml syntax form of [x]. If [x] is
    * [Some x'], [f] is applied to the element [x'].

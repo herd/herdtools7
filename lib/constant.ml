@@ -292,7 +292,7 @@ let rec compare scalar_compare pteval_compare addrreg_compare instr_compare c1 c
   match c1,c2 with
   | Concrete i1, Concrete i2 -> scalar_compare i1 i2
   | ConcreteVector v1, ConcreteVector v2 ->
-     Misc.list_compare
+    List.compare
        (compare scalar_compare pteval_compare addrreg_compare instr_compare) v1 v2
   | ConcreteRecord li1, ConcreteRecord li2 ->
      StringMap.compare
@@ -325,7 +325,7 @@ let rec compare scalar_compare pteval_compare addrreg_compare instr_compare c1 c
 let rec eq scalar_eq pteval_eq addrreg_eq instr_eq c1 c2 = match c1,c2 with
   | Concrete i1, Concrete i2 -> scalar_eq i1 i2
   | ConcreteVector v1, ConcreteVector v2 ->
-     Misc.list_eq (eq scalar_eq pteval_eq addrreg_eq instr_eq) v1 v2
+     List.equal (eq scalar_eq pteval_eq addrreg_eq instr_eq) v1 v2
   | ConcreteRecord li1, ConcreteRecord li2 ->
     StringMap.equal (eq scalar_eq pteval_eq addrreg_eq instr_eq) li1 li2
   | Symbolic s1, Symbolic s2 -> symbol_eq s1 s2
@@ -579,7 +579,7 @@ let is_pt v = match v with
 let make_canonical = function
   | Symbolic (Virtual v) -> Symbolic (Virtual {v with pac=PAC.canonical})
   | cst -> cst
-  
+
 let mk_sym_morello p s t =
   let p_int = Misc.string_as_int64 p in
   if

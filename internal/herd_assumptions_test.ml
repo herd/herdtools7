@@ -57,7 +57,7 @@ let get_raised_flags s =
   List.fold_left
     (fun acc line ->
       let line = String.trim line in
-      if String.length line >= 6 && Misc.string_starts_with ~prefix:"Flag " line
+      if String.length line >= 6 && String.starts_with ~prefix:"Flag " line
       then
         let name = String.sub line 5 (String.length line - 5) |> String.trim in
         name :: acc

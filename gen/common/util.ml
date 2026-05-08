@@ -62,9 +62,6 @@ let parse_cmdline options get_cmd_arg =
     (sprintf "Usage %s [options] [arg]*\noptions are:" Sys.argv.(0))
 
 module List = struct
-  let concat_map : ('a -> 'b list) -> 'a list -> 'b list =
-    fun f l -> List.concat (List.map f l)
-
   let uniq ~eq l =
     let rec uniq eq acc l =
       match l with
@@ -75,7 +72,7 @@ module List = struct
     uniq eq [] l
 
   module Infix = struct
-    let (let*) = fun x f -> concat_map f x
+    let (let*) = fun x f -> List.concat_map f x
   end
 
   let rec sequence : 'a list list -> 'a list list =

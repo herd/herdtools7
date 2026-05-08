@@ -31,16 +31,7 @@ let compare x y =
     | Atom x, Atom y -> String.compare x y
     | Atom _, List _ -> -1
     | List _, Atom _ -> 1
-    | List xs, List ys -> compare_sexp_list xs ys
-  and compare_sexp_list xs ys =
-    match xs, ys with
-    | [], [] -> 0
-    | [], _ -> -1
-    | _, [] -> 1
-    | x :: xs, y :: ys ->
-        match compare_sexp x y with
-        | 0 -> compare_sexp_list xs ys
-        | n -> n
+    | List xs, List ys -> List.compare compare_sexp xs ys
   in
   compare_sexp x y
 

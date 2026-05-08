@@ -1053,7 +1053,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let open Asllib.AST in
       lazy
         (Lazy.force ASLS.built_shared_pseudocode
-        |> Misc.find_map (fun d ->
+        |> List.find_map (fun d ->
             match d.desc with
             | D_GlobalStorage
                 { keyword = GDK_Var; name = "PSTATE"; ty = Some ty; _ } -> (

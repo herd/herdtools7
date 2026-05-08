@@ -668,7 +668,7 @@ let get_failed cns =
               (sol, Failed exn :: eqs)
          end
 
-    let same_eqs eqs1 eqs2 =  Misc.list_compare OrderedEq.compare eqs1 eqs2 = 0
+    let same_eqs eqs1 eqs2 =  List.compare OrderedEq.compare eqs1 eqs2 = 0
 
     let topo_step =
       (* Perform a solving step on each equation in solve_step *)
