@@ -1,5 +1,5 @@
 AArch64 miniMarc03
-Variant=imprecise
+Variant=vmsa,imprecise
 {
  int x=1; (* oldpage *)
  int y=0; (* newpage *)
