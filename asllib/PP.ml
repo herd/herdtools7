@@ -25,15 +25,6 @@ open AST
 
 type 'a printer = Format.formatter -> 'a -> unit
 
-(* Adapted from stdlib >= 4.12.0 *)
-let pp_print_seq ?(pp_sep = pp_print_cut) pp_v ppf v =
-  let is_first = ref true in
-  let pp_v v =
-    if !is_first then is_first := false else pp_sep ppf ();
-    pp_v ppf v
-  in
-  Seq.iter pp_v v
-
 (* Just to display better error messages ... *)
 let nonstandard_constraint_compare c1 c2 =
   match (c1, c2) with

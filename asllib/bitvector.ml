@@ -89,16 +89,6 @@ let _pp_data f (length, data) =
 
 let create_data_bytes length = Bytes.create ((length + 7) / 8)
 
-(** [String.for_all] taken directly out of stdlib version 4.13 . *)
-let string_for_all p s =
-  let n = String.length s in
-  let rec loop i =
-    if i = n then true
-    else if p (String.unsafe_get s i) then loop (succ i)
-    else false
-  in
-  loop 0
-
 (** [remask bv] ensures that the extra bits on the trailing character are '0'.
     It edits in place the string, so to use with prudence. *)
 let remask (length, data) =
@@ -593,7 +583,7 @@ let is_zero = equal zero
 
 let is_zeros bv =
   let _length, data = remask bv in
-  string_for_all (( = ) char_0) data
+  String.for_all (( = ) char_0) data
 
 let is_one = equal one
 let is_ones bv = length bv |> ones |> equal bv
