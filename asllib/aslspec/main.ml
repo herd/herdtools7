@@ -88,7 +88,7 @@ let execute config =
   let open Parsing in
   let ast =
     (* Parse the abstract syntax tree (AST) from all specification files. *)
-    Utils.list_concat_map parse_spec_from_file config.spec_files
+    List.concat_map parse_spec_from_file config.spec_files
   in
   if config.pp then pp_std ast;
   let spec = Spec.from_ast ast in

@@ -110,29 +110,6 @@ let add_pos_from_pos_of ((fname, lnum, cnum, enum), desc) =
     version = default_version (* used only in testing *);
   }
 
-let list_equal equal li1 li2 =
-  li1 == li2 || (List.compare_lengths li1 li2 = 0 && List.for_all2 equal li1 li2)
-
-let rec list_compare cmp l1 l2 =
-  (* List.compare available >= 4.12 *)
-  match (l1, l2) with
-  | [], [] -> 0
-  | [], _ :: _ -> -1
-  | _ :: _, [] -> 1
-  | a1 :: l1, a2 :: l2 ->
-      let c = cmp a1 a2 in
-      if c <> 0 then c else list_compare cmp l1 l2
-
-(* Straight out of stdlib v4.11 *)
-let list_fold_left_map f accu l =
-  let rec aux accu l_accu = function
-    | [] -> (accu, List.rev l_accu)
-    | x :: l ->
-        let accu, x = f accu x in
-        aux accu (x :: l_accu) l
-  in
-  aux accu [] l
-
 let list_fold_lefti f accu l =
   List.fold_left (fun (i, accu) elt -> (i + 1, f i accu elt)) (0, accu) l |> snd
 
@@ -146,17 +123,6 @@ let list_coalesce_right f l =
           | Some coalesced -> coalesced :: acc_tail
           | None -> e :: acc))
     l []
-
-(* Straight out of stdlib v4.10 *)
-let list_concat_map f l =
-  let open List in
-  let rec aux f acc = function
-    | [] -> rev acc
-    | x :: l ->
-        let xs = f x in
-        aux f (rev_append xs acc) l
-  in
-  aux f [] l
 
 let list_take =
   let rec aux acc n li =
@@ -316,11 +282,11 @@ let rec expr_equal eq e1 e2 =
       E_Call { name = x2; params = params2; args = args2 } ) ->
       if e1.version = V0 then
         (* We can ignore parameters as they are deduced from arguments. *)
-        String.equal x1 x2 && list_equal (expr_equal eq) args1 args2
+        String.equal x1 x2 && List.equal (expr_equal eq) args1 args2
       else
         String.equal x1 x2
-        && list_equal (expr_equal eq) params1 params2
-        && list_equal (expr_equal eq) args1 args2
+        && List.equal (expr_equal eq) params1 params2
+        && List.equal (expr_equal eq) args1 args2
   | E_Call _, _ | _, E_Call _ -> false
   | E_Cond (e11, e21, e31), E_Cond (e12, e22, e32) ->
       expr_equal eq e11 e12 && expr_equal eq e21 e22 && expr_equal eq e31 e32
@@ -338,10 +304,10 @@ let rec expr_equal eq e1 e2 =
       String.equal f1 f2 && expr_equal eq e1' e2'
   | E_GetField _, _ | _, E_GetField _ -> false
   | E_GetFields (e1', f1s), E_GetFields (e2', f2s) ->
-      list_equal String.equal f1s f2s && expr_equal eq e1' e2'
+      List.equal String.equal f1s f2s && expr_equal eq e1' e2'
   | E_GetFields _, _ | _, E_GetFields _ -> false
   | E_GetCollectionFields (x1, f1s), E_GetCollectionFields (x2, f2s) ->
-      String.equal x1 x2 && list_equal String.equal f1s f2s
+      String.equal x1 x2 && List.equal String.equal f1s f2s
   | E_GetCollectionFields _, _ | _, E_GetCollectionFields _ -> false
   | E_GetItem (e1', i1), E_GetItem (e2', i2) ->
       Int.equal i1 i2 && expr_equal eq e1' e2'
@@ -351,21 +317,21 @@ let rec expr_equal eq e1 e2 =
   | E_Pattern _, _ -> false
   | E_Record (s1, fields1), E_Record (s2, fields2) ->
       type_equal eq s1 s2
-      && list_equal
+      && List.equal
            (fun (n1, e1') (n2, e2') ->
              String.equal n1 n2 && expr_equal eq e1' e2')
            fields1 fields2
   | E_Record _, _ -> false
   | E_Literal v1, E_Literal v2 -> literal_equal v1 v2
   | E_Literal _, _ | _, E_Literal _ -> false
-  | E_Tuple li1, E_Tuple li2 -> list_equal (expr_equal eq) li1 li2
+  | E_Tuple li1, E_Tuple li2 -> List.equal (expr_equal eq) li1 li2
   | E_Tuple _, _ | _, E_Tuple _ -> false
   | E_Array { length = l1; value = v1 }, E_Array { length = l2; value = v2 } ->
       expr_equal eq l1 l2 && expr_equal eq v1 v2
   | E_Array _, _ | _, E_Array _ -> false
   | ( E_EnumArray { labels = l1; value = v1 },
       E_EnumArray { labels = l2; value = v2 } ) ->
-      list_equal String.equal l1 l2 && expr_equal eq v1 v2
+      List.equal String.equal l1 l2 && expr_equal eq v1 v2
   | E_EnumArray _, _ | _, E_EnumArray _ -> false
   | E_ATC (e1, t1), E_ATC (e2, t2) -> expr_equal eq e1 e2 && type_equal eq t1 t2
   | E_ATC _, _ | _, E_ATC _ -> false
@@ -376,7 +342,7 @@ let rec expr_equal eq e1 e2 =
   | E_Var _, _ (* | _, E_Var _ *) -> false
 
 and slices_equal eq slices1 slices2 =
-  list_equal (slice_equal eq) slices1 slices2
+  List.equal (slice_equal eq) slices1 slices2
 
 and slice_equal eq slice1 slice2 =
   slice1 == slice2
@@ -399,7 +365,7 @@ and constraint_equal eq c1 c2 =
   | _ -> false
 
 and constraints_equal eq cs1 cs2 =
-  cs1 == cs2 || list_equal (constraint_equal eq) cs1 cs2
+  cs1 == cs2 || List.equal (constraint_equal eq) cs1 cs2
 
 and array_length_equal eq l1 l2 =
   match (l1, l2) with
@@ -428,18 +394,18 @@ and type_equal eq t1 t2 =
       array_length_equal eq l1 l2 && type_equal eq t1 t2
   | T_Named s1, T_Named s2 -> String.equal s1 s2
   | T_Enum li1, T_Enum li2 ->
-      (* TODO: order of fields? *) list_equal String.equal li1 li2
+      (* TODO: order of fields? *) List.equal String.equal li1 li2
   | T_Exception f1, T_Exception f2
   | T_Record f1, T_Record f2
   | T_Collection f1, T_Collection f2 ->
-      list_equal
+      List.equal
         (pair_equal String.equal (type_equal eq))
         (canonical_fields f1) (canonical_fields f2)
-  | T_Tuple ts1, T_Tuple ts2 -> list_equal (type_equal eq) ts1 ts2
+  | T_Tuple ts1, T_Tuple ts2 -> List.equal (type_equal eq) ts1 ts2
   | _ -> false
 
 and bitwidth_equal eq w1 w2 = expr_equal eq w1 w2
-and bitfields_equal eq bf1 bf2 = list_equal (bitfield_equal eq) bf1 bf2
+and bitfields_equal eq bf1 bf2 = List.equal (bitfield_equal eq) bf1 bf2
 
 and bitfield_equal eq bf1 bf2 =
   bf1 == bf2
@@ -470,7 +436,7 @@ and pattern_equal eq p1 p2 =
   match (p1.desc, p2.desc) with
   | Pattern_All, Pattern_All -> true
   | Pattern_Any li1, Pattern_Any li2 | Pattern_Tuple li1, Pattern_Tuple li2 ->
-      list_equal (pattern_equal eq) li1 li2
+      List.equal (pattern_equal eq) li1 li2
   | Pattern_Geq e1, Pattern_Geq e2
   | Pattern_Leq e1, Pattern_Leq e2
   | Pattern_Single e1, Pattern_Single e2 ->
@@ -560,23 +526,12 @@ let expr_of_lexpr : lexpr -> expr =
   in
   map_desc aux
 
-(* Straight out of stdlib 4.12 *)
-let string_starts_with ~prefix s =
-  let open String in
-  let len_s = length s and len_pre = length prefix in
-  let rec aux i =
-    if i = len_pre then true
-    else if unsafe_get s i <> unsafe_get prefix i then false
-    else aux (i + 1)
-  in
-  len_s >= len_pre && aux 0
-
 let global_ignored_prefix = "__global_ignored"
 let global_ignored () = fresh_var global_ignored_prefix
-let is_global_ignored s = string_starts_with ~prefix:global_ignored_prefix s
+let is_global_ignored s = String.starts_with ~prefix:global_ignored_prefix s
 let local_ignored_prefix = "__ldi_discard"
 let local_ignored () = fresh_var local_ignored_prefix
-let is_local_ignored s = string_starts_with ~prefix:local_ignored_prefix s
+let is_local_ignored s = String.starts_with ~prefix:local_ignored_prefix s
 let slice_is_single = function Slice_Single _ -> true | _ -> false
 
 let is_noreturn (f : func) =

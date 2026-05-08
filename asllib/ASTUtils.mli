@@ -230,9 +230,6 @@ val global_ignored : unit -> identifier
 val local_ignored : unit -> identifier
 (** Creates a fresh dummy variable for a local ignored variable. *)
 
-val string_starts_with : prefix:string -> string -> bool
-(** A copy of String.starts_with out of stdlib 4.12 *)
-
 val is_global_ignored : identifier -> bool
 (** [is_global_ignored s] is true iff [s] has been created with
     [global_ignored ()]. *)
@@ -356,13 +353,6 @@ val pair : 'a -> 'b -> 'a * 'b
 val pair' : 'b -> 'a -> 'a * 'b
 (** [pair' b a] is [(b, a)]. *)
 
-val list_equal : ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
-(** [list_equal elt_equal li1 li2] is true iff [li1] and [li2] are element-wise
-    equal. *)
-
-val list_compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
-(** An element wise comparaison for lists. *)
-
 val list_cross : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
 (** [list_cross f [a1; ... an] [b1; ... bm]] is the list of all [f ai bj] in a
     non-specified order. *)
@@ -376,17 +366,8 @@ val list_flat_cross : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
 (** [list_flat_cross f [a1; ... an] [b1; ... bm]] is the concatenation of all
     [f ai bj] in a non-specified order. *)
 
-val list_concat_map : ('a -> 'b list) -> 'a list -> 'b list
-(** [list_concat_map f l] gives the same result as [List.concat (List.map f l)].
-    Tail-recursive. Taken from stdlib 4.10. *)
-
 val list_fold_lefti : (int -> 'acc -> 'a -> 'acc) -> 'acc -> 'a list -> 'acc
 (** Same as [List.fold_left] but takes a index. *)
-
-val list_fold_left_map :
-  ('acc -> 'a -> 'acc * 'b) -> 'acc -> 'a list -> 'acc * 'b list
-(** [fold_left_map] is a combination of [fold_left] and [map] that threads an
-    accumulator through calls to [f]. Taken from stdlib 4.11. *)
 
 val list_coalesce_right : ('a -> 'a -> 'a option) -> 'a list -> 'a list
 (** [list_coalesce_right f l] applies the coalescing function [f] to adjacent

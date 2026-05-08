@@ -175,7 +175,7 @@ module Make (S : SPEC_VALUE) = struct
   let pp_relation_definition fmt
       ({ Relation.name; property; input; output } as def) =
     let input_vars = vars_of_opt_named_type_terms input in
-    let output_vars = Utils.list_concat_map vars_of_type_term output in
+    let output_vars = List.concat_map vars_of_type_term output in
     let vars = input_vars @ output_vars in
     let instantiated_prose_description =
       substitute_spec_vars_by_latex_vars ~math_mode:true
@@ -562,7 +562,7 @@ module Make (S : SPEC_VALUE) = struct
           let { Relation.output } = Spec.relation_for_id S.spec relation_name in
           let alternative_output_types = Utils.list_tail output in
           let alternative_macros =
-            Utils.list_concat_map short_circuit_macros_for_type_term
+            List.concat_map short_circuit_macros_for_type_term
               alternative_output_types
           in
           match alternative_macros with
@@ -965,7 +965,7 @@ module Make (S : SPEC_VALUE) = struct
       else
         let formal_arg_pairs = List.combine formal_args args in
         let formal_prose_pairs =
-          Utils.list_concat_map
+          List.concat_map
             (fun (opt_named_term, arg) ->
               named_args_for_opt_named_term opt_named_term arg)
             formal_arg_pairs
@@ -982,7 +982,7 @@ module Make (S : SPEC_VALUE) = struct
           let { Relation.output } = Spec.relation_for_id S.spec relation_name in
           let alternative_output_types = Utils.list_tail output in
           let short_circuit_macros =
-            Utils.list_concat_map short_circuit_macros_for_type_term
+            List.concat_map short_circuit_macros_for_type_term
               alternative_output_types
           in
           if Utils.list_is_empty short_circuit_macros then ""
@@ -1021,7 +1021,7 @@ module Make (S : SPEC_VALUE) = struct
       match (term, expr) with
       | ( Term.Tuple { args = opt_named_term_args },
           Expr.Tuple { args = expr_args } ) ->
-          Utils.list_concat_map
+          List.concat_map
             (fun (opt_named_term, arg) ->
               named_args_for_opt_named_term opt_named_term arg)
             (List.combine opt_named_term_args expr_args)
