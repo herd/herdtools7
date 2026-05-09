@@ -49,50 +49,8 @@ and their corresponding types in comments:
 \RenderType[remove_hypertargets]{literal}
 
 \subsection{ASTRule.Value \label{sec:ASTRule.Value}}
-\NotImportedToASLSpecYet{
-\hypertarget{build-value}{}
-The function
-\[
-  \buildvalue(\overname{\parsenode{\Nvalue}}{\vparsednode}) \;\aslto\; \overname{\literal}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ for $\Nvalue$, except for enumeration labels,
-into an AST node $\vastnode$ for $\literal$.
-} % END_OF_UNIMPORTED_RELATION
-
-\begin{mathpar}
-\inferrule[integer]{}{
-  \buildvalue(\Nvalue(\Tintlit(\vi))) \astarrow
-  \overname{\LInt(\vi)}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[boolean]{}{
-  \buildvalue(\Nvalue(\Tboollit(\vb))) \astarrow
-  \overname{\LBool(\vb)}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[real]{}{
-  \buildvalue(\Nvalue(\Treallit(\vr))) \astarrow
-  \overname{\LReal(\vr)}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[bitvector]{}{
-  \buildvalue(\Nvalue(\Tbitvectorlit(\vb))) \astarrow
-  \overname{\LBitvector(\vb)}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[string]{}{
-  \buildvalue(\Nvalue(\Tstringlit(\vs))) \astarrow
-  \overname{\LString(\vs)}{\vastnode}
-}
-\end{mathpar}
+\RenderRelation{build_value}
+\RenderProseAndFormally{build_value}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Literals}

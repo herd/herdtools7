@@ -29,13 +29,7 @@ matches a value specified by the \emph{pattern} $p$.
 
 \paragraph{Abstract Syntax:} Patterns are derived in the abstract grammar from $\pattern$
   and generated from $\buildpattern$.
-  \hypertarget{build-pattern}{}
-  The function
-\[
-  \buildpattern(\overname{\parsenode{\Npattern}}{\vparsednode}) \;\aslto\;
-  \overname{\pattern}{\vastnode}
-\]
-transforms a pattern parse node $\vparsednode$ into a pattern AST node $\vastnode$.
+\RenderRelation{build_pattern}
 
 \paragraph{Typing:} Patterns are annotated by $\annotatepattern$.
 \RenderRelation{annotate_pattern}
@@ -54,12 +48,7 @@ transforms a pattern parse node $\vparsednode$ into a pattern AST node $\vastnod
 \RenderTypes[remove_hypertargets]{pattern_all}
 
 \ASTRuleDef{PAll}
-\begin{mathpar}
-\inferrule{}{
-  \buildpattern(\Npattern(\Tminus)) \astarrow
-  \overname{\PatternAll}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_pattern_PAll}
 
 \subsection{Typing}
 \TypingRuleDef{PAll}
@@ -88,12 +77,7 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 \RenderTypes[remove_hypertargets]{pattern_single}
 
 \ASTRuleDef{PSingle}
-\begin{mathpar}
-\inferrule{}{
-  \buildpattern(\Npattern(\punnode{\Nexprpattern})) \astarrow
-  \overname{\PatternSingle(\astof{\vexprpattern})}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_pattern_PSingle}
 
 \subsection{Typing}
 \TypingRuleDef{PSingle}
@@ -129,16 +113,7 @@ In \listingref{semantics-psingle},
 \RenderTypes[remove_hypertargets]{pattern_range}
 
 \ASTRuleDef{PRange}
-\begin{mathpar}
-\inferrule{}{
-  {
-    \begin{array}{r}
-  \buildpattern(\Npattern(\punnode{\Nexprpattern}, \Tslicing, \punnode{\Nexpr})) \astarrow\\
-  \overname{\PatternRange(\astof{\vexprpattern}, \astof{\vexpr})}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
+\RenderProseAndFormally{build_pattern_PRange}
 
 \subsection{Typing}
 \TypingRuleDef{PRange}
@@ -177,12 +152,7 @@ range given by \texttt{3..42}.
 \RenderTypes[remove_hypertargets]{pattern_leq}
 
 \ASTRuleDef{PLeq}
-\begin{mathpar}
-\inferrule{}{
-  \buildpattern(\Npattern(\Tleq, \punnode{\Nexpr})) \astarrow
-  \overname{\PatternLeq(\astof{\vexpr})}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_pattern_PLeq}
 
 \subsection{Typing}
 \TypingRuleDef{PLeq}
@@ -219,12 +189,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \RenderTypes[remove_hypertargets]{pattern_geq}
 
 \ASTRuleDef{PGeq}
-\begin{mathpar}
-\inferrule{}{
-  \buildpattern(\Npattern(\Tgeq, \punnode{\Nexpr})) \astarrow
-  \overname{\PatternGeq(\astof{\vexpr})}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_pattern_PGeq}
 
 \subsection{Typing}
 \TypingRuleDef{PGeq}
@@ -264,12 +229,7 @@ and bit sequences in parentheses represent, don't-care values.
 \RenderTypes[remove_hypertargets]{pattern_mask}
 
 \ASTRuleDef{PMask}
-\begin{mathpar}
-\inferrule{}{
-  \buildpattern(\Npattern(\Tmasklit(\vm))) \astarrow
-  \overname{\PatternMask(\vm)}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_pattern_PMask}
 
 \subsection{Typing}
 \TypingRuleDef{PMask}
@@ -322,18 +282,7 @@ It is defined by the following table where the rows correspond to values of the 
 
 
 \ASTRuleDef{PTuple}
-\begin{mathpar}
-\inferrule{
-  \buildplist[\buildpattern](\vpatterns) \astarrow \vpatternasts
-}{
-  {
-    \begin{array}{r}
-  \buildpattern(\Npattern(\namednode{\vpatterns}{\Plisttwo{\Npattern}})) \astarrow \\
-  \overname{\PatternTuple(\vpatternasts)}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
+\RenderProseAndFormally{build_pattern_PTuple}
 
 \subsection{Typing}
 \TypingRuleDef{PTuple}
@@ -376,59 +325,16 @@ the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patt
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{pattern_any}
 
+\ASTRuleDef{PatternIsPatternSet}
+\RenderProseAndFormally{build_pattern_PSet}
 
 \ASTRuleDef{PatternSet}
-\NotImportedToASLSpecYet{
-\hypertarget{build-patternset}{}
-The function
-\[
-  \buildpatternset(\overname{\parsenode{\Npatternset}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[not]{}{
-  {
-    \begin{array}{r}
-  \buildpatternset(\Npatternset(\Tbnot, \Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow\\
-  \overname{\PatternNot(\astof{\vpatternlist})}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[list]{}{
-  \buildpatternset(\Npatternset(\Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow
-  \overname{\astof{\vpatternlist}}{\vastnode}
-}
-\end{mathpar}
+\RenderRelation{build_pattern_set}
+\RenderProseAndFormally{build_pattern_set}
 
 \ASTRuleDef{PatternList}
-\NotImportedToASLSpecYet{
-\hypertarget{build-patternlist}{}
-The function
-\[
-  \buildpatternlist(\overname{\parsenode{\Npatternlist}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule{
-  \buildclist[\buildpattern](\vpatterns) \astarrow \vpatternasts
-}{
-  {
-    \begin{array}{r}
-  \buildpatternlist(\Npatternlist(\namednode{\vpatterns}{\ClistOne{\Npattern}})) \astarrow\\
-  \overname{\PatternAny(\vpatternasts)}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
+\RenderRelation{build_pattern_list}
+\RenderProseAndFormally{build_pattern_list}
 
 \subsection{Typing}
 \TypingRuleDef{PAny}
@@ -439,26 +345,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \listingref{typing-pany-bad} shows an example of an ill-typed Any pattern.
 \ASLListing{An ill-typed Any pattern}{typing-pany-bad}{\typingtests/TypingRule.PAny.bad.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\vp$ is the pattern that matches anything in a list $\vli$, that is, $\PatternAny(\vli)$;
-\item annotating each pattern $\vl$ in $\vli$ yields $(\newl_\vl, \vxs_\vl)$\ProseOrTypeError;
-\item define $\newli$ as the list of patterns $\newl_\vl$, for each $\vl$ in $\vli$;
-\item $\newp$ is the pattern that matches anything in $\newli$, that is, \\ $\PatternAny(\newli)$;
-\item define $\vses$ as the union of all $\vxs_\vl$, for each $\vl$ in $\vli$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vl\in\vli: \annotatepattern(\tenv, \vt, \vl) \typearrow (\newl_\vl, \vxs_\vl) \OrTypeError\hva\\\\
-  \newli \eqdef [\vl\in\vli: \newl_\vl]\\
-  \vses \eqdef \bigcup_{\vl\in\vli} \vxs_\vl
-}{
-  \annotatepattern(\tenv, \vt, \overname{\PatternAny(\vli)}{\vp}) \typearrow (\overname{\PatternAny(\newli)}{\newp}, \vses)
-}
-\end{mathpar}
+\RenderProseAndFormally{annotate_pattern_any}
 \CodeSubsection{\PAnyBegin}{\PAnyEnd}{../Typing.ml}
 
 \subsection{Semantics}
@@ -530,227 +417,5 @@ $\checksymbolicallyevaluable$, and thus in the dynamic semantics
 they are evaluated via $\evalexprsef$.
 
 \subsection{ASTRule.ExprPattern\label{sec:ASTRule.ExprPattern}}
-\NotImportedToASLSpecYet{
-\hypertarget{build-exprpattern}{}
-The function
-\[
-  \buildexprpattern(\overname{\parsenode{\Nexprpattern}}{\vparsednode}) \;\aslto\; \overname{\expr}{\vastnode}
-\]
-transforms a pattern expression parse node $\vparsednode$ into a pattern AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[literal]{}{
-  \buildexprpattern(\Nexprpattern(\punnode{\Nvalue})) \astarrow
-  \overname{\ELiteral(\astof{\vvalue})}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[var]{}{
-  \buildexprpattern(\Nexprpattern(\Tidentifier(\id))) \astarrow
-  \overname{\EVar(\id)}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[binop]{}{
-    {
-      \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \punnode{\Nbinop}, \punnode{\Nexpr})) \astarrow\\
-  \overname{\EBinop(\astof{\vexprpattern}, \astof{\vbinop}, \astof{\vexpr})}{\vastnode}
-      \end{array}
-    }
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[unop]{}{
-  \buildexprpattern(\Nexprpattern(\punnode{\Nunop}, \punnode{\Nexpr})) \astarrow
-  \overname{\EUnop(\astof{\vunop}, \astof{\vexpr})}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[cond]{
-    \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr}\\
-    \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr}\\
-    \buildexpr(\velseexpr) \astarrow \astversion{\velseexpr}
-  }{
-    {
-      \begin{array}{r}
-  \buildexprpattern\left(\Nexprpattern\left(
-    \begin{array}{l}
-    \Tif, \namednode{\vcondexpr}{\Nexpr}, \Tthen, \\
-    \wrappedline\ \namednode{\vthenexpr}{\Nexpr}, \Telse, \\
-    \wrappedline\ \namednode{\velseexpr}{\Nexpr}
-    \end{array}
-    \right)\right) \astarrow\\
-  \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astversion{\velseexpr})}{\vastnode}
-      \end{array}
-    }
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[call]{
-    \buildcall(\vcall) \astarrow \astof{\vcall} \OrBuildError
-  }{
-  \buildexprpattern(\Nexprpattern(\namednode{\vcall}{\Ncall})) \astarrow
-  \overname{\ECall(\astof{\vcall})}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[slice]{}{
-    {
-      \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \punnode{\Nslices})) \astarrow\\
-  \overname{\ESlice(\astof{\vexprpattern}, \astof{\vslices})}{\vastnode}
-      \end{array}
-    }
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[get\_array]{}{
-    {
-      \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tllbracket, \punnode{\Nexpr}, \Trrbracket)) \astarrow\\
-  \overname{\EGetArray(\astof{\vexprpattern}, \astof{\vexpr})}{\vastnode}
-      \end{array}
-    }
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[get\_field]{}{
-  {
-    \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tdot, \Tidentifier(\id))) \astarrow \\
-  \overname{\EGetField(\astof{\vexprpattern}, \id)}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[get\_fields]{
-    \vparsednode = \Nexprpattern(\punnode{\Nexprpattern}, \Tdot, \Tlbracket, \namednode{\vids}{\ClistOne{\Tidentifier}}, \Trbracket)\\
-    \buildclist[\buildidentity](\vids) \astarrow \vidasts\\
-    \vastnode \eqdef \EGetFields(\astof{\vexprpattern}, \vidasts)
-  }{
-  \buildexprpattern(\vparsednode) \astarrow \vastnode
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[atc]{}{
-    {
-      \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tas, \punnode{\Nty})) \astarrow\\
-  \overname{\EATC(\astof{\vexprpattern}, \astof{\tty})}{\vastnode}
-      \end{array}
-    }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[atc\_int\_constraints]{}{
-  {
-  \begin{array}{r}
-    \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tas, \punnode{\Nconstraintkind})) \astarrow\\
-    \overname{\EATC(\astof{\vexprpattern}, \TInt(\astof{\vconstraintkind}))}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[pattern\_in]{}{
-  {
-  \begin{array}{r}
-    \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tin, \punnode{\Npatternset})) \astarrow\\
-    \overname{\EPattern(\astof{\vexprpattern}, \astof{\vpatternset})}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[pattern\_eq]{}{
-  {
-    \begin{array}{r}
-      \buildexprpattern(\overname{\Nexprpattern(\punnode{\Nexprpattern}, \Teqop, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
-      \overname{\EPattern(\astof{\vexprpattern}, \PatternMask(\vm))}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[pattern\_neq]{}{
-  {
-    \begin{array}{r}
-      \buildexprpattern(\overname{\Nexprpattern(\punnode{\Nexprpattern}, \Tneq, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
-      \overname{\EPattern(\astof{\vexprpattern}, \PatternNot(\PatternMask(\vm)))}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[arbitrary]{}{
-  \buildexprpattern(\Nexprpattern(\Tarbitrary, \Tcolon, \punnode{\Nty})) \astarrow
-  \overname{\EArbitrary(\astof{\tty})}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[record\_empty]{}{
-  {
-  \begin{array}{r}
-  \buildexprpattern\left(\Nexprpattern\left(
-    \begin{array}{l}
-    \Tidentifier(\vt), \Tlbrace, \Tminus, \Trbrace \\
-    \end{array}
-    \right)\right) \\
-    \astarrow\ \overname{\ERecord(\TNamed(\vt), \emptylist)}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[record\_non\_empty]{
-    {
-    \vparsednode = \Nexprpattern\left(
-      \begin{array}{l}
-      \Tidentifier(\vt), \Tlbrace, \\
-      \wrappedline\ \namednode{\vfieldassigns}{\ClistOne{\Nfieldassign}}, \\
-      \wrappedline\ \Trbrace
-      \end{array}
-      \right)
-  }\\
-    \buildclist[\buildfieldassign](\vfieldassigns) \astarrow \vfieldassignasts
-  }{
-    {
-    \begin{array}{r}
-      \buildexprpattern(\vparsednode) \\
-      \astarrow\ \overname{\ERecord(\TNamed(\vt), \vfieldassignasts)}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[sub\_expr]{}{
-  {
-    \begin{array}{r}
-      \buildexprpattern(\Nexprpattern(\Tlpar, \punnode{\Nexprpattern}, \Trpar)) \astarrow\\
-      \overname{\ETuple([\ \astof{\vexprpattern}\ ])}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
+\RenderRelation{build_expr_pattern}
+\RenderProseAndFormally{build_expr_pattern}

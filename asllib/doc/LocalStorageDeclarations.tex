@@ -74,91 +74,16 @@ All the local storage declarations in \listingref{local-storage-discards} are il
 \ASLListing{Illegal local storage declarations that discard all storage elements}{local-storage-discards}{\syntaxtests/GuideRule.DiscardingLocalStorageDeclarations.asl}
 
 \ASTRuleDef{LocalDeclKeyword}
-\NotImportedToASLSpecYet{
-\hypertarget{build-localdeclkeyword}{}
-The function
-\[
-\buildlocaldeclkeyword(\overname{\parsenode{\Nlocaldeclkeyword}}{\vparsednode}) \;\aslto\;
-  \overname{\localdeclkeyword}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-% Transliteration note: simplify this when `--allow-local-constants' is removed.
-
-\begin{mathpar}
-\inferrule[let]{}{
-  \buildlocaldeclkeyword(\overname{\Nlocaldeclkeyword(\Tlet)}{\vparsednode}) \astarrow \overname{\LDKLet}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[var]{}{
-  \buildlocaldeclkeyword(\overname{\Nlocaldeclkeyword(\Tvar)}{\vparsednode}) \astarrow \overname{\LDKVar}{\vastnode}
-}
-\end{mathpar}
+\RenderRelation{build_local_decl_keyword}
+\RenderProseAndFormally{build_local_decl_keyword}
 
 \ASTRuleDef{DeclItem}
-\NotImportedToASLSpecYet{
-\hypertarget{build-declitem}{}
-The function
-\[
-  \builddeclitem(\overname{\parsenode{\Ndeclitem}}{\vparsednode}) \;\aslto\; \overname{\localdeclitem}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[var]{}{
-  \builddeclitem(\Ndeclitem(\Tidentifier(\name))) \astarrow
-  \overname{\name}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[tuple]{
-  \vb \eqdef \bigwedge_{i \in \listrange(\vids)} \vids_i = \Tminus \\
-  \becheck(\lnot \vb, \BuildBadDeclaration) \astarrow \True \OrBuildError \\
-  \buildclist[\buildignoredoridentifier](\vids) \astarrow \astversion{\vids}
-}{
-  {
-    \begin{array}{r}
-  \builddeclitem(\Ndeclitem(\namednode{\vids}{\Plisttwo{\Nignoredoridentifier}})) \astarrow \\
-  \overname{\LDITuple(\astversion{\vids})}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
+\RenderRelation{build_decl_item}
+\RenderProseAndFormally{build_decl_item}
 
 \ASTRuleDef{IgnoredOrIdentifier}
-\NotImportedToASLSpecYet{
-\hypertarget{build-ignoredoridentifier}{}
-The relation
-\[
-\buildfuncargs(\overname{\parsenode{\Nignoredoridentifier}}{\vparsednode}) \;\aslrel\;
-  \overname{\Identifier}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[discard]{
-  \id \in \Identifier \text{ is fresh}
-}{
-  \buildignoredoridentifier(\overname{\Nignoredoridentifier(\Tminus)}{\vparsednode}) \astarrow
-  \overname{\id}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[id]{}{
-  \buildignoredoridentifier(\overname{\Nignoredoridentifier(\Tidentifier(\id))}{\vparsednode}) \astarrow
-  \overname{\id}{\vastnode}
-}
-\end{mathpar}
+\RenderRelation{build_ignored_or_identifier}
+\RenderProseAndFormally{build_ignored_or_identifier}
 
 \section{Typing of Local Variable Declarations\label{sec:Typing of Local Variable Declarations}}
 \TypingRuleDef{LDVar}
@@ -168,31 +93,8 @@ In \listingref{ldvar}, the statement \texttt{let x = 3;} is legal, since
 with the type inferred type \texttt{integer{3}}.
 \ASLListing{A local storage declaration}{ldvar}{\typingtests/TypingRule.LDVar.asl}
 
-\ProseParagraph
-\AllApply
-\begin{itemize}
-  \item $\ldi$ denotes a variable $\vx$, that is, $\LDIVar(\vx)$;
-  \item \Prosecheckisnotcollection{$\tenv$}{$\tty$};
-  \item determining whether $\vx$ is not declared in $\tenv$ yields $\True$\ProseOrTypeError;
-  \item \Prosenoprecisionloss{$\tty$};
-  \item $\tenvtwo$ is $\tenv$ modified so that $\vx$ is locally declared to have type $\tty$;
-  \item applying $\addimmutableexpression$ to $\ldk$, $\veopt$, and $\vx$ in $\tenv$ (to conditionally
-        update $\tenvtwo$) yields $\newtenv$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \checkvarnotinenv(\tenv, \vx) \typearrow \True \OrTypeError\hva\\\\
-  \checknoprecisionloss(\tty) \typearrow \True \OrTypeError\hva\\\\
-  \addlocal(\tenv, \vx, \tty, \ldk) \typearrow \tenvtwo\\
-  \addimmutableexpression(\tenvtwo, \ldk, \veopt, \vx) \typearrow \newtenv
-}{
-  \annotatelocaldeclitem(\tenv, \tty, \ldk, \veopt, \overname{\LDIVar(\vx)}{\ldi}) \typearrow \newtenv
-}
-\end{mathpar}
+\RenderProseAndFormally{annotate_local_decl_item_var}
 \CodeSubsection{\LDVarBegin}{\LDVarEnd}{../Typing.ml}
-
 
 \TypingRuleDef{CheckIsNotCollection}%
 \RenderRelation{check_is_not_collection}
@@ -223,8 +125,7 @@ to the evaluation of \texttt{3} in $\env$.
 \ExampleDef{Well-typed Tuple Declarations}
 \ASLListing{Declaring a tuple in the local storage}{typing-ldtuple}{\typingtests/TypingRule.LDTuple.asl}
 
-
-\RenderProseAndFormally{annotate_local_decl_item}
+\RenderProseAndFormally{annotate_local_decl_item_tuple}
 \CodeSubsection{\LDTupleBegin}{\LDTupleEnd}{../Typing.ml}
 
 \TypingRuleDef{AddLocalVars}

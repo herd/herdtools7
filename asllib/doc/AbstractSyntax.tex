@@ -327,19 +327,23 @@ Global pragma declarations $\DPragma$ are removed from the \untypedast\ once the
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Building Abstract Syntax Trees\label{sec:BuildingAbstractSyntaxTrees}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-This section defines how to transform a parse tree into the corresponding AST
+This section describes how to transform a parse tree into the corresponding AST
 via recursively traversing the parse tree and applying a \emph{builder} function
-for each non-terminal node.
-
+or a builder relation for each non-terminal node.
 (Some of the builders are relations due to non-determinism induced by naming global variables
 for assignments whose left-hand-side variable is discarded ($\Tminus$).)
+We refer to builder functions and builder relations collectively as \emph{builders}.
 
 \hypertarget{def-tbuilderror}{}
 \hypertarget{def-builderrorconfig}{}
-For each non-terminal $N \derives R_1 \;|\; \ldots \;|\; R_k$, we define a builder function
-$\textsf{build\_}N $ which takes a parse tree $\parsenode{N}$ and returns the corresponding
+For each non-terminal $N \derives R_1 \;|\; \ldots \;|\; R_k$, we define a builder
+$\textsf{build\_}N $ which takes a parse tree for $\parsenode{N}$ and returns the corresponding
 AST or a \emph{build error configuration} $\BuildErrorConfig \in \TBuildError$.
-The builder function is defined in terms of one inference rule per alternative $R_i$.
+%
+Build errors and build error codes are defined next:
+\RenderTypes{build_error_and_codes}
+
+The builder is defined in terms of one inference rule per alternative $R_i$.
 The input for the builder for an alternative $R = S_{1..m}$ is a parse node
 $N(S_{1..m})$. To allow the builder to refer to the children nodes of $N$,
 we use the notation $\namednode{n_i}{S_i}$, which names the child node $S_i$ as $n_i$.
@@ -391,198 +395,139 @@ Recall that hyphens are not legal characters in ASL identifiers, which avoids po
 user-supplied identifiers. An implementation is free however to choose other naming schemes that
 avoid name clashes, for example, by employing counters.
 
-\subsection{Abbreviated Rule Notation for AST Builders}
-Notice that there is only one instance of $\Nexpr$ and one instance of $\Nstmtlist$ in this production.
-This is very common and we therefore use the following shorthand notation for such cases, as explained next.
-
-If a non-terminal $N$ appears only once in the right-hand-side of a derivation,
-we use the name $\texttt{N}$ to name the corresponding child parse node.
-For example, $\namednode{\vexpr}{\Nexpr}$ and $\namednode{\vstmtlist}{\Nstmtlist}$.
-In such cases, we always have the premise $\textsf{build\_}N(\texttt{N}) \astarrow \astversion{N}$
-to obtain the corresponding AST node.
-We therefore make this premise implicit, by dropping it entirely and using $\astof{N}$ to mean that
-the parse node $N$ is named $\texttt{N}$, the premise $\textsf{build\_}N(\texttt{N}) \astarrow \astversion{N}$
-is considered part of the rule and $\astversion{N}$ itself stands for $\astversion{N}$.
-
-In our example, this results in the abbreviated rule notation
-\begin{mathpar}
-\inferrule{}{
-{
-\begin{array}{r}
-  \buildstmt(\Nstmt(\Twhile, \punnode{\Nexpr}, \Tdo, \punnode{\Nstmtlist}, \Tend, \Tsemicolon))
-  \astarrow\\
-  \SWhile(\astof{\vexpr}, \none, \astof{\vstmtlist})
-  \end{array}
-}
-}
-\end{mathpar}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Building Parameterized Productions\label{sec:BuildingParameterizedProductions}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 This section defines builder relations for the
 subset of macro productions in \secref{ParametricProductions}
-that are not inlined:
+that are not inlined as well as helper builder relations:
 \begin{itemize}
-  \item \ASTRuleRef{List}
-  \item \ASTRuleRef{CList}
-  \item \ASTRuleRef{PList}
-  \item \ASTRuleRef{NTCList}
-  \item \ASTRuleRef{Option}
+  \item \ASTRuleRef{ClistoneToList}
+  \item \ASTRuleRef{ClistzeroToList}
+  \item \ASTRuleRef{ClisttwoToList}
+  \item \ASTRuleRef{TClistoneToList}
+  \item \ASTRuleRef{TClistzeroToList}
+  \item \ASTRuleRef{PlistzeroToList}
+  \item \ASTRuleRef{PlisttwoToList}
+  \item \ASTRuleRef{poptionToOption}
+  \item \ASTRuleRef{Identifier}
 \end{itemize}
 
-We also define \ASTRuleRef{Identity},
-which can be used in conjunction with the rules above in application
-to terminals.
+\ASTRuleDef{ClistoneToList}
+The function $\clistonetolist{\overname{\vx}{\ClistOne{T}}} \aslto \KleenePlus{T}$ takes a parse node for a non-empty comma-separated list and returns a list of the elements.
 
-\ASTRuleDef{List}
-\hypertarget{build-list}{}
-The meta relation
-\[
-\buildlist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
-\]
-which is parameterized by an AST building relation $b(E) \aslrel A$,
-takes a parse node that represents a possibly-empty list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
-to each of them --- $\vsymasts$.
+\begin{mathpar}
+\inferrule[one\_element]{}{
+  \clistonetolist{(\vx)} \astarrow [\vx]
+}
+\and
+\inferrule[multiple\_elements]{
+  \clistonetolist{\vxs} \astarrow \astversion{\vxs}
+}{
+  \clistonetolist{(\vx, \Tcomma, \vxs)} \astarrow [\vx] \concat \astversion{\vxs}
+}
+\end{mathpar}
+
+\ASTRuleDef{ClistzeroToList}
+The function $\clistzerotolist{\overname{\vx}{\ClistZero{T}}} \aslto \KleeneStar{T}$ takes a parse node for a possibly-empty comma-separated list and returns a list of the elements.
 
 \begin{mathpar}
 \inferrule[empty]{}{
-  \buildlist[b](\overname{\emptysentence}{\vsyms}) \astarrow \overname{\emptylist}{\vsymasts}
+  \clistzerotolist{\emptysentence} \astarrow [\ ]
 }
-\end{mathpar}
-
-\begin{mathpar}
+\and
 \inferrule[non\_empty]{
-  b(\vv) \astarrow \astversion{\vv}\\
-  \buildlist[b](\vsymsone) \astarrow \vsymastsone
+  \vxs \neq \emptysentence\\
+  \clistonetolist{\vxs} \astarrow \astversion{\vxs}
 }{
-  \buildlist[b](\overname{
-    \maybeemptylist{N}(\namednode{\vv}{E}, \namednode{\vsymsone}{\maybeemptylist{N}})
-    }{\vsyms}) \astarrow
-  \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
+  \clistzerotolist{\vxs} \astarrow \astversion{\vxs}
 }
 \end{mathpar}
 
-\ASTRuleDef{CList}
-\hypertarget{build-clist}{}
-The meta relation
-\[
-\buildclist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
-\]
-which is parameterized by an AST building relation $b(E) \aslrel A$,
-takes a parse node that represents a possibly-empty comma-separated list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
-to each of them --- $\vsymasts$.
-
-\begin{mathpar}
-\inferrule[empty]{}{
-  \buildclist[b](\overname{\emptysentence}{\vsyms}) \astarrow \overname{\emptylist}{\vsymasts}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  b(\vv) \astarrow \astversion{\vv}\\
-  \buildclist[b](\vsymsone) \astarrow \vsymastsone
-}{
-  \buildclist[b](\overname{
-    \ClistOne{N}(\namednode{\vv}{E}, \Tcomma, \namednode{\vsymsone}{\ClistOne{N}})
-    }{\vsyms}) \astarrow \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
-}
-\end{mathpar}
-
-\ASTRuleDef{PList}
-\hypertarget{build-plist}{}
-The meta relation
-\[
-\buildplist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
-\]
-which is parameterized by an AST building relation $b(E) \aslrel A$,
-takes a parse node that represents a parenthesized comma-separated list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
-to each of them --- $\vsymasts$.
+\ASTRuleDef{ClisttwoToList}
+The function $\clisttwotolist{\overname{\vx}{\Clisttwo{T}}} \aslto \KleenePlus{T}$ takes a parse node for a comma-separated list with at least two elements and returns a list of the elements.
 
 \begin{mathpar}
 \inferrule{
-  \buildclist[b](\vv) \astarrow \astversion{\vv}
+  \clistonetolist{\vxs} \astarrow \astversion{\vxs}
 }{
-  \buildplist[b](\Tlpar, \namednode{\vv}{\ClistZero{N}}, \Trpar) \astarrow \astversion{\vv}
+  \clisttwotolist{(\vx, \Tcomma, \vxs)} \astarrow [\vx] \concat \astversion{\vxs}
 }
 \end{mathpar}
 
-\ASTRuleDef{NTCList}
-\hypertarget{build-tclist}{}
-The meta relation
-\[
-\buildtclist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
-\]
-which is parameterized by an AST building relation $b(E) \aslrel A$,
-takes a parse node that represents a non-empty comma-separated trailing list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
-to each of them --- $\vsymasts$.
+\ASTRuleDef{TClistoneToList}
+The function $\tclistonetolist{\overname{\vx}{\TClistOne{T}}} \aslto \KleenePlus{T}$ takes a parse node for a non-empty comma-separated trailing list and returns a list of the elements.
 
 \begin{mathpar}
-\inferrule[empty]{
-  b(\vv) \astarrow \astversion{\vv}
+\inferrule[one\_element\_no\_comma]{}{
+  \tclistonetolist{(\vx, \emptysentence)} \astarrow [\vx]
+}
+\and
+\inferrule[one\_element\_comma]{}{
+  \tclistonetolist{(\vx, \Tcomma)} \astarrow [\vx]
+}
+\and
+\inferrule[multiple\_elements]{
+  \tclistonetolist{\vxs} \astarrow \astversion{\vxs}
 }{
-  \buildtclist[b](\overname{\vv, \some{\Tcomma}}{\vsyms}) \astarrow \overname{[\astversion{\vv}]}{\vsymasts}
+  \tclistonetolist{(\vx, \Tcomma, \vxs)} \astarrow [\vx] \concat \astversion{\vxs}
 }
 \end{mathpar}
 
+\ASTRuleDef{TClistzeroToList}
+The function $\tclistzerotolist{\overname{\vx}{\TClistZero{T}}} \aslto \KleeneStar{T}$ takes a parse node for a possibly-empty comma-separated trailing list and returns a list of the elements.
+
 \begin{mathpar}
+\inferrule[empty]{}{
+  \tclistzerotolist{\emptysentence} \astarrow [\ ]
+}
+\and
 \inferrule[non\_empty]{
-  b(\vv) \astarrow \astversion{\vv}\\
-  \buildtclist[b](\vsymsone) \astarrow \vsymastsone
+  \tclistonetolist{\vxs} \astarrow \astversion{\vxs}
 }{
-  \buildtclist[b](\overname{\namednode{\vv}{E}, \Tcomma, \namednode{\vsymsone}{\TClistOne{N}}}{\vsyms}) \astarrow \overname{[\astversion{\vv}] \concat \vsymastsone}{\vsymasts}
+  \tclistzerotolist{\vxs} \astarrow \astversion{\vxs}
 }
 \end{mathpar}
 
-\ASTRuleDef{Option}
-\hypertarget{build-option}{}
-The meta relation
-\[
-\buildoption[b](\overname{N}{\vsym}) \;\aslrel\; \overname{\Option{A}}{\vsymast}
-\]
-which is parameterized by an AST building relation $b(N) \aslrel A$,
-takes a parse node that represents an optional $N$ value $\vsym$, and returns the result of applying $b$
-to the value if it exists --- $\vsymasts$.
+\ASTRuleDef{PlistzeroToList}
+The function $\plistzerotolist{\overname{\vx}{\PlistZero{T}}} \aslto \KleeneStar{T}$ takes a parse node for a possibly-empty parenthesized comma-separated list and returns a list of the elements.
+
+\begin{mathpar}
+\inferrule{
+  \clistzerotolist{\vxs} \astarrow \astversion{\vxs}
+}{
+  \plistzerotolist{(\Tlpar, \vxs, \Trpar)} \astarrow \astversion{\vxs}
+}
+\end{mathpar}
+
+\ASTRuleDef{PlisttwoToList}
+The function $\plisttwotolist{\overname{\vx}{\Plisttwo{T}}} \aslto \KleenePlus{T}$ takes a parse node for a parenthesized comma-separated list with at least two elements and returns a list of the elements.
+
+\begin{mathpar}
+\inferrule{
+  \clisttwotolist{\vxs} \astarrow \astversion{\vxs}
+}{
+  \plisttwotolist{(\Tlpar, \vxs, \Trpar)} \astarrow \astversion{\vxs}
+}
+\end{mathpar}
+
+\ASTRuleDef{poptionToOption}
+The function $\poptiontoOption{\overname{\vx}{\option{T}}} \aslto \Option{T}$ takes a parse node for an optional element and returns the corresponding optional value.
 
 \begin{mathpar}
 \inferrule[none]{}{
-  \buildoption[b](\overname{\emptysentence}{\vsym}) \astarrow \overname{\none}{\vsymast}
+  \poptiontoOption{\emptysentence} \astarrow \none
+}
+\and
+\inferrule[some]{}{
+  \poptiontoOption{(\vx)} \astarrow \some{\vx}
 }
 \end{mathpar}
 
-\begin{mathpar}
-\inferrule[some]{
-  b(\vv) \astarrow \astversion{\vv}
-}{
-  \buildoption[b](\overname{\namednode{\vv}{N}}{\vsym}) \astarrow \overname{\some{\astversion{\vv}}}{\vsymast}
-}
-\end{mathpar}
 
-When this relation is applied to a sentence consisting of a prefix of terminals $t_{1..k}$, ending with a non-terminal $\vv$,
-it ignores the terminals and returns the result for the non-terminal.
-\begin{mathpar}
-\inferrule[last]{
-  \buildoption[b](\vv) \astarrow \vsymast
-}{
-  \buildoption[b](t_{1..k}, \namednode{\vv}{N}) \astarrow \vsymast
-}
-\end{mathpar}
-
-\ASTRuleDef{Identity}
-\hypertarget{build-identity}{}
-The meta function
-\[
-\buildidentity(\overname{T}{x}) \aslto \overname{T}{x}
-\]
-is the identity function, which can be used as an argument to meta functions such as $\buildlist$ when they are applied
-to terminals.
-
-\begin{mathpar}
-\inferrule{}{
-  \buildidentity(x) \astarrow x
-}
-\end{mathpar}
+\ASTRuleDef{Identifier}
+\RenderRelation{build_identifier}
+\RenderProseAndFormally{build_identifier}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Transforming Assignable Expressions\label{sec:LeftToRight}}

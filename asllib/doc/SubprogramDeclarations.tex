@@ -98,525 +98,61 @@ This rule defines the cases for $\builddecl$ for subprogram declarations.
 We first define $\accessorpair$, which we use in this section as an intermediate representation between the syntax forms of accessors and their corresponding abstract syntax.
 In particular, rather than directly building the abstract syntax for accessors, we first build an $\accessorpair$ structure, which we then desugar into abstract syntax.
 
-\hypertarget{ast-accessorpair}{}
-\begin{flalign*}
-\accessorpair \derives\ &
-{
-\left\{
-  \begin{array}{rcl}
-    \accessorpairisreadonly &:& \Bool, \\
-    \accessorpairgetter &:& \stmt, \\
-    \accessorpairsetter &:& \stmt
-\end{array}
-\right\}
-} &
-\end{flalign*}
+\RenderType{accessor_pair}
 
-\begin{mathpar}
-\inferrule[func\_decl]{
-  \buildqualifier(\vp) \astarrow \astversion{\vp}
-}{
-  \builddecl\left(
-    \overname{\Ndecl\left(
-      \begin{array}{l}
-    \namednode{\vp}{\Npuritykeyword}, \punnode{\Noverride}, \Tfunc, \Tidentifier(\name), \\
-    \wrappedline\ \punnode{\Nparamsopt}, \punnode{\Nfuncargs}, \punnode{\Nreturntype}, \\
-    \wrappedline\ \punnode{\Nrecurselimit}, \punnode{\Nfuncbody}
-      \end{array}
-  \right)}{\vparsednode}\right)
-\astarrow \\
-{
-\overname{
- \left[\DFunc\left(\left\{
-  \begin{array}{rcl}
-  \FIELDname &:& \name,\\
-  \FIELDparameters &:& \astof{\vparamsopt},\\
-  \FIELDargs &:& \astof{\vfuncargs},\\
-  \funcbody &:& \astof{\vfuncbody},\\
-  \FIELDreturntype &:& \some{ \astof{\vreturntype} },\\
-  \funcsubprogramtype &:& \STFunction,\\
-  \FIELDrecurselimit   &:& \astof{\vrecurselimit}\\
-  \funcbuiltin &:& \False\\
-  \funcqualifierfield &:& \astversion{\vp}\\
-  \funcoverride &:& \astof{\voverride}
- \end{array}
- \right\}\right)\right]}{\vastnode}
-}}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[procedure\_decl]{}{
- \builddecl\left(
-  \overname{\Ndecl\left(
-   \begin{array}{l}
-   \punnode{\Nqualifier}, \punnode{\Noverride}, \Tfunc, \Tidentifier(\name), \punnode{\Nparamsopt}, \\
-   \wrappedline\ \punnode{\Nfuncargs}, \punnode{\Nrecurselimit}, \punnode{\Nfuncbody}
-   \end{array}
-   \right)}{\vparsednode}
-  \right)
-\astarrow\\
-{
-\overname{
- \left[\DFunc\left(\left\{
- \begin{array}{rcl}
-   \FIELDname &:& \name,\\
-   \FIELDparameters &:& \astof{\vparamsopt},\\
-   \FIELDargs &:& \astof{\vfuncargs},\\
-   \funcbody &:& \astof{\vfuncbody},\\
-   \FIELDreturntype &:& \none,\\
-   \funcsubprogramtype &:& \STProcedure,\\
-   \FIELDrecurselimit &:& \astof{\vrecurselimit}\\
-   \funcbuiltin &:& \False\\
-   \funcqualifierfield &:& \astof{\vqualifier}\\
-   \funcoverride &:& \astof{\voverride}
- \end{array}
- \right\}\right)\right]
-}{\vastnode}}}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[accessor]{
-  \buildaccessorbody(\vbody) \astarrow \vaccessorpair \\
-  {
-  \desugaraccessorpair\left(
-    \begin{array}{l}
-    \voverride,\\
-    \name,\\
-    \astof{\vparamsopt},\\
-    \astof{\vfuncargs},\\
-    \vsetterarg,\\
-    \astof{\tty},\\
-    \vaccessorpair
-    \end{array}
-    \right) \astarrow \vastnode
-  }
-}{
-  {
-  \begin{array}{r}
-    \builddecl\left(\overname{\Ndecl\left(
-      \begin{array}{l}
-        \punnode{\Noverride}, \Taccessor, \Tidentifier(\name), \punnode{\Nparamsopt},  \\
-        \wrappedline\ \punnode{\Nfuncargs},
-        \Tbeq, \Tidentifier(\vsetterarg), \punnode{\Nasty}, \\
-        \wrappedline\ \namednode{\vbody}{\Naccessorbody}
-      \end{array}
-    \right)}{\vparsednode}\right)
-  \\ \astarrow \vastnode
-  \end{array}
-  }
-}
-\end{mathpar}
+\RenderProseAndFormally{build_decl_SubprogramDecl}
 
 \ASTRuleDef{AccessorBody}
-\NotImportedToASLSpecYet{
-\hypertarget{build-accessorbody}{}
-The relation
-\[
-  \buildaccessorbody(\overname{\parsenode{\Naccessorbody}}{\vparsednode}) \;\aslrel\; \overname{\accessorpair}{\vaccessorpair}
-\]
-transforms a parse node $\vparsednode$ into an $\accessorpair$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule{
-  \vparsednode = \Ndecl(\Tbegin, \namednode{\vaccessors}{\Naccessors}, \Tend, \Tsemicolon)\\
-  \buildaccessors(\vaccessors) \astarrow \vaccessorpair
-}{
-    \buildaccessorbody(\vparsednode) \astarrow \vaccessorpair
-}
-\end{mathpar}
+\RenderRelation{build_accessor_body}
+\RenderProseAndFormally{build_accessor_body}
 
 \ASTRuleDef{RecurseLimit}
-\NotImportedToASLSpecYet{
-\hypertarget{build-recurselimit}{}
-The function
-\[
-\buildrecurselimit(\overname{\parsenode{\Nrecurselimit}}{\vparsednode}) \aslto \overname{\Option{\expr}}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[limit]{}{
-  \buildrecurselimit\left(\overname{\Nrecurselimit(\Trecurselimit, \punnode{\Nexpr})}{\vparsednode}\right)
-  \astarrow
-  \overname{\some{\astof{\vexpr}}}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[no\_limit]{}{
-  \buildrecurselimit\left(\overname{\Nrecurselimit(\emptysentence)}{\vparsednode}\right)
-  \astarrow
-  \overname{\none}{\vastnode}
-}
-\end{mathpar}
+\RenderRelation{build_recurse_limit}
+\RenderProseAndFormally{build_recurse_limit}
 
 \ASTRuleDef{TypedIdentifier}
-\NotImportedToASLSpecYet{
-\hypertarget{build-typedidentifier}{}
-The function
-\[
-\buildtypedidentifier(\overname{\parsenode{\Ntypedidentifier}}{\vparsednode}) \aslto \overname{(\Identifier, \ty)}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-\begin{mathpar}
-\inferrule{}{
-  \buildtypedidentifier(\overname{\Ntypedidentifier(\Tidentifier(\id), \punnode{\Nasty})}{\vparsednode}) \astarrow \overname{(\id,\astof{\vasty})}{\vastnode}
-}
-\end{mathpar}
+\RenderRelation{build_typed_identifier}
+\RenderProseAndFormally{build_typed_identifier}
 
 \ASTRuleDef{OptTypedIdentifier}
-\NotImportedToASLSpecYet{
-\hypertarget{build-opttypedidentifier}{}
-The function
-\[
-\buildopttypedidentifier(\overname{\parsenode{\Nopttypedidentifier}}{\vparsednode}) \aslto \overname{(\Identifier, \Option{\ty})}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-\begin{mathpar}
-\inferrule{
-  \vparsednode = \Ntypedidentifier(\Tidentifier(\id), \namednode{\vastyopt}{\option{\Nasty}})\\
-  \buildoption[\Nasty](\vastyopt) \astarrow \astversion{\vastyopt}
-}{
-  {
-  \begin{array}{r}
-  \buildopttypedidentifier(\vparsednode) \astarrow \\
-  \overname{(\id, \astversion{\vastyopt})}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
+\RenderRelation{build_opt_typed_identifier}
+\RenderProseAndFormally{build_opt_typed_identifier}
 
 \ASTRuleDef{ReturnType}
-\NotImportedToASLSpecYet{
-\hypertarget{build-returntype}{}
-The function
-\[
-\buildreturntype(\overname{\parsenode{\Nreturntype}}{\vparsednode}) \aslto \overname{\ty}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule{}{
-  \buildreturntype(\overname{\Nreturntype(\Tarrow, \punnode{\Nty})}{\vparsednode}) \astarrow
-  \overname{\astof{\tty}}{\vastnode}
-}
-\end{mathpar}
+\RenderRelation{build_return_type}
+\RenderProseAndFormally{build_return_type}
 
 \ASTRuleDef{ParamsOpt}
-\NotImportedToASLSpecYet{
-\hypertarget{build-paramsopt}{}
-The function
-\[
-\buildparamsopt(\overname{\parsenode{\Nparamsopt}}{\vparsednode}) \aslto
-  \overname{\KleeneStar{(\Identifier, \Option{\ty})}}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[empty]{}{
-  \buildparamsopt(\overname{\Nparamsopt(\epsilonnode)}{\vparsednode}) \astarrow
-  \overname{\emptylist}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  \vparsednode = \Nparamsopt(\Tlbrace, \namednode{\ids}{\ClistZero{\Nopttypedidentifier}}, \Trbrace)\\
-  \buildclist[\Nopttypedidentifier](\ids) \astarrow \astversion{\ids}
-}{
-  \buildparamsopt(\vparsednode) \astarrow
-  \overname{\astversion{\ids}}{\vastnode}
-}
-\end{mathpar}
+\RenderRelation{build_params_opt}
+\RenderProseAndFormally{build_params_opt}
 
 \ASTRuleDef{FuncArgs}
-\NotImportedToASLSpecYet{
-\hypertarget{build-funcargs}{}
-The function
-\[
-\buildfuncargs(\overname{\parsenode{\Nfuncargs}}{\vparsednode}) \aslto
-  \overname{\KleeneStar{(\Identifier, \ty)}}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule{
-  \buildclist[\Ntypedidentifier](\ids) \astarrow \astversion{\ids}
-}{
-  \buildfuncargs(\overname{\Nfuncargs(\Tlpar, \namednode{\ids}{\ClistZero{\Ntypedidentifier}}, \Trpar)}{\vparsednode}) \astarrow
-  \overname{\astversion{\ids}}{\vastnode}
-}
-\end{mathpar}
+\RenderRelation{build_func_args}
+\RenderProseAndFormally{build_func_args}
 
 \ASTRuleDef{FuncBody}
-\NotImportedToASLSpecYet{
-\hypertarget{build-funcbody}{}
-The function
-\[
-\buildfuncargs(\overname{\parsenode{\Nfuncbody}}{\vparsednode}) \aslto
-  \overname{\stmt}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule{}{
-  {
-  \begin{array}{r}
-  \buildfuncbody(\overname{\Nfuncbody(\Tbegin, \namednode{\vstmts}{\Nstmtlist}, \Tend, \Tsemicolon)}{\vparsednode}) \astarrow \\
-  \overname{\astof{\vstmtlist}}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
+\RenderRelation{build_func_body}
+\RenderProseAndFormally{build_func_body}
 
 \ASTRuleDef{Accessors}
-\NotImportedToASLSpecYet{
-\hypertarget{build-accessors}{}
-The function
-\[
-\buildaccessors(\overname{\parsenode{\Naccessors}}{\vparsednode}) \aslto
-  \overname{\accessorpair}{\vaccessorpair}
-\]
-transforms a parse node $\vparsednode$ into an $\accessorpair$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule{
-  \buildstmt(\vgetter) \astarrow \astversion{\vgetter} \hva\\\\
-  \buildstmt(\vsetter) \astarrow \astversion{\vsetter} \hva\\\\
-  {
-  \vaccessorpair \eqdef
-  \left\{
-  \begin{array}{rcl}
-    \accessorpairisreadonly &:& \astof{\visreadonly},\\
-    \accessorpairgetter    &:& \astversion{\vgetter},\\
-    \accessorpairsetter    &:& \astversion{\vsetter}
-  \end{array}
-  \right\}
-  }
-}{
-  {
-  \begin{array}{r}
-    \buildaccessors(
-      \punnode{\Nisreadonly}, \Tgetter, \namednode{\vgetter}{\Nstmtlist}, \Tend, \Tsemicolon, \\
-      \Tsetter, \namednode{\vsetter}{\Nstmtlist}, \Tend, \Tsemicolon
-    ) \\
-    \astarrow \vaccessorpair
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule{
-  \buildstmt(\vgetter) \astarrow \astversion{\vgetter} \hva\\\\
-  \buildstmt(\vsetter) \astarrow \astversion{\vsetter} \hva\\\\
-  {
-  \vaccessorpair \eqdef
-  \left\{
-  \begin{array}{rcl}
-    \accessorpairisreadonly &:& \astof{\visreadonly},\\
-    \accessorpairgetter    &:& \astversion{\vgetter},\\
-    \accessorpairsetter    &:& \astversion{\vsetter}
-  \end{array}
-  \right\}
-  }
-}{
-  {
-  \begin{array}{r}
-    \buildaccessors(
-      \Tsetter, \namednode{\vsetter}{\Nstmtlist}, \Tend, \Tsemicolon, \\
-      \punnode{\Nisreadonly}, \Tgetter, \namednode{\vgetter}{\Nstmtlist}, \Tend, \Tsemicolon
-    ) \\
-    \astarrow \vaccessorpair
-  \end{array}
-  }
-}
-\end{mathpar}
+\RenderRelation{build_accessors}
+\RenderProseAndFormally{build_accessors}
 
 \ASTRuleDef{DesugarAccessorPair}
-\NotImportedToASLSpecYet{
-\hypertarget{def-desugaraccessorpair}{}
-The function
-\[
-  \desugaraccessorpair\left(
-    \begin{array}{l}
-    \overname{\overrideinfo}{\voverride} \aslsep \\
-    \overname{\Identifier}{\name} \aslsep \\
-    \overname{\KleeneStar{(\Identifier, \Option{\ty})}}{\vparameters} \aslsep \\
-    \overname{\KleeneStar{\typedidentifier}}{\vargs} \aslsep \\
-    \overname{\Identifier}{\vsetterarg} \aslsep \\
-    \overname{\ty}{\tty} \aslsep \\
-    \overname{\accessorpair}{\vaccessorpair}
-  \end{array}\right) \aslto
-  \overname{\KleeneStar{\decl}}{\vastnode}
-\]
-transforms an $\accessorpair$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule{
-  \vqualifier \eqdef \ifthenelseop[H]{\vaccessorpair.\accessorpairisreadonly}{\some{\Readonly}}{\none} \hva\\\\
-  {
-  \vgetter \eqdef
-      \DFunc\left\{
-      \begin{array}{rcl}
-        \FIELDname &:& \name,\\
-        \FIELDparameters &:& \vparameters,\\
-        \FIELDargs &:& \vargs,\\
-        \funcbody &:& \vaccessorpair.\accessorpairgetter,\\
-        \FIELDreturntype &:& \some{\tty},\\
-        \funcsubprogramtype &:& \STGetter,\\
-        \FIELDrecurselimit   &:& \none\\
-        \funcbuiltin &:& \False\\
-        \funcqualifierfield &:& \vqualifier\\
-        \funcoverride &:& \voverride
-      \end{array}
-      \right\}
-  } \hva\\\\
-  \vsetterargs \eqdef [(\vsetterarg, \tty)] \concat \vargs \hva\\\\
-  {
-  \vsetter \eqdef
-      \DFunc\left\{
-      \begin{array}{rcl}
-        \FIELDname &:& \name,\\
-        \FIELDparameters &:& \vparameters,\\
-        \FIELDargs &:& \vsetterargs,\\
-        \funcbody &:& \vaccessorpair.\accessorpairsetter,\\
-        \FIELDreturntype &:& \none,\\
-        \funcsubprogramtype &:& \STSetter,\\
-        \FIELDrecurselimit   &:& \none\\
-        \funcbuiltin &:& \False\\
-        \funcqualifierfield &:& \none\\
-        \funcoverride &:& \voverride
-      \end{array}
-      \right\}
-  }
-}{
-  {
-    \desugaraccessorpair\left(
-      \begin{array}{l}
-        \voverride, \\
-        \name, \\
-        \vparameters, \\
-        \vargs, \\
-        \vsetterarg, \\
-        \tty, \\
-        \vaccessorpair
-      \end{array}
-    \right)
-    \astarrow [\vgetter, \vsetter]
-  }
-}
-\end{mathpar}
+\RenderRelation{desugar_accessor_pair}
+\RenderProseAndFormally{desugar_accessor_pair}
 
 \ASTRuleDef{Qualifier}
-\NotImportedToASLSpecYet{
-\hypertarget{build-qualifier}{}
-The function
-\[
-\buildqualifier(\overname{\parsenode{\Nqualifier}}{\vparsednode}) \aslto
-  \overname{\Option{\funcqualifier}}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[none]{}{
-  \buildqualifier(\overname{\Nqualifier(\emptysentence)}{\vparsednode}) \astarrow \none
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[pure]{}{
-  \buildqualifier(\overname{\Nqualifier(\Tpure)}{\vparsednode}) \astarrow \some{\Pure}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[readonly]{}{
-  \buildqualifier(\overname{\Nqualifier(\Treadonly)}{\vparsednode}) \astarrow \some{\Readonly}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[noreturn]{}{
-  \buildqualifier(\overname{\Nqualifier(\Tnoreturn)}{\vparsednode}) \astarrow \some{\Noreturn}
-}
-\end{mathpar}
+\RenderRelation{build_func_qualifier}
+\RenderProseAndFormally{build_func_qualifier}
 
 \ASTRuleDef{IsReadonly}
-\NotImportedToASLSpecYet{
-\hypertarget{build-isreadonly}{}
-The function
-\[
-\buildisreadonly(\overname{\parsenode{\Nisreadonly}}{\vparsednode}) \aslto
-  \overname{\Bool}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[none]{}{
-  \buildisreadonly(\overname{\Nisreadonly(\emptysentence)}{\vparsednode}) \astarrow \False
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[readonly]{}{
-  \buildqualifier(\overname{\Nisreadonly(\Treadonly)}{\vparsednode}) \astarrow \True
-}
-\end{mathpar}
+\RenderRelation{build_is_readonly}
+\RenderProseAndFormally{build_is_readonly}
 
 \ASTRuleDef{Override}
-\NotImportedToASLSpecYet{
-\hypertarget{build-override}{}
-The function
-\[
-\buildoverride(\overname{\parsenode{\Noverride}}{\vparsednode}) \aslto
-  \overname{\Option{\overrideinfo}}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[none]{}{
-  \buildoverride(\overname{\Noverride(\emptysentence)}{\vparsednode}) \astarrow \none
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[impdef]{}{
-  \buildoverride(\overname{\Noverride(\Timpdef)}{\vparsednode}) \astarrow \some{\Impdef}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[implementation]{}{
-  \buildoverride(\overname{\Noverride(\Timplementation)}{\vparsednode}) \astarrow \some{\Implementation}
-}
-\end{mathpar}
+\RenderRelation{build_override}
+\RenderProseAndFormally{build_override}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Subprogram Declarations}
@@ -968,27 +504,7 @@ The specification in \listingref{SubprogramTypesClash-bad2} contains a function 
 whose subprogram types ($\STFunction$ and $\STProcedure$, respectively) clash.
 \ASLListing{Clashing subprogram types}{SubprogramTypesClash-bad2}{\typingtests/TypingRule.SubprogramTypesClash.bad2.asl}
 
-\ProseParagraph
-\ProseEqdef{$\vb$}{$\True$ unless
-$\vsone$ is $\STGetter$ and $\vstwo$ is $\STSetter$ or
-$\vsone$ is $\STSetter$ and $\vstwo$ is $\STGetter$}.
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  {
-  \vb \eqdef (\vsone, \vstwo) \not\in
-  \left\{
-  \begin{array}{l}
-    (\STGetter,       \STSetter),\\
-    (\STSetter,       \STGetter)
-  \end{array}
-  \right\}
-  }
-}{
-  \subprogramtypesclash(\subpgmtypeone, \subpgmtypetwo) \typearrow \vb
-}
-\end{mathpar}
+\RenderProseAndFormally{subprogram_types_clash}
 
 \TypingRuleDef{AddNewFunc}
 \RenderRelation{add_new_func}

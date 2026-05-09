@@ -4,7 +4,7 @@ This chapter defines functions and relations used by the type system.
 
 \ChapterOutline
 \begin{itemize}
-  \item \TypingRuleRef{CheckNoDuplicates} enables checking for the absence of duplicate elements in a list;
+  \item \TypingRuleRef{NoDuplicates} tests whether a list does not contain duplicate elements;
   \item \TypingRuleRef{Sort} allows sorting a list;
   \item \TypingRuleRef{FindBitfieldOpt} recursively looks up a bitfield in a list of bitfields;
   \item \TypingRuleRef{TypeOfArrayLength} returns the type associated with an array index;
@@ -30,8 +30,8 @@ This chapter defines functions and relations used by the type system.
   \item \TypingRuleRef{AddType} updates a \staticenvironmentterm{} with a new type.
 \end{itemize}
 
-\TypingRuleDef{CheckNoDuplicates}
-\RenderRelation{check_no_duplicates}
+\TypingRuleDef{NoDuplicates}
+\RenderRelation{no_duplicates}
 
 \ExampleDef{Checking for Absence of Duplicates in an Identifier List}
 In \listingref{typing-tenum}, annotating the \enumerationtypeterm{} \verb|Color|
@@ -44,8 +44,7 @@ In contrast, annotating the record type \verb|MyRecord| in \listingref{typing-tr
 involves checking that the list of fields \verb|v, b, v| does not contain duplicates, which is not the case,
 thus resulting in a \typingerrorterm.
 
-
-\RenderProseAndFormally{check_no_duplicates}
+\RenderProseAndFormally{no_duplicates}
 
 \TypingRuleDef{Sort}
 \hypertarget{def-sort}{}
