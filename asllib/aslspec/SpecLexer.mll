@@ -78,7 +78,9 @@ rule token = parse
     | '('            { LPAR }
     | ')'            { RPAR }
     | '['            { LBRACKET }
+    | "[["           { LLBRACKET }
     | ']'            { RBRACKET }
+    | "]]"           { RRBRACKET }
     | '{'            { LBRACE }
     | '}'            { RBRACE }
     | '-'            { MINUS }
