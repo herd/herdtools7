@@ -1,5 +1,5 @@
 /****************************************************************************/
-61;8203;1c/*                           the diy toolsuite                              */
+/*                           the diy toolsuite                              */
 /*                                                                          */
 /* Jade Alglave, University College London, UK.                             */
 /* Luc Maranget, INRIA Paris-Rocquencourt, France.                          */
