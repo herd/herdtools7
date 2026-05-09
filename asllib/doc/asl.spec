@@ -2417,7 +2417,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
       width_plus(tenv, e_width) -> e_slice_width;
       --
       (T_Bits(e_slice_width, empty_list), E_GetCollectionFields(base_collection_name, fields), ses_base)
-      { math_layout = [_, [_]] };
+      { math_layout = [_, [_] ] };
     }
     case error {
       make_anonymous(tenv, t_base_annot) -> t_base_annot_anon;
@@ -2874,7 +2874,7 @@ semantics relation eval_expr(env: envs, e: expr) ->
     e =: E_GetFields(e_record, field_names);
     eval_expr(env, e_record) -> ResultExpr((v_record, g), new_env);
     ( INDEX(i, field_names: get_field(field_names[i], v_record) -> NV_Literal(L_Bitvector(field_bits[i]))) )
-    { ([_,[_]]) };
+    { ([_,[_] ]) };
     field_bitvectors := list_map(bits, field_bits, nvbitvector(bits));
     concat_bitvectors(field_bitvectors) -> v;
     --
@@ -2947,7 +2947,7 @@ semantics relation eval_expr(env: envs, e: expr) ->
     denv.dynamic_envs_G.storage(base) =: record;
     record =: NV_Record(field_map);
     ( INDEX(i, field_names: get_field(field_names[i], record) -> NV_Literal(L_Bitvector(bits[i]))) )
-    { ([_, [_]]) };
+    { ([_, [_] ]) };
     vs := list_map(b, bits, nvbitvector(b));
     concat_bitvectors(vs) -> v;
     field_ids := list_map(f, field_names, concat(base, dot_str, f));
@@ -3323,7 +3323,7 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
      check_type_satisfies(tenv, t_e, t_lhs) -> True;
      --
      (LE_SetCollectionFields(base_name, le_fields, slices), ses_base)
-     { math_layout = [_, [_]] };
+     { math_layout = [_, [_] ] };
    }
 
    case error {
@@ -3575,7 +3575,7 @@ typing relation annotate_set_array(
   and the index expression {e_index}.
   The result is the annotated \assignableexpression{} {new_le} and \sideeffectsetterm{} for the annotated expression {ses}. \ProseOtherwiseTypeError",
   prose_transition = "annotating the array update with {size}, {t_elem}, {rhs_ty}, {e_base}, {ses_base}, and {e_index} in {tenv} yields",
-  math_layout = [[_,_,_,_],_],
+  math_layout = [ [_,_,_,_],_],
 } =
   check_type_satisfies(tenv, rhs_ty, t_elem) -> True;
   annotate_expr(tenv, e_index) -> (t_index', e_index', ses_index);
@@ -3617,7 +3617,7 @@ semantics function check_non_overlapping_slices(value_ranges: list0((native_valu
   case non_empty {
     value_ranges =: match_cons(head_range, tail_ranges);
     ( INDEX(i, tail_ranges: check_two_ranges_non_overlapping(head_range, tail_ranges[i]) -> True) )
-    { ([_, [_]]) };
+    { ([_, [_] ]) };
     check_non_overlapping_slices(tail_ranges) -> True;
     --
     True;
@@ -4536,12 +4536,12 @@ typing relation declare_global_storage(genv: global_static_envs, gsd: global_dec
   with_empty_local(genv) -> tenv;
   must_be_pure := keyword in make_set(GDK_Config, GDK_Constant);
   annotate_ty_opt_initial_value(tenv, keyword, must_be_pure, ty_opt, initial_value) -> (typed_initial_value, ty_opt', declared_t)
-  { [[_], [_]] };
+  { [ [_], [_] ] };
   add_global_storage(genv, name, keyword, declared_t) -> genv1;
   with_empty_local(genv1) -> tenv1;
   typed_initial_value =: (initial_value', t_init, ses_initial_value);
   update_global_storage(tenv1, name, keyword, (t_init, initial_value', ses_initial_value)) -> tenv2
-  { [[_], _] };
+  { [ [_], _] };
   new_gsd := [keyword: keyword, global_decl_name: name, global_decl_ty: ty_opt', initial_value: some(initial_value')];
   new_genv := tenv2.static_envs_G;
   --
@@ -4608,7 +4608,7 @@ typing relation annotate_ty_opt_initial_value(
     typed_initial_value := (e', t', empty_set);
     --
     (typed_initial_value, some(t'), t')
-    { [[_], [_]] };
+    { [ [_], [_] ] };
   }
 
   case none_some {
@@ -4773,7 +4773,7 @@ typing relation annotate_local_decl_item(
   prose_transition = "annotating {ldi} and {ldk}
   with {ty} and {e_opt}
   in {tenv} yields",
-  math_layout = [[_,_,_,_,_], _],
+  math_layout = [ [_,_,_,_,_], _],
 } =
   case var {
     ldi =: LDI_Var(x);
@@ -6026,7 +6026,7 @@ typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) 
     make_anonymous(tenv, t) -> T_Tuple(li_t);
     bool_transition(same_length(li_s, li_t)) -> True | False;
     ( INDEX(i, li_s: type_satisfies(tenv, li_t[i], li_s[i]) -> component_type_satisfies[i]) )
-    { ([_, [_]]) };
+    { ([_, [_] ]) };
     --
     list_and(component_type_satisfies);
   }
@@ -6047,7 +6047,7 @@ typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) 
     INDEX(i, names_s: field_type(fields_t, names_s[i]) -> some(field_types_t[i]))
     { [_] };
     ( INDEX(i, field_types_s: type_equal(tenv, field_types_s[i], field_types_t[i]) -> field_tys_equal[i]) )
-    { ([_, [_]]) };
+    { ([_, [_] ]) };
     --
     list_and(field_tys_equal);
   }
@@ -6587,7 +6587,7 @@ typing relation annotate_constraint_binop(
   context of approximating lists of constraints).
   \ProseOtherwiseTypeError",
   prose_transition = "annotating the application of {op} to {cs1} and {cs2} in {tenv} with approximation mode {approx} yields",
-  math_layout = [[_,_,_,_,_],_],
+  math_layout = [ [_,_,_,_,_],_],
 } =
   case exploding {
     binop_filter_rhs(approx, tenv, op, cs2) -> cs2f;
@@ -6784,7 +6784,7 @@ typing relation filter_reduce_constraint_div(c: int_constraint) ->
       binary_and((z1_opt = none), (z2_opt =: some(z6e)))        : some(AbbrevConstraintRange(e1, ELint(z6e))),
       binary_and((z1_opt = none), (z2_opt = none))              : some(c)
     )
-    { (_, [c1[_, [_]], c2[_, [_]], c3[_, [_]],_]) };
+    { (_, [c1[_, [_] ], c2[_, [_] ], c3[_, [_] ],_]) };
     --
     c_opt;
   }
@@ -8111,13 +8111,13 @@ typing relation type_check_mutually_rec(genv: global_static_envs, decls: list0(d
   env_and_fs2 =: list_combine_three(lenvs2, fs2, ses_fs2);
   ( INDEX(i, fs2:
       annotate_subprogram(
-        [static_envs_G: genv2, static_envs_L: lenvs2[i]],
+        [static_envs_G: genv2, static_envs_L: lenvs2[i] ],
         fs2[i],
         ses_fs2[i]
       ) -> (new_fs[i], ses'[i])
     )
   )
-  { ( [_, [_]] ) };
+  { ( [_, [_] ] ) };
   new_decls := list_map(i, indices(new_fs), D_Func(new_fs[i]));
   sess := list_combine(new_fs, ses');
   with_empty_local(genv2) -> tenv2;
@@ -11235,14 +11235,14 @@ typing relation annotate_func_sig(genv: global_static_envs, func_sig: func) ->
     func_sig.args,
     (tenv_with_params, empty_list, ses_with_params)
   ) -> (tenv_with_args, args, ses_with_args)
-  { [[_], _] };
+  { [ [_], _] };
   annotate_return_type(
     tenv_with_args,
     tenv_with_params,
     func_sig.return_type,
     ses_with_args
   ) -> (new_tenv, return_type, ses_with_return)
-  { [[_], _]};
+  { [ [_], _]};
   ses_list := list_set(ses_with_return);
   ses_list_no_locals := list_filter(se, ses_list, not(se = LocalEffect(_)));
   ses' := list_to_set(ses_list_no_locals);
@@ -13840,7 +13840,7 @@ typing function approx_constraint_binop(tenv: static_envs, approx: constants_set
     {s2} with
     the \approximationdirectionterm{} given by {approx}
     in the context of {tenv} yields",
-  math_layout = [[_,_,_,_,_],_],
+  math_layout = [ [_,_,_,_,_],_],
 } =
   case over {
     approx = Over;
@@ -15119,7 +15119,7 @@ typing function add_immutable_expression(
     the initialization given by {e_opt},
     and {x} for the local storage element yields",
   math_macro = \addimmutableexpression,
-  math_layout = [[_,_,_,_],_],
+  math_layout = [ [_,_,_,_],_],
 } =
   case remember {
     ldk = LDK_Let;
