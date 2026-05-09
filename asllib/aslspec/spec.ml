@@ -138,8 +138,9 @@ module Layout = struct
   let rec for_type_term term =
     let open Term in
     match term with
-    | Label _ -> Unspecified
-    | TypeOperator { term = _, t } -> for_type_term t
+    | Label _ | Parameter _ -> Unspecified
+    | TypeOperator { term = _, t } | ParamType { term = _, t } ->
+        for_type_term t
     | Tuple { args = [] | _ :: [] } -> Unspecified
     | Tuple { args } ->
         Horizontal (List.map (fun (_, t) -> for_type_term t) args)
@@ -186,6 +187,7 @@ let list_definition_nodes ast =
             List.fold_right
               (fun ({ TypeVariant.term } as variant) acc_nodes ->
                 match term with
+                | Parameter _ -> acc_nodes
                 | Label _ | Tuple { label_opt = Some _ } ->
                     Node_TypeVariant variant :: acc_nodes
                 | Record { label_opt; fields } ->
@@ -198,7 +200,7 @@ let list_definition_nodes ast =
                     in
                     variant_if_labelled @ field_nodes @ acc_nodes
                 | Tuple { label_opt = None }
-                | Function _ | ConstantsSet _ | TypeOperator _ ->
+                | Function _ | ConstantsSet _ | TypeOperator _ | ParamType _ ->
                     acc_nodes)
               variants acc_nodes
           in
@@ -359,7 +361,9 @@ let symbol_table_for_id id_to_defining_node id =
   | Some (Node_Relation { Relation.parameters; loc }) ->
       List.fold_left
         (fun curr_table param ->
-          let type_for_param = Type.make loc TypeKind_Generic param [] [] in
+          let type_for_param =
+            Type.make loc TypeKind_Generic param None [] []
+          in
           StringMap.add param (Node_Type type_for_param) curr_table)
         id_to_defining_node parameters
   | _ -> id_to_defining_node
@@ -593,7 +597,8 @@ module ResolveRules = struct
           let args = List.map arg_of args in
           Expr.make_opt_labelled_tuple (Term.loc_of term) label_opt args
       | ( None,
-          ( Term.Label _ | Term.Record _ | Term.TypeOperator _ | Term.Function _
+          ( Term.Label _ | Term.Parameter _ | Term.Record _
+          | Term.TypeOperator _ | Term.ParamType _ | Term.Function _
           | Term.ConstantsSet _ ) ) ->
           Format.kasprintf failwith "Unexpected un-named argument term: %a"
             PP.pp_type_term (snd opt_named_term)
@@ -806,9 +811,11 @@ module Check = struct
     let open Layout in
     let open Term in
     match (term, layout) with
-    | Label _, Unspecified -> ()
-    | Label _, _ -> Error.bad_layout term layout ~consistent_layout
+    | (Label _ | Parameter _), Unspecified -> ()
+    | (Label _ | Parameter _), _ ->
+        Error.bad_layout term layout ~consistent_layout
     | TypeOperator { term = _, t }, _ -> check_layout t layout
+    | ParamType { term = _, t }, _ -> check_layout t layout
     | Tuple { args }, Horizontal cells | Tuple { args }, Vertical cells ->
         if List.compare_lengths args cells <> 0 then
           Error.bad_layout term layout ~consistent_layout
@@ -861,7 +868,9 @@ module Check = struct
     let open Term in
     function
     | Label { label } -> [ label ]
+    | Parameter _ -> []
     | TypeOperator { term = _, t } -> referenced_ids t
+    | ParamType { typename; term = _, t } -> typename :: referenced_ids t
     | Tuple { label_opt; args } -> (
         let component_ids =
           List.map snd args |> List.concat_map referenced_ids
@@ -915,7 +924,13 @@ module Check = struct
             Error.undefined_reference missing_location id elem_name)
         ids_referenced_by_elem
     in
-    List.iter (check_no_undefined_ids_in_elem id_to_defining_node) ast
+    List.iter
+      (fun elem ->
+        let id_to_defining_node =
+          symbol_table_for_id id_to_defining_node (elem_name elem)
+        in
+        check_no_undefined_ids_in_elem id_to_defining_node elem)
+      ast
 
   (** [check_relation_outputs elems id_to_defining_node] checks that, for each
       relation in [elems], the first output type term is arbitrary, and that all
@@ -1172,8 +1187,9 @@ module Check = struct
 
     (** [type_term_depth term] computes the depth of [term]. *)
     let rec type_term_depth = function
-      | Label _ | ConstantsSet _ -> 1
-      | TypeOperator { term = _, term; _ } -> 1 + type_term_depth term
+      | Label _ | Parameter _ | ConstantsSet _ -> 1
+      | TypeOperator { term = _, term; _ } | ParamType { term = _, term; _ } ->
+          1 + type_term_depth term
       | Tuple { args; _ } -> 1 + opt_named_type_terms_depth args
       | Record { fields; _ } ->
           1 + list_depth (fun { Term.term; _ } -> type_term_depth term) fields
@@ -1281,6 +1297,13 @@ module Check = struct
             operator_subsumed sub_op super_op
             && subsumed_rec spec expansion_limit expanded_types sub_term
                  super_term
+        | ( ParamType { typename = sub_typename; term = _, sub_term },
+            ParamType { typename = super_typename; term = _, super_term } ) ->
+            String.equal sub_typename super_typename
+            && subsumed_rec spec expansion_limit expanded_types sub_term
+                 super_term
+        | Parameter { name = sub_name }, Parameter { name = super_name } ->
+            String.equal sub_name super_name
         | ( Tuple { label_opt = sub_label_opt; args = sub_components },
             Tuple { label_opt = super_label_opt; args = super_components } ) ->
             Option.equal String.equal sub_label_opt super_label_opt
@@ -1408,6 +1431,15 @@ module Check = struct
       match term with
       | TypeOperator { term = _, operator_term } ->
           check_well_instantiated spec operator_term
+      | ParamType { typename; term = _, sub_term } -> (
+          let () = check_well_instantiated spec sub_term in
+          let type_def = StringMap.find_opt typename spec.id_to_defining_node in
+          match type_def with
+          | Some (Node_Type { Type.param_opt = Some _ }) -> ()
+          | Some (Node_Type { Type.param_opt = None }) ->
+              Error.type_not_parameterized term typename
+          | Some _ -> Error.expected_type_name term typename
+          | None -> Error.undefined_type term typename)
       | Tuple { label_opt; args } -> (
           let terms = List.map snd args in
           let () = List.iter (check_well_instantiated spec) terms in
@@ -1439,7 +1471,7 @@ module Check = struct
       | Function { from_type = _, from_term; to_type = _, to_term } ->
           check_well_instantiated spec from_term;
           check_well_instantiated spec to_term
-      | ConstantsSet _ | Label _ -> ()
+      | ConstantsSet _ | Label _ | Parameter _ -> ()
 
     (** [check_well_formed id_to_defining_node term] checks that [term] is
         well-formed with respect to the type definitions in the range of
@@ -1452,7 +1484,8 @@ module Check = struct
           structural induction on [term]. *)
     let rec check_well_formed id_to_defining_node term =
       match term with
-      | TypeOperator { term = _, sub_term } ->
+      | TypeOperator { term = _, sub_term } | ParamType { term = _, sub_term }
+        ->
           check_well_formed id_to_defining_node sub_term
       | Tuple { label_opt; args } -> (
           let terms = List.map snd args in
@@ -1503,6 +1536,7 @@ module Check = struct
           match variant_def with
           | Node_Type _ | Node_TypeVariant { TypeVariant.term = Label _ } -> ()
           | _ -> Error.instantiation_failure_not_a_type term label)
+      | Parameter _ -> ()
 
     let check_well_typed spec term =
       check_well_formed spec.id_to_defining_node term;
@@ -2101,6 +2135,15 @@ module Check = struct
             in
             infer_parameter_type spec ~relation_name parameters
               formal_inner_term arg_inner_term type_env
+        | ( ParamType { typename = formal_typename; term = _, formal_inner_term },
+            ParamType { typename = arg_typename; term = _, arg_inner_term } ) ->
+            let () =
+              if not (String.equal formal_typename arg_typename) then
+                Error.param_type_instantiation_failure ~relation_name
+                  formal_type arg_type
+            in
+            infer_parameter_type spec ~relation_name parameters
+              formal_inner_term arg_inner_term type_env
         | _ -> type_env
 
       (** [substitute_type_parameters term parameter_env] substitutes type
@@ -2109,8 +2152,8 @@ module Check = struct
       let rec substitute_type_parameters term parameter_env =
         let open Term in
         match term with
-        | Label { label } -> (
-            match StringMap.find_opt label parameter_env with
+        | Label { label = name } | Parameter { name } -> (
+            match StringMap.find_opt name parameter_env with
             | Some substituted_type -> substituted_type
             | None -> term)
         | Tuple ({ args } as node) ->
@@ -2153,6 +2196,11 @@ module Check = struct
             in
             TypeOperator
               { node with term = (term_name, substituted_inner_term) }
+        | ParamType ({ term = term_name, inner_term } as node) ->
+            let substituted_inner_term =
+              substitute_type_parameters inner_term parameter_env
+            in
+            ParamType { node with term = (term_name, substituted_inner_term) }
         | ConstantsSet _ -> term
 
       (** [make_operator_formals_for_actual_num_of_args spec operator_name
@@ -2901,8 +2949,8 @@ module Check = struct
           List.fold_left
             (fun curr_env arg -> update_env_for_term curr_env arg)
             type_env args
-      | Term.Label _ | Term.TypeOperator _ | Term.Record _ | Term.Function _
-      | Term.ConstantsSet _ ->
+      | Term.Label _ | Term.Parameter _ | Term.TypeOperator _ | Term.ParamType _
+      | Term.Record _ | Term.Function _ | Term.ConstantsSet _ ->
           type_env
 
     (** [generate_type_env_from_relation_args relation] generates a type
@@ -3411,6 +3459,78 @@ module ExtendConstantsWithTypes = struct
     update_spec_ast spec (List.rev ast)
 end
 
+(** A module for resolving type-parameter references inside type definitions.
+
+    Within a parameterized type definition, a term [Label param] denotes the
+    type parameter rather than a label/type with the same name. This pass makes
+    that distinction explicit by rewriting those occurrences to
+    [Parameter param]. *)
+module SubstituteTypeParameters : sig
+  val resolve : AST.t -> AST.t
+end = struct
+  let rec resolve_type_term param term =
+    let open Term in
+    match term with
+    | Label { loc; label } when String.equal label param ->
+        Parameter { loc; name = label }
+    | Label _ | Parameter _ | ConstantsSet _ -> term
+    | TypeOperator ({ term = name_opt, sub_term } as type_op) ->
+        TypeOperator
+          { type_op with term = (name_opt, resolve_type_term param sub_term) }
+    | ParamType ({ term = name_opt, sub_term } as param_type) ->
+        ParamType
+          {
+            param_type with
+            term = (name_opt, resolve_type_term param sub_term);
+          }
+    | Tuple ({ args } as tuple) ->
+        Tuple
+          {
+            tuple with
+            args =
+              List.map
+                (fun (name_opt, arg) -> (name_opt, resolve_type_term param arg))
+                args;
+          }
+    | Record ({ fields } as record_type) ->
+        Record
+          {
+            record_type with
+            fields =
+              List.map
+                (fun ({ Term.term = field_term; _ } as field) ->
+                  { field with term = resolve_type_term param field_term })
+                fields;
+          }
+    | Function
+        ({
+           from_type = from_name_opt, from_term;
+           to_type = to_name_opt, to_term;
+         } as function_type) ->
+        Function
+          {
+            function_type with
+            from_type = (from_name_opt, resolve_type_term param from_term);
+            to_type = (to_name_opt, resolve_type_term param to_term);
+          }
+
+  let resolve_variant param ({ TypeVariant.term } as variant) =
+    { variant with term = resolve_type_term param term }
+
+  let resolve_type ({ Type.param_opt; variants } as type_def) =
+    match param_opt with
+    | None -> type_def
+    | Some param ->
+        let variants = List.map (resolve_variant param) variants in
+        { type_def with variants }
+
+  let resolve ast =
+    List.map
+      (function
+        | Elem_Type type_def -> Elem_Type (resolve_type type_def) | elem -> elem)
+      ast
+end
+
 (** [add_default_rule_renders ast] adds default render rules for relations that
     have rules but do not have any rule render associated with them. That is,
     for a relation
@@ -3508,6 +3628,7 @@ let prepend_ast_with_builtins ast id_to_defining_node =
     Parsing.parse_spec_from_string ~spec:Builtins.builtin_spec_str
       ~filename:"builtins.ml"
   in
+  let builtin_ast = SubstituteTypeParameters.resolve builtin_ast in
   List.fold_right
     (fun elem acc_elems ->
       let elem_name = ASTUtils.elem_name elem in
@@ -3518,6 +3639,8 @@ let prepend_ast_with_builtins ast id_to_defining_node =
 (** [make_spec_with_builtins ast] constructs a specification containing the
     builtin definitions. *)
 let make_spec_with_builtins ast =
+  let ast = SubstituteTypeParameters.resolve ast in
+
   let id_to_defining_node = make_symbol_table ast in
   let ast = prepend_ast_with_builtins ast id_to_defining_node in
   let id_to_defining_node = make_symbol_table ast in
