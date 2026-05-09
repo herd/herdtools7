@@ -152,6 +152,10 @@ end = struct
            if flags.Flags.exs then
              "exs.o"::utils
            else utils in
+          let utils =
+           if flags.Flags.exs then
+             "exs.o"::utils
+           else utils in
          let utils =
            if flags.Flags.pac then
              "auth.c"::utils
