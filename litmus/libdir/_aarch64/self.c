@@ -47,7 +47,7 @@ void isync(void) {
   asm __volatile__ ("isb" ::: "memory");
 }
 
-void check_dic_idc(int need_dic, int need_idc) {
+int check_dic_idc(int need_dic, int need_idc) {
   uint64_t ctr_el0;
   asm volatile ("mrs %0, ctr_el0" : "=r" (ctr_el0));
   int idc = (ctr_el0 >> 28) & 1;

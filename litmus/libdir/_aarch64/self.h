@@ -1,5 +1,5 @@
 /****************************************************************************/
-/*                           the diy toolsuite                              */
+61;8203;1c/*                           the diy toolsuite                              */
 /*                                                                          */
 /* Jade Alglave, University College London, UK.                             */
 /* Luc Maranget, INRIA Paris-Rocquencourt, France.                          */
@@ -30,5 +30,5 @@ void selfbar(void *p);
 
 void isync(void);
 
-void check_dic_idc(int need_dic, int need_idc);
+int check_dic_idc(int need_dic, int need_idc);
 #endif
