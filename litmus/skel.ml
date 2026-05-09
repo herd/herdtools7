@@ -2967,7 +2967,7 @@ module Make
         if U.label_in_outs env test then
           UD.dump_label_defs ~pp_labels:true ~pp_faults:false
             (T.all_labels test) ;
-        UD.dump_getinstrs test ;
+        dump_getinstrs test ;
         dump_read_timebase () ;
         dump_threads test ;
         dump_topology doc test ;

@@ -1,4 +1,4 @@
-X86_64_PREFIX ?= x86_64-linux-gnu-
+X86_64_PREFIX ?= 
 
 litmus-x86_64-run: RUN_TESTS=true
 litmus-x86_64-norun: RUN_TESTS=false

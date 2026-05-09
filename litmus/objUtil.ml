@@ -176,7 +176,7 @@ module Make(O:Config)(Tar:Tar.S) =
         match O.mode with
         | Mode.Kvm -> "_kvm" ^ O.platform
         | Mode.PreSi|Mode.Std -> O.platform in
-      do_cpy fnames (Filename.concat platform name) (shared_lib ^ name) ext
+      do_cpy fnames (Filename.concat platform name) name ext
 
     let affinity_base () = match O.targetos with
     | Linux|FreeBsd -> "_linux_affinity"
@@ -189,9 +189,6 @@ module Make(O:Config)(Tar:Tar.S) =
     let mk_libdir = MySys.mkdirp (Tar.outname libdir)
 
     let dump flags =
-      (* Create shared library directory *)
-      let () = MySys.mkdirp (Tar.outname shared_lib) in
-
       let fnames = [] in
       let fnames = match O.driver with
       | Driver.Shell -> fnames
@@ -214,34 +211,34 @@ module Make(O:Config)(Tar:Tar.S) =
         |`BPF | `CPP|`LISA | `JAVA | `ASL -> Warn.fatal "no support for arch '%s'" (Archs.pp O.arch)
       in
       let fnames =
-        let fnames = cpy' fnames "litmus_rand" (shared_lib ^ "litmus_rand") ".c" in
-        let fnames = cpy' fnames "litmus_rand" (shared_lib ^ "litmus_rand") ".h" in
+        let fnames = cpy fnames "litmus_rand" ".c" in
+        let fnames = cpy fnames "litmus_rand" ".h" in
         let sub = dir_of_sysarch O.sysarch in
-        let fnames = cpy' ~sub:sub fnames "cache" (shared_lib ^ "cache") ".h" in
+        let fnames = cpy ~sub:sub fnames "cache" ".h" in
         fnames in
       let fnames =
         if O.stdio then fnames
         else
           let fnames = cpy_platform fnames "io" ".c" in
           let fnames = cpy_platform fnames "io" ".h" in
-          let fnames = cpy' fnames "litmus_io" (shared_lib ^ "litmus_io") ".c" in
-          let fnames = cpy' fnames "litmus_io" (shared_lib ^ "litmus_io") ".h" in
+          let fnames = cpy fnames "litmus_io" ".c" in
+          let fnames = cpy fnames "litmus_io" ".h" in
           fnames in
       let fnames = match O.mode with
       | Mode.Std ->
-          let fnames = cpy' fnames "utils" (shared_lib ^ "utils") ".c" in
+          let fnames = cpy fnames "utils" ".c" in
 (* Select cached conditional variables, disabled.
           if O.cached then
             cpy ~prf:"#define CACHE 1" fnames "utils" ".h"
           else *)
-            cpy' fnames "utils" (shared_lib ^ "utils") ".h"
+            cpy fnames "utils" ".h"
       | Mode.PreSi ->
          if do_dynalloc then
            let fnames =
-             cpy' ~prf:"#define DYNALLOC 1" fnames "presi" (shared_lib ^ "utils") ".c" in
-           cpy' ~prf:"#define DYNALLOC 1" fnames "presi" (shared_lib ^ "utils") ".h"
+             cpy' ~prf:"#define DYNALLOC 1" fnames "presi" "utils" ".c" in
+           cpy' ~prf:"#define DYNALLOC 1" fnames "presi" "utils" ".h"
          else
-           let fnames = cpy' fnames "presi" (shared_lib ^ "utils") ".c" in
+           let fnames = cpy' fnames "presi" "utils" ".c" in
            cpy' fnames "presi" "utils" ".h"
       |  Mode.Kvm ->
           let prf =
@@ -249,9 +246,9 @@ module Make(O:Config)(Tar:Tar.S) =
               "#define KVM 1\n#define DYNALLOC 1"
             else
               "#define KVM 1" in
-          let fnames = cpy' ~prf:prf fnames "presi" (shared_lib ^ "utils") ".c" in
-          let fnames = cpy' ~prf:prf fnames "presi" (shared_lib ^ "utils") ".h" in
-          let fnames = cpy' fnames "kvm_timeofday" (shared_lib ^ "kvm_timeofday") ".h" in
+          let fnames = cpy' ~prf:prf fnames "presi" "utils" ".c" in
+          let fnames = cpy' ~prf:prf fnames "presi" "utils" ".h" in
+          let fnames = cpy fnames "kvm_timeofday" ".h" in
           let module I = Insert(O) in
           I.copy "kvm_timeofday.c" Tar.outname ;
           I.copy "kvm-headers.h" Tar.outname;
@@ -259,8 +256,8 @@ module Make(O:Config)(Tar:Tar.S) =
       let fnames =
         match O.mode with
         | Mode.Std ->
-            let fnames = cpy' fnames "outs" (shared_lib ^ "outs") ".c" in
-            let fnames = cpy' fnames "outs" (shared_lib ^ "outs") ".h" in
+            let fnames = cpy fnames "outs" ".c" in
+            let fnames = cpy fnames "outs" ".h" in
             fnames
         | Mode.PreSi|Mode.Kvm ->
             fnames in
@@ -269,8 +266,8 @@ module Make(O:Config)(Tar:Tar.S) =
         | Affinity.No -> fnames
         | _ ->
             let affi = affinity_base () in
-            let fnames = do_cpy fnames affi (shared_lib ^ "affinity") ".c" in
-            let fnames = cpy' fnames "affinity" (shared_lib ^ "affinity") ".h" in
+            let fnames = do_cpy fnames affi "affinity" ".c" in
+            let fnames = cpy' fnames "affinity" "affinity" ".h" in
             fnames in
       let fnames =
         if flags.Flags.memtag then
@@ -302,8 +299,8 @@ module Make(O:Config)(Tar:Tar.S) =
       let fnames =
         if flags.Flags.pac then
           let sub = dir_of_sysarch O.sysarch in
-          let fnames = cpy' ~sub:sub fnames "auth" (shared_lib ^ "auth") ".c" in
-          let fnames = cpy' ~sub:sub fnames "auth" (shared_lib ^ "auth") ".h" in
+          let fnames = cpy ~sub:sub fnames "auth" ".c" in
+          let fnames = cpy ~sub:sub fnames "auth" ".h" in
           fnames
         else fnames in
       fnames
