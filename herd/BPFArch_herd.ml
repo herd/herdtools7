@@ -19,6 +19,8 @@ module Make
 struct
   include BPFBase
 
+  module CS = ConstraintSolver.No(V)
+
   let is_amo = function
     | AMO _ -> true
     | _ -> false
@@ -89,6 +91,7 @@ struct
         type instr = instruction
 
         module V = V
+        module CS = CS
 
         let endian = endian
 
@@ -120,4 +123,5 @@ struct
     end)
 
   module CMO = Cmo.No
+
 end

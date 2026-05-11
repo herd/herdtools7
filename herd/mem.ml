@@ -109,7 +109,7 @@ module type S = sig
 
   val calculate_rf_with_cnstrnts :
       S.test -> Label.Set.t -> S.event_structure -> S.M.VC.cnstrnts ->
-        (S.concrete -> S.M.VC.cnstrnt option -> 'a -> 'a ) -> (* kont *)
+        (S.concrete -> S.M.VC.cnstrnt option -> S.M.VC.solver_state -> 'a -> 'a ) -> (* kont *)
           'a -> 'a
 
   val solve_regs :
@@ -119,7 +119,7 @@ module type S = sig
   val solve_mem :
       S.test ->S.E.event_structure -> S.read_from S.RFMap.t -> S.M.VC.cnstrnt list ->
         (S.E.event_structure ->
-          S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> 'a -> 'a) ->
+          S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> S.M.VC.solver_state -> 'a -> 'a) ->
             'a -> 'a
 
   val check_sizes : S.test -> S.event_structure -> unit
@@ -128,12 +128,13 @@ module type S = sig
       S.E.event_structure -> S.read_from S.RFMap.t -> bool
 
   val when_unsolved :
-      S.test -> S.E.event_structure -> S.read_from S.RFMap.t -> S.M.VC.cnstrnt list -> 'a -> 'a
+      S.test -> S.E.event_structure -> S.read_from S.RFMap.t -> S.M.VC.cnstrnt list ->
+        S.M.VC.solver_state -> 'a -> 'a
 
   val compute_final_state :
     S.test -> S.read_from S.RFMap.t -> S.E.EventSet.t -> S.A.state * S.A.FaultSet.t
 
-  val check_filter : S.test -> S.A.state * S.A.FaultSet.t -> bool
+  val check_filter : S.M.VC.solver_state -> S.test -> S.A.state * S.A.FaultSet.t -> bool
 
   val get_loc :
     S.E.event -> S.E.A.location
@@ -1000,15 +1001,20 @@ let get_rf_value test read =
 
     exception Contradiction
 
-    let add_eq v1 v2 eqs =
-      if V.is_var_determined v1 then
-        if V.is_var_determined v2 then
-          if V.equal v1 v2 then eqs
-          else raise Contradiction
-        else (* Here, v1 and v2 necessarily differ *)
-          VC.Assign (v2, VC.Atom v1)::eqs
-      else if V.equal v1 v2 then eqs
-      else VC.Assign (v1, VC.Atom v2)::eqs
+let add_eq v1 v2 eqs =
+  let assign v1 v2 eqs = VC.Assign (v1, VC.Atom v2) :: eqs in
+  match (v1, v2) with
+  | (V.Val c1, V.Val c2) -> (
+      if V.Cst.eq c1 c2 then eqs
+      else
+        match A.CS.eq_satisfiable c1 c2 with
+        | Some pred -> VC.Predicate pred :: eqs
+        | None -> raise Contradiction)
+  | (V.Val _, V.Var _) -> assign v1 v2 eqs
+  | (V.Var _, V.Val _) -> assign v2 v1 eqs
+  | (V.Var csym1, V.Var csym2) ->
+      if V.equal_csym csym1 csym2 then eqs
+      else assign v1 v2 eqs
 
     let pp_nosol lvl test es rfm =
       let module PP = Pretty.Make(S) in
@@ -1094,7 +1100,7 @@ let get_rf_value test read =
         | VC.NoSolns ->
             if debug_solver then pp_nosol "register" test es rfm;
             None
-        | VC.Maybe (sol, csn) ->
+        | VC.Maybe (sol, csn,_) ->
             Some
               ( E.simplify_vars_in_event_structure sol es,
                 S.simplify_vars_in_rfmap sol rfm,
@@ -1412,13 +1418,13 @@ let get_rf_value test read =
                  pp_nosol "memory" test es rfm
                end ;
                res
-            | VC.Maybe (sol,cs) ->
+            | VC.Maybe (sol,cs,solver) ->
                 (* Time to complete rfmap *)
                 let rfm = add_some_mem loads stores rfm in
                 (* And to make everything concrete *)
                 let es = E.simplify_vars_in_event_structure sol es
                 and rfm = S.simplify_vars_in_rfmap sol rfm in
-                try kont es rfm cs res
+                try kont es rfm cs solver res
                 with e -> raise (KontFailed (e,es,rfm))
           with
           | Contradiction ->  (* May  be raised by add_mem_eqs *)
@@ -1434,7 +1440,7 @@ let get_rf_value test read =
         )
         res
 
-    let when_unsolved test es rfm _cs res =
+    let when_unsolved test es rfm _cs _solver res =
       (* This system in fact has no solution.
          In other words, it is not possible to make
          such event structures concrete.
@@ -1495,7 +1501,7 @@ let get_rf_value test read =
       in
       (* The actual logic *)
       let compat_locs = compatible_locs_mem in
-      let kont_rem_reads es rfm cns res = (* solve pending constraints and continue *)
+      let kont_rem_reads es rfm cns _solver res = (* solve pending constraints and continue *)
         let all_reads =  E.EventSet.filter E.is_mem_load es.E.events in
         let rem_reads = E.EventSet.diff all_reads (get_imp_instr_rs es) in
         let rem_reads = E.EventSet.diff rem_reads (get_imp_instr_ttd_rs es) in
@@ -1507,8 +1513,8 @@ let get_rf_value test read =
         solve_mem_or_res test es rfm cns kont res
           rem_reads all_writes compat_locs add_mem_eqs
       in
-      let kont_ifetch_reads es rfm cns res = (* solve ifetch constraints and continue *)
-        if not self then kont_rem_reads es rfm cns res
+      let kont_ifetch_reads es rfm cns solver res = (* solve ifetch constraints and continue *)
+        if not self then kont_rem_reads es rfm cns solver res
         else begin
           if dbg then begin
             eprintf "Instruction fetches : %a\n"
@@ -1520,8 +1526,8 @@ let get_rf_value test read =
             (get_imp_instr_rs es) (get_instr_ws es) compat_locs add_mem_eqs
         end
       in
-      let kont_ifetch_ttd_reads es rfm cns res = (* solve vmsa+ifetch constraints and continue *)
-        if not (self && kvm) then kont_ifetch_reads es rfm cns res
+      let kont_ifetch_ttd_reads es rfm cns solver res = (* solve vmsa+ifetch constraints and continue *)
+        if not (self && kvm) then kont_ifetch_reads es rfm cns solver res
         else begin
           if dbg then begin
             eprintf "Implicit Instruction-TTD Reads : %a\n"
@@ -1533,7 +1539,7 @@ let get_rf_value test read =
             (get_imp_instr_ttd_rs es) (get_instr_ttd_ws es) compat_locs add_mem_eqs
         end
       in
-      kont_ifetch_ttd_reads es rfm cns res
+      kont_ifetch_ttd_reads es rfm cns A.CS.empty_solver res
 
 (*************************************)
 (* Mixed-size write-to-load matching *)
@@ -1746,17 +1752,16 @@ let get_rf_value test read =
                       tag_loads tag_stores cns in
                   (* And solve *)
                   match VC.solve cns with
-                  | VC.NoSolns -> res
-                  | VC.Maybe (sol,cs) ->
-                      (* Time to complete rfmap *)
-                      let rfm = add_mems rss wss rfm in
-                      let rfm = add_mem tag_loads tag_stores rfm in
-                      (* And to make everything concrete *)
-                      let es = E.simplify_vars_in_event_structure sol es
-                      and rfm = S.simplify_vars_in_rfmap sol rfm in
-                      kont es rfm cs res
+                    | VC.NoSolns -> res
+                    | VC.Maybe (sol,cs,solver) ->
+                        (* Time to complete rfmap *)
+                        let rfm = add_mems rss wss rfm in
+                        let rfm = add_mem tag_loads tag_stores rfm in
+                        (* And to make everything concrete *)
+                        let es = E.simplify_vars_in_event_structure sol es
+                        and rfm = S.simplify_vars_in_rfmap sol rfm in
+                        kont es rfm cs solver res
                 with
-                | Contradiction -> res  (* can be raised by add_mem_eqs *)
                 | e ->
                     if C.debug.Debug_herd.top then begin
                       eprintf "Exception: %s\n%!" (Printexc.to_string e) ;
@@ -1772,7 +1777,7 @@ let get_rf_value test read =
     let solve_mem test es rfm cns kont res =
       try
         if mixed && not C.debug.Debug_herd.mixed then solve_mem_mixed test es rfm cns kont res
-        else solve_mem_non_mixed  test es rfm cns kont res
+        else solve_mem_non_mixed test es rfm cns kont res
       with
       | CannotSca ->
          solve_mem_non_mixed test es rfm cns kont res
@@ -1785,11 +1790,15 @@ let get_rf_value test read =
     module CM = S.Cons.Mixed(C)
 
 (* Internal filter *)
-    let check_filter test fsc = match test.Test_herd.filter with
+    let check_filter solver test fsc = match test.Test_herd.filter with
     | None -> true
     | Some p ->
-        not C.check_filter ||
-          CM.check_prop p (S.type_env test) (S.size_env test) fsc
+        (* TODO: List.hd is probably an unsound approximation *)
+        not C.check_filter || (
+          match CM.check_prop solver p (S.type_env test) (S.size_env test) fsc with
+          | [result,_] -> result
+          | _ -> Warn.user_error "check_prop return multiple results in check_filter"
+        )
 
 (*************************************)
 (* Final condition invalidation mode *)
@@ -1805,12 +1814,15 @@ let get_rf_value test read =
 
     module T = Test_herd.Make(S.A)
 
-    let final_is_relevant test fsc =
+    let final_is_relevant solver test fsc =
       let open ConstrGen in
       let cnstr = T.find_our_constraint test in
       let senv = S.size_env test
       and tenv = S.type_env test in
-      let check_prop p = CM.check_prop p tenv senv fsc in
+      let check_prop p = match CM.check_prop solver p tenv senv fsc with
+        | [result,_] -> result
+        | _ -> Warn.user_error "check prop return multiple results in final_is_relevant"
+      in
       match cnstr with
         (* Looking for 'Allow' witness *)
       | NotExistsState p | ExistsState p -> check_prop p
@@ -1819,8 +1831,8 @@ let get_rf_value test read =
             (* Looking for witness that invalidates 'Forbid' *)
 
 
-    let worth_going test fsc = match C.speedcheck with
-    | Speed.True|Speed.Fast -> final_is_relevant test fsc
+    let worth_going solver test fsc = match C.speedcheck with
+    | Speed.True|Speed.Fast -> final_is_relevant solver test fsc
     | Speed.False -> true
 
 (***************************)
@@ -1849,16 +1861,18 @@ let get_rf_value test read =
               A.state_add k (tr_physical loc) (get_written ew)
           | _,_ -> k)
           rfm test.Test_herd.init_state in
-      st,
-      if A.FaultAtomSet.is_empty test.Test_herd.ffaults && not !Opts.dumpallfaults then
-        A.FaultSet.empty
-      else
-        E.EventSet.fold
-          (fun e k ->
-            match E.to_fault e with
-            | Some f -> A.FaultSet.add f k
-            | None -> k)
-          es A.FaultSet.empty
+      let flts =
+        if A.FaultAtomSet.is_empty test.Test_herd.ffaults && not !Opts.dumpallfaults
+        then
+          A.FaultSet.empty
+        else
+          E.EventSet.fold
+            (fun e k ->
+              match E.to_fault e with
+              | Some f -> A.FaultSet.add f k
+              | None -> k)
+            es A.FaultSet.empty in
+      st,flts
 
 
 (* View before relations easily available, from po_iico and rfmap *)
@@ -2203,7 +2217,7 @@ let get_rf_value test read =
         loads
 
     let fold_mem_finals
-        test wanted_finals es rfm ofail atomic_load_store kont res =
+        test wanted_finals es rfm ofail atomic_load_store solver kont res =
       (* We can build those now *)
       let evts = es.E.events in
       let po_iico = U.po_iico es in
@@ -2273,7 +2287,7 @@ let get_rf_value test read =
                   S.RFMap.add (S.Final (get_loc w)) (S.Store w) k)
                 rfm ws in
             let fsc = compute_final_state test rfm es.E.events in
-            if check_filter test fsc && worth_going test fsc then begin
+            if check_filter solver test fsc && worth_going solver test fsc then begin
               if debug_solver then begin
                 let module PP = Pretty.Make(S) in
                 let fsc,_ = fsc in eprintf "Final rfmap, final state=%s\n%!" (S.A.dump_state fsc);
@@ -2299,7 +2313,7 @@ let get_rf_value test read =
                    last_store_vbf = last_store_vbf ;
                    atomic_load_store = atomic_load_store ;
                  } in
-                kont conc ofail res
+                kont conc ofail solver res
               else begin
                 if debug_solver then begin
                   let conc =
@@ -2479,12 +2493,15 @@ let get_rf_value test read =
             PP.show_es_rfm test es rfm ;
           end ;
           solve_mem test es rfm cs
-            (fun es rfm cs res ->
+            (fun es rfm cs solver res ->
+              let only_preds =
+                List.for_all (function | VC.Predicate _ -> true | _ -> false) cs in
               let ofail = VC.get_failed cs in
               match cs with
               | _::_
                 when not (
                     oota (* Out of thin air equations can stay at the end. *)
+                    || only_preds
                     || (C.initwrites && do_deps)
                     (* avoid accepting such candidates in non-deps mode.
                        Namely, having  non-sensical candidates rejected later
@@ -2496,7 +2513,7 @@ let get_rf_value test read =
                        (* In ASL, some equations can be generated by ARBITRARY
                           and can stay at the end of an execution. *)
                   ) ->
-                  when_unsolved test es rfm cs res
+                  when_unsolved test es rfm cs solver res
               | _ ->
                   let ofail =
                     match ofail with
@@ -2545,7 +2562,7 @@ let get_rf_value test read =
                       res
                       end else
                       fold_mem_finals test wanted_final_values es
-                        rfm ofail atomic_load_store kont res
+                        rfm ofail atomic_load_store solver kont res
                   else  res)
             res
   end

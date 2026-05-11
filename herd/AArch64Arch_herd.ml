@@ -517,6 +517,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       if C.variant Variant.SME then [PState PSTATE.ZA; PState PSTATE.SM;]
       else []
 
+    module CS = ConstraintSolver.Pac(V)
+
     include ArchExtra_herd.Make(C)
         (struct
 
@@ -525,6 +527,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
           type instr = instruction
 
           module V = V
+          module CS = CS
 
           let endian = endian
 
@@ -572,5 +575,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       then
         Warn.user_error
           "Array location and STZG instruction without -variant mixed"
+
 
   end
