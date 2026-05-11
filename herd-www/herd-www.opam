@@ -1,0 +1,18 @@
+opam-version: "2.0"
+synopsis: "Dependencies for herd-www (web interface for herdtools7)"
+maintainer: "Luc Maranget <Luc.Maranget@inria.fr>"
+authors: [
+  "Jade Alglave <j.alglave@ucl.ac.uk>"
+  "Luc Maranget <Luc.Maranget@inria.fr>"
+]
+homepage: "https://developer.arm.com/herd7"
+bug-reports: "http://github.com/herd/herdtools7/issues/"
+license: "CECILL-B"
+depends: [
+  "ocaml" {>= "4.14.0"}
+  "dune"
+  "menhir"
+  "js_of_ocaml" {= "5.4.0"}
+  "js_of_ocaml-ppx" {= "5.4.0"}
+  "zarith_stubs_js" {>= "v0.16.1"}
+]
