@@ -1,7 +1,15 @@
-comment.cut
-generated_macros.tex
+*.aux
+*.log
+*.out
+*.pdf
+*.synctex.gz
+*.toc
+*.fls
+*.fdb_latexmkcomment.cut
+*.fdb_latexmk
 *.bbl
 *.blg
 *.dvi
+generated_macros.tex
 __pycache__
 ASLReference.synctex(busy)
