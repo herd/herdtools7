@@ -381,7 +381,7 @@ module Make
       | (Prim (_,i1,_),Prim (_,i2,_)) -> Misc.int_compare i1 i2
       | Clo _,Prim _ -> 1
       | Prim _,Clo _ -> -1
-      | Tuple vs,Tuple ws ->  compares vs ws
+      | Tuple vs,Tuple ws -> List.compare compare vs ws
 (* Errors *)
       | (Unv,_)|(_,Unv) -> error "Universe in compare"
       | _,_ ->
@@ -393,16 +393,6 @@ module Make
             error
               "Heterogeneous set elements: types %s and %s "
               (pp_typ t1) (pp_typ t2)
-
-      and compares vs ws = match vs,ws with
-      | [],[] -> 0
-      | [],_::_ -> -1
-      | _::_,[] -> 1
-      | v::vs,w::ws ->
-          begin match compare v w with
-          | 0 -> compares vs ws
-          | r -> r
-          end
 
     end and ValSet : (MySet.S with type elt = V.v) = MySet.Make(ValOrder)
 

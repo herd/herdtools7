@@ -133,34 +133,11 @@ let pair_compare cmpx cmpy (x1,y1) (x2,y2) =
 
 let pair_eq eqx eqy (x1,y1) (x2,y2) =  eqx x1 x2 &&  eqy y1 y2
 
-let rec list_compare cmp xs ys = match xs,ys with
-  | [],[] -> 0
-  | [],_::_ -> -1
-  | _::_,[] -> 1
-  | x::xs,y::ys ->
-      begin match cmp x y with
-      | 0 -> list_compare cmp xs ys
-      | r -> r
-      end
-
-let rec list_eq eq xs ys = match xs,ys with
-  | [],[] -> true
-  | ([],_::_)|(_::_,[]) -> false
-  | x::xs,y::ys -> eq x y && list_eq eq xs ys
-
 let char_uppercase = Char.uppercase_ascii
 let lowercase = String.lowercase_ascii
 let uppercase = String.uppercase_ascii
 let capitalize = String.capitalize_ascii
 let uncapitalize = String.uncapitalize_ascii
-
-(** [string_starts_with ~prefix s] checks if string [s] starts with [prefix].
-  Normally available natively in Ocaml 4.13. *)
-let string_starts_with ~prefix s =
-  let prefix_len = String.length prefix in
-  let s_len = String.length s in
-  if prefix_len > s_len then false
-  else String.equal (String.sub s 0 prefix_len) prefix
 
 let to_c_name =
   let tr c = match c with
@@ -172,12 +149,6 @@ let to_c_name =
 let find_opt = List.find_opt
 let filter_map = List.filter_map
 let split_on_char = String.split_on_char
-
-let rec find_map f = function
-  | [] -> None
-  | x :: t ->
-      let res = f x in
-      if is_some res then res else find_map f t
 
 (********************)
 (* Position parsing *)
@@ -881,7 +852,6 @@ module List = struct
   include List
 
   let empty = []
-  let concat_map f l = concat (map f l)
   let is_empty = function
     | [] -> true
     | _ -> false
@@ -895,15 +865,6 @@ module List = struct
       | x :: xs -> uniq eq (x :: acc) xs
     in
     uniq eq [] l
-
-
-  let fold_left_map f accu l =
-    let rec aux accu l_accu = function
-      | [] -> accu, rev l_accu
-      | x :: l ->
-          let accu, x = f accu x in
-          aux accu (x :: l_accu) l in
-    aux accu [] l
 
   module Syntax = struct
     let (let*) = fun l f -> concat_map f l

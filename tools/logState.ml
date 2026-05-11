@@ -74,12 +74,9 @@ type parsed_topologies = topology list
 
 type sts = parsed_sts (* + sorted *)
 
-let rec do_equal_states xs ys = match xs,ys with
-  | [],[] -> true
-  | (_::_,[])|([],_::_) -> false
-  | x::xs,y::ys ->
-     x.p_st == y.p_st && (* Ignore counts, outcomes are hash-consed *)
-     do_equal_states xs ys
+let do_equal_states xs ys =
+  (* Ignore counts, outcomes are hash-consed. *)
+  List.equal (fun x y -> x.p_st == y.p_st) xs ys
 
 let equal_states sts1 sts2 = do_equal_states sts1.p_sts sts2.p_sts
 
@@ -1330,10 +1327,8 @@ let simple_diff_not_empty out t1 t2 k =
   simple_diff_gen diff_not_empty out t1 t2 k
 
 
-let rec diff_simple_states xs ys = match xs,ys with
-| [],[] -> false
-| x::xs,y::ys -> x != y || diff_simple_states xs ys
-| _,_ -> true
+let diff_simple_states xs ys =
+  not (List.equal ( == ) xs ys)
 
 let simple_diff out t1 t2 k =
   simple_diff_gen diff_simple_states out t1 t2 k

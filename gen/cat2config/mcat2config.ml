@@ -166,7 +166,7 @@ struct
   let rec find_parse_deep (file_path : string) : AST.ins list =
     let _, (_, _, ast) = Parser.find_parse file_path in
     let includes = get_includes ast in
-    let included_asts = Util.List.concat_map find_parse_deep includes in
+    let included_asts = List.concat_map find_parse_deep includes in
     included_asts @ ast
 end
 

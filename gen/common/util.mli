@@ -33,11 +33,6 @@ val arch_opt : Archs.t ref -> spec
 val parse_cmdline : spec list -> (string -> unit) -> unit
 
 module List : sig
-  (** [concat_map f l] gives the same result as [List.concat (List.map f l)].
-
-      For compatibility with OCaml < 4.10 *)
-  val concat_map : ('a -> 'b list) -> 'a list -> 'b list
-
   (** [uniq ~eq l] removes duplicates in [l] w.r.t the equality predicate [eq]. *)
   val uniq : eq:('a -> 'a -> bool) -> 'a list -> 'a list
 

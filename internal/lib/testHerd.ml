@@ -64,12 +64,8 @@ let compare_lines nohash l1 l2 =
    && Str.string_match hash_re l2 0)
   || String.equal l1 l2
 
-let rec log_equal nohash xs ys =
-  match xs,ys with
-  | [],[] -> true
-  | x::xs,y::ys ->
-      compare_lines nohash x y && log_equal nohash xs ys
-  | ([],_::_)|(_::_,[]) -> false
+let log_equal nohash xs ys =
+  List.equal (compare_lines nohash) xs ys
 
 let log_diff  nohash xs ys = not (log_equal nohash xs ys)
 
@@ -113,11 +109,11 @@ let norm_states xs =
        | [] -> k
        | ws -> List.sort String.compare ws::k)
     [] xs
-  |> List.sort (Misc.list_compare String.compare)
+  |> List.sort (List.compare String.compare)
 
 let states_equal litmus xs ys =
   let xs0 = norm_states xs and ys0 = norm_states ys in
-  let eq = Misc.list_eq (Misc.list_eq String.equal) xs0 ys0 in
+  let eq = List.equal (List.equal String.equal) xs0 ys0 in
   if _dbg || not eq then begin
     Printf.eprintf "%s on %s\n" (if eq then "Ok" else "Fail") litmus ;
     Printf.eprintf "** Expected:\n" ; pp_norm_states stderr ys0 ;

@@ -48,49 +48,14 @@ end
 module List = struct
   include List
 
-  let rec compare cf xs ys =
-    match xs, ys with
-    | [], [] -> 0
-    | [], _ -> -1
-    | _, [] -> 1
-    | x :: xs, y :: ys ->
-        match cf x y with
-        | 0 -> compare cf xs ys
-        | n -> n
-
   let to_ocaml_string f xs =
     Printf.sprintf "[%s]" (String.concat "; " (List.map f xs))
 end
 
 module Option = struct
+  include Option
+
   type 'a t = 'a option
-
-  let get o =
-    match o with
-    | None -> invalid_arg "option is None"
-    | Some v -> v
-
-  let value o ~default =
-    match o with
-    | None -> default
-    | Some v -> v
-
-  let map f o =
-    match o with
-    | None -> None
-    | Some v -> Some (f v)
-
-  let is_none o =
-    match o with
-    | None -> true
-    | Some _ -> false
-
-  let compare cf a b =
-    match a, b with
-    | None, None -> 0
-    | Some _, None -> 1
-    | None, Some _ -> -1
-    | Some a, Some b -> cf a b
 
   let to_ocaml_string f o =
     match o with

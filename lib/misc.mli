@@ -88,22 +88,18 @@ val pair_compare :
     ('a -> 'a -> int) -> ('b -> 'b -> int) -> 'a * 'b -> 'a * 'b -> int
 val pair_eq :
   ('a -> 'a -> bool) -> ('b -> 'b -> bool) -> 'a * 'b -> 'a * 'b -> bool
-val list_compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
-val list_eq : ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
 
 val char_uppercase : char -> char
 val lowercase : string -> string
 val uppercase : string -> string
 val capitalize : string -> string
 val uncapitalize : string -> string
-val string_starts_with : prefix:string -> string -> bool
 
 (* strip characters to form a valid c variable/type/enum name *)
 val to_c_name : string -> string
 
 (* Backward compatibility *)
 val find_opt : ('a -> bool) -> 'a list -> 'a option
-val find_map : ('a -> 'b option) -> 'a list -> 'b option
 val split_on_char : char -> string -> string list
 val filter_map : ('a -> 'b option) -> 'a list -> 'b list
 (* Float pair (position) parsint *)
@@ -397,12 +393,6 @@ module List : sig
   (** [uniq ~eq l] removes duplicates in [l] w.r.t the equality predicate [eq].
       Complexity is quadratic in the length of the list, but the order
       of elements is preserved. *)
-
-  val fold_left_map :
-    ('acc -> 'a -> 'acc * 'b) -> 'acc -> 'a list -> 'acc * 'b list
-  (** [fold_left_map] is  a combination of [fold_left] and [map] that threads an
-      accumulator through calls to [f].
-      For compatibility with OCaml < 4.11. *)
 
   module Syntax : sig
     val (let*) : 'a list -> ('a -> 'b list) -> 'b list

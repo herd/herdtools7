@@ -31,7 +31,7 @@ let union : 'a union -> 'a union -> 'a union =
  fun (Union x) (Union y) -> Union (List.append x y)
 
 let union_flat_map (f : 'a -> 'b union) (Union u : 'a union) : 'b union =
-  Union (Util.List.concat_map (fun x -> get_union (f x)) u)
+  Union (List.concat_map (fun x -> get_union (f x)) u)
 
 let union_l : 'a union list -> 'a union =
  fun l -> List.fold_right union l (Union [])
@@ -390,7 +390,7 @@ let expand_domain_range (nf : rel_nf) : rel_nf =
         | None -> [ Set (Inter x) ])
     | x -> [ x ]
   in
-  map_union (fun (Seq seq) -> Seq (Util.List.concat_map expand_item seq)) nf
+  map_union (fun (Seq seq) -> Seq (List.concat_map expand_item seq)) nf
 
 let expand_acq_rel (nf : rel_nf) : rel_nf =
   let mem = to_id (prim_set (Prim "M")) in

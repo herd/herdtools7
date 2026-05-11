@@ -87,15 +87,8 @@ module Top
 
     type name = {fname:string; tname:string;}
 
-    let rec compare_names xs ys = match xs,ys with
-    | [],[] -> 0
-    | [],_::_ -> -1
-    | _::_,[] -> 1
-    | x::xs,y::ys ->
-        begin match String.compare x.tname y.tname with
-        | 0 -> compare_names xs ys
-        | r -> r
-        end
+    let compare_names xs ys =
+      List.compare (fun x y -> String.compare x.tname y.tname) xs ys
 
       let get_base f = Filename.chop_extension (Filename.basename f)
 

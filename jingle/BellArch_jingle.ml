@@ -18,11 +18,8 @@ include Arch.MakeArch(struct
 
   include Arch.MakeCommon(BellBase)
 
-  let rec annots_compare s s' =
-    match s,s' with
-    | [],[] -> true
-    | x::s,y::s' when String.compare x y = 0 -> annots_compare s s'
-    | _ -> false
+  let annots_compare s s' =
+    List.equal String.equal s s'
 
   let match_reg_or_imm subs ri ri' = match ri,ri' with
     | Regi r,Regi r'

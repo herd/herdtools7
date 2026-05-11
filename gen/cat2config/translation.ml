@@ -257,8 +257,8 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
   let* _ = Util.Option.guard left.explicit_mem in
   let* right = build_effect initial_effect (right @ implied_right) in
   let* _ = Util.Option.guard right.explicit_mem in
-  let tedges = tedges |> UList.concat_map (filter_by_sd pedge.sd) in
-  let tedges = tedges |> UList.concat_map (filter_by_ie pedge.ie) in
+  let tedges = tedges |> List.concat_map (filter_by_sd pedge.sd) in
+  let tedges = tedges |> List.concat_map (filter_by_ie pedge.ie) in
   let relaxs =
     tedges
     |> List.map (fun (Tedge { edge; insert }) ->
