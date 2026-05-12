@@ -61,8 +61,7 @@ val seq_sd : sd -> sd -> sd option
 val is_same_loc : sd -> bool
 val is_diff_loc : sd -> bool
 val is_unspec_loc : sd -> bool
-(* The first boolean indicates whether wildcard syntax is included in the fold *)
-val fold_ie : bool -> (ie -> 'a -> 'a) -> 'a -> 'a
+val fold_ie : (ie -> 'a -> 'a) -> 'a -> 'a
 val fold_extr : bool -> (extr -> 'a -> 'a) -> 'a -> 'a
 val fold_sd : bool -> (sd -> 'a -> 'a) -> 'a -> 'a
 val fold_sd_extr : bool -> (sd -> extr -> 'a -> 'a) -> 'a -> 'a
