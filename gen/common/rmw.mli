@@ -21,12 +21,12 @@ module type S = sig
   val pp_rmw : bool -> rmw -> string
   val equal_rmw : rmw -> rmw -> bool
   val is_one_instruction : rmw -> bool
-  val fold_rmw : bool -> (rmw -> 'a -> 'a) -> 'a -> 'a
-  val fold_rmw_compat : (rmw -> 'a -> 'a) -> 'a -> 'a
+  val fold_rmw : (rmw -> 'a -> 'a) -> 'a -> 'a
+  val fold_rmw_macros :
+    (string -> rmw list list -> 'a -> 'a) -> 'a -> 'a
   val applies_atom_rmw : rmw -> atom option -> atom option -> bool
   val show_rmw_reg : rmw -> bool
   val compute_rmw : rmw -> old:int -> operand:int -> int
-  val expand_rmw : rmw -> rmw list
   val is_valid_rmw : rmw list -> bool
 end
 

@@ -243,11 +243,9 @@ let equal_rmw rmw1 rmw2 = match rmw1,rmw2 with
 
 let is_one_instruction _ = true
 
-let fold_rmw _b f r = let r = f Add r in  f Exch r
+let fold_rmw f r = f Add r |> f Exch
 
-let fold_rmw_compat f r = f Exch r
-
-let expand_rmw rmw = [rmw]
+let fold_rmw_macros f r = f "Rmw" [[Exch]] r
 
 let tr_atom_rmw omo_r omo_w = match omo_r,omo_w with
 | (None,_)|(_, None) -> None
