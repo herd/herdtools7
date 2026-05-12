@@ -100,6 +100,8 @@ type t =
   | ASLType of [`Warn|`Silence|`TypeCheck]
 (* UDF control in ASL+AArch64 mode *)
   | ASL_AArch64_UDF
+(* Simplify ASL concurrent semantics by not generating return effects *)
+  | ASL_no_return_evts
 (* Signed Int128 types *)
   | S128
 (* Strict interpretation of variant, e.g. -variant asl,strict *)
