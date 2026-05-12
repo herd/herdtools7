@@ -390,15 +390,12 @@ and module RMW = A.RMW = struct
 
   let do_is_diff e = Code.is_diff_loc @@ do_loc_sd e
 
-let fold_tedges_compat f r =
-  RMW.fold_rmw_compat (fun rmw -> f (Rmw rmw)) r
-
 (* Primitive edge lexemes accepted by `parse_edge`.  Wildcard edge names that
    are now macros, such as Dp**, are added to the relax macro table instead of
    this lexer table. *)
 let fold_tedges f r =
   let r = fold_com (fun com r -> fold_ie (fun ie -> f (Communication (com,ie))) r) r in
-  let r = RMW.fold_rmw wildcard (fun rmw -> f (Rmw rmw)) r in
+  let r = RMW.fold_rmw (fun rmw -> f (Rmw rmw)) r in
   let r = fold_sd_extr_extr wildcard (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
   let r = F.fold_all_fences (fun fe -> f (Insert fe)) r in
   let r = f Store r in
@@ -549,8 +546,6 @@ let fold_tedges f r =
     iter_tedges false fold_tedges;
     add_lxm_edge "R" (plain_edge (Node R)) ;
     add_lxm_edge "W" (plain_edge (Node W)) ;
-    (*LxSx aka Rmw*)
-    iter_tedges true fold_tedges_compat;
     ()
 
   let fold_pp_edges f =
@@ -840,9 +835,7 @@ let fold_tedges f r =
     | Hat |Leave _|Back _
       -> f e acc
     | Communication _ -> f e acc
-    | Rmw rmw ->
-        let expand_rmw_list = A.RMW.expand_rmw rmw in
-        List.fold_left ( fun acc new_rmw -> f {e with edge=Rmw(new_rmw);} acc) acc expand_rmw_list
+    | Rmw _ -> f e acc
     | Dp (dp,sd,expr) ->
       expand_dir expr (fun new_expr ->
         expand_loc sd ( fun new_sd -> f {e with edge=Dp(dp,new_sd,new_expr);})) acc
@@ -876,6 +869,17 @@ let fold_tedges f r =
        keeps only the preferred Coi/Coe names; Wsi/Wse are relax aliases. *)
     |> add_ws "Wsi" Int
     |> add_ws "Wse" Ext
+    (* Add `rmw` aliases *)
+    |> RMW.fold_rmw_macros
+      (fun name choices k ->
+        let choices =
+          List.map
+            (fun rmws -> List.map (fun rmw -> plain_edge (Rmw rmw)) rmws)
+            choices in
+        (* One choice means a backward-compatible alias. *)
+        match choices with
+        | [_] -> f name choices k
+        | _ -> k)
 
   (* Edge-level wildcards exported to the relax wildcard table.  These names
      expand to multiple choices, for example Rf -> Rfi/Rfe or
@@ -888,6 +892,18 @@ let fold_tedges f r =
     |> add_com "Rf" (fun ie -> Communication (Rf,ie))
     |> add_com "Fr" (fun ie -> Communication (Fr,ie))
     |> add_com "Co" (fun ie -> Communication (Co,ie))
+
+    (* Add `rmw` wildcard *)
+    |> RMW.fold_rmw_macros
+      (fun name choices k ->
+        let choices =
+          List.map
+            (fun rmws -> List.map (fun rmw -> plain_edge (Rmw rmw)) rmws)
+            choices in
+        (* More than one choice means a wildcard macro. *)
+        match choices with
+        | [] | [_] -> k
+        | _ -> f name choices k)
 
   let fold_edge_legacy_wildcards f k =
     let add_com name make_edge k =

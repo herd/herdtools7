@@ -2277,8 +2277,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Cas -> map_some emit_cas
         | LdOp op -> map_some (emit_ldop op)
         | StOp op -> emit_stop op
-        | AllAmo | SafeAmo ->
-            Warn.fatal "Cannot compile aggregate atomic operation"
 
 (* Fences *)
     let emit_cachesync s isb r =
@@ -2941,8 +2939,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Swp ->  map_some_dp (emit_ldop_dep swp swp_mixed)
         | Cas -> map_some_dp emit_cas_dep
         | StOp op -> emit_stop_dep op
-        | AllAmo | SafeAmo ->
-            Warn.fatal "Cannot compile aggregate atomic operation"
 
     let emit_fence_dp st p init n f (dp,csel) r1 n1 =
       let vdep = node2vdep n1 in

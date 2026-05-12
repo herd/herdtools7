@@ -177,15 +177,29 @@ let build_effect : partial_effect -> prim_set list -> partial_effect option =
 let build_tedges : prim_rel -> tedge list =
   let dp_tedges dp csel =
     [ mk_tedge (E.Dp ((dp, csel), UnspecLoc, Code.Irr)) ] in
+  let amo_tedges =
+    let open A.RMW in
+    List.map mk_tedge [
+      E.Rmw Swp ;
+      E.Rmw Cas ;
+      E.Rmw (LdOp A_ADD) ;
+      E.Rmw (LdOp A_EOR) ;
+      E.Rmw (LdOp A_SET) ;
+      E.Rmw (LdOp A_CLR) ;
+      E.Rmw (StOp A_ADD) ;
+      E.Rmw (StOp A_EOR) ;
+      E.Rmw (StOp A_SET) ;
+      E.Rmw (StOp A_CLR) ;
+    ] in
   function
   | Prim "po" -> [ mk_tedge E.(Po (UnspecLoc, Code.Irr, Code.Irr)) ]
   | Prim "fr" -> [ mk_macro "Fr" ]
   | Prim "co" -> [ mk_macro "Co" ]
   | Prim "rf" -> [ mk_macro "Rf" ]
   | Fence f -> [ mk_tedge (E.Fenced (A.Barrier f, UnspecLoc, Code.Irr, Code.Irr)) ]
-  | Prim "amo" -> [ mk_tedge (E.Rmw A.RMW.AllAmo) ]
+  | Prim "amo" -> amo_tedges
   | Prim "lxsx" -> [ mk_tedge (E.Rmw A.RMW.LrSc) ]
-  | Prim "rmw" -> [ mk_tedge (E.Rmw A.RMW.LrSc); mk_tedge (E.Rmw A.RMW.AllAmo) ]
+  | Prim "rmw" -> mk_tedge (E.Rmw A.RMW.LrSc) :: amo_tedges
   | Prim "addr" -> dp_tedges Dep.Full.ADDR A.NoCsel
   | Prim "ctrl" -> dp_tedges Dep.Full.CTRL A.NoCsel
   | Prim "data" -> dp_tedges Dep.Full.DATA A.NoCsel
