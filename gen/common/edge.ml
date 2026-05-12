@@ -81,6 +81,11 @@ module type S = sig
 
   val fold_atomo : (atom option -> 'a -> 'a) -> 'a -> 'a
   val fold_atomo_list : atom option list -> (atom option -> 'a -> 'a) -> 'a -> 'a
+  val fold_edge_wildcards : (string -> edge list list -> 'a -> 'a) -> 'a -> 'a
+  val fold_edge_legacy_aliases :
+    (string -> edge list list -> 'a -> 'a) -> 'a -> 'a
+  val fold_edge_legacy_wildcards :
+    (string -> edge list list -> 'a -> 'a) -> 'a -> 'a
 
   val pp_tedge : tedge -> string
   val pp_atom_option : atom option -> string
@@ -388,12 +393,13 @@ and module RMW = A.RMW = struct
   let do_is_diff e = Code.is_diff_loc @@ do_loc_sd e
 
 let fold_tedges_compat f r =
-  let r = fold_ie wildcard (fun ie -> f (Communication (Co,ie))) r in
-  let r = RMW.fold_rmw_compat (fun rmw -> f (Rmw rmw)) r
-  in r
+  RMW.fold_rmw_compat (fun rmw -> f (Rmw rmw)) r
 
+(* Primitive edge lexemes accepted by `parse_edge`.  Wildcard edge names that
+   are now macros, such as Dp**, are added to the relax macro table instead of
+   this lexer table. *)
 let fold_tedges f r =
-  let r = fold_com (fun com r -> fold_ie wildcard (fun ie -> f (Communication (com,ie))) r) r in
+  let r = fold_com (fun com r -> fold_ie (fun ie -> f (Communication (com,ie))) r) r in
   let r = RMW.fold_rmw wildcard (fun rmw -> f (Rmw rmw)) r in
   let r = fold_sd_extr_extr wildcard (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
   let r = F.fold_all_fences (fun fe -> f (Insert fe)) r in
@@ -535,17 +541,18 @@ let fold_tedges f r =
     with Not_found ->
       Hashtbl.add edge_lookup_table lxm e
 
-(* Fill lexeme table *)
+(* Fill the primitive edge lexeme table. *)
   let iter_tedges compat fold =
     Misc.fold_to_iter fold
       (fun te -> add_lxm_edge (pp_tedge_compat compat te) (plain_edge te))
 
   let () =
-   iter_tedges false fold_tedges;
+    (* Preferred spellings use Co for write serialization. *)
+    iter_tedges false fold_tedges;
     add_lxm_edge "R" (plain_edge (Node R)) ;
     add_lxm_edge "W" (plain_edge (Node W)) ;
-(*Co aka Ws and LxSx aka Rmw*)
-   iter_tedges true fold_tedges_compat;
+    (*LxSx aka Rmw*)
+    iter_tedges true fold_tedges_compat;
     ()
 
   let fold_pp_edges f =
@@ -821,10 +828,6 @@ let fold_tedges f r =
   | Same|Diff -> f sd acc
   | UnspecLoc -> f Same (f Diff acc)
 
-  let expand_com com f acc = match com with
-  | Int|Ext -> f com acc
-  | UnspecCom -> f Int (f Ext acc)
-
   let expand_dir d f acc = match d with
   | Dir _|NoDir -> f d acc
   | Irr -> f (Dir W) (f (Dir R) acc)
@@ -838,8 +841,7 @@ let fold_tedges f r =
     | Insert _|Store|Id|Node _
     | Hat |Leave _|Back _
       -> f e acc
-    | Communication (com,ie) ->
-        expand_com ie (fun new_ie -> f {e with edge=Communication (com,new_ie)}) acc
+    | Communication _ -> f e acc
     | Rmw rmw ->
         let expand_rmw_list = A.RMW.expand_rmw rmw in
         List.fold_left ( fun acc new_rmw -> f {e with edge=Rmw(new_rmw);} acc) acc expand_rmw_list
@@ -868,6 +870,33 @@ let fold_tedges f r =
           with Exit -> k)
 
   let expand_edges es f = do_expand_edges (List.rev es) f []
+
+  let fold_edge_legacy_aliases f k =
+    let add_ws name ie k = f name [[plain_edge (Communication (Co,ie))]] k in
+    k
+    (* Backward-compatible concrete Ws spellings.  The primitive lexer table
+       keeps only the preferred Coi/Coe names; Wsi/Wse are relax aliases. *)
+    |> add_ws "Wsi" Int
+    |> add_ws "Wse" Ext
+
+  (* Edge-level wildcards exported to the relax wildcard table.  These names
+     expand to multiple choices, for example Rf -> Rfi/Rfe or
+     Pod** -> PodRR/PodRW/PodWR/PodWW. *)
+  let fold_edge_wildcards f k =
+    let add_com name make_edge k =
+      f name (fold_ie (fun com k -> [plain_edge (make_edge com)]::k) []) k in
+    k
+    (* Communication aliases without an internal/external suffix. *)
+    |> add_com "Rf" (fun ie -> Communication (Rf,ie))
+    |> add_com "Fr" (fun ie -> Communication (Fr,ie))
+    |> add_com "Co" (fun ie -> Communication (Co,ie))
+
+  let fold_edge_legacy_wildcards f k =
+    let add_com name make_edge k =
+      f name (fold_ie (fun com k -> [plain_edge (make_edge com)]::k) []) k in
+    k
+    (* Ws is kept as a backward-compatible alias for Co. *)
+    |> add_com "Ws" (fun ie -> Communication (Co,ie))
 
 (* resolve *)
   let rec find_next_merge = function

@@ -132,7 +132,7 @@ let seq_sd sd1 sd2 =
   | Same,Same -> Some Same
   | Diff,_|_,Diff -> Some Diff
 
-let fold_ie wildcard f r = let r = if wildcard then (f UnspecCom r) else r in f Ext (f Int r)
+let fold_ie f r = f Int (f Ext r)
 let fold_sd wildcard f r = let r = if wildcard then (f UnspecLoc r) else r in f Diff (f Same r)
 let fold_extr wildcard f r = let r = if wildcard then (f Irr r) else r in f (Dir W) (f (Dir R) r)
 let fold_sd_extr wildcard f = fold_sd wildcard (fun sd -> fold_extr wildcard (fun e -> f sd e))

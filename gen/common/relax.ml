@@ -278,16 +278,27 @@ and type edge = E.edge
           let add_ifetch_macros () =
             match E.do_self,E.instr_atom with
             | true,(Some _ as instr_atom) ->
-              fold_ie E.wildcard
+              let rf ie = { E.edge=E.Communication (Code.Rf,ie); a1=None; a2=instr_atom }
+              and fr ie = { E.edge=E.Communication (Code.Fr,ie); a1=instr_atom; a2=None } in
+              let add_ifetch_alias name edge ie =
+                add_legacy_syntax (sprintf "%s%s" name (Code.pp_ie ie)) [[edge ie]] in
+              let add_ifetch_alias_macro name edge =
+                fold_ie
+                  (fun ie k -> [edge ie]::k)
+                  []
+                |> add_legacy_syntax (sprintf "%s*" name) in
+              if E.wildcard then begin
+                add_ifetch_alias_macro "Iff" rf ;
+                add_ifetch_alias_macro "Irf" rf ;
+                add_ifetch_alias_macro "Fif" fr ;
+                add_ifetch_alias_macro "Ifr" fr
+              end ;
+              fold_ie
                 (fun ie () ->
-                  let rf ie = { E.edge=E.Communication (Code.Rf,ie); a1=None; a2=instr_atom }
-                  and fr ie = { E.edge=E.Communication (Code.Fr,ie); a1=instr_atom; a2=None } in
-                  let rf_choices = E.expand_edges [rf ie] Misc.cons []
-                  and fr_choices = E.expand_edges [fr ie] Misc.cons [] in
-                  add_legacy_syntax (sprintf "Iff%s" (Code.pp_ie ie)) rf_choices ;
-                  add_legacy_syntax (sprintf "Irf%s" (Code.pp_ie ie)) rf_choices ;
-                  add_legacy_syntax (sprintf "Fif%s" (Code.pp_ie ie)) fr_choices ;
-                  add_legacy_syntax (sprintf "Ifr%s" (Code.pp_ie ie)) fr_choices)
+                  add_ifetch_alias "Iff" rf ie ;
+                  add_ifetch_alias "Irf" rf ie ;
+                  add_ifetch_alias "Fif" fr ie ;
+                  add_ifetch_alias "Ifr" fr ie)
                 ()
             | _ -> ()
 
@@ -338,6 +349,21 @@ and type edge = E.edge
                 "someWW", someW Diff W;
               ]
 
+          let add_edge_wildcards () =
+            E.fold_edge_wildcards
+              (fun name choices () -> add_wildcard name choices)
+              ()
+
+          let add_edge_legacy_aliases () =
+            E.fold_edge_legacy_aliases
+              (fun name choices () -> add_legacy_syntax name choices)
+              ()
+
+          let add_edge_legacy_wildcards () =
+            E.fold_edge_legacy_wildcards
+              (fun name choices () -> add_legacy_syntax name choices)
+              ()
+
           let () =
             (* Backward-compatible aliases for A-, B-, and AB-cumulativity candidates. *)
             add_cumulativity_macros () ;
@@ -347,6 +373,12 @@ and type edge = E.edge
             add_strong_fence_macros () ;
             (* Backward-compatible aliases for instruction-fetch edges. *)
             add_ifetch_macros () ;
+            (* Legacy edge-level aliases for relax parsing. *)
+            add_edge_legacy_aliases () ;
+            (* Edge-level wildcards for relax parsing. *)
+            if E.wildcard then add_edge_wildcards () ;
+            (* Legacy edge-level wildcards for relax parsing. *)
+            if E.wildcard then add_edge_legacy_wildcards () ;
             (* Legacy wildcards for pre-defined edge sets. *)
             if E.wildcard then add_predefined_legacy_syntax ()
         end
