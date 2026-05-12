@@ -28,10 +28,6 @@ module type S = sig
 
   val ac_fence : fence -> sd -> extr -> extr -> relax
   val bc_fence : fence -> sd -> extr -> extr -> relax
-  val bc_dp : dp -> sd -> extr -> relax
-
-(* Call function over all reckognized relaxations *)
-  val fold_relax : bool -> (relax -> 'a -> 'a) -> 'a -> 'a
 
   val compare : relax -> relax -> int
   val pp_relax : relax -> string
@@ -109,70 +105,21 @@ and type edge = E.edge
         let compare r1 r2 =
           List.compare E.compare r1 r2
 
-
-
-(* Cumulativity macros *)
-        let rf = E.plain_edge (E.Communication (Rf,Ext))
-        and fenced  f sl d1 d2 = E.plain_edge (E.Fenced (f,sl,d1,d2))
-        let ac_fence f sl d1 d2 = [rf; fenced f sl d1 d2]
-        let bc_fence f sl d1 d2 = [fenced f sl d1 d2; rf]
-        let abc_fence f sl d1 d2 = [rf; fenced f sl d1 d2; rf]
-        let bc_dp dp sl d = [E.plain_edge (E.Dp (dp,sl,d)); rf]
-
 (* Pretty print, macros are filtered and printed specially *)
-        let internal_pp_relax backward_compatibility r =
+        let pp_relax r =
           let open E in
           match r with
           | [e] -> E.pp_edge e
-          | [{edge=Communication (Rf,Ext); a1=None;a2=None;};
-             {edge=Fenced _;a1=None; a2=None;} as e] when backward_compatibility ->
-                 sprintf "AC%s" (pp_edge e)
-          | [{edge=Fenced _; a1=None;a2=None;} as e;
-             {edge=Communication (Rf,Ext); a1=None; a2=None;}] when backward_compatibility ->
-                   sprintf "BC%s" (pp_edge e)
-          | [{edge=Communication (Rf,Ext); a1=None; a2=None;};
-             {edge=Fenced _; a1=None; a2=None;} as e;
-             {edge=Communication (Rf,Ext); a1=None; a2=None;}] when backward_compatibility ->
-                   sprintf "ABC%s" (pp_edge e)
-          | [{edge=Dp _; a1=None; a2=None;} as e;
-             {edge=Communication (Rf,Ext); a1=None; a2=None;}] when backward_compatibility ->
-                   sprintf "BC%s" (pp_edge e)
           | es ->
               sprintf "[%s]" (String.concat "," (List.map pp_edge es))
 
-        let pp_relax = internal_pp_relax false
-
         let pp_relax_list lr = String.concat " " (List.map pp_relax lr)
 
-(* Fold over all relaxations *)
-
-        let fold_relax wildcard f k =
-          let k =
-            F.fold_cumul_fences
-              (fun fe k ->
-                let k =
-                  Code.fold_sd wildcard
-                    (fun sd k ->
-                      let k = f (abc_fence fe sd Irr Irr) k in
-                      f (abc_fence fe sd (Dir R) (Dir W)) k)
-                    k in
-                Code.fold_sd_extr wildcard
-                  (fun sd e k ->
-                    let k = f (ac_fence fe sd Irr e) k in
-                    let k = f (ac_fence fe sd (Dir R) e) k in
-                    let k = f (bc_fence fe sd e Irr) k in
-                    f (bc_fence fe sd e (Dir W)) k)
-                  k) k in
-          let k =
-            F.fold_dp
-              (fun dpw k ->
-                Code.fold_sd wildcard
-                  (fun sd k -> f (bc_dp dpw sd (Dir W)) k)
-                  k) k in
-          k
-
-        let iter_relax wildcard = Misc.fold_to_iter (fold_relax wildcard)
-
+(* Cumulativity macros *)
+        let rf = E.plain_edge (E.Rf Ext)
+        and fenced f sl d1 d2 = E.plain_edge (E.Fenced (f,sl,d1,d2))
+        let ac_fence f sl d1 d2 = [rf; fenced f sl d1 d2]
+        let bc_fence f sl d1 d2 = [fenced f sl d1 d2; rf]
 
 (***********)
 (* Parsing *)
@@ -215,43 +162,6 @@ and type edge = E.edge
 
 (* Expand relax macros *)
         let er e = [E.plain_edge e]
-
-        let all_fences sd d1 d2 =
-          F.fold_all_fences
-            (fun f k -> er (E.Fenced (f,sd,Dir d1,Dir d2))::k)
-
-        let some_fences sd d1 d2 =
-          F.fold_some_fences
-            (fun f k -> er (E.Fenced (f,sd,Dir d1,Dir d2))::k)
-
-(* Limited variations *)
-        let app_def_dp o f r = match o with
-        | None -> r
-        | Some dp -> f dp r
-
-        let someR sd d =
-          er (E.Po (sd,Dir R,Dir d))::
-          app_def_dp
-            (match d with R -> F.ddr_default | W -> F.ddw_default)
-            (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
-            (some_fences sd R d [])
-
-        let someW sd d =
-          er (E.Po (sd,Dir W,Dir d))::
-          (some_fences sd W d [])
-
-
-(* ALL *)
-        let allR sd d =
-          er (E.Po (sd,Dir R,Dir d))::
-          F.fold_dp
-            (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
-            (all_fences sd R d [])
-
-        let allW sd d =
-          er (E.Po (sd,Dir W,Dir d))::
-          (all_fences sd W d [])
-
         let atoms_key = "atoms"
 
         let atoms_length = String.length atoms_key
@@ -278,27 +188,168 @@ and type edge = E.edge
         let parse_sequence_ast parser_grammar segments =
           Ast.Seq (List.map (parse_ast parser_grammar) segments)
 
-(* Macro lookup table. *)
-        let macro_lookup_table = Hashtbl.create 101
+        module MacroTable = struct
+          (* wildcard syntax, where one name can unfold to multiple choices *)
+          let wildcard = Hashtbl.create 3000
+          (* legacy syntax *)
+          let legacy_syntax = Hashtbl.create 3000
 
-(* Build the macro lookup table. *)
-        let () =
-          iter_relax E.wildcard
-            (fun e ->
-              let pp = internal_pp_relax true e in
-              Hashtbl.add macro_lookup_table pp [e]) ;
-          List.iter
-            (fun (name, macro) -> Hashtbl.add macro_lookup_table name macro)
-            [
-              "allRR", allR Diff R;
-              "allRW", allR Diff W;
-              "allWR", allW Diff R;
-              "allWW", allW Diff W;
-              "someRR", someR Diff R;
-              "someRW", someR Diff W;
-              "someWR", someW Diff R;
-              "someWW", someW Diff W;
-            ]
+          let add_to bucket name choices =
+            Hashtbl.add bucket name choices
+
+          let add_wildcard = add_to wildcard
+          let add_legacy_syntax = add_to legacy_syntax
+
+          let find_opt name = match Hashtbl.find_opt wildcard name with
+          | Some _ as r -> r
+          | None -> Hashtbl.find_opt legacy_syntax name
+
+          let add_default_dp_alias tag dpo sd e = match dpo with
+          | None -> ()
+          | Some dp ->
+            let name = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e) in
+            let choices = E.expand_edges (er (E.Dp (dp,sd,e))) Misc.cons [] in
+            add_legacy_syntax name choices
+
+          let add_cumulativity_alias tag e r =
+            let choices = E.expand_edges r Misc.cons [] in
+            add_legacy_syntax (sprintf "%s%s" tag (E.pp_edge e)) choices
+
+          let abc_fence f sl d1 d2 = [rf; fenced f sl d1 d2; rf]
+          let bc_dp dp sl d = [E.plain_edge (E.Dp (dp,sl,d)); rf]
+
+          let add_cumulativity_macros () =
+            let add_fence_aliases tag make_relax fe sd d1 d2 k =
+              let e = fenced fe sd d1 d2 in
+              add_cumulativity_alias tag e (make_relax fe sd d1 d2) ;
+              k in
+            let k =
+              F.fold_cumul_fences
+                (fun fe k ->
+                  let k =
+                    Code.fold_sd E.wildcard
+                      (fun sd k ->
+                        let k =
+                          add_fence_aliases "ABC" abc_fence fe sd Irr Irr k in
+                        add_fence_aliases "ABC" abc_fence fe sd (Dir R) (Dir W) k)
+                      k in
+                  Code.fold_sd_extr E.wildcard
+                    (fun sd e k ->
+                      let k =
+                        add_fence_aliases "AC" ac_fence fe sd Irr e k in
+                      let k =
+                        add_fence_aliases "AC" ac_fence fe sd (Dir R) e k in
+                      let k =
+                        add_fence_aliases "BC" bc_fence fe sd e Irr k in
+                      add_fence_aliases "BC" bc_fence fe sd e (Dir W) k)
+                    k) () in
+            F.fold_dpw
+              (fun dpw k ->
+                Code.fold_sd E.wildcard
+                  (fun sd k ->
+                    let e = E.plain_edge (E.Dp (dpw,sd,Dir W)) in
+                    add_cumulativity_alias "BC" e (bc_dp dpw sd (Dir W)) ;
+                    k)
+                  k)
+              k
+
+          let add_default_dp_macros () =
+            fold_sd E.wildcard
+              (fun sd () ->
+                if E.wildcard then begin
+                  add_default_dp_alias "Dp" F.ddr_default sd Irr ;
+                  add_default_dp_alias "Ctrl" F.ctrlr_default sd Irr
+                end ;
+                add_default_dp_alias "Dp" F.ddr_default sd (Dir R) ;
+                add_default_dp_alias "Ctrl" F.ctrlr_default sd (Dir R) ;
+                add_default_dp_alias "Dp" F.ddw_default sd (Dir W) ;
+                add_default_dp_alias "Ctrl" F.ctrlw_default sd (Dir W))
+              ()
+
+          let add_strong_fence_macros () =
+            fold_sd_extr_extr E.wildcard
+              (fun sd e1 e2 () ->
+                let name =
+                  sprintf "Fence%s%s%s" (pp_sd sd) (pp_extr e1) (pp_extr e2) in
+                let edge = E.plain_edge (E.Fenced (F.strong,sd,e1,e2)) in
+                add_legacy_syntax name (E.expand_edges [edge] Misc.cons []))
+              ()
+
+          let add_ifetch_macros () =
+            match E.do_self,E.instr_atom with
+            | true,(Some _ as instr_atom) ->
+              fold_ie E.wildcard
+                (fun ie () ->
+                  let rf ie = { E.edge=E.Rf ie; a1=None; a2=instr_atom }
+                  and fr ie = { E.edge=E.Fr ie; a1=instr_atom; a2=None } in
+                  let rf_choices = E.expand_edges [rf ie] Misc.cons []
+                  and fr_choices = E.expand_edges [fr ie] Misc.cons [] in
+                  add_legacy_syntax (sprintf "Iff%s" (Code.pp_ie ie)) rf_choices ;
+                  add_legacy_syntax (sprintf "Irf%s" (Code.pp_ie ie)) rf_choices ;
+                  add_legacy_syntax (sprintf "Fif%s" (Code.pp_ie ie)) fr_choices ;
+                  add_legacy_syntax (sprintf "Ifr%s" (Code.pp_ie ie)) fr_choices)
+                ()
+            | _ -> ()
+
+          let all_fences sd d1 d2 =
+            F.fold_all_fences
+              (fun f k -> er (E.Fenced (f,sd,Dir d1,Dir d2))::k)
+
+          let some_fences sd d1 d2 =
+            F.fold_some_fences
+              (fun f k -> er (E.Fenced (f,sd,Dir d1,Dir d2))::k)
+
+          let app_def_dp o f r = match o with
+          | None -> r
+          | Some dp -> f dp r
+
+          let someR sd d =
+            er (E.Po (sd,Dir R,Dir d))::
+            app_def_dp
+              (match d with R -> F.ddr_default | W -> F.ddw_default)
+              (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
+              (some_fences sd R d [])
+
+          let someW sd d =
+            er (E.Po (sd,Dir W,Dir d))::
+            (some_fences sd W d [])
+
+          let allR sd d =
+            er (E.Po (sd,Dir R,Dir d))::
+            (match d with R -> F.fold_dpr | W -> F.fold_dpw)
+              (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
+              (all_fences sd R d [])
+
+          let allW sd d =
+            er (E.Po (sd,Dir W,Dir d))::
+            (all_fences sd W d [])
+
+          let add_predefined_legacy_syntax () =
+            List.iter
+              (fun (name, choices) -> add_legacy_syntax name choices)
+              [
+                "allRR", allR Diff R;
+                "allRW", allR Diff W;
+                "allWR", allW Diff R;
+                "allWW", allW Diff W;
+                "someRR", someR Diff R;
+                "someRW", someR Diff W;
+                "someWR", someW Diff R;
+                "someWW", someW Diff W;
+              ]
+
+          let () =
+            (* Backward-compatible aliases for A-, B-, and AB-cumulativity candidates. *)
+            add_cumulativity_macros () ;
+            (* Backward-compatible defaults for dependency aliases. *)
+            add_default_dp_macros () ;
+            (* Backward-compatible aliases for strong fence edges. *)
+            add_strong_fence_macros () ;
+            (* Backward-compatible aliases for instruction-fetch edges. *)
+            add_ifetch_macros () ;
+            (* Legacy wildcards for pre-defined edge sets. *)
+            if E.wildcard then add_predefined_legacy_syntax ()
+        end
 
         let expand_relaxs rs =
           let expand_relax r = E.expand_edges r Misc.cons in
@@ -332,7 +383,7 @@ and type edge = E.edge
           else
             let prefix = String.sub str 0 i in
             (* Macro table lookup. *)
-            match Hashtbl.find_opt macro_lookup_table prefix with
+            match MacroTable.find_opt prefix with
             | Some relax ->
                 let suffix = String.sub str i (String.length str - i) in
                 if String.length suffix = 0 then Some relax

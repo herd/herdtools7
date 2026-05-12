@@ -33,6 +33,7 @@ module type S = sig
   include Atom.AtomType
 
   val wildcard : bool
+  val do_self : bool
   type value = Value.v
 
   val pp_atom : atom -> string
@@ -43,6 +44,7 @@ module type S = sig
   val set_pteval :
     atom option -> Value.pte -> (unit -> string) -> Value.pte
   val merge_atoms : atom -> atom -> atom option
+  val instr_atom : atom option
   val is_ifetch : atom option -> bool
   val atom_to_bank : atom option -> SIMD.atom Code.bank
   val strong : fence
@@ -224,6 +226,7 @@ and module RMW = A.RMW = struct
   | Some a -> A.Value.set_pteval a p
 
   let merge_atoms = A.merge_atoms
+  let instr_atom = A.instr_atom
   let is_ifetch = A.is_ifetch
 
   let atom_to_bank = function
@@ -347,13 +350,6 @@ and module RMW = A.RMW = struct
       | r -> r
       end
   | r -> r
-
-  let pp_strong sd e1 e2 =
-    sprintf "Fence%s%s%s" (pp_sd sd) (pp_extr e1) (pp_extr e2)
-
-(* Backward compatibility... *)
-
-let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
   let do_dir_tgt_com = function
     | Rf -> Dir R
@@ -540,46 +536,16 @@ let fold_tedges f r =
       Hashtbl.add edge_lookup_table lxm e
 
 (* Fill lexeme table *)
-  let iter_ie = Misc.fold_to_iter (fold_ie wildcard)
-
   let iter_tedges compat fold =
     Misc.fold_to_iter fold
       (fun te -> add_lxm_edge (pp_tedge_compat compat te) (plain_edge te))
 
   let () =
    iter_tedges false fold_tedges;
-   fold_sd_extr_extr wildcard
-      (fun sd e1 e2 () ->
-        add_lxm_edge
-          (pp_strong sd e1 e2) (plain_edge (Fenced (F.strong,sd,e1,e2)))) () ;
-    let fill_opt tag dpo sd e = match dpo with
-    | None -> ()
-    | Some dp ->
-        add_lxm_edge
-          (pp_dp_default tag sd e)
-          (plain_edge (Dp (dp,sd,e))) in
-    fold_sd wildcard
-      (fun sd () ->
-        if wildcard then fill_opt "Dp" F.ddr_default sd Irr ;
-        if wildcard then fill_opt "Ctrl" F.ctrlr_default sd Irr ;
-        fill_opt "Dp" F.ddr_default sd (Dir R) ;
-        fill_opt "Ctrl" F.ctrlr_default sd (Dir R) ;
-        fill_opt "Dp" F.ddw_default sd (Dir W) ;
-        fill_opt "Ctrl" F.ctrlw_default sd (Dir W) ;
-        ()) () ;
     add_lxm_edge "R" (plain_edge (Node R)) ;
     add_lxm_edge "W" (plain_edge (Node W)) ;
 (*Co aka Ws and LxSx aka Rmw*)
    iter_tedges true fold_tedges_compat;
-(* Backward compatibility *)
-    let instr_atom = A.instr_atom in
-    if do_self && instr_atom != None then
-      iter_ie
-        (fun ie ->
-           add_lxm_edge (sprintf "Iff%s" (pp_ie ie)) { a1=None; a2=instr_atom; edge=(Communication (Rf,ie)); } ;
-           add_lxm_edge (sprintf "Irf%s" (pp_ie ie)) { a1=None; a2=instr_atom; edge=(Communication (Rf,ie)); } ;
-           add_lxm_edge (sprintf "Fif%s" (pp_ie ie)) { a1=instr_atom; a2=None; edge=(Communication (Fr,ie)); } ;
-           add_lxm_edge (sprintf "Ifr%s" (pp_ie ie)) { a1=instr_atom; a2=None; edge=(Communication (Fr,ie)); });
     ()
 
   let fold_pp_edges f =
