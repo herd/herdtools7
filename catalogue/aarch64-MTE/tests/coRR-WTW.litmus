@@ -10,4 +10,4 @@ variant=async
              |L0:          ;
              | STR W0,[X1] ;
              | STG X2,[X1] ;
-exists [x]=1 /\ ~fault (P1:L0,x) /\ [tag(x)]=:red
+exists [x]=1 /\ ~fault (P1) /\ [tag(x)]=:red
