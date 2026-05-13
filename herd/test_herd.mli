@@ -86,4 +86,6 @@ module Make(A:Arch_herd.S) : sig
   (* needed to interpret bell *)
   val empty_test : result
 
+  val compute_size : MachSize.Tag.t -> result -> MachSize.sz
+  (** Compute basic machine size. *)
 end

@@ -17,17 +17,10 @@
 (** Top level loop : execute test according to model *)
 
 module type CommonConfig = sig
-  val timeout : float option
-  val candidates : bool
   val show : PrettyConf.show
   val nshow : int option
   val restrict : Restrict.t
-  val showkind : bool
-  val shortlegend : bool
   val outcomereads : bool
-  val outputdir : PrettyConf.outputdir_mode
-  val suffix : string
-  val dumpes : bool
   val badexecs : bool
   val badflag : string option
   val throughflag : string option
@@ -43,6 +36,205 @@ module type Config = sig
   val dirty : DirtyBit.t option
 end
 
+module TestResult = struct
+  type observation = Never | Always | Sometimes
+
+  let pp_observation = function
+    | Never -> "Never"
+    | Always -> "Always"
+    | Sometimes -> "Sometimes"
+
+  type 'stset stats =
+    { states : 'stset;
+      cfail : int;
+      cands : int;
+      pos : int;
+      neg : int;
+      observation : observation;
+      flagged : int list Flag.Map.t ;
+      cutoff : string option;
+    }
+
+  let states x = x.states
+  let failed_candidates x = x.cfail
+  let candidates x = x.cands
+  let positive x = x.pos
+  let negative x = x.neg
+  let observation x = x.observation
+  let flagged x = x.flagged
+  let cutoff x = x.cutoff
+
+  let has_bad_execs ~badflag c =
+    Flag.Map.mem Flag.Undef c.flagged ||
+    (match badflag with
+    | None -> false
+    | Some f -> Flag.Map.mem (Flag.Flag f) c.flagged)
+
+  type ('conc, 'sets, 'rels) execution =
+    { concrete : 'conc;
+      passes_check : bool;
+      flags : Flag.Set.t;
+      sets : 'sets Lazy.t;
+      rels : 'rels Lazy.t;
+    }
+
+  let concrete x = x.concrete
+  let passes_check x = x.passes_check
+  let flags x = x.flags
+  let sets x = Lazy.force x.sets
+  let relations x = Lazy.force x.rels
+
+  module Make (S : SemExtra.S) = struct
+    type nonrec stats = S.A.StateSet.t stats
+    type nonrec execution = (S.concrete, S.set_pp, S.rel_pp) execution
+    type t = S.event_structure list * ((execution -> unit) -> stats)
+  end
+end
+
+module type PrinterConfig = sig
+  module PC : PrettyConf.S
+  val candidates : bool
+  val showkind : bool
+  val shortlegend : bool
+  val verbose : int
+  val show : PrettyConf.show
+  val speedcheck : Speed.t
+  val badflag : string option
+end
+
+module Printer (O : PrinterConfig) (S : SemExtra.S) = struct
+  module A = S.A
+  module C = S.Cons
+  module T = Test_herd.Make (S.A)
+
+(* Location out printing *)
+  let tr_out test = OutMapping.info_to_tr  test.Test_herd.info
+
+(* Check condition *)
+
+  let check_cond cstr c =
+    let open ConstrGen in
+    match cstr with
+    | ExistsState _ -> c.TestResult.pos > 0
+    | NotExistsState _-> c.TestResult.pos = 0
+    | ForallStates _  -> c.TestResult.neg = 0
+
+  let check_wit cstr c =
+    let open ConstrGen in
+    match cstr with
+    | ForallStates _
+    | ExistsState _ -> c.TestResult.pos,c.TestResult.neg
+    | NotExistsState _-> c.TestResult.neg,c.TestResult.pos
+
+  let pp_stats ?time test c fmt =
+    let open TestResult in
+    let finals = c.states in
+    let nfinals = A.StateSet.cardinal finals in
+    let tname = test.Test_herd.name.Name.name in
+    let cstr = T.find_our_constraint test in
+
+    let open Format in
+(* Now output *)
+    fprintf fmt "Test %s %s\n" tname (C.dump_as_kind cstr) ;
+(**********)
+(* States *)
+(**********)
+    let tr_out = tr_out test in
+    fprintf fmt "States %i\n" nfinals ;
+    let state_set_str =
+      A.StateSet.pp_str "\n" (fun st ->
+        A.do_dump_final_state
+          test.Test_herd.type_env test.Test_herd.ffaults
+          tr_out st) finals
+    in
+    if nfinals > 0 then
+      fprintf fmt "%s\n" state_set_str;
+(* Condition result *)
+    let has_bad_execs = TestResult.has_bad_execs ~badflag:O.badflag in
+    let ok = check_cond cstr c in
+    fprintf fmt "%s%s\n"
+      (if Misc.is_some c.cutoff then "Loop " else "")
+      (if has_bad_execs c then "Undef" else if ok then "Ok" else "No") ;
+    fprintf fmt "Witnesses\n" ;
+    let pos,neg = check_wit cstr c in
+    fprintf fmt "Positive: %i Negative: %i\n" pos neg ;
+    begin if O.verbose > 0 then
+      Flag.Map.iter
+        (fun flag execs ->
+          fprintf fmt "Flag %s: %s \n"
+            (Flag.pp flag)
+            (List.fold_right
+               (fun i s -> s ^ (if s="" then "" else ",") ^ Format.sprintf "%i" i)
+               execs ""))
+      c.flagged
+    else
+       Flag.Map.iter
+        (fun flag _ ->  Format.fprintf fmt "Flag %s\n" (Flag.pp flag))
+        c.flagged
+    end ;
+    fprintf fmt "Condition %s\n" (C.do_constraints_to_string tr_out cstr) ;
+    fprintf fmt "Observation %s %s %i %i\n%!"
+      tname (TestResult.pp_observation c.observation) c.pos c.neg ;
+    begin match time with
+    | Some time -> fprintf fmt "Time %s %0.2f\n" tname time
+    | None -> ()
+    end ;
+    if O.candidates then
+      fprintf fmt "Candidates %s %i\n" tname (c.cfail+c.cands) ;
+(* Auto info or Hash only*)
+    List.iter
+      (fun (k,v) ->
+        if Misc.string_eq k "Hash" then
+          fprintf fmt "%s=%s\n" k v)
+      test.Test_herd.info ;
+
+  module PP = Pretty.Make (S)
+
+  let dump_exec_graph model test exec chan =
+    let cstr = T.find_our_constraint test in
+    let legend =
+      let open Printf in
+      let pp_flag =
+        match O.show with
+        | PrettyConf.ShowFlag f -> sprintf ", flag %s" f
+        | _ -> "" in
+      let name = Test_herd.readable_name test in
+      let pp_model = sprintf "%s" (Model.pp model) in
+      if O.shortlegend then name
+      else if O.showkind then
+        if O.PC.texmacros then
+          sprintf
+            "\\mylegendkind{%s}{%s}{%s}"
+            name
+            (C.dump_as_kind cstr)
+            pp_model
+        else
+          sprintf "Test %s%s%s%s"
+            name
+            (sprintf ": %s" (C.dump_as_kind cstr))
+            (match pp_model with
+            | "" -> ""
+            | _ -> sprintf " (%s)" pp_model)
+            pp_flag
+      else begin
+        if O.PC.texmacros then
+          sprintf
+            "\\mylegend{%s}{%s}"
+            name
+            pp_model
+        else
+          sprintf "Test %s%s%s" name
+            (match pp_model with
+            | "" -> ""
+            | _ -> sprintf ", %s" pp_model)
+            pp_flag
+      end
+    in
+    TestResult.(
+      PP.dump_legend chan test legend (concrete exec)
+        ~sets:(sets exec) (relations exec))
+end
+
 module Make(O:Config)(M:XXXMem.S) =
   struct
     open Printf
@@ -56,10 +248,7 @@ module Make(O:Config)(M:XXXMem.S) =
     module T = Test_herd.Make(A)
     module W = Warn.Make(O)
 
-    let memtag = O.variant Variant.MemTag
-    let morello = O.variant Variant.Morello
     let showcutoff = O.variant Variant.CutOff
-    let kvm = O.variant Variant.VMSA
 
 (* Utilities *)
     open Restrict
@@ -67,9 +256,6 @@ module Make(O:Config)(M:XXXMem.S) =
     let do_observed = match O.restrict with
     | Observed -> true
     | No|NonAmbiguous|CondOne -> false
-
-(* Location out printing *)
-    let tr_out test = OutMapping.info_to_tr  test.Test_herd.info
 
 (* Cond checking *)
     module CM = C.Mixed(O)
@@ -81,17 +267,9 @@ module Make(O:Config)(M:XXXMem.S) =
       and tenv = S.type_env test in
       fun st -> CM.check_prop p tenv senv st
 
-    let count_prop test =
-      let c = T.find_our_constraint test in
-      let p = ConstrGen.prop_of c in
-      fun sts ->
-        A.StateSet.fold
-          (fun st n ->
-            if CM.check_prop_rlocs p (S.type_env test) st then n+1 else n)
-          sts 0
-
 (* Test result *)
-    type count =
+    module Count = struct
+      type t =
         { states : A.StateSet.t;
           cfail : int ;
           cands : int ;
@@ -107,13 +285,15 @@ module Make(O:Config)(M:XXXMem.S) =
 (* Too much loop unrolling *)
           cutoff : string option;
         }
+    end
+
+    type count = Count.t
 
     let start =
+      let open Count in
       { states = A.StateSet.empty; cfail=0; cands=0; pos=0; neg=0;
         flagged=Flag.Map.empty; shown=0;
         reads = A.LocSet.empty; cutoff=None; }
-
-    let kfail c = { c with cfail=c.cfail+1; }
 
     let bad_flag = match O.badflag with
     | None ->
@@ -127,30 +307,7 @@ module Make(O:Config)(M:XXXMem.S) =
 
     let is_bad flags = Flag.Set.exists bad_flag flags
 
-    let has_bad_execs c =
-      Flag.Map.mem Flag.Undef c.flagged ||
-      (match O.badflag with
-      | None -> false
-      | Some f -> Flag.Map.mem (Flag.Flag f) c.flagged)
-
-(* Check condition *)
-    open ConstrGen
-
-    let check_cond test c =
-      let cstr = T.find_our_constraint test in
-      match cstr with
-      | ExistsState _ -> c.pos > 0
-      | NotExistsState _-> c.pos = 0
-      | ForallStates _  -> c.neg = 0
-
-
-    let check_wit test c =
-      let cstr = T.find_our_constraint test in
-      match cstr with
-      | ForallStates _
-      | ExistsState _ -> c.pos,c.neg
-      | NotExistsState _-> c.neg,c.pos
-
+    let kfail c = Count.{ c with cfail=c.cfail+1; }
 
 (* rfmap generation and processing, from pre-candidates *)
     let iter_rfms test rfms owls kont k =
@@ -169,58 +326,6 @@ module Make(O:Config)(M:XXXMem.S) =
           k rfms in
       k
 
-(* Open a dot outfile or not *)
-    let open_dot test =
-      match O.outputdir with
-      | PrettyConf.NoOutputdir ->
-         begin
-           match S.O.PC.view with
-           | Some _ ->
-            begin try
-              let f,chan = Filename.open_temp_file "herd" ".dot" in
-              Some (chan,f)
-            with  Sys_error msg ->
-              W.warn "Cannot create temporary file: %s" msg ;
-              None
-            end
-           | None -> None
-         end
-      | PrettyConf.StdoutOutput ->
-         let fname = Test_herd.basename test in
-         fprintf stdout "\nDOTBEGIN %s\n" fname;
-         fprintf stdout "DOTCOM %s\n"
-           (let module G = Show.Generator(PC) in
-           G.generator) ;
-         Some (stdout, fname)
-      | PrettyConf.Outputdir d ->
-          let base = Test_herd.basename test in
-          let base = base ^ O.suffix in
-          let f = Filename.concat d base ^ ".dot" in
-          try Some (open_out f,f) with
-          | Sys_error msg ->
-              W.warn "Cannot create %s: %s" f msg ;
-              None
-
-    let close_dot = function
-      | None -> ()
-      | Some (chan,fname) ->
-         match O.outputdir with
-         | PrettyConf.NoOutputdir | PrettyConf.Outputdir _ ->
-            if S.O.PC.debug then eprintf "close %s\n" fname ;
-            close_out chan
-         | PrettyConf.StdoutOutput ->
-            fprintf stdout "\nDOTEND %s\n" fname
-
-    let my_remove name =
-      try Sys.remove name
-      with e ->
-        W.warn "remove failed: %s" (Printexc.to_string e)
-
-    let erase_dot = match S.O.PC.debug,O.outputdir with
-    | false,PrettyConf.NoOutputdir -> (* Erase temp file *)
-        (function Some (_,f) -> my_remove f | None -> ())
-    | (_,PrettyConf.Outputdir _)|(_,PrettyConf.StdoutOutput)|(true,PrettyConf.NoOutputdir) -> (function _ -> ())
-
     exception Over of count (* internal use, to stop everything *)
 
     module PU = PrettyUtils.Make(S)
@@ -232,8 +337,10 @@ module Make(O:Config)(M:XXXMem.S) =
       S.E.EventSet.subset loads obs
 
 (* Called by model simulator in case of success *)
-    let model_kont ochan test do_restrict cstr =
+    let model_kont f test do_restrict =
+      let open ConstrGen in
 
+      let cstr = T.find_our_constraint test in
       let check = check_prop test in
 
       fun conc (st,flts) (set_pp,vbpp) flags c ->
@@ -274,52 +381,22 @@ module Make(O:Config)(M:XXXMem.S) =
             | ShowAll -> true
             | ShowNone -> false
             | ShowFlag f -> Flag.Set.mem (Flag.Flag f) flags in
-
-          begin match ochan with
-          | Some (chan,_) when show_exec ->
-              let legend =
-                let pp_flag = match O.show with
-                | PrettyConf.ShowFlag f -> sprintf ", flag %s" f
-                | _ -> "" in
-                let name = Test_herd.readable_name test in
-                let pp_model = sprintf "%s" (Model.pp M.model) in
-                if O.shortlegend then name
-                else if O.showkind then
-                  if PC.texmacros then
-                    sprintf
-                      "\\mylegendkind{%s}{%s}{%s}"
-                      name
-                      (C.dump_as_kind cstr)
-                      pp_model
-                  else
-                    sprintf "Test %s%s%s%s"
-                      name
-                      (sprintf ": %s" (C.dump_as_kind cstr))
-                      (match pp_model with
-                      | "" -> ""
-                      | _ -> sprintf " (%s)" pp_model)
-                      pp_flag
-                else begin
-                  if PC.texmacros then
-                    sprintf
-                      "\\mylegend{%s}{%s}"
-                      name
-                      pp_model
-                  else
-                    sprintf "Test %s%s%s" name
-                      (match pp_model with
-                      | "" -> ""
-                      | _ -> sprintf ", %s" pp_model)
-                      pp_flag
-                end in
-              let module PP = Pretty.Make(S) in
-              PP.dump_legend chan test legend conc
-                ~sets:(Lazy.force set_pp) (Lazy.force vbpp)
-          | _ -> ()
-          end ;
+          begin if show_exec then
+            let exec =
+              {
+                TestResult.concrete = conc;
+                passes_check = ok;
+                flags;
+                sets = set_pp;
+                rels = vbpp;
+              }
+            in
+            f exec
+          end;
           let fsc = do_restrict test fsc in
           let r =
-            { cands = c.cands+1;
+            Count.{
+              cands = c.cands+1;
               cfail = c.cfail;
               states = A.StateSet.add fsc c.states;
               pos = if ok then c.pos+1 else c.pos;
@@ -341,7 +418,7 @@ module Make(O:Config)(M:XXXMem.S) =
           let r = match O.nshow with
           | None -> r
           | Some m ->
-              if r.shown >= m then raise (Over r)
+              if r.Count.shown >= m then raise (Over r)
               else r in
           let stop_now =
             match O.speedcheck  with
@@ -356,7 +433,7 @@ module Make(O:Config)(M:XXXMem.S) =
     (* Performed delayed checks and warnings *)
     let check_failed_model_kont
           cutoff cs
-          ochan test do_restrict cstr
+          f test do_restrict
           conc (st,flts) (set_pp,vbpp) flags c  =
 
       let open S.M.VC in
@@ -365,7 +442,7 @@ module Make(O:Config)(M:XXXMem.S) =
          (* Perform error *)
           if O.debug.Debug_herd.top then
             model_kont
-              ochan test do_restrict cstr
+              f test do_restrict
               conc (st,flts) (set_pp,vbpp) flags c
           else raise e
       | Some (Warn msg) ->
@@ -376,16 +453,15 @@ module Make(O:Config)(M:XXXMem.S) =
           if not showcutoff && Misc.is_some cutoff then c
           else
             model_kont
-              ochan test do_restrict cstr
+              f test do_restrict
               conc (st,flts) (set_pp,vbpp) flags c
 
-    (* Driver *)
-    let run start_time test =
+    type test_results = TestResult.Make(M.S).t
 
+    (* Driver *)
+    let run test =
       let { MC.event_structures=rfms; MC.overwritable_labels=owls; },test =
         MC.glommed_event_structures ~is_pgm:true test in
-
-      let cstr = T.find_our_constraint test in
 
       let restrict_faults =
         if !Opts.dumpallfaults then
@@ -408,53 +484,37 @@ module Make(O:Config)(M:XXXMem.S) =
         AM.state_restrict_locs O.outcomereads dlocs tenv senv fsc,
         restrict_faults flts in
 
-      let observation =
+      let observation : 'p ConstrGen.constr -> pos:int -> neg:int -> TestResult.observation =
+        let open ConstrGen in
+        let open TestResult in
         match O.speedcheck with
         | Speed.False ->
-            fun _test conc ->
-              if conc.pos = 0 then "Never"
-              else if conc.neg = 0 then "Always"
-              else "Sometimes"
+            fun _test ~pos ~neg ->
+              if pos = 0 then Never
+              else if neg = 0 then Always
+              else Sometimes
         | Speed.(True | Fast) -> (
-            fun test ->
-              match test.Test_herd.cond with
+            fun cond ->
+              match cond with
               | ForallStates _ ->
-                  fun conc ->
+                  fun ~pos ~neg ->
                     (* we have discarded all possible positive states. *)
-                    assert (conc.pos = 0);
+                    assert (pos = 0);
                     (* This means that we can't answer "Never", as we don't
                        know about the positive cases. *)
-                    if conc.neg = 0 then "Always" else "Sometimes"
+                    if neg = 0 then Always else Sometimes
               | ExistsState _ | NotExistsState _ ->
-                  fun conc ->
+                  fun ~pos ~neg ->
                     (* We have discarded all negative states. *)
-                    assert (conc.neg = 0);
+                    assert (neg = 0);
                     (* This means that we can't answer 'Always', as we dont'
                        know about the negative cases. *)
-                    if conc.pos = 0 then "Never" else "Sometimes")
+                    if pos = 0 then Never else Sometimes)
       in
 
-(* Open *)
-      let ochan = open_dot test in
-(* So small a race condition... *)
-      Handler.push (fun () -> erase_dot ochan) ;
-(* Dump event structures ... *)
-      if O.dumpes then begin
-        match ochan with
-        | None -> ()
-        | Some (chan,fname) ->
-            let module PP = Pretty.Make(S) in
-            List.iter
-              (fun (_i,_cs,es) -> PP.dump_es chan test es)
-              rfms ;
-            close_dot ochan ;
-            if Misc.is_some S.O.PC.view then begin
-              let module SH = Show.Make(S.O.PC) in
-              SH.show_file fname
-            end ;
-            erase_dot ochan ;
-            Handler.pop ()
-      end else
+      let event_structures = List.map (fun (_, _, es) -> es) rfms in
+
+      let i = fun f ->
         (* Thanks to the existence of check_test, XXMem modules
            apply their internal functors once *)
         let call_model conc ofail c =
@@ -462,41 +522,26 @@ module Make(O:Config)(M:XXXMem.S) =
         (* Checked pruned executions before even calling model *)
         let cutoff =  S.find_cutoff conc.S.str.S.E.events in
         let c =
-          if Misc.is_some cutoff then { c with cutoff = cutoff; }
+          if Misc.is_some cutoff then Count.{ c with cutoff = cutoff }
           else c in
         (* Discard pruned executions if not explicitely required *)
         check_test
           conc kfail
           (check_failed_model_kont cutoff
-             ofail ochan test final_state_restrict_locs cstr) c in
+             ofail f test final_state_restrict_locs) c in
       let c =
         if O.statelessrc11
         then let module SL = Slrc11.Make(struct include MC let skipchecks = O.skipchecks end) in
              SL.check_event_structure test rfms kfail (fun _ c -> c)
-          (model_kont ochan test final_state_restrict_locs cstr) start
+          (model_kont f test final_state_restrict_locs) start
         else
         try iter_rfms test rfms owls call_model start
         with
         | Over c -> c
-        | e ->
-            close_dot ochan  ; (* Close *)
-            raise e in
-(* Close *)
-      close_dot ochan ;
-      let do_show () =
-(* Show if something to show *)
-        begin match ochan with
-        | Some (_,fname) when c.shown > 0 ->
-            let module SH = Show.Make(S.O.PC) in
-            if S.O.PC.debug then eprintf "show %s file\n" fname ;
-            SH.show_file fname
-        | Some _|None -> ()
-        end ;
-(* Erase *)
-        erase_dot ochan ;
-        Handler.pop () in
+        in
 (* Reduce final states, so as to show relevant locations only *)
       let finals =
+        let open Count in
         if O.outcomereads then
           let do_restrict (st,flts) =
             let st =
@@ -510,80 +555,17 @@ module Make(O:Config)(M:XXXMem.S) =
                 st,flts in
           A.StateSet.map do_restrict c.states
         else c.states in
-      let nfinals = A.StateSet.cardinal finals in
-      match O.restrict with
-      | Observed when c.cands = 0 -> do_show ()
-      | NonAmbiguous when c.cands <> nfinals -> do_show ()
-      | CondOne when c.pos <> count_prop test finals -> do_show ()
-      | _ ->
-        try begin
-(* Header *)
-        let tname = test.Test_herd.name.Name.name in
-        let is_bad = has_bad_execs c in
-        if not O.badexecs &&  is_bad then raise Exit ;
-(* START NOTWWW *)
-(* Stop interval timer *)
-        Itimer.stop O.timeout ;
-(* END NOTWWW *)
-(* Now output *)
-        printf "Test %s %s\n" tname (C.dump_as_kind cstr) ;
-(**********)
-(* States *)
-(**********)
-        let tr_out = tr_out test in
-        printf "States %i\n" nfinals ;
-        A.StateSet.pp stdout ""
-          (fun chan st ->
-            fprintf chan "%s\n"
-              (A.do_dump_final_state
-                 test.Test_herd.type_env test.Test_herd.ffaults
-                 tr_out st))
-          finals ;
-(* Condition result *)
-        let ok = check_cond test c in
-        printf "%s%s\n"
-          (if Misc.is_some c.cutoff then "Loop " else "")
-          (if is_bad then "Undef" else if ok then "Ok" else "No") ;
-        let pos,neg = check_wit test c in
-        printf "Witnesses\n" ;
-        printf "Positive: %i Negative: %i\n" pos neg ;
-        begin if O.verbose > 0 then
-          Flag.Map.iter
-            (fun flag execs ->
-              printf "Flag %s: %s \n"
-                (Flag.pp flag)
-                (List.fold_right
-                   (fun i s -> s ^ (if s="" then "" else ",") ^ sprintf "%i" i)
-                   execs ""))
-          c.flagged
-        else
-           Flag.Map.iter
-            (fun flag _ ->  printf "Flag %s\n" (Flag.pp flag))
-            c.flagged
-        end ;
-        printf "Condition %a\n" (C.do_dump_constraints tr_out) cstr ;
-        printf "Observation %s %s %i %i\n%!" tname
-          (observation test c) c.pos c.neg ;
-        do_show () ;
-        printf "Time %s %0.2f\n" tname (Sys.time () -. start_time) ;
-        if O.candidates then
-          printf "Candidates %s %i\n" tname (c.cfail+c.cands) ;
-(* Auto info or Hash only*)
-        List.iter
-          (fun (k,v) ->
-            if Misc.string_eq k "Hash" then
-              printf "%s=%s\n" k v)
-          test.Test_herd.info ;
-        print_newline () ;
-        begin
-          match c.cutoff with
-          | Some msg ->
-              Warn.warn_always
-                "%a: unrolling limit exceeded at %s, legal outcomes may be missing."
-                Pos.pp_pos0   test.Test_herd.name.Name.file
-                msg
-          | None -> ()
-        end
-      end with Exit -> () ;
-      ()
+        {
+          states = finals;
+          TestResult.cfail = c.Count.cfail;
+          TestResult.cands = c.Count.cands;
+          TestResult.pos = c.Count.pos;
+          TestResult.neg = c.Count.neg;
+          TestResult.observation =
+            observation test.Test_herd.cond ~pos:c.Count.pos ~neg:c.Count.neg;
+          TestResult.flagged = c.Count.flagged;
+          TestResult.cutoff = c.Count.cutoff;
+        }
+      in
+      test, (event_structures, i)
   end

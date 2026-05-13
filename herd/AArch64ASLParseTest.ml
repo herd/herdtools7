@@ -42,7 +42,7 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
     let parser = AArch64Parser.main
   end
 
-  let run dirty start_time name chan env splitted =
+  let run dirty ~filename ~contents env splitted =
     let module SemConf = struct
         module C = Conf
         let dirty = ModelConfig.dirty
@@ -58,6 +58,5 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
       GenParser.Make (Conf) (AArch64ASLArch) (AArch64ASLLexParse) in
     let module X =
       RunTest.Make (AArch64ASLS) (P) (AArch64ASLM) (Conf) in
-    X.run dirty start_time name chan env splitted
+    X.run dirty ~filename ~contents env splitted
 end
-

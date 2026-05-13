@@ -36,51 +36,46 @@ module type Config = sig
   val sme_vector_length : int
 end
 
+module type Outcome = sig
+  module M : XXXMem.S
+  type t = Top_herd.TestResult.Make(M.S).t
+
+  val test : M.S.test
+  val result : t
+end
+
 type runfun =
   DirtyBit.t option ->
-  float (* start time *) ->
-  string (* file name *) ->
-  in_channel (* source channel *) ->
+  filename:string option (* file name *) ->
+  contents:string (* litmus test contents *) ->
   TestHash.env ->
   Splitter.result ->
-  TestHash.env
+  TestHash.env * (module Outcome) option
 
 module Make
     (S:Sem.Semantics)
     (P:sig
       type pseudo
-      val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
+      val parse_string : string -> Splitter.result ->  pseudo MiscParser.t
     end with type pseudo = S.A.pseudo)
     (M:XXXMem.S with module S = S)
     (C:Config) =
   struct
     module T = Test_herd.Make(S.A)
-     let run dirty start_time filename chan env splitted =
+
+    let run dirty ~filename ~contents env splitted =
       try
-         let parsed = P.parse chan splitted in
+         let parsed = P.parse_string contents splitted in
         let name = splitted.Splitter.name in
         let hash = MiscParser.get_hash parsed in
-        let env = match hash with
-        | None -> env
-        | Some hash ->
-            TestHash.check_env env name.Name.name filename hash in
+        let env = match hash, filename with
+          | Some hash, Some filename ->
+              TestHash.check_env env name.Name.name filename hash
+          | _ -> env
+        in
         let test = T.build name parsed in
 (* Compute basic machine size *)
-        let sz =
-          if S.A.is_mixed then begin match C.byte with
-          | MachSize.Tag.Size sz -> sz
-          | MachSize.Tag.Auto ->
-              let szs = test.Test_herd.access_size in
-              match szs with
-              | [] -> MachSize.Byte
-              | [sz] -> MachSize.pred sz
-              | sz::_ -> sz (* Do not split the smallest size involved *)
-          end else begin
-            (* Cannot that easily check the test not to mix sizes,
-               as there are several locations in test that may be of
-               different sizes *)
-            MachSize.Byte
-          end in
+        let sz = T.compute_size C.byte test in
 (* And run test *)
         let module T =
           Top_herd.Make
@@ -89,7 +84,14 @@ module Make
               let byte = sz
               let dirty = dirty
             end)(M) in
-        T.run start_time test ;
-        env
-      with TestHash.Seen -> env
+        let test, result = T.run test in
+        let module R = struct
+          module M = M
+          type t = Top_herd.TestResult.Make(S).t
+          let test = test
+          let result = result
+        end
+        in
+        env, Some (module R : Outcome)
+      with TestHash.Seen -> env, None
   end

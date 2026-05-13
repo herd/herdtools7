@@ -55,6 +55,7 @@ module type S = sig
   val dump_as_kind : 'a ConstrGen.constr -> string
   val do_dump_constraints :  (string -> string) -> out_channel -> constr -> unit
   val dump_constraints : out_channel -> constr -> unit
+  val do_constraints_to_string : (string -> string) -> constr -> string
   val constraints_to_string : constr -> string
 
 (* Nice printing *)
@@ -327,6 +328,9 @@ module Make (C:Config) (A : Arch_herd.S) :
 
         let dump_constraints chan =
           ConstrGen.dump_constraints chan (pp_atom Misc.identity Ascii)
+
+        let do_constraints_to_string tr =
+          ConstrGen.constraints_to_string  (pp_atom tr Ascii)
 
         let constraints_to_string =
           ConstrGen.constraints_to_string  (pp_atom Misc.identity Ascii)

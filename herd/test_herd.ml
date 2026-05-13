@@ -350,4 +350,18 @@ module Make(A:Arch_herd.S) =
 
     let find_our_constraint test = test.cond
 
+    let compute_size byte test =
+      if A.is_mixed then begin match byte with
+      | MachSize.Tag.Size sz -> sz
+      | MachSize.Tag.Auto ->
+          let szs = test.access_size in
+          match szs with
+          | [] -> MachSize.Byte
+          | [sz] -> MachSize.pred sz
+          | sz::_ -> sz (* Do not split the smallest size involved *)
+      end else
+        (* Cannot that easily check the test not to mix sizes,
+           as there are several locations in test that may be of
+           different sizes *)
+        MachSize.Byte
 end

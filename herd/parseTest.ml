@@ -21,7 +21,10 @@
 
 
 
-module Top (TopConf:RunTest.Config) = struct
+module Top (TopConf : sig
+  include RunTest.Config
+  val collect_graph_data : bool
+end) = struct
 
   module SP =
     Splitter.Make
@@ -30,10 +33,15 @@ module Top (TopConf:RunTest.Config) = struct
         let check_rename = TopConf.check_rename
       end)
 
-  let do_from_file start_time env name chan =
-    if TopConf.debug.Debug_herd.files then MyLib.pp_debug name ;
+  let do_from_string env ~filename ~contents =
 (* First split the input file in sections *)
-    let (splitted:Splitter.result) =  SP.split name chan in
+    let (splitted:Splitter.result) =
+      match filename with
+      | Some filename ->
+          if TopConf.debug.Debug_herd.files then MyLib.pp_debug filename ;
+          SP.split_string filename contents
+      | None -> SP.split_string "" contents
+    in
     let tname = splitted.Splitter.name.Name.name in
     let module Conf = struct (* override the precision and variant fields *)
       (* Modify variant with the 'Variant' field of test *)
@@ -96,10 +104,8 @@ module Top (TopConf:RunTest.Config) = struct
         let bell_model_info = Conf.bell_model_info
         let model = model
         let showsome =
-          begin match Conf.outputdir with
-          | PrettyConf.StdoutOutput | PrettyConf.Outputdir _ -> true
-          | _ -> false
-          end || Misc.is_some Conf.PC.view || Conf.variant Variant.MemTag
+          Conf.collect_graph_data
+              || Misc.is_some Conf.PC.view || Conf.variant Variant.MemTag
               || Conf.variant Variant.Morello
         let through = Conf.through
         let debug = Conf.debug.Debug_herd.barrier
@@ -119,58 +125,58 @@ module Top (TopConf:RunTest.Config) = struct
       match arch with
       | `PPC ->
          let module X = PPCParseTest.Make(Conf)(ModelConfig) in
-         X.run dirty start_time name chan env splitted
+         X.run dirty ~filename ~contents env splitted
       | `ARM ->
          let module X = ARMParseTest.Make(Conf)(ModelConfig) in
-         X.run dirty start_time name chan env splitted
+         X.run dirty ~filename ~contents env splitted
       | `BPF ->
          let module X = BPFParseTest.Make(Conf)(ModelConfig) in
-         X.run dirty start_time name chan env splitted
+         X.run dirty ~filename ~contents env splitted
       | `AArch64 ->
          if Conf.variant Variant.ASL then
            let module X =
              AArch64ASLParseTest.Make(Conf)(ModelConfig) in
-           X.run dirty start_time name chan env splitted
+           X.run dirty ~filename ~contents env splitted
          else
            let module X = AArch64ParseTest.Make(Conf)(ModelConfig) in
-           X.run dirty start_time name chan env splitted
+           X.run dirty ~filename ~contents env splitted
 
       | `X86 ->
          let module X = X86ParseTest.Make(Conf)(ModelConfig) in
-         X.run dirty start_time name chan env splitted
+         X.run dirty ~filename ~contents env splitted
       | `X86_64 ->
          let module X = X86_64ParseTest.Make(Conf)(ModelConfig) in
-         X.run dirty start_time name chan env splitted
+         X.run dirty ~filename ~contents env splitted
       | `MIPS ->
          let module X = MIPSParseTest.Make(Conf)(ModelConfig) in
-         X.run dirty start_time name chan env splitted
+         X.run dirty ~filename ~contents env splitted
       | `RISCV ->
          let module X = RISCVParseTest.Make(Conf)(ModelConfig) in
-         X.run dirty start_time name chan env splitted
+         X.run dirty ~filename ~contents env splitted
       | `C ->
          let module X = CParseTest.Make(Conf)(ModelConfig) in
-         X.run dirty start_time name chan env splitted
+         X.run dirty ~filename ~contents env splitted
       | `JAVA ->
          let module X = JAVAParseTest.Make(Conf)(ModelConfig) in
-         X.run dirty start_time name chan env splitted
+         X.run dirty ~filename ~contents env splitted
       | `LISA ->
          let module X = LISAParseTest.Make(Conf)(ModelConfig) in
-         X.run dirty start_time name chan env splitted
+         X.run dirty ~filename ~contents env splitted
 (* START NOTWWW *)
       | `ASL ->
          let module X = ASLParseTest.Make(Conf)(ModelConfig) in
-         X.run dirty start_time name chan env splitted
+         X.run dirty ~filename ~contents env splitted
 (* END NOTWWW *)
       | arch -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
-    end else env
+    end else env, None
 
 (* Enter here... *)
 
+  let from_string ~filename ~contents env =
+    do_from_string env ~filename ~contents
+
   let from_file name env =
-(* START NOTWWW *)
-(* Interval timer will be stopped just before output, see top_herd *)
-    Itimer.start name TopConf.timeout ;
-(* END NOTWWW *)
-    let start_time = Sys.time () in
-    Misc.input_protect (do_from_file start_time env name) name
+    Misc.input_protect (fun ch ->
+      let contents = In_channel.input_all ch in
+      do_from_string env ~filename:(Some name) ~contents) name
 end

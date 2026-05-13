@@ -22,7 +22,7 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
     let debug = Conf.debug.Debug_herd.lexer
   end
 
-  let run dirty start_time name chan env splitted =
+  let run dirty ~filename ~contents env splitted =
 
     let module Top (MakeSem:AArch64Sig.MakeSemantics) =
       struct
@@ -56,8 +56,8 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
           module P =
             struct
               type pseudo = AArch64.pseudo
-              let parse chan splitted =
-                let tst = P0.parse chan splitted in
+              let parse_string str splitted =
+                let tst = P0.parse_string str splitted in
                 let () = AArch64.check tst in
                 tst
             end
@@ -90,5 +90,5 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
       end in
 
     let module Run = Top(AArch64Sem.Make) in
-    Run.run dirty start_time name chan env splitted
+    Run.run dirty ~filename ~contents env splitted
 end
