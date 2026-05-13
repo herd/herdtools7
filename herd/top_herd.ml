@@ -126,7 +126,7 @@ module Printer (O : PrinterConfig) (S : SemExtra.S) = struct
     | ExistsState _ -> c.TestResult.pos,c.TestResult.neg
     | NotExistsState _-> c.TestResult.neg,c.TestResult.pos
 
-  let pp_stats ~time test c fmt =
+  let pp_stats ?time test c fmt =
     let open TestResult in
     let finals = c.states in
     let nfinals = A.StateSet.cardinal finals in
@@ -175,7 +175,10 @@ module Printer (O : PrinterConfig) (S : SemExtra.S) = struct
     fprintf fmt "Condition %s\n" (C.do_constraints_to_string tr_out cstr) ;
     fprintf fmt "Observation %s %s %i %i\n%!"
       tname (TestResult.pp_observation c.observation) c.pos c.neg ;
-    fprintf fmt "Time %s %0.2f\n" tname time ;
+    begin match time with
+    | Some time -> fprintf fmt "Time %s %0.2f\n" tname time
+    | None -> ()
+    end ;
     if O.candidates then
       fprintf fmt "Candidates %s %i\n" tname (c.cfail+c.cands) ;
 (* Auto info or Hash only*)
