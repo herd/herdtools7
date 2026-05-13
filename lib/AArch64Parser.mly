@@ -98,6 +98,7 @@ let check_op3 op e =
 %token SVC
 %token LDR LDRSW LDP LDNP LDPSW LDIAPP STP STNP STILP
 %token LDRB LDRH LDUR STR STRB STRH STLR STLRB STLRH
+%token LDAP STLP
 %token LDRSB LDRSH
 %token LD1 LD1R LDAP1 LD2 LD2R LD3 LD3R LD4 LD4R STL1 ST1 ST2 ST3 ST4 STUR /* Neon load/store */
 %token ADDV DUP FMOV LDAPUR STLUR
@@ -566,9 +567,11 @@ zeroopt:
 
 ldp_instr:
 | LDP
-  { (fun v r1 r2 (r3,idx) -> I_LDP (Pa,v,r1,r2,r3,idx)) }
+  { (fun v r1 r2 (r3,idx) -> I_LDP ((`Pa),v,r1,r2,r3,idx)) }
 | LDNP
-  { (fun v r1 r2 (r3,idx) -> I_LDP (PaN,v,r1,r2,r3,idx)) }
+  { (fun v r1 r2 (r3,idx) -> I_LDP ((`PaN),v,r1,r2,r3,idx)) }
+| LDAP
+  { (fun v r1 r2 (r3,idx) -> I_LDP ((`PaA),v,r1,r2,r3,idx)) }
 | LDIAPP
   {
    (fun v r1 r2 (r3,idx) ->
@@ -577,7 +580,7 @@ ldp_instr:
      | (V32,(MetaConst.Int 8,PostIdx))
      | (V64,(MetaConst.Int 16,PostIdx))
           ->
-            I_LDP (PaI,v,r1,r2,r3,idx)
+            I_LDP ((`PaIQ),v,r1,r2,r3,idx)
       | _,_ -> raise Parsing.Parse_error)
   }
 
@@ -589,9 +592,11 @@ ldp_simd_instr:
 
 stp_instr:
 | STP
-  { (fun v r1 r2 (r3,idx) -> I_STP (Pa,v,r1,r2,r3,idx)) }
+  { (fun v r1 r2 (r3,idx) -> I_STP ((`Pa),v,r1,r2,r3,idx)) }
 | STNP
-  { (fun v r1 r2 (r3,idx) -> I_STP (PaN,v,r1,r2,r3,idx)) }
+  { (fun v r1 r2 (r3,idx) -> I_STP ((`PaN),v,r1,r2,r3,idx)) }
+| STLP
+  { (fun v r1 r2 (r3,idx) -> I_STP ((`PaL),v,r1,r2,r3,idx)) }
 | STILP
     {
      (fun v r1 r2 (r3,idx) ->
@@ -600,7 +605,7 @@ stp_instr:
       | (V32,(MetaConst.Int (-8),PreIdx))
       | (V64,(MetaConst.Int (-16),PreIdx))
           ->
-            I_STP (PaI,v,r1,r2,r3,idx)
+            I_STP ((`PaIL),v,r1,r2,r3,idx)
       | _, _ -> raise Parsing.Parse_error)
     }
 

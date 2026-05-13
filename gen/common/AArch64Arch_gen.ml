@@ -240,7 +240,7 @@ type pair_idx = UnspecLoc
 type atom_acc =
   | Plain of capa_opt | Acq of capa_opt | AcqPc of capa_opt | Rel of capa_opt
   | Atomic of atom_rw | Tag | CapaTag | CapaSeal | Pte of atom_pte | Neon of neon_opt
-  | Pair of pair_opt * pair_idx | Instr
+  | Pair of [ld_pair_opt | st_pair_opt] * pair_idx | Instr
 
 let  plain = Plain None
 
@@ -446,8 +446,10 @@ let applies_atom (a,_) d =
   | Rel _,W
   | Pte (Read|ReadAcq|ReadAcqPc),R
   | Instr, R
-  | (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _|Pair _),(R|W)
+  | (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _),(R|W)
     -> true
+  | Pair ((`Pa|`PaN|`PaIQ|`PaA),_),R -> true
+  | Pair ((`Pa|`PaN|`PaIL|`PaL),_),W -> true
   (* special case for TTHM HA for read *)
   | Pte (Set p),R when WPTESet.mem HA p -> true
   | Pte (ReadHAAcq|ReadHAAcqPc),R -> true
@@ -477,12 +479,23 @@ let is_tthm fields =
      | Some Capability -> "c"
 
    let pp_pair_opt = function
-     | Pa -> ""
-     | PaN -> "N"
-     | PaI -> "I"
+     | `Pa -> ""
+     | `PaN -> "N"
+     | `PaIQ -> "IQ"
+     | `PaIL -> "IL"
+     | `PaA -> "A"
+     | `PaL -> "L"
 
    and pp_pair_idx = function
      | UnspecLoc -> ""
+
+   let pair_opt_to_ld : [ld_pair_opt | st_pair_opt] -> ld_pair_opt = function
+     | `Pa -> `Pa | `PaN -> `PaN | `PaIQ -> `PaIQ | `PaA -> `PaA
+     | `PaIL | `PaL -> assert false
+
+   let pair_opt_to_st : [ld_pair_opt | st_pair_opt] -> st_pair_opt = function
+     | `Pa -> `Pa | `PaN -> `PaN | `PaIL -> `PaIL | `PaL -> `PaL
+     | `PaIQ | `PaA -> assert false
 
    let pp_atom_acc = function
      | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
@@ -579,11 +592,14 @@ let is_tthm fields =
         if do_mixed then r
         else
           let f opt idx r =
-            f (Pair (opt,idx)) r in
+            f (Pair (opt, idx)) r in
           r |>
-          f Pa UnspecLoc |>
-          f PaN UnspecLoc |>
-          f PaI UnspecLoc
+          f `Pa UnspecLoc |>
+          f `PaN UnspecLoc |>
+          f `PaIQ UnspecLoc |>
+          f `PaIL UnspecLoc |>
+          f `PaA UnspecLoc |>
+          f `PaL UnspecLoc
 
       let fold_acc_opt o f r =
         let r = f (Acq o) r in
