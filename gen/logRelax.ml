@@ -17,7 +17,7 @@
 
 module type I = sig
   type relax
-  val parse : LexUtil.t -> relax
+  val parse : string Ast.t -> relax
 end
 
 module type S = sig
@@ -47,19 +47,31 @@ module Make(R:I) : S with type relax = R.relax
       cycle : string ;
     }
 
-  let rec parse_relaxs = function
-    | [] -> []
-    | r::rs ->
-        try
-          let r = R.parse r in
-          r::parse_relaxs rs
-        with Misc.Fatal msg  ->
-          Warn.warn_always "%s" msg ;
-          assert false
+  let parse_relaxs input =
+    let parsed_input =
+      try
+        Lexing.from_string input
+        |> LexUtil.parse Parser.main
+      with
+      | Parser.Error ->
+          Warn.user_error "Bad relax syntax: %s" input in
+    (* Sanity check: the input must be a singleton list *)
+    let open Ast in
+    let parsed_list = match parsed_input with
+    | Ast.One s -> [Ast.One s]
+    | Ast.Seq l -> l
+    | _ ->
+        Warn.user_error "input is not a singleton list: %s" input in
+    try List.map R.parse parsed_list
+    with Misc.Fatal msg  ->
+      Warn.warn_always "%s" msg ;
+      assert false
 
   let add_outcome env name validates rs ss cy =
     let rs = parse_relaxs rs
-    and ss = parse_relaxs ss in
+    and ss = match ss with
+        | None -> []
+        | Some ss -> parse_relaxs ss in
     {name=name; validates=validates; relaxs=rs; safes=ss; cycle=cy; }::env
 
 

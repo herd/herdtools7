@@ -23,12 +23,19 @@ end
 module Make(A:Arch_gen.S) : S
 = struct
   module A = A
-  module E = Edge.Make(Edge.Config)(A)
+  module EdgeConfig = struct
+    include Edge.Config
+    let wildcard = true
+  end
+  module E = Edge.Make(EdgeConfig)(A)(A)
   module R = Relax.Make(A) (E)
 
   module LogInput = struct
     type relax = R.relax
-    let parse = R.parse_relax
+    let parse ast =
+      match R.parse_expand_relaxs ast with
+      | [r] -> r
+      | _ -> Warn.fatal "input is not a singleton relaxation"
   end
 
 

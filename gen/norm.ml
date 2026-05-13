@@ -71,17 +71,20 @@ module Make(Co:Config)(F:Fence.S)(A:Atom.S) = struct
 
   let zyva relaxs =
     try
-      let rs =
-        relaxs
-        |> List.concat_map LexUtil.split
-        |> List.map R.parse_relax
-      in
-      let es = List.concat_map R.edges_of rs in
+      let parsed_relax = R.parse_expand_relaxs (R.parse_sequence_ast Parser.main relaxs) in
+      let es = match parsed_relax with
+        | [x] -> R.edges_of x
+        | _ ->
+          Warn.user_error "`norm7` only accepts exactly one input cycle." in
       let base,es,_ = Norm.normalise_family (E.resolve_edges es) in
       let name =  N.mk_name base ?scope:None es in
       Printf.printf "%s: %s\n" name (E.pp_edges es)
-    with Misc.Fatal msg ->
+    with
+    | Misc.Fatal msg ->
       eprintf "Fatal error: %s\n" msg ;
+      exit 2
+    | Misc.UserError msg ->
+      eprintf "%s\n" msg ;
       exit 2
 
 end
@@ -89,7 +92,9 @@ end
 let () =
   Util.parse_cmdline
     opts
-    (fun a -> args := a :: !args)
+    (fun a ->
+      let segment = String.trim a in
+      if segment <> "" then args := segment :: !args)
 
 
 let () =
