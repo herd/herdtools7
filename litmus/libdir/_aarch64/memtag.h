@@ -13,9 +13,15 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-#ifndef INSTRUCTION_H
-#define INSTRUCTION_H
-#include <stdint.h>
+#ifndef _MEMTAG_H
+#define _MEMTAG_H 1
 
-typedef uint32_t ins_t; /* Type of instructions */
+typedef enum
+{ tag_check_Off = 0b0000,
+  tag_check_Sync = 0b0101,
+  tag_check_Async = 0b1010,
+  tag_check_Asymm = 0b1111,
+} tag_check_key;
+
+void mte_init(tag_check_key tag_check);
 #endif

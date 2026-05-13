@@ -4,7 +4,7 @@
 /* Jade Alglave, University College London, UK.                             */
 /* Luc Maranget, INRIA Paris-Rocquencourt, France.                          */
 /*                                                                          */
-/* Copyright 2025-present Institut National de Recherche en Informatique et */
+/* Copyright 2026-present Institut National de Recherche en Informatique et */
 /* en Automatique and the authors. All rights reserved.                     */
 /*                                                                          */
 /* This software is governed by the CeCILL-B license under French law and   */
@@ -13,12 +13,16 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
+#ifndef PRESI_SELF_H
+#define PRESI_SELF_H 1
 
-typedef enum
-{ tag_check_Off = 0b0000,
-  tag_check_Sync = 0b0101,
-  tag_check_Async = 0b1010,
-  tag_check_Asymm = 0b1111,
-} tag_check_key;
+#include <stddef.h>
+#include <instruction.h>
+#include <self.h>
 
-void mte_init(tag_check_key tag_check);
+void litmus_icache_sync(uintptr_t vaddr, uintptr_t vaddr_end);
+
+size_t code_size(ins_t *p,int skip);
+
+void code_init(void *code, void *src, size_t sz);
+#endif

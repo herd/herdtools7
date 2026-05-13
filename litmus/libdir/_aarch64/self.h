@@ -13,9 +13,22 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-#ifndef INSTRUCTION_H
-#define INSTRUCTION_H
+
+/***********************************/
+/* Support for self-modifying code */
+/***********************************/
+#ifndef SELF_H
+#define SELF_H 1
 #include <stdint.h>
 
-typedef uint32_t ins_t; /* Type of instructions */
+
+uint32_t getcachelinesize(void);
+
+extern uint32_t cache_line_size;
+
+void selfbar(void *p);
+
+void isync(void);
+
+int check_dic_idc(int need_dic, int need_idc);
 #endif

@@ -4,7 +4,7 @@
 /* Jade Alglave, University College London, UK.                             */
 /* Luc Maranget, INRIA Paris-Rocquencourt, France.                          */
 /*                                                                          */
-/* Copyright 2020-present Institut National de Recherche en Informatique et */
+/* Copyright 2026-present Institut National de Recherche en Informatique et */
 /* en Automatique and the authors. All rights reserved.                     */
 /*                                                                          */
 /* This software is governed by the CeCILL-B license under French law and   */
@@ -13,10 +13,18 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-// Find index of some instruction in code, skipping 'skip' occurrences
-static size_t find_ins(ins_t opcode,ins_t *p,int skip) {
-  ins_t *q = p;
+#ifndef KVM_SELF_H
+#define KVM_SELF_H 1
 
-  for  ( ; *q != opcode || (skip-- > 0); q++);
-  return q-p ;
-}
+#include <stddef.h>
+#include <instruction.h>
+#include <self.h>
+
+void litmus_icache_sync(uintptr_t vaddr, uintptr_t vaddr_end);
+
+size_t code_size(ins_t *p,int skip);
+
+void litmus_pte_unset_el0(uintptr_t vaddr, uintptr_t vaddr_end);
+
+void code_init(void *code, void *src, size_t sz);
+#endif

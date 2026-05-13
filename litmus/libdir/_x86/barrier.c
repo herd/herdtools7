@@ -16,19 +16,14 @@
 /**********************/
 /* User level barrier */
 /**********************/
+#include <barrier.h>
 
-typedef struct {
-  volatile int c,sense ;
-  int n ;
-} sense_t ;
-
-
-static void barrier_init(sense_t *p, int n) {
+void barrier_init(sense_t *p, int n) {
   p->n = p->c = n ;
   p->sense = 0 ;
 }
 
-static void barrier_wait(sense_t *p) {
+void barrier_wait(sense_t *p) {
   int sense = p->sense ;
   int r1 ;
   asm __volatile__ (
