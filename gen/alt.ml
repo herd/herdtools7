@@ -229,13 +229,21 @@ struct
     | (None,_)|(_,(Irr|NoDir)) -> true
     | Some a,(Dir d) -> C.A.applies_atom a d
 
-    let rec hd_non_insert = function
+    (* Return the first edge not selected by `skip`.
+       Keep the last edge as a fallback so pseudo-only chunks remain non-empty. *)
+    let rec hd_edge_skip skip = function
       | [] -> assert false
       | [x] -> x
       | x::xs ->
-          if C.E.is_insert_store x.C.E.edge then hd_non_insert xs
+          if skip x.C.E.edge then hd_edge_skip skip xs
           else x
+
+    let hd_non_insert = hd_edge_skip C.E.is_insert_store
     let last_non_insert xs = hd_non_insert (List.rev xs)
+    let hd_non_insert_id =
+      hd_edge_skip
+        (fun e -> C.E.is_insert_store e || C.E.is_id e)
+    let last_non_insert_id xs = hd_non_insert_id (List.rev xs)
 
     (* Check whether relaxation list `xs` can precede relaxation list `ys`.
        This uses the effective boundary edges of the two sequences,
@@ -243,10 +251,15 @@ struct
        - whether the boundary edges are compatible via `Edge.can_precede`
        - whether the mode-specific rule holds *)
     let can_precede safes po_safe xs ys =
-      let e1 = last_non_insert xs in
-      let e2 = hd_non_insert ys in
-      C.E.can_precede e1 e2
-      && match e1.edge,e2.edge with
+      if xs = [] || ys = [] then false
+      else
+        let e1 = last_non_insert xs in
+        let e2 = hd_non_insert ys in
+        (* If adjacent memory accesses match *)
+	      C.E.can_precede_dirs (last_non_insert_id xs) (hd_non_insert_id ys)
+        (* Check adjacent and apply filter *)
+        && C.E.can_precede e1 e2
+        && match e1.edge,e2.edge with
 (*
   First reject some of hb' ; hb'
  *)
@@ -295,9 +308,6 @@ module Make(C:Builder.S)
     | [] -> true
     | (_,ys)::_ -> FilterImpl.can_precede safes po_safe xs ys
 
-    (* List.is_empty only supports for ocaml 5.1 afterwards *)
-    let is_empty_list l = (l = [])
-
     let pp_ess ess =
       let list_sep = " " in
       let list_list_sep = " " in
@@ -307,48 +317,123 @@ module Make(C:Builder.S)
              |> String.concat list_list_sep )
         |> String.concat list_sep
 
+    (* Check whether `list` starts with `expected`, using `pred` for element
+       comparison. *)
+    let rec starts_with pred list expected =
+      match list, expected with
+      | _, [] -> true
+      | [], _::_  -> false
+      | hd :: tail, hd_expected :: tail_expected ->
+          pred hd hd_expected
+          && starts_with pred tail tail_expected
+
+    (* Check whether `list` ends with `expected`, using `pred` for element
+       comparison. *)
+    let ends_with pred list expected =
+      starts_with pred (List.rev list) (List.rev expected)
+
+    (* Given `next = [....; after(..); after(..)]` and
+       `exist = [before(..); before(..); ....]`, check whether the optional
+       boundary predicates can be merged with the neighbouring concrete edge:
+         - `before` merges with concrete if edge matches.
+         - `after` merges with concrete if edge matches.
+         - `before` pairing with `after` fails. *)
+    let merge_predicate next exist =
+      (* Separate the trailing `after` predicate from `next` *)
+      let after =
+        List.fold_right ( fun e (after,seen_non_after) ->
+          match seen_non_after, C.E.get_predicate e = Some C.E.After with
+          | true, _ | _, false -> after, true
+          | false, true -> e :: after, false ) next ([],false)
+        |> fst in
+      (* Separate the beginning `before` predicate from `exist` *)
+      let before =
+        List.fold_left ( fun (before,seen_non_before) e ->
+          match seen_non_before, C.E.get_predicate e = Some C.E.Before with
+          | true, _ | _, false -> before, true
+          | false, true -> e :: before, false ) ([],false) exist
+        |> fst |> List.rev in
+      (* Match `after` or `before` predicates when present. *)
+      match after, before with
+      | [], [] -> true
+      | after, [] ->
+          starts_with C.E.equal_edge_atoms exist after
+      | [], before ->
+          ends_with C.E.equal_edge_atoms next before
+      (* Reject an `after` predicate directly meeting a `before` predicate. *)
+      | _, _ -> false
+
+    let needs_merge next_edges exist_edges =
+      match List.rev next_edges, exist_edges with
+      | next_last::_, exist_first::_ ->
+          C.E.get_predicate next_last = Some C.E.After ||
+          C.E.get_predicate exist_first = Some C.E.Before
+      | _ -> false
+
+    (* Check whether `next_edges` may be placed immediately before
+       `exist_edges`: if `next_edges` contains trailing `after` predicates
+       or `exist_edges` contains leading `before` predicates,
+       match those predicates against the neighbouring concrete edges;
+       otherwise use the ordinary `can_precede` relation. *)
+    let check_precede can_precede next_edges exist_edges =
+      if O.verbose > 2 then
+        eprintf "next: %s, exists: %s\n"
+          (C.E.pp_edges next_edges) (C.E.pp_edges exist_edges);
+      if needs_merge next_edges exist_edges then
+        merge_predicate next_edges exist_edges
+      else
+        can_precede next_edges exist_edges
+
+    (* Check whether a candidate relaxation `next` can be prepended to the
+       current suffix `exist`. The suffix is stored newest-first, so only
+       its head must be checked against `next`; an empty suffix accepts any
+       first relaxation. *)
+    let precede_relax_edge_list safes po_safe next exist =
+      match exist with
+      | [] -> true
+      | (_,exist_edges) :: _ ->
+          check_precede
+            (FilterImpl.can_precede safes po_safe)
+            (snd next) exist_edges
+
     let edges_of_relax_list rs =
       List.map (fun r -> (r, edges_of r)) rs
 
 (* Functional for recursive call of generators *)
 
-    let sz (_,es) =
-      if List.for_all (fun e -> is_id e.edge) es then 0 else 1
-
-    let c_minprocs_es c =
-      List.fold_left ( fun c e ->
-        match e.C.E.edge,get_ie e with
-        | (Back _|Leave _),_
-        | _,Int -> c
-        | _,Ext -> c + 1
-        | _,UnspecCom -> assert false
-      ) c
-
-    let c_minprocs_suff c =
-      List.fold_left ( fun c (_,es) -> c_minprocs_es c es) c
+    (* Count generated procedures from external communication edges.
+       Leave/Back edges only move between code blocks; they do not introduce
+       a new generated thread. *)
+    let procedure_count c es =
+      List.fold_left (fun count e ->
+        match e.C.E.pred,e.C.E.edge,get_ie e with
+        (* Skip predicates *)
+        | Some _, _,_
+        | None,Id,_
+        | None,(Back _|Leave _),_
+        | None,_,Int -> count
+        | None,_,Ext -> count + 1
+        | None,_,UnspecCom -> assert false
+      ) c es
 
     let minprocs suff =
-      let r = c_minprocs_suff 0 suff in
-      if O.verbose > 3 then eprintf "MIN [%s] => %i\n" (pp_ess suff) r ;
-      r
+      List.fold_left ( fun c (_,es) -> procedure_count c es) 0 suff
 
-    let rec c_minint_es c = function
-      | [] -> false,c
-      | {edge=Id; _}::es ->  c_minint_es c es
-      | e::es ->
-          match get_ie e with
-          | Ext -> true,c
-          | Int -> c_minint_es (c+1) es
-          | UnspecCom -> assert false
+    (* Return the longest linear run of internal, non-pseudo edges.
+       Callers pass `es @ es` when they need to account for a cycle `es`. *)
+    let max_edges_in_procedure c es =
+      List.fold_left
+        (fun (current_edges,longest_edges) e ->
+          match e.C.E.pred,e.C.E.edge,get_ie e with
+          | Some _,_,_
+          | None,Id,_ -> current_edges,longest_edges
+          | None,_,Ext -> 0,max current_edges longest_edges
+          | None,_,Int -> current_edges+1,longest_edges
+          | None,_,UnspecCom -> assert false
+        ) c es
 
-    let rec c_minint c = function
-      | [] -> c
-      | (_,es)::suff ->
-          let stop,c = c_minint_es c es in
-          if stop then c
-          else c_minint c suff
-
-    let minint suff = c_minint 0 suff
+    let minint suff =
+      List.fold_left ( fun c (_,es) -> max_edges_in_procedure c es) (0,0) suff |> snd
 
 (* Prefix *)
     let () =
@@ -369,51 +454,99 @@ module Make(C:Builder.S)
 
     let can_prefix prefix = mk_can_prefix prefix
 
-    let rec is_prefix l rl =
-      match rl,l with
-      | hrl::trl, hl::tl -> if hl = hrl then  is_prefix tl trl else false
-      | [], _ -> true (* end of rl before or at the end of l *)
-      | _, [] -> false (* end of l before end of rl*)
+    let rec is_prefix prefix list =
+      match prefix,list with
+      | [],_ -> true
+      | _::_,[] -> false
+      | x::xs,y::ys -> C.E.compare x y = 0 && is_prefix xs ys
 
+    let rec contains_reject reject cycle = match cycle with
+      | [] -> false
+      | _::rem ->
+         is_prefix reject cycle || contains_reject reject rem
 
-    let check_cycle rsuff rl =
-      let rsuff = List.split rsuff |> snd |> List.concat in
-      not (List.exists (fun rl -> is_prefix rsuff rl) rl)
+    (* Check whether a partial candidate already contains a reject segment.
+       Treat the candidate as a linear list, since the cycle is not closed
+       during recursive search. *)
+    let check_reject_partial reject partial =
+      let partial = List.split partial |> snd |> List.concat in
+      not (List.exists (fun reject -> contains_reject reject partial) reject)
 
-
-    (* This function is used `zyva` *)
-    let call_rec_base prefix f0 safes po_safe over n r suff f_rec k ?(reject=[])=
+    (* Recursive search step used by `zyva`.
+       - `prefix` is the user-supplied prefix that must be prepended before
+         calling `test_generator`.
+       - `test_generator` checks/emits a complete candidate cycle.
+       - `safes` and `po_safe` are the global edge set and SC-specific Po
+         safety predicate used by the adjacency filter.
+       - `over` records whether the relax requirement has already been met:
+         when the user gives a non-empty `relax` argument, it becomes true
+         after this branch has added a relax edge; when there is no relax
+         requirement, it starts true.
+       - `n` is the remaining cycle-size budget.
+       - `r` is the relaxation currently being prepended to `suff`.
+       - `suff` is the current suffix, stored newest-first.
+       - `f_rec` continues the search after accepting `r`.
+       - `k` is the accumulator.
+       - `reject` contains edge sequences that must not appear. *)
+    let call_rec_base prefix test_generator safes po_safe over n r suff f_rec k ?(reject=[])=
+      (* The next possible candidate cycle *)
+      let r_suff = r::suff in
+      (* size decreases *)
+      let n = n-1 in
       if
-        can_precede safes po_safe r suff &&
-        minprocs suff <= O.nprocs &&
-        minint (r::suff) <= O.max_ins-1 &&
-        check_cycle (r::suff) reject
-      then
-        let suff = r::suff
-        and n = n-sz r in
-        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess suff) ;
+        (* check if `r` is compatible with `suff` *)
+        precede_relax_edge_list safes po_safe r suff &&
+        (* Check procedure number *)
+        minprocs r_suff <= O.nprocs &&
+        (* Check instruction number *)
+        minint r_suff <= O.max_ins-1 &&
+        (* Check if the cycle is rejected by `reject` *)
+        check_reject_partial reject r_suff
+      then begin
+        (* Find a potential candidate cycle `r_suff`, pass it to `test_generator`.
+         This also means continuing the recursive searching. *)
+        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess r_suff) ;
+        (* Update the accumulator `k` if an actual candidate cycle was found;
+           otherwise keep it unchanged. *)
         let k =
           if
+            (* Check whether the tail `r_suff` is compatible with its head, and
+               hence forms a possible candidate cycle. *)
+            precede_relax_edge_list safes po_safe (Misc.last r_suff) r_suff &&
+            (* Boolean for whether the relax requirement has already been met. *)
             over &&
+            (* cycle size `n` is still within bound *)
             (n = 0 || (n > 0 && O.upto)) &&
-            can_prefix prefix (can_precede safes po_safe) suff
+            (* user-defined `prefix` can be added *)
+            can_prefix prefix (can_precede safes po_safe) r_suff
           then begin
-            let tr =  prefix@suff in
+            (* Find an actual candidate cycle, add `prefix`,
+               remove all predicates since they have already been checked,
+               and then call `test_generator`. *)
+            let candidate_cycle = List.map ( fun (relax, edges) ->
+              let edges = List.filter ( function
+                | { pred = Some _; _ } -> false
+                | _ -> true ) edges in
+              (relax,edges)
+            ) (prefix @ r_suff) in
             if O.verbose > 2 then
             eprintf "TRY: '%s'\n"
-              (C.E.pp_edges (List.flatten (List.map snd tr))) ;
-            try f0 po_safe tr k
-            with  Misc.Exit -> k
-            | Misc.Fatal msg |Misc.UserError msg ->
-                eprintf "Marche pas: '%s'\n" msg ;
+              (C.E.pp_edges (List.flatten (List.map snd candidate_cycle))) ;
+            try test_generator po_safe candidate_cycle k
+            (* `test_generator` fails, however, surpresses some expected error *)
+            with Misc.Exit -> k
+            | Misc.Fatal msg | Misc.UserError msg ->
+                eprintf "try test generator but fail: '%s'\n" msg ;
                 k
             | e ->
-              eprintf "Exc in F0: '%s'\n" (Printexc.to_string e) ;
-              raise e
+                eprintf "unexpected error in test generator: '%s'\n"
+                      (Printexc.to_string e) ;
+                raise e
           end else k in
+        (* recursive call *)
         if n <= 0 then k
-        else f_rec n suff k
-      else k
+        else f_rec n r_suff k
+      end else k
     (* END of call_rec_base *)
 
     module SdDir2Set =
@@ -469,7 +602,7 @@ module Make(C:Builder.S)
 
         (* Decide what is the accumulator `k` for the next iteration
            based on if `prefix` is empty *)
-        if is_empty_list prefix then
+        if Misc.nilp prefix then
           (* Optimise: start with a relax edge `relex_edge` *)
             call_rec_add_safe true n relex_edge [] (add_relaxs true) k
         else
@@ -514,7 +647,7 @@ module Make(C:Builder.S)
 
         (* Function `all_relax` entry point depends on
            if `prefix` is empty. *)
-        if is_empty_list prefix then add_first relax k
+        if Misc.nilp prefix then add_first relax k
         else add_one false relax safe n [] k in
 
      (* New relax that does not enforce the first edge to be a relax *)
@@ -533,7 +666,7 @@ module Make(C:Builder.S)
       (* Function `zyva` starts after all the `let`-bindings *)
       (* *************************************************** *)
       fun k ->
-        if is_empty_list relax then no_relax safe n [] k
+        if Misc.nilp relax then no_relax safe n [] k
         else if O.mix && O.max_relax < 1 then k (* Let us stay logical *)
         else if O.mix && O.max_relax > 1 then all_relax k
         else choose_relax relax k
@@ -560,106 +693,63 @@ module Make(C:Builder.S)
       let rs = RelaxSet.diff rs (RelaxSet.of_list r0) in
       RelaxSet.elements rs
 
-    exception Result of bool
-
-(* Is xs a prefix of s@p ? *)
-
-    let prefix_spanp xs (p,s) =
-      let rec is_prefix xs ys = match xs,ys with
-        | [],_ -> raise (Result true)
-        | _::_,[] -> xs (* xs -> what is still to be matched *)
-        | x::xs,y::ys ->
-           if C.E.compare x y = 0 then is_prefix xs ys
-           else raise (Result false) in
-      try
-        let xs = is_prefix xs s in
-        match is_prefix xs p with
-        | [] -> true (* xs and s@p are equal! *)
-        |  _::_ -> false (* xs larger.. *)
-      with Result b -> b
-
-    let substring_spanp rej pss =
+    (* Check whether a closed cycle contains a reject segment.
+       Search in `cycle @ cycle`, which is equivalent to searching
+       a circular edge list. *)
+    let check_reject reject cycle =
+      let cycle_len = List.length cycle in
+      let doubled_cycle = cycle @ cycle in
       List.exists
-        (fun xs ->
-          List.exists
-            (fun ps -> prefix_spanp xs ps)
-            pss)
-      rej
+        (fun reject ->
+          let reject_len = List.length reject in
+          0 < reject_len && reject_len <= cycle_len && contains_reject reject doubled_cycle)
+        reject
 
     let last_check_call rej aset f rs po_safe res k =
-      if is_empty_list res then k else
+      if Misc.nilp res then k else
           let lst = Misc.last res in
-          if can_precede aset po_safe lst res then
-            let es = List.map snd res in
-            let le = List.flatten es in
-            try
-              if
-                (match O.choice with
-                | Default| Sc | Ppo | MixedCheck -> true
-                | Thin | Free | Uni | Critical | Transitive |Total -> false) &&
-                (count_ext le=1 || all_int le || count_changes le < 2) then k
-              else begin
-                  let ok = (* Check for rejected sequenes that span over cycle "cut" *)
-                  let rej = (* Keep non-trivial edge sequences only *)
-                    List.filter
-                      (function
-                       | []|[_] -> false
-                       | _::_::_ -> true)
-                      rej  in
-                  match rej with
-                  | [] -> true
-                  | _::_ ->
-                     let max_sz =
-                       List.fold_left (fun  k xs -> max k (List.length xs)) 0 rej in
-                     let pss = Misc.cuts max_sz le in
-                     not (substring_spanp rej pss) in
-                if ok then
-                  let mk_info _es =
-                    let ss = build_safe rs res in
-                    let info =
-                      [
-                        "Relax",pp_relax_list rs;
-                        "Safe", pp_relax_list ss;
-                      ] in
-                    info,C.R.Set.of_list rs in
-                  f le mk_info D.no_name D.no_scope k
-                else k
-              end
-            with (Normaliser.CannotNormalise _) -> k
+          let le = List.map snd res |> List.flatten in
+          (* Cheap pre-filter before calling into DumpAll/test_of_cycle:
+             reject candidates that already exceed the configured process or
+             instruction budget, and keep only cycles whose tail can connect
+             back to the head. *)
+          let proc_count = procedure_count 0 le in
+          (* Keep only cycles with at least one generated procedure
+             and no more than O.nprocs. *)
+          if proc_count > 0
+          && proc_count <= O.nprocs
+          (* Check the per-procedure instruction bound on `le @ le`, so runs
+             that cross the chosen cycle cut are counted. *)
+          && (max_edges_in_procedure (0,0) (le @ le) |> snd) <= O.max_ins-1
+          (* Check whether the tail of `res`, i.e. `lst`, can precede the beginning
+             of `res`; otherwise the candidate cannot form a valid cycle. *)
+          && can_precede aset po_safe lst res
+          && (match O.choice with
+              | Default| Sc | Ppo | MixedCheck ->
+                  not (count_ext le=1 || all_int le || count_changes le < 2)
+              | Thin | Free | Uni | Critical | Transitive |Total -> true)
+          (* Reject unwanted cycles using the configured reject list. *)
+          && not (check_reject rej le) then
+            let mk_info =
+              let ss = build_safe rs res in
+              let info =
+                [
+                  "Relax",pp_relax_list rs;
+                  "Safe", pp_relax_list ss;
+                ] in
+              info,C.R.Set.of_list rs in
+            f le mk_info D.no_name D.no_scope k
           else k
 
-    let rec prefixp xs ys =
-      match xs,ys with
-      | [],_ -> true
-      | _::_,[] -> raise Exit
-      | x::xs,y::ys ->
-         C.E.compare x y = 0 && prefixp xs ys
-
-    let rec sublistp xs ys = match ys with
-      | [] -> false
-      | _::rem ->
-         prefixp xs ys || sublistp xs rem
-
-    let substringp xs ys =
-      try sublistp xs ys
-      with Exit ->
-            match xs with
-            | []|[_] -> false
-            | _::_::_ ->
-               let pss = Misc.cuts (List.length xs) ys in
-               List.exists
-                 (fun ps -> prefix_spanp xs ps)
-                 pss
-
+    (* Keep a final check because `ess` is not the same shape as the raw
+       candidate in `last_check_call`:
+       - it is split per generated thread, and
+       - annotations have been merged into neighboring edges.
+       In particular, reject entries such as single annotated edges
+       may only be visible here. *)
     let last_minute rej ess =
       not (List.exists (fun es -> List.length es > O.max_ins) ess)
-      && begin
-          match rej with
-          | _::_ ->
-             let es = List.flatten ess  in
-             not (List.exists (fun xs -> substringp xs es) rej)
-          | [] -> true
-        end
+      && not (check_reject rej (List.flatten ess))
 
     (* Note that we use `edge` here to refer a single edge or a compositional edges.
        e.g. PosRR or [PosRR Fre].
@@ -697,7 +787,9 @@ module Make(C:Builder.S)
         eprintf "** Relax0 **\n" ;
         debug_rs stderr relax ;
         eprintf "** Safe0 **\n" ;
-        debug_rs stderr safe
+        debug_rs stderr safe ;
+        eprintf "** Reject0 **\n" ;
+        debug_rs stderr reject
       end ;
       let relax_set = C.R.Set.of_list relax
       and safe_set = C.R.Set.of_list safe
@@ -709,7 +801,9 @@ module Make(C:Builder.S)
         eprintf "** Relax **\n" ;
         debug_rs stderr relax ;
         eprintf "** Safe **\n" ;
-        debug_rs stderr safe
+        debug_rs stderr safe ;
+        eprintf "** Reject **\n" ;
+        debug_rs stderr reject
       end ;
       relax, safe, reject
 

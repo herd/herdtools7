@@ -259,7 +259,7 @@ module Make (O:Config) (E:Edge.S) :
       ( if e.rmw then "rmw" else "" )
       ( match debug_vec e.cell with | "" -> "" | s -> "cell=[" ^ s ^"] ")
       (debug_val e.v) (debug_tag e) (debug_morello e) (debug_vector e)
-      ( match e.check_fault with | Some (_,b) -> sprintf "%b" b | None -> "none" )
+      ( match e.check_fault with | Some (n,b) -> sprintf "%s:%b" n b | None -> "none" )
       ( match e.check_value with | Some b -> sprintf "%b" b | None -> "none" )
 
   let debug_edge = E.pp_edge
@@ -582,14 +582,24 @@ module CoSt = struct
     | _ when do_kvm ->
       let fault,check_fault = match dir,st.check_fault with
       | _,NoDir -> None,NoDir
-      | (R|W),Irr | W,Dir W | R,Dir R -> label_pte_fault dir pte_val,NoDir
+      | (R|W),Irr | W,Dir W | R,Dir R ->
+          begin
+          match label_pte_fault dir pte_val with
+          (* if the current check on existence of fault, the further
+             code has no need to check, `NoDir`; otherwise the further memory access
+             need to check the non-existence of fault for consistency, carrying the
+             `st.check_fault` to the next memory access *)
+          | (Some (_, true) as fault) -> fault, NoDir
+          | (Some (_, false) as fault) -> fault, st.check_fault
+          | None -> None,NoDir
+          end
       | W,Dir R -> None,Dir R
       | R,Dir W -> None,Dir W in
       fault,{st with check_fault}
       (* In variants `memtag` and `morello`, the cycles are constructed such that
          no fault occurs *)
     | _ when do_memtag || do_morello ->
-      Some ((Label.next_label "L"), false),unset_check_fault st
+      Some ((Label.next_label "L"), false),st
     |_ -> None,unset_check_fault st
 
   let implicit_pte_update st dir =
@@ -1331,6 +1341,7 @@ let do_set_read_v init =
 (* zyva... *)
 
 let finish n =
+  Label.reset ();
   let st = (0,0),Env.empty in
 (* Set locations *)
   let sd,n =
