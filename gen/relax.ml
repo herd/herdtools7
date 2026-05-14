@@ -45,13 +45,13 @@ module type S = sig
   val po : relax list
 
   (* Parse the `input` to `Ast.t` using the input grammar *)
-  val parse_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> string Ast.t) -> string -> string Ast.t
+  val parse_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> (string,string) Ast.t) -> string -> (string,string) Ast.t
+  val parse_sequence_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> (string,string) Ast.t) -> string list -> (string,string) Ast.t
   (* Parse the input relaxation (or relaxations sequences), and expand the wildcard
      syntax into primitive edges and annotations *)
-  val parse_sequence_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> string Ast.t) -> string list -> string Ast.t
   val parse_expand_relaxs :
     ?ppo:((relax -> relax list -> relax list) -> relax list -> relax list)
-        -> string Ast.t -> relax list
+        -> (string,string) Ast.t -> relax list
 
   (* Remove invalid relax from the list *)
   val remove_invalid_relaxes : relax list -> relax list
@@ -137,18 +137,18 @@ and type edge = E.edge
           match r with
           | ERS [e] -> E.pp_edge e
           | ERS
-              [{edge=Rf Ext; a1=None;a2=None;};
-               {edge=Fenced _;a1=None; a2=None;} as e] when backward_compatibility ->
+              [{edge=Rf Ext; a1=None;a2=None;pred=None};
+               {edge=Fenced _;a1=None; a2=None;pred=None} as e] when backward_compatibility ->
                  sprintf "AC%s" (pp_edge e)
-          | ERS [{edge=Fenced _; a1=None;a2=None;} as e;
-                 {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
+          | ERS [{edge=Fenced _; a1=None;a2=None;pred=None} as e;
+                 {edge=Rf Ext; a1=None; a2=None;pred=None}] when backward_compatibility ->
                    sprintf "BC%s" (pp_edge e)
-          | ERS [{edge=Rf Ext; a1=None; a2=None;};
-                 {edge=Fenced _; a1=None; a2=None;} as e;
-                 {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
+          | ERS [{edge=Rf Ext; a1=None; a2=None;pred=None};
+                 {edge=Fenced _; a1=None; a2=None;pred=None} as e;
+                 {edge=Rf Ext; a1=None; a2=None;pred=None}] when backward_compatibility ->
                    sprintf "ABC%s" (pp_edge e)
-          | ERS [{edge=Dp _; a1=None; a2=None;} as e;
-                 {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
+          | ERS [{edge=Dp _; a1=None; a2=None;pred=None} as e;
+                 {edge=Rf Ext; a1=None; a2=None;pred=None}] when backward_compatibility ->
                    sprintf "BC%s" (pp_edge e)
           | ERS es ->
               sprintf "[%s]" (String.concat "," (List.map pp_edge es))
@@ -342,11 +342,30 @@ and type edge = E.edge
                     for_all_adjacent_concrete_edge predicate (rhs :: list)
                 | false, false ->
                     for_all_adjacent_concrete_edge predicate list in
+          let leading_before_trailing_after_predicate list =
+            let valid,_,_ = List.fold_left
+            ( fun ( valid, leading_before, trailing_after ) l ->
+              match valid, leading_before, trailing_after, E.get_predicate l with
+              (* Propagate invalid flag *)
+              | false, _, _,_ -> (false, leading_before, trailing_after)
+              (* Process the leading edges while they are before predicates,
+                 until the first non-before edge. *)
+              | true, true, _, pred -> true, pred = Some E.Before, pred = Some E.After
+              (* A before predicate in the middle of the list *)
+              | true, false, trailing_after, pred when pred = Some E.Before ->
+                  false, false, trailing_after
+              (* Until find the first after predicate *)
+              | true, false, false, pred -> true, false, pred = Some E.After
+              (* Once trailing after predicates start, only after predicates may follow. *)
+              | true, false, true, pred -> pred = Some E.After, false, true
+            ) (true,true,false) list in
+            valid in
           List.filter_map
           ( fun relax ->
-              let is_valid = edges_of relax
-                  |> for_all_adjacent_concrete_edge E.can_precede in
-              if is_valid then Some relax else None
+              let edges = edges_of relax in
+              if for_all_adjacent_concrete_edge E.can_precede edges
+                 && leading_before_trailing_after_predicate edges
+                then Some relax else None
           ) relaxes
 
         let parse_expand_relax ?(ppo=(fun _ k -> k)) str =
@@ -372,8 +391,13 @@ and type edge = E.edge
           |> relax_list_to_choice
 
           let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
+            (* Add the predicate to all the edges *)
+            let add_predicate pred = function
+              | ERS ls -> ERS (List.map ( fun r -> E.add_predicate pred r ) ls)
+              | PPO -> assert false in
             Ast.bind ast (parse_expand_relax ~ppo)
-              |> Ast.expand
+              |> Ast.map_predicate E.parse_predicate
+              |> Ast.expand add_predicate
               |> List.map ( fun e -> ERS (edges_of_relax_list e) )
 
 (********)
@@ -399,15 +423,15 @@ and type edge = E.edge
           let open E in
           match r with
           | ERS
-              [{edge=Rf Code.Ext; a1=None; a2=None;};
-               {edge=Fenced _; a1=None; a2=None;}]
+              [{edge=Rf Code.Ext; a1=None; a2=None;_};
+               {edge=Fenced _; a1=None; a2=None;_}]
           | ERS
-              [{edge=Fenced _; a1=None; a2=None;};
-               {edge=Rf Code.Ext; a1=None; a2=None;};]
+              [{edge=Fenced _; a1=None; a2=None;_};
+               {edge=Rf Code.Ext; a1=None; a2=None;_};]
           | ERS
-              [{edge=Rf Code.Ext; a1=None; a2=None;};
-               {edge=Fenced _; a1=None; a2=None;};
-               {edge=Rf Code.Ext; a1=None; a2=None;};]
+              [{edge=Rf Code.Ext; a1=None; a2=None;_};
+               {edge=Fenced _; a1=None; a2=None;_};
+               {edge=Rf Code.Ext; a1=None; a2=None;_};]
             -> true
           | _ -> false
 

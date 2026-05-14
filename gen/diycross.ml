@@ -60,7 +60,7 @@ module Make (Config:Config) (M:Builder.S) =
          `diycross` cycle. Parse those arguments separately, then rebuild one
          top-level `Seq` before expansion. For example, `diycross7 A 'B|C' D` is
          treated as `A,(B|C),D`. *)
-      List.map (M.R.parse_ast Parser.main_top_level_choice) input
+      List.map (M.R.parse_ast Parser.diycross7) input
       |> fun e -> Ast.Seq e
       |> M.R.parse_expand_relaxs ~ppo:M.ppo
       |> List.map M.R.edges_of
