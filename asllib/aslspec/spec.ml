@@ -1165,12 +1165,47 @@ module Check = struct
           true
       | _ -> false
 
-    (** [subsumed id_to_defining_node expanded_types sub super] conservatively
-        tests whether all values in the domain of [sub] are also in the domain
-        of [super]. Labels that represent types may be expanded, that is,
-        replaced by their list of type variants, using [id_to_defining_node]. To
-        ensure termination on recursive types, this expansion is done at most
-        once by tracking the set of expanded labels in [expanded_types].
+    (** [list_depth depth terms] computes the maximum depth of the type terms in
+        [terms] using the [depth] function. *)
+    let list_depth depth terms =
+      List.fold_left (fun acc term -> max acc (depth term)) 0 terms
+
+    (** [type_term_depth term] computes the depth of [term]. *)
+    let rec type_term_depth = function
+      | Label _ | ConstantsSet _ -> 1
+      | TypeOperator { term = _, term; _ } -> 1 + type_term_depth term
+      | Tuple { args; _ } -> 1 + opt_named_type_terms_depth args
+      | Record { fields; _ } ->
+          1 + list_depth (fun { Term.term; _ } -> type_term_depth term) fields
+      | Function { from_type = _, from_term; to_type = _, to_term; _ } ->
+          1 + max (type_term_depth from_term) (type_term_depth to_term)
+
+    (** [opt_named_type_terms_depth terms] computes the maximum depth of the
+        type terms in [terms]. *)
+    and opt_named_type_terms_depth (terms : Term.opt_named_type_term list) =
+      list_depth (fun (_, term) -> type_term_depth term) terms
+
+    (** [expansion_count typename expanded_types] returns the number of times
+        [typename] has been expanded using [expanded_types]. *)
+    let expansion_count typename expanded_types =
+      match StringMap.find_opt typename expanded_types with
+      | Some count -> count
+      | None -> 0
+
+    (** [increment_expansion_count typename expanded_types] increments the
+        expansion count for [typename] in [expanded_types]. *)
+    let increment_expansion_count typename expanded_types =
+      StringMap.add typename
+        (expansion_count typename expanded_types + 1)
+        expanded_types
+
+    (** [subsumed id_to_defining_node expansion_limit expanded_types sub super]
+        conservatively tests whether all values in the domain of [sub] are also
+        in the domain of [super]. Labels that represent types may be expanded,
+        that is, replaced by their list of type variants, using
+        [id_to_defining_node]. To ensure termination on recursive types,
+        [expanded_types] tracks how often each type has been expanded and stops
+        when [expansion_limit] is reached.
 
         This function assumes that [check_well_formed] has already been run.
 
@@ -1182,16 +1217,15 @@ module Check = struct
         [M(A, Num)], namely whether [M(B, Num)] is subsumed by [M(A, Num)],
         which is the original subsumption test.
 
-        To avoid infinite recursion, the algorithm tracks which types have
-        already been expanded and does not expand them again when checking
-        subsumption for [B]. Thus, [B] is not expanded again, and the
+        To avoid infinite recursion, the algorithm limits how often each type is
+        expanded. Thus, [B] is eventually not expanded again, and the
         subsumption test returns [false].
         {[
           typedef;
           typedef A = L | M(A, Num);
           typedef B = ( M(B, Num) );
         ]} *)
-    let rec subsumed_rec spec expanded_types sub super =
+    let rec subsumed_rec spec expansion_limit expanded_types sub super =
       (* In the example above [( M(B, Num) )] is equivalent to [M(B, Num)]. *)
       let sub = reduce_term spec sub in
       let super = reduce_term spec super in
@@ -1199,7 +1233,7 @@ module Check = struct
         match (sub, super) with
         | Label { label = sub_id }, _
           when is_builtin_constant sub_id spec.bottom_constant ->
-            (* The bottom constant is a subset of every type. *)
+            (* The bottom constant is subsumed by all types. *)
             true
         | Label { label = sub_label }, Label { label = super_label }
           when is_builtin_type sub_label spec.n_type
@@ -1231,25 +1265,29 @@ module Check = struct
                   ||
                   (* The case where [sub_label] is a type name,
                   like [B] of [M(B, Num)] in the example. *)
-                  subsumed_typename_super spec expanded_types sub_label super
+                  subsumed_typename_super spec expansion_limit expanded_types
+                    sub_label super
               | _ -> false
             in
             sub_is_label_case
             (* The case where [super_label] is a type name,
               like [A] of [M(A, Num)] in the example.
           *)
-            || subsumed_sub_typename spec expanded_types sub super_label
+            || subsumed_sub_typename spec expansion_limit expanded_types sub
+                 super_label
         (* From here on the test operates via structural induction. *)
         | ( TypeOperator { op = sub_op; term = _, sub_term },
             TypeOperator { op = super_op; term = _, super_term } ) ->
             operator_subsumed sub_op super_op
-            && subsumed_rec spec expanded_types sub_term super_term
+            && subsumed_rec spec expansion_limit expanded_types sub_term
+                 super_term
         | ( Tuple { label_opt = sub_label_opt; args = sub_components },
             Tuple { label_opt = super_label_opt; args = super_components } ) ->
             Option.equal String.equal sub_label_opt super_label_opt
             && List.for_all2
                  (fun (_, sub_term) (_, super_term) ->
-                   subsumed_rec spec expanded_types sub_term super_term)
+                   subsumed_rec spec expansion_limit expanded_types sub_term
+                     super_term)
                  sub_components super_components
         | ( Record { label_opt = sub_label_opt; fields = sub_fields },
             Record { label_opt = super_label_opt; fields = super_fields } ) ->
@@ -1258,7 +1296,8 @@ module Check = struct
             Option.equal String.equal sub_label_opt super_label_opt
             && List.for_all2
                  (fun { term = sub_term; _ } { term = super_term; _ } ->
-                   subsumed_rec spec expanded_types sub_term super_term)
+                   subsumed_rec spec expansion_limit expanded_types sub_term
+                     super_term)
                  sub_fields super_fields
         | ( Function
               {
@@ -1273,8 +1312,10 @@ module Check = struct
                 total = super_total;
               } ) ->
             ((not sub_total) || super_total) (* sub_total implies super_total *)
-            && subsumed_rec spec expanded_types super_from_term sub_from_term
-            && subsumed_rec spec expanded_types sub_to_term super_to_term
+            && subsumed_rec spec expansion_limit expanded_types super_from_term
+                 sub_from_term
+            && subsumed_rec spec expansion_limit expanded_types sub_to_term
+                 super_to_term
         | ( ConstantsSet { labels = sub_labels },
             ConstantsSet { labels = super_labels } ) ->
             List.for_all (fun name -> List.mem name super_labels) sub_labels
@@ -1294,11 +1335,13 @@ module Check = struct
         in [id_to_defining_node]. If [typename] is not a type with type
         variants, returns false. *)
     and subsumed_sub_typename ({ id_to_defining_node } as spec : spec_type)
-        expanded_types sub_term typename =
-      if StringSet.mem typename expanded_types then false
+        expansion_limit expanded_types sub_term typename =
+      if expansion_count typename expanded_types >= expansion_limit then false
       else
-        (* Prevent infinite recursion on recursive types by expanding a type name at most once. *)
-        let expanded_types = StringSet.add typename expanded_types in
+        (* Prevent infinite recursion on recursive types by bounding expansions. *)
+        let expanded_types =
+          increment_expansion_count typename expanded_types
+        in
         match StringMap.find_opt typename id_to_defining_node with
         | Some (Node_Type { Type.variants; _ }) ->
             (* [sub_term] is subsumed by the type [typename] if it is subsumed by at least
@@ -1309,30 +1352,35 @@ module Check = struct
             (not (Utils.list_is_empty variants))
             && List.exists
                  (fun { TypeVariant.term = super_term } ->
-                   subsumed_rec spec expanded_types sub_term super_term)
+                   subsumed_rec spec expansion_limit expanded_types sub_term
+                     super_term)
                  variants
         | _ -> false
 
     (** [subsumed_typename_super id_to_defining_node typename super_term] checks
         if all type variants defined by [typename] are subsumed by [super_term].
         If [typename] is not a type with type variants, returns false. *)
-    and subsumed_typename_super ({ id_to_defining_node } as spec) expanded_types
-        typename super_term =
-      if StringSet.mem typename expanded_types then false
+    and subsumed_typename_super ({ id_to_defining_node } as spec)
+        expansion_limit expanded_types typename super_term =
+      if expansion_count typename expanded_types >= expansion_limit then false
       else
-        (* Prevent infinite recursion on recursive types by expanding a type name at most once. *)
-        let expanded_types = StringSet.add typename expanded_types in
+        (* Prevent infinite recursion on recursive types by bounding expansions. *)
+        let expanded_types =
+          increment_expansion_count typename expanded_types
+        in
         match StringMap.find_opt typename id_to_defining_node with
         | Some (Node_Type { Type.variants; _ }) ->
             (not (Utils.list_is_empty variants))
             && List.for_all
                  (fun { TypeVariant.term = sub_term } ->
-                   subsumed_rec spec expanded_types sub_term super_term)
+                   subsumed_rec spec expansion_limit expanded_types sub_term
+                     super_term)
                  variants
         | _ -> false
 
     let subsumed id_to_defining_node sub super =
-      subsumed_rec id_to_defining_node StringSet.empty sub super
+      let expansion_limit = type_term_depth sub + type_term_depth super in
+      subsumed_rec id_to_defining_node expansion_limit StringMap.empty sub super
 
     (** [check_subsumed_terms_lists id_to_defining_node term label sub_terms
          super_terms] checks that each term in [sub_terms] is subsumed by the
@@ -1404,8 +1452,8 @@ module Check = struct
           structural induction on [term]. *)
     let rec check_well_formed id_to_defining_node term =
       match term with
-      | TypeOperator { term = _, operator_term } ->
-          check_well_formed id_to_defining_node operator_term
+      | TypeOperator { term = _, sub_term } ->
+          check_well_formed id_to_defining_node sub_term
       | Tuple { label_opt; args } -> (
           let terms = List.map snd args in
           let () = List.iter (check_well_formed id_to_defining_node) terms in

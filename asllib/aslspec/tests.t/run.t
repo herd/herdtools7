@@ -25,6 +25,7 @@
 
 # Check that all type terms are well-formed
   $ aslspec instantiation_expansion.spec
+  $ aslspec instantiation_expansion_depth.spec
   $ aslspec instantiation_labelled_tuple2.bad
   Specification Error: instantiation_labelled_tuple2.bad:9:8: The type term `L(O, A, B)` cannot be instantiated since it has 3 type terms and `L` requires 2 type terms
   [1]
