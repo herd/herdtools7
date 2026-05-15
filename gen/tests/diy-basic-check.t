@@ -2,7 +2,7 @@ A test for no metadata, `-metadata false`
   $ diyone7 -arch AArch64 -variant vmsa PteOA PosWW PteOA PteV1 PteAF0 PosWR PteHA Fri -oneloc -metadata false
   AArch64 CoWR0+posWpteoapteoa.v1.af0-pospteoa.v1.af0pteha-friptehapteoa
   Variant=vmsa
-  TTHM=HA
+  TTHM=P0:HA
   {
    [x]=1;
    [PTE(x)]=(oa:PA(x), af:0, valid:0);
@@ -20,7 +20,7 @@ A VMSA test for a negated exists check, `-neg true`
   $ diyone7 -arch AArch64 -variant vmsa Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -neg true -info "User-define=User-define"
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0
   Variant=vmsa
-  TTHM=HD
+  TTHM=P1:HD
   Generator=diyone7 (version 7.58+1)
   Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
   Com=Rf Rf
@@ -46,12 +46,12 @@ A VMSA test for a negated exists check, `-neg true`
    DSB ISH             |                  ;
    STR X4,[X3]         |                  ;
   
-  ~exists ([x]=3 /\ 0:X1=2 /\ 1:X1=(oa:PA(z), af:0) /\ not (fault(P0:L01,x)) /\ not (fault(P1:L00,x)))
+  ~exists ([x]=3 /\ 0:X1=2 /\ 1:X1=(oa:PA(z), af:0) /\ fault(P1:L00,x) /\ not (fault(P0:L01,x)))
 A VMSA test for observing locations, `-cond observe`
   $ diyone7 -arch AArch64 -variant vmsa Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -info "User-define=User-define" -cond observe
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0
   Variant=vmsa
-  TTHM=HD
+  TTHM=P1:HD
   Generator=diyone7 (version 7.58+1)
   Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
   Com=Rf Rf
@@ -83,7 +83,7 @@ A VMSA test for a forall check, `-cond unicond`
   $ diyone7 -arch AArch64 -variant vmsa Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -info "User-define=User-define" -cond unicond
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0
   Variant=vmsa
-  TTHM=HD
+  TTHM=P1:HD
   Generator=diyone7 (version 7.58+1)
   Prefetch=0:x=F,0:y=W,1:y=F,1:x=W
   Com=Rf Rf
@@ -109,7 +109,7 @@ A VMSA test for a forall check, `-cond unicond`
    DSB ISH             |                  ;
    STR X4,[X3]         |                  ;
   
-  forall (not (fault(P0:L01,x)) /\ not (fault(P1:L00,x)) /\ ([y]=(oa:PA(z), af:0) /\ (0:X1=2 /\ ([x]=3 /\ (1:X1=(oa:PA(z), af:0) \/ 1:X1=0)) \/ 0:X1=0 /\ (1:X1=(oa:PA(z), af:0) /\ ([x]=3 \/ [x]=2) \/ 1:X1=0 /\ ([x]=3 \/ [x]=2)))))
+  forall (fault(P1:L00,x) /\ not (fault(P0:L01,x)) /\ ([y]=(oa:PA(z), af:0) /\ (0:X1=2 /\ ([x]=3 /\ (1:X1=(oa:PA(z), af:0) \/ 1:X1=0)) \/ 0:X1=0 /\ (1:X1=(oa:PA(z), af:0) /\ ([x]=3 \/ [x]=2) \/ 1:X1=0 /\ ([x]=3 \/ [x]=2)))))
 A memtag generation test with `Variant` duplicated in metadata, because of (1) `-info "Variant=memtag"` and (2) automatically generated `Variant=memtag`
   $ diyone7 -arch AArch64 -variant memtag DpDatadW T PosWW T Rfe PodRW Rfe T -info "Variant=memtag"
   AArch64 LB+po+dataWtt-postt
