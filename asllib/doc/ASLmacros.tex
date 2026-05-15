@@ -3,6 +3,7 @@
 \usepackage{amsmath}  % Classic math package
 \usepackage{mathtools}  % Additional math package
 \usepackage{amssymb}  % Classic math package
+\usepackage{qtree}  % Parse trees
 \usepackage{url}  % Automatically escapes urls
 \usepackage[final]{microtype} % Helps with breaking links across lines to reduce overfull hboxes
 \usepackage{hyperref}  % Insert links inside pdfs
@@ -134,6 +135,7 @@
   % showframe
 ]{geometry}
 
+\newcommand\ASLvOneterm[0]{ASL1}
 \newcommand\aslrefterm[0]{\href{https://github.com/herd/herdtools7/tree/master/asllib}{aslref}}
 \newcommand\linuxbashshellterm[0]{Linux bash shell}
 \newcommand\TERM[1]{#1} % escape hatch for spellchecking
@@ -829,7 +831,7 @@
 \newcommand\Tlexeme[0]{\hyperlink{def-tlexeme}{\terminal{LEXEME}}}
 
 \newcommand\Tunops[0]{\hyperlink{def-tunops}{\terminal{UNOPS}}}
-\newcommand\precedence[1]{\textsf{precedence: }#1}
+\newcommand\priority[1]{\textsf{priority: }#1}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Macros for non-terminals
@@ -894,9 +896,12 @@
 \newcommand\Nlooplimit[0]{\hyperlink{def-nlooplimit}{\nonterminal{loop\_limit}}}
 \newcommand\Nrecurselimit[0]{\hyperlink{def-nrecurselimit}{\nonterminal{recurse\_limit}}}
 
+% Example non-terminals
+\newcommand\clistoneslice[0]{\hyperlink{def-clistoneslice}{\nonterminal{clist1\_slice}}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Macros for defining associativity
-\newcommand\nonassoc[0]{\textsf{nonassoc}}
+\newcommand\nonassoc[0]{\textsf{non-associative}}
 \newcommand\leftassoc[0]{\textsf{left}}
 \newcommand\rightassoc[0]{\textsf{right}}
 
@@ -1478,6 +1483,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Glossary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand\shiftreduceconflictterm[0]{\hyperlink{def-shiftreduceconflict}{shift-reduce conflict}}
+\newcommand\shiftreduceconflictsterm[0]{\hyperlink{def-shiftreduceconflict}{shift-reduce conflicts}}
 \newcommand\ContinuingTerm[0]{\hyperlink{type-Continuing}{continuing result configuration}}
 \newcommand\ProseMSB[0]{MSB}
 \newcommand\ProseLSB[0]{LSB}
@@ -1778,7 +1785,7 @@
 \newcommand\ParseErrorConfig[0]{\hyperlink{def-parseerror}{\texttt{\#}\BuildErrorCode{PE}}}
 \newcommand\OrParseError[0]{\;\terminateas\;\ParseErrorConfig}
 \newcommand\ReservedIdentifier[0]{\hyperlink{def-reservedidentifier}{\BuildErrorCode{RI}}}
-\newcommand\BinopPrecedence[0]{\hyperlink{def-binopprecedence}{\BuildErrorCode{BOP}}}
+\newcommand\BinopPriority[0]{\hyperlink{def-binoppriority}{\BuildErrorCode{BOP}}}
 \newcommand\BuildBadDeclaration[0]{\hyperlink{def-buildbaddeclaration}{\BuildErrorCode{BD}}}
 
 %% Type Error Codes
