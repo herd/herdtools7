@@ -785,13 +785,16 @@ module Make (S : SPEC_VALUE) = struct
     let rec expr_to_prose expr =
       let open Expr in
       match expr with
-      | NamedExpr { expr = sub_expr; name } ->
+      | NamedExpr { expr = sub_expr; name; same_name } ->
           (* We strip names from the sub-expression to avoid prose like
             "... (for the output variable a) (for the output variable b)". *)
           let stripped_sub_expr = strip_names_from_expr sub_expr in
           let expr_prose = expr_to_prose stripped_sub_expr in
-          Format.asprintf "%s (for the output variable %s)" expr_prose
-            (var_to_prose name)
+          let pp_output_variable_prose fmt name =
+            if same_name then ()
+            else fprintf fmt " (for the output variable %s)" (var_to_prose name)
+          in
+          Format.asprintf "%s%a" expr_prose pp_output_variable_prose name
       | Var { id } when String.equal id Spec.ignore_var ->
           "some arbitrary value"
       | Var { id } -> (
