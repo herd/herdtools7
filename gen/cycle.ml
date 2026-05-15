@@ -948,7 +948,8 @@ let check_cycle c =
   let exist_fault_related_write ns =
     List.fold_left ( fun acc n ->
       let next = match n.evt.bank,n.evt.dir with
-        | Tag,Some W -> Irr
+        | Tag,Some W
+        | Ord,_
         | Pte,Some W -> Value.need_check_fault n.evt.atom
         | _ -> NoDir in
       match acc,next with
@@ -1000,7 +1001,6 @@ let check_cycle c =
     let v = CoSt.get_co st Ord in
     if v = n.evt.v then
       Warn.fatal "Updated value remains the same. An issue should be reported.";
-    let st = CoSt.implicit_pte_update st W in
     let idx,_ = split_access_atom n.evt.atom in
     let v = if idx = 0 then tr_value n.evt v else v in
     n.evt <- { n.evt with v; } ;
@@ -1071,6 +1071,7 @@ let check_cycle c =
         Warn.fatal "instruction annotation on a data location is not possible"
       | Data _,Some W,Ord ->
         let st = set_write_val_ord st n in
+        let st = CoSt.implicit_pte_update st W in
         let check_fault, st =
           if do_morello then None, st
           else fault_update_without_rmw st in
@@ -1085,6 +1086,7 @@ let check_cycle c =
         assert (Array.length cell>=2) ;
         let st = CoSt.next_co st Ord in (* Pre-increment *)
         let st = set_write_val_ord st n in
+        let st = CoSt.implicit_pte_update st W in
         let check_fault, st = fault_update_without_rmw st in
         n.evt <- { n.evt with check_fault; check_value; };
         sync_physical_address st n;
