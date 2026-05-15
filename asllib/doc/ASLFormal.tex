@@ -1070,20 +1070,8 @@ All these cases are succinctly encoded in a single rule with the alternative out
 We now present functions used conventionally in this reference.
 
 \subsection{Checked Transitions\label{sec:Checked Transitions}}
-\hypertarget{relation-becheck}{}
-\hypertarget{type-builderror}{}
-The function
-\[
-\becheck(\overname{\Bool}{\vb}, \overname{\Strings}{\vcode}) \aslto \{\True\}
-\cup\ \overname{\TBuildError}{\BuildErrorConfig}
-\]
-takes a Boolean value $\vb$ and an error code $\vcode$
-and returns $\True$ when $\vb$ is $\True$ and a build error \configurationterm{} for $\vcode$, otherwise.
-\begin{mathpar}
-\inferrule[be\_check\_true]{}{ \becheck(\True, \vcode) \astarrow \True }
-\hva\and
-\inferrule[be\_check\_false]{}{ \becheck(\False, \vcode) \astarrow \BuildError(\vcode) }
-\end{mathpar}
+\RenderRelation{be_check}
+\RenderProseAndFormally{be_check}
 
 We define a similar function for type errors.
 \RenderRelation{te_check}

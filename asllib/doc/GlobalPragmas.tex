@@ -51,19 +51,7 @@ For example, a tool processing the specification in \listingref{GlobalPragma2} m
 
 
 \ASTRuleDef{GlobalPragma}
-\begin{mathpar}
-\inferrule[global\_pragma]{
-  \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs}
-}{
-  {
-  \begin{array}{r}
-  \builddecl(\overname{\Ndecl(\Tpragma, \Tidentifier(\id), \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)}{\vparsednode})
-  \astarrow \\
-    \overname{\left[\DPragma(\id, \astversion{\vargs})\right]}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
+\RenderProseAndFormally{build_decl_GlobalPragma}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Global Pragma Declarations}

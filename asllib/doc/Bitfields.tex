@@ -124,68 +124,12 @@ defined for each bitfield.
 \RenderType[remove_hypertargets]{bitfield}
 
 \ASTRuleDef{Bitfields}
-\NotImportedToASLSpecYet{
-\hypertarget{build-bitfields}{}
-The function
-\[
-  \buildbitfields(\overname{\parsenode{\Nbitfields}}{\vparsednode}) \;\aslto\; \overname{\KleeneStar{\bitfield}}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule{
-  \buildtclist[\buildbitfield](\vbitfields) \astarrow \vbitfieldasts
-}{
-  {
-    \begin{array}{r}
-  \buildbitfields(\Nbitfields(\Tlbrace, \namednode{\vbitfields}{\TClistZero{\Nbitfield}}, \Trbrace)) \astarrow\\
-  \overname{\vbitfieldasts}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
+\RenderRelation{build_bitfields}
+\RenderProseAndFormally{build_bitfields}
 
 \ASTRuleDef{Bitfield}
-\NotImportedToASLSpecYet{
-\hypertarget{build-bitfield}{}
-The function
-\[
-  \buildbitfield(\overname{\parsenode{\Nbitfield}}{\vparsednode}) \;\aslto\; \overname{\bitfield}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[simple]{}{
-  \buildbitfield(\Nbitfield(\punnode{\Nslices}, \Tidentifier(\vx))) \astarrow
-  \overname{\BitFieldSimple(\vx, \astof{\vslices})}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[nested]{}{
-  {
-    \begin{array}{r}
-      \buildbitfield(\Nbitfield(\punnode{\Nslices}, \Tidentifier(\vx), \punnode{\Nbitfields})) \astarrow\\
-      \overname{\BitFieldNested(\vx, \astof{\vslices}, \astof{\vbitfields})}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[type]{}{
-  {
-    \begin{array}{r}
-      \buildbitfield(\Nbitfield(\punnode{\Nslices}, \Tidentifier(\vx), \Tcolon, \punnode{\Nty})) \astarrow\\
-      \overname{\BitFieldType(\vx, \astof{\vslices}, \astof{\tty})}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
+\RenderRelation{build_bitfield}
+\RenderProseAndFormally{build_bitfield}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Bitfields}

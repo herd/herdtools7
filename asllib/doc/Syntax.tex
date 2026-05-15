@@ -567,7 +567,10 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 \end{flalign*}
 
 \hypertarget{def-nbitfields}{}
+\hypertarget{def-nbitfieldsopt}{}
 \begin{flalign*}
+\Nbitfieldsopt \derives \ &  \emptysentence&\\
+                        |\ & \Nbitfields &\\
 \Nbitfields \derives \ & \Tlbrace \parsesep \TClistZero{\Nbitfield} \parsesep \Trbrace &
 \end{flalign*}
 
@@ -585,7 +588,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
             |\ & \Tstring &\\
             |\ & \Tboolean &\\
             |\ & \Tbit &\\
-            |\ & \Tbits \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \option{\Nbitfields} &\\
+            |\ & \Tbits \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \Nbitfieldsopt &\\
             |\ & \Tlpar \parsesep \Nty \parsesep \Trpar &\\
             |\ & \Plisttwo{\Nty} &\\
             |\ & \Tidentifier &\\

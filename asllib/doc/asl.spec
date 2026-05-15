@@ -57,6 +57,11 @@ typedef N
 constant zero : N { math_macro = \zero, };
 constant one : N { math_macro = \one, };
 constant two : N { math_macro = \two, };
+constant three : N { math_macro = \three, };
+constant four : N { math_macro = \four, };
+constant five : N { math_macro = \five, };
+constant six : N { math_macro = \six, };
+constant seven : N { math_macro = \seven, };
 constant rational_zero : Q { math_macro = \zero, };
 
 typedef N_pos
@@ -888,7 +893,7 @@ ast expr { "expression" } =
 // Unyped AST
 ////////////////////////////////////////////////
     | E_Literal(value: literal)
-    { "the literal expression for {value}" }
+    { "the \literalexpressionterm{} for {value}" }
     | E_Var(name: Identifier)
     { "the variable expression for {name}" }
     | E_ATC(source: expr, type: ty)
@@ -916,7 +921,7 @@ ast expr { "expression" } =
     | E_Arbitrary(type: ty)
     { "the arbitrary value choice expression for {type}" }
     | E_Pattern(discriminant: expr, pattern: pattern)
-    { "the pattern expression for the discriminant given by {discriminant} and {pattern}" }
+    { "the \patternexpressionterm{} for the discriminant given by {discriminant} and {pattern}" }
 
 ////////////////////////////////////////////////
 // Typed AST
@@ -1047,7 +1052,10 @@ ast call { "call descriptor" } =
       call_args: list0(expr) { math_macro = \callargs },
       call_type: subprogram_type,
     ]
-    { "the call descriptor for a subprogram named {call_name} of type {call_type} with parameters {params} and arguments {call_args}" }
+    { "the call descriptor for a subprogram with name given by {call_name},
+       parameters given by {params},
+       arguments given by {call_args}, and
+       call type given by {call_type} " }
 ;
 
 render calls = expr(E_Call), stmt(S_Call);
@@ -1207,7 +1215,7 @@ ast lexpr { "\assignableexpression{}" } =
 // Untyped AST
 ////////////////////////////////////////////////
     | LE_Discard
-    { "the discarding \assignableexpression{}" }
+    { "the \discardlexprterm{}" }
     | LE_Var(var: Identifier)
     { "the variable \assignableexpression{} for {var}" }
     | LE_Slice(base: lexpr, slices: list0(slice))
@@ -1217,7 +1225,7 @@ ast lexpr { "\assignableexpression{}" } =
     | LE_SetField(base: lexpr, field_name: Identifier)
     { "the field write \assignableexpression{} for {base} and field name {field_name}" }
     | LE_SetFields(base: lexpr, field_names: list0(Identifier))
-    { "the multi-field write \assignableexpression{} for {base} and field names {field_names}" }
+    { "the multi-field write \assignableexpression{} for the expression given by {base} and field names given by {field_names}" }
     | LE_Destructuring(subexpressions: list0(lexpr))
     { "the multi-assignment for the list of \assignableexpressions{} {subexpressions}" }
 
@@ -1426,7 +1434,7 @@ ast case_alt { "case alternative" } =
       case_alt_stmt: stmt { math_macro = \casealtstmt }
     ]
     { "the \casealternativeterm{} for the pattern {case_alt_pattern},
-        optional \texttt{where} expression {where},
+        optional guard expression {where},
         and statement {case_alt_stmt}"
     }
 ;
@@ -1542,7 +1550,7 @@ render decl_type = decl(D_TypeDecl), field(-);
 render decl_global_pragma = decl(D_Pragma);
 
 ast spec { "specification" } =
- list0((declarations: decl))
+ (declarations: list0(decl))
   { "the list of declarations given by {declarations}" }
 ;
 
@@ -2475,7 +2483,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
     initialized_fields := list_fst(fields);
     names := list_fst(field_types);
     te_check(make_set(names) = make_set(initialized_fields), TE_BF) -> True;
-    check_no_duplicates(initialized_fields) -> True;
+    te_check(no_duplicates(initialized_fields), TE_IAD) -> True;
     INDEX(i, fields: annotate_field_init(tenv, fields[i], field_types) ->
                      (field_names[i], field_inits[i], field_effects[i]))
     { math_layout = (_, [_]) };
@@ -3908,7 +3916,7 @@ typing relation annotate_bitfields(tenv: static_envs, e_width: expr, fields: lis
   math_layout = [_,_],
 } =
   names := list_map(field, fields, bitfield_get_name(field));
-  check_no_duplicates(names) -> True;
+  te_check(no_duplicates(names), TE_IAD) -> True;
   static_eval(tenv, e_width) -> L_Int(width);
   (
     INDEX(i, fields: annotate_bitfield(tenv, width, fields[i]) -> (fields'[i], xs[i]))
@@ -4796,6 +4804,9 @@ typing relation annotate_local_decl_item(
     new_tenv;
   }
 ;
+
+render rule annotate_local_decl_item_var = annotate_local_decl_item(var);
+render rule annotate_local_decl_item_tuple = annotate_local_decl_item(tuple);
 
 typing function add_local_vars(
   tenv: static_envs,
@@ -11719,9 +11730,9 @@ typing function subprogram_types_clash(s1: subprogram_type, s2: subprogram_type)
   clash, yielding the result in {b}.",
   prose_transition = "determining whether {s1} clashes with {s2} yields",
 } =
-  b := not((s1 = ST_Getter && s2 = ST_Setter) || (s1 = ST_Setter && s2 = ST_Getter));
+  non_clashing := make_set((ST_Getter, ST_Setter), (ST_Setter, ST_Getter));
   --
-  b;
+  (s1, s2) not_in non_clashing;
 ;
 
 typing relation add_new_func(
@@ -14637,7 +14648,7 @@ typing relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
   case tstructureddecl {
     ty =: make_structured(L, fields);
     fields =: list_combine(field_names, field_types);
-    check_no_duplicates(field_names) -> True;
+    te_check(no_duplicates(field_names), TE_IAD) -> True;
     ( INDEX(i, field_types: annotate_type(False, tenv, field_types[i]) -> (tys[i], sess[i])) )
     { ([_]) };
     ses := union_list(sess);
@@ -14662,7 +14673,7 @@ typing relation annotate_type(decl: Bool, tenv: static_envs, ty: ty) ->
   case t_enum_decl {
     decl = True;
     ty =: T_Enum(li);
-    check_no_duplicates(li) -> True;
+    te_check(no_duplicates(li), TE_IAD) -> True;
     INDEX(i, li: check_var_not_in_genv(tenv.static_envs_G, li[i]) -> True);
     --
     (T_Enum(li), empty_set);
@@ -14792,28 +14803,16 @@ typing function check_underlying_integer(tenv: static_envs, t: ty) -> CheckResul
 //////////////////////////////////////////////////
 // Relations for Type System Utilities
 
-typing function check_no_duplicates(ids: list0(Identifier)) ->
-         CheckResult | type_error
+function no_duplicates(ids: list0(Identifier)) -> (b: Bool)
 {
-  "checks whether the possibly-empty list of identifiers {ids}
-  contains a duplicate identifier. If it does not, the
-  result is $\True$ and otherwise the result is a
-  \typingerrorterm{}.",
-  prose_transition = "checking that {ids} contains no duplicate identifiers yields",
+  "tests whether the possibly-empty list of identifiers {ids}
+  does not contain a duplicate identifier, yielding the result in {b}.",
+  prose_application = "{ids} does not contain duplicate identifiers",
+  prose_transition = "testing whether {ids} does not contain duplicate identifiers yields",
 } =
-  case okay {
-    unique_list(ids) -> ids1;
-    same_length(ids1, ids);
-    --
-    True;
-  }
-
-  case error {
-    unique_list(ids) -> ids1;
-    list_len(ids1) != list_len(ids);
-    --
-    TypeError(TE_IAD);
-  }
+  unique_list(ids) -> unique_ids;
+  --
+  list_len(unique_ids) = list_len(ids);
 ;
 
 typing function find_bitfield_opt(name: Identifier, bitfields: list0(bitfield)) ->

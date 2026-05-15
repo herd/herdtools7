@@ -50,38 +50,8 @@ subprogram \verb|top| where the catcher proceeds to call \verb|handle_exception|
 \RenderType[remove_hypertargets]{catcher}
 
 \ASTRuleDef{Catcher}
-\NotImportedToASLSpecYet{
-\hypertarget{build-catcher}{}
-The function
-\[
-\buildcatcher(\overname{\parsenode{\Ncatcher}}{\vparsednode}) \;\aslto\; \overname{\catcher}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-\begin{mathpar}
-\inferrule[named]{}{
-  {
-  \begin{array}{r}
-  \buildcatcher(\overname{\Ncatcher(\Twhen, \Tidentifier(\id), \Tcolon, \Nty, \Tarrow, \Nstmtlist)}{\vparsednode})
-  \astarrow \\
-  \overname{(\some{\id}, \astof{\tty}, \astof{\vstmtlist})}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[unnamed]{}{
-  {
-  \begin{array}{r}
-  \buildcatcher(\overname{\Ncatcher(\Twhen, \Nty, \Tarrow, \Nstmtlist)}{\vparsednode})
-  \astarrow \\
-  \overname{(\none, \astof{\tty}, \astof{\vstmtlist})}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
+\RenderRelation{build_catcher}
+\RenderProseAndFormally{build_catcher}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Exception Catchers}

@@ -58,59 +58,8 @@ as exemplified in \listingref{PrefixSlice}. It is \desugared{} by \\
 \RenderTypes[remove_hypertargets]{untyped_slice}
 
 \ASTRuleDef{Slice}
-\NotImportedToASLSpecYet{
-\hypertarget{build-slice}{}
-The function
-\[
-  \buildslice(\overname{\parsenode{\Nslice}}{\vparsednode}) \;\aslto\; \overname{\slice}{\vastnode}
-\]
-transforms a parse node for a slice $\vparsednode$ into an AST node for a slice $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[single]{}{
-  \buildslice(\Nslice(\punnode{\Nexpr})) \astarrow
-  \overname{\SliceSingle(\astof{\vexpr})}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[range]{
-  \buildexpr(\veone) \astarrow \astversion{\veone}\\
-  \buildexpr(\vetwo) \astarrow \astversion{\vetwo}
-}{
-  \buildslice(\Nslice(\namednode{\veone}{\Nexpr}, \Tcolon, \namednode{\vetwo}{\Nexpr})) \astarrow
-  \overname{\SliceRange(\astversion{\veone}, \astversion{\vetwo})}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[length]{
-  \buildexpr(\veone) \astarrow \astversion{\veone}\\
-  \buildexpr(\vetwo) \astarrow \astversion{\vetwo}
-}{
-  \buildslice(\Nslice(\namednode{\veone}{\Nexpr}, \Tpluscolon, \namednode{\vetwo}{\Nexpr})) \astarrow
-  \overname{\SliceLength(\astversion{\veone}, \astversion{\vetwo})}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[scaled]{
-  \buildexpr(\veone) \astarrow \astversion{\veone}\\
-  \buildexpr(\vetwo) \astarrow \astversion{\vetwo}
-}{
-  \buildslice(\Nslice(\namednode{\veone}{\Nexpr}, \Tstarcolon, \namednode{\vetwo}{\Nexpr})) \astarrow
-  \overname{\SliceStar(\astversion{\veone}, \astversion{\vetwo})}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[width]{}{
-  \buildslice(\Nslice(\Tcolon, \punnode{\Nexpr})) \astarrow
-  \overname{\SliceLength(\ELiteral(\LInt(0)), \astof{\vexpr})}{\vastnode}
-}
-\end{mathpar}
+\RenderRelation{build_slice}
+\RenderProseAndFormally{build_slice}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Bitvector Slices}
@@ -224,24 +173,8 @@ the slice \texttt{[:3]} evaluates to \texttt{(0, 3)}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Lists of Bitvector Slices}
 \ASTRuleDef{Slices}
-\NotImportedToASLSpecYet{
-\hypertarget{build-slices}{}
-The function
-\[
-  \buildslices(\overname{\parsenode{\Nslices}}{\vparsednode}) \;\aslto\; \overname{\KleenePlus{\slice}}{\vastnode}
-\]
-transforms a parse node for a list of slices $\vparsednode$ into an AST node for a list of slices $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule{
-  \buildclist[\buildslice](\vslices) \astarrow \vsliceasts
-}{
-  \buildslices(\Nslices(\Tlbracket, \namednode{\vslices}{\ClistOne{\Nslice}}, \Trbracket)) \astarrow
-  \overname{\vsliceasts}{\vastnode}
-}
-\end{mathpar}
+\RenderRelation{build_slices}
+\RenderProseAndFormally{build_slices}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Lists of Bitvector Slices}

@@ -43,116 +43,21 @@ See \ExampleRef{Types} for examples of type declarations.
 
 \ASTRuleDef{TypeDecl}
 This rule defines the cases for $\builddecl$ for type declarations.
-
-\begin{mathpar}
-\inferrule[type\_decl]{}
-{
-  {
-    \begin{array}{c}
-      \builddecl(\overname{\Ndecl(\Ttype, \Tidentifier(\vx), \Tof, \punnode{\Ntydecl}, \Nsubtypeopt, \Tsemicolon)}{\vparsednode})
-  \astarrow \\
-  \overname{\left[\DTypeDecl(\vx, \astof{\vt}, \astof{\vsubtypeopt})\right]}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[subtype\_decl]{
-  \buildsubtype(\vsubtype) \astarrow \vs\\
-  \vs \reverseeqdef (\name, \vfields)
-}{
-  {
-    \begin{array}{c}
-      \builddecl(\overname{\Ndecl(\Ttype, \Tidentifier(\vx), \Tof, \punnode{\Nsubtype}, \Tsemicolon)}{\vparsednode})
-  \astarrow \\
-  \overname{\left[\DTypeDecl(\vx, \TNamed(\name), \some{(\name, \vfields)})\right]}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
+\RenderProseAndFormally{build_decl_TypeDecl}
 
 \ASTRuleDef{Subtype}
-\NotImportedToASLSpecYet{
-\hypertarget{build-subtype}{}
-The function
-\[
-  \buildsubtype(\overname{\parsenode{\Nsubtype}}{\vparsednode}) \aslto \overname{(\Identifier, \KleeneStar{(\Identifier, \ty)})}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[with\_fields]{}{
-  {
-    \begin{array}{r}
-  \buildsubtype(\overname{\Nsubtype(
-    \Tsubtypes, \Tidentifier(\id), \Twith, \punnode{\Nfields}
-    )}{\vparsednode})
-  \astarrow \\
-  \overname{(\id, \astof{\vfields})}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[no\_fields]{}{
-  \buildsubtype(\overname{\Nsubtype(
-    \Tsubtypes, \Tidentifier(\id))}{\vparsednode})
-  \astarrow
-  \overname{(\id, \emptylist)}{\vastnode}
-}
-\end{mathpar}
+\RenderRelation{build_subtype}
+\RenderProseAndFormally{build_subtype}
 
 \ASTRuleDef{Subtypeopt}
-\NotImportedToASLSpecYet{
-\hypertarget{build-subtypeopt}{}
-The function
-\[
-   \buildsubtypeopt(\overname{\parsenode{\Nsubtypeopt}}{\vparsednode}) \aslto
-    \overname{\Option{(\Identifier, \Option{\KleeneStar{(\Identifier, \ty)}})}}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[subtype\_opt]{
-  \buildoption[\Nsubtype](\vsubtypeopt) \astarrow \vastnode
-}{
-  \buildsubtypeopt(\overname{\Nsubtypeopt(\namednode{\vsubtypeopt}{\option{\Nsubtype}})}{\vparsednode}) \astarrow \vastnode
-}
-\end{mathpar}
+\RenderRelation{build_subtype_opt}
+\RenderProseAndFormally{build_subtype_opt}
 
 \ASTRuleDef{Fields}
-\NotImportedToASLSpecYet{
-\hypertarget{build-fields}{}
-The function
-\[
-  \buildfields(\overname{\parsenode{\Nfields}}{\vparsednode}) \;\aslto\; \overname{\KleeneStar{\field}}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_fields}
 
 
-\begin{mathpar}
-\inferrule[empty]{
-}{
-  \buildfields(\Nfields(\Tlbrace, \Tminus, \Trbrace)) \astarrow
-  \overname{\emptylist}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[non\_empty]{
-  \buildtclist[\buildtypedidentifier](\vfields) \astarrow \vfieldasts
-}{
-  \buildfields(\Nfields(\Tlbrace, \namednode{\vfields}{\TClistOne{\Ntypedidentifier}}, \Trbrace)) \astarrow
-  \overname{\vfieldasts}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_fields}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Type Declarations}

@@ -60,68 +60,28 @@ and types that must be declared and named are grammatically derived from $\Ntyde
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef{Types}
-\NotImportedToASLSpecYet{
-\hypertarget{build-ty}{}
-The function
-\[
-  \buildty(\overname{\parsenode{\Nty}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
-  \cup \overname{\TBuildError}{\BuildErrorConfig}
-\]
-transforms an anonymous type parse node $\vparsednode$ into the corresponding AST node $\vastnode$.
-\ProseOtherwiseBuildError
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_ty}
 
 
 We define $\buildty$ per type in the following sections.
 
-\NotImportedToASLSpecYet{
-\hypertarget{build-tydecl}{}
-The function
-\[
-  \buildtydecl(\overname{\parsenode{\Ntydecl}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
-  \cup \overname{\TBuildError}{\BuildErrorConfig}
-\]
-transforms a \namedtype\ parse node $\vparsednode$ into an AST node $\vastnode$.
-\ProseOtherwiseBuildError
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_ty_decl}
 
 
 We define $\buildtydecl$ per the corresponding type in the following sections.
 
-\NotImportedToASLSpecYet{
-\hypertarget{build-tyorcollection}{}
-The function
-\[
-  \buildtyorcollection(\overname{\parsenode{\Ntyorcollection}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
-  \cup \overname{\TBuildError}{\BuildErrorConfig}
-\]
-transforms a type annotation parse node $\vparsednode$ into a type AST node $\vastnode$.
-\ProseOtherwiseBuildError
-} % END_OF_UNIMPORTED_RELATION
+\RenderRelation{build_ty_or_collection}
 
 
 We define $\buildtyorcollection$ per the corresponding type in the following sections.
 
-\NotImportedToASLSpecYet{
-\hypertarget{build-as-ty}{}
-The function
-\[
-  \buildasty(\overname{\parsenode{\Nasty}}{\vparsednode}) \;\aslto\; \overname{\ty}{\vastnode}
-  \cup \overname{\TBuildError}{\BuildErrorConfig}
-\]
-transforms a type annotation parse node $\vparsednode$ into a type AST node $\vastnode$.
-\ProseOtherwiseBuildError
-} % END_OF_UNIMPORTED_RELATION
+\ASTRuleDef{AsTy}
+\RenderRelation{build_as_ty}
+\RenderProseAndFormally{build_as_ty}
 
-
-Formally:
-\begin{mathpar}
-\inferrule{
-  \buildty(\vt) \astarrow \astversion{\vt}
-} {
-  \buildasty(\Nasty(\Tcolon, \namednode{\vt}{\Nty})) \astarrow \astversion{\vt}
-}
-\end{mathpar}
+\ASTRuleDef{OptionalAsTy}
+\RenderRelation{build_optional_as_ty}
+\RenderProseAndFormally{build_optional_as_ty}
 
 \hypertarget{integertypeterm}{}
 \section{Integer Types\label{sec:IntegerTypes}}
@@ -214,106 +174,20 @@ is a parameterized integer type, \underline{not} an unconstrained integer type.
 \subsection{Abstract Syntax\label{sec:IntegerTypesAST}}
 \RenderTypes[remove_hypertargets]{ty_int_constraint_and_kind}
 
-
 \ASTRuleDef{Ty.TInt}
-\begin{mathpar}
-\inferrule{}{
-  \buildty(\Nty(\Tinteger, \punnode{\Nconstraintkindopt})) \astarrow
-  \overname{\TInt(\astof{\vconstraintkindopt})}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_ty_t_int}
 
 \ASTRuleDef{IntConstraintsOpt}
-\NotImportedToASLSpecYet{
-\hypertarget{build-constraintkindopt}{}
-The function
-\[
-  \buildconstraintkindopt(\overname{\parsenode{\Nconstraintkindopt}}{\vparsednode}) \;\aslto\; \overname{\constraintkind}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[constrained]{}{
-  {
-    \begin{array}{r}
-  \buildconstraintkindopt(\Nconstraintkindopt(\punnode{\Nconstraintkind})) \astarrow \\
-  \overname{\astof{\vconstraintkind}}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[unconstrained]{}{
-  \buildconstraintkindopt(\Nconstraintkindopt(\emptysentence)) \astarrow
-  \overname{\Unconstrained}{\vastnode}
-}
-\end{mathpar}
+\RenderRelation{build_constraint_kind_opt}
+\RenderProseAndFormally{build_constraint_kind_opt}
 
 \subsection{ASTRule.IntConstraints\label{sec:ASTRule.IntConstraints}}
-\NotImportedToASLSpecYet{
-\hypertarget{build-constraintkind}{}
-The function
-\[
-  \buildconstraintkind(\overname{\parsenode{\Nconstraintkind}}{\vparsednode}) \;\aslto\; \overname{\constraintkind}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[well\_constrained]{
-  \buildclist[\buildintconstraint](\cs) \astarrow \vcsasts
-}{
-  {
-    \begin{array}{r}
-  \buildconstraintkind(\Nconstraintkind(\Tlbrace, \namednode{\cs}{\ClistOne{\Nintconstraint}}, \Trbrace)) \astarrow\\
-  \overname{\WellConstrained(\vcsasts)}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[pending\_constrained]{}{
-  \buildconstraintkind(\Nconstraintkind(\Tlbrace, \Trbrace)) \astarrow
-  \overname{\PendingConstrained}{\vastnode}
-}
-\end{mathpar}
+\RenderRelation{build_constraint_kind}
+\RenderProseAndFormally{build_constraint_kind}
 
 \ASTRuleDef{IntConstraint}
-\NotImportedToASLSpecYet{
-\hypertarget{build-intconstraint}{}
-The function
-\[
-  \buildintconstraint(\overname{\parsenode{\Nintconstraint}}{\vparsednode}) \;\aslto\; \overname{\intconstraint}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[exact]{}{
-  \buildintconstraint(\Nintconstraint(\punnode{\Nexpr})) \astarrow
-  \overname{\ConstraintExact(\astof{\vexpr})}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[range]{
-  \buildexpr(\vfromexpr) \astarrow \astversion{\vfromexpr}\\
-  \buildexpr(\vtoexpr) \astarrow \astversion{\vtoexpr}\\
-}{
-  {
-    \begin{array}{r}
-  \buildintconstraint(\Nintconstraint(\namednode{\vfromexpr}{\Nexpr}, \Tslicing, \namednode{\vtoexpr}{\Nexpr})) \astarrow\\
-  \overname{\ConstraintRange(\astversion{\vfromexpr}, \astversion{\vtoexpr})}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
+\RenderRelation{build_int_constraint}
+\RenderProseAndFormally{build_int_constraint}
 
 \subsection{Typing Integer Types\label{sec:TypingIntegerTypes}}
 We use the following helper predicates to classify integer types:
@@ -397,12 +271,7 @@ In \listingref{typing-treal}, all the uses of the \realtypeterm{} are well-typed
 
 
 \ASTRuleDef{TReal}
-\begin{mathpar}
-\inferrule{}{
-  \buildty(\Nty(\Treal)) \astarrow
-  \overname{\TReal}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_ty_t_real}
 
 \subsection{Typing the Real Type\label{sec:TypingRealType}}
 \TypingRuleDef{TReal}
@@ -436,12 +305,7 @@ In \listingref{typing-tstring}, all the uses of the \stringtypeterm{} are well-t
 
 
 \ASTRuleDef{Ty.String}
-\begin{mathpar}
-\inferrule{}{
-  \buildty(\Nty(\Tstring)) \astarrow
-  \overname{\TString}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_ty_t_string}
 
 \subsection{Typing the String Type\label{sec:TypingStringType}}
 \TypingRuleDef{TString}
@@ -469,12 +333,7 @@ In \listingref{typing-tbool}, all the uses of the \booleantypeterm{} are well-ty
 
 
 \ASTRuleDef{Ty.BoolType}
-\begin{mathpar}
-\inferrule{}{
-  \buildty(\Nty(\Tboolean)) \astarrow
-  \overname{\TBool}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_ty_t_bool}
 
 \subsection{Typing the Boolean Type\label{sec:TypingBooleanType}}
 \TypingRuleDef{TBool}
@@ -572,7 +431,9 @@ bv=0x14, rotated twice=0x05
 \subsection{Syntax}
 \begin{flalign*}
 \Nty \derives\ & \Tbit &\\
-            |\ & \Tbits \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \option{\Nbitfields} &\\
+            |\ & \Tbits \parsesep \Tlpar \parsesep \Nexpr \parsesep \Trpar \parsesep \Nbitfieldsopt &\\
+\Nbitfieldsopt \derives \ &  \emptysentence&\\
+                        |\ & \Nbitfields &\\
 \Nbitfields \derives \ & \Tlbrace \parsesep \TClistZero{\Nbitfield} \parsesep \Trbrace &\\
 \Nbitfield \derives \ & \Nslices \parsesep \Tidentifier &\\
                   |\ & \Nslices \parsesep \Tidentifier \parsesep \Nbitfields &\\
@@ -584,25 +445,11 @@ bv=0x14, rotated twice=0x05
 
 
 \ASTRuleDef{Ty.TBits}
-\begin{mathpar}
-\inferrule[bit]{}{
-  \buildty(\Nty(\Tbit)) \astarrow
-  \overname{\TBits(\ELiteral(\LInt(1)), \emptylist)}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_ty_t_bits}
 
-\begin{mathpar}
-\inferrule[bits]{
-  \buildlist[\buildbitfield](\vbitfields) \astarrow \vbitfieldasts
-}{
-  {
-    \begin{array}{r}
-  \buildty(\Nty(\Tbits, \Tlpar, \punnode{\Nexpr}, \Trpar, \namednode{\vbitfields}{\maybeemptylist{\Nbitfields}})) \astarrow\\
-  \overname{\TBits(\astof{\vexpr}, \vbitfieldasts)}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
+\ASTRuleDef{BitfieldsOpt}
+\RenderRelation{build_bitfields_opt}
+\RenderProseAndFormally{build_bitfields_opt}
 
 \subsection{Typing Bitvector Types}
 \TypingRuleDef{TBits}
@@ -674,14 +521,7 @@ element index.
 
 
 \ASTRuleDef{Ty.TTuple}
-\begin{mathpar}
-\inferrule{
-  \buildplist[\buildty](\vtypes) \astarrow \vtypeasts
-}{
-  \buildty(\Nty(\namednode{\vtypes}{\Plisttwo{\Nty}})) \astarrow
-  \overname{\TTuple(\vtypeasts)}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_ty_t_tuple}
 
 \subsection{Typing Tuple Types\label{sec:TypingTupleTypes}}
 \TypingRuleDef{TTuple}
@@ -709,12 +549,7 @@ A parenthesized type produces the abstract syntax of the type itself.
 In other words, we ignore the parenthesis.
 
 \ASTRuleDef{ParenType}
-\begin{mathpar}
-  \inferrule{}{
-  \buildty(\overname{\Nty(\Tlpar, \punnode{\Nty}, \Trpar)}{\vparsednode}) \astarrow
-  \overname{\astof{\tty}}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_ty_paren_type}
 
 \section{Enumeration Types\label{sec:EnumerationTypes}}
 \hypertarget{enumerationtypeterm}{}
@@ -765,18 +600,7 @@ where an enumeration is used outside of a type definition.
 
 
 \ASTRuleDef{TyDecl.TEnum}
-\begin{mathpar}
-\inferrule{
-  \buildtclist[\buildidentity](\vids) \astarrow \vidasts
-}{
-  {
-    \begin{array}{r}
-  \buildtydecl(\Ntydecl(\Tenumeration, \Tlbrace, \namednode{\vids}{\TClistOne{\Tidentifier}}, \Trbrace)) \astarrow\\
-  \overname{\TEnum(\vidasts)}{\vastnode}
-\end{array}
-  }
-}
-\end{mathpar}
+\RenderProseAndFormally{build_ty_decl_t_enum}
 
 \subsection{Typing Enumeration Types\label{sec:TypingEnumerationTypes}}
 \TypingRuleDef{TEnumDecl}
@@ -841,16 +665,7 @@ In \listingref{typing-tarray}, all the uses of array types are well-typed.
 \RenderType[remove_hypertargets]{array_index}
 
 \ASTRuleDef{Ty.TArray}
-\begin{mathpar}
-\inferrule{}{
-  {
-  \begin{array}{r}
-    \buildty(\Nty(\Tarray, \Tllbracket, \punnode{\Nexpr}, \Trrbracket, \Tof, \punnode{\Nty})) \astarrow\\
-    \overname{\TArray(\ArrayLengthExpr(\astof{\vexpr}), \astof{\tty})}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
+\RenderProseAndFormally{build_ty_t_array}
 \subsection{Typing Array Types\label{sec:TypingArrayTypes}}
 \TypingRuleDef{TArray}
 See \ExampleRef{Well-typed Array Types} for examples of well-typed
@@ -938,12 +753,7 @@ is ill-typed, since the field \verb|v| repeats.
 
 
 \ASTRuleDef{TyDecl.TRecord}
-\begin{mathpar}
-\inferrule{}{
-  \buildtydecl(\Ntydecl(\Trecord, \punnode{\Nfields})) \astarrow
-  \overname{\TRecord(\astof{\vfields})}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_ty_decl_t_record}
 
 \subsection{Typing Record Types\label{sec:TypingRecordTypes}}
 \TypingRuleDef{TStructuredDecl}
@@ -981,12 +791,7 @@ In \listingref{typing-texception}, all the uses of exception types are well-type
 
 
 \ASTRuleDef{TyDecl.TException}
-\begin{mathpar}
-\inferrule{}{
-  \buildtydecl(\Ntydecl(\Texception, \punnode{\Nfields})) \astarrow
-  \overname{\TException(\astof{\vfields})}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_ty_decl_t_exception}
 
 \subsection{Typing Exception Types}
 The rule for typing exception types is \TypingRuleRef{TStructuredDecl}.
@@ -1013,21 +818,7 @@ See \listingref{checkisnotcollection} for an ill-typed specification.
 
 
 \ASTRuleDef{TyDecl.TCollection}
-\begin{mathpar}
-\inferrule{}{
-{
-  \begin{array}{r}
-  \buildtyorcollection(\Ntyorcollection(\Tcollection, \punnode{\Nfields})) \astarrow\\
-  \overname{\TCollection(\astof{\vfields})}{\vastnode}
-  \end{array}
-}
-}
-\hva\and
-\inferrule{}{
-  \buildtyorcollection(\Ntyorcollection(\punnode{\Nty})) \astarrow
-  \overname{\astof{\tty}}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_ty_or_collection}
 
 \subsection{Typing Collection Types}
 \ExampleDef{Typing Collection Types}
@@ -1077,12 +868,7 @@ due to an assignment between two different named types (\verb|Char| and \verb|By
 
 
 \ASTRuleDef{Ty.TNamed}
-\begin{mathpar}
-\inferrule{}{
-  \buildty(\Nty(\Tidentifier(\id))) \astarrow
-  \overname{\TNamed(\id)}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_ty_t_named}
 
 \subsection{Typing Named Types\label{sec:TypingNamedTypes}}
 \TypingRuleDef{TNamed}
@@ -1108,12 +894,7 @@ A declared type can be an \enumerationtypeterm{}, a \recordtypeterm, an \excepti
 
 \subsection{Abstract Syntax}
 \ASTRuleDef{TyDecl}
-\begin{mathpar}
-\inferrule{}{
-  \buildtydecl(\Ntydecl(\punnode{\Nty})) \astarrow
-  \overname{\astof{\tty}}{\vastnode}
-}
-\end{mathpar}
+\RenderProseAndFormally{build_ty_decl_tydecl}
 
 \subsection{Typing Declared Types}
 %

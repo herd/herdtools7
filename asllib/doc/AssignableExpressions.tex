@@ -105,214 +105,27 @@ In particular, rather than directly building the abstract syntax for these \assi
 we first build intermediate structures containing $\lhsaccess$,
 which we then desugar into abstract syntax in \secref{AssignableExpressionsDesugaring}.
 
-\hypertarget{ast-lhsaccess}{}
-\begin{flalign*}
-\lhsaccess \derives\ &
-{
-\left\{
-  \begin{array}{rcl}
-    \lhsaccessaccess &:& \fieldorarrayaccess^{*}, \\
-    \lhsaccessslices &:& \slice^{*}
-\end{array}
-\right\}
-} &
-\hypertarget{ast-fieldorarrayaccess}{}
-\hypertarget{ast-fieldaccess}{}
-\hypertarget{ast-arrayaccess}{}
-\\
-\fieldorarrayaccess \derives\ & \FieldAccess(\Identifier)\ |\ \ArrayAccess(\expr)
-\end{flalign*}
+\RenderTypes{lhs_access_and_field_or_array_access}
 
 \ASTRuleDef{LExpr}
-\hypertarget{build-lexpr}{}
-The function
-\[
-  \buildlexpr(\overname{\parsenode{\Nlexpr}}{\vparsednode}) \;\aslto\; \overname{\lexpr}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
-\inferrule[discard]{}{
-  \buildlexpr(\Nlexpr(\Tminus)) \astarrow \overname{\LEDiscard}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[basic\_lexpr]{
-  \desugarlhsaccess(\astof{\vbasiclexpr}) \astarrow \vastnode
-}{
-  \buildlexpr(\Nlexpr(\punnode{\Nbasiclexpr})) \astarrow \vastnode
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[multi\_lexpr]{
-  \buildclist[\builddiscardorbasiclexpr](\vlexprs) \astarrow \vlexprasts \\
-  \desugarlhstuple(\vlexprasts) \astarrow \vastnode
-}{
-  {
-  \begin{array}{r}
-  \buildlexpr(\Nlexpr(\Tlpar, \namednode{\vlexprs}{\Clisttwo{\Ndiscardorbasiclexpr}}, \Trpar)) \\
-  \astarrow \vastnode
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[concat\_fields]{
-  \buildclist[\buildidentity](\vfields) \astarrow \vfieldasts
-}{
-  {
-  \begin{array}{r}
-  \buildlexpr(\Nlexpr(\Tidentifier(\id), \Tdot, \Tlbracket, \namednode{\vfields}{\Clisttwo{\Tidentifier}}, \Trbracket)) \astarrow \\
-  \overname{\LESetFields (\LEVar(\id), \vfieldasts)}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[tuple\_fields]{
-  \buildclist[\builddiscardoridentifier](\vids) \astarrow \astversion{\vids} \\
-  \desugarlhsfieldstuple(\id, \astversion{\vids}) \astarrow \vastnode
-}{
-  {
-  \begin{array}{r}
-  \buildlexpr(\Nlexpr(\Tidentifier(\id), \Tdot, \Tlpar, \namednode{\vids}{\Clisttwo{\Ndiscardoridentifier}}, \Trpar))\\ \astarrow
-  \vastnode
-  \end{array}
-  }
-}
-\end{mathpar}
+\RenderRelation{build_lexpr}
+\RenderProseAndFormally{build_lexpr}
 
 \ASTRuleDef{BasicLexpr}
-\hypertarget{build-basiclexpr}{}
-The function
-\[
-  \buildbasiclexpr(\overname{\parsenode{\Nbasiclexpr}}{\vparsednode}) \;\aslto\; (\overname{\Identifier}{\vbase} \aslsep \overname{\lhsaccess}{\vlhsaccess})
-\]
-transforms a parse node $\vparsednode$ into a pair of AST nodes, $\vbase$ and $\vlhsaccess$.
-
-\begin{mathpar}
-\inferrule[no\_slices]{
-  {
-  \vlhsaccess \eqdef
-    \left\{
-      \begin{array}{rcl}
-        \lhsaccessaccess &:& \astof{\vaccess},\\
-        \lhsaccessslices &:& \emptylist
-      \end{array}
-    \right\}
-  }
-}{
-  \buildbasiclexpr(\Nbasiclexpr(\Tidentifier(\vbase),\punnode{\Naccess})) \astarrow
-  (\vbase, \vlhsaccess)
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[slices]{
-  {
-  \vlhsaccess \eqdef
-    \left\{
-      \begin{array}{rcl}
-              \lhsaccessaccess &:& \astof{\vaccess},\\
-              \lhsaccessslices &:& \astof{\vslices}
-      \end{array}
-    \right\}
-  }
-}{
-  \buildbasiclexpr(\Nbasiclexpr(\Tidentifier(\vbase),\punnode{\Naccess}, \punnode{\Nslices})) \astarrow
-  (\vbase, \vlhsaccess)
-}
-\end{mathpar}
+\RenderRelation{build_basic_lexpr}
+\RenderProseAndFormally{build_basic_lexpr}
 
 \ASTRuleDef{Access}
-
-\hypertarget{build-access}{}
-The function
-\[
-  \buildaccess(\overname{\parsenode{\Naccess}}{\vparsednode}) \;\aslto
-  \overname{\KleeneStar{\fieldorarrayaccess}}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
-\inferrule[empty]{}{
-  \buildaccess(\Naccess(\emptysentence)) \astarrow \overname{\emptylist}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[field\_access]{}{
-  \buildaccess(\Naccess(\Tdot, \Tidentifier(\vfield), \punnode{\Naccess})) \astarrow
-  \overname{[\FieldAccess(\vfield)] \concat \astof{\vaccess}}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[array\_access]{}{
-  \buildaccess(\Naccess(\Tllbracket, \punnode{\Nexpr}, \Trrbracket, \punnode{\Naccess})) \astarrow
-  \overname{[\ArrayAccess(\astof{\vexpr})] \concat \astof{\vaccess}}{\vastnode}
-}
-\end{mathpar}
+\RenderRelation{build_access}
+\RenderProseAndFormally{build_access}
 
 \ASTRuleDef{DiscardOrBasicLexpr}
-\hypertarget{build-discardorbasiclexpr}{}
-The function
-\[
-\begin{array}{r}
-  \builddiscardorbasiclexpr(\overname{\parsenode{\Ndiscardorbasiclexpr}}{\vparsednode}) \;\aslto\\
-  \overname{\Option{(\Identifier, \lhsaccess)}}{\vastnode}
-\end{array}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
-\inferrule[discard]{}{
-  \builddiscardorbasiclexpr(\Ndiscardorbasiclexpr(\Tminus)) \astarrow \overname{\none}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[basic]{}{
-  {
-    \begin{array}{r}
-      \builddiscardorbasiclexpr(\Ndiscardorbasiclexpr(\punnode{\Nbasiclexpr})) \astarrow \\
-      \overname{\some{ \astof{\vbasiclexpr} }}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
+\RenderRelation{build_discard_or_basic_lexpr}
+\RenderProseAndFormally{build_discard_or_basic_lexpr}
 
 \ASTRuleDef{DiscardOrIdentifier}
-\hypertarget{build-discardoridentifier}{}
-The function
-\[
-\begin{array}{r}
-  \builddiscardoridentifier(\overname{\parsenode{\Ndiscardoridentifier}}{\vparsednode}) \;\aslto
-  \overname{\Option{\Identifier}}{\vastnode}
-\end{array}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-
-\begin{mathpar}
-\inferrule[none]{}{
-  \builddiscardoridentifier(\Ndiscardoridentifier(\Tminus)) \astarrow \overname{\none}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[some]{}{
-  {
-    \begin{array}{r}
-      \builddiscardoridentifier(\Ndiscardoridentifier(\Tidentifier(\id))) \astarrow
-      \overname{\some{ \id }}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
+\RenderRelation{build_discard_or_identifier}
+\RenderProseAndFormally{build_discard_or_identifier}
 
 \subsection{Desugaring Assignable Expressions\label{sec:AssignableExpressionsDesugaring}}
 
@@ -326,131 +139,39 @@ They are used to build $\lexpr$ abstract syntax.
 \end{itemize}
 
 \ASTRuleDef{DesugarLHSAccess}
-\hypertarget{def-desugarlhsaccess}{}
-The function
-\[
-  \desugarlhsaccess(\overname{\Identifier}{\name}, \overname{\lhsaccess}{\vlhsaccess}) \;\aslto\; \overname{\lexpr}{\vlexpr}
-\]
-transforms an $\lhsaccess$ on an identifier $\name$ into an AST node $\vlexpr$.
+\RenderRelation{desugar_lhs_access}
 
 \ExampleDef{Desugaring a left-hand side access}
 \listingref{DesugarLHSAccess} shows an example of desugaring an $\lhsaccess$.
 \ASLListing{Desugaring a left-hand side access}{DesugarLHSAccess}{\syntaxtests/ASTRule.DesugarLHSAccess.asl}
 
-\begin{mathpar}
-\inferrule{
-  \vlexprs_0 \eqdef \LEVar(\name) \\
-  {
-  i \in 1..|\vaccess|: \vlexprs_i \eqdef
-    \begin{cases}
-      \LESetField(\vlexprs_{i-1}, \vfield) \\
-        \qquad \text{if } \vaccess_i = \FieldAccess(\vfield) \\
-      \LESetArray(\vlexprs_{i-1}, \vexpr) \\
-        \qquad \text{if } \vaccess_i = \ArrayAccess(\vexpr) \\
-    \end{cases}
-  } \\
-  \vlexpr \eqdef
-  \ifthenelseop[H]{\vslices = \emptylist}{\vlexprs_{|\vaccess|}}{\LESlice(\vlexprs_{|\vaccess|}, \vslices)}
-}{
-  \desugarlhsaccess\overname{
-    \left\{
-      {
-        \begin{array}{rcl}
-          \lhsaccessaccess &:& \vaccess, \\
-          \lhsaccessslices &:& \vslices
-        \end{array}
-      }
-    \right\}
-  }{\vlhsaccess} \astarrow \vlexpr
-}
-\end{mathpar}
+\RenderProseAndFormally{desugar_lhs_access}
 
 \ASTRuleDef{DesugarLHSTuple}
-\hypertarget{def-desugarlhstuple}{}
-The function
-\[
-  \desugarlhstuple(\overname{\KleeneStar{\Option{\lhsaccess}}}{\vlhsaccessopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
-\]
-transforms a list of \optionalterm{} $\lhsaccess$ elements into an AST node $\vlexpr$.
+\RenderRelation{desugar_lhs_tuple}
 
 \ExampleDef{Desugaring a left-hand side tuple}
 \listingref{DesugarLHSTuple} shows an example of desugaring a left-hand side tuple.
 \ASLListing{Desugaring a left-hand side tuple}{DesugarLHSTuple}{\syntaxtests/ASTRule.DesugarLHSTuple.asl}
 
-\begin{mathpar}
-\inferrule{
-  i \in 1..|\vlhsaccessopts|: \desugarlhsaccessopt(\vlhsaccessopt_i) \astarrow \vlexpr_i \\
-  \vlexprs \eqdef [i \in 1..|\vlhsaccessopts|: \vlexpr_i]
-}{
-  \desugarlhstuple(\vlhsaccessopts) \astarrow \overname{\LEDestructuring(\vlexprs)}{\vlexpr}
-}
-\end{mathpar}
+\RenderProseAndFormally{desugar_lhs_tuple}
 
 \ASTRuleDef{DesugarLHSAccessOpt}
-\hypertarget{def-desugarlhsaccessopt}{}
-The helper AST function
-\[
-    \desugarlhsaccessopt(\overname{\Option{\lhsaccess}}{\vlhsaccessopt}) \;\aslto\; \overname{\lexpr}{\vlexpr}
-\]
-is defined via the following rules:
-
-\begin{mathpar}
-\inferrule[none]{}
-{
-  \desugarlhsaccessopt(\overname{\none}{\vlhsaccessopt}) \astarrow \overname{\LEDiscard}{\vlexpr}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[some]{
-  \desugarlhsaccess(\vlhsaccess) \astarrow \vlexpr
-}{
-  \desugarlhsaccessopt(\overname{\some{\vlhsaccess}}{\vlhsaccessopt}) \astarrow \vlexpr
-}
-\end{mathpar}
+\RenderRelation{desugar_lhs_access_opt}
+\RenderProseAndFormally{desugar_lhs_access_opt}
 
 \ASTRuleDef{DesugarLHSFieldsTuple}
-\hypertarget{def-desugarlhsfieldstuple}{}
-The function
-\[
-  \desugarlhsfieldstuple(\overname{\Identifier}{\id} \aslsep \overname{\KleeneStar{\Option{\Identifier}}}{\fieldopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
-\]
-transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into an AST node $\vlexpr$.
+\RenderRelation{desugar_lhs_fields_tuple}
 
 \ExampleDef{Desugaring a left-hand side fields tuple}
 \listingref{DesugarLHSFieldsTuple} shows an example of desugaring a left-hand side fields tuple.
 \ASLListing{Desugaring a left-hand side fields tuple}{DesugarLHSFieldsTuple}{\syntaxtests/ASTRule.DesugarLHSFieldsTuple.asl}
 
-\begin{mathpar}
-\inferrule{
-  \fields \eqdef \filteroptionlist{\fieldopts}\\
-  \checknoduplicates(\fields) \typearrow \True \OrTypeError \hva\\
-  i \in 1..|\fieldopts|: \desugarlhsfieldopt(\id, \fieldopts[i]) \astarrow \vlexpr_i \\
-  \vlexprs \eqdef [i \in 1..|\fieldopts|: \vlexpr_i]
-}{
-  \desugarlhsfieldstuple(\id, \fieldopts) \astarrow \overname{\LEDestructuring(\vlexprs)}{\vlexpr}
-}
-\end{mathpar}
+\RenderProseAndFormally{desugar_lhs_fields_tuple}
 
 \ASTRuleDef{DesugarLHSFieldOpt}
-\hypertarget{def-desugarlhsfieldopt}{}
-The helper AST function
-\[
-    \desugarlhsfieldopt(\overname{\Identifier}{\id} \aslsep \overname{\Option{\Identifier}}{\fieldopt}) \;\aslto\; \overname{\lexpr}{\vlexpr}
-\]
-is defined via the following rules:
-\begin{mathpar}
-\inferrule[none]{}
-{
-  \desugarlhsfieldopt(\id, \overname{\none}{\fieldopt}) \astarrow \overname{\LEDiscard}{\vlexpr}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[some]{}{
-  \desugarlhsfieldopt(\id, \overname{\some{\vfield}}{\fieldopt}) \astarrow \overname{\LESetField(\LEVar(\id), \vfield)}{\vlexpr}
-}
-\end{mathpar}
+\RenderRelation{desugar_lhs_field_opt}
+\RenderProseAndFormally{desugar_lhs_field_opt}
 
 \hypertarget{def-discardlexprterm}{}
 \section{Discarding Assignment Expressions\label{sec:DiscardingAssignmentExpressions}}
@@ -478,7 +199,6 @@ In \listingref{semantics-lediscard}, the assignment \texttt{- = 42;} does not af
 \RenderProseAndFormally{eval_lexpr_LEDiscard}
 \CodeSubsection{\EvalLEDiscardBegin}{\EvalLEDiscardEnd}{../Interpreter.ml}
 
-\hypertarget{def-varlexprterm}{}
 \section{Variable Assignment Expressions\label{sec:VariableAssignmentExpressions}}
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_var}
@@ -520,7 +240,6 @@ In \listingref{semantics-leglobalvar},
 \CodeSubsection{\EvalLEVarBegin}{\EvalLEVarEnd}{../Interpreter.ml}
 
 \section{Multi-assignment Expressions\label{sec:MultiAssignmentExpressions}}
-\hypertarget{def-destructuringlexprterm}{}
 \ASLListing{Assignment to multiple left-hand-side expressions}{semantics-ledestructuring}{\semanticstests/SemanticsRule.LEDestructuring.asl}
 
 \subsection{Abstract Syntax}
@@ -593,7 +312,6 @@ and \ExampleRef{Multi-assignments}.
 \FormallyParagraph
 \RenderRule{protected_multi_assign}
 
-\hypertarget{def-setarraylexprterm}{}
 \section{Array Assignment Expressions\label{sec:ArrayAssignmentExpressions}}
 This section details the syntax, abstract syntax, semantics, and typing of array write expressions.
 In the untyped AST, a write to either an integer-indexed array or an enumeration-indexed array is represented
@@ -653,7 +371,6 @@ cell of
 \RenderProseAndFormally{eval_lexpr_LESetEnumArray}
 \CodeSubsection{\EvalLESetEnumArrayBegin}{\EvalLESetEnumArrayEnd}{../Interpreter.ml}
 
-\hypertarget{def-slicelexprterm}{}
 \section{Bitvector Slice Assignment Expressions\label{sec:BitvectorSliceAssignmentExpressions}}
 \ASLListing{Assignable slice expressions}{semantics-leslice}{\semanticstests/SemanticsRule.LESlice.asl}
 
@@ -720,7 +437,6 @@ See \ExampleRef{Checking Slices for Overlaps}.
 
 \RenderProseAndFormally{check_two_ranges_non_overlapping}
 
-\hypertarget{def-setfieldlexprterm}{}
 \section{Structured Type Field Assignment Expressions\label{sec:StructuredTypeFieldAssignmentExpressions}}
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_setfield}
