@@ -3000,12 +3000,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         match atom with
         | Some (PteAccess (Set (_,pte)))
           when StructuredAtom.is_tthm pte ->
-            WPTESet.union pte acc
+            let acc = if WPTESet.mem HD pte then
+              StringSet.add
+                (Printf.sprintf "%s:HD" (pp_proc node.C.evt.C.proc)) acc
+            else acc in
+            if WPTESet.mem HA pte then
+              StringSet.add
+                (Printf.sprintf "%s:HA" (pp_proc node.C.evt.C.proc)) acc
+            else acc
         | Some (PteAccess (ReadHA _)) ->
-            WPTESet.add HA acc
+            StringSet.add (Printf.sprintf "%s:HA" (pp_proc node.C.evt.C.proc)) acc
         | _ -> acc
-        ) n WPTESet.empty
-      |> WPTESet.pp_str " " WPTE.pp in
+        ) n StringSet.empty
+        |> StringSet.pp_str " " Fun.id in
       if tthm_value = "" then []
       else [("TTHM",tthm_value)]
 
