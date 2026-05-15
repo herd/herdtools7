@@ -1,0 +1,13 @@
+Test CoWR0+tlbi-sync.ishsWpteoapteoa-pospteoap-frippteoa Allowed
+States 3
+0:X4=0;
+0:X4=4;
+0:X4=8;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Flag requires-BBM
+Condition exists (0:X4=0)
+Observation CoWR0+tlbi-sync.ishsWpteoapteoa-pospteoap-frippteoa Sometimes 1 3
+Hash=23a347b5c59603b40c22ea0b5b2ec6e9
+

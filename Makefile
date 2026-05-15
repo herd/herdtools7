@@ -787,6 +787,29 @@ diy-test-aarch64:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diycross7 tests: OK"
 
+diy-test:: diy-test-vmsa
+diy-test-vmsa:
+	@ echo
+	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-diycross-path $(DIYCROSS) \
+		-libdir-path ./herd/libdir \
+		-expected-dir ./gen/tests/AArch64.vmsa \
+		-variant vmsa \
+		-diycross-arg -arch \
+		-diycross-arg AArch64 \
+		-diycross-arg -variant \
+		-diycross-arg vmsa \
+		-diycross-arg -oneloc \
+		-diycross-arg 'PteOA,PteHA,PteHD,P' \
+		-diycross-arg TLBI-sync.ISHsWW \
+		-diycross-arg 'PteV1,PteAF0,P' \
+		-diycross-arg 'PteOA,P' \
+		-diycross-arg PosWR \
+		-diycross-arg Fri \
+		$(REGRESSION_TEST_MODE)
+
 diy-test:: diy-test-mixed
 diy-test-mixed::
 	@ echo

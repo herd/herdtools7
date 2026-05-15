@@ -1,0 +1,14 @@
+Test CoWR0+tlbi-sync.ishsWpteoap-pos-frippteoa Allowed
+States 4
+0:X4=0; [y]=5;
+0:X4=4; [y]=4;
+0:X4=5; [y]=4;
+0:X4=5; [y]=5;
+Ok
+Witnesses
+Positive: 2 Negative: 7
+Flag requires-BBM
+Condition exists ([y]=5 /\ 0:X4=0)
+Observation CoWR0+tlbi-sync.ishsWpteoap-pos-frippteoa Sometimes 2 7
+Hash=15d1233b6a6d5e8c8ce1b9e426000a7a
+
