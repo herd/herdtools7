@@ -1,6 +1,3 @@
-(copy_files
- (files ../aslref.ml))
-
 (executable
  (name jaslref)
  (modes js)
