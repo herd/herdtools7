@@ -2922,11 +2922,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       (* collect distinct tthm *)
       let tthm_value = C.fold ( fun node acc ->
         match node.C.edge.E.a1 with
-        | Some(Pte (Set e|SetRel e), _) when is_tthm e -> WPTESet.union e acc
-        | Some(Pte (ReadHAAcq|ReadHAAcqPc), _) -> WPTESet.add HA acc
+        | Some(Pte (Set e|SetRel e), _) when is_tthm e ->
+            let acc = if WPTESet.mem HD e then
+             StringSet.add (Printf.sprintf "%s:HD" (pp_proc node.C.evt.C.proc)) acc
+            else acc in
+            if WPTESet.mem HA e then
+              StringSet.add (Printf.sprintf "%s:HA" (pp_proc node.C.evt.C.proc)) acc
+            else acc
+        | Some(Pte (ReadHAAcq|ReadHAAcqPc), _) ->
+            StringSet.add (Printf.sprintf "%s:HA" (pp_proc node.C.evt.C.proc)) acc
         | _ -> acc
-        ) n WPTESet.empty
-      |> WPTESet.pp_str " " WPTE.pp in
+      ) n StringSet.empty
+      |> StringSet.pp_str " " Fun.id in
       if tthm_value = "" then []
       else [("TTHM",tthm_value)]
 
