@@ -909,7 +909,11 @@ let check_cycle c =
   let exist_fault_related_write ns =
     List.fold_left ( fun acc n ->
       let next = match n.evt.bank,n.evt.dir with
-        | Tag,Some W -> Irr
+        (* If there is a write to tag *)
+        | Tag,Some W
+        (* If there is a possible implicit pte update *)
+        | Ord, _
+        (* Explicit pte update *)
         | Pte,Some W -> Value.need_check_fault n.evt.atom
         | _ -> NoDir in
       match acc,next with
@@ -964,7 +968,6 @@ let check_cycle c =
     let v = CoSt.get_co st Ord in
     if v = n.evt.v then
       Warn.fatal "Updated value remains the same. An issue should be reported.";
-    let st = CoSt.implicit_pte_update st W in
     n.evt <- { n.evt with v = tr_value n.evt v; } ;
     (* Writing Ord resets morello tag *)
     let st = CoSt.set_co st CapaTag evt_null.ctag in
@@ -1016,6 +1019,7 @@ let check_cycle c =
               let check_fault, st =
                 if do_morello then None, st
                 else fault_update_without_rmw st in
+              let st = CoSt.implicit_pte_update st W in
               n.evt <- { n.evt with check_fault; check_value; };
               sync_physical_address st n ;
               (env, new_variable_value, st)
@@ -1028,6 +1032,7 @@ let check_cycle c =
               let st = CoSt.next_co st Ord in (* Pre-increment *)
               let st = set_write_val_ord st n in
               let check_fault, st = fault_update_without_rmw st in
+              let st = CoSt.implicit_pte_update st W in
               sync_physical_address st n ;
               n.evt <- { n.evt with check_fault; check_value; };
               (env, new_variable_value, st)
@@ -1196,7 +1201,6 @@ let do_set_read_v init =
         let check_value = Some (CoSt.get_check_value st) in
         begin match bank with
         | Ord | Instr->
-          let st = CoSt.implicit_pte_update st R in
           set_read_individual_v n cell check_value;
           let check_fault, st =
             if do_morello then None, st
@@ -1205,23 +1209,24 @@ let do_set_read_v init =
                Here we assume write is stronger than read. *)
             else if n.evt.rmw then CoSt.fault_update st W
             else CoSt.fault_update st R in
+          let st = CoSt.implicit_pte_update st R in
           n.evt <- { n.evt with check_fault };
           sync_physical_address st n ;
           st
         | Pair ->
-          let st = CoSt.implicit_pte_update st R in
           set_read_pair_v n cell check_value;
           let check_fault, st = CoSt.fault_update st R in
+          let st = CoSt.implicit_pte_update st R in
           n.evt <- { n.evt with check_fault };
           sync_physical_address st n ;
           st
         | VecReg a ->
-          let st = CoSt.implicit_pte_update st R in
           let cell = Array.map Value.to_int cell in
           let v = E.SIMD.read a cell
                    |> E.SIMD.reduce
                    |> Value.from_int in
           let check_fault, st = CoSt.fault_update st R in
+          let st = CoSt.implicit_pte_update st R in
           n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
           st
         | Tag ->

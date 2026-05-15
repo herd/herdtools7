@@ -406,6 +406,7 @@ module Value = struct
     let need_check_fault atom =
       let open WPTE in
       match atom with
+      | Some (Tag, None) -> Irr
       | Some (Pte pte, None)
         when (affect_pte_field AF pte || affect_pte_field VALID pte) -> Irr
       | Some (Pte pte, None)
