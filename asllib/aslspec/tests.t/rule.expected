@@ -81,6 +81,6 @@ The relation
     \item define \texttt{y} as the rec record with $\Fieldf$ value \texttt{a} and $\Fieldg$ value \texttt{b}
     \item define \texttt{r\_f} as the sum of the field $\FIELDf$ of \texttt{r} and the field $\FIELDg$ of \texttt{r}
     \item define \texttt{r'} as \texttt{r} with $\FIELDf$ updated to \texttt{res}
-    \item \textbf{the result is:} the pair consisting of \texttt{res} (for the output variable \texttt{c}) and \texttt{r'} (for the output variable \texttt{r'}).
+    \item \textbf{the result is:} the pair consisting of \texttt{res} (for the output variable \texttt{c}) and \texttt{r'}.
   \end{itemize}
 } % EndDefineProse

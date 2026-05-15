@@ -785,13 +785,16 @@ module Make (S : SPEC_VALUE) = struct
     let rec expr_to_prose expr =
       let open Expr in
       match expr with
-      | NamedExpr { expr = sub_expr; name } ->
+      | NamedExpr { expr = sub_expr; name; same_name } ->
           (* We strip names from the sub-expression to avoid prose like
             "... (for the output variable a) (for the output variable b)". *)
           let stripped_sub_expr = strip_names_from_expr sub_expr in
           let expr_prose = expr_to_prose stripped_sub_expr in
-          Format.asprintf "%s (for the output variable %s)" expr_prose
-            (var_to_prose name)
+          let pp_output_variable_prose fmt name =
+            if same_name then ()
+            else fprintf fmt " (for the output variable %s)" (var_to_prose name)
+          in
+          Format.asprintf "%s%a" expr_prose pp_output_variable_prose name
       | Var { id } when String.equal id Spec.ignore_var ->
           "some arbitrary value"
       | Var { id } -> (
@@ -1069,8 +1072,13 @@ module Make (S : SPEC_VALUE) = struct
     let rec pp_prose_rule_element fmt element =
       match element with
       | Judgment judgment -> pp_prose_judgment fmt judgment
-      | Cases cases ->
-          fprintf fmt "\\OneApplies@;<0 0>%a" (pp_itemized_list pp_case) cases
+      | Cases cases -> pp_prose_one_applies fmt cases
+
+    (** [pp_prose_one_applies fmt cases] renders the list [cases] with the
+        formatter [fmt] with the prose that implies only one of the cases should
+        apply. *)
+    and pp_prose_one_applies fmt cases =
+      fprintf fmt "\\OneApplies@;<0 0>%a" (pp_itemized_list pp_case) cases
 
     (** [pp_case fmt case] renders the prose for the single case [case] with the
         formatter [fmt]. *)
@@ -1109,13 +1117,15 @@ module Make (S : SPEC_VALUE) = struct
       | [ Cases cases ] ->
           (* When the top-level is just a list of cases, we want to start with
              an "one of the following applies" without an extra level of nesting.
+             (The case of a single judgment is already handled as an optimization
+             in [pp_prose_rule_elements].)
           *)
-          fprintf fmt "\\OneApplies@;<0 0>%a" (pp_itemized_list pp_case) cases
+          pp_prose_one_applies fmt cases
       | _ ->
           (* The case name is empty, since we are rendering at the top-level and
-           don't want to start with an "all of the following apply" or
-           "one of the following applies".
-        *)
+             don't want to start with an "all of the following apply" or
+             "one of the following applies".
+          *)
           pp_prose_rule_elements fmt ~case_name:"" rule_elements
 
     (** [pp_render_rule_math_and_prose fmt def] renders both the mathematical
