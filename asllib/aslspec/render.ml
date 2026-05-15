@@ -1067,13 +1067,15 @@ module Make (S : SPEC_VALUE) = struct
     (** [pp_prose_rule_element fmt element] renders the prose for a single
         element of a rule with the formatter [fmt]. *)
     let rec pp_prose_rule_element fmt element =
-      let pp_case fmt { name; elements } =
-        pp_prose_rule_elements fmt ~case_name:name elements
-      in
       match element with
       | Judgment judgment -> pp_prose_judgment fmt judgment
       | Cases cases ->
           fprintf fmt "\\OneApplies@;<0 0>%a" (pp_itemized_list pp_case) cases
+
+    (** [pp_case fmt case] renders the prose for the single case [case] with the
+        formatter [fmt]. *)
+    and pp_case fmt { name; elements } =
+      pp_prose_rule_elements fmt ~case_name:name elements
 
     (** [pp_prose_rule_elements fmt ~case_name_opt elements] renders the prose
         for a list of rule elements [elements] with the formatter [fmt]. If
@@ -1103,10 +1105,18 @@ module Make (S : SPEC_VALUE) = struct
     let pp_render_rule_prose fmt { RuleRender.relation_name; path } =
       let relation = Spec.relation_for_id S.spec relation_name in
       let rule_elements = Spec.filter_rule_for_path relation path in
-      (* The case name is empty, since we are rendering at the top-level and
-        don't want to start with an "all of the following apply" or
-        "one of the following applies". *)
-      pp_prose_rule_elements fmt ~case_name:"" rule_elements
+      match rule_elements with
+      | [ Cases cases ] ->
+          (* When the top-level is just a list of cases, we want to start with
+             an "one of the following applies" without an extra level of nesting.
+          *)
+          fprintf fmt "\\OneApplies@;<0 0>%a" (pp_itemized_list pp_case) cases
+      | _ ->
+          (* The case name is empty, since we are rendering at the top-level and
+           don't want to start with an "all of the following apply" or
+           "one of the following applies".
+        *)
+          pp_prose_rule_elements fmt ~case_name:"" rule_elements
 
     (** [pp_render_rule_math_and_prose fmt def] renders both the mathematical
         inference rules and the prose description of the rules referenced by
