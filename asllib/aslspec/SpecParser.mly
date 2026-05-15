@@ -105,7 +105,9 @@ let check_balanced_braces loc s =
 %token LPAR
 %token RPAR
 %token LBRACKET
+%token LLBRACKET
 %token RBRACKET
+%token RRBRACKET
 %token LBRACE
 %token RBRACE
 %token MINUS
@@ -225,11 +227,15 @@ let type_kind := TYPEDEF; { Term.TypeKind_Generic }
 let checked_identifier == id=IDENTIFIER; { check_definition_name (loc $sloc) id; id }
 
 let type_definition :=
-    | ~=type_kind; type_name=checked_identifier; ~=type_attributes; ~=type_variants_with_attributes;
-    {   Elem_Type (Type.make (loc $sloc) type_kind type_name type_variants_with_attributes type_attributes) }
+    | ~=type_kind; type_name=checked_identifier; ~=type_parameter; ~=type_attributes; ~=type_variants_with_attributes;
+    {   Elem_Type (Type.make (loc $sloc) type_kind type_name type_parameter type_variants_with_attributes type_attributes) }
     | type_kind; type_name=IDENTIFIER; type_attributes; list1(type_variant_with_attributes);
     {   let msg = Format.sprintf "Definition of 'typedef %s' is missing '='" type_name in
         raise (SpecError { loc = (loc $sloc); msg }) }
+
+let type_parameter ==
+    | LLBRACKET; param=IDENTIFIER; RRBRACKET; { Some param }
+    | { None }
 
 let relation_definition :=
     ~=relation_category; ~=relation_property; name=checked_identifier; input=plist0(opt_named_type_term); ARROW; output=type_variants;
@@ -357,6 +363,7 @@ let type_term_with_attributes := ~=type_term; ~=type_attributes;
 let type_term :=
     | name=checked_identifier; { Term.make_label (loc $sloc) name }
     | op=type_operator; LPAR; ~=opt_named_type_term; RPAR; { Term.make_type_operation (loc $sloc) op opt_named_type_term }
+    | typename=IDENTIFIER; LLBRACKET; ~=opt_named_type_term; RRBRACKET; { Term.make_param_type (loc $sloc) typename opt_named_type_term }
     | LPAR; args=tclist1(opt_named_type_term); RPAR; { Term.make_tuple (loc $sloc) args }
     | label=checked_identifier; LPAR; args=tclist1(opt_named_type_term); RPAR;
     {   Term.make_labelled_tuple (loc $sloc) label args }
