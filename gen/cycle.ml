@@ -905,7 +905,8 @@ let check_cycle c =
   let exist_fault_related_write ns =
     List.fold_left ( fun acc n ->
       let next = match n.evt.bank,n.evt.dir with
-        | Tag,Some W -> Irr
+        | Tag,Some W
+        | Ord, _
         | Pte,Some W -> Value.need_check_fault n.evt.atom
         | _ -> NoDir in
       match acc,next with
@@ -960,7 +961,6 @@ let check_cycle c =
     let v = CoSt.get_co st Ord in
     if v = n.evt.v then
       Warn.fatal "Updated value remains the same. An issue should be reported.";
-    let st = CoSt.implicit_pte_update st W in
     n.evt <- { n.evt with v = tr_value n.evt v; } ;
     (* Writing Ord resets morello tag *)
     let st = CoSt.set_co st CapaTag evt_null.ctag in
@@ -1009,6 +1009,7 @@ let check_cycle c =
             | Instr -> Warn.fatal "instruction annotation to data bank not possible?"
             | Ord ->
               let st = set_write_val_ord st n in
+              let st = CoSt.implicit_pte_update st W in
               let check_fault, st =
                 if do_morello then None, st
                 else fault_update_without_rmw st in
@@ -1023,6 +1024,7 @@ let check_cycle c =
               assert (Array.length cell>=2) ;
               let st = CoSt.next_co st Ord in (* Pre-increment *)
               let st = set_write_val_ord st n in
+              let st = CoSt.implicit_pte_update st W in
               let check_fault, st = fault_update_without_rmw st in
               sync_physical_address st n ;
               n.evt <- { n.evt with check_fault; check_value; };
