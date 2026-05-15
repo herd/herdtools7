@@ -1,0 +1,12 @@
+AArch64 Z6.3 
+{ 
+0:X1=x; 0:X3=y; 
+1:X3=y; 1:X4=z; 
+2:X4=z; 2:X1=x; 
+} 
+ P0          | P1          | P2          ; 
+ MOV W0,#1   | MOV W0,#2   | LDR W5,[X4] ; 
+ STR W0,[X1] | STR W0,[X3] | LDR W6,[X1] ; 
+ MOV W2,#1   | MOV W2,#1   |             ; 
+ STR W2,[X3] | STR W2,[X4] |             ; 
+exists ([y]=2 /\ 2:X5=1 /\ 2:X6=0) 
