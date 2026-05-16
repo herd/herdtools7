@@ -804,65 +804,281 @@ let filter_rule_for_path { Relation.name; rule_opt; loc } path_str =
   filter_rule_elements (Option.get rule_opt) path
 
 module Check = struct
-  (** [check_layout term layout] checks that the given [layout] is structurally
-      consistent with the given [term]. If not, raises a [SpecError] describing
-      the issue. *)
-  let rec check_layout term layout =
-    let consistent_layout = Layout.for_type_term term in
-    let open Layout in
-    let open Term in
-    match (term, layout) with
-    | (Label _ | Parameter _), Unspecified -> ()
-    | (Label _ | Parameter _), _ ->
-        Error.bad_layout term layout ~consistent_layout
-    | TypeOperator { term = _, t }, _ -> check_layout t layout
-    | ParamType { term = _, t }, _ -> check_layout t layout
-    | Tuple { args }, Horizontal cells | Tuple { args }, Vertical cells ->
-        if List.compare_lengths args cells <> 0 then
-          Error.bad_layout term layout ~consistent_layout
-        else
-          List.iter2 (fun (_, term) cell -> check_layout term cell) args cells
-    | Record { fields }, Horizontal cells | Record { fields }, Vertical cells ->
-        if List.compare_lengths fields cells <> 0 then
-          Error.bad_layout term layout ~consistent_layout
-        else
-          List.iter2
-            (fun { Term.term } cell -> check_layout term cell)
-            fields cells
-    | ConstantsSet { loc; labels }, (Horizontal cells | Vertical cells) ->
-        if List.compare_lengths labels cells <> 0 then
-          Error.bad_layout term layout ~consistent_layout
-        else
-          List.iter2
-            (fun _ cell -> check_layout (Label { loc; label = "" }) cell)
-            labels cells
-    | ( Function { from_type = _, from_term; to_type = _, to_term; _ },
-        (Horizontal cells | Vertical cells) ) ->
-        if List.length cells <> 2 then
-          Error.bad_layout term layout ~consistent_layout
-        else check_layout from_term (List.nth cells 0);
-        check_layout to_term (List.nth cells 1)
-    | _, Unspecified -> ()
+  (** [check spec] checks that all math layout attributes in [spec] match the
+      structure of their respective AST nodes, raising a [SpecError] if any
+      check fails. *)
+  module CheckLayout : sig
+    val check : t -> unit
+  end = struct
+    let is_default_layout = function
+      | Unspecified | Horizontal [ Unspecified ] | Vertical [ Unspecified ] ->
+          true
+      | Horizontal _ | Vertical _ -> false
 
-  (** [check_math_layout spec] checks that the math layouts for all defining
-      nodes in [spec] are structurally consistent with their type terms. *)
-  let check_math_layout spec =
-    let check_math_layout_for_definition_node node =
-      let loc = loc_of_definition_node node in
+    (** [check_term term layout] checks that the given [layout] is structurally
+        consistent with the given [term]. If not, raises a [SpecError]
+        describing the issue. *)
+    let rec check_term term layout =
+      let consistent_layout = Layout.for_type_term term in
       let open Layout in
-      match node with
-      | Node_Type { Type.name } ->
-          check_layout (Label { loc; label = name }) (math_layout_for_node node)
-      | Node_Constant { Constant.name } ->
-          check_layout (Label { loc; label = name }) (math_layout_for_node node)
-      | Node_TypeVariant { TypeVariant.term } ->
-          check_layout term (math_layout_for_node node)
-      | Node_Relation def ->
-          check_layout (relation_to_tuple def) (math_layout_for_node node)
-      | Node_RecordField { term } ->
-          check_layout term (math_layout_for_node node)
-    in
-    iter_defined_nodes spec check_math_layout_for_definition_node
+      let open Term in
+      let check_term_list terms cells =
+        if List.compare_lengths terms cells <> 0 then
+          Error.bad_layout term layout ~consistent_layout
+        else List.iter2 check_term terms cells
+      in
+      match (term, layout) with
+      | (Label _ | Parameter _), _ when is_default_layout layout -> ()
+      | (Label _ | Parameter _), _ ->
+          Error.bad_layout term layout ~consistent_layout
+      | Tuple { args }, (Horizontal [ Unspecified ] | Vertical [ Unspecified ])
+        ->
+          check_term_list (List.map snd args)
+            (LayoutUtils.unspecified_for_elements args)
+      | ( Record { fields },
+          (Horizontal [ Unspecified ] | Vertical [ Unspecified ]) ) ->
+          check_term_list
+            (List.map (fun { Term.term } -> term) fields)
+            (LayoutUtils.unspecified_for_elements fields)
+      | ( ConstantsSet { loc; labels },
+          (Horizontal [ Unspecified ] | Vertical [ Unspecified ]) ) ->
+          check_term_list
+            (List.map (fun _ -> Label { loc; label = "" }) labels)
+            (LayoutUtils.unspecified_for_elements labels)
+      | ( Function { from_type = _, from_term; to_type = _, to_term; _ },
+          (Horizontal [ Unspecified ] | Vertical [ Unspecified ]) ) ->
+          check_term from_term Unspecified;
+          check_term to_term Unspecified
+      | TypeOperator { term = _, t }, _ -> check_term t layout
+      | ParamType { term = _, t }, _ -> check_term t layout
+      | Tuple { args }, Horizontal cells | Tuple { args }, Vertical cells ->
+          check_term_list (List.map snd args) cells
+      | Record { fields }, Horizontal cells | Record { fields }, Vertical cells
+        ->
+          check_term_list (List.map (fun { Term.term } -> term) fields) cells
+      | ConstantsSet { loc; labels }, (Horizontal cells | Vertical cells) ->
+          check_term_list
+            (List.map (fun _ -> Label { loc; label = "" }) labels)
+            cells
+      | ( Function { from_type = _, from_term; to_type = _, to_term; _ },
+          (Horizontal cells | Vertical cells) ) ->
+          if List.length cells <> 2 then
+            Error.bad_layout term layout ~consistent_layout
+          else check_term from_term (List.nth cells 0);
+          check_term to_term (List.nth cells 1)
+      | _, Unspecified -> ()
+
+    let rec check_expr_list spec exprs layout ~expr_for_error =
+      let consistent_layout =
+        Horizontal (LayoutUtils.unspecified_for_elements exprs)
+      in
+      match layout with
+      | Unspecified -> ()
+      (* List renderers treat a single default cell as "use the default layout
+         for every element", regardless of list length. For example, both
+         "r(a, b) { (_) }" and "r(a, b) { [_] }" are valid. *)
+      | Horizontal [ Unspecified ] | Vertical [ Unspecified ] ->
+          List.iter (fun expr -> check_expr spec expr Unspecified) exprs
+      | Horizontal cells | Vertical cells ->
+          if List.compare_lengths exprs cells <> 0 then
+            Error.bad_expr_layout expr_for_error layout ~consistent_layout
+          else List.iter2 (check_expr spec) exprs cells
+
+    (* Pair renderers such as transitions use pp_connect_pair, not the generic
+       list renderer. Like list renderers, they accept a single default cell as
+       shorthand: "r(a) -> b { (_) }" defaults both sides. Record updates are not
+       rendered through pp_connect_pair, so this shorthand is disabled for them. *)
+    and check_expr_pair ?(allow_single_unspecified = true) spec lhs rhs layout
+        ~expr_for_error =
+      match layout with
+      | Unspecified -> ()
+      | (Horizontal [ Unspecified ] | Vertical [ Unspecified ])
+        when allow_single_unspecified ->
+          ()
+      | Horizontal [ lhs_layout; rhs_layout ]
+      | Vertical [ lhs_layout; rhs_layout ] ->
+          check_expr spec lhs lhs_layout;
+          check_expr spec rhs rhs_layout
+      | Horizontal _ | Vertical _ ->
+          let consistent_layout =
+            Horizontal [ layout_for_expr lhs; layout_for_expr rhs ]
+          in
+          Error.bad_expr_layout expr_for_error layout ~consistent_layout
+
+    and check_operator_expr spec expr name args layout =
+      let operator = relation_for_id spec name in
+      match (operator.Relation.input, args) with
+      | [], [] -> (
+          (* Nullary operators are atomic layout leaves, like variables. The general
+            argument-list check would allow empty compound layouts, but only the
+            default layout is valid: "op { _ }" and "op { (_) }" are valid,
+            while "op { () }" and "op { [] }" are not. *)
+          match layout with
+          | Unspecified | Horizontal [ Unspecified ] | Vertical [ Unspecified ]
+            ->
+              ()
+          | Horizontal _ | Vertical _ ->
+              Error.bad_expr_layout expr layout ~consistent_layout:Unspecified)
+      | [ _ ], [ arg ] when not operator.Relation.is_variadic ->
+          check_expr spec arg layout
+      | _ -> check_expr_list spec args layout ~expr_for_error:expr
+
+    and check_expr spec expr layout =
+      let open Expr in
+      match expr with
+      | NamedExpr { expr = sub_expr } ->
+          (* Internal names are layout-transparent. The layout applies to the
+             wrapped expression: "x /* y */ { _ }" is checked like "x { _ }". *)
+          check_expr spec sub_expr layout
+      | Var _ -> (
+          (* Variables are atomic layout leaves. They have no child expressions
+             to distribute layout cells to, so only the default layout is valid:
+             "x { _ }" and "x { (_) }" are valid, but "x { (_, _) }" is not. *)
+          match layout with
+          | Unspecified | Horizontal [ Unspecified ] | Vertical [ Unspecified ]
+            ->
+              ()
+          | Horizontal _ | Vertical _ ->
+              Error.bad_expr_layout expr layout ~consistent_layout:Unspecified)
+      | Relation { name; is_operator = true; args } ->
+          (* Operators have a few renderer-specific forms: nullary operators are
+             atomic leaves, simple unary operators pass their layout to their
+             sole argument, and other operators distribute layout cells over
+             arguments. For example, "a + (b, c) { (_, (_, _)) }" lays out the
+             left and right operands separately. *)
+          check_operator_expr spec expr name args layout
+      | Relation { args } | Tuple { args } | Map { args } ->
+          (* Relations, tuples, and maps render their arguments as a list, so
+             layout cells are distributed over that list. A single default cell
+             covers the whole list. For example, "r(a, b) { (_) }" and
+             "r(a, (b, c)) { (_, (_, _)) }" are valid, while "r(a, b) { (_, _,
+             _) }" is not. *)
+          check_expr_list spec args layout ~expr_for_error:expr
+      | Record { fields } ->
+          (* Records render their field values as a list in field order, with
+             the field names outside the expression layout. For example,
+             "[f: a, g: (b, c)] { (_, (_, _)) }" is valid. *)
+          check_expr_list spec (List.map snd fields) layout ~expr_for_error:expr
+      | RecordUpdate { record_expr; updates } ->
+          (* Record updates are a pair: the base record expression and the
+             update fields. The update fields then have their own list layout.
+             For example, "r(f: a, g: b) { (_, (_, _)) }" is valid. Since record
+             updates are not rendered through pp_connect_pair, "r(f: a) { (_) }"
+             is not. *)
+          let updates_expr =
+            Expr.Record
+              { loc = Expr.loc_of expr; label_opt = None; fields = updates }
+          in
+          check_expr_pair ~allow_single_unspecified:false spec record_expr
+            updates_expr layout ~expr_for_error:expr
+      | ListIndex { index = sub_expr } | FieldAccess { base = sub_expr } ->
+          (* List indexing and field access are layout-transparent wrappers
+             around their sub-expression: "xs[(a, b)] { (_, _) }" checks the
+             index layout, and "r.f { _ }" checks the base expression layout. *)
+          check_expr spec sub_expr layout
+      | Indexed { body } -> (
+          (* Indexed judgments render as an index binder paired with the body.
+             The binder itself has no expression layout, so either the default
+             layout or a two-cell pair is valid:
+             "INDEX(i, xs: body) { (_, body_layout) }". *)
+          match layout with
+          | Unspecified -> ()
+          | Horizontal [ Unspecified ] | Vertical [ Unspecified ] -> ()
+          | Horizontal [ _index_layout; body_layout ]
+          | Vertical [ _index_layout; body_layout ] ->
+              check_expr spec body body_layout
+          | Horizontal _ | Vertical _ ->
+              Error.bad_expr_layout expr layout
+                ~consistent_layout:
+                  (Horizontal [ Unspecified; layout_for_expr body ]))
+      | Transition { lhs; rhs } ->
+          (* Transitions render as a top-level lhs/rhs pair around the arrow.
+             This is why output judgments are checked after resolution as
+             "r(args) -> out": "r(a) -> (b, c) { (_, (_, _)) }" is valid. *)
+          check_expr_pair spec lhs rhs layout ~expr_for_error:expr
+      | UnresolvedApplication _ -> assert false
+
+    and layout_for_expr expr =
+      let open Expr in
+      match expr with
+      | NamedExpr { expr = sub_expr } -> layout_for_expr sub_expr
+      | Var _ -> Unspecified
+      | Relation { args } | Tuple { args } | Map { args } ->
+          Horizontal (List.map layout_for_expr args)
+      | Record { fields } ->
+          Horizontal (List.map (fun (_, expr) -> layout_for_expr expr) fields)
+      | RecordUpdate { record_expr; updates } ->
+          Horizontal
+            [
+              layout_for_expr record_expr;
+              Horizontal
+                (List.map (fun (_, expr) -> layout_for_expr expr) updates);
+            ]
+      | ListIndex { index } -> layout_for_expr index
+      | FieldAccess { base } -> layout_for_expr base
+      | Indexed { body } -> Horizontal [ Unspecified; layout_for_expr body ]
+      | Transition { lhs; rhs } ->
+          Horizontal [ layout_for_expr lhs; layout_for_expr rhs ]
+      | UnresolvedApplication _ -> Unspecified
+
+    let rec check_rule_element spec =
+      let open Rule in
+      function
+      | Judgment ({ expr } as judgment) ->
+          check_expr spec expr (Rule.judgment_layout judgment)
+      | Cases cases ->
+          List.iter
+            (fun { elements; _ } ->
+              List.iter (check_rule_element spec) elements)
+            cases
+
+    (** [check_math_layout spec] checks that the math layouts for all defining
+        nodes in [spec] are structurally consistent with their type terms, and
+        that rule judgment layouts are structurally consistent with their
+        expressions. *)
+    let check spec =
+      let check_math_layout_for_definition_node node =
+        let loc = loc_of_definition_node node in
+        let open Layout in
+        match node with
+        | Node_Type { Type.name } ->
+            check_term (Label { loc; label = name }) (math_layout_for_node node)
+        | Node_Constant ({ Constant.name; opt_value_and_attributes } as def) ->
+            check_term (Label { loc; label = name }) (math_layout_for_node node);
+            Option.iter
+              (fun (expr, _) ->
+                let layout =
+                  Option.value
+                    (Constant.value_math_layout def)
+                    ~default:Unspecified
+                in
+                check_expr spec expr layout)
+              opt_value_and_attributes
+        | Node_TypeVariant { TypeVariant.term } ->
+            check_term term (math_layout_for_node node)
+        | Node_Relation def ->
+            check_term (relation_to_tuple def) (math_layout_for_node node)
+        | Node_RecordField { term } ->
+            check_term term (math_layout_for_node node)
+      in
+      let check_rule_layout_for_elem = function
+        | Elem_Relation { Relation.rule_opt = Some elements } ->
+            List.iter (check_rule_element spec) elements
+        | _ -> ()
+      in
+      let check_type_variant_layout_for_elem = function
+        | Elem_Type { Type.variants } ->
+            List.iter
+              (fun ({ TypeVariant.term } as variant) ->
+                check_term term
+                  (Layout.math_layout_for_node (Node_TypeVariant variant)))
+              variants
+        | _ -> ()
+      in
+      iter_defined_nodes spec check_math_layout_for_definition_node;
+      List.iter check_type_variant_layout_for_elem spec.ast;
+      List.iter check_rule_layout_for_elem spec.ast
+  end
 
   (** Returns all the identifiers referencing nodes that define identifiers. *)
   let rec referenced_ids =
@@ -3681,12 +3897,12 @@ let from_ast ast =
   let () = Check.check_no_undefined_ids spec in
   let () = Check.check_relation_outputs spec in
   let () = Check.CheckTypeInstantiations.check spec in
-  let () = Check.check_math_layout spec in
   let () = Check.CheckProseTemplates.check spec in
   let () = Check.relation_named_arguments_if_exists_rule ast in
   let spec = ResolveApplicationExpr.resolve spec in
   let spec = ExtendConstantsWithTypes.extend spec in
   let spec = ResolveRules.resolve spec in
+  let () = Check.CheckLayout.check spec in
   let spec = ExtendNames.extend spec in
   let () = Check.CheckRules.check spec in
   let spec = add_default_rule_renders spec in

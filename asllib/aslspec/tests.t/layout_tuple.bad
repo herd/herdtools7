@@ -1,0 +1,4 @@
+typedef BadTuple =
+    | (N, Bool)
+    { math_layout = (_, _, _) }
+;

@@ -1,0 +1,10 @@
+typedef N;
+
+operator unary(x: N) -> N {};
+
+relation bad_operator_arity(a: N, b: N) -> N
+{} =
+    x := unary(a, b);
+    --
+    x;
+;

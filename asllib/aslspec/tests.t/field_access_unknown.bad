@@ -1,0 +1,9 @@
+typedef Rec =
+    | [rf: N]
+;
+
+relation bad_field_access(r: Rec) -> N
+{} =
+    --
+    r.rg;
+;

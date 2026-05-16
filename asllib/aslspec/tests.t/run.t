@@ -7,6 +7,8 @@
   Generated LaTeX macros into generated_macros.tex
   $ aslspec operators.spec --render; diff -w generated_macros.tex operators.expected; rm -f generated_macros.tex
   Generated LaTeX macros into generated_macros.tex
+  $ aslspec layout_correct.spec
+  $ aslspec expressions_correct.spec
   $ aslspec type_name.bad
   Syntax Error: type_name.bad:1:9: illegal element-defining identifier: t2
   [1]
@@ -24,8 +26,10 @@
   [1]
 
 # Check that all type terms are well-formed
-  $ aslspec instantiation_expansion.spec
-  $ aslspec instantiation_expansion_depth.spec
+  $ aslspec --render instantiation_expansion.spec
+  Generated LaTeX macros into generated_macros.tex
+  $ aslspec --render instantiation_expansion_depth.spec
+  Generated LaTeX macros into generated_macros.tex
   $ aslspec instantiation_labelled_tuple2.bad
   Specification Error: instantiation_labelled_tuple2.bad:9:8: The type term `L(O, A, B)` cannot be instantiated since it has 3 type terms and `L` requires 2 type terms
   [1]
@@ -53,5 +57,43 @@
   $ aslspec relation_unnamed_arguments.bad
   Specification Error: relation_unnamed_arguments.bad:6:38: The term Num in relation unnamed_arg_has_rule does not provide a name for at least one of its sub-terms.
   [1]
-  $ aslspec constants.spec
-  $ aslspec parameterized_types.spec
+  $ aslspec operator_arity.bad
+  Specification Error: operator_arity.bad:7:10: The application of relation unary in expression unary(a, b) has an invalid number of arguments: expected 1 but found 2
+  [1]
+  $ aslspec variadic_operator_type.bad
+  Specification Error: variadic_operator_type.bad:3:46: Could not unify types N and Bool for parameter T of relation make_set
+  [1]
+  $ aslspec record_extra_field.bad
+  Specification Error: record_extra_field.bad:8:5: The record expression [rf : a, rg : a] has missing or invalid field names: expected rf but found rf, rg
+  [1]
+  $ aslspec field_access_unknown.bad
+  Specification Error: field_access_unknown.bad:8:5: The non-field identifier rg is used as a field in r.rg
+  [1]
+  $ aslspec record_update_unknown_field.bad
+  Specification Error: record_update_unknown_field.bad:8:5: The non-field identifier rg is used as a field in r[rg : a]
+  [1]
+  $ aslspec layout_type.bad
+  Specification Error: layout_type.bad:1:1: layout (_,_) is inconsistent with BadAtomicType. Here's a consistent layout: _
+  [1]
+  $ aslspec layout_tuple.bad
+  Specification Error: layout_tuple.bad:2:7: layout (_,_,_) is inconsistent with (N, Bool). Here's a consistent layout: (_,_)
+  [1]
+  $ aslspec layout_expr_atomic.bad
+  Specification Error: layout_expr_atomic.bad:6:5: layout (_,_) is inconsistent with expression flag. Here's a consistent layout: _
+  [1]
+  $ aslspec layout_expr_nullary.bad
+  Specification Error: layout_expr_nullary.bad:6:5: layout () is inconsistent with expression always_true(). Here's a consistent layout: _
+  [1]
+  $ aslspec layout_expr_list.bad
+  Specification Error: layout_expr_list.bad:6:5: layout (_,_,_) is inconsistent with expression two_args(a, b). Here's a consistent layout: (_,_)
+  [1]
+  $ aslspec layout_record_update.bad
+  Specification Error: layout_record_update.bad:7:5: layout (_) is inconsistent with expression r[rf : a, rg : b]. Here's a consistent layout: (_,(_,_))
+  [1]
+  $ aslspec rule_layout.bad
+  Specification Error: rule_layout.bad:5:5: layout (_,_,_) is inconsistent with expression r(a) -> (a, a). Here's a consistent layout: ((_),(_,_))
+  [1]
+  $ aslspec --render constants.spec
+  Generated LaTeX macros into generated_macros.tex
+  $ aslspec --render parameterized_types.spec
+  Generated LaTeX macros into generated_macros.tex
