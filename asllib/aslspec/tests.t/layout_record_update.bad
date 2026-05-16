@@ -1,0 +1,10 @@
+typedef RecN =
+    | [rf: N, rg: N]
+;
+
+relation bad_record_update(r: RecN, a: N, b: N) -> Bool
+{} =
+    r(rf: a, rg: b) = r { math_layout = ((_), _) };
+    --
+    True;
+;

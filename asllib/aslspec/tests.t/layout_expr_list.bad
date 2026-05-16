@@ -1,0 +1,9 @@
+relation two_args(a: N, b: N) -> Bool
+{};
+
+relation bad_expr_list(a: N, b: N) -> Bool
+{} =
+    two_args(a, b) { math_layout = (_, _, _) };
+    --
+    True;
+;
