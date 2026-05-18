@@ -30,7 +30,8 @@ module Make
     end) = struct
 
 let do_self = C.variant Variant_gen.Self
-let do_tag = C.variant Variant_gen.MemTag
+let do_memtag = C.variant Variant_gen.MemTag
+let do_store_only = C.variant Variant_gen.StoreOnly
 let do_morello = C.variant Variant_gen.Morello
 let do_kvm = C.variant Variant_gen.KVM
 let do_neon = C.variant Variant_gen.Neon
@@ -550,7 +551,7 @@ let is_tthm fields =
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
 
    let fold_tag =
-     if do_tag then fun f r -> f Tag r
+     if do_memtag then fun f r -> f Tag r
      else fun _f r -> r
 
    let fold_morello =
