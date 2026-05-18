@@ -25,8 +25,6 @@ end
 module Make(Cfg:Config) : XXXCompile_gen.S =
   struct
 
-    let do_memtag = Cfg.variant Variant_gen.MemTag
-
 (* Common *)
     let naturalsize = TypBase.get_size Cfg.typ
     module A64 =
@@ -1709,14 +1707,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* Access *)
 (**********)
 
-    let add_tag =
-      if do_memtag then
-        fun loc tag -> Code.add_tag loc tag
-      else if do_morello then
-        fun loc _ -> Code.add_capability loc 0
-      else fun loc _ -> loc
+    let add_tag atom loc tag = match atom with
+      | Some (Pte _,_) -> loc
+      | _ ->
+        if do_memtag then Code.add_tag loc tag
+        else if do_morello then Code.add_capability loc 0
+        else loc
 
-    let get_tagged_loc e = add_tag (as_data e.C.loc) e.C.tag
+    let get_tagged_loc e = add_tag e.C.atom (as_data e.C.loc) e.C.tag
 
     let add_label_to_last_instructions e cs =
       match e.C.check_fault with
@@ -1730,21 +1728,35 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         do_rec cs
       | None -> cs
 
-    (* If there is a fault label in `e`, add the `index`-th label
-       to the first instruction in `cs` *)
-    let add_label_to_first_instructions e cs =
-      match e.C.check_fault with
-      | Some (label_name, _) ->
-        (* find the first non-label instruction *)
-        let rec do_rec cs = match cs with
-          | [] -> assert false (* the `cs` should not be empty *)
-          | instr::rem -> begin match instr with
-            (* skip label or instruction that is already labelled *)
-            | Label(_) -> instr::do_rec rem
-            |_ -> Label(label_name, instr)::rem
-        end in
-        do_rec cs
-      | None -> cs
+    let is_ldxr = function
+      | Instruction (I_LDAR (_, (XX|AX), _, _))
+      | Instruction (I_LDARBH (_, (XX|AX), _, _))
+      | Instruction (I_LDXP _) -> true
+      | _ -> false
+
+    let is_stxr = function
+      | Instruction (I_STXR _)
+      | Instruction (I_STXRBH _)
+      | Instruction (I_STXP _) -> true
+      | _ -> false
+
+    (* The fault label is carried by the read event `er`; in `store-only`,
+       attach it to the following exclusive store instead. *)
+    let add_label_to_exclusive_load_and_store er cs =
+      let add_label e instr =
+        match e.C.check_fault with
+        | Some (label_name, _) -> Label(label_name, instr)
+        | None -> instr in
+      let rec do_rec = function
+        | [] -> assert false (* the `cs` should not be empty *)
+        | (Label(_) as label)::rem -> label :: do_rec rem
+        | instr::rem ->
+            if (not do_store_only && is_ldxr instr)
+               || (do_store_only && is_stxr instr) then
+              (add_label er instr) :: rem
+            else instr :: do_rec rem
+      in
+      do_rec cs
 
     let emit_access st p init e =
     let open WPTE in
@@ -1768,7 +1780,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               (pp_dir d) (C.debug_evt e)
         end
     | Some d,Data loc ->
-        let loc = add_tag loc e.C.tag in
+        let loc = add_tag e.C.atom loc e.C.tag in
         let atom = match e.C.atom with
         | None -> None
         | Some (a,m) -> begin match a with
@@ -1981,7 +1993,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Neon _,Some _) -> assert false
         end in
         (* Add a label to instructions `cs`, when a fault check is required. *)
-          (* Add a label to instructions `cs`, when a fault check is required. *)
         let cs = add_label_to_last_instructions e cs in
         regs,inits,cs,st
     (* END of emit_access *)
@@ -2012,7 +2023,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rW,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
       let arw = check_arw_lxsx er ew in
       let init,cs,st = XSingle.emit_pair arw p st init rR rW rA ew in
-      let cs = add_label_to_first_instructions er cs in
+      let cs = add_label_to_exclusive_load_and_store er cs in
       rR,init,csi@caddr@cs,st
 
     let emit_exch1 = do_emit_exch1 emit_addr_simple
@@ -2025,7 +2036,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let arw = check_arw_lxsx er ew in
       let init,cs,st =
         XPair.emit_pair arw p st init (rR1,rR2) (rW1,rW2) rA ew in
-      let cs = add_label_to_first_instructions er cs in
+      let cs = add_label_to_exclusive_load_and_store er cs in
       rR1,init,csi@caddr@cs,st
 
     let emit_exch22 = do_emit_exch22 emit_addr_simple
@@ -2038,7 +2049,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let module X = ExclusivePair(XLoadPair)(XStore) in
       let init,cs,st =
         X.emit_pair arw p st init (rR1,rR2) rW rA ew in
-      let cs = add_label_to_first_instructions er cs in
+      let cs = add_label_to_exclusive_load_and_store er cs in
       rR1,init,csi@caddr@cs,st
 
     let emit_exch21 = do_emit_exch21 emit_addr_simple
@@ -2052,7 +2063,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let module X = ExclusivePair(XLoad)(XStorePair) in
       let init,cs,st =
         X.emit_pair arw p st init rR (rW1,rW2) rA ew in
-      let cs = add_label_to_first_instructions er cs in
+      let cs = add_label_to_exclusive_load_and_store er cs in
       rR,init,csi@caddr@cs,st
 
     let emit_exch12 = do_emit_exch12 emit_addr_simple
@@ -2275,7 +2286,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       match e.C.dir,e.C.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some d,Data loc ->
-          let loc = add_tag loc e.C.tag in
+          let loc = add_tag e.C.atom loc e.C.tag in
           let atom = match e.C.atom with
           | None -> None
           | Some (a,m) -> begin match a with
@@ -2573,7 +2584,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             match atom with
             | Some (Tag,None) ->
                 let cs0,st = calc0_gen csel st vdep r2 r1 in
-                let rA,init,st = U.next_init st p init (add_tag loc (Value.to_int e.C.v)) in
+                let rA,init,st = U.next_init st p init (add_tag e.C.atom loc (Value.to_int e.C.v)) in
                 let rB,cB,st = sum_addr st rA r2 in
                 rB,pseudo (cs0@cB),init,st,[]
             | Some (_,Some (sz,_)) ->
@@ -2619,7 +2630,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let r2,cs2,init,st = match atom with
             | Some(Neon _, None) -> r2,cs2,init,st
             | _ -> r2,cs2@pseudo addi,init,st in
-          let loc = add_tag loc e.C.tag in
+          let loc = add_tag e.C.atom loc e.C.tag in
           begin match atom with
           | None ->
               let init,cs,st =
