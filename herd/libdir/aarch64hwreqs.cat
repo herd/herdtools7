@@ -104,6 +104,13 @@ let dob =
 let f-ob =
  [Imp & Instr & R]; po; [~(Imp & Instr & R)]
 
+(* Intrinsically-ordered-before *)
+let intr-ob =
+ tc-ib
+ | tr-ib
+ | f-ib
+ | [Exp & M]; iico_order; [Exp & M]
+
 (* Pick-ordered-before *)
 let pob = 
  pick-addr-dep; [Exp & W | HU | TLBI | DC.CVAU | IC]
@@ -128,9 +135,7 @@ let bob =
  | [range([Exp & R & A]; amo; [Exp & W & L])]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
  | [Exp & W & L]; po; [Exp & R & A]
  | [(Exp & R & A) | (Exp & R & Q)]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
- | [Exp & R & Q]; iico_order; [Exp & R & Q]
  | [Exp & M | Imp & Tag & R]; po; [Exp & W & L]
- | [Exp & W & L]; iico_order; [Exp & W & L]
 
 let po-scl-ob =
  [Exp & M]; (po & scl); [DC.CVAU]
@@ -153,9 +158,7 @@ let ets-ob =
 
 (* Locally-ordered-before *)
 let rec lob =
- tc-ib
- | tr-ib
- | f-ib
+ intr-ob
  | ets-ob
  | f-ob
  | po-scl-ob

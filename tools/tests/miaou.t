@@ -546,24 +546,12 @@
     \end{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \ExpRQ{E\textsubscript{1}}.
-    \item \expandafter{\MakeUppercase\iicoorder{E\textsubscript{1}}{E\textsubscript{2}}}.
-    \item \ExpRQ{E\textsubscript{2}}.
-    \end{itemize}
-  \item All of the following apply:
-    \begin{itemize}
     \item One of the following applies:
       \begin{itemize}
       \item \ExpM{E\textsubscript{1}}.
       \item \ImpTagR{E\textsubscript{1}}.
       \end{itemize}
     \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{2}}}.
-    \item \ExpWL{E\textsubscript{2}}.
-    \end{itemize}
-  \item All of the following apply:
-    \begin{itemize}
-    \item \ExpWL{E\textsubscript{1}}.
-    \item \expandafter{\MakeUppercase\iicoorder{E\textsubscript{1}}{E\textsubscript{2}}}.
     \item \ExpWL{E\textsubscript{2}}.
     \end{itemize}
   \end{itemize}
@@ -752,9 +740,7 @@
   $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show lob aarch64.cat
   \expandafter{\MakeUppercase\lobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
-  \item \expandafter{\MakeUppercase\tcib{E\textsubscript{1}}{E\textsubscript{2}}}.
-  \item \expandafter{\MakeUppercase\trib{E\textsubscript{1}}{E\textsubscript{2}}}.
-  \item \expandafter{\MakeUppercase\fib{E\textsubscript{1}}{E\textsubscript{2}}}.
+  \item \expandafter{\MakeUppercase\introb{E\textsubscript{1}}{E\textsubscript{2}}}.
   \item \expandafter{\MakeUppercase\etsob{E\textsubscript{1}}{E\textsubscript{2}}}.
   \item \expandafter{\MakeUppercase\fob{E\textsubscript{1}}{E\textsubscript{2}}}.
   \item \expandafter{\MakeUppercase\posclob{E\textsubscript{1}}{E\textsubscript{2}}}.
