@@ -157,6 +157,7 @@ module Make (O:Config) (E:Edge.S) :
   let do_sve = O.variant Variant_gen.SVE
   let do_sme = O.variant Variant_gen.SME
   let do_no_fault = O.variant Variant_gen.NoFault
+  let do_store_only = O.variant Variant_gen.StoreOnly
 
   type fence = E.fence
   type edge = E.edge
@@ -571,34 +572,70 @@ module CoSt = struct
   let label_pte_fault dir pte_val =
     Some ( (Label.next_label "L"), (Value.can_fault dir pte_val) )
 
+  let is_multi_instruction_rmw n =
+    let edge = match n.evt.dir with
+    | Some R -> n.edge
+    | Some W -> n.prev.edge
+    | None -> Warn.fatal "memory access has no memory event type." in
+    match edge.E.edge with
+    | E.Rmw rmw -> not @@ RMW.is_one_instruction rmw
+    | _ -> false
+
   (* Helper function returns a fresh label and a boolean for if it should fault,
-     if a fault check is need. Otherwise return `None`. *)
-  let fault_update st dir =
+     if a fault check is needed. Otherwise return `None`. *)
+  let fault_update st n =
     let unset_check_fault st = {st with check_fault = NoDir } in
     let pte_val = get_pte_value st in
+    let multi_instruction_store_only = do_store_only && (is_multi_instruction_rmw n) in
+    let dir =
+      match n.evt.rmw,n.evt.dir,multi_instruction_store_only with
+      | _,None,_ -> Warn.fatal "a memory access has no event type."
+      (* Non-`rmw` simple case *)
+      | false,(_ as dir),_ -> dir
+      (* In `rmw`, it processes read and write events separately.
+         In general, we only need to assign fault label to the (first) read event.
+         Also, when checking faults, always check against `W` in `rmw`.
+         This avoids label gap or extra label after compilation.
+         However, for multi-instruction `rmw`, when `store-only` is on,
+         only assign the fault label to the write event. *)
+      | true,Some W,true
+      | true,Some R,false -> Some W
+      (* None in `dir` indicates it is (1) `rmw` and (2) suppressing fault label *)
+      | true,_,_ -> None in
     match () with
     | _ when (st.check_fault = NoDir || do_no_fault) -> None,unset_check_fault st
       (* Need to check fault *)
     | _ when do_kvm ->
       let fault,check_fault = match dir,st.check_fault with
+      | None,_
       | _,NoDir -> None,NoDir
-      | (R|W),Irr | W,Dir W | R,Dir R ->
+      | Some ((R|W) as dir),Irr | Some (W as dir),Dir W | Some (R as dir),Dir R ->
           begin
           match label_pte_fault dir pte_val with
-          (* if the current check on existence of fault, the further
-             code has no need to check, `NoDir`; otherwise the further memory access
-             need to check the non-existence of fault for consistency, carrying the
-             `st.check_fault` to the next memory access *)
-          | (Some (_, true) as fault) -> fault, NoDir
-          | (Some (_, false) as fault) -> fault, st.check_fault
+          (* If the current check is on the existence of a fault, later
+             code has no need to check, `NoDir`. Otherwise, later memory
+             accesses need to check the non-existence of fault for consistency,
+             so carry `st.check_fault` to the next memory access. *)
+          | (Some (_, true) as fault) -> fault,NoDir
+          | (Some (_, false) as fault) -> fault,st.check_fault
           | None -> None,NoDir
           end
-      | W,Dir R -> None,Dir R
-      | R,Dir W -> None,Dir W in
+      | Some W,Dir R -> None,Dir R
+      | Some R,Dir W -> None,Dir W in
       fault,{st with check_fault}
       (* In variants `memtag` and `morello`, the cycles are constructed such that
          no fault occurs *)
-    | _ when do_memtag || do_morello ->
+    | _ when do_memtag ->
+      begin match dir with
+        (* The following `None` can only happen in an `rmw` event,
+           which indicates a suppressed or unnecessary fault check.
+           However, in `store-only` we need to carry the fault checking
+           signal to the next write event. *)
+        | None -> None,if do_store_only then st else unset_check_fault st
+        | Some R when do_store_only -> None,st
+        | _ -> Some ((Label.next_label "L"), false),st
+      end
+    | _ when do_morello ->
       Some ((Label.next_label "L"), false),st
     |_ -> None,unset_check_fault st
 
@@ -963,10 +1000,6 @@ let check_cycle c =
       | Some W ->
           begin
           let check_value = Some (CoSt.get_check_value st) in
-          (* No need to add fault check in read modify write situation,
-             as the label will be assigned in read *)
-          let fault_update_without_rmw st =
-            if n.evt.rmw then None,st else CoSt.fault_update st W in
           match n.evt.loc with
           | Data _ ->
             let bank = n.evt.bank in
@@ -976,7 +1009,7 @@ let check_cycle c =
               let st = set_write_val_ord st n in
               let check_fault, st =
                 if do_morello then None, st
-                else fault_update_without_rmw st in
+                else CoSt.fault_update st n in
               n.evt <- { n.evt with check_fault; check_value; };
               (next_x_ok, st)
             | Pair ->
@@ -987,7 +1020,7 @@ let check_cycle c =
               assert (Array.length cell>=2) ;
               let st = CoSt.next_co st Ord in (* Pre-increment *)
               let st = set_write_val_ord st n in
-              let check_fault, st = fault_update_without_rmw st in
+              let check_fault, st = CoSt.fault_update st n in
               n.evt <- { n.evt with check_fault; check_value; };
               (next_x_ok, st)
             | Tag ->
@@ -1202,14 +1235,13 @@ let do_set_read_v init =
             (* because `rmw` is treated as both read and write,
                we should assign label to this read event.
                Here we assume write is stronger than read. *)
-            else if n.evt.rmw then CoSt.fault_update st W
-            else CoSt.fault_update st R in
+            else CoSt.fault_update st n in
           n.evt <- { n.evt with check_fault };
           st
         | Pair ->
           let st = CoSt.implicit_pte_update st R in
           set_read_pair_v n cell check_value;
-          let check_fault, st = CoSt.fault_update st R in
+          let check_fault, st = CoSt.fault_update st n in
           n.evt <- { n.evt with check_fault };
           st
         | VecReg a ->
@@ -1218,7 +1250,7 @@ let do_set_read_v init =
           let v = E.SIMD.read a cell
                    |> E.SIMD.reduce
                    |> Value.from_int in
-          let check_fault, st = CoSt.fault_update st R in
+          let check_fault, st = CoSt.fault_update st n in
           n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
           st
         | Tag ->
