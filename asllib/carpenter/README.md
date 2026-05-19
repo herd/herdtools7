@@ -38,9 +38,13 @@ dune exec carpenter -- execute $(find tmp -name "$(date +"%Y-%m-%dT%H")*.asl")
 ```
 This should print a list of results for each file, for example:
 ```
-// results for file: tmp/2024-03-19T10:51:29-0000.asl
-Error: ASL Error: Mismatched use of return value from call to 'main'
-// end of results for file: tmp/2024-03-19T10:51:29-0000.asl
+// results for file: ../../tmp/2026-06-05T10:23:11-0006.asl
+Error: File ../../tmp/2026-06-05T10:23:11-0006.asl, line 7, characters 2 to 35:
+  var rwqhgkjdozr: boolean = FALSE;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ASL Type error: not all control flow paths of the function "main" are
+  guaranteed to either return, raise an exception, or invoke unreachable.
+// end of results for file: ../../tmp/2026-06-05T10:23:11-0006.asl
 
 ...
 ```

@@ -479,7 +479,15 @@ ASL Typing Tests / annotating types:
   File TypingRule.SCall.bad.asl, line 11, characters 4 to 11:
       zero();
       ^^^^^^^
-  ASL Type error: No subprogram declaration matches the invocation: zero().
+  ASL Static error:
+    Mismatched call type for subprogram 'zero': expected a procedure and found a function.
+  [1]
+  $ aslref --no-exec TypingRule.ECall.bad.asl
+  File TypingRule.ECall.bad.asl, line 9, characters 8 to 13:
+      - = nop(); // Illegal: nop is a procedure, therefore no value to consume.
+          ^^^^^
+  ASL Static error:
+    Mismatched call type for subprogram 'nop': expected a function and found a procedure.
   [1]
   $ aslref --no-exec TypingRule.SCond.asl
   $ aslref TypingRule.SDecl.asl
@@ -936,8 +944,8 @@ ASL Typing Tests / annotating types:
   File TypingRule.AnnotateRetTy.bad.asl, line 15, characters 4 to 17:
       flip{64}(bv); // Illegal: the returned value must be consumed.
       ^^^^^^^^^^^^^
-  ASL Type error: No subprogram declaration matches the invocation:
-    flip(bits(64)).
+  ASL Static error:
+    Mismatched call type for subprogram 'flip': expected a procedure and found a function.
   [1]
   $ aslref --no-exec TypingRule.AnnotateCall.asl
   $ aslref --no-exec TypingRule.AnnotateCall2.asl
