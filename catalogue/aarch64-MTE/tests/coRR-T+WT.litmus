@@ -10,4 +10,4 @@ variant=memtag,async
              | STR W0,[X1] ;
              | MOV X2,X1   ;
              | LDG X2,[X1] ;
-exists [x]=1 /\ 1:X2=x:green /\ ~fault (P1:L0,x)
+exists [x]=1 /\ 1:X2=x:green /\ ~fault (P1)

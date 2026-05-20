@@ -168,15 +168,27 @@ module Make
         | None -> false
 
       let mk_fault a dir annot ii ft msg =
+        let open FaultType.AArch64 in
         let fh = has_handler ii in
-        let is_sync_exc_entry = match ft with
-          | Some FaultType.AArch64.TagCheck ->
-            (C.variant Variant.MemTag)
-            && ((dir = Dir.R && (C.mte_precision = Precision.Synchronous
-                || C.mte_precision = Precision.Asymmetric))
-              || (dir = Dir.W && C.mte_precision = Precision.Synchronous))
-          | _ -> true in
-        let loc = Misc.map_opt (fun a -> A.Location_global a) a in
+        let is_sync_exc_entry, ii, loc =
+          match ft with
+          | Some TagCheck ->
+              let is_async =
+                match C.mte_precision, dir with
+                | Precision.Asynchronous, _
+                | Precision.Asymmetric, Dir.W -> true
+                | _ -> false
+              in
+              let ii, loc =
+                if is_async then
+                  { ii with A.labels = Label.Set.empty }, None
+                else
+                  ii, Misc.map_opt (fun a -> A.Location_global a) a
+              in
+              (C.variant Variant.MemTag) && not is_async, ii, loc
+          | _ ->
+              true, ii, Misc.map_opt (fun a -> A.Location_global a) a
+        in
         M.mk_singleton_es
           (Act.Fault (ii,loc,dir,annot,fh || is_sync_exc_entry,ft,msg)) ii
 
