@@ -20,6 +20,7 @@ type t =
   | S128 (* 128 bit signed ints*)
   | Mixed (* Ignored *)
   | Vmsa  (* Checked *)
+  | ETS2 (* FEAT_ETS2 *)
   | ExS  (* Enhanced Exception Synchronization *)
   | EIS  (* Set SCTLR_EL1.EIS=1 when variant present *)
   | EOS  (* Set SCTLR_EL1.EOS=1 when variant present *)
