@@ -1,17 +1,23 @@
-name: Check Build WWW
+name: Check Build WWW + Upload Artifact
 
 on:
   pull_request:
     paths:
       - '.github/workflows/check-build-www.yml'
       - 'asllib/aslref.ml'
-      - 'asllib/asllib-www'
+      - 'asllib/asllib-www/**'
+      - 'herd-www/**'
   workflow_dispatch:
     inputs:
       pr_number:
         description: "Optional PR number to build (uses refs/pull/<n>/head)"
         required: false
         type: string
+      upload_artifact:
+        description: "Upload www artifact"
+        required: false
+        type: boolean
+        default: false
   schedule:
       - cron: '0 8 * * 0'
 
@@ -39,6 +45,13 @@ jobs:
           opam exec -- make Version.ml
           opam exec -- dune build tools/cat2html.exe
           opam exec -- make -C herd-www
+      - name: Upload www artifact (manual only)
+        if: ${{ inputs.upload_artifact }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: www
+          path: |
+            herd-www/www
 
   build-aslref-js:
     runs-on: ubuntu-latest
