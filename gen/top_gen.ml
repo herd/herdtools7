@@ -672,6 +672,7 @@ let max_set = IntSet.max_elt
     else []
 
   let do_memtag = O.variant Variant_gen.MemTag
+  let do_async = O.variant Variant_gen.Async
   let do_morello = O.variant Variant_gen.Morello
   let do_kvm = Variant_gen.is_kvm O.variant
 
@@ -819,7 +820,9 @@ let max_set = IntSet.max_elt
                   match e.C.check_fault,e.C.loc,e.C.bank with
                   | Some (lbl, do_fault),Data x,(Ord|CapaTag|CapaSeal) ->
                     let proc = n.C.evt.C.proc in
-                    let flt = ((proc, Some lbl), Some (F.S x), None) in
+                    (* No location and label information if we are in `async` *)
+                    let flt = if do_async then ((proc, None), None, None)
+                      else ((proc, Some lbl), Some (F.S x), None) in
                     (* Collect fault information based on `do_fault`,
                        add into either `pos_flts` for checking `Fault(...)`
                        or `neg_flts` for checking `~Fault(...)`. *)
