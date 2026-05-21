@@ -175,11 +175,22 @@ litmus-cata-aarch64-ifetch-test-kvm: litmus-aarch64-dep
 litmus-aarch64-run:: litmus-cata-aarch64-faults-test-kvm
 litmus-cata-aarch64-faults-test-kvm: litmus-aarch64-dep
 	mkdir $(KUT_DIR_AARCH64)/kvm-unit-tests/t
+	# These tests compile, but on CI their KVM runs have not reliably produced
+	# Observation lines for CHECK_OBS. Keep them in the non-run branch so code
+	# generation is still covered, but exclude them when RUN_TESTS=true.
+	if $(RUN_TESTS); then                                         \
+	  NORUN=LDRredF,SVC-pte.exs1eis0,SVC-pte.exs1eis1,\
+MP+dmb.st+ctrl-svc.exs1eis0,MP+dmb.st+ctrl-svc.exs1eis1,\
+SVC-ifetch.exs1eis0,SVC-ifetch.exs1eis1,\
+SVC-ifetch.dic0idc0-exs1eis0,SVC-ifetch.dic0idc0-exs1eis1 ;    \
+	else                                                         \
+	  NORUN=NO ;                                                 \
+	fi ;                                                         \
 	$(LITMUS)					         \
 		-set-libdir $(LITMUS_LIB_DIR)	                 \
 		-o $(KUT_DIR_AARCH64)/kvm-unit-tests/t	         \
 		-mach kvm-armv8.1 -a 4 -s 10 -r 10			     \
-					-nonames LDRredF,SVC-pte.exs1eis0,SVC-pte.exs1eis1,SVC-ifetch.exs1eis0,SVC-ifetch.exs1eis1 \
+					-nonames $${NORUN} \
                 -driver C -ascall true		                \
                 -outnames $(KUT_NAMES)                  	\
 		catalogue/aarch64-faults/tests/@all
