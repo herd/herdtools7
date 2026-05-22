@@ -29,10 +29,12 @@ ASL
 
 let AArch64 = ~ASLLocal
 
-let asl_iico_ctrl = iico_ctrl
-let asl_iico_data = iico_data
-let asl_rf_reg = rf-reg
-let asl_rf = rf
+let ASL_ADDR = ADDR
+
+let asl_ctrl = iico_ctrl
+let asl_data = iico_data
+let asl_rf = rf-reg
+
 (* Warning, partial_po is _implicitely_ transitive *)
 let asl_po = as_transitive (partial_po)
 
@@ -41,9 +43,9 @@ let asl_po = as_transitive (partial_po)
 (* Working relations *)
 (*********************)
 
-let asl_data = asl_iico_data | asl_rf_reg
-let asl_deps = [AArch64]; asl_data+; [AArch64 | ADDR]
-let asl_ctrl_deps = [B]; (asl_data | asl_iico_ctrl)+; [AArch64]
+let asl_data_rf = asl_data | asl_rf
+let asl_deps = [AArch64]; asl_data_rf+; [AArch64 | ASL_ADDR]
+let asl_ctrl_deps = [B]; (asl_data_rf | asl_ctrl)+; [AArch64]
 
 (**********************************)
 (* Intra-instruction dependencies *)
@@ -80,7 +82,7 @@ let AArch64_Finals = restrict-finals(AArch64&Wreg)
 
 let AArch64Reg = AArch64\(M|B)
 
-let to_addr = [AArch64Reg]; asl_deps; [ADDR]; asl_iico_data; [AArch64]
+let to_addr = [AArch64Reg]; asl_deps; [ASL_ADDR]; asl_data; [AArch64]
 let AArch64_ADDR = domain(to_addr)
 
 let to_memwrite =
@@ -103,18 +105,20 @@ let AArch64_BCC = domain ([B]; aarch64_iico_ctrl; [WPC])
 
 let AArch64NoB = AArch64 \ B
 let reaching = domain ([B]; aarch64_iico_ctrl; [AArch64NoB])
-let R = [B];asl_iico_ctrl;asl_data?
+let R = [B]; asl_ctrl; asl_data?
 let reachable = range ([AArch64NoB]; aarch64_iico_data; R?; [B])
 
 let AArch64B = reaching & reachable
 let AArch64 = AArch64NoB | AArch64B
 
 
-show AArch64
+show [AArch64] as AArch64
 show aarch64_iico_ctrl
 show aarch64_iico_data
 show aarch64_iico_order
-show AArch64_Finals
-show AArch64_ADDR
-show AArch64_DATA
-show AArch64_BCC
+show [AArch64_Finals] as AArch64_Finals
+show [AArch64_ADDR] as AArch64_ADDR
+show [AArch64_DATA] as AArch64_DATA
+show [AArch64_BCC] as AArch64_BCC
+show [ADDR] as ASL_ADDR
+show [DATA] as ASL_DATA
