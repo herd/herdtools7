@@ -80,6 +80,11 @@ module type Config = sig
 
   val bit_clear_optimisation : bool
   (** Interpret [a AND NOT b] as [a BIC b]. *)
+
+  val return_evt : bool
+  (** Perform correct but noisy graph events on return statements.
+
+      Should be [true] by default. *)
 end
 
 module Make (B : Backend.S) (C : Config) : S with module B = B

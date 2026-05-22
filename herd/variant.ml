@@ -99,6 +99,8 @@ type t =
   | ASLType of [`Warn|`Silence|`TypeCheck]
 (* UDF control in AArch64 mode *)
   | ASL_AArch64_UDF
+(* Simplify ASL concurrent semantics by not generating return effects *)
+  | ASL_no_return_evts
 (* Signed Int128 types *)
   | S128
 (* Strict interpretation of variant, e.g. -variant asl,strict *)
@@ -181,6 +183,7 @@ let (mode_variants, arch_variants) : t list * t list =
   | ASLType `Silence -> ASLType `Silence
   | ASLType `TypeCheck -> ASLType `TypeCheck
   | ASL_AArch64_UDF -> ASL_AArch64_UDF
+  | ASL_no_return_evts -> ASL_no_return_evts
   | S128 -> S128
   | Strict -> Strict
   | Warn -> Warn
@@ -203,7 +206,7 @@ let (mode_variants, arch_variants) : t list * t list =
         CutOff; Morello; Deps; Instances;
         OptRfRMW; ConstrainedUnpredictable;
         Exp; CosOpt; Test; T 0;
-        ASL; ASL_AArch64; ASLVersion `ASLv0; ASLVersion `ASLv1;
+        ASL; ASL_AArch64; ASLVersion `ASLv0; ASLVersion `ASLv1; ASL_no_return_evts;
         S128; Strict; Warn;
         ASLType `Warn; ASLType `Silence; ASLType `TypeCheck; ASL_AArch64_UDF;
         Telechat; OldSolver; OOTA ]
@@ -283,6 +286,7 @@ let parse s = match Misc.lowercase s with
 | "asltype+silence"-> Some (ASLType `Silence)
 | "asltype+check"  -> Some (ASLType `TypeCheck)
 | "asl+aarch64+udf" -> Some ASL_AArch64_UDF
+| "asl-no-return-evts" -> Some ASL_no_return_evts
 | "s128" -> Some S128
 | "strict" -> Some Strict
 | "warn" -> Some Warn
@@ -392,6 +396,7 @@ let pp = function
   | ASLType `Silence -> "ASLType+Silence"
   | ASLType `TypeCheck -> "ASLType+Check"
   | ASL_AArch64_UDF -> "ASL+AArch64+UDF"
+  | ASL_no_return_evts -> "ASL-no-return-evts"
   | Telechat -> "telechat"
   | NV2 -> "NV2"
   | OldSolver -> "OldSolver"
@@ -471,6 +476,7 @@ let pp = function
   | ASLType `Silence -> "Silence type-checking errors (AArch64+ASL only)"
   | ASLType `TypeCheck -> "Fail on type-checking error (AArch64+ASL only)"
   | ASL_AArch64_UDF -> "Allow executing the code for the UDF instruction (AArch64+ASL only)"
+  | ASL_no_return_evts -> "Simplify ASL concurrent semantics by removing return effects"
   | Telechat -> ""
   | NV2 -> "Enable enhanced nested virtualisation, which redirects register accesses that would be trapped to memory accesses instead"
   | OldSolver -> "Use a fix-point solver instead of topological solver"
