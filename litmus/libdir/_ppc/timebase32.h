@@ -4,7 +4,7 @@
 /* Jade Alglave, University College London, UK.                             */
 /* Luc Maranget, INRIA Paris-Rocquencourt, France.                          */
 /*                                                                          */
-/* Copyright 2026-present Institut National de Recherche en Informatique et */
+/* Copyright 2015-present Institut National de Recherche en Informatique et */
 /* en Automatique and the authors. All rights reserved.                     */
 /*                                                                          */
 /* This software is governed by the CeCILL-B license under French law and   */
@@ -13,9 +13,22 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-#ifndef INSTRUCTION_H
-#define INSTRUCTION_H
-#include <stdint.h>
-
-typedef uint32_t ins_t; /* Type of instructions */
+#ifndef TIMEBASE_H
+#define TIMEBASE_H 1
+inline static tb_t read_timebase(void) {
+  tb_t r;
+  uint32_t r1,r2,r3;
+asm __volatile__ (
+"0:\n\t"
+"mftbu %[r1]\n\t"
+"mftb %[r2]\n\t"
+"mftbu %[r3]\n\t"
+"cmpw %[r1],%[r3]\n\t"
+"bne 0b\n\t"
+:[r1] "=r" (r1), [r2] "=r" (r2), [r3] "=r" (r3)
+: :"memory" );
+  r = r2;
+  r |= ((tb_t)r1) << 32;
+  return r;
+}
 #endif

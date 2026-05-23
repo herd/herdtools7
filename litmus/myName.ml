@@ -22,6 +22,8 @@
 let chop_litmus source =
   if Filename.check_suffix source ".litmus" then
     Filename.chop_extension source
+  else if Filename.check_suffix source ".litmus_def" then
+    (Filename.chop_extension source) ^ "_def"
   else
     source
 

@@ -4,7 +4,7 @@
 /* Jade Alglave, University College London, UK.                             */
 /* Luc Maranget, INRIA Paris-Rocquencourt, France.                          */
 /*                                                                          */
-/* Copyright 2026-present Institut National de Recherche en Informatique et */
+/* Copyright 2020-present Institut National de Recherche en Informatique et */
 /* en Automatique and the authors. All rights reserved.                     */
 /*                                                                          */
 /* This software is governed by the CeCILL-B license under French law and   */
@@ -13,9 +13,11 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-#ifndef INSTRUCTION_H
-#define INSTRUCTION_H
-#include <stdint.h>
+#ifndef _FIND_INS_H
+#define _FIND_INS_H 1
+#include <instruction.h>
+#include <stddef.h>
 
-typedef uint32_t ins_t; /* Type of instructions */
+// Find index of some instruction in code, skipping 'skip' occurrences
+size_t find_ins(ins_t opcode,ins_t *p,int skip);
 #endif
