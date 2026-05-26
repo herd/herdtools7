@@ -1,0 +1,12 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc PosRW PteAF0 Rfi *)
+AArch64 CoRW1+posppteaf0-rfipteaf0p
+Variant=vmsa
+{
+ [x]=1;
+ 0:X0=x; 0:X2=PTE(x); 0:X3=(oa:PA(x), af:0);
+}
+ P0               ;
+ L00: LDR W1,[X0] ;
+ STR X3,[X2]      ;
+
+exists (fault(P0:L00,x))

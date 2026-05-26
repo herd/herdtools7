@@ -1,0 +1,13 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc DpDatasW Rfi -type uint64_t *)
+AArch64 CoRW1+datas-rfi
+{
+ uint64_t x=0;
+ 0:X0=x; uint64_t 0:X1=0;
+}
+ P0           ;
+ LDR X1,[X0]  ;
+ EOR X2,X1,X1 ;
+ ADD X2,X2,#1 ;
+ STR X2,[X0]  ;
+
+exists (0:X1=1)

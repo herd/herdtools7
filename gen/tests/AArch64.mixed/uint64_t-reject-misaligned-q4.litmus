@@ -1,0 +1,5 @@
+(* diyone7 -hexa -arch AArch64 -variant fullmixed -type uint64_t -metadata false -oneloc q0 PosRW q4 Rfi *)
+(*
+[2]
+diyone7: Fatal error: Bad relax: q4
+*)

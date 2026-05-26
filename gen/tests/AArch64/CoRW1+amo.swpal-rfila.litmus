@@ -1,0 +1,10 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc A Amo.Swp L Rfi *)
+AArch64 CoRW1+amo.swpal-rfila
+{
+ 0:X0=x;
+}
+ P0               ;
+ MOV W2,#1        ;
+ SWPAL W2,W1,[X0] ;
+
+exists (0:X1=1)

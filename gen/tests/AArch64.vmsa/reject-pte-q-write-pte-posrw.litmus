@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc PosRW Pte Q Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+posppteq-rfipteqp [PosRWPPteQ RfiPteQP] failed:
+Atom `Read|ReadAcq|ReadAcqPc` is not a pteval write
+*)

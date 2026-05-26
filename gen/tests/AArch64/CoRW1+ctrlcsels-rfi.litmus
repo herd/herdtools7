@@ -1,0 +1,15 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc DpCtrlCselsW Rfi *)
+AArch64 CoRW1+ctrlcsels-rfi
+{
+ 0:X0=x;
+}
+ P0                 ;
+ LDR W1,[X0]        ;
+ CMP W1,W1          ;
+ CSEL W2,WZR,WZR,EQ ;
+ CBNZ W2,LC00       ;
+ LC00:              ;
+ MOV W3,#1          ;
+ STR W3,[X0]        ;
+
+exists (0:X1=1)

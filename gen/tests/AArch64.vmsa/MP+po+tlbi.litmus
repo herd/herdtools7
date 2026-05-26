@@ -1,0 +1,16 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false PodWW Rfe TLBIdRR Fre *)
+AArch64 MP+po+tlbi
+Variant=vmsa
+{
+ [x]=1;
+ [y]=5;
+ 0:X1=x; 0:X3=y;
+ 1:X1=x; 1:X3=y;
+}
+ P0          | P1              ;
+ MOV W0,#2   | LDR W0,[X3]     ;
+ STR W0,[X1] | LSR X4,X3,#12   ;
+ MOV W2,#6   | TLBI VAAE1IS,X4 ;
+ STR W2,[X3] | LDR W2,[X1]     ;
+
+exists (1:X0=6 /\ 1:X2=1)

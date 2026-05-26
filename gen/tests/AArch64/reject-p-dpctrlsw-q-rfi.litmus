@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc P DpCtrlsW Q Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+ctrlspq-rfiqp [DpCtrlsWPQ RfiQP] failed:
+No store acquirePc
+*)

@@ -1,0 +1,14 @@
+(* diyone7 -arch AArch64 -variant memtag -metadata false -oneloc T DpAddrsW Rfi *)
+AArch64 CoRW1+addrstp-rfipt
+Variant=memtag
+{
+ 0:X1=x:green;
+}
+ P0             ;
+ MOV X0,X1      ;
+ LDG X0,[X1]    ;
+ EOR X2,X0,X0   ;
+ MOV W3,#1      ;
+ STR W3,[X1,X2] ;
+
+exists (0:X0=x:green)

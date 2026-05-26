@@ -1,0 +1,20 @@
+(* diyone7 -arch AArch64 -variant sme -metadata false -oneloc DpAddrsW SmH Rfi *)
+AArch64 CoRW1+addrspsmh-rfismhp
+Variant=sme
+{
+ int x[4]={0,0,0,0};
+ 0:X0=x;
+}
+ P0                                      ;
+ LDR W1,[X0]                             ;
+ EOR W2,W1,W1                            ;
+ SXTW X3,W2                              ;
+ SMSTART                                 ;
+ MOV Z0.S,#1                             ;
+ PTRUE P0.S,VL4                          ;
+ MOV W12,WZR                             ;
+ MOVA ZA0H.S[W12,#0],P0/M,Z0.S           ;
+ ST1W {ZA0H.S[W12,#0]},P0,[X0,X3,LSL #2] ;
+ SMSTOP                                  ;
+
+exists (0:X1=1)

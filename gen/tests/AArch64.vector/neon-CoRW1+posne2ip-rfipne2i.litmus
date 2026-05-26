@@ -1,0 +1,16 @@
+(* diyone7 -arch AArch64 -variant neon -metadata false -oneloc Ne2i PosRW Rfi *)
+AArch64 CoRW1+posne2ip-rfipne2i
+Variant=neon
+{
+ int x[8]={0,0,0,0,0,0,0,0};
+ 0:X0=x;
+}
+ P0                      ;
+ LD2 {V0.4S, V1.4S},[X0] ;
+ ADD V0.4S,V0.4S,V1.4S   ;
+ ADDV S2,V0.4S           ;
+ FMOV W1,S2              ;
+ MOV W2,#1               ;
+ STR W2,[X0]             ;
+
+exists (0:X1=1)

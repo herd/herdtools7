@@ -1,0 +1,13 @@
+(* diyone7 -arch AArch64 -variant memtag -metadata false T PodWW T Rfe PodRR T Fre *)
+AArch64 MP+pott+popt
+Variant=memtag
+{
+ 0:X0=x:red; 0:X1=x:green; 0:X2=y:red; 0:X3=y:green;
+ 1:X1=x:green; 1:X2=y:red;
+}
+ P0          | P1               ;
+ STG X0,[X1] | L00: LDR W4,[X2] ;
+ STG X2,[X3] | MOV X5,X1        ;
+             | LDG X5,[X1]      ;
+
+exists (1:X4=0 /\ 1:X5=x:green /\ not (fault(P1:L00,y)))

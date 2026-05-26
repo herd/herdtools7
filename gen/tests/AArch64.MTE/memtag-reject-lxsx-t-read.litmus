@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -variant memtag -metadata false -oneloc T LxSx Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+rmwtp-rfipt [LxSxTP RfiPT] failed:
+variant annotation on xload
+*)

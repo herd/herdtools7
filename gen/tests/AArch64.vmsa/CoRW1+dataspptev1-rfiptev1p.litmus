@@ -1,0 +1,16 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc DpDatasW PteV1 Rfi *)
+AArch64 CoRW1+dataspptev1-rfiptev1p
+Variant=vmsa
+{
+ [x]=1;
+ [PTE(x)]=(oa:PA(x), valid:0);
+ 0:X0=x; 0:X3=(oa:PA(x)); 0:X5=PTE(x);
+}
+ P0               ;
+ L00: LDR W1,[X0] ;
+ SXTW X4,W1       ;
+ EOR X2,X4,X4     ;
+ ADD X2,X2,X3     ;
+ STR X2,[X5]      ;
+
+exists (not (fault(P0:L00,x)))

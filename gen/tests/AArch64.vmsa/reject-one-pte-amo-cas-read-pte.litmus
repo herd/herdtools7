@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc Pte Amo.Cas Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+amo.casptep-rfippte [Amo.CasPteP RfiPPte] failed:
+Bad annotation for Amo: R=Pte, W=P
+*)

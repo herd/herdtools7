@@ -1,0 +1,10 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc Amo.Swp Rfi *)
+AArch64 CoRW1+amo.swp-rfi
+{
+ 0:X0=x;
+}
+ P0             ;
+ MOV W2,#1      ;
+ SWP W2,W1,[X0] ;
+
+exists (0:X1=1)

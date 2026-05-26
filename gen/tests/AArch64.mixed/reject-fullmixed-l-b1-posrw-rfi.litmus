@@ -1,0 +1,6 @@
+(* diyone7 -hexa -arch AArch64 -variant fullmixed -metadata false -oneloc L b1 PosRW Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+posl.b1w0-rfiw0l.b1 [PosRWL.b1w0 Rfiw0L.b1] failed:
+annotation mismatch on edge PosRWL.b1w0, annotation 'L.b1' on R
+*)

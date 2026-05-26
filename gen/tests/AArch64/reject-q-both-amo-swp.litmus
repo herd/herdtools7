@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc Q Amo.Swp Q Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+amo.swpqq-rfiqq [Amo.SwpQQ RfiQQ] failed:
+Bad annotation for Amo: R=Q, W=Q
+*)

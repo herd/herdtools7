@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc PteV1 L PosRW Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+posptev1lp-rfipptev1l [PosRWPteV1LP RfiPPteV1L] failed:
+annotation mismatch on edge PosRWPteV1LP, annotation 'PteV1L' on R
+*)

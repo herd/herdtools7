@@ -18,12 +18,14 @@ REGRESSION_TEST_MODE = test
 DUNE_PROFILE = release
 
 DIY                           = _build/install/default/bin/diy7
+DIYONE                        = _build/install/default/bin/diyone7
 DIYCROSS                      = _build/install/default/bin/diycross7
 DIYMICROENUM                  = _build/install/default/bin/diymicroenum7
 HERD                          = _build/install/default/bin/herd7
 LITMUS                        = _build/install/default/bin/litmus7
 LITMUS_LIB_DIR                = $(PWD)/litmus/libdir
 DIY_REGRESSION_TEST           = _build/default/internal/diy_regression_test.exe
+DIYONE_TEST                   = _build/default/internal/diyone_test.exe
 HERD_REGRESSION_TEST          = _build/default/internal/herd_regression_test.exe
 HERD_DIYCROSS_REGRESSION_TEST = _build/default/internal/herd_diycross_regression_test.exe
 HERD_CATALOGUE_REGRESSION_TEST = _build/default/internal/herd_catalogue_regression_test.exe
@@ -343,8 +345,7 @@ test-all-asl:: test.herd-asl.cata.aarch64-VMSA
 ### Diy tests, includes
 ### - A `diyone7` generated syntax check
 ### - A `diy7` with `cycleonly` instance checks the cycle generations
-### - Several `diycross7` + `herd7` instances, check if the generated litmus tests
-###   are equivalent based on `herd7` result.
+### - Individual `diyone7` generation tests for each supported variant
 diy-test:: | build
 diy-test:: diyone-basic-test
 diyone-basic-test:
@@ -394,218 +395,30 @@ diy-ifetch-cycleonly::
 		$(REGRESSION_TEST_MODE)
 	@ echo "diy7 ifetch configuration test: OK"
 
-LDS:="Amo.Cas,Amo.LdAdd,Amo.LdClr,Amo.LdEor,Amo.LdSet"
-LDSPLUS:="LxSx",$(LDS)
-
 diy-test:: diy-test-aarch64
 diy-test-aarch64:
 	@ echo
-	$(HERD_DIYCROSS_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-diycross-path $(DIYCROSS) \
-		-libdir-path ./herd/libdir \
-		-expected-dir ./gen/tests/AArch64 \
-		-diycross-arg -arch \
-		-diycross-arg AArch64 \
-		-diycross-arg 'A,L,P' \
-		-diycross-arg 'Pod**,Fenced**,DSB.SYd**,ISBd**,[Amo.Cas,Pod**],[Amo.Swp,Pod**],[Amo.StAdd,Pod**],[LxSx,Pod**]' \
-		-diycross-arg 'Rfe,Fre,Coe' \
-		-diycross-arg 'DpAddrdR,DpAddrdW,DpDatadW,CtrldR,CtrldW,DpAddrCseldR,DpAddrCseldW,DpDataCseldW,DpCtrlCseldR,DpCtrlCseldW,[DpCtrldR,ISB],[DpCtrldW,ISB]' \
-		-diycross-arg 'Rfe,Fre,Coe,Hat' \
+	$(DIYONE_TEST) \
+		-diyone-path $(DIYONE) \
+		./gen/tests/AArch64 \
+		./gen/tests/AArch64.mixed \
+		./gen/tests/AArch64.MTE \
+		./gen/tests/AArch64.vmsa \
+		./gen/tests/AArch64.ifetch \
+		./gen/tests/AArch64.morello \
+		./gen/tests/AArch64.vector \
+		./gen/tests/AArch64.store \
 		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 diycross7 tests: OK"
-
-diy-test:: diy-test-mixed
-diy-test-mixed::
-	@ echo
-	$(HERD_DIYCROSS_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-diycross-path $(DIYCROSS) \
-		-libdir-path ./herd/libdir \
-		-expected-dir ./gen/tests/AArch64.mixed \
-		-conf ./gen/tests/AArch64.mixed/mixed.cfg \
-		-diycross-arg -ua \
-		-diycross-arg 0 \
-		-diycross-arg -obs \
-		-diycross-arg oo \
-		-diycross-arg -arch \
-		-diycross-arg AArch64 \
-		-diycross-arg -variant \
-		-diycross-arg mixed \
-		-diycross-arg -hexa \
-		-diycross-arg Hat \
-		-diycross-arg h0 \
-		-diycross-arg $(LDSPLUS) \
-		-diycross-arg h0 \
-		-diycross-arg Rfi \
-		-diycross-arg w0 \
-		-diycross-arg Amo.StAdd \
-		-diycross-arg w0 \
-		-diycross-arg Rfi \
-		-diycross-arg h2 \
-		-diycross-arg $(LDS) \
-		-diycross-arg h2 \
-		-diycross-arg PodWR \
-		-diycross-arg Hat \
-		-diycross-arg w0 \
-		-diycross-arg Amo.LdSet \
-		-diycross-arg w0 \
-		-diycross-arg PodWR \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64.mixed diycross7 tests: OK"
-
-diy-test-mixed::
-	@ echo
-	$(HERD_DIYCROSS_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-diycross-path $(DIYCROSS) \
-		-libdir-path ./herd/libdir \
-		-expected-dir ./gen/tests/AArch64.mixed.strict \
-		-conf ./gen/tests/AArch64.mixed.strict/mixed.cfg \
-		-diycross-arg -arch \
-		-diycross-arg AArch64 \
-		-diycross-arg -ua \
-		-diycross-arg 0 \
-		-diycross-arg -variant \
-		-diycross-arg mixed,MixedStrictOverlap \
-		-diycross-arg -hexa \
-		-diycross-arg h0,h2,w0 \
-		-diycross-arg Amo.CasAP,LxSxAP \
-		-diycross-arg h0,h2,w0  \
-		-diycross-arg PodWR \
-		-diycross-arg w0,h0 \
-		-diycross-arg Fre \
-		-diycross-arg w0,h2 \
-		-diycross-arg FencedWW \
-		-diycross-arg w0,h0,h2 \
-		-diycross-arg Rfe \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64.mixed.strict diycross7 tests: OK"
-
-diy-test-mixed:: v32 v64
-
-v32:
-	@ echo
-	$(HERD_DIYCROSS_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-diycross-path $(DIYCROSS) \
-		-libdir-path ./herd/libdir \
-		-expected-dir ./gen/tests/AArch64.mixed.v32 \
-		-conf ./gen/tests/AArch64.mixed.strict/mixed.cfg \
-		-diycross-arg -arch \
-		-diycross-arg AArch64 \
-		-diycross-arg -variant \
-		-diycross-arg mixed \
-		-diycross-arg -hexa \
-		-diycross-arg PodWW \
-		-diycross-arg RfeLA \
-		-diycross-arg h0,h2,w0 \
-		-diycross-arg DpDatadW,DpAddrdR,DpAddrdW \
-		-diycross-arg A,P,L \
-		-diycross-arg h0,h2,w0 \
-		-diycross-arg Coe,Fre \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64.mixed.v32 diycross7 tests: OK"
-
-v64:
-	@ echo
-	$(HERD_DIYCROSS_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-diycross-path $(DIYCROSS) \
-		-libdir-path ./herd/libdir \
-		-expected-dir ./gen/tests/AArch64.mixed.v64 \
-		-conf ./gen/tests/AArch64.mixed.strict/mixed.cfg \
-		-diycross-arg -arch \
-		-diycross-arg AArch64 \
-		-diycross-arg -variant \
-		-diycross-arg mixed \
-		-diycross-arg -hexa \
-		-diycross-arg -type \
-		-diycross-arg uint64_t \
-		-diycross-arg PodWW \
-		-diycross-arg RfeLA \
-		-diycross-arg w0,w4,q0 \
-		-diycross-arg DpDatadW,DpAddrdR,DpAddrdW \
-		-diycross-arg A,P,L \
-		-diycross-arg w0,w4,q0 \
-		-diycross-arg Coe,Fre \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64.mixed.v64 diycross7 tests: OK"
-
-diy-test:: diy-store-test
-diy-store-test:
-	@ echo
-	$(HERD_DIYCROSS_REGRESSION_TEST) \
-		-herd-path $(HERD) \
-		-diycross-path $(DIYCROSS) \
-		-libdir-path ./herd/libdir \
-		-expected-dir ./gen/tests/AArch64.store \
-		-diycross-arg -obs \
-		-diycross-arg four \
-		-diycross-arg -arch \
-		-diycross-arg AArch64 \
-		-diycross-arg 'Fenced**' \
-		-diycross-arg 'Rfe,Fre,Coe' \
-		-diycross-arg 'DpAddrdR,DpDatadW' \
-		-diycross-arg 'Pos**' \
-		-diycross-arg 'Store' \
-		-diycross-arg 'Rfe,Fre,Coe' \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64 diycross7.store tests: OK"
-
-diy-test:: diy-test-mte
-diy-test-mte::
-	@ echo
-	$(HERD_DIYCROSS_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-diycross-path $(DIYCROSS) \
-		-libdir-path ./herd/libdir \
-		-expected-dir ./gen/tests/AArch64.MTE \
-		-conf ./gen/tests/AArch64.MTE/MTE.cfg \
-		-diycross-arg -arch \
-		-diycross-arg AArch64 \
-		-diycross-arg -variant \
-		-diycross-arg memtag \
-		-diycross-arg -variant \
-		-diycross-arg async \
-		-diycross-arg DMB.SYd*W \
-		-diycross-arg T,P \
-		-diycross-arg Rfe \
-		-diycross-arg A \
-		-diycross-arg Amo.LdAdd \
-		-diycross-arg L \
-		-diycross-arg PodW* \
-		-diycross-arg T,P \
-		-diycross-arg Coe,Rfe,Fre \
-		-diycross-arg T,P \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 AArch64.MTE diycross7 tests: OK"
+	@ echo "diyone7 AArch64 tests: OK"
 
 diy-test::  diy-test-C
 diy-test-C:
 	@ echo
-	$(HERD_DIYCROSS_REGRESSION_TEST) \
-		-j $(J) \
-		-herd-path $(HERD) \
-		-diycross-path $(DIYCROSS) \
-		-libdir-path ./herd/libdir \
-		-expected-dir ./gen/tests/C \
-		-conf ./gen/tests/C/C.cfg \
-		-diycross-arg -arch \
-                -diycross-arg C \
-		-diycross-arg [Rlx,Coe,Rlx],[Rlx,Rfe,Rlx],[Rlx,Fre,Rlx],[Rlx,Hat,Rlx] \
-                -diycross-arg PosRW,Fetch.Add,Exch \
-                -diycross-arg Rlx \
-                -diycross-arg PodW* \
-		-diycross-arg [Rlx,Coe,Rlx],[Rlx,Rfe,Rlx],[Rlx,Fre,Rlx] \
-                -diycross-arg Pod**,[Fetch.Add,Rlx,PodW*] \
+	$(DIYONE_TEST) \
+		-diyone-path $(DIYONE) \
+		./gen/tests/C \
 		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 C diycross7 tests: OK"
+	@ echo "diyone7 C tests: OK"
 
 ### Diymicro test
 diymicro-test:: | build

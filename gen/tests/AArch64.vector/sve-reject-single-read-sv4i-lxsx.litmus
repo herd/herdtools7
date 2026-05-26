@@ -1,0 +1,7 @@
+(* diyone7 -arch AArch64 -variant sve -metadata false -oneloc Sv4i LxSx Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+rmwsv4ip-rfipsv4i [LxSxSv4iP RfiPSv4i] failed:
+Bad annotation for Lx: Sv4i
+
+*)

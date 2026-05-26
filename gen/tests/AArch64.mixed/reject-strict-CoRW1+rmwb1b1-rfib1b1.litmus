@@ -1,0 +1,5 @@
+(* diyone7 -hexa -arch AArch64 -variant fullmixed,MixedStrictOverlap -metadata false -oneloc b1 LxSx b1 Rfi *)
+(*
+[2]
+diyone7: Fatal error: Identical mixed access in Rfib1b1 and `-variant MixedStrictOverlap` mode
+*)

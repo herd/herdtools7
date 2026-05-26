@@ -1,0 +1,19 @@
+(* diyone7 -arch C -metadata false -oneloc PosWW FenceAR Coi *)
+(*
+Warning: optimised conditions are not supported by C arch
+*)
+C CoWW+pos-[fencear]-coi
+"PosWW FenceAR Coi"
+Generator=diyone7 (version 7.58+1)
+Prefetch=
+Com=Co
+Orig=PosWW FenceAR Coi
+
+{}
+
+P0 (volatile int* x) {
+  *x = 2;
+  *x = 1;
+}
+
+exists ([x]=2)

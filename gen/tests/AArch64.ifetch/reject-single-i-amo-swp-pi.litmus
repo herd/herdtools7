@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -variant ifetch -metadata false -oneloc Amo.SwpPI RfiIP *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+amo.swppi-rfiip [Amo.SwpPI RfiIP] failed:
+instruction annotation to data bank not possible?
+*)

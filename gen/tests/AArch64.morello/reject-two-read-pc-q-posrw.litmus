@@ -1,0 +1,5 @@
+(* diyone7 -arch AArch64 -variant morello -metadata false -oneloc Pc Q PosRW Rfi *)
+(*
+[2]
+diyone7: Fatal error: Invalid extra annotation Pc
+*)

@@ -1,0 +1,7 @@
+(* diyone7 -arch AArch64 -variant morello -metadata false -oneloc LxSx Qc Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+rmwpqc-rfiqcp [LxSxPQc RfiQcP] failed:
+Bad annotation for Sx: Qc
+
+*)

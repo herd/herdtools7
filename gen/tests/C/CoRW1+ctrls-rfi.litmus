@@ -1,0 +1,21 @@
+(* diyone7 -arch C -metadata false -oneloc DpCtrlsW Rfi *)
+(*
+Warning: optimised conditions are not supported by C arch
+*)
+C CoRW1+ctrls-rfi
+"DpCtrlsW Rfi"
+Generator=diyone7 (version 7.58+1)
+Prefetch=
+Com=Rf
+Orig=DpCtrlsW Rfi
+
+{}
+
+P0 (volatile int* x) {
+  int r0 = *x;
+  if (r0 == 1) {
+    *x = 1;
+  }
+}
+
+exists (0:r0=1)

@@ -1,0 +1,7 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc XL LxSx P Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+rmwxlp-rfipxl [LxSxXLP RfiPXL] failed:
+Bad annotation for Lx: XL
+
+*)

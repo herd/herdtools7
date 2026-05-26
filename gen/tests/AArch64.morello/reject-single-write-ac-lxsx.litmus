@@ -1,0 +1,7 @@
+(* diyone7 -arch AArch64 -variant morello -metadata false -oneloc LxSx Ac Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+rmwpac-rfiacp [LxSxPAc RfiAcP] failed:
+Bad annotation for Sx: Ac
+
+*)

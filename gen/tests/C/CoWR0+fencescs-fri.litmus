@@ -1,0 +1,20 @@
+(* diyone7 -arch C -metadata false -oneloc FenceScsWR Fri *)
+(*
+Warning: optimised conditions are not supported by C arch
+*)
+C CoWR0+fencescs-fri
+"FenceScsWR Fri"
+Generator=diyone7 (version 7.58+1)
+Prefetch=
+Com=Fr
+Orig=FenceScsWR Fri
+
+{}
+
+P0 (volatile int* x) {
+  *x = 1;
+  atomic_thread_fence(memory_order_seq_cst);
+  int r0 = *x;
+}
+
+exists (0:r0=0)

@@ -1,0 +1,13 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc DpDataCselsW Rfi *)
+AArch64 CoRW1+datacsels-rfi
+{
+ 0:X0=x;
+}
+ P0                 ;
+ LDR W1,[X0]        ;
+ CMP W1,W1          ;
+ CSEL W2,WZR,WZR,EQ ;
+ ADD W2,W2,#1       ;
+ STR W2,[X0]        ;
+
+exists (0:X1=1)

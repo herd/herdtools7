@@ -1,0 +1,5 @@
+(* diyone7 -arch AArch64 -variant neon -metadata false -oneloc Ne4i L PosRW Rfi *)
+(*
+[2]
+diyone7: Fatal error: Invalid extra annotation Ne4i
+*)

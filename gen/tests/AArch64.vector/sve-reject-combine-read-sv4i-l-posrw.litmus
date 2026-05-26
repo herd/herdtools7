@@ -1,0 +1,5 @@
+(* diyone7 -arch AArch64 -variant sve -metadata false -oneloc Sv4i L PosRW Rfi *)
+(*
+[2]
+diyone7: Fatal error: Invalid extra annotation Sv4i
+*)

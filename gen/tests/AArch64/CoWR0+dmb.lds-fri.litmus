@@ -1,0 +1,12 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc DMB.LDsWR Fri *)
+AArch64 CoWR0+dmb.lds-fri
+{
+ 0:X1=x;
+}
+ P0          ;
+ MOV W0,#1   ;
+ STR W0,[X1] ;
+ DMB LD      ;
+ LDR W2,[X1] ;
+
+exists (0:X2=0)

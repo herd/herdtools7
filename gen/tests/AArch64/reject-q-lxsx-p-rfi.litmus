@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc Q LxSx P Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+rmwqp-rfipq [LxSxQP RfiPQ] failed:
+AcqPC annotation on xload
+*)

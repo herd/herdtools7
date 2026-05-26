@@ -1,0 +1,15 @@
+(* diyone7 -arch AArch64 -variant neon -metadata false -oneloc PosRW Ne3 Rfi *)
+AArch64 CoRW1+pospne3-rfine3p
+Variant=neon
+{
+ int x[12]={0,0,0,0,0,0,0,0,0,0,0,0};
+ 0:X0=x;
+}
+ P0                             ;
+ LDR W1,[X0]                    ;
+ MOVI V0.4S,#1                  ;
+ MOVI V1.4S,#2                  ;
+ MOVI V2.4S,#3                  ;
+ ST1 {V0.4S, V1.4S, V2.4S},[X0] ;
+
+exists (0:X1=1)

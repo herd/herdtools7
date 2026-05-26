@@ -1,0 +1,7 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc P LxSx X Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+rmwpx-rfixp [LxSxPX RfiXP] failed:
+Bad annotation for Sx: X
+
+*)

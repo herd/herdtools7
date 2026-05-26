@@ -1,0 +1,7 @@
+(* diyone7 -arch AArch64 -variant sme -metadata false -oneloc SmH LxSx Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+rmwsmhp-rfipsmh [LxSxSmHP RfiPSmH] failed:
+Bad annotation for Lx: SmH
+
+*)

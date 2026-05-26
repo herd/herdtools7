@@ -1,0 +1,15 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc XL DpDatasW Rfi *)
+AArch64 CoRW1+datasxlp-rfipxl
+{
+ 0:X0=x;
+}
+ P0               ;
+ Loop00:          ;
+ LDXR W1,[X0]     ;
+ STLXR W2,W1,[X0] ;
+ CBNZ W2,Loop00   ;
+ EOR W3,W1,W1     ;
+ ADD W3,W3,#1     ;
+ STR W3,[X0]      ;
+
+exists ([x]=1 /\ 0:X1=1)
