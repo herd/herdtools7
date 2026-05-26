@@ -1,0 +1,7 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc Pte LxSx Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+rmwptep-rfippte [LxSxPteP RfiPPte] failed:
+Bad annotation for Lx: Pte
+
+*)

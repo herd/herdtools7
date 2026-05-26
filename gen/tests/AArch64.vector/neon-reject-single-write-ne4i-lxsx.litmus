@@ -1,0 +1,7 @@
+(* diyone7 -arch AArch64 -variant neon -metadata false -oneloc LxSx Ne4i Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+rmwpne4i-rfine4ip [LxSxPNe4i RfiNe4iP] failed:
+Bad annotation for Sx: Ne4i
+
+*)

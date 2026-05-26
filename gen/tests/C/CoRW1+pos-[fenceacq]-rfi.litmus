@@ -1,0 +1,19 @@
+(* diyone7 -arch C -metadata false -oneloc PosRW FenceAcq Rfi *)
+(*
+Warning: optimised conditions are not supported by C arch
+*)
+C CoRW1+pos-[fenceacq]-rfi
+"PosRW FenceAcq Rfi"
+Generator=diyone7 (version 7.58+1)
+Prefetch=
+Com=Rf
+Orig=PosRW FenceAcq Rfi
+
+{}
+
+P0 (volatile int* x) {
+  int r0 = *x;
+  *x = 1;
+}
+
+exists (0:r0=1)

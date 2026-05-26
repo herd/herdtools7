@@ -1,0 +1,5 @@
+(* diyone7 -arch AArch64 -variant ifetch -metadata false -oneloc PosRW I Rfi *)
+(*
+[2]
+diyone7: Fatal error: Invalid extra annotation I
+*)

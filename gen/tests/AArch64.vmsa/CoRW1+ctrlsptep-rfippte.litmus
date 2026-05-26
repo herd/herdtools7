@@ -1,0 +1,15 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc Pte DpCtrlsW Rfi *)
+AArch64 CoRW1+ctrlsptep-rfippte
+Variant=vmsa
+{
+ [x]=1;
+ 0:X0=PTE(x); pteval_t 0:X1=0; 0:X3=x;
+}
+ P0           ;
+ LDR X1,[X0]  ;
+ CBNZ X1,LC00 ;
+ LC00:        ;
+ MOV W2,#2    ;
+ STR W2,[X3]  ;
+
+exists (0:X1=(oa:PA(x)))

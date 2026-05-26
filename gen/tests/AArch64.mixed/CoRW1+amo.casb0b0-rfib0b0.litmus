@@ -1,0 +1,12 @@
+(* diyone7 -hexa -arch AArch64 -variant fullmixed -metadata false -oneloc b0 Amo.Cas b0 Rfi *)
+AArch64 CoRW1+amo.casb0b0-rfib0b0
+Variant=mixed
+{
+ 0:X0=x; uint32_t 0:X1=0; uint32_t 0:X2=0;
+}
+ P0              ;
+ MOV W1,#1       ;
+ MOV W2,#1       ;
+ CASB W1,W2,[X0] ;
+
+exists (0:X1=0x1)

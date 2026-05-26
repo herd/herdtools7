@@ -1,0 +1,15 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc PosRW TLBI Rfi *)
+AArch64 CoRW1+pos-[tlbi]-rfi
+Variant=vmsa
+{
+ [x]=1;
+ 0:X0=x;
+}
+ P0              ;
+ LDR W1,[X0]     ;
+ LSR X2,X0,#12   ;
+ TLBI VAAE1IS,X2 ;
+ MOV W3,#2       ;
+ STR W3,[X0]     ;
+
+exists (0:X1=2)

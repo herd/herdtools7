@@ -1,0 +1,5 @@
+(* diyone7 -hexa -arch AArch64 -variant fullmixed -metadata false -oneloc b0 Amo.Cas h0 Rfi *)
+(*
+[2]
+diyone7: Fatal error: Illegal mixed-size Rmw edge: Amo.Casb0h0
+*)

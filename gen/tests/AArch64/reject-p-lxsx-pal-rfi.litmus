@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc P LxSx PaL Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+rmwppal-rfipalp [LxSxPPaL RfiPaLP] failed:
+Refuse to generate constrained unpredictable, use -variant CU to accept
+*)

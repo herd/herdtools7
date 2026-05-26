@@ -1,0 +1,5 @@
+(* diyone7 -hexa -arch AArch64 -variant fullmixed -metadata false -oneloc w0 PosRW w2 Rfi *)
+(*
+[2]
+diyone7: Fatal error: Bad relax: w2
+*)

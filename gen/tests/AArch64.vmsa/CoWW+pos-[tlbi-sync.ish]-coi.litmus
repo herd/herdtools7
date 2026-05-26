@@ -1,0 +1,18 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc PosWW TLBI-sync.ISH Coi *)
+AArch64 CoWW+pos-[tlbi-sync.ish]-coi
+Variant=vmsa
+{
+ [x]=1;
+ 0:X1=x;
+}
+ P0              ;
+ MOV W0,#3       ;
+ STR W0,[X1]     ;
+ DSB ISH         ;
+ LSR X2,X1,#12   ;
+ TLBI VAAE1IS,X2 ;
+ DSB ISH         ;
+ MOV W3,#2       ;
+ STR W3,[X1]     ;
+
+exists ([x]=3)

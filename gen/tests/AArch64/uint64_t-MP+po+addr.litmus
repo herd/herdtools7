@@ -1,0 +1,15 @@
+(* diyone7 -arch AArch64 -metadata false PodWW Rfe DpAddrdR Fre -type uint64_t *)
+AArch64 MP+po+addr
+{
+ uint64_t x=0;
+ uint64_t y=0;
+ 0:X1=x; 0:X3=y;
+ uint64_t 1:X0=0; 1:X1=x; 1:X3=y; uint64_t 1:X4=0;
+}
+ P0          | P1             ;
+ MOV X0,#1   | LDR X0,[X3]    ;
+ STR X0,[X1] | EOR X2,X0,X0   ;
+ MOV X2,#1   | LDR X4,[X1,X2] ;
+ STR X2,[X3] |                ;
+
+exists (1:X0=1 /\ 1:X4=0)

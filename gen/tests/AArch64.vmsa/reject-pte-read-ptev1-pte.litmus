@@ -1,0 +1,5 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc PteV1 Pte PosRW Rfi *)
+(*
+[2]
+diyone7: Fatal error: Invalid extra annotation PteV1
+*)

@@ -1,0 +1,15 @@
+(* diyone7 -arch AArch64 -variant memtag,async -metadata false -oneloc T Rfe LxSx Coe *)
+AArch64 CoRW2+rmw+T
+Variant=async memtag
+{
+ 0:X0=x:red;
+ 1:X0=x:red; 1:X1=x:green;
+}
+ P0                | P1          ;
+ MOV W2,#1         | STG X0,[X1] ;
+ Loop00:           |             ;
+ L00: LDXR W1,[X0] |             ;
+ STXR W3,W2,[X0]   |             ;
+ CBNZ W3,Loop00    |             ;
+
+exists (0:X1=1 /\ not (fault(P0)))

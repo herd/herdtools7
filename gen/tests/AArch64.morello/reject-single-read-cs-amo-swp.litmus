@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -variant morello -metadata false -oneloc Cs Amo.Swp Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+amo.swpcsp-rfipcs [Amo.SwpCsP RfiPCs] failed:
+Bad annotation for Amo: R=Cs, W=P
+*)

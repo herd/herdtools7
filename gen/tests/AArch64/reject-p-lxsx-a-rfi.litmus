@@ -1,0 +1,7 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc P LxSx A Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+rmwpa-rfiap [LxSxPA RfiAP] failed:
+Bad annotation for Sx: A
+
+*)

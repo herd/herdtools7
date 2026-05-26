@@ -1,0 +1,12 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc DSB.LDsRW Rfi *)
+AArch64 CoRW1+dsb.lds-rfi
+{
+ 0:X0=x;
+}
+ P0          ;
+ LDR W1,[X0] ;
+ DSB LD      ;
+ MOV W2,#1   ;
+ STR W2,[X0] ;
+
+exists (0:X1=1)
