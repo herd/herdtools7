@@ -81,6 +81,10 @@ module Make
       Warn.user_error "\"const-pac-field\" variant require \"pac\" variant"
 
   let () =
+    if Cfg.variant Variant_litmus.ETS2 && not Cfg.is_kvm then
+      Warn.user_error "\"ets2\" variant requires \"kvm\" mode"
+
+  let () =
     if Cfg.is_kvm && (Cfg.variant Variant_litmus.EIS || Cfg.variant Variant_litmus.EOS)
        && not (Cfg.variant Variant_litmus.ExS) then
       Warn.user_error "\"eis\"/\"eos\" variants require \"exs\" variant"
@@ -276,6 +280,9 @@ module Make
         end;
         if Cfg.variant Variant_litmus.ExS then begin
           O.o "#include \"exs.h\""
+        end;
+        if Cfg.is_kvm && Cfg.variant Variant_litmus.ETS2 then begin
+          O.o "#include \"ets.h\""
         end;
         if Cfg.variant Variant_litmus.Pac then begin
           O.o "#include \"auth.h\""
@@ -2449,6 +2456,8 @@ module Make
         end ;
         if Cfg.variant Variant_litmus.ConstPacField then
           O.fi "if (!check_const_pac_field_variant(%S)) return 0;" doc.Name.name;
+        if Cfg.is_kvm && Cfg.variant Variant_litmus.ETS2 then
+          O.fi "if (!check_ets(2, %S)) return 0;" doc.Name.name ;
         if Cfg.is_kvm && Cfg.variant Variant_litmus.ExS then
           O.fi "if (!check_exs(%S)) return 0;" doc.Name.name ;
         if do_self then begin

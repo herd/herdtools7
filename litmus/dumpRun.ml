@@ -139,9 +139,13 @@ end = struct
            if flags.Flags.memtag then
              "memtag.o"::utils
            else utils in
-          let utils =
+         let utils =
            if flags.Flags.exs then
              "exs.o"::utils
+           else utils in
+         let utils =
+           if flags.Flags.ets then
+             "ets.o"::utils
            else utils in
          let utils =
            if flags.Flags.pac then
@@ -215,10 +219,15 @@ let collect_flags names =
               { pac = flags.pac || some_flags.pac;
                 self = flags.self || some_flags.self;
                 memtag = flags.memtag || some_flags.memtag;
-                exs = flags.exs || some_flags.exs;}
+                exs = flags.exs || some_flags.exs;
+                ets = flags.ets || some_flags.ets;}
           | _ -> some_flags)
       names
-      {Flags.pac=false; Flags.self=false; Flags.memtag=false; Flags.exs=false}
+      { Flags.pac = false;
+        Flags.self = false;
+        Flags.memtag = false;
+        Flags.exs = false;
+        Flags.ets = false; }
 
 let run_tests names flags out_chan =
 

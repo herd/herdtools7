@@ -1,0 +1,7 @@
+ETS2.CoWR0+posptev1p-fripptev1.litmus
+ETS2.CoWR0+tlbi-sync.ishsptev0p-fripptev0.litmus
+ETS2.CoWW+tlbi-sync.ishsptedb1p-coipptedb1.litmus
+ETS2.MP+dsb.stpptehd+popteap.litmus
+ETS2.MP+poptev1l+po.litmus
+ETS2.SB+dsb.sy+dmb.syptev1p.litmus
+ETS2.LB+dsb.ldpptehd+popteap.litmus

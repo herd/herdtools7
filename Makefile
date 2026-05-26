@@ -704,7 +704,7 @@ ets2-test:
 		-herd-path $(HERD) \
 		-herd-timeout $(TIMEOUT) \
 		-libdir-path ./herd/libdir \
-		-kinds-path catalogue/aarch64-ETS2/tests/VMSA-ETS2-kinds.txt \
+		-kinds-path catalogue/aarch64-ETS2/tests/kinds.txt \
 		-shelf-path catalogue/aarch64-ETS2/shelf.py \
 		$(REGRESSION_TEST_MODE)
 		@ echo "herd7 catalogue aarch64-ETS2 tests: OK"

@@ -20,6 +20,7 @@ type t =
   | S128 (* 128 bit signed ints*)
   | Mixed (* Ignored *)
   | Vmsa  (* Checked *)
+  | ETS2
   | ExS  (* Enhanced Exception Synchronization *)
   | EIS  (* Set SCTLR_EL1.EIS=1 when variant present *)
   | EOS  (* Set SCTLR_EL1.EOS=1 when variant present *)
@@ -40,6 +41,7 @@ let (mode_variants, arch_variants) : t list * t list =
   | S128 -> S128
   | Mixed -> Mixed
   | Vmsa -> Vmsa
+  | ETS2 -> ETS2
   | ExS -> ExS
   | EIS -> EIS
   | EOS -> EOS
@@ -57,8 +59,8 @@ let (mode_variants, arch_variants) : t list * t list =
     List.map f [NoInit; S128; Telechat]
   and archs =
     List.map f
-      [SVE; SME; Self; Mixed; Vmsa; ExS; EIS; EOS; Pac; FPac; ConstPacField;
-       MemTag;]
+      [SVE; SME; Self; Mixed; Vmsa; ETS2; ExS; EIS; EOS; Pac; FPac;
+        ConstPacField; MemTag;]
   and mte_precisions =
     List.map (fun precision -> f (MTEPrecision precision)) Precision.all
   and fault_modes =
@@ -79,6 +81,7 @@ let parse s = match Misc.lowercase s with
 | "ifetch"|"self" -> Some Self
 | "mixed" -> Some Mixed
 | "vmsa"|"kvm" -> Some Vmsa
+| "ets2" -> Some ETS2
 | "exs" -> Some ExS
 | "eis" -> Some EIS
 | "eos" -> Some EOS
@@ -115,6 +118,7 @@ let pp = function
   | Mixed -> "mixed"
   | S128 -> "s128"
   | Vmsa -> "vmsa"
+  | ETS2 -> "ets2"
   | ExS -> "exs"
   | EIS -> "eis"
   | EOS -> "eos"

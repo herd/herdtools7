@@ -22,4 +22,5 @@ type t =
     self : bool    ; (* Self modying code *)
     memtag : bool  ; (* Requires memory tagging *)
     exs : bool     ; (* Requires ExS helpers *)
+    ets : bool     ; (* Requires ETS helpers *)
   }
