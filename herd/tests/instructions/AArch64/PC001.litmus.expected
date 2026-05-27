@@ -1,0 +1,10 @@
+Test PC001 Required
+States 1
+0:PC=END_P0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:PC=END_P0)
+Observation PC001 Always 1 0
+Hash=9a56bec1ce54322ef4e1971f214e901d
+

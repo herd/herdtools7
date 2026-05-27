@@ -1,0 +1,11 @@
+AArch64 PC007
+variant=cutoff
+{
+}
+ P0          ;
+ MOV W0,#1    ;
+    MOV W0,#1    ;
+ B .-4     ;
+
+locations [0:PC;]
+forall (0:PC=10004)

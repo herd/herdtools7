@@ -1,0 +1,10 @@
+Test PC009 Required
+States 1
+0:PC=END_P0; 1:PC=END_P1;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall ((0:PC=label:"P1:L1" \/ 0:PC=END_P0) /\ 1:PC=END_P1)
+Observation PC009 Always 2 0
+Hash=3b484f955b610abeb7cb1713bf01f78f
+

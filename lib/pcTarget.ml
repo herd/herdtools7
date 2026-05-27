@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2010-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,54 +14,24 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Define Bell architecture *)
+type pc_specific_symb =
+  | CodeEnd
+  | FaultHandlerEnd
+  | FaultInHandler
 
-module Make
-         (C:Arch_herd.Config)
-         (V:Value.S with type Cst.Instr.exec  = BellBase.instruction) = struct
-  include BellBase
-  let is_amo = function
-    | Prmw _ -> true
-    | Pnop|Pld _|Pst _|Pfence _|Pcall _|Pbranch _|Pmov _ -> false
+type 'v t =
+  | PCSymb of pc_specific_symb * Proc.t
+  | Addr of Proc.t * int
+  | Value of 'v
 
-  let pp_barrier_short = pp_barrier
-  let reject_mixed = false
-  let mem_access_size _ = None
+let ignored_pc_specific_symbs = [CodeEnd; FaultHandlerEnd; FaultInHandler]
 
-  include NoSemEnv
+let pp_prefix = function
+  | CodeEnd -> "END_"
+  | FaultHandlerEnd -> "FH_END_"
+  | FaultInHandler -> "F_FH_"
 
-  module V = V
+let pp symb proc =
+  pp_prefix symb ^ Proc.pp proc
 
-  include NoLevelNorTLBI
-
-  include ArchExtra_herd.Make(C)
-      (struct
-
-        let arch = arch
-
-        type instr = instruction
-
-        module V = V
-
-        let endian = endian
-
-        type arch_reg = reg
-        let pc_reg = None
-        let pp_reg = pp_reg
-        let reg_compare = reg_compare
-
-        let fromto_of_instr ins = match ins with
-          | Pfence(Fence(_,ft)) -> ft
-          | _ -> None
-
-        let get_val _ v = v
-
-        module FaultType=FaultType.No
-      end)
-
-    module MemType=MemoryType.No
-
-    module Barrier = AllBarrier.No(struct type a = barrier end)
-
-    module CMO = Cmo.No
-end
+let prefixes = List.map pp_prefix ignored_pc_specific_symbs
