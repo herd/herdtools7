@@ -112,6 +112,14 @@ let pp_sd = function
   | Diff -> "d"
   | UnspecLoc -> "*"
 
+let pp_sd_macro = function
+| None -> "*"
+| Some sd -> pp_sd sd
+
+let pp_dir_macro = function
+| None -> "*"
+| Some d -> pp_dir d
+
 let is_same_loc = function
   | Same -> true
   | _ -> false
@@ -136,6 +144,43 @@ let fold_extr wildcard f r = let r = if wildcard then (f Irr r) else r in f (Dir
 let fold_sd_extr wildcard f = fold_sd wildcard (fun sd -> fold_extr wildcard (fun e -> f sd e))
 let fold_sd_extr_extr wildcard f =
   fold_sd_extr wildcard (fun sd e1 -> fold_extr wildcard (fun e2 -> f sd e1 e2))
+
+let expand_sd_macro sd f r = match sd with
+| None -> f Same (f Diff r)
+| Some sd -> f sd r
+
+let expand_dir_macro d f r = match d with
+| None -> f W (f R r)
+| Some d -> f d r
+
+(* Macro components for location: `None` represents any Same/Diff location. *)
+let fold_sd_macro_component f r =
+  f None (f (Some Diff) (f (Some Same) r))
+
+(* Macro components for direction: `None` represents any R/W direction. *)
+let fold_dir_macro_component f r =
+  f None (f (Some W) (f (Some R) r))
+
+(* Fold over Same/Diff and direction macro forms, keeping only names with at
+   least one wildcard component.  The `choices` argument passed to `f` is the
+   concrete expansion of that macro form. *)
+let fold_sd_extr_macros f r =
+  fold_sd_macro_component
+    (fun sd ->
+      fold_dir_macro_component
+        (fun d r ->
+          match sd,d with
+          (* Keep only forms that still contain at least one wildcard component. *)
+          | Some _,Some _ -> r
+          | _,_ ->
+              let choices =
+                expand_dir_macro d
+                  (fun d ->
+                    expand_sd_macro sd
+                      (fun sd k -> (sd,d)::k))
+                  [] in
+              f sd d choices r))
+    r
 
 type check =
   | Default | Sc | Uni | Thin | Critical
