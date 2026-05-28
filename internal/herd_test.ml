@@ -27,22 +27,28 @@ let rec to_list k =
   if k+1 >= Array.length Sys.argv then []
   else Sys.argv.(k)::to_list (k+1)
 
-let verbose,check,comidx =
+type flags = { verbose:bool; nohash:bool; check:TestHerd.check; }
+let noflags = { verbose=false; nohash=false; check=TestHerd.All; }
+
+let flags,comidx =
   let rec check_rec k =
     if k+1 >= Array.length Sys.argv then
-      false,TestHerd.All,k
+      noflags,k
     else match Sys.argv.(k) with
       | "-verbose" ->
-          let _,check,comidx = check_rec (k+1) in
-          true,check,comidx
+          let f,comidx = check_rec (k+1) in
+          { f with verbose=true; },comidx
       | "-checkstates" ->
-          let verbose,_,comidx = check_rec (k+1) in
-          verbose,TestHerd.Sta,comidx
+          let f,comidx = check_rec (k+1) in
+          { f with check=TestHerd.Sta},comidx
       | "-checkobs" ->
-          let verbose,_,comidx = check_rec (k+1) in
-          verbose,TestHerd.Obs,comidx
+          let f,comidx = check_rec (k+1) in
+          { f with check=TestHerd.Obs; },comidx
+      | "-nohash" ->
+          let f,comidx = check_rec (k+1) in
+          { f with nohash=true; },comidx
       | _ ->
-          false,TestHerd.All,k in
+          noflags,k in
   check_rec 1
 
 let com = Sys.argv.(comidx)
@@ -54,7 +60,7 @@ let () =
   and expected_warn = TestHerd.expected_warn_of_litmus litmus in
   if
     TestHerd.herd_args_output_matches_expected
-      ~verbose:verbose ~check:check com args litmus
+      ~verbose:flags.verbose ~check:flags.check com ~nohash:flags.nohash args litmus
       expected expected_failure expected_warn
   then
     exit 0

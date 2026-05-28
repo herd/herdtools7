@@ -174,6 +174,8 @@ let do_run_test_par wrapper j flags =
          | All -> args
          | Obs -> "-checkobs"::args
          | Sta -> "-checkstates"::args in
+       let args =
+         if flags.nohash then "-nohash"::args else args in
       if flags.verbose then "-verbose"::args else args) in
   let () =
     if _dbg then
@@ -182,7 +184,7 @@ let do_run_test_par wrapper j flags =
   let () =
     if _dbg then
       let com = Command.command mapply (args @ litmuses) in
-      Printf.eprintf "Wil run: %s\n%!" com in
+      Printf.eprintf "Will run: %s\n%!" com in
   let st = Command.run_status mapply  (args @ litmuses) in
   if st <> 0 then begin
     Printf.printf "Some tests had errors\n" ;

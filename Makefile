@@ -110,10 +110,14 @@ test.aarch64assumptions:
 		-assumptions-path ./tools/libdir/aarch64assumptions.cat
 	@ echo "cat2table AArch64 assumptions: OK"
 
+test.herd.inst.ASL-pseudo-arch: NOHASH=-nohash
+test.herd.inst.ASL: NOHASH=-nohash
+
 test.herd.inst.%:
 	@ echo
 	$(HERD_REGRESSION_TEST) \
 		-j $(J) \
+		$(NOHASH) \
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-litmus-dir ./herd/tests/instructions/$* \
@@ -142,6 +146,9 @@ test.herd.inst:: test.herd.inst.MIPS
 test.herd.inst:: test.herd.inst.X86_64
 test.herd.inst:: test.herd.inst.RISCV
 test.herd.inst:: test.herd.inst.C
+
+test.herd.inst:: test.herd.inst.ASL
+test.herd.inst:: test.herd.inst.ASL-pseudo-arch
 
 test:: test.herd.inst
 test-local:: test.herd.inst
@@ -182,33 +189,6 @@ test.aarch64.asl.with.vmsa: asl-pseudocode
 		-checkstates \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 instructions tests (ASL with VMSA): OK"
-
-test:: test-asl
-test-local:: test-asl
-test-all-asl:: test-asl
-test-asl: asl-pseudocode
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-nohash \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/ASL \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 ASL instructions tests: OK"
-
-test:: test-pseudo-asl
-test-local:: test-pseudo-asl
-test-all-asl:: test-pseudo-asl
-test-pseudo-asl:
-	@ echo
-	$(HERD_REGRESSION_TEST) \
-		-nohash \
-		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
-		-litmus-dir ./herd/tests/instructions/ASL-pseudo-arch \
-		-conf ./herd/tests/instructions/ASL-pseudo-arch/pseudo-conf.cfg \
-		$(REGRESSION_TEST_MODE)
-	@ echo "herd7 ASL instructions tests on pseudo-architecture: OK"
 
 test:: test-aarch64-asl
 test-all-asl:: test-aarch64-asl
