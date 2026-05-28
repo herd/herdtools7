@@ -396,7 +396,7 @@ and module RMW = A.RMW = struct
 let fold_tedges f r =
   let r = fold_com (fun com r -> fold_ie (fun ie -> f (Communication (com,ie))) r) r in
   let r = RMW.fold_rmw (fun rmw -> f (Rmw rmw)) r in
-  let r = fold_sd_extr_extr wildcard (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
+  let r = fold_sd_extr_extr false (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
   let r = F.fold_all_fences (fun fe -> f (Insert fe)) r in
   let r = f Store r in
   let r =
@@ -841,9 +841,7 @@ let fold_tedges f r =
     | Communication _ -> f e acc
     | Rmw _ -> f e acc
     | Dp _ -> f e acc
-    | Po(sd,e1,e2) ->
-        expand_dir2 e1 e2 (fun d1 d2 ->
-          expand_loc sd ( fun new_sd -> f {e with edge=Po(new_sd,d1,d2);})) acc
+    | Po _ -> f e acc
     | Fenced(fe,sd,e1,e2) ->
         expand_dir2 e1 e2 (fun d1 d2 ->
           expand_loc sd ( fun new_sd -> f {e with edge=Fenced(fe,new_sd,d1,d2);})) acc
@@ -863,6 +861,19 @@ let fold_tedges f r =
           with Exit -> k)
 
   let expand_edges es f = do_expand_edges (List.rev es) f []
+
+  let add_po_macros f k =
+    let pp_po_macro sd d1 d2 = match sd,d1,d2 with
+    | None,None,None -> "Po"
+    | _,_,_ -> sprintf "Po%s%s%s" (pp_sd_macro sd) (pp_dir_macro d1) (pp_dir_macro d2) in
+    fold_sd_extr_extr_macros
+      (fun sd d1 d2 choices k ->
+        let choices =
+          List.map
+            (fun (sd,d1,d2) -> [plain_edge (Po (sd,Dir d1,Dir d2))])
+            choices in
+        f (pp_po_macro sd d1 d2) choices k)
+      k
 
   (* Add all dependency-related macro names for one dependency kind.  The
      direction wildcard is not always fully unfolded to both R and W: each
@@ -969,6 +980,8 @@ let fold_tedges f r =
     (* Old default dependency wildcard syntax, for example Dp* and Ctrl*R. *)
     |> add_default_dp_wildcard "Dp" F.ddr_default f
     |> add_default_dp_wildcard "Ctrl" F.ctrlr_default f
+    (* Add `Po` related macro *)
+    |> add_po_macros f
 
 (* resolve *)
   let rec find_next_merge = function

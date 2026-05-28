@@ -71,6 +71,8 @@ val expand_sd_macro : sd option -> (sd -> 'a -> 'a) -> 'a -> 'a
 val expand_dir_macro : dir option -> (dir -> 'a -> 'a) -> 'a -> 'a
 val fold_sd_extr_macros :
   (sd option -> dir option -> (sd * dir) list -> 'a -> 'a) -> 'a -> 'a
+val fold_sd_extr_extr_macros :
+  (sd option -> dir option -> dir option -> (sd * dir * dir) list -> 'a -> 'a) -> 'a -> 'a
 
 type check =
   | Default | Sc | Uni | Thin | Critical | Free
