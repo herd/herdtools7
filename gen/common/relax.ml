@@ -204,11 +204,24 @@ and type edge = E.edge
           | Some _ as r -> r
           | None -> Hashtbl.find_opt legacy_syntax name
 
-          let add_cumulativity_alias tag e r =
-            let choices = E.expand_edges r Misc.cons [] in
-            add_legacy_syntax (sprintf "%s%s" tag (E.pp_edge e)) choices
-
           let abc_fence f sl d1 d2 = [rf; fenced f sl d1 d2; rf]
+
+          (* Add one wildcard fence cumulativity alias.  `None` means "any"
+             for the corresponding location or direction component. *)
+          let add_fence_cumulativity_alias_macro tag make_relax fe sd d1 d2 =
+            let name =
+              sprintf "%s%s%s%s%s"
+                tag (F.pp_fence fe)
+                (pp_sd_macro sd) (pp_dir_macro d1) (pp_dir_macro d2) in
+            let choices =
+              expand_dir_macro d1
+                (fun d1 ->
+                  expand_dir_macro d2
+                    (fun d2 ->
+                      expand_sd_macro sd
+                        (fun sd k -> make_relax fe sd (Dir d1) (Dir d2)::k)))
+                [] in
+            add_legacy_syntax name choices
 
           (* Add one concrete dependency BC-cumulativity alias, for example
              `BCDpDatadW = [DpDatadW,Rfe]`.  These aliases always target writes. *)
@@ -227,31 +240,68 @@ and type edge = E.edge
                 [] in
             add_legacy_syntax (sprintf "BCDp%s*W" (F.pp_dp dp)) choices
 
+          (* Add concrete fence cumulativity aliases for one fence.  These are
+             the historical fixed shapes: ABC uses RW, AC uses R*, and BC uses
+             *W, all for concrete Same/Diff locations. *)
+          let add_fence_cumulativity_aliases fe =
+            (* Add one concrete fence cumulativity alias, for example
+               `ACDMB.SYdRW = [Rfe,DMB.SYdRW]`. *)
+            let add_fence_cumulativity_alias tag make_relax fe sd d1 d2 =
+              let name =
+                sprintf "%s%s%s%s%s"
+                  tag (F.pp_fence fe) (pp_sd sd) (pp_dir d1) (pp_dir d2) in
+              add_legacy_syntax name [make_relax fe sd (Dir d1) (Dir d2)] in
+            fold_sd false
+              (fun sd () ->
+                add_fence_cumulativity_alias "ABC" abc_fence fe sd R W ;
+                expand_dir_macro None
+                  (fun d () ->
+                    add_fence_cumulativity_alias "AC" ac_fence fe sd R d ;
+                    add_fence_cumulativity_alias "BC" bc_fence fe sd d W)
+                  ())
+              ()
+
+          (* Add fence cumulativity wildcards.  This covers both concrete
+             Same/Diff locations, for example `ABCDMB.SYd**`, and wildcard
+             locations, for example `ABCDMB.SY***` and `ABCDMB.SY*RW`. *)
+          let add_fence_cumulativity_wildcard fe =
+            fold_sd false
+              (fun sd () ->
+                add_fence_cumulativity_alias_macro
+                  "ABC" abc_fence fe (Some sd) None None ;
+                expand_dir_macro None
+                  (fun d () ->
+                    add_fence_cumulativity_alias_macro
+                      "AC" ac_fence fe (Some sd) None (Some d) ;
+                    add_fence_cumulativity_alias_macro
+                      "BC" bc_fence fe (Some sd) (Some d) None)
+                  ())
+              () ;
+            (* Wildcard aliases where the location component is also `*`,
+               for example `ABCDMB.SY***` and `ABCDMB.SY*RW`. *)
+            add_fence_cumulativity_alias_macro "ABC" abc_fence fe None None None ;
+            add_fence_cumulativity_alias_macro
+              "ABC" abc_fence fe None (Some R) (Some W) ;
+            expand_dir_macro None
+              (fun d () ->
+                add_fence_cumulativity_alias_macro
+                  "AC" ac_fence fe None None (Some d) ;
+                add_fence_cumulativity_alias_macro
+                  "AC" ac_fence fe None (Some R) (Some d) ;
+                add_fence_cumulativity_alias_macro
+                  "BC" bc_fence fe None (Some d) None ;
+                add_fence_cumulativity_alias_macro
+                  "BC" bc_fence fe None (Some d) (Some W))
+              ()
+
           let add_cumulativity_macros () =
-            let add_fence_aliases tag make_relax fe sd d1 d2 k =
-              let e = fenced fe sd d1 d2 in
-              add_cumulativity_alias tag e (make_relax fe sd d1 d2) ;
-              k in
             let k =
               F.fold_cumul_fences
                 (fun fe k ->
-                  let k =
-                    Code.fold_sd E.wildcard
-                      (fun sd k ->
-                        let k =
-                          add_fence_aliases "ABC" abc_fence fe sd Irr Irr k in
-                        add_fence_aliases "ABC" abc_fence fe sd (Dir R) (Dir W) k)
-                      k in
-                  Code.fold_sd_extr E.wildcard
-                    (fun sd e k ->
-                      let k =
-                        add_fence_aliases "AC" ac_fence fe sd Irr e k in
-                      let k =
-                        add_fence_aliases "AC" ac_fence fe sd (Dir R) e k in
-                      let k =
-                        add_fence_aliases "BC" bc_fence fe sd e Irr k in
-                      add_fence_aliases "BC" bc_fence fe sd e (Dir W) k)
-                    k) () in
+                  add_fence_cumulativity_aliases fe ;
+                  if E.wildcard then add_fence_cumulativity_wildcard fe ;
+                  k)
+                () in
             (* Add dependency BC-cumulativity aliases.  Wildcard location
                aliases are added separately from concrete Same/Diff aliases. *)
             F.fold_dpw
@@ -264,15 +314,6 @@ and type edge = E.edge
                     k)
                   k)
               k
-
-          let add_strong_fence_macros () =
-            fold_sd_extr_extr E.wildcard
-              (fun sd e1 e2 () ->
-                let name =
-                  sprintf "Fence%s%s%s" (pp_sd sd) (pp_extr e1) (pp_extr e2) in
-                let edge = E.plain_edge (E.Fenced (F.strong,sd,e1,e2)) in
-                add_legacy_syntax name (E.expand_edges [edge] Misc.cons []))
-              ()
 
           let add_ifetch_macros () =
             match E.do_self,E.instr_atom with
@@ -366,8 +407,6 @@ and type edge = E.edge
           let () =
             (* Backward-compatible aliases for A-, B-, and AB-cumulativity candidates. *)
             add_cumulativity_macros () ;
-            (* Backward-compatible aliases for strong fence edges. *)
-            add_strong_fence_macros () ;
             (* Backward-compatible aliases for instruction-fetch edges. *)
             add_ifetch_macros () ;
             (* Legacy edge-level aliases for relax parsing. *)

@@ -402,7 +402,7 @@ let fold_tedges f r =
   let r =
     F.fold_all_fences
       (fun fe ->
-        fold_sd_extr_extr wildcard
+        fold_sd_extr_extr false
           (fun sd e1 e2 -> f (Fenced (fe,sd,e1,e2)))) r in
   let r =
     F.fold_dp
@@ -821,18 +821,6 @@ let fold_tedges f r =
 (* Expansion of irrelevant direction specifications in edges *)
 (*************************************************************)
 
-  let expand_loc sd f acc = match sd with
-  | Same|Diff -> f sd acc
-  | UnspecLoc -> f Same (f Diff acc)
-
-  let expand_dir d f acc = match d with
-  | Dir _|NoDir -> f d acc
-  | Irr -> f (Dir W) (f (Dir R) acc)
-
-  let expand_dir2 e1 e2 f =
-    expand_dir e1
-      (fun d1 -> expand_dir e2 (fun d2 -> f d1 d2))
-
   let do_expand_edge e f acc =
     match e.edge with
     | Insert _|Store|Id|Node _
@@ -842,9 +830,7 @@ let fold_tedges f r =
     | Rmw _ -> f e acc
     | Dp _ -> f e acc
     | Po _ -> f e acc
-    | Fenced(fe,sd,e1,e2) ->
-        expand_dir2 e1 e2 (fun d1 d2 ->
-          expand_loc sd ( fun new_sd -> f {e with edge=Fenced(fe,new_sd,d1,d2);})) acc
+    | Fenced _ -> f e acc
 
   let rec do_expand_edges es f suf = match es with
   | [] -> f suf
@@ -873,6 +859,53 @@ let fold_tedges f r =
             (fun (sd,d1,d2) -> [plain_edge (Po (sd,Dir d1,Dir d2))])
             choices in
         f (pp_po_macro sd d1 d2) choices k)
+      k
+
+  let add_fence_macros f k =
+    let pp_fence_macro fe sd d1 d2 = match sd,d1,d2 with
+    | None,None,None -> sprintf "%s***" (pp_fence fe)
+    | _,_,_ -> sprintf "%s%s%s%s"
+        (pp_fence fe) (pp_sd_macro sd) (pp_dir_macro d1) (pp_dir_macro d2) in
+    F.fold_all_fences
+      (fun fe k ->
+        fold_sd_extr_extr_macros
+          (fun sd d1 d2 choices k ->
+            let choices =
+              List.map
+                (fun (sd,d1,d2) -> [plain_edge (Fenced (fe,sd,Dir d1,Dir d2))])
+                choices in
+            f (pp_fence_macro fe sd d1 d2) choices k)
+          k)
+      k
+
+  let add_strong_fence_alias sd d1 d2 f k =
+    let name = sprintf "Fence%s%s%s" (pp_sd sd) (pp_dir d1) (pp_dir d2) in
+    let edge = plain_edge (Fenced (F.strong,sd,Dir d1,Dir d2)) in
+    f name [[edge]] k
+
+  let add_strong_fence_aliases f k =
+    fold_sd false
+      (fun sd k ->
+        expand_dir_macro None
+          (fun d1 k ->
+            expand_dir_macro None
+              (fun d2 k -> add_strong_fence_alias sd d1 d2 f k)
+              k)
+          k)
+      k
+
+  let add_strong_fence_wildcards f k =
+    fold_sd_extr_extr_macros
+      (fun sd d1 d2 choices k ->
+        let name =
+          sprintf "Fence%s%s%s"
+            (pp_sd_macro sd) (pp_dir_macro d1) (pp_dir_macro d2) in
+        let choices =
+          List.map
+            (fun (sd,d1,d2) ->
+              [plain_edge (Fenced (F.strong,sd,Dir d1,Dir d2))])
+            choices in
+        f name choices k)
       k
 
   (* Add all dependency-related macro names for one dependency kind.  The
@@ -937,6 +970,8 @@ let fold_tedges f r =
         |> add_default_dp_alias "Ctrl" F.ctrlr_default sd R f
         |> add_default_dp_alias "Dp" F.ddw_default sd W f
         |> add_default_dp_alias "Ctrl" F.ctrlw_default sd W f)
+    (* Old syntax for concrete strong-fence aliases, for example FenceWW. *)
+    |> add_strong_fence_aliases f
 
   (* Edge-level wildcards exported to the relax wildcard table.  These names
      expand to multiple choices, for example Rf -> Rfi/Rfe or
@@ -970,6 +1005,10 @@ let fold_tedges f r =
         | None,None -> sprintf "Dp%s" (F.pp_dp dp)
         | _,_ -> sprintf "Dp%s%s%s" (F.pp_dp dp) (pp_sd_macro sd) (pp_dir_macro e) in
         add_dp_macros pp_dp_macro dp f)
+    (* Add `Po` related macro *)
+    |> add_po_macros f
+    (* Add fence-related macro *)
+    |> add_fence_macros f
 
   let fold_edge_legacy_wildcards f k =
     let add_com name make_edge k =
@@ -980,8 +1019,8 @@ let fold_tedges f r =
     (* Old default dependency wildcard syntax, for example Dp* and Ctrl*R. *)
     |> add_default_dp_wildcard "Dp" F.ddr_default f
     |> add_default_dp_wildcard "Ctrl" F.ctrlr_default f
-    (* Add `Po` related macro *)
-    |> add_po_macros f
+    (* Old syntax for strong-fence wildcards, for example Fence***. *)
+    |> add_strong_fence_wildcards f
 
 (* resolve *)
   let rec find_next_merge = function
