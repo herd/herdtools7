@@ -204,19 +204,28 @@ and type edge = E.edge
           | Some _ as r -> r
           | None -> Hashtbl.find_opt legacy_syntax name
 
-          let add_default_dp_alias tag dpo sd e = match dpo with
-          | None -> ()
-          | Some dp ->
-            let name = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e) in
-            let choices = E.expand_edges (er (E.Dp (dp,sd,e))) Misc.cons [] in
-            add_legacy_syntax name choices
-
           let add_cumulativity_alias tag e r =
             let choices = E.expand_edges r Misc.cons [] in
             add_legacy_syntax (sprintf "%s%s" tag (E.pp_edge e)) choices
 
           let abc_fence f sl d1 d2 = [rf; fenced f sl d1 d2; rf]
-          let bc_dp dp sl d = [E.plain_edge (E.Dp (dp,sl,d)); rf]
+
+          (* Add one concrete dependency BC-cumulativity alias, for example
+             `BCDpDatadW = [DpDatadW,Rfe]`.  These aliases always target writes. *)
+          let add_bc_dp_cumulativity_alias dp sd =
+            let name = sprintf "BCDp%s%sW" (F.pp_dp dp) (pp_sd sd)
+            and edge = E.plain_edge (E.Dp (dp,sd,Dir W)) in
+            add_legacy_syntax name [[edge; rf]]
+
+          (* Add the wildcard-location dependency BC-cumulativity alias, for
+             example `BCDpData*W = [DpDatasW,Rfe] [DpDatadW,Rfe]`.  These aliases
+             always target writes. *)
+          let add_bc_dp_cumulativity_alias_macro dp =
+            let choices =
+              expand_sd_macro None
+                (fun sd k -> [E.plain_edge (E.Dp (dp,sd,Dir W)); rf]::k)
+                [] in
+            add_legacy_syntax (sprintf "BCDp%s*W" (F.pp_dp dp)) choices
 
           let add_cumulativity_macros () =
             let add_fence_aliases tag make_relax fe sd d1 d2 k =
@@ -243,28 +252,18 @@ and type edge = E.edge
                         add_fence_aliases "BC" bc_fence fe sd e Irr k in
                       add_fence_aliases "BC" bc_fence fe sd e (Dir W) k)
                     k) () in
+            (* Add dependency BC-cumulativity aliases.  Wildcard location
+               aliases are added separately from concrete Same/Diff aliases. *)
             F.fold_dpw
               (fun dpw k ->
-                Code.fold_sd E.wildcard
+                if E.wildcard then
+                  add_bc_dp_cumulativity_alias_macro dpw ;
+                Code.fold_sd false
                   (fun sd k ->
-                    let e = E.plain_edge (E.Dp (dpw,sd,Dir W)) in
-                    add_cumulativity_alias "BC" e (bc_dp dpw sd (Dir W)) ;
+                    add_bc_dp_cumulativity_alias dpw sd ;
                     k)
                   k)
               k
-
-          let add_default_dp_macros () =
-            fold_sd E.wildcard
-              (fun sd () ->
-                if E.wildcard then begin
-                  add_default_dp_alias "Dp" F.ddr_default sd Irr ;
-                  add_default_dp_alias "Ctrl" F.ctrlr_default sd Irr
-                end ;
-                add_default_dp_alias "Dp" F.ddr_default sd (Dir R) ;
-                add_default_dp_alias "Ctrl" F.ctrlr_default sd (Dir R) ;
-                add_default_dp_alias "Dp" F.ddw_default sd (Dir W) ;
-                add_default_dp_alias "Ctrl" F.ctrlw_default sd (Dir W))
-              ()
 
           let add_strong_fence_macros () =
             fold_sd_extr_extr E.wildcard
@@ -367,8 +366,6 @@ and type edge = E.edge
           let () =
             (* Backward-compatible aliases for A-, B-, and AB-cumulativity candidates. *)
             add_cumulativity_macros () ;
-            (* Backward-compatible defaults for dependency aliases. *)
-            add_default_dp_macros () ;
             (* Backward-compatible aliases for strong fence edges. *)
             add_strong_fence_macros () ;
             (* Backward-compatible aliases for instruction-fetch edges. *)

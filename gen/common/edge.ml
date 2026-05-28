@@ -406,7 +406,11 @@ let fold_tedges f r =
           (fun sd e1 e2 -> f (Fenced (fe,sd,e1,e2)))) r in
   let r =
     F.fold_dp
-      (fun dp -> fold_sd_extr wildcard (fun sd e -> f (Dp (dp,sd,e)))) r in
+      (fun dp r ->
+        List.fold_right
+          (fun d r -> fold_sd false (fun sd -> f (Dp (dp,sd,Dir d))) r)
+          (F.expand_dp_dir dp) r)
+      r in
   let r = f Id r in
   let r = f (Node R) (f (Node W) r) in
   let r = f Hat r in
@@ -836,9 +840,7 @@ let fold_tedges f r =
       -> f e acc
     | Communication _ -> f e acc
     | Rmw _ -> f e acc
-    | Dp (dp,sd,expr) ->
-      expand_dir expr (fun new_expr ->
-        expand_loc sd ( fun new_sd -> f {e with edge=Dp(dp,new_sd,new_expr);})) acc
+    | Dp _ -> f e acc
     | Po(sd,e1,e2) ->
         expand_dir2 e1 e2 (fun d1 d2 ->
           expand_loc sd ( fun new_sd -> f {e with edge=Po(new_sd,d1,d2);})) acc
@@ -862,13 +864,44 @@ let fold_tedges f r =
 
   let expand_edges es f = do_expand_edges (List.rev es) f []
 
+  (* Add all dependency-related macro names for one dependency kind.  The
+     direction wildcard is not always fully unfolded to both R and W: each
+     dependency kind restricts the allowed target directions through
+     `F.expand_dp_dir`.  `pp_dp_macro` names the macro form being added. *)
+  let add_dp_macros pp_dp_macro dp f k =
+    (* Get the allowed `dir` expansion of `dp` *)
+    let dirs = F.expand_dp_dir dp in
+    fold_sd_extr_macros
+      (fun sd e choices k ->
+        let filter_choices =
+          List.fold_left
+            (fun k (sd,d) ->
+              (* `fold_sd_extr_macros` expands directions generically.  Filter
+                 them here, since each dependency kind allows only its own
+                 target directions. *)
+              if List.mem d dirs then [plain_edge (Dp (dp,sd,Dir d))]::k
+              else k)
+            [] choices in
+        if Misc.nilp filter_choices then k
+        else f (pp_dp_macro dp sd e) filter_choices k)
+      k
+
+  let add_default_dp_wildcard tag dpo f k = match dpo with
+  | None -> k
+  | Some dp ->
+      add_dp_macros
+        (fun _dp sd d -> sprintf "%s%s%s" tag (pp_sd_macro sd) (pp_dir_macro d))
+        dp f k
+
+  let add_default_dp_alias tag dpo sd d f k = match dpo with
+  | None -> k
+  | Some dp ->
+      let name = sprintf "%s%s%s" tag (pp_sd sd) (pp_dir d) in
+      f name [[plain_edge (Dp (dp,sd,Dir d))]] k
+
   let fold_edge_legacy_aliases f k =
     let add_ws name ie k = f name [[plain_edge (Communication (Co,ie))]] k in
     k
-    (* Backward-compatible concrete Ws spellings.  The primitive lexer table
-       keeps only the preferred Coi/Coe names; Wsi/Wse are relax aliases. *)
-    |> add_ws "Wsi" Int
-    |> add_ws "Wse" Ext
     (* Add `rmw` aliases *)
     |> RMW.fold_rmw_macros
       (fun name choices k ->
@@ -880,6 +913,19 @@ let fold_tedges f r =
         match choices with
         | [_] -> f name choices k
         | _ -> k)
+    (* Backward-compatible concrete Ws spellings.  The primitive lexer table
+       keeps only the preferred Coi/Coe names; Wsi/Wse are relax aliases. *)
+    |> add_ws "Wsi" Int
+    |> add_ws "Wse" Ext
+    (* Old syntax for concrete default dependency aliases, for example
+       DpsR, DpdR, CtrlsW, and CtrldW. *)
+    |> fold_sd false
+      (fun sd k ->
+        k
+        |> add_default_dp_alias "Dp" F.ddr_default sd R f
+        |> add_default_dp_alias "Ctrl" F.ctrlr_default sd R f
+        |> add_default_dp_alias "Dp" F.ddw_default sd W f
+        |> add_default_dp_alias "Ctrl" F.ctrlw_default sd W f)
 
   (* Edge-level wildcards exported to the relax wildcard table.  These names
      expand to multiple choices, for example Rf -> Rfi/Rfe or
@@ -904,6 +950,15 @@ let fold_tedges f r =
         match choices with
         | [] | [_] -> k
         | _ -> f name choices k)
+    (* Add `Dp` related macro *)
+    |> F.fold_dpw
+      (fun dp ->
+        (* Print the user-facing dependency macro name for the current
+           wildcard shape, for example DpAddr, DpAddr*W, or DpAddr**. *)
+        let pp_dp_macro dp sd e = match sd,e with
+        | None,None -> sprintf "Dp%s" (F.pp_dp dp)
+        | _,_ -> sprintf "Dp%s%s%s" (F.pp_dp dp) (pp_sd_macro sd) (pp_dir_macro e) in
+        add_dp_macros pp_dp_macro dp f)
 
   let fold_edge_legacy_wildcards f k =
     let add_com name make_edge k =
@@ -911,6 +966,9 @@ let fold_tedges f r =
     k
     (* Ws is kept as a backward-compatible alias for Co. *)
     |> add_com "Ws" (fun ie -> Communication (Co,ie))
+    (* Old default dependency wildcard syntax, for example Dp* and Ctrl*R. *)
+    |> add_default_dp_wildcard "Dp" F.ddr_default f
+    |> add_default_dp_wildcard "Ctrl" F.ctrlr_default f
 
 (* resolve *)
   let rec find_next_merge = function
