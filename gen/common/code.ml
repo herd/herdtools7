@@ -182,6 +182,31 @@ let fold_sd_extr_macros f r =
               f sd d choices r))
     r
 
+(* Fold over all Same/Diff and direction macro triples that contain at least
+   one wildcard component.  The `choices` argument passed to `f` is the
+   concrete expansion of that triple. *)
+let fold_sd_extr_extr_macros f r =
+  fold_sd_macro_component
+    (fun sd ->
+      fold_dir_macro_component
+        (fun d1 ->
+          fold_dir_macro_component
+            (fun d2 r ->
+              match sd,d1,d2 with
+              (* Keep only forms that still contain at least one wildcard component. *)
+              | Some _,Some _,Some _ -> r
+              | _,_,_ ->
+                  let choices =
+                    expand_dir_macro d1
+                      (fun d1 ->
+                        expand_dir_macro d2
+                          (fun d2 ->
+                            expand_sd_macro sd
+                              (fun sd k -> (sd,d1,d2)::k)))
+                      [] in
+                  f sd d1 d2 choices r)))
+    r
+
 type check =
   | Default | Sc | Uni | Thin | Critical
   | Free | Ppo | Transitive | Total | MixedCheck
