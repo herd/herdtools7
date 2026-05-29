@@ -130,7 +130,7 @@ end
 
 module TestCompileConfig = struct
   let debug = TestGeneratorConfig.debug
-  let show : ShowGen.t option = None
+  let show : Config.show option = None
   let same_loc = TestGeneratorConfig.same_loc
   let unrollatomic : int option = None
   let allow_back = false

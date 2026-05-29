@@ -16,7 +16,7 @@
 
 module type Config = sig
   val debug : Debug_gen.t
-  val show : ShowGen.t option
+  val show : Config.show option
   val same_loc : bool
   val unrollatomic : int option
   val allow_back : bool

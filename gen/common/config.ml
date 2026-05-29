@@ -91,11 +91,22 @@ let same_loc = ref false
 type cond = Cycle | Unicond | Observe
 let cond = ref Cycle
 let hout = ref None
-type show = Edges | Annotations | Fences
-let show = ref (None:ShowGen.t option)
+type show = ShowAll | Edges | Annotations | Fences | Macro | Legacy | LegacyMacro
+let show = ref (None:show option)
 let debug = ref Debug_gen.none
 let moreedges = ref false
 let realdep = ref false
+
+let parse_show = function
+| "all" -> ShowAll
+| "edge"|"edges" -> Edges
+| "annot"|"annotation"|"annotations" -> Annotations
+| "fence"|"fences" -> Fences
+| "macro"|"macros" -> Macro
+| "legacy" -> Legacy
+| "legacymacro"|"legacymacros" -> LegacyMacro
+| _ -> raise (Arg.Bad
+    "Wrong show, choose all, edges, annotations, fences, macros, legacy or legacymacros")
 
 let parse_cond tag = match tag with
 | "cycle" -> Cycle
@@ -231,10 +242,10 @@ let common_specs () =
    ("-c", Arg.Bool (fun b ->  canonical_only := b),
    sprintf "<b> avoid equivalent cycles (default %b)" !canonical_only)::
   ("-list",
-   Arg.Unit (fun () -> show := Some ShowGen.Edges),
-   "list accepted edge syntax and exit")::
-  ("-show", Arg.String (fun s -> show := Some (ShowGen.parse s)),
-    "<edges|annotations|fences> list accepted edges, annotations or fences, and exit")::
+   Arg.Unit (fun () -> show := Some ShowAll),
+   "list accepted edge and annotation syntax and exit")::
+  ("-show", Arg.String (fun s -> show := Some (parse_show s)),
+    "<all|edges|annotations|fences|macros|legacy|legacymacros> list accepted syntax and exit")::
   ("-switch", Arg.Set Misc.switch, "switch something")::
   ("-obs",
    Arg.String (fun s -> do_observers := parse_do_observers s),
