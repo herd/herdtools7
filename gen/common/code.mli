@@ -64,9 +64,8 @@ val is_same_loc : sd -> bool
 val is_diff_loc : sd -> bool
 val is_unspec_loc : sd -> bool
 val fold_ie : (ie -> 'a -> 'a) -> 'a -> 'a
-val fold_sd : bool -> (sd -> 'a -> 'a) -> 'a -> 'a
-val fold_sd_extr : bool -> (sd -> extr -> 'a -> 'a) -> 'a -> 'a
-val fold_sd_extr_extr : bool -> (sd -> extr -> extr -> 'a -> 'a) -> 'a -> 'a
+val fold_sd : (sd -> 'a -> 'a) -> 'a -> 'a
+val fold_sd_extr_extr : (sd -> extr -> extr -> 'a -> 'a) -> 'a -> 'a
 val expand_sd_macro : sd option -> (sd -> 'a -> 'a) -> 'a -> 'a
 val expand_dir_macro : dir option -> (dir -> 'a -> 'a) -> 'a -> 'a
 val fold_sd_extr_macros :

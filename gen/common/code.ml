@@ -139,11 +139,10 @@ let seq_sd sd1 sd2 =
   | Diff,_|_,Diff -> Some Diff
 
 let fold_ie f r = f Int (f Ext r)
-let fold_sd wildcard f r = let r = if wildcard then (f UnspecLoc r) else r in f Diff (f Same r)
-let fold_extr wildcard f r = let r = if wildcard then (f Irr r) else r in f (Dir W) (f (Dir R) r)
-let fold_sd_extr wildcard f = fold_sd wildcard (fun sd -> fold_extr wildcard (fun e -> f sd e))
-let fold_sd_extr_extr wildcard f =
-  fold_sd_extr wildcard (fun sd e1 -> fold_extr wildcard (fun e2 -> f sd e1 e2))
+let fold_sd f r = f Diff (f Same r)
+let fold_extr f r = f (Dir W) (f (Dir R) r)
+let fold_sd_extr_extr f =
+  fold_sd (fun sd -> fold_extr (fun e1 -> fold_extr (fun e2 -> f sd e1 e2)))
 
 let expand_sd_macro sd f r = match sd with
 | None -> f Same (f Diff r)
