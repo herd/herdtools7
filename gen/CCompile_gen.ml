@@ -25,7 +25,7 @@ module type Config = sig
   include Top_gen.Config
   val same_loc : bool
   val allow_back : bool
-  val show : ShowGen.t option
+  val show : Config.show option
   val typ : TypBase.t
   val cpp : bool
   val docheck : bool
@@ -59,11 +59,12 @@ module Make(O:Config) : Builder.S
           end)
           (A)(A)
 
+      module R = Relax.Make(A)(E)
+
       let () = match O.show with
-      | Some s -> begin E.show s ; exit 0 end
+      | Some s -> begin R.show s ; exit 0 end
       | None -> ()
 
-      module R = Relax.Make(A)(E)
       module ConfWithSize = struct
         include O
         let naturalsize = TypBase.get_size O.typ

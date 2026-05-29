@@ -101,6 +101,9 @@ module type S = sig
   val parse_edges : string -> edge list
 
   val pp_edges : ?separate:bool -> edge list -> string
+  val fold_annotation_lookup_table :
+    (string -> atom option -> 'a -> 'a) -> 'a -> 'a
+  val fold_edge_lookup_table : (string -> edge -> 'a -> 'a) -> 'a -> 'a
 
 (* Get source and target event direction,
    Returning Irr means that a Read OR a Write is acceptable,
@@ -152,8 +155,6 @@ module type S = sig
   module Set : MySet.S with type elt = edge
   module Map : MyMap.S with type key = edge
 
-(* Show some elements, for documentation *)
-  val show : ShowGen.t -> unit
 end
 
 
@@ -391,7 +392,7 @@ let fold_tedges f r =
     (fun dp r ->
       List.fold_right
         (fun d r -> fold_sd (fun sd -> f (Dp (dp,sd,Dir d))) r)
-        (F.expand_dp_dir dp) r)
+        [R;W] r)
   (* Identity edge for annotation. *)
   |> f Id
   (* Read/write node pseudo-edges. *)
@@ -488,6 +489,9 @@ let fold_tedges f r =
 
   let () = iter_atom (fun a -> add_lxm_atom (pp_atom_option a) a)
 
+  let fold_annotation_lookup_table f k =
+    Hashtbl.fold f annotation_lookup_table k
+
   let parse_atom s =
     try Hashtbl.find annotation_lookup_table s
     with Not_found -> Warn.fatal "Bad atom: %s" s
@@ -530,13 +534,7 @@ let fold_tedges f r =
     add_lxm_edge "W" (plain_edge (Node W)) ;
     ()
 
-  let fold_pp_edges f =
-    Hashtbl.fold
-      (fun s e k ->
-        if e.a1=None && e.a2=None && e.edge <> Id then
-          f s k
-        else k)
-      edge_lookup_table
+  let fold_edge_lookup_table f k = Hashtbl.fold f edge_lookup_table k
 
   let parse_fence s =
     let fences_pp =
@@ -856,26 +854,16 @@ let fold_tedges f r =
         f name choices k)
       k
 
-  (* Add all dependency-related macro names for one dependency kind.  The
-     direction wildcard is not always fully unfolded to both R and W: each
-     dependency kind restricts the allowed target directions through
-     `F.expand_dp_dir`.  `pp_dp_macro` names the macro form being added. *)
+  (* Add all dependency-related macro names for one dependency kind.
+     `pp_dp_macro` names the macro form being added. *)
   let add_dp_macros pp_dp_macro dp f k =
-    (* Get the allowed `dir` expansion of `dp` *)
-    let dirs = F.expand_dp_dir dp in
     fold_sd_extr_macros
       (fun sd e choices k ->
-        let filter_choices =
-          List.fold_left
-            (fun k (sd,d) ->
-              (* `fold_sd_extr_macros` expands directions generically.  Filter
-                 them here, since each dependency kind allows only its own
-                 target directions. *)
-              if List.mem d dirs then [plain_edge (Dp (dp,sd,Dir d))]::k
-              else k)
-            [] choices in
-        if Misc.nilp filter_choices then k
-        else f (pp_dp_macro dp sd e) filter_choices k)
+        let choices =
+          List.map
+            (fun (sd,d) -> [plain_edge (Dp (dp,sd,Dir d))])
+            choices in
+        f (pp_dp_macro dp sd e) choices k)
       k
 
   let add_default_dp_wildcard tag dpo f k = match dpo with
@@ -945,7 +933,7 @@ let fold_tedges f r =
         | [] | [_] -> k
         | _ -> f name choices k)
     (* Add `Dp` related macro *)
-    |> F.fold_dpw
+    |> F.fold_dp
       (fun dp ->
         (* Print the user-facing dependency macro name for the current
            wildcard shape, for example DpAddr, DpAddr*W, or DpAddr**. *)
@@ -1217,26 +1205,4 @@ let fold_tedges f r =
         let compare = compare
       end)
 
-  let show =
-    let open ShowGen in
-    function
-      | Edges ->
-          let es = fold_pp_edges (fun s k -> s::k) [] in
-          let es = List.sort String.compare es in
-          List.iter (eprintf " %s") es ;
-          eprintf "\n%!"
-      | Annotations ->
-          let es =
-            fold_atomo
-              (fun ao k ->
-                if is_ifetch ao then k
-                else { edge=Id; a1=ao; a2=ao;}::k)
-              [] in
-          List.iter
-            (fun e -> eprintf " %s" (pp_edge e))
-            es ;
-          eprintf "\n%!"
-      | Fences ->
-          F.fold_all_fences (fun f () -> eprintf " %s" (F.pp_fence f)) () ;
-          eprintf "\n%!"
 end
