@@ -45,6 +45,7 @@ module type S = sig
   val parse_expand_relaxs :
     ?ppo:((relax -> relax list -> relax list) -> relax list -> relax list)
         -> (string,string) Ast.t -> relax list
+  val show : Config.show -> unit
 
   (* Remove invalid relax from the list *)
   val remove_invalid_relaxes : relax list -> relax list
@@ -161,6 +162,10 @@ and type edge = E.edge
           | Some _ as r -> r
           | None -> Hashtbl.find_opt legacy_syntax name
 
+          let fold_wildcard f k = Hashtbl.fold f wildcard k
+          let fold_backward_compatibility f k =
+            Hashtbl.fold f legacy_syntax k
+
           let abc_fence f sl d1 d2 = [rf; fenced f sl d1 d2; rf]
 
           (* Add one wildcard fence cumulativity alias.  `None` means "any"
@@ -261,7 +266,7 @@ and type edge = E.edge
                 () in
             (* Add dependency BC-cumulativity aliases.  Wildcard location
                aliases are added separately from concrete Same/Diff aliases. *)
-            F.fold_dpw
+            F.fold_dp
               (fun dpw k ->
                 if E.wildcard then
                   add_bc_dp_cumulativity_alias_macro dpw ;
@@ -324,7 +329,7 @@ and type edge = E.edge
 
           let allR sd d =
             er (E.Po (sd,Dir R,Dir d))::
-            (match d with R -> F.fold_dpr | W -> F.fold_dpw)
+            F.fold_dp
               (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
               (all_fences sd R d [])
 
@@ -479,6 +484,62 @@ and type edge = E.edge
                       (fun edge -> not (E.is_insert_store edge))
                       E.can_precede relax)
           |> List.sort_uniq compare
+
+        (* Print the syntax accepted by -list/-show.  Edge syntax is split
+           between primitive edges, aliases and wildcards, matching the lookup
+           tables used by the parser.  The Macro view includes unfolded choices
+           so deprecated backward-compatible forms stay visible without mixing
+           them with the preferred aliases and wildcards. *)
+        let show =
+          let pp_names title fold =
+            let elements = fold (fun name _choices k -> name::k) []
+              |> List.sort String.compare
+              |> String.concat " " in
+            match elements with
+            | "" -> ()
+            | elements -> printf "%s:\n%s\n" title elements ; in
+          let pp_macro_section title fold =
+            let pp_macro_choices choices =
+              String.concat " | " (List.map pp_relax choices) in
+            let elements =
+              fold
+                (fun name choices k -> (sprintf "%s -> %s" name (pp_macro_choices choices))::k)
+                []
+              |> List.sort String.compare
+              |> String.concat "\n" in
+            match elements with
+            | "" -> ()
+            | elements -> printf "%s:\n%s\n" title elements ; in
+          let show_edges () =
+            pp_names "edges" E.fold_edge_lookup_table ;
+            pp_names "macros" MacroTable.fold_wildcard ; in
+          let show_legacy_syntax () =
+            pp_names "legacy syntax (deprecated)"
+                MacroTable.fold_backward_compatibility; in
+          let show_annotations () =
+            pp_names "annotations" E.fold_annotation_lookup_table in
+          let show_macros () =
+            pp_macro_section "macro" MacroTable.fold_wildcard ; in
+          let show_legacy_macros () =
+            pp_macro_section "legacy syntax (deprecated)"
+              MacroTable.fold_backward_compatibility in
+          function
+          | Config.ShowAll ->
+              show_edges () ;
+              show_annotations () ;
+          | Config.Edges ->
+              show_edges () ;
+          | Config.Annotations ->
+              show_annotations () ;
+          | Config.Macro ->
+              show_macros () ;
+          | Config.Fences ->
+              F.fold_all_fences (fun f () -> printf " %s" (F.pp_fence f)) () ;
+              printf "\n"
+          | Config.Legacy ->
+              show_legacy_syntax () ;
+          | Config.LegacyMacro ->
+              show_legacy_macros () ;
 
 (********)
 (* Sets *)
