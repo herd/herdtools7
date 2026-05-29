@@ -34,9 +34,6 @@ module type S = sig
   val pp_relax_list : relax list -> string
   val edges_of_relax_list : relax list -> edge list
 
-  val com : relax list
-  val po : relax list
-
   (* Parse the `input` to `Ast.t` using the input grammar *)
   val parse_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> (string,string) Ast.t) -> string -> (string,string) Ast.t
   val parse_sequence_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> (string,string) Ast.t) -> string list -> (string,string) Ast.t
@@ -133,49 +130,9 @@ and type edge = E.edge
 (*************************************************************)
 (* Expansion of irrelevant direction specifications in edges *)
 (*************************************************************)
-        let er e = [E.plain_edge e]
-        let ers es = List.map E.plain_edge es
-        let com =
-          let open E in
-          [
-           er (Communication (Rf,Ext));
-           er (Communication (Fr,Ext));
-           er (Communication (Co,Ext));
-           ers [Communication (Fr,Ext) ; Communication (Rf,Ext);];
-           ers [Communication (Co,Ext); Communication (Rf,Ext);];
-         ]
-
-        let po =
-          let open E in
-          er (Po (Diff,Irr,Irr))::
-          F.fold_all_fences
-            (fun f k ->
-              er (Fenced (f,Diff,Irr,Irr))::
-              (if F.orders f R R && not (F.orders f W R) then
-                [ers [Communication (Rf,Int); Fenced (f,Diff,Dir R,Dir R)]]
-              else [])@
-              (if F.orders f R W && not (F.orders f W W) then
-                [ers [Communication (Rf,Int); Fenced (f,Diff,Dir R,Dir W)]]
-              else [])@k)
-            []
-
 
 (* Expand relax macros *)
         let er e = [E.plain_edge e]
-        let atoms_key = "atoms"
-
-        let atoms_length = String.length atoms_key
-
-        let _esparse_atoms s =
-          if
-            String.length s >= atoms_length &&
-            String.sub s 0 atoms_length = atoms_key
-          then
-            let suf =
-              String.sub s atoms_length (String.length s - atoms_length) in
-            try Some (E.parse_edge suf)
-            with _ -> None
-          else None
 
         let parse_ast parser_grammar s =
           try
@@ -251,7 +208,7 @@ and type edge = E.edge
                 sprintf "%s%s%s%s%s"
                   tag (F.pp_fence fe) (pp_sd sd) (pp_dir d1) (pp_dir d2) in
               add_legacy_syntax name [make_relax fe sd (Dir d1) (Dir d2)] in
-            fold_sd false
+            fold_sd
               (fun sd () ->
                 add_fence_cumulativity_alias "ABC" abc_fence fe sd R W ;
                 expand_dir_macro None
@@ -265,7 +222,7 @@ and type edge = E.edge
              Same/Diff locations, for example `ABCDMB.SYd**`, and wildcard
              locations, for example `ABCDMB.SY***` and `ABCDMB.SY*RW`. *)
           let add_fence_cumulativity_wildcard fe =
-            fold_sd false
+            fold_sd
               (fun sd () ->
                 add_fence_cumulativity_alias_macro
                   "ABC" abc_fence fe (Some sd) None None ;
@@ -308,7 +265,7 @@ and type edge = E.edge
               (fun dpw k ->
                 if E.wildcard then
                   add_bc_dp_cumulativity_alias_macro dpw ;
-                Code.fold_sd false
+                Code.fold_sd
                   (fun sd k ->
                     add_bc_dp_cumulativity_alias dpw sd ;
                     k)
@@ -419,10 +376,6 @@ and type edge = E.edge
             if E.wildcard then add_predefined_legacy_syntax ()
         end
 
-        let expand_relaxs rs =
-          let expand_relax r = E.expand_edges r Misc.cons in
-          List.fold_right expand_relax rs []
-
         let relax_to_sequence relax = match relax with
         | [] -> Warn.fatal "Relax is parsed incorrectly."
         | [edge] -> Ast.One edge
@@ -482,9 +435,7 @@ and type edge = E.edge
                   with Misc.UserError _ as err -> raise err
                      | _ -> Warn.fatal "Bad relax: %s" str
               end in
-          (* expand the wildcard edges and annotations *)
-          expand_relaxs parsed_edges
-          |> relax_list_to_choice
+          relax_list_to_choice parsed_edges
 
           let parse_expand_relaxs_ast ?(ppo=(fun _ k -> k)) ast =
             Ast.bind ast (parse_expand_relax ~ppo)
