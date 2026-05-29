@@ -1,11 +1,11 @@
 Test MP+dmb.sypt+amo.ldaddal-polt Allowed
 States 2
-1:X0=0; 1:X5=x:green; [y]=1;  ~Fault(P1);
-1:X0=0; 1:X5=x:green; [y]=1; Fault(P1,TagCheck);
+1:X0=0; 1:X5=x:green;  ~Fault(P1);
+1:X0=0; 1:X5=x:green; Fault(P1,TagCheck);
 Ok
 Witnesses
 Positive: 1 Negative: 1
-Condition exists ([y]=1 /\ 1:X0=0 /\ 1:X5=x:green /\ not (fault(P1)))
+Condition exists (1:X0=0 /\ 1:X5=x:green /\ not (fault(P1)))
 Observation MP+dmb.sypt+amo.ldaddal-polt Sometimes 1 1
-Hash=ed89fcb0f97c33bc849bab0e5fec49f0
+Hash=1595cfedc0ad9d3e0b95e03a7217bfb7
 

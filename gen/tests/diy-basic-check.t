@@ -85,7 +85,7 @@ A VMSA test for a negated exists check, `-neg true`
    DSB ISH             |                  ;
    STR X4,[X3]         |                  ;
   
-  ~exists ([x]=3 /\ 0:X1=2 /\ 1:X1=(oa:PA(x), af:0) /\ not (fault(P0:L01,x)) /\ not (fault(P1:L00,x)))
+  ~exists (0:X1=2 /\ 1:X1=(oa:PA(x), af:0) /\ not (fault(P0:L01,x)) /\ not (fault(P1:L00,x)))
 A VMSA test for observing locations, `-cond observe`
   $ diyone7 -arch AArch64 -variant vmsa Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -info "User-define=User-define" -cond observe
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0
@@ -115,7 +115,7 @@ A VMSA test for observing locations, `-cond observe`
    DSB ISH             |                  ;
    STR X4,[X3]         |                  ;
   
-  locations [x; 0:X1; 1:X1; fault(P0:L01,x); fault(P1:L00,x);]
+  locations [0:X1; 1:X1; fault(P0:L01,x); fault(P1:L00,x);]
   forall (true)
 A VMSA test for a forall check, `-cond unicond`
   $ diyone7 -arch AArch64 -variant vmsa Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -info "User-define=User-define" -cond unicond
@@ -168,7 +168,7 @@ A memtag generation test with `Variant` duplicated in metadata, because of (1) `
    STG X4,[X5]       |                  ;
    STG X6,[X3]       |                  ;
   
-  exists ([tag(y)]=:blue /\ 0:X0=x:green /\ 1:X0=0 /\ not (fault(P1:L00,y)))
+  exists (0:X0=x:green /\ 1:X0=0 /\ not (fault(P1:L00,y)))
 A memtag `LxSx` oneloc comparison test
   $ diyone7 -arch AArch64 -variant memtag -oneloc T PosWR LxSx Coi
   AArch64 CoWW+postp-rmw-coipt
@@ -296,7 +296,7 @@ A base test with int64 arrays
    MOV X4,#1       |                ;
    STR X4,[X5]     |                ;
   
-  exists (x={1,0} /\ [y]=2 /\ 0:X2=0 /\ 1:X2=0)
+  exists ([y]=2 /\ 0:X2=0 /\ 1:X2=0)
 A C test for exists
   $ diyone7 -arch C PodWW Coe PodWR Fre
   Warning: optimised conditions are not supported by C arch
@@ -653,7 +653,7 @@ A valid cycle with annotations and a store edge
    STLR W0,[X1] |             ;
    LDR W3,[X2]  |             ;
   
-  exists ([x]=2 /\ 0:X3=0 /\ 1:X3=0)
+  exists (0:X3=0 /\ 1:X3=0)
 An invalid cycle with annotations and a store edge
   $ diyone7 -arch AArch64 A Store PodWR Fre PodWR Fre
   diyone7: Fatal error: Test SB+po+store-poap [Store PodWRAP Fre PodWR FrePA] failed:
@@ -679,7 +679,7 @@ A valid cycle with duplicate wraparound annotations plus insert and store edges
    ISB          |             ;
    LDAR W3,[X2] |             ;
   
-  exists ([x]=2 /\ 0:X3=0 /\ 1:X3=0)
+  exists (0:X3=0 /\ 1:X3=0)
 
 Alignment filter behaviour between local `Pos**` and internal communication in `diy7` in `default` mode
   $ diy7 -arch AArch64 -filter-check Rfi DpAddrdW
