@@ -12,4 +12,4 @@ Variant=mixed
  STXRH W4,W2,[X1] ;
  CBNZ W4,Loop00   ;
 
-exists ([x]=0x101 /\ 0:X0=0x101 /\ 0:X3=0x100)
+exists (0:X0=0x101 /\ 0:X3=0x100)
