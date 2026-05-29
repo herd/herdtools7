@@ -1165,6 +1165,20 @@ let set_read_pair_v n cell check_value =
   let e = { e with v=v; check_value } in
   n.evt <- e
 
+(* A node is adjacent to its incoming edge (`prev.edge`) and outgoing edge
+   (`edge`).  For RMW, also treat the communication edge after the paired
+   write as adjacent to the read-side event. *)
+let adjacent_with_communication_edge node =
+  let adjacent_with_communication_edge_internal m =
+    E.is_com m.prev.edge || E.is_com m.edge in
+  adjacent_with_communication_edge_internal node
+  (* When `node` is an RMW, and the next `node.next` or
+     the previous `node.prev` is the companion RMW event. *)
+  || ( node.evt.rmw &&
+     ( (node.next.evt.rmw && adjacent_with_communication_edge_internal node.next)
+     || (node.prev.evt.rmw && adjacent_with_communication_edge_internal node.prev) ) )
+
+
 (* Assume all the events are for the same location,
    convert the node list, i.e., the first unnamed parameter,
    to the final value `cell` and PTE value `pte_cell` *)
@@ -1182,7 +1196,9 @@ let do_set_read_v init =
       | Some R ->
         (* If the result of this read need to be checked,
            i.e. generating postcondition *)
-        let check_value = Some (CoSt.get_check_value st) in
+        let check_value =
+          Some ( adjacent_with_communication_edge n
+              && CoSt.get_check_value st) in
         begin match bank with
         | Ord | Instr->
           let st = CoSt.implicit_pte_update st R in
@@ -1588,7 +1604,20 @@ let merge_changes n nss =
           (e.loc,m.store)::k
         else k
       end in
-    do_rec n
+    let adjacent_with_communication_edge_or_store m =
+      adjacent_with_communication_edge m || E.is_insert_store m.edge.E.edge in
+    (* Remove the tail until we reach a write adjacent to a communication
+     edge or an inserted store. This `coherence` function works together with `check` in
+     `top_gen.ml` to decide coherence/write value check.
+     Especially when there are two or more writes, the last value
+     will be checked. Here we remove the tail which means a local,
+     non-communication write will be ignored. *)
+    List.fold_right ( fun (loc,n) (new_list,have_seen_communication) ->
+      match have_seen_communication,adjacent_with_communication_edge_or_store n with
+      | true,_ | _,true -> (loc,n) :: new_list,true
+      | false, false -> new_list,false
+    ) (do_rec n) ([],false)
+    |> fst
 
   let get_ord_writes =
     let open Code in
