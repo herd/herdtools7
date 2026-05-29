@@ -11,4 +11,4 @@ AArch64 SB+po+store-po
  STR W0,[X1] |             ;
  LDR W3,[X2] |             ;
 
-exists ([x]=2 /\ 0:X3=0 /\ 1:X3=0)
+exists (0:X3=0 /\ 1:X3=0)

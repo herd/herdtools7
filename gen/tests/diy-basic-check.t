@@ -48,7 +48,7 @@ A test for observing locations, `-cond observe`
    STR W0,[X1] | STR W0,[X2] ;
    LDR W3,[X2] | LDR W3,[X1] ;
   
-  locations [x; y; 0:X3; 1:X3;]
+  locations [0:X3; 1:X3;]
   forall (true)
 A test for a forall check, `-cond unicond`
   $ diyone7 -arch AArch64 -info "User-define=User-define" -cond unicond PodWR Fre PodWR Fre
