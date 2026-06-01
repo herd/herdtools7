@@ -50,16 +50,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     (* Reserve SME's slice index register *)
     let x12 = Ireg R12
 
-    let next_reg x =
-      if do_sme then
-        begin
-          let r,x = A64.alloc_reg x in
-          match r with
-          | Ireg R12 -> A64.alloc_reg x
-          | _ -> r,x
-        end
-      else
-        A64.alloc_reg x
+    let next_reg x = A64.alloc_reg x
 
     let next_reg2 x =
       let r1,x = next_reg x in
