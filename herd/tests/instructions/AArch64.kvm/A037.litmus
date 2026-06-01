@@ -1,0 +1,8 @@
+AArch64 A037
+
+{ 0:x0=x; uint64_t 0:x1=4; }
+P0;
+  add x0,x0,x1;
+
+forall
+  ( 0:x0=x )

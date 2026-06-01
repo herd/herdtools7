@@ -75,6 +75,7 @@ let dump_fatom_tag d ((p,lbl),v,_) =
      | None -> ""
      | Some v -> "_" ^ d v)
 
+let data_symb s = sprintf "DATA_SYMB_%s" (String.uppercase_ascii s)
 let data_symb_id s = sprintf "DATA_SYMB_ID_%s" (String.uppercase_ascii s)
 let instr_symb_id s = sprintf "INSTR_SYMB_ID_%s" (String.uppercase_ascii s)
 let fault_id s = sprintf "Fault%s" (Misc.to_c_name s)
