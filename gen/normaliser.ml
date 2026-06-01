@@ -159,11 +159,11 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
 
 (* Notice, do not halt on stores... *)
       let ext_com e = match e.E.edge with
-      | E.Rf Ext|E.Fr Ext|E.Ws Ext|E.Hat -> true
+      | E.Communication (_,Ext)|E.Hat -> true
       | _ -> false
 
       let int_com e = match e.E.edge with
-      | E.Rf Int|E.Fr Int|E.Ws Int -> true
+      | E.Communication (_,Int) -> true
       | _ -> false
 
 (* Find skipping Leave/Back *)
@@ -289,10 +289,10 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       let compare_edges e1 e2 =
         let open E in
         match e1.edge,e2.edge with
-        | (Po _|Rf _),(Fenced _|Dp _)
+        | (Po _|Communication (Rf,_)),(Fenced _|Dp _)
         | Dp _,Fenced _
           -> 1
-        | (Fenced _|Dp _),(Po _|Rf _)
+        | (Fenced _|Dp _),(Po _|Communication (Rf,_))
         | Fenced _,Dp _ -> -1
         | _,_ -> Misc.polymorphic_compare e1 e2
 

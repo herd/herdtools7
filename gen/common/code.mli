@@ -74,7 +74,7 @@ val pp_check : check -> string
 val checks : string list
 
 (* Com *)
-type com =  CRf | CFr | CWs
+type com =  Rf | Fr | Co
 
 val pp_com : com -> string
 val fold_com : (com -> 'a -> 'a) -> 'a -> 'a
