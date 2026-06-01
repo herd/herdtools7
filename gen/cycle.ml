@@ -489,7 +489,7 @@ let diff_loc e = Code.is_diff_loc @@ E.loc_sd e
 let same_proc e = E.get_ie e = Int
 let diff_proc e = E.get_ie e = Ext
 let int_com e = match e.E.edge with
-  | E.Rf Int|E.Fr Int|E.Ws Int -> true
+  | E.Communication (_,Int) -> true
   | _ -> false
 
 
@@ -726,7 +726,7 @@ let remove_store n0 =
     begin
       let p = find_non_pseudo_prev m.prev in
       match p.edge.E.edge with
-      | (E.Rf Ext | E.Fr Ext) ->
+      | (E.Communication (Rf,Ext) | E.Communication (Fr,Ext)) ->
         Warn.fatal "Insert pseudo edge %s appears after external communication edge %s"
         (E.pp_edge m.edge) (E.pp_edge p.edge)
       | _ -> ()
@@ -1609,7 +1609,7 @@ let merge_changes n nss =
     let k = IntSet.empty in
     let k = if e.proc >= 0 then IntSet.add e.proc k else k in
     let k = match n.edge.E.edge with
-    | E.Rf _ -> IntSet.add n.next.evt.proc k
+    | E.Communication (Rf,_) -> IntSet.add n.next.evt.proc k
     | _ -> k in
     k
 

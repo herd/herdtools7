@@ -46,6 +46,8 @@ module Make
        open E
 
        let pp_com c = Misc.lowercase (pp_com c)
+       let pp_communication com ie =
+         Misc.lowercase (sprintf "%s%s" (pp_com com) (pp_ie ie))
        let pp_fence = F.pp_fence
        let pp_dp = F.pp_dp
        let pp_atom = A.pp_atom
@@ -57,12 +59,7 @@ module Make
          | Fenced (f,Diff,_,_) -> Some (Misc.lowercase (pp_fence f))
          | Dp (dp,Same,_) -> Some (Misc.lowercase (pp_dp dp) ^ "s")
          | Dp (dp,Diff,_) -> Some (Misc.lowercase (pp_dp dp))
-         | Rf Int -> Some "rfi"
-         | Ws Int -> Some "coi"
-         | Fr Int -> Some "fri"
-         | Rf Ext -> Some "rfe"
-         | Ws Ext -> Some "coe"
-         | Fr Ext -> Some "fre"
+         | Communication (com,(Int|Ext as ie)) -> Some (pp_communication com ie)
          | Rmw rmw ->
             (* Note: backward compatible item ("rmw") in names *)
             Some (Misc.lowercase (E.RMW.pp_rmw true rmw))
@@ -76,14 +73,14 @@ module Make
        let ambiguous_target = function
          | Po _|Fenced _|Dp _
            -> true
-         |Rf _|Ws _|Fr _
+         |Communication (_,_)
          |Id|Hat|Leave _|Back _
          |Insert _|Store|Node _|Rmw _
            -> false
        and ambiguous_source = function
          | Po _|Fenced _
            -> true
-         |Dp _| Rf _|Ws _|Fr _
+         |Dp _| Communication (_,_)
          |Id|Hat|Leave _|Back _
          |Insert _|Store|Node _|Rmw _
            -> false
@@ -116,25 +113,25 @@ module Make
          | [] -> None
 
        let rec count_a = function
-         | {edge=(Rf Ext|Fr Ext|Ws Ext); a2=Some a; _}::
-           ({edge=(Rf Ext|Fr Ext|Ws Ext);a1=Some _; _}::_ as es) ->
+         | {edge=Communication (_,Ext); a2=Some a; _}::
+           ({edge=Communication (_,Ext);a1=Some _; _}::_ as es) ->
              pp_atom a::count_a es
-         | {edge=(Rf Ext|Fr Ext|Ws Ext); a2=None; _}::
-           ({edge=(Rf Ext|Fr Ext|Ws Ext);a1=None; _}::_ as es) ->
+         | {edge=Communication (_,Ext); a2=None; _}::
+           ({edge=Communication (_,Ext);a1=None; _}::_ as es) ->
              Code.plain::count_a es
          | _::es -> count_a es
          | [] -> []
 
        let init_a = function
-         | {edge=(Rf Ext|Fr Ext|Ws Ext);a1=Some a; _}::_ as es ->
+         | {edge=Communication (_,Ext);a1=Some a; _}::_ as es ->
              begin match Misc.last es with
-             | {edge=(Rf Ext|Fr Ext|Ws Ext);a2=Some _; _} ->
+             | {edge=Communication (_,Ext);a2=Some _; _} ->
                  [pp_atom a]
              | _ -> []
              end
-         | {edge=(Rf Ext|Fr Ext|Ws Ext);a1=None; _}::_ as es ->
+         | {edge=Communication (_,Ext);a1=None; _}::_ as es ->
              begin match Misc.last es with
-             | {edge=(Rf Ext|Fr Ext|Ws Ext);a2=None; _} -> [Code.plain]
+             | {edge=Communication (_,Ext);a2=None; _} -> [Code.plain]
              | _ -> []
              end
          | _ -> []
