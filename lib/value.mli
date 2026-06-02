@@ -67,9 +67,6 @@ module type S =
       val as_symbol : v -> string
       val freeze : csym -> Cst.v
 
-(* Equality (for constraint solver) is possible *)
-      val equalityPossible : v -> v -> bool
-
 (* Please use this for comparing constants... *)
       val compare : v -> v -> int
       val equal : v -> v -> bool

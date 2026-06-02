@@ -1,10 +1,10 @@
 Test A06 Required
 States 1
-0:X0=x;  ~Fault(P0);
+0:X1=42;  ~Fault(P0);
 Ok
 Witnesses
 Positive: 1 Negative: 0
-Condition forall (not (fault(P0)) /\ 0:X0=x)
+Condition forall (0:X1=42 /\ not (fault(P0)))
 Observation A06 Always 1 0
-Hash=44a5d20520bdadd90a158d8352318da5
+Hash=2e07c722c441b4f247c91f4cc6d5fdad
 

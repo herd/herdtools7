@@ -54,9 +54,11 @@ module Make(O:Config)(Tar:Tar.S)(D:CoreDumper.S) =
             match O.affinity with
             | Affinity.No -> "utils.c"::k
             | _ ->  "utils.c"::"affinity.c"::k in
+          let pac =
+            O.variant (Variant_litmus.PacVersion `PAuth1) ||
+            O.variant (Variant_litmus.PacVersion `PAuth2) in
           let utils =
-            if O.variant Variant_litmus.Pac
-            then "auth.c"::k else k in
+            if pac then "auth.c"::k else k in
           String.concat " " (List.map Tar.outname utils) in
         let com = sprintf "%s -o %s %s %s" gcc sX utils source in
         exec_stdout com

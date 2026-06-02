@@ -1,12 +1,13 @@
 AArch64 A13
-Variant=pac
-
-{ 0:x0=x }
-
-P0             ;
-  pacdza x0    ;
-  add x0,x0,#4 ;
-  autdza x0    ;
-  sub x0,x0,#4 ;
-  ldr x1,[x0]  ;
-forall (Fault(P0))
+Variant=pauth1
+{
+  0:x0=x; int64_t 0:x1=53; 0:x2=x;
+}
+P0;
+pacda x0,x1;
+pacdzb x2;
+cmp x0,x2;
+b.eq end;
+mov x3,#42;
+end:;
+exists (0:x3=0)

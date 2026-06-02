@@ -273,6 +273,7 @@ cata-test:: test.herd.cata.aarch64-mixed
 cata-test:: test.herd.cata.aarch64-pick
 cata-test:: test.herd.cata.aarch64-faults
 cata-test:: test.herd.cata.aarch64-MTE
+cata-test:: test.herd.cata.aarch64-PAC
 cata-test:: test.herd.cata.aarch64-ifetch
 cata-test:: test.herd.cata.aarch64-cas
 cata-test-all:: test.herd.cata.aarch64-VMSA

@@ -36,6 +36,8 @@ module Make (B : ArchBaseHerd) (C : Arch_herd.Config) (V : Value.S) = struct
   let reject_mixed = false
   let mem_access_size _ = None
 
+  module CS = ConstraintSolver.No(V)
+
   include
     ArchExtra_herd.Make
       (C)
@@ -56,6 +58,8 @@ module Make (B : ArchBaseHerd) (C : Arch_herd.Config) (V : Value.S) = struct
         let reg_compare = reg_compare
         let fromto_of_instr _ = None
         let get_val _ v = v
+
+        module CS = CS
       end)
 
   module MemType = MemoryType.No

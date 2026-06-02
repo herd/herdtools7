@@ -1,10 +1,10 @@
 AArch64 A07
-Variant=pac
-
-{ 0:x0=x; int64_t 0:x1=42 }
-
-P0            ;
-  pacda x0,x1 ;
-  autda x0,x1 ;
-forall
-  ( ~Fault(P0) /\ 0:x0=x )
+Variant=pauth1
+{
+  int64_t x=42;
+  0:x0=x; int64_t 0:x1=53;
+}
+P0;
+pacda x0,x1;
+ldr x1,[x0];
+exists (0:x1=53 /\ Fault(P0,MMU:Translation))

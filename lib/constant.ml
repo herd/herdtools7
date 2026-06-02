@@ -42,6 +42,10 @@ module Symbol = struct
     | Data s -> s
     | Label (p,lbl) -> sprintf "%d:%s" p lbl
 
+  let extract_name = function
+    | Data s -> s
+    | Label (_, lbl) -> lbl
+
   let map f = function
     | Data s -> Data (f s)
     | Label (p,s) -> Label (p, f s)
@@ -88,20 +92,27 @@ let default_symbolic_data =
    pac = PAC.canonical ;
   }
 
+let pp_index base o = match o with
+| 0 -> base
+| i -> sprintf "%s+%i" base i
+let pp_index_init base o = match o with
+| 0 -> base
+| i -> sprintf "%s[%i]" base i
+
 let capa_low c = Int64.shift_left (Int64.logand c 0x1ffffffffL)  3
 and capa_high c = Int64.shift_right_logical c 33
 
-let pp_symbolic_data {name=n; tag=t; cap=c; pac=p; _} =
+let pp_symbolic_data ?(pp_index=pp_index) {name=n; tag=t; cap=c; pac=p; _} offset =
   let s = Symbol.pp n in
   match t,c with
   | None, 0L ->
-      PAC.pp p s
+      PAC.pp p s offset
   | None, _ ->
-     sprintf "%#Lx:%s:%Li" (capa_low c) s (capa_high c)
+     pp_index (sprintf "%#Lx:%s:%Li" (capa_low c) s (capa_high c)) offset
 
-  | Some t, 0L -> sprintf "%s:%s" s t
+  | Some t, 0L -> pp_index (sprintf "%s:%s" s t) offset
   | Some t, _ ->
-      sprintf "%#Lx:%s:%Li:%s" (capa_low c) s (capa_high c) t
+      pp_index (sprintf "%#Lx:%s:%Li:%s" (capa_low c) s (capa_high c) t) offset
 
 let compare_symbolic_data s1 s2 =
   begin match Symbol.compare s1.name s2.name with
@@ -140,6 +151,9 @@ let symbolic_data_collision s1 s2 =
   then Some (s1.pac, s2.pac)
   else None
 
+let symbolic_data_normalize s solver =
+  {s with pac = PAC.normalize s.pac solver}
+
 type syskind = PTE|PTE2|TLB
 type tagkind = PHY|VIR
 
@@ -157,14 +171,6 @@ let get_index = function
 
 let pp_physical s = sprintf "PA(%s)" s
 
-let pp_index base o = match o with
-| 0 -> base
-| i -> sprintf "%s+%i" base i
-
-let pp_index_init base o = match o with
-| 0 -> base
-| i -> sprintf "%s[%i]" base i
-
 let pp_tagaddr t s o =
   let s =
     match t with
@@ -173,7 +179,7 @@ let pp_tagaddr t s o =
   sprintf "tag(%s)" (pp_index s o)
 
 let pp_symbol_old = function
-  | Virtual s -> pp_index (pp_symbolic_data s) s.offset
+  | Virtual s -> pp_symbolic_data s s.offset
   | Physical (s,o) -> pp_index (Misc.add_physical s) o
   | TagAddr (t,s,o) -> pp_tagaddr t s o
   | System (TLB,s) -> Misc.add_tlb s
@@ -182,7 +188,7 @@ let pp_symbol_old = function
 
 
 let pp_symbol = function
-  | Virtual s -> pp_index (pp_symbolic_data s) s.offset
+  | Virtual s -> pp_symbolic_data s s.offset
   | Physical (s,o) -> pp_index (pp_physical s) o
   | TagAddr (t,s,o) -> pp_tagaddr t s o
   | System (TLB,s) -> sprintf "TLB(%s)" s
@@ -190,7 +196,7 @@ let pp_symbol = function
   | System (PTE2,s) -> sprintf "PTE(PTE(%s))" s
 
 let pp_symbol_init = function
-  | Virtual s -> pp_index_init (pp_symbolic_data s) s.offset
+  | Virtual s -> pp_symbolic_data ~pp_index:pp_index_init s s.offset
   | sym -> pp_symbol sym
 
 let compare_id_offset s1 o1 s2 o2 =
@@ -352,6 +358,12 @@ let collision s1 s2 = match s1,s2 with
       symbolic_data_collision v1 v2
   | _, _ ->
       None
+
+let normalize s solver =
+  match s with
+  | Symbolic (Virtual v) ->
+      Symbolic (Virtual (symbolic_data_normalize v solver))
+  | _ -> s
 
   let rec mk_pp pp_symbol pp_scalar pp_label pp_pteval pp_addrreg pp_instr = function
   | Concrete i -> pp_scalar i

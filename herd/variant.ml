@@ -113,7 +113,9 @@ type t =
   (* Accept cyclic equation sets as being solvable *)
   | OOTA
 (* Pointer Authentication Code *)
-  | Pac
+  | PacVersion of [`PAuth1|`PAuth2]
+(* Disable a key for Pointer Authentication Code *)
+  | NoPacKey of PAC.key
 (* Fault generation with Pointer authentication code *)
   | FPac
 (* Allow to use pac(pac(...)) using the XOR of two pac fields *)
@@ -188,7 +190,8 @@ let (mode_variants, arch_variants) : t list * t list =
   | NV2 -> NV2
   | OldSolver -> OldSolver
   | OOTA -> OOTA
-  | Pac -> Pac
+  | PacVersion t -> PacVersion t
+  | NoPacKey t -> NoPacKey t
   | ConstPacField -> ConstPacField
   | FPac -> FPac
   | D128 -> D128
@@ -216,6 +219,11 @@ let (mode_variants, arch_variants) : t list * t list =
         | Some handling -> Some (f (FaultHandling handling))
         | None -> None)
       Fault.Handling.tags
+  and no_pac_keys =
+    List.map
+      (fun tag ->
+        f (NoPacKey (PAC.parse_key (Misc.lowercase tag))))
+      PAC.tags
   and arch_feat =
     List.map f
       [ ETS; ETS2; ETS3;
@@ -224,10 +232,10 @@ let (mode_variants, arch_variants) : t list * t list =
         Mixed; Unaligned; DontCheckMixed; Ifetch;
         VMSA; NoPteBranch; PTE2; D128;
         Neon; SVE; SVELength 128; SME; SMELength 128;
-        Pac; ConstPacField; FPac;
+        PacVersion `PAuth1; PacVersion `PAuth2 ; ConstPacField; FPac;
         MemTag; MTEStoreOnly; ShadowStack]
   in
-  (base_modes, arch_feat @ precision_variants @ fault_variants)
+  (base_modes, arch_feat @ no_pac_keys @ precision_variants @ fault_variants)
 
 let parse s = match Misc.lowercase s with
 | "success" -> Some Success
@@ -290,7 +298,12 @@ let parse s = match Misc.lowercase s with
 | "nv2" | "NV2" -> Some NV2
 | "oldsolver" -> Some OldSolver
 | "oota" -> Some OOTA
-| "pac" -> Some Pac
+| "pauth1" -> Some (PacVersion `PAuth1)
+| "pauth2" -> Some (PacVersion `PAuth2)
+| "no-key-da" -> Some (NoPacKey PAC.DA)
+| "no-key-db" -> Some (NoPacKey PAC.DB)
+| "no-key-ia" -> Some (NoPacKey PAC.IA)
+| "no-key-ib" -> Some (NoPacKey PAC.IB)
 | "const-pac-field" -> Some ConstPacField
 | "fpac" -> Some FPac
 | "d128" -> Some D128
@@ -396,7 +409,12 @@ let pp = function
   | NV2 -> "NV2"
   | OldSolver -> "OldSolver"
   | OOTA -> "oota"
-  | Pac -> "pac"
+  | PacVersion `PAuth1 -> "pauth1"
+  | PacVersion `PAuth2 -> "pauth2"
+  | NoPacKey PAC.DA -> "no-key-da"
+  | NoPacKey PAC.DB -> "no-key-db"
+  | NoPacKey PAC.IA -> "no-key-ia"
+  | NoPacKey PAC.IB -> "no-key-ib"
   | ConstPacField -> "const-pac-field"
   | FPac -> "fpac"
   | D128 -> "d128"
@@ -475,7 +493,13 @@ let pp = function
   | NV2 -> "Enable enhanced nested virtualisation, which redirects register accesses that would be trapped to memory accesses instead"
   | OldSolver -> "Use a fix-point solver instead of topological solver"
   | OOTA -> "Allow Out Of Thin Air values, i.e. allow unsolved equations at the end of the solver phase"
-  | Pac -> "Enable pointer authentication (AArch64 only)"
+  | PacVersion `PAuth1 -> "Enable pointer authentication before using address as target of branch, FEAT_PAuth"
+  | PacVersion `PAuth2 -> "Enable enhanced pointer authentication functionality, FEAT_PAuth2"
+  | NoPacKey t ->
+      let opt = PAC.pp_upper_key t in
+          Printf.sprintf
+            "Disable the use of %s key for PAC"
+            opt
   | ConstPacField -> "When using pointer authentication, enable FEAT_CONSTPACFIELD, PAC algorithm enhancement (AArch64 only)"
   | FPac -> "When using pointer authentication, enable faulting on an AUT* instruction (AArch64 only)"
   | D128 -> "Use 128-bit page table descriptors (AArch64+ASL+VMSA only)"
