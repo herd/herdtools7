@@ -159,10 +159,12 @@ def header_of_tree(root: Element, o_path: Optional[Path] = None) -> str:
         post_header.append("")
 
     elif root_type == "register":
+        reg_short_name = root.find("reg_short_name").text
+        reg_long_name = read_reg_longname(root)
         titles = [
-            root.find("reg_long_name").text
+            reg_long_name
             + " ("
-            + root.find("reg_short_name").text
+            + reg_short_name
             + ")"
         ]
 
@@ -271,6 +273,14 @@ def read_text_in_node(root, path, warn=True) -> str:
 def read_text_in_nodes(root, path) -> [str]:
     """Reads all the texts in the nodes matching that path."""
     return ["".join(n.itertext()) for n in root.findall(path)]
+
+
+def read_reg_longname(reg_root: Element) -> str:
+    """Read a register name, tolerating missing name nodes in Arm XML."""
+    name = reg_root.findtext("reg_long_name")
+    if name is None:
+        return reg_root.findtext("reg_short_name")
+    return name
 
 
 def read_execute(root) -> str:
@@ -1115,6 +1125,19 @@ begin
   end;
 end;"""
 
+ARRAY_VARIABLE_ACCESSOR_TEMPLATE = """var {variable_name}: array [[{array_size}]] of {type_name};
+
+accessor {accessor_name}(i: integer) <=> v: {type_name}
+begin
+  readonly getter
+    return {variable_name}[[i]];
+  end;
+
+  setter
+    {variable_name}[[i]] = v;
+  end;
+end;"""
+
 ACCESSOR_TEMPLATE = """accessor {accessor_name}() <=> v: {type_name}
 begin
   readonly getter
@@ -1128,12 +1151,28 @@ end;"""
 
 
 def generate_array_accessors(
-    reg_name: str, to_replace, reg_min: int, reg_max: int, type_name: str
+    reg_name: str,
+    to_replace,
+    reg_min: int,
+    reg_max: int,
+    type_name: str,
+    use_array_variable: bool,
+    variable_prefix: str,
 ) -> list[str]:
     accessor_name = reg_name.replace(to_replace, "")
 
+    if use_array_variable:
+        return [
+            ARRAY_VARIABLE_ACCESSOR_TEMPLATE.format(
+                accessor_name=accessor_name,
+                variable_name=variable_prefix + accessor_name,
+                array_size=reg_max - reg_min + 1,
+                type_name=type_name,
+            )
+        ]
+
     variable_names = [
-        "_" + reg_name.replace(to_replace, str(i)) for i in range(reg_min, reg_max + 1)
+        variable_prefix + reg_name.replace(to_replace, str(i)) for i in range(reg_min, reg_max + 1)
     ]
 
     getter_case_body = "\n".join(
@@ -1157,7 +1196,11 @@ def generate_array_accessors(
 
 
 def build_global_variable_declarations(
-    reg_root: Element, reg_name: str, type_name: str
+    reg_root: Element,
+    reg_name: str,
+    type_name: str,
+    use_array_variables: bool,
+    variable_prefix: str,
 ) -> Iterable[str]:
     """Builds global declarations corresponding to the register and its type."""
     assert reg_root.tag == "register"
@@ -1179,7 +1222,15 @@ def build_global_variable_declarations(
         to_replace = f"<{reg_var_name}>"
 
         declarations.extend(
-            generate_array_accessors(reg_name, to_replace, reg_min, reg_max, type_name)
+            generate_array_accessors(
+                reg_name,
+                to_replace,
+                reg_min,
+                reg_max,
+                type_name,
+                use_array_variables,
+                variable_prefix,
+            )
         )
 
     else:
@@ -1202,13 +1253,13 @@ def build_global_variable_declarations(
             accessor_names = [reg_name]
 
         declarations.extend(
-            (f"var _{variable_name}: {type_name};" for variable_name in accessor_names)
+            (f"var {variable_prefix}{variable_name}: {type_name};" for variable_name in accessor_names)
         )
         declarations.extend(
             (
                 ACCESSOR_TEMPLATE.format(
                     accessor_name=accessor_name,
-                    variable_name="_" + accessor_name,
+                    variable_name=variable_prefix + accessor_name,
                     type_name=type_name,
                 )
                 for accessor_name in accessor_names
@@ -1221,7 +1272,7 @@ def build_global_variable_declarations(
 def is_implementation_defined_register(reg_root: Element) -> bool:
     """Returns True if the register described by the Elements is implementation defined and thus should be ignored."""
     assert reg_root.tag == "register"
-    reg_long_name = reg_root.find("reg_long_name").text
+    reg_long_name = read_reg_longname(reg_root)
     return reg_long_name.startswith(IMPLEMENTATION_DEFINED_STRING)
 
 
@@ -1250,6 +1301,8 @@ class ExecState(Enum):
 def process_one_reg(
     reg_root: Element,
     i_file: Path,
+    use_array_variables: bool,
+    variable_prefix: str,
 ) -> str:
     """Process the xml tree for one register and write an ASL file
     corresponding to this register."""
@@ -1259,12 +1312,8 @@ def process_one_reg(
     reg_name = reg_root.find("reg_short_name").text
     _logger.debug("Processing register %s.", reg_name)
 
-    title = (
-        reg_root.find("reg_long_name").text
-        + " ("
-        + reg_root.find("reg_short_name").text
-        + ")"
-    )
+    reg_long_name = read_reg_longname(reg_root)
+    title = reg_long_name + " (" + reg_name + ")"
     res.append(f"// {title:^74}\n{SEPARATOR_LINE}")
 
     res.append(f"// Source file: {i_file}")
@@ -1295,7 +1344,11 @@ def process_one_reg(
 
             res.extend(
                 build_global_variable_declarations(
-                    reg_root, reg_name.replace(" ", "_"), type_name
+                    reg_root,
+                    reg_name.replace(" ", "_"),
+                    type_name,
+                    use_array_variables,
+                    variable_prefix,
                 )
             )
 
@@ -1320,7 +1373,11 @@ def process_one_reg(
     return "\n\n".join(res)
 
 
-def process_one_reg_file(i_file) -> str:
+def process_one_reg_file(
+    i_file,
+    use_array_variables: bool,
+    variable_prefix: str,
+) -> str:
     """Parse the xml file and write an ASL file corresponding to this file with
     the sysreg described in it."""
     _logger.info("Processing %s", i_file)
@@ -1332,7 +1389,8 @@ def process_one_reg_file(i_file) -> str:
         return ""
 
     res = "\n\n".join(
-        process_one_reg(reg_root, i_file) for reg_root in file_root.find("registers")
+        process_one_reg(reg_root, i_file, use_array_variables, variable_prefix)
+        for reg_root in file_root.find("registers")
     )
 
     _logger.debug("Processed %s", i_file)
@@ -1365,9 +1423,13 @@ def make_regs(args: argparse.Namespace):
         o_file = args.o_dir
 
     process_regs_options(args)
+    variable_prefix = "" if args.no_register_variable_prefix else "_"
 
     if args.jobs == 1:
-        results = [process_one_reg_file(i_file) for i_file in args.i_files]
+        results = [
+            process_one_reg_file(i_file, args.use_array_variables, variable_prefix)
+            for i_file in args.i_files
+        ]
 
         with open(o_file, "w", encoding="utf8") as f:
             f.write(MESSAGE_ON_TOP)
@@ -1378,7 +1440,13 @@ def make_regs(args: argparse.Namespace):
     else:
         with ThreadPoolExecutor(max_workers=args.jobs) as executor:
             future_strings = (
-                executor.submit(process_one_reg_file, i_file) for i_file in args.i_files
+                executor.submit(
+                    process_one_reg_file,
+                    i_file,
+                    args.use_array_variables,
+                    variable_prefix,
+                )
+                for i_file in args.i_files
             )
 
             with open(o_file, "w", encoding="utf8") as f:
@@ -1541,6 +1609,22 @@ def get_parser() -> argparse.ArgumentParser:
         "declarations.",
         action="append",
         default=[],
+    )
+    parser.add_argument(
+        "--use-array-variables",
+        help=(
+            "For array registers, generate one array variable with direct indexed "
+            "getter/setter access instead of one variable per slot and case statements."
+        ),
+        action="store_true",
+    )
+    parser.add_argument(
+        "--no-register-variable-prefix",
+        help=(
+            "Generate system register global variables without the leading '_' "
+            "prefix used by default."
+        ),
+        action="store_true",
     )
 
     parser.add_argument(

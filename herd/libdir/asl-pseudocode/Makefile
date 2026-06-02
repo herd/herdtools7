@@ -197,11 +197,17 @@ DO_NOT_GENERATE_VARIABLES_FOR := $\
 
 TO_CLEANUP += all-registers-notice.html all_system_registers.asl $(SYSREGS_NAME).log
 
+# To turn these options on, use on the make command line:
+# USE_ARRAY_VARIABLES=--use-array-variables NO_REGISTER_VARIABLE_PREFIX=--no-register-variable-prefix
+USE_ARRAY_VARIABLES := 
+NO_REGISTER_VARIABLE_PREFIX := 
+
 all_system_registers.asl: $(SYSREGS_NAME)
 	@ cp $^/xhtml/notice.html $(@D)/all-registers-notice.html
 	@ echo "Extracting system registers ASL pseudocode from xml files ..."
 	@ touch $@
 	@ $(BUNDLER_CMD) --make-regs -o $@ --log-file $^.log \
+	        $(NO_REGISTER_VARIABLE_PREFIX) $(USE_ARRAY_VARIABLES) \
 		--allow-optional-fields-for "$(ALLOW_CONDITIONAL_FIELDS_FOR)" \
 		--allow-moving-fields-for "$(ALLOW_MOVING_FIELDS_FOR)" \
 		--allow-included-fields-for "$(ALLOW_INCLUDED_FIELDS_FOR)" \
