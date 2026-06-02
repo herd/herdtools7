@@ -108,7 +108,7 @@ let check_not_same_prec loc op op' =
         (CannotParse
            (Some
               (Format.sprintf
-                 "Operators `%s` and `%s` have the same precedence - parenthesise \
+                 "Operators `%s` and `%s` have the same priority - parenthesise \
                   to disambiguate."
                  (PP.binop_to_string op) (PP.binop_to_string op')))))
 

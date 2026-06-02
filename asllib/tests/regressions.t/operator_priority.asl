@@ -28,7 +28,7 @@ begin
   assert(p_a_e == p_a_e_I);
 
   let p_and_and = d AND e AND f;
-  // 'AND' is associative so can be interpreted as either:
+  // 'AND' is mathematically associative so can be interpreted as either:
   let p_and_and_i1 = (d AND e) AND f;
   let p_and_and_i2 = d AND (e AND f);
   assert(p_and_and == p_and_and_i1);
@@ -48,7 +48,7 @@ begin
   assert(p_band_eq == p_band_eq_I);
 
   // let p_eq_eq = a == b == g;
-  // '==' is not associative so causes a compile-time error.
+  // '==' is not  mathematically associative so causes a compile-time error.
   // Must be written as:
   let p_eq_eq_A1 = (a == b) == g;
   // Note: 'a == (b == g)' is not valid as it does not type satisfy.

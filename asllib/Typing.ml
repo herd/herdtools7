@@ -3425,7 +3425,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | E_Literal _ -> []
       | E_Tuple [ e ] ->
           (* [extract_parameters] operates over untyped AST, so it must handle
-             tuples - these are used to check binary operator precedence and are
+             tuples - these are used to check binary operator priority and are
              removed during typechecking) *)
           parameters_of_expr ~env e
       | E_Cond (e, e1, e2) ->

@@ -240,20 +240,10 @@ binary operators.
 \end{tabular}
 \end{center}
 
-The set of \emph{associative binary operators} consists of the following:
-$\ADD$,
-$\MUL$,
-$\BAND$,
-$\BOR$,
-$\AND$,
-$\OR$,
-$\XOR$,
-$\BEQ$,
-$\BVCONCAT$,
-$\STRCONCAT$.
-
 The specification in \listingref{BinaryExpressions} shows examples of binary expressions
 and the effect of operator priority.
+Notice how, even though \verb|d AND e AND f| is parsed as \verb|(d AND e) AND f|,
+since \texttt{AND} is left-associative, this does not affect its meaning.
 \ASLListing{Binary expressions and operator priority}{BinaryExpressions}{\definitiontests/Guide.OperatorPriority.asl}
 
 \subsection{Syntax}
@@ -290,8 +280,8 @@ which results in a \builderrorterm.
   \inferrule{
     \buildexpr(\veone) \astarrow \astversion{\veone} \OrBuildError\hva\\\\
     \buildexpr(\vetwo) \astarrow \astversion{\vetwo} \OrBuildError\hva\\\\
-    \checknotsameprec(\astof{\vbinop}, \astversion{\veone}) \astarrow \True \OrBuildError\hva\\\\
-    \checknotsameprec(\astof{\vbinop}, \astversion{\vetwo}) \astarrow \True \OrBuildError
+    \checknotsamepriority(\astof{\vbinop}, \astversion{\veone}) \astarrow \True \OrBuildError\hva\\\\
+    \checknotsamepriority(\astof{\vbinop}, \astversion{\vetwo}) \astarrow \True \OrBuildError
   }{
     {
       \begin{array}{r}
@@ -306,38 +296,40 @@ which results in a \builderrorterm.
 \hypertarget{build-binopprec}{}
 We define the helper function
 \[
-  \binopprec(\overname{\binop}{\op}) \aslto \N
+  \binoppriority(\overname{\binop}{\op}) \aslto \N
 \]
 which assigns a priority level to each binary operator, $\op$, as defined below:
 \begin{mathpar}
 \inferrule{}{
   {
-  \binopprec(\op) \astarrow
+  \binoppriority(\op) \astarrow
   \begin{cases}
-    5 & \text{if }\op = \POW\\
-    4 & \text{if }\op \in \{\MUL, \DIV, \DIVRM, \RDIV, \MOD, \SHL, \SHR\}\\
-    3 & \text{if }\op \in \left\{
+    6 & \text{if }\op = \POW\\
+    5 & \text{if }\op \in \{\MUL, \DIV, \DIVRM, \RDIV, \MOD, \SHL, \SHR\}\\
+    4 & \text{if }\op \in \left\{
         \begin{array}{l}
           \ADD, \SUB, \OR, \XOR, \\
           \AND, \BVCONCAT, \STRCONCAT
         \end{array}
         \right\}\\
-    2 & \text{if }\op \in \{\GT, \GE, \LT, \LE\}\\
-    1 & \text{if }\op \in \{\EQ, \NE\}\\
-    0 & \text{if }\op \in \{\BOR, \BAND, \IMPL, \BEQ \}\\
+    3 & \text{if }\op \in \{\GT, \GE, \LT, \LE\}\\
+    2 & \text{if }\op \in \{\EQ, \NE\}\\
+    1 & \text{if }\op \in \{\BOR, \BAND, \IMPL, \BEQ \}\\
   \end{cases}
   }
 }
 \end{mathpar}
 
 \NotImportedToASLSpecYet{
-\hypertarget{build-checknotsameprec}{}
+\hypertarget{build-checknotsamepriority}{}
 The function
 \[
-\checknotsameprec(\overname{\binop}{\op} \aslsep \overname{\expr}{\ve})
+\checknotsamepriority(\overname{\binop}{\op} \aslsep \overname{\expr}{\ve})
 \aslto \{\True\} \cup \overname{\TBuildError}{\BuildErrorConfig}
 \]
-checks whether the expression AST node $\ve$ is a binary operator, either with a different operator to $\op$ but the same \emph{priority}, or the same non-associative operator $\op$.
+checks whether the expression AST node $\ve$ is a binary operator,
+either with a different operator to $\op$ but the same \emph{priority},
+or the same non-mathematically-associative operator $\op$.
 In either case, it is considered an error.
 Surrounding $\ve$ by parenthesis fixes the error.
 } % END_OF_UNIMPORTED_RELATION
@@ -345,7 +337,7 @@ Surrounding $\ve$ by parenthesis fixes the error.
 
 For example, \texttt{a + b + c} is considered legal, since the same binary operator (\texttt{+})
 is used, whereas \texttt{a - b - c} and \texttt{a + b - c} are considered illegal.
-For the first, this is because $\SUB$ is not associative.
+For the first, this is because $\SUB$ is not mathematically-associative.
 For the second, this is because $\ADD$ and $\SUB$ have the
 same priority ($3$). To fix these, we can surround one of the subexpressions with parenthesis,
 for example: \texttt{(a - b) - c} and \texttt{(a + b) - c}.
@@ -363,7 +355,7 @@ for example: \texttt{(a - b) - c} and \texttt{(a + b) - c}.
   \begin{itemize}
     \item $\ve$ is a binary operation expression for the operator $\opp$;
     \item $\opp$ is the same operator as $\op$;
-    \item checking whether $\op$ is an associative operator yields $\True$\ProseTerminateAs{\BinopPriority}.
+    \item checking whether $\op$ is a mathematically-associative operator yields $\True$\ProseTerminateAs{\BinopPriority}.
   \end{itemize}
 
   \item \AllApplyCase{binop\_different}
@@ -379,7 +371,7 @@ for example: \texttt{(a - b) - c} and \texttt{(a + b) - c}.
 \inferrule[not\_binop]{
   \astlabel(\ve) \neq \EBinop
 }{
-  \checknotsameprec(\op, \ve) \astarrow \True
+  \checknotsamepriority(\op, \ve) \astarrow \True
 }
 \end{mathpar}
 
@@ -387,7 +379,7 @@ for example: \texttt{(a - b) - c} and \texttt{(a + b) - c}.
 \inferrule[binop\_same]{
   \op = \opp \\
   {
-  \vassociativeoperators \eqdef \left\{
+  \vmathematicallyassociativeoperators \eqdef \left\{
     \begin{array}{l}
     \ADD, \\
     \MUL, \\
@@ -403,19 +395,19 @@ for example: \texttt{(a - b) - c} and \texttt{(a + b) - c}.
     \right\}
   } \\
   {
-  \techeck(\op \in \vassociativeoperators, \BinopPriority) \typearrow \True \OrBuildError
+  \techeck(\op \in \vmathematicallyassociativeoperators, \BinopPriority) \typearrow \True \OrBuildError
   }
 }{
-  \checknotsameprec(\op, \overname{\EBinop(\opp, \Ignore, \Ignore)}{\ve}) \astarrow \True
+  \checknotsamepriority(\op, \overname{\EBinop(\opp, \Ignore, \Ignore)}{\ve}) \astarrow \True
 }
 \end{mathpar}
 
 \begin{mathpar}
 \inferrule[binop\_different]{
   \op \neq \opp \\
-  \becheck(\binopprec(\op) \neq \binopprec(\opp), \BinopPriority) \astarrow \True \OrBuildError
+  \becheck(\binoppriority(\op) \neq \binoppriority(\opp), \BinopPriority) \astarrow \True \OrBuildError
 }{
-  \checknotsameprec(\op, \overname{\EBinop(\opp, \Ignore, \Ignore)}{\ve}) \astarrow \True
+  \checknotsamepriority(\op, \overname{\EBinop(\opp, \Ignore, \Ignore)}{\ve}) \astarrow \True
 }
 \end{mathpar}
 
