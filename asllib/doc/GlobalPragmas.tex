@@ -8,12 +8,12 @@ The specification in \listingref{GlobalPragma} contains two global pragmas,
 which are ignored by the dynamic semantics.
 \ASLListing{Global pragmas}{GlobalPragma}{\definitiontests/GlobalPragma.asl}
 
-It is recommended that tools that process ASL should warn users of unrecognized, tool-specific, pragmas.
+It is recommended that tools that process ASL should warn users of unrecognised, tool-specific, pragmas.
 
 
-For example, a tool processing the specification in \listingref{GlobalPragma2} may recognize \\
+For example, a tool processing the specification in \listingref{GlobalPragma2} may recognise \\
 \verb|my_tool_pragma1| but not \verb|other_tool_op|, and warn about it.
-\ASLListing{Warning of pragmas not recognized by tools}{GlobalPragma2}{\definitiontests/GlobalPragma2.asl}
+\ASLListing{Warning of pragmas not recognised by tools}{GlobalPragma2}{\definitiontests/GlobalPragma2.asl}
 
 \ChapterOutline
 \begin{itemize}
@@ -26,12 +26,12 @@ For example, a tool processing the specification in \listingref{GlobalPragma2} m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \FormalRelationsDef{Global Pragma Declarations}
 
-\paragraph{Syntax:} Global pragma declarations are grammatically derived from $\Ndecl$;
+\paragraph{Syntax:} Global pragma declarations are grammatically derived from $\Ndecl$.
 
 \paragraph{Abstract Syntax:} Global pragma declarations are derived in the abstract syntax from $\decl$,
-    and generated via $\builddecl$ (see \ASTRuleRef{GlobalPragma});
+    and generated via $\builddecl$ (see \ASTRuleRef{GlobalPragma}).
 
-\paragraph{Typing:} Global pragma declarations are checked by $\checkglobalpragma$ (see \TypingRuleRef{CheckGlobalPragma}); and
+\paragraph{Typing:} Global pragma declarations are checked by $\checkglobalpragma$ (see \TypingRuleRef{CheckGlobalPragma}).
 
 \paragraph{Semantics:} Since global pragma declarations are discarded after typechecking,
     they have no associated dynamic semantics.

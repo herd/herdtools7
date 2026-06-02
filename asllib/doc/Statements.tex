@@ -458,8 +458,8 @@ since local constant storage elements are not allowed.
 \ASLListing{A (illegal) local constant declaration}{typing-sdecl-bad1}{\typingtests/TypingRule.SDecl.bad1.asl}
 
 The specification in \listingref{typing-sdecl-bad2} is ill-typed,
-since immutable local storage elements require an initializing expression.
-\ASLListing{An uninitialized immutable local storage declaration}{typing-sdecl-bad2}{\typingtests/TypingRule.SDecl.bad2.asl}
+since immutable local storage elements require an initialising expression.
+\ASLListing{An uninitialised immutable local storage declaration}{typing-sdecl-bad2}{\typingtests/TypingRule.SDecl.bad2.asl}
 
 
 \RenderProseAndFormally{annotate_stmt_SDecl}
@@ -516,16 +516,16 @@ See \ExampleRef{Type-satisfaction Examples}.
 \subsection{Semantics}
 \SemanticsRuleDef{SDecl}
 Notice that \TypingRuleRef{SDecl} ensures that a typed \declarationstatementterm{}
-has an initializing expression.
-% The implementation still handles the case where there is no initializing expression,
+has an initialising expression.
+% The implementation still handles the case where there is no initialising expression,
 % for cases where typechecking is skipped.
 
-\ExampleDef{Declaration With an Initializing Value}
+\ExampleDef{Declaration With an Initialising Value}
 In \listingref{semantics-sdeclsome},
 \texttt{let x = 3;} binds \texttt{x} to $\nvint(3)$ in the empty environment.
 \ASLListing{Evaluating a declaration with a given initial value}{semantics-sdeclsome}{\semanticstests/SemanticsRule.SDeclSome.asl}
 
-\ExampleDef{Declaration Without an Initializing Value}
+\ExampleDef{Declaration Without an Initialising Value}
 In \listingref{semantics-sdeclnone},
 \texttt{var x : integer;} binds \texttt{x} in $\env$ to the base value of \texttt{integer}.
 \ASLListing{Evaluating a declaration without a given initial value}{semantics-sdeclnone}{\semanticstests/SemanticsRule.SDeclNone.asl}
@@ -551,7 +551,7 @@ In \listingref{semantics-sdeclnone},
 \end{flalign*}
 
 \SyntacticSugarDef{ParameterElision}
-In a call to a parameterized subprogram, a parameter can be elided,
+In a call to a parameterised subprogram, a parameter can be elided,
 if it can be inferred from the left-hand-side type annotation,
 as detailed by \ASTRuleRef{ElidedParamCall} (See also \secref{ParameterElision}).
 
@@ -2087,7 +2087,7 @@ for the newline character: $\vnewline \triangleq \ascii{10}$.
 
 Not all ASL runtimes support printing to a console (see \RequirementRef{Printing}).
 %
-Therefore, the semantics are parameterized by the following function.
+Therefore, the semantics are parameterised by the following function.
 \RenderRelation{output_to_console}
 
 We now explain how printing is modelled when the runtime supports a console
@@ -2102,7 +2102,7 @@ to include an extra component to capture the string of characters sent to the co
 \envs \triangleq \staticenvs \cartimes \dynamicenvs \cartimes \Strings \enspace.
 \]
 We omit this component in the rest of this document to avoid clutter, and include it
-only here to explain the modeling of a console.
+only here to explain the modelling of a console.
 
 \ExampleRef{Printing Literals} shows the output to the console in a case it is supported.
 

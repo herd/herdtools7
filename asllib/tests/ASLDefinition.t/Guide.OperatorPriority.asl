@@ -20,7 +20,7 @@ func operator_priority(
         let p_a_e_I = a + (b ^ c);
         assert(p_a_e == p_a_e_I);
         let p_and_and = d AND e AND f;
-        // 'AND' is mathematically associative so can be interpreted as either:
+        // 'AND' is mathematically associative so can be read as either:
         let p_and_and_i1 = (d AND e) AND f;
         let p_and_and_i2 = d AND (e AND f);
         assert(p_and_and == p_and_and_i1);

@@ -22,7 +22,7 @@ Notice that for a conservative test, it is always correct to return $\False$.
 
 In this chapter, we use the special constant value \RenderConstant{CannotBeTransformed}
 to represent a failure in transforming an expression into a desired form (the specific
-desired form varies according to the functions utilizing this value).
+desired form varies according to the functions utilising this value).
 
 \ChapterOutline
 \begin{itemize}
@@ -294,10 +294,10 @@ We employ the following rules:
 \hypertarget{def-normalizedterm}{}
 We refer to an expression in the image of $\normalize$ as a \emph{\normalizedexpressionterm}.
 
-\ExampleDef{Normalize}
+\ExampleDef{Normalise}
 The specification in \listingref{Normalize} shows examples of expressions (on the right-hand-sides of assignments and declarations)
-and their corresponding normalized expressions.
-\ASLListing{Normalizing expressions}{Normalize}{\typingtests/TypingRule.Normalize.asl}
+and their corresponding normalised expressions.
+\ASLListing{Normalising expressions}{Normalize}{\typingtests/TypingRule.Normalize.asl}
 
 
 \RenderProseAndFormally{normalize}
@@ -577,7 +577,7 @@ The following are examples of inputs and outputs of $\monomialtoexpr$:
 \TypingRuleDef{SymAddExpr}
 \RenderRelation{sym_add_expr}
 
-The effect of the function can be summarized by the following table:
+The effect of the function can be summarised by the following table:
 \begin{center}
 \begin{tabular}{|c|c|c|c|}
 \hline
@@ -662,7 +662,7 @@ declaration \verb|var x = t;| in \listingref{expressions-evar-undefined} yields 
 \TypingRuleDef{NormalizeOpt}
 \RenderRelation{normalize_opt}
 
-See \ExampleRef{Normalize}.
+See \ExampleRef{Normalise}.
 
 
 \RenderProseAndFormally{normalize_opt}

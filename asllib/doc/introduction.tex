@@ -57,7 +57,7 @@ written in ASL code that describe an architecture.
 \begin{itemize}
     \item Global bitvectors \texttt{R0}, \texttt{R1}, and \texttt{R2} representing the state of the system.
     \item A function \texttt{MyOR} demonstrating a simple bitwise OR function over two bitvectors.
-    \item Initialization of \texttt{R0} and \texttt{R1} bitvectors.
+    \item Initialisation of \texttt{R0} and \texttt{R1} bitvectors.
     \item Assignment of bitvector \texttt{R2} with the result of a function call.
 \end{itemize}
 
@@ -69,7 +69,7 @@ written in ASL code that describe an architecture.
 \listingref{spec2} shows a small example of a specification written in ASL. It consists of the following declarations:
 \begin{itemize}
 \item A global variable \texttt{COUNT} representing the state of the system.
-\item A procedure \texttt{ColdReset} to initialize the state of the system when power is applied and the system is reset.
+\item A procedure \texttt{ColdReset} to initialise the state of the system when power is applied and the system is reset.
     This interpretation of the function is a convention used in this particular specification. It is up to each
     specification to decide the role of each function.
 \item A procedure \texttt{Step} to advance the state of the system. That is, it defines the \emph{transition relation} of the system.
@@ -125,7 +125,7 @@ Each construct is defined via a subset of the following:
 
 \subsection{Outline of the Rest of this Reference}
 The rest of this document introduces elements of the ASL language
-and formalizes them:
+and formalises them:
 \begin{itemize}
     \item \chapref{FormalSystem} contains the mathematical definitions used
         throughout this document;
@@ -136,12 +136,12 @@ and formalizes them:
         Familiarity with the AST is \underline{essential} for understanding the
         type system and the dynamic semantics;
     \item \chapref{TypeChecking} and \chapref{Semantics} introduce basic
-        definitions needed to formalize the type system and dynamic semantics;
+        definitions needed to formalise the type system and dynamic semantics;
     \item \chapref{Literals}--\chapref{Specifications}
         define the various constructs in ASL, roughly following the structure of the AST
         in a bottom-up fashion;
     \item \chapref{TopLevel} is where all of the formalisms are used together to
-        demonstrate how they can be utilized to form an interpreter for an ASL specification;
+        demonstrate how they can be utilised to form an interpreter for an ASL specification;
     \item \chapref{SideEffects}--\chapref{SemanticsUtilityRules} are additional
         technical chapters for aspects of the type system and dynamic semantics.
     \item \chapref{RuntimeEnvironment} describes how ASL specifications may be used

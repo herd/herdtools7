@@ -17,15 +17,15 @@ This chapter defines functions and relations used by the type system.
   \item \TypingRuleRef{IsLocalUndefined} tests whether an identifier is defined in the \localstaticenvironmentterm;
   \item \TypingRuleRef{LookupConstant} looks up a \staticenvironmentterm{} for a global constant;
   \item \TypingRuleRef{AddGlobalConstant} updates a \staticenvironmentterm{} for a global storage element;
-  \item \TypingRuleRef{LookupImmutableExpr} looks up the initializing expression associated with an immutable storage element;
+  \item \TypingRuleRef{LookupImmutableExpr} looks up the initialising expression associated with an immutable storage element;
   \item \TypingRuleRef{AddGlobalImmutableExpr} updates a \globalstaticenvironmentterm{} by associating a global immutable storage element
-        with its initializing expressions;
+        with its initialising expressions;
   \item \TypingRuleRef{AddLocalImmutableExpr} updates a \localstaticenvironmentterm{} by associating a local immutable storage element
-        with its initializing expressions;
+        with its initialising expressions;
   \item \TypingRuleRef{ShouldRememberImmutableExpression} tests whether to associate an immutable storage element
-        with its initializing expressions based on its \sideeffectdescriptorsetsterm;
+        with its initialising expressions based on its \sideeffectdescriptorsetsterm;
   \item \TypingRuleRef{AddImmutableExpr} conditionally updates a \staticenvironmentterm{} by associating
-        a local immutable storage element with its initializing expressions;
+        a local immutable storage element with its initialising expressions;
   \item \TypingRuleRef{AddSubprogram} updates a \staticenvironmentterm{} with a subprogram;
   \item \TypingRuleRef{AddType} updates a \staticenvironmentterm{} with a new type.
 \end{itemize}

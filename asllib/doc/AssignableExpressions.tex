@@ -599,7 +599,7 @@ This section details the syntax, abstract syntax, semantics, and typing of array
 In the untyped AST, a write to either an integer-indexed array or an enumeration-indexed array is represented
 the same way. The type system infers the kind of array and outputs a typed AST node differentiating
 the two kinds of arrays, either a $\LESetArray$ or a $\LESetEnumArray$, via \TypingRuleRef{LESetArray}.
-The semantics utilizes a rule matching the corresponding type of array ---
+The semantics utilises a rule matching the corresponding type of array ---
 \SemanticsRuleRef{LESetArray} for integer-indexed arrays and
 \SemanticsRuleRef{LESetEnumArray} for enumeration-indexed arrays.
 

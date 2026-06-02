@@ -2487,7 +2487,7 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
 
   case ETuple {
     e =: E_Tuple(li);
-    case parenthesized {
+    case parenthesised {
       li =: make_singleton_list(e');
       annotate_expr(tenv, e') -> (t, new_e, ses);
       --

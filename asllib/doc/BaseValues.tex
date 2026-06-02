@@ -1,14 +1,14 @@
 \section{Base Values\label{sec:BaseValues}}
 \hypertarget{def-basevalueterm}{}
 Each type, with the exceptions stated below, has a \basevalueterm,
-which is used to initialize storage elements (either local or global),
-if an initializer is not supplied.
+which is used to initialise storage elements (either local or global),
+if an initialiser is not supplied.
 
 \RequirementDef{NoBaseValue}
 The following types do not have a \basevalueterm{}:
 \begin{itemize}
     \item \parameterizedintegertypesterm{} ---
-          only subprogram parameters can be parameterized integers, and since they will be initialized by their
+          only subprogram parameters can be parameterised integers, and since they will be initialised by their
           invocation, there is no need to define a \basevalueterm{} for them;
     \item a \wellconstrainedintegertypeterm{} whose list of constraints
           represents the empty set;
@@ -34,7 +34,7 @@ enumeration_array_base = [[RED=0, GREEN=0, BLUE=0]]
 % CONSOLE_END
 
 \listingref{base-values-parameterised} shows a specification that relies on the base value of a \bitvectortypeterm{} whose width is a \parameterizedintegertypeterm{}.
-\ASLListing{Base Value for Parameterized Bitvector Width}{base-values-parameterised}{\typingtests/TypingRule.BaseValue.parameterized.asl}
+\ASLListing{Base Value for Parameterised Bitvector Width}{base-values-parameterised}{\typingtests/TypingRule.BaseValue.parameterized.asl}
 
 \ExampleDef{Types Without Base Value}
 \listingref{base-values-bad-negative-width} shows an ill-typed specification

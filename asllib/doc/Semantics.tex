@@ -3,23 +3,23 @@
 
 The dynamic semantics of ASL define all valid behaviours of a given ASL specification.
 More precisely, an ASL specification is first parsed into an \emph{abstract syntax tree},
-or AST, for short. Second, a typechecker analyzes the \emph{\untypedast} to determine whether it
+or AST, for short. Second, a typechecker analyses the \emph{\untypedast} to determine whether it
 is well-typed and, if successful, returns a \emph{\staticenvironmentterm{}} and a \emph{\typedast}.
 Otherwise, it returns a \typingerrorterm{}.
 
 Tools such as interpreters, Verilog simulators, and verifiers can operate over the \typedast,
-based on the definition of the semantics in this reference, to test and analyze a given specification.
+based on the definition of the semantics in this reference, to test and analyse a given specification.
 
 We note that the dynamic semantics are only used to define the set of valid behaviours
 of a given specification without assigning any other quantification, such as the time
 required to evaluate it.
 
-\paragraph{Understanding the Dynamic Semantics Formalization:}
+\paragraph{Understanding the Dynamic Semantics Formalisation:}
 We assume basic familiarity with the ASL language constructs.
 The ASL dynamic semantics are defined in terms of its AST,
 and as a consequence familiarity with the AST is required to understand the semantics.
 The few components of the type system needed to understand the ASL dynamic semantics are explained in context.
-The mathematical background needed to understand the mathematical formalization
+The mathematical background needed to understand the mathematical formalisation
 of the ASL dynamic semantics appears in \chapref{FormalSystem}.
 
 \ChapterOutline
@@ -121,7 +121,7 @@ The rest of this section defines the components comprising \semanticsconfigurati
 \hypertarget{def-nativevalues}{}
 \section{Native Values\label{sec:nativevalues}}
 Semantic evaluation binds values to storage elements when a specification is semantically evaluated.
-To formalize this, we define the set of \emph{\nativevaluesterm} as follows
+To formalise this, we define the set of \emph{\nativevaluesterm} as follows
 (\texttt{NV} stands for Native Value):
 \RenderType{native_value}
 
@@ -196,7 +196,7 @@ That is, all environments share the same \staticenvironmentterm{}.
 
 \subsection{Concurrent Execution Graphs\label{sec:concurrentexecutiongraphs}}
 \hypertarget{def-executiongraph}{}
-The concurrent semantics of an ASL specification utilize \emph{concurrent execution graphs}
+The concurrent semantics of an ASL specification utilise \emph{concurrent execution graphs}
 (\emph{execution graphs}, for short),
 which track the Read and Write Effects over variables, yielded by the sequential semantics,
 and the \emph{ordering constraints} between those effects.
@@ -303,7 +303,7 @@ should be semantically evaluated, yielding an output \semanticsconfigurationterm
 The helper type \RenderType{value_read_from} conveys that the value $\vv$ has been read
 from a storage element with the identifier $\id$.
 
-ASL dynamic semantics mainly utilize the following types of output \semanticsconfigurationsterm{}:
+ASL dynamic semantics mainly utilise the following types of output \semanticsconfigurationsterm{}:
 \begin{description}
   \item[Normal Values.]\hypertarget{def-normal}{}
   \Semanticsconfigurationsterm{} consisting of different combinations of values,
@@ -316,7 +316,7 @@ ASL dynamic semantics mainly utilize the following types of output \semanticscon
 
   \item[Exceptions.] \Semanticsconfigurationsterm{} in \RenderType{TThrowing} represent thrown exceptions.
 
-  There are two flavors of exceptions:
+  There are two flavours of exceptions:
   exceptions without an exception value (as in \texttt{throw;}), and ones with an exception value,
   an identifier to which the Read Effect is attributed, and an associated type.
   The ASL dynamic semantics propagate these \emph{exceptional \semanticsconfigurationsterm{}} to the nearest \catcherterm{} that matches
@@ -477,7 +477,7 @@ Otherwise, for every input \semanticsconfigurationterm{} there is at least one r
 
 \hypertarget{eval-example}{}
 \subsubsection{Evaluation Example}
-The following example shows how to utilize the rules for expression literals and binary operator expressions
+The following example shows how to utilise the rules for expression literals and binary operator expressions
 to derive a transition from an input \semanticsconfigurationterm{} with the expression $(1+2)*(4+5)$,
 given by the AST
 \[
@@ -666,7 +666,7 @@ is given by two disjoint sets of rules:
   \item[Co-inductive Rules] The set of \emph{co-inductive rules}~\cite{LeroyG:IC09}
        are all dynamic semantics rules whose output configurations are in $\TDiverging$.
        Co-inductive rules have the property that, considering the list of premises that
-       are transition judgments, the last, and only the last one has an output configuration in $\TDiverging$.
+       are transition judgements, the last, and only the last one has an output configuration in $\TDiverging$.
        This is ensured by the placement of $\DivergingConfig$ as short-circuiting alternatives
        in macro rules.
 \end{description}
@@ -704,7 +704,7 @@ for the same macro rule:
 \end{mathpar}
 
 \begin{definition}[Meaning of ASL Big-step Rules]
-We say that a judgment
+We say that a judgement
 $g = C \evalarrow D$ holds if and only if one of the following applies:
 \begin{itemize}
   \item $D\not\in\TDiverging$ and there exists a \underline{finite} \derivationtreeterm{}
@@ -719,7 +719,7 @@ $g = C \evalarrow D$ holds if and only if one of the following applies:
 To exemplify a diverging evaluation, consider the sequential semantics
 of the statement \verb|while TRUE do pass; end;| evaluated with
 an environment $\env$. That is, consider the rules where \executiongraphsterm{}
-and related judgments are omitted.
+and related judgements are omitted.
 The infinite \derivationtreeterm{} consists of vertices
 \[
 \{S_1, L_1, V_1\} \cup \{n \geq 2 \;|\; E_n, B_n, T_n, P_n, Q_n, V_n\} \enspace,

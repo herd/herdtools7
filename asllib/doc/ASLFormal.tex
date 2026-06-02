@@ -7,7 +7,7 @@ reference.
 \begin{itemize}
   \item \secref{Mathematical Definitions and Notations} defines general mathematical concepts and notations;
   \item \secref{Inference Rules} defines the concept of \emph{inference rules};
-  \item \secref{Transition Judgments} explains how \emph{transition judgments} can be used to represent
+  \item \secref{Transition Judgements} explains how \emph{transition judgements} can be used to represent
         relations and functions;
   \item \secref{Configurations} introduces \emph{\configurationsterm{}} as a way of representing compound data;
   \item \secref{FlavoursOfEqualityInRules} explains the kinds of equality notations that are used to
@@ -15,7 +15,7 @@ reference.
   \item \secref{ASTNotations} introduces AST-related notations that are used in inference rules;
   \item \secref{How to Parse Inference Rules Efficiently} explains how to efficiently parse inference rules,
   \item \secref{ShortCircuitRuleMacros} defines rule macros, which compactly represent multiple rules;
-  \item \secref{ConventionallyUsedJudgments} presents commonly used judgments and notations; and
+  \item \secref{ConventionallyUsedJudgments} presents commonly used judgements and notations; and
   \item \secref{Rule Naming} explains the naming scheme for inference rules used in this reference.
 \end{itemize}
 
@@ -82,7 +82,7 @@ We employ the standard notation for first-order logic quantifiers:
   \item $\exists x \in A.\ P(x)$ stands for ``there exists an $x$ in set $A$ such that the property $P(x)$ holds''.
 \end{itemize}
 
-We utilize the notation $\overname{a}{b}$ to enable us to name the mathematical term $a$ as $b$ so that
+We utilise the notation $\overname{a}{b}$ to enable us to name the mathematical term $a$ as $b$ so that
 we can refer to it in text. We especially use this to name the input arguments and
 output results of functions and relations. For example, the input argument of $\sign$,
 defined next, is named $q$.
@@ -168,7 +168,7 @@ Notice that the domain of a partial function need not be finite, which is what t
 
 \paragraph{Parametric Functions and Relations}
 A \emph{parametric function} is a function whose domain is not a priori fixed but rather
-parameterized by the type of its arguments. An example is the $\equallength$ function where the
+parameterised by the type of its arguments. An example is the $\equallength$ function where the
 types $A$ and $B$ (of the list elements) are not explicitly specified, but rather inferred from the context where the function is used.
 
 \texthypertarget{def-finfunction}
@@ -251,9 +251,9 @@ which counts up when $a \leq b$ and counts down when $a \geq b$.
 
 We write $x_{a..b}$ as a shorthand for the sequence $x_a \ldots x_b$.
 %
-We write $i=1..k: V(i)$, where $V(i)$ is a mathematical expression parameterized by $i$,
+We write $i=1..k: V(i)$, where $V(i)$ is a mathematical expression parameterised by $i$,
 to denote the sequence of expressions $V(1) \ldots V(k)$.
-The notation $a \in A: V(a)$, where $A$ is a set and $V$ is an expression parameterized by the free variable $a$,
+The notation $a \in A: V(a)$, where $A$ is a set and $V$ is an expression parameterised by the free variable $a$,
 stands for $V(a_1) \ldots V(a_k)$ where $a_{1..k}$ is an arbitrary ordering of the elements of $A$.
 
 \hypertarget{def-kleenestar}{}
@@ -517,9 +517,9 @@ for a singleton set for the tuple $(a, b, c)$, we will write $\Option{a, b, c}$.
 \section{Inference Rules\label{sec:Inference Rules}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \hypertarget{def-inferencerule}{}
-An \emph{\inferencerule} (rule, for short) is an implication between a list of judgments,
+An \emph{\inferencerule} (rule, for short) is an implication between a list of judgements,
 called the \emph{premises} of the rule,
-and a \emph{conclusion} judgment.
+and a \emph{conclusion} judgement.
 The conclusion holds when the \underline{conjunction} of the rule premises holds.
 
 We use the following rule notation, where $P_{1..k}$ are the rule premises and $C$ is the conclusion:
@@ -549,10 +549,10 @@ and the rule \TypingRuleRef{EBinop} (somewhat simplified here) has four premises
 }
 \end{mathpar}
 
-Judgments of the form $R(a_1,\ldots,a_n) \longrightarrow r$ are used to uniformly denote
+Judgements of the form $R(a_1,\ldots,a_n) \longrightarrow r$ are used to uniformly denote
 both function applications and relation applications, where $R$ is either a function or a relation.
-When $R$ is a function, the judgment $R(a_1,\ldots,a_n) \longrightarrow r$ stands for $R(a_1,\ldots,a_n) = r$ and
-when $R$ is a relation, the judgment stands for $((a_1,\ldots,a_n), r) \in R$.
+When $R$ is a function, the judgement $R(a_1,\ldots,a_n) \longrightarrow r$ stands for $R(a_1,\ldots,a_n) = r$ and
+when $R$ is a relation, the judgement stands for $((a_1,\ldots,a_n), r) \in R$.
 
 The free variables appearing in the premises and conclusion are interpreted \underline{universally}.
 That is, the rules apply to any values (of the appropriate types) assigned to their free variables.
@@ -563,8 +563,8 @@ $\veone$, $\vetwo$, $\veone'$, $\vetwo'$ (expressions),
 $\vt$, $\vtone$, and $\vttwo$ (types).
 
 \begin{definition}[Grounding]
-Judgments can be \emph{grounded} by substituting their free variables with values.
-A \emph{ground rule} is a rule with all its judgments (premises and conclusion) grounded.
+Judgements can be \emph{grounded} by substituting their free variables with values.
+A \emph{ground rule} is a rule with all its judgements (premises and conclusion) grounded.
 \end{definition}
 For example,
 the following is a grounding of \TypingRuleRef{EBinop}
@@ -645,7 +645,7 @@ the set of dynamic semantic rules, we must apply those rules to form a \emph{\de
 
 \hypertarget{def-derivationtree}{}
 \begin{definition}[Derivation Tree]
-A \emph{\derivationtreeterm} is a tree whose vertices correspond to ground judgments.
+A \emph{\derivationtreeterm} is a tree whose vertices correspond to ground judgements.
 Each non-leaf vertex $c$ with children $p_{1..k}$ correspond to a ground rule
 $\inferrule{p_{1..k}}{c}$ and each leaf vertex $c$ corresponds to a ground axiom rule
 $c$. There is one root vertex, which intuitively is the goal of the derivation tree.
@@ -654,15 +654,15 @@ Infinite derivation trees are used for defining diverging evaluations
 (see \secref{Semantics of Diverging Specifications}).
 \end{definition}
 
-\section{Transition Judgments\label{sec:Transition Judgments}}
+\section{Transition Judgements\label{sec:Transition Judgements}}
 
 We use rules as a structured way for defining relations (and therefore functions, as a special case).
 
-To define a relation $R \subseteq X \cartimes Y$, we use judgments of the form $\termx \rulearrow \termy$
+To define a relation $R \subseteq X \cartimes Y$, we use judgements of the form $\termx \rulearrow \termy$
 where $\termx$ and $\termy$ are logical terms denoting sets of elements from $X$ and $Y$, respectively.
 %
-We call such judgments \emph{transition judgments}.
-A set of rules $M$ with transition judgments defines the relation
+We call such judgements \emph{transition judgements}.
+A set of rules $M$ with transition judgements defines the relation
 \[
     R = \{ (x,y) \;|\; x \rulearrow y \text{ can be derived from rules in } M\} \enspace.
 \]
@@ -721,7 +721,7 @@ uses an ignore variable to stand for the value being matched by a \hyperlink{any
 Since the rule does not need to refer to the value, we do not name it and use an ignore variable
 instead.
 
-\section{Flavors of Equality In Rules\label{sec:FlavoursOfEqualityInRules}}
+\section{Flavours of Equality In Rules\label{sec:FlavoursOfEqualityInRules}}
 This section explains the equality notations used in rules, two of which are used in \SemanticsRuleRef{ECond},
 shown here:
 \begin{mathpar}
@@ -738,8 +738,8 @@ shown here:
 \end{mathpar}
 
 \begin{description}
-  \item[Range:] we write $i=1..k$ to allow listing premises parameterized by $i$ or constructing
-  lists from expressions parameterized by $i$.
+  \item[Range:] we write $i=1..k$ to allow listing premises parameterised by $i$ or constructing
+  lists from expressions parameterised by $i$.
   For example, given two lists $a$ and $b$,
   \[
     i=1..k: a[i] > b[i]
@@ -843,10 +843,10 @@ of the conclusion ($\vv$, $\vg$, and $\newenv$, in our example).
 Now, scan the premises in order to see where $\env$, $\op$, $\veone$, and $\vetwo$ are used and how
 premises assign values to $\vv$, $\vg$, and $\newenv$.
 %
-In this case, $\vv$ is assigned as the result of the transition judgment
+In this case, $\vv$ is assigned as the result of the transition judgement
 $\evalbinop(\op, \vvone, \vvtwo) \evalarrow \vv$,
 $\vg$ is assigned the expression $\vgone \parallelcomp \vgtwo$,
-and $\newenv$ is assigned as the result of the transition judgment
+and $\newenv$ is assigned as the result of the transition judgement
 $\evalexpr( \envone, \vetwo ) \evalarrow \ResultExpr(\vmtwo, \newenv)$.
 %
 Notice that to assign values to the variables $\vv$, $\vg$, and $\newenv$,
@@ -982,7 +982,7 @@ $\ResultExpr((\vv, \vg), \newenv)$ --- is achieved.
 Then, re-reading the rule would indicate where exceptions, \dynamicerrorsterm,
 and diverging evaluation may result in other output \configurationsterm{}.
 %
-For example, if the first transition judgment results in a throwing \configurationterm{} $\ThrowingConfig$
+For example, if the first transition judgement results in a throwing \configurationterm{} $\ThrowingConfig$
 then the output \configurationterm{} of the conclusion is also $\ThrowingConfig$.
 This corresponds to the following rule in the expanded macro:
 
@@ -995,7 +995,7 @@ This corresponds to the following rule in the expanded macro:
 }
 \end{mathpar}
 
-Similarly, if the first transition judgment results in a \DynamicErrorConfigurationTerm, the output \configurationterm{} of
+Similarly, if the first transition judgement results in a \DynamicErrorConfigurationTerm, the output \configurationterm{} of
 the conclusion is \DynamicErrorConfigurationTerm, which corresponds to the following rule in the expansion:
 \begin{mathpar}
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\hva\\\\
@@ -1006,7 +1006,7 @@ the conclusion is \DynamicErrorConfigurationTerm, which corresponds to the follo
 }
 \end{mathpar}
 
-Finally, if the first transition judgment results in a diverging \configurationterm{}, the output \configurationterm{} of
+Finally, if the first transition judgement results in a diverging \configurationterm{}, the output \configurationterm{} of
 the conclusion is also a diverging \configurationterm{}, which corresponds to the following rule in the expansion:
 \begin{mathpar}
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\hva\\\\
@@ -1018,7 +1018,7 @@ the conclusion is also a diverging \configurationterm{}, which corresponds to th
 \end{mathpar}
 
 The following rules correspond to the cases where the first transition results in \\
-$\ResultExpr(\vmone, \envone)$, but the second transition judgment results in either
+$\ResultExpr(\vmone, \envone)$, but the second transition judgement results in either
 $\ThrowingConfig$, $\DynErrorConfig$, or $\DivergingConfig$, respectively:
 \begin{mathpar}
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\hva\\\\
@@ -1050,7 +1050,7 @@ $\ThrowingConfig$, $\DynErrorConfig$, or $\DivergingConfig$, respectively:
 }
 \end{mathpar}
 
-Expanding the last transition judgment, gives us the case:
+Expanding the last transition judgement, gives us the case:
 \begin{mathpar}
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
   \evalexpr( \env, \veone) \evalarrow \ResultExpr(\vmone, \envone) \\\\
@@ -1066,7 +1066,7 @@ Expanding the last transition judgment, gives us the case:
 
 All these cases are succinctly encoded in a single rule with the alternative output \configurationsterm{}.
 
-\section{Conventionally-used Judgments and Notations\label{sec:ConventionallyUsedJudgments}}
+\section{Conventionally-used Judgements and Notations\label{sec:ConventionallyUsedJudgments}}
 We now present functions used conventionally in this reference.
 
 \subsection{Checked Transitions\label{sec:Checked Transitions}}
@@ -1093,9 +1093,9 @@ We define a similar function for dynamic errors.
 \RenderRelation{de_check}
 \RenderProseAndFormally{de_check}
 
-\subsection{Boolean Transition Judgments}
+\subsection{Boolean Transition Judgements}
 \RenderRelation{bool_transition}
-We use this function defined by the following trivial rule to allow us to treat Boolean values as transition judgments,
+We use this function defined by the following trivial rule to allow us to treat Boolean values as transition judgements,
 which in turn allows us to employ \shortcircuitrulemacros{}:
 \RenderProseAndFormally{bool_transition}
 
@@ -1112,10 +1112,10 @@ there is no need to consider the rest of the premises, and the function can simp
 }
 \end{mathpar}
 
-\subsection{Judgments Over Optional Data Types}
+\subsection{Judgements Over Optional Data Types}
 \hypertarget{def-mapopt}{}
 Optional data types are prevalent in the AST.
-To facilitate transition judgments over optional data types,
+To facilitate transition judgements over optional data types,
 we introduce the following parametric relation,
 which accepts a one-argument relation (or function) $f(A) \aslrel B$
 and applies it to an optional value:

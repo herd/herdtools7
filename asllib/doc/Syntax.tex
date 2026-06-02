@@ -105,7 +105,7 @@ We use a standard approach here:
   \item \secref{ParseTrees} defines parse trees;
   \item \secref{PriorityAndAssociativity} defines the priority and associativity
         of tokens; and
-  \item \secref{ParsingExamples} presents examples showing how the grammar and
+  \item \secref{GrammarExamples} presents examples showing how the grammar and
         the priority and associativity rules are used to parse ASL text.
 \end{itemize}
 
@@ -240,13 +240,13 @@ We define the following parametric productions for various types of lists and op
 \Clisttwo{x}   \derives \ & x \parsesep \Tcomma \parsesep \ClistOne{x} &\\
 \end{flalign*}
 
-\paragraph{Possibly-empty Parenthesized, Comma-separated List}
+\paragraph{Possibly-empty Parenthesised, Comma-separated List}
 \hypertarget{def-plistzero}{}
 \begin{flalign*}
 \PlistZero{x}   \derivesinline \ & \Tlpar \parsesep \ClistZero{x} \parsesep \Trpar &\\
 \end{flalign*}
 
-\paragraph{Parenthesized Comma-separated List With At Least Two Elements}
+\paragraph{Parenthesised Comma-separated List With At Least Two Elements}
 \hypertarget{def-plisttwo}{}
 \begin{flalign*}
 \Plisttwo{x}   \derivesinline \ & \Tlpar \parsesep \Clisttwo{x} \parsesep \Trpar &\\
@@ -747,7 +747,7 @@ A \emph{parse tree} has one of the following forms:
         and $n_{1..k}$ are its children parse nodes,
         for example,
         $\Ndecl(\Tfunc, \Tidentifier(\id), \Nparamsopt, \Nfuncargs, \Nfuncbody)$
-        is labeled by $\Ndecl$ and has five children nodes.
+        is labelled by $\Ndecl$ and has five children nodes.
 \end{itemize}
 \end{definition}
 (In the literature, parse trees are also referred to as \emph{derivation trees}.)
@@ -801,7 +801,7 @@ The \emph{language of a grammar} $G$ is defined as follows:
 As described in the introduction to \chapref{Syntax}, tokens that may cause a
 \shiftreduceconflictterm{} are assigned a priority, and each priority is
 assigned an associativity. Tokens that cannot cause \shiftreduceconflictsterm{}
-are not assigned priorities
+are not assigned priorities.
 
 The table below assigns priorities to tokens in descending order, starting from
 the highest priority (for $\Tdot$) to the lowest priority (for $\Telse$).
@@ -838,7 +838,7 @@ example \texttt{!!TRUE} still parses as \texttt{!(!TRUE)}.
 \end{center}
 
 
-\section{Parsing Examples\label{sec:ParsingExamples}}
+\section{Grammar Examples\label{sec:GrammarExamples}}
 
 \ExampleDef{Derivation of a Valid Expression}
 The expression \texttt{1 + 3}
@@ -1004,7 +1004,7 @@ Notice that the derivation corresponds perfectly to the concatenation of the sta
 and input, read bottom-up in the table above, with the rightmost non-terminal
 being the one that is reduced at each step.
 
-\ExampleDef{Shift-Reduce Ambiguity with Left Associativity}
+\ExampleDef{Resolving Ambiguity with Left Associativity}
 The expression \texttt{1 + 2 + 3}
 is transformed by the lexical analysis into:
 \[
@@ -1175,7 +1175,7 @@ The table above corresponds to the following derivation in the expanded grammar
 \end{array}
 \]
 
-\ExampleDef{Parsing with Parametric Productions}
+\ExampleDef{Parametric Productions}
 The expression \texttt{b[c,d,e]}
 is transformed by the lexical analysis into:
 \[
@@ -1183,7 +1183,7 @@ is transformed by the lexical analysis into:
 \]
 
 \texthypertarget{def-clistoneslice}
-To emphasize the role of parametric productions, let $\clistoneslice$
+To emphasise the role of parametric productions, let $\clistoneslice$
 be the unique symbol introduced when expanding $\ClistOne{\Nslice}$.
 The relevant expansion is
 \[

@@ -34,7 +34,7 @@ as indicated by respective comments.
   \item \secref{ArbitraryValueExpressions} defines arbitrary value expressions;
   \item \secref{StructuredTypeConstructionExpressions} defines structured type construction expressions;
   \item \secref{TupleExpressions} defines tuple expressions;
-  \item \secref{ParenthesizedExpressions} defines parenthesized expressions;
+  \item \secref{ParenthesisedExpressions} defines parenthesised expressions;
   \item \secref{ArrayConstructionExpressions} defines array construction expressions;
   \item \secref{SideEffectFreeExpressions} defines \sideeffectfreeexpressionsterm{};
   \item \secref{ExprList} defines the dynamic semantics of a list of expressions.
@@ -229,7 +229,6 @@ binary operators.
 \hline
 \textbf{Priority} & \textbf{Class} & \textbf{Operators}\\
 \hline
-7 & \textbf{Unary}                & \Tminus, \Tnot, \Tbnot\\
 6 & \textbf{Power}                & \Tpow\\
 5 & \textbf{Mul--Div--Shift}      & \Tmul, \Tdiv, \Tdivrm, \Trdiv, \Tmod, \Tshl, \Tshr\\
 4 & \textbf{Add--Sub--Logic}      & \Tplus, \Tminus, \Tor, \Tand, \Txor, \Tcoloncolon, \Tplusplus\\
@@ -805,7 +804,7 @@ show examples of ill-typed slicing expressions.
 \subsubsection{Comments}
 The width of \slices\ might be a symbolic expression if one of the
 widths references a \texttt{let} identifier with a non-compile-time-constant
-initializer expression.
+initialiser expression.
 
 
 \subsection{Semantics}
@@ -832,7 +831,7 @@ This section details the syntax, abstract syntax, semantics, and typing of array
 In the untyped AST, a read from either an integer-indexed array or an enumeration-indexed array is represented
 the same way. The type system infers the kind of array and outputs a typed AST node differentiating
 the two kinds of arrays, either a $\EGetArray$ or a $\EGetEnumArray$, via \TypingRuleRef{EGetArray}.
-The semantics utilizes a rule matching the corresponding type of array ---
+The semantics utilises a rule matching the corresponding type of array ---
 \SemanticsRuleRef{EGetArray} for integer-indexed arrays and
 \SemanticsRuleRef{EGetEnumArray} for enumeration-indexed arrays.
 
@@ -1135,7 +1134,7 @@ the asserting type conversion is provided.
 
 Note that ATCs are execution-time checks. An execution-time check is a
 condition that is evaluated during the evaluation of an execution-time
-initializer expression or subprogram. If the condition evaluates to $\False$ it
+initialiser expression or subprogram. If the condition evaluates to $\False$ it
 is a \DynamicErrorConfigurationTerm{}.
 
 \ASLListing{ATC expressions}{typing-atc}{\typingtests/TypingRule.ATC.asl}
@@ -1273,12 +1272,12 @@ Notice that these rules cover all types, including named types ($\TNamed$),
 since the \typedast\ returned from \TypingRuleRef{ATC} is the \structureterm\ of the type
 given in the specification.
 %
-Parameterized integers (integers with an empty set of constraints)
+Parameterised integers (integers with an empty set of constraints)
 cannot appear as a type, since ASL syntax does not allow the following:
 \begin{itemize}
-\item Declaring an parameterized integer as a variable,
-\item Declaring an alias to an parameterized integer type, and
-\item Declaring an parameterized integer in a compound type.
+\item Declaring an parameterised integer as a variable,
+\item Declaring an alias to an parameterised integer type, and
+\item Declaring an parameterised integer in a compound type.
 \end{itemize}
 
 \SemanticsRuleDef{IsConstraintSat}
@@ -1517,7 +1516,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \subsection{Typing}
 \TypingRuleDef{ERecord}
 \listingref{semantics-egetfield} shows an example of a well-typed record construction expression
-and an example (in comment) where the same field is initialized twice, which is invalid.
+and an example (in comment) where the same field is initialised twice, which is invalid.
 
 \RenderProseAndFormally{annotate_expr_ERecord}
 \CodeSubsection{\ERecordBegin}{\ERecordEnd}{../Typing.ml}
@@ -1582,10 +1581,10 @@ the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
 \RenderProseAndFormally{eval_expr_ETuple}
 \CodeSubsection{\EvalETupleBegin}{\EvalETupleEnd}{../Interpreter.ml}
 
-\section{Parenthesized Expressions\label{sec:ParenthesizedExpressions}}
+\section{Parenthesised Expressions\label{sec:ParenthesisedExpressions}}
 A single expression inside parentheses is not considered to be a tuple, but rather the element
 inside the parenthesis.
-Parenthesizing an expression can be used to improve readability, enforce a bracketing
+Parenthesising an expression can be used to improve readability, enforce a bracketing
 of operations, and avoid binary operator priority errors (see \ASTRuleRef{CheckNotSamePriority}).
 
 Note that parenthesising of expressions and ASL1.0's defined evaluation order
@@ -1601,10 +1600,10 @@ ASL's AST, and then evaluation order is defined with respect to ASL's AST.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
-We represent a parenthesized expression as a single element tuple for the technical
-reason of enabling \ASTRuleRef{CheckNotSamePriority} by distinguishing parenthesized
-expressions from non-parenthesized expressions. However, upon typing such expressions,
-we ignore the parenthesis (see \TypingRuleRef{ETuple}.\textsc{PARENTHESIZED}).
+We represent a parenthesised expression as a single element tuple for the technical
+reason of enabling \ASTRuleRef{CheckNotSamePriority} by distinguishing parenthesised
+expressions from non-parenthesised expressions. However, upon typing such expressions,
+we ignore the parenthesis (see \TypingRuleRef{ETuple}.\textsc{PARENTHESISED}).
 
 \ASTRuleDef{ParenExpr}
 \begin{mathpar}
@@ -1615,8 +1614,8 @@ we ignore the parenthesis (see \TypingRuleRef{ETuple}.\textsc{PARENTHESIZED}).
 \end{mathpar}
 
 \section{Array Construction Expressions\label{sec:ArrayConstructionExpressions}}
-Array construction expression are used by the type system to express the initialization
-of array-typed variables. Since there is no syntax to initialize arrays, there are also
+Array construction expression are used by the type system to express the initialisation
+of array-typed variables. Since there is no syntax to initialise arrays, there are also
 no rules for building the AST for such expressions nor rules for typechecking them.
 
 \subsection{Abstract Syntax}
@@ -1629,7 +1628,7 @@ $\annotatetype$ guarantees that expressions in types are \sideeffectfreeterm{}.
 
 \SemanticsRuleDef{EArray}
 In \listingref{typing-tarray},
-the variable \verb|int_arr| is initialized with an array construction expression
+the variable \verb|int_arr| is initialised with an array construction expression
 (which is not expressible in ASL text, only in \typedast, but conceptually could be
 represented as \verb|array[[4]] of 0|),
 which evaluates to
@@ -1642,7 +1641,7 @@ which evaluates to
 
 \SemanticsRuleDef{EEnumArray}
 In \listingref{typing-tarray},
-the variable \verb|big_little_arr| is initialized with an array construction expression
+the variable \verb|big_little_arr| is initialised with an array construction expression
 (which is not expressible in ASL text, only in \typedast, but conceptually could be
 represented as \verb|array[[Labels]] of '0000'|),
 which evaluates to
