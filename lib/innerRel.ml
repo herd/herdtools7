@@ -204,10 +204,10 @@ module Make(O:MySet.OrderedType) : S
         try M.find n s.visit,r
         with
         | Not_found ->
-            let min = s.id in
+            let id0 = s.id in
             let s = {
-              id = min + 1;
-              visit = M.add n min s.visit;
+              id = id0 + 1;
+              visit = M.add n id0 s.visit;
               stack = n :: s.stack;
             } in
             let min,(res,s) as r =
@@ -216,10 +216,8 @@ module Make(O:MySet.OrderedType) : S
                    let m1,(res,s) = dfs v r in
                    Misc.min_int m0 m1,(kont n v res,s))
                 (succs m n)
-                (min,(res,s)) in
-            let valk =
-              try M.find n s.visit with Not_found -> assert false in
-            if not (Misc.int_eq min valk) then
+                (id0,(res,s)) in
+            if not (Misc.int_eq min id0) then
               r (* n is part of previously returned scc *)
             else
               let scc,stack = pop_until n s.stack in
