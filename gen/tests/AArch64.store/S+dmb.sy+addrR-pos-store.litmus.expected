@@ -1,14 +1,12 @@
 Test S+dmb.sy+addrR-pos-store Allowed
-States 5
-1:X0=0; 1:X4=1; [x]=2;
-1:X0=0; 1:X4=1; [x]=3;
-1:X0=0; 1:X4=3; [x]=2;
-1:X0=1; 1:X4=1; [x]=2;
-1:X0=1; 1:X4=3; [x]=2;
+States 3
+1:X0=0; [x]=2;
+1:X0=0; [x]=3;
+1:X0=1; [x]=2;
 No
 Witnesses
 Positive: 0 Negative: 6
-Condition exists ([x]=3 /\ 1:X0=1 /\ 1:X4=0)
+Condition exists ([x]=3 /\ 1:X0=1)
 Observation S+dmb.sy+addrR-pos-store Never 0 6
-Hash=68febaa6c5035496650621d024a4d0b5
+Hash=6372df64670ae144f14dd6d37a5c3225
 

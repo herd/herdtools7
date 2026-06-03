@@ -1728,21 +1728,42 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         do_rec cs
       | None -> cs
 
-    (* If there is a fault label in `e`, add the `index`-th label
-       to the first instruction in `cs` *)
-    let add_label_to_first_instructions e cs =
-      match e.C.check_fault with
-      | Some (label_name, _) ->
+    let is_ldxr_instruction = function
+      | Instruction (I_LDAR (_, (XX|AX), _, _))
+      | Instruction (I_LDARBH (_, (XX|AX), _, _))
+      | Instruction (I_LDXP _) -> true
+      | _ -> false
+
+    let is_stxr_instruction = function
+      | Instruction (I_STXR _)
+      | Instruction (I_STXRBH _)
+      | Instruction (I_STXP _) -> true
+      | _ -> false
+
+    (* If fault labels are present in `er` and `ew`, attach them to the
+       first exclusive load and the following exclusive store in `cs`. *)
+    let add_label_to_exclusive_load_and_store er ew cs =
+      let add_label e instr =
+        match e.C.check_fault with
         (* find the first non-label instruction *)
-        let rec do_rec cs = match cs with
-          | [] -> assert false (* the `cs` should not be empty *)
-          | instr::rem -> begin match instr with
-            (* skip label or instruction that is already labelled *)
-            | Label(_) -> instr::do_rec rem
-            |_ -> Label(label_name, instr)::rem
-        end in
-        do_rec cs
-      | None -> cs
+        | Some (label_name, _) -> Label(label_name, instr)
+        | None -> instr in
+      let rec do_rec met_read cs = match cs,met_read with
+        | [],_ -> assert false (* the `cs` should not be empty *)
+        (* skip existing loop label or instruction that is already labelled *)
+        | (Label(_) as label)::rem,met_read -> label :: do_rec met_read rem
+        | instr::rem,false ->
+            if is_ldxr_instruction instr then
+              (* Label the first `ldxr` *)
+              (add_label er instr) :: do_rec true rem
+            else instr :: do_rec false rem
+        | instr::rem,true ->
+            if is_stxr_instruction instr then
+              (* Label the first `stxr *)
+              (add_label ew instr)::rem
+            else instr :: do_rec true rem
+      in
+      do_rec false cs
 
     let emit_access st p init e =
     let open WPTE in
@@ -1979,7 +2000,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Neon _,Some _) -> assert false
         end in
         (* Add a label to instructions `cs`, when a fault check is required. *)
-          (* Add a label to instructions `cs`, when a fault check is required. *)
         let cs = add_label_to_last_instructions e cs in
         regs,inits,cs,st
     (* END of emit_access *)
@@ -2010,7 +2030,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rW,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
       let arw = check_arw_lxsx er ew in
       let init,cs,st = XSingle.emit_pair arw p st init rR rW rA ew in
-      let cs = add_label_to_first_instructions er cs in
+      let cs = add_label_to_exclusive_load_and_store er ew cs in
       rR,init,csi@caddr@cs,st
 
     let emit_exch1 = do_emit_exch1 emit_addr_simple
@@ -2023,7 +2043,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let arw = check_arw_lxsx er ew in
       let init,cs,st =
         XPair.emit_pair arw p st init (rR1,rR2) (rW1,rW2) rA ew in
-      let cs = add_label_to_first_instructions er cs in
+      let cs = add_label_to_exclusive_load_and_store er ew cs in
       rR1,init,csi@caddr@cs,st
 
     let emit_exch22 = do_emit_exch22 emit_addr_simple
@@ -2036,7 +2056,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let module X = ExclusivePair(XLoadPair)(XStore) in
       let init,cs,st =
         X.emit_pair arw p st init (rR1,rR2) rW rA ew in
-      let cs = add_label_to_first_instructions er cs in
+      let cs = add_label_to_exclusive_load_and_store er ew cs in
       rR1,init,csi@caddr@cs,st
 
     let emit_exch21 = do_emit_exch21 emit_addr_simple
@@ -2050,7 +2070,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let module X = ExclusivePair(XLoad)(XStorePair) in
       let init,cs,st =
         X.emit_pair arw p st init rR (rW1,rW2) rA ew in
-      let cs = add_label_to_first_instructions er cs in
+      let cs = add_label_to_exclusive_load_and_store er ew cs in
       rR,init,csi@caddr@cs,st
 
     let emit_exch12 = do_emit_exch12 emit_addr_simple
