@@ -2644,7 +2644,7 @@ module Make
                       let libfind = O.libfind
                     end) in
                 let (_,_,iprog) =
-                  try P.parse fname
+                  try P.parse ~opt:true fname
                   with Misc.Fatal msg | Misc.UserError msg ->
                     error_not_silent loc "%s" msg  in
                 let stst = st.st in

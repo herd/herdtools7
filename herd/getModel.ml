@@ -40,7 +40,7 @@ let parse archcheck arch libfind variant model =
             include LexUtils.Default
             let libfind = libfind
           end) in
-      let fname,ast = P.find_parse fname in
+      let fname,ast = P.find_parse ~opt:true fname in
       Model.Generic (fname,ast)
   | _ -> m in
   if archcheck then check_arch_model arch m
