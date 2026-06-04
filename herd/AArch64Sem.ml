@@ -5192,24 +5192,6 @@ Arguments:
             | _ -> k)
           test.Test_herd.init_state []
 
-      let get_instr_ptevals test =
-        let open Constant in
-        let open AArch64PteVal in
-        AArch64.state_fold
-          (fun _ v k ->
-            match v with
-            | V.Val (PteVal pte_v) -> begin
-              let lbl_opt =
-                pte_v.oa
-                |> OutputAddress.as_physical
-                |> fun o -> Option.bind o Misc.str_as_label in
-              match lbl_opt with
-              | Some lbl -> lbl::k
-              | None -> k
-              end
-            | _ -> k)
-          test.Test_herd.init_state []
-
       let lift_fetch rA (* Base address register *)
             dir updatedb
             mop
@@ -5220,7 +5202,7 @@ Arguments:
 (* Test all possible instructions, when appropriate *)
       let mk_mop_fetch exposed_page exposed_label test ii =
         let module InstrSet = AArch64.V.Cst.Instr.Set in
-        let relevant_pagelbls = get_instr_ptevals test in
+        let relevant_pagelbls = get_relevant_codepages test in
        
         let default_cands =
           InstrSet.empty
@@ -5307,19 +5289,15 @@ Arguments:
       let check_self test ii =
         let module InstrSet = AArch64.V.Cst.Instr.Set in
         let exp_pages = get_exposed_codepages test in
+        let virt_lbl_eq_mod_offset lbl1 lbl2 =
+          let triple1 = Constant.unmk_sym_virtual_label_with_offset lbl1 in
+          let triple2 = Constant.unmk_sym_virtual_label_with_offset lbl2 in
+          match (triple1,triple2) with
+          | (p1,s1,_),(p2,s2,_) ->
+            (Int.equal p1 p2) && (String.equal s1 s2) in
         let is_on_exported_page =
           match ii.A.rel_addr with
-          | Some (A.V.Val c) -> begin
-            let this_lbl = c in 
-            List.exists
-              (fun ttd_lbl ->
-                let this_triple = Constant.unmk_sym_virtual_label_with_offset this_lbl in
-                let ttd_triple = Constant.unmk_sym_virtual_label_with_offset ttd_lbl in
-                match (this_triple,ttd_triple) with
-                | (p1,s1,_),(p2,s2,_) ->
-                  (Misc.int_eq p1 p2) && (Misc.string_eq s1 s2)
-              ) exp_pages
-            end
+          | Some (A.V.Val c) -> List.exists (virt_lbl_eq_mod_offset c) exp_pages
           | _ -> false
         in
 
