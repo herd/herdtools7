@@ -40,7 +40,7 @@ let get_ie edge =
   let open Code in
   match edge with
   | Id | Po _ | Dp _ | Fenced _ | Rmw _ -> Int
-  | Rf ie | Fr ie | Ws ie -> ie
+  | Rf ie | Fr ie | Ws ie | Coms ie -> ie
   | Leave _ | Back _ | Hat -> Ext
   | Insert _ | Store | Node _ -> Int
 
@@ -54,7 +54,7 @@ let set_ie ie (edge : E.tedge) =
 let get_sd (edge : E.tedge) =
   match edge with
   | Po (sd, _, _) | Dp (_, sd, _) | Fenced (_, sd, _, _) -> sd
-  | Leave _ | Back _ | Hat | Id | Rf _ | Fr _ | Ws _ | Rmw _ -> Same
+  | Leave _ | Back _ | Hat | Id | Rf _ | Fr _ | Ws _ | Coms _ | Rmw _ -> Same
   | Insert _ | Store | Node _ -> raise (Invalid_argument "Unexpected edge kind")
 
 let set_sd sd (edge : E.tedge) =
@@ -262,7 +262,7 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
   let relaxs =
     tedges
     |> List.map (fun (Tedge { edge; insert }) ->
-        let edge = E.{ edge; a1 = left.atom; a2 = right.atom } in
+        let edge = E.{ edge; a1 = left.atom; a2 = right.atom; pred = None } in
         let edge = set_src left.extr edge in
         let edge = set_tgt right.extr edge in
         let edges =
