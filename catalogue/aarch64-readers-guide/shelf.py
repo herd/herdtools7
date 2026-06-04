@@ -10,7 +10,7 @@ cfgs = [
 ]
 
 illustrative_tests = [
-    "tests/2+2W.litmus",
+    "tests/2+2w.litmus",
     "tests/coRR-pte9-mod.litmus",
     "tests/coRR.litmus",
     "tests/coRR+BBM+W.litmus",

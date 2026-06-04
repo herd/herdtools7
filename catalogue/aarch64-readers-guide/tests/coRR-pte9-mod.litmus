@@ -3,7 +3,7 @@ Variant=vmsa,fatal
 {
  [PTE(x)]=(oa:PA(x), valid:1);
  [y]=1;
- 0:X1=x; pteval_t 0:X0=(, valid:0); 0:X3=PTE(x); pteval_t 0:X4=(oa:PA(y), valid:1);
+ 0:X1=x; pteval_t 0:X0=(valid:0); 0:X3=PTE(x); pteval_t 0:X4=(oa:PA(y), valid:1);
  1:X1=x;
 }
  P0              | P1              ;
