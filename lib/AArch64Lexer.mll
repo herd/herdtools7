@@ -474,7 +474,7 @@ let keyword_list = [
   "tst", TST;
   (* Those operations are factorized *)
   "eor", OP A.EOR;
-  "eon", OP A.EOR;
+  "eon", OP A.EON;
   "orr", OP A.ORR;
   "orn", OP A.ORN;
   "and", OP A.AND;

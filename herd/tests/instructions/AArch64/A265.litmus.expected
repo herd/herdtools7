@@ -1,0 +1,10 @@
+Test A265 Required
+States 1
+0:X1=-1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=4294967295)
+Observation A265 Always 1 0
+Hash=f32effe64ab239e050fe82fe69c66925
+
