@@ -21,743 +21,764 @@ module type Config = sig
  val is_morello : bool
 end
 
+open AArch64Parser
+module A = AArch64Base
+
+(* This is intentionally a hash table instead of a large string pattern match.
+ * A large string ppatern match is known to cause issues with some versions of
+ * js_of_ocaml. *)
+let keyword_list = [
+  "nop", NOP;
+  (* Hints are NOPS in AArch64 *)
+  "hint", HINT;
+  (* Halt instructions are used by Debug mode, not needed here - NOP *)
+  "hlt", HLT;
+  (* Branch *)
+  "b", TOK_B;
+  "br", BR;
+  "bl", BL;
+  "blr", BLR;
+  "ret", RET;
+  "eret", ERET;
+  "ne", TOK_NE;
+  "eq", TOK_EQ;
+  "ge", TOK_GE;
+  "gt", TOK_GT;
+  "le", TOK_LE;
+  "lt", TOK_LT;
+  "cs", TOK_CS;
+  "cc", TOK_CC;
+  "mi", TOK_MI;
+  "pl", TOK_PL;
+  "vs", TOK_VS;
+  "vc", TOK_VC;
+  "hi", TOK_HI;
+  "ls", TOK_LS;
+  "al", TOK_AL;
+  "b.eq", BEQ;
+  "b.none", BEQ;
+  "b.ne", BNE;
+  "b.any", BNE;
+  "b.ge", BGE;
+  "b.tcont", BGE;
+  "b.gt", BGT;
+  "b.le", BLE;
+  "b.lt", BLT;
+  "b.tstop", BLT;
+  "b.cs", BCS;
+  "b.nlast", BCS;
+  "b.cc", BCC;
+  "b.last", BCC;
+  "b.mi", BMI;
+  "b.first", BMI;
+  "b.pl", BPL;
+  "b.nfirst", BPL;
+  "b.vs", BVS;
+  "b.vc", BVC;
+  "b.hi", BHI;
+  "b.ls", BLS;
+  "b.plast", BLS;
+  "b.al", BAL;
+  "cbz", CBZ;
+  "cbnz", CBNZ;
+  "tbnz", TBNZ;
+  "tbz", TBZ;
+  (* Memory *)
+  "ldr", LDR;
+  "ldrsw", LDRSW;
+  "ldur", LDUR;
+  "ldapur", LDAPUR;
+  "ldp", LDP;
+  "ldpsw", LDPSW;
+  "ldnp", LDNP;
+  "ldiapp", LDIAPP;
+  "stp", STP;
+  "stnp", STNP;
+  "stilp", STILP;
+  "ldrb", LDRB;
+  "ldrh", LDRH;
+  "ldrsb", LDRSB;
+  "ldrsh", LDRSH;
+  "ldar", LDAR;
+  "ldarb", LDARB;
+  "ldarh", LDARH;
+  "ldapr", LDAPR;
+  "ldaprb", LDAPRB;
+  "ldaprh", LDAPRH;
+  "ldxr", LDXR;
+  "ldxrb", LDXRB;
+  "ldxrh", LDXRH;
+  "ldaxr", LDAXR;
+  "ldaxrb", LDAXRB;
+  "ldaxrh", LDAXRH;
+  "ldxp", LDXP;
+  "ldaxp", LDAXP;
+  "str", STR;
+  "stlr", STLR;
+  "stxr", STXR;
+  "stlxr", STLXR;
+  "strb", STRB;
+  "strh", STRH;
+  "stlrb", STLRB;
+  "stlrh", STLRH;
+  "stxrb", STXRB;
+  "stlxrb", STLXRB;
+  "stxrh", STXRH;
+  "stlxrh", STLXRH;
+  "stxp", STXP;
+  "stlxp", STLXP;
+  (* Neon Extension Memory *)
+  "ld1", LD1;
+  "ldap1", LDAP1;
+  "ld1r", LD1R;
+  "ld2", LD2;
+  "ld2r", LD2R;
+  "ld3", LD3;
+  "ld3r", LD3R;
+  "ld4", LD4;
+  "ld4r", LD4R;
+  "stur", STUR;
+  "stlur", STLUR;
+  "stl1", STL1;
+  "st1", ST1;
+  "st2", ST2;
+  "st3", ST3;
+  "st4", ST4;
+  "addv", ADDV;
+  "dup", DUP;
+  "movi", MOVI;
+  "mvn", MVN;
+  "fmov", FMOV;
+  (* Pointer Authentication Code *)
+  "pacia", PACIA;
+  "pacia1716", PACIA1716;
+  "paciaz", PACIAZ;
+  "paciza", PACIZA;
+  "paciasp", PACIASP;
+  "pacib", PACIB;
+  "pacib1716", PACIB1716;
+  "pacibz", PACIBZ;
+  "pacizb", PACIZB;
+  "pacibsp", PACIBSP;
+  "pacda", PACDA;
+  "pacdza", PACDZA;
+  "pacdb", PACDB;
+  "pacdzb", PACDZB;
+  "autia", AUTIA;
+  "autia1716", AUTIA1716;
+  "autiaz", AUTIAZ;
+  "autiza", AUTIZA;
+  "autiasp", AUTIASP;
+  "autib", AUTIB;
+  "autib1716", AUTIB1716;
+  "autibz", AUTIBZ;
+  "autizb", AUTIZB;
+  "autibsp", AUTIBSP;
+  "autda", AUTDA;
+  "autdza", AUTDZA;
+  "autdb", AUTDB;
+  "autdzb", AUTDZB;
+  "xpaci", XPACI;
+  "xpacd", XPACD;
+  (* Scalabel Vector Extension *)
+  "whilelt", WHILELT;
+  "whilele", WHILELE;
+  "whilelo", WHILELO;
+  "whilels", WHILELS;
+  "uaddv", UADDV;
+  "ld1b", LD1B;
+  "ld1h", LD1H;
+  "ld1w", LD1W;
+  "ld1d", LD1D;
+  "ld1q", LD1Q;
+  "ld2b", LD2B;
+  "ld2h", LD2H;
+  "ld2w", LD2W;
+  "ld2d", LD2D;
+  "ld3b", LD3B;
+  "ld3h", LD3H;
+  "ld3w", LD3W;
+  "ld3d", LD3D;
+  "ld4b", LD4B;
+  "ld4h", LD4H;
+  "ld4w", LD4W;
+  "ld4d", LD4D;
+  "st1b", ST1B;
+  "st1h", ST1H;
+  "st1w", ST1W;
+  "st1d", ST1D;
+  "st1q", ST1Q;
+  "st2b", ST2B;
+  "st2h", ST2H;
+  "st2w", ST2W;
+  "st2d", ST2D;
+  "st3b", ST3B;
+  "st3h", ST3H;
+  "st3w", ST3W;
+  "st3d", ST3D;
+  "st4b", ST4B;
+  "st4h", ST4H;
+  "st4w", ST4W;
+  "st4d", ST4D;
+  "index", TOK_INDEX;
+  "rdvl", RDVL;
+  "addvl", ADDVL;
+  "cntb", (let open AArch64Base in  CNT_INC_SVE (CNT,VSIMD8));
+  "cnth", (let open AArch64Base in  CNT_INC_SVE (CNT,VSIMD16));
+  "cntw", (let open AArch64Base in  CNT_INC_SVE (CNT,VSIMD32));
+  "cntd", (let open AArch64Base in  CNT_INC_SVE (CNT,VSIMD64));
+  "incb", (let open AArch64Base in  CNT_INC_SVE (INC,VSIMD8));
+  "inch", (let open AArch64Base in  CNT_INC_SVE (INC,VSIMD16));
+  "incw", (let open AArch64Base in  CNT_INC_SVE (INC,VSIMD32));
+  "incd", (let open AArch64Base in  CNT_INC_SVE (INC,VSIMD64));
+  "mul", TOK_MUL;
+  "vl", TOK_VL;
+  "ptrue", PTRUE;
+  "pow2", TOK_POW2;
+  "vl1", TOK_VL1;
+  "vl2", TOK_VL2;
+  "vl3", TOK_VL3;
+  "vl4", TOK_VL4;
+  "vl5", TOK_VL5;
+  "vl6", TOK_VL6;
+  "vl7", TOK_VL7;
+  "vl8", TOK_VL8;
+  "vl16", TOK_VL16;
+  "vl32", TOK_VL32;
+  "vl64", TOK_VL64;
+  "vl128", TOK_VL128;
+  "vl256", TOK_VL256;
+  "mul4", TOK_MUL4;
+  "mul3", TOK_MUL3;
+  "all", TOK_ALL;
+  "movprfx", MOVPRFX;
+  "ctermeq", CTERM AArch64Base.CTERM.EQ;
+  "ctermne", CTERM AArch64Base.CTERM.NE;
+  (* Scalable Matrix Extension *)
+  "addva", ADDA AArch64Base.Vertical;
+  "addha", ADDA AArch64Base.Horizontal;
+  "mova", MOVA;
+  "smstart", SMSTART;
+  "smstop", SMSTOP;
+  "sm", TOK_SM;
+  "za", TOK_ZA;
+  (* Compare and swap *)
+  "cas", CAS;
+  "casa", CASA;
+  "casl", CASL;
+  "casal", CASAL;
+  "cash", CASH;
+  "casah", CASAH;
+  "caslh", CASLH;
+  "casalh", CASALH;
+  "casb", CASB;
+  "casab", CASAB;
+  "caslb", CASLB;
+  "casalb", CASALB;
+  "casp", CASP;
+  "caspa", CASPA;
+  "caspl", CASPL;
+  "caspal", CASPAL;
+  (* Swap *)
+  "swp", SWP;
+  "swpa", SWPA;
+  "swpl", SWPL;
+  "swpal", SWPAL;
+  "swph", SWPH;
+  "swpah", SWPAH;
+  "swplh", SWPLH;
+  "swpalh", SWPALH;
+  "swpb", SWPB;
+  "swpab", SWPAB;
+  "swplb", SWPLB;
+  "swpalb", SWPALB;
+  (* Fetch and ADD *)
+  "ldadd", LDOP (A.A_ADD,A.RMW_P);
+  "ldadda", LDOP (A.A_ADD,A.RMW_A);
+  "ldaddl", LDOP (A.A_ADD,A.RMW_L);
+  "ldaddal", LDOP (A.A_ADD,A.RMW_AL);
+  "ldaddh", LDOPBH (A.H,A.A_ADD,A.RMW_P);
+  "ldaddah", LDOPBH (A.H,A.A_ADD,A.RMW_A);
+  "ldaddlh", LDOPBH (A.H,A.A_ADD,A.RMW_L);
+  "ldaddalh", LDOPBH (A.H,A.A_ADD,A.RMW_AL);
+  "ldaddb", LDOPBH (A.B,A.A_ADD,A.RMW_P);
+  "ldaddab", LDOPBH (A.B,A.A_ADD,A.RMW_A);
+  "ldaddlb", LDOPBH (A.B,A.A_ADD,A.RMW_L);
+  "ldaddalb", LDOPBH (A.B,A.A_ADD,A.RMW_AL);
+  "stadd", STOP (A.A_ADD,A.W_P);
+  "staddl", STOP (A.A_ADD,A.W_L);
+  "staddh", STOPBH (A.H,A.A_ADD,A.W_P);
+  "staddlh", STOPBH (A.H,A.A_ADD,A.W_L);
+  "staddb", STOPBH (A.B,A.A_ADD,A.W_P);
+  "staddlb", STOPBH (A.B,A.A_ADD,A.W_L);
+  (* Fetch and exclusive or, EOR *)
+  "ldeor", LDOP (A.A_EOR,A.RMW_P);
+  "ldeora", LDOP (A.A_EOR,A.RMW_A);
+  "ldeorl", LDOP (A.A_EOR,A.RMW_L);
+  "ldeoral", LDOP (A.A_EOR,A.RMW_AL);
+  "ldeorh", LDOPBH (A.H,A.A_EOR,A.RMW_P);
+  "ldeorah", LDOPBH (A.H,A.A_EOR,A.RMW_A);
+  "ldeorlh", LDOPBH (A.H,A.A_EOR,A.RMW_L);
+  "ldeoralh", LDOPBH (A.H,A.A_EOR,A.RMW_AL);
+  "ldeorb", LDOPBH (A.B,A.A_EOR,A.RMW_P);
+  "ldeorab", LDOPBH (A.B,A.A_EOR,A.RMW_A);
+  "ldeorlb", LDOPBH (A.B,A.A_EOR,A.RMW_L);
+  "ldeoralb", LDOPBH (A.B,A.A_EOR,A.RMW_AL);
+  "steor", STOP (A.A_EOR,A.W_P);
+  "steorl", STOP (A.A_EOR,A.W_L);
+  "steorh", STOPBH (A.H,A.A_EOR,A.W_P);
+  "steorlh", STOPBH (A.H,A.A_EOR,A.W_L);
+  "steorb", STOPBH (A.B,A.A_EOR,A.W_P);
+  "steorlb", STOPBH (A.B,A.A_EOR,A.W_L);
+  (* Fetch and SET bit mask *)
+  "ldset", LDOP (A.A_SET,A.RMW_P);
+  "ldseta", LDOP (A.A_SET,A.RMW_A);
+  "ldsetl", LDOP (A.A_SET,A.RMW_L);
+  "ldsetal", LDOP (A.A_SET,A.RMW_AL);
+  "ldseth", LDOPBH (A.H,A.A_SET,A.RMW_P);
+  "ldsetah", LDOPBH (A.H,A.A_SET,A.RMW_A);
+  "ldsetlh", LDOPBH (A.H,A.A_SET,A.RMW_L);
+  "ldsetalh", LDOPBH (A.H,A.A_SET,A.RMW_AL);
+  "ldsetb", LDOPBH (A.B,A.A_SET,A.RMW_P);
+  "ldsetab", LDOPBH (A.B,A.A_SET,A.RMW_A);
+  "ldsetlb", LDOPBH (A.B,A.A_SET,A.RMW_L);
+  "ldsetalb", LDOPBH (A.B,A.A_SET,A.RMW_AL);
+  "stset", STOP (A.A_SET,A.W_P);
+  "stsetl", STOP (A.A_SET,A.W_L);
+  "stseth", STOPBH (A.H,A.A_SET,A.W_P);
+  "stsetlh", STOPBH (A.H,A.A_SET,A.W_L);
+  "stsetb", STOPBH (A.B,A.A_SET,A.W_P);
+  "stsetlb", STOPBH (A.B,A.A_SET,A.W_L);
+  (* Fetch and clear bit mask *)
+  "ldclr", LDOP (A.A_CLR,A.RMW_P);
+  "ldclra", LDOP (A.A_CLR,A.RMW_A);
+  "ldclrl", LDOP (A.A_CLR,A.RMW_L);
+  "ldclral", LDOP (A.A_CLR,A.RMW_AL);
+  "ldclrh", LDOPBH (A.H,A.A_CLR,A.RMW_P);
+  "ldclrah", LDOPBH (A.H,A.A_CLR,A.RMW_A);
+  "ldclrlh", LDOPBH (A.H,A.A_CLR,A.RMW_L);
+  "ldclralh", LDOPBH (A.H,A.A_CLR,A.RMW_AL);
+  "ldclrb", LDOPBH (A.B,A.A_CLR,A.RMW_P);
+  "ldclrab", LDOPBH (A.B,A.A_CLR,A.RMW_A);
+  "ldclrlb", LDOPBH (A.B,A.A_CLR,A.RMW_L);
+  "ldclralb", LDOPBH (A.B,A.A_CLR,A.RMW_AL);
+  "stclr", STOP (A.A_CLR,A.W_P);
+  "stclrl", STOP (A.A_CLR,A.W_L);
+  "stclrh", STOPBH (A.H,A.A_CLR,A.W_P);
+  "stclrlh", STOPBH (A.H,A.A_CLR,A.W_L);
+  "stclrb", STOPBH (A.B,A.A_CLR,A.W_P);
+  "stclrlb", STOPBH (A.B,A.A_CLR,A.W_L);
+  (* Fetch and signed max *)
+  "ldsmax", LDOP (A.A_SMAX,A.RMW_P);
+  "ldsmaxa", LDOP (A.A_SMAX,A.RMW_A);
+  "ldsmaxl", LDOP (A.A_SMAX,A.RMW_L);
+  "ldsmaxal", LDOP (A.A_SMAX,A.RMW_AL);
+  "ldsmaxh", LDOPBH (A.H,A.A_SMAX,A.RMW_P);
+  "ldsmaxah", LDOPBH (A.H,A.A_SMAX,A.RMW_A);
+  "ldsmaxlh", LDOPBH (A.H,A.A_SMAX,A.RMW_L);
+  "ldsmaxalh", LDOPBH (A.H,A.A_SMAX,A.RMW_AL);
+  "ldsmaxb", LDOPBH (A.B,A.A_SMAX,A.RMW_P);
+  "ldsmaxab", LDOPBH (A.B,A.A_SMAX,A.RMW_A);
+  "ldsmaxlb", LDOPBH (A.B,A.A_SMAX,A.RMW_L);
+  "ldsmaxalb", LDOPBH (A.B,A.A_SMAX,A.RMW_AL);
+  "stsmax", STOP (A.A_SMAX,A.W_P);
+  "stsmaxl", STOP (A.A_SMAX,A.W_L);
+  "stsmaxh", STOPBH (A.H,A.A_SMAX,A.W_P);
+  "stsmaxlh", STOPBH (A.H,A.A_SMAX,A.W_L);
+  "stsmaxb", STOPBH (A.B,A.A_SMAX,A.W_P);
+  "stsmaxlb", STOPBH (A.B,A.A_SMAX,A.W_L);
+  (* Fetch and signed min *)
+  "ldsmin", LDOP (A.A_SMIN,A.RMW_P);
+  "ldsmina", LDOP (A.A_SMIN,A.RMW_A);
+  "ldsminl", LDOP (A.A_SMIN,A.RMW_L);
+  "ldsminal", LDOP (A.A_SMIN,A.RMW_AL);
+  "ldsminh", LDOPBH (A.H,A.A_SMIN,A.RMW_P);
+  "ldsminah", LDOPBH (A.H,A.A_SMIN,A.RMW_A);
+  "ldsminlh", LDOPBH (A.H,A.A_SMIN,A.RMW_L);
+  "ldsminalh", LDOPBH (A.H,A.A_SMIN,A.RMW_AL);
+  "ldsminb", LDOPBH (A.B,A.A_SMIN,A.RMW_P);
+  "ldsminab", LDOPBH (A.B,A.A_SMIN,A.RMW_A);
+  "ldsminlb", LDOPBH (A.B,A.A_SMIN,A.RMW_L);
+  "ldsminalb", LDOPBH (A.B,A.A_SMIN,A.RMW_AL);
+  "stsmin", STOP (A.A_SMIN,A.W_P);
+  "stsminl", STOP (A.A_SMIN,A.W_L);
+  "stsminh", STOPBH (A.H,A.A_SMIN,A.W_P);
+  "stsminlh", STOPBH (A.H,A.A_SMIN,A.W_L);
+  "stsminb", STOPBH (A.B,A.A_SMIN,A.W_P);
+  "stsminlb", STOPBH (A.B,A.A_SMIN,A.W_L);
+  (* Fetch and unsigned max *)
+  "ldumax", LDOP (A.A_UMAX,A.RMW_P);
+  "ldumaxa", LDOP (A.A_UMAX,A.RMW_A);
+  "ldumaxl", LDOP (A.A_UMAX,A.RMW_L);
+  "ldumaxal", LDOP (A.A_UMAX,A.RMW_AL);
+  "ldumaxh", LDOPBH (A.H,A.A_UMAX,A.RMW_P);
+  "ldumaxah", LDOPBH (A.H,A.A_UMAX,A.RMW_A);
+  "ldumaxlh", LDOPBH (A.H,A.A_UMAX,A.RMW_L);
+  "ldumaxalh", LDOPBH (A.H,A.A_UMAX,A.RMW_AL);
+  "ldumaxb", LDOPBH (A.B,A.A_UMAX,A.RMW_P);
+  "ldumaxab", LDOPBH (A.B,A.A_UMAX,A.RMW_A);
+  "ldumaxlb", LDOPBH (A.B,A.A_UMAX,A.RMW_L);
+  "ldumaxalb", LDOPBH (A.B,A.A_UMAX,A.RMW_AL);
+  "stumax", STOP (A.A_UMAX,A.W_P);
+  "stumaxl", STOP (A.A_UMAX,A.W_L);
+  "stumaxh", STOPBH (A.H,A.A_UMAX,A.W_P);
+  "stumaxlh", STOPBH (A.H,A.A_UMAX,A.W_L);
+  "stumaxb", STOPBH (A.B,A.A_UMAX,A.W_P);
+  "stumaxlb", STOPBH (A.B,A.A_UMAX,A.W_L);
+  (* Fetch and unsigned min *)
+  "ldumin", LDOP (A.A_UMIN,A.RMW_P);
+  "ldumina", LDOP (A.A_UMIN,A.RMW_A);
+  "lduminl", LDOP (A.A_UMIN,A.RMW_L);
+  "lduminal", LDOP (A.A_UMIN,A.RMW_AL);
+  "lduminh", LDOPBH (A.H,A.A_UMIN,A.RMW_P);
+  "lduminah", LDOPBH (A.H,A.A_UMIN,A.RMW_A);
+  "lduminlh", LDOPBH (A.H,A.A_UMIN,A.RMW_L);
+  "lduminalh", LDOPBH (A.H,A.A_UMIN,A.RMW_AL);
+  "lduminb", LDOPBH (A.B,A.A_UMIN,A.RMW_P);
+  "lduminab", LDOPBH (A.B,A.A_UMIN,A.RMW_A);
+  "lduminlb", LDOPBH (A.B,A.A_UMIN,A.RMW_L);
+  "lduminalb", LDOPBH (A.B,A.A_UMIN,A.RMW_AL);
+  "stumin", STOP (A.A_UMIN,A.W_P);
+  "stuminl", STOP (A.A_UMIN,A.W_L);
+  "stuminh", STOPBH (A.H,A.A_UMIN,A.W_P);
+  "stuminlh", STOPBH (A.H,A.A_UMIN,A.W_L);
+  "stuminb", STOPBH (A.B,A.A_UMIN,A.W_P);
+  "stuminlb", STOPBH (A.B,A.A_UMIN,A.W_L);
+  (* SupervisorCall *)
+  "svc", SVC;
+  (* Undefined *)
+  "udf", UDF;
+  (* Memory Tagging *)
+  "stg", STG;
+  "st2g", ST2G;
+  "stzg", STZG;
+  "stz2g", STZ2G;
+  "ldg", LDG;
+  "irg", IRG;
+  (* Operations *)
+  "ubfm", UBFM;
+  "sbfm", SBFM;
+  "mov", MOV;
+  "movz", MOVZ;
+  "movn", MOVN;
+  "movk", MOVK;
+  "adr", ADR;
+  "rev16", REV16;
+  "rev32", REV32;
+  "rev64", REV64;
+  "rev", REV;
+  "extr", EXTR;
+  "rbit", RBIT;
+  "abs", ABS;
+  "cmp", CMP;
+  "tst", TST;
+  (* Those operations are factorized *)
+  "eor", OP A.EOR;
+  "eon", OP A.EON;
+  "orr", OP A.ORR;
+  "orn", OP A.ORN;
+  "and", OP A.AND;
+  "ands", OP A.ANDS;
+  "bic", OP A.BIC;
+  "bics", OP A.BICS;
+  (* Some arithmetic instruction have their own lexeme,
+      for parser to handle then in special ways *)
+  (* Also used as barrel shift *)
+  "asr", TOK_ASR;
+  "lsl", TOK_LSL;
+  "lsr", TOK_LSR;
+  "ror", TOK_ROR;
+  "asrv", TOK_ASRV;
+  "lslv", TOK_LSLV;
+  "lsrv", TOK_LSRV;
+  "rorv", TOK_RORV;
+  (* extensions *)
+  "uxtb", TOK_UXTB;
+  "uxth", TOK_UXTH;
+  "uxtw", TOK_UXTW;
+  "uxtx", TOK_UXTX;
+  "sxtb", TOK_SXTB;
+  "sxth", TOK_SXTH;
+  "sxtw", TOK_SXTW;
+  "sxtx", TOK_SXTX;
+  (* SUB, SUBS, ADD have 128 bits semantics*)
+  "sub", TOK_SUB;
+  "subs", TOK_SUBS;
+  "add", TOK_ADD;
+  "adds", TOK_ADDS;
+  "neg", TOK_NEG;
+  "negs", TOK_NEGS;
+  "smaddl", MOPL AArch64Base.MOPLExt.(Signed,ADD);
+  "smsubl", MOPL AArch64Base.MOPLExt.(Signed,SUB);
+  "umaddl", MOPL AArch64Base.MOPLExt.(Unsigned,ADD);
+  "umsubl", MOPL AArch64Base.MOPLExt.(Unsigned,SUB);
+  "smull", MOPLZ AArch64Base.MOPLExt.(Signed,ADD);
+  "smnegl", MOPLZ AArch64Base.MOPLExt.(Signed,SUB);
+  "umull", MOPLZ AArch64Base.MOPLExt.(Unsigned,ADD);
+  "umnegl", MOPLZ AArch64Base.MOPLExt.(Unsigned,SUB);
+  "madd", MOP AArch64Base.MOPExt.(ADD);
+  "msub", MOP AArch64Base.MOPExt.(SUB);
+  "mneg", MOPZ AArch64Base.MOPExt.(SUB);
+  (* Morello *)
+  "alignd", ALIGND;
+  "alignu", ALIGNU;
+  "build", BUILD;
+  "chkeq", CHKEQ;
+  "chksld", CHKSLD;
+  "chktgd", CHKTGD;
+  "clrtag", CLRTAG;
+  "cpy", CPY;
+  "cpytype", CPYTYPE;
+  "cpyvalue", CPYVALUE;
+  "cseal", CSEAL;
+  "cthi", SC A.CTHI;
+  "gcflgs", GC A.GCFLGS;
+  "gcperm", GC A.GCPERM;
+  "gcseal", GC A.GCSEAL;
+  "gctag", GC A.GCTAG;
+  "gctype", GC A.GCTYPE;
+  "gcvalue", GC A.GCVALUE;
+  "ldct", LDCT;
+  "scflgs", SC A.SCFLGS;
+  "sctag", SC A.SCTAG;
+  "scvalue", SC A.SCVALUE;
+  "seal", SEAL;
+  "stct", STCT;
+  "unseal", UNSEAL;
+  (* Guarded Control Stack *)
+  "gcspopm", GCSPOPM;
+  "gcspushm", GCSPUSHM;
+  "gcsstr", GCSSTR;
+  "gcsss1", GCSSS1;
+  "gcsss2", GCSSS2;
+  (* Misc *)
+  "csel", CSEL;
+  "csinc", CSINC;
+  "csinv", CSINV;
+  "csneg", CSNEG;
+  "cset", CSET;
+  "csetm", CSETM;
+  "cinc", CINC;
+  (* Fences *)
+  "dmb", TOK_DMB;
+  "dsb", TOK_DSB;
+  "isb", TOK_ISB;
+  "gcsb", TOK_GCSB;
+  (* Fence Operands *)
+  "sy", TOK_SY;
+  "st", TOK_ST;
+  "ld", TOK_LD;
+  "osh", TOK_OSH;
+  "oshst", TOK_OSHST;
+  "oshld", TOK_OSHLD;
+  "ish", TOK_ISH;
+  "ishst", TOK_ISHST;
+  "ishld", TOK_ISHLD;
+  "nsh", TOK_NSH;
+  "nshst", TOK_NSHST;
+  "nshld", TOK_NSHLD;
+  "dsync", TOK_DSYNC;
+  (* inline barrel shift operands *)
+  "msl", TOK_MSL;
+  (* Cache maintenance *)
+  "ic", IC;
+  "dc", DC;
+  "ialluis", A.IC.(IC_OP { funct=I; typ=ALL; point=U; domain=IS; });
+  "ivauis", A.IC.(IC_OP { funct=I; typ=VA; point=U; domain=IS; });
+  "iallu", A.IC.(IC_OP { funct=I; typ=ALL; point=U; domain=NO; });
+  "ivau", IVAU;
+  "ivac", A.DC.(DC_OP { funct=I; typ=VA; point=CO; });
+  "cvac", A.DC.(DC_OP { funct=C; typ=VA; point=CO; });
+  "civac", A.DC.(DC_OP { funct=CI; typ=VA; point=CO; });
+  "zvac", A.DC.(DC_OP { funct=Z; typ=VA; point=CO; });
+  "iswc", A.DC.(DC_OP { funct=I; typ=SW; point=CO; });
+  "cswc", A.DC.(DC_OP { funct=C; typ=SW; point=CO; });
+  "ciswc", A.DC.(DC_OP { funct=CI; typ=SW; point=CO; });
+  "zswc", A.DC.(DC_OP { funct=Z; typ=SW; point=CO; });
+  "cvau", A.DC.(DC_OP { funct=C; typ=VA; point=U; });
+  "civau", A.DC.(DC_OP { funct=CI; typ=VA; point=U; });
+  "zvau", A.DC.(DC_OP { funct=Z; typ=VA; point=U; });
+  "iswu", A.DC.(DC_OP { funct=I; typ=SW; point=U; });
+  "cswu", A.DC.(DC_OP { funct=C; typ=SW; point=U; });
+  "ciswu", A.DC.(DC_OP { funct=CI; typ=SW; point=U; });
+  "zswu", A.DC.(DC_OP { funct=Z; typ=SW; point=U; });
+  (* Idem, tlb *)
+  "tlbi", TLBI;
+  (* Arguments, and there are many... *)
+  "ipas2e1is", A.TLBI.(TLBI_OP {typ=IPAS2; level=A.E1; domain=IS; nXS=false; });
+  "ipas2le1is", A.TLBI.(TLBI_OP {typ=IPAS2L; level=A.E1; domain=IS; nXS=false; });
+  "ipas2e1", A.TLBI.(TLBI_OP {typ=IPAS2; level=A.E1; domain=No; nXS=false; });
+  "ipas2le1", A.TLBI.(TLBI_OP {typ=IPAS2L; level=A.E1; domain=No; nXS=false; });
+  "vmalle1is", A.TLBI.(TLBI_OP {typ=VMALL; level=A.E1; domain=IS; nXS=false; });
+  "vmalle1", A.TLBI.(TLBI_OP {typ=VMALL; level=A.E1; domain=No; nXS=false; });
+  "alle1is", A.TLBI.(TLBI_OP {typ=ALL; level=A.E1; domain=IS; nXS=false; });
+  "alle2is", A.TLBI.(TLBI_OP {typ=ALL; level=A.E2; domain=IS; nXS=false; });
+  "alle3is", A.TLBI.(TLBI_OP {typ=ALL; level=A.E3; domain=IS; nXS=false; });
+  "alle1", A.TLBI.(TLBI_OP {typ=ALL; level=A.E1; domain=No; nXS=false; });
+  "alle2", A.TLBI.(TLBI_OP {typ=ALL; level=A.E2; domain=No; nXS=false; });
+  "alle3", A.TLBI.(TLBI_OP {typ=ALL; level=A.E3; domain=No; nXS=false; });
+  "vae1is", A.TLBI.(TLBI_OP {typ=VA; level=A.E1; domain=IS; nXS=false; });
+  "vae2is", A.TLBI.(TLBI_OP {typ=VA; level=A.E2; domain=IS; nXS=false; });
+  "vae3is", A.TLBI.(TLBI_OP {typ=VA; level=A.E3; domain=IS; nXS=false; });
+  "vae1", A.TLBI.(TLBI_OP {typ=VA; level=A.E1; domain=No; nXS=false; });
+  "vae2", A.TLBI.(TLBI_OP {typ=VA; level=A.E2; domain=No; nXS=false; });
+  "vae3", A.TLBI.(TLBI_OP {typ=VA; level=A.E3; domain=No; nXS=false; });
+  "aside1is", A.TLBI.(TLBI_OP {typ=ASID; level=A.E1; domain=IS; nXS=false; });
+  "aside1", A.TLBI.(TLBI_OP {typ=ASID; level=A.E1; domain=No; nXS=false; });
+  "vaae1is", A.TLBI.(TLBI_OP {typ=VAA; level=A.E1; domain=IS; nXS=false; });
+  "vaae1", A.TLBI.(TLBI_OP {typ=VAA; level=A.E1; domain=No; nXS=false; });
+  "vale1is", A.TLBI.(TLBI_OP {typ=VAL; level=A.E1; domain=IS; nXS=false; });
+  "vale2is", A.TLBI.(TLBI_OP {typ=VAL; level=A.E2; domain=IS; nXS=false; });
+  "vale3is", A.TLBI.(TLBI_OP {typ=VAL; level=A.E3; domain=IS; nXS=false; });
+  "vale1", A.TLBI.(TLBI_OP {typ=VAL; level=A.E1; domain=No; nXS=false; });
+  "vale2", A.TLBI.(TLBI_OP {typ=VAL; level=A.E2; domain=No; nXS=false; });
+  "vale3", A.TLBI.(TLBI_OP {typ=VAL; level=A.E3; domain=No; nXS=false; });
+  "vaale1is", A.TLBI.(TLBI_OP {typ=VAAL; level=A.E1; domain=IS; nXS=false; });
+  "vaale1", A.TLBI.(TLBI_OP {typ=VAAL; level=A.E1; domain=No; nXS=false; });
+  "vmalls12e1is", A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=IS; nXS=false; });
+  "vmalls12e1", A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=No; nXS=false; });
+  (* nXS version of the above *)
+  "ipas2e1isnxs", A.TLBI.(TLBI_OP {typ=IPAS2; level=A.E1; domain=IS; nXS=true; });
+  "ipas2le1isnxs", A.TLBI.(TLBI_OP {typ=IPAS2L; level=A.E1; domain=IS; nXS=true; });
+  "ipas2e1nxs", A.TLBI.(TLBI_OP {typ=IPAS2; level=A.E1; domain=No; nXS=true; });
+  "ipas2le1nxs", A.TLBI.(TLBI_OP {typ=IPAS2L; level=A.E1; domain=No; nXS=true; });
+  "vmalle1isnxs", A.TLBI.(TLBI_OP {typ=VMALL; level=A.E1; domain=IS; nXS=true; });
+  "vmalle1nxs", A.TLBI.(TLBI_OP {typ=VMALL; level=A.E1; domain=No; nXS=true; });
+  "alle1isnxs", A.TLBI.(TLBI_OP {typ=ALL; level=A.E1; domain=IS; nXS=true; });
+  "alle2isnxs", A.TLBI.(TLBI_OP {typ=ALL; level=A.E2; domain=IS; nXS=true; });
+  "alle3isnxs", A.TLBI.(TLBI_OP {typ=ALL; level=A.E3; domain=IS; nXS=true; });
+  "alle1nxs", A.TLBI.(TLBI_OP {typ=ALL; level=A.E1; domain=No; nXS=true; });
+  "alle2nxs", A.TLBI.(TLBI_OP {typ=ALL; level=A.E2; domain=No; nXS=true; });
+  "alle3nxs", A.TLBI.(TLBI_OP {typ=ALL; level=A.E3; domain=No; nXS=true; });
+  "vae1isnxs", A.TLBI.(TLBI_OP {typ=VA; level=A.E1; domain=IS; nXS=true; });
+  "vae2isnxs", A.TLBI.(TLBI_OP {typ=VA; level=A.E2; domain=IS; nXS=true; });
+  "vae3isnxs", A.TLBI.(TLBI_OP {typ=VA; level=A.E3; domain=IS; nXS=true; });
+  "vae1nxs", A.TLBI.(TLBI_OP {typ=VA; level=A.E1; domain=No; nXS=true; });
+  "vae2nxs", A.TLBI.(TLBI_OP {typ=VA; level=A.E2; domain=No; nXS=true; });
+  "vae3nxs", A.TLBI.(TLBI_OP {typ=VA; level=A.E3; domain=No; nXS=true; });
+  "aside1isnxs", A.TLBI.(TLBI_OP {typ=ASID; level=A.E1; domain=IS; nXS=true; });
+  "aside1nxs", A.TLBI.(TLBI_OP {typ=ASID; level=A.E1; domain=No; nXS=true; });
+  "vaae1isnxs", A.TLBI.(TLBI_OP {typ=VAA; level=A.E1; domain=IS; nXS=true; });
+  "vaae1nxs", A.TLBI.(TLBI_OP {typ=VAA; level=A.E1; domain=No; nXS=true; });
+  "vale1isnxs", A.TLBI.(TLBI_OP {typ=VAL; level=A.E1; domain=IS; nXS=true; });
+  "vale2isnxs", A.TLBI.(TLBI_OP {typ=VAL; level=A.E2; domain=IS; nXS=true; });
+  "vale3isnxs", A.TLBI.(TLBI_OP {typ=VAL; level=A.E3; domain=IS; nXS=true; });
+  "vale1nxs", A.TLBI.(TLBI_OP {typ=VAL; level=A.E1; domain=No; nXS=true; });
+  "vale2nxs", A.TLBI.(TLBI_OP {typ=VAL; level=A.E2; domain=No; nXS=true; });
+  "vale3nxs", A.TLBI.(TLBI_OP {typ=VAL; level=A.E3; domain=No; nXS=true; });
+  "vaale1isnxs", A.TLBI.(TLBI_OP {typ=VAAL; level=A.E1; domain=IS; nXS=true; });
+  "vaale1nxs", A.TLBI.(TLBI_OP {typ=VAAL; level=A.E1; domain=No; nXS=true; });
+  "vmalls12e1isnxs", A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=IS; nXS=true; });
+  "vmalls12e1nxs", A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=No; nXS=true; });
+  (* Address translation and its operands *)
+  (* Restricted to stage 1 only for EL1 and EL0; excludes <pan> and <ignore> fields *)
+  "at", AT;
+  "s1e0r", A.AT.(AT_OP {stages=S1; level=A.E0; rw=R; });
+  "s1e0w", A.AT.(AT_OP {stages=S1; level=A.E0; rw=W; });
+  "s1e1r", A.AT.(AT_OP {stages=S1; level=A.E1; rw=R; });
+  "s1e1w", A.AT.(AT_OP {stages=S1; level=A.E1; rw=W; });
+  (* System registers *)
+  "mrs", MRS;
+  "msr", MSR;
+] 
+
+let keyword_table =
+  let tbl = Hashtbl.create 1024 in
+  List.iter
+    (fun (name, tok) ->
+      if Hashtbl.mem tbl name then
+        Warn.fatal
+          "Internal error: Keyword \"%s\" appears twice in the keyword_list"
+          name
+      else begin
+        Hashtbl.add tbl name tok;
+        Hashtbl.add tbl (String.uppercase_ascii name) tok
+        end
+    )
+    keyword_list ;
+  tbl
+
 module Make(O:Config) = struct
 open Lexing
 open LexMisc
-open AArch64Parser
-module A = AArch64Base
 module LU = LexUtils.Make(O)
 
 let parse_creg = if O.is_morello then A.parse_creg  else fun _ -> None
 
 let check_name name =
-if O.debug then Printf.eprintf "Check: '%s'\n"  name ;
-match name with
-| "nop"|"NOP" -> NOP
-(* Hints are NOPS in AArch64 *)
-| "hint"|"HINT" -> HINT
-(* Halt instructions are used by Debug mode, not needed here - NOP *)
-| "hlt" | "HLT" -> HLT
-(* Branch *)
-| "b"  | "B"  -> TOK_B
-| "br"  | "BR"  -> BR
-| "bl"  | "BL"  -> BL
-| "blr"  | "BLR"  -> BLR
-| "ret"  | "RET" -> RET
-| "eret"  | "ERET" -> ERET
-| "ne"  | "NE"  -> TOK_NE
-| "eq"  | "EQ"  -> TOK_EQ
-| "ge"  | "GE"  -> TOK_GE
-| "gt"  | "GT"  -> TOK_GT
-| "le"  | "LE"  -> TOK_LE
-| "lt"  | "LT"  -> TOK_LT
-| "cs"  | "CS"  -> TOK_CS
-| "cc"  | "CC"  -> TOK_CC
-| "mi"  | "MI"  -> TOK_MI
-| "pl"  | "PL"  -> TOK_PL
-| "vs"  | "VS"  -> TOK_VS
-| "vc"  | "VC"  -> TOK_VC
-| "hi"  | "HI"  -> TOK_HI
-| "ls"  | "LS"  -> TOK_LS
-| "al"  | "AL"  -> TOK_AL
-| "b.eq" | "B.EQ" | "b.none" | "B.NONE" -> BEQ
-| "b.ne" | "B.NE" | "b.any" | "B.ANY" -> BNE
-| "b.ge" | "B.GE" | "b.tcont" | "B.TCONT" -> BGE
-| "b.gt" | "B.GT" -> BGT
-| "b.le" | "B.LE" -> BLE
-| "b.lt" | "B.LT" | "b.tstop" | "B.TSTOP" -> BLT
-| "b.cs" | "B.CS" | "b.nlast" | "B.NLAST" -> BCS
-| "b.cc" | "B.CC" | "b.last" | "B.LAST" -> BCC
-| "b.mi" | "B.MI" | "b.first" | "B.FIRST" -> BMI
-| "b.pl" | "B.PL" | "b.nfirst" | "B.NFIRST" -> BPL
-| "b.vs" | "B.VS" -> BVS
-| "b.vc" | "B.VC" -> BVC
-| "b.hi" | "B.HI" -> BHI
-| "b.ls" | "B.LS" | "b.plast" | "B.PLAST" -> BLS
-| "b.al" | "B.AL" -> BAL
-| "cbz"  | "CBZ" -> CBZ
-| "cbnz"  | "CBNZ" -> CBNZ
-| "tbnz" | "TBNZ" -> TBNZ
-| "tbz" | "TBZ" -> TBZ
-(* Memory *)
-| "ldr"|"LDR" -> LDR
-| "ldrsw"|"LDRSW" -> LDRSW
-| "ldur"|"LDUR" -> LDUR
-| "ldapur"|"LDAPUR" -> LDAPUR
-| "ldp"|"LDP" -> LDP
-| "ldpsw"|"LDPSW" -> LDPSW
-| "ldnp"|"LDNP" -> LDNP
-| "ldiapp"|"LDIAPP" -> LDIAPP
-| "stp"|"STP" -> STP
-| "stnp"|"STNP" -> STNP
-| "stilp"|"STILP" -> STILP
-| "ldrb"|"LDRB" -> LDRB
-| "ldrh"|"LDRH" -> LDRH
-| "ldrsb"|"LDRSB" -> LDRSB
-| "ldrsh"|"LDRSH" -> LDRSH
-| "ldar"|"LDAR" -> LDAR
-| "ldarb"|"LDARB" -> LDARB
-| "ldarh"|"LDARH" -> LDARH
-| "ldapr"|"LDAPR" -> LDAPR
-| "ldaprb"|"LDAPRB" -> LDAPRB
-| "ldaprh"|"LDAPRH" -> LDAPRH
-| "ldxr"|"LDXR" -> LDXR
-| "ldxrb"|"LDXRB" -> LDXRB
-| "ldxrh"|"LDXRH" -> LDXRH
-| "ldaxr"|"LDAXR" -> LDAXR
-| "ldaxrb"|"LDAXRB" -> LDAXRB
-| "ldaxrh"|"LDAXRH" -> LDAXRH
-| "ldxp"|"LDXP" -> LDXP
-| "ldaxp"|"LDAXP" -> LDAXP
-| "str"|"STR" -> STR
-| "stlr"|"STLR" -> STLR
-| "stxr"|"STXR" -> STXR
-| "stlxr"|"STLXR" -> STLXR
-| "strb"|"STRB" -> STRB
-| "strh"|"STRH" -> STRH
-| "stlrb"|"STLRB" -> STLRB
-| "stlrh"|"STLRH" -> STLRH
-| "stxrb"|"STXRB" -> STXRB
-| "stlxrb"|"STLXRB" -> STLXRB
-| "stxrh"|"STXRH" -> STXRH
-| "stlxrh"|"STLXRH" -> STLXRH
-| "stxp"| "STXP" -> STXP
-| "stlxp"| "STLXP" -> STLXP
-(* Neon Extension Memory *)
-| "ld1" | "LD1" -> LD1
-| "ldap1" | "LDAP1" -> LDAP1
-| "ld1r" | "LD1R" -> LD1R
-| "ld2" | "LD2" -> LD2
-| "ld2r" | "LD2R" -> LD2R
-| "ld3" | "LD3" -> LD3
-| "ld3r" | "LD3R" -> LD3R
-| "ld4" | "LD4" -> LD4
-| "ld4r" | "LD4R" -> LD4R
-| "stur" | "STUR" -> STUR
-| "stlur" | "STLUR" -> STLUR
-| "stl1" | "STL1" -> STL1
-| "st1" | "ST1" -> ST1
-| "st2" | "ST2" -> ST2
-| "st3" | "ST3" -> ST3
-| "st4" | "ST4" -> ST4
-| "addv" | "ADDV" -> ADDV
-| "dup" | "DUP" -> DUP
-| "movi" | "MOVI" -> MOVI
-| "mvn" | "MVN" -> MVN
-| "fmov" | "FMOV" -> FMOV
-(* Pointer Authentication Code *)
-| "PACIA" | "pacia" -> PACIA
-| "PACIA1716" | "pacia1716" -> PACIA1716
-| "PACIAZ" | "paciaz" -> PACIAZ
-| "PACIZA" | "paciza" -> PACIZA
-| "PACIASP" | "paciasp" -> PACIASP
-| "PACIB" | "pacib" -> PACIB
-| "PACIB1716" | "pacib1716" -> PACIB1716
-| "PACIBZ" | "pacibz" -> PACIBZ
-| "PACIZB" | "pacizb" -> PACIZB
-| "PACIBSP" | "pacibsp" -> PACIBSP
-| "PACDA" | "pacda" -> PACDA
-| "PACDZA" | "pacdza" -> PACDZA
-| "PACDB" | "pacdb" -> PACDB
-| "PACDZB" | "pacdzb" -> PACDZB
-| "AUTIA" | "autia" -> AUTIA
-| "AUTIA1716" | "autia1716" -> AUTIA1716
-| "AUTIAZ" | "autiaz" -> AUTIAZ
-| "AUTIZA" | "autiza" -> AUTIZA
-| "AUTIASP" | "autiasp" -> AUTIASP
-| "AUTIB" | "autib" -> AUTIB
-| "AUTIB1716" | "autib1716" -> AUTIB1716
-| "AUTIBZ" | "autibz" -> AUTIBZ
-| "AUTIZB" | "autizb" -> AUTIZB
-| "AUTIBSP" | "autibsp" -> AUTIBSP
-| "AUTDA" | "autda" -> AUTDA
-| "AUTDZA" | "autdza" -> AUTDZA
-| "AUTDB" | "autdb" -> AUTDB
-| "AUTDZB" | "autdzb" -> AUTDZB
-| "XPACI" | "xpaci" -> XPACI
-| "XPACD" | "xpacd" -> XPACD
-(* Scalabel Vector Extension *)
-| "whilelt" | "WHILELT" -> WHILELT
-| "whilele" | "WHILELE" -> WHILELE
-| "whilelo" | "WHILELO" -> WHILELO
-| "whilels" | "WHILELS" -> WHILELS
-| "uaddv" | "UADDV" -> UADDV
-| "ld1b" | "LD1B" -> LD1B
-| "ld1h" | "LD1H" -> LD1H
-| "ld1w" | "LD1W" -> LD1W
-| "ld1d" | "LD1D" -> LD1D
-| "ld1q" | "LD1Q" -> LD1Q
-| "ld2b" | "LD2B" -> LD2B
-| "ld2h" | "LD2H" -> LD2H
-| "ld2w" | "LD2W" -> LD2W
-| "ld2d" | "LD2D" -> LD2D
-| "ld3b" | "LD3B" -> LD3B
-| "ld3h" | "LD3H" -> LD3H
-| "ld3w" | "LD3W" -> LD3W
-| "ld3d" | "LD3D" -> LD3D
-| "ld4b" | "LD4B" -> LD4B
-| "ld4h" | "LD4H" -> LD4H
-| "ld4w" | "LD4W" -> LD4W
-| "ld4d" | "LD4D" -> LD4D
-| "st1b" | "ST1B" -> ST1B
-| "st1h" | "ST1H" -> ST1H
-| "st1w" | "ST1W" -> ST1W
-| "st1d" | "ST1D" -> ST1D
-| "st1q" | "ST1Q" -> ST1Q
-| "st2b" | "ST2B" -> ST2B
-| "st2h" | "ST2H" -> ST2H
-| "st2w" | "ST2W" -> ST2W
-| "st2d" | "ST2D" -> ST2D
-| "st3b" | "ST3B" -> ST3B
-| "st3h" | "ST3H" -> ST3H
-| "st3w" | "ST3W" -> ST3W
-| "st3d" | "ST3D" -> ST3D
-| "st4b" | "ST4B" -> ST4B
-| "st4h" | "ST4H" -> ST4H
-| "st4w" | "ST4W" -> ST4W
-| "st4d" | "ST4D" -> ST4D
-| "index" | "INDEX" -> TOK_INDEX
-| "rdvl" | "RDVL" -> RDVL
-| "addvl" | "ADDVL" -> ADDVL
-| "cntb" | "CNTB" -> let open AArch64Base in  CNT_INC_SVE (CNT,VSIMD8)
-| "cnth" | "CNTH" -> let open AArch64Base in  CNT_INC_SVE (CNT,VSIMD16)
-| "cntw" | "CNTW" -> let open AArch64Base in  CNT_INC_SVE (CNT,VSIMD32)
-| "cntd" | "CNTD" -> let open AArch64Base in  CNT_INC_SVE (CNT,VSIMD64)
-| "incb" | "INCB" -> let open AArch64Base in  CNT_INC_SVE (INC,VSIMD8)
-| "inch" | "INCH" -> let open AArch64Base in  CNT_INC_SVE (INC,VSIMD16)
-| "incw" | "INCW" -> let open AArch64Base in  CNT_INC_SVE (INC,VSIMD32)
-| "incd" | "INCD" -> let open AArch64Base in  CNT_INC_SVE (INC,VSIMD64)
-| "mul" | "MUL" -> TOK_MUL
-| "vl" | "VL" -> TOK_VL
-| "ptrue" | "PTRUE" -> PTRUE
-| "pow2" | "POW2" -> TOK_POW2
-| "vl1" | "VL1" -> TOK_VL1
-| "vl2" | "VL2" -> TOK_VL2
-| "vl3" | "VL3" -> TOK_VL3
-| "vl4" | "VL4" -> TOK_VL4
-| "vl5" | "VL5" -> TOK_VL5
-| "vl6" | "VL6" -> TOK_VL6
-| "vl7" | "VL7" -> TOK_VL7
-| "vl8" | "VL8" -> TOK_VL8
-| "vl16" | "VL16" -> TOK_VL16
-| "vl32" | "VL32" -> TOK_VL32
-| "vl64" | "VL64" -> TOK_VL64
-| "vl128" | "VL128" -> TOK_VL128
-| "vl256" | "VL256" -> TOK_VL256
-| "mul4" | "MUL4" -> TOK_MUL4
-| "mul3" | "MUL3" -> TOK_MUL3
-| "all" | "ALL" -> TOK_ALL
-| "movprfx" | "MOVPRFX" -> MOVPRFX
-| "ctermeq"|"CTERMEQ" -> CTERM AArch64Base.CTERM.EQ
-| "ctermne"|"CTERMNE" -> CTERM AArch64Base.CTERM.NE
-(* Scalable Matrix Extension *)
-| "addva" | "ADDVA" -> ADDA (AArch64Base.Vertical)
-| "addha" | "ADDHA" -> ADDA (AArch64Base.Horizontal)
-| "mova" | "MOVA" -> MOVA
-| "smstart" | "SMSTART" -> SMSTART
-| "smstop" | "SMSTOP" -> SMSTOP
-| "sm" | "SM" -> TOK_SM
-| "za" | "ZA" -> TOK_ZA
-(* Compare and swap *)
-| "cas"|"CAS" -> CAS
-| "casa"|"CASA" -> CASA
-| "casl"|"CASL" -> CASL
-| "casal"|"CASAL" -> CASAL
-| "cash"|"CASH" -> CASH
-| "casah"|"CASAH" -> CASAH
-| "caslh"|"CASLH" -> CASLH
-| "casalh"|"CASALH" -> CASALH
-| "casb"|"CASB" -> CASB
-| "casab"|"CASAB" -> CASAB
-| "caslb"|"CASLB" -> CASLB
-| "casalb"|"CASALB" -> CASALB
-| "casp" | "CASP" -> CASP
-| "caspa" | "CASPA" -> CASPA
-| "caspl" | "CASPL" -> CASPL
-| "caspal" | "CASPAL" -> CASPAL
-(* Swap *)
-| "swp"|"SWP" -> SWP
-| "swpa"|"SWPA" -> SWPA
-| "swpl"|"SWPL" -> SWPL
-| "swpal"|"SWPAL" -> SWPAL
-| "swph"|"SWPH" -> SWPH
-| "swpah"|"SWPAH" -> SWPAH
-| "swplh"|"SWPLH" -> SWPLH
-| "swpalh"|"SWPALH" -> SWPALH
-| "swpb"|"SWPB" -> SWPB
-| "swpab"|"SWPAB" -> SWPAB
-| "swplb"|"SWPLB" -> SWPLB
-| "swpalb"|"SWPALB" -> SWPALB
-(* Fetch and ADD *)
-| "ldadd"|"LDADD" -> LDOP (A.A_ADD,A.RMW_P)
-| "ldadda"|"LDADDA" -> LDOP (A.A_ADD,A.RMW_A)
-| "ldaddl"|"LDADDL" -> LDOP (A.A_ADD,A.RMW_L)
-| "ldaddal"|"LDADDAL" -> LDOP (A.A_ADD,A.RMW_AL)
-| "ldaddh"|"LDADDH" -> LDOPBH (A.H,A.A_ADD,A.RMW_P)
-| "ldaddah"|"LDADDAH" -> LDOPBH (A.H,A.A_ADD,A.RMW_A)
-| "ldaddlh"|"LDADDLH" -> LDOPBH (A.H,A.A_ADD,A.RMW_L)
-| "ldaddalh"|"LDADDALH" -> LDOPBH (A.H,A.A_ADD,A.RMW_AL)
-| "ldaddb"|"LDADDB" ->  LDOPBH (A.B,A.A_ADD,A.RMW_P)
-| "ldaddab"|"LDADDAB" ->  LDOPBH (A.B,A.A_ADD,A.RMW_A)
-| "ldaddlb"|"LDADDLB" ->  LDOPBH (A.B,A.A_ADD,A.RMW_L)
-| "ldaddalb"|"LDADDALB" ->  LDOPBH (A.B,A.A_ADD,A.RMW_AL)
-| "stadd"|"STADD" -> STOP (A.A_ADD,A.W_P)
-| "staddl"|"STADDL" -> STOP (A.A_ADD,A.W_L)
-| "staddh"|"STADDH" -> STOPBH (A.H,A.A_ADD,A.W_P)
-| "staddlh"|"STADDLH" -> STOPBH (A.H,A.A_ADD,A.W_L)
-| "staddb"|"STADDB" -> STOPBH (A.B,A.A_ADD,A.W_P)
-| "staddlb"|"STADDLB" -> STOPBH (A.B,A.A_ADD,A.W_L)
-(* Fetch and exclusive or, EOR *)
-| "ldeor"|"LDEOR" -> LDOP (A.A_EOR,A.RMW_P)
-| "ldeora"|"LDEORA" -> LDOP (A.A_EOR,A.RMW_A)
-| "ldeorl"|"LDEORL" -> LDOP (A.A_EOR,A.RMW_L)
-| "ldeoral"|"LDEORAL" -> LDOP (A.A_EOR,A.RMW_AL)
-| "ldeorh"|"LDEORH" -> LDOPBH (A.H,A.A_EOR,A.RMW_P)
-| "ldeorah"|"LDEORAH" -> LDOPBH (A.H,A.A_EOR,A.RMW_A)
-| "ldeorlh"|"LDEORLH" -> LDOPBH (A.H,A.A_EOR,A.RMW_L)
-| "ldeoralh"|"LDEORALH" -> LDOPBH (A.H,A.A_EOR,A.RMW_AL)
-| "ldeorb"|"LDEORB" ->  LDOPBH (A.B,A.A_EOR,A.RMW_P)
-| "ldeorab"|"LDEORAB" ->  LDOPBH (A.B,A.A_EOR,A.RMW_A)
-| "ldeorlb"|"LDEORLB" ->  LDOPBH (A.B,A.A_EOR,A.RMW_L)
-| "ldeoralb"|"LDEORALB" ->  LDOPBH (A.B,A.A_EOR,A.RMW_AL)
-| "steor"|"STEOR" -> STOP (A.A_EOR,A.W_P)
-| "steorl"|"STEORL" -> STOP (A.A_EOR,A.W_L)
-| "steorh"|"STEORH" -> STOPBH (A.H,A.A_EOR,A.W_P)
-| "steorlh"|"STEORLH" -> STOPBH (A.H,A.A_EOR,A.W_L)
-| "steorb"|"STEORB" -> STOPBH (A.B,A.A_EOR,A.W_P)
-| "steorlb"|"STEORLB" -> STOPBH (A.B,A.A_EOR,A.W_L)
-(* Fetch and SET bit mask *)
-| "ldset"|"LDSET" -> LDOP (A.A_SET,A.RMW_P)
-| "ldseta"|"LDSETA" -> LDOP (A.A_SET,A.RMW_A)
-| "ldsetl"|"LDSETL" -> LDOP (A.A_SET,A.RMW_L)
-| "ldsetal"|"LDSETAL" -> LDOP (A.A_SET,A.RMW_AL)
-| "ldseth"|"LDSETH" -> LDOPBH (A.H,A.A_SET,A.RMW_P)
-| "ldsetah"|"LDSETAH" -> LDOPBH (A.H,A.A_SET,A.RMW_A)
-| "ldsetlh"|"LDSETLH" -> LDOPBH (A.H,A.A_SET,A.RMW_L)
-| "ldsetalh"|"LDSETALH" -> LDOPBH (A.H,A.A_SET,A.RMW_AL)
-| "ldsetb"|"LDSETB" ->  LDOPBH (A.B,A.A_SET,A.RMW_P)
-| "ldsetab"|"LDSETAB" ->  LDOPBH (A.B,A.A_SET,A.RMW_A)
-| "ldsetlb"|"LDSETLB" ->  LDOPBH (A.B,A.A_SET,A.RMW_L)
-| "ldsetalb"|"LDSETALB" ->  LDOPBH (A.B,A.A_SET,A.RMW_AL)
-| "stset"|"STSET" -> STOP (A.A_SET,A.W_P)
-| "stsetl"|"STSETL" -> STOP (A.A_SET,A.W_L)
-| "stseth"|"STSETH" -> STOPBH (A.H,A.A_SET,A.W_P)
-| "stsetlh"|"STSETLH" -> STOPBH (A.H,A.A_SET,A.W_L)
-| "stsetb"|"STSETB" -> STOPBH (A.B,A.A_SET,A.W_P)
-| "stsetlb"|"STSETLB" -> STOPBH (A.B,A.A_SET,A.W_L)
-(* Fetch and clear bit mask *)
-| "ldclr"|"LDCLR" -> LDOP (A.A_CLR,A.RMW_P)
-| "ldclra"|"LDCLRA" -> LDOP (A.A_CLR,A.RMW_A)
-| "ldclrl"|"LDCLRL" -> LDOP (A.A_CLR,A.RMW_L)
-| "ldclral"|"LDCLRAL" -> LDOP (A.A_CLR,A.RMW_AL)
-| "ldclrh"|"LDCLRH" -> LDOPBH (A.H,A.A_CLR,A.RMW_P)
-| "ldclrah"|"LDCLRAH" -> LDOPBH (A.H,A.A_CLR,A.RMW_A)
-| "ldclrlh"|"LDCLRLH" -> LDOPBH (A.H,A.A_CLR,A.RMW_L)
-| "ldclralh"|"LDCLRALH" -> LDOPBH (A.H,A.A_CLR,A.RMW_AL)
-| "ldclrb"|"LDCLRB" ->  LDOPBH (A.B,A.A_CLR,A.RMW_P)
-| "ldclrab"|"LDCLRAB" ->  LDOPBH (A.B,A.A_CLR,A.RMW_A)
-| "ldclrlb"|"LDCLRLB" ->  LDOPBH (A.B,A.A_CLR,A.RMW_L)
-| "ldclralb"|"LDCLRALB" ->  LDOPBH (A.B,A.A_CLR,A.RMW_AL)
-| "stclr"|"STCLR" -> STOP (A.A_CLR,A.W_P)
-| "stclrl"|"STCLRL" -> STOP (A.A_CLR,A.W_L)
-| "stclrh"|"STCLRH" -> STOPBH (A.H,A.A_CLR,A.W_P)
-| "stclrlh"|"STCLRLH" -> STOPBH (A.H,A.A_CLR,A.W_L)
-| "stclrb"|"STCLRB" -> STOPBH (A.B,A.A_CLR,A.W_P)
-| "stclrlb"|"STCLRLB" -> STOPBH (A.B,A.A_CLR,A.W_L)
-(* Fetch and signed max *)
-| "ldsmax"|"LDSMAX" -> LDOP (A.A_SMAX,A.RMW_P)
-| "ldsmaxa"|"LDSMAXA" -> LDOP (A.A_SMAX,A.RMW_A)
-| "ldsmaxl"|"LDSMAXL" -> LDOP (A.A_SMAX,A.RMW_L)
-| "ldsmaxal"|"LDSMAXAL" -> LDOP (A.A_SMAX,A.RMW_AL)
-| "ldsmaxh"|"LDSMAXH" -> LDOPBH (A.H,A.A_SMAX,A.RMW_P)
-| "ldsmaxah"|"LDSMAXAH" -> LDOPBH (A.H,A.A_SMAX,A.RMW_A)
-| "ldsmaxlh"|"LDSMAXLH" -> LDOPBH (A.H,A.A_SMAX,A.RMW_L)
-| "ldsmaxalh"|"LDSMAXALH" -> LDOPBH (A.H,A.A_SMAX,A.RMW_AL)
-| "ldsmaxb"|"LDSMAXB" ->  LDOPBH (A.B,A.A_SMAX,A.RMW_P)
-| "ldsmaxab"|"LDSMAXAB" ->  LDOPBH (A.B,A.A_SMAX,A.RMW_A)
-| "ldsmaxlb"|"LDSMAXLB" ->  LDOPBH (A.B,A.A_SMAX,A.RMW_L)
-| "ldsmaxalb"|"LDSMAXALB" ->  LDOPBH (A.B,A.A_SMAX,A.RMW_AL)
-| "stsmax"|"STSMAX" -> STOP (A.A_SMAX,A.W_P)
-| "stsmaxl"|"STSMAXL" -> STOP (A.A_SMAX,A.W_L)
-| "stsmaxh"|"STSMAXH" -> STOPBH (A.H,A.A_SMAX,A.W_P)
-| "stsmaxlh"|"STSMAXLH" -> STOPBH (A.H,A.A_SMAX,A.W_L)
-| "stsmaxb"|"STSMAXB" -> STOPBH (A.B,A.A_SMAX,A.W_P)
-| "stsmaxlb"|"STSMAXLB" -> STOPBH (A.B,A.A_SMAX,A.W_L)
-(* Fetch and signed min *)
-| "ldsmin"|"LDSMIN" -> LDOP (A.A_SMIN,A.RMW_P)
-| "ldsmina"|"LDSMINA" -> LDOP (A.A_SMIN,A.RMW_A)
-| "ldsminl"|"LDSMINL" -> LDOP (A.A_SMIN,A.RMW_L)
-| "ldsminal"|"LDSMINAL" -> LDOP (A.A_SMIN,A.RMW_AL)
-| "ldsminh"|"LDSMINH" -> LDOPBH (A.H,A.A_SMIN,A.RMW_P)
-| "ldsminah"|"LDSMINAH" -> LDOPBH (A.H,A.A_SMIN,A.RMW_A)
-| "ldsminlh"|"LDSMINLH" -> LDOPBH (A.H,A.A_SMIN,A.RMW_L)
-| "ldsminalh"|"LDSMINALH" -> LDOPBH (A.H,A.A_SMIN,A.RMW_AL)
-| "ldsminb"|"LDSMINB" ->  LDOPBH (A.B,A.A_SMIN,A.RMW_P)
-| "ldsminab"|"LDSMINAB" ->  LDOPBH (A.B,A.A_SMIN,A.RMW_A)
-| "ldsminlb"|"LDSMINLB" ->  LDOPBH (A.B,A.A_SMIN,A.RMW_L)
-| "ldsminalb"|"LDSMINALB" ->  LDOPBH (A.B,A.A_SMIN,A.RMW_AL)
-| "stsmin"|"STSMIN" -> STOP (A.A_SMIN,A.W_P)
-| "stsminl"|"STSMINL" -> STOP (A.A_SMIN,A.W_L)
-| "stsminh"|"STSMINH" -> STOPBH (A.H,A.A_SMIN,A.W_P)
-| "stsminlh"|"STSMINLH" -> STOPBH (A.H,A.A_SMIN,A.W_L)
-| "stsminb"|"STSMINB" -> STOPBH (A.B,A.A_SMIN,A.W_P)
-| "stsminlb"|"STSMINLB" -> STOPBH (A.B,A.A_SMIN,A.W_L)
-(* Fetch and unsigned max *)
-| "ldumax"|"LDUMAX" -> LDOP (A.A_UMAX,A.RMW_P)
-| "ldumaxa"|"LDUMAXA" -> LDOP (A.A_UMAX,A.RMW_A)
-| "ldumaxl"|"LDUMAXL" -> LDOP (A.A_UMAX,A.RMW_L)
-| "ldumaxal"|"LDUMAXAL" -> LDOP (A.A_UMAX,A.RMW_AL)
-| "ldumaxh"|"LDUMAXH" -> LDOPBH (A.H,A.A_UMAX,A.RMW_P)
-| "ldumaxah"|"LDUMAXAH" -> LDOPBH (A.H,A.A_UMAX,A.RMW_A)
-| "ldumaxlh"|"LDUMAXLH" -> LDOPBH (A.H,A.A_UMAX,A.RMW_L)
-| "ldumaxalh"|"LDUMAXALH" -> LDOPBH (A.H,A.A_UMAX,A.RMW_AL)
-| "ldumaxb"|"LDUMAXB" ->  LDOPBH (A.B,A.A_UMAX,A.RMW_P)
-| "ldumaxab"|"LDUMAXAB" ->  LDOPBH (A.B,A.A_UMAX,A.RMW_A)
-| "ldumaxlb"|"LDUMAXLB" ->  LDOPBH (A.B,A.A_UMAX,A.RMW_L)
-| "ldumaxalb"|"LDUMAXALB" ->  LDOPBH (A.B,A.A_UMAX,A.RMW_AL)
-| "stumax"|"STUMAX" -> STOP (A.A_UMAX,A.W_P)
-| "stumaxl"|"STUMAXL" -> STOP (A.A_UMAX,A.W_L)
-| "stumaxh"|"STUMAXH" -> STOPBH (A.H,A.A_UMAX,A.W_P)
-| "stumaxlh"|"STUMAXLH" -> STOPBH (A.H,A.A_UMAX,A.W_L)
-| "stumaxb"|"STUMAXB" -> STOPBH (A.B,A.A_UMAX,A.W_P)
-| "stumaxlb"|"STUMAXLB" -> STOPBH (A.B,A.A_UMAX,A.W_L)
-(* Fetch and unsigned min *)
-| "ldumin"|"LDUMIN" -> LDOP (A.A_UMIN,A.RMW_P)
-| "ldumina"|"LDUMINA" -> LDOP (A.A_UMIN,A.RMW_A)
-| "lduminl"|"LDUMINL" -> LDOP (A.A_UMIN,A.RMW_L)
-| "lduminal"|"LDUMINAL" -> LDOP (A.A_UMIN,A.RMW_AL)
-| "lduminh"|"LDUMINH" -> LDOPBH (A.H,A.A_UMIN,A.RMW_P)
-| "lduminah"|"LDUMINAH" -> LDOPBH (A.H,A.A_UMIN,A.RMW_A)
-| "lduminlh"|"LDUMINLH" -> LDOPBH (A.H,A.A_UMIN,A.RMW_L)
-| "lduminalh"|"LDUMINALH" -> LDOPBH (A.H,A.A_UMIN,A.RMW_AL)
-| "lduminb"|"LDUMINB" ->  LDOPBH (A.B,A.A_UMIN,A.RMW_P)
-| "lduminab"|"LDUMINAB" ->  LDOPBH (A.B,A.A_UMIN,A.RMW_A)
-| "lduminlb"|"LDUMINLB" ->  LDOPBH (A.B,A.A_UMIN,A.RMW_L)
-| "lduminalb"|"LDUMINALB" ->  LDOPBH (A.B,A.A_UMIN,A.RMW_AL)
-| "stumin"|"STUMIN" -> STOP (A.A_UMIN,A.W_P)
-| "stuminl"|"STUMINL" -> STOP (A.A_UMIN,A.W_L)
-| "stuminh"|"STUMINH" -> STOPBH (A.H,A.A_UMIN,A.W_P)
-| "stuminlh"|"STUMINLH" -> STOPBH (A.H,A.A_UMIN,A.W_L)
-| "stuminb"|"STUMINB" -> STOPBH (A.B,A.A_UMIN,A.W_P)
-| "stuminlb"|"STUMINLB" -> STOPBH (A.B,A.A_UMIN,A.W_L)
-(* SupervisorCall *)
-| "svc"|"SVC" -> SVC
-(* Undefined *)
-| "udf"|"UDF" -> UDF
-(* Memory Tagging *)
-| "stg"|"STG" -> STG
-| "st2g"|"ST2G" -> ST2G
-| "stzg"|"STZG" -> STZG
-| "stz2g"|"STZ2G" -> STZ2G
-| "ldg"|"LDG" -> LDG
-| "irg"|"IRG" -> IRG
-(* Operations *)
-| "ubfm"|"UBFM" -> UBFM
-| "sbfm"|"SBFM" -> SBFM
-| "mov"|"MOV" -> MOV
-| "movz"|"MOVZ" -> MOVZ
-| "movn"|"MOVN" -> MOVN
-| "movk"|"MOVK" -> MOVK
-| "adr"|"ADR" -> ADR
-| "rev16"|"REV16" -> REV16
-| "rev32"|"REV32" -> REV32
-| "rev64"|"REV64" -> REV64
-| "rev"|"REV" -> REV
-| "extr"|"EXTR" -> EXTR
-| "rbit"|"RBIT" -> RBIT
-| "abs"|"ABS" -> ABS
-| "cmp"|"CMP" -> CMP
-| "tst"|"TST" -> TST
-(* Those operations are factorized *)
-| "eor"|"EOR" -> OP A.EOR
-| "eon"|"EON" -> OP A.EOR
-| "orr"|"ORR" -> OP A.ORR
-| "orn"|"ORN" -> OP A.ORN
-| "and"|"AND" -> OP A.AND
-| "ands"|"ANDS" -> OP A.ANDS
-| "bic"|"BIC" -> OP A.BIC
-| "bics"|"BICS" -> OP A.BICS
-(* Some arithmetic instruction have their own lexeme,
-   for parser to handle then in special ways *)
-(* Also used as barrel shift *)
-| "asr" | "ASR" -> TOK_ASR
-| "lsl" | "LSL" -> TOK_LSL
-| "lsr" | "LSR" -> TOK_LSR
-| "ror" | "ROR" -> TOK_ROR
-| "asrv" | "ASRV" -> TOK_ASRV
-| "lslv" | "LSLV" -> TOK_LSLV
-| "lsrv" | "LSRV" -> TOK_LSRV
-| "rorv" | "RORV" -> TOK_RORV
-(* extensions *)
-| "uxtb"|"UXTB" -> TOK_UXTB
-| "uxth"|"UXTH" -> TOK_UXTH
-| "uxtw"|"UXTW" -> TOK_UXTW
-| "uxtx"|"UXTX" -> TOK_UXTX
-| "sxtb"|"SXTB" -> TOK_SXTB
-| "sxth"|"SXTH" -> TOK_SXTH
-| "sxtw"|"SXTW" -> TOK_SXTW
-| "sxtx"|"SXTX" -> TOK_SXTX
-(* SUB, SUBS, ADD have 128 bits semantics*)
-| "sub"|"SUB" -> TOK_SUB
-| "subs"|"SUBS" -> TOK_SUBS
-| "add"|"ADD" -> TOK_ADD
-| "adds"|"ADDS" -> TOK_ADDS
-| "neg"|"NEG" -> TOK_NEG
-| "negs"|"NEGS" -> TOK_NEGS
-| "smaddl"|"SMADDL" -> MOPL AArch64Base.MOPLExt.(Signed,ADD)
-| "smsubl"|"SMSUBL" -> MOPL AArch64Base.MOPLExt.(Signed,SUB)
-| "umaddl"|"UMADDL" -> MOPL AArch64Base.MOPLExt.(Unsigned,ADD)
-| "umsubl"|"UMSUBL" -> MOPL AArch64Base.MOPLExt.(Unsigned,SUB)
-| "smull"|"SMULL" -> MOPLZ AArch64Base.MOPLExt.(Signed,ADD)
-| "smnegl"|"SMNEGL" -> MOPLZ AArch64Base.MOPLExt.(Signed,SUB)
-| "umull"|"UMULL" -> MOPLZ AArch64Base.MOPLExt.(Unsigned,ADD)
-| "umnegl"|"UMNEGL" -> MOPLZ AArch64Base.MOPLExt.(Unsigned,SUB)
-| "madd"|"MADD" -> MOP AArch64Base.MOPExt.(ADD)
-| "msub"|"MSUB" -> MOP AArch64Base.MOPExt.(SUB)
-| "mneg"|"MNEG" -> MOPZ AArch64Base.MOPExt.(SUB)
-(* Morello *)
-| "alignd"|"ALIGND" -> ALIGND
-| "alignu"|"ALIGNU" -> ALIGNU
-| "build"|"BUILD" -> BUILD
-| "chkeq"|"CHKEQ" -> CHKEQ
-| "chksld"|"CHKSLD" -> CHKSLD
-| "chktgd"|"CHKTGD" -> CHKTGD
-| "clrtag"|"CLRTAG" -> CLRTAG
-| "cpy"|"CPY" -> CPY
-| "cpytype"|"CPYTYPE" -> CPYTYPE
-| "cpyvalue"|"CPYVALUE" -> CPYVALUE
-| "cseal"|"CSEAL" -> CSEAL
-| "cthi"|"CTHI" -> SC A.CTHI
-| "gcflgs"|"GCFLGS" -> GC A.GCFLGS
-| "gcperm"|"GCPERM" -> GC A.GCPERM
-| "gcseal"|"GCSEAL" -> GC A.GCSEAL
-| "gctag"|"GCTAG" -> GC A.GCTAG
-| "gctype"|"GCTYPE" -> GC A.GCTYPE
-| "gcvalue"|"GCVALUE" -> GC A.GCVALUE
-| "ldct"|"LDCT" -> LDCT
-| "scflgs"|"SCFLGS" -> SC A.SCFLGS
-| "sctag"|"SCTAG" -> SC A.SCTAG
-| "scvalue"|"SCVALUE" -> SC A.SCVALUE
-| "seal"|"SEAL" -> SEAL
-| "stct"|"STCT" -> STCT
-| "unseal"|"UNSEAL" -> UNSEAL
-(* Guarded Control Stack *)
-| "gcspopm" | "GCSPOPM" -> GCSPOPM
-| "gcspushm" | "GCSPUSHM" -> GCSPUSHM
-| "gcsstr" | "GCSSTR" -> GCSSTR
-| "gcsss1" | "GCSSS1" -> GCSSS1
-| "gcsss2" | "GCSSS2" -> GCSSS2
-(* Misc *)
-| "csel"|"CSEL" -> CSEL
-| "csinc"|"CSINC" -> CSINC
-| "csinv"|"CSINV" -> CSINV
-| "csneg"|"CSNEG" -> CSNEG
-| "cset"|"CSET" -> CSET
-| "csetm"|"CSETM" -> CSETM
-| "cinc"|"CINC" -> CINC
-(* Fences *)
-| "dmb"|"DMB" -> TOK_DMB
-| "dsb"|"DSB" -> TOK_DSB
-| "isb"|"ISB" -> TOK_ISB
-| "gcsb"|"GCSB" -> TOK_GCSB
-(* Fence Operands *)
-| "sy"|"SY" -> TOK_SY
-| "st"|"ST" -> TOK_ST
-| "ld"|"LD" -> TOK_LD
-| "osh"|"OSH" -> TOK_OSH
-| "oshst"|"OSHST" -> TOK_OSHST
-| "oshld"|"OSHLD" -> TOK_OSHLD
-| "ish"|"ISH" -> TOK_ISH
-| "ishst"|"ISHST" -> TOK_ISHST
-| "ishld"|"ISHLD" -> TOK_ISHLD
-| "nsh"|"NSH" -> TOK_NSH
-| "nshst"|"NSHST" -> TOK_NSHST
-| "nshld"|"NSHLD" -> TOK_NSHLD
-| "dsync" | "DSYNC" -> TOK_DSYNC
-(* inline barrel shift operands *)
-| "msl" | "MSL" -> TOK_MSL
-(* Cache maintenance *)
-| "ic"|"IC" -> IC
-| "dc"|"DC" -> DC
-| "ialluis"|"IALLUIS" -> A.IC.(IC_OP { funct=I; typ=ALL; point=U; domain=IS; })
-| "ivauis"|"IVAUIS" -> A.IC.(IC_OP { funct=I; typ=VA; point=U; domain=IS; })
-| "iallu"|"IALLU" -> A.IC.(IC_OP { funct=I; typ=ALL; point=U; domain=NO; })
-| "ivau"|"IVAU" -> IVAU
-| "ivac"|"IVAC" -> A.DC.(DC_OP { funct=I; typ=VA; point=CO; })
-| "cvac"|"CVAC" -> A.DC.(DC_OP { funct=C; typ=VA; point=CO; })
-| "civac"|"CIVAC" -> A.DC.(DC_OP { funct=CI; typ=VA; point=CO; })
-| "zvac"|"ZVAC" -> A.DC.(DC_OP { funct=Z; typ=VA; point=CO; })
-| "iswc"|"ISWC" -> A.DC.(DC_OP { funct=I; typ=SW; point=CO; })
-| "cswc"|"CSWC" -> A.DC.(DC_OP { funct=C; typ=SW; point=CO; })
-| "ciswc"|"CISWC" -> A.DC.(DC_OP { funct=CI; typ=SW; point=CO; })
-| "zswc"|"ZSWC" -> A.DC.(DC_OP { funct=Z; typ=SW; point=CO; })
-| "cvau"|"CVAU" -> A.DC.(DC_OP { funct=C; typ=VA; point=U; })
-| "civau"|"CIVAU" -> A.DC.(DC_OP { funct=CI; typ=VA; point=U; })
-| "zvau"|"ZVAU" -> A.DC.(DC_OP { funct=Z; typ=VA; point=U; })
-| "iswu"|"ISWU" -> A.DC.(DC_OP { funct=I; typ=SW; point=U; })
-| "cswu"|"CSWU" -> A.DC.(DC_OP { funct=C; typ=SW; point=U; })
-| "ciswu"|"CISWU" -> A.DC.(DC_OP { funct=CI; typ=SW; point=U; })
-| "zswu"|"ZSWU" -> A.DC.(DC_OP { funct=Z; typ=SW; point=U; })
-(* Idem, tlb *)
-| "tlbi"|"TLBI"-> TLBI
-(* Arguments, and there are many... *)
-| "ipas2e1is"|"IPAS2E1IS" ->
-    A.TLBI.(TLBI_OP {typ=IPAS2; level=A.E1; domain=IS; nXS=false; })
-| "ipas2le1is"|"IPAS2LE1IS" ->
-    A.TLBI.(TLBI_OP {typ=IPAS2L; level=A.E1; domain=IS; nXS=false; })
-| "ipas2e1"|"IPAS2E1" -> A.TLBI.(TLBI_OP {typ=IPAS2; level=A.E1; domain=No; nXS=false; })
-| "ipas2le1"|"IPAS2LE1" -> A.TLBI.(TLBI_OP {typ=IPAS2L; level=A.E1; domain=No; nXS=false; })
-|  "vmalle1is"|"VMALLE1IS" ->
-    A.TLBI.(TLBI_OP {typ=VMALL; level=A.E1; domain=IS; nXS=false; })
-|  "vmalle1"|"VMALLE1" ->
-    A.TLBI.(TLBI_OP {typ=VMALL; level=A.E1; domain=No; nXS=false; })
-| "alle1is"|"ALLE1IS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E1; domain=IS; nXS=false; })
-| "alle2is"|"ALLE2IS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E2; domain=IS; nXS=false; })
-| "alle3is"|"ALLE3IS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E3; domain=IS; nXS=false; })
-| "alle1"|"ALLE1" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E1; domain=No; nXS=false; })
-| "alle2"|"ALLE2" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E2; domain=No; nXS=false; })
-| "alle3"|"ALLE3" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E3; domain=No; nXS=false; })
-| "vae1is"|"VAE1IS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E1; domain=IS; nXS=false; })
-| "vae2is"|"VAE2IS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E2; domain=IS; nXS=false; })
-| "vae3is"|"VAE3IS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E3; domain=IS; nXS=false; })
-| "vae1"|"VAE1" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E1; domain=No; nXS=false; })
-| "vae2"|"VAE2" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E2; domain=No; nXS=false; })
-| "vae3"|"VAE3" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E3; domain=No; nXS=false; })
-| "aside1is"|"ASIDE1IS" -> A.TLBI.(TLBI_OP {typ=ASID; level=A.E1; domain=IS; nXS=false; })
-| "aside1"|"ASIDE1" -> A.TLBI.(TLBI_OP {typ=ASID; level=A.E1; domain=No; nXS=false; })
-| "vaae1is"|"VAAE1IS" -> A.TLBI.(TLBI_OP {typ=VAA; level=A.E1; domain=IS; nXS=false; })
-| "vaae1"|"VAAE1" -> A.TLBI.(TLBI_OP {typ=VAA; level=A.E1; domain=No; nXS=false; })
-| "vale1is"|"VALE1IS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E1; domain=IS; nXS=false; })
-| "vale2is"|"VALE2IS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E2; domain=IS; nXS=false; })
-| "vale3is"|"VALE3IS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E3; domain=IS; nXS=false; })
-| "vale1"|"VALE1" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E1; domain=No; nXS=false; })
-| "vale2"|"VALE2" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E2; domain=No; nXS=false; })
-| "vale3"|"VALE3" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E3; domain=No; nXS=false; })
-| "vaale1is"|"VAALE1IS" -> A.TLBI.(TLBI_OP {typ=VAAL; level=A.E1; domain=IS; nXS=false; })
-| "vaale1"|"VAALE1" -> A.TLBI.(TLBI_OP {typ=VAAL; level=A.E1; domain=No; nXS=false; })
-| "vmalls12e1is"|"VMALLS12E1IS" ->
-    A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=IS; nXS=false; })
-| "vmalls12e1"|"VMALLS12E1" ->
-    A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=No; nXS=false; })
-(* nXS version of the above *)
-| "ipas2e1isnxs"|"IPAS2E1ISNXS" ->
-    A.TLBI.(TLBI_OP {typ=IPAS2; level=A.E1; domain=IS; nXS=true; })
-| "ipas2le1isnxs"|"IPAS2LE1ISNXS" ->
-    A.TLBI.(TLBI_OP {typ=IPAS2L; level=A.E1; domain=IS; nXS=true; })
-| "ipas2e1nxs"|"IPAS2E1NXS" -> A.TLBI.(TLBI_OP {typ=IPAS2; level=A.E1; domain=No; nXS=true; })
-| "ipas2le1nxs"|"IPAS2LE1NXS" -> A.TLBI.(TLBI_OP {typ=IPAS2L; level=A.E1; domain=No; nXS=true; })
-|  "vmalle1isnxs"|"VMALLE1ISNXS" ->
-    A.TLBI.(TLBI_OP {typ=VMALL; level=A.E1; domain=IS; nXS=true; })
-|  "vmalle1nxs"|"VMALLE1NXS" ->
-    A.TLBI.(TLBI_OP {typ=VMALL; level=A.E1; domain=No; nXS=true; })
-| "alle1isnxs"|"ALLE1ISNXS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E1; domain=IS; nXS=true; })
-| "alle2isnxs"|"ALLE2ISNXS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E2; domain=IS; nXS=true; })
-| "alle3isnxs"|"ALLE3ISNXS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E3; domain=IS; nXS=true; })
-| "alle1nxs"|"ALLE1NXS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E1; domain=No; nXS=true; })
-| "alle2nxs"|"ALLE2NXS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E2; domain=No; nXS=true; })
-| "alle3nxs"|"ALLE3NXS" -> A.TLBI.(TLBI_OP {typ=ALL; level=A.E3; domain=No; nXS=true; })
-| "vae1isnxs"|"VAE1ISNXS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E1; domain=IS; nXS=true; })
-| "vae2isnxs"|"VAE2ISNXS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E2; domain=IS; nXS=true; })
-| "vae3isnxs"|"VAE3ISNXS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E3; domain=IS; nXS=true; })
-| "vae1nxs"|"VAE1NXS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E1; domain=No; nXS=true; })
-| "vae2nxs"|"VAE2NXS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E2; domain=No; nXS=true; })
-| "vae3nxs"|"VAE3NXS" -> A.TLBI.(TLBI_OP {typ=VA; level=A.E3; domain=No; nXS=true; })
-| "aside1isnxs"|"ASIDE1ISNXS" -> A.TLBI.(TLBI_OP {typ=ASID; level=A.E1; domain=IS; nXS=true; })
-| "aside1nxs"|"ASIDE1NXS" -> A.TLBI.(TLBI_OP {typ=ASID; level=A.E1; domain=No; nXS=true; })
-| "vaae1isnxs"|"VAAE1ISNXS" -> A.TLBI.(TLBI_OP {typ=VAA; level=A.E1; domain=IS; nXS=true; })
-| "vaae1nxs"|"VAAE1NXS" -> A.TLBI.(TLBI_OP {typ=VAA; level=A.E1; domain=No; nXS=true; })
-| "vale1isnxs"|"VALE1ISNXS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E1; domain=IS; nXS=true; })
-| "vale2isnxs"|"VALE2ISNXS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E2; domain=IS; nXS=true; })
-| "vale3isnxs"|"VALE3ISNXS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E3; domain=IS; nXS=true; })
-| "vale1nxs"|"VALE1NXS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E1; domain=No; nXS=true; })
-| "vale2nxs"|"VALE2NXS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E2; domain=No; nXS=true; })
-| "vale3nxs"|"VALE3NXS" -> A.TLBI.(TLBI_OP {typ=VAL; level=A.E3; domain=No; nXS=true; })
-| "vaale1isnxs"|"VAALE1ISNXS" -> A.TLBI.(TLBI_OP {typ=VAAL; level=A.E1; domain=IS; nXS=true; })
-| "vaale1nxs"|"VAALE1NXS" -> A.TLBI.(TLBI_OP {typ=VAAL; level=A.E1; domain=No; nXS=true; })
-| "vmalls12e1isnxs"|"VMALLS12E1ISNXS" ->
-    A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=IS; nXS=true; })
-| "vmalls12e1nxs"|"VMALLS12E1NXS" ->
-    A.TLBI.(TLBI_OP {typ=VMALLS12; level=A.E1; domain=No; nXS=true; })
-(* Address translation and its operands *)
-(* Restricted to stage 1 only for EL1 and EL0; excludes <pan> and <ignore> fields *)
-| "at"|"AT" -> AT
-| "s1e0r" | "S1E0R" -> A.AT.(AT_OP {stages=S1; level=A.E0; rw=R; })
-| "s1e0w" | "S1E0W" -> A.AT.(AT_OP {stages=S1; level=A.E0; rw=W; })
-| "s1e1r" | "S1E1R" -> A.AT.(AT_OP {stages=S1; level=A.E1; rw=R; })
-| "s1e1w" | "S1E1W" -> A.AT.(AT_OP {stages=S1; level=A.E1; rw=W; })
-(* System registers *)
-| "mrs"|"MRS" -> MRS
-| "msr"|"MSR" -> MSR
-| _ ->
-    begin match A.parse_wreg name with
-    | Some r -> ARCH_WREG r
-    | None ->
-        begin match A.parse_xreg name with
-        | Some r -> ARCH_XREG r
-        | None ->
-            begin match parse_creg name with
-            | Some r -> ARCH_CREG r
-            | None ->
-                begin match A.parse_vreg name with
-                | Some r -> ARCH_VREG r
-                | None ->
-                    begin match A.parse_simd_reg name with
-                    | Some r ->
-                        begin match (Char.uppercase_ascii name.[0]) with
-                        | 'B' -> ARCH_BREG r
-                        | 'H' -> ARCH_HREG r
-                        | 'S' -> ARCH_SREG r
-                        | 'D' -> ARCH_DREG r
-                        | 'Q' -> ARCH_QREG r
-                        | _ -> assert false
-                        end
-                    | None ->
-                        begin match A.parse_zreg name with
-                        | Some r ->
-                            begin match r with
-                            | A.Zreg(_,8) -> ARCH_ZBREG r
-                            | A.Zreg(_,16) -> ARCH_ZHREG r
-                            | A.Zreg(_,32) -> ARCH_ZSREG r
-                            | A.Zreg(_,64) -> ARCH_ZDREG r
-                            | A.Zreg(_,128) -> ARCH_ZQREG r
-                            | _ -> assert false
-                            end
-                        | None ->
-                            begin match A.parse_pmreg name with
-                            | Some r ->
-                                begin match r with
-                                | A.PMreg (_,A.Zero) -> ARCH_PMREG_Z r
-                                | A.PMreg (_,A.Merge) -> ARCH_PMREG_M r
-                                | _ -> assert false
-                                end
-                            | None ->
-                                begin match A.parse_preg name with
-                                | Some r -> ARCH_PREG r
-                                | None ->
-                                    begin match A.parse_zareg name with
-                                    | Some r ->
-                                        begin match r with
-                                        | A.ZAreg(_,_,8) -> ARCH_ZABREG r
-                                        | A.ZAreg(_,_,16) -> ARCH_ZAHREG r
-                                        | A.ZAreg(_,_,32) -> ARCH_ZASREG r
-                                        | A.ZAreg(_,_,64) -> ARCH_ZADREG r
-                                        | A.ZAreg(_,_,128) -> ARCH_ZAQREG r
-                                        | _ -> assert false
-                                        end
-                                    | None ->
-                                        begin match A.parse_sysreg name with
-                                        | Some r -> SYSREG r
-                                        | None -> NAME name
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
+  if O.debug then Printf.eprintf "Check: '%s'\n" name ;
+  match Hashtbl.find_opt keyword_table name with
+  | Some tok -> tok
+  | None ->
+      begin match A.parse_wreg name with
+      | Some r -> ARCH_WREG r
+      | None ->
+          begin match A.parse_xreg name with
+          | Some r -> ARCH_XREG r
+          | None ->
+              begin match parse_creg name with
+              | Some r -> ARCH_CREG r
+              | None ->
+                  begin match A.parse_vreg name with
+                  | Some r -> ARCH_VREG r
+                  | None ->
+                      begin match A.parse_simd_reg name with
+                      | Some r ->
+                          begin match (Char.uppercase_ascii name.[0]) with
+                          | 'B' -> ARCH_BREG r
+                          | 'H' -> ARCH_HREG r
+                          | 'S' -> ARCH_SREG r
+                          | 'D' -> ARCH_DREG r
+                          | 'Q' -> ARCH_QREG r
+                          | _ -> assert false
+                          end
+                      | None ->
+                          begin match A.parse_zreg name with
+                          | Some r ->
+                              begin match r with
+                              | A.Zreg(_,8) -> ARCH_ZBREG r
+                              | A.Zreg(_,16) -> ARCH_ZHREG r
+                              | A.Zreg(_,32) -> ARCH_ZSREG r
+                              | A.Zreg(_,64) -> ARCH_ZDREG r
+                              | A.Zreg(_,128) -> ARCH_ZQREG r
+                              | _ -> assert false
+                              end
+                          | None ->
+                              begin match A.parse_pmreg name with
+                              | Some r ->
+                                  begin match r with
+                                  | A.PMreg (_,A.Zero) -> ARCH_PMREG_Z r
+                                  | A.PMreg (_,A.Merge) -> ARCH_PMREG_M r
+                                  | _ -> assert false
+                                  end
+                              | None ->
+                                  begin match A.parse_preg name with
+                                  | Some r -> ARCH_PREG r
+                                  | None ->
+                                      begin match A.parse_zareg name with
+                                      | Some r ->
+                                          begin match r with
+                                          | A.ZAreg(_,_,8) -> ARCH_ZABREG r
+                                          | A.ZAreg(_,_,16) -> ARCH_ZAHREG r
+                                          | A.ZAreg(_,_,32) -> ARCH_ZASREG r
+                                          | A.ZAreg(_,_,64) -> ARCH_ZADREG r
+                                          | A.ZAreg(_,_,128) -> ARCH_ZAQREG r
+                                          | _ -> assert false
+                                          end
+                                      | None ->
+                                          begin match A.parse_sysreg name with
+                                          | Some r -> SYSREG r
+                                          | None -> NAME name
+                                          end
+                                      end
+                                  end
+                              end
+                          end
+                      end
+                  end
+              end
+          end
+      end
 }
 let digit = [ '0'-'9' ]
 let alpha = [ 'a'-'z' 'A'-'Z']
