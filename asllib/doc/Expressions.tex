@@ -702,6 +702,11 @@ constructs a call expression AST from a parse tree for a subprogram call.
 \listingref{semantics-ecall} shows call expressions (on the right-hand-side of assignments)
 and the inferred types of the expressions, as type annotations on the left-hand-side variables.
 
+\ExampleDef{Calling a procedure in an expression}
+\listingref{ProcedureAsExpression} shows an illegal call to a procedure
+in an expression (the right-hand side of an assignment).
+\ASLListing{Illegal call expression}{ProcedureAsExpression}{\typingtests/TypingRule.ECall.bad.asl}
+
 \RenderProseAndFormally{annotate_expr_ECall}
 \CodeSubsection{\ECallBegin}{\ECallEnd}{../Typing.ml}
 

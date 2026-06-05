@@ -35,7 +35,12 @@ type error_desc =
   | EmptySlice
   | TypeInferenceNeeded
   | UndefinedIdentifier of error_handling_time * identifier
-  | MismatchedReturnValue of error_handling_time * string
+  | MismatchedCallType of {
+      error_handling_time : error_handling_time;
+      subprogram_name : string;
+      expected_call_type : subprogram_type;
+      found_call_type : subprogram_type;
+    }
   | BadArity of error_handling_time * identifier * int * int
   | BadParameterArity of error_handling_time * version * identifier * int * int
   | UnsupportedBinop of error_handling_time * binop * literal * literal
@@ -154,7 +159,7 @@ let error_label = function
   | EmptySlice -> "EmptySlice"
   | TypeInferenceNeeded -> "TypeInferenceNeeded"
   | UndefinedIdentifier _ -> "UndefinedIdentifier"
-  | MismatchedReturnValue _ -> "MismatchedReturnValue"
+  | MismatchedCallType _ -> "MismatchedCallType"
   | BadArity _ -> "BadArity"
   | BadParameterArity _ -> "BadParameterArity"
   | UnsupportedBinop _ -> "UnsupportedBinop"
@@ -378,10 +383,27 @@ module PPrint = struct
         pp_err internal "Interpreter blocked. Type inference needed."
     | UndefinedIdentifier (t, s) ->
         pp_err (error_handling_time_to_string t) "Undefined identifier:@ '%s'" s
-    | MismatchedReturnValue (t, s) ->
+    | MismatchedCallType
+        {
+          error_handling_time = t;
+          subprogram_name = s;
+          expected_call_type;
+          found_call_type;
+        } ->
+        let call_type_description call_type =
+          match call_type with
+          | ST_Function -> "function"
+          | ST_Getter -> "getter"
+          | ST_Setter -> "setter"
+          | ST_Procedure -> "procedure"
+        in
         pp_err
           (error_handling_time_to_string t)
-          "Mismatched use of return value from call to '%s'." s
+          "Mismatched call type for subprogram '%s': expected a %s and found a \
+           %s."
+          s
+          (call_type_description expected_call_type)
+          (call_type_description found_call_type)
     | BadArity (t, name, expected, provided) ->
         pp_err
           (error_handling_time_to_string t)

@@ -1638,10 +1638,12 @@ module Make (B : Backend.S) (C : Config) = struct
     in
     (match res with
       | Normal ([ v ], _genv) -> read_value_from v
-      | Normal _ ->
+      | Normal (values, _genv) ->
+          (* A safety net for cases where the specification is evaluated without
+             being type checked. *)
           Error.(
             fatal_unknown_pos
-              (MismatchedReturnValue (C.error_handling_time, main_name)))
+              (BadArity (C.error_handling_time, main_name, 1, List.length values)))
       | Throwing ((v, _, _), ty, _genv) ->
           let msg = Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v) in
           Error.fatal_unknown_pos (Error.UncaughtException msg)

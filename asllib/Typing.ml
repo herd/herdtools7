@@ -314,22 +314,50 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
       try IMap.find name env.global.overloaded_subprograms
       with Not_found -> undefined_identifier ~loc name
     in
-    let get_func_sig name' =
+    (* From a specification perspective, [filter_by_call_type] can be
+       ignored. It is used below to distinguish between different
+       error message, which in the specification are mapped to the same
+       error code [TE_BC]. *)
+    let get_func_sig ~filter_by_call_type name' =
       match IMap.find_opt name' env.global.subprograms with
       | Some (func_sig, ses)
-        when has_arg_clash env caller_arg_types func_sig.args
-             && call_type_matches func_sig call_type ->
-          Some (name', func_sig, ses)
+        when has_arg_clash env caller_arg_types func_sig.args ->
+          if (not filter_by_call_type) || call_type_matches func_sig call_type
+          then Some (name', func_sig, ses)
+          else None
       | _ -> None
     in
-    let matching_renamings = set_filter_map get_func_sig renaming_set in
+    let matching_renamings =
+      set_filter_map (get_func_sig ~filter_by_call_type:true) renaming_set
+    in
     match matching_renamings with
     | [ (name', func_sig, ses) ] -> (
         match version with
         | V0 ->
             (deduce_eqs env caller_arg_types func_sig.args, name', func_sig, ses)
         | V1 -> ([], name', func_sig, ses) |: TypingRule.SubprogramForName)
-    | [] -> fatal_from ~loc (Error.NoCallCandidate (name, caller_arg_types))
+    | [] -> (
+        (* If there are no candidates while filtering with [call_type] then
+           either there are no subprograms that match the signature,
+           or there are subprograms that match the signature but they have the
+           wrong call type. For example, a function used for a call statement,
+           or a procedure used in an expression. *)
+        let mismatched_renamings =
+          set_filter_map (get_func_sig ~filter_by_call_type:false) renaming_set
+        in
+        match mismatched_renamings with
+        | [] -> fatal_from ~loc (Error.NoCallCandidate (name, caller_arg_types))
+        | (_, func_sig, _) :: _ ->
+            (* All of the matches in [mismatched_renamings] have the wrong call type,
+               but we report only the first one found. *)
+            fatal_from ~loc
+              (Error.MismatchedCallType
+                 {
+                   error_handling_time = Static;
+                   subprogram_name = name;
+                   expected_call_type = call_type;
+                   found_call_type = func_sig.subprogram_type;
+                 }))
     | _ :: _ ->
         (* If more than one candidate exists, the candidate signature should clash,
            which is detected when typechecking the corresponding declarations. *)
@@ -1679,13 +1707,20 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         func_sig.args arg_types
       (* CheckArgsTypeSat) *)
     in
-    (* Check the function returns as expected, and substitute parameters into
-       the return type *)
+    (* Substitute parameters into the return type *)
     let return_type =
       match (call_type, func_sig.return_type) with
       | (ST_Function | ST_Getter), Some ty -> Some (rename_ty_eqs env eqs ty)
       | (ST_Procedure | ST_Setter), None -> None
-      | _ -> fatal_from ~loc @@ Error.MismatchedReturnValue (Static, name)
+      | _ ->
+          fatal_from ~loc
+            (Error.MismatchedCallType
+               {
+                 error_handling_time = Static;
+                 subprogram_name = name;
+                 expected_call_type = call_type;
+                 found_call_type = func_sig.subprogram_type;
+               })
     in
     ( {
         name;
@@ -1712,7 +1747,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let+ () =
       check_true (callee.subprogram_type = call_type) @@ fun () ->
-      fatal_from ~loc (MismatchedReturnValue (Static, name))
+      fatal_from ~loc
+        (MismatchedCallType
+           {
+             error_handling_time = Static;
+             subprogram_name = name;
+             expected_call_type = call_type;
+             found_call_type = callee.subprogram_type;
+           })
     in
     let () =
       if false then
@@ -1858,7 +1900,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       match (call_type, callee.return_type) with
       | (ST_Function | ST_Getter), Some ty -> Some (rename_ty_eqs env eqs3 ty)
       | (ST_Setter | ST_Procedure), None -> None
-      | _ -> fatal_from ~loc @@ Error.MismatchedReturnValue (Static, name)
+      | _ ->
+          fatal_from ~loc
+            (Error.MismatchedCallType
+               {
+                 error_handling_time = Static;
+                 subprogram_name = name;
+                 expected_call_type = call_type;
+                 found_call_type = callee.subprogram_type;
+               })
     in
     let () = if false then Format.eprintf "Annotated call to %S.@." name1 in
     let params =
