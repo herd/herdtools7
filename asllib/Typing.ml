@@ -1476,20 +1476,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin PAll *)
     | Pattern_All -> (p, SES.empty) |: TypingRule.PAll
     (* End *)
-    (* Begin PAny *)
-    | Pattern_Any li ->
-        let new_li, sess = list_map_split (annotate_pattern ~loc env t) li in
-        let ses =
-          (* They can't be conflicting because they are statically evaluable *)
-          SES.unions sess
-        in
-        (Pattern_Any new_li |> here, ses) |: TypingRule.PAny
-    (* End *)
-    (* Begin PNot *)
-    | Pattern_Not q ->
-        let new_q, ses = annotate_pattern ~loc env t q in
-        (Pattern_Not new_q |> here, ses) |: TypingRule.PNot
-    (* End *)
     (* Begin PSingle *)
     | Pattern_Single e ->
         let t_e, e', ses = annotate_expr env e in
@@ -1567,29 +1553,15 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           check_type_satisfies ~loc env t t_m
         in
         (p, SES.empty) |: TypingRule.PMask
-    (* End *)
-    (* Begin PTuple *)
-    | Pattern_Tuple li -> (
-        let t_struct = Types.get_structure env t in
-        match t_struct.desc with
-        | T_Tuple ts when List.compare_lengths li ts != 0 ->
-            fatal_from ~loc
-              (Error.BadArity
-                 ( Static,
-                   "pattern matching on tuples",
-                   List.length li,
-                   List.length ts ))
-        | T_Tuple ts ->
-            let new_li, sess =
-              List.map2 (annotate_pattern ~loc env) ts li |> List.split
-            in
-            let ses =
-              SES.unions
-                (* They can't be conflicting because they are static *) sess
-            in
-            (Pattern_Tuple new_li |> here, ses) |: TypingRule.PTuple
-        | _ -> conflict ~loc [ T_Tuple [] ] t
-        (* End *))
+  (* End *)
+
+  and annotate_pattern_list_and_kind ~loc env t (ps, pk) =
+    let new_ps, sess = list_map_split (annotate_pattern ~loc env t) ps in
+    let ses =
+      (* They can't be conflicting because they are statically evaluable *)
+      SES.unions sess
+    in
+    ((new_ps, pk), ses)
 
   (* Begin AnnotateCall *)
   and annotate_call ~loc env (call_info : call) =
@@ -2298,7 +2270,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t_e2, e2, ses_e = annotate_expr env e1 in
         let pat', ses_pat =
           best_effort (pat, SES.empty) (fun _ ->
-              annotate_pattern ~loc env t_e2 pat)
+              annotate_pattern_list_and_kind ~loc env t_e2 pat)
         in
         let ses =
           SES.union ses_pat ses_e

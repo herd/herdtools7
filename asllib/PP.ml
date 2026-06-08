@@ -155,7 +155,8 @@ let rec pp_expr f e =
   | E_EnumArray { enum; value } ->
       fprintf f "@[<hv 2>array[[%s]] of %a@]" enum pp_expr value
   | E_Arbitrary ty -> fprintf f "@[<h>ARBITRARY :@ %a@]" pp_ty ty
-  | E_Pattern (e, p) -> fprintf f "@[<hv 2>%a@ IN %a@]" pp_expr e pp_pattern p
+  | E_Pattern (e, p) ->
+      fprintf f "@[<hv 2>%a@ IN %a@]" pp_expr e pp_pattern_list_and_kind p
 
 and pp_expr_list f l = fprintf f "@[<hv>%a@]" (pp_comma_list pp_expr) l
 
@@ -167,17 +168,17 @@ and pp_slice f = function
 
 and pp_pattern f p =
   match p.desc with
-  | Pattern_All -> pp_print_string f "{-}"
-  | Pattern_Any li -> fprintf f "@[{%a}@]" (pp_comma_list pp_pattern) li
+  | Pattern_All -> pp_print_string f "-"
   | Pattern_Geq e -> fprintf f "@[>= %a@]" pp_expr e
   | Pattern_Leq e -> fprintf f "@[<= %a@]" pp_expr e
   | Pattern_Mask m -> fprintf f "'%s'" (Bitvector.mask_to_string m)
-  | Pattern_Not { desc = Pattern_Any li; _ } ->
-      fprintf f "@[!{%a}@]" (pp_comma_list pp_pattern) li
-  | Pattern_Not p -> fprintf f "@[!{%a}@]" pp_pattern p
   | Pattern_Range (e1, e2) -> fprintf f "@[%a .. %a@]" pp_expr e1 pp_expr e2
   | Pattern_Single e -> pp_expr f e
-  | Pattern_Tuple li -> fprintf f "@[(%a)@]" (pp_comma_list pp_pattern) li
+
+and pp_pattern_list_and_kind f (ps, pk) =
+  match pk with
+  | Positive -> fprintf f "@[<hv>{%a}@]" (pp_comma_list pp_pattern) ps
+  | Negative -> fprintf f "@[<hv>!{%a}@]" (pp_comma_list pp_pattern) ps
 
 and pp_slice_list f = pp_comma_list pp_slice f
 

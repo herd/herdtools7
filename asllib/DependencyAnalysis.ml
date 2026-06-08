@@ -77,7 +77,7 @@ let rec use_e e =
   | E_EnumArray { labels; value } ->
       use_list (fun id -> add_other id) labels $ use_e value
   | E_Arbitrary t -> use_ty t
-  | E_Pattern (e, p) -> use_e e $ use_pattern p
+  | E_Pattern (e, p) -> use_e e $ use_pattern_list_and_kind p
 
 and use_es es acc = use_list use_e es acc
 and use_fields fields acc = use_named_list use_e fields acc
@@ -85,10 +85,10 @@ and use_fields fields acc = use_named_list use_e fields acc
 and use_pattern p =
   match p.desc with
   | Pattern_Mask _ | Pattern_All -> Fun.id
-  | Pattern_Tuple li | Pattern_Any li -> use_list use_pattern li
   | Pattern_Single e | Pattern_Geq e | Pattern_Leq e -> use_e e
-  | Pattern_Not p -> use_pattern p
   | Pattern_Range (e1, e2) -> use_e e1 $ use_e e2
+
+and use_pattern_list_and_kind (ps, _) = use_list use_pattern ps
 
 and use_slice = function
   | Slice_Single e -> use_e e
