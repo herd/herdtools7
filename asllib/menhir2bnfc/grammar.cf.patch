@@ -1,0 +1,91 @@
+125,132c125,130
+< Pattern_ExprPattern.         Pattern ::= ExprPattern;
+< Pattern_ExprPattern_Slicing. Pattern ::= ExprPattern ".." Expr;
+< Pattern_Minus.               Pattern ::= "-";
+< Pattern_Le.                  Pattern ::= "<=" Expr;
+< Pattern_Ge.                  Pattern ::= ">=" Expr;
+< Pattern_Lpar.                Pattern ::= "(" Clist2Pattern ")";
+< Pattern_MaskLit.             Pattern ::= MASK_LIT;
+< Pattern_PatternSet.          Pattern ::= PatternSet;
+---
+> Pattern_Expr.         Pattern ::= Expr;
+> Pattern_Expr_Slicing. Pattern ::= Expr ".." Expr;
+> Pattern_Minus.        Pattern ::= "-";
+> Pattern_Le.           Pattern ::= "<=" Expr;
+> Pattern_Ge.           Pattern ::= ">=" Expr;
+> Pattern_MaskLit.      Pattern ::= MASK_LIT;
+254,255d251
+< Clist2Pattern__Rule. Clist2Pattern ::= Pattern "," Clist1Pattern;
+< 
+316,317c312,316
+< CaseAlt_Arrow. CaseAlt ::= "when" PatternList "=>" StmtList;
+< CaseAlt_Where. CaseAlt ::= "when" PatternList "where" Expr "=>" StmtList;
+---
+> CasePattern_PatternSet.  CasePattern ::= PatternSet;
+> CasePattern_PatternList. CasePattern ::= PatternList;
+> 
+> CaseAlt_Arrow. CaseAlt ::= "when" CasePattern "=>" StmtList;
+> CaseAlt_Where. CaseAlt ::= "when" CasePattern "where" Expr "=>" StmtList;
+407,468d405
+< ExprPattern_If. ExprPattern ::= "if" Expr "then" Expr EElse;
+< _.              ExprPattern ::= ExprPattern1;
+< 
+< ExprPattern_ExprPattern_Band. ExprPattern1 ::= ExprPattern1 "&&" Expr2;
+< ExprPattern_ExprPattern_Bor.  ExprPattern1 ::= ExprPattern1 "||" Expr2;
+< ExprPattern_ExprPattern_Beq.  ExprPattern1 ::= ExprPattern1 "<=>" Expr2;
+< ExprPattern_ExprPattern_Impl. ExprPattern1 ::= ExprPattern1 "==>" Expr2;
+< _.                            ExprPattern1 ::= ExprPattern2;
+< 
+< ExprPattern_ExprPattern_EqEq_Expr.    ExprPattern2 ::= ExprPattern2 "==" Expr3;
+< ExprPattern_ExprPattern_Ne_Expr.      ExprPattern2 ::= ExprPattern2 "!=" Expr3;
+< ExprPattern_ExprPattern_Gt.           ExprPattern2 ::= ExprPattern3 ">" Expr3;
+< ExprPattern_ExprPattern_Ge.           ExprPattern2 ::= ExprPattern3 ">=" Expr3;
+< ExprPattern_ExprPattern_Lt.           ExprPattern2 ::= ExprPattern3 "<" Expr3;
+< ExprPattern_ExprPattern_Le.           ExprPattern2 ::= ExprPattern3 "<=" Expr3;
+< ExprPattern_ExprPattern_EqEq_MaskLit. ExprPattern2 ::= ExprPattern2 "==" MASK_LIT;
+< ExprPattern_ExprPattern_Ne_MaskLit.   ExprPattern2 ::= ExprPattern2 "!=" MASK_LIT;
+< _.                                    ExprPattern2 ::= ExprPattern3;
+< 
+< ExprPattern_ExprPattern_And.        ExprPattern3 ::= ExprPattern3 "AND" Expr4;
+< ExprPattern_ExprPattern_Xor.        ExprPattern3 ::= ExprPattern3 "XOR" Expr4;
+< ExprPattern_ExprPattern_Plus.       ExprPattern3 ::= ExprPattern3 "+" Expr4;
+< ExprPattern_ExprPattern_Minus.      ExprPattern3 ::= ExprPattern3 "-" Expr4;
+< ExprPattern_ExprPattern_Or.         ExprPattern3 ::= ExprPattern3 "OR" Expr4;
+< ExprPattern_ExprPattern_ColonColon. ExprPattern3 ::= ExprPattern3 "::" Expr4;
+< ExprPattern_ExprPattern_PlusPlus.   ExprPattern3 ::= ExprPattern3 "++" Expr4;
+< _.                                  ExprPattern3 ::= ExprPattern4;
+< 
+< ExprPattern_ExprPattern_Div.   ExprPattern4 ::= ExprPattern4 "DIV" Expr5;
+< ExprPattern_ExprPattern_Divrm. ExprPattern4 ::= ExprPattern4 "DIVRM" Expr5;
+< ExprPattern_ExprPattern_Mod.   ExprPattern4 ::= ExprPattern4 "MOD" Expr5;
+< ExprPattern_ExprPattern_Mul.   ExprPattern4 ::= ExprPattern4 "*" Expr5;
+< ExprPattern_ExprPattern_Rdiv.  ExprPattern4 ::= ExprPattern4 "/" Expr5;
+< ExprPattern_ExprPattern_Shl.   ExprPattern4 ::= ExprPattern4 "<<" Expr5;
+< ExprPattern_ExprPattern_Shr.   ExprPattern4 ::= ExprPattern4 ">>" Expr5;
+< _.                             ExprPattern4 ::= ExprPattern5;
+< 
+< ExprPattern_ExprPattern_Pow. ExprPattern5 ::= ExprPattern5 "^" Expr6;
+< _.                           ExprPattern5 ::= ExprPattern6;
+< 
+< ExprPattern_Bnot.  ExprPattern6 ::= "!" Expr6;
+< ExprPattern_Minus. ExprPattern6 ::= "-" Expr6;
+< ExprPattern_Not.   ExprPattern6 ::= "NOT" Expr6;
+< _.                 ExprPattern6 ::= ExprPattern7;
+< 
+< ExprPattern_ExprPattern_Slices.            ExprPattern7 ::= ExprPattern7 Slices;
+< ExprPattern_ExprPattern_Llbracket.         ExprPattern7 ::= ExprPattern7 "[[" Expr "]]";
+< ExprPattern_ExprPattern_Dot_Identifier.    ExprPattern7 ::= ExprPattern7 "." IDENTIFIER;
+< ExprPattern_ExprPattern_Dot_Lbracket.      ExprPattern7 ::= ExprPattern7 "." "[" Clist1Identifier "]";
+< ExprPattern_ExprPattern_As_Ty.             ExprPattern7 ::= ExprPattern7 "as" Ty;
+< ExprPattern_ExprPattern_As_ConstraintKind. ExprPattern7 ::= ExprPattern7 "as" ConstraintKind;
+< ExprPattern_ExprPattern_In.                ExprPattern7 ::= ExprPattern7 "IN" PatternSet;
+< _.                                         ExprPattern7 ::= ExprPattern8;
+< 
+< ExprPattern_Value.                               ExprPattern8 ::= Value;
+< ExprPattern_Identifier.                          ExprPattern8 ::= IDENTIFIER;
+< ExprPattern_Call.                                ExprPattern8 ::= Call;
+< ExprPattern_Arbitrary.                           ExprPattern8 ::= "ARBITRARY" ":" Ty;
+< ExprPattern_Lpar.                                ExprPattern8 ::= "(" ExprPattern ")";
+< ExprPattern_Identifier_Lbrace_Minus.             ExprPattern8 ::= IDENTIFIER "{" "-" "}";
+< ExprPattern_Identifier_Lbrace_Clist1FieldAssign. ExprPattern8 ::= IDENTIFIER "{" Clist1FieldAssign "}";
+< 
