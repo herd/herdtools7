@@ -8,5 +8,5 @@ Witnesses
 Positive: 0 Negative: 6
 Condition exists ([y]=2 /\ 0:X1=1 /\ 1:X1=1)
 Observation LB+ctrlcsel+amo.casap-po Never 0 6
-Hash=12e31b84ce442c85d51fdeec15e6cda2
+Hash=a8223d52a57555d26df319f7d44a612f
 
