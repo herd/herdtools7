@@ -91,6 +91,8 @@ module type S = sig
   val parse_atoms : string list -> atom option list
   val get_access_atom: atom option -> MachMixed.t option
 
+  val equal_edge_atoms : edge -> edge -> bool
+
   val parse_fence : string -> fence
   val parse_edge_annotations : string -> (atom option * atom option) option
   val parse_edge : string -> edge
@@ -422,6 +424,35 @@ let fold_tedges f r =
     | Some a1,Some a2 -> A.overlap_atoms a1 a2
 
   let get_access_atom = A.get_access_atom
+
+  let equal_atomo = Option.equal (fun a1 a2 -> A.compare_atom a1 a2 = 0)
+
+  let equal_tedge lhs rhs = match lhs,rhs with
+  | Rf ie1,Rf ie2
+  | Fr ie1,Fr ie2
+  | Ws ie1,Ws ie2 -> Code.equal_ie ie1 ie2
+  | Po (sd1,e11,e12),Po (sd2,e21,e22) ->
+      Code.equal_sd sd1 sd2 && Code.equal_extr e11 e21 &&
+      Code.equal_extr e12 e22
+  | Fenced (f1,sd1,e11,e12),Fenced (f2,sd2,e21,e22) ->
+      F.compare_fence f1 f2 = 0 && Code.equal_sd sd1 sd2 &&
+      Code.equal_extr e11 e21 && Code.equal_extr e12 e22
+  | Dp (dp1,sd1,e1),Dp (dp2,sd2,e2) ->
+      F.equal_dp dp1 dp2 && Code.equal_sd sd1 sd2 && Code.equal_extr e1 e2
+  | Leave c1,Leave c2
+  | Back c1,Back c2 -> Code.equal_com c1 c2
+  | Id,Id
+  | Store,Store
+  | Hat,Hat -> true
+  | Insert f1,Insert f2 -> F.compare_fence f1 f2 = 0
+  | Node d1,Node d2 -> Code.equal_extr (Dir d1) (Dir d2)
+  | Rmw rmw1,Rmw rmw2 -> RMW.equal_rmw rmw1 rmw2
+  | (Rf _|Fr _|Ws _|Po _|Fenced _|Dp _|Leave _|Back _|Id
+    |Insert _|Store|Node _|Hat|Rmw _),_ -> false
+
+  let equal_edge_atoms lhs rhs =
+    equal_tedge lhs.edge rhs.edge &&
+    equal_atomo lhs.a1 rhs.a1 && equal_atomo lhs.a2 rhs.a2
 
   let same_access_atoms a1 a2 =
     Misc.opt_eq MachMixed.equal (get_access_atom a1) (get_access_atom a2)

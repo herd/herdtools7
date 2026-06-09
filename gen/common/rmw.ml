@@ -22,6 +22,7 @@ module No(A:sig
   type atom = A.atom
 
   let pp_rmw _ _ = assert false
+  let equal_rmw () () = true
   let is_one_instruction _ = assert false
   let fold_rmw _ _ r = r
   let fold_rmw_compat _ r = r
@@ -46,6 +47,7 @@ module
     type atom = I.atom
 
     let pp_rmw compat () = if compat then "Rmw" else I.pp
+    let equal_rmw () () = true
 
     let is_one_instruction _ = I.is_one_instruction
 
