@@ -144,6 +144,7 @@ module type S = sig
 
 (* parse `predicate` *)
   val parse_predicate : string -> edge_predicate
+  val get_predicate : edge -> edge_predicate option
 
 (* Atomic variation over yet unspecified atoms *)
   val varatom : edge list -> (edge list -> 'a -> 'a) -> 'a -> 'a
@@ -337,22 +338,17 @@ and module RMW = A.RMW = struct
     | Before -> "before"
     | After -> "after"
 
-  let pp_edge_compat compat e =
+  let do_pp_edge compat e =
     let edge = match e.edge with
     | Id -> ""
     | _ -> pp_tedge_compat compat e.edge in
     let annotation = pp_annotations e.edge e.a1 e.a2 in
-    edge ^ annotation
-
-  let do_pp_edge compat pp_atom_functor e =
-    let annotation = pp_atom_functor e.edge e.a1 e.a2 in
-    let edge = match e.edge with
-    | Id -> ""
-    | _ -> pp_edge_compat compat e.edge in
     let edge_anno = edge ^ annotation in
     match e.pred with
     | None -> edge_anno
     | Some pred -> sprintf "@%s(%s)" (pp_predicate pred) edge_anno
+
+  let pp_edge_compat compat e = do_pp_edge compat e
 
   let pp_edge e = pp_edge_compat false e
 
@@ -648,7 +644,7 @@ let fold_tedges f r =
   let lookup_atom_prefix string =
     fold_prefixes (fun prefix -> Hashtbl.find_opt annotation_lookup_table prefix) string
 
-  let annotation_edge a = { a1=a; a2=a; edge=Id }
+  let annotation_edge a = { a1=a; a2=a; edge=Id; pred=None }
 
   let parse_annotation input =
     match lookup_atom_prefix input with
@@ -1004,6 +1000,8 @@ let fold_tedges f r =
     | "before" -> Before
     | "after" -> After
     | s -> Warn.user_error "predicate %s is not supported." s
+
+  let get_predicate e = e.pred
 
 (********************)
 (* Atomic variation *)

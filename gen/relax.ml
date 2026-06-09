@@ -128,7 +128,7 @@ and type edge = E.edge
              {edge=Rf Ext; a1=None; a2=None;pred=None}] when backward_compatibility ->
                    sprintf "BC%s" (pp_edge e)
           | [{edge=Rf Ext; a1=None; a2=None;pred=None};
-             {edge=Fenced _; a1=None; a2=None;} as e;
+             {edge=Fenced _; a1=None; a2=None;pred=None} as e;
              {edge=Rf Ext; a1=None; a2=None;pred=None}] when backward_compatibility ->
                    sprintf "ABC%s" (pp_edge e)
           | [{edge=Dp _; a1=None; a2=None;pred=None} as e;
@@ -364,8 +364,10 @@ and type edge = E.edge
           |> relax_list_to_choice
 
           let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
+            let add_predicate pred =
+              E.add_predicate (E.parse_predicate pred) in
             Ast.bind ast (parse_expand_relax ~ppo)
-              |> Ast.expand
+              |> Ast.expand add_predicate
 
         (* After wildcard and macro expansion, remove invalid relaxations
            whose adjacent concrete edges cannot appear consecutively.
