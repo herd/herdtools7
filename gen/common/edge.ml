@@ -147,6 +147,7 @@ module type S = sig
 
 (* parse `predicate` *)
   val parse_predicate : string -> edge_predicate
+  val get_predicate : edge -> edge_predicate option
 
 (* Atomic variation over yet unspecified atoms *)
   val varatom : edge list -> (edge list -> 'a -> 'a) -> 'a -> 'a
@@ -1033,6 +1034,8 @@ let fold_tedges f r =
     | "before" -> Before
     | "after" -> After
     | s -> Warn.user_error "predicate %s is not supported." s
+
+  let get_predicate e = e.pred
 
 (********************)
 (* Atomic variation *)
