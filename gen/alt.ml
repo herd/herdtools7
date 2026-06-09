@@ -459,6 +459,92 @@ module Make(C:Builder.S)
     let lift r = List.map predicate_edge r
     let lift_list rs = List.map lift rs
 
+    (* Check whether `list` starts with `expected`, using `pred` for element
+       comparison. *)
+    let rec starts_with pred list expected =
+      match list, expected with
+      | _, [] -> true
+      | [], _::_  -> false
+      | hd :: tail, hd_expected :: tail_expected ->
+          pred hd hd_expected
+          && starts_with pred tail tail_expected
+
+    (* Check whether `list` ends with `expected`, using `pred` for element
+       comparison. *)
+    let ends_with pred list expected =
+      starts_with pred (List.rev list) (List.rev expected)
+
+    (* Given `next = [....; after(..); after(..)]` and
+       `exist = [before(..); before(..); ....]`, check whether the optional
+       boundary predicates can be merged with the neighbouring concrete edge:
+         - `before` merges with concrete if edge matches.
+         - `after` merges with concrete if edge matches.
+         - `before` pairing with `after` fails. *)
+    let merge_predicate next exist =
+      (* Separate the trailing `after` predicate from `next` *)
+      let after =
+        List.fold_right ( fun e (after,seen_non_after) ->
+          match seen_non_after, e.pred = Some After with
+          | true, _ | _, false -> after, true
+          | false, true -> e :: after, false ) next ([],false)
+        |> fst in
+      (* Separate the beginning `before` predicate from `exist` *)
+      let before =
+        List.fold_left ( fun (before,seen_non_before) e ->
+          match seen_non_before, e.pred = Some Before with
+          | true, _ | _, false -> before, true
+          | false, true -> e :: before, false ) ([],false) exist
+        |> fst |> List.rev in
+      (* Match `after` or `before` predicates when present. *)
+      match after, before with
+      | [], [] -> true
+      | after, [] ->
+          starts_with
+            (fun (lhs:predicate_edge) (rhs:predicate_edge) ->
+              C.E.equal_edge_atoms lhs.plain rhs.plain)
+            exist after
+      | [], before ->
+          ends_with
+            (fun (lhs:predicate_edge) (rhs:predicate_edge) ->
+              C.E.equal_edge_atoms lhs.plain rhs.plain)
+            next before
+      (* Reject an `after` predicate directly meeting a `before` predicate. *)
+      | _, _ -> false
+
+    let needs_merge next_edges exist_edges =
+      match List.rev next_edges, exist_edges with
+      | next_last::_, exist_first::_ ->
+          next_last.pred = Some After ||
+          exist_first.pred = Some Before
+      | _ -> false
+
+    (* Check whether `next_edges` may be placed immediately before
+       `exist_edges`: if `next_edges` contains trailing `after` predicates
+       or `exist_edges` contains leading `before` predicates,
+       match those predicates against the neighbouring concrete edges;
+       otherwise use the ordinary `can_precede` relation. *)
+    let check_precede can_precede next_edges exist_edges =
+      if O.verbose > 2 then
+        eprintf "next: %s, exists: %s\n"
+          (C.E.pp_edges (plain next_edges))
+          (C.E.pp_edges (plain exist_edges));
+      if needs_merge next_edges exist_edges then
+        merge_predicate next_edges exist_edges
+      else
+        can_precede (plain next_edges) (plain exist_edges)
+
+    (* Check whether a candidate relaxation `next` can be prepended to the
+       current suffix `exist`. The suffix is stored newest-first, so only
+       its head must be checked against `next`; an empty suffix accepts any
+       first relaxation. *)
+    let precede_relax_edge_list safes po_safe next exist =
+      match exist with
+      | [] -> true
+      | (_,exist_edges) :: _ ->
+          check_precede
+            (FilterImpl.can_precede safes po_safe)
+            (snd next) exist_edges
+
 (* Functional for recursive call of generators *)
 
     let sz (_,es) =
@@ -548,7 +634,7 @@ module Make(C:Builder.S)
     (* This function is used `zyva` *)
     let call_rec_base prefix f0 safes po_safe over n r suff f_rec k ?(reject=[])=
       if
-        can_precede safes po_safe r suff &&
+        precede_relax_edge_list safes po_safe r suff &&
         minprocs suff <= O.nprocs &&
         minint (r::suff) <= O.max_ins-1 &&
         check_cycle (r::suff) reject
@@ -558,6 +644,7 @@ module Make(C:Builder.S)
         if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess suff) ;
         let k =
           if
+            precede_relax_edge_list safes po_safe (Misc.last suff) suff &&
             over &&
             (n = 0 || (n > 0 && O.upto)) &&
             can_prefix prefix (can_precede safes po_safe) suff
