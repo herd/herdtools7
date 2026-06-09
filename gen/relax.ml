@@ -343,6 +343,8 @@ and type edge = E.edge
                     for_all_adjacent_concrete_edge predicate (rhs :: list)
                 | false, false ->
                     for_all_adjacent_concrete_edge predicate list in
+          (* `before` predicates must form a leading prefix and
+             `after` predicates must form a trailing suffix. *)
           let leading_before_trailing_after_predicate list =
             let valid,_,_ = List.fold_left
             ( fun ( valid, leading_before, trailing_after ) l ->
