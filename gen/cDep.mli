@@ -17,6 +17,7 @@
 (* C dependencies *)
 type dp = ADDR | DATA | CTRL
 
+val equal_dp : dp -> dp -> bool
 val fold_dpr : (dp -> 'a -> 'a) -> 'a -> 'a
 val fold_dpw : (dp -> 'a -> 'a) -> 'a -> 'a
 

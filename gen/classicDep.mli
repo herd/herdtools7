@@ -17,6 +17,7 @@
 (* Classical dependencies *)
 type dp = ADDR | DATA | CTRL
 
+val equal_dp : dp -> dp -> bool
 val pp_dp : dp -> string
 
 val fold_dpr : (dp -> 'a -> 'a) -> 'a -> 'a
