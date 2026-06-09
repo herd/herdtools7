@@ -18,6 +18,13 @@
 
 type dp = ADDR | DATA | CTRL | CTRLISYNC
 
+let equal_dp dp1 dp2 = match dp1,dp2 with
+| ADDR,ADDR
+| DATA,DATA
+| CTRL,CTRL
+| CTRLISYNC,CTRLISYNC -> true
+| (ADDR|DATA|CTRL|CTRLISYNC),_ -> false
+
 let fold_dpr f r =  f ADDR (f CTRL (f CTRLISYNC r))
 let fold_dpw f r =  f ADDR (f DATA (f CTRL (f CTRLISYNC r)))
 
