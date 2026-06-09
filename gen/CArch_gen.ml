@@ -245,6 +245,11 @@ let pp_rmw compat = function
   | Exch -> if compat then "Rmw" else "Exch"
   | Add -> "Fetch.Add"
 
+let equal_rmw rmw1 rmw2 = match rmw1,rmw2 with
+  | Exch,Exch
+  | Add,Add -> true
+  | (Exch|Add),_ -> false
+
 let is_one_instruction _ = true
 
 let fold_rmw _b f r = let r = f Add r in  f Exch r
