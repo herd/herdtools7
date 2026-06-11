@@ -46,43 +46,45 @@
  *)
 include "aarch64memattrs.cat"
 
-(* Can we move this to stdlib? *)
-(* Coherence-after *)
-let ca = fr | co
-
-let PTE-MT-update =
+let TTD-MT-update =
   [Normal]; ca; [Device]
   | [Device]; ca; [Normal]
 
-let PTE-SH-update =
+let TTD-SH-update =
   [NSH]; ca; [ISH | OSH]
   | [ISH]; ca; [OSH | NSH]
   | [OSH]; ca; [NSH | ISH]
 
-let PTE-ICH-update =
+let TTD-ICH-update =
   [iNC]; ca; [iWT | iWB]
   | [iWT]; ca; [iWB | iNC]
   | [iWB]; ca; [iNC | iWT]
 
-let PTE-OCH-update =
+let TTD-OCH-update =
   [oNC]; ca; [oWT | oWB]
   | [oWT]; ca; [oWB | oNC]
   | [oWB]; ca; [oNC | oWT]
 
-let PTE-DT-update =
+let TTD-DT-update =
   [Device-GRE]; ca; [Device-nGRE | Device-nGnRE | Device-nGnRnE]
   | [Device-nGRE]; ca; [Device-GRE | Device-nGnRE | Device-nGnRnE]
   | [Device-nGnRE]; ca; [Device-GRE | Device-nGRE | Device-nGnRnE]
   | [Device-nGnRnE]; ca; [Device-GRE | Device-nGRE | Device-nGnRE]
 
-let PTE-OA-update = ([PTE]; ca; [PTE & oa-changes(PTE, ca^-1)])
-let PTE-OA-update-writable = PTE-OA-update &
-        ([PTE]; ca; [PTE & at-least-one-writable(PTE, ca^-1)])
+let TTD-OA-update = [TTD & M]; ca \ same-oa(TTD * TTD); [TTD & W]
+let TTD-at-least-one-writable = at-least-one-writable(TTD*TTD)
+let TTD-memory-contents-mismatch = (PTEtoPA; different-values(IW * IW); PTEtoPA^-1) & loc
 
-let PTE-update-needsBBM = ([PTEV]; ca \ (ca; [PTEV]; ca); [PTEV]) &
-  (PTE-MT-update | PTE-SH-update | PTE-ICH-update | PTE-OCH-update | PTE-DT-update
-  | PTE-OA-update)
+let TLBUncacheableTTD = TTDINV | TTDAF0
+let TLBCacheableTTD = TTD \ TLBUncacheableTTD
 
-let TTDV = PTEV
-let TTDINV = PTEINV
-let TTD-update-needsBBM = PTE-update-needsBBM
+let TTD-update-BBM-cand =
+  TTD-MT-update
+  | TTD-SH-update
+  | TTD-ICH-update
+  | TTD-OCH-update
+  | TTD-DT-update
+  | TTD-OA-update & (TTD-at-least-one-writable | TTD-memory-contents-mismatch)
+
+let TTD-update-needsBBM =
+  [TLBCacheableTTD]; TTD-update-BBM-cand; [TLBCacheableTTD]
