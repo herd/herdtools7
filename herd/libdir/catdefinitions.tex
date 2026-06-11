@@ -98,6 +98,34 @@
 %
 %
 
+\newcommand{\TTDM}[1]{#1 is a TTD Memory Effect}
+\newcommand{\TTDR}[1]{#1 is a TTD Memory Read Effect}
+\newcommand{\TTDW}[1]{#1 is a TTD Memory Write Effect}
+\newcommand{\TTDAF}[1]{#1 is a TTD Memory Effect with the Access flag set to 0}
+\newcommand{\TTDINV}[1]{#1 is a TTD Memory Effect with the valid bit set to 0}
+\newcommand{\TTDupdateneedsBBM}[2]{The TTD update from #1 to #2 needs BBM}
+\newcommand{\TTDupdateneedsBBMemph}[2]{\TTDupdateneedsBBM{#1}{#2}}
+\newcommand{\TTDupdateBBMcand}[2]{The TTD update from #1 to #2 might need BBM}
+\newcommand{\TTDupdateBBMcandemph}[2]{\TTDupdateBBMcand{#1}{#2}}
+\newcommand{\TTDmemorycontentsmismatch}[2]{The memory contents at the OA of #1\
+do not match the memory contents at the OA of #2}
+\newcommand{\TTDmemorycontentsmismatchemph}[2]{\TTDmemorycontentsmismatch{#1}{#2}}
+\newcommand{\PTEtoPA}[2]{#2 is to a Location that maps into the OA of #1}
+\newcommand{\TLBCacheableTTD}[1]{The value of #1 is TLB Cacheable}
+\newcommand{\TLBUncacheableTTD}[1]{The value of #1 is TLB Uncacheable}
+\newcommand{\TTDV}[1]{The value of #1 is a valid TTD}
+\newcommand{\TTDMTupdate}[2]{#2 changes the memory type specified in #1}
+\newcommand{\TTDDTupdate}[2]{#2 changes the Device memory type specified in #1}
+\newcommand{\TTDSHupdate}[2]{#2 changes the Shareability specified in #1}
+\newcommand{\TTDICHupdate}[2]{#2 changes the inner Cacheability specified in #1}
+\newcommand{\TTDOCHupdate}[2]{#2 changes the outer Cacheability specified in #1}
+\newcommand{\TTDOAupdate}[2]{#2 changes the OA specified in #1}
+\newcommand{\TTDOAupdateemph}[2]{\TTDOAupdate{#1}{#2}}
+\newcommand{\TTDatleastonewritable}[2]{\atleastonewritable{#1}{#2}}
+\newcommand{\TTDatleastonewritableemph}[2]{\TTDatleastonewritable{#1}{#2}}
+\newcommand{\BBMemph}[2]{There is a \emph{Break-before-make sequence} between #1 and #2}
+\newcommand{\BBM}[2]{There is a Break-before-make sequence between #1 and #2}
+
 \newcommand{\Exp}[1]{#1 is an Explicit Effect}
 \newcommand{\ExpMREof}[1]{the Explicit \MRE{} of #1}
 \newcommand{\ImpMREof}[1]{the Implicit \MRE{} of #1}
