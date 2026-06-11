@@ -40,23 +40,41 @@ let pp_i fmt m =
       (fun fmt (i1, i2) -> fprintf fmt "@[%d<-%d@]" i1 i2))
     (to_list m)
 
-let simple_tr =
+let simple_tr g =
   let rec loop m =
-    let m2 = R.union m @@ R.sequence m m in
+    let m2 = R.union m @@ R.sequence g m in
     if R.subrel m2 m then m2
     else loop m2 in
-  loop
+  loop g
 
+let log_tr =
+  let rec loop m d =
+    let d2 = R.sequence d d in
+    let m2 = R.union (R.union m d2) (R.sequence m d2) in
+    if R.subrel m2 m then m2 else loop m2 d2 in
+  fun g -> loop g g
 
-let check_manual k edges =
-  let i = R.of_list edges in
-  let ic = simple_tr i
-  and it = R.transitive_closure i in
-  let ok = R.equal it ic in
+let check k i =
+  let t0 = Sys.time () in
+  let ic = simple_tr i in
+  let t1 = Sys.time () in
+  let il = log_tr i in
+  let t2 = Sys.time () in
+  let it = R.transitive_closure i in
+  let t3 = Sys.time () in
+  let d1 = t1 -. t0 and d2 = t2 -. t1
+  and d3 = t3 -. t2 in
+  if d1 > 0.1 then begin
+    Printf.eprintf "NAIVE=%f, LOG=%f, OPT=%f\n%!" d1 d2 d3 ;
+    flush stderr
+  end ;
+  let ok = R.equal it ic && R.equal il ic in
   if not ok then
     Format.eprintf "@[<hv>%a@ gave with trajan@ %a@ and with log@ %a@]@."
-      pp_i i pp_i it pp_i ic ;
+      pp_i i pp_i it pp_i il ;
   k && ok
+
+let check_manual k edges = check k (R.of_list edges)
 
 let () =
   assert
@@ -76,3 +94,36 @@ let () =
          [(0,1); (0,2); (1,3); (1,4); (2,5); (2,6); (3,3); (1,1);];
         ]
     end
+
+let rand_graph p n l =
+  let sub x y =
+    let d = x-y in
+    if d < 0 then d+n
+    else d
+  and inc x = (x+1) mod n in
+
+  let rec do_rec g i =
+    if i < 0 then g
+    else
+      let rec do2 g c j =
+        if c < 0 then g
+        else
+          let g =
+            if Random.float 1.0 < p  then R.add (i,j) g
+            else g in
+          do2 g (c-1) (inc j) in
+      do_rec (do2 g (2*l+1) (sub i l)) (i-1) in
+  do_rec R.empty (n-1)
+
+let sz = 64
+and p = 0.5
+and l = 5
+and n = 10
+
+let gs =
+  let rec do_rec k gs =
+    if k <= 0 then gs
+    else do_rec (k-1) (rand_graph p sz l::gs) in
+  do_rec n []
+
+let  () = assert (List.fold_left check true gs)
