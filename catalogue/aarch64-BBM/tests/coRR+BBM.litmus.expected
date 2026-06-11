@@ -1,0 +1,14 @@
+Test coRR+BBM Allowed
+States 5
+0:X0=0; 0:X2=0;  ~Fault(P0:L2,x);
+0:X0=0; 0:X2=0; Fault(P0:L2,x,D-MMU:Translation);
+0:X0=0; 0:X2=1;  ~Fault(P0:L2,x);
+0:X0=1; 0:X2=0; Fault(P0:L2,x,D-MMU:Translation);
+0:X0=1; 0:X2=1;  ~Fault(P0:L2,x);
+No
+Witnesses
+Positive: 0 Negative: 9
+Condition exists (0:X0=1 /\ 0:X2=0 /\ not (fault(P0:L2,x)))
+Observation coRR+BBM Never 0 9
+Hash=f6ece5ca033543aee1f3f75d5cea8844
+

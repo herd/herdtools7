@@ -1,0 +1,13 @@
+Test MP+tlbi-sync.ishpteoadb0p+dmb.ld Allowed
+States 3
+1:X2=0; 1:X5=1;
+1:X2=0; 1:X5=2;
+1:X2=1; 1:X5=2;
+No
+Witnesses
+Positive: 0 Negative: 4
+Flag Warning-BBM-expected
+Condition exists (1:X2=1 /\ 1:X5=1)
+Observation MP+tlbi-sync.ishpteoadb0p+dmb.ld Never 0 4
+Hash=6f66d48a711d25dc7a97d5151c6a07d1
+

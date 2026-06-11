@@ -1,0 +1,14 @@
+Test MP+tlbi-sync.ishWptev0pteoa-pteoal+dmb.ld Allowed
+States 5
+1:X2=0; 1:X5=0;
+1:X2=0; 1:X5=1;
+1:X2=0; 1:X5=2;
+1:X2=1; 1:X5=0;
+1:X2=1; 1:X5=2;
+No
+Witnesses
+Positive: 0 Negative: 6
+Condition exists (1:X2=1 /\ 1:X5=1)
+Observation MP+tlbi-sync.ishWptev0pteoa-pteoal+dmb.ld Never 0 6
+Hash=7d38f0901d8d6b17719acf4e80afbd92
+

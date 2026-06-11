@@ -1,0 +1,12 @@
+Test CoWR+PteOA Allowed
+States 2
+0:X2=0;
+0:X2=1;
+Ok
+Witnesses
+Positive: 1 Negative: 2
+Flag Warning-BBM-expected
+Condition exists (0:X2=0)
+Observation CoWR+PteOA Sometimes 1 2
+Hash=07e4543b71a8507c54a06609bbe02023
+

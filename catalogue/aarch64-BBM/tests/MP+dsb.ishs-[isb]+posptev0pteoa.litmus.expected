@@ -1,0 +1,15 @@
+Test MP+dsb.ishs-[isb]+posptev0pteoa Allowed
+States 5
+0:X0=0; 0:X2=0;  ~Fault(P0:L2,x);
+0:X0=0; 0:X2=0; Fault(P0:L2,x,D-MMU:Translation);
+0:X0=0; 0:X2=1;  ~Fault(P0:L2,x);
+0:X0=1; 0:X2=0;  ~Fault(P0:L2,x);
+0:X0=1; 0:X2=1;  ~Fault(P0:L2,x);
+Ok
+Witnesses
+Positive: 1 Negative: 5
+Flag Warning-BBM-expected
+Condition exists (0:X0=1 /\ 0:X2=0 /\ not (fault(P0:L2,x)))
+Observation MP+dsb.ishs-[isb]+posptev0pteoa Sometimes 1 5
+Hash=b59acf4b892251b7a42f01048c3b71de
+
