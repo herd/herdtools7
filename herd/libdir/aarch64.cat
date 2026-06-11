@@ -48,9 +48,6 @@ catdep (* This option says that the cat file computes dependencies *)
 
 include "aarch64hwreqs.cat"
 
-(*** Coherence-after ***)
-let ca = fr | co
-
 (*** TLBI-after, DC-after, IC-after ***)
 include "enumerations.cat"
 with TLBI-after from (all-TLBI-Imp_TTD_R-enums local-hw-reqs)
