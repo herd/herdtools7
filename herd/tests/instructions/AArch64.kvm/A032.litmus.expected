@@ -7,6 +7,7 @@ States 4
 Ok
 Witnesses
 Positive: 1 Negative: 5
+Flag Warning-BBM-expected
 Condition exists (0:X3=(oa:PA(x)) /\ [PTE(x)]=(oa:PA(y)))
 Observation A032 Sometimes 1 5
 Hash=4d4ebbbbd741d64b8bb4bcece91ef26d
