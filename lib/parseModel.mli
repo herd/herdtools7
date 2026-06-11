@@ -22,6 +22,6 @@ module type Config = sig
 end
 
 module Make : functor (O:Config)  -> sig
-  val find_parse : string -> string * AST.t
-  val parse : string -> AST.t
+  val find_parse : ?opt:bool -> string -> string * AST.t
+  val parse : ?opt:bool -> string -> AST.t
 end

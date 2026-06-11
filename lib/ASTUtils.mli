@@ -30,3 +30,11 @@ val flatten : AST.exp -> AST.exp
 
 (* Get free variables *)
 val free_body : AST.var option list -> AST.exp -> AST.varset
+
+(*
+ * Translate recursive definitions `let rec r = r1 | r2 | rn | r;r`
+ * into non-recursive definition of r as a transitive closure:
+ * `let r = (r1 | r2 | ... | rn)  +
+ *)
+val rec2plus : AST.ins list -> AST.ins list
+

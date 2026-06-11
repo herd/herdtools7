@@ -63,23 +63,25 @@ module Make(O:Config) = struct
 
   module ML = ModelLexer.Make(O)
 
-  let do_parse fname chan =
+  let do_parse opt fname chan =
     let buff,lexbuf = mk_lexbuf chan in
     lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname=fname;};
     let model = GenParserUtils.call_parser "model" lexbuf ML.token
         ModelParser.main in
     let pp = Buffer.contents buff in
     let opts,txt,code = model in
-    (opts,txt,set_text pp code)
+    let code = set_text pp code  in
+    let code = if opt then ASTUtils.rec2plus code else code in
+    (opts,txt,code)
 
-  let find_parse fname =
+  let find_parse ?(opt=false) fname =
     let fname = O.libfind fname in
     try fname, Hashtbl.find t fname
     with Not_found ->
-      let r = Misc.input_protect (do_parse fname) fname in
+      let r = Misc.input_protect (do_parse opt fname) fname in
       Hashtbl.add t fname r ;
       fname,r
 
-  let parse fname = let _,r = find_parse fname in r
+  let parse ?opt fname = let _,r = find_parse ?opt fname in r
 
 end
