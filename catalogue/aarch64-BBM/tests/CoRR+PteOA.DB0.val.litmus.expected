@@ -1,0 +1,10 @@
+Test CoRR+PteOA.DB0.val Allowed
+States 1
+1:X0=1; 1:X2=1;
+Ok
+Witnesses
+Positive: 4 Negative: 0
+Condition exists (1:X0=1 /\ 1:X2=1)
+Observation CoRR+PteOA.DB0.val Always 4 0
+Hash=d8ae603b3f40d6e0ef5e808c22452434
+

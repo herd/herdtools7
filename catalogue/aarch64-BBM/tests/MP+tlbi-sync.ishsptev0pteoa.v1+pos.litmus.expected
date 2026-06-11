@@ -1,0 +1,15 @@
+Test MP+tlbi-sync.ishsptev0pteoa.v1+pos Allowed
+States 6
+1:X4=0; 1:X5=0;
+1:X4=1; 1:X5=0;
+1:X4=1; 1:X5=1;
+1:X4=1; 1:X5=2;
+1:X4=2; 1:X5=0;
+1:X4=2; 1:X5=2;
+No
+Witnesses
+Positive: 0 Negative: 9
+Condition exists (1:X4=2 /\ 1:X5=1)
+Observation MP+tlbi-sync.ishsptev0pteoa.v1+pos Never 0 9
+Hash=3334f24571de5375d4587a1f8961673f
+
