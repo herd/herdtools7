@@ -60,6 +60,9 @@ module type S =  sig
 (* Transitive closure *)
   val transitive_closure : t -> t
 
+  (* [restrict_domain_transitive_closure s r] returns [s];r+ *)
+  val restrict_domain_transitive_closure : Elts.t -> t -> t
+
 (* Direct cycles *)
   val is_reflexive : t -> bool
   val is_irreflexive : t -> bool
@@ -239,7 +242,13 @@ module Make(O:MySet.OrderedType) : S
           (res,{id=0; visit=M.empty; stack=[];} ) in
       res
 
-    (* Graph is given as set of notes + relation *)
+(*
+ * Graph is given as a set of nodes [nodes] and a relation [r].
+ * Notice for a node [n] in [nodes] but not in [r],
+ * [dfs ....] is called on [n] and this is important,
+ * for instance for the equation solving as performed
+ * by [scc_kont ...] below.
+ *)
     let scan_nodes_rel kont kont_scc res nodes m =
       let dfs = dfs kont kont_scc m in
       let (res,_) =
@@ -249,6 +258,26 @@ module Make(O:MySet.OrderedType) : S
           nodes
       in
       res
+
+(*
+ * Scan the graph `r` in topological order,
+ * computing scc. Excluding paths that start from
+ * the set [nodes]. By contrast, for [n] in [nodes] but
+ * not in [r], [dfs] will *not* be called on [n].
+ *)
+    let scan_restrict_domain_rel kont kont_scc res nodes m =
+      let dfs = dfs kont kont_scc m in
+      let (res,_) =
+        M.fold
+          (fun n _ r ->
+            if Elts.mem n nodes then
+              let _,r = dfs n r in r
+            else r)
+          m
+          (res,{id=0; visit=M.empty; stack=[];})
+      in
+      res
+
   end
 
 
@@ -363,22 +392,25 @@ module Make(O:MySet.OrderedType) : S
    *        1995.
    *)
 
-  let transitive_closure (m:t) =
-    let kont n m res =
+  let kont n m res =
       let vr = succs res m |> Elts.add m in
       add_set n vr res
 
-    and kont_scc n scc res =
-      match scc with
-      | [] -> assert false
-      | [_] -> res
-      | ms ->
-          let vn = try M.find n res with Not_found -> assert false in
-          if Elts.is_empty vn then res
-          else List.fold_left (fun res m -> add_set m vn res) res ms
-    in
+  and kont_scc n scc res =
+    match scc with
+    | [] -> assert false
+    | [_] -> res
+    | ms ->
+       let vn = try M.find n res with Not_found -> assert false in
+       if Elts.is_empty vn then res
+       else List.fold_left (fun res m -> add_set m vn res) res ms
 
+  let transitive_closure (m:t) =
     FullSCC.scan_map kont kont_scc M.empty m
+
+  let restrict_domain_transitive_closure vs m =
+    FullSCC.scan_restrict_domain_rel kont kont_scc M.empty vs m
+    |>  restrict_domain (fun v -> Elts.mem v vs)
 
   (* Reflexivity check *)
 
@@ -582,7 +614,6 @@ module Make(O:MySet.OrderedType) : S
       let kont _ _ r = r
       and kont_scc _ ns r = kont ns r in
       FullSCC.scan_nodes_rel kont kont_scc res nodes edges
-
 
     (* Check hierarchy *)
 
