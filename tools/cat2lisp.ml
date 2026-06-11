@@ -273,5 +273,10 @@ let () =
                          end) in
   let ast = List.concat (List.map MyParse.parse cats) in
   let lisp_ast = of_list_map of_ins ast in
-  print_obj Format.std_formatter lisp_ast
+  let module LispPP = MakePrinter (struct
+                        let defaultpkg = "ACL2"
+                        let downcase = true
+                        let compact = false
+                      end) in
+  LispPP.pp Format.std_formatter lisp_ast
 

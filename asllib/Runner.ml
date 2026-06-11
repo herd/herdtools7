@@ -26,13 +26,14 @@
 open Typing
 
 type file_type = NormalV1 | NormalV0 | PatchV1 | PatchV0
+type lisp_format = Readable | Compact
 
 type args = {
   exec : bool;
   files : (file_type * string) list;
   opn : string option;
   print_ast : bool;
-  print_lisp : bool;
+  print_lisp : lisp_format option;
   print_serialized : bool;
   print_serialized_typed : bool;
   print_typed : bool;
@@ -56,7 +57,7 @@ let default_args =
     files = [];
     opn = None;
     print_ast = false;
-    print_lisp = false;
+    print_lisp = None;
     print_serialized = false;
     print_serialized_typed = false;
     print_typed = false;
@@ -154,7 +155,9 @@ let run_with (args : args) : unit =
     let check = args.strictness
 
     let print_typed =
-      args.print_typed || args.print_lisp || args.print_serialized_typed
+      args.print_typed
+      || Option.is_some args.print_lisp
+      || args.print_serialized_typed
 
     let use_field_getter_extension = args.use_field_getter_extension
     let override_mode = args.override_mode
@@ -180,11 +183,22 @@ let run_with (args : args) : unit =
   in
 
   let () =
-    if args.print_lisp then
-      let lisp_ast = ToLisp.of_ast typed_ast in
-      let lisp_static_env = ToLisp.of_static_env_global static_env in
-      Lispobj.print_obj Format.std_formatter
-        (Lispobj.Cons (lisp_static_env, lisp_ast))
+    match args.print_lisp with
+    | None -> ()
+    | Some lisp_format ->
+        let module LispConf = struct
+          let defaultpkg = "ACL2"
+          let downcase = true
+
+          let compact =
+            match lisp_format with Readable -> false | Compact -> true
+        end in
+        let module Lisp = ToLisp.Make (LispConf) in
+        let lisp_ast = Lisp.of_ast typed_ast in
+        let lisp_static_env = Lisp.of_static_env_global static_env in
+        let module LispPP = Lispobj.MakePrinter (LispConf) in
+        LispPP.pp Format.std_formatter
+          (Lispobj.Cons (lisp_static_env, lisp_ast))
   in
 
   let exit_code, used_rules =

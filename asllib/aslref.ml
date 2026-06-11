@@ -32,7 +32,7 @@ let parse_args () =
   let print_serialized = ref false in
   let print_serialized_typed = ref false in
   let print_typed = ref false in
-  let print_lisp = ref false in
+  let print_lisp = ref None in
   let opn = ref "" in
   let strictness : strictness ref = ref TypeCheck in
   let set_strictness s () = strictness := s in
@@ -67,8 +67,12 @@ let parse_args () =
         Arg.Set print_typed,
         " Print the parsed AST after typing and before executing it." );
       ( "--print-lisp",
-        Arg.Set print_lisp,
+        Arg.Unit (fun () -> print_lisp := Some Readable),
         " Print the parsed and typechecked AST in the Lisp object format." );
+      ( "--print-lisp-compact",
+        Arg.Unit (fun () -> print_lisp := Some Compact),
+        " Print the parsed and typechecked AST in a compact Lisp object format."
+      );
       ( "--format-csv",
         Arg.Unit (fun () -> output_format := Error.CSV),
         " Output the errors in a CSV format." );

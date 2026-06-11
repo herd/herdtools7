@@ -51,11 +51,13 @@ let rec equal x y =
 module type PrinterConf = sig
   val defaultpkg : string
   val downcase : bool
+  val compact : bool
 end
 
 module MakePrinter (Conf : PrinterConf) = struct
   let defaultpkg = Conf.defaultpkg
   let downcase = Conf.downcase
+  let compact = Conf.compact
 
   let symbol_part_str x =
     (* to get this actually right we'd need much better analysis of whether the symbol needs escaping.
@@ -95,9 +97,10 @@ module MakePrinter (Conf : PrinterConf) = struct
           | _ -> pp_obj_as_list f x
         else pp_obj_as_list f x
     | Comment (str, obj) ->
-        fprintf f "@[<v>%a@]%a" pp_comment_lines
-          (String.split_on_char '\n' str)
-          pp_obj obj
+        if not Conf.compact then
+          fprintf f "@[<v>%a@]%a" pp_comment_lines
+            (String.split_on_char '\n' str)
+            pp_obj obj
 
   and pp_comment_lines f lines =
     match lines with
@@ -112,17 +115,25 @@ module MakePrinter (Conf : PrinterConf) = struct
         if equal cdr nil then pp_obj f car
         else fprintf f "%a@ %a" pp_obj car pp_list cdr
     | _ -> fprintf f ".@ %a" pp_obj x
+
+  let pp fmt =
+    if not compact then pp_obj fmt
+    else
+      let fns = Format.pp_get_formatter_out_functions fmt () in
+      let fns =
+        { fns with out_newline = (fun _ -> ()); out_indent = (fun _ -> ()) }
+      in
+      let fmt = Format.formatter_of_out_functions fns in
+      pp_obj fmt
 end
 
-let print_obj ?(pkg = "ACL2") f x =
+let _test () =
   let module C = struct
-    let defaultpkg = pkg
+    let defaultpkg = "ACL2"
     let downcase = true
+    let compact = false
   end in
   let module P = MakePrinter (C) in
-  P.pp_obj f x
-
-let _test () =
   let foo = Symbol ("ACL2", "FOO") in
   let bar = Symbol ("ACL2", "BAR") in
 
@@ -151,9 +162,9 @@ let _test () =
               make_sexpr (n - Random.int (n + 4)) )
   in
   let obj = make_sexpr 100 in
-  let _ = print_obj Format.std_formatter obj in
+  let _ = P.pp Format.std_formatter obj in
   let obj = make_sexpr 20 in
-  let _ = print_obj Format.std_formatter obj in
+  let _ = P.pp Format.std_formatter obj in
   obj
 
 let of_list x = List.fold_right (fun fst rst -> Cons (fst, rst)) x nil
