@@ -1,0 +1,12 @@
+Test coRW+Wpteoa-copy Allowed
+States 2
+0:X0=0;
+0:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 10
+Flag Warning-BBM-expected
+Condition exists (0:X0=1)
+Observation coRW+Wpteoa-copy Sometimes 1 10
+Hash=9a8a5039bac4a5d305e3600d23eea57f
+

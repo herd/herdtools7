@@ -1,0 +1,18 @@
+AArch64 MP+tlbi-sync.ishpteoadb0p+dmb.ld
+Variant=vmsa
+{
+  [x]=1; [y]=2;
+  [PTE(x)]=(oa:PA(x),db:0);
+  0:X1=(oa:PA(y),db:0); 0:X0=PTE(x);
+  0:X3=z; 0:X4=x;
+  1:X3=z; 1:X4=x;
+}
+ P0              | P1          ;
+ STR X1,[X0]     | LDR W2,[X3] ;
+ DSB ISH         | DMB LD      ;
+ LSR X9,X4,#12   | LDR W5,[X4] ;
+ TLBI VAAE1IS,X9 |             ;
+ DSB ISH         |             ;
+ MOV W2,#1       |             ;
+ STR W2,[X3]     |             ;
+exists (1:X2=1 /\ 1:X5=1)

@@ -1,0 +1,14 @@
+AArch64 coRR+dsb.ishs-[isb]+PteOA
+Variant=vmsa
+{
+  [x]=1; [y]=2;
+  [PTE(x)]=(oa:PA(x));
+  0:X0=x;
+  1:X2=(oa:PA(y)); 1:X1=PTE(x);
+}
+ P0          | P1          ;
+ LDR W1,[X0] | STR X2,[X1] ; 
+ DSB ISH     |             ;
+ ISB         |             ;
+ LDR W2,[X0] |             ;
+exists(0:X1=2 /\ 0:X2=1)
