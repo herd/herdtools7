@@ -167,8 +167,8 @@ irreflexive [Exp & Tag & W]; (po & same-loc); [Imp & Tag & R]; (ca & int) as coW
 empty (rmw & (fr; co)) \ (([Exp]; rmw; [Exp]) & (fri ; [Exp & W]; coi)) as atomic
 
 (*** Break Before Make ***)
-let BBM = ([TTDV]; ca; [TTDINV]; co; [TTDV])
-flag ~empty (TTD-update-needsBBM & ~BBM) as requires-BBM
+let BBM = [TLBCacheableTTD]; ca; [TLBUncacheableTTD]; ob; [TLBI]; ob & inv-scope; [TLBCacheableTTD]
+flag ~empty (TTD-update-needsBBM \ BBM) as Warning-BBM-expected
 
 (*** Additional synchronisation requirements for CMODX ***)
 let CMODX-conflicts = same-loc & (

@@ -916,6 +916,17 @@ module Make
  *)
     let arg_mismatch () = raise (PrimError "argument mismatch")
 
+    let filter_rel f =
+      function
+      | V.Rel r ->
+          V.Rel (E.EventRel.restrict_rel f r)
+      | V.TransRel tr ->
+          V.Rel
+            E.EventRel.
+              (restrict_rel f @@ transitive_closure tr)
+      | _ -> arg_mismatch ()
+
+
     let partition arg = match arg with
     | Set evts ->
         let r = U.partition_events evts in
@@ -1136,50 +1147,13 @@ module Make
 
     and different_values arg =
       let different_val e1 e2 = not (U.same_value e1 e2) in
-      match arg with
-      | V.Rel r ->
-          let r = E.EventRel.restrict_rel different_val r in
-          V.Rel r
-      | V.TransRel tr ->
-          let r = E.EventRel.transitive_closure tr in
-          let r = E.EventRel.restrict_rel different_val r in
-          V.Rel r
-      | _ -> arg_mismatch ()
+      filter_rel different_val arg
 
-    and same_oaRel arg =
-      match arg with
-      | V.Rel r ->
-          V.Rel (E.EventRel.restrict_rel U.same_oa r)
-      | V.TransRel tr ->
-          V.Rel
-            E.EventRel.
-              (restrict_rel U.same_oa @@ transitive_closure tr)
-      | _ -> arg_mismatch ()
+    and same_oaRel arg = filter_rel U.same_oa arg
 
-    and check_two pred arg = match arg with
-      | V.Tuple [V.Set ws; (V.Rel _ | V.TransRel _) as prec; ] ->
-          let m =
-            match prec with
-            | V.Rel m -> m
-            | V.TransRel m -> E.EventRel.transitive_closure m
-            | _ -> assert false
-          in
-          let ws =
-            E.EventSet.filter
-              (fun w ->
-                E.is_store w && E.is_pt w &&
-                begin
-                  match E.EventSet.as_singleton (E.EventRel.succs m w) with
-                  | Some p -> pred w p
- (* w does not qualify when zero of two or more prec-related events *)
-                  | None -> false
-                end)
-              ws in
-          V.Set ws
-      | _ -> arg_mismatch ()
+    and oa_changes arg = filter_rel (fun w p -> not (U.same_oa w p)) arg
 
-    let oa_changes = check_two (fun w p -> not (U.same_oa w p))
-    and at_least_one_writable = check_two U.writable2
+    and at_least_one_writable arg = filter_rel U.writable2 arg
 
     let as_transitive =
       function
