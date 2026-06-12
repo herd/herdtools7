@@ -2,7 +2,7 @@
 \chapter{Lexical Structure\label{chap:LexicalStructure}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 This chapter defines the various elements of an ASL specification text in a high-level way,
-and then formalizes the lexical analysis as a function that takes a text and returns
+and then formalises the lexical analysis as a function that takes a text and returns
 either a list of \emph{tokens} or a lexical error.
 
 \ChapterOutline
@@ -136,7 +136,7 @@ Integers are written either in decimal using one or more of the characters \text
 using \texttt{0x} at the start followed by the characters \texttt{0-9, a-f, A-F} and underscore. An integer literal cannot start with
 an underscore.
 
-This is formalized by the following lexical regular expression:
+This is formalised by the following lexical regular expression:
 \hypertarget{def-redigit}{}
 \hypertarget{def-reintlit}{}
 \hypertarget{def-rehexlit}{}
@@ -168,7 +168,7 @@ forbidden and trigger a lexical error.
 \hypertarget{def-reallit}{}
 \hypertarget{def-forbiddenrealfirst}{}
 \hypertarget{def-forbiddenrealremaining}{}
-This is formalized by the following lexical regular expression:
+This is formalised by the following lexical regular expression:
 \begin{center}
 \begin{tabular}{rcl}
 $\REreallit$  &$\triangleq$ & $\REintlit$ \texttt{"."} $\REintlit$ \\
@@ -441,10 +441,10 @@ While Maximal Munch is a useful policy for scanning of most tokens,
 it does not work well for string literals and multi-line comments, which require
 identifying the respective tokens via shortest match.
 %
-For this purpose, most lexical analyzers split the analysis into separate ``states'' ---
+For this purpose, most lexical analysers split the analysis into separate ``states'' ---
 one for keywords, symbols, single-line comments, and identifiers, one for string literals,
-and one for multi-line comments. The lexical analyzers switch between the states as
-needed, and analyzing string literals involves concatenating the individual characters
+and one for multi-line comments. The lexical analysers switch between the states as
+needed, and analysing string literals involves concatenating the individual characters
 of the string literal into a single token.
 
 Lexical analysis of ASL follows this approach by defining three specifications:
@@ -492,7 +492,7 @@ The lexeme action
 \end{array}
 \]
 
-is parameterized by a function $f$ that converts strings into corresponding tokens.
+is parameterised by a function $f$ that converts strings into corresponding tokens.
 It applies $f$ to convert $s_1$ into a token and then continues scanning $s_2$ with \\
 $\spectoken$.
 If at any point a lexical error is encountered, the entire result is a lexical error.
@@ -672,7 +672,7 @@ $\eof$            & $\eoftoken$ \\
 
 \subsection{Scanning Strings}
 \hypertarget{def-scanstring}{}
-To scan string literals, we define the following specialized scanning function.
+To scan string literals, we define the following specialised scanning function.
 The function
 \[
 \scanstring(\overname{\KleeneStar{\REasciichar}}{\buff}, \overname{\KleeneStar{\REasciichar}}{s}) \aslto (\KleeneStar{\Token} \cup \{\LexicalErrorConfig\})

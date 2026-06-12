@@ -311,7 +311,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \RequirementDef{GlobalStorageCycles}
-The declarations, and any associated initialization expressions, for global storage elements, must not include cycles.
+The declarations, and any associated initialisation expressions, for global storage elements, must not include cycles.
 
 The specifications in \listingref{GlobalStorageCycles-bad1} and \listingref{GlobalStorageCycles-bad2}
 are illegal, since they contain cycles.
@@ -354,13 +354,13 @@ focused on storage elements that are not configurations.
 \ASLListing{Ill-typed non-configuration storage element}{DeclareGlobalStorage-non-config-bad}{\typingtests/TypingRule.DeclareGlobalStorage.non_config.bad.asl}
 
 The specification in \listingref{DeclareGlobalStorage-bad3} is illegal since
-\texttt{config} storage elements must have an initializing expression.
-\ASLListing{Uninitialized configuration storage declaration}{DeclareGlobalStorage-bad3}{\typingtests/TypingRule.DeclareGlobalStorage.bad3.asl}
+\texttt{config} storage elements must have an initialising expression.
+\ASLListing{Uninitialised configuration storage declaration}{DeclareGlobalStorage-bad3}{\typingtests/TypingRule.DeclareGlobalStorage.bad3.asl}
 
 The specifications in \listingref{DeclareGlobalStorage-bad1} and \listingref{DeclareGlobalStorage-bad2}
 are ill-typed since
 \texttt{config} storage elements have the \purity{} $\SEPure$,
-which requires that all expressions used in its type annotation and initializing expression
+which requires that all expressions used in its type annotation and initialising expression
 also have \purity{} $\SEPure$,
 whereas \verb|x| has the \purity{} $\SEReadonly$.
 \ASLListing{Ill-typed configuration storage declaration}{DeclareGlobalStorage-bad1}{\typingtests/TypingRule.DeclareGlobalStorage.bad1.asl}

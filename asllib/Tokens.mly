@@ -151,7 +151,7 @@
 (*
    This section on associativity uses menhir associativity and priority
    features. Internally, it is used by menhir to resolve some conflicts that
-   could arrise from different conflicting expressions, e.g. [3 + 4 + 5].
+   could arise from different conflicting expressions, e.g. [3 + 4 + 5].
 
    For a quick intro, menhir assigns a priority level to tokens that have a
    [left], [right], or [nonassoc] declaration in the order in which they are
@@ -177,9 +177,9 @@
      expr_atom <-----------|DOT, brackets, ...|-------------< expr
 
 
-  Note that the token MINUS has two different precedence: one for when it is a
-  binary operator, in that case it has the same precedence as PLUS, and one for
-  when it is a unary operator, in which case it has the same precendence as
+  Note that the token MINUS has two different priority: one for when it is a
+  binary operator, in that case it has the same priority as PLUS, and one for
+  when it is a unary operator, in which case it has the same priority as
   NOT.
 *)
 

@@ -64,8 +64,8 @@
   File binop-same-precedence.asl, line 1, characters 8 to 13:
   let x = a + b - c;
           ^^^^^
-  ASL Grammar error: Cannot parse. Operators `-` and `+` have the same
-    precedence - parenthesise to disambiguate.
+  ASL Grammar error: Cannot parse. Operators `-` and `+` have the same priority
+    - parenthesise to disambiguate.
   [1]
 
   $ aslref empty-record.asl

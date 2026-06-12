@@ -55,7 +55,7 @@ generate a \typedast.
   \end{itemize}
   \item \secref{TypedAbstractSyntaxGrammar} defines the \typedast;
   \item \secref{BuildingAbstractSyntaxTrees} explains how we use inference rules to transform a parse tree into an \untypedast;
-  \item \secref{BuildingParameterizedProductions} presents rules for building ASTs from parameterized productions;
+  \item \secref{BuildingParameterisedProductions} presents rules for building ASTs from parameterised productions;
   \item \secref{LeftToRight} maps \assignableexpressions{} to right-hand side expressions;
   \item \secref{AbstractSyntaxAbbreviations} defines AST abbreviations used by inference rules throughout this reference.
 \end{itemize}
@@ -276,10 +276,10 @@ The intention for each AST node type above is as follows:
   \item $\EGetItem(\ve, i)$ accesses the $i$th component of the tuple given by
     the expression $\ve$.
   \item $\EArray\{\EArrayLength: \veone, \EArrayValue: \vetwo\}$ is used to
-    construct an integer-indexed array value in order to initialize an
+    construct an integer-indexed array value in order to initialise an
     array-typed variable;
   \item $\EEnumArray\{\EArrayEnum: \name, \EArrayLabels: \vl_{1..k}, \EArrayValue: \vetwo\}$ is used
-    to construct an enumeration-indexed array value in order to initialize an
+    to construct an enumeration-indexed array value in order to initialise an
     array-typed variable;
   \item $\EGetEnumArray(\ebase, \ekey)$ is used for accessing an enumerated
     array given by $\ebase$ at the entry given by $\ekey$;
@@ -418,7 +418,7 @@ In our example, this results in the abbreviated rule notation
 \end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Building Parameterized Productions\label{sec:BuildingParameterizedProductions}}
+\section{Building Parameterised Productions\label{sec:BuildingParameterisedProductions}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 This section defines builder relations for the
 subset of macro productions in \secref{ParametricProductions}
@@ -441,7 +441,7 @@ The meta relation
 \[
 \buildlist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
 \]
-which is parameterized by an AST building relation $b(E) \aslrel A$,
+which is parameterised by an AST building relation $b(E) \aslrel A$,
 takes a parse node that represents a possibly-empty list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
 to each of them --- $\vsymasts$.
 
@@ -469,7 +469,7 @@ The meta relation
 \[
 \buildclist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
 \]
-which is parameterized by an AST building relation $b(E) \aslrel A$,
+which is parameterised by an AST building relation $b(E) \aslrel A$,
 takes a parse node that represents a possibly-empty comma-separated list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
 to each of them --- $\vsymasts$.
 
@@ -496,8 +496,8 @@ The meta relation
 \[
 \buildplist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
 \]
-which is parameterized by an AST building relation $b(E) \aslrel A$,
-takes a parse node that represents a parenthesized comma-separated list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
+which is parameterised by an AST building relation $b(E) \aslrel A$,
+takes a parse node that represents a parenthesised comma-separated list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
 to each of them --- $\vsymasts$.
 
 \begin{mathpar}
@@ -514,7 +514,7 @@ The meta relation
 \[
 \buildtclist[b](\overname{N}{\vsyms}) \;\aslrel\; \overname{A}{\vsymasts}
 \]
-which is parameterized by an AST building relation $b(E) \aslrel A$,
+which is parameterised by an AST building relation $b(E) \aslrel A$,
 takes a parse node that represents a non-empty comma-separated trailing list of $E$ values --- $\vsyms$ --- and returns the result of applying $b$
 to each of them --- $\vsymasts$.
 
@@ -541,7 +541,7 @@ The meta relation
 \[
 \buildoption[b](\overname{N}{\vsym}) \;\aslrel\; \overname{\Option{A}}{\vsymast}
 \]
-which is parameterized by an AST building relation $b(N) \aslrel A$,
+which is parameterised by an AST building relation $b(N) \aslrel A$,
 takes a parse node that represents an optional $N$ value $\vsym$, and returns the result of applying $b$
 to the value if it exists --- $\vsymasts$.
 
@@ -587,7 +587,7 @@ to terminals.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Transforming Assignable Expressions\label{sec:LeftToRight}}
 \RenderRelation{rexpr}
-This function is utilized by both the type system and the dynamic semantics.
+This function is utilised by both the type system and the dynamic semantics.
 It is defined recursively by the following table:
 \[
 \begin{array}{lcl}

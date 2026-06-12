@@ -78,12 +78,12 @@ let make_ty_decl_subtype (x, s) =
 let prec =
   let open AST in
   function
-  | `BOR | `BAND | `IMPL | `BEQ -> 0
-  | `EQ | `NE -> 1
-  | `GT | `GE | `LT | `LE -> 2  (* Non assoc *)
-  | `ADD | `SUB | `OR | `XOR | `AND | `BV_CONCAT | `STR_CONCAT | `BIC -> 3
-  | `MUL | `DIV | `DIVRM | `RDIV | `MOD | `SHL | `SHR -> 4
-  | `POW -> 5
+  | `BOR | `BAND | `IMPL | `BEQ -> 1
+  | `EQ | `NE -> 2
+  | `GT | `GE | `LT | `LE -> 3  (* Non assoc *)
+  | `ADD | `SUB | `OR | `XOR | `AND | `BV_CONCAT | `STR_CONCAT | `BIC -> 4
+  | `MUL | `DIV | `DIVRM | `RDIV | `MOD | `SHL | `SHR -> 5
+  | `POW -> 6
 
 let check_is_associative ~loc (op : AST.binop) =
   match op with
@@ -108,7 +108,7 @@ let check_not_same_prec loc op op' =
         (CannotParse
            (Some
               (Format.sprintf
-                 "Operators `%s` and `%s` have the same precedence - parenthesise \
+                 "Operators `%s` and `%s` have the same priority - parenthesise \
                   to disambiguate."
                  (PP.binop_to_string op) (PP.binop_to_string op')))))
 

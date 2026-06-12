@@ -72,10 +72,10 @@ We also define helper functions via respective rules:
 \TypingRuleDef{AnnotateCall}
 \RenderRelation{annotate_call}
 
-\ExampleDef{Parameterized Subprogram Calls}
+\ExampleDef{Parameterised Subprogram Calls}
 The specifications in \listingref{AnnotateCall} and \listingref{AnnotateCall2} are well-typed.
-\ASLListing{Well-typed parameterized subprogram calls}{AnnotateCall}{\typingtests/TypingRule.AnnotateCall.asl}
-\ASLListing{Well-typed parameterized subprogram calls}{AnnotateCall2}{\typingtests/TypingRule.AnnotateCall2.asl}
+\ASLListing{Well-typed parameterised subprogram calls}{AnnotateCall}{\typingtests/TypingRule.AnnotateCall.asl}
+\ASLListing{Well-typed parameterised subprogram calls}{AnnotateCall2}{\typingtests/TypingRule.AnnotateCall2.asl}
 
 \ExampleDef{A Call with an Illegal Parameter Type}
 The specification in \listingref{AnnotateCall-bad} is illegal since
@@ -196,12 +196,12 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
 \TypingRuleDef{RenameTyEqs}
 \RenderRelation{rename_ty_eqs}
 
-\ExampleDef{Transforming Parameterized Types Based on Actual Arguments}
+\ExampleDef{Transforming Parameterised Types Based on Actual Arguments}
 In \listingref{RenameTyEqs}, annotating the call expression \verb|FlipPrefix{8}(bv, 4)|
 requires substituting \verb|8| for \verb|N| in the types
 \verb|bits(N)| and \verb|integer{0..N}|, yielding the types
 \verb|bits(8)| and \verb|integer{0..8}|.
-\ASLListing{Transforming parameterized types based on actual arguments}{RenameTyEqs}{\typingtests/TypingRule.RenameTyEqs.asl}
+\ASLListing{Transforming parameterised types based on actual arguments}{RenameTyEqs}{\typingtests/TypingRule.RenameTyEqs.asl}
 
 
 \RenderProseAndFormally{rename_ty_eqs}
@@ -209,12 +209,12 @@ requires substituting \verb|8| for \verb|N| in the types
 \TypingRuleDef{SubstExprNormalize}
 \RenderRelation{subst_expr_normalize}
 
-\ExampleDef{Substituting Parameter Expressions and Normalizing}
+\ExampleDef{Substituting Parameter Expressions and Normalising}
 In \listingref{SubstExpr},
 considering the call expression \verb|plus{z + 22}(bv1, z)|,
 the expression \verb|z + 22| is substituted for the parameter \verb|N| in the type
 \verb|bits(N + 2)| used for the argument \verb|x| and as the return type of \verb|plus|,
-resulting in the expression \verb|(40 + 22) + 2|, which is then normalized into \verb|64|.
+resulting in the expression \verb|(40 + 22) + 2|, which is then normalised into \verb|64|.
 \ASLListing{Substituting Parameter Expressions}{SubstExpr}{\typingtests/TypingRule.SubstExpr.asl}
 
 
@@ -226,7 +226,7 @@ resulting in the expression \verb|(40 + 22) + 2|, which is then normalized into 
 The function assumes that $\ve$ appears in the declaration of a parameter,
 which means it is in the subset allowed by $\extractparameters$.
 
-See \ExampleRef{Substituting Parameter Expressions and Normalizing}.
+See \ExampleRef{Substituting Parameter Expressions and Normalising}.
 
 
 \RenderProseAndFormally{subst_expr}

@@ -286,7 +286,7 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
   \item \AllApplyCase{greater\_or\_equal}
   \begin{itemize}
     \item $\op$ is one of $\SHL$, $\SHR$, and $\POW$;
-    \item define $\vf$ as the specialization of $\refineconstraintbysign$ for the predicate
+    \item define $\vf$ as the specialisation of $\refineconstraintbysign$ for the predicate
           $\lambda x.\ x \geq 0$, which is $\True$ if and only if the tested number is greater than or equal to $0$;
     \item refining the list of constraints $\cs$ with $\vf$ and $\vapprox$ via $\refineconstraints$ yields \\
           $\newcs$\ProseTerminateAs{\CannotUnderapproximate, \CannotOverapproximate};
@@ -296,7 +296,7 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
   \item \AllApplyCase{greater\_than}
   \begin{itemize}
     \item $\op$ is one of $\MOD$, $\DIV$, and $\DIVRM$;
-    \item define $\vf$ as the specialization of $\refineconstraintbysign$ for the predicate
+    \item define $\vf$ as the specialisation of $\refineconstraintbysign$ for the predicate
           $\lambda x.\ x > 0$, which is $\True$ if and only if the tested number is greater than $0$;
     \item refining the list of constraints $\cs$ with $\vf$ and $\vapprox$ via $\refineconstraints$ yields \\
           $\newcs$\ProseTerminateAs{\CannotUnderapproximate, \CannotOverapproximate};
@@ -778,7 +778,7 @@ See \ExampleRef{The Structure of a Type}.
 \TypingRuleDef{ToWellConstrained}
 \RenderRelation{to_well_constrained}
 
-\ExampleDef{Converting Parameterized Integer Types to Well-constrained Integer Types}
+\ExampleDef{Converting Parameterised Integer Types to Well-constrained Integer Types}
 The following are two examples of applying $\towellconstrained$ to various types:
 \begin{mathpar}
 \inferrule{}{
