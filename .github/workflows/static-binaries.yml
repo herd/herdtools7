@@ -38,14 +38,18 @@ jobs:
           mkdir -p ~/.config/dune
           echo $'(lang dune 2.7)\n(display short)' > ~/.config/dune/config
 
-      - name: Patch asllib/dune
-        run: sed -i -e 's/(name asllib)/(name asllib)(no_dynlink)/g' asllib/dune
+      - name: Patch dune files
+        run: |
+          sed -i -e 's/(name asllib)/(name asllib)(no_dynlink)/g' asllib/dune
+          sed -i -e 's/(name testhelpers)/(name testhelpers)(no_dynlink)/g' asllib/tests/dune
 
       - name: Build
         run: |
           mkdir /artifacts
           opam exec -- make build PREFIX=binaries DUNE_PROFILE=static
           opam exec -- make install PREFIX=/artifacts DUNE_PROFILE=static
+          opam exec -- make build-aslref PREFIX=binaries DUNE_PROFILE=static
+          opam exec -- make install-aslref PREFIX=/artifacts DUNE_PROFILE=static
 
       # NOTE: -set-libdir will need to be passed to various binaries, including `herd7` and `litmus7`
       - name: Upload binaries
