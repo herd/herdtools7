@@ -162,9 +162,8 @@ The main rule for annotating type declarations is \TypingRuleRef{AnnotateTypeDec
 We also define the following helper rules:
 \begin{itemize}
   \item \TypingRuleRef{DeclareType}
-  \item \TypingRuleRef{AddGlobalStorage}
-  \item \TypingRuleRef{DeclareType}
   \item \TypingRuleRef{AnnotateExtraFields}
+  \item \TypingRuleRef{DeclaredType}
   \item \TypingRuleRef{DeclareEnumLabels}
   \item \TypingRuleRef{DeclareConst}
 \end{itemize}
@@ -195,15 +194,15 @@ $\GlobalEffect(\SEPure)$ and\\$\Immutability(\True)$.
 \RenderRelation{annotate_extra_fields}
 
 \ExampleDef{Type Declarations with Fields and Without Fields}
-In \listingref{DeclareType} shows type declarations where one type subtypes
+\listingref{DeclareType} shows type declarations where one type subtypes
 another, with and without extra fields.
 Specifically, both \verb|SubRecordEmptyExtraFields| and \\
 \verb|SubRecordNoExtraFields|
 subtype \verb|Record| with no extra fields.
 
 In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| is declared to subtype
-\verb|SubRecord| is ill-typed, since \verb|SubRecord| is not defined as a type.
-\ASLListing{Subtyping an undefined typed}{AnnotateExtraFields-bad}{\typingtests/TypingRule.AnnotateExtraFields.bad.asl}
+\verb|Record| is ill-typed, since \verb|Record| is not defined as a type.
+\ASLListing{Subtyping an undefined type}{AnnotateExtraFields-bad}{\typingtests/TypingRule.AnnotateExtraFields.bad.asl}
 
 
 \RenderProseAndFormally{annotate_extra_fields}
@@ -218,7 +217,7 @@ necessitates retrieving the type \\
 \verb|integer{0..400}|, which is associated with \verb|MyInt|.
 \ASLListing{The type associated with an identifier}{DeclaredType}{\typingtests/TypingRule.DeclaredType.asl}
 
-The specification in \listingref{DeclaredType} is ill-typed,
+The specification in \listingref{DeclaredType-bad} is ill-typed,
 since the expression \verb|20 as MyInt| refers to the undeclared type \verb|MyInt|.
 \ASLListing{Referring to an undeclared type}{DeclaredType-bad}{\typingtests/TypingRule.DeclaredType.bad.asl}
 
@@ -243,29 +242,25 @@ $\BlueLabel$ & $\TNamed(\ColorType)$ & $\LLabel(\BlueLabel)$\\
 \end{tabular}
 \end{center}
 
-
 \RenderProseAndFormally{declare_enum_labels}
 
 \TypingRuleDef{DeclareConst}
 \RenderRelation{declare_const}
 
-\ExampleDef{Declaring a Global Constant}
-In \listingref{DeclareConst}, declaring the constant \PI{}
+\ExampleDef{Declaring a Global Constant for an Enumeration Label}
+In \listingref{DefEnumLabels}, declaring the constant \RED{}
 in the empty \globalstaticenvironmentterm{} yields the following \globalstaticenvironmentterm:
 \[
 \begin{array}{l}
-  \declareconst(\emptytenv.\staticenvsG, \PI, \TReal, \LReal(157 / 50)) \typearrow \\
+  \declareconst(\emptytenv.\staticenvsG, \RED, \TNamed(\ColorType), \LLabel(\RED)) \typearrow \\
   \emptytenv.\staticenvsG\left[
     \begin{array}{l}
-    \globalstoragetypes\mapsto\{\PI\mapsto(\TReal, \GDKConstant)\},\\
-    \constantvalues[\PI\mapsto\LReal(157 / 50)]
+    \globalstoragetypes\mapsto\{\RED\mapsto(\TNamed(\ColorType), \GDKConstant)\},\\
+    \constantvalues[\RED\mapsto\LLabel(\RED)]
     \end{array}
   \right]
 \end{array}
 \]
 (that is, all maps other than $\globalstoragetypes$ and $\constantvalues$, remain the same.)
-
-\ASLListing{Declaring a global constant}{DeclareConst}{\typingtests/TypingRule.DeclareConst.asl}
-
 
 \RenderProseAndFormally{declare_const}

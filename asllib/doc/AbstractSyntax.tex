@@ -53,7 +53,7 @@ generate a \typedast.
     \item \secref{GlobalDeclarations} defines the AST for global declarations;
     \item \secref{Specifications} defines the AST for specifications;
   \end{itemize}
-  \item \secref{TypedAbstractSyntaxGrammar} defines the \typedast;
+  \item \secref{TypedAbstractSyntax} defines the \typedast;
   \item \secref{BuildingAbstractSyntaxTrees} explains how we use inference rules to transform a parse tree into an \untypedast;
   \item \secref{BuildingParameterisedProductions} presents rules for building ASTs from parameterised productions;
   \item \secref{LeftToRight} maps \assignableexpressions{} to right-hand side expressions;
@@ -260,7 +260,7 @@ Declaration keyword for global storage elements:
 \subsection{Specifications \label{sec:Specifications}}
 \RenderType{spec}
 
-\section{Typed Abstract Syntax Grammar\label{sec:TypedAbstractSyntaxGrammar}}
+\section{Typed Abstract Syntax\label{sec:TypedAbstractSyntax}}
 
 The derivation rules for the typed abstract syntax are the same as the rules for the untyped abstract syntax,
 except for the following differences.
@@ -277,19 +277,21 @@ The intention for each AST node type above is as follows:
     the expression $\ve$.
   \item $\EArray\{\EArrayLength: \veone, \EArrayValue: \vetwo\}$ is used to
     construct an integer-indexed array value in order to initialise an
-    array-typed variable;
+    array-typed variable.
   \item $\EEnumArray\{\EArrayEnum: \name, \EArrayLabels: \vl_{1..k}, \EArrayValue: \vetwo\}$ is used
     to construct an enumeration-indexed array value in order to initialise an
-    array-typed variable;
+    array-typed variable.
   \item $\EGetEnumArray(\ebase, \ekey)$ is used for accessing an enumerated
-    array given by $\ebase$ at the entry given by $\ekey$;
-  \item $\LESetEnumArray(\ebase, \evalue)$ is used for updating an enumerated
-    array left-hand-side expression given by $\ebase$ with the value given by
-    $\evalue$;
-  \item $\EGetCollectionFields(\ebase, \ekey)$ is used for accessing a
-    collection given by $\ebase$ at the entry given by $\ekey$;
-  \item $\LESetCollectionFields(\ebase, \ekey)$ is used for updating a
-    collection given by $\ebase$ at the entry given by $\ekey$.
+    array given by $\ebase$ at the entry given by $\ekey$.
+  \item $\LESetEnumArray(\ebase, \eindex)$ is used for updating an enumerated
+    array left-hand-side expression given by $\ebase$ at the index given by
+    $\eindex$.
+  \item $\EGetCollectionFields(\name, \fieldnames)$ is used for accessing
+    the list of (\bitvectortypeterm{}) fields given by $\fieldnames$
+    of the collection named $\name$.
+  \item $\LESetCollectionFields(\name, \fieldnames, \vslices)$ is used for updating
+    the list of (\bitvectortypeterm{}) fields given by $\fieldnames$ of the
+    collection named $\name$ with the slices given by $\vslices$.
   \item $\typedLESetFields(\vbase, \fieldnames, \vslices)$ is used for simultaneously updating
      the \bitvectortypeterm{}-typed bitfields listed in $\fieldnames$ whose inferred slices
      are given by $\vslices$.
@@ -588,21 +590,10 @@ to terminals.
 \section{Transforming Assignable Expressions\label{sec:LeftToRight}}
 \RenderRelation{rexpr}
 This function is utilised by both the type system and the dynamic semantics.
-It is defined recursively by the following table:
-\[
-\begin{array}{lcl}
-  \textbf{Assignable expression} & & \textbf{Right-hand side expression}\\
-  \hline
-  \torexpr(\LEVar(\vx)) &=& \EVar(\vx)\\
-  \torexpr(\LESlice(\vle, \vargs)) &=& \ESlice(\torexpr(\vle), \vargs)\\
-  \torexpr(\LESetArray(\vle, \ve)) &=& \EGetArray(\torexpr(\vle), \ve)\\
-  \torexpr(\LESetEnumArray(\vle, \ve)) &=& \EGetEnumArray(\torexpr(\vle), \ve)\\
-  \torexpr(\LESetField(\vle, \vx)) &=& \EGetField(\torexpr(\vle), \vx)\\
-  \torexpr(\LESetFields(\vle, [\vx_{1..k}])) &=& \EGetFields(\torexpr(\vle), [\vx_{1..k}])\\
-  \torexpr(\LEDiscard) &=& \EVar(\discardvar)\\
-  \torexpr(\LEDestructuring([\vle_{1..k}])) &=& \ETuple([i=1..k: \torexpr(\vle_i)])\\
-\end{array}
-\]
+
+Notice that $\LESetFields$ has two cases --- one for the \untypedast{} and one for the \typedast{}.
+
+\RenderProseAndFormally{rexpr}
 
 \section{Abstract Syntax Abbreviations\label{sec:AbstractSyntaxAbbreviations}}
 We employ the following abbreviations for various AST nodes:

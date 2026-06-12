@@ -949,7 +949,7 @@ and the types inferred for them via the added \verb|as <inferred type>|.
 
 \ExampleDef{Typing Collection Field Expressions}
 All of the collection field expressions in
-\listingref{typing-lesetcollectionfields} are well-typed.
+\listingref{semantics-lesetcollectionfields} are well-typed.
 
 \RenderProseAndFormally{annotate_expr_EGetField_collection}
 \CodeSubsection{\EGetCollectionFieldBegin}{\EGetCollectionFieldEnd}{../Typing.ml}
@@ -1002,7 +1002,7 @@ for its verbatim string.
 \ExampleDef{Evaluation of a Field Read Expression}
 In \listingref{semantics-egetfield},
 the expression \verb|my_record.a| evaluates to the value \texttt{3}.
-\ASLListing{Evaluating a field access expression}{semantics-egetfield}{\semanticstests/SemanticsRule.ERecord.asl}
+\ASLListing{Constructing a record and accessing a field}{semantics-egetfield}{\semanticstests/SemanticsRule.ERecord.asl}
 
 \RenderProseAndFormally{eval_expr_EGetField}
 \CodeSubsection{\EvalEGetFieldBegin}{\EvalEGetFieldEnd}{../Interpreter.ml}
@@ -1087,14 +1087,13 @@ yields the literal expression for \verb|2|.
 
 \ExampleDef{Summing Widths}
 Summing the list of expressions \verb|2, 3|,
-yields the expression \verb|2+3|,
-(in AST terms, \\
-$\AbbrevEBinop{\ADD}{\ELInt{2}}{\ELInt{2}}$).
+yields the expression \verb|2+3|. That is, the AST node
+$\AbbrevEBinop{\ADD}{\ELInt{2}}{\ELInt{3}}$.
 
 \RenderProseAndFormally{width_plus}
 
 \subsection{Semantics}
-\SemanticsRuleDef{EGetfields}
+\SemanticsRuleDef{EGetFields}
 \ExampleDef{Evaluating Multi-field Expressions}
 In \listingref{egetfields},
 evaluating the multi-field expression \\
@@ -1106,16 +1105,18 @@ and evaluating the multi-field expression \\
 yields the bitvector value \verb|'001010'|.
 
 \RenderProseAndFormally{eval_expr_EGetFields}
-\CodeSubsection{\EvalEGetFieldsBegin}{\EvalEGetFieldsEnd}{../interpreter.ml}
+\CodeSubsection{\EvalEGetFieldsBegin}{\EvalEGetFieldsEnd}{../Interpreter.ml}
 
 \SemanticsRuleDef{EGetCollectionFields}
 
-\ExampleDef{Typing Collection Fields Expressions}
-All of the collection field expressions in
-\listingref{typing-lesetcollectionfields} are well-typed.
+\ExampleDef{Evaluating Collection Fields Expressions}
+The expression \verb|MyCollection.[field2, field1]| in
+\listingref{semantics-lesetcollectionfields}
+returns the concatenation of the values of fields \verb|field2| and \verb|field1|
+in \verb|MyCollection|.
 
 \RenderProseAndFormally{eval_expr_EGetCollectionFields}
-\CodeSubsection{\EvalEGetCollectionFieldsBegin}{\EvalEGetCollectionFieldsEnd}{../interpreter.ml}
+\CodeSubsection{\EvalEGetCollectionFieldsBegin}{\EvalEGetCollectionFieldsEnd}{../Interpreter.ml}
 
 \hypertarget{def-atceexpressionterm}{}
 \section{Asserting Type Conversion Expressions\label{sec:AssertingTypeConversionExpressions}}

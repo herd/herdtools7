@@ -376,8 +376,8 @@ ASL Typing Tests / annotating types:
   ne_string: "hello" != "world" = TRUE
   eq_enum: RED == RED = TRUE
   eq_enum: RED == GREEN = FALSE
-  eq_enum: RED != RED = FALSE
-  eq_enum: RED != GREEN = TRUE
+  ne_enum: RED != RED = FALSE
+  ne_enum: RED != GREEN = TRUE
   concat_string: 0 ++ '1' ++ 2.0 ++ TRUE ++ "foo" ++ RED = 00x12TRUEfooRED
 
   $ aslref TypingRule.EVar.asl
@@ -682,7 +682,6 @@ ASL Typing Tests / annotating types:
               ^^^^^^^^^^
   ASL Grammar error: Cannot parse.
   [1]
-  $ aslref TypingRule.LESetCollectionFields.asl
   $ aslref TypingRule.TypecheckDecl.asl
   0x0000000000000000
   0xffffffffffffffff
@@ -748,7 +747,6 @@ ASL Typing Tests / annotating types:
               ^^^^^^^^^^^
   ASL Static error: Undefined identifier: 'MyInt'
   [1]
-  $ aslref --no-exec TypingRule.DeclareConst.asl
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.config.asl
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.config.bad.asl
   File TypingRule.DeclareGlobalStorage.config.bad.asl, line 2,

@@ -741,11 +741,11 @@ are well-typed.
 
 \ExampleDef{Typing Collection Field Assignable Expressions}
 All of the collection field assignable expressions in
-\listingref{typing-lesetcollectionfields} are well-typed.
+\listingref{semantics-lesetcollectionfields} are well-typed.
 
 
 \RenderProseAndFormally{annotate_lexpr_LESetCollectionField}
-\CodeSubsection{\LESetStructuredFieldBegin}{\LESetStructuredFieldEnd}{../Typing.ml}
+\CodeSubsection{\LESetCollectionFieldBegin}{\LESetCollectionFieldEnd}{../Typing.ml}
 
 \TypingRuleDef{LESetBadField}
 \ExampleDef{Assigning a Field in an Inappropriate Type}
@@ -816,7 +816,7 @@ The multi-field assignments in \listingref{lesetfields} evaluate without yieldin
 
 \SemanticsRuleDef{AssignBitvectorFields}
 \RenderRelation{assign_bitvector_fields}
-\ExampleDef{Assignment Bitvector-typed Fields}
+\ExampleDef{Assignment to Bitvector-typed Fields}
 The statement \verb|y.[data, time, status] = Ones{8} :: Zeros{16} :: '1';|
 in \listingref{lesetfields}
 assigns the fields \verb|data|, \verb|time|, and \verb|status|,
@@ -827,10 +827,9 @@ $\nvbitvector('11111111 0000000000000000 1')$.
 \RenderProseAndFormally{assign_bitvector_fields}
 \SemanticsRuleDef{LESetCollectionFields}
 
-\ExampleDef{Typing Collection Fields Assignable Expressions}
-All of the collection field assignable expressions in
-\listingref{typing-lesetcollectionfields} are well-typed.
-\ASLListing{Typing collection fields assignment expressions}{typing-lesetcollectionfields}{\typingtests/TypingRule.LESetCollectionFields.asl}
+\ExampleDef{Evaluating Collection Fields Assignable Expressions}
+\listingref{semantics-lesetcollectionfields} shows examples of evaluating collection fields assignable expressions.
+\ASLListing{Evaluating collection fields assignment expressions}{semantics-lesetcollectionfields}{\semanticstests/SemanticsRule.LESetCollectionFields.asl}
 
 
 \RenderProseAndFormally{eval_lexpr_LESetCollectionFields}

@@ -688,8 +688,8 @@ eq_string: "hello" == "hello" = TRUE
 ne_string: "hello" != "world" = TRUE
 eq_enum: RED == RED = TRUE
 eq_enum: RED == GREEN = FALSE
-eq_enum: RED != RED = FALSE
-eq_enum: RED != GREEN = TRUE
+ne_enum: RED != RED = FALSE
+ne_enum: RED != GREEN = TRUE
 concat_string: 0 ++ '1' ++ 2.0 ++ TRUE ++ "foo" ++ RED = 00x12TRUEfooRED
 \end{Verbatim}
 % CONSOLE_END

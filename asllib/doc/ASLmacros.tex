@@ -652,7 +652,7 @@
 
 % General types
 \newcommand\N[0]{\hyperlink{type-N}{\mathbb{N}}}
-\newcommand\Npos[0]{\hyperlink{type-Npos}{\mathbb{N}^{+}}}
+\newcommand\Npos[0]{\hyperlink{type-Npos}{\mathbb{N}^{\text{pos}}}}
 \newcommand\Q[0]{\hyperlink{type-Q}{\mathbb{Q}}}
 \newcommand\Z[0]{\hyperlink{type-Z}{\mathbb{Z}}}
 \newcommand\Bool[0]{\hyperlink{type-Bool}{\mathbb{B}}}
@@ -1248,6 +1248,32 @@
 \newcommand\tvector[0]{\hyperlink{type-tvector}{\mathcal{V}\mathcal{E}\mathcal{C}}}
 \newcommand\trecord[0]{\hyperlink{type-trecord}{\mathcal{R}\mathcal{E}\mathcal{C}}}
 \newcommand\tlabel[0]{\hyperlink{type-tlabel}{\mathcal{L}\mathcal{A}\mathcal{B}\mathcal{E}\mathcal{L}}}
+\newcommand\bitvectordomainop[1]{\hyperlink{relation-bitvectordomain}{\mathsf{BitvectorDomain}}\left(#1\right)}
+\newcommand\vectordomainop[1]{\hyperlink{relation-vectordomain}{\mathsf{VectorDomain}}\left(#1\right)}
+\newcommand\arraydomainname[0]{\hyperlink{relation-arraydomain}{\mathsf{ArrayDomain}}}
+\newcommand\arraydomainop[3][H]{
+  \ifthenelse{\equal{#1}{H}}{
+    \arraydomainname\left({#2}, {#3}\right)
+  }{
+    \arraydomainname
+    \left(\begin{array}{l}
+    {#2},\\
+    {#3}
+    \end{array}\right)
+  }
+}
+\newcommand\recorddomainname[0]{\hyperlink{relation-recorddomain}{\mathsf{RecordDomain}}}
+\newcommand\recorddomainop[3][H]{
+  \ifthenelse{\equal{#1}{H}}{
+    \recorddomainname\left({#2}, {#3}\right)
+  }{
+    \recorddomainname
+    \left(\begin{array}{l}
+    {#2},\\
+    {#3}
+    \end{array}\right)
+  }
+}
 
 \newcommand\evalrel[0]{\hyperlink{def-evalrel}{\textsf{eval}}}
 \newcommand\evalarrow[0]{\xrightarrow{\evalrel}}
@@ -1550,7 +1576,7 @@
 \newcommand\booleantypeterm[0]{\hyperlink{booleantypeterm}{boolean type}}
 \newcommand\booleantypesterm[0]{\hyperlink{booleantypeterm}{boolean types}}
 \newcommand\enumerationtypeterm[0]{\hyperlink{enumerationtypeterm}{enumeration type}}
-\newcommand\enumerationtypesterm[0]{\hyperlink{enumerationtypeterm}{enumeration types}}
+\newcommand\enumerationtypesterm[0]{\hyperlink{enumerationtypeterm}{enumeration types}} % DO NOT LINT
 \newcommand\Enumerationtypesterm[0]{\hyperlink{enumerationtypeterm}{Enumeration types}}
 \newcommand\tupletypeterm[0]{\hyperlink{tupletypeterm}{tuple type}}
 \newcommand\tupletypesterm[0]{\hyperlink{tupletypeterm}{tuple types}}

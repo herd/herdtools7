@@ -732,8 +732,16 @@ A \emph{parse tree} has one of the following forms:
         which is said to label the node,
         and $n_{1..k}$ are its children parse nodes,
         for example,
-        $\Ndecl(\Tfunc, \Tidentifier(\id), \Nparamsopt, \Nfuncargs, \Nfuncbody)$
-        is labelled by $\Ndecl$ and has five children nodes.
+        \[
+        \Ndecl\left(
+         \begin{array}{l}
+         \Nqualifier, \Noverride, \Tfunc, \Tidentifier(\id), \Nparamsopt, \Nfuncargs, \\
+         \Nrecurselimit, \Nfuncbody
+         \end{array}
+         \right)
+        \]
+        is labelled by $\Ndecl$ and has eight child nodes,
+        where non-terminal children are shown by their labels, abbreviating their subtrees.
 \end{itemize}
 \end{definition}
 (In the literature, parse trees are also referred to as \emph{derivation trees}.)
@@ -744,7 +752,7 @@ and each non-terminal node $N(n_{1..k})$ corresponds to a grammar derivation
 $N \derives l_{1..k}$ where for each $i \in 1..k$ either:
 \begin{itemize}
    \item $n_i$ is a non-terminal node and $l_i$ is its label;
-   \item $n_i$ is a token and $l_i$ is equal to $n_i$.
+   \item $n_i$ is a token whose label is $l_i$.
 \end{itemize}
 A non-terminal node $N(\epsilonnode)$ is well-formed if the grammar includes a derivation
 $N \derives \emptysentence$.

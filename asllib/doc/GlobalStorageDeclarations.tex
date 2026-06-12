@@ -293,7 +293,7 @@ See \ExampleRef{Declaring Global Storage}.
 focused on storage elements that are not configurations.
 \ASLListing{Well-typed non-configuration storage elements}{DeclareGlobalStorage-non-config}{\typingtests/TypingRule.DeclareGlobalStorage.non_config.asl}
 
-\listingref{DeclareGlobalStorage-non-config} shows an example of an ill-typed global storage declaration.
+\listingref{DeclareGlobalStorage-non-config-bad} shows an example of an ill-typed global storage declaration.
 \ASLListing{Ill-typed non-configuration storage element}{DeclareGlobalStorage-non-config-bad}{\typingtests/TypingRule.DeclareGlobalStorage.non_config.bad.asl}
 
 The specification in \listingref{DeclareGlobalStorage-bad3} is illegal since
@@ -371,7 +371,7 @@ static environment:
 \]
 
 \RenderProseAndFormally{add_global_storage}
-\CodeSubsection{\AddGlobalStorageBegin}{\AddGlobalStorageEnd}{../Interpreter.ml}
+\CodeSubsection{\AddGlobalStorageBegin}{\AddGlobalStorageEnd}{../Typing.ml}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \SemanticsRulesDef{Global Storage Declarations}

@@ -117,6 +117,12 @@ constant main : Identifier
   math_macro = \vmain,
 };
 
+constant discard_var : Identifier
+{
+  "the discard identifier \discardvar{}",
+  math_macro = \discardvar,
+};
+
 typedef ASTLabels
 {
   "\hyperlink{type-ASTLabels}{AST label}",
@@ -493,7 +499,7 @@ variadic operator intersect[T](sets: list0(powerset(T))) -> powerset(T)
   prose_application = "the intersection of {sets}",
 };
 
-variadic operator intersect_finite[T](sets: list0(powerset_finite(T))) -> powerset_finite(T)
+variadic operator intersect_finite[T](sets: list1(powerset_finite(T))) -> powerset_finite(T)
 {
   math_macro = \cap,
   associative = true,
@@ -1679,13 +1685,6 @@ typedef TSideEffect { "\sideeffectdescriptorterm{}" } =
 // Dynamic Semantics Types
 ////////////////////////////////////////////////////////////////////////////////
 
-function dynamic_domain(env: envs, t: ty) -> (d: powerset(native_value))
-{
-  "assigns a set of \nativevaluesterm{} {d} to the annotated type {t} in the \environmentterm{} {env}.",
-  prose_application = "the \hyperlink{relation-dynamicdomain}{dynamic domain} of {t} in {env}",
-  prose_transition = "the \hyperlink{relation-dynamicdomain}{dynamic domain} of {t} in {env} is",
-};
-
 typedef native_value
     {
         "\nativevalueterm{}",
@@ -1806,6 +1805,62 @@ typedef local_dynamic_envs
 
 render dynamic_envs_and_components = dynamic_envs(-), global_dynamic_envs(-), local_dynamic_envs(-);
 
+operator bitvector_domain(width: Z) -> (d: powerset(native_value))
+{
+  math_macro = \bitvectordomainop,
+  prose_application = "the set of native bitvectors of width {width}",
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// Operators for generating sets of values
+// Since we don't support dependent types, we use operators.
+
+operator bool_domain() -> (d: powerset(native_value))
+{
+  math_macro = \tbool,
+  prose_application = "the set of native boolean values",
+};
+
+operator integer_domain() -> (d: powerset(native_value))
+{
+  math_macro = \tint,
+  prose_application = "the set of native integer values",
+};
+
+operator real_domain() -> (d: powerset(native_value))
+{
+  math_macro = \treal,
+  prose_application = "the set of native real values",
+};
+
+operator string_domain() -> (d: powerset(native_value))
+{
+  math_macro = \tstring,
+  prose_application = "the set of native string values",
+};
+
+operator vector_domain(component_domains: list0(powerset(native_value))) -> (d: powerset(native_value))
+{
+  math_macro = \vectordomainop,
+  prose_application = "the set of native vectors whose components are drawn from {component_domains}",
+};
+
+operator array_domain(length: Z, element_domain: powerset(native_value)) -> (d: powerset(native_value))
+{
+  math_macro = \arraydomainop,
+  custom = true,
+  prose_application = "the set of native vectors of length {length} whose values are drawn from {element_domain}",
+};
+
+operator record_domain(names: list0(Identifier), field_domains: list0(powerset(native_value))) -> (d: powerset(native_value))
+{
+  math_macro = \recorddomainop,
+  custom = true,
+  prose_application = "the set of native records with fields {names} whose values are drawn from {field_domains}",
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 constant empty_denv : dynamic_envs
     {
         "the \hyperlink{constant-emptydenv}{empty dynamic environment}",
@@ -1818,6 +1873,221 @@ constant empty_env : envs
         "the \hyperlink{def-emptyenv}{empty environment}",
         math_macro = \emptyenv,
     } = (empty_tenv, empty_denv)
+;
+
+
+function dynamic_domain(env: envs, t: ty) -> (d: powerset(native_value))
+{
+  "assigns a set of \nativevaluesterm{} {d} to the annotated type {t} in the \environmentterm{} {env}.",
+  prose_application = "the \hyperlink{relation-dynamicdomain}{dynamic domain} of {t} in {env}",
+  prose_transition = "the \hyperlink{relation-dynamicdomain}{dynamic domain} of {t} in {env} is",
+} =
+  case t_bool {
+    t = T_Bool;
+    --
+    bool_domain();
+  }
+
+  case t_string {
+    t = T_String;
+    --
+    string_domain();
+  }
+
+  case t_real {
+    t = T_Real;
+    --
+    real_domain();
+  }
+
+  case t_enumeration {
+    t =: T_Enum(labels);
+    d := set_from_list(label, labels, NV_Literal(L_Label(label)));
+    --
+    d;
+  }
+
+  case t_int_unconstrained {
+    t =: T_Int(Unconstrained);
+    --
+    integer_domain();
+  }
+
+  case t_int_well_constrained {
+    t =: T_Int(WellConstrained(cs));
+    ds := list_map(c, cs, dynamic_domain_constraint(env, c));
+    --
+    union_list(ds);
+  }
+
+  case t_int_parameterized {
+    t =: T_Int(Parameterized(id));
+    env =: (_, denv);
+    denv.dynamic_envs_L(id) =: nvint(n);
+    --
+    make_set(nvint(n));
+  }
+
+  case t_bits_dynamic_error {
+    t =: T_Bits(e, _);
+    eval_expr_sef(env, e) -> DynamicError(_) | ;
+    --
+    empty_set;
+  }
+
+  case t_bits_diverging {
+    t =: T_Bits(e, _);
+    eval_expr_sef(env, e) -> Diverging | ;
+    --
+    empty_set;
+  }
+
+  case t_bits_negative_width_error {
+    t =: T_Bits(e, _);
+    eval_expr_sef(env, e) -> ResultExprSEF(nvint(k), _) | ;
+    k < zero;
+    --
+    empty_set;
+  }
+
+  case t_bits_okay {
+    t =: T_Bits(e, _);
+    eval_expr_sef(env, e) -> ResultExprSEF(nvint(k), _) | ;
+    k >= zero;
+    --
+    bitvector_domain(k);
+  }
+
+  case t_tuple {
+    t =: T_Tuple(ts);
+    ds := list_map(ti, ts, dynamic_domain(env, ti));
+    --
+    vector_domain(ds);
+  }
+
+  case t_array_dynamic_error {
+    t =: T_Array(ArrayLength_Expr(e), _);
+    eval_expr_sef(env, e) -> DynamicError(_) | ;
+    --
+    empty_set;
+  }
+
+  case t_array_diverging {
+    t =: T_Array(ArrayLength_Expr(e), _);
+    eval_expr_sef(env, e) -> Diverging | ;
+    --
+    empty_set;
+  }
+
+  case t_array_negative_length_error {
+    t =: T_Array(ArrayLength_Expr(e), _);
+    eval_expr_sef(env, e) -> ResultExprSEF(nvint(k), _) | ;
+    k < zero;
+    --
+    empty_set;
+  }
+
+  case t_array_okay {
+    t =: T_Array(ArrayLength_Expr(e), t_elem);
+    eval_expr_sef(env, e) -> ResultExprSEF(nvint(k), _) | ;
+    k >= zero;
+    dynamic_domain(env, t_elem) -> d_elem;
+    --
+    array_domain(k, d_elem);
+  }
+
+  case t_enum_array {
+    t =: T_Array(ArrayLength_Enum(id, labels), t_elem);
+    dynamic_domain(env, t_elem) -> d_elem;
+    ds := list_map(label, labels, d_elem);
+    --
+    record_domain(labels, ds);
+  }
+
+  case t_structured {
+    t =: make_structured(L, fields);
+    L in make_set(label_T_Record, label_T_Exception);
+    fields =: list_combine(fields_names, types);
+    ds := list_map(ti, types, dynamic_domain(env, ti));
+    --
+    record_domain(fields_names, ds);
+  }
+
+  case t_named {
+    t =: T_Named(id);
+    env =: (tenv, _);
+    tenv.static_envs_G.declared_types(id) =: (t_def, _);
+    dynamic_domain(env, t_def) -> d;
+    --
+    d;
+  }
+;
+
+function dynamic_domain_constraint(env: envs, c: int_constraint) -> (d: powerset(native_value))
+{
+  "assigns a set of \nativevaluesterm{} {d} to the integer constraint {c} in the \environmentterm{} {env}.",
+  prose_application = "the \hyperlink{relation-dynamicdomain}{dynamic domain} of {c} in {env}",
+  prose_transition = "the \hyperlink{relation-dynamicdomain}{dynamic domain} of {c} in {env} is",
+} =
+  case constraint_exact_okay {
+    c =: Constraint_Exact(e);
+    eval_expr_sef(env, e) -> ResultExprSEF(nvint(n), _) | ;
+    --
+    make_set(nvint(n));
+  }
+
+  case constraint_exact_dynamic_error {
+    c =: Constraint_Exact(e);
+    eval_expr_sef(env, e) -> DynamicError(_) | ;
+    --
+    empty_set;
+  }
+
+  case constraint_exact_diverging {
+    c =: Constraint_Exact(e);
+    eval_expr_sef(env, e) -> Diverging | ;
+    --
+    empty_set;
+  }
+
+  case constraint_range_okay {
+    c =: Constraint_Range(e1, e2);
+    eval_expr_sef(env, e1) -> ResultExprSEF(nvint(a), _) | ;
+    eval_expr_sef(env, e2) -> ResultExprSEF(nvint(b), _) | ;
+    ns := range_list(a, b);
+    --
+    set_from_list(n, ns, nvint(n));
+  }
+
+  case constraint_range_dynamic_error1 {
+    c =: Constraint_Range(e1, _);
+    eval_expr_sef(env, e1) -> DynamicError(_) | ;
+    --
+    empty_set;
+  }
+
+  case constraint_range_diverging1 {
+    c =: Constraint_Range(e1, _);
+    eval_expr_sef(env, e1) -> Diverging | ;
+    --
+    empty_set;
+  }
+
+  case constraint_range_dynamic_error2 {
+    c =: Constraint_Range(e1, e2);
+    eval_expr_sef(env, e1) -> ResultExprSEF(_, _) | ;
+    eval_expr_sef(env, e2) -> DynamicError(_) | ;
+    --
+    empty_set;
+  }
+
+  case constraint_range_diverging2 {
+    c =: Constraint_Range(e1, e2);
+    eval_expr_sef(env, e1) -> ResultExprSEF(_, _) | ;
+    eval_expr_sef(env, e2) -> Diverging | ;
+    --
+    empty_set;
+  }
 ;
 
 typedef envs
@@ -2113,13 +2383,72 @@ function bool_transition(condition: Bool) -> (result: Bool)
   condition;
 ;
 
+// This corresponds to [ASTUtils.ml/expr_of_lexpr]
 function rexpr(le: lexpr) -> (re: expr)
 {
   "transforms the \assignableexpression{} {le} to the \rhsexpression{} {re}.",
   prose_transition = "transforming the \assignableexpression{} {le} to a \rhsexpression{} yields",
   prose_application = "the \rhsexpression{} corresponding to {le}",
   math_macro = \torexpr,
-};
+} =
+  case var {
+    le =: LE_Var(x);
+    --
+    E_Var(x);
+  }
+  case slice {
+    le =: LE_Slice(base, slices);
+    rexpr(base) -> base';
+    --
+    E_Slice(base', slices);
+  }
+  case set_array {
+    le =: LE_SetArray(base, index);
+    rexpr(base) -> base';
+    --
+    E_GetArray(base', index);
+  }
+  case set_enum_array {
+    le =: LE_SetEnumArray(base, index);
+    rexpr(base) -> base';
+    --
+    E_GetEnumArray(base', index);
+  }
+  case set_field {
+    le =: LE_SetField(base, field_name);
+    rexpr(base) -> base';
+    --
+    E_GetField(base', field_name);
+  }
+  case set_fields {
+    le =: LE_SetFields(base, field_names);
+    rexpr(base) -> base';
+    --
+    E_GetFields(base', field_names);
+  }
+  case set_fields_typed {
+    le =: typed_LE_SetFields(base, field_names, _);
+    rexpr(base) -> base';
+    --
+    E_GetFields(base', field_names);
+  }
+  case set_collection_fields {
+    le =: LE_SetCollectionFields(collection_name, field_names, _);
+    --
+    E_GetCollectionFields(collection_name, field_names);
+  }
+  case discard {
+    le =: LE_Discard;
+    --
+    E_Var(discard_var);
+  }
+  case destructuring {
+    le =: LE_Destructuring(les);
+    es := list_map(le1, les, rexpr(le1));
+    --
+    E_Tuple(match_non_empty_list(es));
+  }
+;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Relations and functions for Literals

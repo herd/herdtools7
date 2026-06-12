@@ -263,7 +263,7 @@ and $\KleenePlus{T}$ for a non-empty list of elements of type $T$.
 
 \hypertarget{def-inlist}{}
 We slightly abuse notation by employing the notation for set membership for lists.
-Formally, the notation $e \inlist L$ where $e \in T$ and $L \in \KleeneStar{T}$ stands for $\exists i\in\N.\ L[i]=e$.
+Formally, the notation $e \inlist L$ where $e \in T$ and $L \in \KleeneStar{T}$ stands for $\exists i\in\Npos.\ L[i]=e$.
 
 \hypertarget{def-listset}{}
 \begin{definition}[Listing a Set]
@@ -347,7 +347,7 @@ the list $\vlone$ is a \emph{prefix} of the list $\vltwo$:
 
 \hypertarget{def-listrange}{}
 \begin{definition}[Indices of a List]
-The parametric function $\listrange(\KleeneStar{T}) \aslto \KleeneStar{\N}$ returns the ($1$-based) list of indices for a given list:
+The parametric function $\listrange(\KleeneStar{T}) \aslto \KleeneStar{\Npos}$ returns the ($1$-based) list of indices for a given list:
 \[
     \begin{array}{rcl}
         \listrange(\emptylist) &\triangleq& \emptylist\\
@@ -463,7 +463,7 @@ takes the union of a list of sets:
 The parametric function
 \hypertarget{def-intersectionlist}{}
 \[
-\intersectionlist(\KleeneStar{\pow{T}}) \aslto \pow{T}
+\intersectionlist(\KleenePlus{\pow{T}}) \aslto \pow{T}
 \]
 takes the intersection of a list of sets:
 \[

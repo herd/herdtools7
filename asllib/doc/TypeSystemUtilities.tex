@@ -4,29 +4,29 @@ This chapter defines functions and relations used by the type system.
 
 \ChapterOutline
 \begin{itemize}
-  \item \TypingRuleRef{CheckNoDuplicates} enables checking for the absence of duplicate elements in a list;
-  \item \TypingRuleRef{Sort} allows sorting a list;
-  \item \TypingRuleRef{FindBitfieldOpt} recursively looks up a bitfield in a list of bitfields;
-  \item \TypingRuleRef{TypeOfArrayLength} returns the type associated with an array index;
-  \item \TypingRuleRef{WithEmptyLocal} constructs a \staticenvironmentterm{} from a \globalstaticenvironmentterm;
-  \item \TypingRuleRef{CheckVarNotInEnv} ensures that a variable is not in the \staticenvironmentterm{};
-  \item \TypingRuleRef{CheckVarNotInGEnv} ensures that a variable is not in the \globalstaticenvironmentterm;
-  \item \TypingRuleRef{AddLocal} updates a \staticenvironmentterm{} with a local storage element;
-  \item \TypingRuleRef{IsUndefined} checks whether an identifier is defined in a \staticenvironmentterm{};
-  \item \TypingRuleRef{IsGlobalUndefined} tests whether an identifier is defined in the \globalstaticenvironmentterm;
-  \item \TypingRuleRef{IsLocalUndefined} tests whether an identifier is defined in the \localstaticenvironmentterm;
-  \item \TypingRuleRef{LookupConstant} looks up a \staticenvironmentterm{} for a global constant;
-  \item \TypingRuleRef{AddGlobalConstant} updates a \staticenvironmentterm{} for a global storage element;
-  \item \TypingRuleRef{LookupImmutableExpr} looks up the initialising expression associated with an immutable storage element;
+  \item \TypingRuleRef{CheckNoDuplicates} enables checking for the absence of duplicate elements in a list.
+  \item \TypingRuleRef{Sort} allows sorting a list.
+  \item \TypingRuleRef{FindBitfieldOpt} recursively looks up a bitfield in a list of bitfields.
+  \item \TypingRuleRef{TypeOfArrayLength} returns the type associated with an array index.
+  \item \TypingRuleRef{WithEmptyLocal} constructs a \staticenvironmentterm{} from a \globalstaticenvironmentterm{}.
+  \item \TypingRuleRef{CheckVarNotInEnv} ensures that a variable is not in the \staticenvironmentterm{}.
+  \item \TypingRuleRef{CheckVarNotInGEnv} ensures that a variable is not in the \globalstaticenvironmentterm{}.
+  \item \TypingRuleRef{AddLocal} updates a \staticenvironmentterm{} with a local storage element.
+  \item \TypingRuleRef{IsUndefined} checks whether an identifier is undefined in a \staticenvironmentterm{}.
+  \item \TypingRuleRef{IsGlobalUndefined} tests whether an identifier is undefined in the \globalstaticenvironmentterm{}.
+  \item \TypingRuleRef{IsLocalUndefined} tests whether an identifier is undefined in the \localstaticenvironmentterm{}.
+  \item \TypingRuleRef{LookupConstant} looks up a \staticenvironmentterm{} for a global constant.
+  \item \TypingRuleRef{AddGlobalConstant} updates a \staticenvironmentterm{} for a global storage element.
+  \item \TypingRuleRef{LookupImmutableExpr} looks up the initialising expression associated with an immutable storage element.
   \item \TypingRuleRef{AddGlobalImmutableExpr} updates a \globalstaticenvironmentterm{} by associating a global immutable storage element
-        with its initialising expressions;
+        with its initialising expressions.
   \item \TypingRuleRef{AddLocalImmutableExpr} updates a \localstaticenvironmentterm{} by associating a local immutable storage element
-        with its initialising expressions;
+        with its initialising expressions.
   \item \TypingRuleRef{ShouldRememberImmutableExpression} tests whether to associate an immutable storage element
-        with its initialising expressions based on its \sideeffectdescriptorsetsterm;
+        with its initialising expressions based on its \sideeffectdescriptorsetsterm.
   \item \TypingRuleRef{AddImmutableExpr} conditionally updates a \staticenvironmentterm{} by associating
-        a local immutable storage element with its initialising expressions;
-  \item \TypingRuleRef{AddSubprogram} updates a \staticenvironmentterm{} with a subprogram;
+        a local immutable storage element with its initialising expressions.
+  \item \TypingRuleRef{AddSubprogram} updates a \staticenvironmentterm{} with a subprogram.
   \item \TypingRuleRef{AddType} updates a \staticenvironmentterm{} with a new type.
 \end{itemize}
 

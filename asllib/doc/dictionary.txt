@@ -1,6 +1,7 @@
 a
 abbreviate
 abbreviated
+abbreviating
 abbreviations
 able
 abnormal
@@ -712,6 +713,7 @@ effecting
 effectively
 effects
 efficiently
+eight
 either
 elaborated
 element

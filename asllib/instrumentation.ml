@@ -378,6 +378,7 @@ module TypingRule = struct
     | LESlice
     | LESetArray
     | LESetStructuredField
+    | LESetCollectionField
     | LESetBadBitField
     | LESetBitField
     | LESetBadField
@@ -563,6 +564,7 @@ module TypingRule = struct
     | LESlice -> "LESlice"
     | LESetArray -> "LESetArray"
     | LESetStructuredField -> "LESetStructuredField"
+    | LESetCollectionField -> "LESetCollectionField"
     | LESetBadBitField -> "LESetBadBitField"
     | LESetBitField -> "LESetBitField"
     | LESetBadField -> "LESetBadField"
@@ -754,6 +756,7 @@ module TypingRule = struct
       LESlice;
       LESetArray;
       LESetStructuredField;
+      LESetCollectionField;
       LESetBadBitField;
       LESetBitField;
       LESetBadField;

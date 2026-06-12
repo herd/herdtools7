@@ -62,7 +62,6 @@ $A*$                                  & Zero or more repetitions of A\\
 $A+$                                  & One or more repetitions of A\\
 \verb|"a_string"|                     & The string \verb|a_string| verbatim\\
 \texttt{<}r\texttt{>}                 & The lexical regular expression defined for \texttt{<}r\texttt{>}\\
-\hline
 \end{tabular}
 \end{center}
 \end{table}
@@ -257,7 +256,6 @@ The escape sequences allowed in string literals appear in \taref{EscapeSequences
 \verb|\t| & The tab, ASCII code \texttt{9}\\
 \verb|\\| & The backslash character, \verb|\|, ASCII code \texttt{92}\\
 \verb|\"| & The double-quote character, \texttt{"}, ASCII code \texttt{34}\\
-\hline
 \end{tabular}
 \end{center}
 \end{table}
@@ -630,7 +628,6 @@ $\REbitmasklit$                       & $\actiontoken(\masktolit)$ \\
 \texttt{"ARBITRARY"}, \texttt{"unreachable"}, \texttt{"until"}         & $\actiontoken(\tokenid)$ \\
 \texttt{"var"}           & $\actiontoken(\tokenid)$ \\
 \texttt{"when"}, \texttt{"where"}, \texttt{"while"}, \texttt{"with"}          & $\actiontoken(\tokenid)$ \\
-\hline
 \end{tabular}
 \end{center}
 
@@ -643,7 +640,6 @@ The following list represents forbidden lexemes in ASL:
     $\REforbiddenhexremaining$ & $\lexicalerror$ \\
     $\REforbiddenrealfirst$ & $\lexicalerror$ \\
     $\REforbiddenrealremaining$ & $\lexicalerror$ \\
-    \hline
   \end{tabular}
 \end{center}
 
@@ -665,7 +661,6 @@ The following list represents forbidden lexemes in ASL:
 \hline
 $\REidentifier$   & $\actiontoken(\toidentifier)$ \\
 $\eof$            & $\eoftoken$ \\
-\hline
 \end{tabular}
 \end{center}
 
@@ -757,8 +752,7 @@ The lexical specification for string literals --- $\specstring$ --- is given by 
 \anycharacter{\backslash\ } \anycharacter{{\color{white}\backslash}\texttt{" }}  &  $\stringescape$\\
 \anycharacter{\backslash\ } \anycharacter{\ \backslash\ }  & $\stringescape$ \\
 \anycharacter{{\color{white}\backslash}\texttt{" }}   &  $\stringfinish$\\
-$\REchar$                                             &  $\stringchar$\\
-\hline
+$\REstrchar\ \regexminus{}$ \anycharacter{\texttt{"}\ \backslash\ } &  $\stringchar$\\
 \end{tabular}
 \end{center}
 
