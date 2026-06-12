@@ -385,6 +385,165 @@ def check_repeated_words(filename: str) -> int:
     return num_errors
 
 
+def check_missing_paragraph_full_stops(filename: str) -> int:
+    r"""
+    Checks prose blocks that certainly appear to be missing final punctuation.
+    The check is intentionally conservative: it ignores LaTeX environments,
+    lists, headings, formal/display blocks, blocks ending in macros, and any
+    block whose ending may be intentionally non-sentential.
+    """
+    @dataclass
+    class ProseBlock:
+        start_line: int
+        lines: list[str]
+
+        def text(self) -> str:
+            return " ".join(line.strip() for line in self.lines).strip()
+
+    line_starts_environment = re.compile(r"^\s*\\begin\{[^}]+\}")
+    line_ends_environment = re.compile(r"^\s*\\end\{[^}]+\}")
+    # \paragraph is used as a run-in heading, such as "\paragraph{Syntax:} ...".
+    # Treat it as a boundary but lint any prose that follows it on the same line.
+    run_in_heading_command = re.compile(r"^\s*\\paragraph\{[^}]*\}\s*")
+    heading_command = re.compile(
+        r"^\s*\\(chapter|section|subsection|subsubsection)\b"
+    )
+    display_or_formal_command = re.compile(
+        r"^\s*(\\\[|\\\]|\\begin\{(mathpar|equation|flalign\*?|array|center|tabular|lstlisting|Verbatim|verbatim)\}|"
+        r"\\end\{(mathpar|equation|flalign\*?|array|center|tabular|lstlisting|Verbatim|verbatim)\}|"
+        r"\\Render[A-Za-z]*\{|\\Define[A-Za-z]*\{|\\FormallyParagraph|\\ProseParagraph)"
+    )
+    standalone_command = re.compile(
+        r"^\s*\\[A-Za-z]+\*?(?:\[[^\]]*\])?(?:\{[^}]*\})*\s*$"
+    )
+
+    def strip_comment(line: str) -> str:
+        escaped = False
+        for index, char in enumerate(line):
+            if char == "\\":
+                escaped = not escaped
+                continue
+            if char == "%" and not escaped:
+                return line[:index]
+            escaped = False
+        return line
+
+    def extract_prose_blocks(lines: list[str]) -> list[ProseBlock]:
+        blocks: list[ProseBlock] = []
+        block_lines: list[tuple[int, str]] = []
+        environment_depth = 0
+
+        def finish_block() -> None:
+            if block_lines:
+                blocks.append(
+                    ProseBlock(block_lines[0][0], [line for _, line in block_lines])
+                )
+            block_lines.clear()
+
+        def discard_block() -> None:
+            block_lines.clear()
+
+        for line_number, raw_line in enumerate(lines, start=1):
+            if is_skipped_line(raw_line):
+                finish_block()
+                continue
+
+            line = strip_comment(raw_line).strip()
+            if not line:
+                finish_block()
+                continue
+
+            if line_ends_environment.match(line):
+                environment_depth = max(0, environment_depth - 1)
+                discard_block()
+                continue
+
+            if environment_depth > 0:
+                if line_starts_environment.match(line):
+                    environment_depth += 1
+                continue
+
+            if line_starts_environment.match(line):
+                environment_depth = 1
+                discard_block()
+                continue
+
+            if display_or_formal_command.match(line):
+                discard_block()
+                continue
+
+            if heading_command.match(line):
+                finish_block()
+                continue
+
+            if line.startswith(r"\item"):
+                discard_block()
+                continue
+
+            if run_in_heading_command.match(line):
+                finish_block()
+                line = run_in_heading_command.sub("", line).strip()
+
+            if not line:
+                finish_block()
+                continue
+
+            block_lines.append((line_number, line))
+
+        finish_block()
+        return blocks
+
+    def check_prose_block(block: ProseBlock) -> int:
+        text = block.text()
+        if not text:
+            return 0
+
+        text = run_in_heading_command.sub("", text).strip()
+        text = re.sub(r"^\\ExampleDef\{[^}]*\}\s*", "", text).strip()
+        if not text:
+            return 0
+        if heading_command.match(text) or standalone_command.match(text):
+            return 0
+        if text in {"In the specification", "In the following specification"}:
+            return 0
+        if re.search(
+            r"(\\\\|\\linebreak(?:\[[^\]]*\])?|\\pagebreak(?:\[[^\]]*\])?)\s*$",
+            text,
+        ):
+            return 0
+        if re.search(r"\\[A-Za-z]+\*?(?:\[[^\]]*\])?(?:\{[^}]*\})*\s*$", text):
+            return 0
+
+        # Ignore short labels, fragments, and macro-heavy/formal text.
+        alpha_words = re.findall(r"[A-Za-z]{2,}", re.sub(r"\\[A-Za-z]+", " ", text))
+        if len(alpha_words) < 3:
+            return 0
+        if text.count("\\") > len(alpha_words):
+            return 0
+
+        trimmed = text.rstrip()
+        if not trimmed:
+            return 0
+        if trimmed[-1] in ".?!:;":
+            return 0
+        if trimmed[-1] == "}":
+            return 0
+
+        ending = re.sub(r"""[\])'"`]+$""", "", trimmed).rstrip()
+        if not ending or not ending[-1].isalnum():
+            return 0
+
+        print(
+            f"./{filename} line {block.start_line}: prose block may be missing a final full stop: '{trimmed}'"
+        )
+        return 1
+
+    return sum(
+        check_prose_block(block)
+        for block in extract_prose_blocks(read_file_lines(filename))
+    )
+
+
 def detect_incorrect_latex_macros_spacing(filename: str) -> int:
     r"""
     Detects erroneous occurrences of LaTeX macros rendered without
@@ -1622,6 +1781,7 @@ def main():
         [
             check_asllisting_paths_exist_in_file,
             check_repeated_words,
+            check_missing_paragraph_full_stops,
             check_repeated_lines,
             check_repeated_line_sequences,
             detect_incorrect_latex_macros_spacing,
