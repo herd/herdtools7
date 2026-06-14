@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(* Open my files *)
+(* Find my files *)
 
 module type Config = sig
   val includes : string list
@@ -23,26 +23,23 @@ module type Config = sig
   val debug : bool
 end
 
-let pp_debug name = Printf.eprintf "Found and opened: '%s'\n%!" name
+let pp_debug name = Printf.eprintf "Found: '%s'\n%!" name
 
 module Make =
   functor (C:Config) -> struct
 
     let debug = C.debug
 
-    let try_open dir name =
-      let rname = Filename.concat dir name in
-      try
-        let r = rname,open_in rname in
-        if debug then pp_debug rname ;
-        r
-      with _ -> raise Exit
+    (* TODO: could refine this to check whether the file is a regular file or symlink *)
+    let nondir_file_exists path =
+      Sys.file_exists path && not (Sys.is_directory path)
 
-    let rec try_opens dirs name = match dirs with
-    | [] -> raise Exit
-    | dir::dirs ->
-        try try_open dir name
-        with Exit -> try_opens dirs name
+    let try_find name dir =
+      let rname = Filename.concat dir name in
+      if nondir_file_exists rname then begin
+        if debug then pp_debug rname ;
+        Some rname
+      end else None
 
     let envlib = match C.env with
     | None -> None
@@ -58,20 +55,14 @@ module Make =
           else d)
         C.includes
 
-    let open_lib name =
-      try try_opens ("."::includes) name
-      with Exit -> try match envlib with
-      | Some lib -> try_open lib name
-      | None -> raise Exit
-      with Exit -> try try_open C.libdir name
-      with Exit -> Warn.fatal "Cannot find file %s" name
+    let all_locations =
+      List.concat [ ["."] ; includes ; Option.to_list envlib; [ C.libdir ] ]
 
-    let do_find name =
-      let r,chan = open_lib name in
-      begin try close_in chan with _ -> () end ;
-      r
+    let find_lib name =
+      match List.find_map (try_find name) all_locations with
+      | Some path -> path
+      | None -> Warn.fatal "Cannot find file %s" name
 
     let find path =
-      if Filename.is_implicit path then do_find path
-      else path
+      if Filename.is_implicit path then find_lib path else path
   end
