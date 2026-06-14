@@ -14,7 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Open my files *)
+(** Resolve library file names against configured search paths. *)
+
 module type Config = sig
   val includes : string list
   val env : string option
@@ -28,4 +29,11 @@ module Make :
   functor (C:Config) ->
     sig
       val find : string -> string
+      (** [find path] resolves [path] to a concrete the library file path.
+
+          If [path] is implicit, it is searched in the current directory,
+          {!C.includes}, {!C.env}, and finally {!C.libdir}. The first existing
+          candidate is returned. Non-implicit paths are returned unchanged.
+
+          @raise Misc.Fatal on implicit paths that cannot be resolved. *)
     end
