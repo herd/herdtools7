@@ -44,23 +44,19 @@ let add_attrs a p =
   { p with p_attrs = StringSet.union (StringSet.of_list a) p.p_attrs; }
 
 
-let apply_not_empty f = function
-  | "" -> ""
-  | s -> f s
-
-let pp_comma = apply_not_empty (sprintf ", %s")
-
 let mk_pp pp_oa { p_oa; p_kv; p_attrs; } =
-  sprintf
-    "(%s%s%s)"
-    (match p_oa with
-     | None -> ""
-     | Some oa -> sprintf "oa:%s" (pp_oa oa))
-    (pp_comma
-       (StringMap.pp_str_delim ", "
-          (fun k v -> sprintf "%s:%s" k v)
-          p_kv))
-    (apply_not_empty (sprintf ", attrs:(%s)") (StringSet.pp_str ", " Misc.identity p_attrs))
+  let oa = match p_oa with
+    | None -> ""
+    | Some oa -> sprintf "oa:%s" (pp_oa oa) in
+  let kv =
+    StringMap.pp_str_delim ", "
+      (fun k v -> sprintf "%s:%s" k v)
+      p_kv in
+  let attrs =
+    let a = StringSet.pp_str ", " Misc.identity p_attrs in
+    if a = "" then "" else sprintf "attrs:(%s)" a in
+  let parts = List.filter (fun s -> s <> "") [oa; kv; attrs] in
+  sprintf "(%s)" (String.concat ", " parts)
 
 let pp_old = mk_pp OutputAddress.pp_old
 and pp = mk_pp  OutputAddress.pp

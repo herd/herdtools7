@@ -36,22 +36,16 @@ let add_kv k v p =
     Warn.user_error "multiple defintion or property %s" k ;
   { p with p_kv=StringMap.add k v p_kv; }
 
-  let apply_not_empty f = function
-  | "" -> ""
-  | s -> f s
-
-let pp_comma = apply_not_empty (sprintf ", %s")
-
 let mk_pp pp_oa { p_oa; p_kv;} =
-  sprintf
-    "(%s%s)"
-    (match p_oa with
-     | None -> ""
-     | Some pa -> sprintf "oa:%s" (pp_oa pa))
-    (pp_comma
-       (StringMap.pp_str_delim ", "
-          (fun k v -> sprintf "%s:%s" k v)
-          p_kv))
+  let oa = match p_oa with
+    | None -> ""
+    | Some pa -> sprintf "oa:%s" (pp_oa pa) in
+  let kv =
+    StringMap.pp_str_delim ", "
+      (fun k v -> sprintf "%s:%s" k v)
+      p_kv in
+  let parts = List.filter (fun s -> s <> "") [oa; kv] in
+  sprintf "(%s)" (String.concat ", " parts)
 
 let pp_old = mk_pp OutputAddress.pp_old
 and pp = mk_pp  OutputAddress.pp
