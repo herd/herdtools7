@@ -49,12 +49,15 @@ and then invoking its getter and its setter.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Subprogram Calls}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-The rule for typing calls is \TypingRuleRef{AnnotateCall}.
 
-We also define helper functions via respective rules:
+We define the following rules for annotating subprogram calls:
+% TYPING_RULES_BEGIN
+% This is generated code; run `python3 doclint.py -cm` to update.
 \begin{itemize}
+  \item \TypingRuleRef{AnnotateCall}
   \item \TypingRuleRef{AnnotateCallActualsTyped}
   \item \TypingRuleRef{InsertStdlibParam}
+  \item \TypingRuleRef{CanOmmitStdlibParam}
   \item \TypingRuleRef{CheckParamsTypeSat}
   \item \TypingRuleRef{RenameTyEqs}
   \item \TypingRuleRef{SubstExprNormalize}
@@ -66,8 +69,10 @@ We also define helper functions via respective rules:
   \item \TypingRuleRef{FilterCallCandidates}
   \item \TypingRuleRef{CallTypeMatches}
   \item \TypingRuleRef{HasArgClash}
+  \item \TypingRuleRef{TypeClash}
   \item \TypingRuleRef{ExpressionList}
 \end{itemize}
+% TYPING_RULES_END
 
 \TypingRuleDef{AnnotateCall}
 \RenderRelation{annotate_call}
@@ -443,15 +448,19 @@ as an empty parameter list for a standard library function must be entirely omit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \SemanticsRulesDef{Subprogram Calls}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-The rule for evaluating subprogram calls is \SemanticsRuleRef{Call}.
 
-We also define the following helper rules:
+We define the following rules for evaluating subprogram calls:
+% SEMANTICS_RULES_BEGIN
+% This is generated code; run `python3 doclint.py -cm` to update.
 \begin{itemize}
+  \item \SemanticsRuleRef{Call}
   \item \SemanticsRuleRef{EvalSubprogram}
+  \item \SemanticsRuleRef{CheckRecurseLimit}
   \item \SemanticsRuleRef{ReadValueFrom}
   \item \SemanticsRuleRef{AssignArgs}
   \item \SemanticsRuleRef{MatchFuncRes}
 \end{itemize}
+% SEMANTICS_RULES_END
 
 \SemanticsRuleDef{Call}
 \RenderRelation{eval_call}

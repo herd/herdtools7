@@ -270,6 +270,8 @@ Notice that for all $\vpone$ and $\vm$ the following holds:
 
 \section{Typing Rules\label{sec:SymbolicReductionAndEquivalenceTestingRules}}
 We employ the following rules:
+% TYPING_RULES_BEGIN
+% This is generated code; run `python3 doclint.py -cm` to update.
 \begin{itemize}
   \item \TypingRuleRef{Normalize}
   \item \TypingRuleRef{ReduceConstraint}
@@ -279,14 +281,26 @@ We employ the following rules:
   \item \TypingRuleRef{ExprEqualNorm}
   \item \TypingRuleRef{ExprEqualCase}
   \item \TypingRuleRef{TypeEqual}
+  \item \TypingRuleRef{PatternEqual}
   \item \TypingRuleRef{BitwidthEqual}
   \item \TypingRuleRef{BitFieldsEqual}
   \item \TypingRuleRef{BitFieldEqual}
+  \item \TypingRuleRef{ConstraintsEqual}
   \item \TypingRuleRef{ConstraintEqual}
   \item \TypingRuleRef{SlicesEqual}
   \item \TypingRuleRef{SliceEqual}
   \item \TypingRuleRef{ArrayLengthEqual}
+  \item \TypingRuleRef{PolynomialToExpr}
+  \item \TypingRuleRef{CompareMonomialBindings}
+  \item \TypingRuleRef{MonomialsToExpr}
+  \item \TypingRuleRef{MonomialToExpr}
+  \item \TypingRuleRef{SymAddExpr}
+  \item \TypingRuleRef{UnitaryMonomialsToExpr}
+  \item \TypingRuleRef{SymMulExpr}
+  \item \TypingRuleRef{TypeOf}
+  \item \TypingRuleRef{NormalizeOpt}
 \end{itemize}
+% TYPING_RULES_END
 
 \TypingRuleDef{Normalize}
 \RenderRelation{normalize}

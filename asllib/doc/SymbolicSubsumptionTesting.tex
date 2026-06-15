@@ -110,11 +110,11 @@ as follows:
 
 \section{Symbolic Reasoning\label{sec:Symbolic Reasoning}}
 
-The main rule in this section is \TypingRuleRef{SymdomSubsetUnions}, which defines the function
-$\symdomsubsetunions$.
-
-Other helper rules are as follows:
+We define the following rules for symbolic subsumption testing:
+% TYPING_RULES_BEGIN
+% This is generated code; run `python3 doclint.py -cm` to update.
 \begin{itemize}
+  \item \TypingRuleRef{SymdomSubsetUnions}
   \item \TypingRuleRef{SymdomNormalize}
   \item \TypingRuleRef{SymdomOfType}
   \item \TypingRuleRef{SymdomOfWidthExpr}
@@ -123,19 +123,22 @@ Other helper rules are as follows:
   \item \TypingRuleRef{SymdomSubset}
   \item \TypingRuleRef{ApproxConstraints}
   \item \TypingRuleRef{ApproxConstraint}
+  \item \TypingRuleRef{MakeInterval}
   \item \TypingRuleRef{ApproxExprMin}
   \item \TypingRuleRef{ApproxExprMax}
   \item \TypingRuleRef{ApproxBottomTop}
   \item \TypingRuleRef{IntsetToConstraints}
   \item \TypingRuleRef{ApproxExpr}
+  \item \TypingRuleRef{ApproxConstraintBinop}
   \item \TypingRuleRef{ApproxType}
   \item \TypingRuleRef{ConstraintBinop}
   \item \TypingRuleRef{ApplyBinopExtremities}
   \item \TypingRuleRef{PossibleExtremitiesLeft}
   \item \TypingRuleRef{PossibleExtremitiesRight}
-  \item \TypingRuleRef{ConstraintPow}
   \item \TypingRuleRef{ConstraintMod}
+  \item \TypingRuleRef{ConstraintPow}
 \end{itemize}
+% TYPING_RULES_END
 
 \TypingRuleDef{SymdomSubsetUnions}
 \RenderRelation{symdom_subset_unions}

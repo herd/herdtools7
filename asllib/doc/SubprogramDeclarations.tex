@@ -622,16 +622,17 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \TypeRulesDef{Subprogram Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-The main rule for annotating subprogram declarations is \\
-\TypingRuleRef{AnnotateSubprogram}.
-
-We also define the following helper rules:
+We define the following rules for annotating subprogram declarations:
+% TYPING_RULES_BEGIN
+% This is generated code; run `python3 doclint.py -cm` to update.
 \begin{itemize}
+  \item \TypingRuleRef{AnnotateSubprogram}
   \item \TypingRuleRef{AnnotateAndDeclareFunc}
   \item \TypingRuleRef{AnnotateFuncSig}
   \item \TypingRuleRef{AnnotateParams}
   \item \TypingRuleRef{AnnotateOneParam}
   \item \TypingRuleRef{CheckParamDecls}
+  \item \TypingRuleRef{ExtractParameters}
   \item \TypingRuleRef{FuncSigTypes}
   \item \TypingRuleRef{ParametersOfTy}
   \item \TypingRuleRef{ParametersOfExpr}
@@ -642,13 +643,14 @@ We also define the following helper rules:
   \item \TypingRuleRef{CheckSubprogramPurity}
   \item \TypingRuleRef{DeclareOneFunc}
   \item \TypingRuleRef{SubprogramClash}
+  \item \TypingRuleRef{SubprogramTypesClash}
   \item \TypingRuleRef{AddNewFunc}
-  \item \TypingRuleRef{AddSubprogram}
   \item \TypingRuleRef{Subprogram}
   \item \TypingRuleRef{CheckControlFlow}
-  \item \TypingRuleRef{ApproxStmt}
   \item \TypingRuleRef{AllowedAbsConfigs}
+  \item \TypingRuleRef{ApproxStmt}
 \end{itemize}
+% TYPING_RULES_END
 
 \TypingRuleDef{AnnotateSubprogram}
 See \ExampleRef{Annotating Subprogram Signatures} and

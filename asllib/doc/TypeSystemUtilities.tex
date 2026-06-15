@@ -3,6 +3,8 @@
 This chapter defines functions and relations used by the type system.
 
 \ChapterOutline
+% TYPING_RULES_BEGIN
+% This is generated code; run `python3 doclint.py -cm` to update.
 \begin{itemize}
   \item \TypingRuleRef{CheckNoDuplicates} enables checking for the absence of duplicate elements in a list.
   \item \TypingRuleRef{Sort} allows sorting a list.
@@ -18,19 +20,17 @@ This chapter defines functions and relations used by the type system.
   \item \TypingRuleRef{LookupConstant} looks up a \staticenvironmentterm{} for a global constant.
   \item \TypingRuleRef{AddGlobalConstant} updates a \staticenvironmentterm{} for a global storage element.
   \item \TypingRuleRef{LookupImmutableExpr} looks up the initialising expression associated with an immutable storage element.
-  \item \TypingRuleRef{AddGlobalImmutableExpr} updates a \globalstaticenvironmentterm{} by associating a global immutable storage element
-        with its initialising expressions.
-  \item \TypingRuleRef{AddLocalImmutableExpr} updates a \localstaticenvironmentterm{} by associating a local immutable storage element
-        with its initialising expressions.
-  \item \TypingRuleRef{ShouldRememberImmutableExpression} tests whether to associate an immutable storage element
-        with its initialising expressions based on its \sideeffectdescriptorsetsterm.
-  \item \TypingRuleRef{AddImmutableExpr} conditionally updates a \staticenvironmentterm{} by associating
-        a local immutable storage element with its initialising expressions.
+  \item \TypingRuleRef{AddGlobalImmutableExpr} updates a \globalstaticenvironmentterm{} by associating a global immutable storage element with its initialising expression.
+  \item \TypingRuleRef{AddLocalImmutableExpr} updates a \localstaticenvironmentterm{} by associating a local immutable storage element with its initialising expression.
+  \item \TypingRuleRef{ShouldRememberImmutableExpression} tests whether to associate an immutable storage element with its initialising expression based on its \sideeffectdescriptorsetsterm.
+  \item \TypingRuleRef{AddImmutableExpr} conditionally updates a \staticenvironmentterm{} by associating a local immutable storage element with its initialising expression.
   \item \TypingRuleRef{AddSubprogram} updates a \staticenvironmentterm{} with a subprogram.
   \item \TypingRuleRef{AddType} updates a \staticenvironmentterm{} with a new type.
 \end{itemize}
+% TYPING_RULES_END
 
 \TypingRuleDef{CheckNoDuplicates}
+\RuleDescription{enables checking for the absence of duplicate elements in a list.}
 \RenderRelation{check_no_duplicates}
 
 \ExampleDef{Checking for Absence of Duplicates in an Identifier List}
@@ -48,6 +48,7 @@ thus resulting in a \typingerrorterm.
 \RenderProseAndFormally{check_no_duplicates}
 
 \TypingRuleDef{Sort}
+\RuleDescription{allows sorting a list.}
 \hypertarget{def-sort}{}
 The parametric function
 \[
@@ -105,6 +106,7 @@ $\sort([(x, 1), (y, 1), (x, -1)], \comparemonomialbindings) \typearrow [(x, -1),
 \end{mathpar}
 
 \TypingRuleDef{FindBitfieldOpt}
+\RuleDescription{recursively looks up a bitfield in a list of bitfields.}
 \RenderRelation{find_bitfield_opt}
 
 \ExampleDef{Finding Bitfields}
@@ -120,6 +122,7 @@ which does not exist.
 \RenderProseAndFormally{find_bitfield_opt}
 
 \TypingRuleDef{TypeOfArrayLength}
+\RuleDescription{returns the type associated with an array index.}
 \RenderRelation{type_of_array_length}
 
 \ExampleDef{Retrieving the Type of an Array from an Array Index}
@@ -150,6 +153,7 @@ $\ArrayLengthEnum(\BitsArray, [\vBIG, \vLITTLE])$, and
 \section{Static Environment Utilities}
 
 \TypingRuleDef{WithEmptyLocal}
+\RuleDescription{constructs a \staticenvironmentterm{} from a \globalstaticenvironmentterm{}.}
 \RenderRelation{with_empty_local}
 
 \ExampleDef{Constructing a Static Environment with an Empty Local Environment}
@@ -160,6 +164,7 @@ with an empty local environment to annotate the \verb|Color| type declaration.
 \CodeSubsection{\WithEmptyLocalBegin}{\WithEmptyLocalEnd}{../types.ml}
 
 \TypingRuleDef{CheckVarNotInEnv}
+\RuleDescription{ensures that a variable is not in the \staticenvironmentterm{}.}
 \RenderRelation{check_var_not_in_env}
 
 \ExampleDef{Checking Whether Variables are Bound in the Static Environment}
@@ -179,6 +184,7 @@ is repeated.
 \CodeSubsection{\CheckVarNotInEnvBegin}{\CheckVarNotInEnvEnd}{../types.ml}
 
 \TypingRuleDef{CheckVarNotInGEnv}
+\RuleDescription{ensures that a variable is not in the \globalstaticenvironmentterm{}.}
 \RenderRelation{check_var_not_in_genv}
 
 \ExampleDef{Checking Whether an Identifier is Bound in the Global Static Environment}
@@ -202,6 +208,7 @@ is declared both as a global variable and as an enumeration label.
 \CodeSubsection{\CheckVarNotInGEnvBegin}{\CheckVarNotInGEnvEnd}{../Interpreter.ml}
 
 \TypingRuleDef{AddLocal}
+\RuleDescription{updates a \staticenvironmentterm{} with a local storage element.}
 \RenderRelation{add_local}
 
 \ExampleDef{Adding a Local Storage Element}
@@ -220,6 +227,7 @@ the following local storage elements are added:
 \RenderProseAndFormally{add_local}
 
 \TypingRuleDef{IsUndefined}
+\RuleDescription{checks whether an identifier is undefined in a \staticenvironmentterm{}.}
 \RenderRelation{is_undefined}
 
 See \ExampleRef{Checking Whether an Identifier is Associated with a Global Storage Element} and
@@ -229,6 +237,7 @@ See \ExampleRef{Checking Whether an Identifier is Associated with a Global Stora
 \CodeSubsection{\IsUndefinedBegin}{\IsUndefinedEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{IsGlobalUndefined}
+\RuleDescription{tests whether an identifier is undefined in the \globalstaticenvironmentterm{}.}
 \RenderRelation{is_global_undefined}
 
 \ExampleDef{Checking Whether an Identifier is Associated with a Global Storage Element}
@@ -240,6 +249,7 @@ In the typing environment obtained by typechecking this specification, $\isgloba
 \CodeSubsection{\IsGlobalUndefinedBegin}{\IsGlobalUndefinedEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{IsLocalUndefined}
+\RuleDescription{tests whether an identifier is undefined in the \localstaticenvironmentterm{}.}
 \RenderRelation{is_local_undefined}
 
 \ExampleDef{Checking Whether an Identifier is Associated with a Local Storage Element}
@@ -258,6 +268,7 @@ In \listingref{expressions-evar-undefined}, the identifier \verb|t| is undefined
 \CodeSubsection{\IsLocalUndefinedBegin}{\IsLocalUndefinedEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{LookupConstant}
+\RuleDescription{looks up a \staticenvironmentterm{} for a global constant.}
 \RenderRelation{lookup_constant}
 
 \ExampleDef{Looking Up Constants}
@@ -271,6 +282,7 @@ in annotating statements.
 \CodeSubsection{\LookupConstantBegin}{\LookupConstantEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{AddGlobalConstant}
+\RuleDescription{updates a \staticenvironmentterm{} for a global storage element.}
 \RenderRelation{add_global_constant}
 
 \ExampleDef{Binding Global Storage Elements to Constants}
@@ -284,6 +296,7 @@ to infer that the statement \verb|var bv: bits(2^FOUR) = Zeros{FOUR*FOUR};| is w
 \CodeSubsection{\AddGlobalConstantBegin}{\AddGlobalConstantEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{LookupImmutableExpr}
+\RuleDescription{looks up the initialising expression associated with an immutable storage element.}
 \RenderRelation{lookup_immutable_expr}
 
 See \ExampleRef{Remembering Global Immutable Expressions}
@@ -294,6 +307,7 @@ and \ExampleRef{Updating Static Environments for Immutable Expressions}.
 \CodeSubsection{\AddGlobalStorageBegin}{\AddGlobalStorageEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{AddGlobalImmutableExpr}
+\RuleDescription{updates a \globalstaticenvironmentterm{} by associating a global immutable storage element with its initialising expression.}
 \RenderRelation{add_global_immutable_expr}
 
 \ExampleDef{Remembering Global Immutable Expressions}
@@ -308,6 +322,7 @@ which is why it is able to prove that \verb|'11'| \typesatisfiesterm{}
 \CodeSubsection{\AddGlobalImmutableExprBegin}{\AddGlobalImmutableExprEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{AddLocalImmutableExpr}
+\RuleDescription{updates a \localstaticenvironmentterm{} by associating a local immutable storage element with its initialising expression.}
 \RenderRelation{add_local_immutable_expr}
 
 See \ExampleRef{Updating Static Environments for Immutable Expressions}.
@@ -316,6 +331,7 @@ See \ExampleRef{Updating Static Environments for Immutable Expressions}.
 \CodeSubsection{\AddLocalImmutableExprBegin}{\AddLocalImmutableExprEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{ShouldRememberImmutableExpression}
+\RuleDescription{tests whether to associate an immutable storage element with its initialising expression based on its \sideeffectdescriptorsetsterm.}
 \RenderRelation{should_remember_immutable_expression}
 
 \ExampleDef{Remembering vs. not Remembering Immutable Expressions}
@@ -331,6 +347,7 @@ test for \verb|t| fails.
 \RenderProseAndFormally{should_remember_immutable_expression}
 
 \TypingRuleDef{AddImmutableExpr}
+\RuleDescription{conditionally updates a \staticenvironmentterm{} by associating a local immutable storage element with its initialising expression.}
 \RenderRelation{add_immutable_expression}
 
 \ExampleDef{Updating Static Environments for Immutable Expressions}
@@ -348,6 +365,7 @@ specification.
 \RenderProseAndFormally{add_immutable_expression}
 
 \TypingRuleDef{AddSubprogram}
+\RuleDescription{updates a \staticenvironmentterm{} with a subprogram.}
 \RenderRelation{add_subprogram}
 
 \ExampleDef{Updating a Static Environment for a Subprogram Declaration}
@@ -401,6 +419,7 @@ and the empty set of \sideeffectdescriptorsterm.
 \CodeSubsection{\AddSubprogramBegin}{\AddSubprogramEnd}{../StaticEnv.ml}
 
 \TypingRuleDef{AddType}
+\RuleDescription{updates a \staticenvironmentterm{} with a new type.}
 \RenderRelation{add_type}
 
 \ExampleDef{Adding Types to Environments}

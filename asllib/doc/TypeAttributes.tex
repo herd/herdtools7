@@ -4,18 +4,22 @@
 
 This section defines some basic predicates for classifying types as well as
 functions that inspect the structure of types:
+% TYPING_RULES_BEGIN
+% This is generated code; run `python3 doclint.py -cm` to update.
 \begin{itemize}
-  \item Builtin singular types (\TypingRuleRef{BuiltinSingularType})
-  \item Named types (\TypingRuleRef{NamedType})
-  \item Anonymous types (\TypingRuleRef{AnonymousType})
-  \item Singular types (\TypingRuleRef{SingularType})
-  \item Structured types (\TypingRuleRef{StructuredType})
-  \item The structure of a type (\TypingRuleRef{Structure})
-  \item The underlying type of a type (\TypingRuleRef{MakeAnonymous})
-  \item Checked constrained integers (\TypingRuleRef{CheckConstrainedInteger})
+  \item \TypingRuleRef{BuiltinSingularType} Builtin singular types.
+  \item \TypingRuleRef{NamedType} Named types.
+  \item \TypingRuleRef{AnonymousType} Anonymous types.
+  \item \TypingRuleRef{SingularType} Singular types.
+  \item \TypingRuleRef{StructuredType} Structured types.
+  \item \TypingRuleRef{Structure} The structure of a type.
+  \item \TypingRuleRef{MakeAnonymous} The underlying type of a type.
+  \item \TypingRuleRef{CheckConstrainedInteger} Checked constrained integers.
 \end{itemize}
+% TYPING_RULES_END
 
 \TypingRuleDef{BuiltinSingularType}
+\RuleDescription{Builtin singular types.}
 \RenderRelation{is_builtin_singular}
 
 \ExampleDef{Builtin singular types}
@@ -35,6 +39,7 @@ the builtin singular type \texttt{Color} consists of two constants:
 
 
 \TypingRuleDef{NamedType}
+\RuleDescription{Named types.}
 \RenderRelation{is_named}
 
 \Enumerationtypesterm{}, record types, collection types, and exception types
@@ -51,6 +56,7 @@ In \listingref{named-types2},
 
 
 \TypingRuleDef{AnonymousType}
+\RuleDescription{Anonymous types.}
  %
 \RenderRelation{is_anonymous}
 
@@ -63,6 +69,7 @@ of anonymous types as permitted by \TypingRuleRef{TypeSatisfaction}.
 \CodeSubsection{\AnonymousBegin}{\AnonymousEnd}{../types.ml}
 
 \TypingRuleDef{SingularType}
+\RuleDescription{Singular types.}
 %
 \RenderRelation{is_singular}
 
@@ -75,6 +82,7 @@ In \listingref{SingularType}, the types \texttt{A}, \texttt{B}, and \texttt{C} a
 \CodeSubsection{\SingularBegin}{\SingularEnd}{../types.ml}
 
 \TypingRuleDef{StructuredType}
+\RuleDescription{Structured types.}
 \hypertarget{def-structuredtype}{}
 A \emph{\structuredtypeterm} is any type that consists of a list of field
 identifiers that denote individual storage elements.
@@ -91,6 +99,7 @@ are each an example of a \structuredtypeterm{}.
 \RenderProseAndFormally{is_structured}
 
 \TypingRuleDef{Structure}
+\RuleDescription{The structure of a type.}
 \RenderRelation{get_structure}
 
 \TypingRuleRef{TypeCheckAST} ensures the absence of circular type definitions,
@@ -107,6 +116,7 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
 
 
 \TypingRuleDef{MakeAnonymous}
+\RuleDescription{The underlying type of a type.}
 \RenderRelation{make_anonymous}
 
 \ExampleDef{The Underlying Type of a Type}
@@ -122,6 +132,7 @@ Further, the \underlyingtypeterm{} of \texttt{(integer, T2)} and \texttt{T3} is
 \CodeSubsection{\MakeAnonymousBegin}{\MakeAnonymousEnd}{../types.ml}
 
 \TypingRuleDef{CheckConstrainedInteger}
+\RuleDescription{Checked constrained integers.}
 A type is a \emph{\constrainedintegerterm} if it is either a \wellconstrainedintegertypeterm{}
 or a \parameterizedintegertypeterm.
 

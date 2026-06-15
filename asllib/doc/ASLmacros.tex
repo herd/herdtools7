@@ -226,6 +226,9 @@
 \newcommand\TypingRuleDefExample[1]{\emph{TypingRule.#1}}
 \newcommand\SemanticsRuleDef[1]{\subsubsection{SemanticsRule.#1\label{sec:SemanticsRule.#1}}}
 \newcommand\SemanticsRuleDefExample[1]{\emph{SemanticsRule.#1}}
+% Metadata consumed by doclint.py -cm for generated rule lists.
+% Place immediately after a TypingRuleDef or SemanticsRuleDef.
+\newcommand\RuleDescription[1]{}
 \newcommand\listingref[1]{Listing~\ref{listing:#1}}
 \newcommand\taref[1]{Table.~\ref{ta:#1}}
 \newcommand\defref[1]{Definition~\ref{def:#1}}

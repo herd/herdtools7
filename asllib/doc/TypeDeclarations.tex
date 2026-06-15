@@ -160,13 +160,17 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 The main rule for annotating type declarations is \TypingRuleRef{AnnotateTypeDecl}.
 
 We also define the following helper rules:
+% TYPING_RULES_BEGIN
+% This is generated code; run `python3 doclint.py -cm` to update.
 \begin{itemize}
+  \item \TypingRuleRef{AnnotateTypeDecl}
   \item \TypingRuleRef{DeclareType}
   \item \TypingRuleRef{AnnotateExtraFields}
   \item \TypingRuleRef{DeclaredType}
   \item \TypingRuleRef{DeclareEnumLabels}
   \item \TypingRuleRef{DeclareConst}
 \end{itemize}
+% TYPING_RULES_END
 
 \TypingRuleDef{AnnotateTypeDecl}
 See \ExampleRef{Types} for examples of well-typed type declarations.

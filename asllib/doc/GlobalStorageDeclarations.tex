@@ -261,15 +261,17 @@ are illegal, since they contain cycles.
 \ASLListing{Cyclic global storage declarations}{GlobalStorageCycles-bad1}{\definitiontests/GuideRule.GlobalStorageCycles.bad1.asl}
 \ASLListing{Cyclic global storage declarations}{GlobalStorageCycles-bad2}{\definitiontests/GuideRule.GlobalStorageCycles.bad2.asl}
 
-The main rule for annotating global storage declarations is \\
-\TypingRuleRef{AnnotateGlobalStorage}.
-
-We also define the following helper rules:
+We define the following rules for annotating global storage declarations:
+% TYPING_RULES_BEGIN
+% This is generated code; run `python3 doclint.py -cm` to update.
 \begin{itemize}
+  \item \TypingRuleRef{AnnotateGlobalStorage}
   \item \TypingRuleRef{DeclareGlobalStorage}
   \item \TypingRuleRef{AnnotateTyOptInitialValue}
+  \item \TypingRuleRef{UpdateGlobalStorage}
   \item \TypingRuleRef{AddGlobalStorage}
 \end{itemize}
+% TYPING_RULES_END
 
 \TypingRuleDef{AnnotateGlobalStorage}
 See \ExampleRef{Declaring Global Storage}.
@@ -378,10 +380,13 @@ static environment:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 This section defines the following relations:
+% SEMANTICS_RULES_BEGIN
+% This is generated code; run `python3 doclint.py -cm` to update.
 \begin{itemize}
   \item \SemanticsRuleRef{EvalGlobals}
   \item \SemanticsRuleRef{DeclareGlobal}
 \end{itemize}
+% SEMANTICS_RULES_END
 
 \SemanticsRuleDef{EvalGlobals}
 \RenderRelation{eval_globals}
