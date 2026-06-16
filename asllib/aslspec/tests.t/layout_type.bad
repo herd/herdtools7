@@ -1,0 +1,2 @@
+typedef BadAtomicType
+{ math_layout = (_, _) };

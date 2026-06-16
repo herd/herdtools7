@@ -1,0 +1,6 @@
+typedef Num;
+
+relation r(a: Num) -> (b: Num, c: Num) {} =
+    --
+    (a, a) { math_layout = (_, _, _) };
+;

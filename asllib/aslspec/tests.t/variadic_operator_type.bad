@@ -1,0 +1,9 @@
+typedef N;
+
+variadic operator make_set[T](members: list1(T)) -> powerset(T) {};
+
+relation bad_variadic_type(a: N, flag: Bool) -> powerset(N)
+{} =
+    --
+    make_set(a, flag);
+;

@@ -1,0 +1,10 @@
+operator always_true() -> Bool
+{};
+
+relation bad_atomic_expr(flag: Bool) -> Bool
+{} =
+    flag { math_layout = (_, _) };
+    always_true() { math_layout = () };
+    --
+    flag;
+;

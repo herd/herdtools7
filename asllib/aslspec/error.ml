@@ -27,6 +27,13 @@ let bad_layout term layout ~consistent_layout =
        "layout %a is inconsistent with %a. Here's a consistent layout: %a"
        PP.pp_layout layout PP.pp_type_term term PP.pp_layout consistent_layout
 
+let bad_expr_layout expr layout ~consistent_layout =
+  spec_error_loc_of_expr expr
+  @@ Format.asprintf
+       "layout %a is inconsistent with expression %a. Here's a consistent \
+        layout: %a"
+       PP.pp_layout layout PP.pp_expr expr PP.pp_layout consistent_layout
+
 let undefined_reference loc id context =
   spec_error loc @@ Format.asprintf "Undefined reference to %s in %s" id context
 

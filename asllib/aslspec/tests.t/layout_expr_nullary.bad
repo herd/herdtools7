@@ -1,0 +1,9 @@
+operator always_true() -> Bool
+{};
+
+relation bad_nullary_expr() -> Bool
+{} =
+    always_true() { math_layout = () };
+    --
+    True;
+;
