@@ -574,7 +574,7 @@ ASL Typing Tests / annotating types:
       [4] flag,
       // Illegal: slices declared for the same bitfield must not overlap
       [3:0, 5:3] data,
-      [3*:4] value
+      [3*4 +: 4] value
   };
   ASL Static error: overlapping slices 0+:4, 3+:3.
   [1]
@@ -584,7 +584,7 @@ ASL Typing Tests / annotating types:
   var myData: bits(16) {
       [4] flag,
       [3:0, 5+:3] data,
-      [3*:5] value // Illegal: position 19 exceeds 15
+      [3*5 +:5] value // Illegal: position 19 exceeds 15
   };
   ASL Static error:
     Cannot extract from bitvector of length 16 slice (3 * 5)+:5.

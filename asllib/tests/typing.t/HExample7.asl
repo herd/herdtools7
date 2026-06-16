@@ -8,7 +8,7 @@ begin
         for j = 0 to 1 do
             e = Ones{esize};
         end;
-        result[(2*i) *: esize] = e;
+        result[(2*i) * esize +: esize] = e;
     end;
     return result;
 end;

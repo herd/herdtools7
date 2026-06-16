@@ -4,7 +4,7 @@ begin
     for i = 0 to M - 1 do
         for j = 0 to N - 1 do
             let offset = (i * N + j) * 8;
-            let entry = UInt(u[i *: 8]) * UInt(v[j *: 8]);
+            let entry = UInt(u[i * 8 +: 8]) * UInt(v[j * 8 +: 8]);
             result[offset +:8] = entry[7:0];
         end;
     end;

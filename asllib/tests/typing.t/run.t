@@ -366,15 +366,15 @@ Bit slice expressions
   ASL Type error: constrained integer expected, provided integer.
   [1]
   $ aslref --no-exec TNegative15-2.asl
-  File TNegative15-2.asl, line 6, characters 20 to 38:
-      let testC     = 0xA55A1234[0 *: x]; // illegal, bit width isn't a constrained integer
-                      ^^^^^^^^^^^^^^^^^^
+  File TNegative15-2.asl, line 6, characters 20 to 42:
+      let testC     = 0xA55A1234[0 * x +: x]; // illegal, bit width isn't a constrained integer
+                      ^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: constrained integer expected, provided integer.
   [1]
   $ aslref --no-exec TNegative15-3.asl
-  File TNegative15-3.asl, line 7, characters 20 to 28:
-      testD[0 *: x] = Zeros{x}; // Same rules apply to bit slices on LHS
-                      ^^^^^^^^
+  File TNegative15-3.asl, line 7, characters 24 to 32:
+      testD[0 * x +: x] = Zeros{x}; // Same rules apply to bit slices on LHS
+                          ^^^^^^^^
   ASL Type error: constrained integer expected, provided integer.
   [1]
 

@@ -11,7 +11,7 @@ begin
             return register[8*size-1 : 0];
 
         when ELEM =>
-            return register[0 *: 8*size];
+            return register[0 * 8*size +: 8*size];
 
         when FUNC =>
             return register_read{size};

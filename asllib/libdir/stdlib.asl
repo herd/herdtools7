@@ -465,7 +465,7 @@ begin
     let items = N DIV M; // must be exact
     var result = Zeros{N};
     for i = 0 to items - 1 do
-      result[i*:M] = x;
+      result[i*M +: M] = x;
     end;
     return result;
   end;
@@ -685,7 +685,7 @@ end;
 
 pure func AlignDownSize{N}(x: bits(N), size: integer{1..2^N}) => bits(N)
 begin
-    return AlignDownSize(UInt(x), size)[:N];
+    return AlignDownSize(UInt(x), size)[0 +:N];
 end;
 
 
@@ -697,7 +697,7 @@ end;
 
 pure func AlignUpSize{N}(x: bits(N), size: integer{1..2^N}) => bits(N)
 begin
-    return AlignUpSize(UInt(x), size)[:N];
+    return AlignUpSize(UInt(x), size)[0 +:N];
 end;
 
 
@@ -748,7 +748,7 @@ end;
 pure func IsAlignedP2{N}(x: bits(N), p2: integer{0..N}) => boolean
 begin
     if N == 0 || p2 == 0 then return TRUE; end;
-    return IsZero(x[:p2]);
+    return IsZero(x[0 +:p2]);
 end;
 
 

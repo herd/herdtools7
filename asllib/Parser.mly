@@ -380,8 +380,27 @@ let slice :=
   | ~=expr;                       < Slice_Single  >
   | e1=expr; COLON; e2=expr;      < Slice_Range   >
   | e1=expr; PLUS_COLON; e2=expr; < Slice_Length  >
-  | loc=annotated(COLON); e=expr; { Slice_Length(zero ~loc, e) }
-  | e1=expr; STAR_COLON; e2=expr; < Slice_Star    >
+  | loc=annotated(COLON); e=expr;
+  {
+    if Config.version_eac1 then Slice_Length(zero ~loc, e)
+    else
+    let msg fmt =
+        Format.fprintf fmt "Deprecated slice syntax, use \"0 +: %a\" instead." PP.pp_expr e
+      in
+      Error.fatal_here $startpos $endpos @@
+      Error.ObsoleteSyntax msg
+  }
+  | e1=expr; STAR_COLON; e2=expr;
+  {
+    if Config.version_eac1 then Slice_Star(e1, e2)
+    else
+      let msg fmt =
+        Format.fprintf fmt "Deprecated slice syntax, use \"%a*%a +: %a\" instead."
+          PP.pp_expr e1 PP.pp_expr e2 PP.pp_expr e2
+      in
+      Error.fatal_here $startpos $endpos @@
+      Error.ObsoleteSyntax msg
+  }
 
 (* Bitfields *)
 let bitfields_opt := { [] } | bitfields

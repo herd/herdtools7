@@ -47,6 +47,7 @@ type args = {
   no_stdlib : bool;
   no_stdlib0 : bool;
   v0_use_split_chunks : bool;
+  version_eac1 : bool;
 }
 
 let default_args =
@@ -70,6 +71,7 @@ let default_args =
     no_stdlib = false;
     no_stdlib0 = false;
     v0_use_split_chunks = false;
+    version_eac1 = false;
   }
 
 exception Exit of int
@@ -79,8 +81,9 @@ exception Exit of int
 let run_with (args : args) : unit =
   let parser_config =
     let v0_use_split_chunks = args.v0_use_split_chunks in
+    let version_eac1 = args.version_eac1 in
     let open Builder in
-    { v0_use_split_chunks }
+    { v0_use_split_chunks; version_eac1 }
   in
 
   let or_exit f =
