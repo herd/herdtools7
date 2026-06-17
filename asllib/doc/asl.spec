@@ -14520,9 +14520,8 @@ typing function is_structured(ty: ty) -> (b: Bool)
 typing function get_structure(tenv: static_envs, ty: ty) ->
          (t: ty) | type_error
 {
-  "returns the \hypertarget{def-tstruct}{\emph{\structureterm}} of {ty},
-  which is the type formed by recursively replacing
-  named types by their type definition in the
+  "returns the \structureterm{} of {ty}
+  by recursively replacing named types by their type definition in the
   \staticenvironmentterm{} {tenv}. If a \namedtype{} is
   not associated with a declared type in {tenv}, a
   \typingerrorterm{} is returned.",
@@ -14569,13 +14568,9 @@ typing function get_structure(tenv: static_envs, ty: ty) ->
 typing function make_anonymous(tenv: static_envs, ty: ty) ->
          (t: ty) | type_error
 {
-  "returns the \emph{\underlyingtypeterm} {t} of
+  "returns the \underlyingtypeterm{} {t} of
   the type {ty} in the \staticenvironmentterm{} {tenv}
-  or a \typingerrorterm{}. Intuitively, {ty} is the
-  first non-\namedtype{} that is used to define {ty}.
-  Unlike $\tstruct$, $\makeanonymous$ replaces named
-  types by their definition until the first non-named
-  type is found but does not recurse further.",
+  or a \typingerrorterm{}.",
   prose_transition = "obtaining the \underlyingtypeterm{} of {ty} in {tenv} yields",
 } =
   case named {

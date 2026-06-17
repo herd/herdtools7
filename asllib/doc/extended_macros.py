@@ -4,7 +4,6 @@ import os, fnmatch, subprocess, shlex, shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import re
-from typing import List
 
 ASLREF_EXE: str = "aslref"
 
@@ -90,16 +89,6 @@ def find_marked_blocks(lines: list[str], begin_marker: str, end_marker: str) -> 
             raise ValueError(f"{begin_marker} must appear before {end_marker}!")
         blocks.append(Block(begin_line_number, end_line_number))
     return blocks
-
-
-@dataclass
-class RuleListEntry:
-    r"""
-    Represents a rule reference and its optional generated-list description.
-    """
-
-    name: str
-    description: str | None
 
 
 class BlockMacro(ABC):
@@ -267,124 +256,6 @@ class ConsoleMacro(BlockMacro):
         return transformed_lines
 
 
-class RuleListMacro(ABC):
-    r"""
-    Rewrites a marked block into an itemized list of rule references.
-
-    The rules are collected from rule definitions appearing after the end of
-    the marked block in the same file.
-    """
-
-    BEGIN: str
-    END: str
-    DEF_MACRO: str
-    REF_MACRO: str
-
-    @classmethod
-    def find_blocks(cls, lines: list[str]) -> list[Block]:
-        return find_marked_blocks(lines, cls.BEGIN, cls.END)
-
-    @classmethod
-    def rule_entries_after(cls, lines: list[str], line_number: int) -> list[RuleListEntry]:
-        rule_def_pattern = re.compile(rf"\\{cls.DEF_MACRO}{{([^}}]+)}}")
-        rule_description_pattern = re.compile(r"\\RuleDescription{(.*)}\s*$")
-        rule_entries: list[RuleListEntry] = []
-        for current_line_number, line in enumerate(
-            lines[line_number + 1 :], start=line_number + 1
-        ):
-            if line.lstrip().startswith("%"):
-                continue
-            for rule_name in rule_def_pattern.findall(line):
-                description = None
-                if current_line_number + 1 < len(lines):
-                    description_match = rule_description_pattern.search(
-                        lines[current_line_number + 1].strip()
-                    )
-                    if description_match:
-                        description = description_match.group(1)
-                rule_entries.append(RuleListEntry(rule_name, description))
-        return rule_entries
-
-    @classmethod
-    def render_item(cls, rule_entry: RuleListEntry) -> str:
-        description = (
-            f" {rule_entry.description}" if rule_entry.description is not None else ""
-        )
-        return f"  \\item \\{cls.REF_MACRO}{{{rule_entry.name}}}{description}\n"
-
-    @classmethod
-    def transform(cls, lines: list[str], block: Block) -> list[str]:
-        rule_entries = cls.rule_entries_after(lines, block.end)
-        return (
-            [
-                lines[block.begin],
-                "% This is generated code; run `python3 doclint.py -cm` to update.\n",
-                "\\begin{itemize}\n",
-            ]
-            + [cls.render_item(rule_entry) for rule_entry in rule_entries]
-            + [
-                "\\end{itemize}\n",
-                lines[block.end],
-            ]
-        )
-
-    @classmethod
-    def apply_to_file(cls, source: str):
-        with open(source) as file:
-            lines = file.readlines()
-        blocks_to_transform = cls.find_blocks(lines)
-        if not blocks_to_transform:
-            return
-        if debug:
-            print(f"{source}: found {len(blocks_to_transform)} macro instance(s)")
-        all_blocks: list[Block] = BlockMacro.extend_to_all_blocks(
-            blocks_to_transform, len(lines)
-        )
-        BlockMacro.validate_blocks(all_blocks, len(lines))
-        output_lines: list[str] = []
-        number_of_changes = 0
-        for block, should_transform in all_blocks:
-            original_lines = lines[block.begin : block.end + 1]
-            block_output_lines = (
-                cls.transform(lines, block) if should_transform else original_lines
-            )
-            if should_transform and block_output_lines != original_lines:
-                first_changed_line_number = len(output_lines) + 1
-                last_changed_line_number = first_changed_line_number + len(
-                    block_output_lines
-                )
-                print(
-                    f"{source} lines {first_changed_line_number}-{last_changed_line_number} are new."
-                )
-                number_of_changes += 1
-            output_lines.extend(block_output_lines)
-        if number_of_changes > 0:  # Avoid changing file timestamps
-            with open(source, "w") as file:
-                file.writelines(output_lines)
-
-    @classmethod
-    def apply_to_files(cls, sources: list[str]):
-        for source in sources:
-            try:
-                cls.apply_to_file(source)
-            except ValueError as e:
-                print(f"Error in ./{source}: ", e)
-
-
-class TypingRuleListMacro(RuleListMacro):
-    BEGIN = "TYPING_RULES_BEGIN"
-    END = "TYPING_RULES_END"
-    DEF_MACRO = "TypingRuleDef"
-    REF_MACRO = "TypingRuleRef"
-
-
-class SemanticsRuleListMacro(RuleListMacro):
-    BEGIN = "SEMANTICS_RULES_BEGIN"
-    END = "SEMANTICS_RULES_END"
-    DEF_MACRO = "SemanticsRuleDef"
-    REF_MACRO = "SemanticsRuleRef"
-
-
 def transform_by_line(filenames: list[str], from_pattern: str, to_pattern: str):
     r"""
     Performs a line-by-line transformation for all files in 'filenames'.
@@ -436,8 +307,6 @@ def apply_console_macros(aslref_path: str):
     print("Extended macros: applying console macros... ")
     pruned_latex_sources = get_latex_sources(True)
     ConsoleMacro.apply_to_files(pruned_latex_sources)
-    TypingRuleListMacro.apply_to_files(pruned_latex_sources)
-    SemanticsRuleListMacro.apply_to_files(pruned_latex_sources)
     transform_by_line(
         pruned_latex_sources,
         r"\\AllApplyCase{(.*?)}:",

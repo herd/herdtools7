@@ -157,28 +157,16 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Type Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-The main rule for annotating type declarations is \TypingRuleRef{AnnotateTypeDecl}.
+We define the following rules for annotating type declarations:
+\begin{TypingRuleList}{TypeDeclarations}
 
-We also define the following helper rules:
-% TYPING_RULES_BEGIN
-% This is generated code; run `python3 doclint.py -cm` to update.
-\begin{itemize}
-  \item \TypingRuleRef{AnnotateTypeDecl}
-  \item \TypingRuleRef{DeclareType}
-  \item \TypingRuleRef{AnnotateExtraFields}
-  \item \TypingRuleRef{DeclaredType}
-  \item \TypingRuleRef{DeclareEnumLabels}
-  \item \TypingRuleRef{DeclareConst}
-\end{itemize}
-% TYPING_RULES_END
-
-\TypingRuleDef{AnnotateTypeDecl}
+\TypingRuleDef[annotates a type declaration.]{AnnotateTypeDecl}
 See \ExampleRef{Types} for examples of well-typed type declarations.
 
 
 \RenderProseAndFormally{typecheck_decl_type_decl}
 
-\TypingRuleDef{DeclareType}
+\TypingRuleDef[declares a type in a \staticenvironmentterm{}.]{DeclareType}
 \RenderRelation{declare_type}
 
 \ExampleDef{Type Declarations}
@@ -194,7 +182,7 @@ $\GlobalEffect(\SEPure)$ and\\$\Immutability(\True)$.
 \CodeSubsection{\DeclareTypeBegin}{\DeclareTypeEnd}{../Typing.ml}
 
 
-\TypingRuleDef{AnnotateExtraFields}
+\TypingRuleDef[annotates the extra fields of a subtype declaration.]{AnnotateExtraFields}
 \RenderRelation{annotate_extra_fields}
 
 \ExampleDef{Type Declarations with Fields and Without Fields}
@@ -211,7 +199,7 @@ In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| 
 
 \RenderProseAndFormally{annotate_extra_fields}
 
-\TypingRuleDef{DeclaredType}
+\TypingRuleDef[retrieves the type associated with a declared type name.]{DeclaredType}
 \RenderRelation{declared_type}
 
 \ExampleDef{Retrieving the Type Declared for an Identifier}
@@ -228,7 +216,7 @@ since the expression \verb|20 as MyInt| refers to the undeclared type \verb|MyIn
 
 \RenderProseAndFormally{declared_type}
 
-\TypingRuleDef{DeclareEnumLabels}
+\TypingRuleDef[declares the labels of an enumeration type.]{DeclareEnumLabels}
 \RenderRelation{declare_enum_labels}
 
 \ExampleDef{Declaring Enumeration Labels}
@@ -248,7 +236,7 @@ $\BlueLabel$ & $\TNamed(\ColorType)$ & $\LLabel(\BlueLabel)$\\
 
 \RenderProseAndFormally{declare_enum_labels}
 
-\TypingRuleDef{DeclareConst}
+\TypingRuleDef[declares an enumeration label as a global constant.]{DeclareConst}
 \RenderRelation{declare_const}
 
 \ExampleDef{Declaring a Global Constant for an Enumeration Label}
@@ -268,3 +256,5 @@ in the empty \globalstaticenvironmentterm{} yields the following \globalstaticen
 (that is, all maps other than $\globalstoragetypes$ and $\constantvalues$, remain the same.)
 
 \RenderProseAndFormally{declare_const}
+
+\end{TypingRuleList}

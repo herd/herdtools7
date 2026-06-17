@@ -111,36 +111,9 @@ as follows:
 \section{Symbolic Reasoning\label{sec:Symbolic Reasoning}}
 
 We define the following rules for symbolic subsumption testing:
-% TYPING_RULES_BEGIN
-% This is generated code; run `python3 doclint.py -cm` to update.
-\begin{itemize}
-  \item \TypingRuleRef{SymdomSubsetUnions}
-  \item \TypingRuleRef{SymdomNormalize}
-  \item \TypingRuleRef{SymdomOfType}
-  \item \TypingRuleRef{SymdomOfWidthExpr}
-  \item \TypingRuleRef{SymdomOfConstraint}
-  \item \TypingRuleRef{SymdomEval}
-  \item \TypingRuleRef{SymdomSubset}
-  \item \TypingRuleRef{ApproxConstraints}
-  \item \TypingRuleRef{ApproxConstraint}
-  \item \TypingRuleRef{MakeInterval}
-  \item \TypingRuleRef{ApproxExprMin}
-  \item \TypingRuleRef{ApproxExprMax}
-  \item \TypingRuleRef{ApproxBottomTop}
-  \item \TypingRuleRef{IntsetToConstraints}
-  \item \TypingRuleRef{ApproxExpr}
-  \item \TypingRuleRef{ApproxConstraintBinop}
-  \item \TypingRuleRef{ApproxType}
-  \item \TypingRuleRef{ConstraintBinop}
-  \item \TypingRuleRef{ApplyBinopExtremities}
-  \item \TypingRuleRef{PossibleExtremitiesLeft}
-  \item \TypingRuleRef{PossibleExtremitiesRight}
-  \item \TypingRuleRef{ConstraintMod}
-  \item \TypingRuleRef{ConstraintPow}
-\end{itemize}
-% TYPING_RULES_END
+\begin{TypingRuleList}{SymbolicSubsumptionTesting}
 
-\TypingRuleDef{SymdomSubsetUnions}
+\TypingRuleDef[checks symbolic subsumption between lists of symbolic domains.]{SymdomSubsetUnions}
 \RenderRelation{symdom_subset_unions}
 
 \ExampleDef{Conservatively Testing Subsumption Between Two Lists of Symbolic Domains}
@@ -178,7 +151,7 @@ In this example, this is true as the following hold:
 
 \RenderProseAndFormally{symdom_subset_unions}
 
-\TypingRuleDef{SymdomNormalize}
+\TypingRuleDef[normalizes a \symbolicdomainterm{}.]{SymdomNormalize}
 \RenderRelation{symdom_normalize}
 
 \ExampleDef{Normalising Symbolic Domains}
@@ -198,7 +171,7 @@ merges $\Finite(\{1,2,3,4,5,6\})$ and $\Finite(\{9\})$, yielding the \symbolicdo
 
 \RenderProseAndFormally{symdom_normalize}
 
-\TypingRuleDef{SymdomOfType}
+\TypingRuleDef[defines the \symbolicdomainterm{} of a type.]{SymdomOfType}
 \RenderRelation{symdom_of_type}
 
 \ExampleDef{The Symbolic Domain of a Type}
@@ -219,7 +192,7 @@ is
 
 \RenderProseAndFormally{symdom_of_type}
 
-\TypingRuleDef{SymdomOfWidthExpr}
+\TypingRuleDef[defines the \symbolicdomainterm{} of a bitwidth expression.]{SymdomOfWidthExpr}
 \RenderRelation{symdom_of_width_expr}
 
 \ExampleDef{The Symbolic Domain of a Bitwidth Expression}
@@ -232,7 +205,7 @@ is:
 
 \RenderProseAndFormally{symdom_of_width_expr}
 
-\TypingRuleDef{SymdomOfConstraint}
+\TypingRuleDef[defines the \symbolicdomainterm{} of a constraint.]{SymdomOfConstraint}
 \RenderRelation{symdom_of_constraint}
 
 \ExampleDef{The Symbolic Domain of a Constraint}
@@ -255,7 +228,7 @@ In \listingref{SymdomOfConstraint}, considering the type annotation for \verb|x|
 
 \RenderProseAndFormally{symdom_of_constraint}
 
-\TypingRuleDef{SymdomEval}
+\TypingRuleDef[evaluates expressions used to construct symbolic domains.]{SymdomEval}
 \RenderRelation{symdom_eval}
 
 We assume that $\ve$ has been annotated as it is part of the constraint for an integer type,
@@ -274,7 +247,7 @@ yield $1$ and $6$, respectively.
 
 \RenderProseAndFormally{symdom_eval}
 
-\TypingRuleDef{SymdomSubset}
+\TypingRuleDef[checks whether one \symbolicdomainterm{} subsumes another.]{SymdomSubset}
 \RenderRelation{symdom_subset}
 The test first \emph{overapproximates} $\visone$ by a set of integers $\vsone$.
 That is, $\vsone$ represents a superset of the set of numbers represented by $\visone$.
@@ -313,7 +286,7 @@ underapproximated.
 
 \RenderProseAndFormally{symdom_subset}
 
-\TypingRuleDef{ApproxConstraints}
+\TypingRuleDef[approximates a list of constraints.]{ApproxConstraints}
 \RenderRelation{approx_constraints}
 
 \ExampleDef{Approximating Constraint Lists}
@@ -325,7 +298,7 @@ showing how constraint lists are overapproximated.
 \RenderProseAndFormally{approx_constraints}
 \CodeSubsection{\ApproxConstraintsBinopBegin}{\ApproxConstraintsBinopEnd}{../Typing.ml}
 
-\TypingRuleDef{ApproxConstraint}
+\TypingRuleDef[approximates a constraint.]{ApproxConstraint}
 \RenderRelation{approx_constraint}
 
 \ExampleDef{Approximating Constraints}
@@ -336,7 +309,7 @@ showing how constraints are overapproximated and underapproximated.
 
 \RenderProseAndFormally{approx_constraint}
 
-\TypingRuleDef{MakeInterval}
+\TypingRuleDef[approximates an integer interval.]{MakeInterval}
 \RenderRelation{make_interval}
 
 \ExampleDef{Approximating Intervals}
@@ -353,7 +326,7 @@ The following are examples of over- and under-approximating intervals:
 
 \RenderProseAndFormally{make_interval}
 
-\TypingRuleDef{ApproxExprMin}
+\TypingRuleDef[approximates the minimal value of an expression.]{ApproxExprMin}
 \RenderRelation{approx_expr_min}
 
 \ExampleDef{Approximating the Minimal Value of an Expression}
@@ -367,7 +340,7 @@ yields $12$.
 
 \RenderProseAndFormally{approx_expr_min}
 
-\TypingRuleDef{ApproxExprMax}
+\TypingRuleDef[approximates the maximal value of an expression.]{ApproxExprMax}
 \RenderRelation{approx_expr_max}
 
 \ExampleDef{Approximating the Maximal Value of an Expression}
@@ -381,7 +354,7 @@ yields $10$.
 
 \RenderProseAndFormally{approx_expr_max}
 
-\TypingRuleDef{ApproxBottomTop}
+\TypingRuleDef[defines approximation results for bottom and top bounds.]{ApproxBottomTop}
 \RenderRelation{approx_bottom_top}
 
 \ExampleDef{Approximation Extremes}
@@ -392,7 +365,7 @@ $\CannotOverapproximate$.
 
 \RenderProseAndFormally{approx_bottom_top}
 
-\TypingRuleDef{IntsetToConstraints}
+\TypingRuleDef[converts an integer set into a list of constraints.]{IntsetToConstraints}
 \RenderRelation{intset_to_constraints}
 
 \ExampleDef{Transforming Integer Sets to Constraint Lists}
@@ -403,7 +376,7 @@ showing how an instance of integer sets transformed to constraint lists.
 
 \RenderProseAndFormally{intset_to_constraints}
 
-\TypingRuleDef{ApproxExpr}
+\TypingRuleDef[approximates an expression.]{ApproxExpr}
 \RenderRelation{approx_expr}
 
 \ExampleDef{Approximating Expressions}
@@ -416,7 +389,7 @@ needed to annotate the expression \verb|x as bits(N)|.
 
 \RenderProseAndFormally{approx_expr}
 
-\TypingRuleDef{ApproxConstraintBinop}
+\TypingRuleDef[approximates binary operations over constraint lists.]{ApproxConstraintBinop}
 \RenderRelation{approx_constraint_binop}
 
 \ExampleDef{Approximating Binary Expressions Over Constraint Lists}
@@ -443,7 +416,7 @@ the dynamic semantics.
 
 \RenderProseAndFormally{approx_constraint_binop}
 
-\TypingRuleDef{ApproxType}
+\TypingRuleDef[approximates a type.]{ApproxType}
 \RenderRelation{approx_type}
 
 \ExampleDef{Approximating Types}
@@ -455,7 +428,7 @@ This involves overapproximating the type of \verb|M|, which is \verb|integer{4,8
 
 \RenderProseAndFormally{approx_type}
 
-\TypingRuleDef{ConstraintBinop}
+\TypingRuleDef[generates constraints for binary operations.]{ConstraintBinop}
 \RenderRelation{constraint_binop}
 
 For examples of the generated constraints
@@ -469,7 +442,7 @@ see \ExampleRef{Generating Constraints for Binary Operations}.
 \RenderProseAndFormally{constraint_binop}
 \CodeSubsection{\ConstraintBinopBegin}{\ConstraintBinopEnd}{../Typing.ml}
 
-\TypingRuleDef{ApplyBinopExtremities}
+\TypingRuleDef[generates constraints from binary operations over range extremities.]{ApplyBinopExtremities}
 \RenderRelation{apply_binop_extremities}
 
 \ExampleDef{Generating Constraints for Binary Operations}
@@ -484,7 +457,7 @@ for cases where a binary operation involves two \rangeconstraintsterm.
 
 \RenderProseAndFormally{apply_binop_extremities}
 
-\TypingRuleDef{PossibleExtremitiesLeft}
+\TypingRuleDef[generates constraints when the left operand has range extremities.]{PossibleExtremitiesLeft}
 \RenderRelation{possible_extremities_left}
 
 \ExampleDef{Generating Range-to-Exact Constraints}
@@ -497,7 +470,7 @@ contains an \exactconstraintterm.
 
 \RenderProseAndFormally{possible_extremities_left}
 
-\TypingRuleDef{PossibleExtremitiesRight}
+\TypingRuleDef[generates constraints when the right operand has range extremities.]{PossibleExtremitiesRight}
 \RenderRelation{possible_extremities_right}
 
 \ExampleDef{Generating Exact-to-Range Constraints}
@@ -510,7 +483,7 @@ contains a \rangeconstraintterm{}.
 
 \RenderProseAndFormally{possible_extremities_right}
 
-\TypingRuleDef{ConstraintMod}
+\TypingRuleDef[generates constraints for modulus operations.]{ConstraintMod}
 \RenderRelation{constraint_mod}
 
 \ExampleDef{Generating Modulus Constraints}
@@ -530,7 +503,7 @@ inferred for \texttt{z} is\\
 \RenderProseAndFormally{constraint_mod}
 \CodeSubsection{\ConstraintModBegin}{\ConstraintModEnd}{../Typing.ml}
 
-\TypingRuleDef{ConstraintPow}
+\TypingRuleDef[generates constraints for exponentiation operations.]{ConstraintPow}
 \RenderRelation{constraint_pow}
 
 \ExampleDef{Generating Exponentiation Constraints}
@@ -542,3 +515,5 @@ shows the constraints inferred for the exponentiation expression \verb|x^y|
 
 \RenderProseAndFormally{constraint_pow}
 \CodeSubsection{\ConstraintPowBegin}{\ConstraintPowEnd}{../Typing.ml}
+
+\end{TypingRuleList}

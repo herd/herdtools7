@@ -4,33 +4,9 @@
 
 This chapter defines the following helper relations for operating on \nativevaluesterm{},
 \hyperlink{def-envs}{environments}, and operations involving values and types:
-% SEMANTICS_RULES_BEGIN
-% This is generated code; run `python3 doclint.py -cm` to update.
-\begin{itemize}
-  \item \SemanticsRuleRef{GetPendingCalls} retrieves the $\pendingcalls$ value from an environment.
-  \item \SemanticsRuleRef{SetPendingCalls} updates the $\pendingcalls$ value in an environment.
-  \item \SemanticsRuleRef{IncrPendingCalls} increments the $\pendingcalls$ value in an environment by one.
-  \item \SemanticsRuleRef{DecrPendingCalls} decrements the $\pendingcalls$ value in an environment by one.
-  \item \SemanticsRuleRef{RemoveLocal} removes a local storage element from a given environment.
-  \item \SemanticsRuleRef{ReadIdentifier} creates an \executiongraphterm{} representing a Read Effect for a given identifier.
-  \item \SemanticsRuleRef{WriteIdentifier} creates an \executiongraphterm{} representing a Write Effect for a given identifier.
-  \item \SemanticsRuleRef{ConcatBitvectors} concatenates a list of bitvector \nativevaluesterm{}.
-  \item \SemanticsRuleRef{SlicesToPositions} converts a list of slices into a list of indices.
-  \item \SemanticsRuleRef{MaxPosOfSlice} finds the maximum position in a slice.
-  \item \SemanticsRuleRef{ReadFromBitvector} slices a bitvector \nativevalueterm{}.
-  \item \SemanticsRuleRef{WriteToBitvector} updates a slice of a bitvector \nativevalueterm{}.
-  \item \SemanticsRuleRef{GetIndex} reads a vector \nativevalueterm{} at a given index.
-  \item \SemanticsRuleRef{SetIndex} updates a vector \nativevalueterm{} at a given index.
-  \item \SemanticsRuleRef{GetField} reads a given field in a \nativevalueterm{} record.
-  \item \SemanticsRuleRef{SetField} updates a given field in a \nativevalueterm{} record.
-  \item \SemanticsRuleRef{DeclareLocalIdentifier} updates an environment by associating an identifier with a given \nativevalueterm{} and also generates an \executiongraphterm{} with a corresponding Write Effect.
-  \item \SemanticsRuleRef{DeclareLocalIdentifierM} updates an environment by associating an identifier with a given \nativevalueterm{} and also updates a given \executiongraphterm{} with a corresponding Write Effect and an $\asldata$ edge.
-  \item \SemanticsRuleRef{DeclareLocalIdentifierMM} updates an environment by associating an identifier with a given \nativevalueterm{} and also updates a given \executiongraphterm{} with a corresponding Write Effect and an $\aslpo$ edge.
-\end{itemize}
-% SEMANTICS_RULES_END
+\begin{SemanticsRuleList}{SemanticsUtilities}
 
-\SemanticsRuleDef{GetPendingCalls}
-\RuleDescription{retrieves the $\pendingcalls$ value from an environment.}
+\SemanticsRuleDef[retrieves the $\pendingcalls$ value from an environment.]{GetPendingCalls}
 \RenderRelation{get_pending_calls}
 
 \ExampleDef{Retrieving the Number of Pending Calls}
@@ -40,8 +16,7 @@ That is, $\getpendingcalls(\denv_0, \factorial) \evalarrow 0$.
 
 \RenderProseAndFormally{get_pending_calls}
 
-\SemanticsRuleDef{SetPendingCalls}
-\RuleDescription{updates the $\pendingcalls$ value in an environment.}
+\SemanticsRuleDef[updates the $\pendingcalls$ value in an environment.]{SetPendingCalls}
 \RenderRelation{set_pending_calls}
 
 \ExampleDef{Setting the Number of Pending Calls}
@@ -54,8 +29,7 @@ $\getpendingcalls(\denv_1, \factorial) \evalarrow 1$.
 
 \RenderProseAndFormally{set_pending_calls}
 
-\SemanticsRuleDef{IncrPendingCalls}
-\RuleDescription{increments the $\pendingcalls$ value in an environment by one.}
+\SemanticsRuleDef[increments the $\pendingcalls$ value in an environment by one.]{IncrPendingCalls}
 \RenderRelation{incr_pending_calls}
 
 \ExampleDef{Incrementing the Number of Pending Calls}
@@ -68,8 +42,7 @@ $\getpendingcalls(\denv_1, \factorial) \evalarrow 1$.
 
 \RenderProseAndFormally{incr_pending_calls}
 
-\SemanticsRuleDef{DecrPendingCalls}
-\RuleDescription{decrements the $\pendingcalls$ value in an environment by one.}
+\SemanticsRuleDef[decrements the $\pendingcalls$ value in an environment by one.]{DecrPendingCalls}
 \RenderRelation{decr_pending_calls}
 
 \ExampleDef{Decrementing the Number of Pending Calls}
@@ -82,8 +55,7 @@ $\getpendingcalls(\denv_0, \factorial) \evalarrow 0$.
 
 \RenderProseAndFormally{decr_pending_calls}
 
-\SemanticsRuleDef{RemoveLocal}
-\RuleDescription{removes a local storage element from a given environment.}
+\SemanticsRuleDef[removes a local storage element from a \dynamicenvironmentterm{}.]{RemoveLocal}
 \RenderRelation{remove_local}
 
 This relation is used to maintain the invariant that the dynamic environment
@@ -110,8 +82,7 @@ exn=TRUE
 
 \RenderProseAndFormally{remove_local}
 
-\SemanticsRuleDef{ReadIdentifier}
-\RuleDescription{creates an \executiongraphterm{} representing a Read Effect for a given identifier.}
+\SemanticsRuleDef[constructs an \executiongraphterm{} for reading an identifier.]{ReadIdentifier}
 \RenderRelation{read_identifier}
 
 \ExampleDef{The Effect of Reading from an Identifier}
@@ -125,8 +96,7 @@ generates (see \SemanticsRuleRef{EvalFor}) the following transition at the first
 
 \RenderProseAndFormally{read_identifier}
 
-\SemanticsRuleDef{WriteIdentifier}
-\RuleDescription{creates an \executiongraphterm{} representing a Write Effect for a given identifier.}
+\SemanticsRuleDef[constructs an \executiongraphterm{} for writing an identifier.]{WriteIdentifier}
 \RenderRelation{write_identifier}
 
 \ExampleDef{The Effect of Writing to an Identifier}
@@ -139,8 +109,7 @@ as the value of the index variable $\vi$ is incremented from $\nvint(0)$ to $\nv
 
 \RenderProseAndFormally{write_identifier}
 
-\SemanticsRuleDef{ConcatBitvectors}
-\RuleDescription{concatenates a list of bitvector \nativevaluesterm{}.}
+\SemanticsRuleDef[concatenates a list of bitvector \nativevaluesterm{}.]{ConcatBitvectors}
 \RenderRelation{concat_bitvectors}
 
 \ExampleDef{Concatenating Bitvectors}
@@ -150,8 +119,7 @@ the \bitvectortypeterm{} fields of a \collectiontypeterm{} and of a \recordtypet
 
 \RenderProseAndFormally{concat_bitvectors}
 
-\SemanticsRuleDef{SlicesToPositions}
-\RuleDescription{converts a list of slices into a list of indices.}
+\SemanticsRuleDef[converts a list of slices into a list of indices.]{SlicesToPositions}
 \RenderRelation{slices_to_positions}
 
 \ExampleDef{Converting Slices to Lists of Indices}
@@ -170,8 +138,7 @@ is illegal for a slice.
 % in ASTUtils.ml.
 \RenderProseAndFormally{slices_to_positions}
 
-\SemanticsRuleDef{MaxPosOfSlice}
-\RuleDescription{finds the maximum position in a slice.}
+\SemanticsRuleDef[finds the maximum position in a slice.]{MaxPosOfSlice}
 \RenderRelation{max_pos_of_slice}
 
 \ExampleDef{Maximum positions of slices}
@@ -180,8 +147,7 @@ The slice \verb|42+:0| has maximum position 42.
 
 \RenderProseAndFormally{max_pos_of_slice}
 
-\SemanticsRuleDef{ReadFromBitvector}
-\RuleDescription{slices a bitvector \nativevalueterm{}.}
+\SemanticsRuleDef[slices a bitvector \nativevalueterm{}.]{ReadFromBitvector}
 \RenderRelation{read_from_bitvector}
 
 Notice that the bits of a bitvector go from the least-significant bit on the right
@@ -215,8 +181,7 @@ bv = 0xfdf0, bv_i = 0xfdf0
 
 \RenderProseAndFormally{read_from_bitvector}
 
-\SemanticsRuleDef{WriteToBitvector}
-\RuleDescription{updates a slice of a bitvector \nativevalueterm{}.}
+\SemanticsRuleDef[updates a slice of a bitvector \nativevalueterm{}.]{WriteToBitvector}
 \RenderRelation{write_to_bitvector}
 
 See \ExampleRef{Writing to a Bitvector}, following the definition of $\writetobitvector$.
@@ -258,8 +223,7 @@ In reference to \listingref{semantics-leslice}, we have the following applicatio
 }
 \end{mathpar}
 
-\SemanticsRuleDef{GetIndex}
-\RuleDescription{reads a vector \nativevalueterm{} at a given index.}
+\SemanticsRuleDef[reads a vector \nativevalueterm{} at an index.]{GetIndex}
 \RenderRelation{get_index}
 
 \ExampleDef{Reading a Vector at an Index}
@@ -277,8 +241,7 @@ The specification in \listingref{GetIndex} shows examples of accessing indices o
 
 \RenderProseAndFormally{get_index}
 
-\SemanticsRuleDef{SetIndex}
-\RuleDescription{updates a vector \nativevalueterm{} at a given index.}
+\SemanticsRuleDef[updates a vector \nativevalueterm{} at an index.]{SetIndex}
 \RenderRelation{set_index}
 
 \ExampleDef{Writing a Vector at an Index}
@@ -293,8 +256,7 @@ involves the following premise:
 
 \RenderProseAndFormally{set_index}
 
-\SemanticsRuleDef{GetField}
-\RuleDescription{reads a given field in a \nativevalueterm{} record.}
+\SemanticsRuleDef[reads a field in a \nativevalueterm{} record.]{GetField}
 \RenderRelation{get_field}
 
 \ExampleDef{Reading a Record Field}
@@ -310,8 +272,7 @@ In \listingref{GetField}, there are the following examples of reading a record f
 \RenderProseAndFormally{get_field}
 The typechecker ensures, via \TypingRuleRef{EGetRecordField}, that the field $\name$ exists in $\record$.
 
-\SemanticsRuleDef{SetField}
-\RuleDescription{updates a given field in a \nativevalueterm{} record.}
+\SemanticsRuleDef[updates a field in a \nativevalueterm{} record.]{SetField}
 \RenderRelation{set_field}
 
 \ExampleDef{Writing to a Record Field}
@@ -349,8 +310,7 @@ The typechecker ensures that the field $\name$ exists in $\record$.
 
 \RenderProseAndFormally{set_field}
 
-\SemanticsRuleDef{DeclareLocalIdentifier}
-\RuleDescription{updates an environment by associating an identifier with a given \nativevalueterm{} and also generates an \executiongraphterm{} with a corresponding Write Effect.}
+\SemanticsRuleDef[declares a local identifier in an environment and records a write effect.]{DeclareLocalIdentifier}
 \RenderRelation{declare_local_identifier}
 
 \ExampleDef{Evaluating Local Declarations}
@@ -360,18 +320,18 @@ as well as producing the \executiongraphterm{} $\WriteEffect(\vx)$.
 
 \RenderProseAndFormally{declare_local_identifier}
 
-\SemanticsRuleDef{DeclareLocalIdentifierM}
-\RuleDescription{updates an environment by associating an identifier with a given \nativevalueterm{} and also updates a given \executiongraphterm{} with a corresponding Write Effect and an $\asldata$ edge.}
+\SemanticsRuleDef[declares a local identifier and records a write effect with an $\asldata$ edge.]{DeclareLocalIdentifierM}
 \RenderRelation{declare_local_identifier_m}
 
 See \ExampleRef{Evaluating Local Declarations}.
 
 \RenderProseAndFormally{declare_local_identifier_m}
 
-\SemanticsRuleDef{DeclareLocalIdentifierMM}
-\RuleDescription{updates an environment by associating an identifier with a given \nativevalueterm{} and also updates a given \executiongraphterm{} with a corresponding Write Effect and an $\aslpo$ edge.}
+\SemanticsRuleDef[declares a local identifier and records a write effect with an $\aslpo$ edge.]{DeclareLocalIdentifierMM}
 \RenderRelation{declare_local_identifier_mm}
 
 See \ExampleRef{Evaluating Local Declarations}.
 
 \RenderProseAndFormally{declare_local_identifier_mm}
+
+\end{SemanticsRuleList}
