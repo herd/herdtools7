@@ -1188,9 +1188,9 @@ let do_set_read_v init =
           Some ( ( E.is_com n.prev.edge
                  || E.is_com n.edge
                  (* For an RMW sequence such as
-                    read --CAS--> write --communication edge--> ... , check the
-                    read value so the cycle is formed correctly. *)
-                 || (n.evt.rmw && n.evt.dir = Some R && E.is_com n.next.edge ) )
+                    read --CAS--> write, check the read value
+                    so the CAS succeeds and the cycle is formed correctly. *)
+                 || n.evt.rmw )
               && CoSt.get_check_value st) in
         begin match bank with
         | Ord | Instr->
@@ -1597,20 +1597,7 @@ let merge_changes n nss =
           (e.loc,m.store)::k
         else k
       end in
-    let adjacent_with_communication_edge_or_store m =
-      E.is_com m.prev.edge || E.is_com m.edge || E.is_insert_store m.edge.E.edge in
-    (* Remove the tail until we reach a write adjacent to a communication
-     edge or an inserted store. This `coherence` function works together with `check` in
-     `top_gen.ml` to decide coherence/write value check.
-     Especially when there are two or more writes, the last value
-     will be checked. Here we remove the tail which means a local,
-     non-communication write will be ignored. *)
-    List.fold_right ( fun (loc,n) (new_list,have_seen_communication) ->
-      match have_seen_communication,adjacent_with_communication_edge_or_store n with
-      | true,_ | _,true -> (loc,n) :: new_list,true
-      | false, false -> new_list,false
-    ) (do_rec n) ([],false)
-    |> fst
+    do_rec n
 
   let get_ord_writes =
     let open Code in
