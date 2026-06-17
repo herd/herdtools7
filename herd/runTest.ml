@@ -65,7 +65,7 @@ module Make
 
     let run dirty ~filename ~contents env splitted =
       try
-         let parsed = P.parse_string contents splitted in
+        let parsed = P.parse_string contents splitted in
         let name = splitted.Splitter.name in
         let hash = MiscParser.get_hash parsed in
         let env = match hash, filename with

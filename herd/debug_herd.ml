@@ -36,6 +36,7 @@ type t = {
     asl_stack: bool ;
     profile_mem: bool ;
     exc : bool ;
+    timers : bool ;
   }
 
 let tags =
@@ -59,6 +60,7 @@ let tags =
   "asl_stack";
   "profile_mem";
   "exception";
+  "timers";
 ]
 
 let none =
@@ -82,6 +84,7 @@ let none =
    asl_stack = false;
    profile_mem = false;
    exc = false ;
+   timers = false ;
  }
 
 let parse t tag = match tag with
@@ -105,4 +108,5 @@ let parse t tag = match tag with
   | "asl_symb" -> Some { t with asl_symb = true }
   | "asl_stack" -> Some { t with asl_stack = true }
   | "profile_mem" -> Some { t with profile_mem = true }
+  | "timers" -> Some { t with timers = true ; }
   | _ -> None

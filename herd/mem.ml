@@ -29,6 +29,7 @@ module type CommonConfig = sig
   val unroll : int option
   val speedcheck : Speed.t
   val debug : Debug_herd.t
+  module Timer : Timer.S
   val observed_finals_only : bool
   val initwrites : bool
   val check_filter : bool

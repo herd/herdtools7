@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2026-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,31 +14,33 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Debug tags *)
+(** Timers for global profiling, timers are re-entrant. *)
 
-type t = {
-  solver : int ;
-  lexer : bool ;
-  top : bool ;
-  mem : bool ;
-  monad : bool ;
-  barrier : bool ;
-  res : bool ;
-  rfm : bool  ;
-  pretty : bool ;
-  mixed : bool ;
-  files : bool ;
-  timeout : bool ;
-  pac : bool ;
-  profile_cat: bool ;
-  profile_asl: bool ;
-  asl_symb: bool ;
-  asl_stack: bool ;
-  profile_mem: bool ;
-  exc : bool ;
-  timers : bool ;
-}
+module type S = sig
+  (** [create key] Create and register timer,
+      must be called at most once for a given key. *)
+  val create : string -> unit
 
-val none : t
-val tags : string list
-val parse : t -> string -> t option
+  (** [start key] Start the timer [key].
+      If the timer is already running,
+      do not restart timer.
+      Alqways push a [key] marker. *)
+  val start : string -> unit
+
+(** [stop key] Stop the timer [key].
+    Always pop a [key] marker, if no [key] marker are pending,
+    accumulate the time spent. *)
+  val stop : string -> unit
+
+  (** Print all timers *)
+  val pp : Format.formatter -> unit
+
+end
+
+val sem_key : string
+val model_key : string
+val run_key : string
+
+module Ok : S
+module No : S
+

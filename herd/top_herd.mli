@@ -120,6 +120,7 @@ end
 
 module type PrinterConfig = sig
   module PC : PrettyConf.S
+  module Timer : Timer.S
   val candidates : bool
   val verbose : int
   val show : PrettyConf.show

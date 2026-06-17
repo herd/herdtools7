@@ -102,6 +102,7 @@ end
 
 module type PrinterConfig = sig
   module PC : PrettyConf.S
+  module Timer : Timer.S
   val candidates : bool
   val verbose : int
   val show : PrettyConf.show
@@ -221,6 +222,7 @@ module Printer (O : PrinterConfig) (S : SemExtra.S) = struct
         if Misc.string_eq k "Hash" then
           fprintf fmt "%s=%s\n" k v)
       test.Test_herd.info ;
+    O.Timer.pp fmt
 
   module PP = Pretty.Make (S)
 
@@ -245,6 +247,19 @@ module Make(O:Config)(M:XXXMem.S) =
     module W = Warn.Make(O)
 
     let showcutoff = O.variant Variant.CutOff
+
+(* Create timers *)
+    let sem_key = Timer.sem_key
+    and model_key = Timer.model_key
+    and run_key = Timer.run_key
+
+    module Timer = O.Timer
+
+    let () =
+      Timer.create sem_key ;
+      Timer.create model_key ;
+      Timer.create run_key ;
+      ()
 
 (* Utilities *)
     open Restrict
@@ -460,8 +475,11 @@ module Make(O:Config)(M:XXXMem.S) =
 
     (* Driver *)
     let run test =
+      Timer.start run_key ;
+      Timer.start sem_key ;
       let { MC.event_structures=rfms; MC.overwritable_labels=owls; },test =
         MC.glommed_event_structures ~is_pgm:true test in
+      Timer.stop sem_key ;
 
       let restrict_faults =
         if !Opts.dumpallfaults then
@@ -490,6 +508,7 @@ module Make(O:Config)(M:XXXMem.S) =
         (* Thanks to the existence of check_test, XXMem modules
            apply their internal functors once *)
         let call_model conc ofail solver c =
+        Timer.start model_key ;
         let check_test = M.check_event_structure test in
         (* Checked pruned executions before even calling model *)
         let cutoff =  S.find_cutoff conc.S.str.S.E.events in
@@ -497,10 +516,12 @@ module Make(O:Config)(M:XXXMem.S) =
           if Misc.is_some cutoff then Count.{ c with cutoff = cutoff }
           else c in
         (* Discard pruned executions if not explicitely required *)
-        check_test
-          conc kfail
-          (check_failed_model_kont cutoff
-             ofail solver emit_exec test final_state_restrict_locs) c in
+        let c =
+          check_test
+            conc kfail
+            (check_failed_model_kont cutoff
+               ofail solver emit_exec test final_state_restrict_locs) c in
+        Timer.stop model_key ; c in
       let c =
         if O.statelessrc11
         then let module SL = Slrc11.Make(struct include MC let skipchecks = O.skipchecks end) in
@@ -527,6 +548,7 @@ module Make(O:Config)(M:XXXMem.S) =
                 st,flts,solver in
           A.StateSet.map do_restrict c.states
         else c.states in
+        Timer.stop run_key ;
         {
           states = finals;
           TestResult.cfail = c.Count.cfail;

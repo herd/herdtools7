@@ -161,7 +161,7 @@ end) = struct
           | Some msg ->
               Warn.warn_always
                 "%a: unrolling limit exceeded at %s, legal outcomes may be missing."
-                Pos.pp_pos0   test.Test_herd.name.Name.file
+                Pos.pp_pos0 test.Test_herd.name.Name.file
                 msg
           | None -> ()
         end

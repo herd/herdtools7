@@ -1663,10 +1663,12 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           profile "build AArch64 semantics from ASL" @@ fun () ->
           let test_asl, eqs_test = fake_test ii fname args in
           let model = build_model_from_file "asl.cat" in
+          TopConf.C.Timer.start Timer.sem_key ;
           let { MC.event_structures = rfms; _ }, test_asl =
             profile "run ASL Semantics" @@ fun () ->
             MC.glommed_event_structures ~is_pgm:false test_asl
           in
+          TopConf.C.Timer.stop Timer.sem_key ;
           let () =
             if _dbg then
               Printf.eprintf "Got rfms back: %d of them.\n%!" (List.length rfms)
@@ -1693,7 +1695,10 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               let () = end_profile t0 "ASL cat, success" in
               Translator.tr_execution ii eqs_test c :: acc
             in
-            check_event_structure model test_asl conc kfail ksuccess acc
+            TopConf.C.Timer.start Timer.model_key ;
+            let c = check_event_structure model test_asl conc kfail ksuccess acc in
+            TopConf.C.Timer.stop Timer.model_key ;
+            c
           in
           let check_and_translate acc c =
             profile "check and translate" @@ fun () ->
