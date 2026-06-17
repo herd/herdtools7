@@ -64,8 +64,6 @@ val show : PrettyConf.show ref
 val nshow :int option ref
 val candidates : bool ref
 val restrict : Restrict.t ref
-val showkind : bool ref
-val shortlegend : bool ref
 val outcomereads : bool ref
 val outputdir : PrettyConf.outputdir_mode ref
 val suffix : string ref
@@ -83,6 +81,8 @@ module PP : sig
   val dotcom : dotcom option ref
   val view : View.t option ref
   val showevents : showevents ref
+  val showkind : bool ref
+  val shortlegend : bool ref
   val texmacros : bool ref
   val tikz : bool ref
   val hexa : bool ref

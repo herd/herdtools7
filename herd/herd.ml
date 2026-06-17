@@ -243,8 +243,8 @@ let graph_presentation_options = Arg.align ~limit:40 [
     "highlight observed memory reads in execution graphs" ;
   parse_bool "-edgemerge" PP.edgemerge "merge edges, cppmem style" ;
   parse_bool "-showlegend" PP.showlegend  "show legend in pictures" ;
-  parse_bool "-showkind" showkind  "show test kind in legends" ;
-  parse_bool "-shortlegend" shortlegend "show test name only in legends";
+  parse_bool "-showkind" PP.showkind  "show test kind in legends" ;
+  parse_bool "-shortlegend" PP.shortlegend "show test name only in legends";
   parse_bool "-labelinit" PP.labelinit "show labels on the init node" ;
   parse_bool "-showthread" PP.showthread "show thread numbers in execution graphs" ;
   parse_bool "-squished" PP.squished "limit information in graph nodes" ;
@@ -602,8 +602,6 @@ let () =
     let candidates = !candidates
     let nshow = !nshow
     let restrict = !restrict
-    let showkind = !showkind
-    let shortlegend = !shortlegend
     let model = model
     let archcheck = !archcheck
     let through = !through
@@ -663,6 +661,8 @@ let () =
       let dotcom = !PP.dotcom
       let view = !PP.view
       let showevents = !PP.showevents
+      let showkind = !PP.showkind
+      let shortlegend = !PP.shortlegend
       let texmacros = !PP.texmacros
       let tikz = !PP.tikz
       let hexa = !PP.hexa
@@ -755,7 +755,7 @@ let () =
 
   let from_file f =
     let module T =
-      ParseTest.Top
+      Cli.Make
         (struct
           include GenParser.DefaultConfig
           let bell_model_info = bi

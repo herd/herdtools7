@@ -48,7 +48,7 @@ module Make(Conf:RunTest.Config)(ModelConfig:BellMem.Config) = struct
       module P =
         GenParser.Make (Conf) (Bell) (BellLexParse)
       type pseudo = P.pseudo
-      let parse chan splitted =  BellC.check (P.parse chan splitted)
+      let parse_string str splitted =  BellC.check (P.parse_string str splitted)
     end
   module X = RunTest.Make (BellS) (P) (BellM) (Conf)
   let run = X.run

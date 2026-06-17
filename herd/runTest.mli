@@ -38,21 +38,28 @@ module type Config = sig
   val sme_vector_length : int
 end
 
+module type Outcome = sig
+  module M : XXXMem.S
+  type t = Top_herd.TestResult.Make(M.S).t
+
+  val test : M.S.test
+  val result : t
+end
+
 type runfun =
   DirtyBit.t option ->
-  float (* start time *) ->
-  string (* file name *) ->
-  in_channel (* source channel *) ->
+  filename:string option (* file name *) ->
+  contents:string (* litmus test contents *) ->
   TestHash.env ->
   Splitter.result ->
-  TestHash.env
+  TestHash.env * (module Outcome) option
 
 module Make :
 functor(S:Sem.Semantics) ->
   functor
   (P:sig
     type pseudo
-    val parse : in_channel -> Splitter.result ->  pseudo MiscParser.t
+    val parse_string : string -> Splitter.result ->  pseudo MiscParser.t
   end with type pseudo = S.A.pseudo) ->
     functor (M:XXXMem.S with module S = S) ->
       functor (C:Config) -> sig

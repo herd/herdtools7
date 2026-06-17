@@ -1,0 +1,7 @@
+AArch64 Loop-zero
+{
+}
+ P0          ;
+L0:          ;
+ B L0        ;
+forall (true)

@@ -194,9 +194,9 @@ let handle_key dir main key arg = match key with
     lex_tag
        "restrict" Restrict.parse Restrict.tags restrict
        arg
-| "showkind" ->  lex_bool showkind arg
+| "showkind" ->  lex_bool PP.showkind arg
 | "shortlegend" ->
-     lex_bool shortlegend arg
+     lex_bool PP.shortlegend arg
 | "texmacros" ->
      lex_bool PP.texmacros arg
 | "hexa" ->

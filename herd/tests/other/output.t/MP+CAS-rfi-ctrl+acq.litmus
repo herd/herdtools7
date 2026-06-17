@@ -1,0 +1,14 @@
+AArch64 MP+CAS-rfi-ctrl+acq
+{
+0:X0=x; 0:X4=y;
+1:X1=y; 1:X3=x;
+}
+P0             | P1           ;
+MOV W1,#0      | LDAR W0,[X1] ;
+MOV W2,#1      | LDR W2,[X3]  ;
+CAS W1,W2,[X0] |              ;
+CBNZ W1,out    |              ;
+MOV W3,#1      |              ;
+STR W3,[X4]    |              ;
+out:           |              ;
+exists (x=1 /\ 1:X0=1 /\ 1:X2=0)
