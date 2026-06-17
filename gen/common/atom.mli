@@ -33,6 +33,7 @@ module type RMW = sig
   type atom
 
   val pp_rmw : bool (* backward compatibility *) -> rmw -> string
+  val equal_rmw : rmw -> rmw -> bool
   val is_one_instruction : rmw -> bool
   (* The first boolean indicates whether wildcard syntax is included in the fold *)
   val fold_rmw : bool -> (rmw -> 'a -> 'a) -> 'a -> 'a

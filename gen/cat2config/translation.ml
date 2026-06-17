@@ -262,7 +262,7 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
   let relaxs =
     tedges
     |> List.map (fun (Tedge { edge; insert }) ->
-        let edge = E.{ edge; a1 = left.atom; a2 = right.atom } in
+        let edge = E.{ edge; a1 = left.atom; a2 = right.atom; pred = None } in
         let edge = set_src left.extr edge in
         let edge = set_tgt right.extr edge in
         let edges =
