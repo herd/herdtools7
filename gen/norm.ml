@@ -73,7 +73,7 @@ module Make(Co:Config)(F:Fence.S)(A:Atom.S) = struct
     try
       let parsed_relax = R.parse_expand_relaxs (R.parse_sequence_ast Parser.main relaxs) in
       let es = match parsed_relax with
-        | [x] -> R.edges_of x
+        | [x] -> x
         | _ ->
           Warn.user_error "`norm7` only accepts exactly one input cycle." in
       let base,es,_ = Norm.normalise_family (E.resolve_edges es) in

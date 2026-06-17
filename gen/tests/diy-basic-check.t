@@ -604,6 +604,178 @@ Alignment filter behaviour between local `Pos**` and internal communication in `
   $ diy7 -arch AArch64 -mode sc -filter-check DpAddrdW PosWW
   Sequence `DpAddrdW` `PosWW` passes the internal filter in mode `sc`
 
+Backward-compatible edge aliases are accepted by the edge parser
+  $ diy7 -arch AArch64 -relax 'Dp** Ctrl** DpData' -unfold-only 2>&1
+  ***relax***
+  DpAddrsW DpAddrsR DpAddrdW DpAddrdR DpDatasW DpDatadW DpCtrlIsbsW DpCtrlIsbsR DpCtrlIsbdW DpCtrlIsbdR
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -relax 'DpAddr*W DpAddrd* DpData' -unfold-only 2>&1
+  ***relax***
+  DpAddrsW DpAddrdW DpAddrdR DpDatasW DpDatadW
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -relax R -unfold-only 2>&1
+  ***relax***
+  Read
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -relax W -unfold-only 2>&1
+  ***relax***
+  Write
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -relax Ws -unfold-only 2>&1
+  ***relax***
+  Coi Coe
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -relax 'Wse Wsi' -unfold-only 2>&1
+  ***relax***
+  Coi Coe
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -relax Rmw -unfold-only 2>&1
+  ***relax***
+  LxSx
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -relax Amo -unfold-only 2>&1
+  ***relax***
+  Amo.Swp Amo.Cas Amo.LdAdd Amo.LdEor Amo.LdSet Amo.LdClr Amo.StAdd Amo.StEor Amo.StSet Amo.StClr
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -relax Amo.Safe -unfold-only 2>&1
+  ***relax***
+  Amo.Swp Amo.Cas Amo.LdAdd Amo.StAdd
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -relax LxSx -unfold-only 2>&1
+  ***relax***
+  LxSx
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -relax FencedWW -unfold-only 2>&1
+  ***relax***
+  DMB.SYdWW
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -relax 'Fence***' -unfold-only 2>&1
+  ***relax***
+  DMB.SYsWW DMB.SYsWR DMB.SYsRW DMB.SYsRR DMB.SYdWW DMB.SYdWR DMB.SYdRW DMB.SYdRR
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -variant ifetch -relax 'Iff*' -unfold-only 2>&1
+  ***relax***
+  RfiPI RfePI
+  ***safe***
+  
+  ***reject***
+  
+  $ diy7 -arch AArch64 -variant ifetch -relax 'Iffi Irfi Fifi Ifri Iffe Irfe Fife Ifre' -unfold-only 2>&1
+  ***relax***
+  RfiPI RfePI FriIP FreIP
+  ***safe***
+  
+  ***reject***
+  
+
+`PPO` unfolds to concrete PPC relaxations in `diy7 -unfold-only`
+  $ diy7 -arch PPC -relax PPO -unfold-only
+  ***relax***
+  DpAddrdR [DpAddrdR,DpAddrdR] [DpAddrdR,DpDatadW] [DpAddrdR,DpCtrldW] [DpAddrdR,DpCtrlIsyncdR] DpDatadW [DpDatadW,PosWR] [DpDatadW,PosWR,DpAddrdR] [DpDatadW,PosWR,DpDatadW] [DpDatadW,PosWR,DpCtrldW] [DpDatadW,PosWR,DpCtrlIsyncdR] DpCtrldW DpCtrlIsyncdR
+  ***safe***
+  
+  ***reject***
+  
+
+A `BC` relax macro unfolds before raw edge parsing
+  $ diy7 -arch PPC -relax BCDpDatadW -unfold-only
+  ***relax***
+  [DpDatadW,Rfe]
+  ***safe***
+  
+  ***reject***
+  
+
+An `AC` relax macro unfolds before raw edge parsing
+  $ diy7 -arch AArch64 -relax ACDMB.SYdRW -unfold-only
+  ***relax***
+  [Rfe,DMB.SYdRW]
+  ***safe***
+  
+  ***reject***
+  
+
+An `ABC` relax macro unfolds before raw edge parsing
+  $ diy7 -arch AArch64 -relax ABCDMB.SYdRW -unfold-only
+  ***relax***
+  [Rfe,DMB.SYdRW,Rfe]
+  ***safe***
+  
+  ***reject***
+  
+
+`allRW` expands through the named relax lookup table
+  $ diy7 -arch AArch64 -relax allRW -unfold-only
+  ***relax***
+  PodRW ISBdRW GCSB.DSYNCdRW DMB.NSHLDdRW DMB.NSHSTdRW DMB.NSHdRW DMB.ISHLDdRW DMB.ISHSTdRW DMB.ISHdRW DMB.OSHLDdRW DMB.OSHSTdRW DMB.OSHdRW DMB.LDdRW DMB.STdRW DMB.SYdRW DSB.NSHLDdRW DSB.NSHSTdRW DSB.NSHdRW DSB.ISHLDdRW DSB.ISHSTdRW DSB.ISHdRW DSB.OSHLDdRW DSB.OSHSTdRW DSB.OSHdRW DSB.LDdRW DSB.STdRW DSB.SYdRW DpAddrCseldW DpAddrdW DpDataCseldW DpDatadW DpCtrlCseldW DpCtrldW DpCtrlIsbCseldW DpCtrlIsbdW
+  ***safe***
+  
+  ***reject***
+  
+
+`someRW` expands through the named relax lookup table
+  $ diy7 -arch AArch64 -relax someRW -unfold-only
+  ***relax***
+  PodRW ISBdRW DMB.LDdRW DMB.STdRW DMB.SYdRW DpDatadW
+  ***safe***
+  
+  ***reject***
+  
+
+`allWR` expands through the named relax lookup table
+  $ diy7 -arch AArch64 -relax allWR -unfold-only
+  ***relax***
+  PodWR ISBdWR GCSB.DSYNCdWR DMB.NSHLDdWR DMB.NSHSTdWR DMB.NSHdWR DMB.ISHLDdWR DMB.ISHSTdWR DMB.ISHdWR DMB.OSHLDdWR DMB.OSHSTdWR DMB.OSHdWR DMB.LDdWR DMB.STdWR DMB.SYdWR DSB.NSHLDdWR DSB.NSHSTdWR DSB.NSHdWR DSB.ISHLDdWR DSB.ISHSTdWR DSB.ISHdWR DSB.OSHLDdWR DSB.OSHSTdWR DSB.OSHdWR DSB.LDdWR DSB.STdWR DSB.SYdWR
+  ***safe***
+  
+  ***reject***
+  
+
+`someWW` expands through the named relax lookup table
+  $ diy7 -arch AArch64 -relax someWW -unfold-only
+  ***relax***
+  PodWW ISBdWW DMB.LDdWW DMB.STdWW DMB.SYdWW
+  ***safe***
+  
+  ***reject***
+  
+
 `diy7 -unfold-only` unfolds relaxations and drops invalid composites
   $ diy7 -arch AArch64 -relax '[Po,DpAddr?]' -unfold-only 2>&1
   ***relax***

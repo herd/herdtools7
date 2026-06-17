@@ -128,7 +128,7 @@ module Make(O:Config) (M:Builder.S) =
           |> M.R.parse_expand_relaxs ~ppo:M.ppo in
         let es =
           match parsed_cycle with
-            | [x] -> M.R.edges_of x
+            | [x] -> x
             | _ ->
               Warn.user_error "`diyone7` only accepts exactly one input cycle." in
         if O.verbose > 0 then

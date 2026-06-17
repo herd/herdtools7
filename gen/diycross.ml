@@ -63,7 +63,6 @@ module Make (Config:Config) (M:Builder.S) =
       List.map (M.R.parse_ast Parser.main_top_level_choice) input
       |> fun e -> Ast.Seq e
       |> M.R.parse_expand_relaxs ~ppo:M.ppo
-      |> List.map M.R.edges_of
       |> varatom_ess
 
     let zyva pp_rs =

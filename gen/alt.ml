@@ -204,7 +204,7 @@ struct
           let r =
             not
               (List.exists
-                 (fun es -> C.R.Set.mem (C.R.ERS es) safes)
+                 (fun es -> C.R.Set.mem es safes)
                  cs) in
           r
       | _,_ -> true
@@ -307,8 +307,11 @@ module Make(C:Builder.S)
              |> String.concat list_list_sep )
         |> String.concat list_sep
 
-    let edges_of_relax_list rs =
-      List.map (fun r -> (r, edges_of r)) rs
+    (* Pair each relax with the working edge list used by the generator.
+       The first component preserves the original relax for reporting/filtering;
+       the second component may be modified while building candidate cycles. *)
+    let relaxs_with_work_edges rs =
+      List.map (fun r -> (r, r)) rs
 
 (* Functional for recursive call of generators *)
 
@@ -360,7 +363,7 @@ module Make(C:Builder.S)
           O.prefix
       end
 
-    let prefixes = List.map edges_of_relax_list O.prefix
+    let prefixes = List.map relaxs_with_work_edges O.prefix
 
     let rec mk_can_prefix = function
       | [] -> (fun _ _ -> true)
@@ -429,7 +432,7 @@ module Make(C:Builder.S)
           let d2 =
             List.fold_right
               (fun (r,_) k -> match r with
-              | ERS [{edge=Po (sd,e1,e2); _}] -> SdDir2Set.add (sd,e1,e2) k
+              | [{edge=Po (sd,e1,e2); _}] -> SdDir2Set.add (sd,e1,e2) k
               | _ -> k)
               rs SdDir2Set.empty in
           if dbg then
@@ -447,8 +450,8 @@ module Make(C:Builder.S)
 
     let zyva prefix aset relax safe reject n f =
 (*      let safes = C.R.Set.of_list safe in *)
-      let relax = edges_of_relax_list relax in
-      let safe = edges_of_relax_list safe in
+      let relax = relaxs_with_work_edges relax in
+      let safe = relaxs_with_work_edges safe in
       let po_safe = extract_po safe in
 
       (* ********************************** *)
@@ -682,7 +685,6 @@ module Make(C:Builder.S)
       let sset = C.R.Set.of_list safe in
       let rset = C.R.Set.of_list relax in
       let aset = C.R.Set.union sset rset in
-      let rej = List.map (fun a -> edges_of a) rej in
       D.all
         ~check:(last_minute rej)
         (fun f ->
@@ -734,7 +736,7 @@ module Make(C:Builder.S)
       fold_sd_dir2 (fun sd d1 d2 -> C.A.fold_cumul_fences (fun fe -> f fe sd d1 d2))
     let fold_cum f =  fold_cumul_fences f
 
-    let er e = ERS [plain_edge e]
+    let er e = [plain_edge e]
     let safe =
       let k = [] in
       let k = fold_ie (fun ie k -> er (Ws ie)::er (Fr ie)::k) k in k
@@ -767,6 +769,6 @@ module Make(C:Builder.S)
     let filter_check ~relax ~safe lhs rhs =
       let safe,_,_ = parse_input ~relax ~safe ~reject:[] in
       let safe_set = C.R.Set.of_list safe in
-      let po_safe = edges_of_relax_list safe |> extract_po in
+      let po_safe = relaxs_with_work_edges safe |> extract_po in
       FilterImpl.can_precede safe_set po_safe lhs rhs
   end

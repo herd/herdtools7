@@ -23,10 +23,8 @@ module type S = sig
   type edge
 
 
-  type relax =
-(* Sequence of edges (eg Cumulativity) *)
-    | ERS of edge list
-    | PPO
+  (* `relax`, a sequence of edges. *)
+  type relax = edge list
 
   val ac_fence : fence -> sd -> extr -> extr -> relax
   val bc_fence : fence -> sd -> extr -> extr -> relax
@@ -38,7 +36,6 @@ module type S = sig
   val compare : relax -> relax -> int
   val pp_relax : relax -> string
   val pp_relax_list : relax list -> string
-  val edges_of : relax -> edge list
   val edges_of_relax_list : relax list -> edge list
 
   val com : relax list
@@ -102,57 +99,43 @@ and type edge = E.edge
         type dp = E.dp
         type edge = E.edge
 
-        type relax =
-          | ERS of edge list
-          | PPO
+        type relax = edge list
 
-        let edges_of r = match r with
-        | ERS es -> es
-        | PPO -> assert false
+        let edges_of_relax_list = List.flatten
 
-        let edges_of_relax_list = List.concat_map edges_of
-
-        let compare_edges es1 es2 =
-          List.compare E.compare es1 es2
-
-        let compare r1 r2 = match r1,r2 with
-        | PPO,PPO -> 0
-        | PPO,ERS _ -> -1
-        | ERS _,PPO -> 1
-        | ERS l1,ERS l2 -> compare_edges l1 l2
+        let compare r1 r2 =
+          List.compare E.compare r1 r2
 
 
 
 (* Cumulativity macros *)
         let rf = E.plain_edge (E.Rf Ext)
         and fenced  f sl d1 d2 = E.plain_edge (E.Fenced (f,sl,d1,d2))
-        let ac_fence f sl d1 d2 = ERS [rf; fenced f sl d1 d2]
-        let bc_fence f sl d1 d2 = ERS [fenced f sl d1 d2; rf]
-        let abc_fence f sl d1 d2 = ERS [rf; fenced f sl d1 d2; rf]
-        let bc_dp dp sl d = ERS [E.plain_edge (E.Dp (dp,sl,d)); rf]
+        let ac_fence f sl d1 d2 = [rf; fenced f sl d1 d2]
+        let bc_fence f sl d1 d2 = [fenced f sl d1 d2; rf]
+        let abc_fence f sl d1 d2 = [rf; fenced f sl d1 d2; rf]
+        let bc_dp dp sl d = [E.plain_edge (E.Dp (dp,sl,d)); rf]
 
 (* Pretty print, macros are filtered and printed specially *)
         let internal_pp_relax backward_compatibility r =
           let open E in
           match r with
-          | ERS [e] -> E.pp_edge e
-          | ERS
-              [{edge=Rf Ext; a1=None;a2=None;};
-               {edge=Fenced _;a1=None; a2=None;} as e] when backward_compatibility ->
+          | [e] -> E.pp_edge e
+          | [{edge=Rf Ext; a1=None;a2=None;};
+             {edge=Fenced _;a1=None; a2=None;} as e] when backward_compatibility ->
                  sprintf "AC%s" (pp_edge e)
-          | ERS [{edge=Fenced _; a1=None;a2=None;} as e;
-                 {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
+          | [{edge=Fenced _; a1=None;a2=None;} as e;
+             {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
                    sprintf "BC%s" (pp_edge e)
-          | ERS [{edge=Rf Ext; a1=None; a2=None;};
-                 {edge=Fenced _; a1=None; a2=None;} as e;
-                 {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
+          | [{edge=Rf Ext; a1=None; a2=None;};
+             {edge=Fenced _; a1=None; a2=None;} as e;
+             {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
                    sprintf "ABC%s" (pp_edge e)
-          | ERS [{edge=Dp _; a1=None; a2=None;} as e;
-                 {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
+          | [{edge=Dp _; a1=None; a2=None;} as e;
+             {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
                    sprintf "BC%s" (pp_edge e)
-          | ERS es ->
+          | es ->
               sprintf "[%s]" (String.concat "," (List.map pp_edge es))
-          | PPO -> "PPO"
 
         let pp_relax = internal_pp_relax false
 
@@ -161,7 +144,6 @@ and type edge = E.edge
 (* Fold over all relaxations *)
 
         let fold_relax wildcard f k =
-          let k = E.fold_edges (fun e -> f (ERS [e])) k in
           let k =
             F.fold_cumul_fences
               (fun fe k ->
@@ -184,7 +166,6 @@ and type edge = E.edge
                 Code.fold_sd wildcard
                   (fun sd k -> f (bc_dp dpw sd (Dir W)) k)
                   k) k in
-          let k = f PPO k in
           k
 
         let iter_relax wildcard = Misc.fold_to_iter (fold_relax wildcard)
@@ -199,30 +180,11 @@ and type edge = E.edge
   so as to build a table of recognized relaxations.
  *)
 
-(* Lexeme table *)
-        let t = Hashtbl.create 101
-
-(* Fill up lexeme table *)
-        let () =
-          iter_relax E.wildcard
-            (fun e ->
-              let pp = internal_pp_relax true e in
-              Hashtbl.add t pp e);
-          ()
-
 (*************************************************************)
 (* Expansion of irrelevant direction specifications in edges *)
 (*************************************************************)
-        let rec do_expand_relax ppo r f = match r with
-        | ERS es -> E.expand_edges es (fun es -> f (ERS es))
-        | PPO  -> ppo (fun r -> do_expand_relax ppo r f)
-
-        let expand_relaxs ppo rs =
-          let expand_relax r = do_expand_relax ppo r Misc.cons in
-          List.fold_right expand_relax rs []
-
-        let er e = ERS [E.plain_edge e]
-        let ers es = ERS (List.map E.plain_edge es)
+        let er e = [E.plain_edge e]
+        let ers es = List.map E.plain_edge es
         let com =
           let open E in
           [
@@ -249,7 +211,7 @@ and type edge = E.edge
 
 
 (* Expand relax macros *)
-        let er e = ERS [E.plain_edge e]
+        let er e = [E.plain_edge e]
 
         let all_fences sd d1 d2 =
           F.fold_all_fences
@@ -258,14 +220,6 @@ and type edge = E.edge
         let some_fences sd d1 d2 =
           F.fold_some_fences
             (fun f k -> er (E.Fenced (f,sd,Dir d1,Dir d2))::k)
-
-        let relax_list_to_choice relax_list =
-          let ast_relax_list =
-            List.map (fun relax -> Ast.One relax) relax_list in
-          match ast_relax_list with
-              | [] -> assert false
-              | [relax] -> relax
-              | relax_list -> Ast.Choice relax_list
 
 (* Limited variations *)
         let app_def_dp o f r = match o with
@@ -278,12 +232,10 @@ and type edge = E.edge
             (match d with R -> F.ddr_default | W -> F.ddw_default)
             (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
             (some_fences sd R d [])
-          |> relax_list_to_choice
 
         let someW sd d =
           er (E.Po (sd,Dir W,Dir d))::
           (some_fences sd W d [])
-          |> relax_list_to_choice
 
 
 (* ALL *)
@@ -292,12 +244,10 @@ and type edge = E.edge
           (match d with R -> F.fold_dpr | W -> F.fold_dpw)
             (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
             (all_fences sd R d [])
-          |> relax_list_to_choice
 
         let allW sd d =
           er (E.Po (sd,Dir W,Dir d))::
           (all_fences sd W d [])
-          |> relax_list_to_choice
 
         let atoms_key = "atoms"
 
@@ -325,6 +275,98 @@ and type edge = E.edge
         let parse_sequence_ast parser_grammar segments =
           Ast.Seq (List.map (parse_ast parser_grammar) segments)
 
+(* Macro lookup table. *)
+        let macro_lookup_table = Hashtbl.create 101
+
+(* Build the macro lookup table. *)
+        let () =
+          iter_relax E.wildcard
+            (fun e ->
+              let pp = internal_pp_relax true e in
+              Hashtbl.add macro_lookup_table pp [e]) ;
+          List.iter
+            (fun (name, macro) -> Hashtbl.add macro_lookup_table name macro)
+            [
+              "allRR", allR Diff R;
+              "allRW", allR Diff W;
+              "allWR", allW Diff R;
+              "allWW", allW Diff W;
+              "someRR", someR Diff R;
+              "someRW", someR Diff W;
+              "someWR", someW Diff R;
+              "someWW", someW Diff W;
+            ]
+
+        let expand_relaxs rs =
+          let expand_relax r = E.expand_edges r Misc.cons in
+          List.fold_right expand_relax rs []
+
+        let relax_to_sequence relax = match relax with
+        | [] -> Warn.fatal "Relax is parsed incorrectly."
+        | [edge] -> Ast.One edge
+        | edges -> Ast.Seq (List.map (fun edge -> Ast.One edge) edges)
+
+        let relax_list_to_choice relax_list =
+          let ast_relax_list =
+            List.map relax_to_sequence relax_list in
+          match ast_relax_list with
+          | [] -> assert false
+          | [relax] -> relax
+          | relax_list -> Ast.Choice relax_list
+
+        (* Apply an annotation suffix parsed from a macro name such as `PodW*LA`
+           to each singleton expansion of that macro. *)
+        let add_macro_annotations a1 a2 =
+          List.map
+            (function
+              | [e] -> [{e with E.a1; E.a2}]
+              | relax -> relax)
+
+        (* Find the longest prefix that is a macro.  Since the search starts
+           from the full string length, this also covers exact macro names. *)
+        let rec find_macro_prefix str i =
+          if i <= 0 then None
+          else
+            let prefix = String.sub str 0 i in
+            (* Macro table lookup. *)
+            match Hashtbl.find_opt macro_lookup_table prefix with
+            | Some relax ->
+                let suffix = String.sub str i (String.length str - i) in
+                if String.length suffix = 0 then Some relax
+                else
+                  (* If there is a suffix, try to parse it as two annotations. *)
+                  begin match E.parse_edge_annotations suffix with
+                  | Some (a1,a2) -> Some (add_macro_annotations a1 a2 relax)
+                  | None -> find_macro_prefix str (i - 1)
+                  end
+            | None -> find_macro_prefix str (i - 1)
+
+        let parse_expand_relax ?(ppo=(fun _ k -> k)) str =
+          let unfold_ppo () =
+            let relaxs = ppo Misc.cons [] in
+            match relaxs with
+            | [] -> Warn.fatal "Bad relax: PPO"
+            | r -> r in
+          let parsed_edges = match str with
+          (* Directly unfold macro *)
+          | "PPO" -> unfold_ppo ()
+          | str ->
+              (* Macro lookup *)
+              begin match find_macro_prefix str (String.length str) with
+              | Some relax -> relax
+              | None ->
+                  (* Parse primitive edge *)
+                  try [[E.parse_edge str]]
+                  with _ -> Warn.fatal "Bad relax: %s" str
+              end in
+          (* expand the wildcard edges and annotations *)
+          expand_relaxs parsed_edges
+          |> relax_list_to_choice
+
+          let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
+            Ast.bind ast (parse_expand_relax ~ppo)
+              |> Ast.expand
+
         (* After wildcard and macro expansion, remove invalid relaxations
            whose adjacent concrete edges cannot appear consecutively.
            Pseudo-edges (annotations and insert edge) are ignored in the check.
@@ -344,41 +386,13 @@ and type edge = E.edge
                 | false, false ->
                     for_all_adjacent_concrete_edge predicate list in
           List.filter
-          ( fun relax ->
-            let edges = edges_of relax in
-            (* Drop empty alternatives introduced by `?`; they do not
-               describe an actual relaxation. *)
-            edges <> []
-            && for_all_adjacent_concrete_edge E.can_precede edges
-          ) relaxes
+            (fun relax ->
+              (* Drop empty alternatives introduced by `?`; they do not
+                 describe an actual relaxation. *)
+              relax <> []
+              && for_all_adjacent_concrete_edge E.can_precede relax)
+            relaxes
           |> List.sort_uniq compare
-
-        let parse_expand_relax ?(ppo=(fun _ k -> k)) str =
-          match str with
-          (* Directly unfold macro *)
-          | "allRR" -> allR Diff R
-          | "allRW" -> allR Diff W
-          | "allWR" -> allW Diff R
-          | "allWW" -> allW Diff W
-          | "someRR" -> someR Diff R
-          | "someRW" -> someR Diff W
-          | "someWR" -> someW Diff R
-          | "someWW" -> someW Diff W
-          | str ->
-            let relax = try ERS ([E.parse_edge str])
-            (* For backward compatibility, also accept the legacy pretty-printed
-               names recorded in the special table `t`. *)
-            with _ -> try Hashtbl.find t str
-            with Not_found -> Warn.fatal "Bad relax: %s" str in
-            [relax]
-          (* expand the wildcard edges and annotations *)
-          |> expand_relaxs ppo
-          |> relax_list_to_choice
-
-          let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
-            Ast.bind ast (parse_expand_relax ~ppo)
-              |> Ast.expand
-              |> List.map ( fun e -> ERS (edges_of_relax_list e) )
 
 (********)
 (* Sets *)
@@ -402,16 +416,13 @@ and type edge = E.edge
         let is_cumul r =
           let open E in
           match r with
-          | ERS
-              [{edge=Rf Code.Ext; a1=None; a2=None;};
-               {edge=Fenced _; a1=None; a2=None;}]
-          | ERS
-              [{edge=Fenced _; a1=None; a2=None;};
-               {edge=Rf Code.Ext; a1=None; a2=None;};]
-          | ERS
-              [{edge=Rf Code.Ext; a1=None; a2=None;};
-               {edge=Fenced _; a1=None; a2=None;};
-               {edge=Rf Code.Ext; a1=None; a2=None;};]
+          | [{edge=Rf Code.Ext; a1=None; a2=None;};
+             {edge=Fenced _; a1=None; a2=None;}]
+          | [{edge=Fenced _; a1=None; a2=None;};
+             {edge=Rf Code.Ext; a1=None; a2=None;};]
+          | [{edge=Rf Code.Ext; a1=None; a2=None;};
+             {edge=Fenced _; a1=None; a2=None;};
+             {edge=Rf Code.Ext; a1=None; a2=None;};]
             -> true
           | _ -> false
 
@@ -425,17 +436,13 @@ and type edge = E.edge
         let add_fence r k =
           let open E in
           match r with
-          | ERS
-              [{edge=Fenced (f,_,_,_); _}]
-          | ERS
-              [{edge=Rf Code.Ext; _};{edge=Fenced (f,_,_,_);_}]
-          | ERS
-              [{edge=Fenced (f,_,_,_); _};
-               {edge=Rf Code.Ext; _};]
-          | ERS
-              [{edge=Rf Code.Ext; _};
-               {edge=Fenced (f,_,_,_); _};
-               {edge=Rf Code.Ext; _};]
+          | [{edge=Fenced (f,_,_,_); _}]
+          | [{edge=Rf Code.Ext; _};{edge=Fenced (f,_,_,_);_}]
+          | [{edge=Fenced (f,_,_,_); _};
+             {edge=Rf Code.Ext; _};]
+          | [{edge=Rf Code.Ext; _};
+             {edge=Fenced (f,_,_,_); _};
+             {edge=Rf Code.Ext; _};]
             -> FenceSet.add f k
           | _ -> k
 
@@ -448,15 +455,12 @@ and type edge = E.edge
         let add_cumul_fence r k =
           let open E in
           match r with
-          | ERS
-              [{edge=Rf Code.Ext; _};{edge=Fenced (f,_,_,_); _}]
-          | ERS
-              [{edge=Fenced (f,_,_,_); _};
-               {edge=Rf Code.Ext; _};]
-          | ERS
-              [{edge=Rf Code.Ext; _};
-               {edge=Fenced (f,_,_,_); _};
-               {edge=Rf Code.Ext; _};]
+          | [{edge=Rf Code.Ext; _};{edge=Fenced (f,_,_,_); _}]
+          | [{edge=Fenced (f,_,_,_); _};
+             {edge=Rf Code.Ext; _};]
+          | [{edge=Rf Code.Ext; _};
+             {edge=Fenced (f,_,_,_); _};
+             {edge=Rf Code.Ext; _};]
             -> FenceSet.add f k
           | _ -> k
 
@@ -469,19 +473,16 @@ and type edge = E.edge
         let remove_cumul rs = Set.filter (fun r -> not (is_cumul r)) rs
 
         let expand_cumul rs =
-          let er e = ERS [e] in
+          let er e = [e] in
           let xs =
             Set.fold
               (fun r k ->
                 let open E in
                 match r with
-                | ERS
-                    ([{edge=Rf Ext; _}; {edge=Fenced _; _};] as rs)
-                | ERS
-                    ([{edge=Fenced _; _}; {edge=Rf Ext; _};] as rs)
-                | ERS
-                    ([{edge=Rf Ext; _}; {edge=Fenced _; _};
-                      {edge=Rf Ext; _};] as rs)
+                | ([{edge=Rf Ext; _}; {edge=Fenced _; _};] as rs)
+                | ([{edge=Fenced _; _}; {edge=Rf Ext; _};] as rs)
+                | ([{edge=Rf Ext; _}; {edge=Fenced _; _};
+                    {edge=Rf Ext; _};] as rs)
                   ->
                     RSet.of_list (List.map er rs)::k
                 | _ -> RSet.singleton r::k)
@@ -531,12 +532,11 @@ and type edge = E.edge
         let rec match_head rs es =
           Set.fold
             (fun r k ->
-              let ps = edges_of r in
-              match match_edges ps es with
+              match match_edges r es with
               | None -> k
               | Some (h,rem) ->
                   List.fold_left
-                    (fun k rs -> (ERS h::rs)::k)
+                    (fun k rs -> (h::rs)::k)
                     k (matches rs rem))
             rs []
 
@@ -553,15 +553,12 @@ and type edge = E.edge
           SetSet.unions (do_rec (List.length es) es)
 
 
-        let compact_sequence r1 r2 = match r1,r2 with
-        | ERS es1,ERS es2 ->
-            let e1 = Misc.last es1 and e2 = List.hd es2 in
-            begin match E.get_ie e1, E.get_ie e2 with
-            | Int,Int when E.can_precede e1 e2 ->
-                let ess = E.compact_sequence es1 es2 e1 e2 in
-                let rs = List.map (fun es -> ERS es) ess in
-                Set.of_list rs
-            | _,_ -> Set.empty
-            end
-        | _,_ -> assert false
+        let compact_sequence es1 es2 =
+          let e1 = Misc.last es1 and e2 = List.hd es2 in
+          begin match E.get_ie e1, E.get_ie e2 with
+          | Int,Int when E.can_precede e1 e2 ->
+              E.compact_sequence es1 es2 e1 e2
+              |> Set.of_list
+          | _,_ -> Set.empty
+          end
       end
