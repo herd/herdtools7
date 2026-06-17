@@ -1165,18 +1165,6 @@ let set_read_pair_v n cell check_value =
   let e = { e with v=v; check_value } in
   n.evt <- e
 
-(* A node is adjacent to its incoming edge (`prev.edge`) and outgoing edge
-   (`edge`).  For RMW, also treat the communication edge after the paired
-   write as adjacent to the read-side event. *)
-let adjacent_with_communication_edge node =
-  let adjacent_with_communication_edge_internal m =
-    E.is_com m.prev.edge || E.is_com m.edge in
-  adjacent_with_communication_edge_internal node
-  (* When `node` is an RMW, and the next `node.next` or
-     the previous `node.prev` is the companion RMW event. *)
-  || ( node.evt.rmw &&
-     ( (node.next.evt.rmw && adjacent_with_communication_edge_internal node.next)
-     || (node.prev.evt.rmw && adjacent_with_communication_edge_internal node.prev) ) )
 
 
 (* Assume all the events are for the same location,
@@ -1197,7 +1185,12 @@ let do_set_read_v init =
         (* If the result of this read need to be checked,
            i.e. generating postcondition *)
         let check_value =
-          Some ( adjacent_with_communication_edge n
+          Some ( ( E.is_com n.prev.edge
+                 || E.is_com n.edge
+                 (* For an RMW sequence such as
+                    read --CAS--> write --communication edge--> ... , check the
+                    read value so the cycle is formed correctly. *)
+                 || (n.evt.rmw && n.evt.dir = Some R && E.is_com n.next.edge ) )
               && CoSt.get_check_value st) in
         begin match bank with
         | Ord | Instr->
@@ -1605,7 +1598,7 @@ let merge_changes n nss =
         else k
       end in
     let adjacent_with_communication_edge_or_store m =
-      adjacent_with_communication_edge m || E.is_insert_store m.edge.E.edge in
+      E.is_com m.prev.edge || E.is_com m.edge || E.is_insert_store m.edge.E.edge in
     (* Remove the tail until we reach a write adjacent to a communication
      edge or an inserted store. This `coherence` function works together with `check` in
      `top_gen.ml` to decide coherence/write value check.
