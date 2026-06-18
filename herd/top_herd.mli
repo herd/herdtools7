@@ -26,6 +26,7 @@ module type CommonConfig = sig
   val statelessrc11 : bool
   val skipchecks : StringSet.t
   val dumpallfaults : bool
+  module Timer : Timer.S
 end
 
 module type Config = sig
