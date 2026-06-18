@@ -51,7 +51,7 @@ end;
 func NPlusM{M,N}(op1 : bits(M), op2 : bits(N)) => bits(M+N)
 begin
     var result = Zeros{M+N};
-    var result0 : bits(M+N) = ZeroExtend{}(op2);
+    var result0 : bits(M+N) = ZeroExtend{M+N}(op2);
     for i =0 to M-1 do
         result[i] = '1';
     end;
@@ -61,7 +61,7 @@ end;
 
 func save_bits{N}(x : bits(N)) => bits(N)
 begin
-    var result : bits(N) = Ones{}();
+    var result : bits(N) = Ones{N}();
     if N == 16 then
         var value = 100;
         return value[N-1:0];

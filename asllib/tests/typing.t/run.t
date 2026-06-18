@@ -15,23 +15,23 @@ H Examples
   $ aslref --no-exec HExample14.asl
   $ aslref --no-exec HExample15.asl
   $ aslref --no-exec HExample16.asl
-  File HExample16.asl, line 10, characters 19 to 35:
-    let x: bits(a) = Reverse{}(bv, b);
-                     ^^^^^^^^^^^^^^^^
+  File HExample16.asl, line 10, characters 19 to 36:
+    let x: bits(a) = Reverse{a}(bv, b);
+                     ^^^^^^^^^^^^^^^^^
   ASL Type error: a subtype of integer {1..a} was expected,
     provided integer {8, 16, 32, 64}.
   [1]
   $ aslref --no-exec HExample17.asl
-  File HExample17.asl, line 11, characters 19 to 35:
-    let x: bits(a) = Reverse{}(bv, b);
-                     ^^^^^^^^^^^^^^^^
+  File HExample17.asl, line 11, characters 19 to 36:
+    let x: bits(a) = Reverse{a}(bv, b);
+                     ^^^^^^^^^^^^^^^^^
   ASL Type error: a subtype of integer {1..a} was expected,
     provided integer {32}.
   [1]
   $ aslref --no-exec HExample18.asl
-  File HExample18.asl, line 12, characters 20 to 37:
-    let x: bits(a2) = Reverse{}(bv, a2);
-                      ^^^^^^^^^^^^^^^^^
+  File HExample18.asl, line 12, characters 20 to 39:
+    let x: bits(a2) = Reverse{a2}(bv, a2);
+                      ^^^^^^^^^^^^^^^^^^^
   ASL Type error: a subtype of integer {1..a2} was expected,
     provided integer {8, 16, 32, 64}.
   [1]

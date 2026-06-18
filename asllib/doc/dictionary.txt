@@ -717,8 +717,6 @@ elaborated
 element
 elements
 elided
-eliding
-elision
 else
 emit
 emphasise
@@ -2004,6 +2002,7 @@ single
 singleton
 singular
 site
+situation
 situations
 size
 sized

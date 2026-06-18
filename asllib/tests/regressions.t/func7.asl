@@ -15,7 +15,7 @@ end;
 
 func main() => integer
 begin
-  let x: bits(4) = f0{}('0000');
+  let x: bits(4) = f0{4}('0000');
   let y: integer {0..5} = f1{5}('11111');
   let z: bits(6) = f2 {6};
 

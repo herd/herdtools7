@@ -1,6 +1,6 @@
 func main() => integer
 begin
-    var bv: bits(4) = Zeros{};
+    var bv: bits(4) = Zeros{4};
     bv[-1] = '1';
 
     return 0;
