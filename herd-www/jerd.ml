@@ -217,6 +217,7 @@ let run_herd bell cat litmus cfg cat_label =
     let check_filter = !check_filter
     let debug = !debug
     let debuglexer = debug.Debug_herd.lexer
+    module Timer = Timer.No
     let verbose = !verbose
     let hexa = !PP.hexa
     let unroll = !unroll

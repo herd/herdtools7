@@ -66,6 +66,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
   let _dbg = TopConf.C.debug.Debug_herd.monad
   let _profile = TopConf.C.debug.Debug_herd.profile_asl
 
+  module Timer = TopConf.C.Timer
   let start_profile = if _profile then Sys.time else Fun.const 0.
   let end_profile = if _profile then end_profile else fun _ _ -> ()
 
@@ -1686,12 +1687,14 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | Some _ when AArch64.is_mixed -> check_strict test_aarch64 ii
       | Some (fname, args) -> (
           profile "build AArch64 semantics from ASL" @@ fun () ->
+          Timer.start Timer.semantics;
           let test_asl, eqs_test = fake_test ii fname args in
           let model = build_model_from_file "asl.cat" in
           let { MC.event_structures = rfms; _ }, test_asl =
             profile "run ASL Semantics" @@ fun () ->
             MC.glommed_event_structures ~is_pgm:false test_asl
           in
+          Timer.stop Timer.semantics;
           let () =
             if _dbg then
               Printf.eprintf "Got rfms back: %d of them.\n%!" (List.length rfms)
@@ -1718,7 +1721,10 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               let () = end_profile t0 "ASL cat, success" in
               Translator.tr_execution ii eqs_test c :: acc
             in
-            check_event_structure model test_asl conc kfail ksuccess acc
+            Timer.start Timer.model;
+            let c = check_event_structure model test_asl conc kfail ksuccess acc in
+            Timer.stop Timer.model;
+            c
           in
           let check_and_translate acc c =
             profile "check and translate" @@ fun () ->
