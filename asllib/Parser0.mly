@@ -265,7 +265,7 @@ let decl ==
   | setter_decl
   | type_decl
 
-let annotated(x) == desc = x; { AST.{ desc; pos_start=$symbolstartpos; pos_end=$endpos; version }}
+let annotated(x) == desc = x; { AST.{ desc; pos_start=$symbolstartpos; pos_end=$endpos; version; ty_opt=None }}
 
 let unimplemented_decl(x) == x; { None }
 let unimplemented_ty(x) == x; { AST.(T_Bits (ASTUtils.expr_of_int 0, [])) }

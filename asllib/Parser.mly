@@ -168,7 +168,7 @@ let some(x) == ~ = x ; <Some>
 let terminated_by(x, y) == terminated(y, x)
 
 (* Position annotation *)
-let annotated(x) == desc = x; { { desc; pos_start=$symbolstartpos; pos_end=$endpos; version } }
+let annotated(x) == desc = x; { { desc; pos_start=$symbolstartpos; pos_end=$endpos; version; ty_opt=None } }
 
 (* ------------------------------------------------------------------------- *)
 (* List handling *)

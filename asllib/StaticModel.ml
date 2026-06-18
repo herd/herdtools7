@@ -58,7 +58,8 @@ end = struct
     let start = expr_of_z (Q.num factor) in
     let numerator =
       AtomMap.fold
-        (fun atom exponent acc -> mul_expr acc (pow_expr (var_ atom) exponent))
+        (fun atom exponent acc ->
+          mul_expr acc (pow_expr (int_expr_of_var atom) exponent))
         monos start
     in
     div_expr numerator (Q.den factor)
@@ -205,11 +206,12 @@ let rec to_ir env (e : expr) =
       Polynomial.add ir1 ir2
   | E_Binop (`SUB, e1, e2) ->
       let e2 = E_Unop (NEG, e2) |> ASTUtils.add_pos_from_st e2 in
-      E_Binop (`ADD, e1, e2) |> ASTUtils.add_pos_from_st e |> to_ir env
+      E_Binop (`ADD, e1, e2)
+      |> ASTUtils.add_pos_from_st e |> with_integer_ty |> to_ir env
   | E_Binop (`MUL, { desc = E_Binop (`DIV, e1, e2); _ }, e3) ->
-      to_ir env (binop `DIV (binop `MUL e1 e3) e2)
+      to_ir env (integer_binop `DIV (integer_binop `MUL e1 e3) e2)
   | E_Binop (`MUL, e1, { desc = E_Binop (`DIV, e2, e3); _ }) ->
-      to_ir env (binop `DIV (binop `MUL e1 e2) e3)
+      to_ir env (integer_binop `DIV (integer_binop `MUL e1 e2) e3)
   | E_Binop (`MUL, e1, e2) ->
       let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
       Polynomial.mult ir1 ir2
@@ -238,7 +240,8 @@ let rec to_ir env (e : expr) =
 (* Begin Normalize *)
 let normalize env e =
   let { desc } = e |> to_ir env |> Polynomial.to_expr in
-  add_pos_from e desc
+  let normalized_expr = add_pos_from e desc in
+  { normalized_expr with ty_opt = e.ty_opt }
 (* End *)
 
 let try_normalize env e =

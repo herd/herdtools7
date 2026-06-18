@@ -14,7 +14,8 @@ type extremities_binops = [ `ADD | `SUB | `DIV | `DIVRM | `SHR | `SHL | `MUL ]
 (* Begin ConstraintMod *)
 let constraint_mod = function
   | Constraint_Exact e | Constraint_Range (_, e) ->
-      range zero_expr (binop `SUB e one_expr) |: TypingRule.ConstraintMod
+      range zero_expr (integer_binop `SUB e one_expr)
+      |: TypingRule.ConstraintMod
 (* End *)
 
 (* Begin PossibleExtremitiesLeft *)
@@ -70,18 +71,21 @@ let apply_binop_extremities (op : extremities_binops) c1 c2 =
   let op' = (op :> binop) in
   match (c1, c2) with
   | Constraint_Exact a, Constraint_Exact c ->
-      [ exact (binop op' a c) ] |: TypingRule.ApplyBinopExtremities
+      [ exact (integer_binop op' a c) ] |: TypingRule.ApplyBinopExtremities
   | Constraint_Range (a, b), Constraint_Exact c ->
       List.map
-        (fun (a', b') -> range (binop op' a' c) (binop op' b' c))
+        (fun (a', b') ->
+          range (integer_binop op' a' c) (integer_binop op' b' c))
         (possible_extremities_left op a b)
   | Constraint_Exact a, Constraint_Range (c, d) ->
       List.map
-        (fun (c', d') -> range (binop op' a c') (binop op' a d'))
+        (fun (c', d') ->
+          range (integer_binop op' a c') (integer_binop op' a d'))
         (possible_extremities_right op c d)
   | Constraint_Range (a, b), Constraint_Range (c, d) ->
       list_cross
-        (fun (a', b') (c', d') -> range (binop op' a' c') (binop op' b' d'))
+        (fun (a', b') (c', d') ->
+          range (integer_binop op' a' c') (integer_binop op' b' d'))
         (possible_extremities_left op a b)
         (possible_extremities_right op c d)
 (* End *)
@@ -90,7 +94,7 @@ let apply_binop_extremities (op : extremities_binops) c1 c2 =
 
 (** [constraint_pow c1 c2] applies [POW] to [c1] and [c2]. *)
 let constraint_pow c1 c2 =
-  let pow = binop `POW and neg = unop NEG in
+  let pow = integer_binop `POW and neg = integer_unop NEG in
   match (c1, c2) with
   | Constraint_Exact a, Constraint_Exact c ->
       [ exact (pow a c) ] |: TypingRule.ConstraintPow
