@@ -498,6 +498,12 @@ module PPrint = struct
     pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ") pp_elt f li
 
   let pp_type_desc f ty = pp_ty f (ASTUtils.add_dummy_pos ty)
+  let lexical = "Lexical"
+  let parse = "Grammar"
+  let static = "Static"
+  let typing = "Type"
+  let dynamic = "Dynamic"
+  let internal = "Internal"
 
   let fprintf_err f kind code_opt =
     let code_string =
@@ -505,15 +511,16 @@ module PPrint = struct
       | None -> ""
       | Some code -> " (" ^ ErrorCode.to_string code ^ ")"
     in
+    let () =
+      match code_opt with
+      | Some (Typing _) -> assert (kind = typing || kind = static)
+      | Some (Build _) ->
+          assert (kind = lexical || kind = parse || kind = static)
+      | Some (Dynamic _) -> assert (kind = dynamic)
+      | None -> ()
+    in
     kdprintf (fun msg ->
         fprintf f "@[<hov 2>ASL %s error%s:@ %t@]" kind code_string msg)
-
-  let lexical = "Lexical"
-  let parse = "Grammar"
-  let static = "Static"
-  let typing = "Type"
-  let dynamic = "Dynamic"
-  let internal = "Internal"
 
   let error_handling_time_to_string = function
     | Static -> static
