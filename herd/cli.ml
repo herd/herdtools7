@@ -14,6 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Herd_core
 module TR = Top_herd.TestResult
 
 let iter_count (i : ('a -> unit) -> 'b) : ('a -> unit) -> int * 'b =

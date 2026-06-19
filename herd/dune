@@ -22,10 +22,12 @@
 
 (ocamllex lexConf_herd)
 
-(executable
- (name herd)
- (public_name herd7)
+(library
+ (name herd_core)
  (libraries unix herdtools)
+ (wrapped true)
+ (modules
+  (:standard \ herd cli itimer))
  (modules_without_implementation
   AArch64Sig
   action
@@ -34,3 +36,10 @@
   sem
   XXXMem
   port))
+
+(executable
+ (name herd)
+ (public_name herd7)
+ (package herdtools7)
+ (modules herd cli itimer)
+ (libraries unix herdtools herd_core))
