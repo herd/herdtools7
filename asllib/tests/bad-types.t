@@ -27,7 +27,7 @@ Bad fields
     [10: 3] a,
     [2+:1] a,
   };
-  ASL Type error: cannot declare already declared element "a".
+  ASL Type error (TE_IAD): cannot declare already declared element "a".
   [1]
 
 Overlapping slices
@@ -44,7 +44,7 @@ Overlapping slices
     [23: 0] a,
     [10: 0, 3+: 2] b,
   };
-  ASL Static error: overlapping slices 0+:11, 3+:2.
+  ASL Static error (TE_BS): overlapping slices 0+:11, 3+:2.
   [1]
 
 Bad slices
@@ -61,7 +61,8 @@ Bad slices
     [10: 3] a,
     [14:12] b,
   };
-  ASL Static error: Cannot extract from bitvector of length 12 slice 12+:3.
+  ASL Static error (TE_BS):
+    Cannot extract from bitvector of length 12 slice 12+:3.
   [1]
 
   $ cat >bad-types5.asl <<EOF
@@ -77,7 +78,8 @@ Bad slices
     [10: 3] a,
     [-2+:1] b,
   };
-  ASL Static error: Cannot extract from bitvector of length 12 slice (- 2)+:1.
+  ASL Static error (TE_BS):
+    Cannot extract from bitvector of length 12 slice (- 2)+:1.
   [1]
 
   $ cat >bad-types6.asl <<EOF
@@ -99,7 +101,8 @@ Bad slices
       [10:8] c,
     },
   };
-  ASL Static error: Cannot extract from bitvector of length 3 slice 8+:3.
+  ASL Static error (TE_BS):
+    Cannot extract from bitvector of length 3 slice 8+:3.
   [1]
 
 Empty types
@@ -119,7 +122,7 @@ Arbitrary of empty type
   File bad-types7.asl, line 3, characters 38 to 52:
      let b: integer {1..0} = ARBITRARY: integer {1..0};
                                         ^^^^^^^^^^^^^^
-  ASL Dynamic error: ARBITRARY of empty type integer {1..0}.
+  ASL Dynamic error (DE_AET): ARBITRARY of empty type integer {1..0}.
   [1]
 
 Base value of empty type
@@ -136,5 +139,5 @@ Base value of empty type
   File bad-types8.asl, line 3, characters 2 to 24:
     var b: integer {1..0};
     ^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: base value of empty type integer {1..0}.
+  ASL Type error (TE_NBV): base value of empty type integer {1..0}.
   [1]
