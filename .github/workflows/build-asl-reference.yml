@@ -53,3 +53,36 @@ jobs:
         with:
          name: ASL Reference Document
          path: asllib/doc/ASLReference.pdf
+
+  make-asldoc-html:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-bibtex-extra
+
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: dune,zarith,menhir,logs,conf-which,hevea
+          dune-cache: true
+
+      - name: Install opam dependencies
+        run: |
+          opam install . --deps-only --yes
+
+      - name: Build ASL Reference in HTML
+        run: |
+          cd asllib/doc
+          opam exec -- ./zyva.sh
+
+      - name: Upload HTML
+        uses: actions/upload-artifact@v4
+        with:
+         name: ASL Reference Document in HTML
+         path: asllib/doc/HTML
