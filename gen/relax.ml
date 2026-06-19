@@ -46,6 +46,9 @@ module type S = sig
   val parse_sequence_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> (string,string) Ast.t) -> string list -> (string,string) Ast.t
   (* Parse the input relaxation (or relaxations sequences), and expand the wildcard
      syntax into primitive edges and annotations *)
+  val parse_expand_relaxs_ast :
+    ?ppo:((relax -> relax list -> relax list) -> relax list -> relax list)
+        -> (string,string) Ast.t -> (string,edge) Ast.t
   val parse_expand_relaxs :
     ?ppo:((relax -> relax list -> relax list) -> relax list -> relax list)
         -> (string,string) Ast.t -> relax list
@@ -121,18 +124,18 @@ and type edge = E.edge
           let open E in
           match r with
           | [e] -> E.pp_edge e
-          | [{edge=Rf Ext; a1=None;a2=None;pred=None};
-             {edge=Fenced _;a1=None; a2=None;pred=None} as e] when backward_compatibility ->
+          | [{edge=Rf Ext; a1=None;a2=None};
+             {edge=Fenced _;a1=None; a2=None} as e] when backward_compatibility ->
                  sprintf "AC%s" (pp_edge e)
-          | [{edge=Fenced _; a1=None;a2=None;pred=None} as e;
-             {edge=Rf Ext; a1=None; a2=None;pred=None}] when backward_compatibility ->
+          | [{edge=Fenced _; a1=None;a2=None} as e;
+             {edge=Rf Ext; a1=None; a2=None}] when backward_compatibility ->
                    sprintf "BC%s" (pp_edge e)
-          | [{edge=Rf Ext; a1=None; a2=None;pred=None};
-             {edge=Fenced _; a1=None; a2=None;pred=None} as e;
-             {edge=Rf Ext; a1=None; a2=None;pred=None}] when backward_compatibility ->
+          | [{edge=Rf Ext; a1=None; a2=None};
+             {edge=Fenced _; a1=None; a2=None} as e;
+             {edge=Rf Ext; a1=None; a2=None}] when backward_compatibility ->
                    sprintf "ABC%s" (pp_edge e)
-          | [{edge=Dp _; a1=None; a2=None;pred=None} as e;
-             {edge=Rf Ext; a1=None; a2=None;pred=None}] when backward_compatibility ->
+          | [{edge=Dp _; a1=None; a2=None} as e;
+             {edge=Rf Ext; a1=None; a2=None}] when backward_compatibility ->
                    sprintf "BC%s" (pp_edge e)
           | es ->
               sprintf "[%s]" (String.concat "," (List.map pp_edge es))
@@ -363,11 +366,15 @@ and type edge = E.edge
           expand_relaxs parsed_edges
           |> relax_list_to_choice
 
-          let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
-            let add_predicate pred =
-              E.add_predicate (E.parse_predicate pred) in
+          let parse_expand_relaxs_ast ?(ppo=(fun _ k -> k)) ast =
             Ast.bind ast (parse_expand_relax ~ppo)
-              |> Ast.expand add_predicate
+
+          let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
+            parse_expand_relaxs_ast ~ppo ast
+              |> Ast.expand
+                   (fun pred _ ->
+                     Warn.user_error
+                       "predicate %s is only supported by diy7 search." pred)
 
         (* After wildcard and macro expansion, remove invalid relaxations
            whose adjacent concrete edges cannot appear consecutively.
@@ -387,33 +394,12 @@ and type edge = E.edge
                     for_all_adjacent_concrete_edge predicate (rhs :: list)
                 | false, false ->
                     for_all_adjacent_concrete_edge predicate list in
-          (* `before` predicates must form a leading prefix and
-             `after` predicates must form a trailing suffix. *)
-          let leading_before_trailing_after_predicate list =
-            let valid,_,_ = List.fold_left
-            ( fun ( valid, leading_before, trailing_after ) l ->
-              match valid, leading_before, trailing_after, E.get_predicate l with
-              (* Propagate invalid flag *)
-              | false, _, _,_ -> (false, leading_before, trailing_after)
-              (* Process the leading edges while they are before predicates,
-                 until the first non-before edge. *)
-              | true, true, _, pred -> true, pred = Some E.Before, pred = Some E.After
-              (* A before predicate in the middle of the list *)
-              | true, false, trailing_after, pred when pred = Some E.Before ->
-                  false, false, trailing_after
-              (* Until find the first after predicate *)
-              | true, false, false, pred -> true, false, pred = Some E.After
-              (* Once trailing after predicates start, only after predicates may follow. *)
-              | true, false, true, pred -> pred = Some E.After, false, true
-            ) (true,true,false) list in
-            valid in
           List.filter
             (fun relax ->
               (* Drop empty alternatives introduced by `?`; they do not
                  describe an actual relaxation. *)
               relax <> []
               && for_all_adjacent_concrete_edge E.can_precede relax
-              && leading_before_trailing_after_predicate relax
             ) relaxes
           |> List.sort_uniq compare
 
@@ -439,13 +425,13 @@ and type edge = E.edge
         let is_cumul r =
           let open E in
           match r with
-          | [{edge=Rf Code.Ext; a1=None; a2=None; pred=None};
-             {edge=Fenced _; a1=None; a2=None; pred=None}]
-          | [{edge=Fenced _; a1=None; a2=None; pred=None};
-             {edge=Rf Code.Ext; a1=None; a2=None; pred=None};]
-          | [{edge=Rf Code.Ext; a1=None; a2=None; pred=None};
-             {edge=Fenced _; a1=None; a2=None; pred=None};
-             {edge=Rf Code.Ext; a1=None; a2=None; pred=None};]
+          | [{edge=Rf Code.Ext; a1=None; a2=None};
+             {edge=Fenced _; a1=None; a2=None}]
+          | [{edge=Fenced _; a1=None; a2=None};
+             {edge=Rf Code.Ext; a1=None; a2=None};]
+          | [{edge=Rf Code.Ext; a1=None; a2=None};
+             {edge=Fenced _; a1=None; a2=None};
+             {edge=Rf Code.Ext; a1=None; a2=None};]
             -> true
           | _ -> false
 
