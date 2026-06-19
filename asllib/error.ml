@@ -442,10 +442,23 @@ module PPrint = struct
     let of_error_handling_time : error_handling_time -> t = function
       | Static -> Static
       | Dynamic -> Dynamic
+
+    let matches_code (code : ErrorCode.t) (kind : t) =
+      match (code, kind) with
+      | Typing _, (Typing | Static)
+      | Build _, (Lexical | Parse | Static)
+      | Dynamic _, Dynamic ->
+          true
+      | _ -> false
   end
 
   let fprintf_err f kind code_opt =
     let pp_code fmt code = fprintf fmt " (%s)" (ErrorCode.to_string code) in
+    let () =
+      match code_opt with
+      | Some code -> assert (ErrorKind.matches_code code kind)
+      | None -> ()
+    in
     kdprintf (fun msg ->
         fprintf f "@[<hov 2>ASL %s error%a:@ %t@]" (ErrorKind.to_string kind)
           (pp_print_option pp_code) code_opt msg)
