@@ -40,14 +40,13 @@ Explicit parameter tests:
   ASL Type error: cannot declare already declared element "N".
   [1]
 
+  $ aslref --version-eac1 argument-omission.asl
   $ aslref argument-omission.asl
-
-  $ aslref bad-elided-parameter.asl
-  File bad-elided-parameter.asl, line 8, characters 20 to 30:
-    let x : bits(4) = Foo{,3}(0);
-                      ^^^^^^^^^^
-  ASL Static error: Arity error while calling 'Foo':
-    1 parameters expected and 2 provided
+  File argument-omission.asl, line 3, characters 21 to 28:
+    let x : bits(64) = Zeros{};
+                       ^^^^^^^
+  ASL Grammar error: Obsolete syntax:
+    Deprecated elided parameter call syntax, pass parameters explicitly.
   [1]
 
   $ aslref omit-output-stdlib-param.asl

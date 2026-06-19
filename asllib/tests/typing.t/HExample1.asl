@@ -1,7 +1,7 @@
 accessor ReadMem{size}(address : integer, unknown : boolean) <=> value_in: bits(size*8)
 begin
     getter
-      var value : bits(size*8) = Zeros{}();
+      var value : bits(size*8) = Zeros{size*8}();
       value = Read{size}(address, unknown);
       return value;
     end;

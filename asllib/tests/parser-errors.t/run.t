@@ -30,14 +30,6 @@
     one name.
   [1]
 
-  $ aslref elided-parameter-non-bits.asl
-  File elided-parameter-non-bits.asl, line 3, characters 20 to 27:
-    let x : integer = Zeros{};
-                      ^^^^^^^
-  ASL Grammar error: Cannot parse. Cannot desugar elided parameter: left-hand
-    side must have a `bits(...)` type annotation.
-  [1]
-
   $ aslref hyphenated-pending-constraint.asl
   File hyphenated-pending-constraint.asl, line 1, characters 14 to 17:
   let x: integer{-} = 5;

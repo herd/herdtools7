@@ -9,6 +9,6 @@ begin
   let a2 = 8 << UInt(a);
   let bv = Zeros{a2};
   let b = 16;
-  let x: bits(a2) = Reverse{}(bv, a2);
+  let x: bits(a2) = Reverse{a2}(bv, a2);
 end;
 

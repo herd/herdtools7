@@ -42,27 +42,12 @@ end;
 
 
 // We do not need to provide () at a call site if we have explicit parameters
-func elide_empty_argument_list()
+func omit_empty_argument_list()
 begin
   - = Foo{64}();
   - = Foo{64};
-  // This can combine with eliding parameters, but only as follows:
-  let x : bits(64) = Foo{}();
 end;
 
-
-// We can elide parameters on right-hand sides
-func elide_parameters()
-begin
-  let x : bits(4) = Foo{}();
-  let y : bits(4) = Bar{,3}('111');
-end;
-
-// We can elide parameters for global declarations
-let elided_global1: bits(64) = Zeros{};
-var elided_global2: bits(64) = Zeros{};
-constant elided_global3: bits(64) = Zeros{};
-config elided_global4: bits(64) = Zeros{};
 
 // We can parametrise accessors
 var _R : array [[31]] of bits(64);
@@ -86,7 +71,7 @@ end;
 func good()
 begin
   let x = X{64}(0);
-  let y : bits(64) = X{}(1);
+  let y : bits(64) = X{64}(1);
 
   X{64}(2) = Zeros{64};
 end;
@@ -153,11 +138,4 @@ begin
   let x : bits(64) = SignExtend{64}('1111');
   let y : bits(64) = ZeroExtend{64}('1111');
   let z : bits(64) = Extend{64}('1111', TRUE);
-end;
-
-func elide_output_parameters()
-begin
-  let x : bits(64) = SignExtend{}('1111');
-  let y : bits(64) = ZeroExtend{}('1111');
-  let z : bits(64) = Extend{}('1111', TRUE);
 end;
