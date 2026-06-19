@@ -36,7 +36,6 @@ type error_desc =
   | TypeInferenceNeeded
   | UndefinedIdentifier of error_handling_time * identifier
   | MismatchedCallType of {
-      error_handling_time : error_handling_time;
       subprogram_name : string;
       expected_call_type : subprogram_type;
       found_call_type : subprogram_type;
@@ -49,14 +48,12 @@ type error_desc =
   | UnsupportedTy of error_handling_time * ty
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
-  | NotYetImplemented of string
   | ConflictingTypes of type_desc list * ty
   | AssertionFailed of expr
   | CannotParse of string option
   | UnknownSymbol of string
   | NoCallCandidate of string * ty list
   | BadTypesForBinop of binop * ty * ty
-  | CircularDeclarations of string
   | ImpureExpression of expr * SideEffect.SES.t
       (** used for fine-grained analysis *)
   | MismatchedPurity of string  (** Used for coarse-grained analysis *)
@@ -80,12 +77,10 @@ type error_desc =
   | BaseValueEmptyType of ty
   | ArbitraryEmptyType of ty
   | BaseValueNonSymbolic of ty * expr
-  | SettingIntersectingSlices of bitfield list
   | SetterWithoutCorrespondingGetter of func
   | NonReturningFunction of identifier
   | NoreturnViolation of identifier
   | ConflictingSideEffects of SideEffect.t * SideEffect.t
-  | UnexpectedATC
   | UnreachableReached
   | LoopLimitReached
   | RecursionLimitReached of error_handling_time
@@ -99,7 +94,6 @@ type error_desc =
     }
   | ExpectedSingularType of ty
   | ExpectedNamedType of ty
-  | ConfigTimeBroken of expr * SideEffect.SES.t
   | ConstantTimeBroken of expr * SideEffect.SES.t
   | MultipleWrites of identifier
   | UnexpectedInitialisationThrow of
@@ -169,14 +163,12 @@ let error_label = function
   | UnsupportedTy _ -> "UnsupportedTy"
   | InvalidExpr _ -> "InvalidExpr"
   | MismatchType _ -> "MismatchType"
-  | NotYetImplemented _ -> "NotYetImplemented"
   | ConflictingTypes _ -> "ConflictingTypes"
   | AssertionFailed _ -> "AssertionFailed"
   | CannotParse _ -> "CannotParse"
   | UnknownSymbol _ -> "UnknownSymbol"
   | NoCallCandidate _ -> "NoCallCandidate"
   | BadTypesForBinop _ -> "BadTypesForBinop"
-  | CircularDeclarations _ -> "CircularDeclarations"
   | ImpureExpression _ -> "ImpureExpression"
   | MismatchedPurity _ -> "MismatchedPurity"
   | UnreconcilableTypes _ -> "UnreconcilableTypes"
@@ -197,11 +189,9 @@ let error_label = function
   | BaseValueEmptyType _ -> "BaseValueEmptyType"
   | ArbitraryEmptyType _ -> "ArbitraryEmptyType"
   | BaseValueNonSymbolic _ -> "BaseValueNonSymbolic"
-  | SettingIntersectingSlices _ -> "SettingIntersectingSlices"
   | SetterWithoutCorrespondingGetter _ -> "SetterWithoutCorrespondingGetter"
   | NonReturningFunction _ -> "NonReturningFunction"
   | NoreturnViolation _ -> "NoreturnViolation"
-  | UnexpectedATC -> "UnexpectedATC"
   | UnreachableReached -> "UnreachableReached"
   | LoopLimitReached -> "LoopLimitReached"
   | RecursionLimitReached _ -> "RecursionLimitReached"
@@ -211,7 +201,6 @@ let error_label = function
   | ExpectedSingularType _ -> "ExpectedSingularType"
   | ExpectedNamedType _ -> "ExpectedNamedType"
   | ConflictingSideEffects _ -> "ConflictingSideEffects"
-  | ConfigTimeBroken _ -> "ConfigTimeBroken"
   | ConstantTimeBroken _ -> "ConstantTimeBroken"
   | MultipleWrites _ -> "MultipleWrites"
   | UnexpectedInitialisationThrow _ -> "UnexpectedInitialisationThrow"
@@ -386,12 +375,7 @@ module PPrint = struct
     | UndefinedIdentifier (t, s) ->
         pp_err (error_handling_time_to_string t) "Undefined identifier:@ '%s'" s
     | MismatchedCallType
-        {
-          error_handling_time = t;
-          subprogram_name = s;
-          expected_call_type;
-          found_call_type;
-        } ->
+        { subprogram_name = s; expected_call_type; found_call_type } ->
         let call_type_description call_type =
           match call_type with
           | ST_Function -> "function"
@@ -399,8 +383,7 @@ module PPrint = struct
           | ST_Setter -> "setter"
           | ST_Procedure -> "procedure"
         in
-        pp_err
-          (error_handling_time_to_string t)
+        pp_err static
           "Mismatched call type for subprogram '%s': expected a %s and found a \
            %s."
           s
@@ -426,7 +409,6 @@ module PPrint = struct
               "Arity error while calling '%s':@ %d parameters expected and %d \
                provided"
               name expected provided)
-    | NotYetImplemented s -> pp_err internal "Not yet implemented: %s" s
     | ConflictingTypes ([ expected ], provided) ->
         pp_err typing "a subtype of@ %a@ was expected,@ provided %a."
           pp_type_desc expected pp_ty provided
@@ -454,11 +436,6 @@ module PPrint = struct
     | BadTypesForBinop (op, t1, t2) ->
         pp_err typing "Illegal application of operator %s on types@ %a@ and %a."
           (binop_to_string op) pp_ty t1 pp_ty t2
-    | CircularDeclarations x ->
-        pp_err dynamic
-          "ASL Evaluation error: circular definition of constants, including \
-           %S."
-          x
     | ImpureExpression (e, ses) ->
         pp_err typing
           "a pure expression was expected,@ found %a,@ which@ produces@ the@ \
@@ -522,9 +499,6 @@ module PPrint = struct
         pp_err typing
           "cannot@ perform@ Asserted@ Type@ Conversion@ on@ %a@ by@ %a." pp_ty
           t1 pp_ty t2
-    | SettingIntersectingSlices bitfields ->
-        pp_err typing "setting@ intersecting@ bitfields@ [%a]." pp_bitfields
-          bitfields
     | SetterWithoutCorrespondingGetter func ->
         let ret, args =
           match func.args with
@@ -535,7 +509,6 @@ module PPrint = struct
           "setter@ \"%s\"@ does@ not@ have@ a@ corresponding@ getter@ of@ \
            signature@ @[@[%a@]@ ->@ %a@]."
           func.name (pp_comma_list pp_ty) args pp_ty ret
-    | UnexpectedATC -> pp_err typing "unexpected ATC."
     | BadPattern (p, t) ->
         pp_err typing "Erroneous@ pattern@ %a@ for@ expression@ of@ type@ %a."
           pp_pattern p pp_ty t
@@ -554,11 +527,6 @@ module PPrint = struct
     | ConflictingSideEffects (s1, s2) ->
         pp_err typing "conflicting side effects %a and %a" SideEffect.pp_print
           s1 SideEffect.pp_print s2
-    | ConfigTimeBroken (e, ses) ->
-        pp_err typing
-          "expected@ config-time@ expression,@ got@ %a,@ which@ produces@ the@ \
-           following@ side-effects:@ %a."
-          pp_expr e SideEffect.SES.pp_print ses
     | ConstantTimeBroken (e, ses) ->
         pp_err typing
           "expected@ constant-time@ expression,@ got@ %a,@ which@ produces@ \
