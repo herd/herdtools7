@@ -144,6 +144,187 @@ type warning_desc =
 
 type warning = warning_desc annotated
 
+module ErrorCode = struct
+  type build =
+    | LE  (** Lexical *)
+    | PE  (** Parse *)
+    | RI  (** Reserved identifier *)
+    | BOP  (** Binary operation priority *)
+    | BD  (** Bad declaration *)
+
+  type typing =
+    | UI  (** Undefined identifier *)
+    | IAD  (** Identifier already declared *)
+    | AIM  (** Assign to immutable *)
+    | TSF  (** Type satisfaction failure *)
+    | LCA  (** Lowest common ancestor *)
+    | NBV  (** No base value *)
+    | TAF  (** Type assertion failure *)
+    | SEF  (** Static evaluation failure *)
+    | BO  (** Bad operands *)
+    | UT  (** Unexpected type *)
+    | BTI  (** Bad tuple index *)
+    | BS  (** Bad slices *)
+    | BF  (** Bad field *)
+    | BSPD  (** Bad subprogram declaration *)
+    | BD  (** Bad declaration *)
+    | BC  (** Bad call *)
+    | SEV  (** Side effect violation *)
+    | OE  (** Overriding error *)
+    | PLD  (** Declaration with an imprecise type *)
+
+  type dynamic =
+    | UNR  (** Unreachable *)
+    | DAF  (** Assertion failure *)
+    | TAF  (** Type assertion failure *)
+    | AET  (** Arbitrary empty type *)
+    | BO  (** Bad operands *)
+    | LE  (** Limit exceeded *)
+    | UE  (** Uncaught exception *)
+    | BI  (** Bad index *)
+    | OSA  (** Overlapping slice assignment *)
+    | NAL  (** Negative array length *)
+    | NEP  (** No entry point *)
+
+  type t = Build of build | Typing of typing | Dynamic of dynamic
+
+  (* TODO: consider using ppx to derive strings *)
+
+  let build_to_string : build -> string = function
+    | LE -> "LE"
+    | PE -> "PE"
+    | RI -> "RI"
+    | BOP -> "BOP"
+    | BD -> "BD"
+
+  let typing_to_string : typing -> string = function
+    | UI -> "UI"
+    | IAD -> "IAD"
+    | AIM -> "AIM"
+    | TSF -> "TSF"
+    | LCA -> "LCA"
+    | NBV -> "NBV"
+    | TAF -> "TAF"
+    | SEF -> "SEF"
+    | BO -> "BO"
+    | UT -> "UT"
+    | BTI -> "BTI"
+    | BS -> "BS"
+    | BF -> "BF"
+    | BSPD -> "BSPD"
+    | BD -> "BD"
+    | BC -> "BC"
+    | SEV -> "SEV"
+    | OE -> "OE"
+    | PLD -> "PLD"
+
+  let dynamic_to_string : dynamic -> string = function
+    | UNR -> "UNR"
+    | DAF -> "DAF"
+    | TAF -> "TAF"
+    | AET -> "AET"
+    | BO -> "BO"
+    | LE -> "LE"
+    | UE -> "UE"
+    | BI -> "BI"
+    | OSA -> "OSA"
+    | NAL -> "NAL"
+    | NEP -> "NEP"
+
+  let to_string = function
+    | Build b -> "BE_" ^ build_to_string b
+    | Typing t -> "TE_" ^ typing_to_string t
+    | Dynamic d -> "DE_" ^ dynamic_to_string d
+
+  let of_error e =
+    match e.desc with
+    (********** Errors that correspond to error codes **********)
+    | ReservedIdentifier _ -> Some (Build RI)
+    | UnknownSymbol _ -> Some (Build LE)
+    | ObsoleteSyntax _ -> Some (Build PE)
+    | BadField _ | MissingField _ -> Some (Typing BF)
+    | BadPattern _ | BadTypesForBinop _
+    | UnsupportedUnop (Static, _, _)
+    | UnsupportedBinop (Static, _, _, _) ->
+        Some (Typing BO)
+    | BadSlices (Static, _, _)
+    | BadSlice _ | EmptySlice
+    | OverlappingSlices (_, Static)
+    | BitfieldsDontAlign _ ->
+        Some (Typing BS) (* TODO: consider combining BadSlices and BadSlice *)
+    | UndefinedIdentifier (Static, _) -> Some (Typing UI)
+    | ConflictingTypes _ | AssignToTupleElement _ | ConstrainedIntegerExpected _
+    | UnexpectedPendingConstrained | ExpectedSingularType _
+    | ExpectedNamedType _ | UnexpectedCollection ->
+        Some (Typing UT)
+    | MismatchedCallType _
+    | BadParameterArity (Static, _, _, _, _)
+    | NoCallCandidate _ ->
+        Some (Typing BC)
+    | UnsupportedUnop (Dynamic, _, _) | UnsupportedBinop (Dynamic, _, _, _) ->
+        Some (Dynamic BO)
+    | AssertionFailed (Dynamic, _) | BadPrimitiveArgument (Dynamic, _, _) ->
+        Some (Dynamic DAF)
+    | ImpureExpression _ | MismatchedPurity _ -> Some (Typing SEV)
+    | AssignToImmutable _ -> Some (Typing AIM)
+    | AlreadyDeclaredIdentifier _ -> Some (Typing IAD)
+    | BadReturnStmt _ | BadParameterDecl _ | NonReturningFunction _
+    | NoreturnViolation _ ->
+        Some (Typing BSPD)
+    | UncaughtException _ -> Some (Dynamic UE)
+    | OverlappingSlices (_, Dynamic) -> Some (Dynamic OSA)
+    | BadLDI _ | BadRecursiveDecls _ -> Some (Typing BD)
+    | BadATC _ -> Some (Typing TAF)
+    | BaseValueEmptyType _ | BaseValueNonSymbolic _ -> Some (Typing NBV)
+    | ArbitraryEmptyType _ -> Some (Dynamic AET)
+    | UnreachableReached Dynamic -> Some (Dynamic UNR)
+    | LoopLimitReached Dynamic | RecursionLimitReached Dynamic ->
+        Some (Dynamic LE)
+    | NegativeArrayLength (Dynamic, _, _) -> Some (Dynamic NAL)
+    | MultipleImplementations _ | NoOverrideCandidate
+    | TooManyOverrideCandidates _ ->
+        Some (Typing OE)
+    | PrecisionLostDefining -> Some (Typing PLD)
+    | NoEntryPoint -> Some (Dynamic NEP)
+    | RecursionLimitReached Static
+    | UnreachableReached Static
+    | LoopLimitReached Static
+    | NegativeArrayLength (Static, _, _)
+    | AssertionFailed (Static, _)
+    | BadPrimitiveArgument (Static, _, _) ->
+        Some (Typing SEF)
+    (********** TODO tidy up - does not cleanly correspond to a code **********)
+    | BadArity (Static, _, _, _) (* also used for tuple unpacking *) -> None
+    | UnsupportedExpr _ | UnsupportedTy _
+    (* For static interpretation, parameters, and collections *) ->
+        None
+    | MismatchType _
+    (* dynamic ATC but also mismatched integers for loop limits *) ->
+        None
+    | CannotParse _ (* used in lexing too *) -> None
+    | UnreconcilableTypes _ (* both LCA and check_bit_widths_equal *) -> None
+    | EmptyConstraints (* does this need to be reflected in reference? *) ->
+        None
+    | MultipleWrites _
+    (* For desugaring, but uses `check_no_duplicates` which is always TE_IAD? *)
+      ->
+        None
+    | UnexpectedInitialisationThrow _ (* not represented in reference? *) ->
+        None
+    (********** Should not happen **********)
+    (* e.g. skipped type-checking, ASL0, internal option or invariant *)
+    | TypeInferenceNeeded
+    | UndefinedIdentifier (Dynamic, _)
+    | BadArity (Dynamic, _, _, _)
+    | BadParameterArity (Dynamic, _, _, _, _)
+    | InvalidExpr _ | UnexpectedSideEffect _ | UnrespectedParserInvariant
+    | ParameterWithoutDecl _ | SetterWithoutCorrespondingGetter _
+    | ConflictingSideEffects _ | ConstantTimeBroken _ ->
+        None
+    (********** Other **********)
+    | BadSlices (Dynamic, _, _) -> None (* only used in Native.ml *)
+end
+
 module PrintContext = struct
   (* Straight out of stdlib v5.2 *)
   let with_open filename continuation =
@@ -218,6 +399,26 @@ module PrintContext = struct
     else None
 end
 
+(** TODO
+    - SlicesToPositions - static or dynamic in implementation, but always TE_BS
+      in reference?
+    - Various errors are overused in several places - need to clearly
+      distinguish between ASL1 errors and e.g. ASL0 non-typechecked errors,
+      assertion failures, cases we don't expect to hit etc.
+    - TypingRule.TInt mismatch on empty case *)
+(* TODO: check_implementations_unique should be TE_OE in reference - instead just generic #TE *)
+(* TODO: BE_RI unused in reference *)
+(* TODO: following not recoverable from implementation:
+- BE_BOP
+- BE_BD
+- TE_TSF
+- TE_LCA
+- TE_SEF
+- TE_BTI
+- DE_TAF
+- DE_BI
+*)
+
 module PPrint = struct
   open Format
   open PP
@@ -243,12 +444,14 @@ module PPrint = struct
       | Dynamic -> Dynamic
   end
 
-  let fprintf_err f kind =
+  let fprintf_err f kind code_opt =
+    let pp_code fmt code = fprintf fmt " (%s)" (ErrorCode.to_string code) in
     kdprintf (fun msg ->
-        fprintf f "@[<hov 2>ASL %s error:@ %t@]" (ErrorKind.to_string kind) msg)
+        fprintf f "@[<hov 2>ASL %s error%a:@ %t@]" (ErrorKind.to_string kind)
+          (pp_print_option pp_code) code_opt msg)
 
   let pp_error_desc f e =
-    let pp_err s fmt = fprintf_err f s fmt in
+    let pp_err s fmt = fprintf_err f s (ErrorCode.of_error e) fmt in
     match e.desc with
     | ReservedIdentifier id -> pp_err Lexical "%S is a reserved keyword." id
     | UnsupportedBinop (t, op, v1, v2) ->

@@ -7,7 +7,7 @@ Explicit parameter tests:
   begin
     return Zeros{A * B + C};
   end;
-  ASL Type error: incorrect parameter declaration for "Bad", expected
+  ASL Type error (TE_BSPD): incorrect parameter declaration for "Bad", expected
     {A, B, C, D, E} but {D, E, A, B, C} provided
   [1]
 
@@ -17,8 +17,8 @@ Explicit parameter tests:
   begin
     return 0;
   end;
-  ASL Type error: incorrect parameter declaration for "BadUnused", expected 
-    {} but {N} provided
+  ASL Type error (TE_BSPD): incorrect parameter declaration for "BadUnused",
+    expected {} but {N} provided
   [1]
 
   $ aslref undeclared-parameter.asl
@@ -27,8 +27,8 @@ Explicit parameter tests:
   begin
     return Zeros{N};
   end;
-  ASL Type error: incorrect parameter declaration for "BadUndeclared", expected
-    {N} but {} provided
+  ASL Type error (TE_BSPD): incorrect parameter declaration for
+    "BadUndeclared", expected {N} but {} provided
   [1]
 
   $ aslref duplicate-parameter.asl
@@ -37,7 +37,7 @@ Explicit parameter tests:
   begin
     return Zeros{N};
   end;
-  ASL Type error: cannot declare already declared element "N".
+  ASL Type error (TE_IAD): cannot declare already declared element "N".
   [1]
 
   $ aslref --version-eac1 argument-omission.asl
@@ -45,7 +45,7 @@ Explicit parameter tests:
   File argument-omission.asl, line 3, characters 21 to 28:
     let x : bits(64) = Zeros{};
                        ^^^^^^^
-  ASL Grammar error: Obsolete syntax:
+  ASL Grammar error (BE_PE): Obsolete syntax:
     Deprecated elided parameter call syntax, pass parameters explicitly.
   [1]
 
@@ -53,7 +53,7 @@ Explicit parameter tests:
   File omit-output-stdlib-param.asl, line 3, characters 21 to 41:
     let x : bits(64) = Extend('1111', TRUE);
                        ^^^^^^^^^^^^^^^^^^^^
-  ASL Static error: Arity error while calling 'Extend':
+  ASL Static error (TE_BC): Arity error while calling 'Extend':
     2 parameters expected and 1 provided
   [1]
 
@@ -63,5 +63,5 @@ Explicit parameter tests:
   begin
     return N + 1;
   end;
-  ASL Type error: cannot declare already declared element "N".
+  ASL Type error (TE_IAD): cannot declare already declared element "N".
   [1]

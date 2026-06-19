@@ -8,5 +8,5 @@ stderr:
 File capture_output.asl, line 4, characters 9 to 14:
   assert FALSE;
          ^^^^^
-ASL Dynamic error: Assertion failed: FALSE.
+ASL Dynamic error (DE_DAF): Assertion failed: FALSE.
 

@@ -14,7 +14,7 @@
   File on-local-var.asl, line 8, characters 2 to 25:
     var col = MyCollection;
     ^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: unexpected collection.
+  ASL Type error (TE_UT): unexpected collection.
   [1]
   $ aslref with-non-bitvector-arg.asl
   File with-non-bitvector-arg.asl, line 1, character 0 to line 4, character 2:
@@ -36,14 +36,14 @@
   File on-local-tuple.asl, line 8, characters 2 to 33:
     var col2 = (my_collection, 32);
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: unexpected collection.
+  ASL Type error (TE_UT): unexpected collection.
   [1]
 
   $ aslref on-global-var.asl
   File on-global-var.asl, line 6, characters 0 to 33:
   var MyCollection2 = MyCollection;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: unexpected collection.
+  ASL Type error (TE_UT): unexpected collection.
   [1]
 
   $ aslref on-type-declaration.asl

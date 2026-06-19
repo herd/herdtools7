@@ -7,7 +7,7 @@ Examples used to test syntax and AST building rules:
   $ aslref GuideRule.Whitespace1.asl
   $ aslref GuideRule.Whitespace2.asl
   $ aslref GuideRule.ReservedIdentifiers.bad.asl
-  ASL Lexical error: "__internal_var" is a reserved keyword.
+  ASL Lexical error (BE_RI): "__internal_var" is a reserved keyword.
   [1]
   $ aslref GuideRule.IdentifiersKeywords.bad.asl
   File GuideRule.IdentifiersKeywords.bad.asl, line 3, characters 8 to 12:
