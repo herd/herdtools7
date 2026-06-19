@@ -207,7 +207,6 @@ Examples used in ASL High-level Definition:
   $ aslref --no-exec GlobalStorageDeclarations.asl
   $ aslref --no-exec IR.asl
   $ aslref Bit.asl
-  $ aslref PrefixSlice.asl
   $ aslref --no-exec GuideRule.NoEmptyBody.asl
   $ aslref ParenthesizedTypes.asl
   $ aslref EmptyTuple.asl

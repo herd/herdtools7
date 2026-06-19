@@ -20,5 +20,8 @@
 (* herdtools7 github repository.                                              *)
 (******************************************************************************)
 
-module type CONFIG = sig end
 (** The CONFIG module signature for the ASL1 Parser *)
+module type CONFIG = sig
+  val version_eac1 : bool
+  (** Enables the EAC1 deprecated features. *)
+end

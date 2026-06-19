@@ -8,11 +8,11 @@ var x: array[[4]] of MyBV;
 
 func main() => integer
 begin
-  x[[0]].fld1.fld2[:1] = '0';
+  x[[0]].fld1.fld2[0+:1] = '0';
 
   // The above left-hand side desugars to the following `lexpr`:
   // LE_Slice( LE_SetField( LE_SetField( LE_SetArray( LE_Var("x"),
-  //   0), "fld1"), "fld2"), [:1])
+  //   0), "fld1"), "fld2"), [0+:1])
 
   return 0;
 end;

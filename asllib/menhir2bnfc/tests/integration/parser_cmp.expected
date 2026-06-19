@@ -8,6 +8,8 @@ FAIL - aslref false | bnfc true: asllib/tests/parser-errors.t/binop-same-precede
 FAIL - aslref false | bnfc true: asllib/tests/parser-errors.t/discard-locals.asl
 FAIL - aslref false | bnfc true: asllib/tests/parser-errors.t/elided-parameter-non-bits.asl
 FAIL - aslref false | bnfc true: asllib/tests/parser-errors.t/hyphenated-pending-constraint.asl
+FAIL - aslref false | bnfc true: asllib/tests/regressions.t/SliceFromZero.asl
+FAIL - aslref false | bnfc true: asllib/tests/regressions.t/SliceStar.asl
 FAIL - aslref false | bnfc true: asllib/tests/regressions.t/lhs-tuple-fields-same-field.asl
 FAIL - aslref false | bnfc true: asllib/tests/regressions.t/no-tabs-in-block-comments.asl
 FAIL - aslref false | bnfc true: asllib/tests/regressions.t/no-tabs-in-line-comments.asl

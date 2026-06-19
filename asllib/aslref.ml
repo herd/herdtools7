@@ -48,7 +48,7 @@ let parse_args () =
   let use_fine_grained_side_effects = ref false in
   let use_conflincting_side_effects_extension = ref false in
   let v0_use_split_chunks = ref false in
-
+  let version_eac1 = ref false in
   let speclist =
     [
       ("--exec", Arg.Set exec, " Execute the asl program (default).");
@@ -145,6 +145,11 @@ let parse_args () =
         Arg.Set v0_use_split_chunks,
         " While lexing v0 files, split the files along separator comment \
          lines. Error display might be impacted." );
+      ( "--version-eac1",
+        Arg.Set version_eac1,
+        " Enables deprecated ASLv1 features that exist only in EAC1:\n\
+         1. the slicing shorthands [:N] and [A*:B].\n\
+         2. eliding parameters in function calls." );
     ]
     |> Arg.align ?limit:None
   in
@@ -183,6 +188,7 @@ let parse_args () =
       no_stdlib = !no_stdlib;
       no_stdlib0 = !no_stdlib0;
       v0_use_split_chunks = !v0_use_split_chunks;
+      version_eac1 = !version_eac1;
     }
   in
 

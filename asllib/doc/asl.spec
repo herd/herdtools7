@@ -1018,8 +1018,6 @@ ast slice
     { "the slice from the position given by {upper_index} down to the position given by {lower_index}" }
     | Slice_Length(start_index: expr, length: expr)
     { "the slice from the position given by {start_index} and length given by {length}" }
-    | Slice_Star(factor: expr, scale: expr)
-    { "the slice from the position given by {factor}*{scale} and length given by {scale}" }
 
 ////////////////////////////////////////
 // Typed AST
@@ -1035,7 +1033,6 @@ render untyped_slice = slice(
     Slice_Single,
     Slice_Range,
     Slice_Length,
-    Slice_Star,
 );
 
 render typed_slice { lhs_hypertargets = false } = slice(typed_Slice_Length);
@@ -7784,12 +7781,6 @@ typing relation annotate_slice(tenv: static_envs, s: slice) -> (s': slice, ses: 
     ses := union(ses_offset, ses_length);
     s' := Slice_Length(offset', length');
   }
-
-  case scaled {
-    s =: Slice_Star(factor, length);
-    offset := AbbrevEBinop(MUL, factor, length);
-    annotate_slice(tenv, Slice_Length(offset, length)) -> (s', ses);
-  }
   --
   (s', ses);
 ;
@@ -7829,12 +7820,6 @@ typing function slice_width(slice: slice) ->
     slice = Slice_Single(_);
     --
     ELint(one);
-  }
-
-  case scaled {
-    slice =: Slice_Star(_, e);
-    --
-    e;
   }
 
   case length {
@@ -7923,15 +7908,6 @@ semantics relation eval_slice(env: envs, s: slice) ->
     new_g := parallel(g1, g2);
   }
 
-  case scaled {
-    s =: Slice_Star(e_factor, e_length);
-    eval_expr(env, e_factor) -> ResultExpr(m_factor, env1);
-    (v_factor, g1) := m_factor;
-    eval_expr(env1, e_length) -> ResultExpr(m_length, new_env);
-    (v_length, g2) := m_length;
-    eval_binop(MUL, v_factor, v_length) -> v_start;
-    new_g := parallel(g1, g2);
-  }
   range := (v_start, v_length);
   range_and_graph := (range, new_g);
   --
@@ -8878,13 +8854,6 @@ typing function use_slice(s: slice) ->
     s =: Slice_Single(e);
     --
     use_expr(e);
-  }
-
-  case star {
-    s =: Slice_Star(e1, e2);
-    ids := union(use_expr(e1), use_expr(e2));
-    --
-    ids;
   }
 
   case length {
@@ -12895,15 +12864,6 @@ typing function slice_equal(tenv: static_envs, slice1: slice, slice2: slice) ->
   case length_exprs {
     slice1 =: Slice_Length(e1, e2);
     slice2 =: Slice_Length(e3, e4);
-    expr_equal(tenv, e1, e3) -> b1;
-    expr_equal(tenv, e2, e4) -> b2;
-    --
-    b1 && b2;
-  }
-
-  case star_exprs {
-    slice1 =: Slice_Star(e1, e2);
-    slice2 =: Slice_Star(e3, e4);
     expr_equal(tenv, e1, e3) -> b1;
     expr_equal(tenv, e2, e4) -> b2;
     --

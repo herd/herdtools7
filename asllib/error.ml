@@ -112,6 +112,7 @@ type error_desc =
   | UnexpectedCollection
   | BadPrimitiveArgument of identifier * string
   | NoEntryPoint
+  | ObsoleteSyntax of (Format.formatter -> unit)
 
 type error = error_desc annotated
 
@@ -222,6 +223,7 @@ let error_label = function
   | UnexpectedCollection -> "UnexpectedCollection"
   | BadPrimitiveArgument _ -> "BadPrimitiveArgument"
   | NoEntryPoint -> "NoEntryPoint"
+  | ObsoleteSyntax _ -> "ObsoleteSyntax"
 
 let warning_label = function
   | NoLoopLimit -> "NoLoopLimit"
@@ -617,6 +619,7 @@ module PPrint = struct
         pp_err dynamic "%a" pp_print_text
           "no entrypoint supplied. Have you defined `func main() => integer`, \
            or did you mean to pass `--no-exec`?"
+    | ObsoleteSyntax fmt -> pp_err parse "Obsolete syntax:@ @[%t@]" fmt
 
   let fprintf_warn f =
     kdprintf (fun msg -> fprintf f "@[ASL Warning:@ %t@]" msg)

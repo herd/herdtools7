@@ -21,11 +21,9 @@ bits |8:5|, which is a different order from their occurrence in \texttt{myData}.
 \hypertarget{def-singleslice}{}
 \hypertarget{def-rangeslice}{}
 \hypertarget{def-lengthslice}{}
-\hypertarget{def-scaledslice}{}
 We refer to a slice of the form \texttt{[$\ve$]} as a \singleslice,
 a slice of the form \texttt{[$\veone$:$\vetwo$]} as a \rangeslice,
-a slice of the form \texttt{[$\veone$+:$\vetwo$]} as a \lengthslice,
-and a slice of the form \texttt{[$\veone$*:$\vetwo$]} as a \scaledslice.
+and a slice of the form \texttt{[$\veone$+:$\vetwo$]} as a \lengthslice.
 
 \ChapterOutline
 \begin{itemize}
@@ -284,7 +282,7 @@ in \listingref{disjointslicestopositions} overlap, since they have $3$ in common
 \TypingRuleDef{BitfieldSliceToPositions}
 \RenderRelation{bitfield_slice_to_positions}
 
-The function assumes that AST nodes labelled with $\SliceSingle$, $\SliceRange$, and $\SliceStar$ have been reduced
+The function assumes that AST nodes labelled with $\SliceSingle$ and $\SliceRange$ have been reduced
 to $\SliceLength$ (via $\annotateslices$), and that all expressions in $\vslice$ are \pureterm{} and thus deterministic.
 
 \ExampleDef{Converting Bitfield Slices to Positions}
@@ -300,11 +298,9 @@ in \listingref{bitfieldslicetopositions}, followed by examples of erroneous slic
   \verb|4|    & $\some{\{4\}}$ \\
   \verb|3:0|  & $\some{\{0, 1, 2, 3\}}$\\
   \verb|5+:3| & $\some{\{5, 6, 7\}}$\\
-  \verb|3*:4| & $\some{\{12, 13, 14, 15\}}$\\
   \hline
   \verb|0:3|  & $\BadSlices$\\
   \verb|5+:0| & $\BadSlices$\\
-  \verb|4*:0| & $\BadSlices$\\
 \end{tabular}
 \end{center}
 \end{table}

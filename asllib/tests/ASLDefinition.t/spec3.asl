@@ -2,9 +2,9 @@ func Dot8{N}(a: bits(N), b: bits(N)) => bits(N)
 begin
     var n: integer = 0;
     for i = 0 to (N DIV 8) - 1 do
-        n = n + UInt(a[i*:8]) * UInt(b[i*:8]);
+        n = n + UInt(a[i* 8 +:8]) * UInt(b[i*8+:8]);
     end;
-    return n[:N];
+    return n[0+:N];
 end;
 
 var X: bits(16) = '1010 1111 0101 0000';

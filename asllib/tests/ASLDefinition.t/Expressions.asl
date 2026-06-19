@@ -25,6 +25,6 @@ begin
     var bv: bits(8);
 
     // Example of a bitvector slicing expression.
-    bv = Ones{10}[:8];
+    bv = Ones{10}[0+:8];
     return 0;
 end;
