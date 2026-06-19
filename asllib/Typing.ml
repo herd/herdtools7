@@ -34,7 +34,6 @@ let fatal_from ~loc = Error.fatal_from loc
 let undefined_identifier ~loc x =
   fatal_from ~loc (Error.UndefinedIdentifier (Static, x))
 
-let invalid_expr e = fatal_from ~loc:e (Error.InvalidExpr e)
 let add_pos_from ~loc = add_pos_from loc
 
 let conflict ~loc expected provided =
@@ -357,7 +356,6 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
             fatal_from ~loc
               (Error.MismatchedCallType
                  {
-                   error_handling_time = Static;
                    subprogram_name = name;
                    expected_call_type = call_type;
                    found_call_type = func_sig.subprogram_type;
@@ -1660,7 +1658,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           fatal_from ~loc
             (Error.MismatchedCallType
                {
-                 error_handling_time = Static;
                  subprogram_name = name;
                  expected_call_type = call_type;
                  found_call_type = func_sig.subprogram_type;
@@ -1694,7 +1691,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       fatal_from ~loc
         (MismatchedCallType
            {
-             error_handling_time = Static;
              subprogram_name = name;
              expected_call_type = call_type;
              found_call_type = callee.subprogram_type;
@@ -1848,7 +1844,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           fatal_from ~loc
             (Error.MismatchedCallType
                {
-                 error_handling_time = Static;
                  subprogram_name = name;
                  expected_call_type = call_type;
                  found_call_type = callee.subprogram_type;
@@ -2564,7 +2559,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   annotate_set_array ~loc:le env t t_e (le2, ses2, e_index)
                 in
                 (t, le3, ses3)
-            | _ -> invalid_expr (expr_of_lexpr le1))
+            | _ ->
+                let e = expr_of_lexpr le1 in
+                fatal_from ~loc:e (Error.InvalidExpr e))
         | _ -> conflict ~loc:le1 [ default_t_bits ] t_le1
         (* End *))
     | LE_SetField (le1, field) ->
