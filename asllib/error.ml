@@ -316,87 +316,7 @@ module ErrorCode = struct
     | BadSlices (Dynamic, _, _) -> None (* only used in Native.ml *)
 end
 
-let error_label = function
-  | ReservedIdentifier _ -> "ReservedIdentifier"
-  | BadField _ -> "BadField"
-  | BadPattern _ -> "BadPattern"
-  | MissingField _ -> "MissingField"
-  | BadSlices _ -> "BadSlices"
-  | BadSlice _ -> "BadSlice"
-  | EmptySlice -> "EmptySlice"
-  | TypeInferenceNeeded -> "TypeInferenceNeeded"
-  | UndefinedIdentifier _ -> "UndefinedIdentifier"
-  | MismatchedCallType _ -> "MismatchedCallType"
-  | BadArity _ -> "BadArity"
-  | BadParameterArity _ -> "BadParameterArity"
-  | UnsupportedBinop _ -> "UnsupportedBinop"
-  | UnsupportedUnop _ -> "UnsupportedUnop"
-  | UnsupportedExpr _ -> "UnsupportedExpr"
-  | UnsupportedTy _ -> "UnsupportedTy"
-  | InvalidExpr _ -> "InvalidExpr"
-  | MismatchType _ -> "MismatchType"
-  | ConflictingTypes _ -> "ConflictingTypes"
-  | AssertionFailed _ -> "AssertionFailed"
-  | CannotParse _ -> "CannotParse"
-  | UnknownSymbol _ -> "UnknownSymbol"
-  | NoCallCandidate _ -> "NoCallCandidate"
-  | BadTypesForBinop _ -> "BadTypesForBinop"
-  | ImpureExpression _ -> "ImpureExpression"
-  | MismatchedPurity _ -> "MismatchedPurity"
-  | UnreconcilableTypes _ -> "UnreconcilableTypes"
-  | AssignToImmutable _ -> "AssignToImmutable"
-  | AssignToTupleElement _ -> "AssignToTupleElement"
-  | AlreadyDeclaredIdentifier _ -> "AlreadyDeclaredIdentifier"
-  | BadReturnStmt _ -> "BadReturnStmt"
-  | UnexpectedSideEffect _ -> "UnexpectedSideEffect"
-  | UncaughtException _ -> "UncaughtException"
-  | OverlappingSlices _ -> "OverlappingSlices"
-  | BadLDI _ -> "BadLDI"
-  | BadRecursiveDecls _ -> "BadRecursiveDecls"
-  | UnrespectedParserInvariant -> "UnrespectedParserInvariant"
-  | BadATC _ -> "BadATC"
-  | ConstrainedIntegerExpected _ -> "ConstrainedIntegerExpected"
-  | ParameterWithoutDecl _ -> "ParameterWithoutDecl"
-  | BadParameterDecl _ -> "BadParameterDecl"
-  | BaseValueEmptyType _ -> "BaseValueEmptyType"
-  | ArbitraryEmptyType _ -> "ArbitraryEmptyType"
-  | BaseValueNonSymbolic _ -> "BaseValueNonSymbolic"
-  | SetterWithoutCorrespondingGetter _ -> "SetterWithoutCorrespondingGetter"
-  | NonReturningFunction _ -> "NonReturningFunction"
-  | NoreturnViolation _ -> "NoreturnViolation"
-  | UnreachableReached -> "UnreachableReached"
-  | LoopLimitReached -> "LoopLimitReached"
-  | RecursionLimitReached _ -> "RecursionLimitReached"
-  | EmptyConstraints -> "EmptyConstraints"
-  | UnexpectedPendingConstrained -> "UnexpectedPendingConstrained"
-  | BitfieldsDontAlign _ -> "BitfieldsDontAlign"
-  | ExpectedSingularType _ -> "ExpectedSingularType"
-  | ExpectedNamedType _ -> "ExpectedNamedType"
-  | ConflictingSideEffects _ -> "ConflictingSideEffects"
-  | ConstantTimeBroken _ -> "ConstantTimeBroken"
-  | MultipleWrites _ -> "MultipleWrites"
-  | UnexpectedInitialisationThrow _ -> "UnexpectedInitialisationThrow"
-  | NegativeArrayLength _ -> "NegativeArrayLength"
-  | MultipleImplementations _ -> "ClashingImplementations"
-  | NoOverrideCandidate -> "NoOverrideCandidate"
-  | TooManyOverrideCandidates _ -> "TooManyOverrideCandidates"
-  | PrecisionLostDefining -> "PrecisionLostDefining"
-  | UnexpectedCollection -> "UnexpectedCollection"
-  | BadPrimitiveArgument _ -> "BadPrimitiveArgument"
-  | NoEntryPoint -> "NoEntryPoint"
-  | ObsoleteSyntax _ -> "ObsoleteSyntax"
-
-let warning_label = function
-  | NoLoopLimit -> "NoLoopLimit"
-  | IntervalTooBigToBeExploded _ -> "IntervalTooBigToBeExploded"
-  | ConstraintSetPairToBigToBeExploded _ -> "ConstraintSetPairToBigToBeExploded"
-  | RemovingValuesFromConstraints _ -> "RemovingValuesFromConstraints"
-  | NoRecursionLimit _ -> "NoRecursionLimit"
-  | PragmaUse _ -> "PragmaUse"
-  | UnexpectedImplementation -> "UnexpectedImplementation"
-  | MissingOverride -> "MissingOverride"
-
-open struct
+module PrintContext = struct
   (* Straight out of stdlib v5.2 *)
   let with_open filename continuation =
     let chan = open_in filename in
@@ -834,7 +754,7 @@ module PPrint = struct
           "Missing `implementation` for `impdef` function."
 
   let pp_pos_begin f pos =
-    match display_error_context pos with
+    match PrintContext.display_error_context pos with
     | None when ASTUtils.is_dummy_pos pos -> ()
     | None -> fprintf f "@[<h>%a:@]@ " pp_pos pos
     | Some ctx -> fprintf f "@[<h>%a:@]@ %s@ " pp_pos pos ctx
@@ -856,37 +776,121 @@ end
 
 include PPrint
 
-let escape s =
-  let b = Buffer.create (String.length s) in
-  String.iter
-    (function
-      | '"' ->
-          Buffer.add_char b '"';
-          Buffer.add_char b '"'
-      | c -> Buffer.add_char b c)
-    s;
-  Buffer.contents b
+module CSV = struct
+  let error_label = function
+    | ReservedIdentifier _ -> "ReservedIdentifier"
+    | BadField _ -> "BadField"
+    | BadPattern _ -> "BadPattern"
+    | MissingField _ -> "MissingField"
+    | BadSlices _ -> "BadSlices"
+    | BadSlice _ -> "BadSlice"
+    | EmptySlice -> "EmptySlice"
+    | TypeInferenceNeeded -> "TypeInferenceNeeded"
+    | UndefinedIdentifier _ -> "UndefinedIdentifier"
+    | MismatchedCallType _ -> "MismatchedCallType"
+    | BadArity _ -> "BadArity"
+    | BadParameterArity _ -> "BadParameterArity"
+    | UnsupportedBinop _ -> "UnsupportedBinop"
+    | UnsupportedUnop _ -> "UnsupportedUnop"
+    | UnsupportedExpr _ -> "UnsupportedExpr"
+    | UnsupportedTy _ -> "UnsupportedTy"
+    | InvalidExpr _ -> "InvalidExpr"
+    | MismatchType _ -> "MismatchType"
+    | ConflictingTypes _ -> "ConflictingTypes"
+    | AssertionFailed _ -> "AssertionFailed"
+    | CannotParse _ -> "CannotParse"
+    | UnknownSymbol _ -> "UnknownSymbol"
+    | NoCallCandidate _ -> "NoCallCandidate"
+    | BadTypesForBinop _ -> "BadTypesForBinop"
+    | ImpureExpression _ -> "ImpureExpression"
+    | MismatchedPurity _ -> "MismatchedPurity"
+    | UnreconcilableTypes _ -> "UnreconcilableTypes"
+    | AssignToImmutable _ -> "AssignToImmutable"
+    | AssignToTupleElement _ -> "AssignToTupleElement"
+    | AlreadyDeclaredIdentifier _ -> "AlreadyDeclaredIdentifier"
+    | BadReturnStmt _ -> "BadReturnStmt"
+    | UnexpectedSideEffect _ -> "UnexpectedSideEffect"
+    | UncaughtException _ -> "UncaughtException"
+    | OverlappingSlices _ -> "OverlappingSlices"
+    | BadLDI _ -> "BadLDI"
+    | BadRecursiveDecls _ -> "BadRecursiveDecls"
+    | UnrespectedParserInvariant -> "UnrespectedParserInvariant"
+    | BadATC _ -> "BadATC"
+    | ConstrainedIntegerExpected _ -> "ConstrainedIntegerExpected"
+    | ParameterWithoutDecl _ -> "ParameterWithoutDecl"
+    | BadParameterDecl _ -> "BadParameterDecl"
+    | BaseValueEmptyType _ -> "BaseValueEmptyType"
+    | ArbitraryEmptyType _ -> "ArbitraryEmptyType"
+    | BaseValueNonSymbolic _ -> "BaseValueNonSymbolic"
+    | SetterWithoutCorrespondingGetter _ -> "SetterWithoutCorrespondingGetter"
+    | NonReturningFunction _ -> "NonReturningFunction"
+    | NoreturnViolation _ -> "NoreturnViolation"
+    | UnreachableReached -> "UnreachableReached"
+    | LoopLimitReached -> "LoopLimitReached"
+    | RecursionLimitReached _ -> "RecursionLimitReached"
+    | EmptyConstraints -> "EmptyConstraints"
+    | UnexpectedPendingConstrained -> "UnexpectedPendingConstrained"
+    | BitfieldsDontAlign _ -> "BitfieldsDontAlign"
+    | ExpectedSingularType _ -> "ExpectedSingularType"
+    | ExpectedNamedType _ -> "ExpectedNamedType"
+    | ConflictingSideEffects _ -> "ConflictingSideEffects"
+    | ConstantTimeBroken _ -> "ConstantTimeBroken"
+    | MultipleWrites _ -> "MultipleWrites"
+    | UnexpectedInitialisationThrow _ -> "UnexpectedInitialisationThrow"
+    | NegativeArrayLength _ -> "NegativeArrayLength"
+    | MultipleImplementations _ -> "ClashingImplementations"
+    | NoOverrideCandidate -> "NoOverrideCandidate"
+    | TooManyOverrideCandidates _ -> "TooManyOverrideCandidates"
+    | PrecisionLostDefining -> "PrecisionLostDefining"
+    | UnexpectedCollection -> "UnexpectedCollection"
+    | BadPrimitiveArgument _ -> "BadPrimitiveArgument"
+    | NoEntryPoint -> "NoEntryPoint"
 
-let pp_csv pp_desc label =
-  let pos_in_line pos = Lexing.(pos.pos_cnum - pos.pos_bol) in
-  fun f pos ->
-    Printf.fprintf f "\"%s\",%d,%d,%d,%d,%s,\"%s\""
-      (escape pos.pos_start.pos_fname)
-      pos.pos_start.pos_lnum
-      (pos_in_line pos.pos_start)
-      pos.pos_end.pos_lnum (pos_in_line pos.pos_end) (label pos.desc)
-      (desc_to_string_inf pp_desc pos |> escape)
+  let warning_label = function
+    | NoLoopLimit -> "NoLoopLimit"
+    | IntervalTooBigToBeExploded _ -> "IntervalTooBigToBeExploded"
+    | ConstraintSetPairToBigToBeExploded _ ->
+        "ConstraintSetPairToBigToBeExploded"
+    | RemovingValuesFromConstraints _ -> "RemovingValuesFromConstraints"
+    | NoRecursionLimit _ -> "NoRecursionLimit"
+    | PragmaUse _ -> "PragmaUse"
+    | UnexpectedImplementation -> "UnexpectedImplementation"
+    | MissingOverride -> "MissingOverride"
 
-let pp_error_csv f e = pp_csv pp_error_desc error_label f e
-let pp_warning_csv f w = pp_csv pp_warning_desc warning_label f w
+  let escape s =
+    let b = Buffer.create (String.length s) in
+    String.iter
+      (function
+        | '"' ->
+            Buffer.add_char b '"';
+            Buffer.add_char b '"'
+        | c -> Buffer.add_char b c)
+      s;
+    Buffer.contents b
 
-let pp_gnu pp_desc =
-  let pos_in_line pos = Lexing.(pos.pos_cnum - pos.pos_bol) in
-  fun f pos ->
-    Printf.fprintf f "aslref: %s:%d:%d: %s" pos.pos_start.pos_fname
-      pos.pos_start.pos_lnum
-      (pos_in_line pos.pos_start)
-      (desc_to_string_inf pp_desc pos)
+  let pp_csv pp_desc label =
+    let pos_in_line pos = Lexing.(pos.pos_cnum - pos.pos_bol) in
+    fun f pos ->
+      Printf.fprintf f "\"%s\",%d,%d,%d,%d,%s,\"%s\""
+        (escape pos.pos_start.pos_fname)
+        pos.pos_start.pos_lnum
+        (pos_in_line pos.pos_start)
+        pos.pos_end.pos_lnum (pos_in_line pos.pos_end) (label pos.desc)
+        (desc_to_string_inf pp_desc pos |> escape)
+
+  let pp_error f e = pp_csv pp_error_desc error_label f e
+  let pp_warning f w = pp_csv pp_warning_desc warning_label f w
+end
+
+module GNU = struct
+  let pp pp_desc =
+    let pos_in_line pos = Lexing.(pos.pos_cnum - pos.pos_bol) in
+    fun f pos ->
+      Printf.fprintf f "aslref: %s:%d:%d: %s" pos.pos_start.pos_fname
+        pos.pos_start.pos_lnum
+        (pos_in_line pos.pos_start)
+        (desc_to_string_inf pp_desc pos)
+end
 
 type output_format = HumanReadable | CSV | GNU
 
@@ -898,14 +902,14 @@ module ErrorPrinter (C : ERROR_PRINTER_CONFIG) = struct
   let eprintln e =
     match C.output_format with
     | HumanReadable -> Format.eprintf "@[<2>%a@]@." pp_error e
-    | CSV -> Printf.eprintf "%a\n" pp_error_csv e
-    | GNU -> Printf.eprintf "%a\n" (pp_gnu pp_error_desc) e
+    | CSV -> Printf.eprintf "%a\n" CSV.pp_error e
+    | GNU -> Printf.eprintf "%a\n" (GNU.pp pp_error_desc) e
 
   let warn w =
     match C.output_format with
     | HumanReadable -> Format.eprintf "@[<2>%a@]@." pp_warning w
-    | CSV -> Printf.eprintf "%a\n" pp_warning_csv w
-    | GNU -> Printf.eprintf "%a\n" (pp_gnu pp_warning_desc) w
+    | CSV -> Printf.eprintf "%a\n" CSV.pp_warning w
+    | GNU -> Printf.eprintf "%a\n" (GNU.pp pp_warning_desc) w
 
   let warn_from ~loc w = ASTUtils.add_pos_from loc w |> warn
 end
