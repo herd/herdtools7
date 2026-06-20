@@ -154,7 +154,12 @@ end) = struct
         Itimer.stop O.timeout ;
 (* Now output *)
         let time = Sys.time () -. start_time in
-        Format.printf "%a\n" (fun fmt () -> PP.pp_stats ~time test c fmt) ();
+        Format.printf "%a@." (fun fmt () -> PP.pp_stats ~time test c fmt) ();
+        if O.debug.Debug_herd.timers then
+          Format.printf "Timers: %a, %a, %a@."
+            O.Timer.pp O.Timer.run
+            O.Timer.pp O.Timer.semantics
+            O.Timer.pp O.Timer.model;
         do_show ();
         begin
           match TR.cutoff c with

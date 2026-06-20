@@ -1422,7 +1422,7 @@ yielding $\vnewslice$.
   \item \AllApplyCase{non\_single}
   \begin{itemize}
     \item $\vslice$ is a slice over two expression $\veone$ and $\vetwo$ with AST label \\
-          $S \in \{\SliceLength, \SliceRange, \SliceStar\}$;
+          $S \in \{\SliceLength, \SliceRange\}$;
     \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
     \item \Proserenamelocalsexpr{$\vetwo$}{$\vetwop$};
     \item \Proseeqdef{$\vnewslice$}{the slice with AST label $S$ over the two expressions $\veonep$ and $\vetwop$};
@@ -1440,7 +1440,7 @@ yielding $\vnewslice$.
 
 \begin{mathpar}
 \inferrule[non\_single]{
-  S \in \{\SliceLength, \SliceRange, \SliceStar\}
+  S \in \{\SliceLength, \SliceRange\}
   \renamelocalsexpr(\veone) \astarrow \veonep\\
   \renamelocalsexpr(\vetwo) \astarrow \vetwop\\
 }{

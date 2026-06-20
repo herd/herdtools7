@@ -130,6 +130,10 @@ let s_call call = S_Call { call with call_type = ST_Procedure }
 
 let le_var x = LE_Var x.desc |> add_pos_from x
 
+let obsolete_elided_parameter_call =
+  Error.ObsoleteSyntax (fun fmt ->
+    Format.pp_print_string fmt
+      "Deprecated elided parameter call syntax, pass parameters explicitly.")
 %}
 
 (* ------------------------------------------------------------------------- *)
@@ -380,8 +384,27 @@ let slice :=
   | ~=expr;                       < Slice_Single  >
   | e1=expr; COLON; e2=expr;      < Slice_Range   >
   | e1=expr; PLUS_COLON; e2=expr; < Slice_Length  >
-  | loc=annotated(COLON); e=expr; { Slice_Length(zero ~loc, e) }
-  | e1=expr; STAR_COLON; e2=expr; < Slice_Star    >
+  | loc=annotated(COLON); e=expr;
+  {
+    if Config.version_eac1 then Slice_Length(zero ~loc, e)
+    else
+    let msg fmt =
+        Format.fprintf fmt "Deprecated slice syntax, use \"0 +: %a\" instead." PP.pp_expr e
+      in
+      Error.fatal_here $startpos $endpos @@
+      Error.ObsoleteSyntax msg
+  }
+  | e1=expr; STAR_COLON; e2=expr;
+  {
+    if Config.version_eac1 then Slice_Star(e1, e2)
+    else
+      let msg fmt =
+        Format.fprintf fmt "Deprecated slice syntax, use \"%a*%a +: %a\" instead."
+          PP.pp_expr e1 PP.pp_expr e2 PP.pp_expr e2
+      in
+      Error.fatal_here $startpos $endpos @@
+      Error.ObsoleteSyntax msg
+  }
 
 (* Bitfields *)
 let bitfields_opt := { [] } | bitfields
@@ -618,9 +641,19 @@ let call :=
     { { name; params; args; call_type = ST_Function } }
 let elided_param_call :=
   | name=IDENTIFIER; LBRACE; RBRACE; args=opt_call_args;
-    { { name; params=[]; args; call_type = ST_Function } }
+    {
+      if Config.version_eac1 then { name; params=[]; args; call_type = ST_Function }
+      else
+        Error.fatal_here $startpos $endpos @@
+        obsolete_elided_parameter_call
+    }
   | name=IDENTIFIER; LBRACE; COMMA; params=clist1(expr); RBRACE; args=opt_call_args;
-    { { name; params; args; call_type = ST_Function } }
+    {
+      if Config.version_eac1 then { name; params; args; call_type = ST_Function }
+      else
+        Error.fatal_here $startpos $endpos @@
+        obsolete_elided_parameter_call
+    }
 let func_args := plist0(typed_identifier)
 let func_body == delimited(BEGIN, stmt_list, end_semicolon)
 let recurse_limit := ioption(RECURSELIMIT; expr)

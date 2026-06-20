@@ -112,14 +112,7 @@ Examples used in ASL High-level Definition:
   ASL Type error: cannot assign to the (immutable) tuple value x.
   [1]
 
-  $ aslref ParameterElision.asl
-  $ aslref ParameterElision.bad.asl
-  File ParameterElision.bad.asl, line 13, characters 25 to 35:
-      var foo : bits(64) = X(data, n);
-                           ^^^^^^^^^^
-  ASL Static error: Arity error while calling 'X':
-    1 parameters expected and 0 provided
-  [1]
+  $ aslref ParameterOmission.asl
   $ aslref ParameterOmission.bad.asl
   File ParameterOmission.bad.asl, line 6, characters 17 to 18:
       result = LSL{}(result, 3);
@@ -207,7 +200,6 @@ Examples used in ASL High-level Definition:
   $ aslref --no-exec GlobalStorageDeclarations.asl
   $ aslref --no-exec IR.asl
   $ aslref Bit.asl
-  $ aslref PrefixSlice.asl
   $ aslref --no-exec GuideRule.NoEmptyBody.asl
   $ aslref ParenthesizedTypes.asl
   $ aslref EmptyTuple.asl

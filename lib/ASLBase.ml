@@ -207,7 +207,7 @@ let memoize f =
         r
 
 let parser_config =
-  Asllib.Builder.{ v0_use_split_chunks = true }
+  Asllib.Builder.{ v0_use_split_chunks = true; version_eac1 = true }
 
 let do_build_ast_from_file ?ast_type version fname =
   match Asllib.Builder.from_file_multi_version ?ast_type ~parser_config version fname with
@@ -226,7 +226,7 @@ let asl_generic_parser version lexer lexbuf =
 let stmts_from_string s =
   let open Asllib in
   let lexbuf = Lexing.from_string s in
-  let module Parser = Parser.Make(struct end) in
+  let module Parser = Parser.Make(struct let version_eac1 = true end) in
   let module Lexer = Lexer.Make(struct end) in
   try Parser.stmts Lexer.token lexbuf
   with e ->

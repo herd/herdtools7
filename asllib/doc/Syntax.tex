@@ -300,8 +300,6 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Tconfig \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Ntyorcollection \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Nasty \parsesep \Tsemicolon &\\
-|\ & \Nglobaldeclkeyword \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty &\\
-   & \wrappedline\ \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tpragma \parsesep \Tidentifier \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon&
 \end{flalign*}
 
@@ -354,15 +352,6 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
      & \Tidentifier \parsesep \PlistZero{\Nexpr} &\\
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \ClistOne{\Nexpr} \parsesep \Trbrace &\\
   |\ & \Tidentifier \parsesep \Tlbrace \parsesep \ClistOne{\Nexpr} \parsesep \Trbrace \parsesep \PlistZero{\Nexpr} &
-\end{flalign*}
-
-\hypertarget{def-nelidedparamcall}{}
-\begin{flalign*}
-\Nelidedparamcall \derives \
-     & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace &\\
-  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Trbrace \parsesep \PlistZero{\Nexpr} &\\
-  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \ClistOne{\Nexpr} \parsesep \Trbrace &\\
-  |\ & \Tidentifier \parsesep \Tlbrace \parsesep \Tcomma \parsesep \ClistOne{\Nexpr} \parsesep \Trbrace \parsesep \PlistZero{\Nexpr}&
 \end{flalign*}
 
 \hypertarget{def-nfuncargs}{}
@@ -483,7 +472,6 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 |\ & \Ncall \parsesep \Nsetteraccess \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Nsetteraccess \parsesep \Nslices \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Ncall \parsesep \Tdot \parsesep \Tlbracket \parsesep \Clisttwo{{\Tidentifier}} \parsesep \Trbracket \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
-|\ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Teq \parsesep \Nelidedparamcall \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Ndeclitem \parsesep \Nasty \parsesep \Tsemicolon &\\
 |\ & \Tvar \parsesep \Clisttwo{\Tidentifier} \parsesep \Nasty \parsesep \Tsemicolon &\\
 |\ & \Tprint \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon &\\
@@ -640,9 +628,7 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 \begin{flalign*}
 \Nslice \derives \ & \Nexpr &\\
               |\  & \Nexpr \parsesep \Tcolon \parsesep \Nexpr &\\
-              |\  & \Nexpr \parsesep \Tpluscolon \parsesep \Nexpr &\\
-              |\  & \Nexpr \parsesep \Tstarcolon \parsesep \Nexpr &\\
-              |\  & \Tcolon \parsesep \Nexpr &
+              |\  & \Nexpr \parsesep \Tpluscolon \parsesep \Nexpr &
 \end{flalign*}
 
 \hypertarget{def-nbitfields}{}

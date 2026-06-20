@@ -96,9 +96,11 @@ let keyword_list = [
   "ldpsw", LDPSW;
   "ldnp", LDNP;
   "ldiapp", LDIAPP;
+  "ldap", LDAP;
   "stp", STP;
   "stnp", STNP;
   "stilp", STILP;
+  "stlp", STLP;
   "ldrb", LDRB;
   "ldrh", LDRH;
   "ldrsb", LDRSB;

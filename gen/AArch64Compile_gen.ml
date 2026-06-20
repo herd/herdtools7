@@ -1461,8 +1461,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let load ar (r1,r2) rA =
         let a =
           match ar with
-          | Pair (Pa,_),None -> XP
-          | Pair (PaI,_),None -> AXP
+          | Pair ((`Pa),_),None -> XP
+          | Pair ((`PaIQ),_),None -> AXP
+          | Pair ((`PaA),_),None -> AXP
           | _ ->
              Warn.fatal
                "Illegal %s annotaton on load exclusive pair" (pp_atom ar)  in
@@ -1476,8 +1477,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let store aw r (r1,r2) rA =
         let a =
           match aw with
-          | Pair (Pa,_),_ -> YY
-          | Pair (PaI,_),_ -> LY
+          | Pair ((`Pa),_),_ -> YY
+          | Pair ((`PaIL),_),_ -> LY
+          | Pair ((`PaL),_),_ -> LY
           | _ ->
              Warn.fatal
                "Illegal %s annotaton on store exclusive pair" (pp_atom aw)  in
@@ -1695,7 +1697,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          | _ -> LDN.emit_load n
        in
        emit_load
-    | Code.Pair -> emit_ldp Pa UnspecLoc
+    | Code.Pair -> emit_ldp (`Pa) UnspecLoc
 
 
     let emit_obs_not_value = OBS.emit_load_not_value
@@ -1858,7 +1860,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             Some r,init,cs,st
         | R,Some (Neon _,Some _) -> assert false
         | R,Some (Pair (opt,idx),None) ->
-          let r,init,cs,st = emit_ldp opt idx st p init loc in
+          let r,init,cs,st = emit_ldp (pair_opt_to_ld opt) idx st p init loc in
           Some r,init,cs,st
         | R,Some (Pair _,Some _) -> assert false
         | W,None ->
@@ -1899,8 +1901,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let init,cs,st = STG.emit_store st p init e in
             None,init,cs,st
         | W,Some (Pair (opt,idx),None) ->
-            let init,cs,st = emit_stp opt idx st p init loc e in
-            None,init,cs,st
+          let init,cs,st = emit_stp (pair_opt_to_st opt) idx st p init loc e in
+          None,init,cs,st
         | W,Some (Pair _,Some _) -> assert false
         | (R|W), Some (Instr, _) -> Warn.fatal "Instr annotation did not create code location %s" (C.debug_evt e)
         | R,Some (Pte (Read|ReadAcq|ReadAcqPc as rk),None) ->
@@ -2356,7 +2358,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               Some rB,init,pseudo cs0@cs,st
           | R,Some (Pair (opt,idx),None) ->
               let r,init,cs,st =
-                emit_ldp_idx_var opt idx vdep st p init loc r2 in
+                emit_ldp_idx_var (pair_opt_to_ld opt) idx vdep st p init loc r2 in
               Some r,init, pseudo cs0@cs,st
           | R,Some ((Neon _|Pair _),Some _) -> assert false
           | W,None ->
@@ -2439,9 +2441,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               None,init,pseudo cs0@cs,st
           | W,Some (Pair (opt,idx),None) ->
               let init,cs,st =
-                emit_stp_idx_var opt idx vdep st p init loc e r2 in
+                emit_stp_idx_var (pair_opt_to_st opt) idx vdep st p init loc e r2 in
               None,init, pseudo cs0@cs,st
-          | W,Some (Pair _,_) -> assert false
+          | W,Some (Pair _,Some _) -> assert false
           | (W,(Some (Pte (Set _),None))) ->
               let init,cs,st =
                 emit_set_pteval_idx false vdep r2 st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
@@ -2713,7 +2715,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              None,init,cs2@cs,st
           | Some (Neon _,Some _) -> assert false
           | Some (Pair (opt,idx),None) ->
-             let init,cs,st = stp_emit_store_reg opt idx st p init loc r2 in
+             let init,cs,st = stp_emit_store_reg (pair_opt_to_st opt) idx st p init loc r2 in
              None,init,cs2@cs,st
           | Some (Pair _,Some _) -> assert false
           end

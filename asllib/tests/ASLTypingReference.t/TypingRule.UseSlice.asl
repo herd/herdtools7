@@ -7,6 +7,5 @@ begin
     - = bv[FIVE]; // { Other(FIVE) }
     - = bv[SEVEN  : FIVE]; // { Other(FIVE), Other(SEVEN) }
     - = bv[SEVEN +: FIVE]; // { Other(FIVE), Other(SEVEN) }
-    - = bv[SEVEN *: FIVE]; // { Other(FIVE), Other(SEVEN) }
     return 0;
 end;

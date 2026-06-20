@@ -1,0 +1,15 @@
+AArch64 Y006
+{
+ uint64_t x=0;
+ uint64_t y[2]={0,0};
+ 0:X0=x; 0:X1=y;
+ 1:X0=y; 1:X2=x;
+ uint64_t 1:X3; uint64_t 1:X4;
+}
+ P0              | P1              ;
+ MOV X2,#1       | LDAP X3,X4,[X0] ;
+ STR X2,[X0]     | LDR X5,[X2]     ;
+ MOV X3,#1       |                 ;
+ MOV X4,#99      |                 ;
+ STLP X3,X4,[X1] |                 ;
+exists (1:X3=1 /\ 1:X4=99 /\ 1:X5=0)

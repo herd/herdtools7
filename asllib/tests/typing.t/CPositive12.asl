@@ -20,7 +20,7 @@ end;
 func ExtendReg{N : ElementSize}(reg : Rnum_X, exttype : ExtendType, shift : integer{0..4}) => bits(N)
 begin
     assert shift >= 0 && shift <= 4;
-    let val : bits(N) = X{}(reg);
+    let val : bits(N) = X{N}(reg);
     var unsigned : boolean;
     var len : ElementSize;
 

@@ -199,8 +199,8 @@ TO_CLEANUP += all-registers-notice.html all_system_registers.asl $(SYSREGS_NAME)
 
 # To turn these options on, use on the make command line:
 # USE_ARRAY_VARIABLES=--use-array-variables NO_REGISTER_VARIABLE_PREFIX=--no-register-variable-prefix
-USE_ARRAY_VARIABLES := 
-NO_REGISTER_VARIABLE_PREFIX := 
+USE_ARRAY_VARIABLES :=
+NO_REGISTER_VARIABLE_PREFIX :=
 
 all_system_registers.asl: $(SYSREGS_NAME)
 	@ cp $^/xhtml/notice.html $(@D)/all-registers-notice.html
@@ -234,7 +234,7 @@ ASLREF := aslref
 
 .PHONY: type-check
 type-check: $(FEATURES_OFILE) all_system_registers.asl all_instructions.asl shared_pseudocode.asl type-checking-implementations.asl pmu_event_types.asl trbmpam_el1.asl
-	$(ASLREF) --no-exec $^
+	$(ASLREF) --no-exec --version-eac1 $^
 
 
 # Ensure that the content of .INTERMEDIATE is empty

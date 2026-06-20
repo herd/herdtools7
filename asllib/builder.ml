@@ -27,10 +27,11 @@ let _debug = false
 type token = Tokens.token
 type ast_type = [ `Opn | `Ast ]
 type version = [ `ASLv0 | `ASLv1 ]
-type parser_config = { v0_use_split_chunks : bool }
+type parser_config = { v0_use_split_chunks : bool; version_eac1 : bool }
 type version_selector = [ `ASLv0 | `ASLv1 | `Any ]
 
-let default_parser_config = { v0_use_split_chunks = false }
+let default_parser_config =
+  { v0_use_split_chunks = false; version_eac1 = false }
 
 let select_type ~opn ~ast = function
   | Some `Opn -> opn
@@ -60,7 +61,9 @@ let from_lexbuf ast_type parser_config version (lexbuf : lexbuf) =
   in
   match version with
   | `ASLv1 -> (
-      let module Parser = Parser.Make (struct end) in
+      let module Parser = Parser.Make (struct
+        let version_eac1 = parser_config.version_eac1
+      end) in
       let module Lexer = Lexer.Make (struct end) in
       let parse = select_type ~opn:Parser.opn ~ast:Parser.spec ast_type in
       try parse Lexer.token lexbuf with
