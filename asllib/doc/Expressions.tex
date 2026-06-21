@@ -720,7 +720,7 @@ constructs a call expression AST from a parse tree for a subprogram call.
 \ASTRuleDef{ECall}
 \begin{mathpar}
 \inferrule{
-  \buildcall(\vcall) \astarrow \astversion{\vcall} \OrBuildError\hva
+  \buildcall(\vcall) \astarrow \astversion{\vcall} \OrBuildError
 }{
   \buildexpr(\overname{\Nexpr(\namednode{\vcall}{\Ncall})}{\vparsednode}) \astarrow
   \overname{\ECall(\astof{\vcall})}{\vastnode}

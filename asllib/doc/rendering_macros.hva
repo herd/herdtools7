@@ -28,6 +28,12 @@
 % Rule, no optional argument for \render
 \newcommand{\DefineRule}[2]{\def\csname RenderRule@#1\endcsname{#2}}
 \newcommand{\RenderRule}[1]{\csname RenderRule@#1\endcsname}
-% Relation, no optinal argument either
+% Relation, no optional argument either
 \newcommand{\DefineRelation}[2]{\def\csname RenderRelation@#1\endcsname{#2}}
 \newcommand{\RenderRelation}[1]{\csname RenderRelation@#1\endcsname}
+% Prose, no optional argument either
+\newcommand{\DefineProse}[2]{\def\csname RenderProse@#1\endcsname{#2}}
+\newcommand{\RenderProse}[1]{\csname RenderProse@#1\endcsname}
+% HeVeA does not provide e-TeX's \detokenize. The generated render names are
+% already token-safe enough for lookup here.
+\newcommand{\detokenize}[1]{#1}
