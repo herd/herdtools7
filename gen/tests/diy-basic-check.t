@@ -128,6 +128,84 @@ A memtag generation test with `Variant` duplicated in metadata, because of (1) `
    STG X6,[X3]       |                  ;
   
   exists ([tag(y)]=:blue /\ 0:X0=x:green /\ 1:X0=0 /\ not (fault(P1:L00,y)))
+A memtag `LxSx` oneloc comparison test
+  $ diyone7 -arch AArch64 -variant memtag -oneloc T PosWR LxSx Coi
+  AArch64 CoWW+postp-rmw-coipt
+  Variant=memtag
+  Generator=diyone7 (version 7.58+1)
+  Com=Co
+  Orig=PosWRTP LxSx CoiPT
+  "PosWRTP LxSx CoiPT"
+  {
+   0:X0=x:red; 0:X1=x:green;
+  }
+   P0                ;
+   STG X0,[X1]       ;
+   MOV W3,#1         ;
+   Loop00:           ;
+   L00: LDXR W2,[X1] ;
+   STXR W4,W3,[X1]   ;
+   CBNZ W4,Loop00    ;
+  
+  exists (0:X2=0 /\ not (fault(P0:L00,x)))
+
+  $ diyone7 -arch AArch64 -variant memtag,store-only -oneloc T PosWR LxSx Coi
+  AArch64 CoWW+postp-rmw-coipt
+  Variant=memtag store-only
+  Generator=diyone7 (version 7.58+1)
+  Com=Co
+  Orig=PosWRTP LxSx CoiPT
+  "PosWRTP LxSx CoiPT"
+  {
+   0:X0=x:red; 0:X1=x:green;
+  }
+   P0                   ;
+   STG X0,[X1]          ;
+   MOV W3,#1            ;
+   Loop00:              ;
+   LDXR W2,[X1]         ;
+   L00: STXR W4,W3,[X1] ;
+   CBNZ W4,Loop00       ;
+  
+  exists (0:X2=0 /\ not (fault(P0:L00,x)))
+
+A memtag `PosRW` oneloc comparison test
+  $ diyone7 -arch AArch64 -variant memtag -oneloc T PosWR PosRW Coi
+  AArch64 CoWW+posRtp-pos-coipt
+  Variant=memtag
+  Generator=diyone7 (version 7.58+1)
+  Com=Co
+  Orig=PosWRTP PosRW CoiPT
+  "PosWRTP PosRW CoiPT"
+  {
+   0:X0=x:red; 0:X1=x:green;
+  }
+   P0               ;
+   STG X0,[X1]      ;
+   L01: LDR W2,[X0] ;
+   MOV W3,#1        ;
+   L00: STR W3,[X1] ;
+  
+  exists (0:X2=1 /\ not (fault(P0:L00,x)) /\ not (fault(P0:L01,x)))
+
+  $ diyone7 -arch AArch64 -variant memtag,store-only -oneloc T PosWR PosRW Coi
+  AArch64 CoWW+posRtp-pos-coipt
+  Variant=memtag store-only
+  Generator=diyone7 (version 7.58+1)
+  Com=Co
+  Orig=PosWRTP PosRW CoiPT
+  "PosWRTP PosRW CoiPT"
+  {
+   0:X0=x:red; 0:X1=x:green;
+  }
+   P0               ;
+   STG X0,[X1]      ;
+   LDR W2,[X0]      ;
+   MOV W3,#1        ;
+   L00: STR W3,[X1] ;
+  
+  exists (0:X2=1 /\ not (fault(P0:L00,x)))
+
 An ifetch generation test
   $ diyone7 -arch AArch64 -variant ifetch CacheSyncStrongIsbdWRPI FreIP PodWR Fre
   AArch64 SB+cachesyncstrongisbpi+po
