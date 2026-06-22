@@ -21,10 +21,17 @@ ASLReference.pdf: generated_spec *.tex *.bib
 	fi
 	python3 doclint.py --console_macros --aslref $(ASLREF)
 
+html: generated_spec *.tex *.bib *.hva
+	mkdir -p HTML
+	hevea -fix0 -O -o HTML/ASL.html book.hva macros.hva ASLReference.tex
+	bibhva HTML/ASL
+	hevea -fix -O -o HTML/ASL.html book.hva macros.hva ASLReference.tex
+	cd HTML && hacha ASL.html
+
 generated_spec: asl.spec
 	dune exec -- aslspec asl.spec --render;
 
-.PHONY: clean
+.PHONY: html clean
 clean:
 	/bin/rm -f $(PDFS)
 	/bin/rm -f $(GENERATED_MACROS_TEX)
@@ -32,3 +39,4 @@ clean:
 	/bin/rm -f $(CONTROLS)
 	/bin/rm -f comment.cut
 	/bin/rm -f *.blg *.bbl *.out *.dvi *.synctex.gz
+	/bin/rm -rf HTML

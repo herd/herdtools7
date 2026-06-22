@@ -79,7 +79,7 @@ jobs:
       - name: Build ASL Reference in HTML
         run: |
           cd asllib/doc
-          opam exec -- ./zyva.sh
+          opam exec -- make html
 
       - name: Upload HTML
         uses: actions/upload-artifact@v4
