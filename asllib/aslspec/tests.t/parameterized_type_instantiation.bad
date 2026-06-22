@@ -1,0 +1,13 @@
+typedef Int;
+
+typedef Tree[[T]] =
+  | Leaf(value: T)
+;
+
+typing relation make_leaf(x: Int) -> (Tree[[Int]])
+{
+  prose_transition = ""
+} =
+  --
+  Leaf(x);
+;

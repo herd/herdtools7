@@ -47,7 +47,11 @@
   $ aslspec instantiation_recursion.bad
   Specification Error: instantiation_recursion.bad:9:11: Unable to determine that `B` is subsumed by `A`
   [1]
+  $ aslspec parameterized_type_instantiation.bad
+  Specification Error: parameterized_type_instantiation.bad:12:3: Unable to determine that `Leaf(Int)` is subsumed by `Leaf(value: T)`
+  [1]
   $ aslspec relation_unnamed_arguments.bad
   Specification Error: relation_unnamed_arguments.bad:6:38: The term Num in relation unnamed_arg_has_rule does not provide a name for at least one of its sub-terms.
   [1]
   $ aslspec constants.spec
+  $ aslspec parameterized_types.spec

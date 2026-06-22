@@ -54,10 +54,13 @@ let rec pp_type_term fmt =
   let open Term in
   function
   | Label { label } -> pp_print_string fmt label
+  | Parameter { name } -> pp_print_string fmt name
   | TypeOperator { op; term } ->
       fprintf fmt "%s(%a)"
         (type_operator_to_token op |> tok_str)
         pp_opt_named_type_term term
+  | ParamType { typename; term } ->
+      fprintf fmt "%s[[%a]]" typename pp_opt_named_type_term term
   | Tuple { label_opt; args } ->
       fprintf fmt "%s(%a)"
         (Option.value label_opt ~default:"")
@@ -219,13 +222,18 @@ let type_kind_to_string =
   let open Term in
   function TypeKind_Generic -> tok_str TYPEDEF | TypeKind_AST -> tok_str AST
 
-let pp_type_definition fmt ({ Type.name; type_kind; variants } as def) =
-  let eq_str = if Utils.list_is_empty variants then "" else " = " in
-  fprintf fmt "%s %s@.%a@.%s@,@[<v>  %a@]@,;"
-    (type_kind_to_string type_kind)
-    name pp_attribute_key_values
+let pp_type_parameter fmt = function
+  | Some param -> fprintf fmt "[[%s]]" param
+  | None -> ()
+
+let pp_type_definition fmt def =
+  let open Type in
+  let eq_str = if Utils.list_is_empty def.variants then "" else " = " in
+  fprintf fmt "%s %s%a@.%a@.%s@,@[<v>  %a@]@,;"
+    (type_kind_to_string def.type_kind)
+    def.name pp_type_parameter def.param_opt pp_attribute_key_values
     (Type.attributes_to_list def)
-    eq_str pp_variants_with_attributes variants
+    eq_str pp_variants_with_attributes def.variants
 
 let pp_constant_definition fmt
     ({ Constant.name; opt_type; opt_value_and_attributes } as def) =

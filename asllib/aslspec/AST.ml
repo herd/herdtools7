@@ -211,6 +211,10 @@ module Term = struct
     | Label of { loc : source_location; label : string }
         (** Either a set containing the single value named by the given string
             or a reference to a type with the given name. *)
+    | Parameter of { loc : source_location; name : string }
+        (** A named type parameter. The parser constructs an instance of
+            [Label], which is later substituted by an instance of [Parameter] in
+            [SubstituteTypeParameters]. *)
     | TypeOperator of {
         loc : source_location;
         op : type_operator;
@@ -218,6 +222,22 @@ module Term = struct
       }
         (** A set containing all types formed by applying the type operator [op]
             to the type given by [term]. *)
+    | ParamType of {
+        loc : source_location;
+        typename : string;
+        term : opt_named_type_term;
+      }
+        (** A set containing all types formed by instantiating the parameterized
+            type [typename] with the parameter [term]. For example, if we have
+            {[
+              typedef Tree[[T]] =
+              | Leaf(value: T)
+              | Node(left: Tree[[T]], right: Tree[[T]])
+
+              relation walk_tree(x: Tree[[Z]]) -> list0(Z) = ...
+            ]}
+            then {[ Tree[[Z]] ]} is represented by a [ParamType] with [typename] =
+            "Tree" and [term] represented by the type parameter [Z]. *)
     | Tuple of {
         loc : source_location;
         label_opt : string option;
@@ -263,7 +283,9 @@ module Term = struct
   let loc_of term =
     match term with
     | Label { loc }
+    | Parameter { loc }
     | TypeOperator { loc }
+    | ParamType { loc }
     | Tuple { loc }
     | Record { loc }
     | Function { loc }
@@ -277,6 +299,8 @@ module Term = struct
   (** [make_type_operation loc op term] constructs a type term in which [op] is
       applied to [term] at source location [loc]. *)
   let make_type_operation loc op term = TypeOperator { loc; op; term }
+
+  let make_param_type loc typename term = ParamType { loc; typename; term }
 
   (** [make_tuple loc args] constructs an unlabelled tuple with arguments [args]
       at source location [loc]. *)
@@ -544,6 +568,7 @@ module Type : sig
   type t = {
     loc : source_location;
     name : string;
+    param_opt : string option;
     type_kind : Term.type_kind;
     variants : TypeVariant.t list;
     att : Attributes.t;
@@ -551,10 +576,11 @@ module Type : sig
 
   val make :
     source_location ->
-    Term.type_kind ->
-    string ->
-    TypeVariant.t list ->
-    attribute_pairs ->
+    type_kind:Term.type_kind ->
+    name:string ->
+    param_opt:string option ->
+    variants:TypeVariant.t list ->
+    attribute_pairs:attribute_pairs ->
     t
 
   val attributes_to_list : t -> attribute_pairs
@@ -568,12 +594,13 @@ end = struct
   type t = {
     loc : source_location;
     name : string;
+    param_opt : string option;
     type_kind : Term.type_kind;
     variants : TypeVariant.t list;
     att : Attributes.t;
   }
 
-  let make loc type_kind name variants attribute_pairs =
+  let make loc ~type_kind ~name ~param_opt ~variants ~attribute_pairs =
     (* The [type_kind] of the variants is the [type_kind] given above. *)
     let variants_with_parent_type_kind =
       List.map
@@ -586,6 +613,7 @@ end = struct
       loc;
       type_kind;
       name;
+      param_opt;
       variants = variants_with_parent_type_kind;
       att = Attributes.of_list attribute_pairs;
     }
