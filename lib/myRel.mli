@@ -43,7 +43,9 @@ module type S = sig
   val cardinal : t -> int
 
   val iter : ((elt1 * elt2) -> unit) -> t -> unit
+  val iter_succs : (elt1 -> Elts2.t -> unit) -> t -> unit
   val fold : ((elt1 * elt2) -> 'a -> 'a) -> t -> 'a -> 'a
+  val fold_succs : (elt1 -> Elts2.t -> 'a -> 'a) -> t -> 'a -> 'a
   val exists :  ((elt1 * elt2) -> bool) -> t -> bool
   val for_all :  ((elt1 * elt2) -> bool) -> t -> bool
   val to_seq : t -> (elt1 * elt2) Seq.t

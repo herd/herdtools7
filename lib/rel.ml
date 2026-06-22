@@ -109,10 +109,14 @@ and module Es2 = MySet.Make(O2)
     let iter f m =
       M.iter (fun x ys ->  Elts2.iter (fun y -> f (x,y)) ys) m
 
+    let iter_succs = M.iter
+
     let fold f m k =
       M.fold
         (fun x ys k -> Elts2.fold (fun y k -> f (x,y) k) ys k)
         m k
+
+    let fold_succs = M.fold
 
     let exists p m =
       M.exists (fun x ys -> Elts2.exists (fun y -> p (x,y)) ys) m

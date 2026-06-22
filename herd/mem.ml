@@ -2547,6 +2547,17 @@ let add_eq v1 v2 eqs =
                   then
                     (* Atomic load/store pairs *)
                     let atomic_load_store = make_atomic_load_store test es in
+                    let () =
+                      if dbg then
+                        E.EventRel.iter_succs
+                          (fun _er ews ->
+                             if E.EventSet.cardinal ews <> 1 then begin
+                               let module PP = Pretty.Make(S) in
+                               eprintf "Non-affine rmw relation!\n%!" ;
+                               PP.show_es_rfm test es S.RFMap.empty ;
+                               Warn.fatal "Non-affine rmw relation!"
+                             end)
+                          atomic_load_store in
                     if
                       C.variant Variant.OptRfRMW
                       && some_same_rf_rmw rfm atomic_load_store
