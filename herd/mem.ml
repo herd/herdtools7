@@ -140,7 +140,7 @@ module type S = sig
     S.E.event -> S.E.A.location
 
   val make_atomic_load_store :
-    S.E.event_structure -> S.E.EventRel.t
+    S.test -> S.E.event_structure -> S.E.EventRel.t
 
 end
 
@@ -1911,11 +1911,11 @@ let add_eq v1 v2 eqs =
 (*
  * Reconstruct load/store atomic pairs,
  *   By definition such a pair exists when the
- * store precedes the load in generalised program order
+ * load precedes the store in generalised program order
  * (_i.e._ the union of program order and of iico), and
  * that there is no atomic effect to the same location
  * in-between (w.r.t generalised po) the load and the store.
- *   Computation proceeds as follows:
+ *   Computation for explicit accesses proceeds as follows:
  *   First, atomic events are grouped first by thread
  * and then by location. Then, to each atomic load, we
  * associate the closest generalised po successor store,
@@ -1925,15 +1925,25 @@ let add_eq v1 v2 eqs =
  * to use a set of all atomic events (by a given thread and
  * with a given location) ordered by po because some atomic loads
  * may be unrelated.
- *   Finally, such atomic pairs can be spurious, that is not performed
- * by a specific thread. In that case, pairs are given
- * simply by the intra causality data relation.
+ *   Finally, the computation is simpler for non-explicit such atomic
+ * pairs. In that case, pairs are given simply by the intra causality
+ * data relation. Namely, those pairs all stem from the atomic modification
+ * of page table entries.
  *)
 
-    let make_atomic_load_store es =
-      let atms,spurious = U.collect_atomics es in
+    let make_atomic_load_store _test es =
+      let atms,nexps = U.collect_atomics es in
+
       let module StoreSet = EvtSetByPo(struct let es = es end) in
-      let make_atomic_pairs es k =
+
+      let make_atomic_pairs_nexp evts =
+        let rs,ws = List.partition E.is_load evts in
+        let rs = E.EventSet.of_list rs
+        and ws = E.EventSet.of_list ws in
+        E.EventRel.restrict_domains_to_sets
+             rs ws es.E.intra_causality_data
+
+      and make_atomic_pairs es k =
         let rs,ws = List.partition E.is_load es in
         let ws = StoreSet.of_list ws
         and intervening_read er ew =
@@ -1958,23 +1968,10 @@ let add_eq v1 v2 eqs =
         List.map
           (fun (_,m) ->
            U.LocEnv.fold
-             (fun _loc es k ->
-                let exps,nexps = List.partition E.is_explicit es in
-                make_atomic_pairs exps @@ make_atomic_pairs nexps k)
+             (fun _loc exps k -> make_atomic_pairs exps k)
              m E.EventRel.empty)
         atms |> E.EventRel.unions
-      and r2 =
-        let iico = es.E.intra_causality_data in
-        List.map
-          (fun e ->
-             if E.is_load e then
-               match
-                 E.EventRel.succs iico e |> E.EventSet.as_singleton
-               with
-               | None -> assert false (* spurious updates are by pairs *)
-               | Some w -> E.EventRel.singleton (e,w)
-             else E.EventRel.empty)
-          spurious |> E.EventRel.unions in
+      and r2 = make_atomic_pairs_nexp nexps in
       E.EventRel.union r1 r2
 
 (* Retrieve last store from rfmap *)
@@ -2549,7 +2546,7 @@ let add_eq v1 v2 eqs =
                     | OptAce.True -> check_rfmap es rfm
                   then
                     (* Atomic load/store pairs *)
-                    let atomic_load_store = make_atomic_load_store es in
+                    let atomic_load_store = make_atomic_load_store test es in
                     if
                       C.variant Variant.OptRfRMW
                       && some_same_rf_rmw rfm atomic_load_store
