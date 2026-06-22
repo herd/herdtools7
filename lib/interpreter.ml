@@ -276,7 +276,9 @@ module Make
         | Empty | Unv
         | Pair of (S.event * S.event)
         | Rel of S.event_rel
-        | TransRel of S.event_rel (** Implicitly transitive relation *)
+        (** Implicitly transitive relation:
+            [TransRel (r,s,_)] represents [r+|s].  *)
+        | TransRel of S.event_rel * S.event_rel * S.event_rel Lazy.t
         | ClassRel of ClassRel.t
         | Event of S.event
         | Set of S.event_set
@@ -310,7 +312,7 @@ module Make
         | Empty | Unv
         | Pair of (S.event * S.event)
         | Rel of S.event_rel
-        | TransRel of S.event_rel
+        | TransRel of S.event_rel * S.event_rel * S.event_rel Lazy.t
         | ClassRel of ClassRel.t
         | Event of S.event
         | Set of S.event_set
@@ -340,7 +342,7 @@ module Make
         | V.Empty -> TEmpty
         | Unv -> assert false (* Discarded before *)
         | Pair _ -> TPair
-        | Rel _ | TransRel _ -> TRel
+        | Rel _|TransRel _ -> TRel
         | ClassRel _ -> TClassRel
         | Event _ -> TEvent
         | Set _ -> TEvents
@@ -442,12 +444,12 @@ module Make
       | ClassRel r -> debug_class_rel chan r
       | v -> fprintf chan "%s" (pp_val v)
 
-(* lift a tag to a singleton set *)
+    (* lift a tag to a singleton set *)
     let tag2set v = match v with
-    | V.Tag (t,_) -> ValSet (TTag t,ValSet.singleton v)
-    | _ -> v
+      | V.Tag (t,_) -> ValSet (TTag t,ValSet.singleton v)
+      | _ -> v
 
-(* extract lists from tuples *)
+    (* extract lists from tuples *)
     let pat_as_vars = function
       | Pvar x -> [x]
       | Ptuple xs -> xs
@@ -692,7 +694,7 @@ module Make
 
     let as_rel ks = function
       | Rel r -> r
-      | TransRel tr -> E.EventRel.transitive_closure tr
+      | TransRel (_,_,r) -> Lazy.force r
       | Empty -> E.EventRel.empty
       | Unv -> Lazy.force ks.unv
       | v ->
@@ -734,9 +736,12 @@ module Make
         | (_,V.Empty)|(Unv,_) -> stabilised vs ws
 (* Relation *)
         | (V.Empty,Rel w) -> E.EventRel.is_empty w && stabilised vs ws
-        | (Rel v,Unv) ->
+        | (V.Empty,TransRel (t,s,_)) ->
+            E.EventRel.(is_empty t && is_empty s) && stabilised vs ws
+        | ((Rel v|TransRel (_,_,lazy v)),Unv) ->
             E.EventRel.subrel (Lazy.force ks.unv) v && stabilised vs ws
-        | Rel v,Rel w ->
+        | (Rel v|TransRel (_,_,lazy v)),
+          (Rel w|TransRel (_,_,lazy w)) ->
             E.EventRel.subrel w v && stabilised vs ws
 (* Class relation *)
         | (V.Empty,ClassRel w) -> ClassRel.is_empty w && stabilised vs ws
@@ -799,22 +804,30 @@ module Make
 
 
 (* Tests are polymorphic, acting on relations, class relations and sets *)
-    let test2pred env t e v = match t,v with
-    | (Acyclic,(Rel r|TransRel r))
-    | (Irreflexive,TransRel r)  -> E.EventRel.is_acyclic r
+    let test2pred loc env t e v = match t,v with
+    | Acyclic,Rel r ->  E.EventRel.is_acyclic r
+    | Acyclic,TransRel (r,s,_) -> E.EventRel.(is_acyclic @@ union r s)
+    | Irreflexive,TransRel (_,_,r) when Lazy.is_val r ->
+        Lazy.force r |> E.EventRel.is_irreflexive
+    | Irreflexive,TransRel (r,s,_)  ->
+        if _dbg then
+          Printf.eprintf "%a: irreflexive -> transitive!\n%!" TxtLoc.pp loc ;
+        E.EventRel.(is_acyclic @@ union r s)
     | Acyclic,ClassRel r -> ClassRel.is_acyclic r
     | Irreflexive,Rel r -> E.EventRel.is_irreflexive r
     | Irreflexive,ClassRel r -> ClassRel.is_irreflexive r
-    | TestEmpty,(Rel r|TransRel r) -> E.EventRel.is_empty r
+    | TestEmpty,Rel r -> E.EventRel.is_empty r
+    | TestEmpty,TransRel (r,s,_) ->
+        E.EventRel.(is_empty r && is_empty s)
     | TestEmpty,ClassRel r -> ClassRel.is_empty r
     | TestEmpty,Set s -> E.EventSet.is_empty s
     | (Acyclic|Irreflexive),Set _ ->
         error env.EV.silent (get_loc e) "relation expected"
     | _,_ -> assert false (* Called on Rel or Set *)
 
-    let test2pred  env t e v = match  t with
-    | Yes t -> test2pred env t e v
-    | No t -> not (test2pred env t e v)
+    let test2pred loc env t e v = match  t with
+    | Yes t -> test2pred loc env t e v
+    | No t -> not (test2pred loc env t e v)
 
 
 (********************************)
@@ -849,15 +862,6 @@ module Make
         | x::xs -> x::s_rec xs in
       s_rec
 
-(* Union is polymorphic *)
-    let union_args =
-      let rec u_rec = function
-        | [] -> []
-        | (_,V.Empty)::xs -> u_rec xs
-        | (_,Unv)::_ -> raise Exit
-        | (loc,v)::xs ->
-            (loc,tag2set v)::u_rec xs in
-      u_rec
 
 (* Definition of primitives *)
 
@@ -1120,13 +1124,19 @@ module Make
     and domain arg = match arg with
     | V.Empty ->  V.Empty
     | V.Unv -> V.Unv
-    | V.Rel r|V.TransRel r -> V.Set (E.EventRel.domain r)
+    | V.Rel r -> V.Set (E.EventRel.domain r)
+    | V.TransRel (r,s,_) ->
+        V.Set (E.EventSet.union (E.EventRel.domain r) (E.EventRel.domain s))
     | _ -> arg_mismatch ()
 
     and range arg = match arg with
     | V.Empty ->  V.Empty
     | V.Unv -> V.Unv
-    | V.Rel r|V.TransRel r -> V.Set (E.EventRel.codomain r)
+    | V.Rel r -> V.Set (E.EventRel.codomain r)
+    | V.TransRel (r,s,_) ->
+        V.Set
+          (E.EventSet.union
+             (E.EventRel.codomain r) (E.EventRel.codomain s))
     | _ -> arg_mismatch ()
 
     and fail arg =
@@ -1140,9 +1150,8 @@ module Make
       | V.Rel r ->
           let r = E.EventRel.restrict_rel different_val r in
           V.Rel r
-      | V.TransRel tr ->
-          let r = E.EventRel.transitive_closure tr in
-          let r = E.EventRel.restrict_rel different_val r in
+      | V.TransRel (_,_,r) ->
+          let r = E.EventRel.restrict_rel different_val (Lazy.force r) in
           V.Rel r
       | _ -> arg_mismatch ()
 
@@ -1150,10 +1159,10 @@ module Make
       match arg with
       | V.Rel r ->
           V.Rel (E.EventRel.restrict_rel U.same_oa r)
-      | V.TransRel tr ->
+      | V.TransRel (_,_,r) ->
           V.Rel
             E.EventRel.
-              (restrict_rel U.same_oa @@ transitive_closure tr)
+              (restrict_rel U.same_oa @@ Lazy.force r)
       | _ -> arg_mismatch ()
 
     and check_two pred arg = match arg with
@@ -1161,7 +1170,7 @@ module Make
           let m =
             match prec with
             | V.Rel m -> m
-            | V.TransRel m -> E.EventRel.transitive_closure m
+            | V.TransRel (_,_,m) -> Lazy.force m
             | _ -> assert false
           in
           let ws =
@@ -1181,9 +1190,13 @@ module Make
     let oa_changes = check_two (fun w p -> not (U.same_oa w p))
     and at_least_one_writable = check_two U.writable2
 
+    let mk_transrel r =
+      let open E.EventRel in
+      V.TransRel (r,empty,lazy (transitive_closure r))
+
     let as_transitive =
       function
-      | V.Rel r -> V.TransRel r
+      | V.Rel r -> mk_transrel r
       | V.TransRel _ as v -> v
       | _ -> arg_mismatch ()
 
@@ -1251,25 +1264,20 @@ module Make
       | OpAnd (v1,v2) -> (eval_variant_cond loc v1) && (eval_variant_cond loc v2)
       | OpOr (v1,v2) -> (eval_variant_cond loc v1) || (eval_variant_cond loc v2)
 
+    let union_transrel r t s th =
+      let open E.EventRel in
+      TransRel (t,union r s,lazy (union r @@ Lazy.force th))
+
 (* For all success call kont, accumulating results *)
     let interpret test kfail =
 
-      let rec eval_loc accept_implicit env e = get_loc e,eval accept_implicit env e
-      and eval_ord_loc  env e = eval_loc false env e
+      let rec eval_loc env e = get_loc e,eval env e
 
       and check_id env e = match e with
       | Op1 (_,ToId,e) -> Some (eval_events_mem env e)
       | _ -> None
 
-      and eval_ord env e = eval false env e
-
-      (*  The boolean argument `accept_implicit` signals
-       *  that implicitly transitive
-       *  relations are accepted as a result
-       *  in place of a relation.
-      *)
-
-      and eval accept_implicit env = profile_exp @@ function
+      and eval env = profile_exp @@ function
         | Konst (_,AST.Empty SET) -> V.Empty (* Polymorphic empty *)
         | Konst (_,AST.Empty RLN) -> empty_rel
         | Konst (_,Universe _) -> Unv
@@ -1284,52 +1292,55 @@ module Make
         | Fun (loc,xs,body,name,fvs) ->
             Clo (eval_fun false env loc xs body name fvs)
 (* Unary operators *)
-        | Op1 (_,Plus,e) ->
-            begin match eval true env e with
+        | Op1 (loc,Plus,e) ->
+            begin match eval env e with
             | V.Empty -> V.Empty
             | Unv -> Unv
-            | Rel r when accept_implicit -> TransRel r
-            | Rel r -> Rel (E.EventRel.transitive_closure r)
-            | TransRel _ as v -> v
+            | Rel r -> mk_transrel r
+            | TransRel (t,s,_) as v ->
+                if _dbg then
+                  Printf.printf "%a: spare a transitive closure\n%!"
+                    TxtLoc.pp loc ;
+                let open E.EventRel in
+                if is_empty s then v
+                else mk_transrel @@ union t s
             | v -> error_rel env.EV.silent (get_loc e) v
             end
         | Op1 (_,Star,e) ->
-            begin match eval accept_implicit env e with
+            begin match eval env e with
             | V.Empty -> Rel (Lazy.force env.EV.ks.id)
             | Unv -> Unv
             | Rel r ->
-                let ids = Lazy.force env.EV.ks.id in
-                if accept_implicit then TransRel (E.EventRel.union r ids)
-                else
-                  let tr = E.EventRel.transitive_closure r in
-                  Rel (E.EventRel.union tr ids)
-            | TransRel r ->
-                TransRel
-                  E.EventRel.(union r (Lazy.force env.EV.ks.id))
+                let id = Lazy.force env.EV.ks.id in
+                let open E.EventRel in
+                TransRel (r,id,lazy (union id @@ transitive_closure r) )
+            | TransRel (r,s,th) ->
+                let id = Lazy.force env.EV.ks.id in
+                union_transrel id r s th
             | v -> error_rel env.EV.silent (get_loc e) v
             end
         | Op1 (_,Opt,e) ->
-            begin match eval accept_implicit env e with
+            begin match eval env e with
             | V.Empty -> Rel (Lazy.force env.EV.ks.id)
             | Unv -> Unv
             | Rel r ->
                 Rel (E.EventRel.union r (Lazy.force env.EV.ks.id))
-            | TransRel r ->
-                TransRel
-                  E.EventRel.(union r (Lazy.force env.EV.ks.id))
+            | TransRel (r,s,th) ->
+                let id = Lazy.force env.EV.ks.id in
+                union_transrel id r s th
             | v -> error_rel env.EV.silent (get_loc e) v
             end
         | Op1 (_,Comp,e) -> (* Back to polymorphism *)
-            begin match eval_ord env e with
+            begin match eval env e with
             | V.Empty -> Unv
             | Unv -> V.Empty
             | Set s ->
                 Set (E.EventSet.diff env.EV.ks.evts s)
             | Rel r ->
                 Rel (E.EventRel.diff (Lazy.force env.EV.ks.unv) r)
-            | TransRel tr ->
-                Rel (E.EventRel.diff (Lazy.force env.EV.ks.unv)
-                       (E.EventRel.transitive_closure tr))
+            | TransRel (_,_,r) ->
+                Rel
+                  (E.EventRel.diff (Lazy.force env.EV.ks.unv) (Lazy.force r))
             | ValSet (TTag ts as t,s) ->
                 ValSet (t,ValSet.diff (tags_universe env.EV.env ts) s)
             | v ->
@@ -1338,17 +1349,20 @@ module Make
                   (pp_typ (type_val v))
             end
         | Op1 (_,Inv,e) ->
-            begin match eval accept_implicit env e with
+            begin match eval env e with
             | V.Empty -> V.Empty
             | Unv -> Unv
             | Rel r -> Rel (E.EventRel.inverse r)
-            | TransRel r -> TransRel (E.EventRel.inverse r)
+            | TransRel (r,s,th) ->
+                let open E.EventRel in
+                let r = inverse r and s = inverse s  in
+                TransRel (r,s,Lazy.map inverse th)
             | ClassRel r -> ClassRel (ClassRel.inverse r)
             | Pair (v1,v2) -> Pair (v2,v1)
             | v -> error_rel env.EV.silent (get_loc e) v
             end
         | Op1 (_,ToId,e) ->
-            begin match eval_ord env e with
+            begin match eval env e with
             | V.Empty -> V.Empty
             | Unv -> Rel (Lazy.force env.EV.ks.id)
             | Set s -> Rel (E.EventRel.set_to_rln s)
@@ -1356,7 +1370,7 @@ module Make
             end
 (* One xplicit N-ary operator *)
         | ExplicitSet (loc,es) ->
-            let vs = List.map (eval_ord_loc env) es in
+            let vs = List.map (eval_loc env) es in
             let vs = set_args env.EV.silent vs in
             begin match vs with
             | [] -> V.Empty
@@ -1381,32 +1395,61 @@ module Make
             end
 (* Tuple is an actual N-ary operator *)
         | Op (_loc,AST.Tuple,es) ->
-            V.Tuple (List.map (eval accept_implicit env) es)
+            V.Tuple (List.map (eval env) es)
 (* N-ary operators, those associative binary operators are optimized *)
         | Op (loc,Union,es) ->
-            let vs = List.map (eval_loc false env) es in
-            begin try
-              let vs = union_args vs in
-              match vs with
-              | [] -> V.Empty
-              | _ ->
-                  let t,vs = type_list env.EV.silent vs in
-                  match t with
-                  | TClassRel ->
-                      ClassRel(ClassRel.unions (List.map as_classrel vs))
-                  | TRel ->
-                      Rel
-                        (E.EventRel.unions
-                           (List.map (as_rel env.EV.ks) vs))
-                  | TEvents ->
-                      Set (E.EventSet.unions (List.map (as_set env.EV.ks) vs))
-                  | TSet telt ->
-                      ValSet (telt,ValSet.unions (List.map as_valset vs))
-                  | ty ->
-                      error env.EV.silent loc
-                        "cannot perform union on type '%s'" (pp_typ ty)
-            with Exit -> Unv end
-
+            begin
+              try
+                let vs = (* Union being AC, order is irrelevant *)
+                  List.fold_left
+                    (fun vs e ->
+                       match eval_loc env e with
+                       | (_,V.Empty) -> vs
+                       | (_,Unv) -> raise Exit
+                       | (loc,v) -> (loc,tag2set v)::vs)
+                    [] es in
+                match vs with
+                | [] -> V.Empty
+                | _ ->
+                    let t,vs = type_list env.EV.silent vs in
+                    match t with
+                    | TRel ->
+                        let rs,trs =
+                          List.fold_left
+                            (fun (rs,trs) v ->
+                               match v with
+                               | TransRel (t,s,_) ->
+                                   let ts,ss = trs in
+                                   rs,(t::ts,s::ss)
+                               | Rel r ->  r::rs,trs
+                               | _ -> assert false)
+                            ([],([],[]))
+                            vs in
+                        begin
+                          let open E.EventRel in
+                          let r = unions rs in
+                          match trs with
+                          | ([],_) -> Rel r
+                          | (ts,ss) ->
+                              let t = unions ts
+                              and s = union r (unions ss) in
+                              let th =
+                                lazy (union (transitive_closure t) s) in
+                              TransRel (t,s,th)
+                        end
+                    | TClassRel ->
+                        ClassRel(ClassRel.unions (List.rev_map as_classrel vs))
+                    | TEvents ->
+                        Set
+                          (E.EventSet.unions
+                             (List.rev_map (as_set env.EV.ks) vs))
+                    | TSet telt ->
+                        ValSet (telt,ValSet.unions (List.map as_valset vs))
+                    | ty ->
+                        error env.EV.silent loc
+                          "cannot perform union on type '%s'" (pp_typ ty)
+              with Exit -> Unv
+            end
         | Op (loc,Seq,es) ->
             begin try
               let seq2 v1 v2 =
@@ -1434,7 +1477,7 @@ module Make
                      * yields smaller intermediate data-structure.
                      * For instance, it is more efficient to evaluate
                      * `[s1];r;[s2]` as  `([s1];r);[s2]`
-                     * than as `[s2];(r;[s2])`.
+                     * than as `[s1 ];(r;[s2])`.
                      *)
                     List.fold_left seq2 (eval_rels env v) vs in
               match do_seq es with
@@ -1459,21 +1502,22 @@ module Make
           ->
            eval_diff env loc e1 e2
         | Op (loc,Inter,[e1;e2;]) -> (* Binary notation kept in parser *)
-            let loc1,v1 = eval_loc true env e1
-            and loc2,v2 = eval_loc true env e2 in
+            let loc1,v1 = eval_loc env e1
+            and loc2,v2 = eval_loc env e2 in
             begin match tag2set v1,tag2set v2 with
             | (V.Tag _,_)|(_,V.Tag _) -> assert false
             | Rel r1,Rel r2 -> Rel (E.EventRel.inter r1 r2)
-            | TransRel r1, TransRel r2 ->
-                let r1 = E.EventRel.transitive_closure r1
-                and r2 = E.EventRel.transitive_closure r2 in
-                Rel (E.EventRel.inter r1 r2)
-            | (Rel r, TransRel tr)
-            | (TransRel tr, Rel r) ->
+            | TransRel (_,_,r1),TransRel (_,_,r2) ->
+                Rel (E.EventRel.inter (Lazy.force r1) (Lazy.force r2))
+            | (Rel r1, TransRel (t2,s2,_))
+            | (TransRel (t2,s2,_), Rel r1) ->
                 let r =
-                  E.EventRel.restrict_rel
-                    (fun e1 e2 -> E.EventRel.exists_path (e1,e2) tr)
-                    r in
+                  let open E.EventRel in
+                  restrict_rel
+                    (fun e1 e2 ->
+                       let p = e1,e2 in
+                       mem p s2 || exists_path p t2)
+                    r1 in
                 Rel r
             | ClassRel r1,ClassRel r2 -> ClassRel (ClassRel.inter r1 r2)
             | Set s1,Set s2 -> Set (E.EventSet.inter s1 s2)
@@ -1508,8 +1552,8 @@ module Make
             and s2 = eval_events env e2 in
             Rel (E.EventRel.cartesian s1 s2)
         | Op (loc,Add,[e1;e2;]) ->
-            let v1 = eval_ord env e1
-            and v2 = eval_ord env e2 in
+            let v1 = eval env e1
+            and v2 = eval env e2 in
             begin match v1,v2 with
             | V.Unv,_ -> error env.EV.silent loc "universe in set ++"
             | _,V.Unv -> V.Unv
@@ -1525,9 +1569,11 @@ module Make
                 Rel (E.EventRel.add p r)
             | Tuple [Event ev1;Event ev2;],Rel r ->
                 Rel (E.EventRel.add (ev1,ev2) r)
-            | Tuple [ Event ev1; Event ev2 ], TransRel r ->
-                Rel (E.EventRel.(add (ev1, ev2) @@ transitive_closure r))
-            | _,(Rel _ | TransRel _) ->
+            | Pair p,TransRel (r,s,th) ->
+                union_transrel (E.EventRel.singleton p) r s th
+            | Tuple [Event ev1; Event ev2],TransRel (r,s,th) ->
+                union_transrel (E.EventRel.singleton (ev1,ev2)) r s th
+            | _,(Rel _|TransRel _) ->
                 error env.EV.silent (get_loc e1)
                   "this expression of type '%s' should be a pair"
                   (pp_typ (type_val v2))
@@ -1551,10 +1597,10 @@ module Make
         | Op (_,(Diff|Inter|Cartesian|Add),_) -> assert false (* By parsing *)
 (* Application/bindings *)
         | App (loc,f,e) ->
-            eval_app loc accept_implicit env (eval_ord env f) (eval_ord env e)
+            eval_app loc env (eval env f) (eval env e)
         | Bind (_,bds,e) ->
             let m = eval_bds env bds in
-            eval accept_implicit { env with EV.env = m;} e
+            eval { env with EV.env = m;} e
         | BindRec (loc,bds,e) ->
             let m =
               match env_rec (fun _ -> true)
@@ -1562,21 +1608,21 @@ module Make
               with
               | CheckOk env -> env
               | CheckFailed _ -> assert false (* No check in expr binding *) in
-            eval accept_implicit { env with EV.env=m;} e
+            eval { env with EV.env=m;} e
         | Match (loc,e,cls,d) ->
-            let v = eval_ord env e in
+            let v = eval env e in
             begin match v with
             | V.Tag (_,s) ->
                 let rec match_rec = function
                   | [] ->
                       begin match d with
-                      | Some e -> eval accept_implicit env e
+                      | Some e -> eval env e
                       | None ->
                           error env.EV.silent
                             loc "pattern matching failed on value '%s'" s
                       end
                   | (ps,es)::cls ->
-                      if s = ps then eval accept_implicit env es
+                      if s = ps then eval env es
                       else match_rec cls in
                 match_rec cls
             | V.Empty ->
@@ -1589,14 +1635,14 @@ module Make
                   (pp_typ (type_val v))
             end
         | MatchSet (loc,e,ife,cl) ->
-            let v = eval_ord env e in
+            let v = eval env e in
             begin match v with
-            | V.Empty -> eval accept_implicit env ife
+            | V.Empty -> eval env ife
             | V.Unv ->
                 error env.EV.silent loc
                   "%s" "Cannot set-match on universe"
             | Set es ->
-                if E.EventSet.is_empty es then eval_ord env ife
+                if E.EventSet.is_empty es then eval env ife
                 else begin match cl with
                 | EltRem (x,xs,ex) ->
                     let elt =
@@ -1612,7 +1658,7 @@ module Make
                     let m = env.EV.env in
                     let m = add_val x elt m in
                     let m = add_val xs s m in
-                    eval_ord { env with EV.env = m; } ex
+                    eval { env with EV.env = m; } ex
                 | PreEltPost (xs1,x,xs2,ex) ->
                     let s1,elt,s2 =
                       try E.EventSet.split3 es with Not_found -> assert false in
@@ -1620,10 +1666,10 @@ module Make
                     let m = add_val x (lazy (Event elt)) m in
                     let m = add_val xs1 (lazy (Set s1)) m in
                     let m = add_val xs2 (lazy (Set s2)) m in
-                    eval_ord { env with EV.env = m; } ex
+                    eval { env with EV.env = m; } ex
                 end
             | Rel r ->
-                if E.EventRel.is_empty r then eval accept_implicit env ife
+                if E.EventRel.is_empty r then eval env ife
                 else begin match cl with
                 | EltRem (x,xs,ex) ->
                     let p =
@@ -1639,7 +1685,7 @@ module Make
                     let m = env.EV.env in
                     let m = add_val x p m in
                     let m = add_val xs s m in
-                    eval accept_implicit { env with EV.env = m; } ex
+                    eval { env with EV.env = m; } ex
                 | PreEltPost (xs1,x,xs2,ex) ->
                     let s1,elt,s2 =
                       try E.EventRel.split3 r with Not_found -> assert false in
@@ -1647,10 +1693,10 @@ module Make
                     let m = add_val x (lazy (Pair elt)) m in
                     let m = add_val xs1 (lazy (Rel s1)) m in
                     let m = add_val xs2 (lazy (Rel s2)) m in
-                    eval accept_implicit { env with EV.env = m; } ex
+                    eval { env with EV.env = m; } ex
                 end
             | ValSet (t,s) ->
-                if ValSet.is_empty s then eval accept_implicit env ife
+                if ValSet.is_empty s then eval env ife
                 else begin match cl with
                 | EltRem (x,xs,ex) ->
                     let elt =
@@ -1667,7 +1713,7 @@ module Make
                     let m = env.EV.env in
                     let m = add_val x elt m in
                     let m = add_val xs s m in
-                    eval accept_implicit { env with EV.env = m; } ex
+                    eval { env with EV.env = m; } ex
                 | PreEltPost (xs1,x,xs2,ex) ->
                     let s1,elt,s2 =
                       try ValSet.split3 s with Not_found -> assert false in
@@ -1675,7 +1721,7 @@ module Make
                     let m = add_val x (lazy elt) m in
                     let m = add_val xs1 (lazy (ValSet (t,s1))) m in
                     let m = add_val xs2 (lazy (ValSet (t,s2))) m in
-                    eval accept_implicit { env with EV.env = m; } ex
+                    eval { env with EV.env = m; } ex
                 end
             | _ ->
                 error env.EV.silent
@@ -1684,44 +1730,46 @@ module Make
             end
         | Try (loc,e1,e2) ->
             begin
-              try eval accept_implicit { env with EV.silent = true; } e1
+              try eval { env with EV.silent = true; } e1
               with Misc.Exit ->
                 if O.debug then warn loc "caught failure" ;
-                eval accept_implicit env e2
+                eval env e2
             end
         | If (loc,cond,ifso,ifnot) ->
-            if eval_cond loc env cond then eval accept_implicit env ifso
-            else eval accept_implicit env ifnot
+            if eval_cond loc env cond then eval env ifso
+            else eval env ifnot
 
       and eval_diff env loc e1 e2 =
-        let loc1,v1 = eval_ord_loc env e1
-        and loc2,v2 = eval_ord_loc env e2 in
+        let loc1,v1 = eval_loc env e1
+        and loc2,v2 = eval_loc env e2 in
         match tag2set v1,tag2set v2 with
         | (V.Tag _,_)|(_,V.Tag _) -> assert false
         | Rel r1,Rel r2 -> Rel (E.EventRel.diff r1 r2)
-        | TransRel r1,TransRel r2 ->
+        | TransRel (_,_,r1),TransRel (_,_,r2) ->
             Rel
               E.EventRel.
                 (diff
-                   (transitive_closure r1)
-                   (transitive_closure r2))
-        | Rel m1,TransRel m2 ->
+                   (Lazy.force r1)
+                   (Lazy.force r2))
+        | Rel m1,TransRel (r2,s2,_) ->
             Rel
               E.EventRel.
                 (restrict_rel
-                   (fun e1 e2 -> not (exists_path (e1,e2) m2)) m1)
-        | TransRel r1,Rel r2 ->
-            Rel E.EventRel.(diff (transitive_closure r1) r2)
+                   (fun e1 e2 ->
+                      let p = e1,e2 in
+                      not (mem p s2 || exists_path p r2)) m1)
+        | TransRel (_,_,r1),Rel r2 ->
+            Rel E.EventRel.(diff (Lazy.force r1) r2)
         | ClassRel r1,ClassRel r2 -> ClassRel (ClassRel.diff r1 r2)
         | Set s1,Set s2 -> Set (E.EventSet.diff s1 s2)
         | ValSet (t,s1),ValSet (_,s2) ->
             set_op env loc t ValSet.diff s1 s2
         | Unv,Rel r -> Rel (E.EventRel.diff (Lazy.force env.EV.ks.unv) r)
-        | Unv,TransRel r ->
+        | Unv,TransRel (_,_,r) ->
             Rel
               E.EventRel.
                 (diff
-                   (Lazy.force env.EV.ks.unv) (transitive_closure r))
+                   (Lazy.force env.EV.ks.unv) (Lazy.force r))
         | Unv,Set s -> Set (E.EventSet.diff env.EV.ks.evts s)
         | Unv,ValSet (TTag ts as t,s) ->
            ValSet (t,ValSet.diff (tags_universe env.EV.env ts) s)
@@ -1756,7 +1804,7 @@ module Make
 
       and eval_cond loc env c = match c with
       | In (e1,e2) ->
-          let loc1,v1 = eval_ord_loc env e1 in
+          let loc1,v1 = eval_loc env e1 in
           begin match v1 with
           | Event e ->
               let v2 = eval_events env e2 in
@@ -1768,7 +1816,7 @@ module Make
               let v2 = eval_rel env e2 in
               E.EventRel.mem (ev1,ev2) v2
           | _ ->
-              begin match eval_ord_loc env e2 with
+              begin match eval_loc env e2 with
               | _,ValSet (t2,vs) ->
                   let t1 = V.type_val v1 in
                   if type_equal t1 t2 then ValSet.mem v1 vs
@@ -1779,12 +1827,12 @@ module Make
               end
           end
       | Eq (e1,e2) ->
-          let v1 = eval_ord env e1
-          and v2 = eval_ord env e2 in
+          let v1 = eval env e1
+          and v2 = eval env e2 in
           ValOrder.compare v1 v2 = 0
       | Subset(e1,e2) -> (*ici*)
-          let v1 = eval_ord_loc env e1
-          and v2 = eval_ord_loc env e2 in
+          let v1 = eval_loc env e1
+          and v2 = eval_loc env e2 in
           let t,_ = type_list env.EV.silent [v1;v2] in
           let _,a' = v1
           and _,b' = v2 in
@@ -1799,20 +1847,20 @@ module Make
                 "cannot perform subset on type '%s'" (pp_typ ty) end
       | VariantCond v -> eval_variant_cond loc v
 
-      and eval_app loc accept_implicit env vf va = match vf with
+      and eval_app loc env vf va = match vf with
       | Clo f ->
           let env =
             { env with
               EV.env=add_args loc f.clo_args va env f.clo_env;} in
           if O.debug then begin try
-            eval accept_implicit env f.clo_body
+            eval env f.clo_body
           with
           |  Misc.Exit ->
               error env.EV.silent loc "Calling"
           | e ->
               error env.EV.silent loc "Calling (%s)" (Printexc.to_string e)
           end else
-            eval accept_implicit env f.clo_body
+            eval env f.clo_body
       | Prim (name,_,f) ->
           begin try f va with
           | PrimError msg ->
@@ -1854,9 +1902,9 @@ module Make
             bds env_clo in
         env_call
 
-      and eval_rel env e =  match eval_ord env e with
+      and eval_rel env e =  match eval env e with
       | Rel v -> v
-      | TransRel v -> E.EventRel.transitive_closure v
+      | TransRel (_,_,v) -> Lazy.force v
       | Pair p -> E.EventRel.singleton p
       | V.Empty -> E.EventRel.empty
       | Unv -> Lazy.force env.EV.ks.unv
@@ -1864,24 +1912,24 @@ module Make
 
       and eval_rels env e =  match check_id env e with
       | Some es -> Rid es
-      | None -> match eval_ord env e with
+      | None -> match eval env e with
         | Rel v -> Revent v
-        | TransRel v ->  Revent (E.EventRel.transitive_closure v)
+        | TransRel (_,_,v) -> Revent (Lazy.force v)
         | ClassRel v -> Rclass v
         | Pair p -> Revent (E.EventRel.singleton p)
         | V.Empty -> raise Exit
         | Unv -> Revent (Lazy.force env.EV.ks.unv)
         | v -> error_rel env.EV.silent (get_loc e) v
 
-      and eval_events env e = match eval_ord env e with
+      and eval_events env e = match eval env e with
       | Set v -> v
       | Event e -> E.EventSet.singleton e
       | V.Empty -> E.EventSet.empty
       | Unv -> env.EV.ks.evts
       | v -> error_events env.EV.silent (get_loc e) v
 
-      and eval_rel_set accept_implicit env e =
-        match eval accept_implicit env e with
+      and eval_rel_set env e =
+        match eval env e with
         | Rel _ | TransRel _ | Set _ |ClassRel _ as v ->  v
         | Event e -> Set (E.EventSet.singleton e)
         | Pair p -> Rel (E.EventRel.singleton p)
@@ -1889,14 +1937,14 @@ module Make
         | Unv -> Rel (Lazy.force env.EV.ks.unv)
         | _ -> error env.EV.silent (get_loc e) "relation or set expected"
 
-      and eval_shown env e = match eval_rel_set false env e with
+      and eval_shown env e = match eval_rel_set env e with
       | Set v -> Shown.Set v
       | Rel v -> Shown.Rel v
-      | TransRel v -> Shown.Rel (E.EventRel.transitive_closure v)
+      | TransRel (_,_,v) -> Shown.Rel (Lazy.force v)
       | ClassRel _ ->  Shown.Rel E.EventRel.empty (* Show nothing *)
       | _ -> assert false
 
-      and eval_events_mem env e = match eval_ord env e with
+      and eval_events_mem env e = match eval env e with
       | Set s -> fun e -> E.EventSet.mem e s
       | Event e0 -> fun e -> E.event_compare e0 e = 0
       | V.Empty -> fun _ -> false
@@ -1920,7 +1968,7 @@ module Make
               end;
              *)
             add_pat_val env_bd.EV.silent loc
-              p (lazy (eval_ord env_bd e)) (do_rec bds) in
+              p (lazy (eval env_bd e)) (do_rec bds) in
         do_rec
 
 (* For let rec *)
@@ -1979,7 +2027,8 @@ module Make
                   let v = match v with
                   | V.Empty -> E.EventRel.empty
                   | Unv -> Lazy.force env_bd.EV.ks.unv
-                  | Rel r|TransRel r -> r
+                  | Rel r -> r
+                  | TransRel (r,s,_) -> E.EventRel.union r s
                   | _ -> raise Exit in
                   let x = match x with
                   | Some x -> x
@@ -2036,7 +2085,7 @@ module Make
       and fix_step env_bd env bds = match bds with
       | [] -> env,[]
       | (loc,k,e)::bds ->
-          let v = eval_ord {env_bd with EV.env=env;} e in
+          let v = eval {env_bd with EV.env=env;} e in
           let env = add_pat_val env_bd.EV.silent loc k (lazy v) env in
           let env,vs = fix_step env_bd env bds in
           env,(v::vs) in
@@ -2047,8 +2096,8 @@ module Make
 
         let loc_asrel v = match v with
         | Rel r -> Shown.Rel (rt_loc x r)
-        | TransRel tr ->
-            Shown.Rel (rt_loc x @@ E.EventRel.transitive_closure tr)
+        | TransRel (_,_,r) ->
+            Shown.Rel (rt_loc x @@ Lazy.force r)
         | Set r ->
             if _dbg then eprintf "Found set %s: %a\n%!" x debug_set r;
             Shown.Set r
@@ -2137,7 +2186,7 @@ module Make
                 (fun tag order ->
                   let tgt =
                     try
-                      eval_app loc false { env with EV.silent=true;} cat_fun tag
+                      eval_app loc { env with EV.silent=true; } cat_fun tag
                     with Misc.Exit -> V.Empty in
                   let tag = as_tag tag in
                   let add tgt order = StringRel.add (tag,as_tag tgt) order in
@@ -2201,21 +2250,17 @@ module Make
 
 (* Evaluate test -> bool *)
 
-      let eval_test check env t e =
-        let accept_implicit =
-          match t with
-          | Yes Acyclic|No Acyclic -> true
-          | _ -> false in
-        check (test2pred env t e (eval_rel_set accept_implicit env e)) in
+      let eval_test loc check env t e =
+        check (test2pred loc env t e (eval_rel_set env e)) in
 
-      let make_eval_test = function
+      let make_eval_test loc = function
         | None -> fun _env -> true
         | Some (_,_,t,e,name) ->
             if skip_this_check name then
               fun _env -> true
             else
               fun env ->
-                eval_test (check_through Check) env t e in
+                eval_test loc (check_through Check) env t e in
 
       let pp_check_failure (st:st) (loc,pos,_,e,_) =
         warn loc "check failed" ;
@@ -2265,7 +2310,7 @@ module Make
 
 (* Execute one instruction *)
 
-      let eval_st st e = eval_ord (from_st st) e in
+      let eval_st st e = eval (from_st st) e in
 
       let rec exec : 'a. st -> ins -> ('a -> 'a) ->
         (st -> 'a -> 'a) -> 'a -> 'a  =
@@ -2330,7 +2375,7 @@ module Make
               let env =
                 match
                   env_rec
-                    (make_eval_test testo) (from_st st)
+                    (make_eval_test loc testo) (from_st st)
                     loc (fun pp -> pp@show_to_vbpp st) bds
                 with
                 | CheckOk env -> Some env
@@ -2354,7 +2399,7 @@ module Make
                       if
                         O.strictskip &&
                         skip_this_check name &&
-                        not (eval_test Misc.identity (from_st st) t e)
+                        not (eval_test loc Misc.identity (from_st st) t e)
                       then begin
                         { st with
                           skipped =
@@ -2425,7 +2470,7 @@ module Make
                 let env1 =
                   protect_call st
                     (fun penv ->
-                      add_args loc p.proc_args (eval_ord env0 es) env0 penv)
+                      add_args loc p.proc_args (eval env0 es) env0 penv)
                     p.proc_env in
                 if skip then (* call for boolean... *)
                   let pname = match tname with
@@ -2478,7 +2523,7 @@ module Make
           | Forall (_loc,x,e,body) when not O.bell  ->
               let st0 = st in
               let env0 = st0.env in
-              let v = eval_ord (from_st st0) e in
+              let v = eval (from_st st0) e in
               begin match tag2set v with
               | V.Empty -> kont st res
               | ValSet (_,set) ->
@@ -2502,7 +2547,7 @@ module Make
           | WithFrom (_loc,x,e) when not O.bell  ->
               let st0 = st in
               let env0 = st0.env in
-              let v = eval_ord (from_st st0) e in
+              let v = eval (from_st st0) e in
               begin match v with
               | V.Empty -> kfail res
               | ValSet (_,vs) ->
@@ -2519,7 +2564,7 @@ module Make
                 error_not_silent loc
                   "event type %s is not part of legal {%s}\n"
                   x (StringSet.pp_str "," Misc.identity BellName.all_sets) ;
-              let vs = List.map (eval_ord_loc (from_st st)) es in
+              let vs = List.map (eval_loc (from_st st)) es in
               let event_sets =
                 List.map
                   (fun (loc,v) -> match v with
@@ -2577,7 +2622,9 @@ module Make
                         if
                           O.strictskip || not skip || cycle
                         then
-                          let ok = eval_test (check_through test_type) (from_st st) t e in
+                          let ok =
+                            eval_test loc
+                              (check_through test_type) (from_st st) t e in
                           if
                             cycle &&
                             begin match ok,t with
