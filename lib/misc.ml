@@ -344,6 +344,14 @@ let check_same eq f xs =
       None xs
   with Exit -> None
 
+let doubleton_fold f =
+  let rec fold_rec k = function
+    | [] -> k
+    | x::xs ->
+       let k = List.fold_left (fun k y -> f k x y) k xs in
+       fold_rec k xs in
+  fold_rec
+
 (* Bool's *)
 
 let (|||) p1 p2 = fun e -> p1 e || p2 e
