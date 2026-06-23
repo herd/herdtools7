@@ -97,7 +97,8 @@ module MakePrinter (Conf : PrinterConf) = struct
           | _ -> pp_obj_as_list f x
         else pp_obj_as_list f x
     | Comment (str, obj) ->
-        if not Conf.compact then
+        if Conf.compact then pp_obj f obj
+        else
           fprintf f "@[<v>%a@]%a" pp_comment_lines
             (String.split_on_char '\n' str)
             pp_obj obj
