@@ -158,11 +158,10 @@ module Make
 
       let writable2 e1 e2 =
         let writable e =
-          let ha,hd =
-            let open DirtyBit in
-            match S.E.proc_of e, O.dirty with
-            | Some proc, Some d -> d.ha proc,d.hd proc
-            | _, _ -> false,false in
+          let open DirtyBit in
+          let ha, hd = match O.dirty with
+          | Some d -> d.some_ha, d.some_hd
+          | _ -> false, false in
           match S.E.value_of e with
           | Some (S.A.V.Val (Constant.PteVal p)) ->
             S.A.V.Cst.PteVal.writable ha hd p
