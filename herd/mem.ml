@@ -2549,15 +2549,21 @@ let add_eq v1 v2 eqs =
                     let atomic_load_store = make_atomic_load_store test es in
                     let () =
                       if dbg then
-                        E.EventRel.iter_succs
-                          (fun _er ews ->
-                             if E.EventSet.cardinal ews <> 1 then begin
-                               let module PP = Pretty.Make(S) in
-                               eprintf "Non-affine rmw relation!\n%!" ;
-                               PP.show_es_rfm test es S.RFMap.empty ;
-                               Warn.fatal "Non-affine rmw relation!"
-                             end)
-                          atomic_load_store in
+                        let open E.EventRel in
+                        try check_bijection atomic_load_store with
+                        | NonAffine (x, ys) ->
+                          let module PP = Pretty.Make(S) in
+                          eprintf "Non-affine rmw relation!\n%a related to all of (%a)\n%!"
+                            E.debug_event x E.debug_events ys;
+                          PP.show_es_rfm test es S.RFMap.empty ;
+                          Warn.fatal "Non-affine rmw relation!"
+                        | NonInjective (xs, y) ->
+                          let module PP = Pretty.Make(S) in
+                          eprintf "Non-injective rmw relation!\nall of (%a) related to %a%!"
+                            E.debug_events xs E.debug_event y;
+                          PP.show_es_rfm test es S.RFMap.empty ;
+                          Warn.fatal "Non-injective rmw relation!"
+                    in
                     if
                       C.variant Variant.OptRfRMW
                       && some_same_rf_rmw rfm atomic_load_store
