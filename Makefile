@@ -294,7 +294,7 @@ test.herd.cata-ext.%:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue $* instructions tests: OK"
 
-cata-test-all:: test.herd.cata-ext.aarch64-bbm
+cata-test-all:: test.herd.cata-ext.aarch64-BBM
 
 test.herd-mixed.cata.%:
 	@ echo
