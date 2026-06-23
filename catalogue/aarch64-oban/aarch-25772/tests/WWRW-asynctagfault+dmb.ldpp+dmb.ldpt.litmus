@@ -1,0 +1,13 @@
+AArch64 WWRW-asynctagfault+dmb.ldpp+dmb.ldpt
+Variant=memtag,async
+{
+0:X1=x:green; 1:X1=x:green;
+0:X3=y; 1:X3=y;
+1:X5=x:red;
+}
+P0            | P1          ;
+ STR WZR,[X1] | LDR W2,[X3] ;
+ DMB LD       | DMB LD      ;
+ MOV W2,#1    | STG X5,[X1] ;
+ STR W2,[X3]  |             ;
+exists Fault(P0,TagCheck) /\ 1:X2=1

@@ -1226,6 +1226,6 @@ MP+dmb.sypp+ctrlt-lrstt_W-tagfault Forbidden
 MP+dmb.sypp+datapt-lrstt-addrpp Allowed
 MP+dmb.sypp+datapt-lrstt Allowed
 MP+dmb.sypp+datapt-lrstt_W-tagfault Forbidden
-R+dmb.sttt+dsb.ld-mod Forbidden
+R+dmb.sttt+dsb.ld-mod Allowed
 S+dmb.sypp+datapt-lrstt Forbidden
 coRW2-ExpTag+ImpTag-ExpTag Forbidden

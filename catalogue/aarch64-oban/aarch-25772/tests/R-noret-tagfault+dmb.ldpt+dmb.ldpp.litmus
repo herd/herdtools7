@@ -1,0 +1,13 @@
+AArch64 R-noret-synctagfault+dmb.ldpt+dmb.ldpp
+Variant=memtag,sync
+{
+0:X1=x:green; 1:X1=x:green;
+0:X3=y; 1:X3=y;
+0:X5=x:red;
+}
+P0           | P1                | P1.F           ;
+ MOV W2,#1   |     MOV W0,#1     | ADR X8,L1      ;
+ STR W2,[X3] | L0: STADD W0,[X1] | MSR ELR_EL1,X8 ;
+ DMB ST      | L1: DMB LD        | ERET           ;
+ STG X5,[X1] |     LDR W2,[X3]   |                ;
+exists Fault(P1,TagCheck) /\ not (1:X2=1)
