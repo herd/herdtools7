@@ -79,4 +79,4 @@ let TLBCacheableTTD = TTD \ TLBUncacheableTTD
 
 let TTD-update-needsBBM =
   [TLBCacheableTTD]; (TTD-MT-update | TTD-SH-update | TTD-ICH-update | TTD-OCH-update | TTD-DT-update
-  | TTD-OA-update & TTD-at-least-one-writable); [domain([TLBCacheableTTD]; rf; [Imp & TTD & R])]
+  | TTD-OA-update & TTD-at-least-one-writable); [TLBCacheableTTD]
