@@ -37,7 +37,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     let reject_mixed = false
 
-    type lannot = P of mo | X of mo
+    type lannot = P of mo | X of mo | EX of mo
     let get_machsize _ = V.Cst.Scalar.machsize (* TODO, consider machsizes *)
     let empty_annot = P Rlx
 
@@ -45,30 +45,33 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     include PteValSets.No
 
     let is_atomic = function
-    | X _ -> true
+    | X _ | EX _ -> true
     | P _ -> false
+    let is_exclusive = function
+    | EX _ -> true
+    | X _ | P _ -> false
     let is_explicit = function | _ -> true
     let is_not_explicit = function | _ -> false
 
     let is_acquire = function
-      | X Acq|P Acq -> true
-      | X (Rlx|AcqRel|Rel|Sc)| P (Rlx|AcqRel|Rel) -> false
+      | X Acq|EX Acq|P Acq -> true
+      | X (Rlx|AcqRel|Rel|Sc)| EX (Rlx|AcqRel|Rel|Sc)| P (Rlx|AcqRel|Rel) -> false
       | P Sc -> assert false
 
     let is_release = function
-      | X Rel|P Rel -> true
-      | X (Rlx|AcqRel|Acq|Sc)| P (Rlx|AcqRel|Acq) -> false
+      | X Rel|EX Rel|P Rel -> true
+      | X (Rlx|AcqRel|Acq|Sc)| EX (Rlx|AcqRel|Acq|Sc)| P (Rlx|AcqRel|Acq) -> false
       | P Sc -> assert false
 
     let is_acquire_release = function
-      | X AcqRel|P AcqRel -> true
-      | X (Rlx|Rel|Acq|Sc)| P (Rlx|Rel|Acq) -> false
+      | X AcqRel|EX AcqRel|P AcqRel -> true
+      | X (Rlx|Rel|Acq|Sc)|EX (Rlx|Rel|Acq|Sc)| P (Rlx|Rel|Acq) -> false
       | P Sc -> assert false
 
     let is_sc = function
-      | X Sc -> true
+      | X Sc | EX Sc -> true
       | P Sc -> assert false
-      | X (Rlx|Rel|Acq|AcqRel)| P (Rlx|Rel|Acq|AcqRel) -> false
+      | X (Rlx|Rel|Acq|AcqRel)| EX (Rlx|Rel|Acq|AcqRel)| P (Rlx|Rel|Acq|AcqRel) -> false
 
     let same_barrier b = fun c -> barrier_equal_semantics b c
 
@@ -86,7 +89,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     let annot_sets =
       ["X", is_atomic; "Acq", is_acquire; "Rel", is_release;
-       "AcqRel",is_acquire_release;"Sc",is_sc]
+      "AcqRel",is_acquire_release;"Sc",is_sc; "EX", is_exclusive]
 
     let isync =  FenceI
     let is_isync = same_barrier isync
@@ -101,7 +104,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
       | Sc -> "Sc" in
       function
       | P a ->  pp_mo a
-      | X a -> sprintf "%s*" (pp_mo a)
+      | X a | EX a -> sprintf "%s*" (pp_mo a)
 
     module V = V
 
