@@ -48,7 +48,6 @@ let is_release = function
   | _ -> false
 
 let sets = [
-    "X", is_atomic;
     "A",  is_acquire;
     "Q",  is_acquire_pc;
     "L",  is_release;

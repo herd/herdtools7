@@ -43,7 +43,7 @@ module Make (C:Arch_herd.Config) (V:Value.S)
 
     let cmo_sets = []
 
-    let annot_sets = ["X",is_atomic]
+    let annot_sets = []
 
     let is_isync = is_barrier Isync
     let pp_isync = "isync"

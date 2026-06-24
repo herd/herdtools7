@@ -493,6 +493,7 @@ module Make
                  "NExp", E.is_not_explicit;
                  "SPEC", is_spec;
                  "EXEC", (fun e -> not (is_spec e));
+                 "X",E.is_atomic;
                  "AMO",E.is_amo;
                  "SPURIOUS", E.is_spurious;
                  "IW", E.is_mem_store_init;

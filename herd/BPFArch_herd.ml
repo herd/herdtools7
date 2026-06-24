@@ -54,7 +54,7 @@ struct
   let ifetch_value_sets = []
   let barrier_sets = []
   let cmo_sets = []
-  let annot_sets = [ "X", is_atomic; "SC", is_sc; "AQ", is_acquire; "RL", is_release; ]
+  let annot_sets = ["SC", is_sc; "AQ", is_acquire; "RL", is_release; ]
 
   include Explicit.No
   include PteValSets.No

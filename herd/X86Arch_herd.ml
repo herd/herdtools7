@@ -47,7 +47,7 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
 
     let cmo_sets = []
 
-    let annot_sets = ["X",is_atomic]
+    let annot_sets = []
 
     include Explicit.No
     include PteValSets.No
