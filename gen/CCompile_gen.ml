@@ -607,7 +607,7 @@ module Make(O:Config) : Builder.S
               let vss =
                 List.map
                   (List.map
-                     (fun (v,obs) ->
+                     (fun (v,obs,_check) ->
                        if Array.length v > 1 then
                          Warn.fatal "No wide access in C" ;
                        (C.Value.to_int v.(0)),obs))
