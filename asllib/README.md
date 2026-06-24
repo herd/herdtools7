@@ -54,7 +54,7 @@ $ opam remove aslref
    ```
 4. Build and install into a location `$PREFIX`:
    ```bash
-   $ make build-aslref # optional
+   $ make build-aslref
    $ make install-aslref PREFIX=$PREFIX
    ```
 
