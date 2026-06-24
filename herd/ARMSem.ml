@@ -109,7 +109,7 @@ module
       let read_mem sz a ii  =
         M.read_loc Port.No (mk_read ARM.N sz) (A.Location_global a) ii
       let read_mem_atomic sz a ii =
-        M.read_loc Port.No (mk_read ARM.X sz) (A.Location_global a) ii
+        M.read_loc Port.No (mk_read ARM.EX sz) (A.Location_global a) ii
 
       let do_read_mem_ret sz an anexp ac a ii =
         let mk_act loc v =  Act.Access (Dir.R,loc,v,an,anexp,sz,ac) in
@@ -137,18 +137,18 @@ module
         >>= fun () -> B.nextT
 
       let read_mem_acquire sz = do_read_mem sz ARM.A aexp Access.VIR
-      let read_mem_acquire_ex sz = do_read_mem sz ARM.XA aexp Access.VIR
+      let read_mem_acquire_ex sz = do_read_mem sz ARM.EXA aexp Access.VIR
 
       let write_mem_atomic sz a v resa ii =
         let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
         M.mk_singleton_es_eq
-          (Act.Access (Dir.W, A.Location_global a, v, ARM.X, ARM.Exp, sz, Access.VIR))
+          (Act.Access (Dir.W, A.Location_global a, v, ARM.EX, ARM.Exp, sz, Access.VIR))
           eq ii
 
       let write_mem_atomic_release sz a v resa ii =
         let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
         M.mk_singleton_es_eq
-          (Act.Access (Dir.W, A.Location_global a, v, ARM.XL, ARM.Exp, sz, Access.VIR))
+          (Act.Access (Dir.W, A.Location_global a, v, ARM.EXL, ARM.Exp, sz, Access.VIR))
           eq ii
 
       let write_mem_release sz a v ii  =
