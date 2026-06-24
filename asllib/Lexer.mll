@@ -287,6 +287,7 @@ let fatal lexbuf desc =
       version = V1;
       pos_start = Lexing.lexeme_start_p lexbuf;
       pos_end = Lexing.lexeme_end_p lexbuf;
+      ty_opt = None;
     }
   |> Error.fatal
 

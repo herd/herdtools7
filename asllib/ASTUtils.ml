@@ -67,7 +67,7 @@ let default_version = V1
 let desc v = v.desc
 
 let annotated desc pos_start pos_end version =
-  { desc; pos_start; pos_end; version }
+  { desc; pos_start; pos_end; version; ty_opt = None }
 
 let add_dummy_annotation ?(version = default_version) desc =
   annotated desc dummy_pos dummy_pos version
@@ -88,8 +88,10 @@ let add_pos_range_from pos_from pos_to desc =
     pos_start = pos_from.pos_start;
     pos_end = pos_to.pos_end;
     version = pos_from.version;
+    ty_opt = None;
   }
 
+let with_ty_annot ty annotated = { annotated with ty_opt = Some ty }
 let map_desc f thing = f thing |> add_pos_from thing
 let map_annotated thing f = f thing.desc |> add_pos_from thing
 
@@ -108,6 +110,7 @@ let add_pos_from_pos_of ((fname, lnum, cnum, enum), desc) =
     pos_start = { common with pos_cnum = cnum };
     pos_end = { common with pos_cnum = enum };
     version = default_version (* used only in testing *);
+    ty_opt = None;
   }
 
 let list_fold_lefti f accu l =
@@ -184,6 +187,8 @@ let map2_desc f thing1 thing2 =
     pos_start = thing1.pos_start;
     pos_end = thing2.pos_end;
     version = thing1.version;
+    ty_opt =
+      (match thing1.ty_opt with Some t1 -> Some t1 | None -> thing2.ty_opt);
   }
 
 let s_pass = add_dummy_annotation S_Pass
@@ -193,6 +198,7 @@ let string = T_String |> add_dummy_annotation
 let real = T_Real |> add_dummy_annotation
 let integer' = T_Int UnConstrained
 let integer = integer' |> add_dummy_annotation
+let with_integer_ty annotated = with_ty_annot integer annotated
 
 let well_constrained' ?(precision = Precision_Full) cs =
   T_Int (WellConstrained (cs, precision))
@@ -200,7 +206,9 @@ let well_constrained' ?(precision = Precision_Full) cs =
 let well_constrained ?loc ?precision cs =
   well_constrained' ?precision cs |> add_maybe_loc ?loc
 
-let integer_exact' e = well_constrained' [ Constraint_Exact e ]
+let integer_exact' e =
+  well_constrained' [ Constraint_Exact (e |> with_integer_ty) ]
+
 let integer_exact ?loc e = integer_exact' e |> add_maybe_loc ?loc
 let integer_range' e1 e2 = well_constrained' [ Constraint_Range (e1, e2) ]
 let integer_range ?loc e1 e2 = integer_range' e1 e2 |> add_maybe_loc ?loc
@@ -448,38 +456,49 @@ and pattern_equal eq p1 p2 =
   | _ -> false
 
 let qualifier_equal (q1 : func_qualifier option) q2 = Option.equal ( = ) q1 q2
-let var_ x = E_Var x |> add_dummy_annotation
+let int_expr_of_var x = E_Var x |> add_dummy_annotation |> with_integer_ty
 let binop op = map2_desc (fun e1 e2 -> E_Binop (op, e1, e2))
-let unop op = map_desc (fun e -> E_Unop (op, e))
+let integer_binop op e1 e2 = with_integer_ty @@ binop op e1 e2
+let integer_unop op = map_desc (fun e -> E_Unop (op, e))
 let literal v = E_Literal v |> add_dummy_annotation
-let expr_of_int i = literal (L_Int (Z.of_int i))
-let expr_of_z z = literal (L_Int z)
-let e_true = literal (L_Bool true)
-let e_false = literal (L_Bool false)
+let expr_of_int i = literal (L_Int (Z.of_int i)) |> with_integer_ty
+let expr_of_z z = literal (L_Int z) |> with_integer_ty
+let e_true = literal (L_Bool true) |> with_ty_annot boolean
+let e_false = literal (L_Bool false) |> with_ty_annot boolean
 let expr_of_bool b = if b then e_true else e_false
-let zero_expr = expr_of_z Z.zero
-let one_expr = expr_of_z Z.one
-let minus_one_expr = expr_of_z Z.minus_one
+let zero_expr = expr_of_z Z.zero |> with_integer_ty
+let one_expr = expr_of_z Z.one |> with_integer_ty
+let minus_one_expr = expr_of_z Z.minus_one |> with_integer_ty
 
 let expr_of_rational q =
+  with_ty_annot real
+  @@
   if Z.equal (Q.den q) Z.one then expr_of_z (Q.num q)
-  else binop `DIV (expr_of_z (Q.num q)) (expr_of_z (Q.den q))
+  else integer_binop `DIV (expr_of_z (Q.num q)) (expr_of_z (Q.den q))
 
+(** [mul_expr e1 e2] symbolically multiplies the two integer-typed expression
+    [e1] and [e2]. *)
 let mul_expr e1 e2 =
   if expr_equal (fun _ _ -> false) e1 one_expr then e2
   else if expr_equal (fun _ _ -> false) e2 one_expr then e1
-  else binop `MUL e1 e2
+  else integer_binop `MUL e1 e2
 
+(** [pow_expr e p] symbolically raises the integer-typed expression [e] to the
+    power [p]. *)
 let pow_expr e = function
   | 0 -> one_expr
   | 1 -> e
-  | 2 -> mul_expr e e
-  | p -> binop `POW e (expr_of_int p)
+  | 2 -> mul_expr e e |> with_integer_ty
+  | p -> integer_binop `POW e (expr_of_int p)
 
-let div_expr e z = if Z.equal z Z.one then e else binop `DIV e (expr_of_z z)
+let div_expr e z =
+  if Z.equal z Z.one then e |> with_integer_ty
+  else integer_binop `DIV e (expr_of_z z)
 
 let add_expr e1 (s, e2) =
-  if s = 0 then e1 else if s > 0 then binop `ADD e1 e2 else binop `SUB e1 e2
+  if s = 0 then e1 |> with_integer_ty
+  else if s > 0 then integer_binop `ADD e1 e2
+  else integer_binop `SUB e1 e2
 
 let conj_expr e1 e2 =
   let lit_true = literal (L_Bool true) in
@@ -541,10 +560,11 @@ let slice_as_single = function
   | Slice_Single e -> e
   | _ -> raise @@ Invalid_argument "slice_as_single"
 
-let default_t_bits = T_Bits (E_Var "-" |> add_dummy_annotation, [])
+let discard_int_expr = E_Var "-" |> add_dummy_annotation
+let default_t_bits = T_Bits (discard_int_expr, [])
 
 let default_array_ty =
-  let len = ArrayLength_Expr (E_Var "-" |> add_dummy_annotation) in
+  let len = ArrayLength_Expr discard_int_expr in
   let ty = T_Named "-" |> add_dummy_annotation in
   T_Array (len, ty)
 
@@ -927,3 +947,210 @@ let plug_primitives ast =
       raise (Invalid_argument "plug_primitives: badly referenced primitive")
   in
   List.map plug_one
+
+(** Checks that all expressions have [ty_opt = Some t] *)
+module CheckTypeAnnotations = struct
+  exception MissingAnnotation of expr
+
+  let report_missing_annotation pp_expr_opt e =
+    let pp_expr fmt e =
+      match pp_expr_opt with
+      | None -> Format.pp_print_string fmt "<expression>"
+      | Some pp_expr -> pp_expr fmt e
+    in
+    Format.kasprintf invalid_arg
+      "CheckTypeAnnotations: missing expression type annotation for %a" pp_expr
+      e
+
+  let rec check ?pp_expr ast =
+    try List.iter (check_decl pp_expr) ast
+    with MissingAnnotation e -> report_missing_annotation pp_expr e
+
+  and check_decl pp_expr d =
+    match d.desc with
+    | D_Func f -> check_func pp_expr f
+    | D_GlobalStorage global -> check_global_storage pp_expr global
+    | D_TypeDecl (_, ty, fields) ->
+        check_ty pp_expr ty;
+        Option.iter
+          (fun (_, fields) ->
+            List.iter (fun (_, ty) -> check_ty pp_expr ty) fields)
+          fields
+    | D_Pragma _ ->
+        assert false (* pragmas shouldn't appear in the typed AST. *)
+
+  and check_global_storage pp_expr { ty; initial_value } =
+    Option.iter (check_ty pp_expr) ty;
+    Option.iter (check_expr pp_expr) initial_value
+
+  and check_func pp_expr { parameters; args; body; return_type; recurse_limit }
+      =
+    List.iter (fun (_, ty) -> Option.iter (check_ty pp_expr) ty) parameters;
+    List.iter (fun (_, ty) -> check_ty pp_expr ty) args;
+    check_func_body pp_expr body;
+    Option.iter (check_ty pp_expr) return_type;
+    Option.iter (check_expr pp_expr) recurse_limit
+
+  and check_func_body pp_expr = function
+    | SB_Primitive _ -> ()
+    | SB_ASL stmt -> check_stmt pp_expr stmt
+
+  and check_stmt pp_expr s =
+    match s.desc with
+    | S_Pass | S_Unreachable -> ()
+    | S_Seq (s1, s2) ->
+        check_stmt pp_expr s1;
+        check_stmt pp_expr s2
+    | S_Decl (_, _, ty, e) ->
+        Option.iter (check_ty pp_expr) ty;
+        Option.iter (check_expr pp_expr) e
+    | S_Assign (le, e) ->
+        check_lexpr pp_expr le;
+        check_expr pp_expr e
+    | S_Call call -> check_call pp_expr call
+    | S_Return e -> Option.iter (check_expr pp_expr) e
+    | S_Cond (e, s1, s2) ->
+        check_expr pp_expr e;
+        check_stmt pp_expr s1;
+        check_stmt pp_expr s2
+    | S_Assert e -> check_expr pp_expr e
+    | S_For { start_e; end_e; body; limit; _ } ->
+        check_expr pp_expr start_e;
+        check_expr pp_expr end_e;
+        Option.iter (check_expr pp_expr) limit;
+        check_stmt pp_expr body
+    | S_While (e, limit, body) ->
+        check_expr pp_expr e;
+        Option.iter (check_expr pp_expr) limit;
+        check_stmt pp_expr body
+    | S_Repeat (s, e, limit) ->
+        check_stmt pp_expr s;
+        check_expr pp_expr e;
+        Option.iter (check_expr pp_expr) limit
+    | S_Throw (e, ty) ->
+        check_expr pp_expr e;
+        Option.iter (check_ty pp_expr) ty
+    | S_Try (s, catchers, otherwise) ->
+        check_stmt pp_expr s;
+        List.iter (check_catcher pp_expr) catchers;
+        Option.iter (check_stmt pp_expr) otherwise
+    | S_Print { args; _ } -> List.iter (check_expr pp_expr) args
+    | S_Pragma _ ->
+        assert false (* pragmas shouldn't appear in the typed AST. *)
+
+  and check_catcher pp_expr (_, ty, stmt) =
+    check_ty pp_expr ty;
+    check_stmt pp_expr stmt
+
+  and check_lexpr pp_expr le =
+    match le.desc with
+    | LE_Discard | LE_Var _ | LE_SetCollectionFields _ -> ()
+    | LE_Slice (le, slices) ->
+        check_lexpr pp_expr le;
+        List.iter (check_slice pp_expr) slices
+    | LE_SetArray (le, e) | LE_SetEnumArray (le, e) ->
+        check_lexpr pp_expr le;
+        check_expr pp_expr e
+    | LE_SetField (le, _) -> check_lexpr pp_expr le
+    | LE_SetFields (le, _, _) -> check_lexpr pp_expr le
+    | LE_Destructuring les -> List.iter (check_lexpr pp_expr) les
+
+  and check_expr pp_expr e =
+    let () =
+      match e.ty_opt with
+      | None -> raise (MissingAnnotation e)
+      | Some t -> check_ty pp_expr t
+    in
+    match e.desc with
+    | E_Literal _ | E_Var _ | E_GetCollectionFields _ -> ()
+    | E_ATC (e, t) ->
+        check_expr pp_expr e;
+        check_ty pp_expr t
+    | E_Binop (_, e1, e2) | E_GetArray (e1, e2) | E_GetEnumArray (e1, e2) ->
+        check_expr pp_expr e1;
+        check_expr pp_expr e2
+    | E_Unop (_, e) | E_GetField (e, _) | E_GetFields (e, _) | E_GetItem (e, _)
+      ->
+        check_expr pp_expr e
+    | E_Call call -> check_call pp_expr call
+    | E_Slice (e, slices) ->
+        check_expr pp_expr e;
+        List.iter (check_slice pp_expr) slices
+    | E_Cond (e1, e2, e3) ->
+        check_expr pp_expr e1;
+        check_expr pp_expr e2;
+        check_expr pp_expr e3
+    | E_Record (t, fields) ->
+        check_ty pp_expr t;
+        List.iter (fun (_, e) -> check_expr pp_expr e) fields
+    | E_Tuple es -> List.iter (check_expr pp_expr) es
+    | E_Array { length; value } ->
+        check_expr pp_expr length;
+        check_expr pp_expr value
+    | E_EnumArray { value; _ } -> check_expr pp_expr value
+    | E_Arbitrary t -> check_ty pp_expr t
+    | E_Pattern (e, p) ->
+        check_expr pp_expr e;
+        check_pattern pp_expr p
+
+  and check_call pp_expr { args; params } =
+    List.iter (check_expr pp_expr) params;
+    List.iter (check_expr pp_expr) args
+
+  and check_pattern pp_expr p =
+    match p.desc with
+    | Pattern_All | Pattern_Mask _ -> ()
+    | Pattern_Any ps | Pattern_Tuple ps -> List.iter (check_pattern pp_expr) ps
+    | Pattern_Geq e | Pattern_Leq e | Pattern_Single e -> check_expr pp_expr e
+    | Pattern_Not p -> check_pattern pp_expr p
+    | Pattern_Range (e1, e2) ->
+        check_expr pp_expr e1;
+        check_expr pp_expr e2
+
+  and check_ty pp_expr t =
+    match t.desc with
+    | T_Int UnConstrained
+    | T_Int PendingConstrained
+    | T_Int (Parameterized _)
+    | T_Real | T_String | T_Bool | T_Enum _ | T_Named _ ->
+        ()
+    | T_Int (WellConstrained (constraints, _)) ->
+        List.iter (check_constraint pp_expr) constraints
+    | T_Bits (e, bitfields) ->
+        check_expr pp_expr e;
+        List.iter (check_bitfield pp_expr) bitfields
+    | T_Tuple tys -> List.iter (check_ty pp_expr) tys
+    | T_Array (index, elem_ty) ->
+        check_array_index pp_expr index;
+        check_ty pp_expr elem_ty
+    | T_Record fields | T_Exception fields | T_Collection fields ->
+        List.iter (fun (_, t) -> check_ty pp_expr t) fields
+
+  and check_constraint pp_expr = function
+    | Constraint_Exact e -> check_expr pp_expr e
+    | Constraint_Range (e1, e2) ->
+        check_expr pp_expr e1;
+        check_expr pp_expr e2
+
+  and check_array_index pp_expr = function
+    | ArrayLength_Enum _ -> ()
+    | ArrayLength_Expr e -> check_expr pp_expr e
+
+  and check_bitfield pp_expr = function
+    | BitField_Simple (_, slices) -> List.iter (check_slice pp_expr) slices
+    | BitField_Nested (_, slices, bitfields) ->
+        List.iter (check_slice pp_expr) slices;
+        List.iter (check_bitfield pp_expr) bitfields
+    | BitField_Type (_, slices, t) ->
+        List.iter (check_slice pp_expr) slices;
+        check_ty pp_expr t
+
+  and check_slice pp_expr = function
+    | Slice_Single e -> check_expr pp_expr e
+    | Slice_Range (e1, e2) | Slice_Length (e1, e2) | Slice_Star (e1, e2) ->
+        check_expr pp_expr e1;
+        check_expr pp_expr e2
+end
+
+let check_type_annotations ?pp_expr ast =
+  CheckTypeAnnotations.check ?pp_expr ast
