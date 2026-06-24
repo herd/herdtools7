@@ -427,7 +427,7 @@ type global_decl = {
 type decl_desc =
   | D_Func of func
   | D_GlobalStorage of global_decl
-  | D_TypeDecl of identifier * ty * (identifier * field list) option
+  | D_TypeDecl of identifier * ty
   | D_Pragma of identifier * expr list
       (** A global pragma, as an explicit node to be used by tools which need
           AST level hints. *)

@@ -165,7 +165,7 @@ and use_catchers catchers = use_list use_catcher catchers
 
 and use_decl d =
   match d.desc with
-  | D_TypeDecl (_name, ty, fields) -> use_ty ty $ use_option use_subtypes fields
+  | D_TypeDecl (_name, ty) -> use_ty ty
   | D_GlobalStorage { initial_value; ty; name = _; keyword = _ } ->
       use_option use_e initial_value $ use_option use_ty ty
   | D_Func
@@ -184,8 +184,6 @@ and use_decl d =
       $ (match body with SB_ASL s -> use_s s | SB_Primitive _ -> Fun.id)
       $ use_option use_e recurse_limit
   | D_Pragma (name, args) -> add_other name $ use_es args
-
-and use_subtypes (x, subfields) = add_other x $ use_named_list use_ty subfields
 
 let used_identifiers_decl d = use_decl d NameSet.empty
 let used_identifiers_decls ast = use_list use_decl ast NameSet.empty

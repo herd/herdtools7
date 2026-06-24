@@ -460,15 +460,7 @@ module Make (Conf : PrinterConf) = struct
       (match x with
       | D_Func f -> [ key "D_FUNC"; of_func f ]
       | D_GlobalStorage d -> [ key "D_GLOBALSTORAGE"; of_global_decl d ]
-      | D_TypeDecl (i, ty, opt) ->
-          [
-            key "D_TYPEDECL";
-            of_identifier i;
-            of_ty ty;
-            of_option
-              (fun (i, f) -> Cons (of_identifier i, of_list_map of_field f))
-              opt;
-          ]
+      | D_TypeDecl (i, ty) -> [ key "D_TYPEDECL"; of_identifier i; of_ty ty ]
       | D_Pragma (i, x) ->
           [ key "D_PRAGMA"; of_identifier i; of_list_map of_expr x ])
 
@@ -521,7 +513,6 @@ module Make (Conf : PrinterConf) = struct
           of_imap
             (fun (ty, kw) -> Cons (of_ty ty, of_global_decl_keyword kw))
             x.storage_types );
-        ("SUBTYPES", of_imap of_identifier x.subtypes);
         ( "SUBPROGRAMS",
           of_imap
             (fun (func, ses) -> Cons (of_func func, of_ses ses))
