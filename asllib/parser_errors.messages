@@ -317,7 +317,7 @@ spec: CONFIG IDENTIFIER XOR
 ## The known suffix of the stack is as follows:
 ## CONFIG ignored_or_identifier
 ##
-spec: CONFIG IDENTIFIER COLON BIT WITH
+spec: CONFIG IDENTIFIER COLON BIT XOR
 ##
 ## Ends in an error in state: 886.
 ##
@@ -365,7 +365,7 @@ A global `let` declaration must introduce a single name and have an initialising
   let name = initial_expression;
   let name : type = initial_expression;
 
-opn: LET IDENTIFIER COLON BIT WITH
+opn: LET IDENTIFIER COLON BIT XOR
 ##
 ## Ends in an error in state: 414.
 ##
@@ -375,7 +375,7 @@ opn: LET IDENTIFIER COLON BIT WITH
 ## The known suffix of the stack is as follows:
 ## LET decl_item as_ty
 ##
-spec: LET IDENTIFIER COLON BIT WITH
+spec: LET IDENTIFIER COLON BIT XOR
 ##
 ## Ends in an error in state: 779.
 ##
@@ -399,7 +399,7 @@ spec: CONSTANT IDENTIFIER XOR
 ## The known suffix of the stack is as follows:
 ## CONSTANT ignored_or_identifier
 ##
-spec: CONSTANT IDENTIFIER COLON BIT WITH
+spec: CONSTANT IDENTIFIER COLON BIT XOR
 ##
 ## Ends in an error in state: 878.
 ##
