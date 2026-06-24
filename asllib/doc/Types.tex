@@ -729,10 +729,10 @@ Unlike many languages, there is no ordering defined for enumeration literals
 and therefore enumeration types do not support ordering comparisons such as \verb|<=|.
 
 \ExampleDef{Well-typed Enumeration Types}
-\listingref{typing-tenum} and \listingref{typing-tenum-subtypes} show examples of well-typed
+\listingref{typing-tenum} and \listingref{typing-tenum-type-decls} show examples of well-typed
 enumeration type declarations.
 
-\ASLListing{Well-typed enumeration type}{typing-tenum-subtypes}{\typingtests/TypingRule.TEnumDecl.subtypes.asl}
+\ASLListing{Well-typed enumeration type}{typing-tenum-type-decls}{\typingtests/TypingRule.TEnumDecls.asl}
 \ASLListing{Well-typed enumeration type}{typing-tenum}{\typingtests/TypingRule.TEnumDecl.asl}
 
   %
@@ -781,14 +781,9 @@ See \ExampleRef{Well-typed Enumeration Types} for examples of well-typed \enumer
 declarations.
 
 \ExampleDef{Ill-typed Enumeration Type Declarations}
-\listingref{typing-tenum-bad},
-\listingref{typing-tenum-bad2},
-\listingref{typing-tenum-bad3}, and
-\listingref{typing-tenum-bad4},
+\listingref{typing-tenum-bad} and \listingref{typing-tenum-bad4},
 show examples of ill-typed enumeration type declarations.
 \ASLListing{Ill-typed enumeration types}{typing-tenum-bad}{\typingtests/TypingRule.TEnumDecl.bad.asl}
-\ASLListing{Ill-typed enumeration types}{typing-tenum-bad2}{\typingtests/TypingRule.TEnumDecl.bad2.asl}
-\ASLListing{Ill-typed enumeration types}{typing-tenum-bad3}{\typingtests/TypingRule.TEnumDecl.bad3.asl}
 \ASLListing{Ill-typed enumeration types}{typing-tenum-bad4}{\typingtests/TypingRule.TEnumDecl.bad4.asl}
 
 
@@ -1019,8 +1014,7 @@ collection types in comments.
 \section{Named Types\label{sec:NamedTypes}}
 A named type declaration allows declaring a new type associated with the given name.
 The intent is that, by default, any named type should not be assignable to or from any other named type, even
-if they coincidentally have the same \structureterm. Where assignment between named types is desired it is usually
-achieved by grouping related types via a common supertype.
+if they coincidentally have the same \structureterm.
 
 The specification in \listingref{named-types2}, declares two unique types with the same
 \structureterm. Note that the two types are not related in

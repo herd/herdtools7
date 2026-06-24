@@ -24,11 +24,7 @@ See \ExampleRef{Types} for examples of type declarations.
 \SyntaxDef{Type Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
-\Ndecl  \derives \ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon&\\
-|\ & \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon&\\
-\Nsubtypeopt           \derives \ & \option{\Nsubtype} &\\
-\Nsubtype \derives \ & \Tsubtypes \parsesep \Tidentifier \parsesep \Twith \parsesep \Nfields &\\
-            |\              & \Tsubtypes \parsesep \Tidentifier &\\
+\Ndecl  \derives \ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Tsemicolon&\\
 \Nfields \derives \ & \Tlbrace \parsesep \Tminus \parsesep \Trbrace &\\
                     & \Tlbrace \parsesep \TClistOne{\Ntypedidentifier} \parsesep \Trbrace &\\
 \Ntypedidentifier \derives \ & \Tidentifier \parsesep \Nasty &\\
@@ -49,80 +45,11 @@ This rule defines the cases for $\builddecl$ for type declarations.
 {
   {
     \begin{array}{c}
-      \builddecl(\overname{\Ndecl(\Ttype, \Tidentifier(\vx), \Tof, \punnode{\Ntydecl}, \Nsubtypeopt, \Tsemicolon)}{\vparsednode})
+      \builddecl(\overname{\Ndecl(\Ttype, \Tidentifier(\vx), \Tof, \punnode{\Ntydecl}, \Tsemicolon)}{\vparsednode})
   \astarrow \\
-  \overname{\left[\DTypeDecl(\vx, \astof{\vt}, \astof{\vsubtypeopt})\right]}{\vastnode}
+  \overname{\left[\DTypeDecl(\vx, \astof{\vt})\right]}{\vastnode}
     \end{array}
   }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[subtype\_decl]{
-  \buildsubtype(\vsubtype) \astarrow \vs\\
-  \vs \reverseeqdef (\name, \vfields)
-}{
-  {
-    \begin{array}{c}
-      \builddecl(\overname{\Ndecl(\Ttype, \Tidentifier(\vx), \Tof, \punnode{\Nsubtype}, \Tsemicolon)}{\vparsednode})
-  \astarrow \\
-  \overname{\left[\DTypeDecl(\vx, \TNamed(\name), \some{(\name, \vfields)})\right]}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\ASTRuleDef{Subtype}
-\NotImportedToASLSpecYet{
-\hypertarget{build-subtype}{}
-The function
-\[
-  \buildsubtype(\overname{\parsenode{\Nsubtype}}{\vparsednode}) \aslto \overname{(\Identifier, \KleeneStar{(\Identifier, \ty)})}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[with\_fields]{}{
-  {
-    \begin{array}{r}
-  \buildsubtype(\overname{\Nsubtype(
-    \Tsubtypes, \Tidentifier(\id), \Twith, \punnode{\Nfields}
-    )}{\vparsednode})
-  \astarrow \\
-  \overname{(\id, \astof{\vfields})}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[no\_fields]{}{
-  \buildsubtype(\overname{\Nsubtype(
-    \Tsubtypes, \Tidentifier(\id))}{\vparsednode})
-  \astarrow
-  \overname{(\id, \emptylist)}{\vastnode}
-}
-\end{mathpar}
-
-\ASTRuleDef{Subtypeopt}
-\NotImportedToASLSpecYet{
-\hypertarget{build-subtypeopt}{}
-The function
-\[
-   \buildsubtypeopt(\overname{\parsenode{\Nsubtypeopt}}{\vparsednode}) \aslto
-    \overname{\Option{(\Identifier, \Option{\KleeneStar{(\Identifier, \ty)}})}}{\vastnode}
-\]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[subtype\_opt]{
-  \buildoption[\Nsubtype](\vsubtypeopt) \astarrow \vastnode
-}{
-  \buildsubtypeopt(\overname{\Nsubtypeopt(\namednode{\vsubtypeopt}{\option{\Nsubtype}})}{\vparsednode}) \astarrow \vastnode
 }
 \end{mathpar}
 
@@ -180,24 +107,6 @@ $\GlobalEffect(\SEPure)$ and\\$\Immutability(\True)$.
 
 \RenderProseAndFormally{declare_type}
 \CodeSubsection{\DeclareTypeBegin}{\DeclareTypeEnd}{../Typing.ml}
-
-
-\TypingRuleDef[annotates the extra fields of a subtype declaration.]{AnnotateExtraFields}
-\RenderRelation{annotate_extra_fields}
-
-\ExampleDef{Type Declarations with Fields and Without Fields}
-\listingref{DeclareType} shows type declarations where one type subtypes
-another, with and without extra fields.
-Specifically, both \verb|SubRecordEmptyExtraFields| and \\
-\verb|SubRecordNoExtraFields|
-subtype \verb|Record| with no extra fields.
-
-In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| is declared to subtype
-\verb|Record| is ill-typed, since \verb|Record| is not defined as a type.
-\ASLListing{Subtyping an undefined type}{AnnotateExtraFields-bad}{\typingtests/TypingRule.AnnotateExtraFields.bad.asl}
-
-
-\RenderProseAndFormally{annotate_extra_fields}
 
 \TypingRuleDef[retrieves the type associated with a declared type name.]{DeclaredType}
 \RenderRelation{declared_type}

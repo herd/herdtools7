@@ -5,12 +5,7 @@ Hello world should work:
 
 Type-checking errors:
 
-  $ aslref subtype-satisfaction-arrray-illegal.asl
-  File subtype-satisfaction-arrray-illegal.asl, line 4, characters 0 to 38:
-  type o of array[[10]] of n subtypes m;
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: a subtype of m was expected, provided array [[10]] of n.
-  [1]
+  $ aslref subtype-satisfaction-arrray.asl
 
   $ aslref anonymous-types-example.asl
   File anonymous-types-example.asl, line 21, characters 2 to 6:
@@ -428,7 +423,7 @@ Required tests:
   $ aslref assign1.asl
   $ aslref big-ints.asl
   $ aslref bitfields.asl
-  $ aslref --no-exec bitfield-subtyping.asl
+  $ aslref --no-exec bitfields2.asl
   $ aslref bitvectors.asl
   $ aslref case.asl
   $ aslref concat-empty.asl
@@ -467,11 +462,16 @@ Required tests:
   $ aslref pass.asl
   $ aslref patterns.asl
   $ aslref pattern-string.asl
-  $ aslref records-2.asl
+  $ aslref records-2.bad.asl
+  File records-2.bad.asl, line 36, characters 9 to 34:
+    assert equal_a_record_ty (a, aa);
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: No subprogram declaration matches the invocation:
+    equal_a_record_ty(a_record_ty, aa_record_ty).
+  [1]
   $ aslref records.asl
   $ aslref static.asl
-  $ aslref subtypes-example.asl
-  $ aslref subtypes-with.asl
+  $ aslref subtype-satisfaction-example.asl
   $ aslref tuples.asl
   $ aslref tuple-return.asl
   $ aslref declaration-primitive-local.asl

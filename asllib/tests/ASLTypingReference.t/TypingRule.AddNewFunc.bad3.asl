@@ -1,5 +1,5 @@
 type shape of integer;
-type square of integer subtypes shape;
+type square of integer;
 var myShape: shape;
 var mySquare: square;
 
@@ -13,10 +13,4 @@ end;
 func h(x: square, y: shape) // Illegal
 begin
     pass;
-end;
-
-func h_test()
-begin
-    // if the declarations were legal, the which h would be invoked?
-    h(mySquare, mySquare); // either h may apply!!
 end;

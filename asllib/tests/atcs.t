@@ -95,10 +95,10 @@ ATCs on other types
 
   $ cat > atcs8.asl <<EOF
   > type A of record{ a: integer};
-  > type B subtypes A;
+  > type B of A;
   > func main () => integer
   > begin
-  >     let x: A = B { a = 0 };
+  >     let x: A = A { a = 0 };
   >     var a: array[[10]] of B;
   >     let b = a as array[[10]] of A;
   >     return 0;
