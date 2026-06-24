@@ -1,4 +1,4 @@
-// Neither ADDR nor PHYSICAL_ADDR is a subtype of the other.
+// Neither ADDR nor PHYSICAL_ADDR type-satisfy the other.
 type ADDR of bits (32) {};
 type PHYSICAL_ADDR of ADDR;
 
@@ -9,7 +9,7 @@ var physical: PHYSICAL_ADDR;
 func raw_addr(x: ADDR) => bits(32)
 begin
   // x may be used as the expression in the return statement
-  // since the return type is type satisfied by the type of x
+  // since the return type is type-satisfied by the type of x
   return x;
 end;
 

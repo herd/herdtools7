@@ -1,5 +1,4 @@
 type Color of enumeration {RED, GREEN, BLUE};
-type SubColor subtypes Color;
 
 type Word64WithLSB  of bits(64) { [63:32] upper,  [31:0] lower, [0] lsb};
 type Word64         of bits(64) { [63:32] upper,  [31:0] lower};
@@ -19,10 +18,6 @@ begin
     let k: integer{5, 7, 8, 64} = 64    as integer{5, 7, 64};
     let m: integer{1..8} = 5            as integer{2..6};
 
-    // Enumerations
-    //     LHS type                     RHS type
-    let e: Color = RED                  as SubColor;
-
     // Bitvectors
     //          LHS type                        RHS type
     let x :     bits(64) = Zeros{64}            as Word64;
@@ -38,6 +33,6 @@ begin
     var enum_indexed_arr2 :  array[[Color]] of integer;
     enum_indexed_arr1 = enum_indexed_arr2;
 
-    var data: (Color, integer{1..8}) = (RED as SubColor, 5 as integer{2..6});
+    var data: (bits(3) {[0] flag}, integer{1..8}) = ('111', 5 as integer{2..6});
 return 0;
 end;

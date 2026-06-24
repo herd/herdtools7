@@ -2,8 +2,6 @@ type Word1 of integer{0..31};
 type Word2 of integer{32..64};
 
 type SuperInt of integer;
-type SubInt1 of integer subtypes SuperInt;
-type SubInt2 of integer subtypes SuperInt;
 
 func nondet() => boolean
 begin
@@ -22,16 +20,10 @@ type BitsA of bits(8) {[0] f1, [7] f2};
 type BitsB of bits(8) {[5:0] f3};
 
 type SuperRec of record {i: integer};
-type SubRec1 subtypes SuperRec with {b: boolean};
-type SubRec2 subtypes SuperRec with {c: real};
-type Exc of exception {i: integer};
 
 func main() => integer
 begin
     // LCA type                                  Type 1                 Type 2
-    var a : SuperInt = if nondet() then 1     as SubInt1     else 2  as SubInt2;
-    var b : SubInt1 = if nondet() then (1     as SubInt1)    else (2 as integer);
-    var c : SubInt2 = if nondet() then (1     as integer)    else (2 as SubInt2);
     var d : integer = if nondet() then (1     as integer{1}) else (2 as integer);
     var e : integer = if nondet() then 1      as integer{1}  else (2 as integer);
     var f : integer = if nondet() then 1                     else 2  as integer;
@@ -44,18 +36,5 @@ begin
     var arr2 : array[[8]] of Word2;
     var k : array [[8]] of integer {0..31, 32..64} = if nondet() then arr1 else arr2;
 
-    var l : (SuperInt, SuperInt) = if nondet()  then (1 as SubInt1, 2 as SubInt2)
-                                                else (2 as SubInt2, 1 as SubInt1);
-
-    var sup : SuperRec;
-    var r1 : SubRec1;
-    var r2 : SubRec2;
-    //      LCA type                            Type 1              Type 2
-    var m : SuperRec =  if nondet() then sup as SuperRec else r1 as SubRec1;
-    var n : SuperRec =  if nondet() then r1  as SubRec1  else r2 as SubRec2;
-    var ex : Exc;
-    // The following statement in comment is illegal as SuperRec and Exc do not have
-    // lowest common ancestor.
-    // var o  = if nondet() then r1 else ex;
     return 0;
 end;

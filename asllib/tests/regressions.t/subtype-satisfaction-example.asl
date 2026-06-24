@@ -1,6 +1,6 @@
 // Declare some named types
 type superInt of integer;
-type subInt of integer subtypes superInt ;
+type subInt of integer;
 type uniqueInt of superInt;
 
 func assign()
@@ -10,29 +10,23 @@ begin
     // initialization type checking rules
     var myInt: integer;
     var mySuperInt : superInt  = myInt;
-    var mySubInt   : subInt    = myInt;
+    // var mySubInt   : subInt    = myInt; // Illegal
     var myUniqueInt: uniqueInt = myInt;
 
     // Integer is subtype-satisfied by all the named types,
     // so it can be assigned from them by the assignment and
     // initialization type checking rules
     myInt = mySuperInt;
-    myInt = mySubInt;
+    // myInt = mySubInt; // illegal
     myInt = myUniqueInt;
 
-    // superInt is not a subtype of anything (apart from itself)
-    // so it cannot be assigned to any other named type
+    // superInt is unrelated in terms of subtype-satisfaction to mySuperInt
     // Illegal: mySubInt    = mySuperInt;
     // Illegal: myUniqueInt = mySuperInt;
 
-    // subInt is a subtype of superInt, so the assignment and
-    // initialization type checking rules permit the following:
-    mySuperInt = mySubInt;
-    // But subInt and uniqueInt are not subtype related
-    // so do not type-satisfy each other.
     // Illegal: myUniqueInt = mySubInt;
 
-    // uniqueInt has no related subtype or supertype
+    // uniqueInt has no related subtype
     // so it cannot be assigned to any named type
     // Illegal: mySuperInt = myUniqueInt;
     // Illegal: mySubInt = myUniqueInt;
@@ -41,22 +35,21 @@ end;
 type aNumberOfThings of integer;
 type ShapeSides      of aNumberOfThings;
 type AnimalLegs      of aNumberOfThings;
-type InsectLegs      of integer subtypes AnimalLegs ;
+type InsectLegs      of integer ;
 
-func subtyping()
+func subtype_satisfaction()
 begin
     var  myCircleSides: ShapeSides = 1;             // legal
     var  myInt        : integer    = myCircleSides; // legal
     // var  dogLegs      : AnimalLegs = myCircleSides; // illegal: unrelated types
     var  centipedeLegs: InsectLegs = 100;           // legal
-    var  animalLegs   : AnimalLegs = centipedeLegs; // legal
-    // var  insectLegs   : InsectLegs = animalLegs;    // illegal: subtype is wrong way
+    // var  animalLegs   : AnimalLegs = centipedeLegs; // illegal: unrelated types
 end;
 
 func main () => integer
 begin
   assign ();
-  subtyping ();
+  subtype_satisfaction ();
 
   return 0;
 end;

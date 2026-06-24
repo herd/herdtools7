@@ -84,7 +84,6 @@
       return,
       setter,
       string,
-      subtypes,
       then,
       throw,
       to,
@@ -97,8 +96,7 @@
       var,
       when,
       where,
-      while,
-      with
+      while
     },
     keywordstyle=\color{red},
     morecomment=[l][\color{blue}]{//},
@@ -893,7 +891,6 @@
 \newcommand\Tshr[0]{\verbatimterminal{SHR}{{>}{>}}}
 \newcommand\Tslicing[0]{\verbatimterminal{SLICING}{..}}
 \newcommand\Tstring[0]{\verbatimterminal{STRING}{string}}
-\newcommand\Tsubtypes[0]{\verbatimterminal{SUBTYPES}{subtypes}}
 \newcommand\Tthen[0]{\verbatimterminal{THEN}{then}}
 \newcommand\Tthrow[0]{\verbatimterminal{THROW}{throw}}
 \newcommand\Tto[0]{\verbatimterminal{TO}{to}}
@@ -905,7 +902,6 @@
 \newcommand\Twhen[0]{\verbatimterminal{WHEN}{when}}
 \newcommand\Twhere[0]{\verbatimterminal{WHERE}{where}}
 \newcommand\Twhile[0]{\verbatimterminal{WHILE}{while}}
-\newcommand\Twith[0]{\verbatimterminal{WITH}{with}}
 
 \newcommand\Tidentifier[0]{\hyperlink{def-tidentifier}{\terminal{ID}}}
 \newcommand\Tstringlit[0]{\hyperlink{def-tstringlit}{\terminal{STRING\_LIT}}}
@@ -937,8 +933,6 @@
 \newcommand\Ntypedidentifier[0]{\hyperlink{def-ntypedidentifier}{\nonterminal{typed\_identifier}}}
 \newcommand\Nasty[0]{\hyperlink{def-nasty}{\nonterminal{as\_ty}}}
 \newcommand\Ntydecl[0]{\hyperlink{def-ntydecl}{\nonterminal{ty\_decl}}}
-\newcommand\Nsubtype[0]{\hyperlink{def-nsubtype}{\nonterminal{subtype}}}
-\newcommand\Nsubtypeopt[0]{\hyperlink{def-nsubtypeopt}{\nonterminal{subtype\_opt}}}
 \newcommand\Nglobaldeclkeywordnonconfig[0]{\hyperlink{def-nglobaldeclkeywordnonconfig}{\nonterminal{global\_keyword\_non\_config}}}
 \newcommand\Nglobaldeclkeyword[0]{\hyperlink{def-nglobaldeclkeyword}{\nonterminal{global\_keyword}}}
 \newcommand\Nignoredoridentifier[0]{\hyperlink{def-nignoredoridentifier}{\nonterminal{ignored\_or\_identifier}}}
@@ -1106,8 +1100,6 @@
 \newcommand\buildopttypedidentifier[0]{\hyperlink{build-opttypedidentifier}{\textfunc{build\_opt\_typed\_identifier}}} % SPECIFICATION_DEFERRED
 \newcommand\buildtydecl[0]{\hyperlink{build-tydecl}{\textfunc{build\_ty\_decl}}} % SPECIFICATION_DEFERRED
 \newcommand\buildtyorcollection[0]{\hyperlink{build-tyorcollection}{\textfunc{build\_ty\_or\_collection}}} % SPECIFICATION_DEFERRED
-\newcommand\buildsubtype[0]{\hyperlink{build-subtype}{\textfunc{build\_subtype}}} % SPECIFICATION_DEFERRED
-\newcommand\buildsubtypeopt[0]{\hyperlink{build-subtypeopt}{\textfunc{build\_subtype\_opt}}} % SPECIFICATION_DEFERRED
 \newcommand\buildglobaldeclkeywordnonconfig[0]{\hyperlink{build-globaldeclkeywordnonconfig}{\textfunc{build\_global\_keyword\_non\_config}}} % SPECIFICATION_DEFERRED
 \newcommand\buildglobaldeclkeyword[0]{\hyperlink{build-globaldeclkeyword}{\textfunc{build\_global\_keyword}}} % SPECIFICATION_DEFERRED
 \newcommand\builddirection[0]{\hyperlink{build-direction}{\textfunc{build\_direction}}} % SPECIFICATION_DEFERRED
@@ -1303,7 +1295,6 @@
 \newcommand\localstoragetypes[0]{\hyperlink{def-localstoragetypes}{\textsf{local\_storage\_types}}}
 \newcommand\returntype[0]{\hyperlink{def-returntype}{\textsf{return\_type}}}
 \newcommand\declaredtypes[0]{\hyperlink{def-declaredtypes}{\textsf{declared\_types}}}
-\newcommand\subtypes[0]{\hyperlink{def-subtypes}{\textsf{subtypes}}}
 \newcommand\subprograms[0]{\hyperlink{def-subprograms}{\textsf{subprograms}}}
 \newcommand\overloadedsubprograms[0]{\hyperlink{def-overloadedsubprograms}{\textsf{overloaded\_subprograms}}}
 \newcommand\exprequiv[0]{\hyperlink{def-exprequiv}{\textsf{expr\_equiv}}}
@@ -1640,9 +1631,6 @@
 \newcommand\Anonymoustypes[0]{\hyperlink{relation-isanonymous}{Anonymous types}}
 \newcommand\namedtype[0]{\hyperlink{relation-isnamed}{named type}}
 \newcommand\namedtypes[0]{\hyperlink{relation-isnamed}{named types}}
-\newcommand\subtypesterm[0]{\hyperlink{def-subtypes}{subtypes}}
-\newcommand\subtypeterm[0]{\hyperlink{def-subtypes}{subtype}}
-\newcommand\supertypeterm[0]{\hyperlink{def-supertypeterm}{supertype}}
 \newcommand\normalizedexpressionterm[0]{\hyperlink{def-normalizedterm}{normalized expression}}
 \newcommand\symbolicexpressionterm[0]{\hyperlink{def-symbolicexpressionterm}{symbolic expression}}
 \newcommand\symbolicexpressionsterm[0]{\hyperlink{def-symbolicexpressionterm}{symbolic expressions}}
