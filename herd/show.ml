@@ -49,25 +49,30 @@ module Make(O:PrettyConf.S) = struct
   module G = Generator(O)
   let generator = G.generator
 
-  let do_show_file name_dot prog ext =
+  let do_show_file ?(rm_tmp_pdf = not O.debug) name_dot prog ext : unit =
     let name_ps = extfile name_dot ext in
-    Handler.push (fun () -> my_remove name_ps) ;
+    if rm_tmp_pdf then Handler.push (fun () -> my_remove name_ps) ;
     let cmd =
       sprintf
-        "%s -T%s %s > %s 2>/dev/null ; %s %s 2>/dev/null%s"
+        "%s -T%s %s > %s 2>/dev/null ; %s %s 2>/dev/null"
       generator ext
       name_dot name_ps prog name_ps
-        (if O.debug then "" else sprintf " && /bin/rm -f %s" name_ps) in
+    in
+    let cmd =
+      if rm_tmp_pdf then
+        sprintf "%s && /bin/rm -f %s" cmd name_ps
+      else cmd
+    in
     let r = Sys.command cmd in
     if O.debug then eprintf "Command: [%s] -> %i\n" cmd r ;
-    Handler.pop ()
+    if rm_tmp_pdf then Handler.pop ()
 
-let show_file_with_view view name_dot =
-  let open View in
-  match view with
-  | GV -> do_show_file name_dot "gv"  "ps"
-  | Evince -> do_show_file name_dot "evince" "pdf"
-  | Preview -> do_show_file name_dot "open -a Preview" "pdf"
+  let show_file_with_view view name_dot : unit =
+    let open View in
+    match view with
+    | GV -> do_show_file name_dot "gv"  "ps"
+    | Evince -> do_show_file name_dot "evince" "pdf"
+    | Preview -> do_show_file ~rm_tmp_pdf:false name_dot "open -a Preview" "pdf"
 
 let show_file name_dot =
   match O.view with
