@@ -1,7 +1,8 @@
 type l of bits(64) { [1] x, [2] y, [3] z };
 type m of array[[10]] of l;
 type n of bits(64) { [1] x, [2] y, [3] z };
-type o of array[[10]] of n subtypes m;
+type o of array[[10]] of n;
+type p of array[[10]] of m;
 
 func main () => integer
 begin

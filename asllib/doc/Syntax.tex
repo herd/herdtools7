@@ -293,8 +293,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
     &\wrappedline\ \Nrecurselimit \parsesep \Nfuncbody &\\
 |\ & \Noverride \parsesep \Taccessor \parsesep \Tidentifier \parsesep \Nparamsopt \parsesep \Nfuncargs \parsesep \Tbeq \parsesep \Tidentifier \parsesep \Nasty &\\
    & \wrappedline\ \Naccessorbody &\\
-|\ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Nsubtypeopt \parsesep \Tsemicolon &\\
-|\ & \Ttype \parsesep \Tidentifier \parsesep \Nsubtype \parsesep \Tsemicolon &\\
+|\ & \Ttype \parsesep \Tidentifier \parsesep \Tof \parsesep \Ntydecl \parsesep \Tsemicolon &\\
 |\ & \Nglobaldeclkeywordnonconfig \parsesep \Tidentifier \parsesep \option{\Tcolon \parsesep \Nty} &\\
    & \wrappedline\ \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
 |\ & \Tconfig \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
@@ -307,17 +306,6 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 \begin{flalign*}
 \Nrecurselimit   \derives \ & \Trecurselimit \parsesep \Nexpr &\\
 |\                          & \emptysentence &\\
-\end{flalign*}
-
-\hypertarget{def-nsubtype}{}
-\begin{flalign*}
-\Nsubtype \derives\ & \Tsubtypes \parsesep \Tidentifier \parsesep \Twith \parsesep \Nfields &\\
-          |\        & \Tsubtypes \parsesep \Tidentifier &\\
-\end{flalign*}
-
-\hypertarget{def-nsubtypeopt}{}
-\begin{flalign*}
-\Nsubtypeopt           \derives \ & \option{\Nsubtype} &
 \end{flalign*}
 
 \hypertarget{def-ntypedidentifier}{}
