@@ -2130,7 +2130,6 @@ sums
 super
 supers
 superset
-supertypes
 supplied
 support
 supported

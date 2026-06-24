@@ -10,7 +10,7 @@ type aa_record_ty of record {
     count: integer,
     data : bit,
     foo: integer
-} subtypes a_record_ty;
+};
 
 readonly func equal_a_record_ty (x: a_record_ty, y: a_record_ty) => boolean
 begin

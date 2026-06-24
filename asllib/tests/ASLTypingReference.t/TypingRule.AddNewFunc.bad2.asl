@@ -1,5 +1,5 @@
 type shape of integer;
-type square of integer subtypes shape;
+type square of integer;
 var myShape: shape;
 var mySquare: square;
 
@@ -15,10 +15,6 @@ end;
 
 func g_test()
 begin
-    g(mySquare, 0); // legal
-    // because since the first declaration of g has
-    // a first argument of type shape with is type-satisfied by the subtype square
-    // and a second argument which is type satisfied by an integer.
     g(myShape, 0.1); // illegal
     // because no declaration of g has
     // a first argument which is type-satisfied by a shape

@@ -63,7 +63,7 @@ The specifications in \listingref{AnnotateCall} and \listingref{AnnotateCall2} a
 
 \ExampleDef{A Call with an Illegal Parameter Type}
 The specification in \listingref{AnnotateCall-bad} is illegal since
-the type of \verb|wid| --- \verb|integer{2,4,8}| --- does not \subtypesatisfyterm{}
+the type of \verb|wid| --- \verb|integer{2,4,8}| --- does not \typesatisfyterm{}
 the type of the parameter \verb|N| --- \verb|integer{2,4}|.
 \ASLListing{An illegal parameter type}{AnnotateCall-bad}{\typingtests/TypingRule.AnnotateCall.bad.asl}
 
@@ -376,9 +376,9 @@ $B$ \Prosetypeclash{}.
 See \ExampleRef{Argument Clashing}
 
 \ExampleDef{Ill-typed Subprogram Declarations}
-In specification \listingref{TypeClash-bad}, the type \verb|SuperRec| \emph{\Prosetypeclashes} \verb|SubRec|
+In specification \listingref{TypeClash-bad}, the type \verb|integer| \emph{\Prosetypeclashes} \verb|time|
 in the \staticenvironmentterm{} where both types have been annotated,
-which is why both declarations of \verb|structured_procedure| clash and thus they are ill-typed.
+which is why both declarations of \verb|f| clash and thus they are ill-typed.
 \ASLListing{Ill-typed Subprogram Declarations}{TypeClash-bad}{\typingtests/TypingRule.TypeClashes.bad.asl}
 
 
