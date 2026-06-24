@@ -401,8 +401,15 @@ let lift_proc_info i evts =
         (fun e (m,sp as k) ->
            if E.is_atomic e then
              match E.proc_of e with
-             | None -> if E.is_spurious e then (m, e::sp) else k
-             | Some proc -> accumulate_loc_proc proc (get_loc e) e m, sp
+             | None ->
+                 if E.is_spurious e then
+                   m, e::sp
+                 else k
+             | Some proc ->
+                 if E.is_explicit e then
+                   accumulate_loc_proc proc (get_loc e) e m, sp
+                 else
+                   m,(e::sp)
            else k)
         es.E.events (IntMap.empty,[]) in
     IntMap.bindings m,sp
