@@ -153,14 +153,14 @@ let checks =
 
 
 (* Com relation *)
-type com =  CRf | CFr | CWs
+type com =  Rf | Fr | Co
 
 let pp_com = function
-  | CRf -> "Rf"
-  | CFr -> "Fr"
-  | CWs -> "Co"
+  | Rf -> "Rf"
+  | Fr -> "Fr"
+  | Co -> "Co"
 
-let fold_com f r = f CRf (f CFr (f CWs r))
+let fold_com f r = f Rf (f Fr (f Co r))
 
 (* Info in tests *)
 type info = (string * string) list
