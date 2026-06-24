@@ -550,8 +550,7 @@ let default_array_ty =
 
 let identifier_of_decl d =
   match d.desc with
-  | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _)
-    ->
+  | D_Func { name; _ } | D_GlobalStorage { name; _ } | D_TypeDecl (name, _) ->
       name
   | D_Pragma _ -> assert false
 
@@ -571,7 +570,7 @@ let set_decl_name name d =
   map_annotated d @@ function
   | D_Func f -> D_Func { f with name }
   | D_GlobalStorage f -> D_GlobalStorage { f with name }
-  | D_TypeDecl (_name, e, ty) -> D_TypeDecl (name, e, ty)
+  | D_TypeDecl (_name, e) -> D_TypeDecl (name, e)
   | D_Pragma _ as d -> d
 
 let patch_with_backup ~src ~patches =

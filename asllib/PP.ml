@@ -439,13 +439,7 @@ let pp_decl f =
     | D_Func func ->
         fprintf f "@[<v>%a@ begin@;<1 2>@[<v>%a@]@ end;@]" pp_func_sig func
           pp_body func.body
-    | D_TypeDecl (x, ty, None) -> fprintf f "@[<2>type %s of %a;@]" x pp_ty ty
-    | D_TypeDecl (x, ty, Some (s, [])) ->
-        fprintf f "@[<2>type %s@ of %a@ subtypes %s;@]" x pp_ty ty s
-    | D_TypeDecl (x, ty, Some (s, fields)) ->
-        fprintf f
-          "@[<2>type %s@ of %a@ subtypes %s@ with @[<hv 2>{@ %a@;<1 -2>}@];@]" x
-          pp_ty ty s pp_fields fields
+    | D_TypeDecl (x, ty) -> fprintf f "@[<2>type %s@ of %a@;@]" x pp_ty ty
     | D_GlobalStorage decl -> fprintf f "@[<2>%a;@]" pp_global_storage decl
     | D_Pragma (name, args) ->
         fprintf f "@[<2>pragma@ %a %a;@]" pp_print_string name

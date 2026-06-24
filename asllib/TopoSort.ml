@@ -181,7 +181,7 @@ module ASTFold = struct
     let open AST in
     match d.desc with
     | D_Func { name; _ } -> Name.Subprogram name
-    | D_GlobalStorage { name; _ } | D_TypeDecl (name, _, _) -> Other name
+    | D_GlobalStorage { name; _ } | D_TypeDecl (name, _) -> Other name
     | D_Pragma _ -> assert false
 
   let use d = DependencyAnalysis.used_identifiers_decl d
@@ -189,7 +189,7 @@ module ASTFold = struct
   let extra_def d =
     let open AST in
     match d.desc with
-    | D_TypeDecl (_, { desc = T_Enum names; _ }, _) ->
+    | D_TypeDecl (_, { desc = T_Enum names; _ }) ->
         List.map (fun n -> Name.Other n) names
     | _ -> []
 
