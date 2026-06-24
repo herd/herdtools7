@@ -153,6 +153,40 @@ type atom_rw =  PP | PL | AP | AL
 type capa = Capability
 type capa_opt = capa option
 
+module PteAttrs = struct
+  type t = AArch64PteVal.Attrs.t
+
+  let of_list = AArch64PteVal.Attrs.of_list
+
+  let wb = ["Normal"; "ISH"; "iWB"; "oWB"]
+  let wt = ["Normal"; "ISH"; "iWT"; "oWT"]
+  let nc = ["Normal"; "ISH"; "iNC"; "oNC"]
+  let gre = ["Device-GRE"]
+  let ngre = ["Device-nGRE"]
+  let ngnre = ["Device-nGnRE"]
+  let ngnrne = ["Device-nGnRnE"]
+
+  let all_attrs =
+    [wb; wt; nc; gre; ngre; ngnre; ngnrne]
+
+  let all = List.map of_list all_attrs
+
+  let compare = AArch64PteVal.Attrs.compare
+  let equal a1 a2 = compare a1 a2 = 0
+  let pp attrs =
+    match AArch64PteVal.Attrs.as_list attrs with
+    | attrs when attrs = wb -> "WB"
+    | attrs when attrs = wt -> "WT"
+    | attrs when attrs = nc -> "NC"
+    | attrs when attrs = gre -> "GRE"
+    | attrs when attrs = ngre -> "nGRE"
+    | attrs when attrs = ngnre -> "nGnRE"
+    | attrs when attrs = ngnrne -> "nGnRnE"
+    | _ ->
+        Warn.fatal "Unknown PTE memory attributes: %s"
+          (AArch64PteVal.Attrs.pp attrs)
+end
+
 module WPTE = struct
 
   type pte_field = AF | DB | DBM | VALID
@@ -210,7 +244,7 @@ let contain_valid_pte_fields set =
     | p -> p
     ) set |> WPTESet.cardinal )
 
-type atom_pte =
+type atom_pte_op =
   | Read|ReadAcq|ReadAcqPc
   | Set of WPTESet.t
   | SetRel of WPTESet.t
@@ -222,9 +256,11 @@ type atom_pte =
      representation. *)
   | ReadHAAcq | ReadHAAcqPc
 
+type atom_pte = atom_pte_op option * PteAttrs.t option
+
 let pp_w_pte ws = WPTESet.pp_str "." WPTE.pp ws
 
-let pp_atom_pte = function
+let pp_atom_pte_op = function
   | Read -> ""
   | ReadAcq -> "A"
   | ReadAcqPc -> "Q"
@@ -232,6 +268,13 @@ let pp_atom_pte = function
   | ReadHAAcqPc -> "HAQ"
   | Set set -> pp_w_pte set
   | SetRel set -> pp_w_pte set ^"L"
+
+let pp_atom_pte (op, attr) =
+  match op,attr with
+  | None,None -> ""
+  | None,Some attr -> PteAttrs.pp attr
+  | Some op,None -> pp_atom_pte_op op
+  | Some op,Some attr -> sprintf "%s.%s" (pp_atom_pte_op op) (PteAttrs.pp attr)
 
 type neon_opt = SIMD.atom
 
@@ -349,8 +392,9 @@ module Value = struct
         List.fold_left ( fun acc atom_pte ->
           (* Toggle values for further process *)
           match atom_pte with
-          | Set(field_set)|SetRel(field_set) -> WPTESet.fold precise_set_field field_set acc
-          | ReadHAAcq | ReadHAAcqPc -> precise_set_field HA acc
+          | Some ((Set field_set)|(SetRel field_set)),_ ->
+              WPTESet.fold precise_set_field field_set acc
+          | Some (ReadHAAcq | ReadHAAcqPc),_ -> precise_set_field HA acc
           | _ -> acc
         ) (None,None,None,None,default_pte_loc) pte_atom_list in
       (* Create a new WPTESet to adjust the inital value.
@@ -362,18 +406,32 @@ module Value = struct
         |> (if value_false db then WPTESet.add (One DB) else Fun.id)
         |> (if value_false dbm then WPTESet.add (One DBM) else Fun.id)
         |> (if value_false valid then WPTESet.add (One VALID) else Fun.id) in
-      toggle_pte adjust_value default_pte_loc loc_fun
+      let init_attrs =
+        List.fold_left (fun attrs atom_pte ->
+          match atom_pte with
+          | _,Some attr -> attr::attrs
+          | _,None -> attrs)
+          [] pte_atom_list in
+      let default_pte_loc_with_attr =
+        match init_attrs with
+        | [] -> default_pte_loc
+        | [attrs] -> { default_pte_loc with AArch64PteVal.attrs; }
+        | _ -> Warn.user_error "Conflicting memory attributes" in
+      toggle_pte adjust_value default_pte_loc_with_attr loc_fun
 
     let do_setpteval flags pte loc =
       let open WPTE in
       match flags with
-        | Set f|SetRel f when WPTESet.mem HA f || WPTESet.mem HD f ->
+        | Some (Set f),_ | Some (SetRel f),_
+          when WPTESet.mem HA f || WPTESet.mem HD f ->
           Warn.user_error "Atom `HD` or `HA` is not a pteval write"
-        | Set f|SetRel f -> toggle_pte f pte loc
-        | Read|ReadAcq|ReadAcqPc ->
+        | Some (Set f),_ | Some (SetRel f),_ -> toggle_pte f pte loc
+        | Some (Read|ReadAcq|ReadAcqPc),_ ->
           Warn.user_error "Atom `Read|ReadAcq|ReadAcqPc` is not a pteval write"
-        | ReadHAAcq | ReadHAAcqPc ->
+        | Some (ReadHAAcq | ReadHAAcqPc),_ ->
           Warn.user_error "Atom `HA` is not a pteval write"
+        | None,_ ->
+          Warn.user_error "Memory attribute alone is not a pteval write"
 
     let set_pteval a p =
       match a with
@@ -388,14 +446,15 @@ module Value = struct
     let affect_pte_field field pte =
       let open WPTE in
       match pte with
-      | Read | ReadAcq | ReadAcqPc -> false
-      | ReadHAAcq | ReadHAAcqPc -> field = AF
-      | Set pte_fields | SetRel pte_fields ->
+      | Some (Read | ReadAcq | ReadAcqPc),_ -> false
+      | Some (ReadHAAcq | ReadHAAcqPc),_ -> field = AF
+      | Some (Set pte_fields),_ | Some (SetRel pte_fields),_ ->
         WPTESet.mem (One field) pte_fields
         || WPTESet.mem (Zero field) pte_fields
         (* special case for `HD` and `HA` *)
         || (field = AF && WPTESet.mem HA pte_fields)
         || (field = DB && WPTESet.mem HD pte_fields)
+      | None,_ -> false
 
     let need_check_fault atom =
       let open WPTE in
@@ -444,16 +503,18 @@ let applies_atom (a,_) d =
   | Acq _,R
   | AcqPc _,R
   | Rel _,W
-  | Pte (Read|ReadAcq|ReadAcqPc),R
+  | Pte (None,None),_ -> false
+  | Pte (Some (Read|ReadAcq|ReadAcqPc),_),R
+  | Pte (None,Some _),(R|W)
   | Instr, R
   | (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _),(R|W)
     -> true
   | Pair ((`Pa|`PaN|`PaIQ|`PaA),_),R -> true
   | Pair ((`Pa|`PaN|`PaIL|`PaL),_),W -> true
   (* special case for TTHM HA for read *)
-  | Pte (Set p),R when WPTESet.mem HA p -> true
-  | Pte (ReadHAAcq|ReadHAAcqPc),R -> true
-  | Pte (Set _|SetRel _),W -> true
+  | Pte (Some (Set p),_),R when WPTESet.mem HA p -> true
+  | Pte (Some (ReadHAAcq|ReadHAAcqPc),_),R -> true
+  | Pte (Some (Set _|SetRel _),_),W -> true
   | _ -> false
 
 let is_ifetch a = match a with
@@ -555,9 +616,16 @@ let is_tthm fields =
        let open WPTE in
        let fold_singleton_wpte f r =
          List.fold_left (fun acc pte -> f (WPTESet.singleton pte) acc) r WPTE.all in
-       let fold_pte_set fs r = r |> f (SetRel fs) |> f (Set fs) in
-       r |> fold_singleton_wpte fold_pte_set |> f Read |> f ReadAcq |> f ReadAcqPc
-         |> f ReadHAAcq |> f ReadHAAcqPc
+       let fold_pte_set fs r =
+         r
+         |> f (Some (SetRel fs),None)
+         |> f (Some (Set fs),None) in
+       let fold_pte_read f r =
+         List.fold_left (fun acc read -> f (Some read,None) acc)
+           r [Read; ReadAcq; ReadAcqPc; ReadHAAcq; ReadHAAcqPc] in
+       let fold_pte_attr f r =
+         List.fold_left (fun acc attr -> f (None,Some attr) acc) r PteAttrs.all in
+       r |> fold_singleton_wpte fold_pte_set |> fold_pte_read f |> fold_pte_attr f
      else r
 
    let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
@@ -652,6 +720,55 @@ let is_tthm fields =
 
    let varatom_dir _d f r = f None r
 
+   let merge_pte_attr attr1 attr2 =
+     match attr1,attr2 with
+     | None,attr | attr,None -> Some attr
+     | Some attr1,Some attr2 when PteAttrs.equal attr1 attr2 -> Some (Some attr1)
+     | Some _,Some _ -> None
+
+   let merge_pte_fields set1 set2 =
+     let set = WPTESet.union set1 set2 in
+     if contain_valid_pte_fields set
+        || contain_valid_tthm_fields set
+     then Some set
+     else None
+
+   let merge_pte_op op1 op2 =
+     let open WPTE in
+     match op1,op2 with
+     | None,op | op,None -> Some op
+     | Some Read,Some Read -> Some (Some Read)
+     | Some Read,Some ReadAcq
+     | Some ReadAcq,Some Read
+     | Some ReadAcq,Some ReadAcq -> Some (Some ReadAcq)
+     | Some Read,Some (ReadAcqPc)
+     | Some ReadAcqPc,Some Read
+     | Some ReadAcqPc,Some ReadAcqPc -> Some (Some ReadAcqPc)
+     (* A few special cases for TTHM HA on read *)
+     | Some (Set p),Some ReadHAAcq
+     | Some ReadHAAcq,Some (Set p) when p = WPTESet.singleton HA ->
+         Some (Some ReadHAAcq)
+     | Some ReadHAAcq,Some (ReadHAAcq|Read)
+     | Some Read,Some ReadHAAcq -> Some (Some ReadHAAcq)
+     | Some (Set p),Some ReadHAAcqPc
+     | Some ReadHAAcqPc,Some (Set p) when p = WPTESet.singleton HA ->
+         Some (Some ReadHAAcqPc)
+     | Some ReadHAAcqPc,Some (ReadHAAcqPc|Read)
+     | Some Read,Some ReadHAAcqPc -> Some (Some ReadHAAcqPc)
+     (* END special cases for TTHM HA on read *)
+     | Some (Set set1),Some (Set set2) ->
+         Option.map (fun set -> Some (Set set)) (merge_pte_fields set1 set2)
+     | Some (Set set1),Some (SetRel set2)
+     | Some (SetRel set1),Some (Set set2)
+     | Some (SetRel set1),Some (SetRel set2) ->
+         Option.map (fun set -> Some (SetRel set)) (merge_pte_fields set1 set2)
+     | _,_ -> None
+
+   let merge_pte (op1,attr1) (op2,attr2) =
+     match merge_pte_op op1 op2, merge_pte_attr attr1 attr2 with
+     | Some op,Some attr -> Some (op,attr)
+     | _,_ -> None
+
    let merge_atoms a1 a2 =
    let open WPTE in
    match a1,a2 with
@@ -674,45 +791,17 @@ let is_tthm fields =
    | ((_,Some _),((Pte _|Tag),_)) ->
        None
 (* Merge Pte *)
-   | ((Pte (Read|ReadAcq),None),((Pte ReadAcq|Acq None),None))
-   | (((Acq None|Pte ReadAcq),None),(Pte (Read|ReadAcq),None))
-       -> Some (Pte ReadAcq,None)
-   | ((Pte (Read|ReadAcqPc),None),((Pte ReadAcqPc|AcqPc None),None))
-   | (((Pte ReadAcqPc|AcqPc None),None),(Pte (Read|ReadAcqPc),None))
-       -> Some (Pte ReadAcqPc,None)
-   (* A few special cases for TTHM HA on read *)
-   | ((Pte (Set p),None),((Pte ReadHAAcq|Acq None),None))
-   | (((Acq None|Pte ReadHAAcq),None),(Pte (Set p),None))
-     when p = WPTESet.singleton HA
-       -> Some (Pte ReadHAAcq,None)
-   | ((Pte ReadHAAcq,None),((Pte ReadHAAcq|Acq None),None))
-   | ((Acq None,None),(Pte ReadHAAcq,None))
-       -> Some (Pte ReadHAAcq,None)
-   | ((Pte (Set p),None),((Pte ReadHAAcqPc|AcqPc None),None))
-   | (((Pte ReadHAAcqPc|AcqPc None),None),(Pte (Set p),None))
-     when p = WPTESet.singleton HA
-       -> Some (Pte ReadHAAcqPc,None)
-   | ((Pte ReadHAAcqPc,None),((Pte ReadHAAcqPc|AcqPc None),None))
-   | ((AcqPc None,None),(Pte ReadHAAcqPc,None))
-       -> Some (Pte ReadHAAcqPc,None)
-   (* END special cases for TTHM HA on read *)
-   | ((Pte (Set set|SetRel set),None),(Rel None,None))
-   | ((Rel None,None),(Pte (Set set|SetRel set),None))
-       -> Some (Pte (SetRel set),None)
-   | (Pte (Set set1),None),(Pte (Set set2),None)
-     -> let set = WPTESet.union set1 set2 in
-        if contain_valid_pte_fields set
-          || contain_valid_tthm_fields set
-        then Some (Pte (Set set),None)
-        else None
-   | ((Pte (Set set1),None),(Pte (SetRel set2),None))
-   | ((Pte (SetRel set1),None),(Pte (Set set2),None))
-   | ((Pte (SetRel set1),None),(Pte (SetRel set2),None))
-     -> let set = WPTESet.union set1 set2 in
-        if contain_valid_pte_fields set
-          || contain_valid_tthm_fields set
-        then Some (Pte (SetRel set),None)
-        else None
+   | ((Pte p1,None),(Pte p2,None)) ->
+       Option.map (fun p -> Pte p,None) (merge_pte p1 p2)
+   | ((Pte p,None),(Acq None,None))
+   | ((Acq None,None),(Pte p,None)) ->
+       Option.map (fun p -> Pte p,None) (merge_pte p (Some ReadAcq,None))
+   | ((Pte p,None),(AcqPc None,None))
+   | ((AcqPc None,None),(Pte p,None)) ->
+       Option.map (fun p -> Pte p,None) (merge_pte p (Some ReadAcqPc,None))
+   | ((Pte (Some (Set set|SetRel set),attr),None),(Rel None,None))
+   | ((Rel None,None),(Pte (Some (Set set|SetRel set),attr),None)) ->
+       Some (Pte (Some (SetRel set),attr),None)
 (* Add size when (ordinary) annotation equal *)
    | ((Acq None as a,None),(Acq None,(Some _ as sz)))
    | ((Acq None as a,(Some _ as sz)),(Acq None,None))
@@ -754,8 +843,9 @@ let is_tthm fields =
    let atom_to_bank = function
    | Tag,None -> Code.Tag
    (* TTHM feature only apply to ordinary R/W *)
-   | Pte (Set p|SetRel p),None when is_tthm p -> Code.Ord
-   | Pte (ReadHAAcq|ReadHAAcqPc),None -> Code.Ord
+   | Pte (Some (Set p|SetRel p),_),None when is_tthm p -> Code.Ord
+   | Pte (Some (ReadHAAcq|ReadHAAcqPc),_),None -> Code.Ord
+   | Pte (None,Some _),None -> Code.Ord
    | Pte _,None -> Code.Pte
    | CapaTag,None -> Code.CapaTag
    | CapaSeal,None -> Code.CapaSeal
@@ -822,14 +912,14 @@ let overwrite_value v ao w = match ao with
   let get_machine_feature atom =
     let open WPTE in
     match atom with
-    | Some(Pte(Set pte|SetRel pte), _) ->
+    | Some(Pte(Some (Set pte|SetRel pte), _), _) ->
       WPTESet.fold (fun f acc ->
         match f with
         | HA -> StringSet.add (WPTE.pp HA) acc
         | HD -> StringSet.add (WPTE.pp HD) acc
         | _ -> acc
       ) pte StringSet.empty
-    | Some(Pte(ReadHAAcq|ReadHAAcqPc), _) ->
+    | Some(Pte(Some (ReadHAAcq|ReadHAAcqPc), _), _) ->
       StringSet.singleton (WPTE.pp HA)
     | _ -> StringSet.empty
 
