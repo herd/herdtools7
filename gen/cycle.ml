@@ -1174,7 +1174,6 @@ let do_set_read_v init =
        - plain value => CoSt.get_cell, CoSt.set_cell,
        - pte value => CoSt.get_pte_value, CoSt.set_pte_value *)
     List.fold_left ( fun st n ->
-      let st = if n.store == nil then st else CoSt.set_cell st n.store.evt.cell in
       let cell = CoSt.get_cell st in
       let bank = n.evt.bank in
       begin match n.evt.dir with
@@ -1581,13 +1580,7 @@ let merge_changes n nss =
             E.is_node m.edge.E.edge || not (pbank m.evt.bank)
           then k else (e.loc,m)::k
       | None| Some R -> k in
-      if m.store == nil then k
-      else begin
-        let e = m.store.evt in
-        if pbank e.bank then
-          (e.loc,m.store)::k
-        else k
-      end in
+      k in
     do_rec n
 
   let get_ord_writes =
