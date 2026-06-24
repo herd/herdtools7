@@ -38,8 +38,6 @@ type global = {
       (** Maps a global constant name to its value. *)
   storage_types : (ty * global_decl_keyword) IMap.t;
       (** Maps global declared storage elements to their types. *)
-  subtypes : identifier IMap.t;
-      (** Maps an identifier s to its parent in the subtype relation. *)
   subprograms : (AST.func * SideEffect.SES.t) IMap.t;
       (** Maps each subprogram runtime name to its signature and the
           side-effects inferred for it. *)
@@ -106,7 +104,6 @@ val add_global_immutable_expr : identifier -> expr -> env -> env
     the oldest expression corresponding to [x]. *)
 
 val add_local : identifier -> ty -> local_decl_keyword -> env -> env
-val add_subtype : identifier -> identifier -> env -> env
 val is_local_undefined : identifier -> local -> bool
 val is_global_undefined : identifier -> global -> bool
 val is_undefined : identifier -> env -> bool

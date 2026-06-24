@@ -367,10 +367,8 @@ let pp_decl f d =
       bprintf f
         "D_GlobalStorage { name=%S; keyword=%a; ty=%a; initial_value=%a}" name
         pp_gdk keyword (pp_option pp_ty) ty (pp_option pp_expr) initial_value
-  | D_TypeDecl (name, type_desc, subty_opt) ->
-      bprintf f "D_TypeDecl (%S, %a, %a)" name pp_ty type_desc
-        (pp_option (pp_pair pp_string (pp_id_assoc pp_ty)))
-        subty_opt
+  | D_TypeDecl (name, type_desc) ->
+      bprintf f "D_TypeDecl (%S, %a)" name pp_ty type_desc
   | D_Pragma (name, exprs) ->
       bprintf f "D_Pragma (%S, %a)" name (pp_list pp_expr) exprs
 
