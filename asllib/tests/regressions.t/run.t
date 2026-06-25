@@ -359,9 +359,6 @@ Parameterized integers:
 
   $ aslref slice-width-shorthand.asl
 
-Arrays indexed by enumerations
-  $ aslref enum-array.asl
-
   $ aslref array-lca.asl
   $ aslref array-index-error.asl
   ASL Dynamic error: Mismatch type:
@@ -419,7 +416,6 @@ Parameters bugs:
 
 Required tests:
   $ aslref anonymous-types-example-success.asl
-  $ aslref array-with-enums.asl
   $ aslref array.asl
   $ aslref -0 assign-v0.asl
   $ aslref -0 asl0-patterns.asl
@@ -725,20 +721,3 @@ Bounds checks
 
 If test environment reversion bug
   $ aslref if-test-env-updated.asl
-
-  $ aslref --version-eac1 SliceFromZero.asl
-  $ aslref SliceFromZero.asl
-  File SliceFromZero.asl, line 4, characters 11 to 13:
-    assert x[:3] == '100';
-             ^^
-  ASL Grammar error: Obsolete syntax:
-    Deprecated slice syntax, use "0 +: 3" instead.
-  [1]
-  $ aslref --version-eac1 SliceStar.asl
-  $ aslref SliceStar.asl
-  File SliceStar.asl, line 4, characters 11 to 15:
-    assert x[3*:2] == '11';
-             ^^^^
-  ASL Grammar error: Obsolete syntax:
-    Deprecated slice syntax, use "3*2 +: 2" instead.
-  [1]

@@ -825,15 +825,8 @@ the function $\readfrombitvector$ takes care of converting integers to bitvector
 
 \hypertarget{def-arrayaccessexpressionsterm}{}
 \hypertarget{def-getarrayexpressionterm}{}
-\hypertarget{def-getenumarrayexpression}{}
 \section{Array Access Expressions\label{sec:ArrayAccessExpressions}}
 This section details the syntax, abstract syntax, semantics, and typing of array read expressions.
-In the untyped AST, a read from either an integer-indexed array or an enumeration-indexed array is represented
-the same way. The type system infers the kind of array and outputs a typed AST node differentiating
-the two kinds of arrays, either a $\EGetArray$ or a $\EGetEnumArray$, via \TypingRuleRef{EGetArray}.
-The semantics utilises a rule matching the corresponding type of array ---
-\SemanticsRuleRef{EGetArray} for integer-indexed arrays and
-\SemanticsRuleRef{EGetEnumArray} for enumeration-indexed arrays.
 
 \subsection{Syntax}
 \begin{flalign*}
@@ -842,7 +835,6 @@ The semantics utilises a rule matching the corresponding type of array ---
 
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{expr_getarray}
-
 
 \ASTRuleDef{EGetArray}
 \begin{mathpar}
@@ -896,17 +888,6 @@ which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
 
 \RenderProseAndFormally{eval_expr_EGetArray}
 \CodeSubsection{\EvalEGetArrayBegin}{\EvalEGetArrayEnd}{../Interpreter.ml}
-
-\SemanticsRuleDef{EGetEnumArray}
-\ExampleDef{Evaluation of Reading from an Enumeration-indexed Array}
-In \listingref{semantics-egetenumarray},
-the enumeration-typed array \texttt{Arr} is accessed for reading and writing
-with indices taken from the \enumerationtypeterm{} \texttt{Enum}.
-\ASLListing{Evaluating an access to an enumeration-indexed array}{semantics-egetenumarray}
-{\semanticstests/SemanticsRule.EGetEnumArray.asl}
-
-\RenderProseAndFormally{eval_expr_EGetEnumArray}
-\CodeSubsection{\EvalEGetEnumArrayBegin}{\EvalEGetEnumArrayEnd}{../Interpreter.ml}
 
 \hypertarget{def-getfieldexpressionterm}{}
 \section{Field Reading Expressions\label{sec:FieldReadingExpressions}}
@@ -1434,8 +1415,7 @@ $\nvint(3)$ or $\nvint(42)$.
 
 \subsubsection{Evaluation of ARBITRARY for an Integer-indexed Array}
 \listingref{semantics-earbitraryarray}
-demonstrates how to obtain an arbitrary integer-indexed array, \texttt{int\_array},
-and how to obtain an arbitrary enumeration-indexed array, \texttt{enum\_array}.
+demonstrates how to obtain an arbitrary integer-indexed array, \texttt{int\_array}.
 \ASLListing{Evaluating an \texttt{ARBITRARY} expression for array types}{semantics-earbitraryarray}
 {\semanticstests/SemanticsRule.EArbitraryArray.asl}
 
@@ -1639,19 +1619,6 @@ which evaluates to
 
 \RenderProseAndFormally{eval_expr_EArray}
 \CodeSubsection{\EvalEArrayBegin}{\EvalEArrayEnd}{../Interpreter.ml}
-
-\SemanticsRuleDef{EEnumArray}
-In \listingref{typing-tarray},
-the variable \verb|big_little_arr| is initialised with an array construction expression
-(which is not expressible in ASL text, only in \typedast, but conceptually could be
-represented as \verb|array[[Labels]] of '0000'|),
-which evaluates to
-\[
-\NVRecord(\{\vBIG\mapsto\nvbitvector(0000), \vLITTLE\mapsto\nvbitvector(0000)\}) \enspace.
-\]
-
-\RenderProseAndFormally{eval_expr_EEnumArray}
-\CodeSubsection{\EvalEEnumArrayBegin}{\EvalEEnumArrayEnd}{../Interpreter.ml}
 
 \section{Side-effect-free Expressions\label{sec:SideEffectFreeExpressions}}
 \subsection{Typing}

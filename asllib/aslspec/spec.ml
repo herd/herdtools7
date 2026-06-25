@@ -2958,7 +2958,7 @@ module Check = struct
         {[
           relation annotate_get_array(
               tenv: static_envs,
-              (size: array_index, t_elem: ty),
+              (size: expr, t_elem: ty),
               (e_base: expr, ses_base: powerset(TSideEffect),
               e_index: expr)) ->
                 (t: ty, new_e: expr, ses: powerset(TSideEffect))
@@ -2966,7 +2966,7 @@ module Check = struct
         the resulting type environment is
         {[
           "tenv" -> static_envs,
-          "size" -> array_index,
+          "size" -> expr,
           "t_elem" -> ty,
           "e_base" -> expr,
           "ses_base" -> powerset(TSideEffect),
