@@ -35,54 +35,53 @@ module Make(O:PrettyConf.S) = struct
   module W = Warn.Make(O)
 
   let my_remove name =
-    if not O.debug then
-      try Sys.remove name
-      with e ->
-        W.warn "remove failed: %s" (Printexc.to_string e)
+    try Sys.remove name
+    with e -> W.warn "remove failed: %s" (Printexc.to_string e)
 
-  let extfile name_dot ext =
-    let base =
-      try Filename.chop_extension name_dot
-      with Invalid_argument _ -> name_dot in
-    base ^ "." ^ ext
+  let extfile name_dot ext = (Filename.remove_extension name_dot) ^ "." ^ ext
 
   module G = Generator(O)
   let generator = G.generator
 
-  let do_show_file name_dot prog ext =
+  let with_temp_file ?(keep = O.debug) name f =
+    if keep then (
+      if O.debug then
+        Printf.eprintf "The file %s will not be removed.\n%!" name;
+      f ())
+    else (
+      if O.debug then Printf.eprintf "Using tempfile %s\n%!" name;
+      Handler.push (fun () -> my_remove name);
+      f ();
+      my_remove name;
+      Handler.pop ())
+
+  let do_show_file ?(keep_tmp_pdf = O.debug) name_dot prog ext : unit =
     let name_ps = extfile name_dot ext in
-    Handler.push (fun () -> my_remove name_ps) ;
+    with_temp_file ~keep:keep_tmp_pdf name_ps @@ fun () ->
     let cmd =
-      sprintf
-        "%s -T%s %s > %s 2>/dev/null ; %s %s 2>/dev/null%s"
-      generator ext
-      name_dot name_ps prog name_ps
-        (if O.debug then "" else sprintf " && /bin/rm -f %s" name_ps) in
+      sprintf "%s -T%s %s > %s 2>/dev/null ; %s %s 2>/dev/null" generator ext
+        name_dot name_ps prog name_ps
+    in
     let r = Sys.command cmd in
-    if O.debug then eprintf "Command: [%s] -> %i\n" cmd r ;
-    Handler.pop ()
+    if O.debug then eprintf "Command: [%s] -> %i\n" cmd r
 
-let show_file_with_view view name_dot =
-  let open View in
-  match view with
-  | GV -> do_show_file name_dot "gv"  "ps"
-  | Evince -> do_show_file name_dot "evince" "pdf"
-  | Preview -> do_show_file name_dot "open -a Preview" "pdf"
+  let show_file_with_view view name_dot : unit =
+    let open View in
+    match view with
+    | GV -> do_show_file name_dot "gv" "ps"
+    | Evince -> do_show_file name_dot "evince" "pdf"
+    | Preview ->
+        do_show_file ~keep_tmp_pdf:true name_dot "open -a Preview" "pdf"
 
-let show_file name_dot =
-  match O.view with
-  | None -> ()
-  | Some v -> show_file_with_view v name_dot
+  let show_file name_dot =
+    match O.view with None -> () | Some v -> show_file_with_view v name_dot
 
-let show ouput_dot =
-  match O.view with
-  | None -> ()
-  | Some view ->
-     let name_dot = Filename.temp_file "herd" ".dot" in
-     Handler.push (fun () -> my_remove name_dot) ;
-     Misc.output_protect ouput_dot name_dot ;
-     show_file_with_view view name_dot ;
-     my_remove name_dot ;
-     Handler.pop ()
-
+  let show ouput_dot =
+    match O.view with
+    | None -> ()
+    | Some view ->
+        let name_dot = Filename.temp_file "herd" ".dot" in
+        with_temp_file name_dot @@ fun () ->
+        Misc.output_protect ouput_dot name_dot;
+        show_file_with_view view name_dot
 end
