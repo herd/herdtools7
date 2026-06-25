@@ -208,7 +208,6 @@ ASL Typing Tests / annotating types:
   ASL Type error: cannot declare already declared element "RED".
   [1]
   $ aslref --no-exec TypingRule.Subtype.asl
-  $ aslref --no-exec TypingRule.GetVariableEnum.asl
   $ aslref TypingRule.TRecordDecl.asl
   $ aslref TypingRule.TRecordDecl.bad.asl
   File TypingRule.TRecordDecl.bad.asl, line 1, characters 17 to 57:
@@ -261,7 +260,6 @@ ASL Typing Tests / annotating types:
   record_base_init = {data=0x00, time=0, flag=FALSE}
   exception_base = {msg=}
   integer_array_base = [[0, 0, 0, 0]]
-  enumeration_array_base = [[RED=0, GREEN=0, BLUE=0]]
   $ aslref --no-exec TypingRule.BaseValue.parameterized.asl
   $ aslref TypingRule.BaseValue.bad_negative_width.asl
   File TypingRule.BaseValue.bad_negative_width.asl, line 1, characters 0 to 24:
@@ -450,20 +448,6 @@ ASL Typing Tests / annotating types:
       x = 42;
       ^
   ASL Static error: Undefined identifier: 'x'
-  [1]
-  $ aslref TypingRule.LESetBadField.asl
-  File TypingRule.LESetBadField.asl, line 6, characters 4 to 5:
-      x.RED = 42;
-      ^
-  ASL Type error: array [[Color]] of integer does not subtype any of: bits(-),
-    record {  }, exception {  }, collection {  }.
-  [1]
-  $ aslref TypingRule.LESetBadField.asl
-  File TypingRule.LESetBadField.asl, line 6, characters 4 to 5:
-      x.RED = 42;
-      ^
-  ASL Type error: array [[Color]] of integer does not subtype any of: bits(-),
-    record {  }, exception {  }, collection {  }.
   [1]
   $ aslref TypingRule.LESetStructuredField.asl
   $ aslref TypingRule.LESetField.asl
@@ -1088,13 +1072,6 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref --no-exec TypingRule.TypeEqual.asl
   $ aslref TypingRule.ExprEqual.asl
-  $ aslref TypingRule.ArrayLengthEqual.bad.asl
-  File TypingRule.ArrayLengthEqual.bad.asl, line 9, characters 4 to 5:
-      x = y;
-      ^
-  ASL Type error: a subtype of array [[3]] of integer was expected,
-    provided array [[Color]] of integer.
-  [1]
   $ aslref TypingRule.ReduceConstraint.asl
   File TypingRule.ReduceConstraint.asl, line 6, characters 4 to 67:
       var x : integer{3 * w, 0..(5 * z - z) - 2 * z,  w + z} = w + z;

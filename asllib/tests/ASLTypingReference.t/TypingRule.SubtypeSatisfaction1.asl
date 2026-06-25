@@ -34,9 +34,6 @@ begin
     var int_indexed_arr1 :  array[[3]] of integer;
     var int_indexed_arr2 :  array[[m-2]] of integer;
     int_indexed_arr2 = int_indexed_arr1 as array[[3]] of integer;
-    var enum_indexed_arr1 :  array[[Color]] of integer;
-    var enum_indexed_arr2 :  array[[Color]] of integer;
-    enum_indexed_arr1 = enum_indexed_arr2;
 
     var data: (Color, integer{1..8}) = (RED as SubColor, 5 as integer{2..6});
 return 0;

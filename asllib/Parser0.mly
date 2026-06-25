@@ -440,7 +440,7 @@ let variable_decl ==
           { AST.(D_GlobalStorage {
             keyword = GDK_Var;
             name = x;
-            ty = Some (T_Array (ArrayLength_Expr e, ty)
+            ty = Some (T_Array (e, ty)
                        |> ASTUtils.add_dummy_annotation ~version);
             initial_value = None;
           })}

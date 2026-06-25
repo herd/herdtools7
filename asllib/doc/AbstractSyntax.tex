@@ -42,7 +42,6 @@ generate a \typedast.
     \item \secref{Types} defines the AST for types;
     \item \secref{Constraints} defines the AST for constraints;
     \item \secref{BitFields} defines the AST for bitfields;
-    \item \secref{ArrayIndices} defines the AST for array indices;
     \item \secref{FieldsAndTypedIdentifiers} defines the AST for fields and typed identifiers;
     \item \secref{AssignableExpressions} defines the AST for assignable expressions;
     \item \secref{LocalDeclarations} defines the AST for local declarations;
@@ -203,10 +202,6 @@ and pattern matching expressions.
 \subsection{Bit Fields \label{sec:BitFields}}
 \RenderType{bitfield}
 
-\subsection{Array Indices \label{sec:ArrayIndices}}
-\hypertarget{ast-ArrayLengthEnum}{}
-\RenderTypes{untyped_array_index}
-
 \subsection{Fields and Typed Identifiers \label{sec:FieldsAndTypedIdentifiers}}
 
 The following rule corresponds to a field of a record-like structure:
@@ -277,15 +272,7 @@ The intention for each AST node type above is as follows:
     the expression $\ve$.
   \item $\EArray\{\EArrayLength: \veone, \EArrayValue: \vetwo\}$ is used to
     construct an integer-indexed array value in order to initialise an
-    array-typed variable.
-  \item $\EEnumArray\{\EArrayEnum: \name, \EArrayLabels: \vl_{1..k}, \EArrayValue: \vetwo\}$ is used
-    to construct an enumeration-indexed array value in order to initialise an
-    array-typed variable.
-  \item $\EGetEnumArray(\ebase, \ekey)$ is used for accessing an enumerated
-    array given by $\ebase$ at the entry given by $\ekey$.
-  \item $\LESetEnumArray(\ebase, \eindex)$ is used for updating an enumerated
-    array left-hand-side expression given by $\ebase$ at the index given by
-    $\eindex$.
+    array-typed variable;
   \item $\EGetCollectionFields(\name, \fieldnames)$ is used for accessing
     the list of (\bitvectortypeterm{}) fields given by $\fieldnames$
     of the collection named $\name$.
@@ -309,9 +296,6 @@ The rules for slices are replaced by the following single derivation:
 
 This reflects the fact that all other slicing constructs are expanded into
 $\SliceLength$ during typechecking.
-
-The following extra rule enables expressing array indices based on enumeration:
-\RenderTypes[remove_hypertargets]{typed_array_index}
 
 The rules for constraint kinds refine the well-constrained kind by a precision
 indicator, which indicates whether precision has been lost during the typing of
@@ -612,9 +596,7 @@ $\AbbrevConstraintExact{\ve}$ & $\ConstraintExact(\ve)$
 \hypertarget{def-abbrevconstraintrange}{}\\
 $\AbbrevConstraintRange{\veone}{\vetwo}$ & $\ConstraintRange(\veone, \vetwo)$ \hypertarget{def-abbrevebinop}{}\\
 $\AbbrevEBinop{\op}{\veone}{\vetwo}$ & $\EBinop(\op, \veone, \vetwo)$\hypertarget{def-abbrevtarray}{}\\
-$\AbbrevTArray{\vi}{\vt}$ & $\TArray(\ArrayLengthExpr(\vi), \vt)$ \hypertarget{def-abbrevtarraylengthexpr}{}\\
-$\AbbrevTArrayLengthExpr{\ve}{\vt}$ & $\TArray(\ArrayLengthExpr(\ve), \vt)$ \hypertarget{def-abbrevtarraylengthenum}{}\\
-$\AbbrevTArrayLengthEnum{\ve}{\vs}{\vt}$ & $\TArray(\ArrayLengthEnum(\ve, \vs), \vt)$\\
+$\AbbrevTArray{\vi}{\vt}$ & $\TArray(\vi, \vt)$ \\
 \hline
 \end{tabular}
 \end{center}
