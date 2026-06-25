@@ -442,6 +442,19 @@ let find_non_pseudo_prev m = find_edge_prev non_pseudo m
         | None-> k)
     m StringMap.empty
 
+  (* Map a size annotation to the cell index.
+     Return the residual annotation after selecting the cell,
+     - `w4` over `int32_t` selects cell 1, (1, None)
+     - `w4` over `int64_t` and `fullmixed` selects cell 0, but keep the atom
+        for the mixed access (0, Some `w4`) *)
+  let split_access_atom atom =
+    match E.get_access_atom atom with
+    | Some (_,o) ->
+        let cell_idx = o / MachSize.nbytes O.naturalsize in
+        let atom = if cell_idx = 0 then atom else None in
+        cell_idx,atom
+    | None -> 0,atom
+
   let is_pair n = match n.evt.loc with
       | Data loc ->
          if E.is_pair n.edge then Some loc
@@ -534,7 +547,8 @@ module CoSt = struct
   let update_cell_on_write st n =
     let e = n.evt in match e.bank with
     | Ord|Pair -> begin
-       let old = st.co_cell.(0) in
+       let idx,atom = split_access_atom e.atom in
+       let old = st.co_cell.(idx) in
        let co_cell = Array.copy st.co_cell in
        let cell2 =
          match n.prev.edge.E.edge with
@@ -545,7 +559,7 @@ module CoSt = struct
        begin
          match e.bank with
          | Ord ->
-            co_cell.(0) <- E.overwrite_value old e.atom cell2
+            co_cell.(idx) <- E.overwrite_value old atom cell2
          | Pair -> (* No Rmw for pairs *)
             let width = Value.from_int ((Value.to_int e.v) - 1) in
             co_cell.(0) <- E.overwrite_value old e.atom width;
@@ -915,7 +929,9 @@ let check_cycle c =
     if v = n.evt.v then
       Warn.fatal "Updated value remains the same. An issue should be reported.";
     let st = CoSt.implicit_pte_update st W in
-    n.evt <- { n.evt with v = tr_value n.evt v; } ;
+    let idx,_ = split_access_atom n.evt.atom in
+    let v = if idx = 0 then tr_value n.evt v else v in
+    n.evt <- { n.evt with v; } ;
     (* Writing Ord resets morello tag *)
     let st = CoSt.set_co st CapaTag evt_null.ctag in
     let e,st = CoSt.update_cell_on_write st n in
@@ -1151,7 +1167,8 @@ let set_dep_v nss =
 (* TODO: this is wrong for Store CR's: consider Rfi Store PosRR *)
 let set_read_individual_v n cell check_value =
   let e = n.evt in
-  let v = E.extract_value cell.(0) e.atom in
+  let idx,atom = split_access_atom e.atom in
+  let v = E.extract_value cell.(idx) atom in
 (* eprintf "SET READ: cell=0x%x, v=0x%x\n" cell v ; *)
   let e = { e with v=v; check_value } in
   n.evt <- e
