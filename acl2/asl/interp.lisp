@@ -1661,19 +1661,6 @@ be updated since expressions can include function calls."
                       (< idxv (len arrv)))
                  (evo_normal (expr_result (nth idxv arrv) idx.env))
                (evo_error "DE_BI: getarray index out of range" desc (list pos))))
-           :e_getenumarray ;; sol
-           (b* (((evoo (expr_result arr)) (eval_expr env desc.base))
-                ((evoo (expr_result idx)) (eval_expr arr.env desc.index))
-                ((evo idxv) (val-case idx.val
-                              :v_label (ev_normal idx.val.val)
-                              :otherwise (ev_error "DE_BI: getenumarray non-label index" desc (list pos))))
-                ((evo arrv) (val-case arr.val
-                              :v_record (ev_normal arr.val.rec)
-                              :otherwise (ev_error "getenumarray non-record value" desc (list pos))))
-                (look (omap::assoc idxv arrv)))
-             (if look
-                 (evo_normal (expr_result (cdr look) idx.env))
-               (evo_error "DE_BI: getenumarray index not found" desc (list pos))))
            :e_getfield ;; anna
            (b* (((evoo (expr_result recres)) (eval_expr env desc.base))
                 ((evob fieldval) (get_field desc.field recres.val)))
@@ -1713,14 +1700,6 @@ be updated since expressions can include function calls."
                                        (ev_error "DE_NE: negative array length" desc (list pos)))
                               :otherwise (ev_error "array non-integer length" desc (list pos)))))
              (evo_normal (expr_result (v_array (make-list lenv :initial-element v.val)) len.env)))
-           :e_enumarray ;; anna
-           (b* (((evoo (expr_result v)) (eval_expr env desc.value))
-                (labels (set::mergesort desc.labels))
-                (len (len labels))
-                (vals (make-list len :initial-element v.val)) 
-                (rec (omap::from-lists labels vals))
-                )
-             (evo_normal (expr_result (v_record rec) v.env)))
            :e_arbitrary ;; sol
            (b* (((evoo ty) (resolve-ty env desc.type))
                 ((mv val orac) (ty-oracle-val ty orac))
@@ -1860,20 +1839,17 @@ evaluation of @('e_arbitrary') expressions."
                                              (ty-fix x) (list pos))))
            :t_tuple (b* (((evoo tys) (resolve-tylist env ty.types)))
                       (evo_normal (ty (t_tuple tys) pos)))
-           :t_array (b* (((evoo base) (resolve-ty env ty.type)))
-                      (array_index-case ty.index
-                        :arraylength_expr (b* (((evoo (expr_result len)) (eval_expr env ty.index.length)))
-                                            (val-case len.val
-                                              :v_int ;;(if (<= 0 len.val.val)
-                                              (evo_normal (ty (t_array
-                                                               (arraylength_expr
-                                                                (expr (e_literal (l_int len.val.val)) pos))
-                                                               base)
-                                                              pos))
-                                              ;; (evo_error "Negative array length resolving type" x))
-                                              :otherwise (evo_error "Unexpected type of array length"
-                                                                    (ty-fix x) (list pos))))
-                        :arraylength_enum (evo_normal (ty (t_array ty.index base) pos))))
+           :t_array (b* (((evoo base) (resolve-ty env ty.type))
+                         ((evoo (expr_result len)) (eval_expr env ty.index)))
+                      (val-case len.val
+                        :v_int ;;(if (<= 0 len.val.val)
+                        (evo_normal (ty (t_array
+                                         (expr (e_literal (l_int len.val.val)) pos)
+                                         base)
+                                        pos))
+                        ;; (evo_error "Negative array length resolving type" x))
+                        :otherwise (evo_error "Unexpected type of array length"
+                                              (ty-fix x) (list pos))))
            :t_record (b* (((evoo fields)
                            (resolve-typed_identifierlist env ty.fields)))
                        (evo_normal (ty (t_record fields) pos)))
@@ -2166,18 +2142,6 @@ pattern for assigning @('<base>.<field>') is:</p>
                                            (ev_error "DE_BI: le_setarray index out of obunds" lx (list pos)))
                                 :otherwise (ev_error "le_setarray non array base" lx (list pos)))))
                           (evtailcall (eval_lexpr idx.env lx.base newarray)))
-           :le_setenumarray (b* ((rbase (expr_of_lexpr lx.base))
-                                 ((evoo (expr_result rbv)) (eval_expr env rbase))
-                                 ((evoo (expr_result idx)) (eval_expr rbv.env lx.index))
-                                 ((evob idxv) (v_to_label idx.val))
-                                 ((evo newarray)
-                                  (val-case rbv.val
-                                    :v_record (if (omap::assoc idxv rbv.val.rec)
-                                                  (ev_normal (v_record (omap::update idxv (val-fix v) rbv.val.rec)))
-                                                (ev_error "DE_BI: le_setenumarray unrecognized index"
-                                                          lx (list pos)))
-                                    :otherwise (ev_error "le_setenumarray non record base" lx (list pos)))))
-                              (evtailcall (eval_lexpr idx.env lx.base newarray)))
            :le_setfield (b* ((rbase (expr_of_lexpr lx.base))
                              ((evoo (expr_result rbv)) (eval_expr env rbase))
                              ((evo newrec)
@@ -2695,7 +2659,6 @@ ASLRef we don't return the environment.</p>"
                   (ty-resolved-p (ev_normal->res res)))
          :hints ('(:expand ((:free (clk) <call>))
                    :in-theory (enable ty-resolved-p
-                                      array_index-resolved-p
                                       int-literal-expr-p))
                  (and stable-under-simplificationp
                       '(:expand ((ty-resolved-p x)))))

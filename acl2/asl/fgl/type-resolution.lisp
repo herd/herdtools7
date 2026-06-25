@@ -274,9 +274,7 @@
 ;;                       (:t_bool :v_bool)
 ;;                       (:t_enum :v_label)
 ;;                       (:t_tuple :v_array)
-;;                       (:t_array (array_index-case ty.index
-;;                                   :arraylength_expr :v_array
-;;                                   :arraylength_enum :v_record))
+;;                       (:t_array :v_array)
 ;;                       (otherwise :v_record)))))
 ;;   :hints (("goal" :in-theory (enable bind-ty-satisfied)
 ;;            :expand ((ty-satisfied x ty)))))
@@ -355,12 +353,9 @@
              (type_desc-case ty.desc
                (:t_tuple (v_array (tuple-type-fix-val arr ty.desc.types)))
                (:t_array
-                (array_index-case ty.desc.index
-                  :arraylength_expr
-                  (v_array
-                   (array-type-fix-val (nfix (int-literal-expr->val ty.desc.index.length))
-                                       arr ty.desc.type))
-                  :otherwise (fgl::abort-rewrite (ty-fix-val (v_array arr) ty))))
+                (v_array
+                 (array-type-fix-val (nfix (int-literal-expr->val ty.desc.index))
+                                     arr ty.desc.type)))
                (:otherwise (fgl::abort-rewrite (ty-fix-val (v_array arr) ty))))))
     :hints (("goal" :expand ((ty-fix-val (v_array arr) ty)))))
 
@@ -380,9 +375,7 @@
                (:t_bool :v_bool)
                (:t_enum :v_label)
                (:t_tuple :v_array)
-               (:t_array (array_index-case desc.index
-                           :arraylength_expr :v_array
-                           :arraylength_enum :v_record))
+               (:t_array :v_array)
                (:t_record :v_record)
                (:t_exception :v_record)
                (:t_collection :v_record)
@@ -500,9 +493,7 @@
            (b* ((desc (ty->desc ty)))
              (type_desc-case desc
                :t_tuple (len desc.types)
-               :t_array (array_index-case desc.index
-                          :arraylength_expr (nfix (int-literal-expr->val desc.index.length))
-                          :otherwise (fgl::abort-rewrite (v_array-len (ty-fix-val x ty))))
+               :t_array (nfix (int-literal-expr->val desc.index))
                :otherwise (fgl::abort-rewrite (v_array-len (ty-fix-val x ty))))))
     :hints(("Goal"
             :in-theory (enable v_array-len)
@@ -516,21 +507,19 @@
                :t_tuple (if (< (nfix n) (len desc.types))
                             (ty-fix-val (v_array-nth n x) (nth n desc.types))
                           (fgl::abort-rewrite (v_array-nth n (ty-fix-val x ty))))
-               :t_array (array_index-case desc.index
-                          :arraylength_expr
-                          (b* ((len (int-literal-expr->val desc.index.length))
-                               (in-bounds
-                                (fgl-mark 'v_array-nth-in-bounds
-                                          (fgl::fgl-validity-check
-                                           (fgl::make-fgl-ipasir-config)
-                                           (and (< (nfix n) len) t))))
-                               ((unless in-bounds)
-                                (fgl::abort-rewrite (v_array-nth n (ty-fix-val x ty))))
-                               (?ign (not (fgl::trigger-constraints
-                                           (v_array-nth-resolve-equal-indices
-                                            n x desc.type)))))
-                            (ty-fix-val (v_array-nth n x) desc.type))
-                          :otherwise (fgl::abort-rewrite (v_array-nth n (ty-fix-val x ty))))
+               :t_array
+               (b* ((len (int-literal-expr->val desc.index))
+                    (in-bounds
+                     (fgl-mark 'v_array-nth-in-bounds
+                               (fgl::fgl-validity-check
+                                (fgl::make-fgl-ipasir-config)
+                                (and (< (nfix n) len) t))))
+                    ((unless in-bounds)
+                     (fgl::abort-rewrite (v_array-nth n (ty-fix-val x ty))))
+                    (?ign (not (fgl::trigger-constraints
+                                (v_array-nth-resolve-equal-indices
+                                 n x desc.type)))))
+                 (ty-fix-val (v_array-nth n x) desc.type))
                :otherwise (fgl::abort-rewrite (v_array-nth n (ty-fix-val x ty))))))
     :hints(("Goal"
             :do-not-induct t
@@ -545,15 +534,7 @@
   ;;              :t_record (record-type-fix-val (v_record->rec x) desc.fields)
   ;;              :t_exception (record-type-fix-val (v_record->rec x) desc.fields)
   ;;              :t_collection (record-type-fix-val (v_record->rec x) desc.fields)
-  ;;              :t_array (array_index-case desc.index
-  ;;                         :arraylength_enum
-  ;;                         (LET ((KEYS (MERGESORT DESC.INDEX.ELTS)))
-  ;;                              (OMAP::FROM-LISTS
-  ;;                               KEYS
-  ;;                               (ARRAY-TYPE-FIX-VAL (LEN KEYS)
-  ;;                                                   (OMAP::KEY-ORD-VALUES (V_RECORD->REC X))
-  ;;                                                   DESC.TYPE)))
-  ;;                         :otherwise (fgl::abort-rewrite (v_record->rec (ty-fix-val x ty))))
+  ;;              :t_array (fgl::abort-rewrite (v_record->rec (ty-fix-val x ty)))
   ;;              :otherwise (fgl::abort-rewrite (v_record->rec (ty-fix-val x ty))))))
   ;;   :hints(("Goal"
   ;;           :expand ((ty-satisfiable ty)
@@ -635,37 +616,6 @@
            :hints(("Goal" :in-theory (enable acl2::index-of)))
            :rule-classes :rewrite))
 
-  (local (defthm val-imap-lookup-of-enumarray-type-fix-val
-           (implies (and ;; (val-imap-has-key key rec)
-                     (member-equal (identifier-fix key)
-                                   (identifierlist-fix keys)))
-                    (equal (Val-imap-lookup key (enumarray-type-fix-val keys rec ty))
-                           (ty-fix-val (val-imap-lookup key rec) ty)))
-           :hints(("Goal" :in-theory (enable val-imap-lookup
-                                             val-imap-has-key
-                                             omap::lookup)
-                   :induct (len keys)
-                   :expand ((enumarray-type-fix-val keys rec ty))))))
-
-  (local (defthm val-imap-has-key-of-enumarray-type-fix-val
-           (iff (Val-imap-has-key key (enumarray-type-fix-val keys rec ty))
-                (member-equal (identifier-fix key)
-                              (identifierlist-fix keys)))
-           :hints(("Goal" :in-theory (enable val-imap-lookup
-                                             val-imap-has-key
-                                             omap::lookup)
-                   :induct (len keys)
-                   :expand ((enumarray-type-fix-val keys rec ty))))))
-
-  (local (defthm val-imap-keys-of-enumarray-type-fix-val
-           (equal (Val-imap-keys (enumarray-type-fix-val keys rec ty))
-                  (set::mergesort (identifierlist-fix keys)))
-           :hints(("Goal" :in-theory (enable val-imap-keys
-                                             identifierlist-fix
-                                             mergesort)
-                   :induct (len keys)
-                   :expand ((enumarray-type-fix-val keys rec ty))))))
-
   (local (defthm member-of-mergesort
            (iff (member-equal k (mergesort x))
                 (member-equal k x))
@@ -683,9 +633,7 @@
                    :t_record (mv t desc.fields nil)
                    :t_exception (mv t desc.fields nil)
                    :t_collection (mv t desc.fields nil)
-                   :t_array (array_index-case desc.index
-                              :arraylength_enum (mv nil desc.index.elts desc.type)
-                              :otherwise (mv nil nil nil))
+                   :t_array (mv nil nil nil)
                    :otherwise (mv nil nil nil)))
                 ((unless fields)
                  (fgl::fgl-progn
@@ -695,12 +643,7 @@
                  (if (member-equal (identifier-fix key) fields)
                      (ty-fix-val (val-imap-lookup key (v_record->rec (fgl::fgl-hide x))) type)
                    (fgl::fgl-progn
-                    (fgl::fgl-error :msg "Val-imap-lookup-rec-of-ty-fix-val bad enumarray key")
-                    ;; (b* (((unless (member-equal (identifier-fix key) fields))
-                    ;;       (fgl::fgl-progn
-                    ;;        (fgl::fgl-error :msg "Bad enumarray key in val-imap-lookup-rec-of-ty-fix-val")
-                    ;;        (fgl::abort-rewrite (val-imap-lookup key (v_record->rec (ty-fix-val x ty)))))))
-                    ;;   (ty-fix-val (val-imap-lookup key (v_record->rec x)) type))
+                   (fgl::fgl-error :msg "Val-imap-lookup-rec-of-ty-fix-val bad key")
                     (fgl::abort-rewrite (val-imap-lookup key (v_record->rec (ty-fix-val x ty)))))))
                 (type (typed_identifierlist-lookup key fields))
                 ((unless type)
@@ -720,9 +663,7 @@
                    :t_record (mv t desc.fields nil)
                    :t_exception (mv t desc.fields nil)
                    :t_collection (mv t desc.fields nil)
-                   :t_array (array_index-case desc.index
-                              :arraylength_enum (mv nil desc.index.elts desc.type)
-                              :otherwise (mv nil nil nil))
+                   :t_array (mv nil nil nil)
                    :otherwise (mv nil nil nil)))
                 ((unless fields)
                  (fgl::fgl-progn
@@ -742,9 +683,7 @@
                    :t_record (mv t desc.fields nil)
                    :t_exception (mv t desc.fields nil)
                    :t_collection (mv t desc.fields nil)
-                   :t_array (array_index-case desc.index
-                              :arraylength_enum (mv nil desc.index.elts desc.type)
-                              :otherwise (mv nil nil nil))
+                   :t_array (mv nil nil nil)
                    :otherwise (mv nil nil nil)))
                 ((unless fields)
                  (fgl::fgl-progn
@@ -968,11 +907,9 @@
                (:t_collection (v_record (record-type-fix-val (v_record->rec x) desc.fields)))
                (:t_tuple (v_array (tuple-type-fix-val (v_array->arr x) desc.types)))
                (:t_array
-                (array_index-case desc.index
-                  :arraylength_expr (v_array (array-type-fix-val (nfix (int-literal-expr->val desc.index.length))
-                                                                 (v_array->arr x)
-                                                                 desc.type))
-                  :otherwise (fgl::abort-rewrite (ty-fix-val-expand x ty))))
+                (v_array (array-type-fix-val (nfix (int-literal-expr->val desc.index))
+                                             (v_array->arr x)
+                                             desc.type)))
                (:otherwise (fgl::abort-rewrite (ty-fix-val-expand x ty))))))
     :hints (("goal" :expand ((ty-fix-val x ty)))))
 
@@ -1040,8 +977,7 @@
      (implies (and (equal desc (ty->desc ty))
                    (type_desc-case desc :t_array)
                    (equal idx (t_array->index desc))
-                   (array_index-case idx :arraylength_expr)
-                   (equal lenx (arraylength_expr->length idx))
+                   (equal lenx idx)
                    (equal len (int-literal-expr->val lenx)) ;;(l_int->val (e_literal->val (expr->desc lenx))))
                    (< (nfix n) len))
               (equal (ty-fix-val (v_array-update-nth n v x) ty)
@@ -1055,10 +991,9 @@
    (defthm v_array-len-of-ty-fix-val-acl2
      (implies (and (equal desc (ty->desc ty))
                    (type_desc-case desc :t_array)
-                   (equal idx (t_array->index desc))
-                   (array_index-case idx :arraylength_expr))
+                   (equal idx (t_array->index desc)))
               (equal (v_array-len (ty-fix-val x ty))
-                     (nfix (int-literal-expr->val (arraylength_expr->length idx)))))
+                     (nfix (int-literal-expr->val idx))))
      :hints (("goal" :expand ((ty-fix-val x ty))
               :in-theory (e/d (v_array-len))))))
 
@@ -1068,7 +1003,6 @@
     (implies (and (equal desc (ty->desc ty))
                   (type_desc-case desc :t_array)
                   (equal idx (t_array->index desc))
-                  (array_index-case idx :arraylength_expr)
                   (ty-satisfied x ty))
              (equal (ty-fix-val (v_array-update-nths lst x) ty)
                     (v_array-update-nths (ty-fix-array-writes lst (t_array->type desc))
