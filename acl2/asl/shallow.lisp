@@ -347,12 +347,7 @@
         ((:t_enum :v_label) (member-equal x.val ty.elts))
         ((:t_tuple :v_array) (weak-tuple-type-satisfied x.arr ty.types))
         ((:t_array :v_array)
-         :when (array_index-case ty.index :arraylength_expr)
          (weak-array-type-satisfied x.arr ty.type))
-        ((:t_array :v_record)
-         :when (array_index-case ty.index :arraylength_enum)
-         (and (equal (omap::keys x.rec) (mergesort (arraylength_enum->elts ty.index)))
-              (weak-array-type-satisfied (omap::values x.rec) ty.type)))
         ((:t_record :v_record)
          (weak-record-type-satisfied x.rec ty.fields))
         ((:t_exception :v_record)
@@ -455,15 +450,8 @@
         (:t_enum (and (keywordp x)
                       (member-equal (symbol-name x) ty.elts)))
         (:t_tuple (weak-tuple-type-satisfied-native x ty.types))
-        (:t_array (array_index-case ty.index
-                    :arraylength_expr
-                    (and (true-listp x)
-                         (weak-array-type-satisfied-native x ty.type))
-                    :arraylength_enum
-                    (and (keymap-p x)
-                         (equal (omap::keys x)
-                                (mergesort (idlist-to-native (arraylength_enum->elts ty.index))))
-                         (weak-array-type-satisfied-native (omap::values x) ty.type))))
+        (:t_array (and (true-listp x)
+                       (weak-array-type-satisfied-native x ty.type)))
         (:t_record (and (keymap-p x)
                         (weak-record-type-satisfied-native x ty.fields)))
         (:t_exception (and (keymap-p x)
@@ -571,11 +559,7 @@
         :t_string (v_string->val x)
         :t_enum (id-to-native (v_label->val x))
         :t_tuple (tuple-val-to-native (v_array->arr x) ty.types)
-        :t_array (array_index-case ty.index
-                   :arraylength_expr (typed-vallist-to-native (v_array->arr x) ty.type)
-                   :arraylength_enum (b* ((keys (mergesort ty.index.elts)))
-                                       (typed-enumarray-to-native
-                                        keys (v_record->rec x) ty.type)))
+        :t_array (typed-vallist-to-native (v_array->arr x) ty.type)
         :t_record (typed-val-imap-to-native (v_record->rec x) ty.fields)
         :t_exception (typed-val-imap-to-native (v_record->rec x) ty.fields)
         :t_collection (typed-val-imap-to-native (v_record->rec x) ty.fields)
@@ -608,23 +592,6 @@
       (omap::update (id-to-native f1.name) val
                     (typed-val-imap-to-native x (cdr fields)))))
 
-  (define typed-enumarray-to-native ((keys identifierlist-p)
-                                     (x val-imap-p)
-                                     (ty ty-p))
-    :measure (acl2::two-nats-measure (ty-count ty) (len keys))
-    :guard (and (subsetp-equal (identifierlist-fix keys) (omap::keys x))
-                (weak-array-type-satisfied (omap::values x) ty))
-    :returns (val keymap-p)
-    (if (atom keys)
-        nil
-      (omap::update (id-to-native (car keys))
-                    (typed-val-to-native (omap::lookup
-                                          (identifier-fix (car keys))
-                                          (val-imap-fix x))
-                                         ty)
-                    (typed-enumarray-to-native (cdr keys) x ty))))
-                                  
-      
   ///
   (local (defthm weak-ty-satisfied-of-lookup-when-weak-array-type-satisfied-of-values
            (implies (and (weak-array-type-satisfied (omap::values x) ty)
@@ -792,18 +759,15 @@
                     :otherwise (evo_error "Unexpected type of bitvector width type" x)))
         :t_tuple (b* (((mv (evo tys) orac) (partial-resolve-tylist env ty.types)))
                    (evo_normal (ty (t_tuple tys))))
-        :t_array (b* (((mv (evo base) orac) (partial-resolve-ty env ty.type)))
-                   (array_index-case ty.index
-                     :arraylength_expr (b* (((mv (evo (expr_result len)) orac) (eval_expr env ty.index.length)))
-                                         (val-case len.val
-                                           :v_int ;;(if (<= 0 len.val.val)
-                                           (evo_normal (ty (t_array
-                                                            (arraylength_expr
-                                                             (expr (e_literal (l_int len.val.val))))
-                                                            base)))
-                                           ;; (evo_error "Negative array length resolving type" x))
-                                           :otherwise (evo_error "Unexpected type of array length" x)))
-                     :arraylength_enum (evo_normal (ty (t_array ty.index base)))))
+        :t_array (b* (((mv (evo base) orac) (partial-resolve-ty env ty.type))
+                      ((mv (evo (expr_result len)) orac) (eval_expr env ty.index)))
+                   (val-case len.val
+                     :v_int ;;(if (<= 0 len.val.val)
+                     (evo_normal (ty (t_array
+                                      (expr (e_literal (l_int len.val.val)))
+                                      base)))
+                     ;; (evo_error "Negative array length resolving type" x))
+                     :otherwise (evo_error "Unexpected type of array length" x)))
         :t_record (b* (((mv (evo fields) orac)
                         (partial-resolve-typed_identifierlist env ty.fields)))
                     (evo_normal (ty (t_record fields))))
@@ -891,15 +855,9 @@
         (:t_enum (and (keywordp x)
                       (member-equal (symbol-name x) ty.elts)))
         (:t_tuple (tuple-type-satisfied-native x ty.types))
-        (:t_array (array_index-case ty.index
-                    :arraylength_expr
-                    (and (true-listp x)
-                         (eql (len x) (int-literal-expr->val ty.index.length))
-                         (array-type-satisfied-native x ty.type))
-                    :arraylength_enum
-                    (and (keyword-alist-p x)
-                         (equal (acl2::alist-keys x) (idlist-to-native (arraylength_enum->elts ty.index)))
-                         (array-type-satisfied-native (acl2::alist-vals x) ty.type))))
+        (:t_array (and (true-listp x)
+                       (eql (len x) (int-literal-expr->val ty.index))
+                       (array-type-satisfied-native x ty.type)))
         (:t_record (and (keyword-alist-p x)
                         (record-type-satisfied-native x ty.fields)))
         (:t_exception (and (keyword-alist-p x)
@@ -1069,15 +1027,7 @@
                        (id-to-native (car ty.elts))
                      (id-to-native "EMPTY_ENUM"))))
         (:t_tuple (tuple-type-fix-native x ty.types))
-        (:t_array (array_index-case ty.index
-                    :arraylength_expr
-                    (array-type-fix-native (nfix (int-literal-expr->val ty.index.length)) x ty.type)
-                    :arraylength_enum
-                    (pairlis$ (idlist-to-native ty.index.elts)
-                              (array-type-fix-native
-                               (len ty.index.elts)
-                               (acl2::alist-vals x)
-                               ty.type))))
+        (:t_array (array-type-fix-native (nfix (int-literal-expr->val ty.index)) x ty.type))
         (:t_record (record-type-fix-native x ty.fields))
         (:t_exception (record-type-fix-native x ty.fields))
         (:t_collection (record-type-fix-native x ty.fields))
@@ -1302,15 +1252,7 @@
                        (id-to-native (car ty.elts))
                      (id-to-native "EMPTY_ENUM"))))
         (:t_tuple (weak-tuple-type-fix-native x ty.types))
-        (:t_array (array_index-case ty.index
-                    :arraylength_expr
-                    (weak-array-type-fix-native (len x) x ty.type)
-                    :arraylength_enum
-                    (pairlis$ (idlist-to-native ty.index.elts)
-                              (weak-array-type-fix-native
-                               (len ty.index.elts)
-                               (acl2::alist-vals x)
-                               ty.type))))
+        (:t_array (weak-array-type-fix-native (len x) x ty.type))
         (:t_record (weak-record-type-fix-native x ty.fields))
         (:t_exception (weak-record-type-fix-native x ty.fields))
         (:t_collection (weak-record-type-fix-native x ty.fields))
@@ -1434,12 +1376,7 @@
         (:t_bool (v_bool x))
         (:t_enum (v_label (identifier (symbol-name x))))
         (:t_tuple (v_array (native-tuple-to-typed-val x ty.types)))
-        (:t_array (array_index-case ty.index
-                    :arraylength_expr
-                    (v_array (native-array-to-typed-val x ty.type))
-                    :arraylength_enum
-                    (v_record (pairlis$ (arraylength_enum->elts ty.index)
-                                        (native-array-to-typed-val (acl2::alist-vals x) ty.type)))))
+        (:t_array (v_array (native-array-to-typed-val x ty.type)))
         (:t_record     (v_record (native-record-to-typed-val x ty.fields)))
         (:t_exception  (v_record (native-record-to-typed-val x ty.fields)))
         (:t_collection (v_record (native-record-to-typed-val x ty.fields)))
@@ -2628,7 +2565,6 @@
                      (list x.name))
         :le_slice (shallow-lexpr-written-vars x.base declared-vars)
         :le_setarray (shallow-lexpr-written-vars x.base declared-vars)
-        :le_setenumarray (shallow-lexpr-written-vars x.base declared-vars)
         :le_setfield (shallow-lexpr-written-vars x.base declared-vars)
         :le_setfields (shallow-lexpr-written-vars x.base declared-vars)
         :le_setcollectionfields
@@ -2756,8 +2692,6 @@
                               (expr-vars x.else)))
         :e_getarray (union (expr-vars x.base)
                            (expr-vars x.index))
-        :e_getenumarray (union (expr-vars x.base)
-                               (expr-vars x.index))
         :e_getfield (expr-vars x.base)
         :e_getfields (expr-vars x.base)
         :e_getcollectionfields (list x.base)
@@ -2767,7 +2701,6 @@
         :e_tuple (exprlist-vars x.exprs)
         :e_array (union (expr-vars x.length)
                         (expr-vars x.value))
-        :e_enumarray (expr-vars x.value)
         :e_arbitrary (ty-vars x.type)
         :e_pattern (union (expr-vars x.expr)
                           (pattern-vars x.pattern))
@@ -2834,7 +2767,7 @@
         :t_int (constraint_kind-vars x.constraint)
         :t_bits (expr-vars x.expr)
         :t_tuple (tylist-vars x.types)
-        :t_array (union (array_index-vars x.index)
+        :t_array (union (expr-vars x.index)
                         (ty-vars x.type))
         :t_record (typed_identifierlist-vars x.fields)
         :t_exception (typed_identifierlist-vars x.fields)
@@ -2875,14 +2808,6 @@
         nil
       (union (int_constraint-vars (car x))
              (int_constraintlist-vars (cdr x)))))
-
-  (define array_index-vars ((x array_index-p))
-    :measure (array_index-count x)
-    :returns (vars (and (identifierlist-p vars)
-                        (setp vars)))
-    (array_index-case x
-      :arraylength_expr (expr-vars x.length)
-      :otherwise nil))
 
   (define typed_identifier-vars ((x typed_identifier-p))
     :measure (typed_identifier-count x)
