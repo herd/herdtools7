@@ -30,7 +30,7 @@ begin
     let y :     bits(k) = Zeros{64}             as bits(sub_k);
     let bv2:    bits(64) {[0] flag} = Zeros{64} as bits(64);
 
-    // integer-indexed arrays
+    // arrays
     var int_indexed_arr1 :  array[[3]] of integer;
     var int_indexed_arr2 :  array[[m-2]] of integer;
     int_indexed_arr2 = int_indexed_arr1 as array[[3]] of integer;

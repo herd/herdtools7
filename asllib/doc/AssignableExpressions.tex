@@ -617,10 +617,10 @@ for examples of well-typed assignable array expressions.
 
 \subsection{Semantics}
 \SemanticsRuleDef{LESetArray}
-\ExampleDef{Integer-indexed Array Update Assignments}
+\ExampleDef{Array Update Assignments}
 In \listingref{semantics-lesetarray}, the assignment \verb|my_array[[3]] = 53;| binds the third element
 of \texttt{my\_array} to the value \texttt{53}.
-\ASLListing{Assignment to an integer-indexed array cell}{semantics-lesetarray}{\semanticstests/SemanticsRule.LESetArray.asl}
+\ASLListing{Assignment to an array cell}{semantics-lesetarray}{\semanticstests/SemanticsRule.LESetArray.asl}
 
 
 \RenderProseAndFormally{eval_lexpr_LESetArray}
