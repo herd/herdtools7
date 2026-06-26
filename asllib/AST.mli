@@ -186,22 +186,20 @@ type expr_desc =
           This expression constructor is only part of the typed AST, i.e. it is
           only built by the type-checker, not any parser. *)
   | E_Arbitrary of ty
-  | E_Pattern of expr * pattern
+  | E_Pattern of expr * (pattern list * pattern_kind)
 
 and expr = expr_desc annotated
 
 and pattern_desc =
   | Pattern_All
-  | Pattern_Any of pattern list
   | Pattern_Geq of expr
   | Pattern_Leq of expr
   | Pattern_Mask of Bitvector.mask
-  | Pattern_Not of pattern
   | Pattern_Range of expr * expr (* lower -> upper, included *)
   | Pattern_Single of expr
-  | Pattern_Tuple of pattern list
 
 and pattern = pattern_desc annotated
+and pattern_kind = Positive | Negative
 
 (** Slices define lists of indices into arrays and bitvectors. *)
 and slice =
@@ -388,7 +386,13 @@ type stmt_desc =
           AST level hints. *)
 
 and stmt = stmt_desc annotated
-and case_alt_desc = { pattern : pattern; where : expr option; stmt : stmt }
+
+and case_alt_desc = {
+  pattern : (pattern list * pattern_kind) annotated;
+  where : expr option;
+  stmt : stmt;
+}
+
 and case_alt = case_alt_desc annotated
 
 and catcher = identifier option * ty * stmt

@@ -908,7 +908,9 @@ yields a \dynamicerrorterm{}.
 |\ & \Tcase \parsesep \Nexpr \parsesep \Tof \parsesep \Ncasealtlist \parsesep \Totherwise \parsesep \Tarrow &\\
    & \wrappedline\ \Nstmtlist \parsesep \Tend \parsesep \Tsemicolon &\\
 \Ncasealtlist \derives \ & \ClistOne{\Ncasealt} \parsesep &\\
-\Ncasealt \derives \ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &\\
+\Ncasealt \derives \ & \Twhen \parsesep \Ncasepattern \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &\\
+\Ncasepattern \derives \ & \Npatternset &\\
+|\ & \Npatternlist &\\
 \end{flalign*}
 
 \listingref{CaseStatement-bad} shows an example of an erroneous case statement
@@ -1039,20 +1041,42 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 } % END_OF_UNIMPORTED_RELATION
 
 \begin{mathpar}
-\inferrule{
+\inferrule[set]{
+  \buildpatternset(\vpatternset) \astarrow (\vpatternasts, \vpatternkind)\\
   \buildoption[\buildexpr](\vwhereopt) \astarrow \vwhereast
 }{
   {
     \begin{array}{r}
   \buildcasealt\left(\overname{\Ncasealt\left(
     \begin{array}{l}
-    \Twhen, \punnode{\Npatternlist}, \\
+    \Twhen, \namednode{\vpatternset}{\Npatternset}, \\
     \wrappedline\ \namednode{\vwhereopt}{\option{\Twhere, \Nexpr}}, \Tarrow, \\
     \wrappedline\ \namednode{\vstmts}{\Nstmtlist}
     \end{array}
     \right)}{\vparsednode}\right)
   \astarrow \\
-  \overname{\casealt(\CasePattern: \astof{\vpatternlist}, \CaseWhere: \vwhereast, \CaseStmt: \astof{\vstmtlist})}{\vastnode}
+  \overname{\casealt(\CasePattern: (\vpatternasts, \vpatternkind), \CaseWhere: \vwhereast, \CaseStmt: \astof{\vstmtlist})}{\vastnode}
+    \end{array}
+  }
+}
+\end{mathpar}
+
+\begin{mathpar}
+\inferrule[list]{
+  \buildpatternlist(\vpatternlist) \astarrow \vpatternasts\\
+  \buildoption[\buildexpr](\vwhereopt) \astarrow \vwhereast
+}{
+  {
+    \begin{array}{r}
+  \buildcasealt\left(\overname{\Ncasealt\left(
+    \begin{array}{l}
+    \Twhen, \namednode{\vpatternlist}{\Npatternlist}, \\
+    \wrappedline\ \namednode{\vwhereopt}{\option{\Twhere, \Nexpr}}, \Tarrow, \\
+    \wrappedline\ \namednode{\vstmts}{\Nstmtlist}
+    \end{array}
+    \right)}{\vparsednode}\right)
+  \astarrow \\
+  \overname{\casealt(\CasePattern: (\vpatternasts, \Positive), \CaseWhere: \vwhereast, \CaseStmt: \astof{\vstmtlist})}{\vastnode}
     \end{array}
   }
 }
@@ -1146,8 +1170,8 @@ a list of \texttt{case} alternatives already converted to conditionals, into a c
 
 \begin{mathpar}
 \inferrule{
-  \vcase \reverseeqdef \{ \CasePattern : \vpattern, \CaseWhere : \vwhere, \CaseStmt : \vstmt \}\\
-  \vepattern \eqdef \EPattern(\vezero, \vpattern)\hva\\
+  \vcase \reverseeqdef \{ \CasePattern : (\vpatternasts, \vpatternkind), \CaseWhere : \vwhere, \CaseStmt : \vstmt \}\\
+  \vepattern \eqdef \EPattern(\vezero, \vpatternasts, \vpatternkind)\hva\\
   {
   \vcond \eqdef \ifthenelseop[V]{\vwhere = \some{\vewhere}}{\EBinop(\BAND, \vepattern, \vewhere)}{\vepattern}
   }

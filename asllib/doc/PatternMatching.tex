@@ -17,10 +17,7 @@ matches a value specified by the \emph{pattern} $p$.
   \item \secref{MatchingAnUpperBoundedRangeOfIntegers} defines the match-integers-less-than pattern;
   \item \secref{MatchingALowerBoundedRangeOfIntegers} defines the match-integers-greater-than pattern;
   \item \secref{MatchingABitmask} defines the bitmask pattern;
-  \item \secref{MatchingATupleOfPatterns} defines the match-a-tuple pattern;
-  \item \secref{MatchingAnyPatternInASetOfPatterns} defines the match-any pattern;
-  \item \secref{MatchingANegatedPattern} defines the negation pattern;
-  \item \secref{ASTRulesForPatternExpressions} defines the expressions that may appear inside patterns.
+  \item \secref{MatchingPatternLists} defines positive and negative matching against pattern lists.
 \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,6 +40,7 @@ transforms a pattern parse node $\vparsednode$ into a pattern AST node $\vastnod
 \RenderRelation{eval_pattern}
 
 \section{Matching All Values\label{sec:MatchingAllValues}}
+\hypertarget{any-pattern}{}
 \ASLListing{Matching any value}{semantics-pall}{\semanticstests/SemanticsRule.PAll.asl}
 
 \subsection{Syntax}
@@ -81,7 +79,7 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 \section{Matching a Single Value\label{sec:MatchingASingleValue}}
 \subsection{Syntax}
 \begin{flalign*}
-\Npattern \derives\ & \Nexprpattern &
+\Npattern \derives\ & \Nexpr &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -90,8 +88,8 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 \ASTRuleDef{PSingle}
 \begin{mathpar}
 \inferrule{}{
-  \buildpattern(\Npattern(\punnode{\Nexprpattern})) \astarrow
-  \overname{\PatternSingle(\astof{\vexprpattern})}{\vastnode}
+  \buildpattern(\Npattern(\punnode{\Nexpr})) \astarrow
+  \overname{\PatternSingle(\astof{\vexpr})}{\vastnode}
 }
 \end{mathpar}
 
@@ -122,7 +120,7 @@ In \listingref{semantics-psingle},
 \section{Matching a Range of Integers\label{sec:MatchingARangeOfIntegers}}
 \subsection{Syntax}
 \begin{flalign*}
-\Npattern \derives\ & \Nexprpattern \parsesep \Tslicing \parsesep \Nexpr &
+\Npattern \derives\ & \Nexpr \parsesep \Tslicing \parsesep \Nexpr &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
@@ -133,8 +131,8 @@ In \listingref{semantics-psingle},
 \inferrule{}{
   {
     \begin{array}{r}
-  \buildpattern(\Npattern(\punnode{\Nexprpattern}, \Tslicing, \punnode{\Nexpr})) \astarrow\\
-  \overname{\PatternRange(\astof{\vexprpattern}, \astof{\vexpr})}{\vastnode}
+  \buildpattern(\Npattern(\namednode{\veone}{\Nexpr}, \Tslicing, \namednode{\vetwo}{\Nexpr})) \astarrow\\
+  \overname{\PatternRange(\astof{\veone}, \astof{\vetwo})}{\vastnode}
     \end{array}
   }
 }
@@ -311,98 +309,48 @@ It is defined by the following table where the rows correspond to values of the 
 \RenderProseAndFormally{eval_pattern_PMask}
 \CodeSubsection{\EvalPMaskBegin}{\EvalPMaskEnd}{../Interpreter.ml}
 
-\section{Matching a Tuple of Patterns\label{sec:MatchingATupleOfPatterns}}
+
+\section{Matching Pattern Lists\label{sec:MatchingPatternLists}}
+Pattern-list forms are the only set-like pattern syntax. They appear at the top level
+of an \texttt{IN} expression or a case alternative, and their elements are simple
+patterns, that is, patterns derived from \Npattern. The forms \verb|{...}| and
+\verb|!{...}| cannot be nested inside a pattern list.
+
 \subsection{Syntax}
 \begin{flalign*}
-\Npattern \derives\ & \Plisttwo{\Npattern} &
-\end{flalign*}
-
-\subsection{Abstract Syntax}
-\RenderTypes[remove_hypertargets]{pattern_tuple}
-
-
-\ASTRuleDef{PTuple}
-\begin{mathpar}
-\inferrule{
-  \buildplist[\buildpattern](\vpatterns) \astarrow \vpatternasts
-}{
-  {
-    \begin{array}{r}
-  \buildpattern(\Npattern(\namednode{\vpatterns}{\Plisttwo{\Npattern}})) \astarrow \\
-  \overname{\PatternTuple(\vpatternasts)}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\subsection{Typing}
-\TypingRuleDef{PTuple}
-\ExampleDef{Typing Tuple Patterns}
-The tuple patterns in \listingref{semantics-ptuple} are well-typed.
-%
-In contrast, the tuple patterns in \listingref{typing-ptuple-bad} and \listingref{typing-ptuple-bad2} are ill-typed.
-\ASLListing{Ill-typed tuple pattern due to order of elements}{typing-ptuple-bad}{\typingtests/TypingRule.PTuple.bad.asl}
-\ASLListing{Ill-typed tuple pattern due to number of elements}{typing-ptuple-bad2}{\typingtests/TypingRule.PTuple.bad2.asl}
-
-
-\RenderProseAndFormally{annotate_pattern_tuple}
-\CodeSubsection{\PTupleBegin}{\PTupleEnd}{../Typing.ml}
-
-\subsection{Semantics}
-\SemanticsRuleDef{PTuple}
-\ExampleDef{Evaluation of a Tuple Pattern}
-In \listingref{semantics-ptuple},
-\texttt{match\_true} evaluates to \True, since
-the tuple of expression \\
-\texttt{(3, '1101010')} matches the tuple of patterns \texttt{(<= 42, 'xx101010')},
-whereas \\
-\texttt{match\_false} evaluates to \False, since
-the tuple of expression \texttt{(3, '1101010')} does not match the tuple of patterns \texttt{(>= 42, 'xx101010')}.
-\ASLListing{Matching against a tuple of patterns}{semantics-ptuple}{\semanticstests/SemanticsRule.PTuple.asl}
-
-
-\RenderProseAndFormally{eval_pattern_PTuple}
-\CodeSubsection{\EvalPTupleBegin}{\EvalPTupleEnd}{../Interpreter.ml}
-
-\section{Matching Any Pattern in a Set of Patterns\label{sec:MatchingAnyPatternInASetOfPatterns}}
-\subsection{Syntax}
-\begin{flalign*}
-\Npattern     \derives\   & \Npatternset &\\
 \Npatternset  \derives \  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
                   |\      & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
 \Npatternlist \derives \ & \ClistOne{\Npattern} &
 \end{flalign*}
 
 \subsection{Abstract Syntax}
-\RenderTypes[remove_hypertargets]{pattern_any}
-
+\RenderTypes{pattern_kind}
 
 \ASTRuleDef{PatternSet}
 \NotImportedToASLSpecYet{
 \hypertarget{build-patternset}{}
 The function
 \[
-  \buildpatternset(\overname{\parsenode{\Npatternset}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
+  \buildpatternset(\overname{\parsenode{\Npatternset}}{\vparsednode}) \;\aslto\; \overname{(\overname{\pattern^*}{\vpatterns}, \overname{\patternkind}{\vpatternkind})}{\vastnode}
 \]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+transforms a parse node $\vparsednode$ into a pattern list and pattern kind.
 } % END_OF_UNIMPORTED_RELATION
 
-
 \begin{mathpar}
-\inferrule[not]{}{
-  {
-    \begin{array}{r}
-  \buildpatternset(\Npatternset(\Tbnot, \Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow\\
-  \overname{\PatternNot(\astof{\vpatternlist})}{\vastnode}
-    \end{array}
-  }
+\inferrule[not]{
+  \buildpatternlist(\punnode{\Npatternlist}) \astarrow \vpatternasts
+}{
+  \buildpatternset(\Npatternset(\Tbnot, \Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow
+  \overname{(\vpatternasts, \Negative)}{\vastnode}
 }
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[list]{}{
+\inferrule[list]{
+  \buildpatternlist(\punnode{\Npatternlist}) \astarrow \vpatternasts
+}{
   \buildpatternset(\Npatternset(\Tlbrace, \punnode{\Npatternlist}, \Trbrace)) \astarrow
-  \overname{\astof{\vpatternlist}}{\vastnode}
+  \overname{(\vpatternasts, \Positive)}{\vastnode}
 }
 \end{mathpar}
 
@@ -411,346 +359,32 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \hypertarget{build-patternlist}{}
 The function
 \[
-  \buildpatternlist(\overname{\parsenode{\Npatternlist}}{\vparsednode}) \;\aslto\; \overname{\pattern}{\vastnode}
+  \buildpatternlist(\overname{\parsenode{\Npatternlist}}{\vparsednode}) \;\aslto\; \overname{\pattern^*}{\vastnode}
 \]
-transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
+transforms a parse node $\vparsednode$ into a list of simple pattern AST nodes.
 } % END_OF_UNIMPORTED_RELATION
-
 
 \begin{mathpar}
 \inferrule{
   \buildclist[\buildpattern](\vpatterns) \astarrow \vpatternasts
 }{
-  {
-    \begin{array}{r}
-  \buildpatternlist(\Npatternlist(\namednode{\vpatterns}{\ClistOne{\Npattern}})) \astarrow\\
-  \overname{\PatternAny(\vpatternasts)}{\vastnode}
-    \end{array}
-  }
+  \buildpatternlist(\Npatternlist(\namednode{\vpatterns}{\ClistOne{\Npattern}})) \astarrow
+  \overname{\vpatternasts}{\vastnode}
 }
 \end{mathpar}
 
 \subsection{Typing}
-\TypingRuleDef{PAny}
-\ExampleDef{Typing Any Patterns}
-\listingref{typing-pany} shows examples of well-typed Any patterns.
-\ASLListing{Well-typed Any patterns}{typing-pany}{\typingtests/TypingRule.PAny.asl}
-
-\listingref{typing-pany-bad} shows an example of an ill-typed Any pattern.
-\ASLListing{An ill-typed Any pattern}{typing-pany-bad}{\typingtests/TypingRule.PAny.bad.asl}
-
-\ProseParagraph
-\AllApply
-\begin{itemize}
-\item $\vp$ is the pattern that matches anything in a list $\vli$, that is, $\PatternAny(\vli)$;
-\item annotating each pattern $\vl$ in $\vli$ yields $(\newl_\vl, \vxs_\vl)$\ProseOrTypeError;
-\item define $\newli$ as the list of patterns $\newl_\vl$, for each $\vl$ in $\vli$;
-\item $\newp$ is the pattern that matches anything in $\newli$, that is, \\ $\PatternAny(\newli)$;
-\item define $\vses$ as the union of all $\vxs_\vl$, for each $\vl$ in $\vli$.
-\end{itemize}
-
-\FormallyParagraph
-\begin{mathpar}
-\inferrule{
-  \vl\in\vli: \annotatepattern(\tenv, \vt, \vl) \typearrow (\newl_\vl, \vxs_\vl) \OrTypeError\hva\\\\
-  \newli \eqdef [\vl\in\vli: \newl_\vl]\\
-  \vses \eqdef \bigcup_{\vl\in\vli} \vxs_\vl
-}{
-  \annotatepattern(\tenv, \vt, \overname{\PatternAny(\vli)}{\vp}) \typearrow (\overname{\PatternAny(\newli)}{\newp}, \vses)
-}
-\end{mathpar}
-\CodeSubsection{\PAnyBegin}{\PAnyEnd}{../Typing.ml}
+\RenderRelation{annotate_pattern_list_and_kind}
+\RenderProseAndFormally{annotate_pattern_list_and_kind}
 
 \subsection{Semantics}
-\SemanticsRuleDef{PAny}
-\ExampleDef{Evaluation of a Match-any Pattern}
-In \listingref{semantics-pany},
-\texttt{match\_true} evaluates to \True, since \texttt{42} matches the second pattern in \verb|{3, 42}|,
-whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does not match
-any pattern in \verb|{3, 4}|.
-\ASLListing{Matching against any pattern in a list of patterns}{semantics-pany}{\semanticstests/SemanticsRule.PAny.asl}
+\SemanticsRuleDef{EvalPatternListAndKind}
+\ExampleDef{Evaluation of Pattern Lists}
 
+A positive pattern list matches when at least one pattern in the list matches the
+discriminant value. A negative pattern list matches when no pattern in the list
+matches the discriminant value.
 
-\RenderProseAndFormally{eval_pattern_PAny}
-\CodeSubsection{\EvalPAnyBegin}{\EvalPAnyEnd}{../Interpreter.ml}
-
-\section{Matching a Negated Pattern\label{sec:MatchingANegatedPattern}}
-\subsection{Syntax}
-\begin{flalign*}
-\Npatternset \derives \  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
-                  |\    & \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &
-\end{flalign*}
-
-\subsection{Abstract Syntax}
-\RenderTypes[remove_hypertargets]{pattern_not}
-
-
-The AST building rule is \ASTRuleRef{PatternSet} (the \textsc{NOT} case).
-
-\subsection{Typing}
-\TypingRuleDef{PNot}
-\listingref{semantics-pnot} shows an example of a well-typed Negated pattern.
-
-
-\RenderProseAndFormally{annotate_pattern_neg}
-\CodeSubsection{\PNotBegin}{\PNotEnd}{../Typing.ml}
-
-\subsection{Semantics}
-\SemanticsRuleDef{PNot}
-\ExampleDef{Evaluation of a Negated Pattern}
-In \listingref{semantics-pnot},
-\texttt{match\_true} evaluates to \True, since \texttt{42} does not match the pattern \verb|{3}|,
-whereas \texttt{match\_false} evaluates to \False, since \texttt{42} does match the pattern \verb|{42}|.
-\ASLListing{Matching against a negated pattern}{semantics-pnot}{\semanticstests/SemanticsRule.PNot.asl}
-
-
-\RenderProseAndFormally{eval_pattern_PNot}
-\CodeSubsection{\EvalPNotBegin}{\EvalPNotEnd}{../Interpreter.ml}
-
-\section{Pattern Expressions\label{sec:ASTRulesForPatternExpressions}}
-The set of expressions appearing inside patterns are grammatically derived
-from \\
-$\Nexprpattern$.
-These are slightly restricted with respect to the set of all expressions,
-which are grammatically derived from $\Nexpr$.
-%
-The grammar is almost identical to that of $\Nexpr$, except that pattern expressions
-for matching a single value and for matching a range of values, exclude tuples
-(for which the tuple expression is used).
-
-The AST for these expressions is $\expr$ --- same as the AST for $\Nexpr$.
-The builders for $\Nexprpattern$ are identical to those of $\Nexpr$. For completeness,
-we list them below.
-
-The type rules and dynamic semantics rules for both sets of expressions is the same,
-as the same AST is generated for both.
-
-Pattern expressions are \sideeffectfreeterm{}, as guaranteed by the checks to \\
-$\checksymbolicallyevaluable$, and thus in the dynamic semantics
-they are evaluated via $\evalexprsef$.
-
-\subsection{ASTRule.ExprPattern\label{sec:ASTRule.ExprPattern}}
-\NotImportedToASLSpecYet{
-\hypertarget{build-exprpattern}{}
-The function
-\[
-  \buildexprpattern(\overname{\parsenode{\Nexprpattern}}{\vparsednode}) \;\aslto\; \overname{\expr}{\vastnode}
-\]
-transforms a pattern expression parse node $\vparsednode$ into a pattern AST node $\vastnode$.
-} % END_OF_UNIMPORTED_RELATION
-
-
-\begin{mathpar}
-\inferrule[literal]{}{
-  \buildexprpattern(\Nexprpattern(\punnode{\Nvalue})) \astarrow
-  \overname{\ELiteral(\astof{\vvalue})}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[var]{}{
-  \buildexprpattern(\Nexprpattern(\Tidentifier(\id))) \astarrow
-  \overname{\EVar(\id)}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[binop]{}{
-    {
-      \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \punnode{\Nbinop}, \punnode{\Nexpr})) \astarrow\\
-  \overname{\EBinop(\astof{\vexprpattern}, \astof{\vbinop}, \astof{\vexpr})}{\vastnode}
-      \end{array}
-    }
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[unop]{}{
-  \buildexprpattern(\Nexprpattern(\punnode{\Nunop}, \punnode{\Nexpr})) \astarrow
-  \overname{\EUnop(\astof{\vunop}, \astof{\vexpr})}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[cond]{
-    \buildexpr(\vcondexpr) \astarrow \astversion{\vcondexpr}\\
-    \buildexpr(\vthenexpr) \astarrow \astversion{\vthenexpr}\\
-    \buildexpr(\velseexpr) \astarrow \astversion{\velseexpr}
-  }{
-    {
-      \begin{array}{r}
-  \buildexprpattern\left(\Nexprpattern\left(
-    \begin{array}{l}
-    \Tif, \namednode{\vcondexpr}{\Nexpr}, \Tthen, \\
-    \wrappedline\ \namednode{\vthenexpr}{\Nexpr}, \Telse, \\
-    \wrappedline\ \namednode{\velseexpr}{\Nexpr}
-    \end{array}
-    \right)\right) \astarrow\\
-  \overname{\ECond(\astversion{\vcondexpr}, \astversion{\vthenexpr}, \astversion{\velseexpr})}{\vastnode}
-      \end{array}
-    }
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[call]{
-    \buildcall(\vcall) \astarrow \astof{\vcall} \OrBuildError
-  }{
-  \buildexprpattern(\Nexprpattern(\namednode{\vcall}{\Ncall})) \astarrow
-  \overname{\ECall(\astof{\vcall})}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[slice]{}{
-    {
-      \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \punnode{\Nslices})) \astarrow\\
-  \overname{\ESlice(\astof{\vexprpattern}, \astof{\vslices})}{\vastnode}
-      \end{array}
-    }
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[get\_array]{}{
-    {
-      \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tllbracket, \punnode{\Nexpr}, \Trrbracket)) \astarrow\\
-  \overname{\EGetArray(\astof{\vexprpattern}, \astof{\vexpr})}{\vastnode}
-      \end{array}
-    }
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[get\_field]{}{
-  {
-    \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tdot, \Tidentifier(\id))) \astarrow \\
-  \overname{\EGetField(\astof{\vexprpattern}, \id)}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[get\_fields]{
-    \vparsednode = \Nexprpattern(\punnode{\Nexprpattern}, \Tdot, \Tlbracket, \namednode{\vids}{\ClistOne{\Tidentifier}}, \Trbracket)\\
-    \buildclist[\buildidentity](\vids) \astarrow \vidasts\\
-    \vastnode \eqdef \EGetFields(\astof{\vexprpattern}, \vidasts)
-  }{
-  \buildexprpattern(\vparsednode) \astarrow \vastnode
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[atc]{}{
-    {
-      \begin{array}{r}
-  \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tas, \punnode{\Nty})) \astarrow\\
-  \overname{\EATC(\astof{\vexprpattern}, \astof{\tty})}{\vastnode}
-      \end{array}
-    }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[atc\_int\_constraints]{}{
-  {
-  \begin{array}{r}
-    \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tas, \punnode{\Nconstraintkind})) \astarrow\\
-    \overname{\EATC(\astof{\vexprpattern}, \TInt(\astof{\vconstraintkind}))}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[pattern\_in]{}{
-  {
-  \begin{array}{r}
-    \buildexprpattern(\Nexprpattern(\punnode{\Nexprpattern}, \Tin, \punnode{\Npatternset})) \astarrow\\
-    \overname{\EPattern(\astof{\vexprpattern}, \astof{\vpatternset})}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[pattern\_eq]{}{
-  {
-    \begin{array}{r}
-      \buildexprpattern(\overname{\Nexprpattern(\punnode{\Nexprpattern}, \Teqop, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
-      \overname{\EPattern(\astof{\vexprpattern}, \PatternMask(\vm))}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[pattern\_neq]{}{
-  {
-    \begin{array}{r}
-      \buildexprpattern(\overname{\Nexprpattern(\punnode{\Nexprpattern}, \Tneq, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
-      \overname{\EPattern(\astof{\vexprpattern}, \PatternNot(\PatternMask(\vm)))}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[arbitrary]{}{
-  \buildexprpattern(\Nexprpattern(\Tarbitrary, \Tcolon, \punnode{\Nty})) \astarrow
-  \overname{\EArbitrary(\astof{\tty})}{\vastnode}
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[record\_empty]{}{
-  {
-  \begin{array}{r}
-  \buildexprpattern\left(\Nexprpattern\left(
-    \begin{array}{l}
-    \Tidentifier(\vt), \Tlbrace, \Tminus, \Trbrace \\
-    \end{array}
-    \right)\right) \\
-    \astarrow\ \overname{\ERecord(\TNamed(\vt), \emptylist)}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[record\_non\_empty]{
-    {
-    \vparsednode = \Nexprpattern\left(
-      \begin{array}{l}
-      \Tidentifier(\vt), \Tlbrace, \\
-      \wrappedline\ \namednode{\vfieldassigns}{\ClistOne{\Nfieldassign}}, \\
-      \wrappedline\ \Trbrace
-      \end{array}
-      \right)
-  }\\
-    \buildclist[\buildfieldassign](\vfieldassigns) \astarrow \vfieldassignasts
-  }{
-    {
-    \begin{array}{r}
-      \buildexprpattern(\vparsednode) \\
-      \astarrow\ \overname{\ERecord(\TNamed(\vt), \vfieldassignasts)}{\vastnode}
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[sub\_expr]{}{
-  {
-    \begin{array}{r}
-      \buildexprpattern(\Nexprpattern(\Tlpar, \punnode{\Nexprpattern}, \Trpar)) \astarrow\\
-      \overname{\ETuple([\ \astof{\vexprpattern}\ ])}{\vastnode}
-    \end{array}
-  }
-}
-\end{mathpar}
+\RenderRelation{eval_pattern_list_and_kind}
+\RenderProseAndFormally{eval_pattern_list_and_kind}
+\CodeSubsection{\EvalPatternListAndKindBegin}{\EvalPatternListAndKindEnd}{../Interpreter.ml}

@@ -17,10 +17,6 @@ begin
     elsif bv IN !{ '1111', '0000' } then
         status = 3;
 
-    // Example of the tuple pattern
-    elsif (bv, val) IN { ('0010', >= 1000) } then
-        status = 4;
-
     // Example of the match-all pattern
     elsif bv IN { - } then
         status = 5;
