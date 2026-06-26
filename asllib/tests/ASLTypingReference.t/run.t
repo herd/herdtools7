@@ -630,18 +630,6 @@ ASL Typing Tests / annotating types:
   ASL Type error: Erroneous pattern >= (3.0 / 1.0) for expression of type
     integer {42}.
   [1]
-  $ aslref TypingRule.PTuple.bad.asl
-  File TypingRule.PTuple.bad.asl, line 4, characters 11 to 45:
-      assert (3, '101010') IN { ('xx1010', 5) };
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: a subtype of bits(-) was expected, provided integer {3}.
-  [1]
-  $ aslref TypingRule.PTuple.bad2.asl
-  File TypingRule.PTuple.bad2.asl, line 5, characters 11 to 26:
-      assert 3 IN { (3, 4) };
-             ^^^^^^^^^^^^^^^
-  ASL Type error: a subtype of () was expected, provided integer {3}.
-  [1]
   $ aslref TypingRule.PMask.asl
   $ aslref TypingRule.PMask.bad.asl
   File TypingRule.PMask.bad.asl, line 5, characters 11 to 34:

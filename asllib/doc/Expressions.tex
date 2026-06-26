@@ -1296,19 +1296,19 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
 \end{flalign*}
 
 \subsection{Abstract Syntax}
-\RenderTypes[remove_hypertargets]{expr_pattern}
+\RenderTypes[remove_hypertargets]{expr_epattern}
 
 
 \ASTRuleDef{EPattern}
 \begin{mathpar}
 \inferrule{
   \buildexpr(\ve) \astarrow \astversion{\ve} \OrBuildError\hva\\\\
-  \buildpatternset(\vps) \astarrow \astversion{\vps} \OrBuildError
+  \buildpatternset(\vps) \astarrow (\vpatternasts, \vpatternkind) \OrBuildError
 }{
   {
     \begin{array}{r}
       \buildexpr(\overname{\Nexpr(\ve : \Nexpr, \Tin, \vps : \Npatternset)}{\vparsednode}) \astarrow\\
-      \overname{\EPattern(\astversion{\ve}, \astversion{\vps})}{\vastnode}
+      \overname{\EPattern(\astversion{\ve}, \vpatternasts, \vpatternkind)}{\vastnode}
     \end{array}
   }
 }
@@ -1319,7 +1319,7 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
   {
     \begin{array}{r}
   \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Teqop, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
-  \overname{\EPattern(\astof{\vexpr}, \PatternMask(\vm))}{\vastnode}
+  \overname{\EPattern(\astof{\vexpr}, [\PatternMask(\vm)], \Positive)}{\vastnode}
     \end{array}
   }
 }
@@ -1330,7 +1330,7 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
   {
     \begin{array}{r}
       \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tneq, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
-      \overname{\EPattern(\astof{\vexpr}, \PatternNot(\PatternMask(\vm)))}{\vastnode}
+      \overname{\EPattern(\astof{\vexpr}, [\PatternMask(\vm)], \Negative)}{\vastnode}
     \end{array}
   }
 }

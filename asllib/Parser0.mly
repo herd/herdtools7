@@ -383,8 +383,8 @@ let binop_expr(e, b) ==
       | ~=e; ~=bracketed(clist(slice));               < AST.E_Slice     >
       | ~=bracketed(clist(expr));                     < make_concat     >
       | ~=e; IN; ~=bpattern;                          < AST.E_Pattern   >
-      | ~=e; EQ_EQ; ~=pattern_mask;                   < AST.E_Pattern   >
-      | ~=e; ~=annotated(BANG_EQ; pm=pattern_mask; < AST.Pattern_Not >); < AST.E_Pattern >
+      | e=e; EQ_EQ; pm=pattern_mask;                  { AST.E_Pattern (e, ([pm], AST.Positive)) }
+      | e=e; BANG_EQ; pm=pattern_mask;                { AST.E_Pattern (e, ([pm], AST.Negative)) }
       | ~=annotated(ty_non_tuple); UNKNOWN;           < AST.E_Arbitrary >
       (*
       | ~=e; LT; ~=clist(slice); GT;          < AST.E_Slice     >
@@ -737,12 +737,14 @@ let s_else == ~=list(s_elsif); ~=ioption(ELSE; possibly_empty_block); < build_st
 
 let alt ==
   annotated (
-    | WHEN; pattern=pattern_list; where=opt_where; stmt=possibly_empty_block;
+    | WHEN; pattern=annotated(pattern_list); where=opt_where; stmt=possibly_empty_block;
         { AST.{ pattern; where; stmt } }
-    | WHEN; pattern=pattern_list; where=opt_where; stmt=simple_if_stmt;
+    | WHEN; pattern=annotated(pattern_list); where=opt_where; stmt=simple_if_stmt;
         { AST.{ pattern; where; stmt } }
     | loc=annotated(OTHERWISE); stmt=possibly_empty_block;
-        { AST.{ pattern = ASTUtils.add_pos_from loc Pattern_All; where = None; stmt } }
+        { let any_pattern = ASTUtils.add_pos_from loc AST.Pattern_All in
+          let pattern = ASTUtils.add_pos_from loc ([any_pattern], AST.Positive) in
+          AST.{ pattern; where = None; stmt } }
   )
 
 let opt_where ==
@@ -753,9 +755,8 @@ let otherwise == annotated (OTHERWISE; possibly_empty_block)
 
 let pattern_mask == annotated(~=MASK_LIT; <AST.Pattern_Mask>)
 let pattern_all == annotated(MINUS; { AST.Pattern_All })
-let pattern_list == annotated(~=nclist(pattern); < AST.Pattern_Any >)
+let pattern_list == ps=nclist(pattern); {(ps, AST.Positive)}
 let pattern ==
-    | bpattern
     | pattern_mask
     | pattern_all
     | annotated (
@@ -764,7 +765,7 @@ let pattern ==
         | ~=qualident; < AST.E_Var >
       ); < AST.Pattern_Single >
     )
-let bpattern == annotated(braced(~=nclist(apattern); < AST.Pattern_Any >))
+let bpattern == braced(ps=nclist(apattern); {(ps, AST.Positive)})
 let apattern ==
   | annotated (
     | ~=expr; < AST.Pattern_Single >

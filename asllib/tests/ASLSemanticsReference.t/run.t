@@ -163,7 +163,6 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.PRange.asl
   $ aslref SemanticsRule.PSingle.asl
   $ aslref SemanticsRule.PMask.asl
-  $ aslref SemanticsRule.PTuple.asl
   $ aslref SemanticsRule.ATCValue.asl
   $ aslref -0 SemanticsRule.LEUndefIdentV0.asl
   $ aslref SemanticsRule.LEUndefIdentV1.asl
