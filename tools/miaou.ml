@@ -564,6 +564,9 @@ and cons_seqs (fs:exp list) (es:exp list) =
            List { l with items = List.rev items; }
         | _ as i -> i
         end
+      | App (_,Var (_,"domain"), rel) ->
+        let e3 = Next.next () in
+        tr_rel e1 e3 rel
       | e ->
          Item (fail (ASTUtils.exp2loc e) "ignoring expression")
 
