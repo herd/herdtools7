@@ -41,8 +41,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
 
-let TTD = PTE
-
 (*** Device Memory ***)
 
 (* Device Memory Types *)

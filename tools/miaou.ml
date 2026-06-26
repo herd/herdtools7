@@ -564,7 +564,14 @@ and cons_seqs (fs:exp list) (es:exp list) =
            List { l with items = List.rev items; }
         | _ as i -> i
         end
-      | e ->
+      | App (_,Var (_,"domain"), rel) ->
+        let e3 = Next.next () in
+        begin match tr_rel e1 e3 rel with
+        | List ({ items; _ } as l) ->
+           List { l with items = List.rev items; }
+        | _ as i -> i
+        end
+       | e ->
          Item (fail (ASTUtils.exp2loc e) "ignoring expression")
 
     and tr_evts_not e1 e = notItem (tr_evts e1 e)

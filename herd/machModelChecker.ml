@@ -156,24 +156,17 @@ module Make
             S.A.V.Cst.PteVal.same_oa p1 p2
         | _ -> false
 
-      let writable2 =
-        let writable ha hd e = match S.E.value_of e with
+      let writable2 e1 e2 =
+        let writable e =
+          let open DirtyBit in
+          let ha, hd = match O.dirty with
+          | Some d -> d.some_ha, d.some_hd
+          | _ -> false, false in
+          match S.E.value_of e with
           | Some (S.A.V.Val (Constant.PteVal p)) ->
-              S.A.V.Cst.PteVal.writable ha hd p
+            S.A.V.Cst.PteVal.writable ha hd p
           | _ -> false in
-        fun e1 e2 ->
-        let p = S.E.proc_of e1 in
-        match p with
-        | None ->
-           Warn.user_error
-             "Init or spurious write as first argument of writable2"
-        | Some p ->
-            let ha,hd =
-              let open DirtyBit in
-              match O.dirty with
-              | Some d -> d.ha p,d.hd p
-              | None -> false,false in
-            writable ha hd e1 || writable ha hd e2
+        writable e1 || writable e2
 
     end
 

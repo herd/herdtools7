@@ -1,0 +1,12 @@
+AArch64 CoWR+PteOA
+Variant=vmsa
+{
+  [PTE(x)]=(oa:PA(x));
+  0:X1=x;
+  1:X4=(oa:PA(y)); 1:X5=PTE(x);
+}
+ P0          | P1          ;
+ MOV W0,#1   | STR X4,[X5] ;
+ STR W0,[X1] |             ;
+ LDR W2,[X1] |             ;
+exists(0:X2=0)

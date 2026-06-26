@@ -283,6 +283,19 @@ cata-test:: test.herd.cata.aarch64-ETS3
 cata-test:: test.herd.cata.bpf
 cata-test:: test.herd.cata.x86_64
 
+test.herd.cata-ext.%:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-j $(J) \
+		$(NOHASH) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir  catalogue/$*/tests \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 catalogue $* instructions tests: OK"
+
+cata-test-all:: test.herd.cata-ext.aarch64-BBM
+
 test.herd-mixed.cata.%:
 	@ echo
 	$(HERD_CATALOGUE_REGRESSION_TEST) \

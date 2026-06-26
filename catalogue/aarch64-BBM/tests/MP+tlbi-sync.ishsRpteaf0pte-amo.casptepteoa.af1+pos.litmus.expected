@@ -1,0 +1,12 @@
+Test MP+tlbi-sync.ishsRpteaf0pte-posptepteoa.af1+pos Allowed
+States 3
+1:X2=1; 1:X5=1;
+1:X2=1; 1:X5=2;
+1:X2=2; 1:X5=2;
+No
+Witnesses
+Positive: 0 Negative: 70
+Condition exists (1:X2=2 /\ 1:X5=1)
+Observation MP+tlbi-sync.ishsRpteaf0pte-posptepteoa.af1+pos Never 0 70
+Hash=2d93e28584c394c2b67face920ecd28c
+
