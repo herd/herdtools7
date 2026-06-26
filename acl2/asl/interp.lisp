@@ -1126,7 +1126,7 @@ error has been reached. Arguably unnecessary given FGL's backtrace capability."
 
 (defmacro evo_error (&rest args)
   `(pass-error (ev_error . ,args) orac))
-                     
+
 (acl2::def-b*-binder evo
   :parents (asl-interpreter-functions)
   :short "Binds an eval_result object. If it is an ev_error or ev_throwing,
@@ -1167,7 +1167,7 @@ binder)."
   (defret val_result-p-of-<fn>
     (implies (val_result-p x)
              (val_result-p new-x)))
-  
+
   (defthm ev_error->desc-of-init-backtrace
          (equal (ev_error->desc (init-backtrace err storage pos))
                 (ev_error->desc err))
@@ -1572,7 +1572,7 @@ be updated since expressions can include function calls."
                                                                (local-env->storage (env->local env))
                                                                (global-env->storage (env->global env)))))))
            :e_pattern (b* (((evoo (expr_result v1)) (eval_expr env desc.expr))
-                           ((evoo val) (eval_pattern v1.env v1.val desc.pattern)))
+                           ((evoo val) (eval_pattern_list_and_kind v1.env v1.val desc.pattern)))
                         (evo_normal (expr_result val v1.env)))
            :e_unop ;; anna
            (b* (((evoo (expr_result v)) (eval_expr env desc.arg))
@@ -1609,7 +1609,7 @@ be updated since expressions can include function calls."
                         :otherwise (evo_error "DE_BO: First argument of ==> evaluated to non-boolean"
                                               desc (list pos)))))
              ;;all other ops
-             (otherwise 
+             (otherwise
               (b* (((evoo (expr_result v1)) (eval_expr env desc.arg1))
                    ((evoo (expr_result v2)) (eval_expr v1.env desc.arg2))
                    ((evob val) (eval_binop desc.op v1.val v2.val)))
@@ -1717,7 +1717,7 @@ be updated since expressions can include function calls."
            (b* (((evoo (expr_result v)) (eval_expr env desc.value))
                 (labels (set::mergesort desc.labels))
                 (len (len labels))
-                (vals (make-list len :initial-element v.val)) 
+                (vals (make-list len :initial-element v.val))
                 (rec (omap::from-lists labels vals))
                 )
              (evo_normal (expr_result (v_record rec) v.env)))
@@ -1911,7 +1911,6 @@ evaluation of @('e_arbitrary') expressions."
             (pos (pattern->pos_start p)))
          (pattern_desc-case desc
            :pattern_all (evo_normal (v_bool t)) ;; SemanticsRule.PAll
-           :pattern_any (evtailcall (eval_pattern-any env val desc.patterns))
            :pattern_geq (b* (((evoo (expr_result v1)) (eval_expr env desc.expr)))
                           (evo-return (init-backtrace (eval_binop :ge val v1.val)
                                                       (local-env->storage (env->local env))
@@ -1924,10 +1923,6 @@ evaluation of @('e_arbitrary') expressions."
            (val-case val
              :v_bitvector (evo-return (eval_pattern_mask val desc.mask))
              :otherwise (evo_error "Unsupported pattern_mask case" desc (list pos)))
-           :pattern_not (b* (((evoo v1) (eval_pattern env val desc.pattern)))
-                          (evo-return (init-backtrace (eval_unop :bnot v1)
-                                                      (local-env->storage (env->local env))
-                                                      pos)))
            :pattern_range (b* (((evoo (expr_result v1)) (eval_expr env desc.lower))
                                ((evoo (expr_result v2)) (eval_expr env desc.upper))
                                ((evob lower) (eval_binop :ge val v1.val))
@@ -1936,44 +1931,14 @@ evaluation of @('e_arbitrary') expressions."
                                                         (local-env->storage (env->local env))
                                                         pos)))
            :pattern_single (b* (((evoo (expr_result v1)) (eval_expr env desc.expr)))
-                             (evo-return (init-backtrace (eval_binop :eq val v1.val)
-                                                         (local-env->storage (env->local env))
-                                                         pos)))
-           :pattern_tuple (b* ((len (len desc.patterns))
-                               ((evo vs) (val-case val
-                                           :v_array (if (eql (len val.arr) len)
-                                                        (ev_normal val.arr)
-                                                      (ev_error "pattern tuple length mismatch"
-                                                                (pattern-fix p) (list pos)))
-                                           :otherwise (ev_error "pattern tuple type mismatch"
-                                                                (pattern-fix p) (list pos)))))
-                            (evtailcall (eval_pattern_tuple env vs desc.patterns))))))
+                             (evo-return (init-backtrace (eval_binop :eq val v1.val) pos)))))
 
-     (define eval_pattern_tuple ((env env-p)
-                                 (vals vallist-p)
-                                 (p patternlist-p)
-                                 &key
-                                 ((clk natp) 'clk)
-                                 (orac 'orac))
-       :short "Evaluate whether the @(see patternlist) @('p') matches the values @('vals')."
-       :guard (eql (len vals) (len p))
-       :measure (nats-measure clk 0 (patternlist-count p) 0)
-       :returns (mv (res val_result-p) new-orac)
-       (b* (((when (atom p)) (evo_normal (v_bool t)))
-            ((evoo first) (eval_pattern env (car vals) (car p)))
-            ;; short circuit?
-            ((when (val-case first :v_bool (not first.val) :otherwise nil))
-             (evo_normal first))
-            ((evoo rest) (eval_pattern_tuple env (cdr vals) (cdr p))))
-         (evo-return (eval_binop :band first rest))))
-
-
-     (define eval_pattern-any ((env env-p)
-                               (val val-p)
-                               (p patternlist-p)
-                               &key
-                               ((clk natp) 'clk)
-                               (orac 'orac))
+     (define eval_pattern_list ((env env-p)
+                                (val val-p)
+                                (p patternlist-p)
+                                &key
+                                ((clk natp) 'clk)
+                                (orac 'orac))
        :short "Evaluate whether any pattern in @(see patternlist) @('p') matches the value @('val')."
        :measure (nats-measure clk 0 (patternlist-count p) 0)
        :returns (mv (res val_result-p) new-orac)
@@ -1983,8 +1948,27 @@ evaluation of @('e_arbitrary') expressions."
            (val-case v1
              :v_bool (if v1.val
                          (evo_normal v1)
-                       (evtailcall (eval_pattern-any env val (cdr p))))
+                       (evtailcall (eval_pattern_list env val (cdr p))))
              :otherwise (evo_error "Bad result type from eval_pattern" v1 (list (pattern->pos_start (car p))))))))
+
+     (define eval_pattern_list_and_kind ((env env-p)
+                                         (val val-p)
+                                         (p pattern_list_and_kind-p)
+                                         &key
+                                         ((clk natp) 'clk)
+                                         (orac 'orac))
+       :short "Evaluate whether a pattern list matches the value @('val')."
+       :measure (nats-measure clk 0 (pattern_list_and_kind-count p) 0)
+       :returns (mv (res val_result-p) new-orac)
+       (b* (((evoo any-match)
+             (eval_pattern_list env val (pattern_list_and_kind->patterns p))))
+         (val-case any-match
+           :v_bool (evo_normal
+                    (v_bool (if (eq (pattern_list_and_kind->kind p) :negative)
+                                (not any-match.val)
+                              any-match.val)))
+           :otherwise (evo_error "Bad result type from eval_pattern_list"
+                                  any-match nil))))
 
 
      (define eval_expr_list ((env env-p)

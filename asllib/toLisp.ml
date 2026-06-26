@@ -202,7 +202,8 @@ module Make (Conf : PrinterConf) = struct
             of_expr value;
           ]
       | E_Arbitrary t -> [ key "E_ARBITRARY"; of_ty t ]
-      | E_Pattern (x, p) -> [ key "E_PATTERN"; of_expr x; of_pattern p ])
+      | E_Pattern (x, p) ->
+          [ key "E_PATTERN"; of_expr x; of_pattern_list_and_kind p ])
 
   and of_expr x = of_annotated of_expr_desc x
 
@@ -210,16 +211,19 @@ module Make (Conf : PrinterConf) = struct
     tagged_list_of_list
       (match x with
       | Pattern_All -> [ key "PATTERN_ALL" ]
-      | Pattern_Any lst -> [ key "PATTERN_ANY"; of_list_map of_pattern lst ]
       | Pattern_Geq x -> [ key "PATTERN_GEQ"; of_expr x ]
       | Pattern_Leq x -> [ key "PATTERN_LEQ"; of_expr x ]
       | Pattern_Mask m -> [ key "PATTERN_MASK"; of_bitvector_mask m ]
-      | Pattern_Not p -> [ key "PATTERN_NOT"; of_pattern p ]
       | Pattern_Range (x, y) -> [ key "PATTERN_RANGE"; of_expr x; of_expr y ]
-      | Pattern_Single x -> [ key "PATTERN_SINGLE"; of_expr x ]
-      | Pattern_Tuple lst -> [ key "PATTERN_TUPLE"; of_list_map of_pattern lst ])
+      | Pattern_Single x -> [ key "PATTERN_SINGLE"; of_expr x ])
 
   and of_pattern x = of_annotated of_pattern_desc x
+
+  and of_pattern_kind p =
+    key (match p with Positive -> "POSITIVE" | Negative -> "NEGATIVE")
+
+  and of_pattern_list_and_kind (ps, pk) =
+    Cons (of_list_map of_pattern ps, of_pattern_kind pk)
 
   and of_slice x =
     tagged_list_of_list
@@ -421,7 +425,7 @@ module Make (Conf : PrinterConf) = struct
   and of_case_alt_desc x =
     aslsym_alist
       [
-        ("PATTERN", of_pattern x.pattern);
+        ("PATTERN", of_pattern_list_and_kind x.pattern.desc);
         ("WHERE", of_option of_expr x.where);
         ("STMT", of_stmt x.stmt);
       ]

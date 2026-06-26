@@ -4,7 +4,7 @@
 ;;
 ;; SPDX-FileCopyrightText: Copyright 2025 Arm Limited and/or its affiliates <open-source-office@arm.com>
 ;; SPDX-License-Identifier: BSD-3-Clause
-;; 
+;;
 ;;****************************************************************************;;
 ;; Disclaimer:                                                                ;;
 ;; This material covers both ASLv0 (viz, the existing ASL pseudocode language ;;
@@ -114,14 +114,14 @@
        :hints ('(:do-not-induct t
                  :expand ((readonly-patternlist-p p)
                           <call>)))
-       :fn eval_pattern_tuple)
+       :fn eval_pattern_list)
      (defret <fn>-readonly-preserves-orac
-       (implies (readonly-patternlist-p p)
+       (implies (readonly-pattern_list_and_kind-p p)
                 (equal new-orac orac))
        :hints ('(:do-not-induct t
-                 :expand ((readonly-patternlist-p p)
+                 :expand ((readonly-pattern_list_and_kind-p p)
                           <call>)))
-       :fn eval_pattern-any)
+       :fn eval_pattern_list_and_kind)
      (defret <fn>-readonly-preserves-orac
        (implies (readonly-ty-p ty)
                 (equal new-orac orac))
@@ -148,4 +148,3 @@
        :fn check_int_constraints)
      :skip-others t
      :mutual-recursion asl-interpreter-mutual-recursion))
-
