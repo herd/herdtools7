@@ -1,9 +1,9 @@
-type shape of integer;
+type circle of integer;
 type square of integer;
-var myShape: shape;
+var myCircle: circle;
 var mySquare: square;
 
-func g(x: shape, y: integer)
+func g(x: circle, y: integer)
 begin
     pass;
 end;
@@ -15,8 +15,8 @@ end;
 
 func g_test()
 begin
-    g(myShape, 0.1); // illegal
+    g(myCircle, 0.1); // illegal
     // because no declaration of g has
-    // a first argument which is type-satisfied by a shape
+    // a first argument which is type-satisfied by a circle
     // and a second argument which is type-satisfied by a real.
 end;

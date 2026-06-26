@@ -526,7 +526,7 @@ and type_satisfies env t s =
   ((* Type T type-satisfies type S if and only if at least one of the following
       conditions holds: *)
    (* T is a same-named type as S *)
-   same_named_type t s
+   type_equal env t s
   (* T subtype-satisfies S and at least one of S or T is an anonymous type *)
   || ((is_anonymous t || is_anonymous s) && subtype_satisfies env t s)
   ||
