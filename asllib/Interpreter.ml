@@ -747,9 +747,9 @@ module Make (B : Backend.S) (C : Config) = struct
         return_normal (v, env) |: SemanticsRule.EArbitrary
     (* End *)
     (* Begin EvalEPattern *)
-    | E_Pattern (e, p) ->
+    | E_Pattern (e, (ps, pk)) ->
         let** v1, new_env = eval_expr env e in
-        let* v = eval_pattern env e v1 p in
+        let* v = eval_pattern_list_and_kind env v1 ps pk in
         return_normal (v, new_env) |: SemanticsRule.EPattern
     (* End *)
     (* Begin EvalEGetCollectionFields *)
@@ -1043,12 +1043,23 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Evaluation of Patterns *)
   (* ---------------------- *)
 
-  (** [eval_pattern env pos v p] determines if [v] matches the pattern [p]. *)
-  and eval_pattern env pos v : pattern -> B.value m =
+  (** [eval_pattern_list_and_kind env v ps pk] evaluates a list of patterns [ps]
+      against a value [v] and a pattern kind [pk]. *)
+  and eval_pattern_list_and_kind env v ps pk =
+    (* Begin EvalPatternListAndKind *)
+    let bs = List.map (eval_pattern env v) ps in
+    let* disjunction =
+      let false_ = B.v_of_literal (L_Bool false) |> return in
+      big_op false_ (B.binop `BOR) bs
+    in
+    match pk with
+    | Positive -> return disjunction
+    | Negative -> B.unop BNOT disjunction
+  (* End *)
+
+  (** [eval_pattern env v p] determines if [v] matches the pattern [p]. *)
+  and eval_pattern env v : pattern -> B.value m =
     let true_ = B.v_of_literal (L_Bool true) |> return in
-    let false_ = B.v_of_literal (L_Bool false) |> return in
-    let disjunction = big_op false_ (B.binop `BOR)
-    and conjunction = big_op true_ (B.binop `BAND) in
     (* The calls to [eval_expr_sef] are justified since annotate_pattern
        checks that all expressions on which a type depends are statically
        evaluable, i.e. side-effect-free. *)
@@ -1056,11 +1067,6 @@ module Make (B : Backend.S) (C : Config) = struct
       match p.desc with
       (* Begin EvalPAll *)
       | Pattern_All -> true_ |: SemanticsRule.PAll
-      (* End *)
-      (* Begin EvalPAny *)
-      | Pattern_Any ps ->
-          let bs = List.map (eval_pattern env pos v) ps in
-          disjunction bs |: SemanticsRule.PAny
       (* End *)
       (* Begin EvalPGeq *)
       | Pattern_Geq e ->
@@ -1071,11 +1077,6 @@ module Make (B : Backend.S) (C : Config) = struct
       | Pattern_Leq e ->
           let* v1 = eval_expr_sef env e in
           B.binop `LE v v1 |: SemanticsRule.PLeq
-      (* End *)
-      (* Begin EvalPNot *)
-      | Pattern_Not p1 ->
-          let* b1 = eval_pattern env pos v p1 in
-          B.unop BNOT b1 |: SemanticsRule.PNot
       (* End *)
       (* Begin EvalPRange *)
       | Pattern_Range (e1, e2) ->
@@ -1104,13 +1105,7 @@ module Make (B : Backend.S) (C : Config) = struct
           and* v_unset = B.binop `AND (bv m_unset) nv in
           let* v_set_or_unset = B.binop `OR v_set v_unset in
           B.binop `EQ v_set_or_unset (bv m_specified) |: SemanticsRule.PMask
-      (* End *)
-      (* Begin EvalPTuple *)
-      | Pattern_Tuple ps ->
-          let n = List.length ps in
-          let* vs = List.init n (fun i -> B.get_index i v) |> sync_list in
-          let bs = List.map2 (eval_pattern env pos) vs ps in
-          conjunction bs |: SemanticsRule.PTuple
+  (* End *)
 
   (* End *)
   (* Evaluation of Local Declarations *)
