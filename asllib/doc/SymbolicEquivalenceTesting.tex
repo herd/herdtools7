@@ -270,25 +270,9 @@ Notice that for all $\vpone$ and $\vm$ the following holds:
 
 \section{Typing Rules\label{sec:SymbolicReductionAndEquivalenceTestingRules}}
 We employ the following rules:
-\begin{itemize}
-  \item \TypingRuleRef{Normalize}
-  \item \TypingRuleRef{ReduceConstraint}
-  \item \TypingRuleRef{ReduceConstraints}
-  \item \TypingRuleRef{ToIR}
-  \item \TypingRuleRef{ExprEqual}
-  \item \TypingRuleRef{ExprEqualNorm}
-  \item \TypingRuleRef{ExprEqualCase}
-  \item \TypingRuleRef{TypeEqual}
-  \item \TypingRuleRef{BitwidthEqual}
-  \item \TypingRuleRef{BitFieldsEqual}
-  \item \TypingRuleRef{BitFieldEqual}
-  \item \TypingRuleRef{ConstraintEqual}
-  \item \TypingRuleRef{SlicesEqual}
-  \item \TypingRuleRef{SliceEqual}
-  \item \TypingRuleRef{ArrayLengthEqual}
-\end{itemize}
+\begin{TypingRuleList}{SymbolicEquivalenceTesting}
 
-\TypingRuleDef{Normalize}
+\TypingRuleDef[normalizes an expression.]{Normalize}
 \RenderRelation{normalize}
 
 \hypertarget{def-normalizedterm}{}
@@ -303,7 +287,7 @@ and their corresponding normalised expressions.
 \RenderProseAndFormally{normalize}
 \CodeSubsection{\NormalizeBegin}{\NormalizeEnd}{../StaticModel.ml}
 
-\TypingRuleDef{ReduceConstraint}
+\TypingRuleDef[symbolically simplifies a constraint.]{ReduceConstraint}
 \RenderRelation{reduce_constraint}
 
 \ExampleDef{Symbolically Simplifying Constraints}
@@ -315,7 +299,7 @@ and their simplified counterparts.
 \RenderProseAndFormally{reduce_constraint}
 \CodeSubsection{\ReduceConstraintBegin}{\ReduceConstraintEnd}{../StaticOperations.ml}
 
-\TypingRuleDef{ReduceConstraints}
+\TypingRuleDef[symbolically simplifies a list of constraints.]{ReduceConstraints}
 \RenderRelation{reduce_constraints}
 
 See \ExampleRef{Symbolically Simplifying Constraints}.
@@ -324,7 +308,7 @@ See \ExampleRef{Symbolically Simplifying Constraints}.
 \RenderProseAndFormally{reduce_constraints}
 \CodeSubsection{\ReduceConstraintsBegin}{\ReduceConstraintsEnd}{../StaticOperations.ml}
 
-\TypingRuleDef{ToIR}
+\TypingRuleDef[transforms an expression into a symbolic representation.]{ToIR}
 \RenderRelation{to_ir}
 
 \ExampleDef{Transforming Expressions into Symbolic Expressions}
@@ -344,7 +328,7 @@ It is defined as follows:
 \RenderProseAndFormally{to_ir}
 \CodeSubsection{\ToIRBegin}{\ToIREnd}{../StaticModel.ml}
 
-\TypingRuleDef{ExprEqual}
+\TypingRuleDef[checks symbolic equivalence between expressions.]{ExprEqual}
 \RenderRelation{expr_equal}
 
 \ExampleDef{Expression Equivalence}
@@ -355,7 +339,7 @@ comprising the array lengths are equivalent, as detailed in comments.
 
 \RenderProseAndFormally{expr_equal}
 
-\TypingRuleDef{ExprEqualNorm}
+\TypingRuleDef[checks symbolic equivalence between normalized expressions.]{ExprEqualNorm}
 \RenderRelation{expr_equal_norm}
 
 See \ExampleRef{Expression Equivalence}.
@@ -363,7 +347,7 @@ See \ExampleRef{Expression Equivalence}.
 
 \RenderProseAndFormally{expr_equal_norm}
 
-\TypingRuleDef{ExprEqualCase}
+\TypingRuleDef[checks symbolic equivalence for one expression form.]{ExprEqualCase}
 \RenderRelation{expr_equal_case}
 
 See \ExampleRef{Expression Equivalence}.
@@ -371,7 +355,7 @@ In the following definition recall that a conjunction over an empty set equals $
 
 \RenderProseAndFormally{expr_equal_case}
 
-\TypingRuleDef{TypeEqual}
+\TypingRuleDef[checks symbolic equivalence between types.]{TypeEqual}
 \RenderRelation{type_equal}
 
 \ExampleDef{Equivalent Types}
@@ -384,14 +368,14 @@ of \verb|Foo|.
 
 \RenderProseAndFormally{type_equal}
 
-\TypingRuleDef{PatternEqual}
+\TypingRuleDef[checks symbolic equivalence between patterns.]{PatternEqual}
 \RenderRelation{pattern_equal}
 
 See \ExampleRef{Expression Equivalence}.
 
 \RenderProseAndFormally{pattern_equal}
 
-\TypingRuleDef{BitwidthEqual}
+\TypingRuleDef[checks symbolic equivalence between bitwidth expressions.]{BitwidthEqual}
 \RenderRelation{bitwidth_equal}
 
 \ExampleDef{Equivalence of Bitwidth Expressions}
@@ -401,7 +385,7 @@ of the respective local declaration statements.
 
 \RenderProseAndFormally{bitwidth_equal}
 
-\TypingRuleDef{BitFieldsEqual}
+\TypingRuleDef[checks symbolic equivalence between lists of bitfields.]{BitFieldsEqual}
 \RenderRelation{bitfields_equal}
 
 \ExampleDef{Equivalent Lists of Bitfields}
@@ -419,7 +403,7 @@ of \verb|Foo| are not equivalent.
 
 \RenderProseAndFormally{bitfields_equal}
 
-\TypingRuleDef{BitFieldEqual}
+\TypingRuleDef[checks symbolic equivalence between bitfields.]{BitFieldEqual}
 \RenderRelation{bitfield_equal}
 
 \ExampleDef{Bitfield Equivalence}
@@ -438,7 +422,7 @@ or different nested bitfields.
 
 \RenderProseAndFormally{bitfield_equal}
 
-\TypingRuleDef{ConstraintsEqual}
+\TypingRuleDef[checks symbolic equivalence between lists of constraints.]{ConstraintsEqual}
 \RenderRelation{constraints_equal}
 
 \ExampleDef{Equivalent Lists of Constraints}
@@ -457,7 +441,7 @@ and the type assertion will be checked dynamically (see \SemanticsRuleRef{ATC}).
 
 \RenderProseAndFormally{constraints_equal}
 
-\TypingRuleDef{ConstraintEqual}
+\TypingRuleDef[checks symbolic equivalence between constraints.]{ConstraintEqual}
 \RenderRelation{constraint_equal}
 
 \ExampleDef{Equivalent Constraints}
@@ -469,7 +453,7 @@ corresponding constraint on the left-hand-side of that assignment.
 
 \RenderProseAndFormally{constraint_equal}
 
-\TypingRuleDef{SlicesEqual}
+\TypingRuleDef[checks symbolic equivalence between lists of slices.]{SlicesEqual}
 \RenderRelation{slices_equal}
 
 \ExampleDef{Equivalent Lists of Slices}
@@ -479,7 +463,7 @@ corresponding constraint on the left-hand-side of that assignment.
 
 \RenderProseAndFormally{slices_equal}
 
-\TypingRuleDef{SliceEqual}
+\TypingRuleDef[checks symbolic equivalence between slices.]{SliceEqual}
 \RenderRelation{slice_equal}
 
 This function operates both on \typedast{} nodes, where both slices are only
@@ -496,7 +480,7 @@ of \verb|Foo| and the overridden version of \verb|Foo| are equivalent.
 
 \RenderProseAndFormally{slice_equal}
 
-\TypingRuleDef{ArrayLengthEqual}
+\TypingRuleDef[checks symbolic equivalence between array length expressions.]{ArrayLengthEqual}
 \RenderRelation{array_length_equal}
 
 \ExampleDef{Array Length Expression Equivalence}
@@ -510,7 +494,7 @@ even though they both contain three elements each.
 
 \RenderProseAndFormally{array_length_equal}
 
-\TypingRuleDef{PolynomialToExpr}
+\TypingRuleDef[transforms a polynomial into an expression.]{PolynomialToExpr}
 \RenderRelation{polynomial_to_expr}
 
 See \ExampleRef{Transforming Expressions into Symbolic Expressions}.
@@ -521,7 +505,7 @@ using the relation $\comparemonomialbindings$.
 
 \RenderProseAndFormally{polynomial_to_expr}
 
-\TypingRuleDef{CompareMonomialBindings}
+\TypingRuleDef[orders monomial bindings.]{CompareMonomialBindings}
 \RenderRelation{compare_monomial_bindings}
 
 \ExampleDef{Comparing Monomial Bindings}
@@ -535,7 +519,7 @@ via the lexicographic ordering.
 
 \RenderProseAndFormally{compare_monomial_bindings}
 
-\TypingRuleDef{MonomialsToExpr}
+\TypingRuleDef[transforms a list of monomials into an expression.]{MonomialsToExpr}
 \RenderRelation{monomials_to_expr}
 
 \ExampleDef{Transforming a List of Unitary Monomials}
@@ -547,7 +531,7 @@ yields the expression \verb|5 * x * y * y - 5 * x * y|.
 
 \RenderProseAndFormally{monomials_to_expr}
 
-\TypingRuleDef{MonomialToExpr}
+\TypingRuleDef[transforms a monomial into an expression.]{MonomialToExpr}
 \RenderRelation{monomial_to_expr}
 
 \ExampleDef{Transforming Expressions and Rationals}
@@ -574,7 +558,7 @@ The following are examples of inputs and outputs of $\monomialtoexpr$:
 
 \RenderProseAndFormally{monomial_to_expr}
 
-\TypingRuleDef{SymAddExpr}
+\TypingRuleDef[symbolically adds signed expressions.]{SymAddExpr}
 \RenderRelation{sym_add_expr}
 
 The effect of the function can be summarised by the following table:
@@ -610,7 +594,7 @@ The following are some examples of inputs and outputs for symbolic addition:
 
 \RenderProseAndFormally{sym_add_expr}
 
-\TypingRuleDef{UnitaryMonomialsToExpr}
+\TypingRuleDef[transforms unitary monomials into expressions.]{UnitaryMonomialsToExpr}
 \RenderRelation{unitary_monomials_to_expr}
 
 \ExampleDef{Transforming Unitary Monomials to Expressions}
@@ -622,7 +606,7 @@ and the corresponding expressions, in comments.
 
 \RenderProseAndFormally{unitary_monomials_to_expr}
 
-\TypingRuleDef{SymMulExpr}
+\TypingRuleDef[symbolically multiplies expressions.]{SymMulExpr}
 \RenderRelation{sym_mul_expr}
 
 \ExampleDef{Symbolic Multiplication}
@@ -641,7 +625,7 @@ yielding the result in $\ve$:
 
 \RenderProseAndFormally{sym_mul_expr}
 
-\TypingRuleDef{TypeOf}
+\TypingRuleDef[retrieves the type bound to an identifier.]{TypeOf}
 \RenderRelation{type_of}
 
 \ExampleDef{The Type Bound to an Identifier}
@@ -659,10 +643,12 @@ declaration \verb|var x = t;| in \listingref{expressions-evar-undefined} yields 
 \RenderProseAndFormally{type_of}
 \CodeSubsection{\TypeOfBegin}{\TypeOfEnd}{../StaticModel.ml}
 
-\TypingRuleDef{NormalizeOpt}
+\TypingRuleDef[normalizes an optional expression.]{NormalizeOpt}
 \RenderRelation{normalize_opt}
 
 See \ExampleRef{Normalise}.
 
 
 \RenderProseAndFormally{normalize_opt}
+
+\end{TypingRuleList}

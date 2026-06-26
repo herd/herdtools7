@@ -1,10 +1,9 @@
 #!/usr/bin/python3
 
-import os, fnmatch, subprocess, shlex
+import os, fnmatch, subprocess, shlex, shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import re
-from typing import List
 
 ASLREF_EXE: str = "aslref"
 
@@ -68,6 +67,28 @@ class Block:
 
     begin: int
     end: int
+
+
+def find_marked_blocks(lines: list[str], begin_marker: str, end_marker: str) -> list[Block]:
+    begin_lines = []
+    end_lines = []
+    for line_number, line in enumerate(lines):
+        if begin_marker in line:
+            begin_lines.append(line_number)
+        if end_marker in line:
+            end_lines.append(line_number)
+    if len(begin_lines) != len(end_lines):
+        error_message = (
+            f"there are {len(begin_lines)} occurrences of {begin_marker}"
+            f" and {len(end_lines)} occurrences of {end_marker}! Aborting."
+        )
+        raise ValueError(error_message)
+    blocks: list[Block] = []
+    for begin_line_number, end_line_number in zip(begin_lines, end_lines):
+        if begin_line_number >= end_line_number:
+            raise ValueError(f"{begin_marker} must appear before {end_marker}!")
+        blocks.append(Block(begin_line_number, end_line_number))
+    return blocks
 
 
 class BlockMacro(ABC):
@@ -191,24 +212,8 @@ class ConsoleMacro(BlockMacro):
     CONSOLE_CMD = "CONSOLE_CMD"
 
     @classmethod
-    def find_blocks(cls, lines):
-        begin_lines = []
-        end_lines = []
-        for line_number, line in enumerate(lines):
-            if cls.CONSOLE_BEGIN in line:
-                begin_lines.append(line_number)
-            if cls.CONSOLE_END in line:
-                end_lines.append(line_number)
-        if len(begin_lines) != len(end_lines):
-            error_message = (
-                f"there are {len(begin_lines)} occurrences of {cls.CONSOLE_BEGIN}"
-                f" and {len(end_lines)} occurrences of {cls.CONSOLE_END}! Aborting."
-            )
-            raise ValueError(error_message)
-        blocks: list[Block] = []
-        for begin_line_number, end_line_number in zip(begin_lines, end_lines):
-            blocks.append(Block(begin_line_number, end_line_number))
-        return blocks
+    def find_blocks(cls, lines: list[str]) -> list[Block]:
+        return find_marked_blocks(lines, cls.CONSOLE_BEGIN, cls.CONSOLE_END)
 
     @classmethod
     def transform(cls, block_lines: list[str]) -> list[str]:
@@ -285,9 +290,18 @@ def transform_by_line(filenames: list[str], from_pattern: str, to_pattern: str):
 
 def apply_console_macros(aslref_path: str):
     global ASLREF_EXE
-    ASLREF_EXE = aslref_path
+    resolved_aslref_path = (
+        aslref_path if os.path.isfile(aslref_path) else shutil.which(aslref_path)
+    )
+    if not resolved_aslref_path:
+        raise Exception(
+            f"Unable to find aslref in path {aslref_path}. Perhaps you need to build it?"
+        )
+    ASLREF_EXE = resolved_aslref_path
     if not os.path.isfile(ASLREF_EXE):
-        raise Exception(f"Unable to find aslref in path {ASLREF_EXE}. Perhaps you need to build it?")
+        raise Exception(
+            f"Unable to find aslref in path {aslref_path}. Perhaps you need to build it?"
+        )
     else:
         print(f"Using aslref path {ASLREF_EXE}")
     print("Extended macros: applying console macros... ")

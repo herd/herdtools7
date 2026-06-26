@@ -71,7 +71,7 @@ This separation allows us to typecheck subprograms by using an empty local envir
 The intuitive meaning of each field appearing above is as follows:
 \begin{itemize}
   \hypertarget{def-declaredtypes}{}
-  \item $\declaredtypes$ assigns to names of storage elements and enumeration labels their inferred types and \purity{};
+  \item $\declaredtypes$ assigns to names of declared types and enumeration labels their inferred types and \purity{};
   \hypertarget{def-constantvalues}{}
   \item $\constantvalues$ assigns literals to their declaring (global constant) identifiers;
   \hypertarget{def-globalstoragetypes}{}
@@ -125,12 +125,6 @@ The \emph{empty \staticenvironmentterm{}}, \\ denoted as $\emptytenv$, is define
 \right)
 \]
 \end{definition}
-
-The global environment and local environment consist of various components.
-We use the notation $\tenv.\staticenvsG.m$ and $\tenv.\staticenvsL.m$ to access the $m$ component of a given environment.
-
-To update a function component $f$ (e.g., $\declaredtypes$) of a global or local environment $E$
-with a new mapping $x \mapsto v$, we use the notation $E.f[x \mapsto v]$ to stand for $E[f \mapsto E.f[x \mapsto v]]$.
 
 \section{Typing Rule Configurations\label{sec:Typing Rule Configurations}}
 The output configurations of type system assertions have two flavours:

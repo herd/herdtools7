@@ -609,14 +609,14 @@ class RuleBlock:
     CONVENTION_RULE = "Convention"
 
     rule_begin_pattern = re.compile(
-        r"\\(TypingRuleDef|SemanticsRuleDef|ASTRuleDef|ConventionDef|RequirementDef){(.*?)}"
+        r"\\(TypingRuleDef|SemanticsRuleDef|ASTRuleDef|ConventionDef|RequirementDef)(?:\[.*?\])?{(.*?)}"
     )
     end_patterns = [
         r"\\section{.*}",
         r"\\subsection{.*}",
-        r"\\TypingRuleDef{.*}",
-        r"\\SemanticsRuleDef{.*}",
-        r"\\ASTRuleDef{.*}",
+        r"\\TypingRuleDef(?:\[.*?\])?{.*}",
+        r"\\SemanticsRuleDef(?:\[.*?\])?{.*}",
+        r"\\ASTRuleDef(?:\[.*?\])?{.*}",
         r"\\ConventionDef{.*}",
         r"\\RequirementDef{.*}",
         r"\\SyntacticSugarDef{.*}",
@@ -881,11 +881,13 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\LexicalRuleRef{.*?}",
         r"\\ASTRuleRef{.*?}",
         r"\\ASTRuleCaseRef{.*?}{.*?}",
-        r"\\ASTRuleDef{.*?}",
+        r"\\ASTRuleDef(?:\[.*?\])?{.*?}",
+        r"\\begin{(?:AST|Typing|Semantics)RuleList}{.*?}",
+        r"\\end{(?:AST|Typing|Semantics)RuleList}",
         r"\\TypingRuleRef{.*?}",
-        r"\\TypingRuleDef{.*?}",
+        r"\\TypingRuleDef(?:\[.*?\])?{.*?}",
         r"\\SemanticsRuleRef{.*?}",
-        r"\\SemanticsRuleDef{.*?}",
+        r"\\SemanticsRuleDef(?:\[.*?\])?{.*?}",
         r"\\RequirementDef{.*?}",
         r"\\RequirementRef{.*?}",
         r"\\SyntacticSugarDef{.*?}",

@@ -157,25 +157,16 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Type Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-The main rule for annotating type declarations is \TypingRuleRef{AnnotateTypeDecl}.
+We define the following rules for annotating type declarations:
+\begin{TypingRuleList}{TypeDeclarations}
 
-We also define the following helper rules:
-\begin{itemize}
-  \item \TypingRuleRef{DeclareType}
-  \item \TypingRuleRef{AddGlobalStorage}
-  \item \TypingRuleRef{DeclareType}
-  \item \TypingRuleRef{AnnotateExtraFields}
-  \item \TypingRuleRef{DeclareEnumLabels}
-  \item \TypingRuleRef{DeclareConst}
-\end{itemize}
-
-\TypingRuleDef{AnnotateTypeDecl}
+\TypingRuleDef[annotates a type declaration.]{AnnotateTypeDecl}
 See \ExampleRef{Types} for examples of well-typed type declarations.
 
 
 \RenderProseAndFormally{typecheck_decl_type_decl}
 
-\TypingRuleDef{DeclareType}
+\TypingRuleDef[declares a type in a \staticenvironmentterm{}.]{DeclareType}
 \RenderRelation{declare_type}
 
 \ExampleDef{Type Declarations}
@@ -191,24 +182,24 @@ $\GlobalEffect(\SEPure)$ and\\$\Immutability(\True)$.
 \CodeSubsection{\DeclareTypeBegin}{\DeclareTypeEnd}{../Typing.ml}
 
 
-\TypingRuleDef{AnnotateExtraFields}
+\TypingRuleDef[annotates the extra fields of a subtype declaration.]{AnnotateExtraFields}
 \RenderRelation{annotate_extra_fields}
 
 \ExampleDef{Type Declarations with Fields and Without Fields}
-In \listingref{DeclareType} shows type declarations where one type subtypes
+\listingref{DeclareType} shows type declarations where one type subtypes
 another, with and without extra fields.
 Specifically, both \verb|SubRecordEmptyExtraFields| and \\
 \verb|SubRecordNoExtraFields|
 subtype \verb|Record| with no extra fields.
 
 In \listingref{AnnotateExtraFields-bad}, the declaration where \verb|SubRecord| is declared to subtype
-\verb|SubRecord| is ill-typed, since \verb|SubRecord| is not defined as a type.
-\ASLListing{Subtyping an undefined typed}{AnnotateExtraFields-bad}{\typingtests/TypingRule.AnnotateExtraFields.bad.asl}
+\verb|Record| is ill-typed, since \verb|Record| is not defined as a type.
+\ASLListing{Subtyping an undefined type}{AnnotateExtraFields-bad}{\typingtests/TypingRule.AnnotateExtraFields.bad.asl}
 
 
 \RenderProseAndFormally{annotate_extra_fields}
 
-\TypingRuleDef{DeclaredType}
+\TypingRuleDef[retrieves the type associated with a declared type name.]{DeclaredType}
 \RenderRelation{declared_type}
 
 \ExampleDef{Retrieving the Type Declared for an Identifier}
@@ -218,14 +209,14 @@ necessitates retrieving the type \\
 \verb|integer{0..400}|, which is associated with \verb|MyInt|.
 \ASLListing{The type associated with an identifier}{DeclaredType}{\typingtests/TypingRule.DeclaredType.asl}
 
-The specification in \listingref{DeclaredType} is ill-typed,
+The specification in \listingref{DeclaredType-bad} is ill-typed,
 since the expression \verb|20 as MyInt| refers to the undeclared type \verb|MyInt|.
 \ASLListing{Referring to an undeclared type}{DeclaredType-bad}{\typingtests/TypingRule.DeclaredType.bad.asl}
 
 
 \RenderProseAndFormally{declared_type}
 
-\TypingRuleDef{DeclareEnumLabels}
+\TypingRuleDef[declares the labels of an enumeration type.]{DeclareEnumLabels}
 \RenderRelation{declare_enum_labels}
 
 \ExampleDef{Declaring Enumeration Labels}
@@ -243,29 +234,27 @@ $\BlueLabel$ & $\TNamed(\ColorType)$ & $\LLabel(\BlueLabel)$\\
 \end{tabular}
 \end{center}
 
-
 \RenderProseAndFormally{declare_enum_labels}
 
-\TypingRuleDef{DeclareConst}
+\TypingRuleDef[declares an enumeration label as a global constant.]{DeclareConst}
 \RenderRelation{declare_const}
 
-\ExampleDef{Declaring a Global Constant}
-In \listingref{DeclareConst}, declaring the constant \PI{}
+\ExampleDef{Declaring a Global Constant for an Enumeration Label}
+In \listingref{DefEnumLabels}, declaring the constant \RED{}
 in the empty \globalstaticenvironmentterm{} yields the following \globalstaticenvironmentterm:
 \[
 \begin{array}{l}
-  \declareconst(\emptytenv.\staticenvsG, \PI, \TReal, \LReal(157 / 50)) \typearrow \\
+  \declareconst(\emptytenv.\staticenvsG, \RED, \TNamed(\ColorType), \LLabel(\RED)) \typearrow \\
   \emptytenv.\staticenvsG\left[
     \begin{array}{l}
-    \globalstoragetypes\mapsto\{\PI\mapsto(\TReal, \GDKConstant)\},\\
-    \constantvalues[\PI\mapsto\LReal(157 / 50)]
+    \globalstoragetypes\mapsto\{\RED\mapsto(\TNamed(\ColorType), \GDKConstant)\},\\
+    \constantvalues[\RED\mapsto\LLabel(\RED)]
     \end{array}
   \right]
 \end{array}
 \]
 (that is, all maps other than $\globalstoragetypes$ and $\constantvalues$, remain the same.)
 
-\ASLListing{Declaring a global constant}{DeclareConst}{\typingtests/TypingRule.DeclareConst.asl}
-
-
 \RenderProseAndFormally{declare_const}
+
+\end{TypingRuleList}

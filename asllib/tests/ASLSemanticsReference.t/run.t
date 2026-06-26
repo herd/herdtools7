@@ -55,6 +55,7 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.LELocalVar.asl
   $ aslref SemanticsRule.LESetArray.asl
   $ aslref SemanticsRule.LESetEnumArray.asl
+  $ aslref SemanticsRule.LESetCollectionFields.asl
   $ aslref SemanticsRule.SReturnNone.asl
   $ aslref SemanticsRule.SCond.asl
   $ aslref SemanticsRule.SCase.asl

@@ -211,6 +211,93 @@
 \newcommand\CodeSubsection[3]{}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Rule list generation macros
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% These environments generate rule-reference lists using the same multi-run
+% approach as the table of contents. Place the rules to include inside the
+% corresponding ...RuleList environment and run LaTeX twice.
+\makeatletter
+\let\ASLCurrentASTRuleList\@empty
+\let\ASLCurrentTypingRuleList\@empty
+\let\ASLCurrentSemanticsRuleList\@empty
+
+\newcommand\ASLRuleListEntry[5]{%
+  \@ifundefined{ASLRuleList@#1@#2}{%
+    \expandafter\gdef\csname ASLRuleList@#1@#2\endcsname{}%
+  }{}%
+  \def\ASLRuleListDescription{#5}%
+  \ifx\ASLRuleListDescription\@empty
+    \expandafter\g@addto@macro\csname ASLRuleList@#1@#2\endcsname{%
+      \item \csname #3\endcsname{#4}%
+    }%
+  \else
+    \expandafter\g@addto@macro\csname ASLRuleList@#1@#2\endcsname{%
+      \item \csname #3\endcsname{#4} #5%
+    }%
+  \fi
+}
+
+\newcommand\ASLPrintRuleList[2]{%
+  \begin{itemize}
+  \@ifundefined{ASLRuleList@#1@#2}{%
+    \item \emph{Run LaTeX again to generate this rule list.}%
+  }{%
+    \csname ASLRuleList@#1@#2\endcsname
+  }%
+  \end{itemize}%
+}
+
+\newenvironment{ASTRuleList}[1]{%
+  \ASLPrintRuleList{AST}{#1}%
+  \gdef\ASLCurrentASTRuleList{#1}%
+}{%
+  \global\let\ASLCurrentASTRuleList\@empty
+}
+
+\newenvironment{TypingRuleList}[1]{%
+  \ASLPrintRuleList{Typing}{#1}%
+  \gdef\ASLCurrentTypingRuleList{#1}%
+}{%
+  \global\let\ASLCurrentTypingRuleList\@empty
+}
+
+\newenvironment{SemanticsRuleList}[1]{%
+  \ASLPrintRuleList{Semantics}{#1}%
+  \gdef\ASLCurrentSemanticsRuleList{#1}%
+}{%
+  \global\let\ASLCurrentSemanticsRuleList\@empty
+}
+
+\newcommand\ASLRecordASTRule[2]{%
+  \ifx\ASLCurrentASTRuleList\@empty
+  \else
+    \immediate\write\@auxout{%
+      \string\ASLRuleListEntry{AST}{\ASLCurrentASTRuleList}{ASTRuleRef}{#2}{\unexpanded{#1}}%
+    }%
+  \fi
+}
+
+\newcommand\ASLRecordTypingRule[2]{%
+  \ifx\ASLCurrentTypingRuleList\@empty
+  \else
+    \immediate\write\@auxout{%
+      \string\ASLRuleListEntry{Typing}{\ASLCurrentTypingRuleList}{TypingRuleRef}{#2}{\unexpanded{#1}}%
+    }%
+  \fi
+}
+
+\newcommand\ASLRecordSemanticsRule[2]{%
+  \ifx\ASLCurrentSemanticsRuleList\@empty
+  \else
+    \immediate\write\@auxout{%
+      \string\ASLRuleListEntry{Semantics}{\ASLCurrentSemanticsRuleList}{SemanticsRuleRef}{#2}{\unexpanded{#1}}%
+    }%
+  \fi
+}
+\makeatother
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Typesetting macros
 \newtheorem{definition}{Definition}
 \newtheorem{example}{Example}
@@ -220,11 +307,11 @@
 \newcommand\SyntacticSugarDef[1]{\paragraph{Guide.SyntacticSugar.#1\label{Guide.SyntacticSugar.#1}}}
 \newcommand\SyntacticSugarExample[1]{\emph{Guide.SyntacticSugar.#1}}
 \newcommand\LexicalRuleDef[1]{\subsubsection{LexicalRule.#1\label{sec:LexicalRule.#1}}}
-\newcommand\ASTRuleDef[1]{\subsubsection{ASTRule.#1\label{sec:ASTRule.#1}}}
+\newcommand\ASTRuleDef[2][]{\subsubsection{ASTRule.#2\label{sec:ASTRule.#2}}\ASLRecordASTRule{#1}{#2}}
 \newcommand\ASTRuleDefExample[1]{\emph{ASTRule.#1}}
-\newcommand\TypingRuleDef[1]{\subsubsection{TypingRule.#1\label{sec:TypingRule.#1}}}
+\newcommand\TypingRuleDef[2][]{\subsubsection{TypingRule.#2\label{sec:TypingRule.#2}}\ASLRecordTypingRule{#1}{#2}}
 \newcommand\TypingRuleDefExample[1]{\emph{TypingRule.#1}}
-\newcommand\SemanticsRuleDef[1]{\subsubsection{SemanticsRule.#1\label{sec:SemanticsRule.#1}}}
+\newcommand\SemanticsRuleDef[2][]{\subsubsection{SemanticsRule.#2\label{sec:SemanticsRule.#2}}\ASLRecordSemanticsRule{#1}{#2}}
 \newcommand\SemanticsRuleDefExample[1]{\emph{SemanticsRule.#1}}
 \newcommand\listingref[1]{Listing~\ref{listing:#1}}
 \newcommand\taref[1]{Table.~\ref{ta:#1}}
@@ -652,7 +739,7 @@
 
 % General types
 \newcommand\N[0]{\hyperlink{type-N}{\mathbb{N}}}
-\newcommand\Npos[0]{\hyperlink{type-Npos}{\mathbb{N}^{+}}}
+\newcommand\Npos[0]{\hyperlink{type-Npos}{\mathbb{N}^{\text{pos}}}}
 \newcommand\Q[0]{\hyperlink{type-Q}{\mathbb{Q}}}
 \newcommand\Z[0]{\hyperlink{type-Z}{\mathbb{Z}}}
 \newcommand\Bool[0]{\hyperlink{type-Bool}{\mathbb{B}}}
@@ -1248,6 +1335,32 @@
 \newcommand\tvector[0]{\hyperlink{type-tvector}{\mathcal{V}\mathcal{E}\mathcal{C}}}
 \newcommand\trecord[0]{\hyperlink{type-trecord}{\mathcal{R}\mathcal{E}\mathcal{C}}}
 \newcommand\tlabel[0]{\hyperlink{type-tlabel}{\mathcal{L}\mathcal{A}\mathcal{B}\mathcal{E}\mathcal{L}}}
+\newcommand\bitvectordomainop[1]{\hyperlink{relation-bitvectordomain}{\mathsf{BitvectorDomain}}\left(#1\right)}
+\newcommand\vectordomainop[1]{\hyperlink{relation-vectordomain}{\mathsf{VectorDomain}}\left(#1\right)}
+\newcommand\arraydomainname[0]{\hyperlink{relation-arraydomain}{\mathsf{ArrayDomain}}}
+\newcommand\arraydomainop[3][H]{
+  \ifthenelse{\equal{#1}{H}}{
+    \arraydomainname\left({#2}, {#3}\right)
+  }{
+    \arraydomainname
+    \left(\begin{array}{l}
+    {#2},\\
+    {#3}
+    \end{array}\right)
+  }
+}
+\newcommand\recorddomainname[0]{\hyperlink{relation-recorddomain}{\mathsf{RecordDomain}}}
+\newcommand\recorddomainop[3][H]{
+  \ifthenelse{\equal{#1}{H}}{
+    \recorddomainname\left({#2}, {#3}\right)
+  }{
+    \recorddomainname
+    \left(\begin{array}{l}
+    {#2},\\
+    {#3}
+    \end{array}\right)
+  }
+}
 
 \newcommand\evalrel[0]{\hyperlink{def-evalrel}{\textsf{eval}}}
 \newcommand\evalarrow[0]{\xrightarrow{\evalrel}}
@@ -1550,7 +1663,7 @@
 \newcommand\booleantypeterm[0]{\hyperlink{booleantypeterm}{boolean type}}
 \newcommand\booleantypesterm[0]{\hyperlink{booleantypeterm}{boolean types}}
 \newcommand\enumerationtypeterm[0]{\hyperlink{enumerationtypeterm}{enumeration type}}
-\newcommand\enumerationtypesterm[0]{\hyperlink{enumerationtypeterm}{enumeration types}}
+\newcommand\enumerationtypesterm[0]{\hyperlink{enumerationtypeterm}{enumeration types}} % DO NOT LINT
 \newcommand\Enumerationtypesterm[0]{\hyperlink{enumerationtypeterm}{Enumeration types}}
 \newcommand\tupletypeterm[0]{\hyperlink{tupletypeterm}{tuple type}}
 \newcommand\tupletypesterm[0]{\hyperlink{tupletypeterm}{tuple types}}

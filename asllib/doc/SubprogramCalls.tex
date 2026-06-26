@@ -49,27 +49,11 @@ and then invoking its getter and its setter.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \TypeRulesDef{Subprogram Calls}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-The rule for typing calls is \TypingRuleRef{AnnotateCall}.
 
-We also define helper functions via respective rules:
-\begin{itemize}
-  \item \TypingRuleRef{AnnotateCallActualsTyped}
-  \item \TypingRuleRef{InsertStdlibParam}
-  \item \TypingRuleRef{CheckParamsTypeSat}
-  \item \TypingRuleRef{RenameTyEqs}
-  \item \TypingRuleRef{SubstExprNormalize}
-  \item \TypingRuleRef{SubstExpr}
-  \item \TypingRuleRef{SubstConstraint}
-  \item \TypingRuleRef{CheckArgsTypeSat}
-  \item \TypingRuleRef{AnnotateRetTy}
-  \item \TypingRuleRef{SubprogramForSignature}
-  \item \TypingRuleRef{FilterCallCandidates}
-  \item \TypingRuleRef{CallTypeMatches}
-  \item \TypingRuleRef{HasArgClash}
-  \item \TypingRuleRef{ExpressionList}
-\end{itemize}
+We define the following rules for annotating subprogram calls:
+\begin{TypingRuleList}{SubprogramCalls}
 
-\TypingRuleDef{AnnotateCall}
+\TypingRuleDef[annotates a subprogram call.]{AnnotateCall}
 \RenderRelation{annotate_call}
 
 \ExampleDef{Parameterised Subprogram Calls}
@@ -102,7 +86,7 @@ For more examples, see \ExampleRef{Annotating Calls with Typed Parameters and Ty
 \CodeSubsection{\AnnotateCallBegin}{\AnnotateCallEnd}{../Typing.ml}
 
 
-\TypingRuleDef{AnnotateCallActualsTyped}
+\TypingRuleDef[annotates a call with typed actual parameters and arguments.]{AnnotateCallActualsTyped}
 \RenderRelation{annotate_call_actuals_typed}
 
 \ExampleDef{Annotating Calls with Typed Parameters and Typed Arguments}
@@ -132,7 +116,7 @@ is ill-typed, since \verb|myWid| has the \unconstrainedintegertypeterm.
 \RenderProseAndFormally{annotate_call_actuals_typed}
 \CodeSubsection{\AnnotateCallActualsTypedBegin}{\AnnotateCallActualsTypedEnd}{../Typing.ml}
 
-\TypingRuleDef{InsertStdlibParam}
+\TypingRuleDef[inserts omitted parameters in calls to standard library subprograms.]{InsertStdlibParam}
 \RenderRelation{insert_stdlib_param}
 
 Note that this function relies on all standard library functions with input parameters having one of two simple forms:
@@ -150,7 +134,7 @@ parameters elided, and the equivalent calls with all parameters included.
 
 \RenderProseAndFormally{insert_stdlib_param}
 
-\TypingRuleDef{CanOmmitStdlibParam}
+\TypingRuleDef[defines when a standard library parameter can be omitted.]{CanOmmitStdlibParam}
 \RenderRelation{can_omit_stdlib_param}
 
 \ExampleDef{Determining Whether a Parameter Can be Omitted}
@@ -171,7 +155,7 @@ func Ones{N}() => bits(N)
 
 \RenderProseAndFormally{can_omit_stdlib_param}
 
-\TypingRuleDef{CheckParamsTypeSat}
+\TypingRuleDef[checks that actual parameter types satisfy formal parameter types.]{CheckParamsTypeSat}
 \RenderRelation{check_params_typesat}
 
 \ExampleDef{Checking that Expression Types Type-satisfy Parameters}
@@ -193,7 +177,7 @@ the type of \verb|EIGHT|, which is \verb|integer{8}|, \typesatisfiesterm{} $\TIn
 
 \RenderProseAndFormally{check_params_typesat}
 
-\TypingRuleDef{RenameTyEqs}
+\TypingRuleDef[substitutes actual parameter expressions into parameterised types.]{RenameTyEqs}
 \RenderRelation{rename_ty_eqs}
 
 \ExampleDef{Transforming Parameterised Types Based on Actual Arguments}
@@ -206,7 +190,7 @@ requires substituting \verb|8| for \verb|N| in the types
 
 \RenderProseAndFormally{rename_ty_eqs}
 
-\TypingRuleDef{SubstExprNormalize}
+\TypingRuleDef[substitutes and normalizes parameter expressions.]{SubstExprNormalize}
 \RenderRelation{subst_expr_normalize}
 
 \ExampleDef{Substituting Parameter Expressions and Normalising}
@@ -220,7 +204,7 @@ resulting in the expression \verb|(40 + 22) + 2|, which is then normalised into 
 
 \RenderProseAndFormally{subst_expr_normalize}
 
-\TypingRuleDef{SubstExpr}
+\TypingRuleDef[substitutes parameter expressions in expressions.]{SubstExpr}
 \RenderRelation{subst_expr}
 
 The function assumes that $\ve$ appears in the declaration of a parameter,
@@ -232,7 +216,7 @@ See \ExampleRef{Substituting Parameter Expressions and Normalising}.
 \RenderProseAndFormally{subst_expr}
 \CodeSubsection{\SubstExprBegin}{\SubstExprEnd}{../ASTUtils.ml}
 
-\TypingRuleDef{SubstConstraint}
+\TypingRuleDef[substitutes parameter expressions in constraints.]{SubstConstraint}
 \RenderRelation{subst_constraint}
 
 \ExampleDef{Substituting Parameter Expressions in Constraints}
@@ -245,7 +229,7 @@ resulting in the type \verb|integer{0..64}|.
 
 \RenderProseAndFormally{subst_constraint}
 
-\TypingRuleDef{CheckArgsTypeSat}
+\TypingRuleDef[checks that actual argument types satisfy formal argument types.]{CheckArgsTypeSat}
 \RenderRelation{check_args_typesat}
 
 \ExampleDef{Checking that Actual Arguments Type-satisfy the Formal Arguments}
@@ -265,7 +249,7 @@ that $\funcsigargs$ and $\argtypes$ have the same length.
 
 \RenderProseAndFormally{check_args_typesat}
 
-\TypingRuleDef{AnnotateRetTy}
+\TypingRuleDef[annotates the return type of a subprogram call.]{AnnotateRetTy}
 \RenderRelation{annotate_ret_ty}
 
 \ExampleDef{Annotating the Return Type of a Subprogram Call}
@@ -284,7 +268,7 @@ and functions can only be used in call expressions.
 
 \RenderProseAndFormally{annotate_ret_ty}
 
-\TypingRuleDef{SubprogramForSignature}
+\TypingRuleDef[identifies the subprogram matching a call signature.]{SubprogramForSignature}
 \RenderRelation{subprogram_for_signature}
 
 This function determines which one of
@@ -330,7 +314,7 @@ the \integertypeterm{} rather than the \realtypeterm).
 \RenderProseAndFormally{subprogram_for_signature}
 \CodeSubsection{\SubprogramForSignatureBegin}{\SubprogramForSignatureEnd}{../Typing.ml}
 
-\TypingRuleDef{FilterCallCandidates}
+\TypingRuleDef[filters subprogram candidates for a call signature.]{FilterCallCandidates}
 \RenderRelation{filter_call_candidates}
 
 The names $\candidates$ are assumed to exist in $\tenv.\staticenvsG.\subprograms$.
@@ -347,7 +331,7 @@ yields an empty list.
 
 \RenderProseAndFormally{filter_call_candidates}
 
-\TypingRuleDef{CallTypeMatches}
+\TypingRuleDef[defines compatible subprogram and call types.]{CallTypeMatches}
 \RenderRelation{call_type_matches}
 
 \ExampleDef{Matching call types}
@@ -368,7 +352,7 @@ The table below shows keywords used to define functions, and their possible comp
 
 \CodeSubsection{\CallTypeMatchesBegin}{\CallTypeMatchesEnd}{../Typing.ml}
 
-\TypingRuleDef{HasArgClash}
+\TypingRuleDef[checks whether an argument type clashes with a list of argument types.]{HasArgClash}
 \RenderRelation{has_arg_clash}
 
 \ExampleDef{Argument Clashing}
@@ -381,7 +365,7 @@ the arguments of procedures -- that do not clash and types that do clash
 \RenderProseAndFormally{has_arg_clash}
 \CodeSubsection{\HasArgClashBegin}{\HasArgClashEnd}{../Typing.ml}
 
-\TypingRuleDef{TypeClash}
+\TypingRuleDef[defines type clashing for subprogram arguments.]{TypeClash}
 \RenderRelation{type_clashes}
 
 
@@ -405,7 +389,7 @@ which is why both declarations of \verb|structured_procedure| clash and thus the
 Note that if $\vt$ \subtypesatisfiesterm{} $\vs$ then $\vt$ and $\vs$ \Prosetypeclash, but not the other
 way around.
 
-\TypingRuleDef{ExpressionList}
+\TypingRuleDef[annotates a list of expressions.]{ExpressionList}
 \RenderRelation{annotate_exprs}
 
 \ExampleDef{Annotating a List of Expressions}
@@ -423,6 +407,8 @@ is annotated as
 
 
 \RenderProseAndFormally{annotate_exprs}
+
+\end{TypingRuleList}
 
 \subsection{Parameter Omission\label{sec:ParameterOmission}}
 
@@ -443,17 +429,11 @@ as an empty parameter list for a standard library function must be entirely omit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \SemanticsRulesDef{Subprogram Calls}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-The rule for evaluating subprogram calls is \SemanticsRuleRef{Call}.
 
-We also define the following helper rules:
-\begin{itemize}
-  \item \SemanticsRuleRef{EvalSubprogram}
-  \item \SemanticsRuleRef{ReadValueFrom}
-  \item \SemanticsRuleRef{AssignArgs}
-  \item \SemanticsRuleRef{MatchFuncRes}
-\end{itemize}
+We define the following rules for evaluating subprogram calls:
+\begin{SemanticsRuleList}{SubprogramCalls}
 
-\SemanticsRuleDef{Call}
+\SemanticsRuleDef[evaluates a subprogram call.]{Call}
 \RenderRelation{eval_call}
 
 The evaluation first evaluates the expressions corresponding to the arguments
@@ -470,7 +450,7 @@ while calling \\
 \RenderProseAndFormally{eval_call}
 \CodeSubsection{\EvalCallBegin}{\EvalCallEnd}{../Interpreter.ml}
 
-\SemanticsRuleDef{EvalSubprogram}
+\SemanticsRuleDef[evaluates a subprogram body for a call.]{EvalSubprogram}
 \RenderRelation{eval_subprogram}
 
 \ExampleDef{Subprogram Calls}
@@ -487,7 +467,7 @@ the function \texttt{main} calls the function \texttt{foo} and the procedure \te
 It is not an error for execution of a procedure or setter to end without a
 return statement.
 
-\SemanticsRuleDef{CheckRecurseLimit}
+\SemanticsRuleDef[checks the recursion limit for a subprogram call.]{CheckRecurseLimit}
 \RenderRelation{check_recurse_limit}
 
 \ExampleDef{Checking the Recursion Limit of a Subprogram Call}
@@ -506,7 +486,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 
 \RenderProseAndFormally{check_recurse_limit}
 
-\SemanticsRuleDef{ReadValueFrom}
+\SemanticsRuleDef[reads the value produced by a subprogram call.]{ReadValueFrom}
 \RenderRelation{read_value_from}
 
 % NO_EXAMPLE
@@ -515,7 +495,7 @@ and evaluating \verb|main| terminates with a \dynamicerrorterm{} (\LimitExceeded
 \RenderProseAndFormally{read_value_from}
 \CodeSubsection{\EvalReadValueFromBegin}{\EvalReadValueFromEnd}{../Interpreter.ml}
 
-\SemanticsRuleDef{AssignArgs}
+\SemanticsRuleDef[assigns actual argument values to formal arguments.]{AssignArgs}
 \RenderRelation{assign_args}
 
 \ExampleDef{Assigning Arguments}
@@ -527,7 +507,7 @@ these variable values and evaluates to $\nvint(15)$.
 
 \RenderProseAndFormally{assign_args}
 
-\SemanticsRuleDef{MatchFuncRes}
+\SemanticsRuleDef[converts subprogram-return configurations into call results.]{MatchFuncRes}
 Using the type \RenderType{TContinuingOrReturning} we define the following relation.
 
 \RenderRelation{match_func_res}
@@ -545,3 +525,5 @@ with the same value and a fresh identifier for it.
 
 
 \RenderProseAndFormally{match_func_res}
+
+\end{SemanticsRuleList}

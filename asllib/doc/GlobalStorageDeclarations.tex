@@ -261,22 +261,15 @@ are illegal, since they contain cycles.
 \ASLListing{Cyclic global storage declarations}{GlobalStorageCycles-bad1}{\definitiontests/GuideRule.GlobalStorageCycles.bad1.asl}
 \ASLListing{Cyclic global storage declarations}{GlobalStorageCycles-bad2}{\definitiontests/GuideRule.GlobalStorageCycles.bad2.asl}
 
-The main rule for annotating global storage declarations is \\
-\TypingRuleRef{AnnotateGlobalStorage}.
+We define the following rules for annotating global storage declarations:
+\begin{TypingRuleList}{GlobalStorageDeclarations}
 
-We also define the following helper rules:
-\begin{itemize}
-  \item \TypingRuleRef{DeclareGlobalStorage}
-  \item \TypingRuleRef{AnnotateTyOptInitialValue}
-  \item \TypingRuleRef{AddGlobalStorage}
-\end{itemize}
-
-\TypingRuleDef{AnnotateGlobalStorage}
+\TypingRuleDef[annotates a global storage declaration.]{AnnotateGlobalStorage}
 See \ExampleRef{Declaring Global Storage}.
 
 \RenderProseAndFormally{typecheck_decl_global_storage}
 
-\TypingRuleDef{DeclareGlobalStorage}
+\TypingRuleDef[declares a global storage element in a \staticenvironmentterm{}.]{DeclareGlobalStorage}
 \RenderRelation{declare_global_storage}
 
 \ExampleDef{Declaring Global Storage}
@@ -293,7 +286,7 @@ See \ExampleRef{Declaring Global Storage}.
 focused on storage elements that are not configurations.
 \ASLListing{Well-typed non-configuration storage elements}{DeclareGlobalStorage-non-config}{\typingtests/TypingRule.DeclareGlobalStorage.non_config.asl}
 
-\listingref{DeclareGlobalStorage-non-config} shows an example of an ill-typed global storage declaration.
+\listingref{DeclareGlobalStorage-non-config-bad} shows an example of an ill-typed global storage declaration.
 \ASLListing{Ill-typed non-configuration storage element}{DeclareGlobalStorage-non-config-bad}{\typingtests/TypingRule.DeclareGlobalStorage.non_config.bad.asl}
 
 The specification in \listingref{DeclareGlobalStorage-bad3} is illegal since
@@ -317,7 +310,7 @@ of an ill-typed global storage declaration due to precision loss.
 \CodeSubsection{\DeclareGlobalStorageBegin}{\DeclareGlobalStorageEnd}{../Typing.ml}
 
 
-\TypingRuleDef{AnnotateTyOptInitialValue}
+\TypingRuleDef[annotates the optional type and initial value of a global storage declaration.]{AnnotateTyOptInitialValue}
 \RenderRelation{annotate_ty_opt_initial_value}
 
 See \ExampleRef{Declaring Global Storage}.
@@ -326,7 +319,7 @@ The case where both $\tyopt$ and $\initialvalue$ are $\none$ is considered a syn
 
 \RenderProseAndFormally{annotate_ty_opt_initial_value}
 
-\TypingRuleDef{UpdateGlobalStorage}
+\TypingRuleDef[updates a \globalstaticenvironmentterm{} for a global storage element.]{UpdateGlobalStorage}
 \RenderRelation{update_global_storage}
 This helper function is applied following
 $\addglobalstorage(\tenv, \name, \gdk, \vt)$ where $\vt$ is the type associated with
@@ -348,7 +341,7 @@ is ill-typed, since only a \singulartypeterm{} can be used for \texttt{config} s
 
 \RenderProseAndFormally{update_global_storage}
 
-\TypingRuleDef{AddGlobalStorage}
+\TypingRuleDef[adds a global storage element to a \staticenvironmentterm{}.]{AddGlobalStorage}
 \RenderRelation{add_global_storage}
 
 \ExampleDef{Adding Global Storage Elements to the Static Environment}
@@ -371,19 +364,18 @@ static environment:
 \]
 
 \RenderProseAndFormally{add_global_storage}
-\CodeSubsection{\AddGlobalStorageBegin}{\AddGlobalStorageEnd}{../Interpreter.ml}
+\CodeSubsection{\AddGlobalStorageBegin}{\AddGlobalStorageEnd}{../Typing.ml}
+
+\end{TypingRuleList}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \SemanticsRulesDef{Global Storage Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 This section defines the following relations:
-\begin{itemize}
-  \item \SemanticsRuleRef{EvalGlobals}
-  \item \SemanticsRuleRef{DeclareGlobal}
-\end{itemize}
+\begin{SemanticsRuleList}{GlobalStorageDeclarations}
 
-\SemanticsRuleDef{EvalGlobals}
+\SemanticsRuleDef[evaluates a list of global storage declarations.]{EvalGlobals}
 \RenderRelation{eval_globals}
 
 \ExampleDef{Evaluating a List of Global Declarations}
@@ -410,7 +402,7 @@ before having the chance to evaluate \verb|main|.
 \RenderProseAndFormally{eval_globals}
 \CodeSubsection{\EvalGlobalsBegin}{\EvalGlobalsEnd}{../Interpreter.ml}
 
-\SemanticsRuleDef{DeclareGlobal}
+\SemanticsRuleDef[declares a global storage element in the \dynamicenvironmentterm{}.]{DeclareGlobal}
 \RenderRelation{declare_global}
 
 \ExampleDef{Declaring a Global Storage Element}
@@ -419,3 +411,5 @@ of the global dynamic environment by binding $\vx$ to $\nvint(5)$.
 \ASLListing{Declaring a global storage element}{DeclareGlobal}{\semanticstests/SemanticsRule.DeclareGlobal.asl}
 
 \RenderProseAndFormally{declare_global}
+
+\end{SemanticsRuleList}

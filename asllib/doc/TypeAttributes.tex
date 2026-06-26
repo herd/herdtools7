@@ -4,18 +4,9 @@
 
 This section defines some basic predicates for classifying types as well as
 functions that inspect the structure of types:
-\begin{itemize}
-  \item Builtin singular types (\TypingRuleRef{BuiltinSingularType})
-  \item Named types (\TypingRuleRef{NamedType})
-  \item Anonymous types (\TypingRuleRef{AnonymousType})
-  \item Singular types (\TypingRuleRef{SingularType})
-  \item Structured types (\TypingRuleRef{StructuredType})
-  \item The structure of a type (\TypingRuleRef{Structure})
-  \item The underlying type of a type (\TypingRuleRef{MakeAnonymous})
-  \item Checked constrained integers (\TypingRuleRef{CheckConstrainedInteger})
-\end{itemize}
+\begin{TypingRuleList}{TypeAttributes}
 
-\TypingRuleDef{BuiltinSingularType}
+\TypingRuleDef[defines builtin singular types.]{BuiltinSingularType}
 \RenderRelation{is_builtin_singular}
 
 \ExampleDef{Builtin singular types}
@@ -34,7 +25,7 @@ the builtin singular type \texttt{Color} consists of two constants:
 \CodeSubsection{\BuiltinSingularBegin}{\BuiltinSingularEnd}{../types.ml}
 
 
-\TypingRuleDef{NamedType}
+\TypingRuleDef[defines named types.]{NamedType}
 \RenderRelation{is_named}
 
 \Enumerationtypesterm{}, record types, collection types, and exception types
@@ -50,7 +41,7 @@ In \listingref{named-types2},
 \CodeSubsection{\NamedBegin}{\NamedEnd}{../types.ml}
 
 
-\TypingRuleDef{AnonymousType}
+\TypingRuleDef[defines anonymous types.]{AnonymousType}
  %
 \RenderRelation{is_anonymous}
 
@@ -62,7 +53,7 @@ of anonymous types as permitted by \TypingRuleRef{TypeSatisfaction}.
 \RenderProseAndFormally{is_anonymous}
 \CodeSubsection{\AnonymousBegin}{\AnonymousEnd}{../types.ml}
 
-\TypingRuleDef{SingularType}
+\TypingRuleDef[defines singular types.]{SingularType}
 %
 \RenderRelation{is_singular}
 
@@ -74,7 +65,7 @@ In \listingref{SingularType}, the types \texttt{A}, \texttt{B}, and \texttt{C} a
 \RenderProseAndFormally{is_singular}
 \CodeSubsection{\SingularBegin}{\SingularEnd}{../types.ml}
 
-\TypingRuleDef{StructuredType}
+\TypingRuleDef[defines structured types.]{StructuredType}
 \hypertarget{def-structuredtype}{}
 A \emph{\structuredtypeterm} is any type that consists of a list of field
 identifiers that denote individual storage elements.
@@ -90,7 +81,9 @@ are each an example of a \structuredtypeterm{}.
 
 \RenderProseAndFormally{is_structured}
 
-\TypingRuleDef{Structure}
+\TypingRuleDef[defines the \structureterm{} of a type.]{Structure}
+The \hypertarget{def-tstruct}{\emph{\structureterm}} of a type is the type that results from replacing all named types
+with their definitions.
 \RenderRelation{get_structure}
 
 \TypingRuleRef{TypeCheckAST} ensures the absence of circular type definitions,
@@ -106,8 +99,14 @@ this ensures that \TypingRuleRef{Structure} is a proper \emph{structural inducti
 \CodeSubsection{\StructureBegin}{\StructureEnd}{../types.ml}
 
 
-\TypingRuleDef{MakeAnonymous}
+\TypingRuleDef[defines the \underlyingtypeterm{} of a type.]{MakeAnonymous}
+The \emph{\underlyingtypeterm{}} of a type is the
+first non-\namedtype{} that is used to define it.
+
 \RenderRelation{make_anonymous}
+Unlike $\tstruct$, $\makeanonymous$ replaces named
+types by their definition until the first non-named
+type is found, but does not recurse further.
 
 \ExampleDef{The Underlying Type of a Type}
 \ASLListing{Anonymous types}{MakeAnonymous}{\typingtests/TypingRule.MakeAnonymous.asl}
@@ -121,7 +120,7 @@ Further, the \underlyingtypeterm{} of \texttt{(integer, T2)} and \texttt{T3} is
 \RenderProseAndFormally{make_anonymous}
 \CodeSubsection{\MakeAnonymousBegin}{\MakeAnonymousEnd}{../types.ml}
 
-\TypingRuleDef{CheckConstrainedInteger}
+\TypingRuleDef[checks whether a type is a \constrainedintegerterm{}.]{CheckConstrainedInteger}
 A type is a \emph{\constrainedintegerterm} if it is either a \wellconstrainedintegertypeterm{}
 or a \parameterizedintegertypeterm.
 
@@ -136,3 +135,5 @@ is a \constrainedintegerterm{} type.
 
 \RenderProseAndFormally{check_constrained_integer}
 \CodeSubsection{\CheckConstrainedIntegerBegin}{\CheckConstrainedIntegerEnd}{../Typing.ml}
+
+\end{TypingRuleList}

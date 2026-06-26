@@ -452,7 +452,7 @@ As given by applying the relevant rules to the desugared AST.
 \listingref{typing-sdecl} shows well-typed declaration statements.
 \ASLListing{Typing declaration statements}{typing-sdecl}{\typingtests/TypingRule.SDecl.asl}
 
-The specifications in \listingref{typing-sdecl-bad1} ill-typed,
+The specification in \listingref{typing-sdecl-bad1} is ill-typed,
 since local constant storage elements are not allowed.
 \ASLListing{A (illegal) local constant declaration}{typing-sdecl-bad1}{\typingtests/TypingRule.SDecl.bad1.asl}
 
@@ -462,7 +462,7 @@ since immutable local storage elements require an initialising expression.
 
 
 \RenderProseAndFormally{annotate_stmt_SDecl}
-\CodeSubsection{\SDeclegin}{\SDeclEnd}{../Typing.ml}
+\CodeSubsection{\SDeclBegin}{\SDeclEnd}{../Typing.ml}
 
 \TypingRuleDef{AnnotateLocalDeclTypeAnnot}
 \RenderRelation{annotate_local_decl_type_annot}
@@ -696,11 +696,11 @@ changes the call type of $\vcall$ to $\calltype$.
 In \listingref{scall}, the call statement \verb|catenate_into_g{4, 3}(x, y, TRUE);|
 is well-typed.
 
-\ExampleDef{Ill-defined Call to a Function}
+\ExampleDef{An ill-typed Call to a Function}
 In \listingref{scall-bad}, the call statement \verb|zero();| is ill-typed,
 since call statements are only allowed for procedures, not functions.
 
-\ASLListing{An ill-defined call statement}{scall-bad}{\typingtests/TypingRule.SCall.bad.asl}
+\ASLListing{An ill-typed call statement}{scall-bad}{\typingtests/TypingRule.SCall.bad.asl}
 
 
 \RenderProseAndFormally{annotate_stmt_SCall}
@@ -1207,7 +1207,7 @@ The first call to \verb|checked_8bit_add| succeeds, whereas the second call fail
 \subsection{Typing}
 \TypingRuleDef{SAssert}
 \ExampleDef{Type Assertion Statements}
-The specifications in \listingref{semantics-sasertok} and \listingref{semantics-sassertno}
+The specifications in \listingref{semantics-sassert-ok} and \listingref{semantics-sassertno}
 are well-typed.
 
 The assertion statements in \listingref{assert-ill-typed} are ill-typed,
@@ -1222,9 +1222,9 @@ since the expression needs to be both of a \booleantypeterm{} and \readonlyterm{
 \subsection{Semantics}
 \SemanticsRuleDef{SAssert}
 \ExampleDef{Evaluation of Assertions: Success}
-In \listingref{semantics-sasertok},
+In \listingref{semantics-sassert-ok},
 \texttt{assert (42 != 3);} ensures that \texttt{3} is not equal to \texttt{42}.
-\ASLListing{Evaluating an assertion that succeeds}{semantics-sasertok}{\semanticstests/SemanticsRule.SAssertOk.asl}
+\ASLListing{Evaluating an assertion that succeeds}{semantics-sassert-ok}{\semanticstests/SemanticsRule.SAssertOk.asl}
 
 \ExampleDef{Evaluation of Assertions: Failure}
 In \listingref{semantics-sassertno},
@@ -1331,7 +1331,7 @@ expression \verb|N|, while the loop in \verb|main| does not
 have a loop limit.
 
 The loop in \listingref{typing-swhile-bad-limit} uses
-the limit expression \verb|i_limit| whose type the
+the limit expression \verb|i_limit| whose type is the
 \unconstrainedintegertypeterm, which is illegal for
 limit expressions.
 

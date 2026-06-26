@@ -227,7 +227,7 @@ The signatures for the arithmetic operations for the \realtypeterm{} are as foll
 \[
   \supers(\tenv, \vt) \triangleq
   \begin{cases}
-    \{\vt\} \cup \supers(\vs) & \text{ if }\tenv.\staticenvsG.\subtypes(\vt) = \vs\\
+    \{\vt\} \cup \supers(\tenv, \vs) & \text{ if }\tenv.\staticenvsG.\subtypes(\vt) = \vs\\
     \{\vt\}  & \text{ otherwise } (\text{that is, }\vt \not\in\dom(\tenv.\staticenvsG.\subtypes))\\
   \end{cases}
 \]
@@ -337,7 +337,7 @@ from the constraint \verb|-5..3|, thus avoiding including constraints
 \inferrule[no\_filtering]{
   \op \in \{\SUB, \MUL, \ADD\}
 }{
-  \binopfilterrhs(\vapprox, \op, \cs) \typearrow \overname{\cs}{\newcs}
+  \binopfilterrhs(\vapprox, \tenv, \op, \cs) \typearrow \overname{\cs}{\newcs}
 }
 \end{mathpar}
 
@@ -792,11 +792,7 @@ The following are two examples of applying $\towellconstrained$ to various types
 
 \begin{mathpar}
 \inferrule{}{
-  {
-    \begin{array}{r}
-  \towellconstrained(\overname{\TInt(\unconstrainedinteger)}{\vt}) \typearrow\\ \TInt(\unconstrainedinteger)
-    \end{array}
-  }
+  \towellconstrained(\overname{\unconstrainedinteger}{\vt}) \typearrow \unconstrainedinteger
 }
 \end{mathpar}
 

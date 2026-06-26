@@ -780,7 +780,7 @@ where an enumeration is used outside of a type definition.
 
 \subsection{Typing Enumeration Types\label{sec:TypingEnumerationTypes}}
 \TypingRuleDef{TEnumDecl}
-See \ExampleRef{Well-typed Enumeration Types} for examples of well-typed \enumerationtypesterm{}
+See \ExampleRef{Well-typed Enumeration Types} for examples of well-typed \enumerationtypeterm{}
 declarations.
 
 \ExampleDef{Ill-typed Enumeration Type Declarations}
@@ -809,7 +809,8 @@ ASL offers two kinds of arrays:
 \hypertarget{intarraytypeterm}{}
 \hypertarget{enumarraytypeterm}{}
 \begin{description}
-  \item[\Intarraytypeterm] represents a consecutive list of elements at positions $0$ to the size
+  \item[\Intarraytypeterm] represents a consecutive list of elements at positions $0$ up to,
+      but not including, the size
       specified for the array. The array elements can be accessed via an \integertypeterm{}
       that specifies the $0$-based position of the element to read/update.
   \item[\Enumarraytypeterm] represents a dictionary-like data type where the keys are defined

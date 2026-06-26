@@ -37,382 +37,53 @@ function $\annotatetype$.
 %
 Evaluation is defined by the relation $\evalexprsef\empty$,
 which evaluates \sideeffectfreeexpressionsterm{} and either returns
-a configuration of the form $\ResultExprSEF(\vv,\vg)$ or a dynamic error configuration $\DynErrorConfig$.
+a configuration of the form $\ResultExprSEF(\vv,\vg)$ or a dynamic error configuration $\DynErrorConfig$,
+or diverges.
 In the first case, $\vv$ is a \nativevalueterm{} and $\vg$
 is an \emph{execution graph}. Execution graphs are related to the concurrent semantics
 and can be ignored in the context of defining dynamic domains.
-In the latter case (which can occur if, for example, an expression attempts to divide
+In the case of a \dynamicerrorterm{} (which can occur if, for example, an expression attempts to divide
 \texttt{8} by \texttt{0}), a \DynamicErrorConfigurationTerm{}, for which we use the notation
 $\DynErrorConfig$, is returned.
 %
 The dynamic domain is empty in cases where evaluating \sideeffectfreeexpressionsterm{}
-results in a \DynamicErrorConfigurationTerm{}.
+results in a \DynamicErrorConfigurationTerm{} or diverges.
 %
 The dynamic domain is undefined if the type $\vt$ is not well-typed in $\tenv$.
 That is, if $\annotatetype(\tenv, \vt) \typearrow \TypeErrorConfig$.
 
-As part of the definition, we also associate dynamic domains to integer constraints
-by overloading $\dynamicdomain$:
+We use the following notations to define sets of values used as domains:
+\hypertarget{relation-bitvectordomain}{}
+\hypertarget{relation-vectordomain}{}
+\hypertarget{relation-arraydomain}{}
+\hypertarget{relation-recorddomain}{}
 \[
-  \dynamicdomain(\overname{\envs}{\env}, \overname{\intconstraint}{\vc})
-  \partialto \overname{\pow{\nativevalue}}{\vd}
+\begin{array}{@{}ll@{}}
+  \text{Expression} & \text{Set denoted by the expression}\\
+  \hline
+  \tbool &
+    \{ \nvboolop{\True}, \nvboolop{\False} \}\\
+  \tint &
+    \{ \nvintop{n} \;|\; n \in \Z \}\\
+  \treal &
+    \{ \NVLiteral(\LReal(q)) \;|\; q \in \Q \}\\
+  \tstring &
+    \{ \nvstringop{s} \;|\; s \in \Strings \}\\
+  \bitvectordomainop{k} &
+    \begin{cases}
+      \{ \nvbitvectorop{\vb_{1..k}} \;|\; \forall i=1..k: \vb_i \in \Bit \} & \text{if }k > 0\\
+      \{ \nvbitvectorop{\emptylist} \} & \text{otherwise}
+    \end{cases}\\
+  \vectordomainop{D_{1..k}} &
+    \{ \NVVector(\vv_{1..k}) \;|\; \vi=1..k: \vv_\vi \in D_\vi \}\\
+  \arraydomainop[H]{k}{D} &
+    \{ \NVVector(\vv_{1..k}) \;|\; \vi=1..k: \vv_\vi \in D \}\\
+  \recorddomainop[H]{\id_{1..k}}{D_{1..k}} &
+    \{ \NVRecord(\{ \vi=1..k: \id_\vi \mapsto \vv_\vi \}) \;|\; \vi=1..k: \vv_\vi \in D_\vi \}
+\end{array}
 \]
 
-\ProseParagraph
-\OneApplies
-\begin{itemize}
-  \item \AllApplyCase{t\_bool}
-  \begin{itemize}
-    \item $\vt$ is the Boolean type, $\TBool$;
-    \item $\vd$ is the set of native Boolean values, $\tbool$.
-  \end{itemize}
-
-  \item \AllApplyCase{t\_string}
-  \begin{itemize}
-    \item $\vt$ is the \stringtypeterm{}, $\TString$;
-    \item $\vd$ is the set of all native string values, $\tstring$.
-  \end{itemize}
-
-  \item \AllApplyCase{t\_real}
-  \begin{itemize}
-    \item $\vt$ is the \realtypeterm{}, $\TReal$;
-    \item $\vd$ is the set of all native real values, $\treal$.
-  \end{itemize}
-
-  \item \AllApplyCase{t\_enumeration}
-  \begin{itemize}
-    \item $\vt$ is the \enumerationtypeterm{} with labels $\vl_{1..k}$, that is $\TEnum(\vl_{1..k})$;
-    \item $\vd$ is the set of all native labels $\nvlabel(\vl_\vi)$, for $\vi = 1..k$.
-  \end{itemize}
-
-  \item \AllApplyCase{t\_int\_unconstrained}
-  \begin{itemize}
-    \item $\vt$ is the unconstrained integer type, $\unconstrainedinteger$;
-    \item $\vd$ is the set of all native integer values, $\tint$.
-  \end{itemize}
-
-  \item \AllApplyCase{t\_int\_well\_constrained}
-  \begin{itemize}
-    \item $\vt$ is the well-constrained integer type $\TInt(\WellConstrained(\vc_{1..k}))$;
-    \item $\vd$ is the union of the dynamic domains of each of the constraints $\vc_{1..k}$ in $\env$.
-  \end{itemize}
-
-  \item \AllApplyCase{constraint\_exact\_okay}
-  \begin{itemize}
-    \item $\vc$ is a constraint consisting of a single side-effect-free expression $\ve$, that is, $\ConstraintExact(\ve)$;
-    \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $n$;
-    \item $\vd$ is the set containing the single native integer value for $n$.
-  \end{itemize}
-
-  \item \AllApplyCase{constraint\_exact\_abnormal}
-  \begin{itemize}
-    \item $\vc$ is a constraint consisting of a single side-effect-free expression $\ve$, that is, $\ConstraintExact(\ve)$;
-    \item evaluating $\ve$ in $\env$ results in either a dynamic error configuration or diverges;
-    \item $\vd$ is the empty set.
-  \end{itemize}
-
-  \item \AllApplyCase{constraint\_range\_okay}
-  \begin{itemize}
-    \item $\vc$ is a range constraint consisting of two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
-    \item evaluating $\veone$ in $\env$ results in a configuration with the native integer for $a$;
-    \item evaluating $\vetwo$ in $\env$ results in a configuration with the native integer for $b$;
-    \item $\vd$ is the set containing all native integer values for integers greater than or equal to $a$ and less than or equal to $b$.
-  \end{itemize}
-
-  \item \AllApplyCase{constraint\_range\_abnormal1}
-  \begin{itemize}
-    \item $\vc$ is a range constraint consisting of two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
-    \item evaluating $\veone$ in $\env$ results in either a dynamic error configuration or diverges;
-    \item $\vd$ is the empty set.
-  \end{itemize}
-
-  \item \AllApplyCase{constraint\_range\_abnormal2}
-  \begin{itemize}
-    \item $\vc$ is a range constraint consisting of two side-effect-free expressions $\veone$ and $\vetwo$, that is, $\ConstraintRange(\veone, \vetwo)$;
-    \item evaluating $\veone$ in $\env$ results in a configuration with the native integer for $a$;
-    \item evaluating $\vetwo$ in $\env$ results in either a dynamic error configuration or diverges;
-    \item $\vd$ is the empty set.
-  \end{itemize}
-
-  \item \AllApplyCase{t\_int\_parameterized}
-  \begin{itemize}
-    \item $\vt$ is a \parameterizedintegertypeterm\ for parameter $\id$, \\ $\TInt(\Parameterized(\id))$;
-    \item the \nativevalueterm{} associated with $\id$ in the local dynamic environment is the native integer value for $n$;
-    \item $\vd$ is the set containing the single integer value for $n$.
-  \end{itemize}
-
-  \item \AllApplyCase{t\_bits\_dynamic\_error}
-  \begin{itemize}
-    \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
-    \item evaluating $\ve$ in $\env$ results in either a dynamic error configuration or diverges;
-    \item $\vd$ is the empty set.
-  \end{itemize}
-
-  \item \AllApplyCase{t\_bits\_negative\_width\_error}
-  \begin{itemize}
-    \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
-    \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
-    \item $k$ is negative;
-    \item $\vd$ is the empty set.
-  \end{itemize}
-
-  \item \AllApplyCase{t\_bits\_empty}
-  \begin{itemize}
-    \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
-    \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $0$;
-    \item $\vd$ is the set containing the single \nativevalueterm{} for an empty bitvector.
-  \end{itemize}
-
-  \item \AllApplyCase{t\_bits\_non\_empty}
-  \begin{itemize}
-    \item $\vt$ is a bitvector type with size expression $\ve$, $\TBits(\ve, \Ignore)$;
-    \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
-    \item $k$ is greater than $0$;
-    \item $\vd$ is the set containing all \nativevaluesterm{} for bitvectors of size exactly $k$.
-  \end{itemize}
-
-  \item \AllApplyCase{t\_tuple}
-  \begin{itemize}
-    \item $\vt$ is a \tupletypeterm{} over types $\vt_i$, for $i=1..k$, $\TTuple(\vt_{1..k})$;
-    \item the domain of each element $\vt_i$ is $D_i$, for $i=1..k$;
-    \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
-    \item $\vd$ is the set containing all native vectors of $k$ values, where the value at position $i$
-    is from $D_i$.
-  \end{itemize}
-
-  \item \AllApply
-  \begin{itemize}
-    \item $\vt$ is an integer-indexed array type with length expression $\ve$ and element type $\telem$, $\TArray(\ArrayLengthExpr(\ve), \telem)$;
-    \item \OneApplies
-      \begin{itemize}
-      \item \AllApplyCase{t\_array\_dynamic\_error}
-      \begin{itemize}
-        \item evaluating $\ve$ in $\env$ results in either a dynamic error configuration or diverges;
-        \item $\vd$ is the empty set.
-      \end{itemize}
-
-      \item \AllApplyCase{t\_array\_negative\_length\_error}
-      \begin{itemize}
-        \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
-        \item $k$ is negative;
-        \item $\vd$ is the empty set.
-      \end{itemize}
-
-      \item \AllApplyCase{t\_array\_okay}
-      \begin{itemize}
-        \item evaluating $\ve$ in $\env$ results in a configuration with the native integer for $k$;
-        \item $k$ is greater than or equal to $0$;
-        \item the domain of $\vtone$ is $D_\telem$;
-        \item $\vd$ is the set of all native vectors of $k$ values taken from $D_\telem$.
-      \end{itemize}
-    \end{itemize}
-  \end{itemize}
-
-  \item \AllApplyCase{t\_enum\_array}
-  \begin{itemize}
-    \item $\vt$ is an enumeration-indexed array type with for the enumeration $\id$ with $k$ labels and element type $\telem$,\\
-          ($\TArray(\ArrayLengthEnum(\id, k), \telem)$);
-    \item view $\env$ as the pair consisting of the \staticenvironmentterm{} $\tenv$ and a dynamic environment;
-    \item the type bound to $\id$ in the $\declaredtypes$ map of the \staticenvironmentterm{} of $\tenv$ is the \enumerationtypeterm{}
-          for the labels $\vl_{1..k}$, that is, $\TEnum(\vl_{1..k})$;
-    \item the dynamic domain of $\telem$ in $\env$ is $D_\telem$;
-    \item $\vd$ is the set of all native records where each $\vl_i$ is mapped to a value taken from $D_\telem$, for $i=1..k$.
-  \end{itemize}
-
-  \item \AllApplyCase{t\_structured}
-  \begin{itemize}
-    \item $\vt$ is a \structuredtypeterm\ with typed fields $(\id_i, \vt_i)$, for $i=1..k$, that is $L([i=1..k: (\id_i,\vt_i)])$
-    where $L\in\{\TRecord, \TException\}$;
-    \item the domain of each type $\vt_i$ is $D_i$, for $i=1..k$;
-    \item $\vd$ is the set containing all native records where $\id_i$ is mapped to a value taken from $D_i$, for $i=1..k$.
-  \end{itemize}
-
-  \item \AllApplyCase{t\_named}
-  \begin{itemize}
-    \item $\vt$ is a named type with name $\id$, $\TNamed(\id)$;
-    \item the type associated with $\id$ in $\tenv$ is $\tty$;
-    \item $\vd$ is the domain of $\tty$ in $\env$.
-  \end{itemize}
-\end{itemize}
-
-\FormallyParagraph
-
-\begin{mathpar}
-\inferrule[t\_bool]{}{ \dynamicdomain(\env, \overname{\TBool}{\vt}) = \overname{\tbool}{\vd} }
-\hva\and
-\inferrule[t\_string]{}{ \dynamicdomain(\env, \overname{\TString}{\vt}) = \overname{\tstring}{\vd} }
-\hva\and
-\inferrule[t\_real]{}{ \dynamicdomain(\env, \overname{\TReal}{\vt}) = \overname{\treal}{\vd} }
-\hva\and
-\inferrule[t\_enumeration]{}{
-  \dynamicdomain(\env, \overname{\TEnum(\vl_{1..k})}{\vt}) = \overname{\{ \vi = 1..k: \nvlabel(\vl_\vi) \}}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-  \inferrule[t\_int\_unconstrained]{}{
-  \dynamicdomain(\env, \overname{\unconstrainedinteger}{\vt}) = \overname{\tint}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[t\_int\_well\_constrained]{}{
-  \dynamicdomain(\env, \overname{\TInt(\WellConstrained(\vc_{1..k}))}{\vt}) = \overname{\bigcup_{i=1}^k \dynamicdomain(\env, \vc_i)}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[constraint\_exact\_okay]{
-  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(n), \Ignore)
-}{
-  \dynamicdomain(\env, \overname{\ConstraintExact(\ve)}{\vc}) = \overname{\{ \nvint(n) \}}{\vd}
-}
-\hva\and
-\inferrule[constraint\_exact\_abnormal]{
-  \evalexprsef(\env, \ve) \evalarrow C\\
-  C \in \TDynError \cup \TDiverging
-}{
-  \dynamicdomain(\env, \overname{\ConstraintExact(\ve)}{\vc}) = \overname{\emptyset}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[constraint\_range\_okay]{
-  \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\nvint(a), \Ignore)\\
-  \evalexprsef(\env, \vetwo) \evalarrow \ResultExprSEF(\nvint(b), \Ignore)
-}{
-  \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\{ \nvint(n) \;|\;  a \leq n \land n \leq b\}}{\vd}
-}
-\hva\and
-\inferrule[constraint\_range\_abnormal1]{
-  \evalexprsef(\env, \veone) \evalarrow C\\
-  C \in \TDynError \cup \TDiverging
-}{
-  \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\emptyset}{\vd}
-}
-\hva\and
-\inferrule[constraint\_range\_abnormal2]{
-  \evalexprsef(\env, \veone) \evalarrow \ResultExprSEF(\Ignore, \Ignore)\\
-  \evalexprsef(\env, \vetwo) \evalarrow C\\
-  C \in \TDynError \cup \TDiverging
-}{
-  \dynamicdomain(\env, \overname{\ConstraintRange(\veone, \vetwo)}{\vc}) = \overname{\emptyset}{\vd}
-}
-\end{mathpar}
-
-The notation $\denv.\dynamicenvsL(\id)$ denotes the \nativevalueterm{} associated with the identifier $\id$
-in the \emph{local dynamic environment} of $\denv$.
-\begin{mathpar}
-\inferrule[t\_int\_parameterized]{
-  \env \reverseeqdef (\Ignore, \denv)\\
-  \denv.\dynamicenvsL(\id) = \nvint(n)
-}{
-  \dynamicdomain(\env, \overname{\TInt(\Parameterized(\id))}{\vt}) = \overname{\{ \nvint(n) \}}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[t\_bits\_abnormal]{
-  \evalexprsef(\env, \ve) \evalarrow C\\
-  C \in \TDynError \cup \TDiverging
-}{
-  \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\emptyset}{\vd}
-}
-\hva\and
-\inferrule[t\_bits\_negative\_width\_error]{
-  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
-  k < 0
-}{
-  \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\emptyset}{\vd}
-}
-\hva\and
-\inferrule[t\_bits\_empty]{
-  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(0), \Ignore)
-}{
-  \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\{ \nvbitvector(\emptylist) \}}{\vd}
-}
-\hva\and
-\inferrule[t\_bits\_non\_empty]{
-  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
-  k > 0
-}{
-  \dynamicdomain(\env, \overname{\TBits(\ve, \Ignore)}{\vt}) = \overname{\{ \nvbitvector(\vb_{1..k}) \;|\; \vb_1,\ldots,\vb_k \in \Bit \}}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[t\_tuple]{
-  i=1..k: \dynamicdomain(\env, \vt_i) = D_i
-}{
-  \dynamicdomain(\env, \overname{\TTuple(\vt_{1..k})}{\vt}) =
-  \overname{\{ \NVVector(\vv_{1..k}) \;|\; \vv_i \in D_i \}}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[t\_array\_abnormal]{
-  \vt = \TArray(\ArrayLengthExpr(\ve), \telem)\\
-  \evalexprsef(\env, \ve) \evalarrow C\\
-  C \in \TDynError \cup \TDiverging
-}{
-  \dynamicdomain(\env, \vt) = \overname{\emptyset}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[t\_array\_negative\_length\_error]{
-  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
-  k < 0
-}{
-  \dynamicdomain(\env, \overname{\TArray(\ArrayLengthExpr(\ve), \telem)}{\vt}) = \overname{\emptyset}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[t\_array\_okay]{
-  \vt = \TArray(\ArrayLengthExpr(\ve), \telem)\\
-  \evalexprsef(\env, \ve) \evalarrow \ResultExprSEF(\nvint(k), \Ignore)\\
-  k \geq 0\\
-  \dynamicdomain(\env, \telem) = D_\telem
-}{
-  \dynamicdomain(\env, \vt) =
-  \overname{\{ \NVVector(\vv_{1..k}) \;|\; \vv_{1..k} \in D_{\telem} \}}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[t\_enum\_array]{
-  \env \reverseeqdef (\tenv, \Ignore)\\
-  \tenv.\staticenvsG.\declaredtypes(\id) = (\TEnum(\vl_{1..k}), \Ignore)\\
-  \dynamicdomain(\env, \telem) = D_\telem
-}{
-  {
-  \begin{array}{c}
-    \dynamicdomain(\env, \overname{\TArray(\ArrayLengthEnum(\id, k), \telem)}{\vt}) =\\
-    \overname{\{ \NVRecord(\{i=1..k: \vl_i\mapsto \vv_i\}) \;|\; \vv_i \in D_\telem \}}{\vd}
-  \end{array}
-  }
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[structured]{
-  L \in \{\TRecord, \TException\}\\
-  i=1..k: \dynamicdomain(\env, \vt_i) = D_i
-}{
-  \dynamicdomain(\env, \overname{L([i=1..k: (\id_i,\vt_i)])}{\vt}) = \\
-  \overname{\{ \NVRecord(\{i=1..k: \id_i\mapsto \vv_i\}) \;|\; \vv_i \in D_i \}}{\vd}
-}
-\end{mathpar}
-
-\begin{mathpar}
-\inferrule[t\_named]{
-  \env \reverseeqdef (\tenv, \Ignore)\\
-  \tenv.\staticenvsG.\declaredtypes(\id) = (\tty, \Ignore)
-}{
-  \dynamicdomain(\env, \overname{\TNamed(\id)}{\vt}) = \overname{\dynamicdomain(\env, \tty)}{\vd}
-}
-\end{mathpar}
+\RenderProseAndFormally{dynamic_domain}
 
 \ExampleDef{Type Domains}
 The domain of \texttt{integer} is the infinite set of all integers.
@@ -424,8 +95,17 @@ The domain of \verb|integer{1..3}| is the set $\{\nvint(1), \nvint(2), \nvint(3)
 The domain of \verb|integer{10..1}| is the empty set as there are no integers that are
 both greater than $10$ and smaller than $1$.
 
-The domain of \texttt{bits(2)} is the set $\{\nvbitvector(00)$, $\nvbitvector(01),$
-$\nvbitvector(10)$, $\nvbitvector(11)\}$.
+The domain of \texttt{bits(2)} is the following set:
+\[
+  \left\{
+  \begin{array}{l}
+    \nvbitvector(00),\\
+    \nvbitvector(01),\\
+    \nvbitvector(10),\\
+    \nvbitvector(11)
+  \end{array}
+  \right\}\enspace.
+\]
 
 The domain of \verb|enumeration {GREEN, ORANGE, RED}| is the set \\
 $\{\nvlabel(\texttt{GREEN}), \nvlabel(\texttt{ORANGE}), \nvlabel(\texttt{RED})\}$ and so is the domain
@@ -441,3 +121,26 @@ The dynamic domain of a subprogram parameter \texttt{N: integer} is the (singlet
 the native integer value $c$,
 which is assigned to \texttt{N} by a given dynamic environment. The static domain of that parameter
 is the infinite set of all native integer values.
+
+The domain of \texttt{array [[2]] of boolean} is the set
+\[
+  \left\{
+  \begin{array}{l}
+    \NVVector([\nvboolop{\False}, \nvboolop{\False}]),\\
+    \NVVector([\nvboolop{\False}, \nvboolop{\True}]),\\
+    \NVVector([\nvboolop{\True}, \nvboolop{\False}]),\\
+    \NVVector([\nvboolop{\True}, \nvboolop{\True}])
+  \end{array}
+  \right\}.
+\]
+
+\subsection{The Dynamic Domain of a Constraint\label{sec:DynDomainConstraint}}
+We also associate dynamic domains to integer constraints.
+\RenderRelation{dynamic_domain_constraint}
+\RenderProseAndFormally{dynamic_domain_constraint}
+
+\ExampleDef{Constraint Domains}
+The dynamic domain of the integer constraint \texttt{4} is the singleton set $\{\nvintop{4}\}$.
+%
+The dynamic domain of the integer constraint \texttt{1..3} is the set
+$\{\nvintop{1}, \nvintop{2}, \nvintop{3}\}$.

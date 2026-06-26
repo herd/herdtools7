@@ -2644,6 +2644,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
              let+ () = check_type_satisfies ~loc env t_e t in
              ( LE_SetField (le2, field) |> here,
                ses |: TypingRule.LESetStructuredField )
+         (* End *)
+         (* Begin LESetCollectionField *)
          | T_Collection fields ->
              let collection_var_name =
                match le2.desc with LE_Var x -> x | _ -> assert false
@@ -2658,7 +2660,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
              ( LE_SetCollectionFields
                  (collection_var_name, [ field ], [ (0, n) ])
                |> here,
-               ses |: TypingRule.LESetStructuredField )
+               ses |: TypingRule.LESetCollectionField )
          (* End *)
          (* Begin LESetBitField *)
          | T_Bits (_, bitfields) ->
