@@ -4,7 +4,7 @@
 ;;
 ;; SPDX-FileCopyrightText: Copyright 2025 Arm Limited and/or its affiliates <open-source-office@arm.com>
 ;; SPDX-License-Identifier: BSD-3-Clause
-;; 
+;;
 ;;****************************************************************************;;
 ;; Disclaimer:                                                                ;;
 ;; This material covers both ASLv0 (viz, the existing ASL pseudocode language ;;
@@ -63,7 +63,7 @@
                 (equal (symbol-name k) (identifier->val x))))
     :hints(("Goal" :in-theory (enable id-to-native keywordp member-symbol-name))))
 
-  
+
   ;; (defret equal-of-id-to-native
   ;;   (implies (and (identifier-p x) (identifier-p y))
   ;;            (equal (equal (id-to-native x) (id-to-native y))
@@ -173,10 +173,10 @@
       :fn val-imap-to-native)
     :skip-others t)
 
-  
+
 
   (fty::deffixequiv-mutual val-to-native)
-  
+
   (local (in-theory (enable val-to-native)))
 
   (acl2::defopen val-to-native-when-v_int (val-to-native x) :hyp (val-case x :v_int) :hint (:expand ((val-to-native x))))
@@ -187,7 +187,7 @@
   (acl2::defopen val-to-native-when-v_label (val-to-native x) :hyp (val-case x :v_label) :hint (:expand ((val-to-native x))))
   (acl2::defopen val-to-native-when-v_record (val-to-native x) :hyp (val-case x :v_record) :hint (:expand ((val-to-native x))))
   (acl2::defopen val-to-native-when-v_array (val-to-native x) :hyp (val-case x :v_array) :hint (:expand ((val-to-native x))))
-  
+
   (defthm val-to-native-of-v_int
     (equal (val-to-native (v_int x)) (ifix x)))
 
@@ -235,7 +235,7 @@
                                              omap::mfix
                                              omap::mapp)))
            :rule-classes :definition))
-  
+
   (std::defret-mutual assoc-of-<fn>
     (defret assoc-of-<fn>
       (equal (omap::assoc key new-x)
@@ -258,7 +258,7 @@
       :fn val-imap-to-native)
     :skip-others t)
 
-  
+
   (local (defcong acl2::set-equiv acl2::set-equiv (vallist-to-native x) 1
            :hints (("goal" :use ((:instance (:functional-instance
                                              acl2::set-equiv-congruence-over-elementlist-projection
@@ -275,7 +275,7 @@
                     (equal (omap::values (omap::update key val x))
                            (set::insert val (omap::values x))))
            :hints(("Goal" :in-theory (enable omap::values omap::assoc)))))
-  
+
   (local (defthm values-of-update-when-assoc-matches-if-any
            (implies (or (not (omap::assoc key x))
                         (equal (cdr (omap::assoc key x)) val))
@@ -283,7 +283,7 @@
                            (set::insert val (omap::values x))))
            :hints (("goal" :use values-of-update-when-assoc-matches
                     :in-theory (disable values-of-update-when-assoc-matches)))))
-  
+
   (std::defret-mutual vals-of-val-imap-to-native
     (defret vals-of-val-imap-to-native
       (equal (omap::values new-x)
@@ -303,7 +303,7 @@
                     (equal (val-imap-p (omap::update key val x))
                            (and (identifier-p key)
                                 (val-p val))))
-           :hints(("Goal" :in-theory (enable 
+           :hints(("Goal" :in-theory (enable
 
   (defthm val-imap-to-native-of-update
     (equal (val-imap-to-native (omap::update key val x))
@@ -436,7 +436,7 @@
 ;;                                            identifier-fix)))))
 
 
-         
+
 
 
 (defines weak-ty-satisfied-native
@@ -501,7 +501,7 @@
   ///
   (fty::deffixequiv-mutual weak-ty-satisfied-native)
 
-  
+
 
   (defcong acl2::set-equiv equal (weak-array-type-satisfied-native x ty) 1
     :hints (("goal" :use ((:instance (:functional-instance
@@ -511,7 +511,7 @@
                                       (acl2::element-list-final-cdr-p (lambda (x) t)))
                            (x x) (y x-equiv)))
              :in-theory (enable weak-array-type-satisfied-native))))
-  
+
   (defthm-weak-ty-satisfied-flag
     (defthm weak-ty-satisfied-native-of-val-to-native
       (implies (and (weak-ty-satisfied x ty))
@@ -604,82 +604,23 @@
     :returns (val keymap-p)
     (b* (((when (atom fields)) nil)
          ((typed_identifier f1) (car fields))
-         (val (typed-val-to-native (omap::lookup f1.name (val-imap-fix x)) f1.type)))
-      (omap::update (id-to-native f1.name) val
-                    (typed-val-imap-to-native x (cdr fields)))))
+         (val (cdar x)))
+      (cons (cons (id-to-native f1.name) (typed-val-to-native val f1.type))
+            (typed-val-imap-to-native (cdr x) (cdr fields)))))
 
-  (define typed-enumarray-to-native ((keys identifierlist-p)
-                                     (x val-imap-p)
-                                     (ty ty-p))
-    :measure (acl2::two-nats-measure (ty-count ty) (len keys))
-    :guard (and (subsetp-equal (identifierlist-fix keys) (omap::keys x))
-                (weak-array-type-satisfied (omap::values x) ty))
-    :returns (val keymap-p)
-    (if (atom keys)
-        nil
-      (omap::update (id-to-native (car keys))
-                    (typed-val-to-native (omap::lookup
-                                          (identifier-fix (car keys))
-                                          (val-imap-fix x))
-                                         ty)
-                    (typed-enumarray-to-native (cdr keys) x ty))))
-                                  
-      
   ///
-  (local (defthm weak-ty-satisfied-of-lookup-when-weak-array-type-satisfied-of-values
-           (implies (and (weak-array-type-satisfied (omap::values x) ty)
-                         (val-imap-p x)
-                         (member-equal k (omap::keys x)))
-                    (weak-ty-satisfied (cdr (omap::assoc k x)) ty))
-           :hints(("Goal" :in-theory (enable omap::lookup
-                                             (:i omap::values))
-                   :expand ((omap::keys x)
-                            (omap::values x)
-                            (omap::assoc k x)
-                            (:free (a b) (weak-array-type-satisfied (cons a b) ty)))
-                   :induct (omap::values x)))))
-  
-  (local (defthm in-when-setp
-           (implies (setp x)
-                    (iff (in k x)  (member-equal k x)))
-           :hints (("goal" :use ((:instance set::in-mergesort
-                                  (a k) (x x)))
-                    :in-theory (disable set::in-mergesort)))))
-  (verify-guards typed-val-to-native
-    :hints (("goal" :expand ((weak-tuple-type-satisfied x types)
-                             (weak-array-type-satisfied x ty)
-                             (weak-record-type-satisfied x fields)
-                             (weak-ty-satisfied x ty))
-             :in-theory (enable subsetp-equal
-                                omap::lookup
-                                omap::assoc-iff-in-keys))))
 
-  ;; (local (defthm pairlis$-equals-val-imap-to-native
-  ;;          (implies (val-imap-p x)
-  ;;                   (equal (pairlis$ (idlist-to-native (acl2::alist-keys x))
-  ;;                                    (vallist-to-native (acl2::alist-vals x)))
-  ;;                          (val-imap-to-native x)))
-  ;;          :hints(("Goal" :in-theory (enable acl2::alist-vals
-  ;;                                            acl2::alist-keys
-  ;;                                            val-imap-to-native
-  ;;                                            idlist-to-native
-  ;;                                            vallist-to-native)))))
+  (local (defthm pairlis$-equals-val-imap-to-native
+           (implies (val-imap-p x)
+                    (equal (pairlis$ (idlist-to-native (acl2::alist-keys x))
+                                     (vallist-to-native (acl2::alist-vals x)))
+                           (val-imap-to-native x)))
+           :hints(("Goal" :in-theory (enable acl2::alist-vals
+                                             acl2::alist-keys
+                                             val-imap-to-native
+                                             idlist-to-native
+                                             vallist-to-native)))))
 
-  (local (defthm restrict-of-insert
-           (equal (omap::restrict (set::insert k keys) x)
-                  (let ((look (omap::assoc k x)))
-                    (if look
-                        (omap::update k (cdr look) (omap::restrict keys x))
-                      (omap::restrict keys x))))
-           :hints (("goal" :use ((:instance omap::diff-key-when-unequal
-                                  (x (omap::restrict (set::insert k keys) x))
-                                  (y (let ((look (omap::assoc k x)))
-                                       (if look
-                                           (omap::update k (cdr look) (omap::restrict keys x))
-                                         (omap::restrict keys x))))))
-                    :in-theory (e/d (omap::assoc-of-restrict)
-                                    (in-when-setp))))))
-  
   (std::defret-mutual <fn>-is-val-to-native
     (defretd <fn>-is-val-to-native
       (implies (weak-ty-satisfied x ty)
@@ -726,7 +667,7 @@
                                             t_tuple t_array t_record t_exception
                                             t_collection t_named)))
                         (& nil)))))
-  
+
   (defopener open-tuple-val-to-native tuple-val-to-native
     :hyp (syntaxp (or (quotep types)
                       (and (consp types) (eq (car types) 'cons))))))
@@ -767,7 +708,7 @@
          ((mv (evo first) orac) (partial-resolve-ty env x1.type))
          ((mv (evo rest) orac) (partial-resolve-typed_identifierlist env (cdr x))))
       (evo_normal (cons (typed_identifier x1.name first) rest))))
-    
+
   (define partial-resolve-ty ((env env-p)
                               (x ty-p)
                               &key ((clk natp) 'clk) (orac 'orac))
@@ -1019,7 +960,7 @@
          (implies (equal (len x) (len y))
                   (equal (acl2::alist-vals (pairlis$ x y))
                          (true-list-fix y)))
-         :hints(("Goal" :in-theory (enable acl2::alist-vals pairlis$)))))                       
+         :hints(("Goal" :in-theory (enable acl2::alist-vals pairlis$)))))
 
 (local (defthm pairlis$-keys-vals-when-alistp
          (implies (alistp x)
@@ -1276,7 +1217,7 @@
         t
       (and (ty-bitwidths-nonneg-p (typed_identifier->type (car x)))
            (typed_identifierlist-bitwidths-nonneg-p (cdr x))))))
-  
+
 
 (defines weak-ty-fix-native
   :flag-local nil
@@ -1488,13 +1429,13 @@
       :hints ('(:expand (<call>)))
       :fn native-array-to-typed-val)
     :skip-others t)
-  
+
   (local (defthm equal-lens-when-when-equal-idlist-to-native
            (implies (equal x (idlist-to-native y))
                     (equal (equal (len y) (len x)) t))))
 
-  
-  
+
+
   (verify-guards native-to-typed-val
     :hints (("goal" :expand ((ty-satisfied-native x ty)
                              (tuple-type-satisfied-native x types)
@@ -1792,8 +1733,8 @@
       (append (shallow-returntype-type-prescriptions (car exprs))
               (shallow-returntype-type-prescriptions-lst (cdr exprs))))))
 
-            
-  
+
+
 
 (define shallow-type->asl-satisfies-expr (weakp
                                           type-expr ;; expr for resolved type
@@ -1898,7 +1839,7 @@
     (cons `(val-p ,(car params))
           (cons `(val-case ,(car params) :v_int)
                 (shallow-asl-param-v_int-hyps (cdr params))))))
-       
+
 
 
 
@@ -1930,8 +1871,8 @@
        (type-term (kwote (ev_normal->res type-res))))
     (cons type-term
           (shallow-resolve-weak-arg-types (cdr fn-args) static-env))))
-   
-    
+
+
 ;; ---------------------------------------------------------------------------------
 ;; Shallow function's DEFINE formals:
 ;; Given resolved types for the parameters and args, pair (varname type-satisfied-term).
@@ -2006,7 +1947,7 @@
 ;; of eval_subprogram of the function with correct arity can be expressed in terms of the shallow function.
 ;; The shallow function needs to be called with args derived from the ASL value args given to eval_subprogram.
 ;; E.g., for foo {n} (v : bits(N)), we need (v_int->val n) (v_bits->val v).
-;; 
+;;
 (define shallow-asl-to-native-args ((args symbol-listp)
                                     asl-resolved-types
                                     hyp ;; params v_int
@@ -2036,10 +1977,10 @@
     (value (if (eq first t)
                rest
              (cons first rest)))))
-      
 
 
-       
+
+
 
 ;; (define shallow-return-exprs-aux (returnvars returntypes hyps state)
 ;;   (b* (((When (atom returnvars)) (value nil))
@@ -2049,7 +1990,7 @@
 ;;        ((er rw-term) (simplify-for-shallow term `(and . ,hyps) 'equal state))
 ;;        ((er rest) (shallow-return-exprs-aux (cdr returnvars) (cdr returntypes) hyps local-storage state)))
 ;;     (value (cons rw-term rest))))
-    
+
 
 ;; (define shallow-return-exprs (returnvars returntype hyps local-storage state)
 ;;   (b* (((unless returntype)
@@ -2064,7 +2005,7 @@
 ;;                    (shallow-return-exprs-aux
 ;;                     (list returnvars) (list returntype) hyps local-storage state)))))
 
-    
+
 
 
 
@@ -2091,8 +2032,8 @@
 
 ;; (define remove-duplicated-keys (x)
 ;;   (remove-duplicated-keys-aux x nil))
-                                     
-             
+
+
 (define remove-corresponding-elements (keys vals rem)
   (if (atom keys)
       nil
@@ -2100,7 +2041,7 @@
         (remove-corresponding-elements (cdr keys) (cdr vals) rem)
       (cons (car vals)
             (remove-corresponding-elements (cdr keys) (cdr vals) rem)))))
-                    
+
 
 
 
@@ -2148,7 +2089,7 @@
          returns ;; name or list of names, not specs like in def-asl-subprogram
          ;; measure
          safe-clock
-         
+
          ;; enable
          ;; disable
          ;; hints
@@ -2159,7 +2100,7 @@
 
        (weak-types t)
        (partialp t)
-       
+
        ((when bad-args)
         (er soft 'def-asl-shallow "Bad arguments: ~x0" bad-args))
        ((unless (stringp function))
@@ -2206,7 +2147,7 @@
                     (car returns)
                   returns))
 
-       
+
        (direct-subprograms (collect-direct-subprograms f.body nil))
        (table  (table-alist 'asl-subprogram-table (w state)))
        (subprograms (cons function (collect-transitive-subprograms direct-subprograms table nil)))
@@ -2237,11 +2178,11 @@
        ((er types-sat) (shallow-types-satisfiable weak-types
                                                   (append weak-param-types weak-arg-types)
                                                   params-integerp-hyp state))
-       
+
        (nondup-args (set-difference-eq args params))
        (nondup-arg-types (remove-corresponding-elements args weak-arg-types params))
 
-       
+
        ((er param-formals)
         (shallow-define-formals weak-types params weak-param-types t state))
        ((er arg-formals)
@@ -2251,9 +2192,9 @@
         (if weak-types
             (shallow-bitwidth-nonneg-exprs arg-types params-integerp-hyp state)
           (value nil)))
-       
+
        (guard-hyps (append additional-guards (acl2::strip-cadrs formals)))
-       
+
        ((er param-fixer-al)
         (shallow-formal-fixer-alist weak-types params weak-param-types t state))
        ((er arg-fixer-al)
@@ -2265,7 +2206,7 @@
         (shallow-native-to-asl-args params param-types params-integerp-hyp state))
        ((er asl-args)
         (shallow-native-to-asl-args args arg-types params-integerp-hyp state))
-       
+
        (match-hyp `(subprograms-match ',subprograms
                                       (global-env->static (env->global env))
                                       ,static-env))
@@ -2273,7 +2214,7 @@
                          t
                        `(<= ,clk-val (ifix clk))))
 
-       
+
        (body-hyp (list* 'and match-hyp measure-reqs (append params-integerp-hyps guard-hyps)))
        (body-term `(mv-nth 0 (eval_subprogram env ,function (list . ,asl-params) (list . ,asl-args))))
        ((er body-simp) (simplify-for-shallow body-term body-hyp 'equal state
@@ -2306,12 +2247,12 @@
        ;;                          (value nil)
        ;;                        (simplify-for-shallow `(equal (eval_result-kind ,body-simp) :ev_throwing)
        ;;                                              `(and . ,hyps) 'iff state)))
-       
+
        (return-expr
         (if returntype-is-tuple
             `(tuple-vallist-to-native (func_result->vals res.res) ,return-type/s)
           `(typed-val-to-native (car (func_result->vals res.res)) ,return-type/s)))
-       
+
        ((er body) (simplify-for-shallow
                    (if always-normal
                        `(let ((res.res (ev_normal->res ,body-simp)))
@@ -2383,7 +2324,7 @@
        (return-concl `(and ,@(and return-type-prescrips `(,return-type-prescrip))
                            ,@(and return-reverse `(,return-reverse))
                            ,return-rewrites))
-                               
+
 
        (asl-param-env-term (shallow-asl-param-env params f.parameters))
        (asl-params-v_int-hyps (shallow-asl-param-v_int-hyps params))
@@ -2399,7 +2340,7 @@
                                  (append params nondup-args)
                                  (append asl-param-types nondup-asl-arg-types)
                                  asl-params-v_int-hyp state))
-       
+
        (return-binder (if (symbolp returns) returns `(list . ,returns)))
 
        ((er asl-return-type)
@@ -2414,7 +2355,7 @@
         (if returntype-is-tuple
             (shallow-type->native-wrap-exprlist asl-return-type/s returns asl-params-v_int-hyp state)
           (shallow-type->native-wrap-exprlist (list asl-return-type) (list returns) asl-params-v_int-hyp state))))
-       
+
     (value `(define ,name ,formals
               :returns (returnval ,return-concl
                                   :rule-classes nil :name ,return-sig-thmname)
@@ -2428,7 +2369,7 @@
                 :hints (("goal" :use ,return-sig-thmname
                          :in-theory (disable ,name)))
                 :rule-classes :rewrite)
-              
+
               ,@(and return-type-prescrip
                      `((defret ,return-type-prescrip-thmname
                          ,return-type-prescrip
@@ -2450,7 +2391,7 @@
                          :hints (("goal" :use ,return-sig-thmname
                                   :in-theory (disable ,name
                                                       ,return-rewrite-thmname))))))
-              
+
               (def-asl-subprogram ,(intern-in-package-of-symbol
                                     (concatenate 'string (symbol-name name) "-SHALLOW-CORRECT")
                                     'asl-pkg)
@@ -2472,7 +2413,7 @@
                                                        (ev_throwing impl.throwdata
                                                                     (change-env env :local (empty-local-env)))))))
                 :return-values ,asl-return-exprs)))))
-            
+
 
 
 
@@ -2527,7 +2468,7 @@
       (stmt_desc-case x
         :s_seq (b* (((mv res decls1 n) (shallow-loop-and-decls n stmttype x.first))
                     ((when res) (mv res decls1 n))
-                    ((mv res decls2 n) 
+                    ((mv res decls2 n)
                      (shallow-loop-and-decls n stmttype x.second)))
                  (mv res (append decls1 decls2) n))
         :s_decl (b* (((unless x.ty) (mv nil nil n))
@@ -2648,7 +2589,7 @@
   ///
   (verify-guards shallow-lexpr-written-vars))
 
-    
+
 
 (defines shallow-written-vars
   (define shallow-written-vars ((x stmt-p)
@@ -2770,7 +2711,7 @@
         :e_enumarray (expr-vars x.value)
         :e_arbitrary (ty-vars x.type)
         :e_pattern (union (expr-vars x.expr)
-                          (pattern-vars x.pattern))
+                          (pattern_list_and_kind-vars x.pattern))
         :otherwise nil)))
 
   (define exprlist-vars ((x exprlist-p))
@@ -2788,13 +2729,10 @@
                         (setp vars)))
     (b* ((x (pattern->val x)))
       (pattern_desc-case x
-        :pattern_any (patternlist-vars x.patterns)
         :pattern_geq (expr-vars x.expr)
         :pattern_leq (expr-vars x.expr)
-        :pattern_not (pattern-vars x.pattern)
         :pattern_range (union (expr-vars x.upper) (expr-vars x.lower))
         :pattern_single (expr-vars x.expr)
-        :pattern_tuple (patternlist-vars x.patterns)
         :otherwise nil)))
 
   (define patternlist-vars ((x patternlist-p))
@@ -2805,6 +2743,12 @@
         nil
       (union (pattern-vars (car x))
              (patternlist-vars (cdr x)))))
+
+  (define pattern_list_and_kind-vars ((x pattern_list_and_kind-p))
+    :measure (pattern_list_and_kind-count x)
+    :returns (vars (and (identifierlist-p vars)
+                        (setp vars)))
+    (patternlist-vars (pattern_list_and_kind->patterns x)))
 
   (define slice-vars ((x slice-p))
     :measure (slice-count x)
@@ -2915,10 +2859,10 @@
              (named_exprlist-vars (cdr x)))))
   ///
   (verify-guards expr-vars))
-      
-    
-        
-    
+
+
+
+
 
 
 
@@ -2989,7 +2933,7 @@
 
 ;;          (static-env '(stdlib-static-env)))
 ;;         args)
-       
+
 ;;        ((when bad-args)
 ;;         (er soft 'def-asl-shallow-loop "Bad arguments: ~x0" bad-args))
 ;;        ((unless (stringp function))
@@ -3024,7 +2968,7 @@
 ;;        ((unless (subprogram_body-case f.body :sb_asl))
 ;;         (er soft 'def-asl-shallow-loop "Function is a primitive rather than an ASL function"))
 ;;        (fn-body (sb_asl->stmt f.body))
-       
+
 ;;        ((mv loopstmt decls &)
 ;;         (shallow-loop-and-decls nth looptype fn-body))
 
@@ -3048,10 +2992,10 @@
 ;;                      local-vars))
 
 ;;        (local-vars (shallow-loop-reorder-local-vars decls local-vars))
-    
+
 ;;        (varnames (strip-cars local-vars))
 ;;        (asl-vars (acl2::strip-cadrs local-vars))
-       
+
 ;;        (decl-names (typed_identifierlist->names decls))
 ;;        (diff (difference (mergesort asl-vars) (mergesort decl-names)))
 ;;        ((when diff)
@@ -3062,7 +3006,7 @@
 ;;        (diff (difference (mergesort written-vars) (mergesort asl-vars)))
 ;;        ((when diff)
 ;;         (er soft 'def-asl-shallow-loop "Loop writes variables missing from local-vars: ~x0" diff))
-            
+
 ;;        ;; It seems complicated to determine automatically exactly what type
 ;;        ;; theorems are needed for a loop.  We can get the types of the
 ;;        ;; variables read and written in the loop, but those types might depend
@@ -3082,7 +3026,7 @@
 ;;                                    asl-vars varnames var-types
 ;;                                    '(local-env->storage (env->local env))
 ;;                                    nil state))
-                                                  
+
 ;;        (resolved-var-types-res (name-resolve-tylist static-env-val var-types :clk 1000))
 ;;        ((unless (eval_result-case resolved-var-types-res :ev_normal))
 ;;         (er soft 'def-asl-shallow-loop "Couldn't resolve some named types in local vars: ~x0" resolved-var-types-res))
@@ -3114,7 +3058,7 @@
 ;;                          t
 ;;                        `(<= ,clk-val (ifix clk))))
 
-       
+
 ;;        (body-hyp (list* 'and match-hyp measure-reqs
 ;;                         '(no-duplicatesp-equal (acl2::alist-keys env.local.storage))
 ;;                         guard-hyps))
@@ -3129,7 +3073,7 @@
 ;;        ;; some that are expressed in terms of other variables that don't need to be inputs to our function.
 ;;        ;; So this leads to a complicated compromise: When a bitvector's bitwidth is expressed in terms of variables that we know about, we'll assume that it equals that expression's evaluation,
 ;;        ;; otherwise we won't assume anything about it.
-       
+
 ;;        ;; As a hack for doing this, we'll collect these environment conditions
 ;;        ;; for each variable in the order they were declared, under the
 ;;        ;; environment conditions produced by the previous variables, plus the
@@ -3155,15 +3099,15 @@
 
 ;;        ((er test-term-simp) (simplify-for-shallow test-term body-hyp
 
-       
-       
+
+
 ;;        (body-term `(eval_block env ,(case looptype
 ;;                                       (:s_for (s_for->body form))
 ;;                                       (:s_while (s_while->body form))
 ;;                                       (:s_repeat (s_repeat->body form)))))
-       
+
 ;;        )
-       
+
 ;;     (value `(define ,name ,formals
 ;;               :returns (returnval ,return-concl
 ;;                                   :rule-classes nil :name ,return-sig-thmname)
@@ -3176,7 +3120,7 @@
 ;;                 :hints (("goal" :use ,return-sig-thmname
 ;;                          :in-theory (disable ,name)))
 ;;                 :rule-classes :rewrite)
-              
+
 ;;               ,@(and return-type-prescrip
 ;;                      `((defret ,return-type-prescrip-thmname
 ;;                          ,return-type-prescrip
@@ -3198,7 +3142,7 @@
 ;;                          :hints (("goal" :use ,return-sig-thmname
 ;;                                   :in-theory (disable ,name
 ;;                                                       ,return-rewrite-thmname))))))
-              
+
 ;;               (def-asl-subprogram ,(intern-in-package-of-symbol
 ;;                                     (concatenate 'string (symbol-name name) "-SHALLOW-CORRECT")
 ;;                                     'asl-pkg)
