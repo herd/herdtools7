@@ -70,11 +70,6 @@ let version = V1
 let t_bit ~loc = T_Bits (E_Literal (L_Int Z.one) |> add_pos_from loc, [])
 let zero ~loc = E_Literal (L_Int Z.zero) |> add_pos_from loc
 
-let make_ty_decl_subtype (x, s) =
-  let name, _fields = s.desc in
-  let ty = ASTUtils.add_pos_from s (T_Named name) in
-  D_TypeDecl (x, ty, Some s.desc)
-
 let prec =
   let open AST in
   function
@@ -624,11 +619,6 @@ let s_else :=
 
   ------------------------------------------------------------------------- *)
 
-let with_opt == { [] } | WITH; ~=fields; <>
-
-let subtype := SUBTYPES; ~=IDENTIFIER; ~=with_opt; <>
-let subtype_opt := ioption(subtype)
-
 let opt_typed_identifier := pair(IDENTIFIER, ty_opt)
 let return_type := ARROW; ty
 let params_opt := { [] } | braced(clist1(opt_typed_identifier))
@@ -730,10 +720,7 @@ let decl :=
     (* End *)
     | terminated_by(SEMI_COLON,
       (* Begin type_decl *)
-      | TYPE; x=IDENTIFIER; OF; t=ty_decl; ~=subtype_opt; < D_TypeDecl           >
-      (* End *)
-      (* Begin subtype_decl *)
-      | TYPE; x=IDENTIFIER; s=annotated(subtype);         < make_ty_decl_subtype >
+      | TYPE; x=IDENTIFIER; OF; t=ty_decl; < D_TypeDecl >
       (* End *)
       (* Begin global_storage *)
       | keyword=global_keyword_non_config; name=ignored_or_identifier;

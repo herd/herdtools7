@@ -4,9 +4,6 @@ type RecordBase of record {status: boolean};
 // { }
 constant HALF_WORD_BITS = 8;
 
-// { Other(RecordBase), Other(HALF_WORD_BITS) }
-type MyRecord subtypes RecordBase with { data: bits(HALF_WORD_BITS) };
-
 // { }
 constant WORD_BITS = 16;
 

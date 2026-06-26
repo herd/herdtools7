@@ -32,7 +32,6 @@ type global = {
   declared_types : (ty * TimeFrame.t) IMap.t;
   constant_values : literal IMap.t;
   storage_types : (ty * global_decl_keyword) IMap.t;
-  subtypes : identifier IMap.t;
   subprograms : (AST.func * SES.t) IMap.t;
   overloaded_subprograms : ISet.t IMap.t;
   expr_equiv : expr IMap.t;
@@ -83,21 +82,20 @@ module PPEnv = struct
         constant_values;
         storage_types;
         declared_types;
-        subtypes;
         subprograms;
         overloaded_subprograms;
         expr_equiv;
       } =
     fprintf f
       "@[<v 2>Global with:@ - @[constants:@ %a@]@ - @[storage:@ %a@]@ - \
-       @[types:@ %a@]@ - @[subtypes:@ %a@]@ - @[subprograms:@ %a@]@ - \
-       @[overloaded_subprograms:@ %a@]@ - @[expr equiv:@ %a@]@]"
+       @[types:@ %a@]@ - @[subprograms:@ %a@]@ - @[overloaded_subprograms:@ \
+       %a@]@ - @[expr equiv:@ %a@]@]"
       (IMap.pp_print PP.pp_literal)
       constant_values
       (pp_map (fun f (t, _) -> PP.pp_ty f t))
       storage_types
       (pp_map (pp_fst PP.pp_ty))
-      declared_types (pp_map pp_print_string) subtypes
+      declared_types
       (pp_map (fun f (p, _ses) -> pp_subprogram f p))
       subprograms (pp_map pp_iset) overloaded_subprograms (pp_map PP.pp_expr)
       expr_equiv
@@ -116,7 +114,6 @@ let empty_global =
     declared_types = IMap.empty;
     constant_values = IMap.empty;
     storage_types = IMap.empty;
-    subtypes = IMap.empty;
     subprograms = IMap.empty;
     overloaded_subprograms = IMap.empty;
     expr_equiv = IMap.empty;
@@ -252,12 +249,6 @@ let add_global_immutable_expr x e env =
   }
   |: TypingRule.AddGlobalImmutableExpr
 (* End *)
-
-let add_subtype s t env =
-  {
-    env with
-    global = { env.global with subtypes = IMap.add s t env.global.subtypes };
-  }
 
 (* Begin IsGlobalUndefined *)
 let is_global_undefined x (genv : global) =

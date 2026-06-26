@@ -447,7 +447,7 @@ module Make (C : Config.S) = struct
       in
       gdks ** vars ** no_double_none tys exprs |> map make_global_decl
     and d_type_decl =
-      let make_type_decl (name, ty) = D_TypeDecl (name, ty, None) in
+      let make_type_decl (name, ty) = D_TypeDecl (name, ty) in
       names ** ty_decl |> map make_type_decl
     in
     d_func ++ d_global_storage ++ d_type_decl |> map annot

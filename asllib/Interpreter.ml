@@ -28,18 +28,6 @@ open ASTUtils
 let _warn = false
 let _dbg = false
 
-let rec subtypes_names env s1 s2 =
-  if String.equal s1 s2 then true
-  else
-    match IMap.find_opt s1 StaticEnv.(env.global.subtypes) with
-    | None -> false
-    | Some s1' -> subtypes_names env s1' s2
-
-let subtypes env t1 t2 =
-  match (t1.desc, t2.desc) with
-  | T_Named s1, T_Named s2 -> subtypes_names env s1 s2
-  | _ -> false
-
 module type S = sig
   module B : Backend.S
   module IEnv : Env.S with type v = B.value and module Scope = B.Scope
@@ -1270,7 +1258,7 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalSTry *)
     | S_Try (s1, catchers, otherwise_opt) ->
         let s_m = eval_block env s1 in
-        eval_catchers env catchers otherwise_opt s_m |: SemanticsRule.STry
+        eval_catchers catchers otherwise_opt s_m |: SemanticsRule.STry
     (* End *)
     (* Begin EvalSDecl *)
     | S_Decl (_ldk, ldi, _ty_opt, Some e_init) ->
@@ -1427,14 +1415,12 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (* Evaluation of Catchers *)
   (* ---------------------- *)
-  and eval_catchers env catchers otherwise_opt s_m : stmt_eval_type =
+  and eval_catchers catchers otherwise_opt s_m : stmt_eval_type =
     (* [catcher_matches t c] returns true if the catcher [c] match the raised
        exception type [t]. *)
     (* Begin EvalFindCatcher *)
-    let catcher_matches =
-      let static_env = { StaticEnv.empty with global = env.global.static } in
-      fun v_ty (_e_name, e_ty, _stmt) ->
-        subtypes static_env v_ty e_ty |: SemanticsRule.FindCatcher
+    let catcher_matches v_ty (_e_name, e_ty, _stmt) =
+      Types.same_named_type v_ty e_ty |: SemanticsRule.FindCatcher
       (* End *)
     in
     (* Main logic: *)

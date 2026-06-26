@@ -117,7 +117,6 @@
 %token SLICING
 %token STAR_COLON
 %token STRING
-%token SUBTYPES
 %token THEN
 %token THROW
 %token TO
@@ -129,7 +128,6 @@
 %token WHEN
 %token WHERE
 %token WHILE
-%token WITH
 %token XOR
 
 %token DEBUG [@internal true]
