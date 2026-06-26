@@ -174,7 +174,6 @@ module Make (Conf : PrinterConf) = struct
       | E_Slice (x, s) -> [ key "E_SLICE"; of_expr x; of_list_map of_slice s ]
       | E_Cond (x, y, z) -> [ key "E_COND"; of_expr x; of_expr y; of_expr z ]
       | E_GetArray (x, y) -> [ key "E_GETARRAY"; of_expr x; of_expr y ]
-      | E_GetEnumArray (x, y) -> [ key "E_GETENUMARRAY"; of_expr x; of_expr y ]
       | E_GetField (x, i) -> [ key "E_GETFIELD"; of_expr x; of_identifier i ]
       | E_GetFields (x, i) ->
           [ key "E_GETFIELDS"; of_expr x; of_list_map of_identifier i ]
@@ -194,13 +193,6 @@ module Make (Conf : PrinterConf) = struct
       | E_Tuple lst -> [ key "E_TUPLE"; of_list_map of_expr lst ]
       | E_Array { length; value } ->
           [ key "E_ARRAY"; of_expr length; of_expr value ]
-      | E_EnumArray { enum; labels; value } ->
-          [
-            key "E_ENUMARRAY";
-            of_identifier enum;
-            of_list_map of_identifier labels;
-            of_expr value;
-          ]
       | E_Arbitrary t -> [ key "E_ARBITRARY"; of_ty t ]
       | E_Pattern (x, p) -> [ key "E_PATTERN"; of_expr x; of_pattern p ])
 
@@ -254,7 +246,7 @@ module Make (Conf : PrinterConf) = struct
       | T_Bool -> [ key "T_BOOL" ]
       | T_Enum i -> [ key "T_ENUM"; of_list_map of_identifier i ]
       | T_Tuple t -> [ key "T_TUPLE"; of_list_map of_ty t ]
-      | T_Array (i, t) -> [ key "T_ARRAY"; of_array_index i; of_ty t ]
+      | T_Array (i, t) -> [ key "T_ARRAY"; of_expr i; of_ty t ]
       | T_Record f -> [ key "T_RECORD"; of_list_map of_field f ]
       | T_Exception f -> [ key "T_EXCEPTION"; of_list_map of_field f ]
       | T_Collection f -> [ key "T_COLLECTION"; of_list_map of_field f ]
@@ -302,17 +294,6 @@ module Make (Conf : PrinterConf) = struct
             of_ty t;
           ])
 
-  and of_array_index x =
-    tagged_list_of_list
-      (match x with
-      | ArrayLength_Expr x -> [ key "ARRAYLENGTH_EXPR"; of_expr x ]
-      | ArrayLength_Enum (i, lst) ->
-          [
-            key "ARRAYLENGTH_ENUM";
-            of_identifier i;
-            of_list_map of_identifier lst;
-          ])
-
   and of_field (id, t) = Cons (of_identifier id, of_ty t)
   and of_typed_identifier (id, t) = Cons (of_identifier id, of_ty t)
 
@@ -330,8 +311,6 @@ module Make (Conf : PrinterConf) = struct
       | LE_Slice (lx, s) ->
           [ key "LE_SLICE"; of_lexpr lx; of_list_map of_slice s ]
       | LE_SetArray (lx, x) -> [ key "LE_SETARRAY"; of_lexpr lx; of_expr x ]
-      | LE_SetEnumArray (lx, x) ->
-          [ key "LE_SETENUMARRAY"; of_lexpr lx; of_expr x ]
       | LE_SetField (lx, i) ->
           [ key "LE_SETFIELD"; of_lexpr lx; of_identifier i ]
       | LE_SetFields (lx, i, pairs) ->

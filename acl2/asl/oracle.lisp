@@ -179,20 +179,11 @@ can be produced by this function if the oracle is set up appropriately (see
                    (mv (and ok
                             (v_array vals))
                        orac))
-        :t_array (array_index-case x.index
-                   :arraylength_expr
-                   (b* ((len (int-literal-expr->val x.index.length))
-                        ((when (<= len 0))
-                         (mv (v_array nil) orac))
-                        ((mv ok vals orac) (ty-oracle-vals len x.type orac)))
-                     (mv (and ok (v_array vals)) orac))
-                   :arraylength_enum
-                   (if (atom x.index.elts)
-                       (mv (v_record nil) orac)
-                     (b* ((keys (mergesort x.index.elts))
-                          ((mv ok vals orac) (ty-oracle-vals (len keys) x.type orac)))
-                       (mv (and ok (v_record (omap::from-lists keys vals)))
-                           orac))))
+        :t_array (b* ((len (int-literal-expr->val x.index))
+                      ((when (<= len 0))
+                       (mv (v_array nil) orac))
+                      ((mv ok vals orac) (ty-oracle-vals len x.type orac)))
+                   (mv (and ok (v_array vals)) orac))
         :t_record (b* (((mv ok vals orac) (typed_identifierlist-oracle-val x.fields orac)))
                     (mv (and ok
                              (v_record vals))
@@ -464,11 +455,7 @@ field and its mode set appropriately, makes @('(ty-oracle-val x orac)') produce
         :t_bool (list (bool->bit (v_bool->val val)))
         :t_enum (list (acl2::index-of (v_label->val val) x.elts))
         :t_tuple (typed-vallist-to-oracle x.types (v_array->arr val))
-        :t_array (array_index-case x.index
-                   :arraylength_expr
-                   (typed-val-array-to-oracle x.type (v_array->arr val))
-                   :arraylength_enum
-                   (typed-val-array-to-oracle x.type (omap::key-ord-values (v_record->rec val))))
+        :t_array (typed-val-array-to-oracle x.type (v_array->arr val))
         :t_record (typed-val-record-to-oracle x.fields (v_record->rec val))
         :t_exception (typed-val-record-to-oracle x.fields (v_record->rec val))
         :t_collection (typed-val-record-to-oracle x.fields (v_record->rec val))

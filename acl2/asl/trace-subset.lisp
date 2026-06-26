@@ -755,7 +755,6 @@
 (def-trace-subset-x int_constraint)
 (def-trace-subset-x int_constraintlist)
 (def-trace-subset-x constraint_kind)
-(def-trace-subset-x array_index)
 (def-trace-subset-x named_expr)
 (def-trace-subset-x named_exprlist)
 (def-trace-subset-x maybe-ty)
@@ -791,20 +790,17 @@
          :e_cond (and (trace-subset-expr-p x.test)
                       (trace-subset-expr-p x.then)
                       (trace-subset-expr-p x.else))
-         :e_getarray (and (trace-subset-expr-p x.base)
-                          (trace-subset-expr-p x.index))
-         :e_getenumarray (and (trace-subset-expr-p x.base)
-                              (trace-subset-expr-p x.index))
-         :e_getfield (trace-subset-expr-p x.base)
+        :e_getarray (and (trace-subset-expr-p x.base)
+                         (trace-subset-expr-p x.index))
+        :e_getfield (trace-subset-expr-p x.base)
          :e_getfields (trace-subset-expr-p x.base)
          :e_getitem (trace-subset-expr-p x.base)
          :e_record (and (trace-subset-ty-p x.type)
                         (trace-subset-named_exprlist-p x.fields))
          :e_tuple (trace-subset-exprlist-p x.exprs)
-         :e_array (and (trace-subset-expr-p x.length)
-                       (trace-subset-expr-p x.value))
-         :e_enumarray (trace-subset-expr-p x.value)
-         :e_arbitrary (trace-subset-ty-p x.type)
+        :e_array (and (trace-subset-expr-p x.length)
+                      (trace-subset-expr-p x.value))
+        :e_arbitrary (trace-subset-ty-p x.type)
          :e_pattern (and (trace-subset-expr-p x.expr)
                          (trace-subset-pattern-p x.pattern))
          :otherwise t))
@@ -939,8 +935,8 @@
          :t_int (trace-subset-constraint_kind-p x.constraint)
          :t_bits (trace-subset-expr-p x.expr)
          :t_tuple (trace-subset-tylist-p x.types)
-         :t_array (and (trace-subset-array_index-p x.index)
-                       (trace-subset-ty-p x.type))
+        :t_array (and (trace-subset-expr-p x.index)
+                      (trace-subset-ty-p x.type))
          :t_record (trace-subset-typed_identifierlist-p x.fields)
          :t_exception (trace-subset-typed_identifierlist-p x.fields)
          :t_collection (trace-subset-typed_identifierlist-p x.fields)
@@ -950,7 +946,6 @@
                                     trace-subset-expr-p
                                     trace-subset-tylist-p
                                     trace-subset-ty-p
-                                    trace-subset-array_index-p
                                     trace-subset-typed_identifierlist-p)
           :expand ((all-callsigs-type_desc x))))
   :rule-classes :definition)
@@ -1006,17 +1001,6 @@
   :hints(("Goal" :in-theory (enable trace-subset-constraint_kind-p
                                     trace-subset-int_constraintlist-p)
           :expand ((all-callsigs-constraint_kind x))))
-  :rule-classes :definition)
-
-
-(defthmd trace-subset-array_index-p-decomp
-  (iff (trace-subset-array_index-p x)
-       (array_index-case x
-         :arraylength_expr (trace-subset-expr-p x.length)
-         :otherwise t))
-  :hints(("Goal" :in-theory (enable trace-subset-array_index-p
-                                    trace-subset-expr-p)
-          :expand ((all-callsigs-array_index x))))
   :rule-classes :definition)
 
 
@@ -1076,11 +1060,9 @@
        (lexpr_desc-case x
          :le_slice (and (trace-subset-lexpr-p x.base)
                         (trace-subset-slicelist-p x.slices))
-         :le_setarray (and (trace-subset-lexpr-p x.base)
-                           (trace-subset-expr-p x.index))
-         :le_setenumarray (and (trace-subset-lexpr-p x.base)
-                               (trace-subset-expr-p x.index))
-         :le_setfield (trace-subset-lexpr-p x.base)
+        :le_setarray (and (trace-subset-lexpr-p x.base)
+                          (trace-subset-expr-p x.index))
+        :le_setfield (trace-subset-lexpr-p x.base)
          :le_setfields (trace-subset-lexpr-p x.base)
          :le_destructuring (trace-subset-lexprlist-p x.elts)
          :otherwise t))
@@ -2586,8 +2568,7 @@ asl-interpreter-mutual-recursion-*t) for overview."
                                               (:free (tracespec2) (trace-subset-pattern_desc-p (pattern->desc p))))))))
             ((:fnname resolve-ty-*t)
              (:add-keyword :hints ('(:expand ((:free (tracespec2) (trace-subset-ty-p x))
-                                              (:free (tracespec2) (trace-subset-type_desc-p (ty->desc x)))
-                                              (:free (tracespec2) (TRACE-SUBSET-ARRAY_INDEX-P (T_ARRAY->INDEX (TY->DESC X)))))))))
+                                              (:free (tracespec2) (trace-subset-type_desc-p (ty->desc x))))))))
             ((:fnname resolve-typed_identifierlist-*t)
              (:add-keyword :hints ('(:expand ((:free (tracespec2) (trace-subset-typed_identifierlist-p x))
                                               (:free (tracespec2) (TRACE-SUBSET-TYPED_IDENTIFIER-P (CAR X))))))))
@@ -2635,4 +2616,3 @@ asl-interpreter-mutual-recursion-*t) for overview."
                     (cw "~x0~%" flagval)
                     '(:no-op t))))
             )))
-

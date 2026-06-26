@@ -60,8 +60,7 @@ let rec use_e e =
   | E_Literal _ -> Fun.id
   | E_ATC (e, ty) -> use_ty ty $ use_e e
   | E_Var x -> add_maybe_pgm e x
-  | E_GetArray (e1, e2) | E_GetEnumArray (e1, e2) | E_Binop (_, e1, e2) ->
-      use_e e1 $ use_e e2
+  | E_GetArray (e1, e2) | E_Binop (_, e1, e2) -> use_e e1 $ use_e e2
   | E_Unop (_op, e) -> use_e e
   | E_Call { name; args; params } ->
       NameSet.add (Subprogram name) $ use_es params $ use_es args
@@ -74,8 +73,6 @@ let rec use_e e =
   | E_Record (ty, li) -> use_ty ty $ use_fields li
   | E_Tuple es -> use_es es
   | E_Array { length; value } -> use_e length $ use_e value
-  | E_EnumArray { labels; value } ->
-      use_list (fun id -> add_other id) labels $ use_e value
   | E_Arbitrary t -> use_ty t
   | E_Pattern (e, p) -> use_e e $ use_pattern p
 
@@ -109,8 +106,7 @@ and use_ty t =
   | T_Tuple li -> use_list use_ty li
   | T_Record fields | T_Collection fields | T_Exception fields ->
       use_named_list use_ty fields
-  | T_Array (ArrayLength_Expr e, t') -> use_e e $ use_ty t'
-  | T_Array (ArrayLength_Enum (s, _), t') -> add_other s $ use_ty t'
+  | T_Array (e, t') -> use_e e $ use_ty t'
   | T_Bits (e, bit_fields) -> use_e e $ use_bitfields bit_fields
 
 and use_bitfields bitfields = use_list use_bitfield bitfields
@@ -159,7 +155,7 @@ and use_le le =
   | LE_Var x -> add_maybe_pgm le x
   | LE_Destructuring les -> List.fold_right use_le les
   | LE_Discard -> Fun.id
-  | LE_SetArray (le, e) | LE_SetEnumArray (le, e) -> use_le le $ use_e e
+  | LE_SetArray (le, e) -> use_le le $ use_e e
   | LE_SetField (le, _) | LE_SetFields (le, _, _) -> use_le le
   | LE_Slice (le, slices) -> use_slices slices $ use_le le
   | LE_SetCollectionFields (x, _, _) -> add_maybe_pgm le x

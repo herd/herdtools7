@@ -32,10 +32,7 @@
   (fgl::def-fancy-ev-primitives asl-fancy-ev))
 
 (make-event `(fgl::remove-fgl-rewrites
-              eval_expr-*t-when-error-free-getenumarray-redef
-              eval_expr-*t-when-error-free-enumarray-redef
               eval_expr-*t-when-error-free-record-redef
-              eval_lexpr-*t-when-error-free-setenumarray-redef
               eval_lexpr-*t-when-error-free-setfield-redef
               eval_stmt-*t1-when-error-free-avoid-merging-s_cond-branches
               eval_expr-*t-when-error-free-arbitrary-redef
