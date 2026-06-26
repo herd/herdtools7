@@ -1,16 +1,16 @@
-type shape of integer;
+type circle of integer;
 type square of integer;
-var myShape: shape;
+var myCircle: circle;
 var mySquare: square;
 
 // following declarations of h are illegal
 // since all arguments type-clash with corresponding arguments in the other declaration
-func h(x: shape, y: square)
+func h(x: circle, y: square)
 begin
     pass;
 end;
 
-func h(x: square, y: shape) // Illegal
+func h(x: square, y: circle) // Illegal
 begin
     pass;
 end;
