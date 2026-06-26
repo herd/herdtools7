@@ -5,7 +5,7 @@ Hello world should work:
 
 Type-checking errors:
 
-  $ aslref subtype-satisfaction-arrray.asl
+  $ aslref subtype-satisfaction-array.asl
 
   $ aslref anonymous-types-example.asl
   File anonymous-types-example.asl, line 21, characters 2 to 6:
@@ -472,6 +472,33 @@ Required tests:
   $ aslref records.asl
   $ aslref static.asl
   $ aslref subtype-satisfaction-example.asl
+  $ aslref --no-exec subtype-satisfaction-insect-to-animal.bad.asl
+  File subtype-satisfaction-insect-to-animal.bad.asl, line 9,
+    characters 2 to 45:
+    var animalLegs: AnimalLegs = centipedeLegs;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: a subtype of AnimalLegs was expected, provided InsectLegs.
+  [1]
+  $ aslref --no-exec subtype-satisfaction-shape-to-animal.bad.asl
+  File subtype-satisfaction-shape-to-animal.bad.asl, line 9, characters 2 to 42:
+    var dogLegs: AnimalLegs = myCircleSides;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: a subtype of AnimalLegs was expected, provided ShapeSides.
+  [1]
+  $ aslref --no-exec subtype-satisfaction-word-count-to-packet-length.bad.asl
+  File subtype-satisfaction-word-count-to-packet-length.bad.asl, line 9,
+    characters 2 to 16:
+    myPacketLength = myWordCount;
+    ^^^^^^^^^^^^^^
+  ASL Type error: a subtype of PacketLength was expected, provided WordCount.
+  [1]
+  $ aslref --no-exec subtype-satisfaction-packet-length-to-word-count.bad.asl
+  File subtype-satisfaction-packet-length-to-word-count.bad.asl, line 9,
+    characters 2 to 13:
+    myWordCount = myPacketLength;
+    ^^^^^^^^^^^
+  ASL Type error: a subtype of WordCount was expected, provided PacketLength.
+  [1]
   $ aslref tuples.asl
   $ aslref tuple-return.asl
   $ aslref declaration-primitive-local.asl

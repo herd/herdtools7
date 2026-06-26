@@ -1215,22 +1215,22 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.AddNewFunc.bad1.asl
   File TypingRule.AddNewFunc.bad1.asl, line 8, character 0 to line 11,
     character 4:
-  func f(x: shape)
+  func f(x: circle)
   begin
       pass;
   end;
   ASL Type error: cannot declare already declared element "f".
   [1]
   $ aslref --no-exec TypingRule.AddNewFunc.bad2.asl
-  File TypingRule.AddNewFunc.bad2.asl, line 18, characters 4 to 20:
-      g(myShape, 0.1); // illegal
-      ^^^^^^^^^^^^^^^^
-  ASL Type error: a subtype of square was expected, provided shape.
+  File TypingRule.AddNewFunc.bad2.asl, line 18, characters 4 to 21:
+      g(myCircle, 0.1); // illegal
+      ^^^^^^^^^^^^^^^^^
+  ASL Type error: a subtype of square was expected, provided circle.
   [1]
   $ aslref --no-exec TypingRule.AddNewFunc.bad3.asl
   File TypingRule.AddNewFunc.bad3.asl, line 8, character 0 to line 11,
     character 4:
-  func h(x: shape, y: square)
+  func h(x: circle, y: square)
   begin
       pass;
   end;

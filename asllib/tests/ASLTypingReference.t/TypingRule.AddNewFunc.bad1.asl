@@ -1,11 +1,11 @@
-type shape of integer;
+type circle of integer;
 type square of integer;
-var myShape: shape;
+var myCircle: circle;
 var mySquare: square;
 
 // following declarations of f are illegal since
 // both have the structure of an integer so their arguments type-clash
-func f(x: shape)
+func f(x: circle)
 begin
     pass;
 end;
