@@ -181,7 +181,7 @@ let desugar_case_stmt e0 cases otherwise =
   (* Begin CaseToCond *)
   let case_to_cond e0 case tail =
     let { pattern; where; stmt } = case.desc in
-    let e_pattern = E_Pattern (e0, pattern) |> add_pos_from pattern in
+    let e_pattern = E_Pattern (e0, pattern.desc) |> add_pos_from pattern in
     let cond =
       match where with
       | None -> e_pattern
