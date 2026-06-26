@@ -2444,9 +2444,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Tuple li ->
         let exprs = List.map (base_value_v1 ~loc env) li in
         E_Tuple exprs |> here
-    | T_Array (e_length, ty) ->
+    | T_Array (length, ty) ->
         let value = base_value_v1 ~loc env ty in
-        E_Array { length = e_length; value } |> here
+        E_Array { length; value } |> here
   (* End *)
 
   let rec base_value_v0 ~loc env t : expr =
@@ -2469,9 +2469,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             fields
         in
         E_Record (t, fields) |> here
-    | T_Array (e_length, ty) ->
+    | T_Array (length, ty) ->
         let value = base_value_v0 ~loc env ty in
-        E_Array { length = e_length; value } |> here
+        E_Array { length; value } |> here
     | T_Named _id ->
         let t = Types.make_anonymous env t in
         base_value_v0 ~loc env t

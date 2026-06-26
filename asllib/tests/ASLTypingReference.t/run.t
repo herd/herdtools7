@@ -451,6 +451,13 @@ ASL Typing Tests / annotating types:
   [1]
   $ aslref TypingRule.LESetStructuredField.asl
   $ aslref TypingRule.LESetField.asl
+  $ aslref TypingRule.LESetBadField.asl
+  File TypingRule.LESetBadField.asl, line 10, characters 4 to 5:
+      x.RED = 42;
+      ^
+  ASL Type error: integer does not subtype any of: bits(-), record {  },
+    exception {  }, collection {  }.
+  [1]
   $ aslref TypingRule.LESetFields.asl
   $ aslref TypingRule.LESlice.bad.asl
   File TypingRule.LESlice.bad.asl, line 4, characters 3 to 11:

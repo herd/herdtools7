@@ -721,3 +721,20 @@ Bounds checks
 
 If test environment reversion bug
   $ aslref if-test-env-updated.asl
+
+  $ aslref --version-eac1 SliceFromZero.asl
+  $ aslref SliceFromZero.asl
+  File SliceFromZero.asl, line 4, characters 11 to 13:
+    assert x[:3] == '100';
+             ^^
+  ASL Grammar error: Obsolete syntax:
+    Deprecated slice syntax, use "0 +: 3" instead.
+  [1]
+  $ aslref --version-eac1 SliceStar.asl
+  $ aslref SliceStar.asl
+  File SliceStar.asl, line 4, characters 11 to 15:
+    assert x[3*:2] == '11';
+             ^^^^
+  ASL Grammar error: Obsolete syntax:
+    Deprecated slice syntax, use "3*2 +: 2" instead.
+  [1]
