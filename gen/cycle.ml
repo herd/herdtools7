@@ -1165,6 +1165,8 @@ let set_read_pair_v n cell check_value =
   let e = { e with v=v; check_value } in
   n.evt <- e
 
+
+
 (* Assume all the events are for the same location,
    convert the node list, i.e., the first unnamed parameter,
    to the final value `cell` and PTE value `pte_cell` *)
@@ -1182,7 +1184,14 @@ let do_set_read_v init =
       | Some R ->
         (* If the result of this read need to be checked,
            i.e. generating postcondition *)
-        let check_value = Some (CoSt.get_check_value st) in
+        let check_value =
+          Some ( ( E.is_com n.prev.edge
+                 || E.is_com n.edge
+                 (* For an RMW sequence such as
+                    read --CAS--> write, check the read value
+                    so the CAS succeeds and the cycle is formed correctly. *)
+                 || n.evt.rmw )
+              && CoSt.get_check_value st) in
         begin match bank with
         | Ord | Instr->
           let st = CoSt.implicit_pte_update st R in

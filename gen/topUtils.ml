@@ -26,7 +26,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
   sig
 (* Coherence utilities *)
     type cos0 =  (string * (C.C.node * IntSet.t) list list) list
-    type cos = (string * (C.C.Value.v array * IntSet.t) list list) list
+    type cos =
+        (string * (C.C.Value.v array * IntSet.t * bool) list list) list
     val pp_coherence : cos0 -> unit
     val last_map : cos0 -> C.C.event StringMap.t
     val compute_cos : cos0 ->  cos
@@ -49,7 +50,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
   struct
 
     type cos0 =  (string * (C.C.node * IntSet.t) list list) list
-    type cos = (string * (C.C.Value.v array * IntSet.t) list list) list
+    type cos = (string * (C.C.Value.v array * IntSet.t * bool) list list) list
 
     open Printf
     open Code
@@ -109,6 +110,14 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     | _ -> StringMap.empty
 
 
+    let check_final_write n =
+      match n.C.C.edge.C.E.edge with
+      | C.E.Store | C.E.Node _ -> false
+      | _ ->
+          C.E.is_com n.C.C.prev.C.C.edge
+          || C.E.is_com n.C.C.edge
+          || n.C.C.evt.C.C.rmw
+
     let compute_cos =
       List.map
         (fun (loc,ns) ->
@@ -119,7 +128,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
             let cells = if Misc.check_atag loc then
               n.C.C.evt.C.C.tcell
             else n.C.C.evt.C.C.cell in
-            cells,obs))
+            cells,obs,check_final_write n))
             ns)
 
 (******************)
