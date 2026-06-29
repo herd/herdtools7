@@ -424,3 +424,6 @@ remove_invalid_relaxes test (AArch64): [PodRW @after(Rfe) Fre]
 remove_invalid_relaxes test (AArch64): [PodRW @before([Rfe Fre])]
 []
 
+remove_invalid_relaxes test (AArch64): [@before([Rfe PodRW])]
+[]
+
