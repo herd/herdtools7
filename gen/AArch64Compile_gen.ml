@@ -1621,7 +1621,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_ldp_reg opt st init rA =
       let r1,r2,st = next_reg2 st in
-      r1,init,pseudo [do_ldp opt r1 r2 rA;add vloc r1 r1 r2;],st
+      let st = A.set_friends r1 [r2] st in
+      r1,init,pseudo [do_ldp opt r1 r2 rA;],st
 
     let emit_ldp_reg opt idx st _p init rA =
       match opt,idx with
