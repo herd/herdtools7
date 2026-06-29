@@ -85,6 +85,6 @@ let EX = try EX with emptyset
 let X = try X with emptyset
 
 let lxsx = [R & EX]; po \ (po; [M & EX]; po); [W & EX]
-let amo = [Exp & R & X]; same-instance & loc; [Exp & W & X]
+let amo = [Exp & R & X]; (same-instance \ id) & loc; [Exp & W & X]
     | [NExp & PTE & R]; iico_data & loc; [NExp & PTE & W]
 let rmw = amo | lxsx
