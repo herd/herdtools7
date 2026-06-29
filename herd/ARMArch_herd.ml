@@ -39,7 +39,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let is_exclusive = function
       |  EX | EXL | EXA -> true
       | _ -> false
-    let is_atomic = is_exclusive
+    let is_atomic _ = false
 
     let is_acquire = function
       | A | EXA -> true
