@@ -45,8 +45,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     include PteValSets.No
 
     let is_atomic = function
-    | X _ | EX _ -> true
-    | P _ -> false
+    | X _ -> true
+    | EX _ | P _ -> false
     let is_exclusive = function
     | EX _ -> true
     | X _ | P _ -> false
