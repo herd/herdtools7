@@ -124,18 +124,18 @@ and type edge = E.edge
           let open E in
           match r with
           | [e] -> E.pp_edge e
-          | [{edge=Rf Ext; a1=None;a2=None};
-             {edge=Fenced _;a1=None; a2=None} as e] when backward_compatibility ->
+          | [{edge=Rf Ext; a1=None;a2=None;};
+             {edge=Fenced _;a1=None; a2=None;} as e] when backward_compatibility ->
                  sprintf "AC%s" (pp_edge e)
-          | [{edge=Fenced _; a1=None;a2=None} as e;
-             {edge=Rf Ext; a1=None; a2=None}] when backward_compatibility ->
+          | [{edge=Fenced _; a1=None;a2=None;} as e;
+             {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
                    sprintf "BC%s" (pp_edge e)
-          | [{edge=Rf Ext; a1=None; a2=None};
-             {edge=Fenced _; a1=None; a2=None} as e;
-             {edge=Rf Ext; a1=None; a2=None}] when backward_compatibility ->
+          | [{edge=Rf Ext; a1=None; a2=None;};
+             {edge=Fenced _; a1=None; a2=None;} as e;
+             {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
                    sprintf "ABC%s" (pp_edge e)
-          | [{edge=Dp _; a1=None; a2=None} as e;
-             {edge=Rf Ext; a1=None; a2=None}] when backward_compatibility ->
+          | [{edge=Dp _; a1=None; a2=None;} as e;
+             {edge=Rf Ext; a1=None; a2=None;}] when backward_compatibility ->
                    sprintf "BC%s" (pp_edge e)
           | es ->
               sprintf "[%s]" (String.concat "," (List.map pp_edge es))
@@ -399,8 +399,8 @@ and type edge = E.edge
               (* Drop empty alternatives introduced by `?`; they do not
                  describe an actual relaxation. *)
               relax <> []
-              && for_all_adjacent_concrete_edge E.can_precede relax
-            ) relaxes
+              && for_all_adjacent_concrete_edge E.can_precede relax)
+            relaxes
           |> List.sort_uniq compare
 
 (********)
@@ -425,13 +425,13 @@ and type edge = E.edge
         let is_cumul r =
           let open E in
           match r with
-          | [{edge=Rf Code.Ext; a1=None; a2=None};
-             {edge=Fenced _; a1=None; a2=None}]
-          | [{edge=Fenced _; a1=None; a2=None};
-             {edge=Rf Code.Ext; a1=None; a2=None};]
-          | [{edge=Rf Code.Ext; a1=None; a2=None};
-             {edge=Fenced _; a1=None; a2=None};
-             {edge=Rf Code.Ext; a1=None; a2=None};]
+          | [{edge=Rf Code.Ext; a1=None; a2=None;};
+             {edge=Fenced _; a1=None; a2=None;}]
+          | [{edge=Fenced _; a1=None; a2=None;};
+             {edge=Rf Code.Ext; a1=None; a2=None;};]
+          | [{edge=Rf Code.Ext; a1=None; a2=None;};
+             {edge=Fenced _; a1=None; a2=None;};
+             {edge=Rf Code.Ext; a1=None; a2=None;};]
             -> true
           | _ -> false
 
