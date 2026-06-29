@@ -6409,14 +6409,14 @@ typing function type_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | t
     yielding the result {b}. \ProseOtherwiseTypeError",
     prose_transition = "testing whether {t} \typesatisfiesterm{} {s} in {tenv} yields",
 } =
-  case same_named {
-    same_named_type(t, s) -> True;
+  case equal {
+    type_equal(tenv, t, s) -> True;
     --
     True;
   }
 
-  case not_same_named {
-    same_named_type(t, s) -> False;
+  case not_equal {
+    type_equal(tenv, t, s) -> False;
 
     case anonymous_or_subtype_satisfies {
       binary_or(is_anonymous(t), is_anonymous(s));
@@ -6479,14 +6479,14 @@ typing relation lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (ty: 
   case type_equal {
     type_equal(tenv, t, s) -> True;
     --
-    t;
+    s;
   }
 
   case distinct_named {
     type_equal(tenv, t, s) -> False;
     t =: T_Named(t_name);
     s =: T_Named(s_name);
-    t_name != s_name;
+    s_name != t_name;
     make_anonymous(tenv, t) -> t_anon;
     make_anonymous(tenv, s) -> s_anon;
     lowest_common_ancestor(tenv, t_anon, s_anon) -> ty;
