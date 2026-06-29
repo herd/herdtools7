@@ -415,13 +415,6 @@ end
 
 (* --------------------------------------------------------------------------*)
 
-(* Begin SameNamedType *)
-let same_named_type t1 t2 =
-  match (t1.desc, t2.desc) with
-  | T_Named s1, T_Named s2 -> String.equal s1 s2 |: TypingRule.SameNamedType
-  | _ -> false
-(* End SameNamedType *)
-
 let rec bitfields_included env bfs1 bfs2 =
   let rec mem_bfs bfs2 bf1 =
     match find_bitfield_opt (bitfield_get_name bf1) bfs2 with
@@ -515,7 +508,7 @@ and subtype_satisfies env t s =
 and type_satisfies env t s =
   ((* Type T type-satisfies type S if and only if at least one of the following
       conditions holds: *)
-   (* T is a same-named type as S *)
+   (* T is equivalent to S *)
    type_equal env t s
   (* T subtype-satisfies S and at least one of S or T is an anonymous type *)
   || ((is_anonymous t || is_anonymous s) && subtype_satisfies env t s)
@@ -550,22 +543,23 @@ let rec type_clashes env t s =
         corresponding element types type-clash
       • S and T are same-named types *)
   (* We will add a rule for boolean and boolean. *)
-  (same_named_type s t
-  ||
-  let s_struct = get_structure env s and t_struct = get_structure env t in
-  match (s_struct.desc, t_struct.desc) with
-  | T_Int _, T_Int _
-  | T_Real, T_Real
-  | T_String, T_String
-  | T_Bits _, T_Bits _
-  | T_Bool, T_Bool ->
-      true
-  | T_Enum li_s, T_Enum li_t -> List.equal String.equal li_s li_t
-  | T_Array (_, ty_s), T_Array (_, ty_t) -> type_clashes env ty_s ty_t
-  | T_Tuple li_s, T_Tuple li_t ->
-      List.compare_lengths li_s li_t = 0
-      && List.for_all2 (type_clashes env) li_s li_t
-  | _ -> false)
+  (match (s.desc, t.desc) with
+    | T_Int _, T_Int _
+    | T_Real, T_Real
+    | T_String, T_String
+    | T_Bits _, T_Bits _
+    | T_Bool, T_Bool ->
+        true
+    | T_Enum li_s, T_Enum li_t -> List.equal String.equal li_s li_t
+    | T_Array (_, ty_s), T_Array (_, ty_t) -> type_clashes env ty_s ty_t
+    | T_Tuple li_s, T_Tuple li_t ->
+        List.compare_lengths li_s li_t = 0
+        && List.for_all2 (type_clashes env) li_s li_t
+    | T_Named s_name, T_Named t_name when String.equal s_name t_name -> true
+    | T_Named _, _ | _, T_Named _ ->
+        let t1 = make_anonymous env t and s1 = make_anonymous env s in
+        type_clashes env s1 t1
+    | _ -> false |: TypingRule.TypeClash)
   |: TypingRule.TypeClash
 (* End *)
 
@@ -601,9 +595,10 @@ let rec lowest_common_ancestor ~loc env s t =
   (* The lowest common ancestor of types S and T is: *)
   (match (s.desc, t.desc) with
     | _, _ when type_equal env s t ->
-        (* • If S and T are the same type: S (or T). *)
+        (* If S and T are the same type: S (or T). *)
         Some s
-    | T_Named s_name, T_Named t_name when not (String.equal s_name t_name) ->
+    | T_Named s_name, T_Named t_name ->
+        assert (not (String.equal s_name t_name));
         let anon_s = make_anonymous env s and anon_t = make_anonymous env t in
         lowest_common_ancestor ~loc env anon_s anon_t
     | _, T_Named _ | T_Named _, _ ->

@@ -327,7 +327,6 @@ module TypingRule = struct
     | Structure
     | Canonical
     | Domain
-    | SameNamedType
     | SubtypeSatisfaction
     | TypeSatisfaction
     | TypeClash
@@ -513,7 +512,6 @@ module TypingRule = struct
     | Canonical -> "Canonical"
     | Domain -> "Domain"
     | Structure -> "Structure"
-    | SameNamedType -> "SameNamedType"
     | SubtypeSatisfaction -> "SubtypeSatisfaction"
     | TypeSatisfaction -> "TypeSatisfaction"
     | TypeClash -> "TypeClash"
@@ -702,7 +700,6 @@ module TypingRule = struct
       Canonical;
       Domain;
       Structure;
-      SameNamedType;
       SubtypeSatisfaction;
       TypeSatisfaction;
       TypeClash;

@@ -4706,7 +4706,9 @@ semantics function find_catcher(tenv: static_envs, v_ty: ty, catchers: list0(cat
   case match {
     catchers =: match_cons(c, catchers1);
     c =: (name_opt, e_ty, s);
-    same_named_type(v_ty, e_ty) -> True;
+    v_ty =: T_Named(v_name);
+    e_ty =: T_Named(e_name);
+    v_name = e_name;
     --
     some(c);
   }
@@ -4714,7 +4716,7 @@ semantics function find_catcher(tenv: static_envs, v_ty: ty, catchers: list0(cat
   case no_match {
     catchers =: match_cons(c, catchers1);
     c =: (name_opt, e_ty, s);
-    same_named_type(v_ty, e_ty) -> False;
+    not(v_ty = T_Named(_) && e_ty = T_Named(_) && v_ty = e_ty);
     find_catcher(tenv, v_ty, catchers1) -> d;
     --
     d;
@@ -6127,36 +6129,6 @@ semantics function eval_binop(op: binop, v1: native_value, v2: native_value) ->
 //////////////////////////////////////////////////
 // Relations for Relations On Types
 
-typing function same_named_type(t1: ty, t2: ty) -> (b: Bool)
-{
-    "tests whether both types {t1} and {t2} are \namedtypesterm{} sharing the same name,
-    yielding the result in {b}.",
-    prose_application = "{t1} and {t2} are same-named types",
-    prose_transition = "testing whether {t1} and {t2} are same-named types yields",
-} =
-  case same {
-    t1 =: T_Named(id1);
-    t2 =: T_Named(id2);
-    id1 = id2;
-    --
-    True;
-  }
-
-  case different_names {
-    t1 =: T_Named(id1);
-    t2 =: T_Named(id2);
-    id1 != id2;
-    --
-    False;
-  }
-
-  case not_named {
-    binary_or(ast_label(t1) != label_T_Named, ast_label(t2) != label_T_Named);
-    --
-    False;
-  }
-;
-
 typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | type_error
 {
     "determines whether a type {t} \emph{\subtypesatisfiesterm} a type {s} in the static environment {tenv},
@@ -6295,14 +6267,14 @@ typing function type_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | t
     yielding the result {b}. \ProseOtherwiseTypeError",
     prose_transition = "testing whether {t} \typesatisfiesterm{} {s} in {tenv} yields",
 } =
-  case same_named {
-    same_named_type(t, s) -> True;
+  case equal {
+    type_equal(tenv, t, s) -> True;
     --
     True;
   }
 
-  case not_same_named {
-    same_named_type(t, s) -> False;
+  case not_equal {
+    type_equal(tenv, t, s) -> False;
 
     case anonymous_or_subtype_satisfies {
       binary_or(is_anonymous(t), is_anonymous(s));
@@ -6365,14 +6337,14 @@ typing relation lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (ty: 
   case type_equal {
     type_equal(tenv, t, s) -> True;
     --
-    t;
+    s;
   }
 
   case distinct_named {
     type_equal(tenv, t, s) -> False;
     t =: T_Named(t_name);
     s =: T_Named(s_name);
-    t_name != s_name;
+    s_name != t_name;
     make_anonymous(tenv, t) -> t_anon;
     make_anonymous(tenv, s) -> s_anon;
     lowest_common_ancestor(tenv, t_anon, s_anon) -> ty;
@@ -10954,59 +10926,68 @@ typing function type_clashes(tenv: static_envs, t: ty, s: ty) ->
   result {b}. \ProseOtherwiseTypeError",
   prose_transition = "determining whether {t} clashes with {s} in the context of {tenv} yields",
 } =
-  case same_named {
-    same_named_type(s, t) -> True;
+  case simple {
+    ast_label(t) = ast_label(s);
+    ast_label(t) in make_set(label_T_Bits, label_T_Bool, label_T_Int, label_T_Real, label_T_String);
     --
     True;
   }
 
-  case not_same_named {
-    same_named_type(s, t) -> False;
-    get_structure(tenv, t) -> t_struct;
-    get_structure(tenv, s) -> s_struct;
-    case simple {
-      ast_label(t_struct) = ast_label(s_struct);
-      ast_label(t_struct) in make_set(label_T_Bits, label_T_Bool, label_T_Int, label_T_Real, label_T_String);
-      --
-      True;
-    }
+  case t_enum {
+    t =: T_Enum(labels_t);
+    s =: T_Enum(labels_s);
+    --
+    labels_t = labels_s;
+  }
 
-    case t_enum {
-      t_struct =: T_Enum(labels_t);
-      s_struct =: T_Enum(labels_s);
-      --
-      labels_t = labels_s;
-    }
+  case t_array {
+    t =: T_Array(_, ty_t);
+    s =: T_Array(_, ty_s);
+    type_clashes(tenv, ty_s, ty_t) -> b;
+    --
+    b;
+  }
 
-    case t_array {
-      t_struct =: T_Array(_, ty_t);
-      s_struct =: T_Array(_, ty_s);
-      type_clashes(tenv, ty_t, ty_s) -> b;
-      --
-      b;
-    }
+  case t_tuple {
+    t =: T_Tuple(ts_t);
+    s =: T_Tuple(ts_s);
+    bool_transition(same_length(ts_t, ts_s)) -> True | False;
+    INDEX(i, ts_t: type_clashes(tenv, ts_s[i], ts_t[i]) -> clashes[i]);
+    --
+    list_and(clashes);
+  }
 
-    case t_tuple {
-      t_struct =: T_Tuple(ts_t);
-      s_struct =: T_Tuple(ts_s);
-      bool_transition(same_length(ts_t, ts_s)) -> True | False;
-      INDEX(i, ts_t: type_clashes(tenv, ts_t[i], ts_s[i]) -> clashes[i]);
-      --
-      list_and(clashes);
-    }
+  case same_named {
+    t =: T_Named(t_name);
+    s =: T_Named(s_name);
+    t_name = s_name;
+    --
+    True;
+  }
 
-    case otherwise_different_labels {
-      ast_label(t_struct) != ast_label(s_struct);
-      --
-      False;
-    }
+  case named {
+    binary_or(ast_label(t) = label_T_Named, ast_label(s) = label_T_Named);
+    t != s;
+    make_anonymous(tenv, t) -> t1;
+    make_anonymous(tenv, s) -> s1;
+    type_clashes(tenv, s1, t1) -> b;
+    --
+    b;
+  }
 
-    case otherwise_structured {
-      ast_label(t_struct) = ast_label(s_struct);
-      ast_label(t_struct) in make_set(label_T_Collection, label_T_Exception, label_T_Record);
-      --
-      False;
-    }
+  case otherwise_different_labels {
+    ast_label(t) != label_T_Named;
+    ast_label(s) != label_T_Named;
+    ast_label(t) != ast_label(s);
+    --
+    False;
+  }
+
+  case otherwise_structured {
+    ast_label(t) = ast_label(s);
+    ast_label(t) in make_set(label_T_Collection, label_T_Exception, label_T_Record);
+    --
+    False;
   }
 ;
 
