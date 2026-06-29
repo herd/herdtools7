@@ -285,7 +285,9 @@ module Make (Conf : Config) = struct
             (* Read has priority, as for native VMSA *)
             access_bool_field accdesc "read" map
       in
-      let is_ax x n = if is_atomic || is_exclusive then x else n in
+      assert (not (is_exclusive && is_atomic));
+      let is_ax x n = if is_atomic then x else n in
+      let is_eax ex x n = if is_exclusive then ex else is_ax x n in
       let is_noret =
         if not is_atomic then false
         else
@@ -314,14 +316,11 @@ module Make (Conf : Config) = struct
           | _ -> false
       in
       let an =
-        if (not is_read) && is_release && is_exclusive then EXL
-        else if (not is_read) && is_release then is_ax XL L
+        if (not is_read) && is_release then is_eax EXL XL L
         else if is_noret then NoRet
-        else if is_read && is_acquiresc && is_exclusive then EXA
-        else if is_read && is_acquiresc then is_ax XA A
+        else if is_read && is_acquiresc then is_eax EXA XA A
         else if is_read && is_acquirepc then is_ax XQ Q
-        else if is_exclusive then EX
-        else is_ax X N
+        else is_eax EX X N
       in
       let () =
         if false && an <> N then
