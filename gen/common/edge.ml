@@ -862,7 +862,7 @@ let fold_tedges f r =
      - `remaining` is the unconsumed suffix of `es`. *)
   let rec merge_left (e:edge) (es:edge list) : (bool * edge option * edge list) =
     let is_default e = match e with
-      | { edge=Id; a1=None; a2=None } -> true
+      | { edge=Id; a1=None; a2=None; } -> true
       | _ -> false in
     try
       let store_insert,next,rest = find_next_merge es in
@@ -1103,7 +1103,7 @@ let fold_tedges f r =
             fold_atomo
               (fun ao k ->
                 if is_ifetch ao then k
-                else { edge=Id; a1=ao; a2=ao}::k)
+                else { edge=Id; a1=ao; a2=ao;}::k)
               [] in
           List.iter
             (fun e -> eprintf " %s" (pp_edge e))
