@@ -29,6 +29,7 @@ module Make (C:Arch_herd.Config) (V:Value.S)
     let get_machsize _ = V.Cst.Scalar.machsize
     let empty_annot = false
     let is_atomic annot = annot
+    let is_exclusive annot = annot
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
     let ifetch_value_sets = []
@@ -43,7 +44,10 @@ module Make (C:Arch_herd.Config) (V:Value.S)
 
     let cmo_sets = []
 
-    let annot_sets = ["X",is_atomic]
+    let annot_sets = [
+      "X", is_atomic;
+      "EX", is_exclusive;
+    ]
 
     let is_isync = is_barrier Isync
     let pp_isync = "isync"
