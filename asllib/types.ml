@@ -525,7 +525,7 @@ and subtype_satisfies env t s =
 and type_satisfies env t s =
   ((* Type T type-satisfies type S if and only if at least one of the following
       conditions holds: *)
-   (* T is a same-named type as S *)
+   (* T is equivalent to S *)
    type_equal env t s
   (* T subtype-satisfies S and at least one of S or T is an anonymous type *)
   || ((is_anonymous t || is_anonymous s) && subtype_satisfies env t s)
@@ -611,9 +611,10 @@ let rec lowest_common_ancestor ~loc env s t =
   (* The lowest common ancestor of types S and T is: *)
   (match (s.desc, t.desc) with
     | _, _ when type_equal env s t ->
-        (* • If S and T are the same type: S (or T). *)
+        (* If S and T are the same type: S (or T). *)
         Some s
-    | T_Named s_name, T_Named t_name when not (String.equal s_name t_name) ->
+    | T_Named s_name, T_Named t_name ->
+        assert (not (String.equal s_name t_name));
         let anon_s = make_anonymous env s and anon_t = make_anonymous env t in
         lowest_common_ancestor ~loc env anon_s anon_t
     | _, T_Named _ | T_Named _, _ ->
