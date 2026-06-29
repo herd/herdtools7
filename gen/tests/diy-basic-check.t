@@ -166,18 +166,18 @@ A base test with int64 arrays
    int64_t x[2]={0,0};
    int64_t y=0;
    0:X0=x; int64_t 0:X2=0; 0:X5=y;
-   1:X0=x; int64_t 1:X2=0; 1:X5=y;
+   1:X0=x; int64_t 1:X2=0; int64_t 1:X3=0; 1:X5=y;
   }
    P0              | P1             ;
    MOV X1,#1       | MOV X1,#2      ;
    Loop00:         | STR X1,[X5]    ;
    LDXR X2,[X0]    | LDP X2,X3,[X0] ;
-   STXR W3,X1,[X0] | ADD X2,X2,X3   ;
+   STXR W3,X1,[X0] |                ;
    CBNZ X3,Loop00  |                ;
    MOV X4,#1       |                ;
    STR X4,[X5]     |                ;
   
-  exists (x={1,0} /\ [y]=2 /\ 0:X2=0 /\ 1:X2=0)
+  exists (x={1,0} /\ [y]=2 /\ 0:X2=0 /\ 1:X2=0 /\ 1:X3=0)
 A C test for exists
   $ diyone7 -arch C PodWW Coe PodWR Fre
   Warning: optimised conditions are not supported by C arch
