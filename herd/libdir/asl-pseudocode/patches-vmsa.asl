@@ -408,9 +408,9 @@ var NeedCheckPermissionFault : boolean = FALSE;
 // storage UpdatedAF, which will be checked against the permission fault
 // record in SetDirtyState.
 
-func AArch64_SetAccessFlag(ha : bit, accdesc : AccessDescriptor, fault : FaultRecord) => boolean
+func AArch64_SetAccessFlag(ha : bit, accdesc : AccessDescriptor, fault : FaultRecord, fault_perm: FaultRecord) => boolean
 begin
-    let overriden_result = _patched_AArch64_SetAccessFlag(ha, accdesc, fault);
+    let overriden_result = _patched_AArch64_SetAccessFlag(ha, accdesc, fault, fault_perm);
 
     // There are cases where the overriden function says that we need to update
     // the access flag a bit too often: when there is a permission fault.
