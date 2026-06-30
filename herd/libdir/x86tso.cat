@@ -5,7 +5,7 @@ include "cos.cat"
 
 (* Uniproc check *)
 let com = rf | fr | co
-acyclic po-loc | com
+acyclic po-loc | amo | com
 
 (* Atomic *)
 empty rmw & (fre;coe)
