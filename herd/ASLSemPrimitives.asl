@@ -31,7 +31,7 @@ begin pass; end;
 // implementation-defined in the Arm ARM, and implemented by hand in
 // `implementations.asl`.
 
-func primitive_dmb(d: MBReqDomain, t: MBReqTypes)
+func primitive_dmb(t: MBReqTypes)
 begin pass; end;
 
 
@@ -43,7 +43,7 @@ begin pass; end;
 // implementation-defined in the Arm ARM, and implemented by hand in
 // `implementations.asl`.
 
-func primitive_dsb(d: MBReqDomain, t: MBReqTypes)
+func primitive_dsb(d: MBMaintenanceScope, t: MBReqTypes)
 begin pass; end;
 
 // -----------------------------------------------------------------------------

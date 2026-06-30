@@ -188,9 +188,9 @@ end;
 // This function generates a DMB Effect, with the correct parameters. In
 // practice it is just a call to the `primitive_dmb` primitive.
 
-func DataMemoryBarrier(domain : MBReqDomain, types : MBReqTypes)
+func DataMemoryBarrier(types : MBReqTypes)
 begin
-  primitive_dmb(domain, types);
+  primitive_dmb(types);
 end;
 
 // DataSynchronizationBarrier()
@@ -202,11 +202,11 @@ end;
 // nXS is not implemented in herd
 
 func DataSynchronizationBarrier
-  (domain : MBReqDomain,
+  (scope : MBMaintenanceScope,
    types : MBReqTypes,
    nXS : boolean)
 begin
-  primitive_dsb(domain, types);
+  primitive_dsb(scope, types);
 end;
 
 // =============================================================================
