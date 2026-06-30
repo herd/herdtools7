@@ -24,7 +24,7 @@ let DSB.SY = try DSB.SY with emptyset
 let DSB.ST = try DSB.ST with emptyset
 let DSB.LD = try DSB.LD with emptyset
 let DSB.OSH = try DSB.OSH with emptyset
-let DSB.OSHLD = try DSB.OSH with emptyset
+let DSB.OSHLD = try DSB.OSHLD with emptyset
 let DSB.OSHST = try DSB.OSHST with emptyset
 
 let ISB = try ISB with emptyset
