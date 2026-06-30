@@ -436,12 +436,6 @@ module Make
               "ext",lazy begin
                 comp_ext (Lazy.force by_proc)
               end ;
-              "rmw",lazy conc.S.atomic_load_store;
-              "amo",
-              lazy begin
-                E.EventRel.restrict_rel E.po_eq
-                  conc.S.atomic_load_store
-              end;
               "po", lazy po;
               "partial_po", partial_po;
               "depend", lazy (Lazy.force pr).S.depend;
