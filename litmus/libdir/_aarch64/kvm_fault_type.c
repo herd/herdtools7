@@ -48,8 +48,6 @@ static const char *fault_type_names[] = {
   "Unsupported",
 };
 
-#define ESR_EL1_EC_PAC 0b011100
-
 static enum fault_type_t get_fault_type(unsigned long esr)
 {
   unsigned int ec = esr >> ESR_EL1_EC_SHIFT;

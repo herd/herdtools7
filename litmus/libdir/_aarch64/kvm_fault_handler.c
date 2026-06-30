@@ -71,8 +71,6 @@ static void fault_handler(struct pt_regs *regs,unsigned int esr) {
 #endif
 }
 
-#define ESR_EL1_EC_PAC 0b011100
-
 static void install_fault_handler(int cpu) {
   install_exception_handler(EL1H_SYNC, ESR_EL1_EC_DABT_EL1, fault_handler);
   install_exception_handler(EL1H_SYNC, ESR_EL1_EC_IABT_EL1, fault_handler);
