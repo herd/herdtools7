@@ -16,7 +16,7 @@ BUNDLER_ARGS := -vv $(BUNDLER_JOBS)
 BUNDLER := bundler.py
 BUNDLER_CMD := $(PYTHON) $(BUNDLER) $(BUNDLER_ARGS)
 
-ARCHITECTURE_RELEASE = 2025-12
+ARCHITECTURE_RELEASE = 2026-03
 
 BASE_URL := https://developer.arm.com/-/cdn-downloads/permalink
 
@@ -82,6 +82,7 @@ shared_pseudocode.asl: $(ISA_A64_NAME)
 	@ echo "Extracting the shared ASL pseudocode from xml files ..."
 	@ touch $@
 	@ $(BUNDLER_CMD) --make-shared-pseudocode -o $@ --log-file $@.log $^/shared_pseudocode.xml
+	@ sed -i '' -re 's/(constant|var|let) integer{} ([A-Za-z][A-Za-z0-9_]*)/\1 \2 : integer{}/' shared_pseudocode.asl # note: workaround for old ASL0 declaration syntax in a couple places
 	@ echo "You can find extraction log at $@.log"
 
 TO_CLEANUP += aarch64-notice.html $(ISA_A64_NAME).log $(ISA_A64_OFILE)
@@ -103,9 +104,11 @@ $(SYSREGS_OFILE): $(SYSREGS_NAME)
 
 TO_CLEANUP += $(FEATURES_OFILE) $(FEATURES_NAME)
 
+EXTRA_FEATURES := FEAT_RASSA_ACR,FEAT_RASSAv2
+
 $(FEATURES_OFILE): $(FEATURES_NAME)
 	@ echo "Extracting Features type definition from json file $^"
-	@ $(PYTHON) build_features.py -o $@ $^
+	@ $(PYTHON) build_features.py -o $@ --extra-features "$(EXTRA_FEATURES)" $^
 
 .PHONY: a64
 a64: $(ISA_A64_OFILE) shared_pseudocode.asl
@@ -193,6 +196,7 @@ DO_NOT_GENERATE_VARIABLES_FOR := $\
 		BRBTGT<n>_EL1,$\
 		BRBSRC<n>_EL1,$\
 		BRBINF<n>_EL1,$\
+		ERRIRQCR<m>,$\
 		SVCR
 
 TO_CLEANUP += all-registers-notice.html all_system_registers.asl $(SYSREGS_NAME).log
