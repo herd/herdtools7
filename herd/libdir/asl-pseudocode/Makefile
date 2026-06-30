@@ -82,7 +82,7 @@ shared_pseudocode.asl: $(ISA_A64_NAME)
 	@ echo "Extracting the shared ASL pseudocode from xml files ..."
 	@ touch $@
 	@ $(BUNDLER_CMD) --make-shared-pseudocode -o $@ --log-file $@.log $^/shared_pseudocode.xml
-	@ sed -i '' -re 's/(constant|var|let) integer{} ([A-Za-z][A-Za-z0-9_]*)/\1 \2 : integer{}/' shared_pseudocode.asl # note: workaround for old ASL0 declaration syntax in a couple places
+	@ sed -i '' -e 's/constant integer{} \([A-Za-z][A-Za-z0-9_]*\)/constant \1 : integer{}/' shared_pseudocode.asl # note: workaround for old ASL0 declaration syntax in a couple places
 	@ echo "You can find extraction log at $@.log"
 
 TO_CLEANUP += aarch64-notice.html $(ISA_A64_NAME).log $(ISA_A64_OFILE)
