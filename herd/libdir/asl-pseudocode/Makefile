@@ -80,9 +80,10 @@ TO_CLEANUP += notice.html shared_pseudocode.asl shared_pseudocode.asl.log
 shared_pseudocode.asl: $(ISA_A64_NAME)
 	@ cp $^/xhtml/notice.html .
 	@ echo "Extracting the shared ASL pseudocode from xml files ..."
-	@ touch $@
-	@ $(BUNDLER_CMD) --make-shared-pseudocode -o $@ --log-file $@.log $^/shared_pseudocode.xml
-	@ sed -i '' -e 's/constant integer{} \([A-Za-z][A-Za-z0-9_]*\)/constant \1 : integer{}/' shared_pseudocode.asl # note: workaround for old ASL0 declaration syntax in a couple places
+	@ touch $@.tmp
+	@ $(BUNDLER_CMD) --make-shared-pseudocode -o $@.tmp --log-file $@.log $^/shared_pseudocode.xml
+	@ sed -e 's/constant integer{} \([A-Za-z][A-Za-z0-9_]*\)/constant \1 : integer{}/' $@.tmp > $@ # note: workaround for old ASL0 declaration syntax in a couple places
+	@ rm $@.tmp
 	@ echo "You can find extraction log at $@.log"
 
 TO_CLEANUP += aarch64-notice.html $(ISA_A64_NAME).log $(ISA_A64_OFILE)
