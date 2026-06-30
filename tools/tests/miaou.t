@@ -130,7 +130,13 @@
         \item \ExpR{E\textsubscript{1}}.
         \item \expandafter{\MakeUppercase\notthecase{\NoRet{E\textsubscript{1}}}}.
         \end{itemize}
-      \item \ImpTagR{E\textsubscript{1}}.
+      \item All of the following apply:
+        \begin{itemize}
+        \item \ImpTagR{E\textsubscript{1}}.
+        \item \expandafter{\MakeUppercase\sameinstance{E\textsubscript{1}}{E\textsubscript{4}}}.
+        \item \ExpR{E\textsubscript{4}}.
+        \item \expandafter{\MakeUppercase\notthecase{\NoRet{E\textsubscript{4}}}}.
+        \end{itemize}
       \end{itemize}
     \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \DSBLD{E\textsubscript{3}}.
@@ -144,8 +150,21 @@
   \item All of the following apply:
     \begin{itemize}
     \item \ETSTwo{} or \ETSThree{}.
-    \item \ExpR{E\textsubscript{1}}.
-    \item \expandafter{\MakeUppercase\notthecase{\NoRet{E\textsubscript{1}}}}.
+    \item One of the following applies:
+      \begin{itemize}
+      \item All of the following apply:
+        \begin{itemize}
+        \item \ExpR{E\textsubscript{1}}.
+        \item \expandafter{\MakeUppercase\notthecase{\NoRet{E\textsubscript{1}}}}.
+        \end{itemize}
+      \item All of the following apply:
+        \begin{itemize}
+        \item \ImpTagR{E\textsubscript{1}}.
+        \item \expandafter{\MakeUppercase\sameinstance{E\textsubscript{1}}{E\textsubscript{4}}}.
+        \item \ExpR{E\textsubscript{4}}.
+        \item \expandafter{\MakeUppercase\notthecase{\NoRet{E\textsubscript{4}}}}.
+        \end{itemize}
+      \end{itemize}
     \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \DSBLD{E\textsubscript{3}}.
     \item \expandafter{\MakeUppercase\po{E\textsubscript{3}}{E\textsubscript{2}}}.
@@ -482,11 +501,16 @@
       \begin{itemize}
       \item All of the following apply:
         \begin{itemize}
-        \item \Exp{E\textsubscript{1}}.
-        \item \R{E\textsubscript{1}}.
+        \item \ExpR{E\textsubscript{1}}.
         \item \expandafter{\MakeUppercase\notthecase{\NoRet{E\textsubscript{1}}}}.
         \end{itemize}
-      \item \ImpTagR{E\textsubscript{1}}.
+      \item All of the following apply:
+        \begin{itemize}
+        \item \ImpTagR{E\textsubscript{1}}.
+        \item \expandafter{\MakeUppercase\sameinstance{E\textsubscript{1}}{E\textsubscript{4}}}.
+        \item \ExpR{E\textsubscript{4}}.
+        \item \expandafter{\MakeUppercase\notthecase{\NoRet{E\textsubscript{4}}}}.
+        \end{itemize}
       \end{itemize}
     \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \DMBLD{E\textsubscript{3}}.
