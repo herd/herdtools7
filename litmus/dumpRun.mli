@@ -47,7 +47,8 @@ end
 
 
 module type OneTest = sig
-  val from_file : hash_env -> string -> out_channel -> answer
+  val from_file :
+    ?compileonly:bool -> hash_env -> string -> out_channel -> answer
 end
 
 module Make :

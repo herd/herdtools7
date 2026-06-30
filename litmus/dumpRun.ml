@@ -47,7 +47,8 @@ module type Config = sig
 end
 
 module type OneTest = sig
-  val from_file : hash_env -> string -> out_channel -> answer
+  val from_file :
+    ?compileonly:bool -> hash_env -> string -> out_channel -> answer
 end
 
 
@@ -208,7 +209,7 @@ let collect_flags names =
     Misc.fold_argv_or_stdin
       (fun name some_flags ->
          let ans =
-          try CT.from_file StringMap.empty name devnull
+          try CT.from_file ~compileonly:true StringMap.empty name devnull
           with
           | e ->
               if Cfg.nocatch then raise e ;
