@@ -157,6 +157,7 @@ module Make (O:Config) (E:Edge.S) :
   let do_sve = O.variant Variant_gen.SVE
   let do_sme = O.variant Variant_gen.SME
   let do_no_fault = O.variant Variant_gen.NoFault
+  let do_store_only = O.variant Variant_gen.StoreOnly
 
   type fence = E.fence
   type edge = E.edge
@@ -572,7 +573,7 @@ module CoSt = struct
     Some ( (Label.next_label "L"), (Value.can_fault dir pte_val) )
 
   (* Helper function returns a fresh label and a boolean for if it should fault,
-     if a fault check is need. Otherwise return `None`. *)
+     if a fault check is needed. Otherwise return `None`. *)
   let fault_update st dir =
     let unset_check_fault st = {st with check_fault = NoDir } in
     let pte_val = get_pte_value st in
@@ -1169,6 +1170,8 @@ let set_read_pair_v n cell check_value =
    convert the node list, i.e., the first unnamed parameter,
    to the final value `cell` and PTE value `pte_cell` *)
 let do_set_read_v init =
+  let skip_store_only st dir =
+    if do_store_only then None,st else CoSt.fault_update st dir in
   let do_rec st ns =
     (* `st` keeps track of tags and current state of memory,
        - plain value => CoSt.get_cell, CoSt.set_cell,
@@ -1193,13 +1196,13 @@ let do_set_read_v init =
                we should assign label to this read event.
                Here we assume write is stronger than read. *)
             else if n.evt.rmw then CoSt.fault_update st W
-            else CoSt.fault_update st R in
+            else skip_store_only st R in
           n.evt <- { n.evt with check_fault };
           st
         | Pair ->
           let st = CoSt.implicit_pte_update st R in
           set_read_pair_v n cell check_value;
-          let check_fault, st = CoSt.fault_update st R in
+          let check_fault, st = skip_store_only st R in
           n.evt <- { n.evt with check_fault };
           st
         | VecReg a ->
@@ -1208,7 +1211,7 @@ let do_set_read_v init =
           let v = E.SIMD.read a cell
                    |> E.SIMD.reduce
                    |> Value.from_int in
-          let check_fault, st = CoSt.fault_update st R in
+          let check_fault, st = skip_store_only st R in
           n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
           st
         | Tag ->

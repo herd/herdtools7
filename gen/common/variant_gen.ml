@@ -38,6 +38,8 @@ type t =
   | KVM | NoFault
 (* Synchronisation mode *)
   | Sync | Async
+(* Store-only mode *)
+  | StoreOnly
 (* Neon AArch64 extension *)
   | Neon
 (* Scalable Vector extension (AArch64) *)
@@ -52,12 +54,12 @@ let tags =
    "Mixed";"FullMixed";"MixedDisjoint"; "MixedStrictOverlap";
    "Ifetch(Self)"; "MemTag";
    "NoVolatile"; "Morello"; "VMSA(KVM)"; "NoFault";
-   "Sync"; "Async"; "Neon"; "ConstrainedUnpredictable"; ]
+   "Sync"; "Async"; "StoreOnly"; "Neon"; "ConstrainedUnpredictable"; ]
 
 let all_t =
   [ AsAmo ; ConstsInInit ; Mixed ; FullMixed ; MixedDisjoint ; MixedStrictOverlap ;
     Self ; MemTag ; NoVolatile ; Morello ; KVM ; NoFault ;
-    Sync ; Async ; Neon ; SVE ; SME ; ConstrainedUnpredictable ]
+    Sync ; Async ; StoreOnly ; Neon ; SVE ; SME ; ConstrainedUnpredictable ]
 
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
@@ -74,6 +76,7 @@ let parse tag = match Misc.lowercase tag with
 | "nofault" -> Some NoFault
 | "sync" -> Some Sync
 | "async" -> Some Async
+| "storeonly" | "store-only" -> Some StoreOnly
 | "neon" -> Some Neon
 | "sve" -> Some SVE
 | "sme" -> Some SME
@@ -95,6 +98,7 @@ let pp = function
   | NoFault -> "NoFault"
   | Sync -> "Sync"
   | Async -> "Async"
+  | StoreOnly -> "StoreOnly"
   | Neon -> "Neon"
   | SVE -> "sve"
   | SME -> "sme"
@@ -110,6 +114,7 @@ let pp_herd_variant = function
   | MemTag -> Some "memtag"
   | Sync -> Some "sync"
   | Async -> Some "async"
+  | StoreOnly -> Some "store-only"
   | Morello -> Some "morello"
   | KVM  -> Some "vmsa"
   | ConstrainedUnpredictable -> Some "ConstrainedUnpredictable"
@@ -118,5 +123,6 @@ let is_mixed v = v Mixed || v FullMixed
 let is_kvm v = v KVM
 
 let validate v =
-  if (v Sync || v Async) && not (v MemTag) then
-    Warn.user_error "variants `Sync` and `Async` must be used with `MemTag`"
+  if (v Sync || v Async || v StoreOnly) && not (v MemTag) then
+    Warn.user_error
+      "variants `Sync`, `Async` and `StoreOnly` must be used with `MemTag`"
