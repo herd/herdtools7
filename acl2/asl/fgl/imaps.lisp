@@ -49,7 +49,7 @@
 ;;    using (val-imap-add-pairs pairs nil), and an update will modify the pairs
 ;;    using put-assoc-equal.
 ;;
-;;  - Records/enumarrays.  These have keys determined by their types. We used to
+;;  - Records.  These have keys determined by their types. We used to
 ;;    represent these the same way as local storage frames, always fully expanding
 ;;    them to have explicit key/symbolic value pairs. However, this was expensive
 ;;    so we're moving to a dual strategy:
@@ -1218,90 +1218,7 @@
 (fgl::remove-fgl-rewrite env-find-global)
 
 
-(fgl::def-fgl-rewrite eval_expr-getenumarray-redef
-  (implies (expr_desc-case (expr->desc e) :e_getenumarray)
-           (equal (eval_expr env (fgl::concrete e))
-                  (b* ((pos (expr->pos_start e))
-                       ((e_getenumarray e) (expr->desc e))
-                       ((mv (evo (expr_result arr)) orac) (eval_expr env e.base))
-                       ((mv (evo (expr_result idx)) orac) (eval_expr arr.env e.index))
-                       ((evo idxv) (val-case idx.val
-                                     :v_label (ev_normal idx.val.val)
-                                     :otherwise (ev_error "DE_BI: getenumarray non-label index" e (list pos))))
-                       ((evo arrv) (val-case arr.val
-                                     :v_record (ev_normal arr.val.rec)
-                                     :otherwise (ev_error "getenumarray non-record value" e (list pos)))))
-                    (if (val-imap-has-key idxv arrv)
-                        (evo_normal (expr_result (val-imap-lookup idxv arrv) idx.env))
-                      (evo_error "DE_BI: getenumarray index not found" e (list pos))))))
-  :hints (("goal" :expand ((eval_expr env e))
-           :in-theory (enable val-imap-lookup val-imap-has-key
-                              omap::lookup))))
-
-(fgl::def-fgl-rewrite eval_expr-*t-getenumarray-redef
-  (implies (expr_desc-case (expr->desc e) :e_getenumarray)
-           (equal (eval_expr-*t env (fgl::concrete e))
-                  (b* ((env (env-replace-static static-env env))
-                       (pos (expr->pos_start e))
-                       (trace nil)
-                       ((e_getenumarray e) (expr->desc e))
-                       ((EVOO-*T (EXPR_RESULT ARR))
-                        (EVAL_EXPR-*T ENV E.BASE))
-                       ((EVOO-*T (EXPR_RESULT IDX))
-                        (EVAL_EXPR-*T ARR.ENV E.INDEX))
-                       ((EVO-*T IDXV)
-                        (VAL-CASE IDX.VAL
-                          :V_LABEL (EV_NORMAL IDX.VAL.VAL)
-                          :OTHERWISE (EV_ERROR "DE_BI: getenumarray non-label index"
-                                               e (LIST POS))))
-                       ((EVO-*T ARRV)
-                        (VAL-CASE ARR.VAL
-                          :V_RECORD (EV_NORMAL ARR.VAL.REC)
-                          :OTHERWISE (EV_ERROR "getenumarray non-record value"
-                                               e (LIST POS)))))
-                    (IF (val-imap-has-key idxv arrv)
-                        (EVO_NORMAL-*T (EXPR_RESULT (val-imap-lookup idxv arrv) IDX.ENV))
-                        (EVO_ERROR-*T "DE_BI: getenumarray index not found"
-                                      e (LIST POS))))))
-  :hints (("goal" :expand ((eval_expr-*t env e))
-           :in-theory (enable val-imap-lookup val-imap-has-key
-                              omap::lookup))))
-
 (local (in-theory (acl2::disable* asl-*t-equals-original-rules)))
-
-(fgl::def-fgl-rewrite eval_expr-*t-when-error-free-getenumarray-redef
-  (implies (and (eval_expr-*t-no-error env e)
-                (expr_desc-case (expr->desc e) :e_getenumarray))
-           (equal (eval_expr-*t env (fgl::concrete e))
-                  (b* ((env (env-replace-static static-env env))
-                       (pos (expr->pos_start e))
-                       (trace nil)
-                       ((e_getenumarray e) (expr->desc e))
-                       ((EVOO-*Tef _condvar-0 (EXPR_RESULT ARR))
-                        (EVAL_EXPR-*T ENV E.BASE))
-                       ((EVOO-*Tef _condvar-1 (EXPR_RESULT IDX))
-                        (EVAL_EXPR-*T ARR.ENV E.INDEX))
-                       ((EVO-*Tef _condvar-3 IDXV)
-                        (VAL-CASE IDX.VAL
-                          :V_LABEL (EV_NORMAL IDX.VAL.VAL)
-                          :OTHERWISE (EV_ERROR "DE_BI: getenumarray non-label index"
-                                               e (LIST POS))))
-                       ((EVO-*Tef _condvar-4 ARRV)
-                        (VAL-CASE ARR.VAL
-                          :V_RECORD (EV_NORMAL ARR.VAL.REC)
-                          :OTHERWISE (EV_ERROR "getenumarray non-record value"
-                                               e (LIST POS)))))
-                    (IF (val-imap-has-key idxv arrv)
-                        (EVO_NORMAL-*T (EXPR_RESULT (val-imap-lookup idxv arrv) IDX.ENV))
-                        (EVO_ERROR-*T "DE_BI: getenumarray index not found"
-                                      e (LIST POS))))))
-  :HINTS ((ACL2::JUST-EXPAND ((EVAL_EXPR-*T-NO-ERROR ENV E)))
-          (ACL2::JUST-EXPAND ((EVAL_EXPR-*T ENV E)))
-          (and stable-under-simplificationp
-               (ACL2::JUST-EXPAND ((EVAL_EXPR-*T ENV E))))
-          '(:IN-THEORY (ENABLE FGL::CONDITIONALIZE1 fgl::conditionalize2
-                               val-imap-lookup val-imap-has-key
-                               omap::lookup))))
 
 
 
@@ -1380,57 +1297,6 @@
 
 (fgl::remove-fgl-rewrite declare_local_identifier)
 
-(fgl::def-fgl-rewrite eval_expr-enumarray-redef
-  (implies (expr_desc-case (expr->desc e) :e_enumarray)
-           (equal (eval_expr env (fgl::concrete e))
-                  (b* (((e_enumarray e) (expr->desc e))
-                       ((mv (evo (expr_result v)) orac) (eval_expr env e.value))
-                       (labels (set::mergesort e.labels))
-                       (len (len labels))
-                       (vals (make-list len :initial-element v.val))
-                       (rec (pairlis$ labels vals)))
-                    (evo_normal (expr_result (v_record (val-imap-add-pairs rec nil)) v.env)))))
-  :hints (("goal" :expand ((eval_expr env e))
-           :in-theory (enable val-imap-add-pairs-is-from-lists*))))
-
-(fgl::def-fgl-rewrite eval_expr-*t-enumarray-redef
-  (implies (expr_desc-case (expr->desc e) :e_enumarray)
-           (equal (eval_expr-*t env (fgl::concrete e))
-                  (b* ((trace nil)
-                       ((e_enumarray desc) (expr->desc e))
-                       (env (env-replace-static static-env env))
-                       ((EVOO-*T (EXPR_RESULT V))
-                        (EVAL_EXPR-*T ENV DESC.VALUE))
-                       (LABELS (MERGESORT DESC.LABELS))
-                       (LEN (LEN LABELS))
-                       (VALS (MAKE-LIST LEN :INITIAL-ELEMENT V.VAL))
-                       (REC (pairlis$ labels vals)))
-                    (EVO_NORMAL-*T (EXPR_RESULT (V_RECORD (val-imap-add-pairs rec nil)) V.ENV)))))
-  :hints (("goal" :expand ((eval_expr-*t env e))
-           :in-theory (enable val-imap-add-pairs-is-from-lists*))))
-
-(fgl::def-fgl-rewrite eval_expr-*t-when-error-free-enumarray-redef
-  (implies (and (eval_expr-*t-no-error env e)
-                (expr_desc-case (expr->desc e) :e_enumarray))
-           (equal (eval_expr-*t env (fgl::concrete e))
-                  (b* ((trace nil)
-                       ((e_enumarray desc) (expr->desc e))
-                       (env (env-replace-static static-env env))
-                       ((EVOO-*Tef _condvar-0 (EXPR_RESULT V))
-                        (EVAL_EXPR-*T ENV DESC.VALUE))
-                       (LABELS (MERGESORT DESC.LABELS))
-                       (LEN (LEN LABELS))
-                       (VALS (MAKE-LIST LEN :INITIAL-ELEMENT V.VAL))
-                       (REC (pairlis$ labels vals)))
-                    (EVO_NORMAL-*T (EXPR_RESULT (V_RECORD (val-imap-add-pairs rec nil)) V.ENV)))))
-  :hints ((ACL2::JUST-EXPAND ((EVAL_EXPR-*T-NO-ERROR ENV E)))
-          (ACL2::JUST-EXPAND ((EVAL_EXPR-*T ENV E)))
-          (and stable-under-simplificationp
-               (ACL2::JUST-EXPAND ((EVAL_EXPR-*T ENV E))))
-          '(:IN-THEORY (ENABLE FGL::CONDITIONALIZE1 fgl::conditionalize2
-                               val-imap-add-pairs-is-from-lists*))))
-
-
 (local (defthm len-of-eval_expr_list-*t
          (b* (((mv res ?new-orac ?trace)
                (eval_expr_list-*t env e)))
@@ -1484,80 +1350,6 @@
                (ACL2::JUST-EXPAND ((EVAL_EXPR-*T ENV E))))
           '(:IN-THEORY (ENABLE FGL::CONDITIONALIZE1 fgl::conditionalize2
                                val-imap-add-pairs-is-from-lists*))))
-
-(fgl::def-fgl-rewrite eval_lexpr-setenumarray-redef
-  (implies (lexpr_desc-case (lexpr->desc lx) :le_setenumarray)
-           (equal (eval_lexpr env (fgl::concrete lx) v)
-                  (b* ((pos (lexpr->pos_start lx))
-                       ((le_setenumarray lx) (lexpr->desc lx))
-                       (rbase (expr_of_lexpr lx.base))
-                       ((mv (evo (expr_result rbv)) orac) (eval_expr env rbase))
-                       ((mv (evo (expr_result idx)) orac) (eval_expr rbv.env lx.index))
-                       ((evob idxv) (v_to_label idx.val))
-                       ((evo newarray)
-                        (val-case rbv.val
-                          :v_record (if (val-imap-has-key idxv rbv.val.rec)
-                                        (ev_normal (v_record (val-imap-put idxv (val-fix v)
-                                                                           rbv.val.rec)))
-                                      (ev_error "DE_BI: le_setenumarray unrecognized index" lx (list pos)))
-                          :otherwise (ev_error "le_setenumarray non record base" lx (list pos)))))
-                    (eval_lexpr idx.env lx.base newarray))))
-  :hints (("goal" :expand ((eval_lexpr env lx v))
-           :in-theory (enable val-imap-has-key val-imap-put v_to_label))))
-
-(fgl::def-fgl-rewrite eval_lexpr-*t-setenumarray-redef
-  (implies (lexpr_desc-case (lexpr->desc lx) :le_setenumarray)
-           (equal (eval_lexpr-*t env (fgl::concrete lx) v)
-                  (b* ((trace nil)
-                       (pos (lexpr->pos_start lx))
-                       ((le_setenumarray lx) (lexpr->desc lx))
-                       (rbase (expr_of_lexpr lx.base))
-                       (env (env-replace-static static-env env))
-                       ((evoo-*t (expr_result rbv))
-                        (eval_expr-*t env rbase))
-                       ((evoo-*t (expr_result idx))
-                        (eval_expr-*t rbv.env lx.index))
-                       ((evob-*t idxv) (v_to_label idx.val))
-                       ((evo-*t newarray)
-                        (val-case rbv.val :v_record
-                          (if (val-imap-has-key idxv rbv.val.rec)
-                              (ev_normal (v_record (val-imap-put idxv (val-fix v)
-                                                                 rbv.val.rec)))
-                            (ev_error "DE_BI: le_setenumarray unrecognized index"
-                                      lx (list pos)))
-                          :otherwise (ev_error "le_setenumarray non record base"
-                                               lx (list pos)))))
-                    (evtailcall-*t (eval_lexpr-*t idx.env lx.base newarray)))))
-  :hints (("goal" :expand ((eval_lexpr-*t env lx v))
-           :in-theory (enable val-imap-has-key val-imap-put v_to_label))))
-
-(fgl::def-fgl-rewrite eval_lexpr-*t-when-error-free-setenumarray-redef
-  (implies (and (eval_lexpr-*t-no-error env lx v)
-                (lexpr_desc-case (lexpr->desc lx) :le_setenumarray))
-           (equal (eval_lexpr-*t env (fgl::concrete lx) v)
-                  (b* ((trace nil)
-                       (pos (lexpr->pos_start lx))
-                       ((le_setenumarray lx) (lexpr->desc lx))
-                       (rbase (expr_of_lexpr lx.base))
-                       (env (env-replace-static static-env env))
-                       ((evoo-*tef _condvar-0 (expr_result rbv))
-                        (eval_expr-*t env rbase))
-                       ((evoo-*tef _condvar-1 (expr_result idx))
-                        (eval_expr-*t rbv.env lx.index))
-                       ((evob-*tef _condvar-2 idxv) (v_to_label idx.val))
-                       ((evo-*tef _condvar-3 newarray)
-                        (val-case rbv.val :v_record
-                          (if (val-imap-has-key idxv rbv.val.rec)
-                              (ev_normal (v_record (val-imap-put idxv (val-fix v)
-                                                                 rbv.val.rec)))
-                            (ev_error "DE_BI: le_setenumarray unrecognized index"
-                                      lx (list pos)))
-                          :otherwise (ev_error "le_setenumarray non record base"
-                                               lx (list pos)))))
-                    (evtailcall-*tef _condvar-4 (eval_lexpr-*t idx.env lx.base newarray)))))
-  :hints (("goal" :expand ((eval_lexpr-*t env lx v)
-                           (eval_lexpr-*t-no-error env lx v))
-           :in-theory (enable val-imap-has-key val-imap-put v_to_label))))
 
 (fgl::def-fgl-rewrite eval_lexpr-setfield-redef
   (implies (lexpr_desc-case (lexpr->desc lx) :le_setfield)
@@ -1867,21 +1659,6 @@
                                     record-type-satisfied-implies-val-imap-has-key)
           :expand ((ty-satisfied x ty)))))
 
-(fgl::def-fgl-rewrite enumarray-lookup-by-bind-ty-satisfied
-  (b* (((t_array r) (ty->desc ty))
-       ((arraylength_enum r.index)))
-    (implies (and (bind-ty-satisfied ty x)
-                  (syntaxp (fgl::fgl-object-case ty :g-concrete))
-                  (type_desc-case (ty->desc ty) :t_array)
-                  (array_index-case r.index :arraylength_enum)
-                  (identifier-p fld))
-             (iff (val-imap-has-key fld (v_record->rec x))
-                  (member-equal fld r.index.elts))))
-  :hints(("Goal" :in-theory (enable bind-ty-satisfied
-                                    omap::assoc-iff-in-keys
-                                    val-imap-has-key)
-          :expand ((ty-satisfied x ty)))))
-
 (define rec-extract-keys ((keys identifierlist-p)
                           (rec val-imap-p))
   :returns (alist)
@@ -1934,21 +1711,6 @@
                 '(:in-theory (enable val-imap-has-key-is-in-of-keys))))))
 
 
-(fgl::def-fgl-rewrite v_record->rec-bind-ty-satisfied-enumarray
-  (b* (((t_array r) (ty->desc ty))
-       ((arraylength_enum r.index)))
-    (implies (and (bind-ty-satisfied ty x)
-                  (syntaxp (fgl::fgl-object-case ty :g-concrete))
-                  (type_desc-case (ty->desc ty) :t_array)
-                  (array_index-case r.index :arraylength_enum)
-                  (identifier-p fld))
-             (equal (v_record->rec x)
-                    (val-imap-add-pairs (rec-extract-keys r.index.elts
-                                                          (fgl::fgl-hide (v_record->rec x)))
-                                        nil))))
-  :hints(("Goal" :in-theory (e/d (bind-ty-satisfied))
-          :expand ((ty-satisfied x ty)))))
-
 (fgl::def-fgl-rewrite v_record->rec-bind-ty-satisfied-record
   (b* (((t_record r) (ty->desc ty)))
     (implies (and (bind-ty-satisfied ty x)
@@ -1961,27 +1723,8 @@
   :hints(("Goal" :in-theory (enable bind-ty-satisfied)
           :expand ((ty-satisfied x ty)))))
 
-(fgl::remove-fgl-rewrites v_record->rec-bind-ty-satisfied-record
-                          v_record->rec-bind-ty-satisfied-enumarray)
+(fgl::remove-fgl-rewrite v_record->rec-bind-ty-satisfied-record)
 
-
-(fgl::def-fgl-branch-merge merge-v_record->rec-bind-ty-satisfied-enumarray
-  (b* (((t_array r) (ty->desc ty))
-       ((arraylength_enum r.index)))
-    (implies (and (bind-ty-satisfied ty x)
-                  (syntaxp (fgl::fgl-object-case ty :g-concrete))
-                  (type_desc-case (ty->desc ty) :t_array)
-                  (array_index-case r.index :arraylength_enum)
-                  (identifier-p fld))
-             (equal (if test (v_record->rec x) y)
-                    (let ((pairs
-                           (val-imap-add-pairs (rec-extract-keys r.index.elts
-                                                                 (fgl::fgl-hide (v_record->rec x)))
-                                               nil)))
-                      (if test pairs y)))))
-  :hints(("Goal" :in-theory (e/d (bind-ty-satisfied))
-          :expand ((ty-satisfied x ty)))))
-(fgl::remove-fgl-branch-merge merge-v_record->rec-bind-ty-satisfied-enumarray)
 
 (fgl::def-fgl-branch-merge merge-v_record->rec-bind-ty-satisfied-record
   (b* (((t_record r) (ty->desc ty)))
@@ -2006,22 +1749,6 @@
 ;;                     (fgl::if! test (v_record->rec x) y))))
 ;;   :hints(("Goal" :in-theory (enable fgl::if!))))
 
-
-;; (fgl::def-fgl-rewrite equal-v_record->rec-bind-ty-satisfied-enumarray
-;;   (b* (((t_array r) (ty->desc ty))
-;;        ((arraylength_enum r.index)))
-;;     (implies (and (bind-ty-satisfied ty x)
-;;                   (syntaxp (fgl::fgl-object-case ty :g-concrete))
-;;                   (type_desc-case (ty->desc ty) :t_array)
-;;                   (array_index-case r.index :arraylength_enum)
-;;                   (identifier-p fld))
-;;              (equal (equal (v_record->rec x) y)
-;;                     (equal (val-imap-add-pairs (rec-extract-keys r.index.elts
-;;                                                                  (fgl::fgl-hide (v_record->rec x)))
-;;                                                nil)
-;;                            y))))
-;;   :hints(("Goal" :in-theory (e/d (bind-ty-satisfied))
-;;           :expand ((ty-satisfied x ty)))))
 
 ;; (fgl::def-fgl-rewrite equal-v_record->rec-bind-ty-satisfied-record
 ;;   (b* (((t_record r) (ty->desc ty)))
@@ -2254,4 +1981,3 @@
 
 ;; (fgl::disable-if-merge-args val-imap-add-pairs)
 ;; (fgl::disable-if-merge-args val-imap-put-pairs)
-

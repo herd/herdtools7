@@ -170,9 +170,6 @@ concatenated together, MSBs first, to form the result.</p>")
     (:e_getarray ((base expr)
                   (index expr))
      :short "Array lookup expression")
-    (:e_getenumarray ((base expr)
-                      (index expr))
-     :short "Enumarray lookup expression")
     (:e_getfield ((base expr)
                   (field identifier))
      :short "Record field lookup expression")
@@ -197,11 +194,6 @@ e_getfields))")
                (value expr))
      :short "Array construction expression. (No syntax for this; only produced for initial
 values.)")
-    (:e_enumarray ((enum identifier)
-                   (labels identifierlist)
-                   (value expr))
-     :short "Enumarray construction expression. (No syntax for this; only produced for
-initial values.)")
     (:e_arbitrary ((type ty))
      :short "Arbitrary value expression. Semantics: reads the oracle to construct a value of
 the given type.")
@@ -289,10 +281,10 @@ to them are removed by the typechecker.")
     (:t_bool ())
     (:t_enum ((elts identifierlist)))
     (:t_tuple ((types tylist)))
-    (:t_array ((index array_index)
+    (:t_array ((index expr)
                (type ty))
-     :short "Array type, either an integer-indexed array or an enumarray depending on
-@('index'). All elements are of type @('type').")
+     :short "Array type. @('index') is the length expression and all elements are of type
+@('type').")
     (:t_record ((fields typed_identifierlist)))
     (:t_exception ((fields typed_identifierlist)))
     (:t_collection ((fields typed_identifierlist)))
@@ -358,14 +350,6 @@ are semantically relevant.</p>"
     :short "List of ASL bitfields"
     :measure (acl2::two-nats-measure (acl2-count x) 10))
 
-  (deftagsum array_index
-    :short "Array indexing specification -- either a length (indicating a regular array) or
-an enum type (indicating an enumarray)."
-    (:arraylength_expr ((length expr)))
-    (:arraylength_enum ((name identifier)
-                        (elts identifierlist)))
-    :measure (acl2::two-nats-measure (acl2-count x) 10))
-
   (defprod named_expr
     :short "Pairing of a name (identifier) with an expression, as in @(see e_record)"
     ((name identifier)
@@ -417,8 +401,6 @@ a bitvector slice"
      :short "Assignment to a list of bitvector slices: see @(see write_to_bitvector)")
     (:le_setarray ((base lexpr)
                    (index expr)))
-    (:le_setenumarray ((base lexpr)
-                       (index expr)))
     (:le_setfield ((base lexpr)
                    (field identifier)))
     (:le_setfields ((base lexpr)

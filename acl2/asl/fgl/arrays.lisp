@@ -206,12 +206,9 @@
   ;;   (implies (and (syntaxp (fgl::fgl-object-case ty :g-concrete))
   ;;                 (natp n)
   ;;                 (type_desc-case (ty->desc ty) :t_array)
-  ;;                 (b* (((t_array ty) (ty->desc ty))) (array_index-case ty.index :arraylength_expr))
-  ;;                 (b* (((t_array ty) (ty->desc ty))
-  ;;                      ((arraylength_expr ty.index))) (int-literal-expr-p ty.index.length))
-  ;;                 (fgl-mark 'n-less-than-ty.index.length
-  ;;                           (and (b* (((t_array ty) (ty->desc ty))
-  ;;                                     ((arraylength_expr ty.index))) (< n (int-literal-expr->val ty.index.length)))
+  ;;                 (b* (((t_array ty) (ty->desc ty))) (int-literal-expr-p ty.index))
+  ;;                 (fgl-mark 'n-less-than-ty.index
+  ;;                           (and (b* (((t_array ty) (ty->desc ty))) (< n (int-literal-expr->val ty.index)))
   ;;                                t)))
   ;;            (equal (v_array-nth n (ty-fix-val x ty))
   ;;                   (ty-fix-val (nth n (v_array->arr x))
@@ -971,11 +968,10 @@
     (implies (and (bind-ty-satisfied ty x)
                   (syntaxp (fgl::fgl-object-case ty :g-concrete))
                   (type_desc-case (ty->desc ty) :t_array)
-                  (array_index-case a.index :arraylength_expr)
-                  (b* (((arraylength_expr len) a.index)) (int-literal-expr-p len.length))
-                  (b* (((arraylength_expr len) a.index))
-                    (fgl-mark 'n-less-than-len.length (fgl::fgl-validity-check (fgl::make-fgl-ipasir-config)
-                                                                               (and (< (nfix n) (int-literal-expr->val len.length)) t))))
+                  (int-literal-expr-p a.index)
+                  (fgl-mark 'n-less-than-len
+                            (fgl::fgl-validity-check (fgl::make-fgl-ipasir-config)
+                                                     (and (< (nfix n) (int-literal-expr->val a.index)) t)))
                   ;; Note: This triggers the constraint generation for
                   ;; resolving equal indices -- see below.
                   (not (fgl::trigger-constraints (v_array-nth-resolve-equal-indices n x a.type)))
@@ -1025,15 +1021,13 @@
 
 
 (fgl::def-fgl-rewrite v_array-len-when-bind-ty-satisfied
-  (b* (((t_array ta) (ty->desc ty))
-       ((arraylength_expr ta.index)))
+  (b* (((t_array ta) (ty->desc ty)))
     (implies (and (bind-ty-satisfied ty x)
                   (syntaxp (fgl::fgl-object-case ty :g-concrete))
                   (type_desc-case ta :t_array)
-                  (array_index-case ta.index :arraylength_expr)
-                  (int-literal-expr-p ta.index.length))
+                  (int-literal-expr-p ta.index))
              (equal (v_array-len x)
-                    (int-literal-expr->val ta.index.length))))
+                    (int-literal-expr->val ta.index))))
   :hints(("Goal" :in-theory (enable bind-ty-satisfied
                                     v_array-len)
           :expand ((ty-satisfied x ty)))))

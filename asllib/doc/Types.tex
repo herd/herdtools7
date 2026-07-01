@@ -720,14 +720,11 @@ In other words, we ignore the parenthesis.
 \hypertarget{enumerationtypeterm}{}
 The \emph{\enumerationtypeterm} defines a list of enumeration literals,
 also referred to as \emph{labels}, that act
-as global constants that can be compared for equality and inequality and used
-as indices in enumeration-indexed arrays.
+as global constants that can be compared for equality and inequality.
 %
 The type of an enumeration literal is the anonymous \enumerationtypeterm{}
 that defined the literal.
 
-
-%
 Unlike many languages, there is no ordering defined for enumeration literals
 and therefore enumeration types do not support ordering comparisons such as \verb|<=|.
 
@@ -803,28 +800,20 @@ show examples of ill-typed enumeration type declarations.
 %
 Arrays are sequences of values of a single given type.
 The syntax \verb|array [[expr]] of ty| declares a single-dimensional array of type \texttt{ty}
-with an index type derived from the expression \texttt{expr}.
+and number of elements given by \texttt{expr}.
 %
-ASL offers two kinds of arrays:
-\hypertarget{intarraytypeterm}{}
-\hypertarget{enumarraytypeterm}{}
-\begin{description}
-  \item[\Intarraytypeterm] represents a consecutive list of elements at positions $0$ up to,
-      but not including, the size
-      specified for the array. The array elements can be accessed via an \integertypeterm{}
-      that specifies the $0$-based position of the element to read/update.
-  \item[\Enumarraytypeterm] represents a dictionary-like data type where the keys are defined
-      by a given \enumerationtypeterm{}. The array elements can be accessed via values of the
-      \enumerationtypeterm{} specified for the array type.
-\end{description}
+An array type represents a consecutive list of elements at positions $0$ up to,
+but not including, the size
+specified for the array. The array elements can be accessed via an \integertypeterm{}
+that specifies the $0$-based position of the element to read/update.
 
 \RequirementDef{ArrayLengthImmutable}
 The length of an array cannot be modified.
 % NO_EXAMPLE
 
 \RequirementDef{ArrayLengthExpression}
-The length expression of an \intarraytypeterm{} must be a \symbolicallyevaluableterm{}
-expression whose \underlyingtypeterm{} is an \integertypeterm{} .
+The length expression of an array type must be a \symbolicallyevaluableterm{}
+expression whose \underlyingtypeterm{} is a \constrainedintegerterm{} type.
 
 \ExampleDef{Well-typed Array Types}
 In \listingref{typing-tarray}, all the uses of array types are well-typed.
@@ -839,15 +828,13 @@ In \listingref{typing-tarray}, all the uses of array types are well-typed.
 \RenderTypes[remove_hypertargets]{ty_array}
 
 
-\RenderType[remove_hypertargets]{array_index}
-
 \ASTRuleDef{Ty.TArray}
 \begin{mathpar}
 \inferrule{}{
   {
   \begin{array}{r}
     \buildty(\Nty(\Tarray, \Tllbracket, \punnode{\Nexpr}, \Trrbracket, \Tof, \punnode{\Nty})) \astarrow\\
-    \overname{\TArray(\ArrayLengthExpr(\astof{\vexpr}), \astof{\tty})}{\vastnode}
+    \overname{\TArray(\astof{\vexpr}, \astof{\tty})}{\vastnode}
   \end{array}
   }
 }
@@ -869,18 +856,6 @@ Similarly in \listingref{typing-tarray-bad2}, the array type for \verb|illegal_a
 \RenderProseAndFormally{annotate_type_t_array}
 \CodeSubsection{\TArrayBegin}{\TArrayEnd}{../Typing.ml}
 
-\TypingRuleDef{GetVariableEnum}
-\RenderRelation{get_variable_enum}
-
-\ExampleDef{Retrieving Enumeration Labels from Variable Expressions}
-\listingref{typing-getvariableenum} shows examples of retrieving
-enumeration labels from variable expressions.
-\ASLListing{Retrieving enumeration labels from expressions}{typing-getvariableenum}{\typingtests/TypingRule.GetVariableEnum.asl}
-
-
-\RenderProseAndFormally{get_variable_enum}
-
- %
 \RequirementDef{SymbolicallyEvaluable}
 An expression is \symbolicallyevaluableterm{} if its evaluation only involves
 the use of immutable values.

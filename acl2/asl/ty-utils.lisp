@@ -102,17 +102,6 @@
                   (implies (constraint_kind-case x :wellconstrained)
                            (int_constraintlist-resolved-p (wellconstrained->constraints x)))))))
 
-(define array_index-resolved-p ((x array_index-p))
-  (array_index-case x
-    :arraylength_expr (int-literal-expr-p x.length)
-    :otherwise t)
-  ///
-  (defthm array_index-resolved-p-implies
-    (implies (and (array_index-resolved-p x)
-                  (array_index-case x :arraylength_expr))
-             (int-literal-expr-p (arraylength_expr->length x)))))
-
-
 (defines ty-resolved-p
   (define ty-resolved-p ((x ty-p))
     :measure (ty-count x)
@@ -121,7 +110,7 @@
         :t_int (constraint_kind-resolved-p x.constraint)
         :t_bits (int-literal-expr-p x.expr)
         :t_tuple (tylist-resolved-p x.types)
-        :t_array (and (array_index-resolved-p x.index)
+        :t_array (and (int-literal-expr-p x.index)
                       (ty-resolved-p x.type))
         :t_record (typed_identifierlist-resolved-p x.fields)
         :t_exception (typed_identifierlist-resolved-p x.fields)
@@ -139,7 +128,7 @@
                       (implies (type_desc-case x :t_tuple)
                                (tylist-resolved-p (t_tuple->types x)))
                       (implies (type_desc-case x :t_array)
-                               (and (array_index-resolved-p (t_array->index x))
+                               (and (int-literal-expr-p (t_array->index x))
                                     (ty-resolved-p (t_array->type x))))
                       (implies (type_desc-case x :t_record)
                                (typed_identifierlist-resolved-p (t_record->fields x)))
@@ -273,13 +262,8 @@
         ((:t_enum :v_label) (member-equal x.val ty.elts))
         ((:t_tuple :v_array) (tuple-type-satisfied x.arr ty.types))
         ((:t_array :v_array)
-         :when (array_index-case ty.index :arraylength_expr)
-         (and (eql (len x.arr) (int-literal-expr->val (arraylength_expr->length ty.index)))
+         (and (eql (len x.arr) (int-literal-expr->val ty.index))
               (array-type-satisfied x.arr ty.type)))
-        ((:t_array :v_record)
-         :when (array_index-case ty.index :arraylength_enum)
-         (and (equal (omap::keys x.rec) (set::mergesort (arraylength_enum->elts ty.index)))
-              (array-type-satisfied (omap::values x.rec) ty.type)))
         ((:t_record :v_record)
          (and (no-duplicatesp-equal (typed_identifierlist->names ty.fields))
               (equal (omap::keys x.rec) (set::mergesort (typed_identifierlist->names ty.fields)))
@@ -440,22 +424,13 @@
         :t_tuple (b* (((mv ok vals) (tylist-satisfying-val x.types)))
                    (and ok
                         (v_array vals)))
-        :t_array (b* ((val (ty-satisfying-val x.type)))
-                   (array_index-case x.index
-                     :arraylength_expr
-                     (b* ((len (int-literal-expr->val x.index.length)))
-                       (if (eql 0 len)
-                           (v_array nil)
-                         (and (<= 0 len)
-                              val
-                              (v_array (make-list len :initial-element val)))))
-                     :arraylength_enum
-                     (if (atom x.index.elts)
-                         (v_record nil)
-                       (and val
-                            (v_record (omap::from-lists
-                                       x.index.elts
-                                       (make-list (len x.index.elts) :initial-element val)))))))
+        :t_array (b* ((val (ty-satisfying-val x.type))
+                      (len (int-literal-expr->val x.index)))
+                   (if (eql 0 len)
+                       (v_array nil)
+                     (and (<= 0 len)
+                          val
+                          (v_array (make-list len :initial-element val)))))
         :t_record
         (and (no-duplicatesp-equal (typed_identifierlist->names x.fields))
              (b* (((mv ok val) (typed_identifierlist-satisfying-val x.fields)))
@@ -656,15 +631,10 @@
         :t_bool t
         :t_enum (consp x.elts)
         :t_tuple (tylist-satisfiable x.types)
-        :t_array (array_index-case x.index
-                   :arraylength_expr
-                   (b* ((len (int-literal-expr->val x.index.length)))
-                     (or (eql 0 len)
-                         (and (<= 0 len)
-                              (ty-satisfiable x.type))))
-                   :arraylength_enum
-                   (or (atom x.index.elts)
-                       (ty-satisfiable x.type)))
+        :t_array (b* ((len (int-literal-expr->val x.index)))
+                   (or (eql 0 len)
+                       (and (<= 0 len)
+                            (ty-satisfiable x.type))))
         :t_record (and (no-duplicatesp-equal (typed_identifierlist->names x.fields))
                        (typed_identifierlist-satisfiable x.fields))
         :t_exception (and (no-duplicatesp-equal (typed_identifierlist->names x.fields))
@@ -1018,15 +988,9 @@
                               (v_label->val x)
                             (car ty.elts))))
         (:t_tuple (v_array (tuple-type-fix-val (v_array->arr x) ty.types)))
-        (:t_array (array_index-case ty.index
-                    :arraylength_expr
-                    (v_array (array-type-fix-val (nfix (int-literal-expr->val ty.index.length))
-                                                 (v_array->arr x)
-                                                 ty.type))
-                    :arraylength_enum
-                    (v_record (let ((keys (set::mergesort ty.index.elts)))
-                                (enumarray-type-fix-val
-                                 keys (v_record->rec x) ty.type)))))
+        (:t_array (v_array (array-type-fix-val (nfix (int-literal-expr->val ty.index))
+                                               (v_array->arr x)
+                                               ty.type)))
         (:t_record (v_record (record-type-fix-val (v_record->rec x) ty.fields)))
         (:t_exception (v_record (record-type-fix-val (v_record->rec x) ty.fields)))
         (:t_collection (v_record (record-type-fix-val (v_record->rec x) ty.fields)))
@@ -1063,22 +1027,6 @@
         nil
       (cons (ty-fix-val (and (consp x) (car x)) ty)
             (array-type-fix-val (1- len) (and (consp x) (cdr x)) ty))))
-
-  (define enumarray-type-fix-val ((keys identifierlist-p) (x val-imap-p) (ty ty-p))
-    :guard (and (ty-resolved-p ty)
-                (subsetp-equal keys (omap::keys x))
-                (array-type-satisfied (omap::values x) ty))
-    :measure (acl2::two-nats-measure (ty-count ty) (len keys))
-    :returns (new-x (And (val-imap-p new-x)
-                         (equal (omap::keys new-x) (mergesort (identifierlist-fix keys)))
-                         (implies (ty-satisfiable ty)
-                                  (array-type-satisfied (omap::values new-x) ty))))
-    (if (atom keys)
-        nil
-      (omap::update (identifier-fix (car keys))
-                    (ty-fix-val (omap::lookup (identifier-fix (car keys))
-                                              (val-imap-fix x)) ty)
-                    (enumarray-type-fix-val (cdr keys) x ty))))
 
   (define record-type-fix-val ((x val-imap-p) (fields typed_identifierlist-p))
     :guard (and (typed_identifierlist-resolved-p fields)
@@ -1243,18 +1191,6 @@
                          <call>
                          (:free (x ty) (array-type-fix-val 0 x ty)))))
       :fn array-type-fix-val)
-    (defret <fn>-when-satisfied
-      (implies (and (array-type-satisfied (omap::values (val-imap-fix x)) ty)
-                    (subsetp (identifierlist-fix keys) (omap::keys (val-imap-fix x))))
-               (equal new-x (omap::restrict (mergesort (identifierlist-fix keys))
-                                            (val-imap-fix x))))
-      :hints ('(:expand ((array-type-satisfied x ty)
-                         (identifierlist-fix keys)
-                         (:free (a b) (mergesort (cons a b)))
-                         <call>
-                         (:free (x ty) (array-type-fix-val 0 x ty)))
-                :in-theory (disable INSERT-IDENTIFIER-FIX-MERGESORT)))
-      :fn enumarray-type-fix-val)
     (defret <fn>-when-satisfied-aux
       (implies (record-type-satisfied x fields)
                (equal new-x
@@ -1590,16 +1526,8 @@
          :t_bits (t_bits (int-literal-expr-normalize x.expr) nil)
          :t_enum (t_enum (mergesort x.elts))
          :t_tuple (t_tuple (tuple-type-normalize x.types))
-         :t_array (array_index-case x.index
-                    :arraylength_expr (t_array (arraylength_expr (int-literal-expr-normalize x.index.length))
-                                               (ty-normalize x.type))
-                    :arraylength_enum (t_array (arraylength_enum x.index.name
-                                                                 (mergesort x.index.elts))
-                                               (if (consp x.index.elts)
-                                                   (ty-normalize x.type)
-                                                 ;; unimportant what the type is
-                                                 (change-ty x.type
-                                                            :desc (t_bool)))))
+         :t_array (t_array (int-literal-expr-normalize x.index)
+                           (ty-normalize x.type))
          :t_record
          (t_record
           (record-type-normalize (mergesort (typed_identifierlist->names x.fields))
@@ -1847,9 +1775,7 @@
          :t_int (t_int (constraint_kind-normalize x.constraint))
          :t_bits (t_bits (int-literal-expr-normalize x.expr) nil)
          :t_tuple (t_tuple (tuple-type-norm-posns x.types))
-         :t_array (t_array (array_index-case x.index
-                             :arraylength_expr (arraylength_expr (int-literal-expr-normalize x.index.length))
-                             :arraylength_enum x.index)
+         :t_array (t_array (int-literal-expr-normalize x.index)
                            (ty-norm-posns x.type))
          :t_record
          (t_record
@@ -1900,11 +1826,6 @@
              new-x)
       :hints ('(:expand ((:free (len ty) <call>))))
       :fn array-type-fix-val)
-    (defret <fn>-of-ty-norm-posns
-      (equal (enumarray-type-fix-val keys x (ty-norm-posns ty))
-             new-x)
-      :hints ('(:expand ((:free (ty) <call>))))
-      :fn enumarray-type-fix-val)
     (defret <fn>-of-ty-norm-posns
       (equal (record-type-fix-val x (record-type-norm-posns fields))
              new-x)
