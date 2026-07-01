@@ -1786,10 +1786,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
            - `st`, states
         *)
         let regs,inits,cs,st = begin match d,atom with
-        | R,None ->
+        | R,None
+        | R,Some (Pte (None,Some _,None),None) ->
             let r,init,cs,st = LDR.emit_load st p init loc in
             Some r,init,cs,st
-        | R,Some (Acq _,None) ->
+        | R,Some (Acq _,None)
+        | R,Some (Pte (None,Some _,Some PteAcq),None) ->
             let r,init,cs,st = LDAR.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (Acq a,Some (sz,o)) ->
@@ -1805,7 +1807,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let r,init,cs,st = L.emit_load st p init loc in
             let cs2 = emit_ldr_addon a r in
             Some r,init,cs@pseudo cs2,st
-        | R,Some (AcqPc _,None) ->
+        | R,Some (AcqPc _,None)
+        | R,Some (Pte (None,Some _,Some PteAcqPc),None) ->
             let r,init,cs,st = LDAPR.emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (AcqPc a,Some (sz,o)) ->
@@ -1863,11 +1866,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let r,init,cs,st = emit_ldp (pair_opt_to_ld opt) idx st p init loc in
           Some r,init,cs,st
         | R,Some (Pair _,Some _) -> assert false
-        | W,None ->
+        | W,None
+        | W,Some (Pte (None,Some _,None),None) ->
             let init,cs,st =
               STR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
             None,init,cs,st
-        | W,Some (Rel _,None) ->
+        | W,Some (Rel _,None)
+        | W,Some (Pte (None,Some _,Some PteRel),None) ->
             let init,cs,st =
               STLR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
             None,init,cs,st
@@ -1905,46 +1910,42 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           None,init,cs,st
         | W,Some (Pair _,Some _) -> assert false
         | (R|W), Some (Instr, _) -> Warn.fatal "Instr annotation did not create code location %s" (C.debug_evt e)
-        | R,Some (Pte (Read|ReadAcq|ReadAcqPc as rk),None) ->
-            let emit = match rk with
-            | Read -> LDR.emit_load_var
-            | ReadAcq -> LDAR.emit_load_var
-            | ReadAcqPc -> LDAPR.emit_load_var
-            | _ -> assert false in
+        | R,Some (Pte (Some Read, _, acc),None) ->
+            let emit = match acc with
+            | None -> LDR.emit_load_var
+            | Some PteAcq -> LDAR.emit_load_var
+            | Some PteAcqPc -> LDAPR.emit_load_var
+            | Some PteRel -> Warn.fatal "No PTE load release" in
             let r,init,cs,st = emit A64.V64 st p init (Misc.add_pte loc) in
             Some r,init,cs,st
         (* A special case for TTHM HA on read. *)
-        | R,Some (Pte (Set pte),None) when WPTESet.mem HA pte ->
-            let r,init,cs,st = LDR.emit_load st p init loc in
+        | R,Some (Pte (Some (Set pte), _, acc),None) when WPTESet.mem HA pte ->
+            let emit = match acc with
+            | None -> LDR.emit_load
+            | Some PteAcq -> LDAR.emit_load
+            | Some PteAcqPc -> LDAPR.emit_load
+            | Some PteRel -> Warn.fatal "No PTE load release" in
+            let r,init,cs,st = emit st p init loc in
             Some r,init,cs,st
         (* Special cases for TTHM.
            - `HA` is on both read and write
            - `HD` is only on write *)
-        | R,Some(Pte (Set pte),None) when pte = WPTESet.singleton HA ->
-            let r,init,cs,st = LDR.emit_load st p init loc in
-            Some r,init,cs,st
-        | R,Some(Pte ReadHAAcq,None) ->
-            let r,init,cs,st = LDAR.emit_load st p init loc in
-            Some r,init,cs,st
-        | R,Some(Pte ReadHAAcqPc,None) ->
-            let r,init,cs,st = LDAPR.emit_load st p init loc in
-            Some r,init,cs,st
-        | W,Some (Pte (Set pte),None) when is_tthm pte ->
+        | W,Some (Pte (Some (Set pte), _, acc),None) when is_tthm pte ->
+            let emit = match acc with
+            | None -> STR.emit_store
+            | Some PteRel -> STLR.emit_store
+            | Some (PteAcq|PteAcqPc) -> Warn.fatal "No PTE store acquire" in
             let init,cs,st =
-              STR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
-            None,init,cs,st
-        | W,Some (Pte (SetRel pte),None) when is_tthm pte ->
-            let init,cs,st =
-              STLR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
+              emit st p init loc (Value.to_int e.C.v) None C.evt_null in
             None,init,cs,st
         (* END special cases for TTHM. *)
-        | W,Some (Pte (Set _),None) ->
+        | W,Some (Pte (Some (Set _), _, acc),None) ->
+            let is_release = match acc with
+            | None -> false
+            | Some PteRel -> true
+            | Some (PteAcq|PteAcqPc) -> Warn.fatal "No PTE store acquire" in
             let init,cs,st =
-              emit_set_pteval false st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
-            None,init,cs,st
-        | W,Some (Pte (SetRel _),None) ->
-            let init,cs,st =
-              emit_set_pteval true st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
+              emit_set_pteval is_release st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
             None,init,cs,st
         | d,Some (Pte _,_ as a) ->
             Warn.fatal
@@ -2287,11 +2288,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               Some (a,Some (MachSize.S128,0))
             | _ -> Some (a,m) end in
           let regs,inits,cs,st = begin match d,atom with
-          | R,None ->
+          | R,None
+          | R,Some (Pte (None,Some _,None),None) ->
               let r,init,cs,st =
                 LDR.emit_load_idx_var vloc vdep st p init loc r2 in
               Some r,init, pseudo cs0@cs,st
-          | R,Some (Acq _,None) ->
+          | R,Some (Acq _,None)
+          | R,Some (Pte (None,Some _,Some PteAcq),None) ->
               let r,init,cs,st =
                 LDAR.emit_load_idx_var vloc vdep st p init loc r2 in
               Some r,init, pseudo cs0@cs,st
@@ -2304,7 +2307,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let r,init,cs,st = load st p init loc r2 in
               let cs2 = emit_ldr_addon a r in
               Some r,init,pseudo cs0@cs@pseudo cs2,st
-          | R,Some (AcqPc _,None) ->
+          | R,Some (AcqPc _,None)
+          | R,Some (Pte (None,Some _,Some PteAcqPc),None) ->
               let r,init,cs,st =
                 LDAPR.emit_load_idx_var vloc vdep st p init loc r2 in
               Some r,init, pseudo cs0@cs,st
@@ -2361,7 +2365,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 emit_ldp_idx_var (pair_opt_to_ld opt) idx vdep st p init loc r2 in
               Some r,init, pseudo cs0@cs,st
           | R,Some ((Neon _|Pair _),Some _) -> assert false
-          | W,None ->
+          | W,None
+          | W,Some (Pte (None,Some _,None),None) ->
               let module STR =
                 STORE
                   (struct
@@ -2372,7 +2377,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = STR.emit_store_idx st p init loc r2 (Value.to_int e.C.v) None C.evt_null in
               None,init,pseudo cs0@cs,st
-          | W,Some (Rel _,None) ->
+          | W,Some (Rel _,None)
+          | W,Some (Pte (None,Some _,Some PteRel),None) ->
               let module STLR =
                 STORE
                   (struct
@@ -2444,21 +2450,21 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 emit_stp_idx_var (pair_opt_to_st opt) idx vdep st p init loc e r2 in
               None,init, pseudo cs0@cs,st
           | W,Some (Pair _,Some _) -> assert false
-          | (W,(Some (Pte (Set _),None))) ->
+          | (W,(Some (Pte (Some (Set _), _, acc),None))) ->
+              let is_release = match acc with
+              | None -> false
+              | Some PteRel -> true
+              | Some (PteAcq|PteAcqPc) -> Warn.fatal "No PTE store acquire" in
               let init,cs,st =
-                emit_set_pteval_idx false vdep r2 st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
+                emit_set_pteval_idx is_release vdep r2 st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
               None,init,pseudo cs0@cs,st
-          | (W,(Some (Pte (SetRel _),None))) ->
-              let init,cs,st =
-                emit_set_pteval_idx true vdep r2 st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
-              None,init,pseudo cs0@cs,st
-          | (R,(Some (Pte (Read|ReadAcq|ReadAcqPc as rk),None)))
+          | (R,(Some (Pte (Some Read, _, acc),None)))
             ->
-              let emit = match rk with
-              | Read -> LDR.emit_load_var_reg
-              | ReadAcq -> LDAR.emit_load_var_reg
-              | ReadAcqPc -> LDAPR.emit_load_var_reg
-              | _ -> assert false in
+              let emit = match acc with
+              | None -> LDR.emit_load_var_reg
+              | Some PteAcq -> LDAR.emit_load_var_reg
+              | Some PteAcqPc -> LDAPR.emit_load_var_reg
+              | Some PteRel -> Warn.fatal "No PTE load release" in
               let loc = Misc.add_pte loc in
               let rA,init,st = U.next_init st p init loc in
               let rA,cs1,st = do_sum_addr vdep st rA r2 in
@@ -2587,7 +2593,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 let cs2 = pseudo cs0 in
                 let addi = [addi r2 r2 e.C.ord] in
                 r2,cs2,init,st,addi
-            | Some (Pte (Set pte|SetRel pte),None) when (not @@ is_tthm pte) ->
+            | Some (Pte (Some (Set pte), _, _),None) when (not @@ is_tthm pte) ->
                 let rA,init,st = U.emit_pteval st p init (Value.to_pte e.C.v) in
                 let cs,st =
                   match vdep with
@@ -2621,11 +2627,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             | _ -> r2,cs2@pseudo addi,init,st in
           let loc = add_tag loc e.C.tag in
           begin match atom with
-          | None ->
+          | None
+          | Some (Pte (None,Some _,None),None) ->
               let init,cs,st =
                 STR.emit_store_reg st p init loc r2 None C.evt_null in
               None,init,cs2@cs,st
-          | Some (Rel _,None) ->
+          | Some (Rel _,None)
+          | Some (Pte (None,Some _,Some PteRel),None) ->
               let init,cs,st =
                 STLR.emit_store_reg st p init loc r2 None C.evt_null in
               None,init,cs2@cs,st
@@ -2668,22 +2676,27 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (Tag, None) ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
-          | Some (Pte (Set pte),None) when is_tthm pte ->
+          | Some (Pte (Some (Set pte), _, acc),None) when is_tthm pte ->
+              let emit = match acc with
+              | None -> STR.emit_store_reg
+              | Some PteRel -> STLR.emit_store_reg
+              | Some (PteAcq|PteAcqPc) -> Warn.fatal "No PTE store acquire" in
               let init,cs,st =
-                STR.emit_store_reg st p init loc r2 None C.evt_null in
+                emit st p init loc r2 None C.evt_null in
               None,init,cs2@cs,st
-          | Some (Pte (SetRel pte),None) when is_tthm pte ->
-              let init,cs,st =
-                STLR.emit_store_reg st p init loc r2 None C.evt_null in
+          | Some (Pte (Some (Set _), _, acc),None) ->
+              let is_release = match acc with
+              | None -> false
+              | Some PteRel -> true
+              | Some (PteAcq|PteAcqPc) -> Warn.fatal "No PTE store acquire" in
+              let init,cs,st = emit_set_pteval_reg is_release st p init r2 (Misc.add_pte loc) in
               None,init,cs2@cs,st
-          | Some (Pte (Set _),None) ->
-              let init,cs,st = emit_set_pteval_reg false st p init r2 (Misc.add_pte loc) in
-              None,init,cs2@cs,st
-          | Some (Pte (SetRel _),None) ->
-              let init,cs,st = emit_set_pteval_reg true st p init r2 (Misc.add_pte loc) in
-              None,init,cs2@cs,st
-          | Some ((Pte _,Some _)|(Pte (Read|ReadAcq|ReadAcqPc|ReadHAAcq|ReadHAAcqPc),_))
+          | Some ((Pte _,Some _)
+                 |(Pte (None,None,_),_)
+                 |(Pte (Some Read,_,_),_))
             -> assert false
+          | Some (Pte (None,Some _,Some (PteAcq|PteAcqPc)),None) ->
+              Warn.fatal "No PTE store acquire"
           | Some (Plain _,None) -> assert false
           | Some (Tag,Some _) -> assert false
           | Some (CapaTag,None) ->
@@ -2915,8 +2928,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       (* collect distinct tthm *)
       let tthm_value = C.fold ( fun node acc ->
         match node.C.edge.E.a1 with
-        | Some(Pte (Set e|SetRel e), _) when is_tthm e -> WPTESet.union e acc
-        | Some(Pte (ReadHAAcq|ReadHAAcqPc), _) -> WPTESet.add HA acc
+        | Some(Pte (Some (Set e), _, _), _) when is_tthm e -> WPTESet.union e acc
         | _ -> acc
         ) n WPTESet.empty
       |> WPTESet.pp_str " " WPTE.pp in
