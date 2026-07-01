@@ -36,6 +36,7 @@ module type S = sig
 
 (* Dependencies *)
   type dp
+  val equal_dp : dp -> dp -> bool
   val pp_dp : dp -> string
   val fold_dpr : (dp -> 'a -> 'a) -> 'a -> 'a
   val fold_dpw : (dp -> 'a -> 'a) -> 'a -> 'a
