@@ -47,7 +47,8 @@ module type Config = sig
 end
 
 module type OneTest = sig
-  val from_file : hash_env -> string -> out_channel -> answer
+  val from_file :
+    bool (* compileonly *) -> hash_env -> string -> out_channel -> answer
 end
 
 
@@ -208,7 +209,7 @@ let collect_flags names =
     Misc.fold_argv_or_stdin
       (fun name some_flags ->
          let ans =
-          try CT.from_file StringMap.empty name devnull
+          try CT.from_file true StringMap.empty name devnull
           with
           | e ->
               if Cfg.nocatch then raise e ;
@@ -246,7 +247,7 @@ let run_tests names flags out_chan =
                  Warn.fatal "diferent architectures in the same batch: %s (file %s) vs. %s"
                    (Archs.pp arch) name (Archs.pp a) in
          let ans =
-          try CT.from_file hashes name out_chan
+          try CT.from_file false hashes name out_chan
           with
           | e ->
               if Cfg.nocatch then raise e ;

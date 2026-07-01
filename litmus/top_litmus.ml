@@ -247,7 +247,7 @@ end = struct
 
       let compile
             parse count_procs compile allocate
-            hash_env
+            compileonly hash_env
             name in_chan out_chan splitted =
         try begin
             check_variant Variant_litmus.Self splitted.Splitter.arch ;
@@ -291,7 +291,8 @@ end = struct
                       Obj.dump flags in
                     ()
                   end ;
-                R.run name out_chan doc allocated src ;
+                if not compileonly then
+                  R.run name out_chan doc allocated src ;
                 Completed
                   { arch = A'.arch; doc; src; fullhash = hash ;
                     nprocs; flags; }
@@ -398,7 +399,7 @@ end = struct
 
   module SP = Splitter.Make(LexConfig)
 
-  let from_chan hash_env name in_chan out_chan =
+  let from_chan compileonly hash_env name in_chan out_chan =
     (* First split the input file in sections *)
     let { Splitter.arch=arch ; _ } as splitted =
       SP.split name in_chan in
@@ -607,14 +608,14 @@ end = struct
              X.compile
           | `CPP | `LISA | `JAVA | `ASL | `BPF -> assert false
         in
-        aux arch hash_env name in_chan out_chan splitted
+        aux arch compileonly hash_env name in_chan out_chan splitted
       end else begin (* Excluded explicitely, (check_tname), do not warn *)
         Absent
       end
 
-  let from_file hash_env name out_chan =
+  let from_file compileonly hash_env name out_chan =
     Misc.input_protect
-      (fun in_chan -> from_chan hash_env name in_chan out_chan)
+      (fun in_chan -> from_chan compileonly hash_env name in_chan out_chan)
       name
 
   (* Call generic tar builder/runner *)
