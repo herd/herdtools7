@@ -4,7 +4,7 @@
 ;;
 ;; SPDX-FileCopyrightText: Copyright 2025 Arm Limited and/or its affiliates <open-source-office@arm.com>
 ;; SPDX-License-Identifier: BSD-3-Clause
-;; 
+;;
 ;;****************************************************************************;;
 ;; Disclaimer:                                                                ;;
 ;; This material covers both ASLv0 (viz, the existing ASL pseudocode language ;;
@@ -22,40 +22,44 @@
 
 (in-package "ASL")
 
-;; TODO: Document and add the stdlib proofs.
-
-(include-book "toplevel")
-(include-book "trace-subset")
-(include-book "stack-preserved")
-(include-book "stack-normalize")
-(include-book "proofs/stdlib/top")
-(include-book "xdoc/save" :dir :system)
-(include-book "oslib/date" :dir :system)
-(include-book "centaur/fty/top" :dir :system)
-(include-book "fgl/asl-fgl-top")
-(include-book "find")
-(defttag :manual-info)
-
-(value-triple (acl2::tshell-ensure))
-(defconsts (*herdtools-git-hash* state)
-  (b* (((mv ?ok lines state)
-        (acl2::tshell-call "git rev-parse HEAD")))
-    (mv (subseq (car lines) 0 8) state)))
-
-(defconsts (*acl2-git-hash* state)
-  (b* ((dir (acl2::include-book-dir :system state))
-       ((mv ?ok lines state)
-        (acl2::tshell-call (concatenate 'string
-                                        "cd " dir "; git rev-parse HEAD"))))
-    (mv (subseq (car lines) 0 8) state)))
-
-(defconsts (*manual-date* state) (oslib::date))
+(include-book "interp")
+(local (std::add-default-post-define-hook :fix))
 
 
-(defxdoc acl2::top
-  :short "ACL2 ASL interpreter manual"
-  :long "<p>This manual was built on @(`(:raw *manual-date*)`) from Herdtools7 git
-version @(`(:raw *herdtools-git-hash*)`) and ACL2 git version @(`(:raw
-*acl2-git-hash*)`). See @(see asl) for a starting point.</p>")
 
-(xdoc::save "./manual" :error t :redef-okp t)
+
+
+(define termination-error-p ((x eval_result-p))
+  :returns (errp)
+  (eval_result-case x
+    :ev_error
+    (and (member-equal x.desc
+                       '("DE_LE: Recursion limit ran out"
+                         "DE_LE: Loop limit ran out"
+                         "DE_LE: Recursion limit ran out"
+                         "Clock ran out resolving named type"))
+         t)
+    :otherwise nil)
+  ///
+  (defthm termination-error-p-of-ev_error
+    (implies (syntaxp (quotep desc))
+             (iff (termination-error-p (ev_error desc data backtrace))
+                  (member-equal (acl2::str-fix desc)
+                                '("DE_LE: Recursion limit ran out"
+                                  "DE_LE: Loop limit ran out"
+                                  "DE_LE: Recursion limit ran out"
+                                  "Clock ran out resolving named type")))))
+
+  (defthm termination-error-p-when-not-ev_error
+    (implies (not (equal (eval_result-kind x) :ev_error))
+             (not (termination-error-p x))))
+
+  (defthm termination-error-p-of-init-backtrace
+    (iff (termination-error-p (init-backtrace x storage pos))
+         (termination-error-p x))
+    :hints(("Goal" :in-theory (enable init-backtrace))))
+
+  (defthm termination-error-p-of-change
+    (implies (eval_result-case x :ev_error)
+             (iff (termination-error-p (ev_error (ev_error->desc x) data backtrace))
+                  (termination-error-p x)))))

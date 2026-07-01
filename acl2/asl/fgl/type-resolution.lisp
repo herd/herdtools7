@@ -325,7 +325,7 @@
                (:t_string (v_string (v_string->val x)))
                (:t_bool (v_bool (and (v_bool->val x) t)))
                (:T_ENUM (let* ((elts ty.desc.elts)
-                               (rev-elts (acl2::rev elts))
+                               (rev-elts (acl2::rev (mergesort elts)))
                                (val (v_label->val x))
                                (ignore (fgl::trigger-constraints
                                         ;; Why do we skip the first element? see above.
@@ -652,7 +652,7 @@
                   (fgl::abort-rewrite (val-imap-lookup key (v_record->rec (ty-fix-val x ty)))))))
              ;; note: this hide is here so that if x is a variable with a ty-satisfied hyp,
              ;; its replacement with its ty-fix-val won't loop with this rule.
-             (ty-fix-val (val-imap-lookup key (v_record->rec (fgl::fgl-hide x))) type)))
+             (ty-fix-val (fgl::fgl-hide (val-imap-lookup key (v_record->rec x))) type)))
     :hints (("goal" :expand ((ty-fix-val x ty)))))
 
   (fgl::def-fgl-rewrite val-imap-has-key-rec-of-ty-fix-val

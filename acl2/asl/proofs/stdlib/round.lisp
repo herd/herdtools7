@@ -135,7 +135,7 @@
   :function "RoundTowardsZero"
   :args (val)
   :safe-clock (+ 1 (ilog2-safe-clock (abs val.val)))
-  :hyps (<= (ilog2-safe-clock (abs val.val)) (expt 2 128))
+  :measure-hyps (<= (ilog2-safe-clock (abs val.val)) (expt 2 128))
   :return-values ((v_int (truncate val.val 1)))
   :enable (abs)
   :disable (truncate)
@@ -186,7 +186,7 @@
   :function "RoundUp"
   :args (val)
   :safe-clock (+ 2 (ilog2-safe-clock (abs val.val)))
-  :hyps (<= (ilog2-safe-clock (abs val.val)) (expt 2 128))
+  :measure-hyps (<= (ilog2-safe-clock (abs val.val)) (expt 2 128))
   :return-values ((v_int (ceiling val.val 1)))
   :enable (abs)
   :prepwork ((local (in-theory (disable abs)))))
@@ -196,7 +196,7 @@
   :function "RoundDown"
   :args (val)
   :safe-clock (+ 2 (ilog2-safe-clock (abs val.val)))
-  :hyps (<= (ilog2-safe-clock (abs val.val)) (expt 2 128))
+  :measure-hyps (<= (ilog2-safe-clock (abs val.val)) (expt 2 128))
   :return-values ((v_int (floor val.val 1)))
   :enable (abs)
   :prepwork ((local (in-theory (disable abs)))))
