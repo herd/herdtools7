@@ -66,14 +66,12 @@ module SemanticsRule = struct
     | Slices
     | Slice
     | PAll
-    | PAny
     | PGeq
     | PLeq
-    | PNot
     | PRange
     | PSingle
     | PMask
-    | PTuple
+    | PatternListAndKind
     | LDDiscard
     | LDVar
     | LDTuple
@@ -156,14 +154,12 @@ module SemanticsRule = struct
     | Slices -> "Slices"
     | Slice -> "Slice"
     | PAll -> "PAll"
-    | PAny -> "PAny"
     | PGeq -> "PGeq"
     | PLeq -> "PLeq"
-    | PNot -> "PNot"
     | PRange -> "PRange"
     | PSingle -> "PSingle"
     | PMask -> "PMask"
-    | PTuple -> "PTuple"
+    | PatternListAndKind -> "PatternListAndKind"
     | LDDiscard -> "LDDiscard"
     | LDVar -> "LDVar"
     | LDTuple -> "LDTuple"
@@ -249,14 +245,12 @@ module SemanticsRule = struct
       Slices;
       Slice;
       PAll;
-      PAny;
       PGeq;
       PLeq;
-      PNot;
       PRange;
       PSingle;
       PMask;
-      PTuple;
+      PatternListAndKind;
       LDDiscard;
       LDVar;
       LDTuple;
@@ -386,14 +380,11 @@ module TypingRule = struct
     | LEConcat
     | Slice
     | PAll
-    | PAny
     | PGeq
     | PLeq
-    | PNot
     | PRange
     | PSingle
     | PMask
-    | PTuple
     | LDDiscard
     | LDVar
     | LDTuple
@@ -575,14 +566,11 @@ module TypingRule = struct
     | LEUndefIdentV1 -> "LEUndefIdentV1"
     | Slice -> "Slice"
     | PAll -> "PAll"
-    | PAny -> "PAny"
     | PGeq -> "PGeq"
     | PLeq -> "PLeq"
-    | PNot -> "PNot"
     | PRange -> "PRange"
     | PSingle -> "PSingle"
     | PMask -> "PMask"
-    | PTuple -> "PTuple"
     | LDDiscard -> "LDDiscardNone"
     | LDVar -> "LDVar"
     | LDUninitialisedVar -> "LDUninitialisedVar"

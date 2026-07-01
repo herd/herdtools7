@@ -921,8 +921,8 @@ ast expr { "expression" } =
     { "the tuple expression for the components given by {components}" }
     | E_Arbitrary(type: ty)
     { "the arbitrary value choice expression for {type}" }
-    | E_Pattern(discriminant: expr, pattern: pattern)
-    { "the pattern expression for the discriminant given by {discriminant} and {pattern}" }
+    | E_Pattern(discriminant: expr, patterns: list0(pattern), pattern_kind: pattern_kind)
+    { "the pattern expression for the discriminant given by {discriminant}, pattern list {patterns}, and pattern kind {pattern_kind}" }
 
 ////////////////////////////////////////////////
 // Typed AST
@@ -975,11 +975,10 @@ render expr_cond = expr(E_Cond);
 render expr_getarray = expr(E_GetArray);
 render expr_getfield = expr(E_GetField);
 render expr_getfields = expr(E_GetFields);
+render expr_epattern = expr(E_Pattern);
 render expr_record = expr(E_Record);
 render expr_tuple = expr(E_Tuple);
 render expr_arbitrary = expr(E_Arbitrary);
-render expr_pattern = expr(E_Pattern);
-
 render typed_expr { lhs_hypertargets = false } = expr(E_GetItem, E_Array, E_EnumArray, E_GetEnumArray, E_GetCollectionFields);
 render expr_array = expr(E_Array, E_EnumArray);
 
@@ -995,22 +994,23 @@ constant x_bit
 ast pattern { "pattern" } =
     | Pattern_All
     { "the match-all pattern" }
-    | Pattern_Any(patterns: list0(pattern))
-    { "the match-any pattern for {patterns}" }
     | Pattern_Geq(subexpression: expr)
     { "the greater-or-equal pattern for {subexpression}" }
     | Pattern_Leq(subexpression: expr)
     { "the less-or-equal pattern for {subexpression}" }
     | Pattern_Mask(mask_constant: list0(constants_set(zero_bit, one_bit, x_bit)))
     { "the mask pattern for the mask given by {mask_constant}" }
-    | Pattern_Not(subpattern: pattern)
-    { "the negation pattern for {subpattern}" }
     | Pattern_Range(lower: expr, upper: expr)
     { "the range pattern for the low expression given by {lower} and high expression given by {upper}" }
     | Pattern_Single(subexpression: expr)
     { "the single-expression pattern for {subexpression}" }
-    | Pattern_Tuple(patterns:list0(pattern))
-    { "the tuple pattern for {patterns}" }
+;
+
+ast pattern_kind { "pattern kind" } =
+    | Positive
+    { "the positive pattern kind" }
+    | Negative
+    { "the negative pattern kind" }
 ;
 
 ast slice
@@ -1269,10 +1269,7 @@ render pattern_range = pattern(Pattern_Range);
 render pattern_leq = pattern(Pattern_Leq);
 render pattern_geq = pattern(Pattern_Geq);
 render pattern_mask = pattern(Pattern_Mask);
-render pattern_tuple = pattern(Pattern_Tuple);
-render pattern_any = pattern(Pattern_Any);
-render pattern_not = pattern(Pattern_Not);
-
+render pattern_kind = pattern_kind(Positive, Negative);
 render ty_real = ty(T_Real);
 render ty_string = ty(T_String);
 render ty_bool = ty(T_Bool);
@@ -1424,11 +1421,11 @@ constant label_S_Print : ASTLabels { math_macro = \SPrint };
 
 ast case_alt { "case alternative" } =
     [
-      case_alt_pattern: pattern { math_macro = \casealtpattern },
+      case_alt_pattern: (patterns: list0(pattern), pattern_kind: pattern_kind) { math_macro = \casealtpattern },
       where: option(expr),
       case_alt_stmt: stmt { math_macro = \casealtstmt }
     ]
-    { "the \casealternativeterm{} for the pattern {case_alt_pattern},
+    { "the \casealternativeterm{} for the pattern list and kind {case_alt_pattern},
         optional \texttt{where} expression {where},
         and statement {case_alt_stmt}"
     }
@@ -2770,12 +2767,12 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
   }
 
   case EPattern {
-    e =: E_Pattern(e1, pat);
+    e =: E_Pattern(e1, ps, pk);
     annotate_expr(tenv, e1) -> (t_e2, e2, ses_e);
-    annotate_pattern(tenv, t_e2, pat) -> (pat', ses_pat);
+    annotate_pattern_list_and_kind(tenv, t_e2, ps, pk) -> (ps', pk', ses_pat);
     ses := union(ses_e, ses_pat);
     --
-    (T_Bool, E_Pattern(e2, pat'), ses);
+    (T_Bool, E_Pattern(e2, ps', pk'), ses);
   }
 
   case EArbitrary {
@@ -3259,9 +3256,9 @@ semantics relation eval_expr(env: envs, e: expr) ->
   }
 
   case EPattern {
-    e =: E_Pattern(e1, p);
+    e =: E_Pattern(e1, ps, pk);
     eval_expr(env, e1) -> ResultExpr((v1, g1), new_env);
-    eval_pattern(env, v1, p) -> ResultPattern(v, g2);
+    eval_pattern_list_and_kind(env, v1, ps, pk) -> ResultPattern(v, g2);
     g := ordered_data(g1, g2);
     --
     ResultExpr((v, g), new_env);
@@ -5353,34 +5350,6 @@ typing relation annotate_pattern(tenv: static_envs, t: ty, p: pattern) ->
     (Pattern_Mask(m), empty_set);
   }
 
-  case tuple {
-    p =: Pattern_Tuple(li);
-    get_structure(tenv, t) -> t_struct;
-    te_check(ast_label(t_struct) = label_T_Tuple, TE_UT) -> True;
-    t_struct =: T_Tuple(ts);
-    te_check(same_length(li, ts), TE_UT) -> True;
-    INDEX(i, li: annotate_pattern(tenv, ts[i], li[i]) -> (li'[i], xs[i]));
-    new_li := li';
-    ses := union_list(xs);
-    --
-    (Pattern_Tuple(new_li), ses);
-  }
-
-  case any {
-    p =: Pattern_Any(li);
-    INDEX(i, li: annotate_pattern(tenv, t, li[i]) -> (new_l[i], xs[i]));
-    new_li := new_l;
-    ses := union_list(xs);
-    --
-    (Pattern_Any(new_li), ses);
-  }
-
-  case neg {
-    p =: Pattern_Not(q);
-    annotate_pattern(tenv, t, q) -> (new_q, ses);
-    --
-    (Pattern_Not(new_q), ses);
-  }
 ;
 
 render rule annotate_pattern_all = annotate_pattern(all);
@@ -5389,9 +5358,24 @@ render rule annotate_pattern_range = annotate_pattern(range);
 render rule annotate_pattern_leq = annotate_pattern(leq);
 render rule annotate_pattern_geq = annotate_pattern(geq);
 render rule annotate_pattern_mask = annotate_pattern(mask);
-render rule annotate_pattern_tuple = annotate_pattern(tuple);
-render rule annotate_pattern_any = annotate_pattern(any);
-render rule annotate_pattern_neg = annotate_pattern(neg);
+
+typing relation annotate_pattern_list_and_kind(tenv: static_envs, t: ty, ps: list0(pattern), pk: pattern_kind) ->
+         (new_ps: list0(pattern), new_pk: pattern_kind, ses: powerset(TSideEffect)) | type_error
+{
+  "annotates the pattern list {ps} with pattern kind {pk} in the \staticenvironmentterm{}
+  {tenv} given a type {t}, resulting in {new_ps}, {new_pk}, and the inferred
+  \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError.",
+  prose_transition = "annotating {ps} with {pk} and {t} in {tenv} yields",
+} =
+  case annotate {
+    INDEX(i, ps: annotate_pattern(tenv, t, ps[i]) -> (new_ps[i], xs[i]));
+    ses := union_list(xs);
+    --
+    (new_ps, pk, ses);
+  }
+;
+
+render rule annotate_pattern_list_and_kind = annotate_pattern_list_and_kind(annotate);
 
 semantics relation eval_pattern(env: envs, v: native_value, p: pattern) -> ResultPattern(b: tbool, new_g: XGraphs) | TDynError | TDiverging
 {
@@ -5461,34 +5445,6 @@ semantics relation eval_pattern(env: envs, v: native_value, p: pattern) -> Resul
     }
   }
 
-  case PTuple {
-    p =: Pattern_Tuple(ps);
-    INDEX(i, ps: get_index(i, v) -> values[i]);
-    ( INDEX(i, ps: eval_pattern(env, values[i], ps[i]) -> ResultPattern(nvbool(bs[i]), gs[i])) )
-    { ([_]) };
-    all_patterns_match := list_and(bs);
-    g := parallel_graphs(gs);
-    --
-    ResultPattern(nvbool(all_patterns_match), g);
-  }
-
-  case PAny {
-    p =: Pattern_Any(ps);
-    INDEX(i, ps: eval_pattern(env, v, ps[i]) -> ResultPattern(nvbool(bs[i]), gs[i]))
-    { [_] };
-    any_pattern_matches := list_or(bs);
-    g := parallel_graphs(gs);
-    --
-    ResultPattern(nvbool(any_pattern_matches), g);
-  }
-
-  case PNot {
-    p =: Pattern_Not(p1);
-    eval_pattern(env, v, p1) -> ResultPattern(b', new_g);
-    eval_unop(BNOT, b') -> b;
-    --
-    ResultPattern(native_value_as_tbool(b), new_g);
-  }
 ;
 
 render rule eval_pattern_PAll = eval_pattern(PAll);
@@ -5497,9 +5453,25 @@ render rule eval_pattern_PRange = eval_pattern(PRange);
 render rule eval_pattern_PLeq = eval_pattern(PLeq);
 render rule eval_pattern_PGeq = eval_pattern(PGeq);
 render rule eval_pattern_PMask = eval_pattern(PMask);
-render rule eval_pattern_PTuple = eval_pattern(PTuple);
-render rule eval_pattern_PAny = eval_pattern(PAny);
-render rule eval_pattern_PNot = eval_pattern(PNot);
+
+semantics relation eval_pattern_list_and_kind(env: envs, v: native_value, ps: list0(pattern), pk: pattern_kind) ->
+  ResultPattern(b: tbool, new_g: XGraphs) | TDynError | TDiverging
+{
+  prose_description = "determines whether a value {v} matches the pattern list
+                       {ps} with pattern kind {pk} in the environment {env},
+                       resulting in either the \hyperlink{type-ResultPattern}{pattern result configuration}
+                       for {b} and {new_g} or an abnormal configuration.",
+  prose_transition = "evaluating whether {v} matches {ps} with {pk} in {env} yields",
+  [_,_]
+} =
+  ( INDEX(i, ps: eval_pattern(env, v, ps[i]) -> ResultPattern(nvbool(bs[i]), gs[i])) )
+  { ([_]) };
+  any_pattern_matches := list_or(bs);
+  b := if pk = Negative then not_single(any_pattern_matches) else any_pattern_matches;
+  g := parallel_graphs(gs);
+  --
+  ResultPattern(nvbool(b), g);
+;
 
 semantics function mask_match(mv: constants_set(zero_bit, one_bit, x_bit), b: Bit) -> (res: Bool)
 {
@@ -9036,9 +9008,10 @@ case e_array {
   }
 
   case e_pattern {
-    e =: E_Pattern(e1, pat);
+    e =: E_Pattern(e1, ps, _);
+    ids_sets := list_map(p, ps, use_pattern(p));
     --
-    union(use_expr(e1), use_pattern(pat));
+    union(use_expr(e1), union_list(ids_sets));
   }
 
   case e_getcollectionfields {
@@ -9125,20 +9098,6 @@ typing function use_pattern(p: pattern) ->
     empty_set;
   }
 
-  case tuple {
-    p =: Pattern_Tuple(patterns);
-    ids_sets := list_map(p1, patterns, use_pattern(p1));
-    --
-    union_list(ids_sets);
-  }
-
-  case any {
-    p =: Pattern_Any(patterns);
-    ids_sets := list_map(p1, patterns, use_pattern(p1));
-    --
-    union_list(ids_sets);
-  }
-
   case single {
     p =: Pattern_Single(e);
     --
@@ -9155,12 +9114,6 @@ typing function use_pattern(p: pattern) ->
     p =: Pattern_Leq(e);
     --
     use_expr(e);
-  }
-
-  case not {
-    p =: Pattern_Not(p1);
-    --
-    use_pattern(p1);
   }
 
   case range {
@@ -10936,11 +10889,11 @@ typing function subst_expr(tenv: static_envs, substs: list0((Identifier, expr)),
   }
 
   case e_pattern {
-    e =: E_Pattern(e1, pat);
+    e =: E_Pattern(e1, ps, pk);
     subst_expr(tenv, substs, e1) -> e1';
-    // TODO: shouldn't we also transform pat?
+    // TODO: shouldn't we also transform ps?
     --
-    E_Pattern(e1', pat);
+    E_Pattern(e1', ps, pk);
   }
 
   case e_record {
@@ -12818,10 +12771,10 @@ typing function expr_equal_case(tenv: static_envs, e1: expr, e2: expr) ->
   }
 
   case e_pattern {
-    e1 =: E_Pattern(e1', p1);
-    e2 =: E_Pattern(e2', p2);
+    e1 =: E_Pattern(e1', ps1, pk1);
+    e2 =: E_Pattern(e2', ps2, pk2);
     expr_equal(tenv, e1', e2') -> b1;
-    pattern_equal(tenv, p1, p2) -> b2;
+    pattern_list_and_kind_equal(tenv, ps1, pk1, ps2, pk2) -> b2;
     --
     b1 && b2;
   }
@@ -12851,24 +12804,6 @@ typing function pattern_equal(tenv: static_envs, p1: pattern, p2: pattern) ->
     p2 = Pattern_All;
     --
     True;
-  }
-
-  case any_len {
-    p1 =: Pattern_Any(ps1);
-    p2 =: Pattern_Any(ps2);
-    bool_transition(same_length(ps1, ps2)) -> True | False;
-    INDEX(i, ps1: pattern_equal(tenv, ps1[i], ps2[i]) -> bs[i]);
-    --
-    list_and(bs);
-  }
-
-  case tuple_len {
-    p1 =: Pattern_Tuple(ps1);
-    p2 =: Pattern_Tuple(ps2);
-    bool_transition(same_length(ps1, ps2)) -> True | False;
-    INDEX(i, ps1: pattern_equal(tenv, ps1[i], ps2[i]) -> bs[i]);
-    --
-    list_and(bs);
   }
 
   case geq {
@@ -12902,14 +12837,6 @@ typing function pattern_equal(tenv: static_envs, p1: pattern, p2: pattern) ->
     m1 = m2;
   }
 
-  case not {
-    p1 =: Pattern_Not(p1');
-    p2 =: Pattern_Not(p2');
-    pattern_equal(tenv, p1', p2') -> b;
-    --
-    b;
-  }
-
   case range {
     p1 =: Pattern_Range(e11, e12);
     p2 =: Pattern_Range(e21, e22);
@@ -12924,6 +12851,20 @@ typing function pattern_equal(tenv: static_envs, p1: pattern, p2: pattern) ->
     --
     False;
   }
+;
+
+typing function pattern_list_and_kind_equal(tenv: static_envs, ps1: list0(pattern), pk1: pattern_kind, ps2: list0(pattern), pk2: pattern_kind) ->
+  (b: Bool) | type_error
+{
+  "tests whether the pattern list {ps1} with pattern kind {pk1} is equivalent
+  to the pattern list {ps2} with pattern kind {pk2} in {tenv} and yields the
+  result in {b}. \ProseOtherwiseTypeError",
+  prose_transition = "testing whether {ps1} with {pk1} is equivalent to {ps2} with {pk2} in {tenv} yields",
+} =
+  bool_transition(same_length(ps1, ps2)) -> True | False;
+  INDEX(i, ps1: pattern_equal(tenv, ps1[i], ps2[i]) -> bs[i]);
+  --
+  list_and(bs) && pk1 = pk2;
 ;
 
 typing function type_equal(tenv: static_envs, t1: ty, t2: ty) ->
