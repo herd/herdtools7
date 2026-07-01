@@ -1,0 +1,95 @@
+\chapter*{Changelog}
+
+\section*{EAC2}
+
+The following changes were introduced in version EAC2.
+
+\subsection*{AARCH-25136: Improve exposition of ASL1.0's grammar construction}
+
+The construction of ASL1.0's grammar has been clarified in the following sections:
+\begin{itemize}
+  \item Introduction to \chapref{Syntax}
+  \item \secref{ASLGrammar}
+  \item \secref{PriorityAndAssociativity}
+  \item \secref{GrammarExamples}, a new section with worked examples
+  \item \secref{BinaryExpressions}
+\end{itemize}
+
+\subsection*{AARCH-25137: Improve exposition of ASL1.0's evaluation order and its consequences}
+
+Order of evaluation has been clarified in the following sections:
+\begin{itemize}
+  \item \secref{EvaluationOrder}, including new example \ExampleRef{Evaluation order}
+  \item \secref{ParenthesisedExpressions}
+\end{itemize}
+
+\subsection*{AARCH-25350: Remove ASL1.0 shorthands for readability}
+
+The following shorthand slice forms are no longer permitted:
+\begin{itemize}
+  \item Scaled form, \lstinline{factor*:len}. Equivalent to \lstinline{(factor*len) +: len}.
+  \item Shorthand length form, \lstinline{:len}. Equivalent to \lstinline{0 +: len}.
+\end{itemize}
+
+Eliding of parameters on the right-hand sides of declarations with an explicit \lstinline{bits(N)} type annotation is no longer permitted.
+For example, the following is no longer valid ASL:
+\begin{lstlisting}
+let x : bits(32) = Zeros{}();
+let y : bits(64) = ZeroExtend{,1}('1');
+\end{lstlisting}
+
+\subsection*{AARCH-25640: Remove ASL1.0 constructs not used in pseudocode}
+
+The following features are removed:
+\begin{itemize}
+  \item Enumeration-indexed arrays.
+  \item Subtyping.
+  \item Nested patterns.
+\end{itemize}
+
+\paragraph{Enumeration-indexed-arrays.}
+
+Arrays of the form
+\begin{lstlisting}
+array [[enumeration_type]] of element_type
+\end{lstlisting}
+are no longer permitted.
+For example, the following is no longer valid ASL:
+\begin{lstlisting}
+type Color of enumeration {RED, GREEN, BLUE};
+var x : array[[Color]] of integer;
+\end{lstlisting}
+
+\paragraph{Subtyping.}
+
+Named type declarations using the \lstinline{subtypes} or \lstinline{with} keywords are no longer permitted.
+For example, the following is no longer valid ASL:
+\begin{lstlisting}
+type SuperInt of integer;
+type SubInt of integer subtypes SuperInt;
+
+type Packet of record { data : bits(32) };
+type TimedPacket subtypes Packet with { time : integer };
+\end{lstlisting}
+
+\paragraph{Nested patterns.}
+
+ASL patterns of the following set-like forms are no longer permitted to be nested:
+\begin{lstlisting}
+{pattern1, ...}
+!{pattern1, ...}
+\end{lstlisting}
+ASL nested patterns of the following tuple form are no longer permitted:
+\begin{lstlisting}
+(pattern1, ...)
+\end{lstlisting}
+For example, the following will no longer be valid ASL.
+\begin{lstlisting}
+x IN {{1, 2}, 3}
+y IN {!{TRUE}}
+z IN {(1, 2)}
+\end{lstlisting}
+Note that this does not affect tuple expressions of the form:
+\begin{lstlisting}
+(expression1, ...)
+\end{lstlisting}

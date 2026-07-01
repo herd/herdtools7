@@ -321,6 +321,7 @@ certain
 chance
 change
 changed
+changelog
 changes
 changing
 chapter
@@ -345,6 +346,7 @@ circuited
 circuiting
 circuits
 circular
+clarified
 clarify
 clash
 clashes
@@ -719,6 +721,7 @@ elaborated
 element
 elements
 elided
+eliding
 else
 emit
 emphasise
@@ -848,6 +851,7 @@ exponent
 exponentiation
 export
 exposes
+exposition
 express
 expressed
 expressible
@@ -1695,6 +1699,7 @@ provide
 provided
 provides
 prs
+pseudocode
 pull
 punctuation
 pure
