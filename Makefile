@@ -171,6 +171,8 @@ test:: test.herd-asl.inst.AArch64.kvm
 
 test-local:: test.herd-asl.inst.AArch64.sve
 
+test-all-asl:: test.herd.inst.ASL
+test-all-asl:: test.herd.inst.ASL-pseudo-arch
 test-all-asl:: test.herd-asl.inst.AArch64
 test-all-asl:: test.herd-asl.inst.AArch64.sve
 test-all-asl:: test.herd-asl.inst.AArch64.kvm
