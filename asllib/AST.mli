@@ -33,13 +33,6 @@
 type version = V0 | V1
 type position = Lexing.position
 
-type 'a annotated = {
-  desc : 'a;
-  pos_start : position;
-  pos_end : position;
-  version : version;
-}
-
 type identifier = string
 (** Type of local identifiers in the AST. *)
 
@@ -146,8 +139,16 @@ type subprogram_type =
       (** A setter is a special procedure called with a syntax similar to slice
           assignment. *)
 
+type 'a annotated = {
+  desc : 'a;
+  pos_start : position;
+  pos_end : position;
+  version : version;
+  ty_opt : ty option;
+}
+
 (** Expressions. Parametric on the type of literals. *)
-type expr_desc =
+and expr_desc =
   | E_Literal of literal
   | E_Var of identifier
   | E_ATC of expr * ty  (** Asserted type conversion *)

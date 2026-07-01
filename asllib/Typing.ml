@@ -40,7 +40,8 @@ let add_pos_from ~loc = add_pos_from loc
 let conflict ~loc expected provided =
   fatal_from ~loc (Error.ConflictingTypes (expected, provided))
 
-let plus = binop `ADD
+let plus e1 e2 = integer_binop `ADD e1 e2
+let minus e1 e2 = integer_binop `SUB e1 e2
 let t_bits_bitwidth e = T_Bits (e, [])
 
 let func_version f =
@@ -62,11 +63,13 @@ let rec list_mapi3 f i l1 l2 l3 =
       r :: list_mapi3 f (i + 1) l1 l2 l3
   | _, _, _ -> invalid_arg "List.mapi3"
 
-let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
+let sum = function
+  | [] -> zero_expr
+  | [ x ] -> x
+  | h :: t -> List.fold_left plus h t
 
 (* Begin SlicesWidth *)
 let slices_width env =
-  let minus = binop `SUB in
   let slice_width = function
     | Slice_Single _ -> one_expr
     | Slice_Star (_, e) | Slice_Length (_, e) -> e
@@ -505,7 +508,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             else
               let e =
                 E_Literal (L_Int (Z.of_int (i1 + n)))
-                |> add_pos_range_from e1 e2
+                |> add_pos_range_from e1 e2 |> with_integer_ty
               in
               e :: do_rec (n + 1)
           in
@@ -781,7 +784,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         match t_struct.desc with
         | T_Int UnConstrained -> T_Int UnConstrained |> here
         | T_Int (WellConstrained (cs, precision)) ->
-            let neg e = unop NEG e in
+            let neg e = integer_unop NEG e in
             let constraint_minus = function
               | Constraint_Exact e -> Constraint_Exact (neg e)
               | Constraint_Range (top, bot) ->
@@ -1483,13 +1486,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           (* LRM R_GXKG:
              The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
           *)
-          let length = binop `SUB j i |> binop `ADD !$1 in
+          let length = plus (minus j i) one_expr in
           annotate_slice (Slice_Length (i, length)) |: TypingRule.Slice
       | Slice_Star (factor, length) ->
           (* LRM R_GXQG:
              The notation b[i *: n] is syntactic sugar for b[i*n +: n]
           *)
-          let offset = binop `MUL factor length in
+          let offset = integer_binop `MUL factor length in
           annotate_slice (Slice_Length (offset, length)) |: TypingRule.Slice
       (* End *)
     in
@@ -1927,7 +1930,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       ret_ty_opt,
       ses3 )
 
+  (** [annotate_expr] annotates the expression [e] in [env] and sets a type
+      annotation. *)
   and annotate_expr env (e : expr) : ty * expr * SES.t =
+    let t, e', ses = annotate_expr_impl env e in
+    let e_with_type = { e' with ty_opt = Some t } in
+    (t, e_with_type, ses)
+
+  (** [annotate_expr_impl] annotates the expression [e] in [env] without setting
+      a type annotation. *)
+  and annotate_expr_impl env (e : expr) : ty * expr * SES.t =
     let () = if false then Format.eprintf "@[Annotating %a@]@." PP.pp_expr e in
     let here x = add_pos_from ~loc:e x and loc = to_pos e in
     match e.desc with
@@ -2426,6 +2438,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       [loc]. Note however that a bit vector with width [N] can always be
       generated using [0[:N]]. *)
   let rec base_value_v1 ~loc env t : expr =
+    let value = base_value_v1_impl ~loc env t in
+    { value with ty_opt = Some t }
+
+  (** [base_value_v1_impl ~loc env t] is the implementation of [base_value_v1],
+      which doesn't set a type annotation. *)
+  and base_value_v1_impl ~loc env t : expr =
     let here = add_pos_from ~loc in
     let lit v = here (E_Literal v) in
     let fatal_non_static e =
@@ -2446,12 +2464,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             if length < 0 then fatal_from ~loc @@ Error.BaseValueEmptyType t
             else L_BitVector (Bitvector.zeros length) |> lit
         | _ ->
-            let zero = L_Int Z.zero |> lit in
-            let slice = Slice_Length (zero, e) in
-            E_Slice (zero, [ slice ]) |> here)
+            let slice = Slice_Length (zero_expr, e) in
+            E_Slice (zero_expr, [ slice ]) |> here)
     | T_Enum [] -> assert false
     | T_Enum (name :: _) -> lookup_constant env name |> lit
-    | T_Int UnConstrained -> L_Int Z.zero |> lit
+    | T_Int UnConstrained -> zero_expr
     | T_Int (Parameterized id) -> E_Var id |> here |> fatal_non_static
     | T_Int PendingConstrained -> assert false
     | T_Int (WellConstrained (cs, _)) ->
@@ -2471,7 +2488,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         if list_is_empty z_min_list then fatal_is_empty ()
         else
           let z_min = list_min_abs_z z_min_list in
-          L_Int z_min |> lit
+          expr_of_z z_min
     | T_Named _ -> Types.make_anonymous env t |> base_value_v1 ~loc env
     | T_Real -> L_Real Q.zero |> lit
     | T_Exception fields | T_Record fields | T_Collection fields ->
@@ -2521,12 +2538,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t = Types.make_anonymous env t in
         base_value_v0 ~loc env t
 
-  (** [base_value ~loc env e] is [base_value_v1 ~loc env e] if running for
-      ASLv1, or [base_value_v0 ~loc env e] if running for ASLv0. *)
-  let base_value ~loc env e =
+  (** [base_value ~loc env t] is [base_value_v1 ~loc env t] if running for
+      ASLv1, or [base_value_v0 ~loc env t] if running for ASLv0. *)
+  let base_value ~loc env t =
     match loc.version with
-    | V0 -> base_value_v0 ~loc env e
-    | V1 -> base_value_v1 ~loc env e
+    | V0 -> base_value_v0 ~loc env t
+    | V1 -> base_value_v1 ~loc env t
 
   (* Begin AnnotateSetArray *)
   let annotate_set_array ~loc env (size, t_elem) rhs_ty
@@ -2544,7 +2561,23 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (new_le |> add_pos_from ~loc, ses) |: TypingRule.AnnotateSetArray
   (* End *)
 
+  (** [annotate_lexpr env le t_e] annotates the assignable expression [le] in
+      [env] with the type [t_e] and sets [t_e] as the type annotation to the
+      resulting expression. *)
   let rec annotate_lexpr env le t_e =
+    (* This might be somewhat flawed. Ideally, we would annotate [expr_of_lexpr(env, le)]
+       and use the resulting type. However, [le] might contain instances of [LE_Discard]
+       whose type might as well be inferred from [t_e].
+       For, now, let's go with this approach until we see a need to change it.
+       *)
+    let le', ses = annotate_lexpr_impl env le t_e in
+    ({ le' with ty_opt = Some t_e }, ses)
+
+  (** [annotate_lexpr_impl env le t_e] annotates the assignable expression [le]
+      in [env] with the type [t_e], which corresponds to the type of a value
+      about to be assigned to [le]. The annotated assignable expression is
+      returned together with its side effects. *)
+  and annotate_lexpr_impl env le t_e =
     let () =
       if false then
         Format.eprintf "Typing lexpr: @[%a@] to @[%a@]@." PP.pp_lexpr le
@@ -3973,11 +4006,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let new_ty =
             if extra_fields = [] then t1
             else
+              let annotated_extra_fields =
+                List.map
+                  (fun (field, ty) ->
+                    let new_ty, _ses = annotate_type ~loc env ty in
+                    (field, new_ty))
+                  extra_fields
+              in
               match IMap.find_opt super genv.declared_types with
               | Some ({ desc = T_Record fields; _ }, _) ->
-                  T_Record (fields @ extra_fields) |> here
+                  T_Record (fields @ annotated_extra_fields) |> here
               | Some ({ desc = T_Exception fields; _ }, _) ->
-                  T_Exception (fields @ extra_fields) |> here
+                  T_Exception (fields @ annotated_extra_fields) |> here
               | Some _ -> conflict ~loc [ T_Record []; T_Exception [] ] t1
               | None -> undefined_identifier ~loc super
           and env = add_subtype name super env in
@@ -4431,7 +4471,20 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       let () = List.iter (check_global_pragma env) pragmas in
       (List.rev ast_rev, env)
 
-  let type_check_ast ast = type_check_ast_in_env empty_global ast
+  let type_check_ast ast =
+    let annotated_ast, genv = type_check_ast_in_env empty_global ast in
+    let should_check_type_annotations =
+      match C.check with
+      | TypeCheck ->
+          false (* set to true if debugging missing annotations is needed *)
+      | _ -> false
+    in
+    let () =
+      if should_check_type_annotations then
+        ASTUtils.check_type_annotations ~pp_expr:PP.pp_expr annotated_ast
+      else ()
+    in
+    (annotated_ast, genv)
 
   (* Note: produces a *dynamic* error if the main function cannot be found *)
   let find_main env =

@@ -311,14 +311,17 @@ module NativeBackend (C : Config) = struct
     let round_towards_zero = wrap_real_to_int "RoundTowardsZero" truncate
 
     let primitives =
-      let e_var x = E_Var x |> add_dummy_annotation in
+      let e_int_var x = E_Var x |> add_dummy_annotation |> with_integer_ty in
       let eoi i = expr_of_int i in
-      let binop = ASTUtils.binop in
-      let minus_one e = binop `SUB e (eoi 1) in
-      let pow_2 = binop `POW (eoi 2) in
-      let neg e = E_Unop (NEG, e) |> add_pos_from e in
+      let integer_binop op e1 e2 = ASTUtils.binop op e1 e2 |> with_integer_ty in
+      let minus_one e = integer_binop `SUB e (eoi 1) in
+      let pow_2 e = integer_binop `POW (eoi 2) e in
+      let neg e = E_Unop (NEG, e) |> add_pos_from e |> with_integer_ty in
+      let n_integer_parameter =
+        ("N", Some (T_Int UnConstrained |> add_dummy_annotation))
+      in
       (* [t_bits "N"] is the bitvector type of length [N]. *)
-      let t_bits x = T_Bits (e_var x, []) |> add_dummy_annotation in
+      let t_bits x = T_Bits (e_int_var x, []) |> add_dummy_annotation in
       (* [p ~parameters ~args ~returns name f] declares a primtive named [name]
          with body [f], and signature specified by [parameters] [args] and
          [returns]. *)
@@ -345,26 +348,25 @@ module NativeBackend (C : Config) = struct
           fun _params args -> f args )
       in
       [
-        (let two_pow_n_minus_one = minus_one (pow_2 (e_var "N")) in
+        (let two_pow_n_minus_one = minus_one (pow_2 (e_int_var "N")) in
          let returns = integer_range (eoi 0) two_pow_n_minus_one in
-         p
-           ~parameters:[ ("N", None) ]
+         p ~parameters:[ n_integer_parameter ]
            ~args:[ ("x", t_bits "N") ]
            ~returns "UInt" uint);
-        (let var_N = e_var "N" in
+        (let var_N = e_int_var "N" in
          let two_pow_n_minus_one = pow_2 (minus_one var_N) in
          let minus_two_pow_n_minus_one = neg two_pow_n_minus_one
          and two_pow_n_minus_one_minus_one = minus_one two_pow_n_minus_one in
          let if_0_then_0_else else_expr =
-           cond_expr (binop `EQ var_N zero_expr) zero_expr else_expr
+           cond_expr (integer_binop `EQ var_N zero_expr) zero_expr else_expr
+           |> with_integer_ty
          in
          let returns =
            integer_range
              (if_0_then_0_else minus_two_pow_n_minus_one)
              (if_0_then_0_else two_pow_n_minus_one_minus_one)
          in
-         p
-           ~parameters:[ ("N", None) ]
+         p ~parameters:[ n_integer_parameter ]
            ~args:[ ("x", t_bits "N") ]
            ~returns "SInt" sint);
         p ~args:[ ("x", integer) ] ~returns:integer "FloorLog2" floor_log2;

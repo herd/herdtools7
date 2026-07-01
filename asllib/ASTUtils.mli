@@ -93,6 +93,12 @@ val add_pos_from_st : 'a annotated -> 'a -> 'a annotated
     If both arguments are physically equal, then the result is also physically
     equal. *)
 
+val with_ty_annot : AST.ty -> 'a annotated -> 'a annotated
+(** [with_ty_annot ty v] is [v] with the type annotation [ty]. *)
+
+val with_integer_ty : 'a annotated -> 'a annotated
+(** [with_integer_ty v] is [v] with the type annotation [integer]. *)
+
 val map2_desc :
   ('a annotated -> 'b annotated -> 'c) ->
   'a annotated ->
@@ -166,14 +172,19 @@ val expr_of_int : int -> expr
 val literal : literal -> expr
 (** [literal v] is the expression evaluated to [v]. *)
 
-val var_ : identifier -> expr
-(** [var_ x] is the expression [x]. *)
+val int_expr_of_var : identifier -> expr
+(** [int_expr_of_var x] is the expression [x]. *)
 
 val binop : binop -> expr -> expr -> expr
 (** Builds a binary operation from to subexpressions. *)
 
-val unop : unop -> expr -> expr
-(** Builds a unary operation from its subexpression. *)
+val integer_binop : binop -> expr -> expr -> expr
+(** Builds a binary operation from to subexpressions, with the assumption that
+    both subexpressions are of type [integer]. *)
+
+val integer_unop : unop -> expr -> expr
+(** Builds a unary operation from its subexpression, with the assumption that
+    the subexpression is of type [integer]. *)
 
 val expr_of_z : Z.t -> expr
 (** [expr_of_z z] is the integer literal for [z]. *)
@@ -415,3 +426,9 @@ val get_cycle : ISet.t IMap.t -> identifier list option
 val plug_primitives : AST.t -> ('f * string) list -> (AST.func * 'f) list
 (** [plug_primitives ast arg primitives] is the list of primitives as accepted
     by [Backend.mli]. *)
+
+val check_type_annotations :
+  ?pp_expr:(Format.formatter -> AST.expr -> unit) -> AST.t -> unit
+(** [check_type_annotations ?pp_expr ast] checks that all expressions in [ast]
+    have a type annotation. If [pp_expr] is provided, the exception raised for a
+    missing annotation includes the unannotated expression. *)
