@@ -342,7 +342,7 @@ module Untyped (C : Config.S) = struct
   let decl : decl sgen =
     let type_decl n =
       let+ ty = ty n and+ name = names in
-      D_TypeDecl (name, ty, None) |> annot
+      D_TypeDecl (name, ty) |> annot
     and global_decl n =
       let* n1, n2 = Nat.split2 n in
       let+ name = names
@@ -934,7 +934,7 @@ module Typed (C : Config.S) = struct
   let decl : env -> (decl * env) sgen =
     let type_decl env n : (decl * env) gen =
       let+ ty = ty true env n and+ name = fresh_name env in
-      ( D_TypeDecl (name, ty, None) |> annot,
+      ( D_TypeDecl (name, ty) |> annot,
         StaticEnv.add_type name ty SideEffect.TimeFrame.Constant env )
     and global_decl env n : (decl * env) gen =
       let* n1, n2 = Nat.split2 n in

@@ -416,20 +416,12 @@ end
 
 (* --------------------------------------------------------------------------*)
 
-(* Begin Subtype *)
-let rec subtypes_names env s1 s2 =
-  if String.equal s1 s2 then true
-  else
-    match IMap.find_opt s1 env.SEnv.global.subtypes with
-    | None -> false
-    | Some s1' -> subtypes_names env s1' s2
-
-let subtypes env t1 t2 =
-  (match (t1.desc, t2.desc) with
-    | T_Named s1, T_Named s2 -> subtypes_names env s1 s2
-    | _ -> false)
-  |: TypingRule.Subtype
-(* End Subtype *)
+(* Begin SameNamedType *)
+let same_named_type t1 t2 =
+  match (t1.desc, t2.desc) with
+  | T_Named s1, T_Named s2 -> String.equal s1 s2 |: TypingRule.SameNamedType
+  | _ -> false
+(* End SameNamedType *)
 
 let rec bitfields_included env bfs1 bfs2 =
   let rec mem_bfs bfs2 bf1 =
@@ -533,8 +525,8 @@ and subtype_satisfies env t s =
 and type_satisfies env t s =
   ((* Type T type-satisfies type S if and only if at least one of the following
       conditions holds: *)
-   (* T is a subtype of S *)
-   subtypes env t s
+   (* T is equivalent to S *)
+   type_equal env t s
   (* T subtype-satisfies S and at least one of S or T is an anonymous type *)
   || ((is_anonymous t || is_anonymous s) && subtype_satisfies env t s)
   ||
@@ -566,9 +558,9 @@ let rec type_clashes env t s =
         type-clash
       • they both have the structure of tuples of the same length whose
         corresponding element types type-clash
-      • S is either a subtype or a supertype of T *)
+      • S and T are same-named types *)
   (* We will add a rule for boolean and boolean. *)
-  ((subtypes env s t || subtypes env t s)
+  (same_named_type s t
   ||
   let s_struct = get_structure env s and t_struct = get_structure env t in
   match (s_struct.desc, t_struct.desc) with
@@ -605,30 +597,6 @@ let subprogram_clashes env (f1 : func) (f2 : func) =
 
 (* --------------------------------------------------------------------------*)
 
-let supertypes_set (env : env) =
-  let rec aux acc x =
-    let acc = ISet.add x acc in
-    match IMap.find_opt x env.global.subtypes with
-    | Some x' -> aux acc x'
-    | None -> acc
-  in
-  aux ISet.empty
-
-let find_named_lowest_common_supertype env x1 x2 =
-  (* TODO: Have a better algorithm? This is in O(h * log h) because set
-     insertions are in O (log h), where h is the max height of the subtype
-     tree. Wikipedia says it is in O(h) generally, and it can be precomputed,
-     in which case it becomes O(1). *)
-  let set1 = supertypes_set env x1 in
-  let rec aux x =
-    if ISet.mem x set1 then Some x
-    else
-      match IMap.find_opt x env.global.subtypes with
-      | None -> None
-      | Some x' -> aux x'
-  in
-  aux x2
-
 (** [unpack_options li] is [Some [x1; ... x_n]] if [li] is
     [[Some x1; ... Some x_n]], [None] otherwise *)
 let unpack_options li =
@@ -643,17 +611,12 @@ let rec lowest_common_ancestor ~loc env s t =
   (* The lowest common ancestor of types S and T is: *)
   (match (s.desc, t.desc) with
     | _, _ when type_equal env s t ->
-        (* • If S and T are the same type: S (or T). *)
+        (* If S and T are the same type: S (or T). *)
         Some s
-    | T_Named name_s, T_Named name_t -> (
-        (* If S and T are both named types: the (unique) common supertype of S
-         and T that is a subtype of all other common supertypes of S and T. *)
-        match find_named_lowest_common_supertype env name_s name_t with
-        | Some name -> Some (T_Named name |> here)
-        | None ->
-            let anon_s = make_anonymous env s
-            and anon_t = make_anonymous env t in
-            lowest_common_ancestor ~loc env anon_s anon_t)
+    | T_Named s_name, T_Named t_name ->
+        assert (not (String.equal s_name t_name));
+        let anon_s = make_anonymous env s and anon_t = make_anonymous env t in
+        lowest_common_ancestor ~loc env anon_s anon_t
     | _, T_Named _ | T_Named _, _ ->
         let anon_s = make_anonymous env s and anon_t = make_anonymous env t in
         if type_equal env anon_s anon_t then

@@ -1236,67 +1236,14 @@ evaluates the rest of the bindings/body."
   :short "@(csee B*) binder: see @(see patbind-evs)")
 
 
-(encapsulate nil
-  (local (in-theory (enable nfix)))
-  ;; Note: if the subtypes map is malformed, this function won't terminate.
-  (defxdoc subtypes_names
-    :short "Checks the subtypes map of the given @(see static_env_global) to
- see if @('name1') is a subtype of @('name2'). That is, it checks whether
- either the two names are equal, or else the supertype of @('name1') according
- to the subtypes map is transitively a subtype of @('name2')."
-    :long "<p>This is defined with @('acl2::def-tr') to create a function that doesn't
-necessarily terminate, e.g. if we encounter a cycle in the subtypes
-relation. In this case it returns NIL (not a subtype).</p>")
-
-  (acl2::def-tr subtypes_names (tenv name1 name2)
-    (declare (xargs :guard (and (static_env_global-p tenv)
-                                (identifier-p name1)
-                                (identifier-p name2))))
-    (b* ((name1 (identifier-fix name1))
-         (name2 (identifier-fix name2))
-         ((when (equal name1 name2)) t)
-         (look (hons-assoc-equal name1 (static_env_global->subtypes tenv)))
-         ((unless look) nil))
-      (subtypes_names tenv (cdr look) name2))
-    :diverge nil)
-
-  (fty::deffixequiv subtypes_names-steps
-    :args ((tenv static_env_global-p)
-           (name1 identifier-p)
-           (name2 identifier-p)))
-
-  (local (defun terminates-hint (stable-under-simplificationp clause)
-           (and stable-under-simplificationp
-                (let ((lit (assoc 'subtypes_names-terminates clause))
-                      (other (cadr (assoc 'not clause))))
-                  (case-match lit
-                    (('subtypes_names-terminates tenv name1 name2)
-                     `(:expand (:with subtypes_names-terminates ,other)
-                       :use ((:instance subtypes_names-terminates-suff
-                              (tr-clk (subtypes_names-terminates-witness
-                                       . ,(cdr other)))
-                              (tenv ,tenv) (name1 ,name1) (name2 ,name2)))))
-                    (& nil))))))
-  (fty::deffixcong static_env_global-equiv iff (subtypes_names-terminates tenv name1 name2) tenv
-    :hints ((terminates-hint stable-under-simplificationp clause)))
-
-  (fty::deffixequiv subtypes_names :args ((tenv static_env_global-p)
-                                          (name1 identifier-p)
-                                          (name2 identifier-p))))
-
-(define subtypes ((tenv static_env_global-p)
-                  (ty1 ty-p)
-                  (ty2 ty-p))
-  :short "Checks whether @('ty1') is a subtype of @('ty2') according to the subtypes
-map. Following ASLRef, this only is the case if both types are named and
-@('ty2') is among the chain of supertypes of @('ty1') in the static
-environment's subtypes map (according to @(see subtypes_names))."
-  (b* ((ty1 (ty->desc ty1))
-       (ty2 (ty->desc ty2)))
-    (fty::multicase ((type_desc-case ty1)
-                     (type_desc-case ty2))
-      ((:t_named :t_named) (subtypes_names tenv ty1.name ty2.name))
-      (- nil))))
+(define same_named_type ((x ty-p) (y ty-p))
+  (b* (((ty x))
+       ((ty y)))
+    (type_desc-case x.desc
+      :t_named (type_desc-case y.desc
+                 :t_named (equal x.desc.name y.desc.name)
+                 :otherwise nil)
+      :otherwise nil)))
 
 
 (fty::defoption maybe-catcher catcher)
@@ -1310,7 +1257,7 @@ accepted by the catcher."
   :returns (catcher maybe-catcher-p)
   (b* (((when (atom catchers)) nil)
        ((catcher c) (car catchers))
-       ((when (subtypes tenv ty c.ty))
+       ((when (same_named_type ty c.ty))
         (catcher-fix c)))
     (find_catcher tenv ty (cdr catchers)))
   ///

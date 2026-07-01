@@ -1,5 +1,4 @@
 type Key of enumeration {One, Two, Three};
-type SubKey subtypes Key;
 
 func main() => integer
 begin            // The right-hand-side expression is | Reason:

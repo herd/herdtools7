@@ -64,15 +64,9 @@ val get_well_constrained_structure : env -> ty -> ty
 
 (** {2 Orders on types} *)
 
-val subtypes : env -> ty -> ty -> bool
-(** [subtypes env t1 t2] is true if and only if [t1] is a declared subtype of
-    [t2]. *)
-
-val subtypes_names : env -> identifier -> identifier -> bool
-(** [subtypes_names env s1 s2] is true if and only if the type named [s1] is a
-    declared subtype of the type named [s2].
-
-    Equivalent to [subtypes env (T_Named s1 |> here) (T_Named s2 |> here)]. *)
+val same_named_type : ty -> ty -> bool
+(** [same_named_type t1 t2] is true if and only if [t1] and [t2] are both named
+    types with the same name. *)
 
 val subtype_satisfies : env -> ty -> ty -> bool
 (** Subtype-satisfaction test. *)
