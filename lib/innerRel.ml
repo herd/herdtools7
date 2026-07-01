@@ -33,6 +33,28 @@ module type S =  sig
 (* Inverse *)
   val inverse : t -> t
 
+  exception NonAffine of elt0 * Elts.t
+  (* raised if affinity assumption is broken, returning a witness [x, ys] when
+     [x] is in relation with each element of [ys]. *)
+
+  exception NonInjective of Elts.t * elt0
+  (* raised if injectivity assumption is broken, returning a witness [ys, x] when
+     each element of [ys] is in relation with [x]. *)
+
+  val inverse_bijection : t -> t
+  (* Inverse [t], assuming that it is a bijection.
+
+     If [t] is not injective, then [NonInjective] is raised.
+     If [t] is not affine, then [NonAffine] is raised.
+  *)
+
+  val check_bijection : t -> unit
+  (* [check_bijection t] checks that [t] is a bijection.
+
+     If [t] is not injective, then [NonInjective] is raised.
+     If [t] is not affine, then [NonAffine] is raised.
+   *)
+
 (* Set to relation *)
   val set_to_rln : Elts.t -> t
 
@@ -267,6 +289,32 @@ module Make(O:MySet.OrderedType) : S
 
   (* Inverse *)
   let inverse t = fold (fun (x,y) k -> add (y,x) k) t empty
+
+  (* Bijections *)
+  exception NonAffine of O.t * Elts.t
+  exception NonInjective of Elts.t * O.t
+
+  let inverse_bijection m =
+    M.fold
+      (fun x ys res ->
+         let y =
+           match Elts.as_singleton ys with
+           | Some y -> y
+           | None ->
+             assert (Elts.cardinal ys > 1);
+             raise (NonAffine (x, ys))
+        in
+        M.update y
+          (function
+            | None -> Some (Elts.singleton x)
+            | Some xs ->
+              assert (Elts.cardinal xs > 0);
+              assert (not (Elts.mem x xs));
+              raise (NonInjective (Elts.add x xs, y)))
+          res)
+      m M.empty
+
+  let check_bijection t = inverse_bijection t |> ignore
 
   (* Set to relation *)
   let set_to_rln s =
