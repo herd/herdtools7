@@ -87,7 +87,7 @@ let EX = try EX with emptyset
 let X = try X with emptyset
 
 (* Define pairs of exclusives *)
-let lxsx = [R & EX]; po \ (po; [R & EX]; po); [W & EX]
+let lxsx = [R & EX]; po \ (po; [M & EX]; po); [W & EX]
 
 (* Define atomic operations, this includes:                    *)
 (* 1. The explicit memory events of atomic instructions.       *)
