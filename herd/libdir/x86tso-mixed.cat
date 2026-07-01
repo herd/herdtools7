@@ -22,7 +22,7 @@ let rec ob = obs; si
         | ob; ob
 
 (* Internal visibility requirement *)
-acyclic po-loc | ca | rf as internal
+acyclic po-loc | amo | ca | rf as internal
 
 (* Atomicity requirement *)
 empty rmw & (fre;coe) as atomic

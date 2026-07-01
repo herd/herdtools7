@@ -33,9 +33,6 @@ let fencerel(B) = (po & (_ * B)) ;  po
 (* Control+cfence *)
 let ctrlcfence(ctrl,CFENCE) = (ctrl & (_ * CFENCE)) ; po
 
-(* Make the difference between load-reserve/store conditional and amo insructions *)
-let lxsx = rmw \ amo
-
 (* Backward compatibility *)
 let inv-field = try inv-domain with 0
 
@@ -79,3 +76,23 @@ let map f =
   do_map
 
 let LKW = try LKW with emptyset
+
+(* For architectures where virtual memory is not yet implemented *)
+let PTE = try PTE with emptyset
+
+(* For architectures that do not have exclusives or LL/SC or LR/SC *)
+let EX = try EX with emptyset
+
+(* For architectures that do not have atomic instructions *)
+let X = try X with emptyset
+
+(* Define pairs of exclusives *)
+let lxsx = [R & EX]; po \ (po; [M & EX]; po); [W & EX]
+
+(* Define atomic operations, this includes:                    *)
+(* 1. The explicit memory events of atomic instructions.       *)
+(* 2. The implicit memory events of hardware updates of a PTE. *)
+let amo = [Exp & R & X]; (same-instance \ id) & loc; [Exp & W & X]
+    | [NExp & PTE & R]; iico_data & loc; [NExp & PTE & W]
+
+let rmw = amo | lxsx
