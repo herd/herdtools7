@@ -127,3 +127,25 @@ let gs =
   do_rec n []
 
 let  () = assert (List.fold_left check true gs)
+
+let () = R.check_bijection @@ R.of_list []
+let () = R.check_bijection @@ R.of_list [ (1, 1) ]
+let () = R.check_bijection @@ R.of_list [ (1, 2); (3, 4); (5, 6); ]
+let () = R.check_bijection @@ R.of_list [ (1, 2); (2, 3); (3, 4); (4, 1) ]
+
+let () =
+  try
+    R.check_bijection @@ R.of_list [ (1, 2); (1, 3); ];
+    assert false;
+  with
+  | R.NonAffine _ -> ()
+  | R.NonInjective _ -> assert false
+
+let () =
+  try
+    R.check_bijection @@ R.of_list [ (2, 3); (1, 3); ];
+    assert false;
+  with
+  | R.NonAffine _ -> assert false
+  | R.NonInjective _ -> ()
+

@@ -66,7 +66,6 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let cmo_sets = []
 
     let annot_sets = [
-      "X", is_atomic;
       "A",  is_acquire;
       "L",  is_release;
       "AL", is_acquire;

@@ -91,13 +91,14 @@ module Make : functor (S: SemExtra.S) -> sig
    * When given an event structure as argument, the function
    * returns a pair [(maps,evts)], where:
    *  + [maps] is a list of location maps, one per thread.
-   *    The values of this map are the atomic effects
+   *    The values of this map are the explicit atomic effects
         of the given thread.
-   *  + [evts] is the list of spurious (atomic) effects.
+   *  + [evts] is the list of non-explicit (atomic) effects.
    *)
 
   val collect_atomics :
-    S.event_structure -> (Proc.t * S.event list LocEnv.t) list * S.event list
+    S.event_structure ->
+    (Proc.t * S.event list LocEnv.t) list * S.event list
 
 (* Partition by location *)
   val partition_events : S.event_set -> S.event_set list

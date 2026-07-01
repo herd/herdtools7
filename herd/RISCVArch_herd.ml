@@ -85,7 +85,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let cmo_sets = []
 
     let annot_sets =
-      ["X", is_atomic; "Acq", is_acquire; "Rel", is_release;
+      ["Acq", is_acquire; "Rel", is_release;
        "AcqRel",is_acquire_release;"Sc",is_sc]
 
     let isync =  FenceI

@@ -36,6 +36,28 @@ module type S =  sig
 (* Inverse *)
   val inverse : t -> t
 
+  exception NonAffine of elt0 * Elts.t
+  (* raised if affinity assumption is broken, returning a witness [x, ys] when
+     [x] is in relation with each element of [ys]. *)
+
+  exception NonInjective of Elts.t * elt0
+  (* raised if injectivity assumption is broken, returning a witness [ys, x] when
+     each element of [ys] is in relation with [x]. *)
+
+  val inverse_bijection : t -> t
+  (* Inverse [t], assuming that it is a bijection.
+
+     If [t] is not injective, then [NonInjective] is raised.
+     If [t] is not affine, then [NonAffine] is raised.
+  *)
+
+  val check_bijection : t -> unit
+  (* [check_bijection t] checks that [t] is a bijection.
+
+     If [t] is not injective, then [NonInjective] is raised.
+     If [t] is not affine, then [NonAffine] is raised.
+   *)
+
 (* Set to relation *)
   val set_to_rln : Elts.t -> t
 

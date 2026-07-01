@@ -876,7 +876,7 @@ module Make (M:Cfg)
     let check_rfms test rfms _kfail _kont model_kont res =
       let (_, cs0, es0) = rfms in
       let (es, rfm, cs) = solve test es0 cs0 in
-      let rmws = M.make_atomic_load_store es in
+      let rmws = M.make_atomic_load_store test es in
       let evts = E.EventSet.filter real es.E.events in
       let inits = E.EventSet.filter E.is_mem_store_init evts in
       let po = U.po_iico es in

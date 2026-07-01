@@ -32,7 +32,61 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let is_kvm = C.variant Variant.VMSA
 
-    let is_amo _ = false
+    let is_amo = function
+      | I_CAS _|I_CASBH _|I_CASP _
+      | I_SWP _|I_SWPBH _
+      | I_LDOP _|I_LDOPBH _
+      | I_STOP _|I_STOPBH _
+        -> true
+      | I_NOP|I_ERET|I_B _|I_BR _|I_BC _|I_CBZ _|I_CBNZ _|
+        I_TBNZ _|I_TBZ _|I_BL _|I_BLR _|I_RET _|I_SVC _|
+        I_LDR _|I_LDRSW _|I_LDUR _|I_LD1 _|
+        I_LDAP1 _|I_LD1M _|I_LD1R _|I_LD2 _|
+        I_LD2M _|I_LD2R _|I_LD3 _|I_LD3M _|
+        I_LD3R _|I_LD4 _|I_LD4M _|I_LD4R _|
+        I_ST1 _|I_STL1 _|I_ST1M _|I_ST2 _|
+        I_ST2M _|I_ST3 _|I_ST3M _|I_ST4 _|
+        I_ST4M _|I_LDP_SIMD _|
+        I_STP_SIMD _|I_LDR_SIMD _|
+        I_STR_SIMD _|I_LDUR_SIMD _|I_LDAPUR_SIMD _|
+        I_STUR_SIMD _|I_STLUR_SIMD _|I_ADDV _|
+        I_DUP _|I_FMOV_TG _|I_MOV_VE _|I_MOV_V _|
+        I_MOV_TG _|I_MOV_FG _|I_MOV_S _|
+        I_MOVI_V _|I_MOVI_S _|I_OP3_SIMD _|
+        I_ADD_SIMD _|I_ADD_SIMD_S _|I_LDP _|
+        I_LDPSW _|I_LDAR _|I_LDXP _|
+        I_STR _|I_STP _|I_STLR _|
+        I_STXR _|I_STXP _|I_PTRUE _|
+        I_WHILELT _|I_WHILELE _|I_WHILELO _|
+        I_WHILELS _|I_UADDV _|I_LD1SP _|
+        I_LD2SP _|I_LD3SP _|I_LD4SP _|
+        I_ST1SP _|I_ST2SP _|I_ST3SP _|
+        I_ST4SP _|I_MOV_SV _|I_DUP_SV _|
+        I_ADD_SV _|I_NEG_SV _|I_MOVPRFX _|
+        I_OP3_SV _|I_INDEX_SI _|I_INDEX_IS _|
+        I_INDEX_SS _|I_INDEX_II _|I_RDVL _|I_ADDVL _|
+        I_CNT_INC_SVE _|I_CTERM _|
+        I_LD1SPT _|I_ST1SPT _|
+        I_MOVA_VT _|I_MOVA_TV _|I_ADDA _|
+        I_SMSTART _|I_SMSTOP _|I_ALIGND _|I_ALIGNU _|
+        I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _|I_CLRTAG _|
+        I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|
+        I_LDCT _|I_SC _|I_SEAL _|I_STCT _|
+        I_UNSEAL _|I_GCSPOPM _|I_GCSPUSHM _|I_GCSSTR _|I_GCSSS1 _|
+        I_GCSSS2 _|I_LDRBH _|I_LDRS _|
+        I_LDARBH _|I_STRBH _|I_STLRBH _|
+        I_STXRBH _|I_MOV _|I_MOVZ _|
+        I_MOVN _|I_MOVK _|I_SXTW _|I_SBFM _|
+        I_UBFM _|I_ADDSUBEXT _|
+        I_MOPL _|I_MOP _|I_OP3 _|
+        I_ADR _|I_RBIT _|I_ABS _|I_REV _|
+        I_EXTR _|I_FENCE _|I_CSEL _|
+        I_IC _|I_DC _|I_TLBI _|
+        I_AT _|I_MRS _|I_MSR _|I_STG _|
+        I_ST2G _|I_STZG _|I_STZ2G _|
+        I_LDG _|I_IRG _|I_UDF _|I_PAC _|I_AUT _|
+        I_XPACI _|I_XPACD _
+        -> false
     let pp_barrier_short = pp_barrier
     let reject_mixed = true
 
@@ -291,14 +345,14 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | I_CASBH (v,_,_,_,_) | I_SWPBH (v,_,_,_,_)
       | I_LDOPBH (_,v,_,_,_,_) | I_STOPBH (_,v,_,_,_) ->
           Some (bh_to_sz v)
-      | I_NOP|I_B _|I_BR _|I_BC (_, _)|I_CBZ (_, _, _)
-      | I_CBNZ (_, _, _)|I_BL _|I_BLR _|I_RET _|I_ERET| I_SVC _ | I_LDAR (_, _, _, _)
+      | I_NOP|I_B _|I_BR _|I_BC _|I_CBZ _
+      | I_CBNZ _|I_BL _|I_BLR _|I_RET _|I_ERET| I_SVC _ | I_LDAR _
       | I_TBNZ(_,_,_,_) | I_TBZ (_,_,_,_) | I_MOVZ (_,_,_,_) | I_MOVK(_,_,_,_)
       | I_MOVN _
-      | I_MOV (_, _, _)|I_SXTW (_, _)|I_OP3 (_, _, _, _, _)
-      | I_ADR (_, _)|I_RBIT (_, _, _)|I_ABS _|I_REV _|I_EXTR _|I_FENCE _
+      | I_MOV _|I_SXTW _|I_OP3 (_, _, _, _, _)
+      | I_ADR _|I_RBIT _|I_ABS _|I_REV _|I_EXTR _|I_FENCE _
       | I_SBFM (_,_,_,_,_) | I_UBFM (_,_,_,_,_)
-      | I_CSEL (_, _, _, _, _, _)|I_IC (_, _)|I_DC (_, _)|I_MRS (_, _)|I_MSR (_, _)
+      | I_CSEL (_, _, _, _, _, _)|I_IC _|I_DC _|I_MRS _|I_MSR _
       | I_STG _ | I_LDG _|I_ST2G _ | I_IRG _
       | I_ALIGND _| I_ALIGNU _|I_BUILD _|I_CHKEQ _|I_CHKSLD _|I_CHKTGD _
       | I_CLRTAG _|I_CPYTYPE _|I_CPYVALUE _|I_CSEAL _|I_GC _|I_LDCT _|I_SEAL _

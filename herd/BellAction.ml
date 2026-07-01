@@ -251,7 +251,6 @@ end = struct
 
   let arch_sets =
     [
-      "X",is_atomic;
      "RMW",is_atomic;
      "Ftotal",is_total_barrier;
     ]
