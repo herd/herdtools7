@@ -25,6 +25,48 @@
 
 #define LITMUS_PAGE_SIZE PAGE_SIZE
 
+/*
+ * Compatibility definitions.
+ * These definitions are necessary after the following change in KUT:
+ *  arm64: update ESR_ELx definitions to match Linux kernel
+ * and allows litmus7 to work with both newer and older versions of KUT
+ */
+#ifndef ESR_EL1_EC_SHIFT
+#define ESR_EL1_EC_SHIFT ESR_ELx_EC_SHIFT
+#endif
+
+#ifndef ESR_EL1_EC_UNKNOWN
+#define ESR_EL1_EC_UNKNOWN ESR_ELx_EC_UNKNOWN
+#endif
+
+#ifndef ESR_EL1_EC_SVC64
+#define ESR_EL1_EC_SVC64 ESR_ELx_EC_SVC64
+#endif
+
+#ifndef ESR_EL1_EC_PAC
+#ifdef ESR_ELx_EC_FPAC
+#define ESR_EL1_EC_PAC ESR_ELx_EC_FPAC
+#else
+#define ESR_EL1_EC_PAC 0b011100
+#endif
+#endif
+
+#ifndef ESR_EL1_EC_DABT_EL0
+#define ESR_EL1_EC_DABT_EL0 ESR_ELx_EC_DABT_LOW
+#endif
+
+#ifndef ESR_EL1_EC_DABT_EL1
+#define ESR_EL1_EC_DABT_EL1 ESR_ELx_EC_DABT_CUR
+#endif
+
+#ifndef ESR_EL1_EC_IABT_EL0
+#define ESR_EL1_EC_IABT_EL0 ESR_ELx_EC_IABT_LOW
+#endif
+
+#ifndef ESR_EL1_EC_IABT_EL1
+#define ESR_EL1_EC_IABT_EL1 ESR_ELx_EC_IABT_CUR
+#endif
+
 static inline pteval_t *litmus_tr_pte(void *p) {
   return follow_pte(mmu_idmap, (uintptr_t)p);
 }
