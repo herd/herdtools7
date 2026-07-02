@@ -247,6 +247,148 @@ let  plain = Plain None
 
 type atom = atom_acc * MachMixed.t option
 
+module StructuredAtom : sig
+  type access_read = [ `Plain | `Acquire | `AcquirePC ]
+  type access_write = [ `Plain | `Release ]
+  type access_order = [ access_read | access_write ]
+
+  type pte_access =
+    | PteRead of access_read
+    | PteReadHA of access_read
+    | PteSet of access_write * WPTESet.t
+
+  type atomic_access =
+    | AtomicOrdinary
+    | AtomicAccessSize of MachMixed.t
+
+  type t = private
+    | OrdinaryAccess of access_order
+    | MixedSizeAccess of access_order * MachMixed.t
+    | MorelloAccess of access_order
+    | PteAccess of pte_access
+    | NeonAccess of neon_opt
+    | AtomicAccess of atom_rw * atomic_access
+    | MorelloTagAccess
+    | MorelloSealAccess
+    | MemoryTagAccess
+    | PairAccess of [ld_pair_opt | st_pair_opt]
+    | InstrAccess
+
+  val plain : t
+  val default : t
+  val instr : t
+  val to_legacy : t -> atom
+  val of_legacy : atom -> t
+end = struct
+  type access_read = [ `Plain | `Acquire | `AcquirePC ]
+  type access_write = [ `Plain | `Release ]
+  type access_order = [ access_read | access_write ]
+
+  type pte_access =
+    | PteRead of access_read
+    | PteReadHA of access_read
+    | PteSet of access_write * WPTESet.t
+
+  type atomic_access =
+    | AtomicOrdinary
+    | AtomicAccessSize of MachMixed.t
+
+  type t =
+    (* Ordinary integer/general-purpose data access. *)
+    | OrdinaryAccess of access_order
+    (* Mixed-size slice of an ordinary access, as in `b0`, `h0`, or `w0`. *)
+    | MixedSizeAccess of access_order * MachMixed.t
+    (* Morello capability data access, as in `Pc`, `Ac`, `Qc`, or `Lc`. *)
+    | MorelloAccess of access_order
+    (* VMSA PTE access, as in `Pte`, `PteA`, `PteV1`, or `PteHA`. *)
+    | PteAccess of pte_access
+    (* SIMD/Neon/SVE/SME access, as in `NeP` or `Ne1`. *)
+    | NeonAccess of neon_opt
+    | AtomicAccess of atom_rw * atomic_access
+    | MorelloTagAccess
+    | MorelloSealAccess
+    | MemoryTagAccess
+    | PairAccess of [ld_pair_opt | st_pair_opt]
+    | InstrAccess
+
+  let plain = OrdinaryAccess `Plain
+  let default = AtomicAccess (PP,AtomicOrdinary)
+  let instr = InstrAccess
+
+  let legacy_plain o : atom_acc = Plain o
+  let legacy_acquire o : atom_acc = Acq o
+  let legacy_acquire_pc o : atom_acc = AcqPc o
+  let legacy_release o : atom_acc = Rel o
+  let legacy_atomic rw : atom_acc = Atomic rw
+
+  let to_legacy a =
+    match a with
+    | OrdinaryAccess `Plain -> legacy_plain None,None
+    | MixedSizeAccess (`Plain,m) -> legacy_plain None,Some m
+    | OrdinaryAccess `Acquire -> legacy_acquire None,None
+    | MixedSizeAccess (`Acquire,m) -> legacy_acquire None,Some m
+    | OrdinaryAccess `AcquirePC -> legacy_acquire_pc None,None
+    | MixedSizeAccess (`AcquirePC,m) -> legacy_acquire_pc None,Some m
+    | OrdinaryAccess `Release -> legacy_release None,None
+    | MixedSizeAccess (`Release,m) -> legacy_release None,Some m
+    | AtomicAccess (rw,AtomicOrdinary) -> legacy_atomic rw,None
+    | AtomicAccess (rw,AtomicAccessSize m) -> legacy_atomic rw,Some m
+    | MorelloAccess `Plain -> legacy_plain (Some Capability),None
+    | MorelloAccess `Acquire -> legacy_acquire (Some Capability),None
+    | MorelloAccess `AcquirePC -> legacy_acquire_pc (Some Capability),None
+    | MorelloAccess `Release -> legacy_release (Some Capability),None
+    | MorelloTagAccess -> CapaTag,None
+    | MorelloSealAccess -> CapaSeal,None
+    | MemoryTagAccess -> Tag,None
+    | PteAccess (PteRead `Plain) -> Pte Read,None
+    | PteAccess (PteRead `Acquire) -> Pte ReadAcq,None
+    | PteAccess (PteRead `AcquirePC) -> Pte ReadAcqPc,None
+    | PteAccess (PteReadHA `Plain) -> Pte (Set (WPTESet.singleton WPTE.HA)),None
+    | PteAccess (PteReadHA `Acquire) -> Pte ReadHAAcq,None
+    | PteAccess (PteReadHA `AcquirePC) -> Pte ReadHAAcqPc,None
+    | PteAccess (PteSet (`Plain,p)) -> Pte (Set p),None
+    | PteAccess (PteSet (`Release,p)) -> Pte (SetRel p),None
+    | NeonAccess n -> Neon n,None
+    | PairAccess opt -> Pair (opt,UnspecLoc),None
+    | InstrAccess -> Instr,None
+
+  let of_legacy (legacy : atom) =
+    let ordinary_or_size = function
+      | None -> fun order -> OrdinaryAccess order
+      | Some m -> fun order -> MixedSizeAccess (order,m) in
+    match legacy with
+    | Plain None,None -> plain
+    | Plain None,Some m -> MixedSizeAccess (`Plain,m)
+    | Acq None,m -> ordinary_or_size m `Acquire
+    | AcqPc None,m -> ordinary_or_size m `AcquirePC
+    | Rel None,m -> ordinary_or_size m `Release
+    | Atomic rw,None -> AtomicAccess (rw,AtomicOrdinary)
+    | Atomic rw,Some m -> AtomicAccess (rw,AtomicAccessSize m)
+    | Plain (Some Capability),None -> MorelloAccess `Plain
+    | Acq (Some Capability),None -> MorelloAccess `Acquire
+    | AcqPc (Some Capability),None -> MorelloAccess `AcquirePC
+    | Rel (Some Capability),None -> MorelloAccess `Release
+    | CapaTag,None -> MorelloTagAccess
+    | CapaSeal,None -> MorelloSealAccess
+    | Tag,None -> MemoryTagAccess
+    | Pte Read,None -> PteAccess (PteRead `Plain)
+    | Pte ReadAcq,None -> PteAccess (PteRead `Acquire)
+    | Pte ReadAcqPc,None -> PteAccess (PteRead `AcquirePC)
+    | Pte (Set p),None when p = WPTESet.singleton WPTE.HA ->
+        PteAccess (PteReadHA `Plain)
+    | Pte (Set p),None -> PteAccess (PteSet (`Plain,p))
+    | Pte (SetRel p),None -> PteAccess (PteSet (`Release,p))
+    | Pte ReadHAAcq,None -> PteAccess (PteReadHA `Acquire)
+    | Pte ReadHAAcqPc,None -> PteAccess (PteReadHA `AcquirePC)
+    | Neon n,None -> NeonAccess n
+    | Pair (opt,_),None -> PairAccess opt
+    | Instr,None -> instr
+    | (Plain (Some Capability)|Acq (Some Capability)|AcqPc (Some Capability)
+      |Rel (Some Capability)|Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _|Instr),Some _ ->
+        assert false
+
+end
+
 module Value = struct
 
   include Value_gen.Make(struct
@@ -509,8 +651,8 @@ let is_tthm fields =
      | CapaSeal -> "Cs"
      | Pte p -> sprintf "Pte%s" (pp_atom_pte p)
      | Neon n -> SIMD.pp n
-     | Pair (opt,idx)
-       -> sprintf "Pa%s%s" (pp_pair_opt opt) (pp_pair_idx idx)
+     | Pair (opt,idx) ->
+         sprintf "Pa%s%s" (pp_pair_opt opt) (pp_pair_idx idx)
      | Instr -> "I"
 
    let pp_atom (a,m) = match a with
@@ -592,8 +734,7 @@ let is_tthm fields =
       let fold_pair f r =
         if do_mixed then r
         else
-          let f opt idx r =
-            f (Pair (opt, idx)) r in
+          let f opt idx r = f (Pair (opt,idx)) r in
           r |>
           f `Pa UnspecLoc |>
           f `PaN UnspecLoc |>
