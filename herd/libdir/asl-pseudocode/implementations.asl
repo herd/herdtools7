@@ -129,7 +129,13 @@ readonly func ImpDefBool(s: string) => boolean
 begin
   case s of
     when "Secure-only implementation" => return FALSE;
-    otherwise => unreachable;
+
+    /* Guards CheckDebug, that we haven't implemented anyways */
+    when "GPF, GPC, Data SyncExternal Aborts, TagChecks prioritized over Watchpoints" => return FALSE;
+
+    otherwise =>
+      println "Reached ImpDefBool:", s;
+      unreachable;
   end;
 end;
 
