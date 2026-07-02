@@ -247,6 +247,149 @@ let  plain = Plain None
 
 type atom = atom_acc * MachMixed.t option
 
+module StructuredAtom = struct
+  type access_order =
+    (* Plain access order, as in `P` or the order part of `h0`. *)
+    | OrderPlain
+    (* Acquire load order, as in `A`. *)
+    | OrderAcquire
+    (* Acquire-PC load order, as in `Q`. *)
+    | OrderAcquirePc
+    (* Release store order, as in `L`. *)
+    | OrderRelease
+    (* Atomic/RMW order, as in `X`, `XA`, `XL`, or `XAL`. *)
+    | OrderAtomic of atom_rw
+
+  type access_type =
+    (* Ordinary integer/general-purpose data access. *)
+    | OrdinaryAccess
+    (* Mixed-size slice of an ordinary access, as in `b0`, `h0`, or `w0`. *)
+    | AccessSize of MachMixed.t
+    (* Morello capability data access, as in `Pc`, `Ac`, `Qc`, or `Lc`. *)
+    | CapaAccess
+    (* Morello capability-tag access, as in `Ct`. *)
+    | CapaTagAccess
+    (* Morello capability-seal access, as in `Cs`. *)
+    | CapaSealAccess
+    (* MemTag allocation-tag access, as in `T`. *)
+    | TagAccess
+    (* VMSA PTE access, as in `Pte`, `PteA`, `PteV1`, or `PteHA`. *)
+    | PteAccess of atom_pte
+    (* SIMD/Neon/SVE/SME access, as in `NeP` or `Ne1`. *)
+    | NeonAccess of neon_opt
+    (* Pair access, as in `Pa`, `PaN`, `PaIQ`, `PaA`, `PaIL`, or `PaL`. *)
+    | PairAccess of [ld_pair_opt | st_pair_opt] * pair_idx
+    (* Instruction-fetch access used by the ifetch variant, printed as `I`. *)
+    | InstrAccess
+
+  type t =
+    { access_type : access_type;
+      access_order : access_order; }
+
+  let make access_type access_order = { access_type; access_order; }
+
+  let plain = make OrdinaryAccess OrderPlain
+  let default = make OrdinaryAccess (OrderAtomic PP)
+  let instr = make InstrAccess OrderPlain
+
+  let is_valid a =
+    match a.access_type,a.access_order with
+    | (OrdinaryAccess|AccessSize _),(OrderPlain|OrderAcquire|OrderAcquirePc
+                                    |OrderRelease|OrderAtomic _) ->
+        true
+    | CapaAccess,(OrderPlain|OrderAcquire|OrderAcquirePc|OrderRelease) ->
+        true
+    | PteAccess Read,(OrderPlain|OrderAcquire|OrderAcquirePc) ->
+        true
+    | PteAccess (Set _),(OrderPlain|OrderRelease) ->
+        true
+    | PteAccess (Set p),(OrderAcquire|OrderAcquirePc)
+      when p = WPTESet.singleton WPTE.HA ->
+        true
+    | (CapaTagAccess|CapaSealAccess|TagAccess|NeonAccess _
+      |PairAccess _|InstrAccess),OrderPlain ->
+        true
+    | _,_ ->
+        false
+
+  let order_to_legacy = function
+    | OrderPlain -> Plain None
+    | OrderAcquire -> Acq None
+    | OrderAcquirePc -> AcqPc None
+    | OrderRelease -> Rel None
+    | OrderAtomic rw -> Atomic rw
+
+  let to_legacy a =
+    if not (is_valid a) then assert false
+    else
+      match a.access_type,a.access_order with
+      | OrdinaryAccess,access_order ->
+          order_to_legacy access_order,None
+      | AccessSize m,access_order ->
+          order_to_legacy access_order,Some m
+      | CapaAccess,OrderPlain -> Plain (Some Capability),None
+      | CapaAccess,OrderAcquire -> Acq (Some Capability),None
+      | CapaAccess,OrderAcquirePc -> AcqPc (Some Capability),None
+      | CapaAccess,OrderRelease -> Rel (Some Capability),None
+      | CapaAccess,OrderAtomic _ -> assert false
+      | CapaTagAccess,OrderPlain -> CapaTag,None
+      | CapaSealAccess,OrderPlain -> CapaSeal,None
+      | TagAccess,OrderPlain -> Tag,None
+      | PteAccess Read,OrderPlain -> Pte Read,None
+      | PteAccess Read,OrderAcquire -> Pte ReadAcq,None
+      | PteAccess Read,OrderAcquirePc -> Pte ReadAcqPc,None
+      | PteAccess (Set p),OrderPlain -> Pte (Set p),None
+      | PteAccess (Set p),OrderRelease -> Pte (SetRel p),None
+      | PteAccess (Set p),OrderAcquire
+        when p = WPTESet.singleton WPTE.HA -> Pte ReadHAAcq,None
+      | PteAccess (Set p),OrderAcquirePc
+        when p = WPTESet.singleton WPTE.HA -> Pte ReadHAAcqPc,None
+      | PteAccess (ReadAcq|ReadAcqPc|SetRel _|ReadHAAcq|ReadHAAcqPc),_ ->
+          assert false
+      | NeonAccess n,OrderPlain -> Neon n,None
+      | PairAccess (opt,idx),OrderPlain -> Pair (opt,idx),None
+      | InstrAccess,OrderPlain -> Instr,None
+      | (CapaTagAccess|CapaSealAccess|TagAccess|PteAccess _
+        |NeonAccess _|PairAccess _|InstrAccess),
+        (OrderAcquire|OrderAcquirePc|OrderRelease|OrderAtomic _) ->
+          assert false
+
+  let of_legacy =
+    let ordinary_or_size = function
+      | None -> OrdinaryAccess
+      | Some m -> AccessSize m in
+    function
+    | Plain None,None -> plain
+    | Plain None,Some m -> make (AccessSize m) OrderPlain
+    | Acq None,m -> make (ordinary_or_size m) OrderAcquire
+    | AcqPc None,m -> make (ordinary_or_size m) OrderAcquirePc
+    | Rel None,m -> make (ordinary_or_size m) OrderRelease
+    | Atomic rw,m -> make (ordinary_or_size m) (OrderAtomic rw)
+    | Plain (Some Capability),None -> make CapaAccess OrderPlain
+    | Acq (Some Capability),None -> make CapaAccess OrderAcquire
+    | AcqPc (Some Capability),None -> make CapaAccess OrderAcquirePc
+    | Rel (Some Capability),None -> make CapaAccess OrderRelease
+    | CapaTag,None -> make CapaTagAccess OrderPlain
+    | CapaSeal,None -> make CapaSealAccess OrderPlain
+    | Tag,None -> make TagAccess OrderPlain
+    | Pte Read,None -> make (PteAccess Read) OrderPlain
+    | Pte ReadAcq,None -> make (PteAccess Read) OrderAcquire
+    | Pte ReadAcqPc,None -> make (PteAccess Read) OrderAcquirePc
+    | Pte (Set p),None -> make (PteAccess (Set p)) OrderPlain
+    | Pte (SetRel p),None -> make (PteAccess (Set p)) OrderRelease
+    | Pte ReadHAAcq,None ->
+        make (PteAccess (Set (WPTESet.singleton WPTE.HA))) OrderAcquire
+    | Pte ReadHAAcqPc,None ->
+        make (PteAccess (Set (WPTESet.singleton WPTE.HA))) OrderAcquirePc
+    | Neon n,None -> make (NeonAccess n) OrderPlain
+    | Pair (opt,idx),None -> make (PairAccess (opt,idx)) OrderPlain
+    | Instr,None -> instr
+    | (Plain (Some Capability)|Acq (Some Capability)|AcqPc (Some Capability)
+      |Rel (Some Capability)|Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _|Instr),Some _ ->
+        assert false
+
+end
+
 module Value = struct
 
   include Value_gen.Make(struct
