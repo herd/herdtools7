@@ -348,5 +348,5 @@ end;
 // =============================================================================
 
 // Not defined in the arm arm
-constant NUM_VMIDBITS = 16;
-constant NUM_ASIDBITS = 16;
+constant NUM_VMIDBITS = 16; /* Was the value before M.c */
+constant NUM_ASIDBITS = 16; /* Was the value before M.c */
