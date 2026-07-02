@@ -16,7 +16,7 @@ BUNDLER_ARGS := -vv $(BUNDLER_JOBS)
 BUNDLER := bundler.py
 BUNDLER_CMD := $(PYTHON) $(BUNDLER) $(BUNDLER_ARGS)
 
-ARCHITECTURE_RELEASE = 2026-03
+ARCHITECTURE_RELEASE = 2026-06
 
 BASE_URL := https://developer.arm.com/-/cdn-downloads/permalink
 
@@ -80,10 +80,8 @@ TO_CLEANUP += notice.html shared_pseudocode.asl shared_pseudocode.asl.log
 shared_pseudocode.asl: $(ISA_A64_NAME)
 	@ cp $^/xhtml/notice.html .
 	@ echo "Extracting the shared ASL pseudocode from xml files ..."
-	@ touch $@.tmp
-	@ $(BUNDLER_CMD) --make-shared-pseudocode -o $@.tmp --log-file $@.log $^/shared_pseudocode.xml
-	@ sed -e 's/constant integer{} \([A-Za-z][A-Za-z0-9_]*\)/constant \1 : integer{}/' $@.tmp > $@ # note: workaround for old ASL0 declaration syntax in a couple places
-	@ rm $@.tmp
+	@ touch $@
+	@ $(BUNDLER_CMD) --make-shared-pseudocode -o $@ --log-file $@.log $^/shared_pseudocode.xml
 	@ echo "You can find extraction log at $@.log"
 
 TO_CLEANUP += aarch64-notice.html $(ISA_A64_NAME).log $(ISA_A64_OFILE)
@@ -156,6 +154,10 @@ ALLOW_CONDITIONAL_FIELDS_FOR := $\
 		PMCNTENSET_EL0,$\
 		PMINTENSET_EL1,$\
 		PMCR_EL0,$\
+		TFSRE0_EL1,$\
+		TFSR_EL1,$\
+		TFSR_EL2,$\
+		TFSR_EL3,$\
 		TCR2_EL2,$\
 		TCR2MASK_EL2,$\
 		TTBCR,$\
