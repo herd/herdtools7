@@ -466,6 +466,8 @@ module Make(C:Builder.S)
     let chunk_relax c = c.chunk_relax
     let chunk_edges c = c.chunk_edges
     let chunk_plain_edges c = plain c.chunk_edges
+    let chunk_concrete_edges c =
+      List.filter (fun e -> e.pred = None) c.chunk_edges |> plain
 
     let pp_ess ess =
       let list_sep = " " in
@@ -611,39 +613,19 @@ module Make(C:Builder.S)
               | UnspecCom -> assert false
         ) c es
 
-    let c_minprocs_es c =
-      List.fold_left ( fun c e ->
-        match e.pred,e.plain.C.E.edge,get_ie e.plain with
-        | Some _,_,_
-        | None,(Back _|Leave _),_
-        | None,_,Int -> c
-        | None,_,Ext -> c + 1
-        | None,_,UnspecCom -> assert false
-      ) c
-
-    let minprocs suff =
-      let r = List.fold_left (fun c chunk -> c_minprocs_es c (chunk_edges chunk)) 0 suff in
-      if O.verbose > 3 then eprintf "MIN [%s] => %i\n" (pp_ess suff) r ;
+    let procedure_count_chunks chunks =
+      let r =
+        List.fold_left
+          (fun c chunk -> procedure_count c (chunk_concrete_edges chunk))
+          0 chunks in
+      if O.verbose > 3 then eprintf "PROCS [%s] => %i\n" (pp_ess chunks) r ;
       r
 
-    let rec c_minint_es c = function
-      | [] -> false,c
-      | {pred=Some _; _}::es
-      | {plain={edge=Id; _}; _}::es ->  c_minint_es c es
-      | e::es ->
-          match get_ie e.plain with
-          | Ext -> true,c
-          | Int -> c_minint_es (c+1) es
-          | UnspecCom -> assert false
-
-    let rec c_minint c = function
-      | [] -> c
-      | chunk::suff ->
-          let stop,c = c_minint_es c (chunk_edges chunk) in
-          if stop then c
-          else c_minint c suff
-
-    let minint suff = c_minint 0 suff
+    let max_instruction_count_chunks chunks =
+      List.fold_left
+        (fun c chunk -> max_edges_in_procedure c (chunk_concrete_edges chunk))
+        (0,0) chunks
+      |> snd
 
 (* Prefix *)
     let parse_prefixes prefix =
@@ -719,9 +701,9 @@ module Make(C:Builder.S)
         (* check if `r` is compatible with `suff` *)
         can_precede_relax r suff &&
         (* Check procedure number *)
-        minprocs r_suff <= O.nprocs &&
+        procedure_count_chunks r_suff <= O.nprocs &&
         (* Check instruction number *)
-        minint r_suff <= O.max_ins-1 &&
+        max_instruction_count_chunks r_suff <= O.max_ins-1 &&
         (* Check if the cycle is rejected by `reject` *)
         check_reject_partial reject r_suff
       then begin
