@@ -585,11 +585,6 @@ module Make(C:Builder.S)
           table.(next.chunk_id).(exist_head.chunk_id)
 
 (* Functional for recursive call of generators *)
-
-    let sz chunk =
-      List.for_all (fun e -> is_id e.plain.edge) (chunk_edges chunk)
-      |> fun only_id -> if only_id then 0 else 1
-
     let procedure_count c es =
       List.fold_left (fun count e ->
         match e.edge with
@@ -696,7 +691,7 @@ module Make(C:Builder.S)
        - `reject` contains edge sequences that must not appear. *)
     let call_rec_base prefix test_generator po_safe can_precede_relax over n r suff f_rec k ?(reject=[])=
       let r_suff = r::suff in
-      let n = n-sz r in
+      let n = n-1 in
       if
         (* check if `r` is compatible with `suff` *)
         can_precede_relax r suff &&
