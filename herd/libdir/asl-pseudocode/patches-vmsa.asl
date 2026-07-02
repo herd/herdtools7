@@ -181,8 +181,8 @@ end;
 
 // =============================================================================
 
-// StageOA()
-// =========
+// Stage1OA()
+// ==========
 // Given the final walk state (a page or block descriptor), map the untranslated
 // input address bits to the output address
 
@@ -190,9 +190,9 @@ end;
 // function and use a primitive to compute the offset with respect to the
 // output address.
 
-func StageOA(ia:bits(64),d128:bit,tgx:TGx,walkstate:TTWState) => FullAddress
+func Stage1OA(ia : bits(64), walkparams : S1TTWParams, walkstate : TTWState) => FullAddress
 begin
-var oa : FullAddress;
+  var oa : FullAddress;
   oa.paspace = walkstate.baseaddress.paspace;
   oa.address = walkstate.baseaddress.address + OffsetPrimitive(ia);
   return oa;
