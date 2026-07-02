@@ -344,3 +344,9 @@ begin
     return FALSE;
   end;
 end;
+
+// =============================================================================
+
+// Not defined in the arm arm
+constant NUM_VMIDBITS = 16;
+constant NUM_ASIDBITS = 16;
