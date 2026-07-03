@@ -507,6 +507,15 @@ Required tests:
   $ aslref alt-mask-syntax.asl
   $ aslref subprogram-global-name-clash.asl
   $ aslref subprogram-local-name-clash.asl
+  $ aslref subprogram-tuple-clash.bad.asl
+  File subprogram-tuple-clash.bad.asl, line 3, character 0 to line 6,
+    character 4:
+  func f1 (x: (integer, t1))
+  begin
+    pass;
+  end;
+  ASL Type error: cannot declare already declared element "f1".
+  [1]
   $ aslref string_concat.asl
   $ aslref approx-expr-binop.asl
   $ aslref asl1-calls-asl0-accessor.asl -0 asl0-accessor.asl
