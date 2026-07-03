@@ -177,17 +177,15 @@ module
 
       let write_mem sz an = do_write_mem sz (RISCV.P an)
 
-      let lrscdiffok = C.variant Variant.LrScDiffOk
+
+(* Notice that LR/SC to different addresses can succeed. *)
 
       let write_mem_conditional sz an a v resa ii =
-        if  lrscdiffok then
-          (M.mk_singleton_es_eq
-             (Act.Access (Dir.W, A.Location_global a, v, RISCV.EX an, (), sz,Access.VIR)) [] ii >>|
-             M.neqT resa V.zero) >>! () (* resa = zero <-> no matching load reserve *)
-        else
-          let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
-          M.mk_singleton_es_eq
-            (Act.Access (Dir.W, A.Location_global a, v, RISCV.EX an, (), sz,Access.VIR)) eq ii
+        (M.mk_singleton_es
+           (Act.Access
+              (Dir.W, A.Location_global a, v,
+               RISCV.EX an, (), sz,Access.VIR)) ii >>|
+           M.neqT resa V.zero) >>! () (* resa = zero <-> no matching load reserve *)
 
       let write_mem_atomic sz an = do_write_mem sz (RISCV.X an)
 
