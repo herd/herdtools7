@@ -560,10 +560,7 @@ let rec type_clashes env t s =
         corresponding element types type-clash
       • S and T are same-named types *)
   (* We will add a rule for boolean and boolean. *)
-  (same_named_type s t
-  ||
-  let s_struct = get_structure env s and t_struct = get_structure env t in
-  match (s_struct.desc, t_struct.desc) with
+  match (s.desc, t.desc) with
   | T_Int _, T_Int _
   | T_Real, T_Real
   | T_String, T_String
@@ -575,8 +572,11 @@ let rec type_clashes env t s =
   | T_Tuple li_s, T_Tuple li_t ->
       List.compare_lengths li_s li_t = 0
       && List.for_all2 (type_clashes env) li_s li_t
-  | _ -> false)
-  |: TypingRule.TypeClash
+  | T_Named s_name, T_Named t_name when String.equal s_name t_name -> true
+  | T_Named _, _ | _, T_Named _ ->
+      let t1 = make_anonymous env t and s1 = make_anonymous env s in
+      type_clashes env s1 t1
+  | _ -> false |: TypingRule.TypeClash
 (* End *)
 
 let subprogram_clashes env (f1 : func) (f2 : func) =

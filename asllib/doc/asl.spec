@@ -11111,59 +11111,65 @@ typing function type_clashes(tenv: static_envs, t: ty, s: ty) ->
   result {b}. \ProseOtherwiseTypeError",
   prose_transition = "determining whether {t} clashes with {s} in the context of {tenv} yields",
 } =
-  case same_named {
-    same_named_type(s, t) -> True;
+  case simple {
+    ast_label(t) = ast_label(s);
+    ast_label(t) in make_set(label_T_Bits, label_T_Bool, label_T_Int, label_T_Real, label_T_String);
     --
     True;
   }
 
-  case not_same_named {
-    same_named_type(s, t) -> False;
-    get_structure(tenv, t) -> t_struct;
-    get_structure(tenv, s) -> s_struct;
-    case simple {
-      ast_label(t_struct) = ast_label(s_struct);
-      ast_label(t_struct) in make_set(label_T_Bits, label_T_Bool, label_T_Int, label_T_Real, label_T_String);
-      --
-      True;
-    }
+  case t_enum {
+    t =: T_Enum(labels_t);
+    s =: T_Enum(labels_s);
+    --
+    labels_t = labels_s;
+  }
 
-    case t_enum {
-      t_struct =: T_Enum(labels_t);
-      s_struct =: T_Enum(labels_s);
-      --
-      labels_t = labels_s;
-    }
+  case t_array {
+    t =: T_Array(_, ty_t);
+    s =: T_Array(_, ty_s);
+    type_clashes(tenv, ty_t, ty_s) -> b;
+    --
+    b;
+  }
 
-    case t_array {
-      t_struct =: T_Array(_, ty_t);
-      s_struct =: T_Array(_, ty_s);
-      type_clashes(tenv, ty_t, ty_s) -> b;
-      --
-      b;
-    }
+  case t_tuple {
+    t =: T_Tuple(ts_t);
+    s =: T_Tuple(ts_s);
+    bool_transition(same_length(ts_t, ts_s)) -> True | False;
+    INDEX(i, ts_t: type_clashes(tenv, ts_t[i], ts_s[i]) -> clashes[i]);
+    --
+    list_and(clashes);
+  }
 
-    case t_tuple {
-      t_struct =: T_Tuple(ts_t);
-      s_struct =: T_Tuple(ts_s);
-      bool_transition(same_length(ts_t, ts_s)) -> True | False;
-      INDEX(i, ts_t: type_clashes(tenv, ts_t[i], ts_s[i]) -> clashes[i]);
-      --
-      list_and(clashes);
-    }
+  case same_named {
+    t =: T_Named(t_name);
+    s =: T_Named(s_name);
+    s_name = t_name;
+    --
+    True;
+  }
 
-    case otherwise_different_labels {
-      ast_label(t_struct) != ast_label(s_struct);
-      --
-      False;
-    }
+  case one_named {
+    ast_label(t) = label_T_Named || ast_label(s) = label_T_Named;
+    make_anonymous(tenv, t) -> t1;
+    make_anonymous(tenv, s) -> s1;
+    type_clashes(tenv, t1, s1) -> b;
+    --
+    b;
+  }
 
-    case otherwise_structured {
-      ast_label(t_struct) = ast_label(s_struct);
-      ast_label(t_struct) in make_set(label_T_Collection, label_T_Exception, label_T_Record);
-      --
-      False;
-    }
+  case otherwise_different_labels {
+    ast_label(t) != ast_label(s);
+    --
+    False;
+  }
+
+  case otherwise_structured {
+    ast_label(t) = ast_label(s);
+    ast_label(t) in make_set(label_T_Collection, label_T_Exception, label_T_Record);
+    --
+    False;
   }
 ;
 
