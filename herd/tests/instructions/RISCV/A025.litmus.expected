@@ -1,0 +1,11 @@
+Test A025 Forbidden
+States 2
+[x]=0;
+[x]=1;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition ~exists ([x]=2)
+Observation A025 Never 0 2
+Hash=5834b5dd50ad482687f514e06a23a6cb
+

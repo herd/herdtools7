@@ -1133,10 +1133,13 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let state_add loc v st =
         ASLS.A.state_add st (ASLS.A.Location_reg (ii.A.proc, loc)) v
       in
-      let add_reg_if_present reg loc st =
+      let add_reg_if_present ?(setzero=false) reg loc st =
         match A.look_reg reg ii.A.env.A.regs with
         | Some v -> state_add loc (aarch64_to_asl v) st
-        | _ -> st
+        | _ ->
+           if setzero then
+             state_add loc ASLS.V.zero st
+           else st
       in
       let add_arch_reg_if_present reg =
         add_reg_if_present reg (ASLBase.ArchReg reg)
@@ -1154,7 +1157,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         |> state_add (global_loc "PSTATE") pstate_val
         |> state_add (global_loc "_PC") pc_val
         |> List.fold_right add_arch_reg_if_present ASLBase.gregs
-        |> add_reg_if_present AArch64Base.ResAddr (global_loc "RESADDR")
+        |> add_reg_if_present ~setzero:true AArch64Base.ResAddr (global_loc "RESADDR")
         |> add_reg_if_present AArch64Base.SP (global_loc "_SP_EL0")
         |> (if is_vmsa then
               state_add (global_loc "D128")

@@ -1274,7 +1274,7 @@ module Make
         check_morello_for_write
           (fun a ->
             ((if do_cu (* If CU allowed, write may succeed whatever the address _a_ is *)
-              then M.unitT () else M.assign a resa)
+              then M.unitT () else M.neqT V.zero resa)
              >>| check_mixed_write_mem sz an anexp ac a v ii)
             >>! ())
         a v ii
@@ -2175,7 +2175,10 @@ Arguments:
               begin
                 let open AArch64 in
                 match ii.env.lx_sz with
-                | None -> true (* No LoadExcl at all. always fail *)
+                | None ->
+                (* No LoadExcl at all, store may succeed
+                   when constrained unpredictable is allowed *)
+                   not do_cu
                 | Some szr ->
                    (* Some, must fail when size differ and cu is disallowed *)
                    not (do_cu || MachSize.equal szr sz)
@@ -2193,7 +2196,8 @@ Arguments:
       let stxr sz t rr rs rd ii =
         do_stxr
           (read_reg_ord_sz sz rs ii)
-          (fun an ac ea resa v  -> write_mem_atomic sz an aexp ac ea v resa ii)
+          (fun an ac ea resa v  ->
+            write_mem_atomic sz an aexp ac ea v resa ii)
           sz t rr rd ii
 
       let stxp sz t rr rs1 rs2 rd ii =
@@ -5213,7 +5217,7 @@ Arguments:
       let mk_mop_fetch exposed_page exposed_label test ii =
         let module InstrSet = AArch64.V.Cst.Instr.Set in
         let relevant_pagelbls = get_instr_ptevals test in
-       
+
         let default_cands =
           InstrSet.empty
           |> InstrSet.add ii.A.inst

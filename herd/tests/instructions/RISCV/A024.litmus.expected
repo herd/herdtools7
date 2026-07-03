@@ -1,0 +1,11 @@
+Test A024 Allowed
+States 2
+[y]=0;
+[y]=1;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists ([y]=1)
+Observation A024 Sometimes 1 1
+Hash=d0e19174b76a6520c338d289c54f6f3e
+

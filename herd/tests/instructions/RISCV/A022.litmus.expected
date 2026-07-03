@@ -1,0 +1,12 @@
+Test A022 Forbidden
+States 3
+0:x1=0; [x]=2;
+0:x1=2; [x]=1;
+0:x1=2; [x]=2;
+Ok
+Witnesses
+Positive: 4 Negative: 0
+Condition ~exists (0:x1=0 /\ [x]=1)
+Observation A022 Never 0 4
+Hash=8b72df1f97f7cccf6d9f8d0102c21653
+

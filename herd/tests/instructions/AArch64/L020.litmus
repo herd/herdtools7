@@ -1,6 +1,5 @@
 AArch64 L020
-(* LX/SX with different address, success is Constrained Upredictable.
-   Normaly excluded, appears with  -variant CU *)
+(* LX/SX with different address, observed on Raspberry Pi4B *)
 {
 int x=1;
 int y=2;
@@ -11,4 +10,4 @@ int y=2;
  LDXR W1,[X0]     ;
  MOV W3,#3        ;
  STXR W4,W3,[X2]  ;
-~exists y=3;
+exists [y]=3;

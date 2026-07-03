@@ -1,0 +1,11 @@
+RISCV A024
+(* SC may succeed on y when reservation is on x *)
+{
+ 0:x5=x;
+ 0:x7=y;
+}
+ P0                  ;
+ lr.w x1,(x5)        ;
+ ori x2,x0,1         ;
+ sc.w x6,x2,(x7)     ;
+exists [y]=1
