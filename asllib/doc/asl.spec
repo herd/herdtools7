@@ -4807,7 +4807,9 @@ semantics function find_catcher(tenv: static_envs, v_ty: ty, catchers: list0(cat
   case match {
     catchers =: match_cons(c, catchers1);
     c =: (name_opt, e_ty, s);
-    same_named_type(v_ty, e_ty) -> True;
+    v_ty =: T_Named(v_ty_name);
+    e_ty =: T_Named(e_ty_name);
+    e_ty_name = v_ty_name;
     --
     some(c);
   }
@@ -4815,7 +4817,9 @@ semantics function find_catcher(tenv: static_envs, v_ty: ty, catchers: list0(cat
   case no_match {
     catchers =: match_cons(c, catchers1);
     c =: (name_opt, e_ty, s);
-    same_named_type(v_ty, e_ty) -> False;
+    v_ty =: T_Named(v_ty_name);
+    e_ty =: T_Named(e_ty_name);
+    e_ty_name != v_ty_name;
     find_catcher(tenv, v_ty, catchers1) -> d;
     --
     d;
