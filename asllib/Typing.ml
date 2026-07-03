@@ -3169,7 +3169,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     and ses_filtered =
       let ty_name = match ty'.desc with T_Named s -> s | _ -> assert false in
       SES.filter_thrown_exceptions
-        (fun s -> not (Types.subtypes_names env s ty_name))
+        (fun s -> not (String.equal s ty_name))
         ses_in
     in
     let ses = SES.union ses_block ses_ty in
@@ -3897,7 +3897,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin DeclareType *)
-  let declare_type ~loc name ty s genv =
+  let declare_type ~loc name ty genv =
     let () =
       if false then Format.eprintf "Declaring type %s of %a@." name PP.pp_ty ty
     in
@@ -3905,51 +3905,25 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let+ () = check_var_not_in_genv ~loc genv name in
     let env = with_empty_local genv in
     let t1, ses_t = annotate_type ~decl:true ~loc:(to_pos ty) env ty in
-    let env1, t2, s' =
-      match s with
-      (* AnnotateExtraFields( *)
-      | None -> (env, t1, None)
-      | Some (super, extra_fields) ->
-          let+ () =
-           fun () ->
-            if Types.subtype_satisfies env t1 (T_Named super |> here) then ()
-            else conflict ~loc [ T_Named super ] t1
-          in
-          let new_ty =
-            if extra_fields = [] then t1
-            else
-              match IMap.find_opt super genv.declared_types with
-              | Some ({ desc = T_Record fields; _ }, _) ->
-                  T_Record (fields @ extra_fields) |> here
-              | Some ({ desc = T_Exception fields; _ }, _) ->
-                  T_Exception (fields @ extra_fields) |> here
-              | Some _ -> conflict ~loc [ T_Record []; T_Exception [] ] t1
-              | None -> undefined_identifier ~loc super
-          and env = add_subtype name super env in
-          (* the extra_fields have already been incorporated into new_ty,
-             so we produce an empty list instead here *)
-          (env, new_ty, Some (super, []))
-      (* AnnotateExtraFields) *)
-    in
     let time_frame =
       if SES.is_pure ses_t then TimeFrame.Constant else TimeFrame.Execution
     in
-    let env2 = add_type name t2 time_frame env1 in
+    let env1 = add_type name t1 time_frame env in
     let new_tenv =
-      match t2.desc with
+      match t1.desc with
       | T_Enum ids ->
           let t = T_Named name |> here in
           (* DeclareEnumLabels( *)
-          let declare_one env2 label =
-            declare_const ~loc label t (L_Label label) env2
+          let declare_one env1 label =
+            declare_const ~loc label t (L_Label label) env1
           in
-          let genv3 = List.fold_left declare_one env2.global ids in
+          let genv3 = List.fold_left declare_one env1.global ids in
           (* DeclareEnumLabels) *)
-          { env2 with global = genv3 }
-      | _ -> env2
+          { env1 with global = genv3 }
+      | _ -> env1
     in
     let () = if false then Format.eprintf "Declared %s.@." name in
-    (new_tenv.global, t2, s')
+    (new_tenv.global, t1)
   (* End *)
 
   (* Begin DeclareGlobalStorage *)
@@ -4074,9 +4048,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let gsd', new_genv = declare_global_storage ~loc gsd genv in
           let new_d = D_GlobalStorage gsd' |> here in
           (new_d, new_genv) |: TypingRule.TypecheckDecl
-      | D_TypeDecl (x, ty, s) ->
-          let new_genv, ty', s' = declare_type ~loc x ty s genv in
-          let new_d = D_TypeDecl (x, ty', s') |> here in
+      | D_TypeDecl (x, ty) ->
+          let new_genv, ty' = declare_type ~loc x ty genv in
+          let new_d = D_TypeDecl (x, ty') |> here in
           (new_d, new_genv) |: TypingRule.TypecheckDecl
       (* End *)
       | D_Pragma _ -> assert false

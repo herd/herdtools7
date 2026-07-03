@@ -2,43 +2,12 @@
 
 This section defines the following relations over types and operators:
 \begin{itemize}
-  \item Subtype (\TypingRuleRef{Subtype})
   \item Subtype Satisfaction (\TypingRuleRef{SubtypeSatisfaction})
   \item Type Satisfaction (\TypingRuleRef{TypeSatisfaction})
   \item The Lowest Common Ancestor of two types (\TypingRuleRef{LowestCommonAncestor})
   \item Applying a unary operator to a type (\TypingRuleRef{ApplyUnopType})
   \item Applying a binary operator to a pair of types (\TypingRuleRef{ApplyBinopTypes})
 \end{itemize}
-
-\TypingRuleDef{Subtype}
-\hypertarget{def-supertypeterm}{}
-The \emph{\subtypeterm} relation is a partial order over \underline{named types}.
-The \emph{\supertypeterm} is the inverse relation.
-That is, \tty\ is a \supertypeterm{} of \tsy\ if and only if \tsy\ is a \subtypeterm{} of \tty.
-
-\ExampleDef{Subtypes and Supertypes}
-The following table determines whether the type \vAbf{}
-subtypes the type \vBbf{} with respect to the types
-declared in \listingref{subtype}:\\
-\begin{tabular}{llll}
-  \textbf{type A} & \textbf{type B}   & \textbf{subtypes?}  & \textbf{reason}\\
-\hline
-  \texttt{subInt}     & \texttt{subInt}   & yes             & subtyping is reflexive for \namedtypesterm{}\\
-  \texttt{subInt}     & \texttt{superInt} & yes             & declared as a \subtypeterm{}\\
-  \texttt{superInt}   & \texttt{subInt}   & no              & subtyping is antisymmetric\\
-  \texttt{subsubInt}  & \texttt{superInt} & yes             & subtyping is transitive\\
-  \texttt{otherInt}   & \texttt{superInt} & no              & no chain of subtyping between the types\\
-  \texttt{superInt}   & \texttt{integer}  & no              & \texttt{integer} is not a \namedtypeterm{}\\
-  \texttt{integer}    & \texttt{integer}  & no              & \texttt{integer} is not a \namedtypeterm{}\\
-\end{tabular}
-
-\ASLListing{Subtypes and Supertypes}{subtype}{\typingtests/TypingRule.Subtype.asl}
-
-\RenderRelation{is_subtype}
-
-\RenderProseAndFormally{is_subtype}
-\CodeSubsection{\SubtypeBegin}{\SubtypeEnd}{../types.ml}
-
 
 \TypingRuleDef{SubtypeSatisfaction}
 \RenderRelation{subtype_satisfies}
@@ -59,12 +28,8 @@ a type consisting of one variable expression.
 \ASLListing{Subtype satisfaction error 1}{subtypesat-bad1}{\typingtests/TypingRule.SubtypeSatisfaction.bad1.asl}
 \ASLListing{Subtype satisfaction error 2}{subtypesat-bad2}{\typingtests/TypingRule.SubtypeSatisfaction.bad2.asl}
 
-\listingref{subtypesat2} shows examples of legal and illegal assignments involving
-subtyping.
-\ASLListing{More Examples of subtype satisfaction}{subtypesat2}{\typingtests/TypingRule.SubtypeSatisfaction2.asl}
-
-\listingref{subtypesat3} shows more examples of legal and illegal assignments involving
-subtyping.
+\listingref{subtypesat3} shows more examples of legal and illegal assignments in the context
+of subtype-satisfaction.
 \ASLListing{Even more examples of subtype satisfaction}{subtypesat3}{\typingtests/TypingRule.SubtypeSatisfaction3.asl}
 
 We employ the following helper function.
@@ -144,6 +109,10 @@ We refer to such a type as a \emph{\Proselca}, or LCA, for short, and define it 
 \pagebreak
 \ASLListing{Lowest common ancestor}{example-lca}{\typingtests/TypingRule.LowestCommonAncestor.asl}
 
+\listingref{example-lca-bad} shows an example of an erroneous conditional expressions
+where no lowest common ancestor exists.
+\ASLListing{Lowest common ancestor error}{example-lca-bad}{\typingtests/TypingRule.LowestCommonAncestor.bad.asl}
+
 \listingref{example-lca2} shows an example of a lowest common ancestor of two \bitvectortypesterm{}
 of different widths.
 \ASLListing{Lowest common ancestor of two bitvectors}{example-lca2}{\typingtests/TypingRule.LowestCommonAncestor2.asl}
@@ -219,31 +188,6 @@ The signatures for the arithmetic operations for the \realtypeterm{} are as foll
 \RenderConstant{arith_real_signatures}
 
 \CodeSubsection{\applybinoptypesBegin}{\applybinoptypesEnd}{../Typing.ml}
-
-
-\TypingRuleDef{FindNamedLCA}
-\RenderRelation{named_lowest_common_ancestor}
-\RenderRelation{supers}
-\[
-  \supers(\tenv, \vt) \triangleq
-  \begin{cases}
-    \{\vt\} \cup \supers(\tenv, \vs) & \text{ if }\tenv.\staticenvsG.\subtypes(\vt) = \vs\\
-    \{\vt\}  & \text{ otherwise } (\text{that is, }\vt \not\in\dom(\tenv.\staticenvsG.\subtypes))\\
-  \end{cases}
-\]
-
-\ExampleDef{Finding Named Lowest Common Ancestors}
-In \listingref{find-named-lca},
-the set of named supertypes for \verb|B2| is \verb|{A1, A2, B1, B2}|,
-set of named supertypes for \verb|C2| is \verb|{A1, A2, C1, C2}|,
-therefore the named lowest common ancestor of \verb|B2| and \verb|C2|
-is \verb|A2|, while \verb|B2| and \verb|D1| have no
-named lowest common ancestor.
-
-\ASLListing{Finding named lowest common ancestors}{find-named-lca}{\typingtests/TypingRule.FindNamedLCA.asl}
-
-
-\RenderProseAndFormally{named_lowest_common_ancestor}
 
 \TypingRuleDef{AnnotateConstraintBinop}
 \RenderRelation{annotate_constraint_binop}

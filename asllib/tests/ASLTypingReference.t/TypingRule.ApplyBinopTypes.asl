@@ -1,5 +1,4 @@
 type Color of enumeration {RED, GREEN, BLUE};
-type SubColor subtypes Color;
 type Status of enumeration {OK, ERROR};
 
 func main() => integer
@@ -18,7 +17,7 @@ begin
                     (Ones{8} as bits(8) {[7] flag});
   // The next statement is illegal: both bitvectors must have the same length for ==.
   // var - : boolean = Ones{8} == Zeros{9};
-  var f : boolean = (RED as Color) != (GREEN as SubColor);
+  var f : boolean = (RED as Color) != (GREEN as Color);
   // The next statement is illegal: comparing labels declared in
   // different enumerations is not allowed.
   // var - : boolean = RED != OK;

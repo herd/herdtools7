@@ -5,12 +5,7 @@ Hello world should work:
 
 Type-checking errors:
 
-  $ aslref subtype-satisfaction-arrray-illegal.asl
-  File subtype-satisfaction-arrray-illegal.asl, line 4, characters 0 to 38:
-  type o of array[[10]] of n subtypes m;
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: a subtype of m was expected, provided array [[10]] of n.
-  [1]
+  $ aslref subtype-satisfaction-array.asl
 
   $ aslref anonymous-types-example.asl
   File anonymous-types-example.asl, line 21, characters 2 to 6:
@@ -428,7 +423,7 @@ Required tests:
   $ aslref assign1.asl
   $ aslref big-ints.asl
   $ aslref bitfields.asl
-  $ aslref --no-exec bitfield-subtyping.asl
+  $ aslref --no-exec bitfields2.asl
   $ aslref bitvectors.asl
   $ aslref case.asl
   $ aslref concat-empty.asl
@@ -467,11 +462,43 @@ Required tests:
   $ aslref pass.asl
   $ aslref patterns.asl
   $ aslref pattern-string.asl
-  $ aslref records-2.asl
+  $ aslref records-2.bad.asl
+  File records-2.bad.asl, line 36, characters 9 to 34:
+    assert equal_a_record_ty (a, aa);
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: No subprogram declaration matches the invocation:
+    equal_a_record_ty(a_record_ty, aa_record_ty).
+  [1]
   $ aslref records.asl
   $ aslref static.asl
-  $ aslref subtypes-example.asl
-  $ aslref subtypes-with.asl
+  $ aslref subtype-satisfaction-example.asl
+  $ aslref --no-exec subtype-satisfaction-insect-to-animal.bad.asl
+  File subtype-satisfaction-insect-to-animal.bad.asl, line 9,
+    characters 2 to 45:
+    var animalLegs: AnimalLegs = centipedeLegs;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: a subtype of AnimalLegs was expected, provided InsectLegs.
+  [1]
+  $ aslref --no-exec subtype-satisfaction-shape-to-animal.bad.asl
+  File subtype-satisfaction-shape-to-animal.bad.asl, line 9, characters 2 to 42:
+    var dogLegs: AnimalLegs = myCircleSides;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error: a subtype of AnimalLegs was expected, provided ShapeSides.
+  [1]
+  $ aslref --no-exec subtype-satisfaction-word-count-to-packet-length.bad.asl
+  File subtype-satisfaction-word-count-to-packet-length.bad.asl, line 9,
+    characters 2 to 16:
+    myPacketLength = myWordCount;
+    ^^^^^^^^^^^^^^
+  ASL Type error: a subtype of PacketLength was expected, provided WordCount.
+  [1]
+  $ aslref --no-exec subtype-satisfaction-packet-length-to-word-count.bad.asl
+  File subtype-satisfaction-packet-length-to-word-count.bad.asl, line 9,
+    characters 2 to 13:
+    myWordCount = myPacketLength;
+    ^^^^^^^^^^^
+  ASL Type error: a subtype of WordCount was expected, provided PacketLength.
+  [1]
   $ aslref tuples.asl
   $ aslref tuple-return.asl
   $ aslref declaration-primitive-local.asl
@@ -480,6 +507,15 @@ Required tests:
   $ aslref alt-mask-syntax.asl
   $ aslref subprogram-global-name-clash.asl
   $ aslref subprogram-local-name-clash.asl
+  $ aslref subprogram-tuple-clash.bad.asl
+  File subprogram-tuple-clash.bad.asl, line 3, character 0 to line 6,
+    character 4:
+  func f1 (x: (integer, t1))
+  begin
+    pass;
+  end;
+  ASL Type error: cannot declare already declared element "f1".
+  [1]
   $ aslref string_concat.asl
   $ aslref approx-expr-binop.asl
   $ aslref asl1-calls-asl0-accessor.asl -0 asl0-accessor.asl

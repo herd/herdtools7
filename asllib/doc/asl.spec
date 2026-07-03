@@ -1497,11 +1497,10 @@ ast decl { "global declaration" } =
     { "the \hyperlink{ast-DFunc}{subprogram declaration} with {descriptor}" }
     | D_GlobalStorage(storage_declaration: global_decl)
     { "the \hyperlink{ast-DGlobalStorage}{global storage declaration} with {storage_declaration}" }
-    | D_TypeDecl(type_name: Identifier, annotation: ty, extra_fields: option((super_type: Identifier, with_fields: list0(field))))
+    | D_TypeDecl(type_name: Identifier, annotation: ty)
     {
-      "the \hyperlink{ast-DTypeDecl}{type declaration} for the type name {type_name},
-      type annotation {annotation},
-      optional extra fields {extra_fields} in addition to those in the super type"
+      "the \hyperlink{ast-DTypeDecl}{type declaration} for the type name {type_name}
+      and type annotation {annotation}"
     }
     | D_Pragma(pragma_name: Identifier, arguments: list0(expr))
     { "the \hyperlink{ast-DPragma}{pragma declaration} for the pragma name {pragma_name} and
@@ -1557,8 +1556,6 @@ typedef global_static_envs
         constant_values: partial Identifier -> literal,
         global_storage_types: partial Identifier -> (element_type: ty, declared_keyword: global_decl_keyword),
         global_expr_equiv: partial Identifier -> (initializer: expr) { math_macro = \globalstaticenvsexprequiv },
-        subtypes: partial (sub_type: Identifier) ->
-         (super_type: Identifier),
         subprogram: partial Identifier -> (func, side_effects: powerset(TSideEffect)),
         overloaded_subprograms: partial Identifier -> powerset(Strings)
     ]
@@ -4709,7 +4706,9 @@ semantics function find_catcher(tenv: static_envs, v_ty: ty, catchers: list0(cat
   case match {
     catchers =: match_cons(c, catchers1);
     c =: (name_opt, e_ty, s);
-    is_subtype(tenv, v_ty, e_ty) -> True;
+    v_ty =: T_Named(v_name);
+    e_ty =: T_Named(e_name);
+    v_name = e_name;
     --
     some(c);
   }
@@ -4717,7 +4716,7 @@ semantics function find_catcher(tenv: static_envs, v_ty: ty, catchers: list0(cat
   case no_match {
     catchers =: match_cons(c, catchers1);
     c =: (name_opt, e_ty, s);
-    is_subtype(tenv, v_ty, e_ty) -> False;
+    not(v_ty = T_Named(_) && e_ty = T_Named(_) && v_ty = e_ty);
     find_catcher(tenv, v_ty, catchers1) -> d;
     --
     d;
@@ -6130,47 +6129,6 @@ semantics function eval_binop(op: binop, v1: native_value, v2: native_value) ->
 //////////////////////////////////////////////////
 // Relations for Relations On Types
 
-typing function is_subtype(tenv: static_envs, t1: ty, t2: ty) -> (b: Bool)
-{
-    "defines whether the type {t1} \subtypesterm{} the type {t2} in the \staticenvironmentterm{} {tenv},
-    yielding the result in {b}.",
-    prose_application = "{t1} is a \subtypesterm{} of {t2} in {tenv}",
-    prose_transition = "testing whether {t1} is a \subtypesterm{} of {t2} in {tenv} yields",
-} =
-  case reflexive {
-    t1 =: T_Named(id1);
-    t2 =: T_Named(id2);
-    id1 = id2;
-    --
-    True;
-  }
-
-  case transitive {
-    t1 =: T_Named(id1);
-    t2 =: T_Named(id2);
-    id1 != id2;
-    tenv.static_envs_G.subtypes(id1) =: id3;
-    is_subtype(tenv, T_Named(id3), t2) -> b;
-    --
-    b;
-  }
-
-  case no_supertype {
-    t1 =: T_Named(id1);
-    t2 =: T_Named(id2);
-    id1 != id2;
-    id1 not_in dom(tenv.static_envs_G.subtypes);
-    --
-    False;
-  }
-
-  case not_named {
-    binary_or(ast_label(t1) != label_T_Named, ast_label(t2) != label_T_Named);
-    --
-    False;
-  }
-;
-
 typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | type_error
 {
     "determines whether a type {t} \emph{\subtypesatisfiesterm} a type {s} in the static environment {tenv},
@@ -6309,14 +6267,14 @@ typing function type_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | t
     yielding the result {b}. \ProseOtherwiseTypeError",
     prose_transition = "testing whether {t} \typesatisfiesterm{} {s} in {tenv} yields",
 } =
-  case subtypes {
-    is_subtype(tenv, t, s) -> True;
+  case equal {
+    type_equal(tenv, t, s) -> True;
     --
     True;
   }
 
-  case not_subtypes {
-    is_subtype(tenv, t, s) -> False;
+  case not_equal {
+    type_equal(tenv, t, s) -> False;
 
     case anonymous_or_subtype_satisfies {
       binary_or(is_anonymous(t), is_anonymous(s));
@@ -6382,45 +6340,36 @@ typing relation lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (ty: 
     s;
   }
 
-  case named_subtype1 {
-    t =: T_Named(name_s);
-    s =: T_Named(name_t);
+  case distinct_named {
     type_equal(tenv, t, s) -> False;
-    named_lowest_common_ancestor(tenv, name_s, name_t) -> none;
-    make_anonymous(tenv, s) -> s_anon;
+    t =: T_Named(t_name);
+    s =: T_Named(s_name);
+    s_name != t_name;
     make_anonymous(tenv, t) -> t_anon;
+    make_anonymous(tenv, s) -> s_anon;
     lowest_common_ancestor(tenv, t_anon, s_anon) -> ty;
     --
     ty;
   }
 
-  case named_subtype2 {
-    t =: T_Named(name_s);
-    s =: T_Named(name_t);
-    type_equal(tenv, t, s) -> False;
-    named_lowest_common_ancestor(tenv, name_s, name_t) -> some(name);
-    --
-    T_Named(name);
-  }
-
-  case one_named1 {
+  case named_same_anonymous {
     type_equal(tenv, t, s) -> False;
     binary_or(ast_label(t) = label_T_Named, ast_label(s) = label_T_Named);
-    ast_label(t) != ast_label(s);
-    make_anonymous(tenv, s) -> s_anon;
+    binary_or(ast_label(t) != label_T_Named, ast_label(s) != label_T_Named);
     make_anonymous(tenv, t) -> t_anon;
+    make_anonymous(tenv, s) -> s_anon;
     type_equal(tenv, t_anon, s_anon) -> True;
     ty := if (ast_label(t) = label_T_Named) then t else s;
     --
     ty;
   }
 
-  case one_named2 {
+  case named_different_anonymous {
     type_equal(tenv, t, s) -> False;
     binary_or(ast_label(t) = label_T_Named, ast_label(s) = label_T_Named);
-    ast_label(t) != ast_label(s);
-    make_anonymous(tenv, s) -> s_anon;
+    binary_or(ast_label(t) != label_T_Named, ast_label(s) != label_T_Named);
     make_anonymous(tenv, t) -> t_anon;
+    make_anonymous(tenv, s) -> s_anon;
     type_equal(tenv, t_anon, s_anon) -> False;
     lowest_common_ancestor(tenv, t_anon, s_anon) -> ty;
     --
@@ -6732,49 +6681,6 @@ typing relation apply_binop_types(tenv: static_envs, op: binop, t1: ty, t2: ty) 
     TypeError(TE_BO);
   }
 ;
-
-// REVIEW: signature changed for translation; please confirm expected argument/return types.
-// Previous: typing relation named_lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (name_opt: option(Identifier)) | type_error
-typing function named_lowest_common_ancestor(tenv: static_envs, t: Identifier, s: Identifier) ->
-         (name_opt: option(Identifier)) | type_error
-{
-  "returns the lowest common named super type
-   of types {t} and {s} in {tenv} in {name_opt}.",
-  prose_transition = "finding the lowest common named supertype of {t} and {s} in {tenv} yields",
-} =
-  case found {
-    supers(tenv, t) -> t_supers;
-    s in t_supers;
-    --
-    some(s);
-  }
-
-  case super {
-    supers(tenv, t) -> t_supers;
-    s not_in t_supers;
-    tenv.static_envs_G.subtypes(s) =: s';
-    named_lowest_common_ancestor(tenv, t, s') -> name_opt;
-    --
-    name_opt;
-  }
-
-  case none {
-    supers(tenv, t) -> t_supers;
-    s not_in t_supers;
-    s not_in dom(tenv.static_envs_G.subtypes);
-    --
-    none;
-  }
-;
-
-typing function supers(tenv: static_envs, t: Identifier) ->
-         (powerset(Identifier))
-{
-  "returns the set of \emph{named supertypes} of a type
-  {t} in the $\subtypes$ function of a
-  \globalstaticenvironmentterm{} {tenv}.",
-  prose_transition = "computing the set of named supertypes of {t} in {tenv} yields",
-}; // Using direct definition in LaTeX; no rule needed.
 
 constant max_constraint_size : N { math_macro = \maxconstraintsize };
 constant max_exploded_interal_size : N { math_macro = \maxexplodedintervalsize };
@@ -8178,10 +8084,10 @@ typing relation typecheck_decl(genv: global_static_envs, d: decl) ->
   }
 
   case type_decl {
-    d =: D_TypeDecl(x, ty, s);
-    declare_type(genv, x, ty, s) -> (new_genv, ty', s');
+    d =: D_TypeDecl(x, ty);
+    declare_type(genv, x, ty) -> (new_genv, ty');
     --
-    (D_TypeDecl(x, ty', s'), new_genv);
+    (D_TypeDecl(x, ty'), new_genv);
   }
 
   case func {
@@ -8629,7 +8535,7 @@ typing function def_decl(d: decl) ->
   }
 
   case d_typedecl {
-    d =: D_TypeDecl(id, _, _);
+    d =: D_TypeDecl(id, _);
     --
     Other(id);
   }
@@ -8645,14 +8551,14 @@ typing function def_enum_labels(d: decl) ->
   prose_transition = "computing the enumeration labels defined by {d} yields",
 } =
   case decl_enum {
-    d =: D_TypeDecl(_, T_Enum(labels1), _);
+    d =: D_TypeDecl(_, T_Enum(labels1));
     labels := set_from_list(l, labels1, Other(l));
     --
     labels;
   }
 
   case other {
-    not(d = D_TypeDecl(_, T_Enum(_), _));
+    not(d = D_TypeDecl(_, T_Enum(_)));
     --
     empty_set;
   }
@@ -8667,10 +8573,9 @@ typing function use_decl(d: decl) ->
   prose_transition = "computing the set of identifiers used by {d} yields",
 } =
   case decl_typedecl {
-    d =: D_TypeDecl(_, ty, fields);
-    ids := union(use_ty(ty), use_subtypes(fields));
+    d =: D_TypeDecl(_, ty);
     --
-    ids;
+    use_ty(ty);
   }
 
   case decl_globalstorage {
@@ -8758,32 +8663,6 @@ typing function use_ty(t: ty) -> (ids: powerset(def_use_name))
     t =: T_Bits(e, bitfields);
     field_ids := list_map(bf, bitfields, use_bitfield(bf));
     ids := union(use_expr(e), union_list(field_ids));
-    --
-    ids;
-  }
-;
-
-typing function use_subtypes(fields: option((x: Identifier, subfields: list0(field)))) ->
-         (ids: powerset(def_use_name))
-{
-  "returns the set of identifiers {ids} which the
-  \optionalterm{} pair consisting of identifier {x} (the type
-  being subtyped) and fields {subfields} depends on.",
-  prose_application = "the set of identifiers used by {fields}",
-  prose_transition = "computing the set of identifiers used by {fields}
-    consisting of the identifier {x} (the type being subtyped) and fields {subfields}> yields",
-} =
-  case none {
-    fields = none;
-    --
-    empty_set;
-  }
-
-  case some {
-    fields =: some((x1, subfields1));
-    subfields1 =: list_combine(sub_names, sub_types);
-    sub_ids := list_map(sub_ty, sub_types, use_ty(sub_ty));
-    ids := union(make_set(Other(x1)), union_list(sub_ids));
     --
     ids;
   }
@@ -11047,60 +10926,68 @@ typing function type_clashes(tenv: static_envs, t: ty, s: ty) ->
   result {b}. \ProseOtherwiseTypeError",
   prose_transition = "determining whether {t} clashes with {s} in the context of {tenv} yields",
 } =
-  case subtype {
-    binary_or(is_subtype(tenv, s, t), is_subtype(tenv, t, s));
+  case simple {
+    ast_label(t) = ast_label(s);
+    ast_label(t) in make_set(label_T_Bits, label_T_Bool, label_T_Int, label_T_Real, label_T_String);
     --
     True;
   }
 
-  case no_subtype {
-    is_subtype(tenv, s, t) -> False;
-    is_subtype(tenv, t, s) -> False;
-    get_structure(tenv, t) -> t_struct;
-    get_structure(tenv, s) -> s_struct;
-    case simple {
-      ast_label(t_struct) = ast_label(s_struct);
-      ast_label(t_struct) in make_set(label_T_Bits, label_T_Bool, label_T_Int, label_T_Real, label_T_String);
-      --
-      True;
-    }
+  case t_enum {
+    t =: T_Enum(labels_t);
+    s =: T_Enum(labels_s);
+    --
+    labels_t = labels_s;
+  }
 
-    case t_enum {
-      t_struct =: T_Enum(labels_t);
-      s_struct =: T_Enum(labels_s);
-      --
-      labels_t = labels_s;
-    }
+  case t_array {
+    t =: T_Array(_, ty_t);
+    s =: T_Array(_, ty_s);
+    type_clashes(tenv, ty_s, ty_t) -> b;
+    --
+    b;
+  }
 
-    case t_array {
-      t_struct =: T_Array(_, ty_t);
-      s_struct =: T_Array(_, ty_s);
-      type_clashes(tenv, ty_t, ty_s) -> b;
-      --
-      b;
-    }
+  case t_tuple {
+    t =: T_Tuple(ts_t);
+    s =: T_Tuple(ts_s);
+    bool_transition(same_length(ts_t, ts_s)) -> True | False;
+    INDEX(i, ts_t: type_clashes(tenv, ts_s[i], ts_t[i]) -> clashes[i]);
+    --
+    list_and(clashes);
+  }
 
-    case t_tuple {
-      t_struct =: T_Tuple(ts_t);
-      s_struct =: T_Tuple(ts_s);
-      bool_transition(same_length(ts_t, ts_s)) -> True | False;
-      INDEX(i, ts_t: type_clashes(tenv, ts_t[i], ts_s[i]) -> clashes[i]);
-      --
-      list_and(clashes);
-    }
+  case same_named {
+    t =: T_Named(t_name);
+    s =: T_Named(s_name);
+    t_name = s_name;
+    --
+    True;
+  }
 
-    case otherwise_different_labels {
-      ast_label(t_struct) != ast_label(s_struct);
-      --
-      False;
-    }
+  case named {
+    binary_or(ast_label(t) = label_T_Named, ast_label(s) = label_T_Named);
+    t != s;
+    make_anonymous(tenv, t) -> t1;
+    make_anonymous(tenv, s) -> s1;
+    type_clashes(tenv, s1, t1) -> b;
+    --
+    b;
+  }
 
-    case otherwise_structured {
-      ast_label(t_struct) = ast_label(s_struct);
-      ast_label(t_struct) in make_set(label_T_Collection, label_T_Exception, label_T_Record);
-      --
-      False;
-    }
+  case otherwise_different_labels {
+    ast_label(t) != label_T_Named;
+    ast_label(s) != label_T_Named;
+    ast_label(t) != ast_label(s);
+    --
+    False;
+  }
+
+  case otherwise_structured {
+    ast_label(t) = ast_label(s);
+    ast_label(t) in make_set(label_T_Collection, label_T_Exception, label_T_Record);
+    --
+    False;
   }
 ;
 
@@ -14441,101 +14328,35 @@ typing function check_constrained_integer(tenv: static_envs, t: ty) ->
 typing relation declare_type(
   genv: global_static_envs,
   name: Identifier,
-  ty: ty,
-  s: option((Identifier, list0(field)))) ->
+  ty: ty) ->
          (new_genv: global_static_envs,
-         t2: ty,
-         s': option((Identifier, list0(field)))) | type_error
+         t2: ty) | type_error
 {
-  "declares a type named {name} with type {ty} and
-  \optionalterm{} additional fields over another type {s} in
+  "declares a type named {name} with type {ty} in
   the \globalstaticenvironmentterm{} {genv}, resulting
   in the modified \globalstaticenvironmentterm{}
-  {new_genv}, annotated type {t2}, and annotated
-  \optionalterm{} additional fields {s'}.
+  {new_genv} and annotated type {t2}.
   \ProseOtherwiseTypeError",
-  prose_transition = "declaring a type for {name} with {ty}
-    and optionally additional fields given by {s}
-    in {genv} yields",
+  prose_transition = "declaring a type for {name} with {ty} in {genv} yields",
   math_layout = [_,_],
 } =
   check_var_not_in_genv(genv, name) -> True;
   with_empty_local(genv) -> tenv;
   annotate_type(True, tenv, ty) -> (t1, ses_t);
-  annotate_extra_fields(tenv, name, t1, s) -> (tenv1, t2, s');
   ses_is_pure(ses_t) -> b;
   purity := if_then_else(b, SE_Pure, SE_Readonly);
-  add_type(tenv1, name, t2, purity) -> tenv2;
+  add_type(tenv, name, t1, purity) -> tenv1;
   case enum {
-    t2 =: T_Enum(ids);
-    declare_enum_labels(tenv2, name, ids) -> tenv3;
+    t1 =: T_Enum(ids);
+    declare_enum_labels(tenv1, name, ids) -> tenv2;
     --
-    (tenv3.static_envs_G, t2, s');
+    (tenv2.static_envs_G, t1);
   }
 
   case not_enum {
-    ast_label(t2) != label_T_Enum;
+    ast_label(t1) != label_T_Enum;
     --
-    (tenv2.static_envs_G, t2, s');
-  }
-;
-
-typing relation annotate_extra_fields(tenv: static_envs, name: Identifier, ty: ty, s: option((super: Identifier, extra_fields: list0(field)))) ->
-         (new_tenv: static_envs, new_ty: ty, s': option((Identifier, list0(field)))) | type_error
-{
-  "annotates the type {ty} with the \optionalterm{} extra
-  fields {s} in {tenv}, yielding the modified
-  environment {new_tenv}, type {new_ty}, and \optionalterm{}
-  extra fields {s'}. \ProseOtherwiseTypeError",
-  prose_transition = "annotating {ty} with optional extra fields given by
-    {s} in {tenv} yields",
-  math_layout = [_,_],
-} =
-  case none {
-    s = none;
-    --
-    (tenv, ty, none);
-  }
-
-  case empty_fields {
-    s =: some((super_name, extra_fields'));
-    subtype_satisfies(tenv, ty, T_Named(super_name)) -> b;
-    te_check(b, TE_UT) -> True;
-    extra_fields' = empty_list;
-    updated_subtypes := map_update(tenv.static_envs_G.subtypes, name, super_name);
-    new_genv := tenv.static_envs_G(subtypes: updated_subtypes);
-    new_tenv := tenv(static_envs_G: new_genv);
-    --
-    (new_tenv, ty, some((super_name, empty_list)))
-    { [_] };
-  }
-
-  case no_super {
-    s =: some((super_name, extra_fields'));
-    subtype_satisfies(tenv, ty, T_Named(super_name)) -> b;
-    te_check(b, TE_UT) -> True;
-    extra_fields' != empty_list;
-    super_name not_in dom(tenv.static_envs_G.declared_types);
-    --
-    TypeError(TE_UI);
-  }
-
-  case structured {
-    s =: some((super_name, extra_fields'));
-    subtype_satisfies(tenv, ty, T_Named(super_name)) -> b;
-    te_check(b, TE_UT) -> True;
-    extra_fields' != empty_list;
-    tenv.static_envs_G.declared_types(super_name) =: (t_super, _);
-    te_check(ast_label(t_super) in make_set(label_T_Exception, label_T_Record), TE_UT) -> True
-    { (((_, [_]), _), _) };
-    t_super =: make_structured(L, fields);
-    new_ty := make_structured(L, concat(fields, extra_fields'));
-    updated_subtypes := map_update(tenv.static_envs_G.subtypes, name, super_name);
-    new_genv := tenv.static_envs_G(subtypes: updated_subtypes);
-    new_tenv := tenv(static_envs_G: new_genv);
-    --
-    (new_tenv, new_ty, some((super_name, empty_list)))
-    { [_] };
+    (tenv1.static_envs_G, t1);
   }
 ;
 
