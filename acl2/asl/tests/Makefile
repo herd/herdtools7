@@ -122,9 +122,7 @@ regressions.t/bad-shift.asl \
 regressions.t/tuple_items.asl \
 regressions.t/cases_where.asl \
 regressions.t/slice-width-shorthand.asl \
-regressions.t/enum-array.asl \
 regressions.t/anonymous-types-example-success.asl \
-regressions.t/array-with-enums.asl \
 regressions.t/array.asl \
 regressions.t/assign1.asl \
 regressions.t/big-ints.asl \
@@ -264,4 +262,3 @@ export PATH := $(BINDIR):$(PATH)
 clean :
 	@rm -f $(PASSING_TARGETS) $(FAILING_TARGETS)
 	@find . -name '*.t' | xargs rm -rf
-

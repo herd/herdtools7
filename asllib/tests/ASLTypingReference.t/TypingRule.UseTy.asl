@@ -15,7 +15,6 @@ begin
     var g : (integer{0..N}, boolean) = (0 as integer{0..N}, TRUE); // { Other(N) }
     var h : MyRecord; // { Other(MyRecord) }
     var i : array[[N]] of MyRecord; // { Other(N), Other(MyRecord) }
-    var j : array[[Color]] of MyRecord; // { Other(Color), Other(MyRecord) }
     var k : bits(64) { [FIFTEEN] flag }; // { Other(FIFTEEN) }
     var l : bits(N) = Zeros{N}; // { Other(N) }
 

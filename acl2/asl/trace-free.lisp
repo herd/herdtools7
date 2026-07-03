@@ -1409,7 +1409,6 @@
 (def-trace-free-x int_constraint)
 (def-trace-free-x int_constraintlist)
 (def-trace-free-x constraint_kind)
-(def-trace-free-x array_index)
 (def-trace-free-x named_expr)
 (def-trace-free-x named_exprlist)
 (def-trace-free-x maybe-ty)
@@ -1441,20 +1440,17 @@
          :e_cond (and (trace-free-expr-p x.test)
                       (trace-free-expr-p x.then)
                       (trace-free-expr-p x.else))
-         :e_getarray (and (trace-free-expr-p x.base)
-                          (trace-free-expr-p x.index))
-         :e_getenumarray (and (trace-free-expr-p x.base)
-                              (trace-free-expr-p x.index))
-         :e_getfield (trace-free-expr-p x.base)
+        :e_getarray (and (trace-free-expr-p x.base)
+                         (trace-free-expr-p x.index))
+        :e_getfield (trace-free-expr-p x.base)
          :e_getfields (trace-free-expr-p x.base)
          :e_getitem (trace-free-expr-p x.base)
          :e_record (and (trace-free-ty-p x.type)
                         (trace-free-named_exprlist-p x.fields))
          :e_tuple (trace-free-exprlist-p x.exprs)
-         :e_array (and (trace-free-expr-p x.length)
-                       (trace-free-expr-p x.value))
-         :e_enumarray (trace-free-expr-p x.value)
-         :e_arbitrary (trace-free-ty-p x.type)
+        :e_array (and (trace-free-expr-p x.length)
+                      (trace-free-expr-p x.value))
+        :e_arbitrary (trace-free-ty-p x.type)
          :e_pattern (and (trace-free-expr-p x.expr)
                          (trace-free-pattern-p x.pattern))
          :otherwise t))
@@ -1633,8 +1629,8 @@
          :t_int (trace-free-constraint_kind-p x.constraint)
          :t_bits (trace-free-expr-p x.expr)
          :t_tuple (trace-free-tylist-p x.types)
-         :t_array (and (trace-free-array_index-p x.index)
-                       (trace-free-ty-p x.type))
+        :t_array (and (trace-free-expr-p x.index)
+                      (trace-free-ty-p x.type))
          :t_record (trace-free-typed_identifierlist-p x.fields)
          :t_exception (trace-free-typed_identifierlist-p x.fields)
          :t_collection (trace-free-typed_identifierlist-p x.fields)
@@ -1644,7 +1640,6 @@
                                     trace-free-expr-p
                                     trace-free-tylist-p
                                     trace-free-ty-p
-                                    trace-free-array_index-p
                                     trace-free-typed_identifierlist-p)
           :expand ((all-callsigs-type_desc x))))
   :rule-classes :definition)
@@ -1703,17 +1698,6 @@
   :rule-classes :definition)
 
 
-(defthmd trace-free-array_index-p-redef
-  (iff (trace-free-array_index-p x)
-       (array_index-case x
-         :arraylength_expr (trace-free-expr-p x.length)
-         :otherwise t))
-  :hints(("Goal" :in-theory (enable trace-free-array_index-p
-                                    trace-free-expr-p)
-          :expand ((all-callsigs-array_index x))))
-  :rule-classes :definition)
-
-
 (defthmd trace-free-named_expr-p-redef
   (iff (trace-free-named_expr-p x)
        (b* (((named_expr x)))
@@ -1769,11 +1753,9 @@
        (lexpr_desc-case x
          :le_slice (and (trace-free-lexpr-p x.base)
                         (trace-free-slicelist-p x.slices))
-         :le_setarray (and (trace-free-lexpr-p x.base)
-                           (trace-free-expr-p x.index))
-         :le_setenumarray (and (trace-free-lexpr-p x.base)
-                               (trace-free-expr-p x.index))
-         :le_setfield (trace-free-lexpr-p x.base)
+        :le_setarray (and (trace-free-lexpr-p x.base)
+                          (trace-free-expr-p x.index))
+        :le_setfield (trace-free-lexpr-p x.base)
          :le_setfields (trace-free-lexpr-p x.base)
          :le_destructuring (trace-free-lexprlist-p x.elts)
          :otherwise t))
@@ -2391,8 +2373,7 @@
                                               (trace-free-pattern_desc-p (pattern->desc p)))))))
             ((:fnname resolve-ty-*t)
              (:add-keyword :hints ('(:expand ((trace-free-ty-p x)
-                                              (trace-free-type_desc-p (ty->desc x))
-                                              (TRACE-FREE-ARRAY_INDEX-P (T_ARRAY->INDEX (TY->DESC X))))))))
+                                              (trace-free-type_desc-p (ty->desc x)))))))
             ((:fnname resolve-typed_identifierlist-*t)
              (:add-keyword :hints ('(:expand ((trace-free-typed_identifierlist-p x)
                                               (TRACE-FREE-TYPED_IDENTIFIER-P (CAR X)))))))
@@ -2583,7 +2564,6 @@
                               eval_subprogram-*t1-equals-original
                               maybe-call-tracespec->interior-tracespec
                               maybe-call-tracespec->empty-tracespec))))
-
 
 
 
