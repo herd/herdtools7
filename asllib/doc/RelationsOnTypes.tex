@@ -2,24 +2,12 @@
 
 This section defines the following relations over types and operators:
 \begin{itemize}
-  \item Same named types (\TypingRuleRef{SameNamedType})
   \item Subtype Satisfaction (\TypingRuleRef{SubtypeSatisfaction})
   \item Type Satisfaction (\TypingRuleRef{TypeSatisfaction})
   \item The Lowest Common Ancestor of two types (\TypingRuleRef{LowestCommonAncestor})
   \item Applying a unary operator to a type (\TypingRuleRef{ApplyUnopType})
   \item Applying a binary operator to a pair of types (\TypingRuleRef{ApplyBinopTypes})
 \end{itemize}
-
-\TypingRuleDef{SameNamedType}
-\RenderRelation{same_named_type}
-
-In \listingref{same_named_type}, \verb|time| and \verb|space| are both named types of the same underlying type \verb|integer|,
-but they are not the same named type.
-\ASLListing{Same-named type}{same_named_type}{\typingtests/TypingRule.SameNamedType.asl}
-
-\RenderProseAndFormally{same_named_type}
-\CodeSubsection{\SameNamedTypeBegin}{\SameNamedTypeEnd}{../types.ml}
-
 
 \TypingRuleDef{SubtypeSatisfaction}
 \RenderRelation{subtype_satisfies}

@@ -64,10 +64,6 @@ val get_well_constrained_structure : env -> ty -> ty
 
 (** {2 Orders on types} *)
 
-val same_named_type : ty -> ty -> bool
-(** [same_named_type t1 t2] is true if and only if [t1] and [t2] are both named
-    types with the same name. *)
-
 val subtype_satisfies : env -> ty -> ty -> bool
 (** Subtype-satisfaction test. *)
 

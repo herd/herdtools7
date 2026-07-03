@@ -6232,36 +6232,6 @@ semantics function eval_binop(op: binop, v1: native_value, v2: native_value) ->
 //////////////////////////////////////////////////
 // Relations for Relations On Types
 
-typing function same_named_type(t1: ty, t2: ty) -> (b: Bool)
-{
-    "tests whether both types {t1} and {t2} are \namedtypesterm{} sharing the same name,
-    yielding the result in {b}.",
-    prose_application = "{t1} and {t2} are same-named types",
-    prose_transition = "testing whether {t1} and {t2} are same-named types yields",
-} =
-  case same {
-    t1 =: T_Named(id1);
-    t2 =: T_Named(id2);
-    id1 = id2;
-    --
-    True;
-  }
-
-  case different_names {
-    t1 =: T_Named(id1);
-    t2 =: T_Named(id2);
-    id1 != id2;
-    --
-    False;
-  }
-
-  case not_named {
-    binary_or(ast_label(t1) != label_T_Named, ast_label(t2) != label_T_Named);
-    --
-    False;
-  }
-;
-
 typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | type_error
 {
     "determines whether a type {t} \emph{\subtypesatisfiesterm} a type {s} in the static environment {tenv},

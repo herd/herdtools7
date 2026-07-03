@@ -416,13 +416,6 @@ end
 
 (* --------------------------------------------------------------------------*)
 
-(* Begin SameNamedType *)
-let same_named_type t1 t2 =
-  match (t1.desc, t2.desc) with
-  | T_Named s1, T_Named s2 -> String.equal s1 s2 |: TypingRule.SameNamedType
-  | _ -> false
-(* End SameNamedType *)
-
 let rec bitfields_included env bfs1 bfs2 =
   let rec mem_bfs bfs2 bf1 =
     match find_bitfield_opt (bitfield_get_name bf1) bfs2 with
