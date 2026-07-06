@@ -746,6 +746,7 @@
 (def-trace-subset-x pattern_desc)
 (def-trace-subset-x pattern)
 (def-trace-subset-x patternlist)
+(def-trace-subset-x pattern_matcher)
 (def-trace-subset-x slice)
 (def-trace-subset-x slicelist)
 (def-trace-subset-x call)
@@ -790,19 +791,19 @@
          :e_cond (and (trace-subset-expr-p x.test)
                       (trace-subset-expr-p x.then)
                       (trace-subset-expr-p x.else))
-        :e_getarray (and (trace-subset-expr-p x.base)
-                         (trace-subset-expr-p x.index))
-        :e_getfield (trace-subset-expr-p x.base)
+         :e_getarray (and (trace-subset-expr-p x.base)
+                          (trace-subset-expr-p x.index))
+         :e_getfield (trace-subset-expr-p x.base)
          :e_getfields (trace-subset-expr-p x.base)
          :e_getitem (trace-subset-expr-p x.base)
          :e_record (and (trace-subset-ty-p x.type)
                         (trace-subset-named_exprlist-p x.fields))
          :e_tuple (trace-subset-exprlist-p x.exprs)
-        :e_array (and (trace-subset-expr-p x.length)
-                      (trace-subset-expr-p x.value))
-        :e_arbitrary (trace-subset-ty-p x.type)
+         :e_array (and (trace-subset-expr-p x.length)
+                       (trace-subset-expr-p x.value))
+         :e_arbitrary (trace-subset-ty-p x.type)
          :e_pattern (and (trace-subset-expr-p x.expr)
-                         (trace-subset-pattern-p x.pattern))
+                         (trace-subset-pattern_matcher-p x.pattern))
          :otherwise t))
   :hints(("Goal" :in-theory (enable trace-subset-expr_desc-p
                                     trace-subset-expr-p
@@ -811,7 +812,7 @@
                                     trace-subset-slicelist-p
                                     trace-subset-named_exprlist-p
                                     trace-subset-exprlist-p
-                                    trace-subset-pattern-p
+                                    trace-subset-pattern_matcher-p
                                     ;; traced-callsigs-fnnames-in-terms-of-all-callsigs
                                     )
           :expand ((all-callsigs-expr_desc x))))
@@ -856,14 +857,11 @@
 (defthmd trace-subset-pattern_desc-p-decomp
   (iff (trace-subset-pattern_desc-p x)
        (pattern_desc-case x
-         :pattern_any (trace-subset-patternlist-p x.patterns)
          :pattern_geq (trace-subset-expr-p x.expr)
          :pattern_leq (trace-subset-expr-p x.expr)
-         :pattern_not (trace-subset-pattern-p x.pattern)
          :pattern_range (and (trace-subset-expr-p x.lower)
                              (trace-subset-expr-p x.upper))
          :pattern_single (trace-subset-expr-p x.expr)
-         :pattern_tuple (trace-subset-patternlist-p x.patterns)
          :otherwise t))
   :hints(("Goal" :in-theory (enable trace-subset-patternlist-p
                                     trace-subset-pattern-p
@@ -889,6 +887,15 @@
   :hints(("Goal" :in-theory (enable trace-subset-patternlist-p
                                     trace-subset-pattern-p)
           :expand ((all-callsigs-patternlist x))))
+  :rule-classes :definition)
+
+(defthmd trace-subset-pattern_matcher-p-decomp
+  (iff (trace-subset-pattern_matcher-p x)
+       (b* (((pattern_matcher x)))
+         (trace-subset-patternlist-p x.patterns)))
+  :hints(("Goal" :in-theory (enable trace-subset-patternlist-p
+                                    trace-subset-pattern_matcher-p)
+          :expand ((all-callsigs-pattern_matcher x))))
   :rule-classes :definition)
 
 (defthmd trace-subset-slice-p-decomp
@@ -935,8 +942,8 @@
          :t_int (trace-subset-constraint_kind-p x.constraint)
          :t_bits (trace-subset-expr-p x.expr)
          :t_tuple (trace-subset-tylist-p x.types)
-        :t_array (and (trace-subset-expr-p x.index)
-                      (trace-subset-ty-p x.type))
+         :t_array (and (trace-subset-expr-p x.index)
+                       (trace-subset-ty-p x.type))
          :t_record (trace-subset-typed_identifierlist-p x.fields)
          :t_exception (trace-subset-typed_identifierlist-p x.fields)
          :t_collection (trace-subset-typed_identifierlist-p x.fields)
@@ -1060,9 +1067,9 @@
        (lexpr_desc-case x
          :le_slice (and (trace-subset-lexpr-p x.base)
                         (trace-subset-slicelist-p x.slices))
-        :le_setarray (and (trace-subset-lexpr-p x.base)
-                          (trace-subset-expr-p x.index))
-        :le_setfield (trace-subset-lexpr-p x.base)
+         :le_setarray (and (trace-subset-lexpr-p x.base)
+                           (trace-subset-expr-p x.index))
+         :le_setfield (trace-subset-lexpr-p x.base)
          :le_setfields (trace-subset-lexpr-p x.base)
          :le_destructuring (trace-subset-lexprlist-p x.elts)
          :otherwise t))
@@ -2504,6 +2511,7 @@ asl-interpreter-mutual-recursion-*t) for overview."
                   ((ty-p x) (trace-subset-ty-p x))
                   ((pattern-p x) (trace-subset-pattern-p x))
                   ((patternlist-p x) (trace-subset-patternlist-p x))
+                  ((pattern_matcher-p x) (trace-subset-pattern_matcher-p x))
                   ((exprlist-p x) (trace-subset-exprlist-p x))
                   ((lexpr-p x) (trace-subset-lexpr-p x))
                   ((lexprlist-p x) (trace-subset-lexprlist-p x))
@@ -2560,12 +2568,13 @@ asl-interpreter-mutual-recursion-*t) for overview."
              (:add-hyp (trace-subset-fnname-p name)))
             ((:fnname eval_expr_list-*t)
              (:add-keyword :hints ('(:expand ((:free (tracespec2) (trace-subset-exprlist-p e)))))))
-            ((or (:fnname eval_pattern-any-*t)
-                 (:fnname eval_pattern_tuple-*t))
-             (:add-keyword :hints ('(:expand ((:free (tracespec2) (trace-subset-patternlist-p p)))))))
             ((:fnname eval_pattern-*t)
              (:add-keyword :hints ('(:expand ((:free (tracespec2) (trace-subset-pattern-p p))
                                               (:free (tracespec2) (trace-subset-pattern_desc-p (pattern->desc p))))))))
+            ((:fnname eval_pattern_matcher-*t)
+             (:add-keyword :hints ('(:expand ((:free (tracespec2) (trace-subset-pattern_matcher-p p)))))))
+            ((:fnname eval_pattern_list-*t)
+             (:add-keyword :hints ('(:expand ((:free (tracespec2) (trace-subset-patternlist-p p)))))))
             ((:fnname resolve-ty-*t)
              (:add-keyword :hints ('(:expand ((:free (tracespec2) (trace-subset-ty-p x))
                                               (:free (tracespec2) (trace-subset-type_desc-p (ty->desc x))))))))

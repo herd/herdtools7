@@ -241,7 +241,7 @@ the given type.")
      (kind pattern_kind-p))
     :short "Pattern matcher: a list of patterns and whether they are matched positively or negatively."
     :layout :fulltree
-    :measure (acl2::two-nats-measure (acl2-count x) 10))
+    :measure (acl2::two-nats-measure (acl2-count x) 20))
 
   (deftagsum slice
     :short "ASL bitvector slice expression"
