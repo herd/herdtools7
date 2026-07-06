@@ -1,0 +1,11 @@
+Test L106 Allowed
+States 2
+[x]=0;
+[x]=1;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists ([x]=1)
+Observation L106 Sometimes 1 1
+Hash=cb70be2de517dd2190958ea8c830b40c
+
