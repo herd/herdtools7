@@ -1,14 +1,14 @@
 Test LB+dmb.sy+addrR-pos-store Allowed
 States 5
-0:X1=0; 1:X1=0; [x]=2;
-0:X1=0; 1:X1=1; [x]=2;
-0:X1=1; 1:X1=0; [x]=2;
-0:X1=1; 1:X1=1; [x]=2;
-0:X1=2; 1:X1=0; [x]=2;
+0:X1=0; 1:X1=0;
+0:X1=0; 1:X1=1;
+0:X1=1; 1:X1=0;
+0:X1=1; 1:X1=1;
+0:X1=2; 1:X1=0;
 No
 Witnesses
 Positive: 0 Negative: 5
-Condition exists ([x]=2 /\ 0:X1=2 /\ 1:X1=1)
+Condition exists (0:X1=2 /\ 1:X1=1)
 Observation LB+dmb.sy+addrR-pos-store Never 0 5
-Hash=24b179685de17f284ef5e7cd97d3e692
+Hash=0e3514ae263b57a3fbb3baaa2e614789
 

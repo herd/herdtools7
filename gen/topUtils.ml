@@ -115,8 +115,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       | C.E.Store | C.E.Node _ -> false
       | _ ->
           C.E.is_com n.C.C.prev.C.C.edge
-          || C.E.is_com n.C.C.edge
-          || n.C.C.evt.C.C.rmw
+          || (C.E.is_com n.C.C.edge && not (C.E.is_rf n.C.C.edge) )
 
     let compute_cos =
       List.map

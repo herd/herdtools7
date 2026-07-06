@@ -147,6 +147,7 @@ module type S = sig
 (* Utilities *)
   val is_ext : edge -> bool
   val is_com : edge -> bool
+  val is_rf : edge -> bool
   val is_fetch : edge -> bool
 
 (* Set/Map *)
@@ -718,6 +719,10 @@ let fold_tedges f r =
 
   let is_com e = match e.edge with
   | Rf _|Fr _|Ws _|Leave _|Back _| Hat -> true
+  | _ -> false
+
+  let is_rf e = match e.edge with
+  | Rf _ -> true
   | _ -> false
 
   let is_fetch e = match e.edge with
