@@ -453,8 +453,7 @@ let max_set = IntSet.max_elt
           else cons_one loc (Some v) k in
 
     let last_write_event_adjacent_to_communication vs =
-      List.find_opt (fun (_, _, check) -> check) (List.rev vs)
-      |> Option.map (fun (v, _, _) -> v) in
+      List.find_map (fun (v, _, check) -> if check then Some v else None) (List.rev vs) in
 
     (* - `p`, process number
        - `i`, initial value accumulator
