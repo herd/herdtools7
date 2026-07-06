@@ -62,7 +62,6 @@ ASLSemanticsReference.t/SemanticsRule.EConcat2.asl \
 ASLSemanticsReference.t/SemanticsRule.LEGlobalVar.asl \
 ASLSemanticsReference.t/SemanticsRule.SCond2.asl \
 ASLSemanticsReference.t/SemanticsRule.SCond4.asl \
-ASLSemanticsReference.t/SemanticsRule.EGetEnumArray.asl \
 ASLSemanticsReference.t/SemanticsRule.EBinopAndFalse.asl \
 ASLSemanticsReference.t/SemanticsRule.ETuple.asl \
 ASLSemanticsReference.t/SemanticsRule.LESlice.asl \

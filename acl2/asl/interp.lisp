@@ -1647,14 +1647,6 @@ be updated since expressions can include function calls."
                                        (ev_error "DE_NE: negative array length" desc (list pos)))
                               :otherwise (ev_error "array non-integer length" desc (list pos)))))
              (evo_normal (expr_result (v_array (make-list lenv :initial-element v.val)) len.env)))
-           :e_enumarray ;; anna
-           (b* (((evoo (expr_result v)) (eval_expr env desc.value))
-                (labels (set::mergesort desc.labels))
-                (len (len labels))
-                (vals (make-list len :initial-element v.val))
-                (rec (omap::from-lists labels vals))
-                )
-             (evo_normal (expr_result (v_record rec) v.env)))
            :e_arbitrary ;; sol
            (b* (((evoo ty) (resolve-ty env desc.type))
                 ((mv val orac) (ty-oracle-val ty orac))

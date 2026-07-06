@@ -1308,7 +1308,7 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
   {
     \begin{array}{r}
       \buildexpr(\overname{\Nexpr(\ve : \Nexpr, \Tin, \vps : \Npatternset)}{\vparsednode}) \astarrow\\
-      \overname{\EPattern(\astversion{\ve}, \vpatternasts, \vpatternkind)}{\vastnode}
+      \overname{\EPattern(\astversion{\ve}, (\vpatternasts, \vpatternkind))}{\vastnode}
     \end{array}
   }
 }
@@ -1319,7 +1319,7 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
   {
     \begin{array}{r}
   \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Teqop, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
-  \overname{\EPattern(\astof{\vexpr}, [\PatternMask(\vm)], \Positive)}{\vastnode}
+  \overname{\EPattern(\astof{\vexpr}, ([\PatternMask(\vm)], \Positive))}{\vastnode}
     \end{array}
   }
 }
@@ -1330,7 +1330,7 @@ and it is \desugared{} by \ASTRuleCaseRef{EPattern}{neq}.
   {
     \begin{array}{r}
       \buildexpr(\overname{\Nexpr(\punnode{\Nexpr}, \Tneq, \Tmasklit(\vm))}{\vparsednode}) \astarrow\\
-      \overname{\EPattern(\astof{\vexpr}, [\PatternMask(\vm)], \Negative)}{\vastnode}
+      \overname{\EPattern(\astof{\vexpr}, ([\PatternMask(\vm)], \Negative))}{\vastnode}
     \end{array}
   }
 }

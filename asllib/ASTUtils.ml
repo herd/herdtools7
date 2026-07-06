@@ -699,7 +699,7 @@ let rename_locals map_name ast =
     | E_Tuple li -> E_Tuple (map_es li)
     | E_Array { length; value } ->
         E_Array { length = map_e length; value = map_e value }
-    | E_Pattern (e1, p) -> E_Pattern (map_e e1, map_pattern_list_and_kind p)
+    | E_Pattern (e1, p) -> E_Pattern (map_e e1, map_pattern_matcher p)
   (* End *)
   and map_es li = List.map map_e li
   and map_slices slices = List.map map_slice slices
@@ -816,7 +816,7 @@ let rename_locals map_name ast =
     | Pattern_Mask _ -> p.desc
     | Pattern_Range (e1, e2) -> Pattern_Range (map_e e1, map_e e2)
     | Pattern_Single p_e -> Pattern_Single (map_e p_e)
-  and map_pattern_list_and_kind (ps, pk) = (List.map map_pattern ps, pk)
+  and map_pattern_matcher (ps, pk) = (List.map map_pattern ps, pk)
   (* End *)
   (* Begin RenameCatcher *)
   and map_catcher (opt_exn_name, exn_ty, when_stmt) =

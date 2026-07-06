@@ -1155,8 +1155,12 @@ yielding the expression $\newe$.
   \renamelocalsexpr(\veone) \astarrow \veonep\\
   \vpatternasts \eqdef [\vi\in\indices(\vps): \renamelocalspattern(\vps[\vi])]
 }{
-  \renamelocalsexpr(\overname{\EPattern(\veone, \vps, \vpatternkind)}{\ve}) \astarrow
-  \overname{\EPattern(\veonep, \vpatternasts, \vpatternkind)}{\newe}
+  {
+    \begin{array}{r}
+  \renamelocalsexpr(\overname{\EPattern(\veone, (\vps, \vpatternkind))}{\ve}) \astarrow\\
+  \overname{\EPattern(\veonep, (\vpatternasts, \vpatternkind))}{\newe}
+    \end{array}
+  }
 }
 \end{mathpar}
 

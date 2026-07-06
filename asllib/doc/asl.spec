@@ -922,7 +922,7 @@ ast expr { "expression" } =
     | E_Arbitrary(type: ty)
     { "the arbitrary value choice expression for {type}" }
     | E_Pattern(discriminant: expr, matcher: pattern_matcher)
-    { "the pattern expression for the discriminant given by {discriminant} and pattern matcher {matcher}" }
+    { "the pattern expression for the discriminant given by {discriminant} and pattern matcher given by {matcher}" }
 
 ////////////////////////////////////////////////
 // Typed AST
@@ -971,7 +971,6 @@ render expr_epattern = expr(E_Pattern);
 render expr_record = expr(E_Record);
 render expr_tuple = expr(E_Tuple);
 render expr_arbitrary = expr(E_Arbitrary);
-render expr_pattern = expr(E_Pattern);
 
 render typed_expr { lhs_hypertargets = false } = expr(E_GetItem, E_Array, E_GetCollectionFields);
 render expr_array = expr(E_Array);
@@ -1009,7 +1008,7 @@ ast pattern_kind { "pattern kind" } =
 
 ast pattern_matcher { "pattern matcher" } =
     (patterns: list0(pattern), pattern_kind: pattern_kind)
-    { "the pattern matcher for {patterns} and {pattern_kind}" }
+    { "the pattern matcher given by {patterns} and {pattern_kind}" }
 ;
 
 ast slice
@@ -1242,13 +1241,13 @@ render lexpr_setfields = lexpr(LE_SetFields);
 render lexpr_destructuring = lexpr(LE_Destructuring);
 render lexpr_setarray_and_typed = lexpr(LE_SetArray);
 
+render patterns = pattern_matcher(-), pattern_kind(-);
 render pattern_all = pattern(Pattern_All);
 render pattern_single = pattern(Pattern_Single);
 render pattern_range = pattern(Pattern_Range);
 render pattern_leq = pattern(Pattern_Leq);
 render pattern_geq = pattern(Pattern_Geq);
 render pattern_mask = pattern(Pattern_Mask);
-render pattern_kind = pattern_kind(Positive, Negative);
 render ty_real = ty(T_Real);
 render ty_string = ty(T_String);
 render ty_bool = ty(T_Bool);
@@ -2730,10 +2729,9 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
 
   case EPattern {
     e =: E_Pattern(e1, pattern_matcher);
-    pattern_matcher =: (ps, pk);
     annotate_expr(tenv, e1) -> (t_e2, e2, ses_e);
-    annotate_pattern_list_and_kind(tenv, t_e2, ps, pk) -> (ps', pk', ses_pat);
-    pattern_matcher' := (ps', pk');
+    annotate_pattern_matcher(tenv, t_e2, pattern_matcher) -> (pattern_matcher', ses_pat)
+    { [_] };
     ses := union(ses_e, ses_pat);
     --
     (T_Bool, E_Pattern(e2, pattern_matcher'), ses);
@@ -3191,10 +3189,9 @@ semantics relation eval_expr(env: envs, e: expr) ->
   }
 
   case EPattern {
-    e =: E_Pattern(e1, pattern_matcher);
-    pattern_matcher =: (ps, pk);
+    e =: E_Pattern(e1, matcher);
     eval_expr(env, e1) -> ResultExpr((v1, g1), new_env);
-    eval_pattern_list_and_kind(env, v1, ps, pk) -> ResultPattern(v, g2);
+    eval_pattern_matcher(env, v1, matcher) -> ResultPattern(v, g2);
     g := ordered_data(g1, g2);
     --
     ResultExpr((v, g), new_env);
@@ -5267,23 +5264,21 @@ render rule annotate_pattern_leq = annotate_pattern(leq);
 render rule annotate_pattern_geq = annotate_pattern(geq);
 render rule annotate_pattern_mask = annotate_pattern(mask);
 
-typing relation annotate_pattern_list_and_kind(tenv: static_envs, t: ty, ps: list0(pattern), pk: pattern_kind) ->
-         (new_ps: list0(pattern), new_pk: pattern_kind, ses: powerset(TSideEffect)) | type_error
+typing relation annotate_pattern_matcher(tenv: static_envs, t: ty, (ps: list0(pattern), pk: pattern_kind)) ->
+         ((new_ps: list0(pattern), new_pk: pattern_kind), ses: powerset(TSideEffect)) | type_error
 {
   "annotates the pattern list {ps} with pattern kind {pk} in the \staticenvironmentterm{}
   {tenv} given a type {t}, resulting in {new_ps}, {new_pk}, and the inferred
-  \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError.",
+  \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
   prose_transition = "annotating {ps} with {pk} and {t} in {tenv} yields",
+  math_layout = [_,_],
 } =
-  case annotate {
-    INDEX(i, ps: annotate_pattern(tenv, t, ps[i]) -> (new_ps[i], xs[i]));
-    ses := union_list(xs);
-    --
-    (new_ps, pk, ses);
-  }
+  INDEX(i, ps: annotate_pattern(tenv, t, ps[i]) -> (new_ps[i], xs[i]));
+  ses := union_list(xs);
+  new_pk := pk;
+  --
+  ((new_ps, new_pk), ses);
 ;
-
-render rule annotate_pattern_list_and_kind = annotate_pattern_list_and_kind(annotate);
 
 semantics relation eval_pattern(env: envs, v: native_value, p: pattern) -> ResultPattern(b: tbool, new_g: XGraphs) | TDynError | TDiverging
 {
@@ -5362,7 +5357,7 @@ render rule eval_pattern_PLeq = eval_pattern(PLeq);
 render rule eval_pattern_PGeq = eval_pattern(PGeq);
 render rule eval_pattern_PMask = eval_pattern(PMask);
 
-semantics relation eval_pattern_list_and_kind(env: envs, v: native_value, ps: list0(pattern), pk: pattern_kind) ->
+semantics relation eval_pattern_matcher(env: envs, v: native_value, (ps: list0(pattern), pk: pattern_kind)) ->
   ResultPattern(b: tbool, new_g: XGraphs) | TDynError | TDiverging
 {
   prose_description = "determines whether a value {v} matches the pattern list
@@ -10716,7 +10711,7 @@ typing function check_args_typesat(tenv: static_envs, func_sig_args: list0((Iden
   the types of the corresponding formal arguments
   {func_sig_args} with the parameters substituted with
   their corresponding arguments as per {eqs}.
-  \ProseOtherwiseTypeError{}.",
+  \ProseOtherwiseTypeError{}",
   prose_transition = "checking that {arg_types} \typesatisfyterm{} the types of {func_sig_args} with parameters substituted as per {eqs} in the context of {tenv} yields",
 } =
   case empty {
@@ -12598,9 +12593,9 @@ typing function pattern_matcher_equal(tenv: static_envs, pattern_matcher1: patte
   (b: Bool) | type_error
 {
   "tests whether the pattern matcher {pattern_matcher1} is equivalent
-  to the pattern matcher {pattern_matcher2} in {tenv} and yields the
+  to the pattern matcher given by {pattern_matcher2} in {tenv} and yields the
   result in {b}. \ProseOtherwiseTypeError",
-  prose_transition = "testing whether {pattern_matcher1} is equivalent to {pattern_matcher2} in {tenv} yields",
+  prose_transition = "testing whether the pattern matcher given by {pattern_matcher1} is equivalent to {pattern_matcher2} in {tenv} yields",
 } =
   pattern_matcher1 =: (ps1, pk1);
   pattern_matcher2 =: (ps2, pk2);

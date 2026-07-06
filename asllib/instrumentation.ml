@@ -68,7 +68,7 @@ module SemanticsRule = struct
     | PRange
     | PSingle
     | PMask
-    | PatternListAndKind
+    | PatternMatcher
     | LDDiscard
     | LDVar
     | LDTuple
@@ -153,7 +153,7 @@ module SemanticsRule = struct
     | PRange -> "PRange"
     | PSingle -> "PSingle"
     | PMask -> "PMask"
-    | PatternListAndKind -> "PatternListAndKind"
+    | PatternMatcher -> "PatternMatcher"
     | LDDiscard -> "LDDiscard"
     | LDVar -> "LDVar"
     | LDTuple -> "LDTuple"
@@ -241,7 +241,7 @@ module SemanticsRule = struct
       PRange;
       PSingle;
       PMask;
-      PatternListAndKind;
+      PatternMatcher;
       LDDiscard;
       LDVar;
       LDTuple;

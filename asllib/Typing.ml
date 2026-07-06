@@ -1552,7 +1552,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (p, SES.empty) |: TypingRule.PMask
   (* End *)
 
-  and annotate_pattern_list_and_kind ~loc env t (ps, pk) =
+  and annotate_pattern_matcher ~loc env t (ps, pk) =
     let new_ps, sess = list_map_split (annotate_pattern ~loc env t) ps in
     let ses =
       (* They can't be conflicting because they are statically evaluable *)
@@ -2289,7 +2289,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t_e2, e2, ses_e = annotate_expr env e1 in
         let pat', ses_pat =
           best_effort (pat, SES.empty) (fun _ ->
-              annotate_pattern_list_and_kind ~loc env t_e2 pat)
+              annotate_pattern_matcher ~loc env t_e2 pat)
         in
         let ses =
           SES.union ses_pat ses_e

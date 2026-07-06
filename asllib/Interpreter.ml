@@ -718,9 +718,9 @@ module Make (B : Backend.S) (C : Config) = struct
         return_normal (v, env) |: SemanticsRule.EArbitrary
     (* End *)
     (* Begin EvalEPattern *)
-    | E_Pattern (e, (ps, pk)) ->
+    | E_Pattern (e, matcher) ->
         let** v1, new_env = eval_expr env e in
-        let* v = eval_pattern_list_and_kind env v1 ps pk in
+        let* v = eval_pattern_matcher env v1 matcher in
         return_normal (v, new_env) |: SemanticsRule.EPattern
     (* End *)
     (* Begin EvalEGetCollectionFields *)
@@ -1002,23 +1002,22 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Evaluation of Patterns *)
   (* ---------------------- *)
 
-  (** [eval_pattern_list_and_kind env v ps pk] evaluates a list of patterns [ps]
+  (** [eval_pattern_matcher env v ps pk] evaluates a list of patterns [ps]
       against a value [v] and a pattern kind [pk]. *)
-  and eval_pattern_list_and_kind env v ps pk =
-    (* Begin EvalPatternListAndKind *)
+  and eval_pattern_matcher env v (ps, pk) =
+    (* Begin EvalPatternMatcher *)
     let bs = List.map (eval_pattern env v) ps in
     let* disjunction = big_op m_false (B.binop `BOR) bs in
     match pk with
-    | Positive -> return disjunction
-    | Negative -> B.unop BNOT disjunction
+    | Positive -> return disjunction |: SemanticsRule.PatternMatcher
+    | Negative -> B.unop BNOT disjunction |: SemanticsRule.PatternMatcher
   (* End *)
 
   (** [eval_pattern env v p] determines if [v] matches the pattern [p]. *)
-  and eval_pattern env v : pattern -> B.value m =
-   (* The calls to [eval_expr_sef] are justified since annotate_pattern
+  and eval_pattern env v p : B.value m =
+    (* The calls to [eval_expr_sef] are justified since annotate_pattern
        checks that all expressions on which a type depends are statically
        evaluable, i.e. side-effect-free. *)
-   fun p ->
     match p.desc with
     (* Begin EvalPAll *)
     | Pattern_All -> m_true |: SemanticsRule.PAll

@@ -324,7 +324,7 @@ patterns, that is, patterns derived from \Npattern. The forms \verb|{...}| and
 \end{flalign*}
 
 \subsection{Abstract Syntax}
-\RenderTypes{pattern_kind}
+\RenderTypes{patterns}
 
 \ASTRuleDef{PatternSet}
 \NotImportedToASLSpecYet{
@@ -374,17 +374,17 @@ transforms a parse node $\vparsednode$ into a list of simple pattern AST nodes.
 \end{mathpar}
 
 \subsection{Typing}
-\RenderRelation{annotate_pattern_list_and_kind}
-\RenderProseAndFormally{annotate_pattern_list_and_kind}
+\RenderRelation{annotate_pattern_matcher}
+\RenderProseAndFormally{annotate_pattern_matcher}
 
 \subsection{Semantics}
-\SemanticsRuleDef{EvalPatternListAndKind}
+\SemanticsRuleDef{EvalPatternMatcher}
 \ExampleDef{Evaluation of Pattern Lists}
 
 A positive pattern list matches when at least one pattern in the list matches the
 discriminant value. A negative pattern list matches when no pattern in the list
 matches the discriminant value.
 
-\RenderRelation{eval_pattern_list_and_kind}
-\RenderProseAndFormally{eval_pattern_list_and_kind}
-\CodeSubsection{\EvalPatternListAndKindBegin}{\EvalPatternListAndKindEnd}{../Interpreter.ml}
+\RenderRelation{eval_pattern_matcher}
+\RenderProseAndFormally{eval_pattern_matcher}
+\CodeSubsection{\EvalPatternPatternMatcherBegin}{\EvalPatternPatternMatcherEnd}{../Interpreter.ml}
