@@ -1,5 +1,6 @@
 AArch64 L020
-(* LX/SX with different address, observed on Raspberry Pi4B *)
+(* LX/SX with different address, observed on many systems.
+   with -mode presi or -s <small> *)
 {
 int x=1;
 int y=2;

@@ -1,0 +1,13 @@
+Test L107 Allowed
+States 4
+0:X4=0; 0:X6=0; [x]=3;
+0:X4=0; 0:X6=1; [x]=2;
+0:X4=1; 0:X6=0; [x]=3;
+0:X4=1; 0:X6=1; [x]=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:X4=1 /\ 0:X6=0 /\ [x]=3)
+Observation L107 Sometimes 1 3
+Hash=7a4f826210407ee264f41a4a24ae888c
+
