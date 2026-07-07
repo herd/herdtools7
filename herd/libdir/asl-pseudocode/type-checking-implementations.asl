@@ -87,3 +87,6 @@ var EDPCSRhi: bits(32) {
   [2:1] EL,
   [0] NS,
 };
+
+constant NUM_VMIDBITS = 16; /* Was the value before M.c */
+constant NUM_ASIDBITS = 16; /* Was the value before M.c */

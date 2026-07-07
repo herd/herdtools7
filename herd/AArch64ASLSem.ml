@@ -160,10 +160,10 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
     let barrier_domain =
       let open AArch64Base in
       function
-      | NSH -> "MBReqDomain_Nonshareable"
-      | ISH -> "MBReqDomain_InnerShareable"
-      | OSH -> "MBReqDomain_OuterShareable"
-      | SY -> "MBReqDomain_FullSystem"
+      | NSH -> "MBMaintenanceScope_Nonshareable"
+      | ISH -> "MBMaintenanceScope_InnerShareable"
+      | OSH -> "MBMaintenanceScope_OuterShareable"
+      | SY -> "MBMaintenanceScope_None"
 
     and barrier_typ =
       let open AArch64Base in
@@ -1003,12 +1003,11 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 ])
 
       | I_FENCE ISB -> Some ("control/barriers/ISB_BI_barriers.opn", stmt [])
-      | I_FENCE (DMB (dom, btyp)) ->
+      | I_FENCE (DMB (SY, btyp)) ->
           Some
             ( "control/barriers/DMB_BO_barriers.opn",
               stmt
                 [
-                  "domain" ^= var (barrier_domain dom);
                   "types" ^= var (barrier_typ btyp);
                 ] )
       | I_FENCE (DSB (dom, btyp)) ->
@@ -1018,7 +1017,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 [
                   "nXS" ^= litb false;
                   "alias" ^= var "DSBAlias_DSB";
-                  "domain" ^= var (barrier_domain dom);
+                  "scope" ^= var (barrier_domain dom);
                   "types" ^= var (barrier_typ btyp);
                 ] )
       | I_UDF k when C.variant Variant.ASL_AArch64_UDF ->

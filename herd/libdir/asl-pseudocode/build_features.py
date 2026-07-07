@@ -1,5 +1,4 @@
-"""Build the list of features from the released json file.
-"""
+"""Build the list of features from the released json file."""
 
 # SPDX-FileCopyrightText: Copyright 2022-2025 Arm Limited and/or its affiliates <open-source-office@arm.com>
 # SPDX-License-Identifier: BSD-3-Clause
@@ -38,6 +37,13 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="PATH",
         type=Path,
         help="the path to the features.json file to parse.",
+    )
+
+    parser.add_argument(
+        "--extra-features",
+        action="store",
+        default="",
+        help="Comma-separated list of features not specified in the json file.",
     )
 
     return parser
@@ -97,6 +103,7 @@ def main():
     args = build_parser().parse_args()
     obj = load_json(args.path)
     feature_names = extract_features_names(obj)
+    feature_names += args.extra_features.split(",")
     output_file_content = get_output_content(feature_names)
     write_output(args.output, output_file_content)
 

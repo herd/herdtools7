@@ -129,7 +129,13 @@ readonly func ImpDefBool(s: string) => boolean
 begin
   case s of
     when "Secure-only implementation" => return FALSE;
-    otherwise => unreachable;
+
+    /* Guards CheckDebug, that we haven't implemented anyways */
+    when "GPF, GPC, Data SyncExternal Aborts, TagChecks prioritized over Watchpoints" => return FALSE;
+
+    otherwise =>
+      println "Reached ImpDefBool:", s;
+      unreachable;
   end;
 end;
 
@@ -188,9 +194,9 @@ end;
 // This function generates a DMB Effect, with the correct parameters. In
 // practice it is just a call to the `primitive_dmb` primitive.
 
-func DataMemoryBarrier(domain : MBReqDomain, types : MBReqTypes)
+func DataMemoryBarrier(types : MBReqTypes)
 begin
-  primitive_dmb(domain, types);
+  primitive_dmb(types);
 end;
 
 // DataSynchronizationBarrier()
@@ -202,11 +208,11 @@ end;
 // nXS is not implemented in herd
 
 func DataSynchronizationBarrier
-  (domain : MBReqDomain,
+  (scope : MBMaintenanceScope,
    types : MBReqTypes,
    nXS : boolean)
 begin
-  primitive_dsb(domain, types);
+  primitive_dsb(scope, types);
 end;
 
 // =============================================================================
@@ -338,3 +344,9 @@ begin
     return FALSE;
   end;
 end;
+
+// =============================================================================
+
+// Not defined in the arm arm
+constant NUM_VMIDBITS = 16; /* Was the value before M.c */
+constant NUM_ASIDBITS = 16; /* Was the value before M.c */
