@@ -18,6 +18,7 @@
 type t =
   A | XA | L | XL | X | N | Q | XQ | NoRet | S
   | NTA (* Non-Temporal, avoid clash with NT in AArch64Base *)
+  | EX | EXA | EXL (* Exclusives *)
 
 let is_speculated = function
   | S -> true
@@ -36,7 +37,7 @@ let is_noreturn = function
   | _ -> false
 
 let is_acquire = function
-  | A | XA -> true
+  | A | XA | EXA -> true
   | _ -> false
 
 let is_acquire_pc = function
@@ -44,7 +45,11 @@ let is_acquire_pc = function
   | _ -> false
 
 let is_release = function
-  | L | XL -> true
+  | L | XL | EXL -> true
+  | _ -> false
+
+let is_exclusive = function
+  | EX | EXA | EXL -> true
   | _ -> false
 
 let sets = [
@@ -55,6 +60,7 @@ let sets = [
     "NoRet", is_noreturn;
     "S", is_speculated;
     "NT",is_non_temporal;
+    "EX", is_exclusive;
   ]
 
 let pp = function
@@ -69,3 +75,6 @@ let pp = function
   | NoRet -> "NoRet"
   | S -> "^s"
   | NTA -> "NT"
+  | EX -> "EX"
+  | EXA -> "AcqEx"
+  | EXL -> "RelEx"

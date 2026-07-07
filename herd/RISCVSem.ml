@@ -143,6 +143,7 @@ module
 
       let read_mem sz mo = read_mem_annot sz (RISCV.P mo)
       let read_mem_atomic sz mo = read_mem_annot sz (RISCV.X mo)
+      let read_mem_reserved sz mo = read_mem_annot sz (RISCV.EX mo)
 
       let write_loc_annot sz an loc v ii =
         M.mk_singleton_es
@@ -181,12 +182,12 @@ module
       let write_mem_conditional sz an a v resa ii =
         if  lrscdiffok then
           (M.mk_singleton_es_eq
-             (Act.Access (Dir.W, A.Location_global a, v, RISCV.X an, (), sz,Access.VIR)) [] ii >>|
+             (Act.Access (Dir.W, A.Location_global a, v, RISCV.EX an, (), sz,Access.VIR)) [] ii >>|
              M.neqT resa V.zero) >>! () (* resa = zero <-> no matching load reserve *)
         else
           let eq = [M.VC.Assign (a,M.VC.Atom resa)] in
           M.mk_singleton_es_eq
-            (Act.Access (Dir.W, A.Location_global a, v, RISCV.X an, (), sz,Access.VIR)) eq ii
+            (Act.Access (Dir.W, A.Location_global a, v, RISCV.EX an, (), sz,Access.VIR)) eq ii
 
       let write_mem_atomic sz an = do_write_mem sz (RISCV.X an)
 
@@ -358,7 +359,7 @@ module
               (fun ea ->
                 write_reg RISCV.RESADDR ea ii
                 >>|
-                  (read_mem_atomic (tr_sz sz) mo ea ii
+                  (read_mem_reserved (tr_sz sz) mo ea ii
                    >>= fun v -> write_reg r1 v ii))
               >>= B.next2T
           | RISCV.StoreConditional

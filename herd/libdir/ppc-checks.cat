@@ -18,5 +18,5 @@ let prop = propbase & (W * W) | (chapo? ; propbase*; strong; hbstar)
 acyclic co|prop as propagation
 irreflexive fre;prop;hbstar as observation
 
-let xx = po & (X * X)
+let xx = po & (EX * EX)
 acyclic co | xx as scXX
