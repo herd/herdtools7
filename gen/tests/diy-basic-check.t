@@ -177,7 +177,7 @@ A base test with int64 arrays
    MOV X4,#1       |                ;
    STR X4,[X5]     |                ;
   
-  exists (x={1,0} /\ [y]=2 /\ 0:X2=0 /\ 1:X2=0)
+  exists ([y]=2 /\ 0:X2=0 /\ 1:X2=0)
 A C test for exists
   $ diyone7 -arch C PodWW Coe PodWR Fre
   Warning: optimised conditions are not supported by C arch
@@ -534,7 +534,7 @@ A valid cycle with annotations and a store edge
    STLR W0,[X1] |             ;
    LDR W3,[X2]  |             ;
   
-  exists ([x]=2 /\ 0:X3=0 /\ 1:X3=0)
+  exists (0:X3=0 /\ 1:X3=0)
 An invalid cycle with annotations and a store edge
   $ diyone7 -arch AArch64 A Store PodWR Fre PodWR Fre
   diyone7: Fatal error: Test SB+po+store-poap [Store PodWRAP Fre PodWR FrePA] failed:
@@ -560,7 +560,7 @@ A valid cycle with duplicate wraparound annotations plus insert and store edges
    ISB          |             ;
    LDAR W3,[X2] |             ;
   
-  exists ([x]=2 /\ 0:X3=0 /\ 1:X3=0)
+  exists (0:X3=0 /\ 1:X3=0)
 
 Alignment filter behaviour between local `Pos**` and internal communication in `diy7` in `default` mode
   $ diy7 -arch AArch64 -filter-check Rfi DpAddrdW
