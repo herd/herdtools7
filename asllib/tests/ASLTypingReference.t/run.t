@@ -367,6 +367,7 @@ ASL Typing Tests / annotating types:
   ne_enum: RED != RED = FALSE
   ne_enum: RED != GREEN = TRUE
   concat_string: 0 ++ '1' ++ 2.0 ++ TRUE ++ "foo" ++ RED = 00x12TRUEfooRED
+  concat_string: '10' ++ '1' = 0x20x1
 
   $ aslref TypingRule.EVar.asl
   $ aslref TypingRule.EVar.undefined.asl
