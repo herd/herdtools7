@@ -110,6 +110,8 @@ never used in the interpreter")
   (:precision_full ())
   (:precision_lost ()))
 
+(defenum pattern_kind-p (:positive :negative))
+
 
 (defenum subprogram_type-p
   (:st_procedure :st_function :st_getter :st_emptygetter :st_setter :st_emptysetter))
@@ -198,7 +200,7 @@ values.)")
      :short "Arbitrary value expression. Semantics: reads the oracle to construct a value of
 the given type.")
     (:e_pattern ((expr expr)
-                 (pattern pattern))
+                 (pattern pattern_matcher))
      :short "Pattern match expression")
     :base-case-override :e_literal
     :measure (acl2::two-nats-measure (acl2-count x) 10))
@@ -216,15 +218,12 @@ the given type.")
   (deftagsum pattern_desc
     :short "ASL pattern expression (main body)"
     (:pattern_all ())
-    (:pattern_any ((patterns patternlist)))
     (:pattern_geq ((expr expr)))
     (:pattern_leq ((expr expr)))
     (:pattern_mask ((mask bitvector_mask)))
-    (:pattern_not ((pattern pattern)))
     (:pattern_range ((lower expr)
                      (upper expr)))
     (:pattern_single ((expr expr)))
-    (:pattern_tuple ((patterns patternlist)))
     :measure (acl2::two-nats-measure (acl2-count x) 10))
 
   (defprod pattern ((desc pattern_desc "Main pattern")
@@ -235,6 +234,13 @@ the given type.")
 
   (deflist patternlist :elt-type pattern :true-listp t
     :short "List of ASL patterns"
+    :measure (acl2::two-nats-measure (acl2-count x) 10))
+
+  (defprod pattern_matcher
+    ((patterns patternlist)
+     (kind pattern_kind-p))
+    :short "Pattern matcher: a list of patterns and whether they are matched positively or negatively."
+    :layout :fulltree
     :measure (acl2::two-nats-measure (acl2-count x) 10))
 
   (deftagsum slice

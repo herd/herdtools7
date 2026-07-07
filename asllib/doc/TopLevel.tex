@@ -1153,10 +1153,14 @@ yielding the expression $\newe$.
 \begin{mathpar}
 \inferrule[e\_pattern]{
   \renamelocalsexpr(\veone) \astarrow \veonep\\
-  \renamelocalspattern(\vp) \astarrow \vpp
+  \vpatternasts \eqdef [\vi\in\indices(\vps): \renamelocalspattern(\vps[\vi])]
 }{
-  \renamelocalsexpr(\overname{\EPattern(\veone, \vp)}{\ve}) \astarrow
-  \overname{\EPattern(\veonep, \vpp)}{\newe}
+  {
+    \begin{array}{r}
+  \renamelocalsexpr(\overname{\EPattern(\veone, (\vps, \vpatternkind))}{\ve}) \astarrow\\
+  \overname{\EPattern(\veonep, (\vpatternasts, \vpatternkind))}{\newe}
+    \end{array}
+  }
 }
 \end{mathpar}
 
@@ -1473,19 +1477,10 @@ pattern $\vp$, yielding the pattern $\newp$.
     \item \Proseeqdef{$\newp$}{$\vp$}.
   \end{itemize}
 
-  \item \AllApplyCase{pattern\_list}
-  \begin{itemize}
-    \item $\vp$ is a pattern with AST label $L$ and list of patterns $\pl$,
-          where $L$ is one of $\PatternAny$ and $\PatternTuple$;
-    \item \Proseeqdef{$\newpl$}{the list obtained by applying $\renamelocalspattern$ to each pattern in $\pl$};
-    \item \Proseeqdef{$\newp$}{the pattern with AST label $L$ and list of patterns $\newpl$}.
-  \end{itemize}
-
   \item \AllApplyCase{single\_expr}
   \begin{itemize}
     \item $\vp$ is a pattern with AST label $L$ and expression $\vpe$,
-          where $L$ is one of $\PatternGeq$, $\PatternLeq$, $\PatternNot$, and
-          $\PatternSingle$;
+          where $L$ is one of $\PatternGeq$, $\PatternLeq$, and $\PatternSingle$;
     \item \Proserenamelocalsexpr{$\veone$}{$\veonep$};
     \item \Proseeqdef{$\vpe$}{the pattern with AST label $L$ and expression $\vnewpe$}.
   \end{itemize}
@@ -1509,19 +1504,9 @@ pattern $\vp$, yielding the pattern $\newp$.
 \end{mathpar}
 
 \begin{mathpar}
-\inferrule[pattern\_list]{
-  \vp = L(\pl)\\
-  \astlabel(\vp) \in \{\PatternAny, \PatternTuple\}\\
-  \newpl \eqdef [ \vi\in\indices(\pl): \renamelocalspattern(\pl[\vi]) ]
-}{
-  \renamelocalspattern(\vp) \astarrow \overname{L(\newpl)}{\newp}
-}
-\end{mathpar}
-
-\begin{mathpar}
 \inferrule[single\_expr]{
   \vp = L(\vpe)\\
-  \astlabel(\vp) \in \{\PatternGeq, \PatternLeq, \PatternNot, \PatternSingle\}\\
+  \astlabel(\vp) \in \{\PatternGeq, \PatternLeq, \PatternSingle\}\\
   \renamelocalsexpr(\vpe) \astarrow \vnewpe
 }{
   \renamelocalspattern(\vp) \astarrow \overname{L(\vnewpe)}{\newp}

@@ -310,7 +310,7 @@ let rec expr_equal eq e1 e2 =
       Int.equal i1 i2 && expr_equal eq e1' e2'
   | E_GetItem _, _ | _, E_GetItem _ -> false
   | E_Pattern (e1', p1), E_Pattern (e2', p2) ->
-      expr_equal eq e1' e2' && pattern_equal eq p1 p2
+      expr_equal eq e1' e2' && pattern_matcher_equal eq p1 p2
   | E_Pattern _, _ -> false
   | E_Record (s1, fields1), E_Record (s2, fields2) ->
       type_equal eq s1 s2
@@ -419,17 +419,22 @@ and pattern_equal eq p1 p2 =
   ||
   match (p1.desc, p2.desc) with
   | Pattern_All, Pattern_All -> true
-  | Pattern_Any li1, Pattern_Any li2 | Pattern_Tuple li1, Pattern_Tuple li2 ->
-      List.equal (pattern_equal eq) li1 li2
   | Pattern_Geq e1, Pattern_Geq e2
   | Pattern_Leq e1, Pattern_Leq e2
   | Pattern_Single e1, Pattern_Single e2 ->
       expr_equal eq e1 e2
   | Pattern_Mask m1, Pattern_Mask m2 -> Bitvector.mask_equal m1 m2
-  | Pattern_Not p1, Pattern_Not p2 -> pattern_equal eq p1 p2
   | Pattern_Range (e11, e12), Pattern_Range (e21, e22) ->
       expr_equal eq e11 e21 && expr_equal eq e12 e22
   | _ -> false
+
+and pattern_kind_equal pk1 pk2 =
+  match (pk1, pk2) with
+  | Positive, Positive | Negative, Negative -> true
+  | _ -> false
+
+and pattern_matcher_equal eq (ps1, pk1) (ps2, pk2) =
+  List.equal (pattern_equal eq) ps1 ps2 && pattern_kind_equal pk1 pk2
 
 let qualifier_equal (q1 : func_qualifier option) q2 = Option.equal ( = ) q1 q2
 let var_ x = E_Var x |> add_dummy_annotation
@@ -694,7 +699,7 @@ let rename_locals map_name ast =
     | E_Tuple li -> E_Tuple (map_es li)
     | E_Array { length; value } ->
         E_Array { length = map_e length; value = map_e value }
-    | E_Pattern (e1, p) -> E_Pattern (map_e e1, map_pattern p)
+    | E_Pattern (e1, p) -> E_Pattern (map_e e1, map_pattern_matcher p)
   (* End *)
   and map_es li = List.map map_e li
   and map_slices slices = List.map map_slice slices
@@ -806,14 +811,12 @@ let rename_locals map_name ast =
   and map_pattern p =
     map_annotated p @@ function
     | Pattern_All -> Pattern_All
-    | Pattern_Any pl -> Pattern_Any (List.map map_pattern pl)
     | Pattern_Geq p_e -> Pattern_Geq (map_e p_e)
     | Pattern_Leq p_e -> Pattern_Leq (map_e p_e)
     | Pattern_Mask _ -> p.desc
-    | Pattern_Not sub_p -> Pattern_Not (map_pattern sub_p)
     | Pattern_Range (e1, e2) -> Pattern_Range (map_e e1, map_e e2)
     | Pattern_Single p_e -> Pattern_Single (map_e p_e)
-    | Pattern_Tuple pl -> Pattern_Tuple (List.map map_pattern pl)
+  and map_pattern_matcher (ps, pk) = (List.map map_pattern ps, pk)
   (* End *)
   (* Begin RenameCatcher *)
   and map_catcher (opt_exn_name, exn_ty, when_stmt) =

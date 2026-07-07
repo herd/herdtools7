@@ -139,7 +139,8 @@ let rec pp_expr =
         bprintf f "E_Array { length=(%a); value=(%a) }" pp_expr length pp_expr
           value
     | E_Arbitrary ty -> bprintf f "E_Arbitrary (%a)" pp_ty ty
-    | E_Pattern (e, p) -> bprintf f "E_Pattern (%a, %a)" pp_expr e pp_pattern p
+    | E_Pattern (e, p) ->
+        bprintf f "E_Pattern (%a, %a)" pp_expr e pp_pattern_matcher p
   in
   fun f e -> pp_annotated pp_desc f e
 
@@ -154,26 +155,27 @@ and pp_slice f = function
       bprintf f "Slice_Length (%a, %a)" pp_expr e1 pp_expr e2
   | Slice_Star (e1, e2) -> bprintf f "Slice_Star (%a, %a)" pp_expr e1 pp_expr e2
 
-and pp_pattern =
-  let pp_desc f = function
+and pp_pattern_matcher =
+  let pp_pattern_desc f = function
     | Pattern_All -> addb f "Pattern_All"
-    | Pattern_Any li ->
-        addb f "Pattern_Any ";
-        pp_list pp_pattern f li
     | Pattern_Geq e -> bprintf f "Pattern_Geq (%a)" pp_expr e
     | Pattern_Leq e -> bprintf f "Pattern_Leq (%a)" pp_expr e
     | Pattern_Mask m ->
         bprintf f "Pattern_Mask (Bitvector.mask_of_string \"%S\")"
           (Bitvector.mask_to_canonical_string m)
-    | Pattern_Not p -> bprintf f "Pattern_Not (%a)" pp_pattern p
     | Pattern_Range (e1, e2) ->
         bprintf f "Pattern_Range (%a, %a)" pp_expr e1 pp_expr e2
     | Pattern_Single e -> bprintf f "Pattern_Single (%a)" pp_expr e
-    | Pattern_Tuple li ->
-        addb f "Pattern_Tuple ";
-        pp_list pp_pattern f li
   in
-  fun f p -> pp_annotated pp_desc f p
+  let pattern_kind_to_string = function
+    | Positive -> "Positive"
+    | Negative -> "Negative"
+  in
+  let pp_pattern_kind f pk = addb f (pattern_kind_to_string pk) in
+  fun f (ps, pk) ->
+    bprintf f "(%a,%a)"
+      (pp_list (pp_annotated pp_pattern_desc))
+      ps pp_pattern_kind pk
 
 and pp_ty =
   let pp_desc f = function

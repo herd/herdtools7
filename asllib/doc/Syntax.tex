@@ -272,8 +272,7 @@ The derivations allow certain parse trees where lists may have invalid sizes.
 Those parse trees must be rejected in a later phase.
 
 \hypertarget{def-tunops}{}
-Notice that two of the derivations (for $\Nexprpattern$ and for $\Nexpr$) end with
-$\priority{\Tunops}$.
+Notice that $\Nexpr$ uses $\priority{\Tunops}$.
 This is a priority annotation, which is not part of the right-hand-side sentence, and is explained in \secref{PriorityAndAssociativity}
 and can be ignored upon first reading.
 
@@ -419,7 +418,7 @@ For example, instead of $\Tidentifier(\id)$, we simply write $\Tidentifier$.
 
 \hypertarget{def-ncasealt}{}
 \begin{flalign*}
-\Ncasealt \derives \ & \Twhen \parsesep \Npatternlist \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &
+\Ncasealt \derives \ & \Twhen \parsesep \Ncasepattern \parsesep \option{\Twhere \parsesep \Nexpr} \parsesep \Tarrow \parsesep \Nstmtlist &
 \end{flalign*}
 
 \hypertarget{def-notherwiseopt}{}
@@ -552,32 +551,6 @@ it must declare a new variable.
 |\ & \Nexpr \parsesep \Tslicing \parsesep \Nexpr &
 \end{flalign*}
 
-Pattern expressions ($\Nexprpattern$), defined by the following derivations, are similar to regular expressions  ($\Nexpr$),
-except they do not derive tuples, which are the last derivation for $\Nexpr$.
-
-\hypertarget{def-nexprpattern}{}
-\begin{flalign*}
-\Nexprpattern \derives\ & \Nvalue &\\
-                    |\  & \Tidentifier &\\
-                    |\  & \Nexprpattern \parsesep \Nbinop \parsesep \Nexpr &\\
-                    |\  & \Nunop \parsesep \Nexpr & \priority{\Tunops}\\
-                    |\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Telse \parsesep \Nexpr &\\
-                    |\  & \Ncall &\\
-                    |\  & \Nexprpattern \parsesep \Nslices &\\
-                    |\  & \Nexprpattern \parsesep \Tllbracket \parsesep \Nexpr \parsesep \Trrbracket &\\
-                    |\  & \Nexprpattern \parsesep \Tdot \parsesep \Tidentifier&\\
-                    |\  & \Nexprpattern \parsesep \Tdot \parsesep \Tlbracket \parsesep \ClistOne{\Tidentifier} \parsesep \Trbracket &\\
-                    |\  & \Nexprpattern \parsesep \Tas \parsesep \Nty &\\
-                    |\  & \Nexprpattern \parsesep \Tas \parsesep \Nconstraintkind &\\
-                    |\  & \Nexpr \parsesep \Tin \parsesep \Npatternset &\\
-                    |\  & \Nexpr \parsesep \Teqop \parsesep \Tmasklit &\\
-                    |\  & \Nexpr \parsesep \Tneq \parsesep \Tmasklit &\\
-                    |\  & \Tarbitrary \parsesep \Tcolon \parsesep \Nty &\\
-                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \Tminus \parsesep \Trbrace & \mathhypertarget{any-pattern}\\
-                    |\  & \Tidentifier \parsesep \Tlbrace \parsesep \ClistOne{\Nfieldassign} \parsesep \Trbrace &\\
-                    |\  & \Tlpar \parsesep \Nexprpattern \parsesep \Trpar &
-\end{flalign*}
-
 \hypertarget{def-npatternset}{}
 \begin{flalign*}
 \Npatternset \derives \  & \Tbnot \parsesep \Tlbrace \parsesep \Npatternlist \parsesep \Trbrace &\\
@@ -591,14 +564,18 @@ except they do not derive tuples, which are the last derivation for $\Nexpr$.
 
 \hypertarget{def-npattern}{}
 \begin{flalign*}
-\Npattern \derives\ & \Nexprpattern &\\
-                |\  & \Nexprpattern \parsesep \Tslicing \parsesep \Nexpr &\\
+\Npattern \derives\ & \Nexpr &\\
+                |\  & \Nexpr \parsesep \Tslicing \parsesep \Nexpr &\\
                 |\  & \Tminus &\\
                 |\  & \Tleq \parsesep \Nexpr &\\
                 |\  & \Tgeq \parsesep \Nexpr &\\
-                |\  & \Tmasklit &\\
-                |\  & \Plisttwo{\Npattern} &\\
-                |\  & \Npatternset &
+                |\  & \Tmasklit &
+\end{flalign*}
+
+\hypertarget{def-ncasepattern}{}
+\begin{flalign*}
+\Ncasepattern \derives \ & \Npatternset &\\
+                    |\  & \Npatternlist &
 \end{flalign*}
 
 \hypertarget{def-nfields}{}

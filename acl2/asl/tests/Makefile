@@ -62,10 +62,8 @@ ASLSemanticsReference.t/SemanticsRule.EConcat2.asl \
 ASLSemanticsReference.t/SemanticsRule.LEGlobalVar.asl \
 ASLSemanticsReference.t/SemanticsRule.SCond2.asl \
 ASLSemanticsReference.t/SemanticsRule.SCond4.asl \
-ASLSemanticsReference.t/SemanticsRule.EGetEnumArray.asl \
 ASLSemanticsReference.t/SemanticsRule.EBinopAndFalse.asl \
 ASLSemanticsReference.t/SemanticsRule.ETuple.asl \
-ASLSemanticsReference.t/SemanticsRule.PTuple.asl \
 ASLSemanticsReference.t/SemanticsRule.LESlice.asl \
 ASLSemanticsReference.t/SemanticsRule.PMask.asl \
 ASLSemanticsReference.t/SemanticsRule.LDTuple.asl \
@@ -216,7 +214,7 @@ control-flow.t/try-02.asl \
 control-flow.t/try-00.asl \
 control-flow.t/always-throw.asl \
 
-# side-effects.t/assert-unknown.asl \   assertion fails due to the expectation that ARBITRARY returns a default value 
+# side-effects.t/assert-unknown.asl \   assertion fails due to the expectation that ARBITRARY returns a default value
 
 FAILING_TESTS := \
 ASLSemanticsReference.t/SemanticsRule.EArbitraryInteger0.asl \

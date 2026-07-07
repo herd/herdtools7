@@ -156,14 +156,11 @@ ASL Semantics Tests:
   [1]
   $ aslref SemanticsRule.FCall.asl
   $ aslref SemanticsRule.PAll.asl
-  $ aslref SemanticsRule.PAny.asl
   $ aslref SemanticsRule.PGeq.asl
   $ aslref SemanticsRule.PLeq.asl
-  $ aslref SemanticsRule.PNot.asl
   $ aslref SemanticsRule.PRange.asl
   $ aslref SemanticsRule.PSingle.asl
   $ aslref SemanticsRule.PMask.asl
-  $ aslref SemanticsRule.PTuple.asl
   $ aslref SemanticsRule.ATCValue.asl
   $ aslref -0 SemanticsRule.LEUndefIdentV0.asl
   $ aslref SemanticsRule.LEUndefIdentV1.asl
