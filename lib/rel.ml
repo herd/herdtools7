@@ -174,6 +174,11 @@ and module Es2 = MySet.Make(O2)
         (fun _ ys -> Elts2.filter p ys |> set_opt)
         m
 
+    and restrict_codomain_to_set s2 m =
+      M.filter_map
+        (fun _ ys -> Elts2.inter s2 ys |> set_opt)
+        m
+
     and restrict_domains p1 p2 m =
       M.filter_map
         (fun x ys ->

@@ -62,6 +62,7 @@ module type S =  sig
 
 (* Transitive closure, efficient implementation *)
   val transitive_closure : t -> t
+  val restrict_domain_transitive_closure : Elts.t -> t -> t
 
 (* Direct cycles *)
   val is_reflexive : t -> bool
