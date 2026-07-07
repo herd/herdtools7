@@ -23,8 +23,13 @@ ASLReference.pdf: generated_spec *.tex *.bib
 
 html: generated_spec *.tex *.bib *.hva
 	mkdir -p HTML
-	hevea -fix0 -O -o HTML/ASL.html book.hva macros.hva ASLReference.tex
+	@# The first run is expected to generate warnings because bibhva
+	@# and the second hevea pass have not run, so we silence them via -s.
+	hevea -fix0 -s -O -o HTML/ASL.html book.hva macros.hva ASLReference.tex
 	bibhva HTML/ASL
+	@# bibhva makes citations available after the first pass; run one more
+	@# silent pass so the final unsilenced pass starts from stable references.
+	hevea -fix0 -s -O -o HTML/ASL.html book.hva macros.hva ASLReference.tex
 	hevea -fix -O -o HTML/ASL.html book.hva macros.hva ASLReference.tex
 	cd HTML && hacha ASL.html
 
