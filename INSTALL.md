@@ -13,10 +13,6 @@ Then, to get the newest version:
 Source build
 ============
 
-Tools will be installed in PREFIX/bin, and various files in PREFIX/share/herdtools7.
-By default (see Makefile) PREFIX is $HOME.
-You can change PREFIX by editing the Makefile, or by running ``make ...`` as ``make PREFIX=yourprefix ...``.
-
 Requirements
 ------------
 
@@ -27,11 +23,12 @@ Requirements
 - logs
 
 We strongly recommend to have this base software installed through the opam
-package manager.
+package manager. This means an opam switch needs to be prepared to install the
+software:
 
-    % opam install dune menhir zarith logs
-
-Make sure to run `eval $(opam config env)` to make tools available in your PATH.
+    % opam switch create herdtools7 ocaml.4.14.4
+    % eval $(opam config env --switch=herdtool7 --set-switch)
+    % opam install . --deps-only
 
 Notice: Compilation with ocamlbuild is not longer possible
 
@@ -43,7 +40,7 @@ Build
 Testing
 -------
 
-The optionnal dependency `qcheck` can be installed with `opam` as follows:
+The optional dependency `qcheck` can be installed with `opam` as follows:
 
     % opam install qcheck
 
@@ -52,7 +49,15 @@ runs the tests, skipping the ones that necessitate non-available dependencies.
 
     % make test
 
+More information on running more kinds of tests can be found at
+[README-tests.md](README-tests.md)
+
 Install
 -------
 
-    % make install
+Tools will be installed in PREFIX/bin, and various files in PREFIX/share/herdtools7.
+By default (see Makefile) PREFIX is $HOME.
+You can change PREFIX by editing the Makefile, or by explicitly defining it
+when calling `make`, like so:
+
+    % make PREFIX="$HOME/.local/" install
