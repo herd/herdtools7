@@ -528,7 +528,6 @@ module CoSt = struct
     { st with map=M.add b v st.map; }
 
   let get_cell st = st.co_cell
-  let set_cell st co_cell = {st with co_cell; }
 
   (* Assume node `n` is a memory store event,
      assign a written value to `n`*)
@@ -580,7 +579,11 @@ module CoSt = struct
     match st.check_fault,dir with
     | _,_ when do_no_fault -> None,unset_check_fault st
     | NoDir,_ -> None,st
-    | Irr,(R|W) | Dir W,W | Dir R,R when do_kvm ->
+    | Irr,R when do_kvm ->
+        label_pte_fault dir pte_val,{st with check_fault = Dir W}
+    | Irr,W when do_kvm ->
+        label_pte_fault dir pte_val,{st with check_fault = Dir R}
+    | Dir W,W | Dir R,R when do_kvm ->
         label_pte_fault dir pte_val,unset_check_fault st
     | Dir R,W | Dir W,R when do_kvm ->
         None,st
@@ -920,9 +923,26 @@ let check_cycle c =
     n.evt <- e ;
     st
 
-  (* `do_set_write_val` returns true when variable next_x has been used
+  (* TODO: this is wrong for Store CR's: consider Rfi Store PosRR *)
+  let set_read_individual_v n cell check_value =
+    let e = n.evt in
+    let v = E.extract_value cell.(0) e.atom in
+  (* eprintf "SET READ: cell=0x%x, v=0x%x\n" cell v ; *)
+    let e = { e with v=v; check_value } in
+    n.evt <- e
+  (* eprintf "AFTER %a\n" debug_node n *)
+
+  let set_read_pair_v n cell check_value =
+    let e = n.evt in
+    let v0 = E.extract_value cell.(0) e.atom |> Value.to_int
+    and v1 =  E.extract_value cell.(1) e.atom |> Value.to_int in
+    let v = v0 + v1 |> Value.from_int in
+    let e = { e with v=v; check_value } in
+    n.evt <- e
+
+  (* `set_values_for_location` returns true when variable next_x has been used
      and should thus be initialised *)
-  let do_set_write_val next_x_ok st nss =
+  let set_values_for_location next_x_ok st nss =
     List.fold_left ( fun (next_x_ok, st) n ->
     (* Update the `cell` in `st` if there is a `.store *)
       let st = if n.store == nil then st else set_write_val_ord st n.store in
@@ -999,6 +1019,7 @@ let check_cycle c =
               n.evt <- e ;
               (next_x_ok, st)
             | VecReg a ->
+              let st = CoSt.implicit_pte_update st W in
               let st = CoSt.step_simd st a in
               let cell = CoSt.get_cell st
                            |> Array.map Value.to_int in
@@ -1050,15 +1071,67 @@ let check_cycle c =
             | Instr -> Warn.fatal "not letting instr write happen"
             | _ -> (next_x_ok, st)
           end (* END of `Some W` *)
-      | Some R |None -> (next_x_ok, st)
+      | Some R ->
+        let cell = CoSt.get_cell st in
+        let bank = n.evt.bank in
+        let check_value = Some (CoSt.get_check_value st) in
+        let st =
+          begin match bank with
+          | Ord | Instr ->
+            let st = CoSt.implicit_pte_update st R in
+            set_read_individual_v n cell check_value;
+            let check_fault, st =
+              if do_morello then None, st
+              (* because `rmw` is treated as both read and write,
+                 we should assign label to this read event.
+                 Here we assume write is stronger than read. *)
+              else if n.evt.rmw then CoSt.fault_update st W
+              else CoSt.fault_update st R in
+            n.evt <- { n.evt with check_fault };
+            st
+          | Pair ->
+            let st = CoSt.implicit_pte_update st R in
+            set_read_pair_v n cell check_value;
+            let check_fault, st = CoSt.fault_update st R in
+            n.evt <- { n.evt with check_fault };
+            st
+          | VecReg a ->
+            let st = CoSt.implicit_pte_update st R in
+            let cell = Array.map Value.to_int cell in
+            let v = E.SIMD.read a cell
+                     |> E.SIMD.reduce
+                     |> Value.from_int in
+            let check_fault, st = CoSt.fault_update st R in
+            n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
+            st
+          | Tag ->
+            n.evt <- { n.evt with v = CoSt.get_co st bank; check_value; };
+            st
+          | CapaTag|CapaSeal ->
+            (* in Morello, check fault on CapaTag or CapaSeal access
+               if it is followed by a depend address edge *)
+            let check_fault =
+              if E.is_dp_addr n.prev.edge.E.edge then
+                Some (Label.next_label "L", false)
+              else None in
+            n.evt <- { n.evt with v = CoSt.get_co st bank; check_value; check_fault };
+            st
+          | Pte ->
+            let pte_val = CoSt.get_pte_value st in
+            let v = Value.from_pte pte_val in
+            n.evt <- { n.evt with v; };
+            st
+          end in
+        (next_x_ok, st)
+      | None -> (next_x_ok, st)
     ) (* END of the function applying to `fold_left` *) (next_x_ok, st) nss
-    (* END of do_set_write_val *)
+    (* END of set_values_for_location *)
 
-  let set_all_write_val nss =
+  let set_all_values nss =
     (* `initptes` contains the initial pte values, if they are non-default *)
-    let _,initvals =
+    let _,initvals,vs =
       List.fold_left
-        (fun (k,env as r) ns ->
+        (fun (k,env,vs as r) ns ->
           match ns with
           | [] -> r
           | n::_ ->
@@ -1079,21 +1152,22 @@ let check_cycle c =
                     StringSet.union acc (E.get_machine_feature n.edge)
                   ) StringSet.empty ns in
               let init_st = CoSt.create init_val sz pte_val check_value check_fault machine_feature in
-              let next_x_ok,_st = do_set_write_val false init_st ns in
+              let next_x_ok,final_st = set_values_for_location false init_st ns in
+              let vf = (CoSt.get_cell final_st).(0),CoSt.get_pte_value final_st in
               let env = if init_val = 0 then env
                         else (Code.as_data loc,Value.from_int init_val)::env in
               (* Add pte initial values when kvm and the value is not default *)
               let env = if (not do_kvm) || is_pte_default loc pte_val then env
                         else ((Misc.add_pte @@ Code.as_data loc),Value.from_pte pte_val)::env in
               if next_x_ok then
-                k+8,(next_x,Value.from_int (k+4))::env
+                k+8,(next_x,Value.from_int (k+4))::env,(loc,vf)::vs
               else
-                k+4,env )
+                k+4,env,(loc,vf)::vs )
         (* When in kvm mode, using initial value `1, 5, 9, ...,`
            avoiding value `0`, which collides with
            the default value of register. *)
-        (1,[]) nss in
-    initvals
+        (1,[],[]) nss in
+    initvals,List.rev vs
 
   (* TODO carry back the pte init value *)
   let set_write_v n =
@@ -1127,8 +1201,8 @@ let check_cycle c =
         with Not_found -> Warn.fatal "cannot set write values" in
         start_node,split_one_loc start_node
       | Exit -> Warn.fatal "cannot set write values" in
-    let initvals = set_all_write_val nss in
-    start_node,nss,initvals
+    let initvals,vs = set_all_values nss in
+    start_node,nss,initvals,vs
 
 (* Loop over every node and set the expected value from the previous node *)
 let set_dep_v nss =
@@ -1145,142 +1219,6 @@ let set_dep_v nss =
       let n = (List.hd (List.hd nss)) in
       n.evt <- { n.evt with dep=Value.to_int v; }) ;
   ()
-
-(* TODO: this is wrong for Store CR's: consider Rfi Store PosRR *)
-let set_read_individual_v n cell check_value =
-  let e = n.evt in
-  let v = E.extract_value cell.(0) e.atom in
-(* eprintf "SET READ: cell=0x%x, v=0x%x\n" cell v ; *)
-  let e = { e with v=v; check_value } in
-  n.evt <- e
-(* eprintf "AFTER %a\n" debug_node n *)
-
-let set_read_pair_v n cell check_value =
-  let e = n.evt in
-  let v0 = E.extract_value cell.(0) e.atom |> Value.to_int
-  and v1 =  E.extract_value cell.(1) e.atom |> Value.to_int in
-  let v = v0 + v1 |> Value.from_int in
-  let e = { e with v=v; check_value } in
-  n.evt <- e
-
-(* Assume all the events are for the same location,
-   convert the node list, i.e., the first unnamed parameter,
-   to the final value `cell` and PTE value `pte_cell` *)
-let do_set_read_v init =
-  let do_rec st ns =
-    (* `st` keeps track of tags and current state of memory,
-       - plain value => CoSt.get_cell, CoSt.set_cell,
-       - pte value => CoSt.get_pte_value, CoSt.set_pte_value *)
-    List.fold_left ( fun st n ->
-      let st = if n.store == nil then st else CoSt.set_cell st n.store.evt.cell in
-      let cell = CoSt.get_cell st in
-      let bank = n.evt.bank in
-      begin match n.evt.dir with
-      (* Assign the read value according to `cell` and `pte_cell` *)
-      | Some R ->
-        (* If the result of this read need to be checked,
-           i.e. generating postcondition *)
-        let check_value = Some (CoSt.get_check_value st) in
-        begin match bank with
-        | Ord | Instr->
-          let st = CoSt.implicit_pte_update st R in
-          set_read_individual_v n cell check_value;
-          let check_fault, st =
-            if do_morello then None, st
-            (* because `rmw` is treated as both read and write,
-               we should assign label to this read event.
-               Here we assume write is stronger than read. *)
-            else if n.evt.rmw then CoSt.fault_update st W
-            else CoSt.fault_update st R in
-          n.evt <- { n.evt with check_fault };
-          st
-        | Pair ->
-          let st = CoSt.implicit_pte_update st R in
-          set_read_pair_v n cell check_value;
-          let check_fault, st = CoSt.fault_update st R in
-          n.evt <- { n.evt with check_fault };
-          st
-        | VecReg a ->
-          let st = CoSt.implicit_pte_update st R in
-          let cell = Array.map Value.to_int cell in
-          let v = E.SIMD.read a cell
-                   |> E.SIMD.reduce
-                   |> Value.from_int in
-          let check_fault, st = CoSt.fault_update st R in
-          n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
-          st
-        | Tag ->
-          n.evt <- { n.evt with v = CoSt.get_co st bank; check_value; };
-          st
-        | CapaTag|CapaSeal ->
-          (* in Morello, check fault on CapaTag or CapaSeal access
-             if it is followed by a depend address edge *)
-          let check_fault =
-            if E.is_dp_addr n.prev.edge.E.edge then
-              Some (Label.next_label "L", false)
-            else None in
-          n.evt <- { n.evt with v = CoSt.get_co st bank; check_value; check_fault };
-          st
-        | Pte ->
-          let pte_val = CoSt.get_pte_value st in
-          let v = Value.from_pte pte_val in
-          n.evt <- { n.evt with v; };
-          st
-        end
-      (* Update `st`, `cell` and `pte_cell` for future read events *)
-      | Some W ->
-        let st =
-          match bank with
-          | Tag ->
-            CoSt.set_co st bank (Value.to_int n.evt.v) |> CoSt.set_check_fault
-          |CapaTag|CapaSeal ->
-            CoSt.set_co st bank (Value.to_int n.evt.v)
-          |Ord|Pair|VecReg _ ->
-              (* Record the cell value in `st` in
-               memory access to a non-instruction value *)
-            let st = CoSt.implicit_pte_update st W in
-            if Code.is_data n.evt.loc then CoSt.set_cell st n.evt.cell
-            else st
-          | Instr -> st
-          |Pte ->
-            (* Record the pte value in `st` in
-              memory access to a non-instruction pte value *)
-            if Code.is_data n.evt.loc then
-              let check_fault = Value.need_check_fault n.evt.atom in
-              CoSt.set_pte_value st check_fault @@ Value.to_pte n.evt.v
-            else st in
-        st
-      | None ->
-        st
-    end ) st ns in
-  fun ns -> match ns with
-  | []   -> assert false
-  | n::_ ->
-    let sz = get_wide_list ns in
-    let pte_val = pte_val_init ns n.evt.loc in
-    let check_value = exist_plain_value_write ns in
-    let check_fault = exist_fault_related_write ns in
-    let machine_feature =
-      List.fold_left
-        ( fun acc n ->
-          StringSet.union acc (E.get_machine_feature n.edge)
-        ) StringSet.empty ns in
-    let init_st = CoSt.create init sz pte_val check_value check_fault machine_feature in
-    let final_st = do_rec init_st ns in
-    (CoSt.get_cell final_st).(0),CoSt.get_pte_value final_st
-
-  let set_read_v nss initvals =
-  List.filter_map
-    (fun ns -> match ns with
-      | [] -> None
-      | n::_  ->
-        let init = if not (Code.is_data n.evt.loc) then 0
-                  else List.assoc_opt (Code.as_data n.evt.loc) initvals
-                  |> Option.map Value.to_int
-                  |> Option.value ~default:0 in
-        let vf = do_set_read_v init ns in
-        Some (n.evt.loc,vf))
-  nss
 
   (* find the next node with communication but
      there are all ordinary write nodes in between. *)
@@ -1366,8 +1304,8 @@ let finish n =
     eprintf "LOCATIONS\n" ;
     debug_cycle stderr n
   end ;
-(* Set write values *)
-  let start_node,by_loc,initvals = set_write_v n in
+(* Set read and write values *)
+  let start_node,by_loc,initvals,vs = set_write_v n in
   if O.verbose > 1 then begin
     eprintf "INITIAL VALUES: %s\n"
       (String.concat "; "
@@ -1377,8 +1315,6 @@ let finish n =
     eprintf "WRITE VALUES\n" ;
     debug_cycle stderr start_node
   end ;
-(* Set load values *)
-  let vs = set_read_v by_loc initvals in
   propagate_fault by_loc;
 (* Set dependency values *)
   (if do_morello then set_dep_v by_loc) ;
