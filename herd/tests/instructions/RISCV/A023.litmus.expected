@@ -1,0 +1,13 @@
+Test A023 Allowed
+States 4
+1:x5=0; 1:x10=1; 1:x12=0;
+1:x5=0; 1:x10=1; 1:x12=1;
+1:x5=1; 1:x10=1; 1:x12=0;
+1:x5=1; 1:x10=1; 1:x12=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (1:x5=1 /\ 1:x10=1 /\ 1:x12=0)
+Observation A023 Sometimes 1 3
+Hash=1cef5e303435fcd77fc6fab84399ba4f
+
