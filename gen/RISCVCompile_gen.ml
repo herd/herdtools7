@@ -487,10 +487,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       let rA,init,st = U.next_init st p init loc in
       let rW,init,csv,st = U.emit_mov st p init (Value.to_int ew.v) in
       let rR,st = next_reg st in
-      let mo = tr_swap er.C.atom ew.C.atom in
-      let swap = Instruction (amoswap mo rR rW rA) in
+      let mo = tr_swap er.C.atom ew.C.atom and rB,st = next_reg st in
+      let swap = Instruction (amoswap mo rR rW rB) in
       rR,init,
-      Instruction c::Instruction (add r2 rA r2)::csv@[swap],st
+      Instruction c::Instruction (add rB rA r2)::csv@[swap],st
 
     let emit_access_dep_data st p init e  r1 =
       match e.dir,e.loc with
@@ -545,7 +545,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     | CTRLISYNC -> emit_access_ctrl true st p init e r1
 
     let emit_exch_dep st p init er ew dp rd = match dp with
-    | ADDR -> emit_exch_dep_addr   st p init er ew rd
+    | ADDR -> emit_exch_dep_addr st p init er ew rd
     | DATA -> Warn.fatal "not data dependency to RMW"
     | CTRL -> emit_exch_ctrl false st p init er ew rd
     | CTRLISYNC -> emit_exch_ctrl true st p init er ew rd
