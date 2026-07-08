@@ -1,0 +1,12 @@
+% HeVeA's built-in mathjax.hva loads MathJax 2.7.1 directly from a CDN.
+% Override that hook so the ASL HTML build can use a generated MathJax 4
+% configuration with ASL-specific macros and anchor handling.
+%
+% The MathJax URL is pinned to an exact release and protected with SRI.
+% Avoid using the rolling "mathjax@4" selector: it can change over time.
+% If this URL is upgraded, update the integrity hash at the same time.
+\renewcommand{\jax@meta}
+{\begin{rawhtml}<link rel="stylesheet" href="asl-html.css">
+<script src="ASL-mathjax-config.js"></script>
+<script id="MathJax-script" defer src="https://cdn.jsdelivr.net/npm/mathjax@4.0.0/tex-chtml.js" integrity="sha384-2BWc4dVaHADUocwKrUrK9u3iDwHxVMKXWEcoRmUkXYSFKhAsgVAYClu9ydNuo5Oz" crossorigin="anonymous"></script>
+\end{rawhtml}}
