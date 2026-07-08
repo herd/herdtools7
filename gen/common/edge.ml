@@ -356,8 +356,9 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
   let do_dir_tgt e = match e with
   | Po(_,_,e)| Fenced(_,_,_,e)|Dp (_,_,e) -> e
-  | Communication (Rf,_)| Hat -> Dir R
-  | Communication ((Co|Fr),_)|Rmw _  -> Dir W
+  | Hat -> Dir R
+  | Rmw _  -> Dir W
+  | Communication (c, _)
   | Leave c|Back c -> do_dir_tgt_com c
   | Id -> NoDir
   | Insert _ -> NoDir
@@ -367,8 +368,8 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
   and do_dir_src e = match e with
   | Po(_,e,_)| Fenced(_,_,e,_) -> e
-  | Dp _|Communication (Fr,_)|Hat|Rmw _ -> Dir R
-  | Communication ((Co|Rf),_) -> Dir W
+  | Dp _|Hat|Rmw _ -> Dir R
+  | Communication(c, _)
   | Leave c|Back c -> do_dir_src_com c
   | Id -> NoDir
   | Insert _ -> NoDir
@@ -639,14 +640,14 @@ let fold_tedges f r =
   | Po(sd,src,_) -> Po (sd,src,Dir d)
   | Fenced(f,sd,src,_) -> Fenced(f,sd,src,Dir d)
   | Dp (dp,sd,_) -> Dp (dp,sd,Dir d)
-  | Communication (Rf,_) | Hat
-  | Insert _|Store|Id|Node _|Communication ((Co|Fr),_)|Rmw _|Leave _|Back _-> e
+  | Communication _ | Hat
+  | Insert _|Store|Id|Node _|Rmw _|Leave _|Back _-> e
 
   and do_set_src d e = match e with
   | Po(sd,_,tgt) -> Po(sd,Dir d,tgt)
   | Fenced(f,sd,_,tgt) -> Fenced(f,sd,Dir d,tgt)
-  | Communication (Fr,_)|Hat|Dp _
-  | Insert _|Store|Id|Node _|Communication ((Co|Rf),_)|Rmw _|Leave _|Back _ -> e
+  | Communication _|Hat|Dp _
+  | Insert _|Store|Id|Node _|Rmw _|Leave _|Back _ -> e
 
   let set_tgt d e = { e with edge = do_set_tgt d e.edge ; }
   and set_src d e = { e with edge = do_set_src d e.edge ; }

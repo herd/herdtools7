@@ -160,7 +160,7 @@ let pp_com = function
   | Fr -> "Fr"
   | Co -> "Co"
 
-let fold_com f r = f Rf (f Fr (f Co r))
+let fold_com f r = f Co (f Fr (f Rf r))
 
 (* Info in tests *)
 type info = (string * string) list
