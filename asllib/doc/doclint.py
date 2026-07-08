@@ -861,6 +861,8 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         reference_words = set(reference_word_list)
 
     patterns_to_remove = [
+        # Issue-code style identifiers such as AARCH-25136.
+        r"\b[A-Z]{2,}-\d+\b",
         # Patterns for environments inside which spellchecking is not needed:
         r"\$.*?\$",
         r"\\\[.*?\\\]",
@@ -869,6 +871,7 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\begin\{flalign\*\}.*?\\end\{flalign\*\}",
         r"\\begin{table}.*?\\end{table}",
         r"\\begin{lstlisting}.*?\\end{lstlisting}",
+        r"\\lstinline(?:\[.*?\])?\{.*?\}",
         r"\\begin\{Verbatim\}.*?\\end\{Verbatim\}",
         r"\\begin\{verbatim\}.*?\\end\{verbatim\}",
         r"\\begin{tabular}.*?\\end{tabular}",
