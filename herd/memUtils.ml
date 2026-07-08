@@ -395,11 +395,11 @@ let lift_proc_info i evts =
       | None -> Some (LocEnv.singleton loc [e])
       | Some m -> Some (LocEnv.accumulate loc e m)
 
-  let collect_atomics es =
+  let collect_atomics_and_exclusives es =
     let m,sp =
       E.EventSet.fold
         (fun e (m,sp as k) ->
-           if E.is_atomic e then
+           if E.is_atomic e || E.is_exclusive e then
              match E.proc_of e with
              | None -> if E.is_spurious e then (m, e::sp) else k
              | Some proc -> accumulate_loc_proc proc (get_loc e) e m, sp

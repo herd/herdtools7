@@ -177,6 +177,9 @@ module Make (C: Config) (A : S) = struct
   let is_atomic = function
     | Access _|Fault _|Branching _|Barrier _|CutOff _|NoAction
       -> false
+  let is_exclusive = function
+    | Access _|Fault _|Branching _|Barrier _|CutOff _|NoAction
+      -> false
   let is_fault = function
     | Fault _ -> true
     | Access _| Branching _|Barrier _|CutOff _|NoAction

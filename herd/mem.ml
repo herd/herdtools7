@@ -1936,7 +1936,7 @@ let add_eq v1 v2 eqs =
  *)
 
     let make_atomic_load_store es =
-      let atms,spurious = U.collect_atomics es in
+      let atms,spurious = U.collect_atomics_and_exclusives es in
       let module StoreSet = EvtSetByPo(struct let es = es end) in
       let make_atomic_pairs es k =
         let rs,ws = List.partition E.is_load es in

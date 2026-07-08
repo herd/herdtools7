@@ -19,12 +19,6 @@
 module Make (C:Arch_herd.Config)(V:Value.S) =
   struct
     include X86_64Base
-    let is_amo = function
-      | I_LOCK _ | I_EFF_EFF (I_XCHG,_,_,_) -> true
-      | I_NOP | I_RET | I_EFF_OP _ | I_EFF _ | I_EFF_EFF _
-      | I_CMPXCHG _ | I_JMP _ | I_JCC _ | I_CMOVC _ | I_MOVNTI _
-      | I_FENCE _ | I_MOVD _ | I_MOVNTDQA _ | I_CLFLUSH _
-        -> false
 
     let pp_barrier_short = pp_barrier
     let reject_mixed = false
@@ -35,6 +29,7 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
     let is_atomic = function
       | Atomic -> true
       | Plain|NonTemporal -> false
+    and is_exclusive _ = false
     and is_nt = function
       | NonTemporal -> true
       | Plain|Atomic -> false

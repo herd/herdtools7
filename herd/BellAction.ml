@@ -129,6 +129,7 @@ end = struct
   | Access (_,_,_,true,_,_) ->
       assert (is_mem a); true
   | _ -> false
+  and is_exclusive _ = false
 
   let is_fault _ = false
 
