@@ -94,8 +94,7 @@ struct
     | _,_ ->
         match get_ie e1, get_ie e2 with
         | Int,Int -> false
-        | Ext,_|_,Ext -> true
-        | UnspecCom,_ | _,UnspecCom -> assert false in
+        | Ext,_|_,Ext -> true in
       if O.debug.Debug_gen.searchsteps then
         eprintf "NEXT RELAX: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
@@ -121,8 +120,7 @@ struct
           (* Reject other internal followed by internal sequences *)
           match get_ie e1, get_ie e2 with
           | Int,Int -> false
-          | Ext,_|_,Ext -> true
-          | UnspecCom,_ | _,UnspecCom -> assert false in
+          | Ext,_|_,Ext -> true in
       if O.debug.Debug_gen.searchsteps then
         eprintf "NEXT RELAX: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
@@ -160,8 +158,7 @@ struct
                 | _ -> assert false
                 end
             | Ext,Ext -> false
-            | (Ext,Int) | (Int,Ext) -> true
-            | UnspecCom,_ | _,UnspecCom -> assert false in
+            | (Ext,Int) | (Int,Ext) -> true in
 (*      eprintf "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ; *)
       r
     let choice_uni e1 e2 =  match e1.edge,e2.edge with
@@ -485,7 +482,6 @@ module Make(C:Builder.S)
     let is_int e = match get_ie e with
     | Int -> true
     | Ext -> false
-    | UnspecCom -> assert false
 
     let lift r = List.map (fun edge -> Plain edge) r
     let lift_list rs = List.map lift rs

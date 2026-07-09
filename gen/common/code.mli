@@ -40,7 +40,7 @@ type dir = W | R
 (* Edges compoments that do not depend on architecture *)
 
 (* Change or proc accross edge *)
-type ie = Int|Ext|UnspecCom
+type ie = Int|Ext
 
 (* Change of location across edge *)
 type sd = Same|Diff|UnspecLoc

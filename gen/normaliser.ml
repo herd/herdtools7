@@ -299,7 +299,6 @@ module Make : functor (C:Config) -> functor (E:Edge.S) ->
       let ninternals n =
         let rec do_rec r m =
           match E.get_ie m.edge with
-          | UnspecCom -> assert false
           | Ext -> r
           | Int ->
               if m.next == n then r

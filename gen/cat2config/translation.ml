@@ -17,7 +17,12 @@
 module Log = (val Logs.src_log (Logs.Src.create "translation") : Logs.LOG)
 module UList = Util.List
 module A = AArch64Arch_gen.Make (AArch64Arch_gen.Config)
-module E = Edge.Make (Edge.Config) (A : Fence.S) (A : Atom.S)
+module EdgeConfig = struct
+  include Edge.Config
+  let wildcard = true
+end
+module E = Edge.Make (EdgeConfig) (A : Fence.S) (A : Atom.S)
+module R = Relax.Make (A) (E)
 
 let merge_dir_opt d1 d2 =
   let open Code in
@@ -44,11 +49,6 @@ let get_ie edge =
   | Leave _ | Back _ | Hat -> Ext
   | Insert _ | Store | Node _ -> Int
 
-let set_ie ie (edge : E.tedge) =
-  match edge with
-  | Communication (com, _) -> E.Communication (com, ie)
-  | _ -> raise (Invalid_argument "Cannot set ie on this edge kind")
-
 let get_sd (edge : E.tedge) =
   match edge with
   | Po (sd, _, _) | Dp (_, sd, _) | Fenced (_, sd, _, _) -> sd
@@ -68,19 +68,56 @@ let set_src (extr : Code.extr) (e : E.edge) : E.edge =
 let set_tgt (extr : Code.extr) (e : E.edge) : E.edge =
   match extr with Code.Dir dir -> E.set_tgt dir e | _ -> e
 
-type tedge = Tedge of { edge : E.tedge; insert : E.fence option }
+type tedge_head = Concrete of E.tedge | Macro of string
+type tedge = { head : tedge_head; insert : E.fence option }
 
-let filter_by_ie (ie : Code.ie) (Tedge ed : tedge) : tedge list =
-  let e_ie = get_ie ed.edge in
-  if ie = UnspecCom || ie = e_ie then [ Tedge ed ]
-  else if e_ie = UnspecCom then [ Tedge { ed with edge = set_ie ie ed.edge } ]
-  else []
+let mk_tedge edge = { head = Concrete edge; insert = None }
+let mk_macro name = { head = Macro name; insert = None }
 
-let filter_by_sd (sd : Code.sd) (Tedge ed : tedge) : tedge list =
-  let e_sd = get_sd ed.edge in
-  if sd = UnspecLoc || sd = e_sd then [ Tedge ed ]
-  else if e_sd = UnspecLoc then [ Tedge { ed with edge = set_sd sd ed.edge } ]
-  else []
+let filter_by_ie ie = function
+  | { head = Macro name; _ } ->
+      Warn.fatal "Macro %s must be unfolded before filter_by_ie" name
+  | { head = Concrete _; _ } as tedge when Option.is_none ie -> [ tedge ]
+  | { head = Concrete edge; _ } as tedge ->
+      let e_ie = get_ie edge in
+      if Some e_ie = ie then [ tedge ] else []
+
+let filter_by_sd (sd : Code.sd) = function
+  | { head = Macro name; _ } ->
+      Warn.fatal "Macro %s must be unfolded before filter_by_sd" name
+  | { head = Concrete edge; _ } as tedge ->
+      let e_sd = get_sd edge in
+      if sd = UnspecLoc || sd = e_sd then [ tedge ]
+      else if e_sd = UnspecLoc then
+        [ { tedge with head = Concrete (set_sd sd edge) } ]
+      else []
+
+(* Keep communication macros in macro form.  When the cat relation constrains
+   internal/external communication, append the corresponding suffix directly,
+   for example `Fr & ext` becomes `Fre`. *)
+let filter_macro ie tedge name =
+  let name =
+    match name with
+    | "Fr" | "Co" | "Rf" -> (
+        match ie with
+        | None -> name
+        | Some ie -> Format.sprintf "%s%s" name (Code.pp_ie ie))
+    | _ -> name in
+  let head =
+    match R.parse_expand_relaxs (Ast.One name) with
+    | [] -> Warn.fatal "Macro %s expands to no relaxation" name
+    | [ [ { E.edge; a1 = None; a2 = None } ] ] -> Concrete edge
+    | _ -> Macro name in
+  [ { tedge with head } ]
+
+let filter_tedge sd ie tedge =
+  let filter tedges =
+    tedges
+    |> List.concat_map (filter_by_sd sd)
+    |> List.concat_map (filter_by_ie ie) in
+  match tedge with
+  | { head = Concrete _; _ } -> filter [ tedge ]
+  | { head = Macro name; _ } -> filter_macro ie tedge name
 
 (* Partial structures
 
@@ -101,7 +138,7 @@ type partial_effect = {
   explicit_mem : bool;
 }
 
-type partial_edge = { tedges : tedge list option; ie : Code.ie; sd : Code.sd }
+type partial_edge = { tedges : tedge list option; ie : Code.ie option; sd : Code.sd }
 type prim_set = Ir.prim_set
 type prim_rel = Ir.prim_rel
 type seq_item = Ir.seq_item
@@ -110,7 +147,7 @@ let initial_effect : partial_effect =
   { extr = Code.Irr; atom = None; explicit_mem = false }
 
 let initial_edge : partial_edge =
-  { tedges = None; ie = UnspecCom; sd = UnspecLoc }
+  { tedges = None; ie = None; sd = UnspecLoc }
 
 let apply_prim_set : partial_effect -> prim_set -> partial_effect option =
   let build_dir_eff eff d =
@@ -137,17 +174,18 @@ let apply_prim_set : partial_effect -> prim_set -> partial_effect option =
 let build_effect : partial_effect -> prim_set list -> partial_effect option =
   UList.fold_left_opt apply_prim_set
 
-let build_tedges : prim_rel -> E.tedge list =
-  let dp_tedges dp csel = [ E.Dp ((dp, csel), UnspecLoc, Code.Irr) ] in
+let build_tedges : prim_rel -> tedge list =
+  let dp_tedges dp csel =
+    [ mk_tedge (E.Dp ((dp, csel), UnspecLoc, Code.Irr)) ] in
   function
-  | Prim "po" -> [ E.(Po (UnspecLoc, Code.Irr, Code.Irr)) ]
-  | Prim "fr" -> [ E.Communication (Fr, UnspecCom) ]
-  | Prim "co" -> [ E.Communication (Co, UnspecCom) ]
-  | Prim "rf" -> [ E.Communication (Rf, UnspecCom) ]
-  | Fence f -> [ E.Fenced (A.Barrier f, UnspecLoc, Code.Irr, Code.Irr) ]
-  | Prim "amo" -> [ E.Rmw A.RMW.AllAmo ]
-  | Prim "lxsx" -> [ E.Rmw A.RMW.LrSc ]
-  | Prim "rmw" -> [ E.Rmw A.RMW.LrSc; E.Rmw A.RMW.AllAmo ]
+  | Prim "po" -> [ mk_tedge E.(Po (UnspecLoc, Code.Irr, Code.Irr)) ]
+  | Prim "fr" -> [ mk_macro "Fr" ]
+  | Prim "co" -> [ mk_macro "Co" ]
+  | Prim "rf" -> [ mk_macro "Rf" ]
+  | Fence f -> [ mk_tedge (E.Fenced (A.Barrier f, UnspecLoc, Code.Irr, Code.Irr)) ]
+  | Prim "amo" -> [ mk_tedge (E.Rmw A.RMW.AllAmo) ]
+  | Prim "lxsx" -> [ mk_tedge (E.Rmw A.RMW.LrSc) ]
+  | Prim "rmw" -> [ mk_tedge (E.Rmw A.RMW.LrSc); mk_tedge (E.Rmw A.RMW.AllAmo) ]
   | Prim "addr" -> dp_tedges Dep.Full.ADDR A.NoCsel
   | Prim "ctrl" -> dp_tedges Dep.Full.CTRL A.NoCsel
   | Prim "data" -> dp_tedges Dep.Full.DATA A.NoCsel
@@ -159,12 +197,11 @@ let build_tedges : prim_rel -> E.tedge list =
 let apply_prim_rel (ed : partial_edge) (r : prim_rel) : partial_edge option =
   let tedges = build_tedges r in
   if tedges <> [] && ed.tedges = None then
-    let relaxs = List.map (fun edge -> Tedge { edge; insert = None }) tedges in
-    Some { ed with tedges = Some relaxs }
+    Some { ed with tedges = Some tedges }
   else
     match r with
     | Prim "loc" when ed.sd <> Code.Diff -> Some { ed with sd = Code.Same }
-    | Prim "ext" when ed.ie <> Code.Int -> Some { ed with ie = Code.Ext }
+    | Prim "ext" when ed.ie <> Some Code.Int -> Some { ed with ie = Some Code.Ext }
     | _ -> None
 
 let build_edge : partial_edge -> prim_rel list -> partial_edge option =
@@ -187,7 +224,8 @@ let implied_constraints (l : prim_rel list) :
        (fun (x, y, z) (x', y', z') -> (x @ x', y @ y', z @ z'))
        ([], [], [])
 
-type relax = Relax of E.edge list
+type relax_edge = Concrete of E.edge | Macro of string
+type relax = Relax of relax_edge list
 
 let join_relax (Relax r1 : relax) (Relax r2 : relax) : relax =
   Relax (List.append r1 r2)
@@ -212,8 +250,8 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
           match f with None -> AArch64Base.(DSB (SY, FULL)) | Some f -> f
         in
         let edge = E.Fenced (A.Barrier f, UnspecLoc, Code.Irr, Code.Irr) in
-        let tedges = [ Tedge { edge; insert = None } ] in
-        let pedge = { tedges = Some tedges; ie = Code.Int; sd = UnspecLoc } in
+        let tedges = [ mk_tedge edge ] in
+        let pedge = { tedges = Some tedges; ie = Some Code.Int; sd = UnspecLoc } in
         Some ([], pedge, [])
     | [
      Rel (Inter [ Prim "ctrl" ]);
@@ -222,9 +260,9 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
     ] ->
         let edge = E.Dp ((A.D.CTRL, A.NoCsel), UnspecLoc, Code.Irr) in
         let tedges =
-          [ Tedge { edge; insert = Some (A.Barrier AArch64Base.ISB) } ]
+          [ { head = Concrete edge; insert = Some (A.Barrier AArch64Base.ISB) } ]
         in
-        let pedge = { tedges = Some tedges; ie = Code.Int; sd = UnspecLoc } in
+        let pedge = { tedges = Some tedges; ie = Some Code.Int; sd = UnspecLoc } in
         Some ([], pedge, [])
     | [
      Rel (Inter [ Prim "pick-ctrl-dep" ]);
@@ -233,9 +271,9 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
     ] ->
         let edge = E.Dp ((A.D.CTRL, A.OkCsel), UnspecLoc, Code.Irr) in
         let tedges =
-          [ Tedge { edge; insert = Some (A.Barrier AArch64Base.ISB) } ]
+          [ { head = Concrete edge; insert = Some (A.Barrier AArch64Base.ISB) } ]
         in
-        let pedge = { tedges = Some tedges; ie = Code.Int; sd = UnspecLoc } in
+        let pedge = { tedges = Some tedges; ie = Some Code.Int; sd = UnspecLoc } in
         Some ([], pedge, [])
     | [
      Rel (Inter [ Prim "po" ]);
@@ -246,8 +284,8 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
     ] ->
         let insert = Some (A.Barrier ins) in
         let edge = E.Fenced (A.Barrier f, UnspecLoc, Code.Irr, Code.Irr) in
-        let tedges = [ Tedge { edge; insert } ] in
-        let pedge = { tedges = Some tedges; ie = Code.Int; sd = UnspecLoc } in
+        let tedges = [ { head = Concrete edge; insert } ] in
+        let pedge = { tedges = Some tedges; ie = Some Code.Int; sd = UnspecLoc } in
         Some ([], pedge, [])
     | _ -> None
   in
@@ -256,19 +294,22 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
   let* _ = Util.Option.guard left.explicit_mem in
   let* right = build_effect initial_effect (right @ implied_right) in
   let* _ = Util.Option.guard right.explicit_mem in
-  let tedges = tedges |> List.concat_map (filter_by_sd pedge.sd) in
-  let tedges = tedges |> List.concat_map (filter_by_ie pedge.ie) in
+  let tedges = tedges |> List.concat_map (filter_tedge pedge.sd pedge.ie) in
   let relaxs =
     tedges
-    |> List.map (fun (Tedge { edge; insert }) ->
-        let edge = E.{ edge; a1 = left.atom; a2 = right.atom } in
-        let edge = set_src left.extr edge in
-        let edge = set_tgt right.extr edge in
+    |> List.map (fun (tedge : tedge) ->
         let edges =
-          match insert with
-          | None -> [ edge ]
-          | Some ins -> E.[ edge; plain_edge (Insert ins) ]
-        in
+          match tedge.head with
+          | Macro name -> [ Macro name ]
+          | Concrete edge ->
+              let edge = E.{ edge; a1 = left.atom; a2 = right.atom } in
+              let edge = set_src left.extr edge in
+              let edge = set_tgt right.extr edge in
+              [ Concrete edge ] in
+        let edges =
+          match tedge.insert with
+          | None -> edges
+          | Some ins -> edges @ [ Concrete (E.plain_edge (Insert ins)) ] in
         Relax edges)
   in
   Some relaxs
@@ -343,7 +384,11 @@ let translate ~binding (nf : Ir.rel_nf) : relax list =
   let relaxs = Util.List.uniq ~eq:( = ) relaxs in
   relaxs
 
+let pp_relax_edge = function
+  | Concrete edge -> E.pp_edge edge
+  | Macro name -> name
+
 let pp_relax : relax -> string = function
-  | Relax [ rlx ] -> E.pp_edge rlx
+  | Relax [ rlx ] -> pp_relax_edge rlx
   | Relax rlxs ->
-      Format.sprintf "[%s]" (String.concat ", " (List.map E.pp_edge rlxs))
+      Format.sprintf "[%s]" (String.concat ", " (List.map pp_relax_edge rlxs))
