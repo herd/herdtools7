@@ -869,6 +869,11 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
             else relabel es in
           let es =
             { es with E.procs = procs; E.po = if do_deps then transitive_po es else es.E.po } in
+          let () =
+            if C.debug.Debug_herd.monad then
+              let module PP = Pretty.Make(S) in
+              PP.show_es_rfm test es S.RFMap.empty
+          in
           (i,vcl,es)::index xs (i+1) in
       let r =
         EM.get_output_check
