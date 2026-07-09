@@ -308,9 +308,7 @@ and module RMW = A.RMW = struct
     let com = match com with
     | Co when compat -> "Ws"
     | _ -> pp_com com in
-    match ie with
-    | UnspecCom -> com
-    | _ -> sprintf "%s%s" com (pp_ie ie)
+    sprintf "%s%s" com (pp_ie ie)
 
   let pp_tedge_compat compat = function
     | Communication (com,ie) -> pp_communication_compat compat com ie
