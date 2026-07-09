@@ -67,7 +67,7 @@ type dir = W | R
 (* Edges compoments that do not depend on architecture *)
 
 (* Change or proc accross edge *)
-type ie = Int|Ext|UnspecCom
+type ie = Int|Ext
 
 (* Change of location across edge *)
 type sd = Same|Diff|UnspecLoc
@@ -77,9 +77,8 @@ type extr = Dir of dir | Irr | NoDir
 
 let equal_ie ie1 ie2 = match ie1,ie2 with
   | Int,Int
-  | Ext,Ext
-  | UnspecCom,UnspecCom -> true
-  | (Int|Ext|UnspecCom),_ -> false
+  | Ext,Ext -> true
+  | (Int|Ext),_ -> false
 
 let equal_sd sd1 sd2 = match sd1,sd2 with
   | Same,Same
@@ -102,7 +101,6 @@ let pp_dir = function
 let pp_ie = function
   | Int -> "i"
   | Ext -> "e"
-  | UnspecCom -> "*"
 
 let pp_extr = function
   | Dir d -> pp_dir d
