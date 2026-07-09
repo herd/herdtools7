@@ -55,15 +55,18 @@ module Make(O:PrettyConf.S) = struct
       my_remove name;
       Handler.pop ())
 
+  let run_cmd fmt =
+    ksprintf
+      (fun cmd ->
+         let r = Sys.command cmd in
+         if O.debug then eprintf "Command: [%s] -> %i\n%!" cmd r)
+      fmt
+
   let do_show_file ?(keep_tmp_pdf = O.debug) name_dot prog ext : unit =
     let name_ps = extfile name_dot ext in
     with_temp_file ~keep:keep_tmp_pdf name_ps @@ fun () ->
-    let cmd =
-      sprintf "%s -T%s %s > %s 2>/dev/null ; %s %s 2>/dev/null" generator ext
-        name_dot name_ps prog name_ps
-    in
-    let r = Sys.command cmd in
-    if O.debug then eprintf "Command: [%s] -> %i\n" cmd r
+    run_cmd "%s -T%s %s -o %s 2>/dev/null ; %s %s 2>/dev/null" generator ext
+      name_dot name_ps prog name_ps
 
   let show_file_with_view view name_dot : unit =
     let open View in
@@ -71,7 +74,9 @@ module Make(O:PrettyConf.S) = struct
     | GV -> do_show_file name_dot "gv" "ps"
     | Evince -> do_show_file name_dot "evince" "pdf"
     | Preview ->
-        do_show_file ~keep_tmp_pdf:true name_dot "open -a Preview" "pdf"
+      run_cmd
+        "%s -Tpdf %s -O %s 2>/dev/null; open -a Preview %s.*pdf %s 2>/dev/null"
+        generator name_dot suppress_output name_dot suppress_output
 
   let show_file name_dot =
     match O.view with None -> () | Some v -> show_file_with_view v name_dot
