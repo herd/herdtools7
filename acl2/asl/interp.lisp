@@ -1854,7 +1854,9 @@ evaluation of @('e_arbitrary') expressions."
                                                         (local-env->storage (env->local env))
                                                         pos)))
            :pattern_single (b* (((evoo (expr_result v1)) (eval_expr env desc.expr)))
-                             (evo-return (init-backtrace (eval_binop :eq val v1.val) pos)))))
+                             (evo-return (init-backtrace (eval_binop :eq val v1.val)
+                                                         (local-env->storage (env->local env))
+                                                         pos))))))
 
      (define eval_pattern_list ((env env-p)
                                 (val val-p)
@@ -1875,11 +1877,11 @@ evaluation of @('e_arbitrary') expressions."
              :otherwise (evo_error "Bad result type from eval_pattern" v1 (list (pattern->pos_start (car p))))))))
 
      (define eval_pattern_matcher ((env env-p)
-                                         (val val-p)
-                                         (p pattern_matcher-p)
-                                         &key
-                                         ((clk natp) 'clk)
-                                         (orac 'orac))
+                                   (val val-p)
+                                   (p pattern_matcher-p)
+                                   &key
+                                   ((clk natp) 'clk)
+                                   (orac 'orac))
        :short "Evaluate whether a pattern matcher matches the value @('val')."
        :measure (nats-measure clk 0 (pattern_matcher-count p) 0)
        :returns (mv (res val_result-p) new-orac)
