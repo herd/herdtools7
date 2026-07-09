@@ -116,7 +116,7 @@ and type edge = E.edge
         let pp_relax_list lr = String.concat " " (List.map pp_relax lr)
 
 (* Cumulativity macros *)
-        let rf = E.plain_edge (E.Rf Ext)
+        let rf = E.plain_edge (E.Communication (Code.Rf,Ext))
         and fenced f sl d1 d2 = E.plain_edge (E.Fenced (f,sl,d1,d2))
         let ac_fence f sl d1 d2 = [rf; fenced f sl d1 d2]
         let bc_fence f sl d1 d2 = [fenced f sl d1 d2; rf]
@@ -280,8 +280,8 @@ and type edge = E.edge
             | true,(Some _ as instr_atom) ->
               fold_ie E.wildcard
                 (fun ie () ->
-                  let rf ie = { E.edge=E.Rf ie; a1=None; a2=instr_atom }
-                  and fr ie = { E.edge=E.Fr ie; a1=instr_atom; a2=None } in
+                  let rf ie = { E.edge=E.Communication (Code.Rf,ie); a1=None; a2=instr_atom }
+                  and fr ie = { E.edge=E.Communication (Code.Fr,ie); a1=instr_atom; a2=None } in
                   let rf_choices = E.expand_edges [rf ie] Misc.cons []
                   and fr_choices = E.expand_edges [fr ie] Misc.cons [] in
                   add_legacy_syntax (sprintf "Iff%s" (Code.pp_ie ie)) rf_choices ;
