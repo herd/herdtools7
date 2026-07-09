@@ -5975,7 +5975,6 @@ typing function binop_literals(op: binop, v1: literal, v2: literal) ->
 
     case concat {
       op = STR_CONCAT;
-      binary_or(ast_label(v1) != label_L_Bitvector, ast_label(v2) != label_L_Bitvector);
       literal_to_string(v1) -> s1;
       literal_to_string(v2) -> s2;
       --
@@ -6575,7 +6574,6 @@ typing relation apply_binop_types(tenv: static_envs, op: binop, t1: ty, t2: ty) 
 
   case string_concat {
     op = STR_CONCAT;
-    binary_or(ast_label(t1) != label_T_Bits, ast_label(t2) != label_T_Bits);
     is_singular(tenv, t1) -> t1_singular;
     is_singular(tenv, t2) -> t2_singular;
     te_check(t1_singular, TE_UT) -> True;

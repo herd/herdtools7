@@ -11,5 +11,6 @@ begin
     println "ne_enum: RED != GREEN = ", RED != GREEN;
     println "concat_string: 0 ++ '1' ++ 2.0 ++ TRUE ++ \"foo\" ++ RED = ",
             0 ++ '1' ++ 2.0 ++ TRUE ++ "foo" ++ RED;
+    println "concat_string: '10' ++ '1' = ", '10' ++ '1';
     return 0;
 end;

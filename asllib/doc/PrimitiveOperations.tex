@@ -438,12 +438,49 @@ $\Tcoloncolon$  & $\LBitvector$ & $\LBitvector$ & $\LBitvector$ & $\concatbits$\
 \centering
 \hypertarget{def-eqstring}{}
 \hypertarget{def-nestring}{}
+\hypertarget{def-concatstring}{}
 \begin{tabular}{lllll}
 \hline
 \textbf{Operator} & \textbf{Operand 1} & \textbf{Operand 2} & \textbf{Result} & \textbf{Name}\\
 \hline
 $\Teqop$  & $\LString$ & $\LString$ & $\LBool$ & $\eqstring$\\
 $\Tneq$   & $\LString$ & $\LString$ & $\LBool$ & $\nestring$\\
+$\Tplusplus$ & $\LBitvector$ & $\LBitvector$ & $\LString$ & $\concatstringop{\bitsname}{\bitsname}$\\
+$\Tplusplus$ & $\LBitvector$ & $\LBool$      & $\LString$ & $\concatstringop{\bitsname}{\boolname}$\\
+$\Tplusplus$ & $\LBitvector$ & $\LInt$       & $\LString$ & $\concatstringop{\bitsname}{\intname}$\\
+$\Tplusplus$ & $\LBitvector$ & $\LLabel$     & $\LString$ & $\concatstringop{\bitsname}{\labelname}$\\
+$\Tplusplus$ & $\LBitvector$ & $\LReal$      & $\LString$ & $\concatstringop{\bitsname}{\realname}$\\
+$\Tplusplus$ & $\LBitvector$ & $\LString$    & $\LString$ & $\concatstringop{\bitsname}{\stringname}$\\
+$\Tplusplus$ & $\LBool$      & $\LBitvector$ & $\LString$ & $\concatstringop{\boolname}{\bitsname}$\\
+$\Tplusplus$ & $\LBool$      & $\LBool$      & $\LString$ & $\concatstringop{\boolname}{\boolname}$\\
+$\Tplusplus$ & $\LBool$      & $\LInt$       & $\LString$ & $\concatstringop{\boolname}{\intname}$\\
+$\Tplusplus$ & $\LBool$      & $\LLabel$     & $\LString$ & $\concatstringop{\boolname}{\labelname}$\\
+$\Tplusplus$ & $\LBool$      & $\LReal$      & $\LString$ & $\concatstringop{\boolname}{\realname}$\\
+$\Tplusplus$ & $\LBool$      & $\LString$    & $\LString$ & $\concatstringop{\boolname}{\stringname}$\\
+$\Tplusplus$ & $\LInt$       & $\LBitvector$ & $\LString$ & $\concatstringop{\intname}{\bitsname}$\\
+$\Tplusplus$ & $\LInt$       & $\LBool$      & $\LString$ & $\concatstringop{\intname}{\boolname}$\\
+$\Tplusplus$ & $\LInt$       & $\LInt$       & $\LString$ & $\concatstringop{\intname}{\intname}$\\
+$\Tplusplus$ & $\LInt$       & $\LLabel$     & $\LString$ & $\concatstringop{\intname}{\labelname}$\\
+$\Tplusplus$ & $\LInt$       & $\LReal$      & $\LString$ & $\concatstringop{\intname}{\realname}$\\
+$\Tplusplus$ & $\LInt$       & $\LString$    & $\LString$ & $\concatstringop{\intname}{\stringname}$\\
+$\Tplusplus$ & $\LLabel$     & $\LBitvector$ & $\LString$ & $\concatstringop{\labelname}{\bitsname}$\\
+$\Tplusplus$ & $\LLabel$     & $\LBool$      & $\LString$ & $\concatstringop{\labelname}{\boolname}$\\
+$\Tplusplus$ & $\LLabel$     & $\LInt$       & $\LString$ & $\concatstringop{\labelname}{\intname}$\\
+$\Tplusplus$ & $\LLabel$     & $\LLabel$     & $\LString$ & $\concatstringop{\labelname}{\labelname}$\\
+$\Tplusplus$ & $\LLabel$     & $\LReal$      & $\LString$ & $\concatstringop{\labelname}{\realname}$\\
+$\Tplusplus$ & $\LLabel$     & $\LString$    & $\LString$ & $\concatstringop{\labelname}{\stringname}$\\
+$\Tplusplus$ & $\LReal$      & $\LBitvector$ & $\LString$ & $\concatstringop{\realname}{\bitsname}$\\
+$\Tplusplus$ & $\LReal$      & $\LBool$      & $\LString$ & $\concatstringop{\realname}{\boolname}$\\
+$\Tplusplus$ & $\LReal$      & $\LInt$       & $\LString$ & $\concatstringop{\realname}{\intname}$\\
+$\Tplusplus$ & $\LReal$      & $\LLabel$     & $\LString$ & $\concatstringop{\realname}{\labelname}$\\
+$\Tplusplus$ & $\LReal$      & $\LReal$      & $\LString$ & $\concatstringop{\realname}{\realname}$\\
+$\Tplusplus$ & $\LReal$      & $\LString$    & $\LString$ & $\concatstringop{\realname}{\stringname}$\\
+$\Tplusplus$ & $\LString$    & $\LBitvector$ & $\LString$ & $\concatstringop{\stringname}{\bitsname}$\\
+$\Tplusplus$ & $\LString$    & $\LBool$      & $\LString$ & $\concatstringop{\stringname}{\boolname}$\\
+$\Tplusplus$ & $\LString$    & $\LInt$       & $\LString$ & $\concatstringop{\stringname}{\intname}$\\
+$\Tplusplus$ & $\LString$    & $\LLabel$     & $\LString$ & $\concatstringop{\stringname}{\labelname}$\\
+$\Tplusplus$ & $\LString$    & $\LReal$      & $\LString$ & $\concatstringop{\stringname}{\realname}$\\
+$\Tplusplus$ & $\LString$    & $\LString$    & $\LString$ & $\concatstringop{\stringname}{\stringname}$\\
 \hline
 \end{tabular}
 \end{table}
