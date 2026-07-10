@@ -92,16 +92,22 @@ let filter_by_sd (sd : Code.sd) = function
         [ { tedge with head = Concrete (set_sd sd edge) } ]
       else []
 
-(* Keep communication macros in macro form.  When the cat relation constrains
-   internal/external communication, append the corresponding suffix directly,
-   for example `Fr & ext` becomes `Fre`. *)
-let filter_macro ie tedge name =
+(* Keep macros in macro form unless Relax can parse them to a singleton edge.
+   Communication macros receive their internal/external suffix directly, for
+   example `Fr & ext` becomes `Fre`.  Dp macros receive their explicit
+   location/destination suffix when one of those constraints is present, for
+   example `DpData` becomes `DpData*W`. *)
+let filter_macro sd ie tgt tedge name =
   let name =
     match name with
     | "Fr" | "Co" | "Rf" -> (
         match ie with
         | None -> name
         | Some ie -> Format.sprintf "%s%s" name (Code.pp_ie ie))
+    | name
+      when Misc.is_prefix "Dp" name && (sd <> Code.UnspecLoc || tgt <> Code.Irr)
+      ->
+        Format.sprintf "%s%s%s" name (Code.pp_sd sd) (Code.pp_extr tgt)
     | _ -> name in
   let head =
     match R.parse_expand_relaxs (Ast.One name) with
@@ -110,14 +116,14 @@ let filter_macro ie tedge name =
     | _ -> Macro name in
   [ { tedge with head } ]
 
-let filter_tedge sd ie tedge =
+let filter_tedge sd ie tgt tedge =
   let filter tedges =
     tedges
     |> List.concat_map (filter_by_sd sd)
     |> List.concat_map (filter_by_ie ie) in
   match tedge with
   | { head = Concrete _; _ } -> filter [ tedge ]
-  | { head = Macro name; _ } -> filter_macro ie tedge name
+  | { head = Macro name; _ } -> filter_macro sd ie tgt tedge name
 
 (* Partial structures
 
@@ -175,8 +181,6 @@ let build_effect : partial_effect -> prim_set list -> partial_effect option =
   UList.fold_left_opt apply_prim_set
 
 let build_tedges : prim_rel -> tedge list =
-  let dp_tedges dp csel =
-    [ mk_tedge (E.Dp ((dp, csel), UnspecLoc, Code.Irr)) ] in
   function
   | Prim "po" -> [ mk_tedge E.(Po (UnspecLoc, Code.Irr, Code.Irr)) ]
   | Prim "fr" -> [ mk_macro "Fr" ]
@@ -186,12 +190,12 @@ let build_tedges : prim_rel -> tedge list =
   | Prim "amo" -> [ mk_macro "Amo" ]
   | Prim "lxsx" -> [ mk_tedge (E.Rmw A.RMW.LrSc) ]
   | Prim "rmw" -> [ mk_tedge (E.Rmw A.RMW.LrSc); mk_macro "Amo" ]
-  | Prim "addr" -> dp_tedges Dep.Full.ADDR A.NoCsel
-  | Prim "ctrl" -> dp_tedges Dep.Full.CTRL A.NoCsel
-  | Prim "data" -> dp_tedges Dep.Full.DATA A.NoCsel
-  | Prim "pick-addr-dep" -> dp_tedges Dep.Full.ADDR A.OkCsel
-  | Prim "pick-ctrl-dep" -> dp_tedges Dep.Full.CTRL A.OkCsel
-  | Prim "pick-data-dep" -> dp_tedges Dep.Full.DATA A.OkCsel
+  | Prim "addr" -> [ mk_macro "DpAddr" ]
+  | Prim "ctrl" -> [ mk_macro "DpCtrl" ]
+  | Prim "data" -> [ mk_macro "DpData" ]
+  | Prim "pick-addr-dep" -> [ mk_macro "DpAddrCsel" ]
+  | Prim "pick-ctrl-dep" -> [ mk_macro "DpCtrlCsel" ]
+  | Prim "pick-data-dep" -> [ mk_macro "DpDataCsel" ]
   | _ -> []
 
 let apply_prim_rel (ed : partial_edge) (r : prim_rel) : partial_edge option =
@@ -294,7 +298,8 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
   let* _ = Util.Option.guard left.explicit_mem in
   let* right = build_effect initial_effect (right @ implied_right) in
   let* _ = Util.Option.guard right.explicit_mem in
-  let tedges = tedges |> List.concat_map (filter_tedge pedge.sd pedge.ie) in
+  let tedges =
+    tedges |> List.concat_map (filter_tedge pedge.sd pedge.ie right.extr) in
   let pp_macro name =
     match (left.atom, right.atom) with
     | None, None -> name
