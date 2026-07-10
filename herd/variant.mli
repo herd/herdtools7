@@ -31,7 +31,6 @@ type t =
   | SplittedRMW  (* Splitted RMW events for riscv *)
   | SwitchDepScWrite     (* Switch dependency on sc mem write, riscv *)
   | SwitchDepScResult    (* Switch dependency from address read to sc result write, riscv,aarch64 *)
-  | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
   | NotWeakPredicated (* NOT "Weak" predicated instructions, not performing non-selected events, aarch64 *)
   | LKMMVersion of [
         `lkmmv1 (* Legacy mode (wrapp rmw[Mb] instructions with explicit Mb fences, add noreturn tags) *)

@@ -1,0 +1,15 @@
+AArch64 L109
+(* Observed, `-mode presi` or `-s <small>`.
+   No "atomic" pairing of LR/SC by P0 *)
+{
+0:X0=x;
+0:X2=y;
+0:X1=1;
+1:X0=x;
+1:X1=2;
+}
+  P0             | P1          ;
+ LDXR W3,[X0]    | STR W1,[X0] ;
+ LDXR W5,[X2]    |             ;
+ STXR W7,W1,[X0] |             ;
+exists 0:X3=0 /\ [x]=1

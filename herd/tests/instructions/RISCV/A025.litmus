@@ -1,0 +1,12 @@
+RISCV A025
+(* SC cancels the reservation: the second SC never succeeds *)
+{
+ 0:x5=x;
+}
+ P0                  ;
+ lr.w x1,(x5)        ;
+ ori x2,x0,1         ;
+ sc.w x6,x2,(x5)     ;
+ ori x4,x0,2         ;
+ sc.w x8,x4,(x5)     ;
+~exists [x]=2

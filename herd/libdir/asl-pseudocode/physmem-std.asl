@@ -123,7 +123,7 @@ begin
   SuccessVA = SomeBoolean();
 
   if SuccessVA then
-    CheckEq(address, reserved);
+    CheckProp(reserved != 0);
   end;
 
   return SuccessVA;

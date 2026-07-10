@@ -1,0 +1,12 @@
+RISCV A023
+(* Atomicity LR/SC vs. amoswap *)
+{
+ 0:x5=x;
+ 1:x5=x;
+}
+ P0                  | P1                   ;
+ lr.w x1,(x5)        | ori x6,x0,2          ;
+ ori x2,x0,1         | amoswap.w x1,x6,(x5) ;
+ sc.w x6,x2,(x5)     |                      ;
+locations [x;]
+~exists (0:x6=0 /\ 0:x1=0 /\ 1:x1=0)

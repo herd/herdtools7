@@ -1,0 +1,12 @@
+AArch64 L108
+(* Observed `-mode presi` or `-s <small>` *)
+{
+0:X0=x;
+0:X2=y;
+0:X1=1;
+}
+  P0             ;
+ LDXR W3,[X0]    ;
+ LDXR W5,[X2]    ;
+ STXR W7,W1,[X0] ;
+exists [x]=1

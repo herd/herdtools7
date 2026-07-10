@@ -1,0 +1,13 @@
+Test L109 Allowed
+States 4
+0:X3=0; [x]=1;
+0:X3=0; [x]=2;
+0:X3=2; [x]=1;
+0:X3=2; [x]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 4
+Condition exists (0:X3=0 /\ [x]=1)
+Observation L109 Sometimes 1 4
+Hash=f94ed99de5f12ff5b5634bbea7c0d5ee
+

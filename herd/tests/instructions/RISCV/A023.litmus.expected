@@ -1,0 +1,13 @@
+Test A023 Forbidden
+States 4
+0:x1=0; 0:x6=0; 1:x1=1; [x]=2;
+0:x1=0; 0:x6=1; 1:x1=0; [x]=2;
+0:x1=2; 0:x6=0; 1:x1=0; [x]=1;
+0:x1=2; 0:x6=1; 1:x1=0; [x]=2;
+Ok
+Witnesses
+Positive: 4 Negative: 0
+Condition ~exists (0:x6=0 /\ 0:x1=0 /\ 1:x1=0)
+Observation A023 Never 0 4
+Hash=1dfa63cd6e138edf69c3be7f9dcdefc4
+

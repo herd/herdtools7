@@ -1,0 +1,9 @@
+AArch64 L106
+(* Without -variant CU, this test fails *)
+Variant=CU
+{
+0:X0=x; 0:X1=1;
+}
+  P0             ;
+ STXR W2,W1,[X0] ;
+exists [x]=1
