@@ -1,0 +1,11 @@
+Test C16 Forbidden
+States 2
+[y]=0x1; [z]=0x0;
+[y]=0x1; [z]=0x1;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition ~exists ([z]=0x0 /\ [y]=0x2)
+Observation C16 Never 0 2
+Hash=ab2f8e6026f219ae47eec68e6e2ba7a5
+

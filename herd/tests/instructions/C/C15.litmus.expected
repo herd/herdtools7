@@ -1,0 +1,11 @@
+Test C15 Forbidden
+States 2
+1:r1=0x0; [y]=0x1;
+1:r1=0x1; [y]=0x2;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition ~exists (1:r1=0x0 /\ [y]=0x2)
+Observation C15 Never 0 2
+Hash=39a09669dfbf2aaf26417bf1bd2480c6
+
