@@ -177,29 +177,15 @@ let build_effect : partial_effect -> prim_set list -> partial_effect option =
 let build_tedges : prim_rel -> tedge list =
   let dp_tedges dp csel =
     [ mk_tedge (E.Dp ((dp, csel), UnspecLoc, Code.Irr)) ] in
-  let amo_tedges =
-    let open A.RMW in
-    List.map mk_tedge [
-      E.Rmw Swp ;
-      E.Rmw Cas ;
-      E.Rmw (LdOp A_ADD) ;
-      E.Rmw (LdOp A_EOR) ;
-      E.Rmw (LdOp A_SET) ;
-      E.Rmw (LdOp A_CLR) ;
-      E.Rmw (StOp A_ADD) ;
-      E.Rmw (StOp A_EOR) ;
-      E.Rmw (StOp A_SET) ;
-      E.Rmw (StOp A_CLR) ;
-    ] in
   function
   | Prim "po" -> [ mk_tedge E.(Po (UnspecLoc, Code.Irr, Code.Irr)) ]
   | Prim "fr" -> [ mk_macro "Fr" ]
   | Prim "co" -> [ mk_macro "Co" ]
   | Prim "rf" -> [ mk_macro "Rf" ]
   | Fence f -> [ mk_tedge (E.Fenced (A.Barrier f, UnspecLoc, Code.Irr, Code.Irr)) ]
-  | Prim "amo" -> amo_tedges
+  | Prim "amo" -> [ mk_macro "Amo" ]
   | Prim "lxsx" -> [ mk_tedge (E.Rmw A.RMW.LrSc) ]
-  | Prim "rmw" -> mk_tedge (E.Rmw A.RMW.LrSc) :: amo_tedges
+  | Prim "rmw" -> [ mk_tedge (E.Rmw A.RMW.LrSc); mk_macro "Amo" ]
   | Prim "addr" -> dp_tedges Dep.Full.ADDR A.NoCsel
   | Prim "ctrl" -> dp_tedges Dep.Full.CTRL A.NoCsel
   | Prim "data" -> dp_tedges Dep.Full.DATA A.NoCsel
@@ -309,12 +295,18 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
   let* right = build_effect initial_effect (right @ implied_right) in
   let* _ = Util.Option.guard right.explicit_mem in
   let tedges = tedges |> List.concat_map (filter_tedge pedge.sd pedge.ie) in
+  let pp_macro name =
+    match (left.atom, right.atom) with
+    | None, None -> name
+    | a1, a2 ->
+        Format.sprintf "%s%s%s" name (E.pp_atom_option a1)
+          (E.pp_atom_option a2) in
   let relaxs =
     tedges
     |> List.map (fun (tedge : tedge) ->
         let edges =
           match tedge.head with
-          | Macro name -> [ Macro name ]
+          | Macro name -> [ Macro (pp_macro name) ]
           | Concrete edge ->
               let edge = E.{ edge; a1 = left.atom; a2 = right.atom } in
               let edge = set_src left.extr edge in
