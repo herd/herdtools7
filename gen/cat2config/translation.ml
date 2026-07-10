@@ -96,8 +96,10 @@ let filter_by_sd (sd : Code.sd) = function
    Communication macros receive their internal/external suffix directly, for
    example `Fr & ext` becomes `Fre`.  Dp macros receive their explicit
    location/destination suffix when one of those constraints is present, for
-   example `DpData` becomes `DpData*W`. *)
-let filter_macro sd ie tgt tedge name =
+   example `DpData` becomes `DpData*W`.  Po macros receive the explicit
+   location/source/destination suffix when needed, for example `Po` becomes
+   `Po**W` or `PosWR`. *)
+let filter_macro sd ie src tgt tedge name =
   let name =
     match name with
     | "Fr" | "Co" | "Rf" -> (
@@ -108,6 +110,9 @@ let filter_macro sd ie tgt tedge name =
       when Misc.is_prefix "Dp" name && (sd <> Code.UnspecLoc || tgt <> Code.Irr)
       ->
         Format.sprintf "%s%s%s" name (Code.pp_sd sd) (Code.pp_extr tgt)
+    | "Po" when sd <> Code.UnspecLoc || src <> Code.Irr || tgt <> Code.Irr ->
+        Format.sprintf "Po%s%s%s" (Code.pp_sd sd) (Code.pp_extr src)
+          (Code.pp_extr tgt)
     | _ -> name in
   let head =
     match R.parse_expand_relaxs (Ast.One name) with
@@ -116,14 +121,14 @@ let filter_macro sd ie tgt tedge name =
     | _ -> Macro name in
   [ { tedge with head } ]
 
-let filter_tedge sd ie tgt tedge =
+let filter_tedge sd ie src tgt tedge =
   let filter tedges =
     tedges
     |> List.concat_map (filter_by_sd sd)
     |> List.concat_map (filter_by_ie ie) in
   match tedge with
   | { head = Concrete _; _ } -> filter [ tedge ]
-  | { head = Macro name; _ } -> filter_macro sd ie tgt tedge name
+  | { head = Macro name; _ } -> filter_macro sd ie src tgt tedge name
 
 (* Partial structures
 
@@ -182,7 +187,7 @@ let build_effect : partial_effect -> prim_set list -> partial_effect option =
 
 let build_tedges : prim_rel -> tedge list =
   function
-  | Prim "po" -> [ mk_tedge E.(Po (UnspecLoc, Code.Irr, Code.Irr)) ]
+  | Prim "po" -> [ mk_macro "Po" ]
   | Prim "fr" -> [ mk_macro "Fr" ]
   | Prim "co" -> [ mk_macro "Co" ]
   | Prim "rf" -> [ mk_macro "Rf" ]
@@ -299,7 +304,8 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
   let* right = build_effect initial_effect (right @ implied_right) in
   let* _ = Util.Option.guard right.explicit_mem in
   let tedges =
-    tedges |> List.concat_map (filter_tedge pedge.sd pedge.ie right.extr) in
+    tedges
+    |> List.concat_map (filter_tedge pedge.sd pedge.ie left.extr right.extr) in
   let pp_macro name =
     match (left.atom, right.atom) with
     | None, None -> name
