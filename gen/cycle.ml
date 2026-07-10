@@ -1327,8 +1327,7 @@ let finish n =
   let _nv,_st =
     match sd with
     | Diff -> set_diff_loc st n
-    | Same -> set_same_loc st n
-    | UnspecLoc -> assert false in
+    | Same -> set_same_loc st n in
 
   (* Check if the cycle is valid, function may fail hence
      terminate the program *)

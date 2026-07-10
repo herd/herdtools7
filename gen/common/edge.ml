@@ -450,9 +450,6 @@ let fold_tedges f r =
     not (RMW.is_one_instruction rmw) || same_access_atoms a1 a2
 
   let ok_non_rmw e a1 a2 =
-    (* `do_is_diff` is safe to call when `e` is not
-       wildcard `*`/UnspecLoc location. *)
-    Code.is_unspec_loc @@ do_loc_sd e ||
     do_is_diff e || do_disjoint ||
     (overlap_atoms a1 a2 &&
      not (do_strict_overlap && same_access_atoms a1 a2))
@@ -1143,10 +1140,7 @@ let fold_tedges f r =
 
 (* compact *)
 
-  let seq_sd e1 e2 =
-    match Code.seq_sd (loc_sd e1) (loc_sd e2) with
-    | None -> Warn.user_error "Unexpected UnspecLoc"
-    | Some b -> b
+  let seq_sd e1 e2 = Code.seq_sd (loc_sd e1) (loc_sd e2)
 
 
   let fst_dp e1 e2 k = match e1.edge with

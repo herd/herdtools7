@@ -56,10 +56,6 @@ struct
           (fun f -> List.exists (equal_fence f) fs)
 
     let choice_sc po_safe e1 e2 =
-      let seq_sd e1 e2 =
-        match Code.seq_sd e1 e2 with
-        | None -> Warn.user_error "Unexpected UnspecLoc"
-        | Some b -> b in
       let r = match e1.edge,e2.edge with
 (*
   Now accept internal with internal composition
@@ -75,13 +71,13 @@ struct
         not (po_safe sd (dir_src e1) (dir_tgt e2))
     | Po (sd1,_,_), Dp (_,sd2,_) ->
         not (po_safe sd1 (dir_src e1) (dir_tgt e1)) &&
-        not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
+        not (po_safe (Code.seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
     | Dp (_,sd1,_),Po (sd2,_,_) ->
         not (po_safe sd2 (dir_src e2) (dir_tgt e2)) &&
-        not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
+        not (po_safe (Code.seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
 (* Check Po is safe *)
     | Po (sd1,_,_),Po (sd2,_,_) ->
-        not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
+        not (po_safe (Code.seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
     | Communication (Rf,Int),Po (sd,_,_) ->
         po_safe sd (dir_src e2) (dir_tgt e2) &&
         not (po_safe sd (dir_src e1) (dir_tgt e2))
@@ -155,7 +151,6 @@ struct
                 | (Same,Same) | (Diff,Same) | (Same,Diff)
                   -> true
                 | Diff,Diff -> false
-                | _ -> assert false
                 end
             | Ext,Ext -> false
             | (Ext,Int) | (Int,Ext) -> true in
