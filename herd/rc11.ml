@@ -77,7 +77,7 @@ module Make (O:Cfg)(S:Sem.Semantics)
       let proc_ws ws0 res =
         let ws = ER.transitive_closure ws0 in
         let unv = ER.cartesian conc.S.str.E.events conc.S.str.E.events in
-        let rf = pr.rf in
+        let rf = pr.S.rf in
         let mo = ws in
         let sb = conc.S.po in
         let rb = U.make_fr conc ws in
@@ -87,7 +87,7 @@ module Make (O:Cfg)(S:Sem.Semantics)
         let rmw = conc.S.atomic_load_store in
 
         let aux = fun x ->
-          try List.assoc x S.E.Act.arch_sets with Not_found -> fun x -> true in
+          try List.assoc x S.E.Act.arch_sets with Not_found -> fun _ -> true in
 
         let rlx = aux "RLX" in
         let acq = aux "ACQ" in
@@ -103,9 +103,9 @@ module Make (O:Cfg)(S:Sem.Semantics)
 
         let rs0 = ER.sequence rf rmw in
         let rs1 = ER.transitive_closure rs0 in
-        let rs2 = ER.restrict_domain (fun x -> E.is_mem_store x && (rlx x.action|| na x.action)) rs1 in
+        let rs2 = ER.restrict_domain (fun x -> E.is_mem_store x && (rlx x.E.action|| na x.E.action)) rs1 in
         let rs3 = ER.inter sb loc in
-        let rs4 = ER.restrict_domains E.is_mem_store (fun x -> E.is_mem_store x && (rlx x.action|| na x.action)) rs3 in
+        let rs4 = ER.restrict_domains E.is_mem_store (fun x -> E.is_mem_store x && (rlx x.E.action|| na x.E.action)) rs3 in
         let rs5 = ER.sequence rs4 rs2 in
         let rs = ER.union rs2 rs5 in
 
@@ -113,11 +113,11 @@ module Make (O:Cfg)(S:Sem.Semantics)
         let sw1 = ER.restrict_domain f sb in
         let sw2 = ER.sequence sw1 sw0 in
         let sw3 = ER.union sw0 sw2 in
-        let sw4 = ER.restrict_domains (fun x -> rel x.action || acq_rel x.action || sc x.action) (fun x -> E.is_mem_store x && (rlx x.action || na x.action)) sw3 in
+        let sw4 = ER.restrict_domains (fun x -> rel x.E.action || acq_rel x.E.action || sc x.E.action) (fun x -> E.is_mem_store x && (rlx x.E.action || na x.E.action)) sw3 in
         let sw5 = ER.restrict_codomain f sb in
         let sw6 = ER.sequence sw4 sw5 in
         let sw7 = ER.union sw4 sw6 in
-        let sw = ER.restrict_codomain (fun x -> acq x.action || acq_rel x.action || sc x.action) sw7 in
+        let sw = ER.restrict_codomain (fun x -> acq x.E.action || acq_rel x.E.action || sc x.E.action) sw7 in
 
         let hb0 = ER.union sb sw in
         let hb = ER.transitive_closure hb0 in
@@ -126,21 +126,21 @@ module Make (O:Cfg)(S:Sem.Semantics)
 
         let scb = ER.unions [sb; ER.sequences [sbl; hb; sbl]; ER.inter sb loc; mo; rb] in
 
-        let pscb0 = ER.restrict_domain (fun x -> sc x.action) scb in
-        let pscb1 = ER.restrict_domain (fun x -> f x && sc x.action) unv in
+        let pscb0 = ER.restrict_domain (fun x -> sc x.E.action) scb in
+        let pscb1 = ER.restrict_domain (fun x -> f x && sc x.E.action) unv in
         let pscb2 = ER.inter pscb1 hb in
         let pscb3 = ER.sequence pscb2 scb in
         let pscb4 = ER.inter pscb1 scb in
         let pscb5 = ER.union3 pscb0 pscb3 pscb4 in
 
-        let pscb6 = ER.restrict_codomain (fun x -> sc x.action) pscb5 in
+        let pscb6 = ER.restrict_codomain (fun x -> sc x.E.action) pscb5 in
         let pscb7 = ER.sequence pscb5 hb in
         let pscb8 = ER.union pscb5 pscb7 in
-        let pscb9 = ER.restrict_codomain (fun x -> f x && sc x.action) pscb8 in
+        let pscb9 = ER.restrict_codomain (fun x -> f x && sc x.E.action) pscb8 in
         let pscb = ER.union pscb6 pscb9 in
 
         let pscf0 = ER.union hb (ER.sequences [hb; eco; hb]) in
-        let fsc = fun x -> f x && sc x.action in
+        let fsc = fun x -> f x && sc x.E.action in
         let pscf = ER.restrict_domains fsc fsc pscf0 in
 
         let psc = ER.union pscb pscf in
@@ -165,7 +165,7 @@ module Make (O:Cfg)(S:Sem.Semantics)
 
         let dr0 = ER.inter cnf ext in
         let dr1 = ER.diff dr0 (ER.union hb (ER.inverse hb)) in
-        let dr = ER.restrict_rel (fun x y -> not (a x.action) && not (a y.action)) dr1 in
+        let dr = ER.restrict_rel (fun x y -> not (a x.E.action) && not (a y.E.action)) dr1 in
 
         let pp_relns =
           lazy begin
