@@ -1051,18 +1051,20 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
     let tr_cst tr =
       Constant.map tr Misc.identity Misc.identity Misc.identity
 
-    let aarch64_to_asl_bv_cst sz = function
+    let aarch64_to_asl_bv var_ val_ sz = function
       | V.Var _ as v ->
           let nv = V.fresh_var () in
-          let nid =
-            match nv with
-            | V.Var n -> n
-            | _ -> assert false in
+          let nid = match nv with V.Var n -> n | _ -> assert false in
           let eq =
             let op = AArch64Op.Extra1 (ASLOp.ToBV sz) in
             M.VC.Assign (nv,M.VC.Unop (Op.ArchOp1 op,v))  in
-          (ASLS.A.V.freeze nid, [eq])
-      | V.Val cst -> (tr_cst (ASLScalar.convert_to_bv sz) cst, [])
+          (var_ nid, [eq])
+      | V.Val cst -> (val_ (tr_cst (ASLScalar.convert_to_bv sz) cst), [])
+
+    let aarch64_to_asl_bv_cst = aarch64_to_asl_bv ASLS.A.V.freeze Fun.id
+
+    let aarch64_to_asl_bv_v =
+      aarch64_to_asl_bv (fun n -> ASLS.A.V.Var n) (fun cst -> ASLS.A.V.Val cst)
 
     let aarch64_to_asl = function
       | V.Var v -> ASLS.A.V.Var v
@@ -1133,13 +1135,10 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let state_add loc v st =
         ASLS.A.state_add st (ASLS.A.Location_reg (ii.A.proc, loc)) v
       in
-      let add_reg_if_present ?(setzero=false) reg loc st =
+      let add_reg_if_present reg loc st =
         match A.look_reg reg ii.A.env.A.regs with
         | Some v -> state_add loc (aarch64_to_asl v) st
-        | _ ->
-           if setzero then
-             state_add loc ASLS.V.zero st
-           else st
+        | _ -> st
       in
       let add_arch_reg_if_present reg =
         add_reg_if_present reg (ASLBase.ArchReg reg)
@@ -1152,12 +1151,21 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let pc_val =
         ASLS.A.V.scalarToV (ASLScalar.bv_of_int_sized 64 ii.A.addr)
       in
+      let resaddr_val, eqs =
+        match A.look_reg AArch64Base.ResAddr ii.A.env.A.regs with
+        | Some v ->
+          let v, eqs2  = aarch64_to_asl_bv_v (if is_vmsa then 56 else 64) v in
+          Some v, eqs2 @ eqs
+       | None -> None, eqs
+      in
       let st =
         ASLS.A.state_empty
         |> state_add (global_loc "PSTATE") pstate_val
         |> state_add (global_loc "_PC") pc_val
         |> List.fold_right add_arch_reg_if_present ASLBase.gregs
-        |> add_reg_if_present ~setzero:true AArch64Base.ResAddr (global_loc "RESADDR")
+        |> (match resaddr_val with
+            | Some v -> state_add (global_loc "RESADDR") v
+            | None -> Fun.id)
         |> add_reg_if_present AArch64Base.SP (global_loc "_SP_EL0")
         |> (if is_vmsa then
               state_add (global_loc "D128")

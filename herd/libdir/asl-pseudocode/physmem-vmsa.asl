@@ -249,7 +249,7 @@ begin
   SuccessPA = SomeBoolean();
 
   if SuccessPA then
-    CheckProp(reserved != 0);
+    CheckProp(reserved != Zeros{56});
     RegisterAddress(paddress.address);
   end;
 

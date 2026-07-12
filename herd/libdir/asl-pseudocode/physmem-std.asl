@@ -123,7 +123,7 @@ begin
   SuccessVA = SomeBoolean();
 
   if SuccessVA then
-    CheckProp(reserved != 0);
+    CheckProp(reserved != Zeros{64});
   end;
 
   return SuccessVA;
