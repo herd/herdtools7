@@ -36,10 +36,13 @@ let undefined_identifier ~loc x =
 
 let invalid_expr e = fatal_from ~loc:e (Error.InvalidExpr e)
 let add_pos_from ~loc = add_pos_from loc
-let set_expr_type_annotation (t, e, ses) = (t, expr_with_ty_annot t e, ses)
+let set_expr_type_annotation (t, e, ses) = (t, with_ty_annot t e, ses)
 
-let set_lexpr_type_annotation t ((le, ses) : AST.lexpr * SES.t) =
-  (lexpr_with_ty_annot t le, ses)
+(** [set_lexpr_type_annotation (lexpr_ty, lexpr, ses)] sets [lexpr_ty] as the
+    type annotation of [lexpr] and returns the updated assignable expression
+    together with [lexpr_ty] and [ses]. *)
+let set_lexpr_type_annotation (lexpr_ty, lexpr, ses) =
+  (lexpr_ty, with_ty_annot lexpr_ty lexpr, ses)
 
 let conflict ~loc expected provided =
   fatal_from ~loc (Error.ConflictingTypes (expected, provided))
@@ -2369,7 +2372,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       [loc]. Note however that a bit vector with width [N] can always be
       generated using [0[:N]]. *)
   let rec base_value_v1 ~loc env t : expr =
-    expr_with_ty_annot t
+    with_ty_annot t
     @@
     let here = add_pos_from ~loc in
     let lit v = here (E_Literal v) in
@@ -2476,10 +2479,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (new_le |> add_pos_from ~loc, ses) |: TypingRule.AnnotateSetArray
   (* End *)
 
-  (** [annotate_lexpr env le t_e] annotates the assignable expression [le] in
-      [env] with the type [t_e] and sets [t_e] as the type annotation to the
-      resulting expression. *)
-  let rec annotate_lexpr env le t_e =
+  (** [annotate_lexpr_ty env le t_e] annotates the assignable expression [le] in
+      [env], checks that it can be assigned a value of type [t_e], and returns
+      and sets its actual type. *)
+  let rec annotate_lexpr_ty env le t_e =
     let () =
       if false then
         Format.eprintf "Typing lexpr: @[%a@] to @[%a@]@." PP.pp_lexpr le
@@ -2487,11 +2490,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let loc = to_pos le in
     let here x = add_pos_from ~loc x in
-    set_lexpr_type_annotation t_e
+    set_lexpr_type_annotation
     @@
     match le.desc with
     (* Begin LEDiscard *)
-    | LE_Discard -> (le, SES.empty) |: TypingRule.LEDiscard
+    | LE_Discard -> (t_e, le, SES.empty) |: TypingRule.LEDiscard
     (* End *)
     (* Begin LEVar *)
     | LE_Var x ->
@@ -2506,7 +2509,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               | None -> undefined_identifier ~loc x)
         in
         let+ () = check_type_satisfies ~loc env t_e ty in
-        (le, ses) |: TypingRule.LEVar
+        (ty, le, ses) |: TypingRule.LEVar
     (* End *)
     (* Begin LEDestructuring *)
     | LE_Destructuring les ->
@@ -2520,14 +2523,14 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                        List.length tys,
                        List.length les ))
               else
-                let les', sess =
-                  List.map2 (annotate_lexpr env) les tys |> List.split
+                let lhs_tys, les', sess =
+                  List.map2 (annotate_lexpr_ty env) les tys |> list_split3
                 in
                 let ses =
                   (* TODO left-hand-side conflicting union *)
                   SES.unions sess
                 in
-                (LE_Destructuring les' |> here, ses)
+                (T_Tuple lhs_tys |> here, LE_Destructuring les' |> here, ses)
           | _ -> conflict ~loc [ T_Tuple [] ] t_e)
         |: TypingRule.LEDestructuring
     (* End *)
@@ -2537,38 +2540,38 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (* Begin LESlice *)
         match t_le1_anon.desc with
         | T_Bits _ ->
-            let le2, ses1 = annotate_lexpr env le1 t_le1 in
+            let _, le2, ses1 = annotate_lexpr_ty env le1 t_le1 in
             let slices_annotated, ses_slices =
               best_effort (slices, SES.empty) @@ fun _ ->
               annotate_slices env slices ~loc
             in
-            let+ () =
-             fun () ->
-              let width =
-                slices_width env slices_annotated
-                |> StaticModel.try_normalize env
-              in
-              let t = T_Bits (width, []) |> here in
-              check_type_satisfies ~loc env t_e t ()
+            let width =
+              slices_width env slices_annotated |> StaticModel.try_normalize env
             in
+            let t = T_Bits (width, []) |> here in
+            let+ () = check_type_satisfies ~loc env t_e t in
             let+ () = check_disjoint_slices ~loc env slices_annotated in
             let+ () =
               check_true (not (list_is_empty slices_annotated)) @@ fun () ->
               fatal_from ~loc Error.EmptySlice
             in
             let ses = ses_non_conflicting_union ~loc ses1 ses_slices in
-            (LE_Slice (le2, slices_annotated) |> here, ses |: TypingRule.LESlice)
+            (t, LE_Slice (le2, slices_annotated) |> here, ses)
+            |: TypingRule.LESlice
         | T_Array (_, t) when le.version = V0 -> (
             match slices with
             | [ Slice_Single e_index ] ->
-                let le2, ses2 = annotate_lexpr env le1 t_le1 in
-                annotate_set_array ~loc:le env t t_e (le2, ses2, e_index)
+                let _, le2, ses2 = annotate_lexpr_ty env le1 t_le1 in
+                let le3, ses3 =
+                  annotate_set_array ~loc:le env t t_e (le2, ses2, e_index)
+                in
+                (t, le3, ses3)
             | _ -> invalid_expr (expr_of_lexpr le1))
         | _ -> conflict ~loc:le1 [ default_t_bits ] t_le1
         (* End *))
     | LE_SetField (le1, field) ->
         (let t_le1, _, _ = expr_of_lexpr le1 |> annotate_expr env in
-         let le2, ses = annotate_lexpr env le1 t_le1 in
+         let _, le2, ses = annotate_lexpr_ty env le1 t_le1 in
          let t_le1_anon = Types.make_anonymous env t_le1 in
          match t_le1_anon.desc with
          (* Begin LESetStructuredField *)
@@ -2579,7 +2582,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                | Some t -> t
              in
              let+ () = check_type_satisfies ~loc env t_e t in
-             ( LE_SetField (le2, field) |> here,
+             ( t,
+               LE_SetField (le2, field) |> here,
                ses |: TypingRule.LESetStructuredField )
          (* End *)
          (* Begin LESetCollectionField *)
@@ -2594,7 +2598,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
              in
              let+ () = check_type_satisfies ~loc env t_e t in
              let n = get_bitvector_const_width ~loc env t in
-             ( LE_SetCollectionFields
+             ( t,
+               LE_SetCollectionFields
                  (collection_var_name, [ field ], [ (0, n) ])
                |> here,
                ses |: TypingRule.LESetCollectionField )
@@ -2619,7 +2624,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
              in
              let+ () = check_type_satisfies ~loc:le1 env t_e t in
              let le3 = LE_Slice (le1, slices) |> here in
-             annotate_lexpr env le3 t_e |: TypingRule.LESetBitField
+             annotate_lexpr_ty env le3 t_e |: TypingRule.LESetBitField
          (* End *)
          (* Begin LESetBadField *)
          | T_Tuple _ -> fatal_from ~loc @@ Error.AssignToTupleElement le1
@@ -2632,7 +2637,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Begin LESetFields *)
     | LE_SetFields (le_base, le_fields, []) -> (
         let t_base, _, _ = expr_of_lexpr le_base |> annotate_expr env in
-        let le_base_annot, ses_base = annotate_lexpr env le_base t_base in
+        let _, le_base_annot, ses_base = annotate_lexpr_ty env le_base t_base in
         let t_base_anon = Types.make_anonymous env t_base in
         match t_base_anon.desc with
         | T_Bits (_, bitfields) ->
@@ -2646,7 +2651,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 (le_base_annot, List.concat_map slices_of_bitfield le_fields)
               |> here
             in
-            annotate_lexpr env le_slice t_e |: TypingRule.LESetFields
+            annotate_lexpr_ty env le_slice t_e |: TypingRule.LESetFields
         | T_Record base_fields | T_Exception base_fields ->
             let fold_bitvector_fields field (start, slices) =
               match List.assoc_opt field base_fields with
@@ -2662,7 +2667,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             in
             let t_lhs = T_Bits (expr_of_int length, []) |> here in
             let+ () = check_type_satisfies ~loc env t_e t_lhs in
-            (LE_SetFields (le_base_annot, le_fields, slices) |> here, ses_base)
+            ( t_lhs,
+              LE_SetFields (le_base_annot, le_fields, slices) |> here,
+              ses_base )
         | T_Collection base_fields ->
             let collection_var_name =
               match le_base.desc with
@@ -2685,7 +2692,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             in
             let t_lhs = T_Bits (expr_of_int length, []) |> here in
             let+ () = check_type_satisfies ~loc env t_e t_lhs in
-            ( LE_SetCollectionFields (collection_var_name, le_fields, slices)
+            ( t_lhs,
+              LE_SetCollectionFields (collection_var_name, le_fields, slices)
               |> here,
               ses_base )
         | _ -> conflict ~loc [ default_t_bits ] t_base |: TypingRule.LESetFields
@@ -2697,11 +2705,21 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t_anon_base = Types.make_anonymous env t_base in
         match t_anon_base.desc with
         | T_Array (_, t_elem) ->
-            let e_base', ses_base = annotate_lexpr env e_base t_base in
-            annotate_set_array ~loc env t_elem t_e (e_base', ses_base, e_index)
+            let _, e_base', ses_base = annotate_lexpr_ty env e_base t_base in
+            let le', ses =
+              annotate_set_array ~loc env t_elem t_e (e_base', ses_base, e_index)
+            in
+            (t_elem, le', ses)
         | _ -> conflict ~loc [ default_array_ty ] t_base)
     (* End *)
     | LE_SetFields (_, _, _ :: _) | LE_SetCollectionFields _ -> assert false
+
+  (** [annotate_lexpr env le t_e] annotates the assignable expression [le] in
+      [env], checks that it can be assigned a value of type [t_e], and returns
+      the annotated expression and its side effects. *)
+  let annotate_lexpr env le t_e =
+    let _, le', ses = annotate_lexpr_ty env le t_e in
+    (le', ses)
 
   (* Begin CheckCanBeInitializedWith *)
   let can_be_initialized_with env s t =

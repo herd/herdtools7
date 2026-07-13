@@ -73,13 +73,13 @@ let add_dummy_annotation ?(version = default_version) desc =
   annotated desc dummy_pos dummy_pos version
 
 let dummy_annotated = add_dummy_annotation ()
-let to_pos pos = { pos with desc = () }
+let to_pos pos = { pos with desc = (); ty_opt = None }
 let is_dummy_annotated x = x.pos_end == dummy_pos || x.pos_start == dummy_pos
 
 let add_pos_from_st pos desc =
   if pos.desc == desc then pos else { pos with desc }
 
-let add_pos_from pos desc = { pos with desc }
+let add_pos_from pos desc = { pos with desc; ty_opt = None }
 
 let add_pos_range_from pos_from pos_to desc =
   let () = assert (pos_from.version = pos_to.version) in
@@ -92,8 +92,7 @@ let add_pos_range_from pos_from pos_to desc =
   }
 
 let expr_ty_annot_from ~src expr = { expr with ty_opt = src.ty_opt }
-let expr_with_ty_annot ty expr = { expr with ty_opt = Some ty }
-let lexpr_with_ty_annot ty lexpr = { lexpr with ty_opt = Some ty }
+let with_ty_annot ty node = { node with ty_opt = Some ty }
 let map_desc f thing = f thing |> add_pos_from thing
 let map_annotated thing f = f thing.desc |> add_pos_from thing
 
@@ -183,14 +182,13 @@ let pair x y = (x, y)
 let pair' y x = (x, y)
 let pair_equal f g (x1, y1) (x2, y2) = f x1 x2 && g y1 y2
 
-let map2_desc f thing1 thing2 =
+let map2_desc f v1 v2 =
   {
-    desc = f thing1 thing2;
-    pos_start = thing1.pos_start;
-    pos_end = thing2.pos_end;
-    version = thing1.version;
-    ty_opt =
-      (match thing1.ty_opt with Some t1 -> Some t1 | None -> thing2.ty_opt);
+    desc = f v1 v2;
+    pos_start = v1.pos_start;
+    pos_end = v2.pos_end;
+    version = v1.version;
+    ty_opt = (match v1.ty_opt with Some t -> Some t | None -> v2.ty_opt);
   }
 
 let s_pass = add_dummy_annotation S_Pass
@@ -450,15 +448,15 @@ let neg e = E_Unop (NEG, e) |> add_pos_from e
 let literal v = E_Literal v |> add_dummy_annotation
 let expr_of_int i = literal (L_Int (Z.of_int i))
 let expr_of_z z = literal (L_Int z)
-let e_true = literal (L_Bool true) |> expr_with_ty_annot boolean
-let e_false = literal (L_Bool false) |> expr_with_ty_annot boolean
+let e_true = literal (L_Bool true) |> with_ty_annot boolean
+let e_false = literal (L_Bool false) |> with_ty_annot boolean
 let expr_of_bool b = if b then e_true else e_false
 let zero_expr = expr_of_z Z.zero
 let one_expr = expr_of_z Z.one
 let minus_one_expr = expr_of_z Z.minus_one
 
 let expr_of_rational q =
-  expr_with_ty_annot real
+  with_ty_annot real
   @@
   if Z.equal (Q.den q) Z.one then expr_of_z (Q.num q)
   else binop `DIV (expr_of_z (Q.num q)) (expr_of_z (Q.den q))

@@ -13,12 +13,12 @@ val constraint_binop :
 
 module type CONFIG = sig
   val fail : string -> 'a
-  val warn_from : loc:'a annotated -> Error.warning_desc -> unit
+  val warn_from : loc:_ t_annotated -> Error.warning_desc -> unit
 end
 
 module Make : functor (C : CONFIG) -> sig
   val annotate_constraint_binop :
-    loc:'a annotated ->
+    loc:_ t_annotated ->
     StaticEnv.env ->
     int3_binop ->
     int_constraint list ->

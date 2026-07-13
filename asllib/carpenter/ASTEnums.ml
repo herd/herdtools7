@@ -410,7 +410,7 @@ module Make (C : Config.S) = struct
 
   let gdks = scaled_finite [ GDK_Config; GDK_Let; GDK_Constant; GDK_Var ]
 
-  let decls =
+  let decls : decl enum =
     let d_func =
       let make_func (name, (body, (return_type, (args, subprogram_type)))) =
         let parameters = [] and body = SB_ASL body and recurse_limit = None in

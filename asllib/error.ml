@@ -671,7 +671,7 @@ module PPrint = struct
   let pp_warning f e =
     fprintf f "@[<v 0>%a%a@]" pp_pos_begin e pp_warning_desc e
 
-  let error_desc_to_string = asprintf "%a" pp_error_desc
+  let error_desc_to_string e = asprintf "%a" pp_error_desc e
 
   let desc_to_string_inf pp_desc =
     asprintf "%a" @@ fun f e ->

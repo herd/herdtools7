@@ -29,10 +29,10 @@ open AST
 type 'a printer = Format.formatter -> 'a -> unit
 (** A general pretty-printer type. *)
 
-val pp_pos : 'a annotated printer
-val pp_pos_str : 'a annotated -> string
+val pp_pos : _ t_annotated printer
+val pp_pos_str : _ t_annotated -> string
 
-val pp_pos_str_no_char : 'a annotated -> string
+val pp_pos_str_no_char : _ t_annotated -> string
 (** Print a position. *)
 
 (** {1 AST pretty-printers} *)

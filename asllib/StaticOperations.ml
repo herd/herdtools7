@@ -180,7 +180,7 @@ let filter_reduce_constraint_div =
 
 module type CONFIG = sig
   val fail : string -> 'a
-  val warn_from : loc:'a annotated -> Error.warning_desc -> unit
+  val warn_from : loc:_ t_annotated -> Error.warning_desc -> unit
 end
 
 module Make (C : CONFIG) = struct
