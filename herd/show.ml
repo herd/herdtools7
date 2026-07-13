@@ -58,27 +58,38 @@ module Make(O:PrettyConf.S) = struct
   let suppress_stderr cmd =
     if O.debug then cmd else sprintf "(%s) 2>/dev/null" cmd
 
-  let run_cmd fmt =
-    ksprintf
-      (fun cmd ->
-         let r = Sys.command (suppress_stderr cmd) in
-         if O.debug then eprintf "Command: [%s] -> %i\n%!" cmd r)
-      fmt
+  let run_cmd cmd =
+    let r = Sys.command (suppress_stderr cmd) in
+    if O.debug then eprintf "Command: [%s] -> %i\n%!" cmd r
+
+  let run_cmds cmds = String.concat " && " cmds |> run_cmd
 
   let do_show_file ?(keep_tmp_pdf = O.debug) name_dot prog ext : unit =
     let name_ps = extfile name_dot ext in
     with_temp_file ~keep:keep_tmp_pdf name_ps @@ fun () ->
-    run_cmd "%s -T%s %s -o %s && %s %s" generator ext name_dot name_ps prog
-      name_ps
+    run_cmds
+      [
+        sprintf "%s -T%s %s -o %s" generator ext name_dot name_ps;
+        sprintf "%s %s" prog name_ps;
+      ]
+
+  let macos_join_pdf =
+    {|/System/Library/Automator/Combine\ PDF\ Pages.action/Contents/MacOS/join|}
+
+  let do_show_file_preview name_dot =
+    run_cmds
+      [
+        sprintf "%s -Tpdf %s -O" generator name_dot;
+        sprintf "%s -o %s.all.pdf %s*.pdf" macos_join_pdf name_dot name_dot;
+        sprintf "open -a Preview %s.all.pdf" name_dot;
+      ]
 
   let show_file_with_view view name_dot : unit =
     let open View in
     match view with
     | GV -> do_show_file name_dot "gv" "ps"
     | Evince -> do_show_file name_dot "evince" "pdf"
-    | Preview ->
-      run_cmd "%s -Tpdf %s -O && open -a Preview %s.*pdf" generator name_dot
-        name_dot
+    | Preview -> do_show_file_preview name_dot
 
   let show_file name_dot =
     match O.view with None -> () | Some v -> show_file_with_view v name_dot
