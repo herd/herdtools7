@@ -90,7 +90,7 @@ let apply_binop_extremities (op : extremities_binops) c1 c2 =
 
 (** [constraint_pow c1 c2] applies [POW] to [c1] and [c2]. *)
 let constraint_pow c1 c2 =
-  let pow = binop `POW and neg = unop NEG in
+  let pow = binop `POW in
   match (c1, c2) with
   | Constraint_Exact a, Constraint_Exact c ->
       [ exact (pow a c) ] |: TypingRule.ConstraintPow

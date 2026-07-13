@@ -61,7 +61,7 @@ let normalize () =
       ( binop `ADD (binop `SUB !%"N" !%"m") (binop `SUB !%"m" !$1),
         binop `SUB !%"N" !$1,
         StaticEnv.add_local "m" integer LDK_Let env_with_N );
-      (unop NEG !$3, !$(-3), StaticEnv.empty);
+      (neg !$3, !$(-3), StaticEnv.empty);
     ]
 
 let () =

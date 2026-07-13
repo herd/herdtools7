@@ -33,13 +33,6 @@
 type version = V0 | V1
 type position = Lexing.position
 
-type 'a annotated = {
-  desc : 'a;
-  pos_start : position;
-  pos_end : position;
-  version : version;
-}
-
 type identifier = string
 (** Type of local identifiers in the AST. *)
 
@@ -146,8 +139,22 @@ type subprogram_type =
       (** A setter is a special procedure called with a syntax similar to slice
           assignment. *)
 
+type 'a annotated = {
+  desc : 'a;
+  pos_start : position;
+  pos_end : position;
+  version : version;
+  ty_opt : ty option;
+      (** An optional type annotation, added only to typed versions of [expr]
+          and [lexpr] types. This is added by the typechecker once the type is
+          inferred, and never used by the typechecker itself. In particular,
+          expressions synthesized by the typechecker are not associated with a
+          type annotation. The intended usage is for tools built on top of
+          aslref. *)
+}
+
 (** Expressions. Parametric on the type of literals. *)
-type expr_desc =
+and expr_desc =
   | E_Literal of literal
   | E_Var of identifier
   | E_ATC of expr * ty  (** Asserted type conversion *)

@@ -36,11 +36,16 @@ let undefined_identifier ~loc x =
 
 let invalid_expr e = fatal_from ~loc:e (Error.InvalidExpr e)
 let add_pos_from ~loc = add_pos_from loc
+let set_expr_type_annotation (t, e, ses) = (t, expr_with_ty_annot t e, ses)
+
+let set_lexpr_type_annotation t ((le, ses) : AST.lexpr * SES.t) =
+  (lexpr_with_ty_annot t le, ses)
 
 let conflict ~loc expected provided =
   fatal_from ~loc (Error.ConflictingTypes (expected, provided))
 
-let plus = binop `ADD
+let plus e1 e2 = binop `ADD e1 e2
+let minus e1 e2 = binop `SUB e1 e2
 let t_bits_bitwidth e = T_Bits (e, [])
 
 let func_version f =
@@ -62,11 +67,13 @@ let rec list_mapi3 f i l1 l2 l3 =
       r :: list_mapi3 f (i + 1) l1 l2 l3
   | _, _, _ -> invalid_arg "List.mapi3"
 
-let sum = function [] -> !$0 | [ x ] -> x | h :: t -> List.fold_left plus h t
+let sum = function
+  | [] -> zero_expr
+  | [ x ] -> x
+  | h :: t -> List.fold_left plus h t
 
 (* Begin SlicesWidth *)
 let slices_width env =
-  let minus = binop `SUB in
   let slice_width = function
     | Slice_Single _ -> one_expr
     | Slice_Star (_, e) | Slice_Length (_, e) -> e
@@ -775,7 +782,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         match t_struct.desc with
         | T_Int UnConstrained -> T_Int UnConstrained |> here
         | T_Int (WellConstrained (cs, precision)) ->
-            let neg e = unop NEG e in
             let constraint_minus = function
               | Constraint_Exact e -> Constraint_Exact (neg e)
               | Constraint_Range (top, bot) ->
@@ -1452,7 +1458,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           (* LRM R_GXKG:
              The notation b[j:i] is syntactic sugar for b[i +: j-i+1].
           *)
-          let length = binop `SUB j i |> binop `ADD !$1 in
+          let length = plus (minus j i) one_expr in
           annotate_slice (Slice_Length (i, length)) |: TypingRule.Slice
       | Slice_Star (factor, length) ->
           (* LRM R_GXQG:
@@ -1868,9 +1874,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       ret_ty_opt,
       ses3 )
 
+  (** [annotate_expr] annotates the expression [e] in [env] and sets a type
+      annotation. *)
   and annotate_expr env (e : expr) : ty * expr * SES.t =
     let () = if false then Format.eprintf "@[Annotating %a@]@." PP.pp_expr e in
     let here x = add_pos_from ~loc:e x and loc = to_pos e in
+    set_expr_type_annotation
+    @@
     match e.desc with
     (* Begin ELit *)
     | E_Literal v ->
@@ -2359,6 +2369,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       [loc]. Note however that a bit vector with width [N] can always be
       generated using [0[:N]]. *)
   let rec base_value_v1 ~loc env t : expr =
+    expr_with_ty_annot t
+    @@
     let here = add_pos_from ~loc in
     let lit v = here (E_Literal v) in
     let fatal_non_static e =
@@ -2379,12 +2391,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             if length < 0 then fatal_from ~loc @@ Error.BaseValueEmptyType t
             else L_BitVector (Bitvector.zeros length) |> lit
         | _ ->
-            let zero = L_Int Z.zero |> lit in
-            let slice = Slice_Length (zero, e) in
-            E_Slice (zero, [ slice ]) |> here)
+            let slice = Slice_Length (zero_expr, e) in
+            E_Slice (zero_expr, [ slice ]) |> here)
     | T_Enum [] -> assert false
     | T_Enum (name :: _) -> lookup_constant env name |> lit
-    | T_Int UnConstrained -> L_Int Z.zero |> lit
+    | T_Int UnConstrained -> zero_expr
     | T_Int (Parameterized id) -> E_Var id |> here |> fatal_non_static
     | T_Int PendingConstrained -> assert false
     | T_Int (WellConstrained (cs, _)) ->
@@ -2404,7 +2415,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         if list_is_empty z_min_list then fatal_is_empty ()
         else
           let z_min = list_min_abs_z z_min_list in
-          L_Int z_min |> lit
+          expr_of_z z_min
     | T_Named _ -> Types.make_anonymous env t |> base_value_v1 ~loc env
     | T_Real -> L_Real Q.zero |> lit
     | T_Exception fields | T_Record fields | T_Collection fields ->
@@ -2448,12 +2459,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let t = Types.make_anonymous env t in
         base_value_v0 ~loc env t
 
-  (** [base_value ~loc env e] is [base_value_v1 ~loc env e] if running for
-      ASLv1, or [base_value_v0 ~loc env e] if running for ASLv0. *)
-  let base_value ~loc env e =
+  (** [base_value ~loc env t] is [base_value_v1 ~loc env t] if running for
+      ASLv1, or [base_value_v0 ~loc env t] if running for ASLv0. *)
+  let base_value ~loc env t =
     match loc.version with
-    | V0 -> base_value_v0 ~loc env e
-    | V1 -> base_value_v1 ~loc env e
+    | V0 -> base_value_v0 ~loc env t
+    | V1 -> base_value_v1 ~loc env t
 
   (* Begin AnnotateSetArray *)
   let annotate_set_array ~loc env t_elem rhs_ty (e_base, ses_base, e_index) =
@@ -2465,6 +2476,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (new_le |> add_pos_from ~loc, ses) |: TypingRule.AnnotateSetArray
   (* End *)
 
+  (** [annotate_lexpr env le t_e] annotates the assignable expression [le] in
+      [env] with the type [t_e] and sets [t_e] as the type annotation to the
+      resulting expression. *)
   let rec annotate_lexpr env le t_e =
     let () =
       if false then
@@ -2473,6 +2487,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let loc = to_pos le in
     let here x = add_pos_from ~loc x in
+    set_lexpr_type_annotation t_e
+    @@
     match le.desc with
     (* Begin LEDiscard *)
     | LE_Discard -> (le, SES.empty) |: TypingRule.LEDiscard

@@ -93,6 +93,16 @@ val add_pos_from_st : 'a annotated -> 'a -> 'a annotated
     If both arguments are physically equal, then the result is also physically
     equal. *)
 
+val expr_ty_annot_from : src:'a annotated -> expr -> expr
+(** [expr_ty_annot_from ~src:a b] is the expression [b] with the type annotation
+    from [a]. *)
+
+val expr_with_ty_annot : AST.ty -> expr -> expr
+(** [expr_with_ty_annot ty e] is [e] with the type annotation [ty]. *)
+
+val lexpr_with_ty_annot : AST.ty -> lexpr -> lexpr
+(** [lexpr_with_ty_annot ty le] is [le] with the type annotation [ty]. *)
+
 val map2_desc :
   ('a annotated -> 'b annotated -> 'c) ->
   'a annotated ->
@@ -166,14 +176,14 @@ val expr_of_int : int -> expr
 val literal : literal -> expr
 (** [literal v] is the expression evaluated to [v]. *)
 
-val var_ : identifier -> expr
-(** [var_ x] is the expression [x]. *)
+val expr_of_var : identifier -> expr
+(** [expr_of_var x] is the expression for the identifier [x]. *)
 
 val binop : binop -> expr -> expr -> expr
 (** Builds a binary operation from to subexpressions. *)
 
-val unop : unop -> expr -> expr
-(** Builds a unary operation from its subexpression. *)
+val neg : expr -> expr
+(** Builds a negation operation from its subexpression. *)
 
 val expr_of_z : Z.t -> expr
 (** [expr_of_z z] is the integer literal for [z]. *)

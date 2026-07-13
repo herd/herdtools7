@@ -58,7 +58,8 @@ end = struct
     let start = expr_of_z (Q.num factor) in
     let numerator =
       AtomMap.fold
-        (fun atom exponent acc -> mul_expr acc (pow_expr (var_ atom) exponent))
+        (fun atom exponent acc ->
+          mul_expr acc (pow_expr (expr_of_var atom) exponent))
         monos start
     in
     div_expr numerator (Q.den factor)
@@ -238,7 +239,8 @@ let rec to_ir env (e : expr) =
 (* Begin Normalize *)
 let normalize env e =
   let { desc } = e |> to_ir env |> Polynomial.to_expr in
-  add_pos_from e desc
+  let normalized_expr = add_pos_from e desc in
+  { normalized_expr with ty_opt = e.ty_opt }
 (* End *)
 
 let try_normalize env e =
