@@ -1,0 +1,10 @@
+Test C14 Required
+States 1
+[y]=0x2;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall ([y]=0x2)
+Observation C14 Always 2 0
+Hash=4ba3dd96c70ac3dd5dac4c7337261858
+

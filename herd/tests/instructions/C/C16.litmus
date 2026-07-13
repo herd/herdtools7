@@ -1,0 +1,12 @@
+C C16
+{}
+
+P0 (atomic_int* y) {
+  atomic_store_explicit(y,1,memory_order_relaxed);
+}
+
+P1 (atomic_int* y,int *z) {
+  atomic_compare_exchange_strong(y,z,2);
+}
+
+~exists z=0 /\ y=2
