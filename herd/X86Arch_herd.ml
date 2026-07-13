@@ -19,13 +19,6 @@
 module Make (C:Arch_herd.Config)(V:Value.S) =
   struct
     include X86Base
-    let is_amo = function
-      |I_LOCK _ | I_XCHG _ -> true
-      |I_NOP|I_LFENCE|I_SFENCE|I_MFENCE|I_MOVSD|I_JMP _|I_JCC _|I_READ _
-      |I_ADD _|I_XOR _|I_OR _|I_MOV _|I_DEC _|I_CMP _|I_CMOVC _
-      |I_INC _|I_XCHG_UNLOCKED _|I_CMPXCHG _|I_SETNB _
-      |I_MOVB _|I_MOVW _|I_MOVL _|I_MOVQ _|I_MOVT _
-          -> false
 
     let pp_barrier_short = pp_barrier
     let reject_mixed = false
@@ -34,6 +27,7 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
     let get_machsize _ = V.Cst.Scalar.machsize
     let empty_annot = false
     let is_atomic annot = annot
+    let is_exclusive _ = false
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
     let ifetch_value_sets = []

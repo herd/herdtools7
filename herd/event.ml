@@ -99,9 +99,10 @@ val same_instance : event -> event -> bool
   val is_additional_mem : event -> bool
 (* Specific memory property examination *)
   val is_atomic : event -> bool
+  val is_exclusive : event -> bool
   val is_fault : event -> bool
   val to_fault : event -> A.fault option
-  val is_amo : event -> bool
+
   val get_mem_dir : event -> Dir.dirn
   val get_mem_size : event -> MachSize.sz
 
@@ -697,11 +698,10 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       | _ -> false
     let is_additional_mem e = Act.is_additional_mem e.action
     let is_atomic e = Act.is_atomic e.action
+    let is_exclusive e = Act.is_exclusive e.action
     let is_fault e = Act.is_fault e.action
     let to_fault e = Act.to_fault e.action
-    let is_amo e = match e.iiid with
-    | IdSome {A.inst=i; _} when A.is_amo i -> Act.is_mem_store e.action
-    | _ -> false
+
     let get_mem_dir e = Act.get_mem_dir e.action
     let get_mem_size e = Act.get_mem_size e.action
 

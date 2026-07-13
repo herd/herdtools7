@@ -1,0 +1,16 @@
+Test A021 Forbidden
+States 7
+1:x5=0; 1:x13=0; 1:x15=0;
+1:x5=0; 1:x13=0; 1:x15=1;
+1:x5=0; 1:x13=1; 1:x15=0;
+1:x5=0; 1:x13=1; 1:x15=1;
+1:x5=1; 1:x13=0; 1:x15=0;
+1:x5=1; 1:x13=0; 1:x15=1;
+1:x5=1; 1:x13=1; 1:x15=1;
+Ok
+Witnesses
+Positive: 7 Negative: 0
+Condition ~exists (1:x5=1 /\ 1:x13=1 /\ 1:x15=0)
+Observation A021 Never 0 7
+Hash=ca29792908216df96447f220d919053d
+

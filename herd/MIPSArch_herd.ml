@@ -21,7 +21,7 @@ module Make
          (V:Value.S with type Cst.Instr.exec  = MIPSBase.instruction ) =
   struct
     include MIPSBase
-    let is_amo _ = false
+
     let pp_barrier_short = pp_barrier
     let reject_mixed = false
 

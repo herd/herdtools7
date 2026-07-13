@@ -32,7 +32,6 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
 
     let is_kvm = C.variant Variant.VMSA
 
-    let is_amo _ = false
     let pp_barrier_short = pp_barrier
     let reject_mixed = true
 
@@ -45,6 +44,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let nexp_ifetch = AArch64Explicit.NExp AArch64Explicit.IFetch
 
     let is_atomic = AArch64Annot.is_atomic
+    and is_exclusive = AArch64Annot.is_exclusive
 
     let is_ifetch_annot = function
       | NExp IFetch -> true

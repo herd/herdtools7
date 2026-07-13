@@ -21,11 +21,6 @@ struct
 
   module CS = ConstraintSolver.No(V)
 
-  let is_amo = function
-    | AMO _ -> true
-    | _ -> false
-  ;;
-
   let pp_barrier_short = pp_barrier
   let reject_mixed = false
   let get_machsize _ = V.Cst.Scalar.machsize
@@ -39,6 +34,7 @@ struct
   let is_atomic = function
     | X | SC -> true
     | _ -> false
+  and is_exclusive _ = false
   ;;
 
   let is_acquire = function

@@ -61,16 +61,12 @@ module
       let read_reg_ord = read_reg Port.No
       and read_reg_data = read_reg Port.Data
       and read_reg_addr = read_reg Port.Addr
-      
+
       let read_mem sz a s ii =
         M.read_loc Port.No (mk_read sz false s) (A.Location_global a) ii
 
       let read_mem_atom sz a s ii =
         M.read_loc Port.No (mk_read sz true s) (A.Location_global a) ii
-
-
-(*    let read_mem_atom cop a ii =
-      M.read_loc (mk_read true cop) (A.Location_global a) ii *)
 
       let write_reg r v ii =
         M.mk_singleton_es (Act.Access (Dir.W, (A.Location_reg (ii.A.proc,r)), v, false, [], reg_sz)) ii

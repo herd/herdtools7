@@ -96,6 +96,7 @@ end = struct
   | Access (_,A.Location_global _,_,_,_) -> true
   | RMW _ -> true
   | _ -> false
+  and is_exclusive _ = false
 
   let to_fault _ = None
 

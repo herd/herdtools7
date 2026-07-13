@@ -16,7 +16,6 @@
 module Make (C:Arch_herd.Config) (V:Value.S) = struct
   include CBase
   (* Not so simple, should consider expressions... *)
-  let is_amo _ = assert false
 
   let pp_barrier_short = pp_barrier
   let reject_mixed = false

@@ -22,14 +22,6 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
   struct
     include RISCVBase
 
-    let is_amo = function
-      | Amo _ -> true
-      | INop|Ret|Li _|J _|Bcc _|Load _|Store _|LoadReserve _
-      | OpI _|OpI2 _|OpIW _|Op _|OpW _|OpA _
-      |StoreConditional _|FenceIns _
-      |AUIPC _| Ext _
-           -> false
-
     let pp_barrier_short = function
       | FenceI -> "fence.i"
       | FenceTSO -> "fence.tso"

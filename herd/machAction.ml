@@ -31,6 +31,7 @@ module type A = sig
   val dirty_sets : (string * (DirtyBit.my_t -> V.Cst.PteVal.t -> bool)) list
 
   val is_atomic : lannot -> bool
+  val is_exclusive : lannot -> bool
   val is_isync : barrier -> bool
   val pp_isync : string
 
@@ -286,12 +287,15 @@ end = struct
 
   let is_additional_mem _ = false
 
-  let is_atomic a = match a with
-  | Access (_,_,_,an,_,_,_) ->
-      is_mem a && A.is_atomic an
+  let do_is_annot pred a = match a with
+  | Access (_,_,_,an,_,_,_)|Amo (_,_,_,an,_,_,_) ->
+      is_mem a && pred an
   | Arch a ->
-     is_mem_arch_action a && A.is_atomic (A.ArchAction.get_lannot a)
+     is_mem_arch_action a && pred (A.ArchAction.get_lannot a)
   | _ -> false
+
+  let is_atomic = do_is_annot A.is_atomic
+  and is_exclusive = do_is_annot A.is_exclusive
 
   let is_tag = function
     | Access (_,_,_,_,_,_,Access.TAG) -> true

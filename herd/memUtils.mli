@@ -87,17 +87,21 @@ module Make : functor (S: SemExtra.S) -> sig
   val collect_loads_non_spec : S.event_structure -> S.event list LocEnv.t
 
   (*
-   * Collect atomic effects indexed by threads and by locations.
+   * Collect atomic and exclusive effects indexed by threads and by locations.
    * When given an event structure as argument, the function
-   * returns a pair [(maps,evts)], where:
-   *  + [maps] is a list of location maps, one per thread.
-   *    The values of this map are the atomic effects
-        of the given thread.
-   *  + [evts] is the list of spurious (atomic) effects.
+   * returns a tuple [(atms,excls,nexps)], where:
+   *  + [atms] is a list of location maps, one per thread.
+   *    The values of this map are the explicit atomic effects
+   *    of the given thread.
+   *  + [excls] is a list of exlusive effects, one per thread.
+   *  + [nexps] is the list of non-explicit (atomic) effects.
    *)
 
-  val collect_atomics :
-    S.event_structure -> (Proc.t * S.event list LocEnv.t) list * S.event list
+  val collect_atomics_and_exclusives :
+    S.event_structure ->
+      (Proc.t * S.event list LocEnv.t) list
+      * (Proc.t * S.event list) list
+      * S.event list
 
 (* Partition by location *)
   val partition_events : S.event_set -> S.event_set list

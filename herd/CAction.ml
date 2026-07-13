@@ -197,6 +197,7 @@ end = struct
   let is_atomic = function
     | Access (_,A.Location_global _,_,_,at,_) -> at
     | _ -> false
+  and is_exclusive _ = false
 
   let is_fault _ = false
 

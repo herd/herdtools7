@@ -395,17 +395,38 @@ let lift_proc_info i evts =
       | None -> Some (LocEnv.singleton loc [e])
       | Some m -> Some (LocEnv.accumulate loc e m)
 
-  let collect_atomics es =
-    let m,sp =
+  let accumulate_proc proc e =
+    IntMap.update proc @@
+      function
+      | None -> Some [e]
+      | Some es -> Some (e::es)
+
+  let collect_atomics_and_exclusives es =
+    let atms,excls,nexps =
       E.EventSet.fold
-        (fun e (m,sp as k) ->
+        (fun e (atms,excls,nexps as k) ->
            if E.is_atomic e then
              match E.proc_of e with
-             | None -> if E.is_spurious e then (m, e::sp) else k
-             | Some proc -> accumulate_loc_proc proc (get_loc e) e m, sp
+             | None ->
+                if E.is_spurious e then
+                  atms,excls,(e::nexps)
+                else k
+             | Some proc ->
+                 if E.is_explicit e then
+                   accumulate_loc_proc proc (get_loc e) e atms,excls,nexps
+                 else
+                   atms,excls,(e::nexps)
+           else if E.is_exclusive e then
+             match E.proc_of e with
+             | None ->
+                Warn.fatal
+                  "Exclusive effect %s must be issued by a thread"
+                  (E.debug_event_str e)
+             | Some proc ->
+                atms,accumulate_proc proc e excls,nexps
            else k)
-        es.E.events (IntMap.empty,[]) in
-    IntMap.bindings m,sp
+        es.E.events (IntMap.empty,IntMap.empty,[]) in
+    IntMap.bindings atms,IntMap.bindings excls,nexps
 
   let partition_events es =
     let env =

@@ -165,6 +165,11 @@ val group_iteri : ('a -> 'a -> int) -> (int -> 'a -> 'a list -> unit) -> 'a list
 (* Check that f yields the same result on all list elements *)
 val check_same : ('a -> 'a -> bool) -> ('b -> 'a) -> 'b list -> 'a option
 
+(* [doubleton_fold f k_) [x_1;..;x_n] k_0]
+   computes  [(f  (f (... (f (f k_0 x_1 x_2) x_1 x_3)) ...) x_{n-1} x_n))]
+   for all i,j where i in [1..n], j in [1..n], i < j *)
+val doubleton_fold : ('b -> 'a -> 'a -> 'b) -> 'b -> 'a list -> 'b
+
 (* Lift boolean connectors to predicates *)
 val (|||) : ('a -> bool) -> ('a -> bool) -> 'a -> bool
 val (&&&) : ('a -> bool) -> ('a -> bool) -> 'a -> bool

@@ -1,0 +1,12 @@
+Test A022 Forbidden
+States 3
+1:x5=0; 1:x13=1; 1:x15=0;
+1:x5=0; 1:x13=1; 1:x15=1;
+1:x5=1; 1:x13=1; 1:x15=1;
+Ok
+Witnesses
+Positive: 3 Negative: 0
+Condition ~exists (1:x5=1 /\ 1:x13=1 /\ 1:x15=0)
+Observation A022 Never 0 3
+Hash=59012c83b13704a1ae4f80decce7e06f
+
