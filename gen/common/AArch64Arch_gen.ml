@@ -238,6 +238,35 @@ let  plain = Plain None
 
 type atom = atom_acc * MachMixed.t option
 
+type rmw = LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas | AllAmo
+  (* `SafeAmo` unfolds to
+     `[Swp; Cas; LdOp A_ADD; StOp A_ADD]`, that is,
+     edges `[Amo.Swp; Amo.Cas; Amo.LdAdd; Amo.StAdd]` and
+     the corresponding instructions `[SWP; CAS; LDADD; STADD]`.
+     These edges, `Amo.R`, can be safely used to generate cycles.
+     That is, for any `Amo.R`,
+     (1) given a value `a` (of a location), e.g. 0,
+     (2) given the current operand `b`, e.g. 1, where `b` is picked
+     by `diy` internally from an incremental counter starting from 1,
+     then the result value of `a Amo.R b` should be
+     distinct from the initial value `a`. Hence we can distinguish
+     whether `Amo.R` takes effect by reading the value of `a Amo.R b`,
+     making it safe to use when generating tests.
+     A counterexample is
+     `diyone7 -arch AArch64 "PodWR Amo.LdClr Rfe PodRW Coe"`
+     ```
+     P0               | P1          ;
+     ...              | LDR W0,[X2] ;
+     MOV W4,#1        | ...         ;
+     LDCLR W4,W3,[X2] |             ;
+     exists (... /\ 0:X3=0 /\ 1:X0=0)
+     ```
+     Here the initial value is observed by `0:X3 = 0`, the instruction
+     calculates `0 LDCLR 1`, and the result is observed by `1:X1 = 0`.
+     The problem here is `1:X1 = 0:X3`, thus the test cannot
+     distinguish whether `LDCLR` or `Amo.LdClr` takes effect. *)
+  | SafeAmo
+
 module StructuredAtom = struct
   type access_order =
     (* Plain access order, as in `P` or the order part of `h0`. *)
@@ -623,6 +652,31 @@ module StructuredAtom = struct
     | PairAccess ((`Pa|`PaN|`PaIQ|`PaA),_),OrderPlain,R -> true
     | PairAccess ((`Pa|`PaN|`PaIL|`PaL),_),OrderPlain,W -> true
     | _ -> false
+
+  let applies_rmw rmw ar aw =
+    let ok_rw ar aw = match ar,aw with
+      | (None|Some {
+          access_type = (OrdinaryAccess|AccessSize _|CapaAccess);
+          access_order = (OrderPlain|OrderAcquire); }),
+        (None|Some {
+          access_type = (OrdinaryAccess|AccessSize _|CapaAccess);
+          access_order = (OrderPlain|OrderRelease); }) -> true
+      | _,_ -> false in
+    let ok_w ar aw = match ar,aw with
+      | (None|Some {
+          access_type = (OrdinaryAccess|AccessSize _|CapaAccess);
+          access_order = OrderPlain; }),
+        (None|Some {
+          access_type = (OrdinaryAccess|AccessSize _|CapaAccess);
+          access_order = (OrderPlain|OrderRelease); }) -> true
+      | _,_ -> false in
+    let same_mixed =
+      Misc.opt_eq MachMixed.equal
+        (get_access_atom ar) (get_access_atom aw) in
+    match rmw with
+    | LrSc -> ok_rw ar aw && (do_cu || same_mixed)
+    | Swp|Cas|LdOp _|AllAmo|SafeAmo -> ok_rw ar aw && same_mixed
+    | StOp _ -> ok_w ar aw && same_mixed
 
   let is_tthm fields =
     let open WPTE in
@@ -1274,34 +1328,14 @@ let expand_dp_dir (dir,_) = D.expand_dp_dir dir
 
 (* Read-Modify-Write *)
 module RMW = struct
-type rmw =  LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas | AllAmo
-  (* `SafeAmo` unfolds to
-     `[Swp; Cas; LdOp A_ADD; StOp A_ADD]`, that is,
-     edges `[Amo.Swp; Amo.Cas; Amo.LdAdd; Amo.StAdd]` and
-     the corresponding instructions `[SWP; CAS; LDADD; STADD]`.
-     These edges, `Amo.R`, can be safely used to generate cycles.
-     That is, for any `Amo.R`,
-     (1) given a value `a` (of a location), e.g. 0,
-     (2) given the current operand `b`, e.g. 1, where `b` is picked
-     by `diy` internally from an incremental counter starting from 1,
-     then the result value of `a Amo.R b` should be
-     distinct from the initial value `a`. Hence we can distinguish
-     whether `Amo.R` takes effect by reading the value of `a Amo.R b`,
-     making it safe to use when generating tests.
-     A counterexample is
-     `diyone7 -arch AArch64 "PodWR Amo.LdClr Rfe PodRW Coe"`
-     ```
-     P0               | P1          ;
-     ...              | LDR W0,[X2] ;
-     MOV W4,#1        | ...         ;
-     LDCLR W4,W3,[X2] |             ;
-     exists (... /\ 0:X3=0 /\ 1:X0=0)
-     ```
-     Here the initial value is observed by `0:X3 = 0`, the instruction
-     calculates `0 LDCLR 1`, and the result is observed by `1:X1 = 0`.
-     The problem here is `1:X1 = 0:X3`, thus the test cannot
-     distinguish whether `LDCLR` or `Amo.LdClr` takes effect. *)
-            | SafeAmo
+type nonrec rmw = rmw =
+  | LrSc
+  | LdOp of atomic_op
+  | StOp of atomic_op
+  | Swp
+  | Cas
+  | AllAmo
+  | SafeAmo
 
 type nonrec atom = atom
 
@@ -1359,30 +1393,12 @@ let fold_rmw_compat f r = f LrSc r
 
 (* Check legal anotation for AMO instructions and LxSx pairs *)
 
-let ok_rw ar aw =
-  match ar,aw with
-  | (Some ((Acq _|Plain _),_)|None),(Some ((Rel _|Plain _),_)|None)
-    -> true
-  | _ -> false
-
-let ok_w  ar aw =
-  match ar,aw with
-  | (Some (Plain _,_)|None),(Some ((Rel _|Plain _),_)|None)
-    -> true
-  | _ -> false
-
-let same_mixed (a1:atom option) (a2:atom option) =
-  let a1 = get_access_atom a1
-  and a2 = get_access_atom a2 in
-  Misc.opt_eq MachMixed.equal a1 a2
-
-let applies_atom_rmw rmw ar aw = match rmw with
-  | LrSc ->
-     ok_rw ar aw && (do_cu || same_mixed ar aw)
-  | Swp|Cas|LdOp _ | AllAmo | SafeAmo ->
-     ok_rw ar aw && same_mixed ar aw
-  | StOp _ ->
-     ok_w ar aw && same_mixed ar aw
+let applies_atom_rmw rmw ar aw =
+  let to_structured = function
+    | None -> None
+    | Some atom -> Some (StructuredAtom.of_legacy atom) in
+  let ar = to_structured ar and aw = to_structured aw in
+  StructuredAtom.applies_rmw rmw ar aw
 
 let show_rmw_reg = function
 | StOp _ -> false
