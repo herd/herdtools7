@@ -72,8 +72,6 @@ module type S = sig
   val pp_plain : string
   val pp_as_a : atom option
   val pp_atom : atom -> string
-  val fold_non_mixed : (atom -> 'a -> 'a) -> 'a -> 'a
-  val fold_mixed : (atom -> 'a -> 'a) -> 'a -> 'a
   val fold_atom : (atom -> 'a -> 'a) -> 'a -> 'a
   val worth_final : atom -> bool
   val varatom_dir : Code.dir -> (atom option -> 'a -> 'a) -> 'a -> 'a

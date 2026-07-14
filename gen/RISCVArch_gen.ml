@@ -98,8 +98,6 @@ module Make
         | None|Some (Mixed _) -> Mixed sz
         | Some (MO _|Atomic _ as a) -> a)
 
-   let fold_mixed f k = Mixed.fold_mixed (fun  mix r -> f (Mixed mix) r) k
-
    let fold_mo f k =
      let k = f Acq k in
      let k = f Rel k in
@@ -112,13 +110,10 @@ module Make
        (fun m1 k -> fold1 (fun m2 k -> f (Atomic (m1,m2)) k) k)
        k
 
-   let fold_non_mixed f k =
+   let fold_atom f k =
+     let k = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) k in
      let k = fold_mo (fun mo k -> f (MO mo) k) k in
      fold_rmw false f k
-
-   let fold_atom f k =
-     let k = fold_mixed f k in
-     fold_non_mixed f k
 
    let worth_final = function
      | Atomic _ -> true

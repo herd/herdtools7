@@ -530,6 +530,159 @@ module StructuredAtom = struct
     | c -> c
 
   let equal a1 a2 = compare a1 a2 = 0
+  let pp_mixed (sz,o) =
+    sprintf "%s%i" (MachSize.pp_short sz) o
+
+  let pp_atom_rw = function
+    | PP -> ""
+    | PL -> "L"
+    | AP -> "A"
+    | AL -> "AL"
+
+  let pp_order = function
+    | OrderPlain -> "P"
+    | OrderAcquire -> "A"
+    | OrderAcquirePc -> "Q"
+    | OrderRelease -> "L"
+    | OrderAtomic rw -> sprintf "X%s" (pp_atom_rw rw)
+
+  let pp_pair_opt = function
+    | `Pa -> ""
+    | `PaN -> "N"
+    | `PaIQ -> "IQ"
+    | `PaIL -> "IL"
+    | `PaA -> "A"
+    | `PaL -> "L"
+
+  let pp_pair_idx = function
+    | UnspecLoc -> ""
+
+  let pp = function
+    | { access_type = OrdinaryAccess; access_order = OrderPlain; } -> "P"
+    | { access_type = OrdinaryAccess; access_order; } -> pp_order access_order
+    | { access_type = AccessSize m; access_order = OrderPlain; } -> pp_mixed m
+    | { access_type = AccessSize m; access_order; } ->
+        sprintf "%s.%s" (pp_order access_order) (pp_mixed m)
+    | { access_type = CapaAccess; access_order = OrderPlain; } -> "Pc"
+    | { access_type = CapaAccess; access_order = OrderAcquire; } -> "Ac"
+    | { access_type = CapaAccess; access_order = OrderAcquirePc; } -> "Qc"
+    | { access_type = CapaAccess; access_order = OrderRelease; } -> "Lc"
+    | { access_type = CapaAccess; access_order = OrderAtomic _; } -> assert false
+    | { access_type = CapaTagAccess; access_order = OrderPlain; } -> "Ct"
+    | { access_type = CapaSealAccess; access_order = OrderPlain; } -> "Cs"
+    | { access_type = TagAccess; access_order = OrderPlain; } -> "T"
+    | { access_type = PteAccess Read; access_order = OrderPlain; } -> "Pte"
+    | { access_type = PteAccess Read; access_order = OrderAcquire; } -> "PteA"
+    | { access_type = PteAccess Read; access_order = OrderAcquirePc; } -> "PteQ"
+    | { access_type = PteAccess (Set p); access_order = OrderPlain; } ->
+        sprintf "Pte%s" (pp_w_pte p)
+    | { access_type = PteAccess (Set p); access_order = OrderRelease; } ->
+        sprintf "Pte%sL" (pp_w_pte p)
+    | { access_type = PteAccess (Set p); access_order = OrderAcquire; } ->
+        assert (p = WPTESet.singleton WPTE.HA) ; "PteHAA"
+    | { access_type = PteAccess (Set p); access_order = OrderAcquirePc; } ->
+        assert (p = WPTESet.singleton WPTE.HA) ; "PteHAQ"
+    | { access_type = NeonAccess n; access_order = OrderPlain; } -> SIMD.pp n
+    | { access_type = PairAccess (opt,idx); access_order = OrderPlain; } ->
+        sprintf "Pa%s%s" (pp_pair_opt opt) (pp_pair_idx idx)
+    | { access_type = InstrAccess; access_order = OrderPlain; } -> "I"
+    | { access_type =
+          PteAccess (ReadAcq|ReadAcqPc|SetRel _|ReadHAAcq|ReadHAAcqPc); _ } ->
+        assert false
+    | { access_type =
+          (CapaTagAccess|CapaSealAccess|TagAccess|PteAccess _
+          |NeonAccess _|PairAccess _|InstrAccess);
+        access_order = (OrderAcquire|OrderAcquirePc|OrderRelease|OrderAtomic _); } ->
+        assert false
+
+  let applies a d =
+    let open WPTE in
+    match a.access_type,a.access_order,d with
+    | NeonAccess SIMD.NeAcqPc,_,W
+    | NeonAccess SIMD.NeRel,_,R -> false
+    | (OrdinaryAccess|AccessSize _|CapaAccess),(OrderAcquire|OrderAcquirePc),R -> true
+    | (OrdinaryAccess|AccessSize _|CapaAccess),OrderRelease,W -> true
+    | PteAccess Read,(OrderPlain|OrderAcquire|OrderAcquirePc),R -> true
+    | PteAccess (Set p),OrderPlain,R when WPTESet.mem HA p -> true
+    | PteAccess (Set p),(OrderAcquire|OrderAcquirePc),R
+      when p = WPTESet.singleton HA -> true
+    | PteAccess (Set _),(OrderPlain|OrderRelease),W -> true
+    | InstrAccess,OrderPlain,R -> true
+    | (OrdinaryAccess|AccessSize _|CapaAccess),OrderPlain,(R|W) -> true
+    | (OrdinaryAccess|AccessSize _),OrderAtomic _,(R|W) -> true
+    | (TagAccess|CapaTagAccess|CapaSealAccess|NeonAccess _),OrderPlain,(R|W) ->
+        true
+    | PairAccess ((`Pa|`PaN|`PaIQ|`PaA),_),OrderPlain,R -> true
+    | PairAccess ((`Pa|`PaN|`PaIL|`PaL),_),OrderPlain,W -> true
+    | _ -> false
+
+  let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
+
+  let fold_access_order f r =
+    let r = f OrderPlain r in
+    let r = f OrderAcquire r in
+    let r = f OrderAcquirePc r in
+    let r = f OrderRelease r in
+    fold_atom_rw (fun rw -> f (OrderAtomic rw)) r
+
+  let fold_pte_access f r =
+    let open WPTE in
+    let fold_set set r =
+      f (PteAccess (Set set)) r in
+    let r =
+      List.fold_left
+        (fun r pte -> fold_set (WPTESet.singleton pte) r)
+        r WPTE.all in
+    r
+    |> f (PteAccess Read)
+
+  let fold_neon_access fold f r =
+    fold (fun n -> f (NeonAccess n)) r
+
+  let fold_pair_access f r =
+    let add opt = f (PairAccess (opt,UnspecLoc)) in
+    r |> add `Pa |> add `PaN |> add `PaIQ |> add `PaIL |> add `PaA |> add `PaL
+
+  let fold_mixed f r =
+    let open MachSize in
+    let get_off =
+      (if C.fullmixed then get_off else get_off_reduced) C.naturalsize in
+    let fold_size sz r =
+      List.fold_right (fun o r -> f (sz,o) r) (get_off sz) r in
+    r |> fold_size Byte |> fold_size Short |> fold_size Word
+      |> fold_size Quad |> fold_size S128
+
+  let fold_access_type f r =
+    let r = f OrdinaryAccess r in
+    let r = if do_mixed then fold_mixed (fun m -> f (AccessSize m)) r else r in
+    let r = if do_kvm then fold_pte_access f r else r in
+    let r = if do_neon then fold_neon_access SIMD.fold_neon f r else r in
+    let r = if do_sve then fold_neon_access SIMD.fold_sve f r else r in
+    let r = if do_sme then fold_neon_access SIMD.fold_sme f r else r in
+    let r = if do_mixed then r else fold_pair_access f r in
+    let r = if do_memtag then f TagAccess r else r in
+    let r = if do_self then f InstrAccess r else r in
+    if do_morello then
+      r
+      |> f CapaAccess
+      |> f CapaTagAccess
+      |> f CapaSealAccess
+    else r
+
+  let fold f r =
+    fold_access_type
+      (fun access_type ->
+        fold_access_order
+          (fun access_order r ->
+            let atom = make access_type access_order in
+            let is_component = match access_type,access_order with
+            | PteAccess _,(OrderAcquire|OrderAcquirePc|OrderRelease|OrderAtomic _) ->
+                false
+            | _,_ -> true in
+            if is_component && is_valid atom && (applies atom R || applies atom W)
+            then f atom r
+            else r))
+      r
 
 end
 
@@ -833,103 +986,10 @@ let is_tthm fields =
          let plain = plain
        end)
 
-   let fold_mixed f r =
-     if do_mixed then
-       Mixed.fold_mixed
-         (fun m r -> f (Plain None,Some m) r)
-         r
-     else
-       r
-
-   let fold_pte f r =
-     if do_kvm then
-       let open WPTE in
-       let fold_singleton_wpte f r =
-         List.fold_left (fun acc pte -> f (WPTESet.singleton pte) acc) r WPTE.all in
-       let fold_pte_set fs r = r |> f (SetRel fs) |> f (Set fs) in
-       r |> fold_singleton_wpte fold_pte_set |> f Read |> f ReadAcq |> f ReadAcqPc
-         |> f ReadHAAcq |> f ReadHAAcqPc
-     else r
-
-   let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
-
-   let fold_tag =
-     if do_memtag then fun f r -> f Tag r
-     else fun _f r -> r
-
-   let fold_morello =
-     if do_morello then fun f r -> f CapaSeal (f CapaTag r)
-     else fun _f r -> r
-
-   let fold_neon =
-     if do_neon then
-       fun f -> SIMD.fold_neon (fun n -> f (Neon n))
-     else
-       fun _ r -> r
-
-   let fold_sve =
-     if do_sve then
-       fun f -> SIMD.fold_sve (fun n -> f (Neon n))
-     else
-       fun _ r -> r
-
-   let fold_sme =
-     if do_sme then
-       fun f -> SIMD.fold_sme (fun n -> f (Neon n))
-     else
-       fun _ r -> r
-
-      let fold_pair f r =
-        if do_mixed then r
-        else
-          let f opt idx r =
-            f (Pair (opt, idx)) r in
-          r |>
-          f `Pa UnspecLoc |>
-          f `PaN UnspecLoc |>
-          f `PaIQ UnspecLoc |>
-          f `PaIL UnspecLoc |>
-          f `PaA UnspecLoc |>
-          f `PaL UnspecLoc
-
-      let fold_acc_opt o f r =
-        let r = f (Acq o) r in
-        let r = f (AcqPc o) r in
-        let r = f (Rel o) r in
-        r
-
-   let fold_self f r = if do_self then f Instr r else r
-
-   let fold_acc mixed f r =
-     let r = if mixed then r else fold_pte (fun p r -> f (Pte p) r) r in
-     let r = fold_morello f r in
-     let r = fold_tag f r in
-     let r = fold_neon f r in
-     let r = fold_sve f r in
-     let r = fold_sme f r in
-     let r = fold_pair f r in
-     let r = fold_acc_opt None f r in
-     let r = fold_self f r in
-     let r =
-       if do_morello then
-         let r = f (Plain (Some Capability)) r in
-         let r = fold_acc_opt (Some Capability) f r in
-         r
-       else r in
-     let r = fold_atom_rw (fun rw -> f (Atomic rw)) r in
-     r
-
-   let fold_non_mixed f r = fold_acc false (fun acc r -> f (acc,None) r) r
-
    let fold_atom f r =
-     let r = fold_non_mixed f r in
-     if do_mixed then
-       fold_acc true
-         (fun acc r -> Mixed.fold_mixed (fun m r -> f (acc,Some m) r) r)
-         (Mixed.fold_mixed
-            (fun m r -> f (Plain None,Some m) r)
-            r)
-     else r
+     StructuredAtom.fold
+       (fun atom r -> f (StructuredAtom.to_legacy atom) r)
+       r
 
    let worth_final (a,_) = match a with
      | Atomic _ -> true
@@ -1332,17 +1392,6 @@ let pp_rmw compat = function
   | AllAmo -> sprintf "Amo"
   | SafeAmo -> sprintf "Amo.Safe"
 
-let equal_aop op1 op2 = match op1,op2 with
-  | A_ADD,A_ADD
-  | A_EOR,A_EOR
-  | A_SET,A_SET
-  | A_CLR,A_CLR
-  | A_SMAX,A_SMAX
-  | A_SMIN,A_SMIN
-  | A_UMAX,A_UMAX
-  | A_UMIN,A_UMIN -> true
-  | (A_ADD|A_EOR|A_SET|A_CLR|A_SMAX|A_SMIN|A_UMAX|A_UMIN),_ -> false
-
 let equal_rmw rmw1 rmw2 = match rmw1,rmw2 with
   | LrSc,LrSc
   | Swp,Swp
@@ -1350,7 +1399,7 @@ let equal_rmw rmw1 rmw2 = match rmw1,rmw2 with
   | AllAmo,AllAmo
   | SafeAmo,SafeAmo -> true
   | LdOp op1,LdOp op2
-  | StOp op1,StOp op2 -> equal_aop op1 op2
+  | StOp op1,StOp op2 -> atomic_op_equal op1 op2
   | (LrSc|LdOp _|StOp _|Swp|Cas|AllAmo|SafeAmo),_ -> false
 
 let is_one_instruction = function

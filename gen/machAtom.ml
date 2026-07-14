@@ -67,12 +67,9 @@ module Make(C:Config) = struct
        | None|Some (Mixed _) -> Mixed sz
        | Some (Atomic|Reserve as a) -> a)
 
-  let fold_mixed f r = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) r
-  let fold_non_mixed f r =  f Reserve (f Atomic r)
-
   let fold_atom f r =
-    let r = fold_mixed f r in
-    fold_non_mixed f r
+    let r = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) r in
+    f Reserve (f Atomic r)
 
   let worth_final = function
     | Atomic -> true
