@@ -586,6 +586,23 @@ module StructuredAtom = struct
         access_order = (OrderAcquire|OrderAcquirePc|OrderRelease|OrderAtomic _); } ->
         assert false
 
+  let get_access_atom = function
+    | None -> None
+    | Some { access_type = AccessSize m; _ } -> Some m
+    | Some _ -> None
+
+  let set_access_atom atom m =
+    match atom with
+    | None -> Some (make (AccessSize m) OrderPlain)
+    | Some ({ access_type = (OrdinaryAccess|AccessSize _); _ } as atom) ->
+        Some { atom with access_type = AccessSize m }
+    | Some atom -> Some atom
+
+  let overlap a1 a2 =
+    match a1.access_type,a2.access_type with
+    | AccessSize sz1,AccessSize sz2 -> MachMixed.overlap sz1 sz2
+    | _,_ -> true
+
   let applies a d =
     let open WPTE in
     match a.access_type,a.access_order,d with
@@ -980,12 +997,18 @@ let is_tthm fields =
      StructuredAtom.equal
        (StructuredAtom.of_legacy a1) (StructuredAtom.of_legacy a2)
 
-   include
-     MachMixed.Util
-       (struct
-         type at = atom_acc
-         let plain = plain
-       end)
+   let get_access_atom = function
+   | None -> None
+   | Some atom ->
+       StructuredAtom.get_access_atom (Some (StructuredAtom.of_legacy atom))
+
+   let set_access_atom atom m =
+     let atom = match atom with
+     | None -> None
+     | Some atom -> Some (StructuredAtom.of_legacy atom) in
+     match StructuredAtom.set_access_atom atom m with
+     | None -> None
+     | Some atom -> Some (StructuredAtom.to_legacy atom)
 
    let fold_atom f r =
      StructuredAtom.fold
@@ -1012,10 +1035,9 @@ let is_tthm fields =
      | Some atom -> Some (StructuredAtom.to_legacy atom)
      | None -> None
 
-   let overlap_atoms a1 a2 = match a1,a2 with
-     | ((_,None),(_,_))|((_,_),(_,None)) -> true
-     | ((_,Some sz1),(_,Some sz2)) ->
-         MachMixed.overlap  sz1 sz2
+   let overlap_atoms a1 a2 =
+     StructuredAtom.overlap
+       (StructuredAtom.of_legacy a1) (StructuredAtom.of_legacy a2)
 
    let neon_as_integers =
      let open SIMD in
@@ -1036,9 +1058,9 @@ let is_tthm fields =
 (* Mixed size *)
 (**************)
 
-   let tr_value ao v = match ao with
-   | None| Some (_,None) -> v
-   | Some (_,Some (sz,_)) -> Mixed.tr_value sz v
+   let tr_value ao v = match get_access_atom ao with
+   | None -> v
+   | Some (sz,_) -> Mixed.tr_value sz v
 
    module ValsMixed =
      MachMixed.Vals
@@ -1047,25 +1069,13 @@ let is_tthm fields =
          let endian = endian
        end)(Value)
 
-let overwrite_value v ao w = match ao with
-| None
-| Some
-    ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|
-    Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _|Instr),None)
-  -> w (* total overwrite *)
-| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Neon _|Instr),Some (sz,o)) ->
-   ValsMixed.overwrite_value v sz o w
-| Some ((Tag|CapaTag|CapaSeal|Pte _|Pair _),Some _) ->
-    assert false
+let overwrite_value v ao w = match get_access_atom ao with
+| None -> w (* total overwrite *)
+| Some (sz,o) -> ValsMixed.overwrite_value v sz o w
 
- let extract_value v ao = match ao with
-  | None
-  | Some
-      ((Atomic _|Acq _|AcqPc _|Rel _|Plain _
-        |Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _|Instr),None) -> v
-  | Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Neon _),Some (sz,o)) ->
-     ValsMixed.extract_value v sz o
-  | Some ((Pte _|Pair _|Instr),Some _) -> assert false
+ let extract_value v ao = match get_access_atom ao with
+ | None -> v
+ | Some (sz,o) -> ValsMixed.extract_value v sz o
 
 (* Wide accesses *)
 
