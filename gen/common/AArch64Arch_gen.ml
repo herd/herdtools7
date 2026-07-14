@@ -632,6 +632,14 @@ module StructuredAtom = struct
     | AccessSize sz1,AccessSize sz2 -> MachMixed.overlap sz1 sz2
     | _,_ -> true
 
+  let is_ifetch = function
+    | Some { access_type = InstrAccess; _ } -> true
+    | _ -> false
+
+  let is_pair = function
+    | Some { access_type = PairAccess _; _ } -> true
+    | _ -> false
+
   let applies a d =
     let open WPTE in
     match a.access_type,a.access_order,d with
@@ -1015,9 +1023,11 @@ let instr_atom = Some (Instr,None)
 let applies_atom atom d =
   StructuredAtom.applies (StructuredAtom.of_legacy atom) d
 
-let is_ifetch a = match a with
-| Some (Instr,_) -> true
-| _ -> false
+let is_ifetch atom =
+  let atom = match atom with
+  | None -> None
+  | Some atom -> Some (StructuredAtom.of_legacy atom) in
+  StructuredAtom.is_ifetch atom
 
 let is_tthm fields =
   let open WPTE in
@@ -1143,10 +1153,11 @@ let overwrite_value v ao w = match get_access_atom ao with
         | _ -> None)
        a
 
-   let is_pair a =
-     match a with
-     | Some (Pair _,_) -> true
-     | Some _|None -> false
+   let is_pair atom =
+     let atom = match atom with
+     | None -> None
+     | Some atom -> Some (StructuredAtom.of_legacy atom) in
+     StructuredAtom.is_pair atom
 
   let get_machine_feature atom =
     let open WPTE in
