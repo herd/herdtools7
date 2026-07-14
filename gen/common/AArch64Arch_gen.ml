@@ -241,15 +241,6 @@ type atom_pte =
 
 let pp_w_pte ws = WPTESet.pp_str "." WPTE.pp ws
 
-let pp_atom_pte = function
-  | Read -> ""
-  | ReadAcq -> "A"
-  | ReadAcqPc -> "Q"
-  | ReadHAAcq -> "HAA"
-  | ReadHAAcqPc -> "HAQ"
-  | Set set -> pp_w_pte set
-  | SetRel set -> pp_w_pte set ^"L"
-
 type neon_opt = SIMD.atom
 
 type pair_idx = UnspecLoc
@@ -905,27 +896,6 @@ let is_tthm fields =
 (* Annotation A is taken by load aquire *)
    let pp_as_a = None
 
-   let pp_atom_rw = function
-     | PP -> ""
-     | PL -> "L"
-     | AP -> "A"
-     | AL -> "AL"
-
-   let pp_opt = function
-     | None -> ""
-     | Some Capability -> "c"
-
-   let pp_pair_opt = function
-     | `Pa -> ""
-     | `PaN -> "N"
-     | `PaIQ -> "IQ"
-     | `PaIL -> "IL"
-     | `PaA -> "A"
-     | `PaL -> "L"
-
-   and pp_pair_idx = function
-     | UnspecLoc -> ""
-
    let pair_opt_to_ld : [ld_pair_opt | st_pair_opt] -> ld_pair_opt = function
      | `Pa -> `Pa | `PaN -> `PaN | `PaIQ -> `PaIQ | `PaA -> `PaA
      | `PaIL | `PaL -> assert false
@@ -934,39 +904,13 @@ let is_tthm fields =
      | `Pa -> `Pa | `PaN -> `PaN | `PaIL -> `PaIL | `PaL -> `PaL
      | `PaIQ | `PaA -> assert false
 
-   let pp_atom_acc = function
-     | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
-     | Rel o -> sprintf "L%s" (pp_opt o)
-     | Acq o -> sprintf "A%s" (pp_opt o)
-     | AcqPc o -> sprintf "Q%s" (pp_opt o)
-     | Plain o -> sprintf "P%s" (pp_opt o)
-     | Tag -> "T"
-     | CapaTag -> "Ct"
-     | CapaSeal -> "Cs"
-     | Pte p -> sprintf "Pte%s" (pp_atom_pte p)
-     | Neon n -> SIMD.pp n
-     | Pair (opt,idx) ->
-         sprintf "Pa%s%s" (pp_pair_opt opt) (pp_pair_idx idx)
-     | Instr -> "I"
+   let pp_atom_acc atom =
+     StructuredAtom.pp (StructuredAtom.of_legacy (atom,None))
 
-   let pp_atom (a,m) = match a with
-   | Plain o ->
-      let prefix = match o with
-      | None -> ""
-      | Some Capability -> "Pc" in
-       begin
-         match m with
-         | None -> prefix
-         | Some m ->
-            if String.length prefix > 0
-            then sprintf "%s.%s" prefix (Mixed.pp_mixed m)
-            else Mixed.pp_mixed m
-       end
-   | _ ->
-     let pp_acc = pp_atom_acc a in
-     match m with
-     | None -> pp_acc
-     | Some m -> sprintf "%s.%s" pp_acc  (Mixed.pp_mixed m)
+   let pp_atom atom =
+     let atom = StructuredAtom.of_legacy atom in
+     if StructuredAtom.equal atom StructuredAtom.plain then ""
+     else StructuredAtom.pp atom
 
    let compare_atom a1 a2 =
      StructuredAtom.compare
