@@ -52,11 +52,25 @@ module ScopeGen = ScopeGen.NoGen
 
 (* AArch64 has more atoms that others *)
 let bellatom = false
-module SIMD = struct
+module SIMD : sig
 
   type atom = SmV|SmH
              |SvV|Sv1|Sv2i|Sv3i|Sv4i
              |NeP|NeAcqPc|NeRel|Ne1|Ne2|Ne3|Ne4|Ne2i|Ne3i|Ne4i|NePa|NePaN
+
+  include Atom.SIMD with type atom := atom
+
+  val fold_neon : (atom -> 'a -> 'a) -> 'a -> 'a
+  val fold_sve : (atom -> 'a -> 'a) -> 'a -> 'a
+  val fold_sme : (atom -> 'a -> 'a) -> 'a -> 'a
+  val nelements : atom -> int
+end = struct
+
+  type atom = SmV|SmH
+             |SvV|Sv1|Sv2i|Sv3i|Sv4i
+             |NeP|NeAcqPc|NeRel|Ne1|Ne2|Ne3|Ne4|Ne2i|Ne3i|Ne4i|NePa|NePaN
+
+  let compare (a1 : atom) (a2 : atom) = Stdlib.compare a1 a2
 
   let fold_neon f r = r |>
     f NeAcqPc |> f NeRel |>
@@ -151,6 +165,8 @@ module SIMD = struct
 end
 
 type atom_rw =  PP | PL | AP | AL
+let compare_atom_rw (rw1 : atom_rw) (rw2 : atom_rw) = Stdlib.compare rw1 rw2
+
 type capa = Capability
 type capa_opt = capa option
 
@@ -279,10 +295,18 @@ module StructuredAtom : sig
   val instr : t
   val to_legacy : t -> atom
   val of_legacy : atom -> t
+  val compare : t -> t -> int
+  val equal : t -> t -> bool
 end = struct
   type access_read = [ `Plain | `Acquire | `AcquirePC ]
   type access_write = [ `Plain | `Release ]
   type access_order = [ access_read | access_write ]
+  let compare_access_order (o1 : access_order) (o2 : access_order) =
+    Stdlib.compare o1 o2
+  let compare_mixed (sz1,o1) (sz2,o2) =
+    match MachSize.compare sz1 sz2 with
+    | 0 -> Misc.int_compare o1 o2
+    | c -> c
 
   type pte_access =
     | PteRead of access_read
@@ -292,6 +316,11 @@ end = struct
   type atomic_access =
     | AtomicOrdinary
     | AtomicAccessSize of MachMixed.t
+  let compare_atomic_access a1 a2 = match a1,a2 with
+    | AtomicOrdinary,AtomicOrdinary -> 0
+    | AtomicOrdinary,AtomicAccessSize _ -> -1
+    | AtomicAccessSize _,AtomicOrdinary -> 1
+    | AtomicAccessSize m1,AtomicAccessSize m2 -> compare_mixed m1 m2
 
   type t =
     (* Ordinary integer/general-purpose data access. *)
@@ -386,6 +415,73 @@ end = struct
     | (Plain (Some Capability)|Acq (Some Capability)|AcqPc (Some Capability)
       |Rel (Some Capability)|Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _|Instr),Some _ ->
         assert false
+
+  let compare_atom_pte p1 p2 =
+    let rank = function
+      | PteRead _ -> 0
+      | PteReadHA _ -> 1
+      | PteSet _ -> 2 in
+    match Misc.int_compare (rank p1) (rank p2) with
+    | 0 -> begin
+        match p1,p2 with
+        | PteRead o1,PteRead o2
+        | PteReadHA o1,PteReadHA o2 ->
+            compare_access_order
+              (o1 :> access_order) (o2 :> access_order)
+        | PteSet (o1,s1),PteSet (o2,s2) ->
+            Misc.pair_compare compare_access_order WPTESet.compare
+              ((o1 :> access_order),s1) ((o2 :> access_order),s2)
+        | _,_ -> assert false
+      end
+    | c -> c
+
+  let compare_pair_opt
+      (p1 : [ld_pair_opt | st_pair_opt])
+      (p2 : [ld_pair_opt | st_pair_opt]) =
+    Stdlib.compare p1 p2
+
+  let compare_pair_idx idx1 idx2 =
+    match idx1,idx2 with
+    | UnspecLoc,UnspecLoc -> 0
+
+  let access_rank atom =
+    match atom with
+    | OrdinaryAccess _ -> 0
+    | MixedSizeAccess _ -> 1
+    | MorelloAccess _ -> 2
+    | PteAccess _ -> 3
+    | NeonAccess _ -> 4
+    | AtomicAccess _ -> 5
+    | MorelloTagAccess -> 6
+    | MorelloSealAccess -> 7
+    | MemoryTagAccess -> 8
+    | PairAccess _ -> 9
+    | InstrAccess -> 10
+
+  let compare a1 a2 =
+    match Misc.int_compare (access_rank a1) (access_rank a2) with
+    | 0 -> begin match a1,a2 with
+        | OrdinaryAccess o1,OrdinaryAccess o2
+        | MorelloAccess o1,MorelloAccess o2 -> compare_access_order o1 o2
+        | MixedSizeAccess (o1,m1),MixedSizeAccess (o2,m2) ->
+            Misc.pair_compare compare_access_order compare_mixed (o1,m1) (o2,m2)
+        | PteAccess p1,PteAccess p2 -> compare_atom_pte p1 p2
+        | NeonAccess n1,NeonAccess n2 -> SIMD.compare n1 n2
+        | AtomicAccess (rw1,a1),AtomicAccess (rw2,a2) ->
+            Misc.pair_compare compare_atom_rw compare_atomic_access
+              (rw1,a1) (rw2,a2)
+        | PairAccess (p1,i1),PairAccess (p2,i2) ->
+            Misc.pair_compare compare_pair_opt compare_pair_idx
+              (p1,i1) (p2,i2)
+        | MorelloTagAccess,MorelloTagAccess
+        | MorelloSealAccess,MorelloSealAccess
+        | MemoryTagAccess,MemoryTagAccess
+        | InstrAccess,InstrAccess -> 0
+        | _,_ -> assert false
+      end
+    | c -> c
+
+  let equal a1 a2 = compare a1 a2 = 0
 
 end
 
@@ -674,9 +770,13 @@ let is_tthm fields =
      | None -> pp_acc
      | Some m -> sprintf "%s.%s" pp_acc  (Mixed.pp_mixed m)
 
-   let compare_atom = compare
+   let compare_atom a1 a2 =
+     StructuredAtom.compare
+       (StructuredAtom.of_legacy a1) (StructuredAtom.of_legacy a2)
 
-   let equal_atom a1 a2 = a1 = a2
+   let equal_atom a1 a2 =
+     StructuredAtom.equal
+       (StructuredAtom.of_legacy a1) (StructuredAtom.of_legacy a2)
 
    include
      MachMixed.Util
