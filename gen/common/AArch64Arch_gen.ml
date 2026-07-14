@@ -616,6 +616,80 @@ module StructuredAtom = struct
     | PairAccess ((`Pa|`PaN|`PaIL|`PaL),_),OrderPlain,W -> true
     | _ -> false
 
+  let is_tthm fields =
+    let open WPTE in
+    WPTESet.mem HD fields || WPTESet.mem HA fields
+
+  let to_bank = function
+    | { access_type = TagAccess; access_order = OrderPlain; } -> Code.Tag
+    | { access_type = PteAccess (Set p); access_order =
+          (OrderPlain|OrderAcquire|OrderAcquirePc|OrderRelease); }
+      when is_tthm p -> Code.Ord
+    | { access_type = PteAccess (Read|Set _); _ } -> Code.Pte
+    | { access_type = CapaTagAccess; access_order = OrderPlain; } -> Code.CapaTag
+    | { access_type = CapaSealAccess; access_order = OrderPlain; } -> Code.CapaSeal
+    | { access_type = NeonAccess n; access_order = OrderPlain; } -> Code.VecReg n
+    | { access_type = PairAccess (_,UnspecLoc); access_order = OrderPlain; } -> Code.Pair
+    | { access_type = InstrAccess; access_order = OrderPlain; } -> Code.Instr
+    | { access_type = (OrdinaryAccess|AccessSize _|CapaAccess); _ } -> Code.Ord
+    | _ -> assert false
+
+  let merge a1 a2 =
+    let open WPTE in
+    let merge_order o1 o2 = match o1,o2 with
+    | OrderPlain,o
+    | o,OrderPlain -> Some o
+    | o1,o2 when o1 = o2 -> Some o1
+    | _,_ -> None in
+    match a1,a2 with
+    | { access_type = OrdinaryAccess; access_order = OrderPlain; },
+      { access_type = InstrAccess; _ }
+    | { access_type = InstrAccess; _ },
+      { access_type = OrdinaryAccess; access_order = OrderPlain; } ->
+        None
+    | { access_type = OrdinaryAccess; access_order = OrderPlain; }, a
+    | a, { access_type = OrdinaryAccess; access_order = OrderPlain; } ->
+        Some a
+    | { access_type = AccessSize m; access_order = OrderPlain; },
+      { access_type = OrdinaryAccess; access_order; }
+    | { access_type = OrdinaryAccess; access_order; },
+      { access_type = AccessSize m; access_order = OrderPlain; } ->
+        Some (make (AccessSize m) access_order)
+    | { access_type = AccessSize m; access_order = o1; },
+      { access_type = OrdinaryAccess; access_order = o2; }
+      when o1 = o2 ->
+        Some (make (AccessSize m) o1)
+    | { access_type = OrdinaryAccess; access_order = o1; },
+      { access_type = AccessSize m; access_order = o2; }
+      when o1 = o2 ->
+        Some (make (AccessSize m) o1)
+    | { access_type = AccessSize m1; access_order = OrderPlain; },
+      { access_type = AccessSize m2; access_order; }
+      when m1 = m2 ->
+        Some (make (AccessSize m1) access_order)
+    | { access_type = AccessSize m1; access_order; },
+      { access_type = AccessSize m2; access_order = OrderPlain; }
+      when m1 = m2 ->
+        Some (make (AccessSize m1) access_order)
+    | { access_type = PteAccess p; access_order = OrderPlain; },
+      { access_type = OrdinaryAccess; access_order; }
+    | { access_type = OrdinaryAccess; access_order; },
+      { access_type = PteAccess p; access_order = OrderPlain; } ->
+        let atom = make (PteAccess p) access_order in
+        if is_valid atom then Some atom else None
+    | { access_type = PteAccess (Set set1); access_order = order1; },
+      { access_type = PteAccess (Set set2); access_order = order2; } ->
+        let set = WPTESet.union set1 set2 in
+        begin match merge_order order1 order2 with
+        | Some access_order
+          when contain_valid_pte_fields set || contain_valid_tthm_fields set ->
+            let atom = make (PteAccess (Set set)) access_order in
+            if is_valid atom then Some atom else None
+        | Some _|None -> None
+        end
+    | _,_ ->
+        if equal a1 a2 then Some a1 else None
+
   let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
 
   let fold_access_order f r =
@@ -876,25 +950,8 @@ module Mixed =
 let default_atom = Atomic PP,None
 let instr_atom = Some (Instr,None)
 
-let applies_atom (a,_) d =
-  let open WPTE in
-  match a,d with
-  | Neon SIMD.NeAcqPc,W
-  | Neon SIMD.NeRel,R -> false
-  | Acq _,R
-  | AcqPc _,R
-  | Rel _,W
-  | Pte (Read|ReadAcq|ReadAcqPc),R
-  | Instr, R
-  | (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _),(R|W)
-    -> true
-  | Pair ((`Pa|`PaN|`PaIQ|`PaA),_),R -> true
-  | Pair ((`Pa|`PaN|`PaIL|`PaL),_),W -> true
-  (* special case for TTHM HA for read *)
-  | Pte (Set p),R when WPTESet.mem HA p -> true
-  | Pte (ReadHAAcq|ReadHAAcqPc),R -> true
-  | Pte (Set _|SetRel _),W -> true
-  | _ -> false
+let applies_atom atom d =
+  StructuredAtom.applies (StructuredAtom.of_legacy atom) d
 
 let is_ifetch a = match a with
 | Some (Instr,_) -> true
@@ -1004,87 +1061,12 @@ let is_tthm fields =
    let varatom_dir _d f r = f None r
 
    let merge_atoms a1 a2 =
-   let open WPTE in
-   match a1,a2 with
-(* Plain and Instr do not merge *)
-   | ((Plain _,_),(Instr,_))
-   | ((Instr,_),(Plain _,_)) ->
-       None
-(* Eat Plain *)
-   | ((Plain None,None),a)
-   | (a,(Plain None,None)) ->
-       Some a
-(* Add size to ordinary annotations *)
-   | ((Plain None,(Some _ as sz)),
-      ((Acq None|AcqPc None|Rel None|Atomic _ as a),None))
-   | (((Acq None|AcqPc None|Rel None|Atomic _ as a),None),
-      (Plain None,(Some _ as sz)))
-     -> Some (a,sz)
-(* No sizes for Pte and tags *)
-   | (((Pte _|Tag),_),(_,Some _))
-   | ((_,Some _),((Pte _|Tag),_)) ->
-       None
-(* Merge Pte *)
-   | ((Pte (Read|ReadAcq),None),((Pte ReadAcq|Acq None),None))
-   | (((Acq None|Pte ReadAcq),None),(Pte (Read|ReadAcq),None))
-       -> Some (Pte ReadAcq,None)
-   | ((Pte (Read|ReadAcqPc),None),((Pte ReadAcqPc|AcqPc None),None))
-   | (((Pte ReadAcqPc|AcqPc None),None),(Pte (Read|ReadAcqPc),None))
-       -> Some (Pte ReadAcqPc,None)
-   (* A few special cases for TTHM HA on read *)
-   | ((Pte (Set p),None),((Pte ReadHAAcq|Acq None),None))
-   | (((Acq None|Pte ReadHAAcq),None),(Pte (Set p),None))
-     when p = WPTESet.singleton HA
-       -> Some (Pte ReadHAAcq,None)
-   | ((Pte ReadHAAcq,None),((Pte ReadHAAcq|Acq None),None))
-   | ((Acq None,None),(Pte ReadHAAcq,None))
-       -> Some (Pte ReadHAAcq,None)
-   | ((Pte (Set p),None),((Pte ReadHAAcqPc|AcqPc None),None))
-   | (((Pte ReadHAAcqPc|AcqPc None),None),(Pte (Set p),None))
-     when p = WPTESet.singleton HA
-       -> Some (Pte ReadHAAcqPc,None)
-   | ((Pte ReadHAAcqPc,None),((Pte ReadHAAcqPc|AcqPc None),None))
-   | ((AcqPc None,None),(Pte ReadHAAcqPc,None))
-       -> Some (Pte ReadHAAcqPc,None)
-   (* END special cases for TTHM HA on read *)
-   | ((Pte (Set set|SetRel set),None),(Rel None,None))
-   | ((Rel None,None),(Pte (Set set|SetRel set),None))
-       -> Some (Pte (SetRel set),None)
-   | (Pte (Set set1),None),(Pte (Set set2),None)
-     -> let set = WPTESet.union set1 set2 in
-        if contain_valid_pte_fields set
-          || contain_valid_tthm_fields set
-        then Some (Pte (Set set),None)
-        else None
-   | ((Pte (Set set1),None),(Pte (SetRel set2),None))
-   | ((Pte (SetRel set1),None),(Pte (Set set2),None))
-   | ((Pte (SetRel set1),None),(Pte (SetRel set2),None))
-     -> let set = WPTESet.union set1 set2 in
-        if contain_valid_pte_fields set
-          || contain_valid_tthm_fields set
-        then Some (Pte (SetRel set),None)
-        else None
-(* Add size when (ordinary) annotation equal *)
-   | ((Acq None as a,None),(Acq None,(Some _ as sz)))
-   | ((Acq None as a,(Some _ as sz)),(Acq None,None))
-   | ((AcqPc None as a,None),(AcqPc None,(Some _ as sz)))
-   | ((AcqPc None as a,(Some _ as sz)),(AcqPc None,None))
-   | ((Rel None as a,None),(Rel None,(Some _ as sz)))
-   | ((Rel None as a,(Some _ as sz)),(Rel None,None))
-   | ((Atomic PP as a,None),(Atomic PP,(Some _ as sz)))
-   | ((Atomic PP as a,(Some _ as sz)),(Atomic PP,None))
-   | ((Atomic AP as a,None),(Atomic AP,(Some _ as sz)))
-   | ((Atomic AP as a,(Some _ as sz)),(Atomic AP,None))
-   | ((Atomic PL as a,None),(Atomic PL,(Some _ as sz)))
-   | ((Atomic PL as a,(Some _ as sz)),(Atomic PL,None))
-   | ((Atomic AL as a,None),(Atomic AL,(Some _ as sz)))
-   | ((Atomic AL as a,(Some _ as sz)),(Atomic AL,None))
-     -> Some (a,sz)
-(* Remove plain when size equal *)
-   | ((Plain None,sz1),(a,sz2))
-   | ((a,sz1),(Plain None,sz2)) when sz1=sz2 -> Some (a,sz1)
-   | _,_ ->
-       if equal_atom a1 a2 then Some a1 else None
+     match
+       StructuredAtom.merge
+         (StructuredAtom.of_legacy a1) (StructuredAtom.of_legacy a2)
+     with
+     | Some atom -> Some (StructuredAtom.to_legacy atom)
+     | None -> None
 
    let overlap_atoms a1 a2 = match a1,a2 with
      | ((_,None),(_,_))|((_,_),(_,None)) -> true
@@ -1102,20 +1084,8 @@ let is_tthm fields =
      | Sv3i | Ne3 | Ne3i -> 12
      | Sv4i | Ne4 | Ne4i -> 16
 
-   let atom_to_bank = function
-   | Tag,None -> Code.Tag
-   (* TTHM feature only apply to ordinary R/W *)
-   | Pte (Set p|SetRel p),None when is_tthm p -> Code.Ord
-   | Pte (ReadHAAcq|ReadHAAcqPc),None -> Code.Ord
-   | Pte _,None -> Code.Pte
-   | CapaTag,None -> Code.CapaTag
-   | CapaSeal,None -> Code.CapaSeal
-   | Neon n,None -> Code.VecReg n
-   | Pair (_,UnspecLoc),_ -> Code.Pair
-   | Instr,_ -> Code.Instr
-   | (Tag|CapaTag|CapaSeal|Pte _|Neon _),Some _ -> assert false
-   | (Plain _|Acq _|AcqPc _|Rel _|Atomic _),_
-     -> Code.Ord
+   let atom_to_bank atom =
+     StructuredAtom.to_bank (StructuredAtom.of_legacy atom)
 
 
 (**************)
