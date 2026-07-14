@@ -1003,8 +1003,8 @@ module Mixed =
       let fullmixed = C.fullmixed
     end)(Value)
 
-let default_atom = Atomic PP,None
-let instr_atom = Some (Instr,None)
+let default_atom = StructuredAtom.to_legacy StructuredAtom.default
+let instr_atom = Some (StructuredAtom.to_legacy StructuredAtom.instr)
 
 let applies_atom atom d =
   StructuredAtom.applies (StructuredAtom.of_legacy atom) d
