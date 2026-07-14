@@ -321,6 +321,8 @@ module StructuredAtom : sig
   val get_access_atom : t option -> MachMixed.t option
   val set_access_atom : t option -> MachMixed.t -> t option
   val overlap : t -> t -> bool
+  val is_ifetch : t option -> bool
+  val is_pair : t option -> bool
   val applies : t -> dir -> bool
   val applies_rmw : rmw -> t option -> t option -> bool
   val is_tthm : WPTESet.t -> bool
@@ -583,6 +585,14 @@ end = struct
     match get_access_atom (Some a1),get_access_atom (Some a2) with
     | Some sz1,Some sz2 -> MachMixed.overlap sz1 sz2
     | _,_ -> true
+
+  let is_ifetch = function
+    | Some InstrAccess -> true
+    | _ -> false
+
+  let is_pair = function
+    | Some (PairAccess _) -> true
+    | _ -> false
 
   let applies a d =
     let open WPTE in
@@ -961,9 +971,11 @@ let instr_atom = Some (Instr,None)
 let applies_atom atom d =
   StructuredAtom.applies (StructuredAtom.of_legacy atom) d
 
-let is_ifetch a = match a with
-| Some (Instr,_) -> true
-| _ -> false
+let is_ifetch atom =
+  let atom = match atom with
+  | None -> None
+  | Some atom -> Some (StructuredAtom.of_legacy atom) in
+  StructuredAtom.is_ifetch atom
 
 let is_tthm fields =
   let open WPTE in
@@ -1089,10 +1101,11 @@ let overwrite_value v ao w = match get_access_atom ao with
         | _ -> None)
        a
 
-   let is_pair a =
-     match a with
-     | Some (Pair _,_) -> true
-     | Some _|None -> false
+   let is_pair atom =
+     let atom = match atom with
+     | None -> None
+     | Some atom -> Some (StructuredAtom.of_legacy atom) in
+     StructuredAtom.is_pair atom
 
   let get_machine_feature atom =
     let open WPTE in
