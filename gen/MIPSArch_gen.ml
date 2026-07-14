@@ -60,6 +60,12 @@ let var_fence f r = f default r
 
 type dp = ADDR | DATA | CTRL
 
+let equal_dp dp1 dp2 = match dp1,dp2 with
+  | ADDR,ADDR
+  | DATA,DATA
+  | CTRL,CTRL -> true
+  | (ADDR|DATA|CTRL),_ -> false
+
 let pp_dp = function
   | ADDR -> "Addr"
   | DATA -> "Data"
