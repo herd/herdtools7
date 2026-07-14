@@ -1,0 +1,14 @@
+This test asks whether the following execution is architecturally Allowed:
+
+\begin{itemize}
+  \item The Load instruction on P0, i.e. LDR W3,[X1], generates an Explicit Memory Read Effect of Location x;
+  \item The Store instruction on P1, i.e. STR W0,[X1], generates an Explicit Memory Write Effect of Location x with value 2;
+  \item The Load instruction on P1, i.e. LDR W3,[X2], generates an Explicit Memory Read Effect of Location y;
+  \item The Store instruction on P2, i.e. STR W0,[X2], generates an Explicit Memory Write Effect of Location y with value 1;
+  \item The Load instruction on P3, i.e. LDR W4,[X2], generates an Explicit Memory Read Effect of Location y;
+  \item The Store instruction on P3, i.e. STR W5,[X1], generates an Explicit Memory Write Effect of Location x with value 1;
+  \item The value of x is 2 in the end, which means that the Explicit Memory Write Effect on P3 is Coherence-before the Explicit Memory Write Effect on P1;
+  \item The Register X3 on P0 holds the value 1 in the end, which means that the Explicit Memory Read Effect on P0 Reads-from the Explicit Memory Write Effect on P3;
+  \item The Register X3 on P1 holds the value 0 in the end, which means that the Explicit Memory Read Effect on P1 Reads-from the initial state, and therefore is Coherence-before the Explicit Memory Write Effect on P2;
+  \item The Register X4 on P3 holds the value 1 in the end, which means that the Explicit Memory Read Effect on P3 Reads-from the Explicit Memory Write Effect on P2.
+\end{itemize}
