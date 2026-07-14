@@ -67,8 +67,6 @@ module Make
    let is_ifetch _ = false
    let pp_plain = "P"
 
-   let pp_as_a = None
-
    let pp_mo = function
      | Rlx -> "P"
      | Acq -> "Aq"

@@ -1063,14 +1063,7 @@ let is_ifetch atom =
   | Some atom -> Some (StructuredAtom.of_legacy atom) in
   StructuredAtom.is_ifetch atom
 
-let is_tthm fields =
-  let open WPTE in
-    WPTESet.mem HD fields || WPTESet.mem HA fields
-
-   let pp_plain = "P"
-(* Annotation A is taken by load aquire *)
-   let pp_as_a = None
-
+   let pp_plain = StructuredAtom.pp StructuredAtom.plain
    let pair_opt_to_ld : [ld_pair_opt | st_pair_opt] -> ld_pair_opt = function
      | `Pa -> `Pa | `PaN -> `PaN | `PaIQ -> `PaIQ | `PaA -> `PaA
      | `PaIL | `PaL -> assert false
