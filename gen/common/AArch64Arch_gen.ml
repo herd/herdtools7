@@ -640,6 +640,26 @@ module StructuredAtom = struct
     | Some { access_type = PairAccess _; _ } -> true
     | _ -> false
 
+  let as_integers atom =
+    let neon_as_integers =
+      let open SIMD in
+      function
+      | NeP | NeAcqPc | NeRel -> 1
+      | NePa | NePaN -> 2
+      | SmV | SmH
+      | SvV | Sv1 | Ne1 -> 4
+      | Sv2i | Ne2 | Ne2i -> 8
+      | Sv3i | Ne3 | Ne3i -> 12
+      | Sv4i | Ne4 | Ne4i -> 16 in
+    match atom with
+    | Some { access_type = NeonAccess n; _ } ->
+        begin match neon_as_integers n with
+        | 1 -> None
+        | n -> Some n
+        end
+    | Some { access_type = PairAccess _; _ } -> Some 2
+    | Some _|None -> None
+
   let applies a d =
     let open WPTE in
     match a.access_type,a.access_order,d with
@@ -1103,17 +1123,6 @@ let is_tthm fields =
      StructuredAtom.overlap
        (StructuredAtom.of_legacy a1) (StructuredAtom.of_legacy a2)
 
-   let neon_as_integers =
-     let open SIMD in
-     function
-     | NeP | NeAcqPc | NeRel -> 1
-     | NePa | NePaN -> 2
-     | SmV | SmH
-     | SvV | Sv1  | Ne1 -> 4
-     | Sv2i | Ne2 | Ne2i -> 8
-     | Sv3i | Ne3 | Ne3i -> 12
-     | Sv4i | Ne4 | Ne4i -> 16
-
    let atom_to_bank atom =
      StructuredAtom.to_bank (StructuredAtom.of_legacy atom)
 
@@ -1143,15 +1152,11 @@ let overwrite_value v ao w = match get_access_atom ao with
 
 (* Wide accesses *)
 
-   let as_integers a =
-     Misc.seq_opt
-       (function
-        | Neon n,_ -> (match neon_as_integers n with
-                       | 1 -> None
-                       | n -> Some n)
-        | Pair _,_ -> Some 2
-        | _ -> None)
-       a
+   let as_integers atom =
+     let atom = match atom with
+     | None -> None
+     | Some atom -> Some (StructuredAtom.of_legacy atom) in
+     StructuredAtom.as_integers atom
 
    let is_pair atom =
      let atom = match atom with
