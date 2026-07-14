@@ -17,6 +17,7 @@
 module type SIMD = sig
     (* Atom particular for SIMD *)
     type atom
+    val compare : atom -> atom -> int
     val nregs : atom -> int
     val pp : atom -> string
 
