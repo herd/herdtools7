@@ -78,13 +78,7 @@ module Make
         | a,None -> pp_atom_acc a
         | a,Some m -> sprintf "%s%s" (pp_atom_acc a) (Mixed.pp_mixed m)
 
-      let fold_mixed f r =
-        Mixed.fold_mixed (fun mix r -> f (Plain,Some mix) r) r
-
       let fold_acc f k = f Atomic (f NonTemporal k)
-
-      let fold_non_mixed f r =
-        fold_acc (fun acc r -> f (acc,None) r) r
 
       let apply_mix f acc m r = match acc,m with
       | (NonTemporal,(None|Some ((MachSize.Quad|MachSize.Word),_)))
@@ -95,12 +89,13 @@ module Make
       | (NonTemporal,Some (MachSize.S128,_)) -> assert false
 
       let fold_atom f r =
+        let r = Mixed.fold_mixed (fun mix r -> f (Plain,Some mix) r) r in
         fold_acc
           (fun acc r ->
             Mixed.fold_mixed
               (fun m r -> apply_mix f acc (Some m) r)
               (f (acc,None) r))
-          (fold_mixed f r)
+          r
 
       let worth_final (a,_) = match a with
         | NonTemporal|Plain -> false

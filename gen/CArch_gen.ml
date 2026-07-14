@@ -42,8 +42,7 @@ include MachMixed.No
 let pp_plain = Code.plain
 let pp_as_a = Some SC
 let pp_atom = pp_mem_order_short
-
-let fold_non_mixed f k =
+let fold_atom f k =
   let k = f Acq k in
   let k = f Rel k in
   let k = f Acq_Rel k in
@@ -51,8 +50,6 @@ let fold_non_mixed f k =
   let k = f Rlx k in
   let k = f Con k in
   k
-
-let fold_atom = fold_non_mixed
 
 let worth_final _ = false
 
