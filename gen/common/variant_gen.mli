@@ -40,6 +40,8 @@ type t =
   | NoFault
 (* Synchronisation mode *)
   | Sync | Async
+(* Store-only mode *)
+  | StoreOnly
 (* Neon AArch64 extension *)
   | Neon
 (* SVE AArch64 extension *)
