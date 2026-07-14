@@ -69,15 +69,15 @@ let desc v = v.desc
 let annotated desc pos_start pos_end version =
   { desc; pos_start; pos_end; version; ty_opt = None }
 
-let add_dummy_annotation ?(version = default_version) desc =
+let add_dummy_pos ?(version = default_version) desc =
   annotated desc dummy_pos dummy_pos version
 
-let dummy_annotated = add_dummy_annotation ()
+let dummy_annotated = add_dummy_pos ()
 let to_pos pos = { pos with desc = (); ty_opt = None }
-let is_dummy_annotated x = x.pos_end == dummy_pos || x.pos_start == dummy_pos
+let is_dummy_pos x = x.pos_end == dummy_pos || x.pos_start == dummy_pos
 
 let add_pos_from_st pos desc =
-  if pos.desc == desc then pos else { pos with desc }
+  if pos.desc == desc then pos else { pos with desc; ty_opt = None }
 
 let add_pos_from pos desc = { pos with desc; ty_opt = None }
 
@@ -98,7 +98,7 @@ let map_annotated thing f = f thing.desc |> add_pos_from thing
 
 let add_maybe_loc ?loc thing =
   match loc with
-  | None -> add_dummy_annotation thing
+  | None -> add_dummy_pos thing
   | Some loc -> add_pos_from loc thing
 
 let add_pos_from_pos_of ((fname, lnum, cnum, enum), desc) =
@@ -188,16 +188,16 @@ let map2_desc f v1 v2 =
     pos_start = v1.pos_start;
     pos_end = v2.pos_end;
     version = v1.version;
-    ty_opt = (match v1.ty_opt with Some t -> Some t | None -> v2.ty_opt);
+    ty_opt = None;
   }
 
-let s_pass = add_dummy_annotation S_Pass
+let s_pass = add_dummy_pos S_Pass
 let s_then = map2_desc (fun s1 s2 -> S_Seq (s1, s2))
-let boolean = T_Bool |> add_dummy_annotation
-let string = T_String |> add_dummy_annotation
-let real = T_Real |> add_dummy_annotation
+let boolean = T_Bool |> add_dummy_pos
+let string = T_String |> add_dummy_pos
+let real = T_Real |> add_dummy_pos
 let integer' = T_Int UnConstrained
-let integer = integer' |> add_dummy_annotation
+let integer = integer' |> add_dummy_pos
 
 let well_constrained' ?(precision = Precision_Full) cs =
   T_Int (WellConstrained (cs, precision))
@@ -442,10 +442,10 @@ and pattern_matcher_equal eq (ps1, pk1) (ps2, pk2) =
   List.equal (pattern_equal eq) ps1 ps2 && pattern_kind_equal pk1 pk2
 
 let qualifier_equal (q1 : func_qualifier option) q2 = Option.equal ( = ) q1 q2
-let expr_of_var x = E_Var x |> add_dummy_annotation
+let expr_of_var x = E_Var x |> add_dummy_pos
 let binop op = map2_desc (fun e1 e2 -> E_Binop (op, e1, e2))
 let neg e = E_Unop (NEG, e) |> add_pos_from e
-let literal v = E_Literal v |> add_dummy_annotation
+let literal v = E_Literal v |> add_dummy_pos
 let expr_of_int i = literal (L_Int (Z.of_int i))
 let expr_of_z z = literal (L_Int z)
 let e_true = literal (L_Bool true) |> with_ty_annot boolean
@@ -539,11 +539,11 @@ let slice_as_single = function
   | Slice_Single e -> e
   | _ -> raise @@ Invalid_argument "slice_as_single"
 
-let discard_expr = E_Var "-" |> add_dummy_annotation
+let discard_expr = E_Var "-" |> add_dummy_pos
 let default_t_bits = T_Bits (discard_expr, [])
 
 let default_array_ty =
-  let ty = T_Named "-" |> add_dummy_annotation in
+  let ty = T_Named "-" |> add_dummy_pos in
   T_Array (discard_expr, ty)
 
 let identifier_of_decl d =

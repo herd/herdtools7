@@ -50,9 +50,6 @@ end
 (** {1 Position utils} *)
 (*---------------------*)
 
-val dummy_pos : Lexing.position
-(** A dummy position. *)
-
 val default_version : version
 (** The default version, [V1]. *)
 
@@ -63,19 +60,19 @@ val annotated : 'a -> position -> position -> version -> ('a, _) t_annotated
 val desc : ('a, _) t_annotated -> 'a
 (** [desc v] is [v.desc] *)
 
-val add_dummy_annotation : ?version:version -> 'a -> ('a, _) t_annotated
-(** Add a dummy annotation to a value.
+val add_dummy_pos : ?version:version -> 'a -> ('a, _) t_annotated
+(** [add_dummy_pos version term] returns [term] annotated with a dummy source
+    position and [None] as the type annotation.
 
     The default version is [default_version]. The default type annotation is
     [None]. *)
 
 val dummy_annotated : (unit, _) t_annotated
-(** A dummy annotation.
+(** A dummy annotation with a [None] type annotation. *)
 
-    Type annotation is always [None]. *)
-
-val is_dummy_annotated : _ t_annotated -> bool
-(** Returns true if its argument is annotated with [dummy_pos]. *)
+val is_dummy_pos : _ t_annotated -> bool
+(** [is_dummy_pos v] is true if [v] has the dummy position (that of
+    [Lexing.dummy_pos]). *)
 
 val to_pos : _ t_annotated -> (unit, _) t_annotated
 (** Removes the value from an annotated record.
@@ -102,10 +99,10 @@ val add_pos_from_st : ('a, 't) t_annotated -> 'a -> ('a, 't) t_annotated
 (** [add_pos_from_st a' a] is [a] with the location from [a'].
 
     If both arguments are physically equal, then the result is also physically
-    equal. *)
+    equal, otherwise the type annotation is set to [None]. *)
 
 val expr_ty_annot_from : src:(_, ty) t_annotated -> expr -> expr
-(** [expr_ty_annot_from ~src:a b] is the expression [b] with the type annotation
+(** [expr_ty_annot_from ~src:a e] is the expression [e] with the type annotation
     from [a]. *)
 
 val with_ty_annot : AST.ty -> ('term, ty) t_annotated -> ('term, ty) t_annotated
@@ -118,7 +115,7 @@ val map2_desc :
   ('c, 'ty) t_annotated
 (** [map2_desc f v1 v2] folds two annotated values via [f] and yields a value
     with positions ranging from the start of [v1] to the end of [v2] and the
-    first type annotation of [v1] and [v2] that is not [None]. *)
+    [None] type annotation. *)
 
 (** {1 Type utils} *)
 (*-----------------*)

@@ -439,7 +439,7 @@ let access :=
 
 let basic_lexpr :=
   | base=annotated(IDENTIFIER); ~=access;
-    { ( base, {access; slices=add_dummy_annotation ~version []} ) }
+    { ( base, {access; slices=add_dummy_pos ~version []} ) }
   | base=annotated(IDENTIFIER); ~=access; slices=annotated(slices);
     { ( base, {access; slices} ) }
 
@@ -554,7 +554,7 @@ let stmt :=
       | ~=local_decl_keyword; ~=decl_item; ~=ty_opt; EQ; ~=some(expr); < S_Decl   >
       | le=lexpr; EQ; e=expr;                                < S_Assign >
       | call=annotated(call); ~=setter_access; EQ; rhs=expr;
-        { desugar_setter call { access=setter_access; slices=add_dummy_annotation ~version [] } rhs }
+        { desugar_setter call { access=setter_access; slices=add_dummy_pos ~version [] } rhs }
       | call=annotated(call); ~=setter_access; slices=annotated(slices); EQ; rhs=expr;
         { desugar_setter call { access=setter_access; slices } rhs }
       | call=annotated(call); DOT; flds=bracketed(clist2(IDENTIFIER)); EQ; rhs=expr;
@@ -734,7 +734,7 @@ let opn [@internal true] := body=stmt_list0; EOF;
             parameters = [];
             body = SB_ASL body;
             return_type =
-              Some (T_Int UnConstrained |> add_dummy_annotation ~version);
+              Some (T_Int UnConstrained |> add_dummy_pos ~version);
             subprogram_type = ST_Function;
             recurse_limit = None;
             qualifier = None;

@@ -36,13 +36,6 @@ let undefined_identifier ~loc x =
 
 let invalid_expr e = fatal_from ~loc:e (Error.InvalidExpr e)
 let add_pos_from ~loc = add_pos_from loc
-let set_expr_type_annotation (t, e, ses) = (t, with_ty_annot t e, ses)
-
-(** [set_lexpr_type_annotation (lexpr_ty, lexpr, ses)] sets [lexpr_ty] as the
-    type annotation of [lexpr] and returns the updated assignable expression
-    together with [lexpr_ty] and [ses]. *)
-let set_lexpr_type_annotation (lexpr_ty, lexpr, ses) =
-  (lexpr_ty, with_ty_annot lexpr_ty lexpr, ses)
 
 let conflict ~loc expected provided =
   fatal_from ~loc (Error.ConflictingTypes (expected, provided))
@@ -1882,6 +1875,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   and annotate_expr env (e : expr) : ty * expr * SES.t =
     let () = if false then Format.eprintf "@[Annotating %a@]@." PP.pp_expr e in
     let here x = add_pos_from ~loc:e x and loc = to_pos e in
+    let set_expr_type_annotation (t, e, ses) = (t, with_ty_annot t e, ses) in
     set_expr_type_annotation
     @@
     match e.desc with
@@ -2490,6 +2484,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     let loc = to_pos le in
     let here x = add_pos_from ~loc x in
+    let set_lexpr_type_annotation (lexpr_ty, lexpr, ses) =
+      (lexpr_ty, with_ty_annot lexpr_ty lexpr, ses)
+    in
     set_lexpr_type_annotation
     @@
     match le.desc with
