@@ -39,13 +39,13 @@ let exprs : AST.expr enum =
   let ( let+ ) x f = map f x and ( and+ ) = ( ** ) in
   let e_binops exprs =
     let+ e1 = exprs and+ op = binops and+ e2 = exprs in
-    AST.E_Binop (op, e1, e2) |> ASTUtils.add_dummy_annotation
+    AST.E_Binop (op, e1, e2) |> ASTUtils.add_dummy_pos
   and e_unops exprs =
     let+ e = exprs and+ op = unops in
-    AST.E_Unop (op, e) |> ASTUtils.add_dummy_annotation
+    AST.E_Unop (op, e) |> ASTUtils.add_dummy_pos
   and e_conds exprs =
     let+ e = exprs in
-    AST.E_Cond (literal, literal, e) |> ASTUtils.add_dummy_annotation
+    AST.E_Cond (literal, literal, e) |> ASTUtils.add_dummy_pos
   in
   Fix.Memoize.Int.fix @@ fun exprs ->
   let exprs = pay exprs in

@@ -111,7 +111,7 @@ module Make (B : Backend.S) (C : Config) = struct
       let pp_stack fmt stack =
         let stack = List.rev stack in
         let pp_call fmt call =
-          if is_dummy_annotated call then pp_print_string fmt call.desc
+          if is_dummy_pos call then pp_print_string fmt call.desc
           else
             fprintf fmt "@[<2>%s@ (called@ at@ %a)@]" call.desc PP.pp_pos call
         in
@@ -121,7 +121,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let spath = List.rev spath in
         let pp_choice fmt choice =
           let open IEnv in
-          if is_dummy_annotated choice.location then
+          if is_dummy_pos choice.location then
             fprintf fmt "%s<-%B" choice.description choice.decision
           else
             fprintf fmt "@[<2>%s<-%B@ decided@ at@ %a@]" choice.description
@@ -373,7 +373,7 @@ module Make (B : Backend.S) (C : Config) = struct
     |> Hashtbl.of_seq
 
   let primitive_decls =
-    List.map (fun (f, _) -> D_Func f |> add_dummy_annotation) B.primitives
+    List.map (fun (f, _) -> D_Func f |> add_dummy_pos) B.primitives
 
   let () =
     if false then

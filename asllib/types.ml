@@ -123,7 +123,7 @@ let parameterized_ty ~loc var = T_Int (Parameterized var) |> add_pos_from loc
 
 let to_well_constrained ty =
   match ty.desc with
-  | T_Int (Parameterized var) -> var_ var |> integer_exact
+  | T_Int (Parameterized var) -> expr_of_var var |> integer_exact
   | _ -> ty
 
 let get_well_constrained_structure env ty =
@@ -197,7 +197,7 @@ module Domain = struct
     match ty.desc with
     | T_Int UnConstrained -> Top
     | T_Int (Parameterized var) ->
-        Subdomains [ ConstrainedDom (Constraint_Exact (var_ var)) ]
+        Subdomains [ ConstrainedDom (Constraint_Exact (expr_of_var var)) ]
     | T_Int (WellConstrained (constraints, _)) ->
         Subdomains (List.map (symdom_of_constraint env) constraints)
     | T_Int PendingConstrained

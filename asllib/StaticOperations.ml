@@ -90,7 +90,7 @@ let apply_binop_extremities (op : extremities_binops) c1 c2 =
 
 (** [constraint_pow c1 c2] applies [POW] to [c1] and [c2]. *)
 let constraint_pow c1 c2 =
-  let pow = binop `POW and neg = unop NEG in
+  let pow = binop `POW in
   match (c1, c2) with
   | Constraint_Exact a, Constraint_Exact c ->
       [ exact (pow a c) ] |: TypingRule.ConstraintPow
@@ -180,7 +180,7 @@ let filter_reduce_constraint_div =
 
 module type CONFIG = sig
   val fail : string -> 'a
-  val warn_from : loc:'a annotated -> Error.warning_desc -> unit
+  val warn_from : loc:_ t_annotated -> Error.warning_desc -> unit
 end
 
 module Make (C : CONFIG) = struct

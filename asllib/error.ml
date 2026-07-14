@@ -126,7 +126,7 @@ let fatal_from pos e = fatal (ASTUtils.add_pos_from pos e)
 let fatal_here pos_start pos_end e =
   fatal (ASTUtils.annotated e pos_start pos_end ASTUtils.default_version)
 
-let fatal_unknown_pos e = fatal (ASTUtils.add_dummy_annotation e)
+let fatal_unknown_pos e = fatal (ASTUtils.add_dummy_pos e)
 let intercept f () = try Ok (f ()) with ASLException e -> Error e
 
 type warning_desc =
@@ -294,7 +294,7 @@ open struct
     and end_cnum = e.pos_end.pos_cnum
     and start_bol = e.pos_start.pos_bol
     and end_bol = e.pos_end.pos_bol in
-    if ASTUtils.is_dummy_annotated e then None
+    if ASTUtils.is_dummy_pos e then None
     else if String.equal filename end_filename && Sys.file_exists filename then
       let lines = fetch_lines ~start_bol ~end_bol filename in
       let lines =
@@ -316,7 +316,7 @@ module PPrint = struct
   let pp_comma_list pp_elt f li =
     pp_print_list ~pp_sep:(fun f () -> fprintf f ",@ ") pp_elt f li
 
-  let pp_type_desc f ty = pp_ty f (ASTUtils.add_dummy_annotation ty)
+  let pp_type_desc f ty = pp_ty f (ASTUtils.add_dummy_pos ty)
 
   let fprintf_err f kind =
     kdprintf (fun msg -> fprintf f "@[<hov 2>ASL %s error:@ %t@]" kind msg)
@@ -662,7 +662,7 @@ module PPrint = struct
 
   let pp_pos_begin f pos =
     match display_error_context pos with
-    | None when ASTUtils.is_dummy_annotated pos -> ()
+    | None when ASTUtils.is_dummy_pos pos -> ()
     | None -> fprintf f "@[<h>%a:@]@ " pp_pos pos
     | Some ctx -> fprintf f "@[<h>%a:@]@ %s@ " pp_pos pos ctx
 
@@ -671,7 +671,7 @@ module PPrint = struct
   let pp_warning f e =
     fprintf f "@[<v 0>%a%a@]" pp_pos_begin e pp_warning_desc e
 
-  let error_desc_to_string = asprintf "%a" pp_error_desc
+  let error_desc_to_string e = asprintf "%a" pp_error_desc e
 
   let desc_to_string_inf pp_desc =
     asprintf "%a" @@ fun f e ->

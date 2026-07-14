@@ -24,7 +24,7 @@ let aarch64_iico_order = "aarch64_iico_order"
 let return_i i =
   let open Asllib.AST in
   let open Asllib.ASTUtils in
-  add_dummy_annotation (S_Return (Some (expr_of_int i)))
+  add_dummy_pos (S_Return (Some (expr_of_int i)))
 
 let return_0 = return_i 0
 
@@ -32,14 +32,14 @@ let catch_silent_exit body =
   let open Asllib.AST in
   let open Asllib.ASTUtils in
   let exit_type : Asllib.AST.ty =
-    add_dummy_annotation (T_Named "SilentExit") in
+    add_dummy_pos (T_Named "SilentExit") in
   let catcher = (None,exit_type,return_0) in
-  add_dummy_annotation (S_Try (body,[catcher],None))
+  add_dummy_pos (S_Try (body,[catcher],None))
 
 let setup_registers is_vmsa =
   let open Asllib.AST in
   let open Asllib.ASTUtils in
-  add_dummy_annotation
+  add_dummy_pos
     (S_Call
        {
          name = "_SetUpRegisters";
@@ -215,7 +215,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
     let decode_inst ii =
       let ii = unalias ii in
       let open Asllib.AST in
-      let with_pos desc = Asllib.ASTUtils.add_dummy_annotation ~version:V0 desc in
+      let with_pos desc = Asllib.ASTUtils.add_dummy_pos ~version:V0 desc in
       let ( ^= ) x e = S_Decl (LDK_Let, LDI_Var x, None, Some e) |> with_pos in
       let lit v = E_Literal v |> with_pos in
       let liti i = lit (L_Int (Z.of_int i)) in

@@ -40,13 +40,13 @@
       List.fold_right (map2_desc folder) s_elsifs s_else
 
     let t_bit =
-      T_Bits (E_Literal (L_Int Z.one) |> add_dummy_annotation ~version, [])
+      T_Bits (E_Literal (L_Int Z.one) |> add_dummy_pos ~version, [])
 
 
     let make_ldi_vars (ty, xs) =
       let make_one x =
         S_Decl (LDK_Var, LDI_Var x, Some ty, None)
-        |> add_dummy_annotation ~version
+        |> add_dummy_pos ~version
       in
       List.map make_one xs |> stmt_from_list |> desc
 
@@ -247,7 +247,7 @@ let opn := list(EOL); body=list(stmts); EOF;
           parameters = [];
           body = SB_ASL body;
           return_type =
-            Some (T_Int UnConstrained |> ASTUtils.add_dummy_annotation ~version);
+            Some (T_Int UnConstrained |> ASTUtils.add_dummy_pos ~version);
           subprogram_type = ST_Function;
           recurse_limit = None;
           override = None;
@@ -265,7 +265,7 @@ let decl ==
   | setter_decl
   | type_decl
 
-let annotated(x) == desc = x; { AST.{ desc; pos_start=$symbolstartpos; pos_end=$endpos; version }}
+let annotated(x) == desc = x; { AST.{ desc; pos_start=$symbolstartpos; pos_end=$endpos; version; ty_opt=None }}
 
 let unimplemented_decl(x) == x; { None }
 let unimplemented_ty(x) == x; { AST.(T_Bits (ASTUtils.expr_of_int 0, [])) }
@@ -441,7 +441,7 @@ let variable_decl ==
             keyword = GDK_Var;
             name = x;
             ty = Some (T_Array (e, ty)
-                       |> ASTUtils.add_dummy_annotation ~version);
+                       |> ASTUtils.add_dummy_pos ~version);
             initial_value = None;
           })}
       )))

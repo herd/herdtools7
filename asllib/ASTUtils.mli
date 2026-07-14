@@ -50,55 +50,72 @@ end
 (** {1 Position utils} *)
 (*---------------------*)
 
-val dummy_pos : Lexing.position
-(** A dummy position. *)
-
 val default_version : version
 (** The default version, [V1]. *)
 
-val annotated : 'a -> position -> position -> version -> 'a annotated
+val annotated : 'a -> position -> position -> version -> ('a, _) t_annotated
 (** [annotated v start end version] is [v] with location specified as from
     [start] to [end] and version specified by [version]. *)
 
-val desc : 'a annotated -> 'a
+val desc : ('a, _) t_annotated -> 'a
 (** [desc v] is [v.desc] *)
 
-val add_dummy_annotation : ?version:version -> 'a -> 'a annotated
-(** Add a dummy annotation to a value. The default version is [default_version].
-*)
+val add_dummy_pos : ?version:version -> 'a -> ('a, _) t_annotated
+(** [add_dummy_pos version term] returns [term] annotated with a dummy source
+    position and [None] as the type annotation.
 
-val dummy_annotated : unit annotated
-(** A dummy annotation *)
+    The default version is [default_version]. The default type annotation is
+    [None]. *)
 
-val is_dummy_annotated : 'a annotated -> bool
-(** Returns true if its argument is annotated with [dummy_pos]. *)
+val dummy_annotated : (unit, _) t_annotated
+(** A dummy annotation with a [None] type annotation. *)
 
-val to_pos : 'a annotated -> unit annotated
-(** Removes the value from an annotated record. *)
+val is_dummy_pos : _ t_annotated -> bool
+(** [is_dummy_pos v] is true if [v] has the dummy position (that of
+    [Lexing.dummy_pos]). *)
 
-val add_pos_from_pos_of : (string * int * int * int) * 'a -> 'a annotated
+val to_pos : _ t_annotated -> (unit, _) t_annotated
+(** Removes the value from an annotated record.
+
+    Also removes the type annotation, which is replaced by [None]. *)
+
+val add_pos_from_pos_of : (string * int * int * int) * 'a -> ('a, _) t_annotated
 (** [add_pos_from_pos_of (__POS_OF__ e)] is [annotated s s' e] where [s] and
-    [s'] correspond to [e]'s position in the ocaml file. *)
+    [s'] correspond to [e]'s position in the ocaml file.
 
-val add_pos_from : 'a annotated -> 'b -> 'b annotated
-(** [add_pos_from loc v] is [v] with the location data from [loc]. *)
+    Type annotation is always [None]. *)
 
-val add_pos_range_from : 'a annotated -> 'a annotated -> 'b -> 'b annotated
+val add_pos_from : _ t_annotated -> 'b -> ('b, _) t_annotated
+(** [add_pos_from loc v] is [v] with the location data from [loc].
+
+    Type annotation in the result is always [None]. *)
+
+val add_pos_range_from :
+  ('a, _) t_annotated -> ('a, _) t_annotated -> 'b -> ('b, _) t_annotated
 (** [add_pos_range_from loc_from loc_to v] is [v] with the location data given
     by the range of locations starting at [loc_from] and ending to [loc_to]. *)
 
-val add_pos_from_st : 'a annotated -> 'a -> 'a annotated
+val add_pos_from_st : ('a, 't) t_annotated -> 'a -> ('a, 't) t_annotated
 (** [add_pos_from_st a' a] is [a] with the location from [a'].
 
     If both arguments are physically equal, then the result is also physically
-    equal. *)
+    equal, otherwise the type annotation is set to [None]. *)
+
+val expr_ty_annot_from : src:(_, ty) t_annotated -> expr -> expr
+(** [expr_ty_annot_from ~src:a e] is the expression [e] with the type annotation
+    from [a]. *)
+
+val with_ty_annot : AST.ty -> ('term, ty) t_annotated -> ('term, ty) t_annotated
+(** [with_ty_annot ty v] is [v] with the type annotation [ty]. *)
 
 val map2_desc :
-  ('a annotated -> 'b annotated -> 'c) ->
-  'a annotated ->
-  'b annotated ->
-  'c annotated
-(** Folder on two annotated types. *)
+  (('a, 'ty) t_annotated -> ('b, 'ty) t_annotated -> 'c) ->
+  ('a, 'ty) t_annotated ->
+  ('b, 'ty) t_annotated ->
+  ('c, 'ty) t_annotated
+(** [map2_desc f v1 v2] folds two annotated values via [f] and yields a value
+    with positions ranging from the start of [v1] to the end of [v2] and the
+    [None] type annotation. *)
 
 (** {1 Type utils} *)
 (*-----------------*)
@@ -109,13 +126,13 @@ val integer : ty
 val integer' : type_desc
 (** [integer], without the position annotation. *)
 
-val integer_exact : ?loc:'a annotated -> expr -> ty
+val integer_exact : ?loc:_ t_annotated -> expr -> ty
 (** [integer_exact e] is the integer type constrained to be equal to [e]. *)
 
 val integer_exact' : expr -> type_desc
 (** [integer_exact' e] is [integer_exact e] without the position annotation. *)
 
-val integer_range : ?loc:'a annotated -> expr -> expr -> ty
+val integer_range : ?loc:_ t_annotated -> expr -> expr -> ty
 (* [integer_range e1 e2] is the integer type constrained to be in the range
    [e1..e2]. *)
 
@@ -124,7 +141,7 @@ val integer_range' : expr -> expr -> type_desc
     annotation. *)
 
 val well_constrained :
-  ?loc:'a annotated ->
+  ?loc:_ t_annotated ->
   ?precision:precision_loss_flag ->
   int_constraint list ->
   ty
@@ -166,14 +183,14 @@ val expr_of_int : int -> expr
 val literal : literal -> expr
 (** [literal v] is the expression evaluated to [v]. *)
 
-val var_ : identifier -> expr
-(** [var_ x] is the expression [x]. *)
+val expr_of_var : identifier -> expr
+(** [expr_of_var x] is the expression for the identifier [x]. *)
 
 val binop : binop -> expr -> expr -> expr
 (** Builds a binary operation from to subexpressions. *)
 
-val unop : unop -> expr -> expr
-(** Builds a unary operation from its subexpression. *)
+val neg : expr -> expr
+(** Builds a negation operation from its subexpression. *)
 
 val expr_of_z : Z.t -> expr
 (** [expr_of_z z] is the integer literal for [z]. *)

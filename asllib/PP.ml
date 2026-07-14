@@ -48,7 +48,7 @@ let pp_pos f ({ pos_start; pos_end; _ } as x) =
   let pp_char_num f { pos_cnum; pos_bol; _ } =
     pp_print_int f (pos_cnum - pos_bol)
   in
-  if ASTUtils.is_dummy_annotated x then ()
+  if ASTUtils.is_dummy_pos x then ()
   else (
     pp_open_hovbox f 2;
     fprintf f "File %s,@ " pos_start.pos_fname;

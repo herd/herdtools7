@@ -167,7 +167,7 @@ module type S = sig
   (** Represents a range by its first accessed index and its length. *)
 
   val read_from_bitvector :
-    loc:'a AST.annotated -> value_range list -> value -> value m
+    loc:_ AST.t_annotated -> value_range list -> value -> value m
   (** Read a slice (represented by a list of value ranges) from a bitvector. *)
 
   val write_to_bitvector : value_range list -> value -> value -> value m
