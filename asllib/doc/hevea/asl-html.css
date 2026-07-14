@@ -1,0 +1,259 @@
+/*
+ * Additional styling for the HeVeA HTML build of the ASL Reference.
+ *
+ * HeVeA emits a small structural stylesheet into each generated page. Keep
+ * these rules as a source-controlled layer on top of that output rather than
+ * editing files under HTML/, which are build artifacts.
+ */
+
+:root {
+  color-scheme: light;
+  --asl-paper: #fffdf8;
+  --asl-background: #f3f1ea;
+  --asl-text: #1b1b18;
+  --asl-muted: #5d5b55;
+  --asl-rule: #d8d2c4;
+  --asl-code-background: #f6f3ea;
+}
+
+html {
+  background: var(--asl-background);
+}
+
+body {
+  box-sizing: border-box;
+  max-width: 72rem;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 2.4rem 3.2rem 4rem;
+  background: var(--asl-paper);
+  color: var(--asl-text);
+  font-family: "Latin Modern Roman", "Computer Modern Serif", "STIX Two Text",
+    "Times New Roman", Times, serif;
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+p {
+  margin: 0.72rem 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--asl-text);
+  font-family: "Latin Modern Roman", "Computer Modern Serif", "STIX Two Text",
+    "Times New Roman", Times, serif;
+  font-weight: 700;
+  line-height: 1.18;
+}
+
+h1.chapter {
+  margin-top: 2.4rem;
+  margin-bottom: 1.1rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--asl-rule);
+  font-size: 2rem;
+}
+
+h2.section {
+  margin-top: 1.9rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.55rem;
+}
+
+h3.subsection {
+  margin-top: 1.45rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.24rem;
+}
+
+h4.subsubsection,
+h5.paragraph {
+  margin-top: 1.1rem;
+  margin-bottom: 0.35rem;
+}
+
+a {
+  color: #064f86;
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.12em;
+}
+
+a:hover {
+  color: #083b63;
+}
+
+ul,
+ol,
+dl {
+  margin-top: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+li {
+  margin: 0.25rem 0;
+}
+
+blockquote,
+.quote,
+.quotation {
+  margin-left: 2rem;
+  margin-right: 2rem;
+  color: var(--asl-muted);
+}
+
+pre,
+.lstlisting,
+.tt {
+  font-family: "Latin Modern Mono", "Computer Modern Typewriter",
+    ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+pre,
+.lstlisting {
+  overflow-x: auto;
+  margin: 1rem 0;
+  padding: 0.85rem 1rem;
+  background: var(--asl-code-background);
+  border: 1px solid var(--asl-rule);
+  line-height: 1.35;
+}
+
+table.title {
+  margin-top: 0.8rem;
+  margin-bottom: 2.4rem;
+}
+
+.titlemain {
+  margin-bottom: 0.5rem;
+  font-size: 2.35rem;
+}
+
+.titlerest {
+  color: var(--asl-muted);
+  font-size: 1.05rem;
+  font-weight: 400;
+}
+
+.toc,
+ul.toc {
+  padding-left: 0;
+  line-height: 1.35;
+}
+
+.caption {
+  color: var(--asl-muted);
+  font-size: 0.95rem;
+}
+
+.theorem {
+  margin: 1rem 0;
+}
+
+.display,
+.displaystack,
+.vdisplay,
+.vdisplaystack,
+.equationcontainer,
+mjx-container[display="true"] {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+mjx-container {
+  line-height: 1.2;
+}
+
+mjx-container[display="true"] {
+  margin: 0.9rem 0;
+  padding: 0.1rem 0;
+}
+
+.asl-mathjax-pending {
+  position: relative;
+  overflow: hidden;
+  color: transparent;
+  background: #e9e5dc;
+  background-image: linear-gradient(
+    90deg,
+    #e9e5dc 0%,
+    #f8f6ef 45%,
+    #e9e5dc 90%
+  );
+  background-size: 220% 100%;
+  animation: asl-mathjax-placeholder 1.2s ease-in-out infinite;
+}
+
+.asl-mathjax-pending.asl-mathjax-inline {
+  display: inline-block;
+  width: var(--asl-mathjax-placeholder-width, 4em);
+  max-width: 18em;
+  height: 0.95em;
+  border-radius: 3px;
+  vertical-align: -0.12em;
+}
+
+.asl-mathjax-pending.asl-mathjax-display {
+  display: block;
+  height: var(--asl-mathjax-placeholder-height, 3rem);
+  margin: 0.9rem 0;
+  border-radius: 4px;
+}
+
+@keyframes asl-mathjax-placeholder {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .asl-mathjax-pending {
+    animation: none;
+  }
+}
+
+.asl-wrappedline {
+  color: #c00000;
+}
+
+.mprow {
+  border-spacing: 1.35rem 0.65rem;
+}
+
+.mprcell {
+  padding: 0.1rem 0.25rem;
+  vertical-align: middle;
+}
+
+hr.floatrule,
+.footnoterule {
+  background-color: var(--asl-rule);
+}
+
+@media (max-width: 720px) {
+  body {
+    padding: 1.2rem 1rem 2.5rem;
+    font-size: 16px;
+  }
+
+  h1.chapter {
+    font-size: 1.7rem;
+  }
+
+  h2.section {
+    font-size: 1.35rem;
+  }
+
+  .titlemain {
+    font-size: 1.9rem;
+  }
+}
