@@ -222,6 +222,7 @@ module Make
 
       type dp
 
+      let equal_dp _ _ = assert false
       let pp_dp _ = assert false
 
       let fold_dpr _f r =  r

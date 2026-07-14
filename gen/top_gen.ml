@@ -681,7 +681,6 @@ let max_set = IntSet.max_elt
       Printf.eprintf "COMPILE CYCLE:\n%a" C.debug_cycle n
     end ;
     let open Config in
-    Label.reset () ;
     let env_wide = C.get_wide n in
     let env_pair =
       if StringMap.is_empty env_wide then StringSet.empty

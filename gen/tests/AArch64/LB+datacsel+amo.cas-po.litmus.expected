@@ -9,5 +9,5 @@ Witnesses
 Positive: 2 Negative: 6
 Condition exists ([y]=2 /\ 0:X1=1 /\ 1:X1=1)
 Observation LB+datacsel+amo.cas-po Sometimes 2 6
-Hash=8051661ca4bacd7ce86229dd373d231a
+Hash=25b74d5c111ccdf294c4ca0371b1a11d
 
