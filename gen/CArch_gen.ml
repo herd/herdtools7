@@ -40,7 +40,6 @@ let compare_atom = Misc.polymorphic_compare
 include MachMixed.No
 
 let pp_plain = Code.plain
-let pp_as_a = Some SC
 let pp_atom = pp_mem_order_short
 let fold_atom f k =
   let k = f Acq k in

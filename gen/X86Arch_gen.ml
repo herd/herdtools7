@@ -43,8 +43,6 @@ let overlap_atoms _ _ = true
 
 let pp_plain = Code.plain
 
-let pp_as_a = None
-
 let pp_atom = function
   | Atomic -> "A"
 

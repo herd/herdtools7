@@ -68,8 +68,6 @@ module Make
 
       let pp_plain = Code.plain
 
-      let pp_as_a = None
-
       let pp_atom_acc = function
         | Atomic -> "A" | Plain -> ""
         | NonTemporal -> "NT"
