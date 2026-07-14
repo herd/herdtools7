@@ -1941,11 +1941,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some(Pte ReadHAAcqPc,None) ->
             let r,init,cs,st = LDAPR.emit_load st p init loc in
             Some r,init,cs,st
-        | W,Some (Pte (Set pte),None) when is_tthm pte ->
+        | W,Some (Pte (Set pte),None) when StructuredAtom.is_tthm pte ->
             let init,cs,st =
               STR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
             None,init,cs,st
-        | W,Some (Pte (SetRel pte),None) when is_tthm pte ->
+        | W,Some (Pte (SetRel pte),None) when StructuredAtom.is_tthm pte ->
             let init,cs,st =
               STLR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
             None,init,cs,st
@@ -2595,7 +2595,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 let cs2 = pseudo cs0 in
                 let addi = [addi r2 r2 e.C.ord] in
                 r2,cs2,init,st,addi
-            | Some (Pte (Set pte|SetRel pte),None) when (not @@ is_tthm pte) ->
+            | Some (Pte (Set pte|SetRel pte),None)
+              when not (StructuredAtom.is_tthm pte) ->
                 let rA,init,st = U.emit_pteval st p init (Value.to_pte e.C.v) in
                 let cs,st =
                   match vdep with
@@ -2676,11 +2677,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (Tag, None) ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
-          | Some (Pte (Set pte),None) when is_tthm pte ->
+          | Some (Pte (Set pte),None) when StructuredAtom.is_tthm pte ->
               let init,cs,st =
                 STR.emit_store_reg st p init loc r2 None C.evt_null in
               None,init,cs2@cs,st
-          | Some (Pte (SetRel pte),None) when is_tthm pte ->
+          | Some (Pte (SetRel pte),None) when StructuredAtom.is_tthm pte ->
               let init,cs,st =
                 STLR.emit_store_reg st p init loc r2 None C.evt_null in
               None,init,cs2@cs,st
@@ -2921,7 +2922,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       (* collect distinct tthm *)
       let tthm_value = C.fold ( fun node acc ->
         match node.C.edge.E.a1 with
-        | Some(Pte (Set e|SetRel e), _) when is_tthm e -> WPTESet.union e acc
+        | Some(Pte (Set e|SetRel e), _) when StructuredAtom.is_tthm e ->
+            WPTESet.union e acc
         | Some(Pte (ReadHAAcq|ReadHAAcqPc), _) -> WPTESet.add HA acc
         | _ -> acc
         ) n WPTESet.empty

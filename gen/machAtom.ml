@@ -46,8 +46,6 @@ module Make(C:Config) = struct
   let is_ifetch _ = false
 
   let pp_plain = Code.plain
-  let pp_as_a = None
-
   let pp_atom = function
     | Atomic -> "A"
     | Reserve -> "R"

@@ -117,8 +117,6 @@ let applies_atom = match bi with
 | Some bi -> (fun a d -> BellModel.check_event (tr_dir d) a bi)
 let is_ifetch _ = false
 let pp_plain = "P"
-let pp_as_a = None
-
 let pp_annots a = match a with
 | [] -> ""
 | _ ->
