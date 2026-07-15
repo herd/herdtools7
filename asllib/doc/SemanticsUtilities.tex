@@ -72,13 +72,7 @@ and the local storage element \verb|exn| is removed after the (only) \trystateme
 
 \ASLListing{Removing local storage elements from dynamic environments}{RemoveLocal}{\semanticstests/SemanticsRule.RemoveLocal.asl}
 The output to the console is the following:
-% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.RemoveLocal.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-i=0
-i=11/2
-exn=TRUE
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{semanticsrule-removelocal}{\semanticstests/SemanticsRule.RemoveLocal.asl}
 
 \RenderProseAndFormally{remove_local}
 
@@ -161,23 +155,14 @@ The specification in \listingref{ReadFromBitvector} shows examples of reading sl
 and reading slices from an integer (first converted to a bitvector), followed by the output to the console.
 
 \ASLListing{Reading from a bitvector}{ReadFromBitvector}{\semanticstests/SemanticsRule.ReadFromBitvector.asl}
-% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.ReadFromBitvector.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-empty_bv_slice = 0x, empty_i_slice = 0x
-slice_bv = 0x9c5, slice_i = 0x9c5
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{semanticsrule-readfrombitvector}{\semanticstests/SemanticsRule.ReadFromBitvector.asl}
 
 \ExampleDef{Conversion of Integers to Bitvectors}
 The specification in \listingref{AsBitvector} shows an example of converting a negative
 integer into a bitvector, followed by the output to the console.
 
 \ASLListing{Converting a signed integer into a bitvector}{AsBitvector}{\semanticstests/SemanticsRule.AsBitvector.asl}
-% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.AsBitvector.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-bv = 0xfdf0, bv_i = 0xfdf0
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{semanticsrule-asbitvector}{\semanticstests/SemanticsRule.AsBitvector.asl}
 
 \RenderProseAndFormally{read_from_bitvector}
 

@@ -836,12 +836,7 @@ condition an expression satisfies.
 and the output to a console when it is evaluated.
 
 \ASLListing{A side-effecting case discriminant}{case-discriminant}{\definitiontests/CaseStatement.discriminant.asl}
-% CONSOLE_BEGIN aslref \definitiontests/CaseStatement.discriminant.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-num_tests: 0
-selected case x=51
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{casestatement-discriminant}{\definitiontests/CaseStatement.discriminant.asl}
 \listingref{case-discriminant} shows an example of a \casestatementterm{}
 and the output to a console when it is evaluated.
 %
@@ -887,12 +882,7 @@ It is not a static error if it can be statically determined that none of the pat
 \listingref{case-otherwise} demonstrates how the \otherwisecaseterm{} is evaluated.
 
 \ASLListing{Executing the \texttt{otherwise} case alternative}{case-otherwise}{\definitiontests/CaseStatement.otherwise.asl}
-% CONSOLE_BEGIN aslref \definitiontests/CaseStatement.otherwise.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-num_tests: 0
-selected otherwise
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{casestatement-otherwise}{\definitiontests/CaseStatement.otherwise.asl}
 
 \RequirementDef{CaseNoOtherwiseError} If no \casealternativeterm\ is selected,
 and there is no \otherwisecaseterm, it is a \dynamicerrorterm{}.
@@ -1375,14 +1365,7 @@ limit expressions.
 \ExampleDef{Evaluation of While Statements}
 The specification in \listingref{semantics-swhile} prints the
 following to the console:
-% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SWhile.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-i = 0
-i = 1
-i = 2
-i = 3
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{semanticsrule-swhile}{\semanticstests/SemanticsRule.SWhile.asl}
 
 The specification in \listingref{swhile-limit-reached} yields a dynamic
 error once the loop limit for the \whilestatementterm{} is reached.
@@ -1494,22 +1477,7 @@ The \repeatstatementsterm{} in \listingref{semantics-srepeat} are well-typed.
 \SemanticsRuleDef{SRepeat}
 \ExampleDef{Evaluation of Repeat Statements}
 The specification in \listingref{semantics-srepeat} produces the following output to the console.
-% CONSOLE_BEGIN aslref  --type-check-no-warn \semanticstests/SemanticsRule.SRepeat.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-j = 0
-j = 1
-j = 2
-j = 3
-j = 4
-#ones in x = 5
-i = 0
-i = 1
-i = 2
-i = 3
-i = 4
-#ones in x = 5
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor[--type-check-no-warn]{semanticsrule-srepeat}{\semanticstests/SemanticsRule.SRepeat.asl}
 
 
 \RenderProseAndFormally{eval_stmt_SRepeat}
@@ -1630,22 +1598,7 @@ statement.
 \pagebreak % To avoid cutting the example output.
 \ExampleDef{Evaluation of For Statements}
 The specification in \listingref{semantics-sfor} is followed by its output to the console.
-% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SFor.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-j = 0
-j = 1
-j = 2
-j = 3
-j = 4
-#ones in x = 5
-i = 4
-i = 3
-i = 2
-i = 1
-i = 0
-#ones in x = 5
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{semanticsrule-sfor}{\semanticstests/SemanticsRule.SFor.asl}
 
 The specification in \listingref{SFor-nop} shows a \forstatementterm{}
 whose body does not evaluate since its lower bound is greater than its upper bound.
@@ -1886,7 +1839,7 @@ In \listingref{semantics-sreturntuple},
 \SemanticsRuleDef{EExprListM}
 \RenderRelation{eval_expr_list_m}
 
-\ExampleDef{Seperately Evaluating a List of Expressions}
+\ExampleDef{Separately Evaluating a List of Expressions}
 In \listingref{semantics-sreturntuple}, the expressions \verb|3| and \verb|42|
 are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
 
@@ -1958,23 +1911,7 @@ empty \executiongraphterm{}.
 \listingref{semantics-literals} shows examples of printing various types of literals,
 followed by the output to the console resulting from running the specification.
 \ASLListing{Literals and how they are displayed}{semantics-literals}{\semanticstests/SemanticsRule.SPrint.asl}
-% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SPrint.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-string_number_1
-0
-1000000
-53170898287292728730499578000
-TRUE
-FALSE
-12345678900123456789/10000000000
-0
-hello\world
-	 "here I am "
-0xd
-0x
-LABEL_B
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{semanticsrule-sprint}{\semanticstests/SemanticsRule.SPrint.asl}
 
 Notice that empty bitvectors are displayed as \verb|0x|.
 

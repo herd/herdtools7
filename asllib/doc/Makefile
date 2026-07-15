@@ -3,6 +3,8 @@ LATEX=pdflatex
 BIBTEX=bibtex
 
 GENERATED_MACROS_TEX=generated_macros.tex
+GENERATED_CONSOLE_MACROS_TEX=generated_console_macros.tex
+ASL_TESTS=$(shell find ../tests -name '*.asl')
 
 # HeVeA and Hacha can emit warnings on stderr while still exiting with success.
 # Capture stderr from the command, preserve real command failures, and make
@@ -29,7 +31,7 @@ all: ASLReference.pdf
 
 LATEXMK=latexmk
 
-ASLReference.pdf: generated_spec *.tex *.bib
+ASLReference.pdf: generated_spec $(GENERATED_CONSOLE_MACROS_TEX) *.tex *.bib
 	if command -v $(LATEXMK) >/dev/null 2>&1; \
 	then \
 		$(LATEXMK) -pdf ASLReference.tex; \
@@ -40,9 +42,12 @@ ASLReference.pdf: generated_spec *.tex *.bib
 		$(BIBTEX) ASLReference; \
 		$(LATEX) ASLReference.tex; \
 	fi
-	python3 doclint.py --console_macros --aslref $(ASLREF)
+	python3 doclint.py
 
-html: generated_spec *.tex *.bib *.hva
+$(GENERATED_CONSOLE_MACROS_TEX): extended_macros.py doclint.py $(ASLREF) $(ASL_TESTS) $(filter-out $(GENERATED_CONSOLE_MACROS_TEX),$(wildcard *.tex))
+	python3 doclint.py --console-macros-only --aslref $(ASLREF)
+
+html: generated_spec $(GENERATED_CONSOLE_MACROS_TEX) *.tex *.bib *.hva
 	mkdir -p HTML
 	@# The first run is expected to generate warnings because bibhva
 	@# and the second hevea pass have not run, so we silence them via -s.
@@ -63,6 +68,8 @@ generated_spec: asl.spec
 clean:
 	/bin/rm -f $(PDFS)
 	/bin/rm -f $(GENERATED_MACROS_TEX)
+	/bin/rm -f $(GENERATED_CONSOLE_MACROS_TEX)
+	/bin/rm -rf generated_console_output
 	/bin/rm -f *.aux *.log *.fls *.log *.toc *.fdb_latexmk *~
 	/bin/rm -f $(CONTROLS)
 	/bin/rm -f comment.cut
