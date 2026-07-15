@@ -31,16 +31,7 @@ and \typingerrorsterm{}.
 followed by an example of a report from \aslrefterm{} in a \linuxbashshellterm.
 
 \ASLListing{A specification resulting in a type error}{typing-error-reporting}{\definitiontests/TypingErrorReporting.asl}
-% CONSOLE_BEGIN CONSOLE_STDERR aslref \definitiontests/TypingErrorReporting.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-File ../tests/ASLDefinition.t/TypingErrorReporting.asl, line 3,
-  characters 11 to 22:
-    return 5 + "hello";
-           ^^^^^^^^^^^
-ASL Type error: Illegal application of operator + on types integer {5}
-  and string.
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor[expect-error]{typingerrorreporting}{\definitiontests/TypingErrorReporting.asl}
 
 \RequirementDef{DynamicErrorBehaviour} The behaviour of an implementation when a \dynamicerrorterm{}
 occurs is implementation-defined, including, but not limited to,
@@ -54,12 +45,7 @@ followed by an example of a report from \aslrefterm{} in a \linuxbashshellterm.
 
 \ASLListing{A specification resulting in a dynamic error}{dynamic-error-reporting}{\definitiontests/DynamicErrorReporting.asl}
 
-% CONSOLE_BEGIN CONSOLE_STDERR CONSOLE_CMD aslref \definitiontests/DynamicErrorReporting.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-> aslref ../tests/ASLDefinition.t/DynamicErrorReporting.asl
-ASL Dynamic error: Illegal application of operator DIV for values 128 and 7.
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor[expect-error show-command]{dynamicerrorreporting}{\definitiontests/DynamicErrorReporting.asl}
 
 \RequirementDef{DynamicErrorHost}
 If an implementation terminates execution in response to a \dynamicerrorterm{},
@@ -75,15 +61,7 @@ An assertion failure arising from an \assertionstatementterm\ is a \dynamicerror
 \listingref{AssertionStatement} shows an example of a specification failing
 an \assertionstatementterm{}.
 The report from \aslrefterm{} in a \linuxbashshellterm{} is shown next:
-% CONSOLE_BEGIN CONSOLE_STDERR aslref \definitiontests/AssertionStatement.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-File ../tests/ASLDefinition.t/AssertionStatement.asl, line 5,
-  characters 11 to 22:
-    assert a + b < 256;
-           ^^^^^^^^^^^
-ASL Dynamic error: Assertion failed: ((a + b) < 256).
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor[expect-error]{assertionstatement}{\definitiontests/AssertionStatement.asl}
 
 \RequirementDef{DynamicErrorUnreachable}
 Evaluation of the \unreachablestatementterm{} is a \dynamicerrorterm{}
@@ -93,16 +71,7 @@ Evaluation of the \unreachablestatementterm{} is a \dynamicerrorterm{}
 fails with a \dynamicerrorsterm{} due to evaluation of an \unreachablestatementterm{}.
 The report from \aslrefterm{} in a \linuxbashshellterm{} is shown next:
 
-% CONSOLE_BEGIN CONSOLE_STDERR aslref \definitiontests/UnreachableStatement.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-diagnostic assertion failed: example message
-File ../tests/ASLDefinition.t/UnreachableStatement.asl, line 5,
-  characters 8 to 20:
-        unreachable;
-        ^^^^^^^^^^^^
-ASL Dynamic error: unreachable reached.
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor[expect-error]{unreachablestatement}{\definitiontests/UnreachableStatement.asl}
 
 \section{Error Kinds\label{sec:Error Kinds}}
 \hypertarget{def-errorcodeterm}{}
