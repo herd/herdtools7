@@ -67,8 +67,8 @@ let f-ib =
 let DSB-ob =
 [M | DC.CVAU | IC | TLBI]; po; [dsb.full]; po; [~(Imp & TTD & M | Imp & Instr & R)]
  | (if "ETS2" || "ETS3" then [M | DC.CVAU | IC | TLBI]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
- | [(Exp & R) \ NoRet | domain([Imp & Tag & R]; same-instance; [(Exp & R) \ NoRet])]; po; [dsb.ld]; po; [~(Imp & TTD & M | Imp & Instr & R)]
- | (if "ETS2" || "ETS3" then [(Exp & R) \ NoRet | domain([Imp & Tag & R]; same-instance; [(Exp & R) \ NoRet])]; po; [dsb.ld]; po; [Imp & TTD & M] else 0)
+ | [(Exp & R) \ NoRet | Imp & Tag & R]; po; [dsb.ld]; po; [~(Imp & TTD & M | Imp & Instr & R)]
+ | (if "ETS2" || "ETS3" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [Imp & TTD & M] else 0)
  | [Exp & W]; po; [dsb.st]; po; [~(Imp & TTD & M | Imp & Instr & R)]
  | (if "ETS2" || "ETS3" then [Exp & W]; po; [dsb.st]; po; [Imp & TTD & M] else 0)
 
@@ -130,7 +130,7 @@ let bob =
  | [Exp & M]; po; [dmb.full]; po; [DC.CVAU]
  | [DC.CVAU]; po; [dmb.full]; po; [Exp & M]
  | [DC.CVAU]; po; [dmb.full]; po; [DC.CVAU]
- | [(Exp & R) \ NoRet | domain([Imp & Tag & R]; same-instance; [(Exp & R) \ NoRet])]; po; [dmb.ld]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [Exp & (R \ NoRet) | Imp & Tag & R]; po; [dmb.ld]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
  | [Exp & W]; po; [dmb.st]; po; [Exp & W | MMU & FAULT]
  | [range([Exp & R & A]; amo; [Exp & W & L])]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
  | [Exp & W & L]; po; [Exp & R & A]
