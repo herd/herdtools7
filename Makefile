@@ -49,22 +49,21 @@ build-release: Version.ml
 build: check-deps | just-build
 
 install-herdtools:
-	sh ./dune-install.sh $(PREFIX)
+	dune install herdtools7 --prefix=$(PREFIX)
 
 build-aslref:
 	dune build -p aslref --profile $(DUNE_PROFILE)
 
 install-aslref:
-	# There are no lib files for aslref so we don't need dune-install.sh
-	dune install aslref --prefix $(PREFIX)
+	dune install aslref --prefix=$(PREFIX)
 
 install: install-herdtools
 
 uninstall:
-	sh ./dune-uninstall.sh $(PREFIX)
+	dune uninstall herdtools7 --prefix=$(PREFIX)
 
 uninstall-aslref:
-	dune uninstall aslref --prefix $(PREFIX)
+	dune uninstall aslref --prefix=$(PREFIX)
 
 clean: dune-clean clean-asl-pseudocode clean-asldoc
 	rm -f Version.ml

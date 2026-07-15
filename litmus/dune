@@ -1,3 +1,9 @@
+;; do not ignore dirs starting with _
+
+(subdir
+ libdir
+ (data_only_dirs *))
+
 (rule
  (copy ../Version.ml Version.ml))
 
@@ -26,3 +32,9 @@
   target
   LISATarget
   XXXCompile_litmus))
+
+(install
+ (source_trees
+  (libdir as litmus))
+ (section share)
+ (package herdtools7))

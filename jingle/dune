@@ -8,3 +8,9 @@
  (public_names jingle7 gen_theme7)
  (libraries herdtools str)
  (modules_without_implementation))
+
+(install
+ (source_trees
+  (libdir as jingle))
+ (section share)
+ (package herdtools7))

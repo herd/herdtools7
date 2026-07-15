@@ -99,3 +99,9 @@
   cat2table7)
  (libraries herdtools unix str)
  (modules_without_implementation arch_tools))
+
+(install
+ (source_trees
+  (libdir as tools))
+ (section share)
+ (package herdtools7))
