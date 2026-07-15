@@ -1,0 +1,15 @@
+C C17
+
+{
+  atomic_t x = ATOMIC_INIT(0);
+}
+
+P0 (atomic_int* x) {
+  int r0;
+  r0 = __atomic_add_unless{mb}(x, 10, 0);
+
+  int r1;
+  r1 = __atomic_add_unless{mb}(x, 10, 10);
+}
+
+forall (0: r0 = 0 /\ 0: r1 = 1 /\ x = 10)
