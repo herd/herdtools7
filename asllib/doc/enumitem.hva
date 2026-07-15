@@ -1,3 +1,4 @@
 \ProvidesPackage{enumitem}
+\newcommand{\setlistdepth}[1]{}
 \newcommand{\renewlist}[3]{}
 \newcommand{\setlist}[2][]{}
