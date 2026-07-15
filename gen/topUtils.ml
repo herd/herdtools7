@@ -26,7 +26,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
   sig
 (* Coherence utilities *)
     type cos0 =  (string * (C.C.node * IntSet.t) list list) list
-    type cos = (string * (C.C.Value.v array * IntSet.t) list list) list
+    type cos =
+        (string * (C.C.Value.v array * IntSet.t * bool) list list) list
     val pp_coherence : cos0 -> unit
     val last_map : cos0 -> C.C.event StringMap.t
     val compute_cos : cos0 ->  cos
@@ -49,7 +50,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
   struct
 
     type cos0 =  (string * (C.C.node * IntSet.t) list list) list
-    type cos = (string * (C.C.Value.v array * IntSet.t) list list) list
+    type cos = (string * (C.C.Value.v array * IntSet.t * bool) list list) list
 
     open Printf
     open Code
@@ -109,18 +110,48 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     | _ -> StringMap.empty
 
 
+    (* Decide whether the value written by `n` is a candidate for the final
+       condition. `top_gen.ml` later selects the last candidate in the
+       flattened coherence sequence.
+       A write is a candidate in the following cases:
+       - it has an ordinary incoming communication edge;
+       - it has an incoming `fr` edge and `check_fr_write` is true, indicating
+         that another write has an observer from a process absent from the
+         current write's observer set;
+       - it has an outgoing communication edge other than `rf`; an outgoing
+         `rf` is omitted because its value is checked through the receiving
+         read. *)
+    let check_final_write check_fr_write n =
+      match n.C.C.edge.C.E.edge with
+      | C.E.Store | C.E.Node _ -> false
+      | _ ->
+          let prev_edge = n.C.C.prev.C.C.edge in
+          let next_edge = n.C.C.edge in
+          ( not (C.E.is_fr prev_edge) && C.E.is_com prev_edge )
+          || ( C.E.is_fr prev_edge && check_fr_write )
+          || (C.E.is_com next_edge && not (C.E.is_rf next_edge) )
+
     let compute_cos =
       List.map
         (fun (loc,ns) ->
           loc,
-          List.map
-            (*NOTYET*)
+          List.map ( fun ns_per_location ->
+            (* Mark `fr` writes as candidates only if another write has an
+               observer from a process absent from the current write's
+               observer set. If all observer sets agree, the
+               read/communication checks already constrain the value. *)
+            let all_obs_set =
+              List.fold_left
+                (fun all (_,obs) -> IntSet.union all obs)
+                IntSet.empty ns_per_location in
             (List.map (fun (n,obs) ->
             let cells = if Misc.check_atag loc then
               n.C.C.evt.C.C.tcell
             else n.C.C.evt.C.C.cell in
-            cells,obs))
-            ns)
+            cells,obs,
+            check_final_write (not (IntSet.equal obs all_obs_set)) n))
+              ns_per_location
+          )ns)
 
 (******************)
 (* Prefetch hints *)

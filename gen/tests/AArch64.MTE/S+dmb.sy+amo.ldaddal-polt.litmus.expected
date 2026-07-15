@@ -1,15 +1,13 @@
 Test S+dmb.sy+amo.ldaddal-polt Allowed
-States 6
-1:X0=0; [x]=1; [y]=1;  ~Fault(P0);
-1:X0=0; [x]=1; [y]=1; Fault(P0,TagCheck);
-1:X0=1; [x]=1; [y]=1;  ~Fault(P0);
-1:X0=1; [x]=1; [y]=1; Fault(P0,TagCheck);
-1:X0=1; [x]=1; [y]=3;  ~Fault(P0);
-1:X0=1; [x]=1; [y]=3; Fault(P0,TagCheck);
+States 4
+1:X0=0; [x]=1;  ~Fault(P0);
+1:X0=0; [x]=1; Fault(P0,TagCheck);
+1:X0=1; [x]=1;  ~Fault(P0);
+1:X0=1; [x]=1; Fault(P0,TagCheck);
 Ok
 Witnesses
-Positive: 1 Negative: 5
-Condition exists ([x]=1 /\ [y]=3 /\ 1:X0=1 /\ not (fault(P0)))
-Observation S+dmb.sy+amo.ldaddal-polt Sometimes 1 5
-Hash=332abfae7a1609c3348bc510b88bdd41
+Positive: 2 Negative: 4
+Condition exists ([x]=1 /\ 1:X0=1 /\ not (fault(P0)))
+Observation S+dmb.sy+amo.ldaddal-polt Sometimes 2 4
+Hash=2fba4dad3b109eb4cebdf3c6a67763ed
 
