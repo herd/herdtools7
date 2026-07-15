@@ -1,0 +1,10 @@
+Test C17 Required
+States 1
+0:r0=0x0; 0:r1=0x1; [x]=0xa;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:r0=0x0 /\ 0:r1=0x1 /\ [x]=0xa)
+Observation C17 Always 1 0
+Hash=43fb4fc4801554302d3544049fac3a99
+

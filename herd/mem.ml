@@ -1978,11 +1978,8 @@ let add_eq v1 v2 eqs =
                 List.fold_left
                   (fun k er ->
                     match EvtSet.find_first_after er ws with
-                    | Some ew ->
-                       assert (E.same_instance er ew) ;
-                       (er,ew)::k
-                    | None -> (* Cann occur for failing CAS *)
-                       k)
+                    | Some ew when E.same_instance er ew -> (er, ew) :: k
+                    | _ -> k (* Can occur for failing CAS *))
                   k rs)
               atms k)
         [] atms |> E.EventRel.of_list
