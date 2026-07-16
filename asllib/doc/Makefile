@@ -1,15 +1,10 @@
-ASLREF=../../_build/install/default/bin/aslref
+# Dune reports the location to stderr for some reason.
+ASLREF=../../$(shell dune show location --no-print-directory ../aslref.exe 2>&1)
 LATEX=pdflatex
 BIBTEX=bibtex
 
 GENERATED_MACROS_TEX=generated_macros.tex
-# Empty file marking successful generation of every file in generated_console_output/.
-GENERATED_CONSOLE_OUTPUT_STAMP=generated_console_output.stamp
-ASL_TESTS=$(wildcard \
-	../compliance/tests/ASLDefinition.t/*.asl \
-	../compliance/tests/ASLSyntaxReference.t/*.asl \
-	../compliance/tests/ASLTypingReference.t/*.asl \
-	../compliance/tests/ASLSemanticsReference.t/*.asl)
+ASL_TESTS=$(wildcard ../compliance/tests/*/*.asl)
 
 # HeVeA and Hacha can emit warnings on stderr while still exiting with success.
 # Capture stderr from the command, preserve real command failures, and make
@@ -37,7 +32,7 @@ all: ASLReference.pdf
 LATEXMK=latexmk
 TECTONIC=tectonic
 
-ASLReference.pdf: generated_spec $(GENERATED_CONSOLE_MACROS_TEX) *.tex *.bib
+ASLReference.pdf: generated_spec generated_console_output *.tex *.bib
 	if command -v $(LATEXMK) >/dev/null 2>&1; \
 	then \
 		$(LATEXMK) -pdf ASLReference.tex; \
@@ -53,10 +48,16 @@ ASLReference.pdf: generated_spec $(GENERATED_CONSOLE_MACROS_TEX) *.tex *.bib
 	fi
 	python3 doclint.py
 
-$(GENERATED_CONSOLE_MACROS_TEX): extended_macros.py doclint.py $(ASLREF) $(ASL_TESTS) $(filter-out $(GENERATED_CONSOLE_MACROS_TEX),$(wildcard *.tex))
+.PHONY: generated_console_output
+generated_console_output: extended_macros.py doclint.py $(ASLREF) $(ASL_TESTS) $(wildcard *.tex)
 	python3 doclint.py --console-macros-only --aslref $(ASLREF)
 
-html: generated_spec $(GENERATED_CONSOLE_MACROS_TEX) *.tex *.bib *.hva
+.PHONY: FORCE_REMAKE
+$(ASLREF): FORCE_REMAKE
+	@# ASLREF may be overridden with an absolute build-output path.
+	dune build ../aslref.exe
+
+html: generated_spec generated_console_output *.tex *.bib *.hva
 	mkdir -p HTML
 	@# The first run is expected to generate warnings because bibhva
 	@# and the second hevea pass have not run, so we silence them via -s.
@@ -77,7 +78,6 @@ generated_spec: asl.spec
 clean:
 	/bin/rm -f $(PDFS)
 	/bin/rm -f $(GENERATED_MACROS_TEX)
-	/bin/rm -f $(GENERATED_CONSOLE_MACROS_TEX)
 	/bin/rm -rf generated_console_output
 	/bin/rm -f *.aux *.log *.fls *.log *.toc *.fdb_latexmk *~
 	/bin/rm -f $(CONTROLS)
