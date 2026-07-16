@@ -1,4 +1,4 @@
-ASLREF=../../_build/install/default/bin/aslref
+ASLREF=../../_build/default/asllib/aslref.exe
 LATEX=pdflatex
 BIBTEX=bibtex
 
@@ -46,6 +46,10 @@ ASLReference.pdf: generated_spec $(GENERATED_CONSOLE_MACROS_TEX) *.tex *.bib
 
 $(GENERATED_CONSOLE_MACROS_TEX): extended_macros.py doclint.py $(ASLREF) $(ASL_TESTS) $(filter-out $(GENERATED_CONSOLE_MACROS_TEX),$(wildcard *.tex))
 	python3 doclint.py --console-macros-only --aslref $(ASLREF)
+
+$(ASLREF):
+	@# Build the aslref target in the parent asllib directory.
+	dune build ../aslref.exe
 
 html: generated_spec $(GENERATED_CONSOLE_MACROS_TEX) *.tex *.bib *.hva
 	mkdir -p HTML
