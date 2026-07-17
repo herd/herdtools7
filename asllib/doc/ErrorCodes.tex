@@ -8,18 +8,10 @@ and the ASL Reference mandates the different types of errors
 including when these errors must be detected and reported to users.
 
 \ChapterOutline
-\begin{itemize}
-  \item \secref{How Implementations Should Handle Errors} describes how implementations of ASL
-        should handle errors;
-  \item \secref{Error Kinds} defines a classification of ASL errors;
-  \item \secref{ErrorCodesSummary} summarises the error codes used throughout this reference;
-  \item \secref{BuildErrors} details \builderrorsterm;
-  \item \secref{TypingErrors} details \typingerrorsterm;
-  \item \secref{DynamicErrors} details \dynamicerrorsterm.
-\end{itemize}
 
-\section{How Implementations Should Handle Errors\label{sec:How Implementations Should Handle Errors}}
-
+\SectionDef[describes how implementations of ASL
+        should handle errors;]
+  {How Implementations Should Handle Errors}{How Implementations Should Handle Errors}
 \RequirementDef{StaticErrorCheck} Implementations should detect and report \staticerrorsterm. \\
 Specifically, \staticerrorsterm{} must never cause a \dynamicerrorterm{} or
 cause an exception to be raised.
@@ -104,7 +96,8 @@ ASL Dynamic error: unreachable reached.
 \end{Verbatim}
 % CONSOLE_END
 
-\section{Error Kinds\label{sec:Error Kinds}}
+\SectionDef[defines a classification of ASL errors;]
+  {Error Kinds}{Error Kinds}
 \hypertarget{def-errorcodeterm}{}
 Each type of error has an \emph{\errorcodeterm}, which uniquely identifies it
 (see \secref{ErrorCodesSummary} for the full list of \errorcodesterm),
@@ -137,7 +130,8 @@ ASL includes the following error kinds:
 
 \Builderrorsterm{} and \typingerrorsterm{} are known collectively as \staticerrorsterm.
 
-\section{Error Codes Summary\label{sec:ErrorCodesSummary}}
+\SectionDef[summarises the error codes used throughout this reference;]
+  {ErrorCodesSummary}{Error Codes Summary}
 The following table summarises all error codes.
 
 \begin{center}
@@ -185,7 +179,8 @@ The following table summarises all error codes.
 \end{tabular}
 \end{center}
 
-\section{Build Errors\label{sec:BuildErrors}}
+\SectionDef[details \builderrorsterm;]
+  {BuildErrors}{Build Errors}
 \begin{description}
   \item[$\LexicalError$]
     \textit{Lexical error.}
@@ -216,7 +211,8 @@ The following table summarises all error codes.
     For example, the standard library defines a non-subprogram (\ASTRuleRef{SetBuiltin}).
 \end{description}
 
-\section{Type Errors\label{sec:TypingErrors}}
+\SectionDef[details \typingerrorsterm;]
+  {TypingErrors}{Type Errors}
 \begin{description}
 
 \hypertarget{def-undefinedidentifier}{}
@@ -396,7 +392,8 @@ The following table summarises all error codes.
   See \TypingRuleRef{LDVar}.
 \end{description}
 
-\section{Dynamic Errors\label{sec:DynamicErrors}}
+\SectionDef[details \dynamicerrorsterm.]
+  {DynamicErrors}{Dynamic Errors}
 \begin{description}
 
 \hypertarget{def-unreachableerror}{}

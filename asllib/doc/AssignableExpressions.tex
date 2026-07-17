@@ -13,25 +13,10 @@ followed by a slice or field access, it is desugared via \ASTRuleRef{DesugarSett
 to satisfy \\ \SyntacticSugarRef{SetterFieldAssignment}.
 
 \ChapterOutline
-\begin{itemize}
-  \item \FormalRelationsRef{Assignable Expressions} introduces the formal relations for
-        \assignableexpressions;
-  \item \SyntaxRef{Assignable Expressions} defines the syntax for \assignableexpressions;
-  \item \AbstractSyntaxRef{Assignable Expressions} defines the functions needed to build
-        the AST for \assignableexpressions{}. These make use of desugaring functions,
-        defined in \secref{AssignableExpressionsDesugaring};
-  \item \secref{DiscardingAssignmentExpressions} defines discarding assignment expressions;
-  \item \secref{VariableAssignmentExpressions} defines variable assignment expressions;
-  \item \secref{MultiAssignmentExpressions} defines multi-assignment expressions;
-  \item \secref{ArrayAssignmentExpressions} defines array assignment expressions;
-  \item \secref{BitvectorSliceAssignmentExpressions} defines bitvector slice assignment expressions;
-  \item \secref{StructuredTypeFieldAssignmentExpressions} defines structured type field assignment expressions;
-  \item \secref{StructuredTypeMultiFieldAssignmentExpressions} defines structured type multi-field assignment expressions;
-  \item \secref{BitfieldAssignableExpressions} defines bitfield assignment expressions.
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef{Assignable Expressions}
+\FormalRelationsDef[introduces the formal relations for
+        \assignableexpressions;]{Assignable Expressions}
 \paragraph{Syntax:} Assignable expressions are grammatically derived from $\Nlexpr$.
 
 \paragraph{Abstract Syntax:} Assignable expressions are derived in the abstract syntax from $\lexpr$
@@ -57,7 +42,7 @@ To achieve this, $\torexpr(\record)$ is used to obtain an \rhsexpression, which 
 using $\texttt{eval\_expr}$ to evaluate it.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SyntaxDef{Assignable Expressions}
+\SyntaxDef[defines the syntax for \assignableexpressions;]{Assignable Expressions}
 \begin{flalign*}
 \Nlexpr \derives\
    & \Tminus &\\
@@ -97,8 +82,9 @@ See \ExampleRef{Desugaring a left-hand side fields tuple}.
 It is \desugared{} by \ASTRuleRef{DesugarLHSFieldsTuple}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\AbstractSyntaxDef{Assignable Expressions}
-
+\AbstractSyntaxDef[defines the functions needed to build
+        the AST for \assignableexpressions{}. These make use of desugaring functions,
+        defined in \secref{AssignableExpressionsDesugaring};]{Assignable Expressions}
 We first define $\lhsaccess$, which we use in this section as an intermediate representation
 between some syntax forms of \assignableexpressions{} and their corresponding abstract syntax.
 In particular, rather than directly building the abstract syntax for these \assignableexpressions{},
@@ -453,7 +439,8 @@ is defined via the following rules:
 \end{mathpar}
 
 \hypertarget{def-discardlexprterm}{}
-\section{Discarding Assignment Expressions\label{sec:DiscardingAssignmentExpressions}}
+\SectionDef[defines discarding assignment expressions;]
+  {DiscardingAssignmentExpressions}{Discarding Assignment Expressions}
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_discard}
 
@@ -479,7 +466,8 @@ In \listingref{semantics-lediscard}, the assignment \texttt{- = 42;} does not af
 \CodeSubsection{\EvalLEDiscardBegin}{\EvalLEDiscardEnd}{../Interpreter.ml}
 
 \hypertarget{def-varlexprterm}{}
-\section{Variable Assignment Expressions\label{sec:VariableAssignmentExpressions}}
+\SectionDef[defines variable assignment expressions;]
+  {VariableAssignmentExpressions}{Variable Assignment Expressions}
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_var}
 
@@ -519,7 +507,8 @@ In \listingref{semantics-leglobalvar},
 \RenderProseAndFormally{eval_lexpr_LEVar}
 \CodeSubsection{\EvalLEVarBegin}{\EvalLEVarEnd}{../Interpreter.ml}
 
-\section{Multi-assignment Expressions\label{sec:MultiAssignmentExpressions}}
+\SectionDef[defines multi-assignment expressions;]
+  {MultiAssignmentExpressions}{Multi-assignment Expressions}
 \hypertarget{def-destructuringlexprterm}{}
 \ASLListing{Assignment to multiple left-hand-side expressions}{semantics-ledestructuring}{\semanticstests/SemanticsRule.LEDestructuring.asl}
 
@@ -594,7 +583,8 @@ and \ExampleRef{Multi-assignments}.
 \RenderRule{protected_multi_assign}
 
 \hypertarget{def-setarraylexprterm}{}
-\section{Array Assignment Expressions\label{sec:ArrayAssignmentExpressions}}
+\SectionDef[defines array assignment expressions;]
+  {ArrayAssignmentExpressions}{Array Assignment Expressions}
 This section details the syntax, abstract syntax, semantics, and typing of array write expressions.
 
 \subsection{Abstract Syntax}
@@ -633,7 +623,8 @@ via \TypingRuleRef{LESetArray}.
 See \SyntacticSugarRef{SetterFieldAssignment}.
 
 \hypertarget{def-slicelexprterm}{}
-\section{Bitvector Slice Assignment Expressions\label{sec:BitvectorSliceAssignmentExpressions}}
+\SectionDef[defines bitvector slice assignment expressions;]
+  {BitvectorSliceAssignmentExpressions}{Bitvector Slice Assignment Expressions}
 \ASLListing{Assignable slice expressions}{semantics-leslice}{\semanticstests/SemanticsRule.LESlice.asl}
 
 \subsection{Abstract Syntax}
@@ -699,7 +690,8 @@ See \ExampleRef{Checking Slices for Overlaps}.
 \RenderProseAndFormally{check_two_ranges_non_overlapping}
 
 \hypertarget{def-setfieldlexprterm}{}
-\section{Structured Type Field Assignment Expressions\label{sec:StructuredTypeFieldAssignmentExpressions}}
+\SectionDef[defines structured type field assignment expressions;]
+  {StructuredTypeFieldAssignmentExpressions}{Structured Type Field Assignment Expressions}
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_setfield}
 
@@ -756,8 +748,8 @@ via \TypingRuleRef{LESetStructuredField}.
 
 See \SyntacticSugarRef{SetterFieldAssignment}.
 
-\section{Structured Type Multi-field Assignment Expressions\label{sec:StructuredTypeMultiFieldAssignmentExpressions}}
-
+\SectionDef[defines structured type multi-field assignment expressions;]
+  {StructuredTypeMultiFieldAssignmentExpressions}{Structured Type Multi-field Assignment Expressions}
 \ASLListing{Multi-field assignment expression}{lesetfields}{\typingtests/TypingRule.LESetFields.asl}
 
 \subsection{Abstract Syntax}
@@ -811,7 +803,8 @@ $\nvbitvector('11111111 0000000000000000 1')$.
 
 \RenderProseAndFormally{eval_lexpr_LESetCollectionFields}
 
-\section{Bitfield Assignable Expressions\label{sec:BitfieldAssignableExpressions}}
+\SectionDef[defines bitfield assignment expressions.]
+  {BitfieldAssignableExpressions}{Bitfield Assignable Expressions}
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_slice}
 

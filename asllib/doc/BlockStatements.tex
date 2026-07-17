@@ -22,14 +22,9 @@ is defined before the block and hence still exists after the block.
 \ASLListing{A conditional statement defining a block structure}{block}{\semanticstests/SemanticsRule.Block.asl}
 
 \ChapterOutline
-\begin{itemize}
-  \item \FormalRelationsRef{Block Statements} defines the formal relations for block statements;
-  \item \TypeRulesRef{Block Statements} defines the type rule for block statements; and
-  \item \SemanticsRulesRef{Block Statements} defines the semantics of block statements.
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef{Block Statements}
+\FormalRelationsDef[defines the formal relations for block statements;]{Block Statements}
 \paragraph{Syntax:} Block statements are grammatically the same as other statements
 derived from $\Nstmt$.
 
@@ -41,7 +36,7 @@ as statements $\stmt$.
 \paragraph{Semantics:} Block statements are evaluated by $\evalblock$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\TypeRulesDef{Block Statements}
+\TypeRulesDef[defines the type rule for block statements; and]{Block Statements}
 \RenderRelation{annotate_block}
 
 \TypingRuleDef{Block}
@@ -57,7 +52,7 @@ an enclosing block, which has the effect of dropping bindings of the identifiers
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SemanticsRulesDef{Block Statements}
+\SemanticsRulesDef[defines the semantics of block statements.]{Block Statements}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \RenderRelation{eval_block}
 

@@ -17,31 +17,9 @@ as indicated by respective comments.
 \ASLListing{More examples of expressions}{expr2}{\syntaxtests/expr2.asl}
 
 \ChapterOutline
-\begin{itemize}
-  \item \FormalRelationsRef{Expressions} defines the formal relations for expressions;
-  \item \secref{LiteralExpressions} defines \literalexpressionsterm;
-  \item \secref{VariableExpressions} defines \variableexpressionsterm;
-  \item \secref{BinaryExpressions} defines \binopexpressionsterm;
-  \item \secref{UnaryExpressions} defines \unopexpressionsterm;
-  \item \secref{ConditionalExpressions} defines \condexpressionsterm;
-  \item \secref{CallExpressions} defines \callexpressionsterm;
-  \item \secref{SlicingExpressions} defines \slicingexpressionsterm;
-  \item \secref{ArrayAccessExpressions} defines \arrayaccessexpressionsterm;
-  \item \secref{FieldReadingExpressions} defines field reading expressions;
-  \item \secref{MultiFieldReadingExpressions} defines multi-field reading expressions;
-  \item \secref{AssertingTypeConversionExpressions} defines asserting type conversion expressions;
-  \item \secref{PatternMatchingExpressions} defines pattern matching expressions;
-  \item \secref{ArbitraryValueExpressions} defines arbitrary value expressions;
-  \item \secref{StructuredTypeConstructionExpressions} defines structured type construction expressions;
-  \item \secref{TupleExpressions} defines tuple expressions;
-  \item \secref{ParenthesisedExpressions} defines parenthesised expressions;
-  \item \secref{ArrayConstructionExpressions} defines array construction expressions;
-  \item \secref{SideEffectFreeExpressions} defines \sideeffectfreeexpressionsterm{};
-  \item \secref{ExprList} defines the dynamic semantics of a list of expressions.
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef{Expressions}
+\FormalRelationsDef[defines the formal relations for expressions;]{Expressions}
 \paragraph{Syntax:} Expressions are grammatically derived from $\Nexpr$.
 
 \paragraph{Abstract Syntax:} Expressions are derived in the abstract syntax from $\expr$,
@@ -67,7 +45,8 @@ variables with constant values are substituted by their constant values.
 \paragraph{Semantics:}
 \RenderRelation{eval_expr}
 \hypertarget{def-literalexpressionterm}{}
-\section{Literal Expressions\label{sec:LiteralExpressions}}
+\SectionDef[defines \literalexpressionsterm;]
+  {LiteralExpressions}{Literal Expressions}
 A literal expression represents a literal as an expression.
 
 \ASLListing{Literal Expressions}{literalssemantics}{\semanticstests/SemanticsRule.Lit.asl}
@@ -107,7 +86,8 @@ In \listingref{literalssemantics}, each of the expressions \texttt{3} evaluates 
 \CodeSubsection{\EvalELitBegin}{\EvalELitEnd}{../Interpreter.ml}
 
 \hypertarget{def-variableexpressionterm}{}
-\section{Variable Expressions\label{sec:VariableExpressions}}
+\SectionDef[defines \variableexpressionsterm;]
+  {VariableExpressions}{Variable Expressions}
 A variable expression consists of an identifier for a storage element.
 
 \subsection{Syntax}
@@ -162,7 +142,8 @@ This is enforced by \TypingRuleRef{LDVar},
 \TypingRuleRef{DeclareGlobalStorage}, and \TypingRuleRef{DeclareOneFunc}.
 
 \hypertarget{def-binopexpressionterm}{}
-\section{Binary Expressions\label{sec:BinaryExpressions}}
+\SectionDef[defines \binopexpressionsterm;]
+  {BinaryExpressions}{Binary Expressions}
 Binary expressions apply a binary operator to two sub-expressions.
 
 \RequirementDef{BinaryOperatorPriorities}
@@ -540,7 +521,8 @@ The rule above applies to many binary operators, including $\EQ$ (which is used 
 as well as \texttt{==}).
 
 \hypertarget{def-unopexpressionterm}{}
-\section{Unary Expressions\label{sec:UnaryExpressions}}
+\SectionDef[defines \unopexpressionsterm;]
+  {UnaryExpressions}{Unary Expressions}
 \subsection{Syntax}
 \begin{flalign*}
 \Nexpr \derives\  & \Nunop \parsesep \Nexpr &
@@ -579,7 +561,8 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 \CodeSubsection{\EvalUnopBegin}{\EvalUnopEnd}{../Interpreter.ml}
 
 \hypertarget{def-conditionexpressionterm}{}
-\section{Conditional Expressions\label{sec:ConditionalExpressions}}
+\SectionDef[defines \condexpressionsterm;]
+  {ConditionalExpressions}{Conditional Expressions}
 \subsection{Syntax}
 \begin{flalign*}
 \Nexpr \derives\  & \Tif \parsesep \Nexpr \parsesep \Tthen \parsesep \Nexpr \parsesep \Telse \parsesep \Nexpr &\\
@@ -645,7 +628,8 @@ evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
 \CodeSubsection{\EvalECondBegin}{\EvalECondEnd}{../Interpreter.ml}
 
 \hypertarget{def-callexpressionterm}{}
-\section{Call Expressions\label{sec:CallExpressions}}
+\SectionDef[defines \callexpressionsterm;]
+  {CallExpressions}{Call Expressions}
 \ASLListing{Call expressions}{semantics-ecall}{\semanticstests/SemanticsRule.ECall.asl}
 
 \subsection{Syntax}
@@ -752,7 +736,8 @@ and the values they evaluate to, as assertions on the values assigned.
 \CodeSubsection{\EvalECallBegin}{\EvalECallEnd}{../Interpreter.ml}
 
 \hypertarget{def-slicingexpressionsterm}{}
-\section{Slicing Expressions\label{sec:SlicingExpressions}}
+\SectionDef[defines \slicingexpressionsterm;]
+  {SlicingExpressions}{Slicing Expressions}
 This section details the high-level form of the syntax and abstract syntax of slicing expressions,
 and defines the semantics of bitvector slices.
 The details of the various types of bitvector slices are deferred to \chapref{BitvectorSlicing}.
@@ -825,7 +810,8 @@ the function $\readfrombitvector$ takes care of converting integers to bitvector
 
 \hypertarget{def-arrayaccessexpressionsterm}{}
 \hypertarget{def-getarrayexpressionterm}{}
-\section{Array Access Expressions\label{sec:ArrayAccessExpressions}}
+\SectionDef[defines \arrayaccessexpressionsterm;]
+  {ArrayAccessExpressions}{Array Access Expressions}
 This section details the syntax, abstract syntax, semantics, and typing of array read expressions.
 
 \subsection{Syntax}
@@ -890,7 +876,8 @@ which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
 \CodeSubsection{\EvalEGetArrayBegin}{\EvalEGetArrayEnd}{../Interpreter.ml}
 
 \hypertarget{def-getfieldexpressionterm}{}
-\section{Field Reading Expressions\label{sec:FieldReadingExpressions}}
+\SectionDef[defines field reading expressions;]
+  {FieldReadingExpressions}{Field Reading Expressions}
 \subsection{Syntax}
 \begin{flalign*}
 \Nexpr \derives\  & \Nexpr \parsesep \Tdot \parsesep \Tidentifier&
@@ -1000,7 +987,8 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \CodeSubsection{\EvalEGetTupleItemBegin}{\EvalEGetTupleItemEnd}{../Interpreter.ml}
 
 \hypertarget{def-getfieldsexpressionterm}{}
-\section{Multi-field Reading Expressions\label{sec:MultiFieldReadingExpressions}}
+\SectionDef[defines multi-field reading expressions;]
+  {MultiFieldReadingExpressions}{Multi-field Reading Expressions}
 \subsection{Syntax}
 \begin{flalign*}
 \Nexpr \derives\  & \Nexpr \parsesep \Tdot \parsesep \Tlbracket \parsesep \ClistOne{\Tidentifier} \parsesep \Trbracket &
@@ -1100,8 +1088,8 @@ in \verb|MyCollection|.
 \CodeSubsection{\EvalEGetCollectionFieldsBegin}{\EvalEGetCollectionFieldsEnd}{../Interpreter.ml}
 
 \hypertarget{def-atceexpressionterm}{}
-\section{Asserting Type Conversion Expressions\label{sec:AssertingTypeConversionExpressions}}
-
+\SectionDef[defines asserting type conversion expressions;]
+  {AssertingTypeConversionExpressions}{Asserting Type Conversion Expressions}
 The rule about domains in the definitions of subtype-satisfaction and
 type-satisfaction means that it is illegal to use the unconstrained integer
 where a constrained integer is expected.
@@ -1273,7 +1261,8 @@ that expressions appearing in types are all \sideeffectfreeterm{}.
 \RenderProseAndFormally{is_constraint_sat}
 
 \hypertarget{def-patternexpressionterm}{}
-\section{Pattern Matching Expressions\label{sec:PatternMatchingExpressions}}
+\SectionDef[defines pattern matching expressions;]
+  {PatternMatchingExpressions}{Pattern Matching Expressions}
 The binary operator $\Tin$ tests whether a value (referred to as the discriminant) matches any item from a $\Npatternset$.
 Patterns can also be used to test whether an expression matches a bitmask.
 Lists of patterns are also used in case statements.
@@ -1357,7 +1346,8 @@ succeed.
 \CodeSubsection{\EvalEPatternBegin}{\EvalEPatternEnd}{../Interpreter.ml}
 
 \hypertarget{def-arbitraryexpressionterm}{}
-\section{Arbitrary Value Expressions\label{sec:ArbitraryValueExpressions}}
+\SectionDef[defines arbitrary value expressions;]
+  {ArbitraryValueExpressions}{Arbitrary Value Expressions}
 An expression of the form \texttt{ARBITRARY: ty} evaluates to an arbitrary value in the
 domain of \texttt{ty}.
 Each evaluation can produce a different arbitrary value, but (as always) once a particular expression is evaluated, its arbitrary value cannot change.
@@ -1426,7 +1416,8 @@ demonstrates how to obtain an arbitrary array, \texttt{int\_array}.
 Notice that this rule introduces non-determinism.
 
 
-\section{Structured Type Construction Expressions\label{sec:StructuredTypeConstructionExpressions}}
+\SectionDef[defines structured type construction expressions;]
+  {StructuredTypeConstructionExpressions}{Structured Type Construction Expressions}
 \hypertarget{def-recordexpressionterm}{}
 \listingref{semantics-egetfield} shows an example of a well-typed record construction expression.
 
@@ -1520,7 +1511,8 @@ $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
 \RenderProseAndFormally{eval_expr_ERecord}
 \CodeSubsection{\EvalERecordBegin}{\EvalERecordEnd}{../Interpreter.ml}
 
-\section{Tuple Expressions\label{sec:TupleExpressions}}
+\SectionDef[defines tuple expressions;]
+  {TupleExpressions}{Tuple Expressions}
 \hypertarget{def-tupleexpressionterm}{}
 
 \ASLListing{Tuple expressions}{TupleExpressions}{\definitiontests/TupleExpressions.asl}
@@ -1562,7 +1554,8 @@ the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
 \RenderProseAndFormally{eval_expr_ETuple}
 \CodeSubsection{\EvalETupleBegin}{\EvalETupleEnd}{../Interpreter.ml}
 
-\section{Parenthesised Expressions\label{sec:ParenthesisedExpressions}}
+\SectionDef[defines parenthesised expressions;]
+  {ParenthesisedExpressions}{Parenthesised Expressions}
 A single expression inside parentheses is not considered to be a tuple, but rather the element
 inside the parenthesis.
 Parenthesising an expression can be used to improve readability, enforce a bracketing
@@ -1594,7 +1587,8 @@ we ignore the parenthesis (see \TypingRuleRef{ETuple}.\textsc{PARENTHESISED}).
 }
 \end{mathpar}
 
-\section{Array Construction Expressions\label{sec:ArrayConstructionExpressions}}
+\SectionDef[defines array construction expressions;]
+  {ArrayConstructionExpressions}{Array Construction Expressions}
 Array construction expression are used by the type system to express the initialisation
 of array-typed variables. Since there is no syntax to initialise arrays, there are also
 no rules for building the AST for such expressions nor rules for typechecking them.
@@ -1620,7 +1614,8 @@ which evaluates to
 \RenderProseAndFormally{eval_expr_EArray}
 \CodeSubsection{\EvalEArrayBegin}{\EvalEArrayEnd}{../Interpreter.ml}
 
-\section{Side-effect-free Expressions\label{sec:SideEffectFreeExpressions}}
+\SectionDef[defines \sideeffectfreeexpressionsterm{};]
+  {SideEffectFreeExpressions}{Side-effect-free Expressions}
 \subsection{Typing}
 \texthypertarget{def-sideeffectfreeexpressionterm}
 An expression $\ve$ is considered to be \sideeffectfreeterm{} in the \staticenvironmentterm{} $\tenv$
@@ -1640,7 +1635,8 @@ $\ResultExprSEF(\nvint(1), \emptygraph)$.
 Notice that the output configuration does not contain an environment,
 since \sideeffectfreeexpressionsterm{} do not modify the environment.
 
-\section{Evaluating a List of Expressions\label{sec:ExprList}}
+\SectionDef[defines the dynamic semantics of a list of expressions.]
+  {ExprList}{Evaluating a List of Expressions}
 \SemanticsRuleDef{EExprList}
 \RenderRelation{eval_expr_list}
 

@@ -4,22 +4,9 @@ This chapter defines the mathematical concepts and notations used throughout thi
 reference.
 
 \ChapterOutline
-\begin{itemize}
-  \item \secref{Mathematical Definitions and Notations} defines general mathematical concepts and notations;
-  \item \secref{Inference Rules} defines the concept of \emph{inference rules};
-  \item \secref{Transition Judgements} explains how \emph{transition judgements} can be used to represent
-        relations and functions;
-  \item \secref{Configurations} introduces \emph{\configurationsterm{}} as a way of representing compound data;
-  \item \secref{FlavoursOfEqualityInRules} explains the kinds of equality notations that are used to
-        convey intention in inference rules;
-  \item \secref{ASTNotations} introduces AST-related notations that are used in inference rules;
-  \item \secref{How to Parse Inference Rules Efficiently} explains how to efficiently parse inference rules,
-  \item \secref{ShortCircuitRuleMacros} defines rule macros, which compactly represent multiple rules;
-  \item \secref{ConventionallyUsedJudgments} presents commonly used judgements and notations; and
-  \item \secref{Rule Naming} explains the naming scheme for inference rules used in this reference.
-\end{itemize}
 
-\section{Mathematical Definitions and Notations\label{sec:Mathematical Definitions and Notations}}
+\SectionDef[defines general mathematical concepts and notations;]
+  {Mathematical Definitions and Notations}{Mathematical Definitions and Notations}
 \hypertarget{def-triangleq}{}
 We use $\triangleq$ to define mathematical concepts.
 
@@ -514,7 +501,8 @@ for a singleton set for the tuple $(a, b, c)$, we will write $\Option{a, b, c}$.
 \end{definition}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Inference Rules\label{sec:Inference Rules}}
+\SectionDef[defines the concept of \emph{inference rules};]
+  {Inference Rules}{Inference Rules}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \hypertarget{def-inferencerule}{}
 An \emph{\inferencerule} (rule, for short) is an implication between a list of judgements,
@@ -654,8 +642,9 @@ Infinite derivation trees are used for defining diverging evaluations
 (see \secref{Semantics of Diverging Specifications}).
 \end{definition}
 
-\section{Transition Judgements\label{sec:Transition Judgements}}
-
+\SectionDef[explains how \emph{transition judgements} can be used to represent
+        relations and functions;]
+  {Transition Judgements}{Transition Judgements}
 We use rules as a structured way for defining relations (and therefore functions, as a special case).
 
 To define a relation $R \subseteq X \cartimes Y$, we use judgements of the form $\termx \rulearrow \termy$
@@ -681,8 +670,8 @@ rules. This makes it easy to determine the rule responsible
 for a given transition.
 
 \hypertarget{def-configuration}{}
-\section{Configurations\label{sec:Configurations}}
-
+\SectionDef[introduces \emph{\configurationsterm{}} as a way of representing compound data;]
+  {Configurations}{Configurations}
 Our relations range over compound values. That is, values that often nest tuples and lists inside other tuples and lists.
 We refer to such values as \emph{\configurationsterm}. To make it easier to distinguish between different \configurationsterm{},
 we will sometimes attach labels to tuples using the OCaml-style notation discussed earlier.
@@ -721,7 +710,9 @@ uses an ignore variable to stand for the value being matched by a \hyperlink{any
 Since the rule does not need to refer to the value, we do not name it and use an ignore variable
 instead.
 
-\section{Flavours of Equality In Rules\label{sec:FlavoursOfEqualityInRules}}
+\SectionDef[explains the kinds of equality notations that are used to
+        convey intention in inference rules;]
+  {FlavoursOfEqualityInRules}{Flavours of Equality In Rules}
 This section explains the equality notations used in rules, two of which are used in \SemanticsRuleRef{ECond},
 shown here:
 \begin{mathpar}
@@ -794,8 +785,8 @@ by inlining their right-hand sides:
 \end{mathpar}
 \end{description}
 
-\section{AST-related Notations\label{sec:ASTNotations}}
-
+\SectionDef[introduces AST-related notations that are used in inference rules;]
+  {ASTNotations}{AST-related Notations}
 When deconstructing AST record nodes such as $\{f_1:t_1,\ldots,f_k:t_k\}$,
 we sometimes only care about a subset of the fields $\{f_{i_1},\ldots,f_{i_m}\} \subset \{f_{1..k}\}$.
 In such cases, we write $\{f_{i_1}:t_{i_1},\ldots,f_{i_m}:t_{i_m},\ldots\}$,
@@ -813,7 +804,8 @@ Recall that a subset of AST nodes are either labels or labelled tuples.\texthype
 The partial function $\astlabel$ returns the label $\vl\in\ASTLabels$ of an AST node, when it exists.
 For example, $\astlabel(\TBool) = \TBool$ and $\astlabel(\TNamed(\vx)) = \TNamed$.
 
-\section{How to Parse Inference Rules Efficiently\label{sec:How to Parse Inference Rules Efficiently}}
+\SectionDef[explains how to efficiently parse inference rules,]
+  {How to Parse Inference Rules Efficiently}{How to Parse Inference Rules Efficiently}
 Consider the following examples, which is a simplified version of \SemanticsRuleRef{Binop}
 \begin{mathpar}
 \inferrule{\op \not\in \{\BAND, \BOR, \IMPL\}\\\\
@@ -858,7 +850,8 @@ Similarly, $\vg$ requires first assigning values to $\vgone$ and $\vgtwo$,
 which are components of the previously assigned variables $\vmone$ and $\vmtwo$.
 
 \hypertarget{def-shortcircuitrulemacro}{}
-\section{Short-circuit Rule Macros\label{sec:ShortCircuitRuleMacros}}
+\SectionDef[defines rule macros, which compactly represent multiple rules;]
+  {ShortCircuitRuleMacros}{Short-circuit Rule Macros}
 \emph{\Shortcircuitrulemacros}, or \emph{rule macros}, for short, allow us to succinctly define sets of rules.
 Specifically, they allow us to capture situations where
 transitions have two alternative output \configurationsterm{}.
@@ -1066,7 +1059,8 @@ Expanding the last transition judgement, gives us the case:
 
 All these cases are succinctly encoded in a single rule with the alternative output \configurationsterm{}.
 
-\section{Conventionally-used Judgements and Notations\label{sec:ConventionallyUsedJudgments}}
+\SectionDef[presents commonly used judgements and notations; and]
+  {ConventionallyUsedJudgments}{Conventionally-used Judgements and Notations}
 We now present functions used conventionally in this reference.
 
 \subsection{Checked Transitions\label{sec:Checked Transitions}}
@@ -1157,7 +1151,8 @@ and applies it to an optional value:
 \hypertarget{def-wrapline}{}
 The notation $\wrappedline$ denotes that a line that is longer than the page width continues on the next line.
 
-\section{Rule Naming\label{sec:Rule Naming}}
+\SectionDef[explains the naming scheme for inference rules used in this reference.]
+  {Rule Naming}{Rule Naming}
 To name a rule, we place it in a section with its name.
 However, some relations are defined by a group of rules.
 In such cases, we refer to the individual rules in a group as \emph{case rules},

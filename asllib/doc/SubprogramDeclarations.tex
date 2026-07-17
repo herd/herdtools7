@@ -14,16 +14,10 @@ In \listingref{SubprogramDeclarations}, \verb|Add| is a function whereas \verb|I
 \ASLListing{Invoking a parametric function}{ParametricFunction2}{\definitiontests/ParametricFunction2.asl}
 
 \ChapterOutline
-\begin{itemize}
-  \item \secref{Accessors} discusses \emph{accessors};
-  \item \FormalRelationsRef{Subprogram Declarations} defines the formal relations for subprogram declarations;
-  \item \SyntaxRef{Subprogram Declarations} defines the syntax of subprogram declarations;
-  \item \AbstractSyntaxRef{Subprogram Declarations} defines the abstract syntax of subprogram declarations; and
-  \item \TypeRulesRef{Subprogram Declarations} defines the type rules for subprogram declarations.
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Accessors\label{sec:Accessors}}
+\SectionDef[discusses \emph{accessors};]
+  {Accessors}{Accessors}
 Special kinds of subprograms are \emph{getters} and \emph{setters}, which are paired to form an \emph{accessor}
 declaration. Intuitively, an accessor is used to abstract reading and writing to a global storage datatype.
 
@@ -34,7 +28,7 @@ For example, this could model a register file consisting of 32 registers, each o
 \ASLListing{An accessor declaration}{AccessorDeclaration}{\definitiontests/Accessor.asl}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef{Subprogram Declarations}
+\FormalRelationsDef[defines the formal relations for subprogram declarations;]{Subprogram Declarations}
 \paragraph{Syntax:} Subprogram declarations are grammatically derived from $\Ndecl$ via the subset of productions shown in
   \SyntaxRef{Subprogram Declarations}.
 
@@ -46,7 +40,7 @@ For example, this could model a register file consisting of 32 registers, each o
 \paragraph{Semantics:} The dynamic semantics of subprogram calls is given in \chapref{SubprogramCalls}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SyntaxDef{Subprogram Declarations}
+\SyntaxDef[defines the syntax of subprogram declarations;]{Subprogram Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \RequirementDef{NoEmptyBody}
@@ -87,7 +81,7 @@ For example, \listingref{NoEmptyBody} shows a subprogram declaration whose body 
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\AbstractSyntaxDef{Subprogram Declarations}
+\AbstractSyntaxDef[defines the abstract syntax of subprogram declarations; and]{Subprogram Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \RenderTypes[remove_hypertargets]{decl_func}
 
@@ -619,7 +613,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\TypeRulesDef{Subprogram Declarations}
+\TypeRulesDef[defines the type rules for subprogram declarations.]{Subprogram Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 We define the following rules for annotating subprogram declarations:

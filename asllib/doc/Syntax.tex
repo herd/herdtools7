@@ -96,20 +96,9 @@ We use a standard approach here:
 \end{itemize}
 
 \ChapterOutline
-\begin{itemize}
-  \item \secref{InlinedDerivations} defines \emph{inlined derivations};
-  \item \secref{ParametricProductions} defines \emph{parametric productions};
-  \item \secref{ASLParametricProductions} introduces the parametric productions
-        used for the ASL grammar;
-  \item \secref{ASLGrammar} defines the ASL grammar;
-  \item \secref{ParseTrees} defines parse trees;
-  \item \secref{PriorityAndAssociativity} defines the priority and associativity
-        of tokens; and
-  \item \secref{GrammarExamples} presents examples showing how the grammar and
-        the priority and associativity rules are used to parse ASL text.
-\end{itemize}
 
-\section{Inlined Derivations\label{sec:InlinedDerivations}}
+\SectionDef[defines \emph{inlined derivations};]
+  {InlinedDerivations}{Inlined Derivations}
 Context-free grammars consist of a list of \emph{derivations} $N \derives \KleeneStar{S}$
 where $N$ is a non-terminal symbol and $S$ is a list of non-terminal symbols and terminal symbols,
 which correspond to tokens.
@@ -160,7 +149,8 @@ By defining the derivations of $\Nbinop$ as inlined, we achieve the same effect 
 Barring mutually-recursive derivations involving inlined derivations, it is possible to expand
 all inlined derivations to obtain a context-free grammar without any inlined derivations.
 
-\section{Parametric Productions\label{sec:ParametricProductions}}
+\SectionDef[defines \emph{parametric productions};]
+  {ParametricProductions}{Parametric Productions}
 A parametric production has the form
 $N(p_{1..m}) \derives R_1 \;|\; \ldots \;|\; R_k$
 where $p_{1..m}$ are place holders for grammar symbols and may appear in any of the alternatives $R_{1..k}$.
@@ -201,7 +191,9 @@ which results in the following derivation replacing the original derivation for 
 \Nspec \derives\ & \Ndecllist &
 \end{flalign*}
 
-\section{ASL Parametric Productions\label{sec:ASLParametricProductions}}
+\SectionDef[introduces the parametric productions
+        used for the ASL grammar;]
+  {ASLParametricProductions}{ASL Parametric Productions}
 We define the following parametric productions for various types of lists and optional productions.
 
 \paragraph{Optional Symbol}
@@ -265,7 +257,8 @@ We define the following parametric productions for various types of lists and op
 \TClistZero{x}   \derives \ & \option{\TClistOne{x}} &\\
 \end{flalign*}
 
-\section{ASL Grammar\label{sec:ASLGrammar}}
+\SectionDef[defines the ASL grammar;]
+  {ASLGrammar}{ASL Grammar}
 We now present the list of derivations for the ASL Grammar where the start non-terminal is $\Nspec$.
 %
 The derivations allow certain parse trees where lists may have invalid sizes.
@@ -684,7 +677,8 @@ it must declare a new variable.
                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon \;|\; \Tplusplus
 \end{flalign*}
 
-\section{Parse Trees\label{sec:ParseTrees}}
+\SectionDef[defines parse trees;]
+  {ParseTrees}{Parse Trees}
 We now define \emph{parse trees} for the ASL expanded grammar. Those are later used to build Abstract Syntax Trees.
 
 \begin{definition}[Parse Trees]
@@ -755,7 +749,9 @@ The \emph{language of a grammar} $G$ is defined as follows:
 \Lang{G} = \{\yield(n) \;|\; n \text{ is a well-formed parse tree for }G\} \enspace.
 \]
 
-\section{Priority and Associativity for Parsing Tokens\label{sec:PriorityAndAssociativity}}
+\SectionDef[defines the priority and associativity
+        of tokens; and]
+  {PriorityAndAssociativity}{Priority and Associativity for Parsing Tokens}
 As described in the introduction to \chapref{Syntax}, tokens that may cause a
 \shiftreduceconflictterm{} are assigned a priority, and each priority is
 assigned an associativity. Tokens that cannot cause \shiftreduceconflictsterm{}
@@ -796,8 +792,9 @@ example \texttt{!!TRUE} still parses as \texttt{!(!TRUE)}.
 \end{center}
 
 
-\section{Grammar Examples\label{sec:GrammarExamples}}
-
+\SectionDef[presents examples showing how the grammar and
+        the priority and associativity rules are used to parse ASL text.]
+  {GrammarExamples}{Grammar Examples}
 \ExampleDef{Derivation of a Valid Expression}
 The expression \texttt{1 + 3}
 is transformed by the lexical analysis into:
