@@ -11,18 +11,10 @@ In other words, a read-only expression can be evaluated multiple times (or not a
 A \symbolicallyevaluableterm{} expression is compatible with symbolic reduction and equivalence testing (see \chapref{SymbolicEquivalenceTesting}).
 
 \ChapterOutline
-\begin{itemize}
-  \item \secref{Purity} defines the concept of expression \purities{};
-  \item \secref{SideEffectDescriptors} defines \sideeffectdescriptorsetsterm, which the type system infers
-        for each kind of ASL construct;
-  \item \secref{SideEffectSets} defines functions used to construct, modify, and query sets
-        of \sideeffectdescriptorsetsterm{}.
-        These are used throughout the type system to infer \sideeffectdescriptorsetsterm{}
-        and to ensure each construct meets its requirements in terms of side effects.
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Purity\label{sec:Purity}}
+\SectionDef[defines the concept of expression \purities{};]
+  {Purity}{Purity}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 We now define configurations used to determine whether expressions are \pureterm{} and \readonlyterm{} by the side effect analysis, as explained below.
@@ -50,7 +42,9 @@ f \puritygeq f' \triangleq \lnot(f \purityless f')
 \]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Side Effect Descriptors\label{sec:SideEffectDescriptors}}
+\SectionDef[defines \sideeffectdescriptorsetsterm, which the type system infers
+        for each kind of ASL construct;]
+  {SideEffectDescriptors}{Side Effect Descriptors}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \hypertarget{def-sideeffectdescriptorterm}{}
@@ -120,7 +114,11 @@ See \ExampleRef{Pure, Read-only, and Symbolically Evaluable Side Effect Descript
 \RenderProseAndFormally{side_effect_is_symbolically_evaluable}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Side Effect Sets\label{sec:SideEffectSets}}
+\SectionDef[defines functions used to construct, modify, and query sets
+        of \sideeffectdescriptorsetsterm{}.
+        These are used throughout the type system to infer \sideeffectdescriptorsetsterm{}
+        and to ensure each construct meets its requirements in terms of side effects.]
+  {SideEffectSets}{Side Effect Sets}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Transliteration note:

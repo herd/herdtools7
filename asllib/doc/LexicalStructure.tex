@@ -6,22 +6,9 @@ and then formalises the lexical analysis as a function that takes a text and ret
 either a list of \emph{tokens} or a lexical error.
 
 \ChapterOutline
-\begin{itemize}
-  \item \secref{ASL Specification Text} defines what constitutes the text of an ASL specification,
-  \item \secref{Lexical Regular Expressions} defines the regular expressions used to define the lexical structure,
-  \item \secref{Whitespace} defines whitespace,
-  \item \secref{Comments} defines comments,
-  \item \secref{Integer Literals} defines integer literals,
-  \item \secref{Rational Number Literals} defines rational number literals,
-  \item \secref{Boolean Literals} defines Boolean literals,
-  \item \secref{Bitvector Literals} defines bitvector literals,
-  \item \secref{Bitmasks} defines bitmasks,
-  \item \secref{String Literals} defines string literals,
-  \item \secref{LexicalIdentifiers} defines identifiers, and
-  \item \secref{LexicalAnalysis} defines the analysis used to transform text into tokens.
-\end{itemize}
 
-\section{ASL Specification Text\label{sec:ASL Specification Text}}
+\SectionDef[defines what constitutes the text of an ASL specification,]
+  {ASL Specification Text}{ASL Specification Text}
 An ASL specification is a string, that is a list of ASCII characters, consisting of a \emph{content text}
 followed by an \emph{end-of-file}.
 The content text is a list of
@@ -37,8 +24,8 @@ The content text does not contain an end-of-file character.
 % NO_EXAMPLE
 In particular, it is an error to use a tab character in ASL specification text (decimal encoding 9).
 
-\section{Lexical Regular Expressions\label{sec:Lexical Regular Expressions}}
-
+\SectionDef[defines the regular expressions used to define the lexical structure,]
+  {Lexical Regular Expressions}{Lexical Regular Expressions}
 \hypertarget{def-regex}{}
 \taref{LexicalRegularExpressions} defines the regular expressions $\RegExp$ used to define
 \emph{lexemes} --- substrings of the ASL specification text that are used to form \emph{tokens}.
@@ -86,7 +73,8 @@ $\REchar$       &$\triangleq$& \ascii{10} \texttt{|} \ascii{13} \texttt{|} \asci
 The notation $\Lang{e}$ stands for the \emph{formal language} of a regular expression $e$.
 That is, the set of strings that match that regular expression.
 
-\section{Whitespace\label{sec:Whitespace}}
+\SectionDef[defines whitespace,]
+  {Whitespace}{Whitespace}
 \RequirementDef{Whitespace}
 Comments and whitespace characters are collectively referred to as whitespace lexemes
 and are discarded. Technically, line comments and multi-line comments are treated
@@ -108,7 +96,8 @@ $\REwhitespace$ & $\triangleq$ & (\ascii{10} $|$ \ascii{13} $|$ \ascii{32})+\\
 \end{tabular}
 \end{center}
 
-\section{Comments\label{sec:Comments}}
+\SectionDef[defines comments,]
+  {Comments}{Comments}
 ASL supports comments in the style of C++:
 \begin{itemize}
 \item Single-line comments: the text from \text{//} until the end of the line
@@ -130,7 +119,8 @@ $\RElinecomment$  &$\triangleq$& \texttt{"//"} (\REchar\ \regexminus{} \ascii{10
 
 Multi-line comments are defined by \hyperlink{start-multiline-comment}{intercepting \texttt{"/*"}} (see \secref{scanningmultilinecomments}).
 
-\section{Integer Literals\label{sec:Integer Literals}}
+\SectionDef[defines integer literals,]
+  {Integer Literals}{Integer Literals}
 Integers are written either in decimal using one or more of the characters \texttt{0-9} and underscore, or in hexadecimal
 using \texttt{0x} at the start followed by the characters \texttt{0-9, a-f, A-F} and underscore. An integer literal cannot start with
 an underscore.
@@ -154,7 +144,8 @@ $\REforbiddenhexremaining$ &$\triangleq$& $\REhexlit$ (\REletter{} \regexminus{}
 \end{tabular}
 \end{center}
 
-\section{Rational Number Literals\label{sec:Rational Number Literals}}
+\SectionDef[defines rational number literals,]
+  {Rational Number Literals}{Rational Number Literals}
 Rational numbers are written in decimal form and consist of one or more decimal digits, a decimal point, and one
 or more decimal digits. Underscores can be added between digits to aid readability.
 
@@ -176,10 +167,12 @@ $\REforbiddenrealremaining$ &$\triangleq$& $\REintlit$ \texttt{"."} $\REintlit$ 
 \end{tabular}
 \end{center}
 
-\section{Boolean Literals\label{sec:Boolean Literals}}
+\SectionDef[defines Boolean literals,]
+  {Boolean Literals}{Boolean Literals}
 Boolean literals are written using \texttt{TRUE} or \texttt{FALSE}.
 
-\section{Bitvector Literals\label{sec:Bitvector Literals}}
+\SectionDef[defines bitvector literals,]
+  {Bitvector Literals}{Bitvector Literals}
 Constant bitvectors are written using 1, 0 and spaces surrounded by single-quotes.
 
 We first define a regular expression for a bit character:
@@ -210,7 +203,8 @@ In terms of notation, the \ProseMSB{} is the leftmost bit and the
 For example, in \verb|'10100'| the \ProseMSB{} is \verb|1| at index $4$,
 and the \ProseLSB{} is \verb|0| at index $0$.
 
-\section{Bitmasks\label{sec:Bitmasks}}
+\SectionDef[defines bitmasks,]
+  {Bitmasks}{Bitmasks}
 Constant bitmasks are written using \texttt{1}, \texttt{0}, \texttt{x}, and \texttt{0}s/\texttt{1}s enclosed in parentheses.
 Any \texttt{x}s or characters enclosed in parentheses represent don't care characters.
 
@@ -232,7 +226,8 @@ Similarly, \verb|'0xx(1)'| is equivalent to \verb|'0xxx'|.
 
 Bitmasks follow \RequirementRef{BitvectorOrdering}.
 
-\section{String Literals\label{sec:String Literals}}
+\SectionDef[defines string literals,]
+  {String Literals}{String Literals}
 String literals consist of printable characters surrounded by double quotes.
 They are used to create string values, which are strings of zero or more characters,
 where a character is a printable ASCII character,
@@ -269,7 +264,8 @@ $\REstringlit$ &$\triangleq$& \anycharacter{\texttt{"}} ( ($\REstrchar$ \regexmi
 \end{tabular}
 \end{center}
 
-\section{Identifiers\label{sec:LexicalIdentifiers}}
+\SectionDef[defines identifiers, and]
+  {LexicalIdentifiers}{Identifiers}
 Identifiers start with a letter or underscore and continue with zero or more letters, underscores or digits.
 Identifiers are case sensitive.
 \hypertarget{def-reletter}{}
@@ -327,7 +323,8 @@ For example, \listingref{IdentifierSingleUnderscore}
 can be useful for declaring a constant specific to the platform \verb|my_platform|.
 \ASLListing{An identifier starting with a single underscore}{IdentifierSingleUnderscore}{\syntaxtests/ConventionRule.IdentifierSingleUnderscore.asl}
 
-\section{Lexical Analysis\label{sec:LexicalAnalysis}}
+\SectionDef[defines the analysis used to transform text into tokens.]
+  {LexicalAnalysis}{Lexical Analysis}
 Lexical analysis, which is also referred to as \emph{scanning}, is defined via the function
 \hypertarget{def-aslscan}{}
 \[

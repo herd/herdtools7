@@ -26,16 +26,9 @@ a slice of the form \texttt{[$\veone$:$\vetwo$]} as a \rangeslice,
 and a slice of the form \texttt{[$\veone$+:$\vetwo$]} as a \lengthslice.
 
 \ChapterOutline
-\begin{itemize}
-  \item \secref{Nested Bitfields} describes nested bitfields;
-  \item \FormalRelationsRef{Bitfields} defines the formal relations for bitfields;
-  \item \SyntaxRef{Bitfields} defines the syntax of bitfields;
-  \item \AbstractSyntaxRef{Bitfields} defines the abstract syntax of bitfields;
-  \item \TypeRulesRef{Bitfields} defines the type system rules for bitfields; and
-  \item \SemanticsRulesRef{Bitfields} defines the dynamic semantics of bitfields.
-\end{itemize}
 
-\section{Nested Bitfields\label{sec:Nested Bitfields}}
+\SectionDef[describes nested bitfields;]
+  {Nested Bitfields}{Nested Bitfields}
 Bitfields may have nested bitfields. This can have several uses, one of which is being able to define two
 different views of a register.
 
@@ -94,7 +87,7 @@ defined for each bitfield.
 \ASLListing{A bitvector type with nested bitfields}{nestedbitfields}{\definitiontests/Bitfields_nested.asl}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef{Bitfields}
+\FormalRelationsDef[defines the formal relations for bitfields;]{Bitfields}
 \paragraph{Syntax:} Bitfields are grammatically derived from $\Nbitfield$
   and lists of bitfields are grammatically derived from $\Nbitfields$.
 
@@ -109,7 +102,7 @@ defined for each bitfield.
   $\evallexpr$ (see \secref{BitvectorSliceAssignmentExpressions}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SyntaxDef{Bitfields}
+\SyntaxDef[defines the syntax of bitfields;]{Bitfields}
 \begin{flalign*}
 \Nbitfields \derives \ & \Tlbrace \parsesep \TClistZero{\Nbitfield} \parsesep \Trbrace &\\
 \Nbitfield \derives \ & \Nslices \parsesep \Tidentifier &\\
@@ -118,7 +111,7 @@ defined for each bitfield.
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\AbstractSyntaxDef{Bitfields}
+\AbstractSyntaxDef[defines the abstract syntax of bitfields;]{Bitfields}
 \RenderType[remove_hypertargets]{bitfield}
 
 \ASTRuleDef{Bitfields}
@@ -186,7 +179,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\TypeRulesDef{Bitfields}
+\TypeRulesDef[defines the type system rules for bitfields; and]{Bitfields}
 \TypingRuleDef{TBitFields}
 \RenderRelation{annotate_bitfields}
 
@@ -402,7 +395,7 @@ $[7, 6, 5]$.
 
 \RenderProseAndFormally{slice_to_indices}
 
-\SemanticsRulesDef{Bitfields}
+\SemanticsRulesDef[defines the dynamic semantics of bitfields.]{Bitfields}
 The type system annotates expressions that read from a bitfield into corresponding slicing \rhsexpressions{}.
 Therefore, reading from a bitfield is done by evaluating a corresponding slice expression (see \SemanticsRuleRef{ESlice}).
 

@@ -9,18 +9,9 @@ ASL also supports tuples of (mutable or immutable) local storage declarations.
 \ASLListing{Local storage declarations}{LocalStorageDeclarations}{\definitiontests/LocalStorageDeclarations.asl}
 
 \ChapterOutline
-\begin{itemize}
-  \item \FormalRelationsRef{Local Storage Declarations} defines the formal relations for local storage declarations;
-  \item \SyntaxRef{Local Storage Declarations} defines the syntax of local storage declarations;
-  \item \AbstractSyntaxRef{Local Storage Declarations} defines the abstract syntax of local storage declarations;
-  \item \secref{Typing of Local Variable Declarations} defines the type rules of local variable declarations;
-  \item \secref{Semantics of Local Variable Declarations} defines the dynamic semantics of local variable declarations;
-  \item \secref{Typing of Tuple Declarations} defines the type rules of tuples of local storage declarations;
-  \item \secref{Semantics of Tuple Declarations} defines the dynamic semantics of tuples of local storage declarations.
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef{Local Storage Declarations}
+\FormalRelationsDef[defines the formal relations for local storage declarations;]{Local Storage Declarations}
 \paragraph{Syntax:} Local storage declarations are grammatically derived from statements ($\Nstmt$)
   via dedicated rules (see \SyntaxRef{Local Storage Declarations}).
 
@@ -40,7 +31,7 @@ has already been evaluated, yielding $\vm$ (see, for example, \SemanticsRuleRef{
 This is used to evaluate both single local storage declarations and tuples of local storage declarations.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SyntaxDef{Local Storage Declarations}
+\SyntaxDef[defines the syntax of local storage declarations;]{Local Storage Declarations}
 \hypertarget{def-localdeclarationkeyword}{}
 \hypertarget{def-localdeclarationitem}{}
 A \localdeclarationkeyword\ is either \texttt{var} or \texttt{let}.
@@ -64,7 +55,7 @@ Declaring a local storage element is done via the following grammar rules:
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\AbstractSyntaxDef{Local Storage Declarations}
+\AbstractSyntaxDef[defines the abstract syntax of local storage declarations;]{Local Storage Declarations}
 \RenderTypes[remove_hypertargets]{local_decl_keyword_and_item}
 
 
@@ -160,7 +151,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\section{Typing of Local Variable Declarations\label{sec:Typing of Local Variable Declarations}}
+\SectionDef[defines the type rules of local variable declarations;]
+  {Typing of Local Variable Declarations}{Typing of Local Variable Declarations}
 \TypingRuleDef{LDVar}
 \ExampleDef{Well-typed Local Variable Declarations}
 In \listingref{ldvar}, the statement \texttt{let x = 3;} is legal, since
@@ -208,7 +200,8 @@ In \listingref{checkisnotcollection}, the statement
 
 \CodeSubsection{\CheckIsNotCollectionBegin}{\CheckIsNotCollectionEnd}{../Typing.ml}
 
-\section{Semantics of Local Variable Declarations\label{sec:Semantics of Local Variable Declarations}}
+\SectionDef[defines the dynamic semantics of local variable declarations;]
+  {Semantics of Local Variable Declarations}{Semantics of Local Variable Declarations}
 \SemanticsRuleDef{LDVar}
 \ExampleDef{Evaluation of a Local Variable Declaration}
 The statement \texttt{var x = 3;} in \listingref{ldvar} binds \texttt{x}
@@ -218,7 +211,8 @@ to the evaluation of \texttt{3} in $\env$.
 \RenderProseAndFormally{eval_local_decl_LDI_Var}
 \CodeSubsection{\EvalLDVarBegin}{\EvalLDVarEnd}{../Interpreter.ml}
 
-\section{Typing of Tuple Declarations\label{sec:Typing of Tuple Declarations}}
+\SectionDef[defines the type rules of tuples of local storage declarations;]
+  {Typing of Tuple Declarations}{Typing of Tuple Declarations}
 \TypingRuleDef{LDTuple}
 \ExampleDef{Well-typed Tuple Declarations}
 \ASLListing{Declaring a tuple in the local storage}{typing-ldtuple}{\typingtests/TypingRule.LDTuple.asl}
@@ -234,7 +228,8 @@ See \ExampleRef{Well-typed Tuple Declarations}.
 
 \RenderProseAndFormally{add_local_vars}
 
-\section{Semantics of Tuple Declarations\label{sec:Semantics of Tuple Declarations}}
+\SectionDef[defines the dynamic semantics of tuples of local storage declarations.]
+  {Semantics of Tuple Declarations}{Semantics of Tuple Declarations}
 \SemanticsRuleDef{LDTuple}
 \ExampleDef{Evaluation of Tuple Declarations}
 In \listingref{semantics-ldtuple},

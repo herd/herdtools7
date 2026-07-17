@@ -169,16 +169,15 @@
 % Not imported here means, it is not yet considered for auto-generation.
 \newcommand\NotImportedToASLSpecYet[1]{#1}
 
-\newcommand\ChapterOutline[0]{\paragraph{Outline} The rest of this chapter is organized as follows:}
-\newcommand\FormalRelationsDef[1]{\section{Formal Relations for #1\label{sec:Formal Relations for #1}}}
-\newcommand\FormalRelationsRef[1]{\secref{Formal Relations for #1}}
-\newcommand\SyntaxDef[1]{\section{Syntax of #1\label{sec:Syntax of #1}}}
+\newcommand\FormalRelationsDef[2][]{\SectionDef[#1]{Formal Relations for #2}{Formal Relations for #2}}
+\newcommand\FormalRelationsRef[1]{\secref{Formal Relations for #1}} % DO NOT LINT: public convenience macro.
+\newcommand\SyntaxDef[2][]{\SectionDef[#1]{Syntax of #2}{Syntax of #2}}
 \newcommand\SyntaxRef[1]{\secref{Syntax of #1}}
-\newcommand\AbstractSyntaxDef[1]{\section{Abstract Syntax of #1\label{sec:Abstract Syntax of #1}}}
+\newcommand\AbstractSyntaxDef[2][]{\SectionDef[#1]{Abstract Syntax of #2}{Abstract Syntax of #2}}
 \newcommand\AbstractSyntaxRef[1]{\secref{Abstract Syntax of #1}}
-\newcommand\TypeRulesDef[1]{\section{Type Rules for #1\label{sec:Type Rules for #1}}}
-\newcommand\TypeRulesRef[1]{\secref{Type Rules for #1}}
-\newcommand\SemanticsRulesDef[1]{\section{Dynamic Semantics Rules for #1\label{sec:Dynamic Semantics Rules for #1}}}
+\newcommand\TypeRulesDef[2][]{\SectionDef[#1]{Type Rules for #2}{Type Rules for #2}}
+\newcommand\TypeRulesRef[1]{\secref{Type Rules for #1}} % DO NOT LINT: public convenience macro.
+\newcommand\SemanticsRulesDef[2][]{\SectionDef[#1]{Dynamic Semantics Rules for #2}{Dynamic Semantics Rules for #2}}
 \newcommand\SemanticsRulesRef[1]{\secref{Dynamic Semantics Rules for #1}}
 \newcommand\textfunc[1]{\textit{#1}}
 \newcommand\textastlabel[1]{\textsc{#1}}
@@ -294,6 +293,144 @@
     \immediate\write\@auxout{%
       \string\ASLRuleListEntry{Semantics}{\ASLCurrentSemanticsRuleList}{SemanticsRuleRef}{#2}{\unexpanded{#1}}%
     }%
+  \fi
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Chapter outline generation macros
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Use \ChapterOutline once in a chapter, after its introductory text and before
+% its first section.  It prints an itemized list of every \SectionDef in that
+% chapter.  Chapter membership is independent of file boundaries, so a chapter
+% and its sections may span multiple input files.
+%
+% Define an outlined section as follows:
+%
+%   \SectionDef[defines the relevant concepts;]{StableLabel}{Displayed Title}
+%
+% The optional first argument is the text printed after the section reference
+% in the outline.  It should include its final punctuation.  The second
+% argument is a stable label key: the section receives the label
+% `sec:StableLabel' and can be referenced with \secref{StableLabel}.  The third
+% argument is the displayed section title.  Keep the label stable when changing
+% either the title or its outline description.
+%
+% \FormalRelationsDef, \SyntaxDef, \AbstractSyntaxDef, \TypeRulesDef, and
+% \SemanticsRulesDef are convenience forms of \SectionDef.  They accept the
+% same optional outline description before their existing required argument.
+%
+% Most subsections should continue to use \subsection and do not appear in the
+% chapter outline.  To include a selected subsection, use:
+%
+%   \OutlineSubsectionDef[defines a special case;]{StableLabel}{Displayed Title}
+%
+% It is nested under the most recent \SectionDef in the same chapter, so it must
+% follow its intended parent section.
+%
+% Outlines are read from the previous LaTeX run, like the table of contents, so
+% run LaTeX twice after changing their structure or descriptions.  Their
+% auxiliary data and state are separate from the rule-list macros.
+\let\ASLCurrentOutlineSection\@empty
+\let\ASLCurrentOutlineSectionChapter\@empty
+
+\newcommand\ASLChapterOutlineSection[3]{%
+  \item \secref{#2}%
+  \def\ASLChapterOutlineDescription{#3}%
+  \ifx\ASLChapterOutlineDescription\@empty
+  \else
+    \space #3%
+  \fi
+  \@ifundefined{ASLChapterOutlineSubsections@#1@#2}{}{%
+    \begin{itemize}%
+      \csname ASLChapterOutlineSubsections@#1@#2\endcsname
+    \end{itemize}%
+  }%
+}
+
+\newcommand\ASLChapterOutlineEntry[3]{%
+  \@ifundefined{ASLChapterOutlineSeen@#1@#2}{%
+    \expandafter\gdef\csname ASLChapterOutlineSeen@#1@#2\endcsname{}%
+    \@ifundefined{ASLChapterOutline@#1}{%
+      \expandafter\gdef\csname ASLChapterOutline@#1\endcsname{}%
+    }{}%
+    \expandafter\g@addto@macro\csname ASLChapterOutline@#1\endcsname{%
+      \ASLChapterOutlineSection{#1}{#2}{#3}%
+    }%
+  }{}%
+}
+
+\newcommand\ASLChapterOutlineSubentry[4]{%
+  \@ifundefined{ASLChapterOutlineSubsectionSeen@#1@#2@#3}{%
+    \expandafter\gdef\csname ASLChapterOutlineSubsectionSeen@#1@#2@#3\endcsname{}%
+    \@ifundefined{ASLChapterOutlineSubsections@#1@#2}{%
+      \expandafter\gdef\csname ASLChapterOutlineSubsections@#1@#2\endcsname{}%
+    }{}%
+    \expandafter\g@addto@macro\csname ASLChapterOutlineSubsections@#1@#2\endcsname{%
+      \item \secref{#3}%
+      \def\ASLChapterOutlineDescription{#4}%
+      \ifx\ASLChapterOutlineDescription\@empty
+      \else
+        \space #4%
+      \fi
+    }%
+  }{}%
+}
+
+\newcommand\ASLPrintChapterOutline{%
+  \begin{itemize}%
+  \@ifundefined{ASLChapterOutline@\number\c@chapter}{%
+    \item \emph{Run LaTeX again to generate this chapter outline.}%
+  }{%
+    \csname ASLChapterOutline@\number\c@chapter\endcsname
+  }%
+  \end{itemize}%
+}
+
+\newcommand\ChapterOutline[0]{%
+  \@ifundefined{ASLChapterOutlinePrinted@\number\c@chapter}{%
+    \expandafter\gdef\csname ASLChapterOutlinePrinted@\number\c@chapter\endcsname{}%
+  }{%
+    \PackageError{ASLReference}{Multiple chapter outlines in chapter \number\c@chapter}{}%
+  }%
+  \global\let\ASLCurrentOutlineSection\@empty
+  \global\let\ASLCurrentOutlineSectionChapter\@empty
+  \paragraph{Outline} The rest of this chapter is organized as follows:
+  \ASLPrintChapterOutline
+}
+
+\newcommand\SectionDef[3][]{%
+  \section{#3\label{sec:#2}}%
+  \@ifundefined{ASLChapterOutlineWritten@\number\c@chapter @#2}{%
+    \expandafter\gdef\csname ASLChapterOutlineWritten@\number\c@chapter @#2\endcsname{}%
+  }{%
+    \PackageError{ASLReference}{Duplicate outline section `#2' in chapter \number\c@chapter}{}%
+  }%
+  \xdef\ASLCurrentOutlineSectionChapter{\number\c@chapter}%
+  \gdef\ASLCurrentOutlineSection{#2}%
+  \immediate\write\@auxout{%
+    \string\ASLChapterOutlineEntry{\number\c@chapter}{\unexpanded{#2}}{\unexpanded{#1}}%
+  }%
+}
+
+\newcommand\OutlineSubsectionDef[3][]{%
+  \subsection{#3\label{sec:#2}}%
+  \@ifundefined{ASLChapterOutlineSubsectionWritten@\number\c@chapter @#2}{%
+    \expandafter\gdef\csname ASLChapterOutlineSubsectionWritten@\number\c@chapter @#2\endcsname{}%
+  }{%
+    \PackageError{ASLReference}{Duplicate outline subsection `#2' in chapter \number\c@chapter}{}%
+  }%
+  \edef\ASLCurrentChapter{\number\c@chapter}%
+  \ifx\ASLCurrentOutlineSection\@empty
+    \PackageError{ASLReference}{Outline subsection `#2' has no preceding outline section}{}%
+  \else
+    \ifx\ASLCurrentChapter\ASLCurrentOutlineSectionChapter
+      \immediate\write\@auxout{%
+        \string\ASLChapterOutlineSubentry{\number\c@chapter}{\expandafter\unexpanded\expandafter{\ASLCurrentOutlineSection}}{\unexpanded{#2}}{\unexpanded{#1}}%
+      }%
+    \else
+      \PackageError{ASLReference}{Outline subsection `#2' has no preceding outline section in this chapter}{}%
+    \fi
   \fi
 }
 \makeatother

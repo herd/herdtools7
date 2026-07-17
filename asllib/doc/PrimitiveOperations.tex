@@ -20,20 +20,8 @@ on \nativevaluesterm{} via $\evalunop$ and $\evalbinop$.
 \ASLListing{Examples of primitive operations}{PrimitiveOperations}{\definitiontests/PrimitiveOperations.asl}
 
 \ChapterOutline
-\begin{itemize}
-  \item \FormalRelationsRef{Primitive Operations} defines the formal relations for primitive operations;
-  \item \SyntaxRef{Primitive Operations} defines the syntax for unary operations and binary operations;
-  \item \AbstractSyntaxRef{Primitive Operations} defines the AST for unary operations and binary operations;
-  \item \secref{PrimitiveOperationSignatures} defines the signatures for all primitive operations;
-  \item \secref{PrimitiveOperationDomains} defines the valid sets of operand values for primitive operations;
-  \item \TypeRulesRef{Primitive Operations} defines the static evaluation of primitive operations for literal values;
-  \item \SemanticsRulesRef{Primitive Operations} defines how to adapt the static evaluation of the primitive operations
-        (given by $\unopliterals$ and $\binopliterals$) for the dynamic semantics. Essentially this is done by unwrapping
-        \nativevaluesterm{} into literal values, applying either $\unopliterals$ or $\binopliterals$,
-        and finally wrapping the results by \nativevaluesterm{}.
-\end{itemize}
 
-\FormalRelationsDef{Primitive Operations}
+\FormalRelationsDef[defines the formal relations for primitive operations;]{Primitive Operations}
 \paragraph{Syntax:} primitive operations are grammatically derived from $\Nunop$ and $\Nbinop$.
 
 \paragraph{Abstract Syntax:} primitive operations are derived in the abstract syntax from $\unop$
@@ -53,7 +41,7 @@ on \nativevaluesterm{} via $\evalunop$ and $\evalbinop$.
   and binary operations are dynamically evaluated via
   $\evalbinop$ (see \SemanticsRuleRef{BinopValues}).
 
-\SyntaxDef{Primitive Operations}
+\SyntaxDef[defines the syntax for unary operations and binary operations;]{Primitive Operations}
 \begin{flalign*}
 \Nunop \derivesinline\ & \Tbnot \;|\; \Tminus \;|\; \Tnot &\\
 \Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
@@ -61,7 +49,7 @@ on \nativevaluesterm{} via $\evalunop$ and $\evalbinop$.
                       |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon \;|\; \Tplusplus
 \end{flalign*}
 
-\AbstractSyntaxDef{Primitive Operations}
+\AbstractSyntaxDef[defines the AST for unary operations and binary operations;]{Primitive Operations}
 \RenderTypes[remove_hypertargets]{unop_and_binop}
 
 
@@ -255,7 +243,8 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\section{Primitive Operation Signatures\label{sec:PrimitiveOperationSignatures}}
+\SectionDef[defines the signatures for all primitive operations;]
+  {PrimitiveOperationSignatures}{Primitive Operation Signatures}
 ASL follows the mathematical and programming language tradition of allowing operators such as \texttt{+} to be overloaded
 to refer to one of several different operations.
 %
@@ -501,7 +490,8 @@ $\Tneq$   & $\LLabel$ & $\LLabel$ & $\LBool$ & $\neenum$\\
 \end{table}
 
 \clearpage
-\section{Primitive Operation Domains\label{sec:PrimitiveOperationDomains}}
+\SectionDef[defines the valid sets of operand values for primitive operations;]
+  {PrimitiveOperationDomains}{Primitive Operation Domains}
 The unary operations ($\aslnotbool$, $\negateint$, $\negatereal$, and $\notbits$) are valid for all possible literal values,
 and most binary operations are also valid for all possible combinations of literal values of their operands.
 However, some binary operations are only considered valid for a subset of possible operand values.
@@ -539,7 +529,7 @@ $\nebits$         & length of $a$ = length of $b$\\
 \end{tabular}
 \end{center}
 
-\TypeRulesDef{Primitive Operations}
+\TypeRulesDef[defines the static evaluation of primitive operations for literal values;]{Primitive Operations}
 \TypingRuleDef{UnopLiterals}
 \RenderRelation{unop_literals}
 
@@ -795,8 +785,10 @@ and as $0$ for an empty bit sequence:
 \subsubsection{Operators Over Label Values \label{sec:LabelOperations}}
 \RenderProseAndFormally{binop_literals_label}
 
-\SemanticsRulesDef{Primitive Operations}
-
+\SemanticsRulesDef[defines how to adapt the static evaluation of the primitive operations
+        (given by $\unopliterals$ and $\binopliterals$) for the dynamic semantics. Essentially this is done by unwrapping
+        \nativevaluesterm{} into literal values, applying either $\unopliterals$ or $\binopliterals$,
+        and finally wrapping the results by \nativevaluesterm{}.]{Primitive Operations}
 \SemanticsRuleDef{UnopValues}
 \RenderRelation{eval_unop}
 

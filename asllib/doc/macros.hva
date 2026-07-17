@@ -133,6 +133,75 @@
    \let\ASLRecordTypingRule\my@ASLRecordTypingRule
    \let\ASLRecordSemanticsRule\my@ASLRecordSemanticsRule}
 
+% Chapter outlines use the LaTeX aux file in the PDF build.  Record the same
+% information in HeVeA's .haux file for HTML.  Number outlines by their order
+% in the document: this avoids relying on LaTeX's internal chapter counter,
+% which HeVeA does not provide, while still allowing a chapter to span files.
+\newcounter{ASLChapterOutlineIndex}
+\let\my@ASLCurrentOutlineSection\@empty
+
+\newcommand{\my@ASLChapterOutlineWrite}[3]{%
+  \@auxdowrite{\@print{\ASLChapterOutlineEntry}\{#1\}\{#2\}\{\@subst{#3}\}\@print{
+}}}
+
+\newcommand{\my@ASLChapterOutlineSubwrite}[4]{%
+  \@auxdowrite{\@print{\ASLChapterOutlineSubentry}\{#1\}\{#2\}\{#3\}\{\@subst{#4}\}\@print{
+}}}
+
+\newcommand{\my@ASLChapterOutlineEntry}[3]{%
+  \@ifundefined{ASLChapterOutline@#1}{%
+    \newtokens{\csname ASLChapterOutline@#1\endcsname}%
+  }{}%
+  \addtokens{\csname ASLChapterOutline@#1\endcsname}
+    {\ASLChapterOutlineSection{#1}{#2}{#3}}}
+
+\newcommand{\my@ASLChapterOutlineSubentry}[4]{%
+  \@ifundefined{ASLChapterOutlineSubsections@#1@#2}{%
+    \newtokens{\csname ASLChapterOutlineSubsections@#1@#2\endcsname}%
+  }{}%
+  \addtokens{\csname ASLChapterOutlineSubsections@#1@#2\endcsname}
+    {\item \secref{#3} #4}}
+
+\newcommand{\my@ASLChapterOutlineSection}[3]{%
+  \item \secref{#2} #3%
+  \@ifundefined{ASLChapterOutlineSubsections@#1@#2}{}{%
+    \begin{itemize}%
+      \csname ASLChapterOutlineSubsections@#1@#2\endcsname
+    \end{itemize}}}
+
+\newcommand{\my@ChapterOutline}{%
+  \stepcounter{ASLChapterOutlineIndex}%
+  \global\let\my@ASLCurrentOutlineSection\@empty
+  \paragraph{Outline} The rest of this chapter is organized as follows:
+  \begin{itemize}%
+  \@ifundefined{ASLChapterOutline@\arabic{ASLChapterOutlineIndex}}{%
+    \item \emph{Run HeVeA again to generate this chapter outline.}%
+  }{%
+    \csname ASLChapterOutline@\arabic{ASLChapterOutlineIndex}\endcsname
+  }%
+  \end{itemize}}
+
+\newcommand{\my@SectionDef}[3][]{%
+  \section{#3\label{sec:#2}}%
+  \gdef\my@ASLCurrentOutlineSection{#2}%
+  \my@ASLChapterOutlineWrite{\arabic{ASLChapterOutlineIndex}}{#2}{#1}}
+
+\newcommand{\my@OutlineSubsectionDef}[3][]{%
+  \subsection{#3\label{sec:#2}}%
+  \my@ASLChapterOutlineSubwrite
+    {\arabic{ASLChapterOutlineIndex}}{\my@ASLCurrentOutlineSection}{#2}{#1}}
+
+% HeVeA reads .haux from an earlier AtBeginDocument hook.  Stored entries must
+% therefore see these definitions before the document-level overrides below.
+\addrevtokens{\@atbegindocument}
+  {\let\ASLChapterOutlineEntry\my@ASLChapterOutlineEntry
+   \let\ASLChapterOutlineSubentry\my@ASLChapterOutlineSubentry}
+\AtBeginDocument
+  {\let\ASLChapterOutlineSection\my@ASLChapterOutlineSection
+   \let\ChapterOutline\my@ChapterOutline
+   \let\SectionDef\my@SectionDef
+   \let\OutlineSubsectionDef\my@OutlineSubsectionDef}
+
 % Some hyperlinked math constructs produce tables in display mode. Put the link
 % inside the display-mode construct there, and around the compact inline
 % construct otherwise, to avoid invalid HTML.

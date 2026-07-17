@@ -15,17 +15,9 @@ The final call to \verb|bar| is a \dynamicerrorterm.
 and then invoking its getter and its setter.
 
 \ChapterOutline
-\begin{itemize}
-  \item \FormalRelationsRef{Subprogram Calls} defines the formal relations for subprogram calls;
-  \item \SyntaxRef{Subprogram Calls} defines the syntax of subprogram calls;
-  \item \AbstractSyntaxRef{Subprogram Calls} defines the abstract syntax of subprogram calls;
-  \item \TypeRulesRef{Subprogram Calls} defines the type rules for subprogram calls,
-        and includes a discussion on parameter omission (\secref{ParameterOmission}); and
-  \item \SemanticsRulesRef{Subprogram Calls} defines the dynamic semantics of subprogram calls.
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef{Subprogram Calls}
+\FormalRelationsDef[defines the formal relations for subprogram calls;]{Subprogram Calls}
 \paragraph{Syntax:} Subprogram calls are grammatically derived from $\Nexpr$ and $\Nstmt$.
 \paragraph{Abstract Syntax:} Subprogram calls are derived in the abstract syntax by
   $\ECall$ and $\SCall$;
@@ -33,7 +25,7 @@ and then invoking its getter and its setter.
 \paragraph{Semantics:} Subprogram calls are evaluated by $\evalcall$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SyntaxDef{Subprogram Calls}
+\SyntaxDef[defines the syntax of subprogram calls;]{Subprogram Calls}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
 \Nexpr \derives\  & \Tidentifier \parsesep \PlistZero{\Nexpr} &\\
@@ -41,13 +33,14 @@ and then invoking its getter and its setter.
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\AbstractSyntaxDef{Subprogram Calls}
+\AbstractSyntaxDef[defines the abstract syntax of subprogram calls;]{Subprogram Calls}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \RenderTypes[remove_hypertargets]{calls}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\TypeRulesDef{Subprogram Calls}
+\TypeRulesDef[defines the type rules for subprogram calls,
+        and includes a discussion on parameter omission (\secref{ParameterOmission}); and]{Subprogram Calls}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 We define the following rules for annotating subprogram calls:
@@ -427,7 +420,7 @@ as an empty parameter list for a standard library function must be entirely omit
 \ASLListing{Erroneous parameter omission}{ParameterOmission-bad}{\definitiontests/ParameterOmission.bad.asl}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SemanticsRulesDef{Subprogram Calls}
+\SemanticsRulesDef[defines the dynamic semantics of subprogram calls.]{Subprogram Calls}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 We define the following rules for evaluating subprogram calls:

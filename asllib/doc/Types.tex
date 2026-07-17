@@ -12,36 +12,9 @@ from the AST symbol $\ty$.
 \ASLListing{Examples of Types}{Types}{\definitiontests/Types.asl}
 
 \ChapterOutline
-\begin{itemize}
-  \item \FormalRelationsRef{Types} defines the formal relations for types;
-  \item \AbstractSyntaxRef{Types} defines how the abstract syntax nodes for types
-    are generated;
-  \item \secref{IntegerTypes} defines the \integertypeterm{};
-  \item \secref{RealType} defines the \realtypeterm{};
-  \item \secref{StringType} defines the \stringtypeterm{};
-  \item \secref{BooleanType} defines the \booleantypeterm{};
-  \item \secref{BitvectorTypes} defines the \bitvectortypeterm{};
-  \item \secref{TupleTypes} defines \Tupletypesterm{};
-  \item \secref{ParenthesisedTypes} defines parenthesised types;
-  \item \secref{EnumerationTypes} defines \Enumerationtypesterm{};
-  \item \secref{ArrayTypes} defines array types;
-  \item \secref{RecordTypes} defines record types;
-  \item \secref{ExceptionTypes} defines exception types;
-  \item \secref{CollectionTypes} defines collection types;
-  \item \secref{NamedTypes} defines named types;
-  \item \secref{DeclaredTypes} defines \emph{declared types} and restrictions over them;
-  \item \secref{DomainOfValuesForTypes} defines the semantics of types by associating a value to each type;
-  \item \secref{BasicTypeAttributes} assigns basic properties to types, which are useful
-        in classifying them;
-  \item \secref{RelationsOnTypes} defines relations on types that are needed to typecheck
-        expressions and statements; and
-  \item \secref{BaseValues} defines how to generate a \emph{base value} --- an expression
-        to initialise a storage element of a given type for which no initialising
-        expression is given.
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef{Types}
+\FormalRelationsDef[defines the formal relations for types;]{Types}
 \paragraph{Syntax:} \Anonymoustypes{} are grammatically derived from $\Nty$
 and types that must be declared and named are grammatically derived from $\Ntydecl$;
 
@@ -59,7 +32,8 @@ and types that must be declared and named are grammatically derived from $\Ntyde
   (see \SemanticsRuleRef{ATC} and \SemanticsRuleRef{IsValOfType}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\AbstractSyntaxDef{Types}
+\AbstractSyntaxDef[defines how the abstract syntax nodes for types
+    are generated;]{Types}
 \NotImportedToASLSpecYet{
 \hypertarget{build-ty}{}
 The function
@@ -124,7 +98,8 @@ Formally:
 \end{mathpar}
 
 \hypertarget{integertypeterm}{}
-\section{Integer Types\label{sec:IntegerTypes}}
+\SectionDef[defines the \integertypeterm{};]
+  {IntegerTypes}{Integer Types}
 The \emph{\integertypesterm{}} represent the mathematical integer values.
 
 There are four kinds of integer types, and we
@@ -369,7 +344,8 @@ expressions of \texttt{let} storage elements.
 
 \RenderProseAndFormally{annotate_constraint}
 
-\section{The Real Type\label{sec:RealType}}
+\SectionDef[defines the \realtypeterm{};]
+  {RealType}{The Real Type}
 \hypertarget{realtypeterm}{}
 The \emph{\realtypeterm{}} represents mathematical rational number values.
 There is no bound on the minimum and maximum rational value that can be represented,
@@ -412,7 +388,8 @@ See \ExampleRef{Well-typed Real Types} for examples of well-typed \realtypeterm{
 \RenderProseAndFormally{annotate_type_t_real}
 \CodeSubsection{\TRealBegin}{\TRealEnd}{../Typing.ml}
 
-\section{The String Type\label{sec:StringType}}
+\SectionDef[defines the \stringtypeterm{};]
+  {StringType}{The String Type}
 \hypertarget{stringtypeterm}{}
 \hypertarget{stringtypesterm}{}
 The \emph{\stringtypeterm{}} represents strings of characters.
@@ -451,7 +428,8 @@ See \ExampleRef{Well-typed String Types} for examples of well-typed \stringtypes
 \RenderProseAndFormally{annotate_type_t_string}
 \CodeSubsection{\TStringBegin}{\TStringEnd}{../Typing.ml}
 
-\section{The Boolean Type\label{sec:BooleanType}}
+\SectionDef[defines the \booleantypeterm{};]
+  {BooleanType}{The Boolean Type}
 \hypertarget{booleantypeterm}{}
 The \emph{\booleantypeterm{}} represents Booleans.
 
@@ -484,7 +462,8 @@ See \ExampleRef{Well-typed Boolean Types} for examples of well-typed \booleantyp
 \RenderProseAndFormally{annotate_type_t_bool}
 \CodeSubsection{\TBoolBegin}{\TBoolEnd}{../Typing.ml}
 
-\section{Bitvector Types\label{sec:BitvectorTypes}}
+\SectionDef[defines the \bitvectortypeterm{};]
+  {BitvectorTypes}{Bitvector Types}
 \hypertarget{bitvectortypeterm}{}
 \emph{Bitvectors} represent sequences of $0$ and $1$ bits ordered according to \RequirementRef{BitvectorOrdering}.
 %
@@ -623,7 +602,8 @@ bitvectors of unbounded width.
 \RenderProseAndFormally{annotate_type_t_bits}
 \CodeSubsection{\TBitsBegin}{\TBitsEnd}{../Typing.ml}
 
-\section{Tuple Types\label{sec:TupleTypes}}
+\SectionDef[defines \Tupletypesterm{};]
+  {TupleTypes}{Tuple Types}
 \hypertarget{tupletypeterm}{}
 
 Types can be combined into \tupletypesterm{} whose values consist of tuples of values of those types.
@@ -691,7 +671,8 @@ See \ExampleRef{Well-typed Tuples} for examples of well-typed \tupletypesterm.
 \RenderProseAndFormally{annotate_type_t_tuple}
 \CodeSubsection{\TTupleBegin}{\TTupleEnd}{../Typing.ml}
 
-\section{Parenthesised Types\label{sec:ParenthesisedTypes}}
+\SectionDef[defines parenthesised types;]
+  {ParenthesisedTypes}{Parenthesised Types}
 A single type inside parentheses is not considered to be a tuple, but rather the element
 inside the parenthesis.
 Parenthesising a type can be used to improve readability.
@@ -716,7 +697,8 @@ In other words, we ignore the parenthesis.
 }
 \end{mathpar}
 
-\section{Enumeration Types\label{sec:EnumerationTypes}}
+\SectionDef[defines \Enumerationtypesterm{};]
+  {EnumerationTypes}{Enumeration Types}
 \hypertarget{enumerationtypeterm}{}
 The \emph{\enumerationtypeterm} defines a list of enumeration literals,
 also referred to as \emph{labels}, that act
@@ -790,7 +772,8 @@ show examples of ill-typed enumeration type declarations.
 \RenderProseAndFormally{annotate_type_t_enum_decl}
 \CodeSubsection{\TEnumDeclBegin}{\TEnumDeclEnd}{../Typing.ml}
 
-\section{Array Types\label{sec:ArrayTypes}}
+\SectionDef[defines array types;]
+  {ArrayTypes}{Array Types}
 \hypertarget{arraytypeterm}{}
 %
 Arrays are sequences of values of a single given type.
@@ -884,7 +867,8 @@ of \verb|i| is the \unconstrainedintegertypeterm.
 \RenderProseAndFormally{check_underlying_integer}
 \CodeSubsection{\CheckUnderlyingIntegerBegin}{\CheckUnderlyingIntegerEnd}{../Typing.ml}
 
-\section{Record Types\label{sec:RecordTypes}}
+\SectionDef[defines record types;]
+  {RecordTypes}{Record Types}
 \hypertarget{recordtypeterm}{}
 %
 A record is a \structuredtypeterm{} consisting of a list of field identifiers which denote individual storage elements.
@@ -924,7 +908,8 @@ is ill-typed, since the field \verb|v| repeats.
 \RenderProseAndFormally{annotate_type_t_record_exception}
 \CodeSubsection{\TStructuredDeclBegin}{\TStructuredDeclEnd}{../Typing.ml}
 
-\section{Exception Types\label{sec:ExceptionTypes}}
+\SectionDef[defines exception types;]
+  {ExceptionTypes}{Exception Types}
 \hypertarget{exceptiontypeterm}{}
 An exception is a \structuredtypeterm{} consisting of a list of field identifiers
 which denote individual storage elements.
@@ -962,7 +947,8 @@ In \listingref{typing-texception}, all the uses of exception types are well-type
 \subsection{Typing Exception Types}
 The rule for typing exception types is \TypingRuleRef{TStructuredDecl}.
 
-\section{Collection Types\label{sec:CollectionTypes}}
+\SectionDef[defines collection types;]
+  {CollectionTypes}{Collection Types}
 \hypertarget{collectiontypeterm}{}
 
 \ASLListing{Collection types}{TCollection}{\typingtests/TypingRule.TCollection.asl}
@@ -1011,7 +997,8 @@ collection types in comments.
 
 \RenderProseAndFormally{annotate_type_t_collection}
 
-\section{Named Types\label{sec:NamedTypes}}
+\SectionDef[defines named types;]
+  {NamedTypes}{Named Types}
 A named type declaration allows declaring a new type associated with the given name.
 The intent is that, by default, any named type should not be assignable to or from any other named type, even
 if they coincidentally have the same \structureterm.
@@ -1069,7 +1056,8 @@ show examples of ill-typed named types.
 \RenderProseAndFormally{annotate_type_t_named}
 \CodeSubsection{\TNamedBegin}{\TNamedEnd}{../Typing.ml}
 
-\section{Declared Types\label{sec:DeclaredTypes}}
+\SectionDef[defines \emph{declared types} and restrictions over them;]
+  {DeclaredTypes}{Declared Types}
 A declared type can be an \enumerationtypeterm{}, a \recordtypeterm, an \exceptiontypeterm, or an \anonymoustype.
 \subsection{Syntax}
 \begin{flalign*}

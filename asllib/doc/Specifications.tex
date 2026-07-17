@@ -17,21 +17,9 @@ All global declarations in \listingref{TypecheckDecl} are well-typed.
 \ASLListing{Global declarations}{TypecheckDecl}{\typingtests/TypingRule.TypecheckDecl.asl}
 
 \ChapterOutline
-\begin{itemize}
-  \item \secref{Formal Relations for Specifications} defines the formal relations used for specifications;
-  \item \secref{Formal Relations for Global Declarations} defines the formal relations used for individual
-    global declarations;
-  \item \secref{Syntax of Specifications} defines the syntax of specifications;
-  \item \secref{Abstract Syntax of Specifications} defines the abstract syntax of specifications;
-  \item \secref{Typing Specifications} defines the type rules for specifications;
-  \item \secref{Overriding Subprograms} defines subprogram overriding and the associated type rules;
-  \item \secref{TopologicalOrdering} defines defined-used relations between global declarations,
-        which is needed to sort them;
-  \item \secref{Dependencies} defines how the global declarations in a specification are sorted;
-  \item \secref{Semantics Of Specifications} defines the dynamic semantics of specifications.
-\end{itemize}
 
-\section{Formal Relations for Specifications\label{sec:Formal Relations for Specifications}}
+\SectionDef[defines the formal relations used for specifications;]
+  {Formal Relations for Specifications}{Formal Relations for Specifications}
 \hypertarget{def-specificationterm}{}
 
 \paragraph{Syntax:} Specifications are grammatically derived from $\Nspec$.
@@ -41,7 +29,9 @@ All global declarations in \listingref{TypecheckDecl} are well-typed.
 \paragraph{Semantics:} The dynamic semantics of specifications in given by the relation $\evalspec$,
   which is defined in \SemanticsRuleRef{EvalSpec}.
 
-\section{Formal Relations for Global Declarations\label{sec:Formal Relations for Global Declarations}}
+\SectionDef[defines the formal relations used for individual
+    global declarations;]
+  {Formal Relations for Global Declarations}{Formal Relations for Global Declarations}
 Specifications are lists of global declarations.
 The formal relations for individual global declarations are as follows:
 
@@ -82,14 +72,16 @@ Therefore, they have no corresponding rule to implement $\typecheckdecl$.
   $\evalglobals$ and subprogram declarations are evaluated via $\evalcall$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Syntax of Specifications\label{sec:Syntax of Specifications}}
+\SectionDef[defines the syntax of specifications;]
+  {Syntax of Specifications}{Syntax of Specifications}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
 \Nspec   \derives\ & \maybeemptylist{\Ndecl} &
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Abstract Syntax of Specifications\label{sec:Abstract Syntax of Specifications}}
+\SectionDef[defines the abstract syntax of specifications;]
+  {Abstract Syntax of Specifications}{Abstract Syntax of Specifications}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \RenderType[remove_hypertargets]{spec}
 
@@ -116,7 +108,8 @@ We define this function for subprogram declarations, type declarations, and glob
 \end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Typing Specifications\label{sec:Typing Specifications}}
+\SectionDef[defines the type rules for specifications;]
+  {Typing Specifications}{Typing Specifications}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The \untypedast{} of an ASL specification consists of a list of global declarations.
@@ -311,7 +304,8 @@ and the subprogram with the \realtypeterm{} argument is named \verb|increment-1|
 
 \RenderProseAndFormally{add_subprogram_decls}
 
-\section{Overriding Subprograms\label{sec:Overriding Subprograms}}
+\SectionDef[defines subprogram overriding and the associated type rules;]
+  {Overriding Subprograms}{Overriding Subprograms}
 This section defines how to override subprograms in a specification.
 In particular, a subprogram marked by \texttt{impdef} can be overridden by a subprogram marked by \\
 \texttt{implementation}.
@@ -402,7 +396,8 @@ In particular, though the ill-typed subprogram is overridden and will not be use
 
 \RenderProseAndFormally{rename_subprograms}
 
-\section{Defined-Used Dependencies for Global Declarations\label{sec:TopologicalOrdering}}
+\SectionDef[defines defined-used relations used to sort global declarations;]
+  {TopologicalOrdering}{Defined-Used Dependencies for Global Declarations}
 This section defines how to construct a graph of \defusedependenciesterm\ between the identifiers associated
 with global declarations.
 This is achieved by associating, for each declaration $d$, the set identifiers \emph{used} by $d$,
@@ -594,8 +589,8 @@ and the identifiers used by it, appearing in comments to its right.
 
 \RenderProseAndFormally{use_catcher}
 
-\section{Ordering Global Declarations via Defined-Used Dependencies\label{sec:Dependencies}}
-
+\SectionDef[defines how the global declarations in a specification are sorted;]
+  {Dependencies}{Ordering Global Declarations via Defined-Used Dependencies}
 \begin{definition}[Strongly Connected Components]
 \hypertarget{relation-scc}{}
 Given a graph $G=(V, E)$, a \\ subset of its nodes $C \subseteq V$ is called
@@ -623,7 +618,8 @@ $C_{1..k} \in \topologicalorderingcomps[H]{\comps}{E}$, if the following conditi
 \]
 \end{definition}
 
-\section{Semantics of Specifications\label{sec:Semantics Of Specifications}}
+\SectionDef[defines the dynamic semantics of specifications.]
+  {Semantics Of Specifications}{Semantics of Specifications}
 The semantics of specifications is defined via the relation $\evalspec$, which is defined next.
 
 \SemanticsRuleDef{EvalSpec}

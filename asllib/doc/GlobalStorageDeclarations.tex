@@ -7,19 +7,11 @@ Global storage declarations introduce storage elements into the \globalstaticenv
 \ASLListing{Examples of global storage declarations}{GlobalStorageDeclarations}{\definitiontests/GlobalStorageDeclarations.asl}
 
 \ChapterOutline
-\begin{itemize}
-  \item \secref{ConfigurableGlobalStorageDeclarations} describes configurable global storage elements ---
-        elements declared with the \Tconfig{} keyword;
-  \item \FormalRelationsRef{Global Storage Declarations} defines the formal relations
-        for global storage declarations;
-  \item \SyntaxRef{Global Storage Declarations} defines the syntax of global storage declarations;
-  \item \AbstractSyntaxRef{Global Storage Declarations} defines the abstract syntax of global storage declarations;
-  \item \TypeRulesRef{Global Storage Declarations} defines the type rules of global storage declarations;
-  \item \SemanticsRulesRef{Global Storage Declarations} defines the dynamic semantics of global storage declarations.
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Configurable Global Storage Declarations\label{sec:ConfigurableGlobalStorageDeclarations}}
+\SectionDef[describes configurable global storage elements ---
+        elements declared with the \Tconfig{} keyword;]
+  {ConfigurableGlobalStorageDeclarations}{Configurable Global Storage Declarations}
 Global storage declarations with the keyword \texttt{config} aim to assist implementation-specific support for ``configuration'' of an ASL specification.
 In particular, implementations may provide mechanisms to override \texttt{config} values, such as:
 \begin{itemize}
@@ -39,7 +31,8 @@ The language supports such overriding mechanisms (and in particular, simplifies 
 \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef{Global Storage Declarations}
+\FormalRelationsDef[defines the formal relations
+        for global storage declarations;]{Global Storage Declarations}
 \paragraph{Syntax:} Global storage declarations are grammatically derived from $\Ndecl$
   via the subset of productions shown in \SyntaxRef{Global Storage Declarations}.
 
@@ -54,8 +47,7 @@ The language supports such overriding mechanisms (and in particular, simplifies 
   The semantics of a single global storage declaration is defined in \SemanticsRuleRef{DeclareGlobal}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SyntaxDef{Global Storage Declarations}
-
+\SyntaxDef[defines the syntax of global storage declarations;]{Global Storage Declarations}
 \RequirementDef{DiscardingGlobalStorageDeclarations}
 Global storage declarations must\\ bind a name.
 This is ensured by the ASL grammar.
@@ -78,7 +70,7 @@ as they discard their declared storage elements.
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\AbstractSyntaxDef{Global Storage Declarations}
+\AbstractSyntaxDef[defines the abstract syntax of global storage declarations;]{Global Storage Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \RenderTypes[remove_hypertargets]{decl_global_storage}
 
@@ -250,7 +242,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\TypeRulesDef{Global Storage Declarations}
+\TypeRulesDef[defines the type rules of global storage declarations;]{Global Storage Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \RequirementDef{GlobalStorageCycles}
@@ -369,7 +361,7 @@ static environment:
 \end{TypingRuleList}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SemanticsRulesDef{Global Storage Declarations}
+\SemanticsRulesDef[defines the dynamic semantics of global storage declarations.]{Global Storage Declarations}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 This section defines the following relations:
