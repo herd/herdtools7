@@ -77,10 +77,15 @@ The relation
 \DefineProse{r}{
 \AllApply
   \begin{itemize}
-    \item define \texttt{res} as \begin{itemize}\item \texttt{a} if \texttt{a} is equal to \texttt{b}, \item the sum of \texttt{a} and \texttt{b} if \texttt{a} is greater than \texttt{b}, and \item \texttt{b} if \texttt{a} is less than \texttt{b}\end{itemize}
-    \item define \texttt{y} as the rec record with $\Fieldf$ value \texttt{a} and $\Fieldg$ value \texttt{b}
-    \item define \texttt{r\_f} as the sum of the field $\FIELDf$ of \texttt{r} and the field $\FIELDg$ of \texttt{r}
-    \item define \texttt{r'} as \texttt{r} with $\FIELDf$ updated to \texttt{res}
-    \item \textbf{the result is:} the pair consisting of \texttt{res} (for the output variable \texttt{c}) and \texttt{r'}.
+    \item define \ProseMath{\texttt{res}} as \begin{itemize}\item \ProseMath{\texttt{a}} if \ProseMath{{ \texttt{a} \equal \texttt{b} }}, \item \ProseMath{{ \texttt{a}\numplus\texttt{b} }} if \ProseMath{{ \texttt{a} \greaterthan \texttt{b} }}, and \item \ProseMath{\texttt{b}} if \ProseMath{{ \texttt{a} \lessthan \texttt{b} }}\end{itemize}
+    \item define \ProseMath{\texttt{y}} as \ProseMath{\left\{\begin{array}{lcl}
+                  \FIELDf & : & \texttt{a}\\
+                  \FIELDg & : & \texttt{b}
+                  \end{array}\right\}}
+    \item define \ProseMath{\texttt{r\_f}} as \ProseMath{{ \texttt{r}.\FIELDf\numplus\texttt{r}.\FIELDg }}
+    \item define \ProseMath{\texttt{r'}} as \ProseMath{\texttt{r}\left\{\begin{array}{lcl}
+                            \FIELDf & : & \texttt{res}
+                            \end{array}\right\}}
+    \item \textbf{the result is:} \ProseMath{(\overtext{\texttt{res}}{\texttt{c}}, \texttt{r'})}.
   \end{itemize}
 } % EndDefineProse

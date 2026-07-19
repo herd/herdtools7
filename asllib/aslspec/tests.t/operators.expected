@@ -41,7 +41,9 @@ The relation
 \DefineRule{f}{
 \begin{mathpar}
 \inferrule{ { { { \texttt{a}\intplus\texttt{b} } \equal \texttt{c} } } \hva\\
- { { \texttt{d} \eqdef { \ifthenelseop[H]{{ \texttt{a} \member \texttt{S} }}{\texttt{b}}{\texttt{c}} } } } }{
+ { { \texttt{d} \eqdef { \ifthenelseop[H]{{ \texttt{a} \member \texttt{S} }}{\texttt{b}}{\texttt{c}} } } } \hva\\
+ { { \texttt{at\_limit} \eqdef { \texttt{a}\intplus{ \texttt{b}\intplus\texttt{c} } } } } \hva\\
+ { { \texttt{above\_limit} \eqdef { \texttt{a}\intplus{ \texttt{a}\intplus{ \texttt{b}\intplus\texttt{c} } } } } } }{
  { \f(\texttt{a}, \texttt{b}, \texttt{c}, \texttt{S}) \typearrow \texttt{d} } 
 }
 \end{mathpar}
@@ -50,8 +52,10 @@ The relation
 \DefineProse{f}{
 \AllApply
   \begin{itemize}
-    \item the sum of \texttt{a} and \texttt{b} is equal to \texttt{c}
-    \item define \texttt{d} as: if \texttt{a} is in \texttt{S} then \texttt{b} else \texttt{c}
-    \item \textbf{the result is:} \texttt{d}.
+    \item \ProseMath{{ \texttt{a}\intplus\texttt{b} }} is equal to \ProseMath{\texttt{c}}
+    \item define \ProseMath{\texttt{d}} as: if \ProseMath{{ \texttt{a} \member \texttt{S} }} then \ProseMath{\texttt{b}} else \ProseMath{\texttt{c}}
+    \item define \ProseMath{\texttt{at\_limit}} as: \ProseMath{{ \texttt{a}\intplus{ \texttt{b}\intplus\texttt{c} } }}
+    \item define \ProseMath{\texttt{above\_limit}} as: the sum of \ProseMath{\texttt{a}} and \ProseMath{{ \texttt{a}\intplus{ \texttt{b}\intplus\texttt{c} } }}
+    \item \textbf{the result is:} \ProseMath{\texttt{d}}.
   \end{itemize}
 } % EndDefineProse

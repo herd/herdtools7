@@ -37,6 +37,8 @@ typing relation f(a: N, b: N, c: N, S: powerset(N)) -> N {
 } =
     a + b = c;
     d := if a in S then b else c;
+    at_limit := a + b + c;
+    above_limit := a + a + b + c;
     --
     d;
 ;
