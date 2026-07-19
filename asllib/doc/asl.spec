@@ -185,20 +185,20 @@ operator map_update[K,V](map: partial K -> V, key: K, value: V) -> (partial K ->
 {
   math_macro = \mapupdate,
   custom = true,
-  prose_application = "the map given by {map} \hyperlink{def-mapupdate}{updated} by binding {key} to {value}",
+  prose_application = "{map} \hyperlink{def-mapupdate}{updated} by binding {key} to {value}",
 };
 
 operator dom[K,V](map: partial K -> V) -> powerset(K)
 {
   math_macro = \domop,
-  prose_application = "the \hyperlink{def-dom}{domain} of the map given by {map}",
+  prose_application = "the \hyperlink{def-dom}{domain} of {map}",
 };
 
 operator map_apply[K,V](map: partial K -> V, key: K) -> V
 {
   custom = true,
   math_macro = \mapapplyop,
-  prose_application = "the application of the map given by {map} to {key}",
+  prose_application = "{map} applied to {key}",
 };
 
 operator sort[T](unsorted: list0(T), comparator: fun T -> Sign) -> list0(T)
@@ -284,7 +284,7 @@ operator same_length[A,B](lhs: list0(A), rhs: list0(B)) -> Bool
 {
   math_macro = \samelengthop,
   custom = true,
-  prose_application = "the lists given by {lhs} and {rhs} have the same length",
+  prose_application = "{lhs} and {rhs} have the same length",
 };
 
 // Concatenates a fixed number of lists into a single list.
@@ -312,7 +312,7 @@ operator list_set[T](s: powerset(T)) -> list0(T)
 operator cons[T](head: T, tail: list0(T)) -> list1(T)
 {
   math_macro = \cons,
-  prose_application = "the list whose \head{} is given by {head} and \tail{} is given by {tail}",
+  prose_application = "the list with \head{} {head} and \tail{} {tail}",
 };
 
 // The output type has to be list0, not list1,
@@ -320,13 +320,13 @@ operator cons[T](head: T, tail: list0(T)) -> list1(T)
 operator match_cons[T](head: T, tail: list0(T)) -> list0(T)
 {
   math_macro = \cons,
-  prose_application = "the non-empty list whose \head{} is given by {head} and \tail{} is given by {tail}",
+  prose_application = "the non-empty list with \head{} {head} and \tail{} {tail}",
 };
 
 operator match_non_empty_cons[T](head: T, tail: list0(T)) -> list1(T)
 {
   math_macro = \cons,
-  prose_application = "the non-empty list whose \head{} is given by {head} and \tail{} is given by {tail}",
+  prose_application = "the non-empty list with \head{} {head} and \tail{} {tail}",
 };
 
 operator list_combine[A,B](lst_a: list0(A), lst_b: list0(B)) -> list0((A, B))
@@ -345,7 +345,7 @@ operator list_cross[A,B](lhs: list0(A), rhs: list0(B)) -> list0((A, B))
 operator list_fst[A,B](list_of_pairs: list0((A, B))) -> list0(A)
 {
   math_macro = \listfst,
-  prose_application = "the list consisting of the first component from each pair in the list of pairs given by {list_of_pairs}",
+  prose_application = "the list of first components of the pairs in {list_of_pairs}",
 };
 
 operator list_combine_three[A,B,C](lst1:list0(A), lst2: list0(B), lst3: list0(C)) -> list0((A, B, C))
@@ -372,7 +372,7 @@ operator listprefix[T](lhs: list0(T), rhs: list0(T)) -> Bool
 {
   math_macro = \listprefix,
   custom = true,
-  prose_application = "the list given by {lhs} is a prefix of the list given by {rhs}",
+  prose_application = "{lhs} is a prefix of {rhs}",
 };
 
 // A type conversion in case we know that the input
@@ -741,20 +741,20 @@ operator ELint(n: Z) -> expr
 operator AbbrevEBinop(op: binop, left: expr, right: expr) -> expr
 {
   math_macro = \AbbrevEBinop,
-  prose_application = "the binary expression for {op}, left operand given by {left}, and right operand given by {right}",
+  prose_application = "the binary expression with operator {op}, left operand {left}, and right operand {right}",
 };
 
 operator AbbrevECond(test: expr, true_branch: expr, false_branch: expr) -> expr
 {
   math_macro = \AbbrevECond,
-  prose_application = "the condition expression with test given by {test}, true branch given by {true_branch}, and false branch given by {false_branch}",
+  prose_application = "the conditional expression with test {test}, true branch {true_branch}, and false branch {false_branch}",
 };
 
 operator AbbrevConstraintRange(e1: expr, e2: expr) -> int_constraint
 {
   math_macro = \AbbrevConstraintRangeOp,
   custom = true,
-  prose_application = "the \rangeconstraintterm{} for the start expression given by {e1} and end expression given by {e2}",
+  prose_application = "the \rangeconstraintterm{} from {e1} to {e2}",
 };
 
 operator AbbrevConstraintExact(e: expr) -> int_constraint
@@ -900,7 +900,7 @@ ast expr { "expression" } =
     | E_ATC(source: expr, type: ty)
     { "the asserting type conversion for {source} and the type given by {type}" }
     | E_Binop(binary_operator: binop, left: expr, right: expr)
-    { "the binary expression for {binary_operator}, left operand given by {left}, and right operand given by {right}" }
+    { "the binary expression with operator {binary_operator}, left operand {left}, and right operand {right}" }
     | E_Unop(unary_operator: unop, subexpression: expr)
     { "the unary expression for {unary_operator} and operand given by {subexpression}" }
     | E_Call(call_descriptor: call)
@@ -908,7 +908,7 @@ ast expr { "expression" } =
     | E_Slice(base: expr, slices: list0(slice))
     { "the slice expression for the base expression given by {base} and slices given by {slices}" }
     | E_Cond(test: expr, true_branch: expr, false_branch: expr)
-    { "the condition expression with test given by {test}, true branch given by {true_branch}, and false branch given by {false_branch}", }
+    { "the conditional expression with test {test}, true branch {true_branch}, and false branch {false_branch}", }
     | E_GetArray(base: expr, index: expr)
     { "the array read expression for the array expression given by {base} and index expression given by {index}" }
     | E_GetField(record: expr, field_name: Identifier)
@@ -1149,7 +1149,7 @@ ast int_constraint { "integer constraint" } =
     | Constraint_Exact(subexpression: expr)
     { "the \exactconstraintterm{} for {subexpression}" }
     | Constraint_Range(start_expression: expr, end_expression: expr)
-    { "the \rangeconstraintterm{} from the start expression given by {start_expression} to the end expression given by {end_expression}" }
+    { "the \rangeconstraintterm{} from {start_expression} to {end_expression}" }
 ;
 
 ast bitfield { "bitfield" } =
@@ -2324,7 +2324,7 @@ typedef value_read_from { "value-reading effect" } =
 typing function te_check(condition: Bool, code: type_error_code) -> CheckResult | type_error
   {
     "returns $\True$ if {condition} holds and a type error with {code} otherwise.",
-    prose_transition = "checking the condition --- {condition} --- yields",
+    prose_transition = "checking whether {condition} holds yields",
   } =
   case te_check_true {
     condition = True;
@@ -2360,7 +2360,7 @@ function bool_transition(condition: Bool) -> (result: Bool)
     math_macro = \booltrans,
     "is the identity function for Booleans.",
     prose_application = "{condition}",
-    prose_transition = "testing if {condition} yields",
+    prose_transition = "testing whether {condition} holds yields",
 } =
   --
   condition;
@@ -2844,8 +2844,7 @@ typing function find_bitfields_slices(name: Identifier, bitfields: list0(bitfiel
 {
   "returns the slices associated with the bitfield named {name} among the list of bitfields {bitfields}
   in {slices}. \ProseOtherwiseTypeError",
-  prose_transition = "finding the slices associated with the bitfield named by {name} among {bitfields}
-  yields",
+  prose_transition = "finding the slices of the bitfield named {name} in {bitfields} yields",
 } =
   case non_empty {
     bitfields =: match_cons(field, bitfields1);
@@ -2905,11 +2904,8 @@ typing relation annotate_get_array(
   expression in {t}, the annotated expression {new_e},
   and the inferred \sideeffectdescriptorterm{} {ses}.",
   prose_application = "the annotated array access expression for base {e_base} and index {e_index}",
-  prose_transition = "annotating the array access expression with
-    type of array elements given by {t_elem},
-    array base expression given by {e_base},
-    its associated {ses_base},
-    and index expression given by {e_index} yields",
+  prose_transition = "annotating the array access in {tenv} with element type {t_elem},
+    base expression {e_base}, base side effects {ses_base}, and index {e_index} yields",
   math_layout = [(_,_,[_,_,_]),_],
 } =
   annotate_expr(tenv, e_index) -> (t_index', e_index', ses_index);
@@ -2928,8 +2924,7 @@ typing function get_bitfield_width(tenv: static_envs, name: Identifier, tfields:
   "returns the expression {e_width} that describes the
   width of the bitfield named {name} in the list of
   fields {tfields}. \ProseOtherwiseTypeError",
-  prose_transition = "obtaining the expression corresponding to the width of the bitfield whose name is given by {name},
-                      which should be listed in {tfields} yields",
+  prose_transition = "obtaining the width expression for the bitfield named {name} in {tfields} yields",
 } =
   case okay {
     assoc_opt(tfields, name) =: some(t);
@@ -4018,7 +4013,7 @@ typing function check_disjoint_slices(tenv: static_envs, slices: list0(slice)) -
          CheckResult | type_error
 {
     "checks whether the list of slices {slices} do not overlap in {tenv}, yielding $\True$. \ProseOtherwiseTypeError",
-    prose_transition = "checking whether {slices} are pairwise-disjoint in {tenv} yields",
+    prose_transition = "checking whether the slices in {slices} are pairwise disjoint in {tenv} yields",
 } =
   disjoint_slices_to_positions(tenv, False, slices) -> positions;
   --
@@ -4029,7 +4024,7 @@ semantics function check_non_overlapping_slices(value_ranges: list0((native_valu
          CheckResult | TDynError
 {
     "checks whether the sets of integers represented by the list of ranges {value_ranges} overlap, yielding $\True$. \ProseOtherwiseDynamicErrorOrDiverging",
-    prose_transition = "checking whether {value_ranges} are pairwise-non-overlapping yields",
+    prose_transition = "checking whether the ranges in {value_ranges} are pairwise non-overlapping yields",
 } =
   case empty {
     value_ranges = empty_list;
@@ -4074,7 +4069,7 @@ typing function fold_bitvector_fields(tenv: static_envs, base_fields: list0(fiel
 {
     "accepts a \staticenvironmentterm{} {tenv}, the list of all fields {base_fields} for a record type, and a list of fields {le_fields} that are the subset of the names of fields
     in {base_fields} about to be assigned to, and yields the total width across the fields named in {le_fields} and the ranges corresponding to them in terms of pairs where the first component is the start position and the second component is the width of the field.",
-    prose_application = "the total width of {le_fields} and the rangesfrom {base_fields} and the subset of field names given by {le_fields}in {tenv}",
+    prose_application = "the total width and slices, in {tenv}, of the fields named by {le_fields} in {base_fields}",
     prose_transition = "computing from {base_fields} the total width and slices for the fields named by {le_fields}, in the context of {tenv}, yields",
 } =
   case empty {
@@ -4138,7 +4133,7 @@ typing function base_value(tenv: static_envs, t: ty) ->
   initialize a storage element of type {t} in the
   \staticenvironmentterm{} {tenv}.
   \ProseOtherwiseTypeError",
-  prose_transition = "obtaining initial value for {t} in {tenv} yields",
+  prose_transition = "obtaining an initial value for {t} in {tenv} yields",
 } =
   case t_bool {
     t = T_Bool;
@@ -4521,7 +4516,8 @@ typing function bitfield_slice_to_positions(tenv: static_envs, is_static: Bool, 
   via static evaluation or normalization, depending on
   {is_static}, and $\none$ if it cannot be determined.
   \ProseOtherwiseTypeError",
-  prose_transition = "converting the {slice} in {tenv} with the flag {is_static} yields",
+  prose_transition = "converting {slice} to positions in {tenv}
+    with static-evaluation flag {is_static} yields",
 } =
   slice =: Slice_Length(e1, e2);
   eval_slice_expr(tenv, is_static, e1) -> some(offset);
@@ -4568,8 +4564,8 @@ typing function check_common_bitfields_align(tenv: static_envs, bitfields: list0
   bitvector type of width {width} in the
   \staticenvironmentterm{} {tenv}.
   \ProseOtherwiseTypeError",
-  prose_transition = "checking that every pair of bitfields in {bitfields}, contained in a bitvector whose
-                      width is given by {width}, are aligned in {tenv} yields",
+  prose_transition = "checking whether every pair of bitfields in {bitfields} is aligned
+    within a bitvector of width {width} in {tenv} yields",
 } =
   last_index := width - one;
   top_absolute := (empty_list, range_list(last_index, zero));
@@ -5447,13 +5443,13 @@ render rule annotate_pattern_leq = annotate_pattern(leq);
 render rule annotate_pattern_geq = annotate_pattern(geq);
 render rule annotate_pattern_mask = annotate_pattern(mask);
 
-typing relation annotate_pattern_matcher(tenv: static_envs, t: ty, (ps: list0(pattern), pk: pattern_kind)) ->
+typing relation annotate_pattern_matcher(tenv: static_envs, t: ty, pattern_matcher: (ps: list0(pattern), pk: pattern_kind)) ->
          ((new_ps: list0(pattern), new_pk: pattern_kind), ses: powerset(TSideEffect)) | type_error
 {
   "annotates the pattern list {ps} with pattern kind {pk} in the \staticenvironmentterm{}
   {tenv} given a type {t}, resulting in {new_ps}, {new_pk}, and the inferred
   \sideeffectsetterm{} {ses}. \ProseOtherwiseTypeError",
-  prose_transition = "annotating {ps} with {pk} and {t} in {tenv} yields",
+  prose_transition = "annotating {pattern_matcher} with {t} in {tenv} yields",
   math_layout = [_,_],
 } =
   INDEX(i, ps: annotate_pattern(tenv, t, ps[i]) -> (new_ps[i], xs[i]));
@@ -5540,14 +5536,14 @@ render rule eval_pattern_PLeq = eval_pattern(PLeq);
 render rule eval_pattern_PGeq = eval_pattern(PGeq);
 render rule eval_pattern_PMask = eval_pattern(PMask);
 
-semantics relation eval_pattern_matcher(env: envs, v: native_value, (ps: list0(pattern), pk: pattern_kind)) ->
+semantics relation eval_pattern_matcher(env: envs, v: native_value, matcher: (ps: list0(pattern), pk: pattern_kind)) ->
   ResultPattern(b: tbool, new_g: XGraphs) | TDynError | TDiverging
 {
   prose_description = "determines whether a value {v} matches the pattern list
                        {ps} with pattern kind {pk} in the environment {env},
                        resulting in either the \hyperlink{type-ResultPattern}{pattern result configuration}
                        for {b} and {new_g} or an abnormal configuration.",
-  prose_transition = "evaluating whether {v} matches {ps} with {pk} in {env} yields",
+  prose_transition = "evaluating whether {v} matches {matcher} in {env} yields",
   [_,_]
 } =
   ( INDEX(i, ps: eval_pattern(env, v, ps[i]) -> ResultPattern(nvbool(bs[i]), gs[i])) )
@@ -7737,7 +7733,7 @@ semantics function get_index(i: N, vec: native_value) -> (r: native_value) | TDy
 {
    prose_description = "reads the value {r} from the vector of values {vec}
                         at the index {i}. \ProseOtherwiseDynamicError",
- prose_transition = "obtaining the value from {vec} at the index given by {i} yields"
+ prose_transition = "obtaining the value at index {i} of {vec} yields"
 } =
   vec =: NV_Vector(values);
   case ok {
@@ -7758,7 +7754,7 @@ semantics function set_index(i: N, v: native_value, vec: native_value) -> (res: 
    prose_description = "overwrites the value at the given index {i} in a
                         vector of values {vec} with the new value {v}.
                         \ProseOtherwiseDynamicError",
- prose_transition = "overwriting the value of {vec} at the index given by {i} with {v} yields"
+ prose_transition = "overwriting the value at index {i} of {vec} with {v} yields"
 } =
   vec =: NV_Vector(values);
   case ok {
@@ -7779,8 +7775,8 @@ semantics function get_field(name: Identifier, record: native_value) -> (v: nati
 {
   prose_description = "retrieves the value {v} corresponding to the field name
                         {name} from the record value {record}.",
-  prose_application = "the value of the field given by {name} for {record}",
-  prose_transition = "the value of the field given by {name} for {record} is"
+  prose_application = "the value of field {name} in {record}",
+  prose_transition = "the value of field {name} in {record} is"
 } =
   record =: NV_Record(field_map);
   --
@@ -7792,7 +7788,7 @@ semantics function set_field(name: Identifier, v: native_value, record: native_v
    prose_description = "overwrites the value corresponding to the field name
                         {name} in the record value {record} with the value
                         {v}.",
- prose_transition = "overwriting the value corresponding to the field name given by {name} in {record} with {v} yields"
+ prose_transition = "overwriting field {name} of {record} with {v} yields"
 } =
   record =: NV_Record(field_map);
   field_map' := map_update(field_map, name, v);
@@ -8260,14 +8256,14 @@ render rule typecheck_decl_func = typecheck_decl(func);
 
 operator scc[T](nodes: list0(T), edges: list0((T, T))) -> powerset(powerset(T))
 {
-  prose_application = "the strongly-connected components for the graph made of nodes given by {nodes} and edges given by {edges}",
+  prose_application = "the strongly connected components of the graph with nodes {nodes} and edges {edges}",
   math_macro = \sccop,
   custom = true,
 };
 
 operator topological_ordering_comps[T](comps: powerset(powerset(T)), edges: list0((T, T))) -> list0(powerset(T))
 {
-  prose_application = "the topological ordering of the sets of nodes given by {comps} relative to the edges given by {edges}",
+  prose_application = "the topological ordering of {comps} with respect to {edges}",
   math_macro = \topologicalorderingcomps,
   custom = true,
 };
@@ -8314,7 +8310,7 @@ typing relation annotate_decl_comps(genv: global_static_envs, comps: list0((list
   {new_decls} and modified
   \globalstaticenvironmentterm{} {new_genv}.
   \ProseOtherwiseTypeError",
-  prose_transition = "annotating the components given by {comps} in the context of {genv} yields",
+  prose_transition = "annotating the declaration components {comps} in {genv} yields",
 } =
   case empty {
     comps = empty_list;
@@ -8350,7 +8346,7 @@ typing relation type_check_mutually_rec(genv: global_static_envs, decls: list0(d
   yielding the annotated list of subprogram declarations
   {new_decls} and modified
   \globalstaticenvironmentterm{} {new_genv}.",
-  prose_transition = "annotating the mutually recursive declarations given by {decls} in the context of {genv} yields",
+  prose_transition = "annotating the mutually recursive declarations {decls} in {genv} yields",
 } =
   funcs_of_decls(decls) -> funcs;
   (
@@ -8527,7 +8523,7 @@ typing function check_implementations_unique(impls: list0(func)) ->
 {
   "checks that the \Proseimplementationsubprograms{} {impls} have unique signatures.
   \ProseOtherwiseTypeError{}",
-  prose_transition = "checking that the \Proseimplementationsubprograms{} given by {impls} have unique signatures yields",
+  prose_transition = "checking that the \Proseimplementationsubprograms{} in {impls} have unique signatures yields",
 } =
   case empty {
     impls = empty_list;
@@ -9692,7 +9688,7 @@ typing function check_no_precision_loss(t: ty) ->
   "checks whether the type {t} is the result of a
   precision loss in its constraint computation (see for
   example \TypingRuleRef{ApplyBinopTypes}).",
-  prose_transition = "checking whether {t} involves a precision loss yields",
+  prose_transition = "checking that {t} does not involve a precision loss yields",
 } =
   case well_constrained_typed {
     t =: T_Int(typed_WellConstrained(_, p));
@@ -9722,7 +9718,8 @@ typing function check_can_be_initialized_with(tenv: static_envs, s: ty, t: ty) -
   to initialize a storage element of type {t} in the
   \staticenvironmentterm{} {tenv}. If the answer if
   $\False$, the result is a \typingerrorterm.",
-  prose_transition = "checking whether an expression of {s} can initialize a storage element of {t} in the context of {tenv} yields",
+  prose_transition = "checking that an expression of type {s} can initialize
+    a storage element of type {t} in {tenv} yields",
 } =
   case okay {
     type_satisfies(tenv, t, s) -> True;
@@ -10557,7 +10554,8 @@ typing function insert_stdlib_param(
 {
   "inserts the (optionally) omitted input parameter of a
   standard library function call.",
-  prose_application = "",
+  prose_application = "{params} with an omitted standard library parameter for {func_sig}
+    inserted when applicable based on {arg_types} in {tenv}",
   prose_transition = "inserting an omitted standard library parameter for {func_sig} with {params} and {arg_types} in the context of {tenv} yields",
   math_layout = ([_,_,(_,_,_),_],[_])
 } =
@@ -10623,7 +10621,8 @@ typing function check_params_typesat(tenv: static_envs, func_sig_params: list0((
   {func_sig_params}. \ProseOtherwiseTypeError{} It
   assumes that {func_sig_params} and {params} have the
   same length.",
-  prose_transition = "checking that {params} satisfies {func_sig_params} in the context of {tenv} yields",
+  prose_transition = "checking that the parameters in {params} satisfy
+    the declarations in {func_sig_params} in {tenv} yields",
   math_layout = [_,_],
 } =
   case empty {
@@ -10666,7 +10665,8 @@ typing relation rename_ty_eqs(tenv: static_envs, eqs: list0((Identifier, expr)),
   parameter names with their corresponding expressions
   in {eqs}, yielding the type {new_ty}.
   \ProseOtherwiseTypeError",
-  prose_transition = "transforming {ty} by substituting parameters names with the corresponding expressions in {eqs} in the context of {tenv} yields",
+  prose_transition = "transforming {ty} by substituting the corresponding expressions in {eqs}
+    for parameter names in {tenv} yields",
 } =
   case t_bits {
     ty =: T_Bits(e, fields);
@@ -11058,7 +11058,8 @@ typing function has_arg_clash(tenv: static_envs, f_tys: list0(ty), args: list0((
   the list of types appearing in the list of arguments
   {args} in {tenv}, yielding the result in {b}.
   \ProseOtherwiseTypeError",
-  prose_transition = "checking whether {f_tys} clashes with the types in {args} in the context of {tenv} yields",
+  prose_transition = "checking whether the types in {f_tys} clash with the argument types in {args}
+    in {tenv} yields",
 } =
   bool_transition(same_length(f_tys, args)) -> True | False;
   args =: list_combine(arg_names, arg_tys);
@@ -12009,7 +12010,8 @@ typing function check_control_flow(tenv: static_envs, f: func, body: stmt) ->
   "checks whether the annotated body statement {body} of the
   function definition {f} obeys the control-flow
   requirements in the \staticenvironmentterm{} {tenv}.",
-  prose_transition = "checking whether {body} of {f} obeys control-flow requirements in the context of {tenv} yields",
+  prose_transition = "checking that the body {body} of {f} obeys
+    the control-flow requirements in {tenv} yields",
 } =
   approx_stmt(tenv, body) -> abs_configs;
   te_check(subseteq(abs_configs, allowed_abs_configs(f)), TE_BSPD) -> True;
@@ -12927,7 +12929,8 @@ typing function bitfields_equal(tenv: static_envs, bf1: list0(bitfield), bf2: li
   {bf1} is equivalent to the list of bitfields {bf2} in
   environment {tenv} and yields the result in {b}.
   \ProseOtherwiseTypeError",
-  prose_transition = "conservatively testing whether {bf1} are equivalent to {bf2} in environment {tenv} yields",
+  prose_transition = "conservatively testing whether the bitfield lists {bf1} and {bf2}
+    are equivalent in {tenv} yields",
 } =
   bool_transition(same_length(bf1, bf2)) -> True | False;
   INDEX(i, bf1: bitfield_equal(tenv, bf1[i], bf2[i]) -> bf_equal[i]);
@@ -12987,7 +12990,8 @@ typing function constraints_equal(tenv: static_envs, cs1: list0(int_constraint),
   is equivalent to the constraint list {cs2} in
   environment {tenv} and yields the result in {b}.
   \ProseOtherwiseTypeError",
-  prose_transition = "conservatively testing whether {cs1} is equivalent to {cs2} in environment {tenv} yields",
+  prose_transition = "conservatively testing whether the constraint lists {cs1} and {cs2}
+    are equivalent in {tenv} yields",
 } =
   bool_transition(same_length(cs1, cs2)) -> True | False;
   INDEX(i, cs1: constraint_equal(tenv, cs1[i], cs2[i]) -> cs_equal[i]);
@@ -13035,7 +13039,8 @@ typing function slices_equal(tenv: static_envs, slices1: list0(slice), slices2: 
   {slices1} is equivalent to the list of slices
   {slices2} in environment {tenv} and yields the result
   in {b}.  \ProseOtherwiseTypeError",
-  prose_transition = "conservatively testing whether {slices1} is equivalent to {slices2} in environment {tenv} yields",
+  prose_transition = "conservatively testing whether the slice lists {slices1} and {slices2}
+    are equivalent in {tenv} yields",
 } =
   bool_transition(same_length(slices1, slices2)) -> True | False;
   ( INDEX(i, slices1: slice_equal(tenv, slices1[i], slices2[i]) -> equal_at_index[i]) )
@@ -13089,7 +13094,7 @@ typing function mul_monomials(m1: unitary_monomial, m2: unitary_monomial) -> (m:
 {
   "multiplies the unitary monomial {m1} with the unitary monomial {m2},
   yielding the unitary monomial {m}.",
-  prose_transition = "multiplying {m1} with {m2} yields",
+  prose_transition = "multiplying {m1} by {m2} yields",
 }; // This function is defined by a table in LaTeX; no rule needed.
 
 typing function add_polynomials(p1: polynomial, p2: polynomial) -> (p: polynomial)
@@ -13097,14 +13102,14 @@ typing function add_polynomials(p1: polynomial, p2: polynomial) -> (p: polynomia
   "adds the polynomial {p1} with the polynomial {p2},
   yielding the polynomial {p}.",
   prose_application = "the sum of {p1} and {p2}",
-  prose_transition = "adding {p1} with {p2} yields",
+  prose_transition = "adding {p1} to {p2} yields",
 }; // This function is defined by a table in LaTeX; no rule needed.
 
 typing function mul_polynomials(p1: polynomial, p2: polynomial) -> (p: polynomial)
 {
   "multiplies the polynomial {p1} with the polynomial {p2}, yielding the polynomial {p}.",
-  prose_application = "the multiplication of {p1} with {p2},",
-  prose_transition = "multiplying {p1} with {p2} yields"
+  prose_application = "the product of {p1} and {p2}",
+  prose_transition = "multiplying {p1} by {p2} yields"
 }; // This function is defined by a table in LaTeX; no rule needed.
 
 typing function polynomial_divide_by_term(p1: polynomial, m: unitary_monomial, f: Q) ->
@@ -13296,7 +13301,7 @@ typing function sym_add_expr(e1: expr, s1: Sign, e2: expr, s2: Sign) ->
   respective signs {s1} and {s2}, yielding the expression
   {e} and sign {s}.",
   prose_application = "the symbolic sum of {e1} with sign {s1} and {e2} with sign {s2}",
-  prose_transition = "symbolically summing {e1} and {s1} with {e2}  and {s2} yields",
+  prose_transition = "symbolically summing {e1} with sign {s1} and {e2} with sign {s2} yields",
 } =
   case zero {
     binary_or(s1 = equal_sign, s2 = equal_sign);
@@ -13380,7 +13385,7 @@ typing function type_of(tenv: static_envs, s: Identifier) ->
   associated with an identifier {s}. The result is
   \typingerrorterm{} if {s} is not associated with any
   type.",
-  prose_transition = "looking up {tenv} for the type associated with {s} yields",
+  prose_transition = "looking up the type associated with {s} in {tenv} yields",
 } =
   case local {
     tenv.static_envs_L.local_storage_types(s) =: (ty, _);
@@ -14443,7 +14448,7 @@ typing function check_constrained_integer(tenv: static_envs, t: ty) ->
   "checks whether the type {t} is a
   \constrainedintegerterm{} type. If so, the result is
   $\True$, otherwise the result is a \typingerrorterm.",
-  prose_transition = "checking whether {t} is a \constrainedintegerterm{} type yields",
+  prose_transition = "checking that {t} is a \constrainedintegerterm{} yields",
 } =
   case well_constrained {
     t = T_Int(WellConstrained(_));
@@ -14793,7 +14798,8 @@ typing function check_underlying_integer(tenv: static_envs, t: ty) -> CheckResul
 {
   "returns $\True$ if {t} has the \underlyingtypeterm{} of an \integertypeterm{} in the \staticenvironmentterm{} {tenv}.
   \ProseOtherwiseTypeError",
-  prose_transition = "checking whether {t} has the \underlyingtypeterm{} of an \integertypeterm{} in {tenv} yields",
+  prose_transition = "checking that the \underlyingtypeterm{} of {t} in {tenv}
+    is an \integertypeterm{} yields",
 } =
   make_anonymous(tenv, t) -> t';
   te_check(ast_label(t') = label_T_Int, TE_UT) -> True;
@@ -14880,7 +14886,7 @@ typing function check_var_not_in_env(tenv: static_envs, id: Strings) ->
   "checks whether {id} is already declared in {tenv}. If
   it is, the result is a \typingerrorterm{}, and
   otherwise the result is $\True$.",
-  prose_transition = "checking whether {id} is already declared in {tenv} yields",
+  prose_transition = "checking that {id} is not already declared in {tenv} yields",
 } =
   te_check(is_undefined(tenv, id), TE_IAD) -> True;
   --
@@ -14894,7 +14900,7 @@ typing function check_var_not_in_genv(genv: global_static_envs, id: Strings) ->
   \globalstaticenvironmentterm{} {genv}. If it is, the
   result is a \typingerrorterm{}, and otherwise the
   result is $\True$.",
-  prose_transition = "checking whether {id} is already declared in {genv} yields",
+  prose_transition = "checking that {id} is not already declared in {genv} yields",
 } =
   te_check(is_global_undefined(genv, id), TE_IAD) -> True;
   --
@@ -14970,7 +14976,7 @@ typing function lookup_constant(tenv: static_envs, s: Identifier) ->
   associated with an identifier {s}. The result is
   $\none$ if {s} is not associated with any constant.",
   prose_application = "the \optionalterm{} constant associated with {s} in {tenv}",
-  prose_transition = "looking up {tenv} for a constant associated with {s} yields",
+  prose_transition = "looking up the constant associated with {s} in {tenv} yields",
 } =
   case exists {
     s in dom(tenv.static_envs_G.constant_values);
@@ -14992,7 +14998,7 @@ typing function add_global_constant(genv: global_static_envs, name: Identifier, 
   "binds the identifier {name} to the literal {v} in the
   \globalstaticenvironmentterm{} {genv}, yielding the
   updated \globalstaticenvironmentterm{} {new_genv}.",
-  prose_application = "{genv} with {name} bound to {v} in {genv}",
+  prose_application = "{genv} with {name} bound to {v}",
   prose_transition = "binding {name} to {v} in {genv} yields",
 } =
   updated_map := map_update(genv.constant_values, name, v);
@@ -15007,8 +15013,8 @@ typing function lookup_immutable_expr(tenv: static_envs, x: Identifier) ->
   immutable expression associated with the identifier
   {x}. The result is \none if no such expression exists.",
   prose_application = "the \optionalterm{} immutable expression associated with {x} in {tenv}",
-  prose_transition = "looking up {tenv} for an immutable expression
-    associated with {x} yields",
+  prose_transition = "looking up the immutable expression associated with {x}
+    in {tenv} yields",
 } =
   case local {
     x in dom(tenv.static_envs_L.local_expr_equiv);

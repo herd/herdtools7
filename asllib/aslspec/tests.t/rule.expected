@@ -77,7 +77,7 @@ The relation
 \DefineProse{r}{
 \AllApply
   \begin{itemize}
-    \item define \ProseMath{\texttt{res}} as \begin{itemize}\item \ProseMath{\texttt{a}} if \ProseMath{{ \texttt{a} \equal \texttt{b} }}, \item \ProseMath{{ \texttt{a}\numplus\texttt{b} }} if \ProseMath{{ \texttt{a} \greaterthan \texttt{b} }}, and \item \ProseMath{\texttt{b}} if \ProseMath{{ \texttt{a} \lessthan \texttt{b} }}\end{itemize}
+    \item define \ProseMath{\texttt{res}} as \begin{itemize}\item if \ProseMath{{ \texttt{a} \equal \texttt{b} }}, then \ProseMath{\texttt{a}}, \item if \ProseMath{{ \texttt{a} \greaterthan \texttt{b} }}, then \ProseMath{{ \texttt{a}\numplus\texttt{b} }}, and \item if \ProseMath{{ \texttt{a} \lessthan \texttt{b} }}, then \ProseMath{\texttt{b}}\end{itemize}
     \item define \ProseMath{\texttt{y}} as \ProseMath{\left\{\begin{array}{lcl}
                   \FIELDf & : & \texttt{a}\\
                   \FIELDg & : & \texttt{b}

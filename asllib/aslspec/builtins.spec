@@ -2,7 +2,7 @@ operator cond_case[T](c: Bool, r: T) -> T
 {
   math_macro = \condcase,
   custom = true,
-  prose_application = "\item {r} if {c}",
+  prose_application = "\item if {c}, then {r}",
 };
 
 // TODO: add a custom rendering where all conditions
@@ -204,7 +204,7 @@ variadic operator num_times[NumType](numbers: list1(NumType)) -> NumType
 {
   math_macro = \numtimes,
   associative = true,
-  prose_application = "the multiplication of {numbers}",
+  prose_application = "the product of {numbers}",
 };
 
 operator num_divide[NumType](lhs: NumType, rhs: NumType) -> NumType
@@ -248,23 +248,23 @@ operator greater_or_equal[NumType](lhs: NumType, rhs: NumType) -> Bool
 operator forall[T](bound_variable: T, domain: powerset(T), condition: Bool) -> Bool
 {
   math_macro = \forallop,
-  prose_application = "for all bindings of {bound_variable} in {domain}: {condition}",
+  prose_application = "for every {bound_variable} in {domain}: {condition}",
 };
 
 operator exists[T](bound_variable: T, domain: powerset(T), condition: Bool) -> Bool
 {
   math_macro = \existsop,
-  prose_application = "for some binding of {bound_variable} in {domain}: {condition}",
+  prose_application = "for some {bound_variable} in {domain}: {condition}",
 };
 
 operator list_forall[T](bound_variable: T, domain: list0(T), condition: Bool) -> Bool
 {
   math_macro = \listforall,
-  prose_application = "for all bindings of {bound_variable} in {domain}: {condition}",
+  prose_application = "for every {bound_variable} in {domain}: {condition}",
 };
 
 operator list_exists[T](bound_variable: T, domain: list0(T), condition: Bool) -> Bool
 {
   math_macro = \listexists,
-  prose_application = "for some binding of {bound_variable} in {domain}: {condition}",
+  prose_application = "for some {bound_variable} in {domain}: {condition}",
 };
