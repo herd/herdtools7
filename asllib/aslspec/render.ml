@@ -724,9 +724,7 @@ module Make (S : SPEC_VALUE) = struct
     (** [prose_or_math prose expr] returns [prose] if it is not empty, and a
         math rendering of [expr] otherwise. *)
     let prose_or_math prose expr =
-      if Utils.string_is_empty prose then
-        Format.asprintf "$%a$" pp_expr (expr, Unspecified)
-      else prose
+      if Utils.string_is_empty prose then expr_to_prose_math expr else prose
 
     (** [strip_names_from_expr expr] removes names from the expression [expr].
     *)
@@ -1120,7 +1118,8 @@ module Make (S : SPEC_VALUE) = struct
       top_level_pair @ named_args_for_term term expr
 
     (** [named_args_for_term term expr] returns a list of pairs of argument
-        names and their corresponding prose for a given term and expression. *)
+        names and their corresponding prose-or-math renderings for a given term
+        and expression. *)
     and named_args_for_term term expr =
       match (term, expr) with
       | ( Term.Tuple { args = opt_named_term_args },

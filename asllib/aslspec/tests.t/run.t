@@ -25,6 +25,10 @@
   Specification Error: Unknown location: The prose template "transforms {a} to {b}" contains the following unmatched variables: {b}
   [1]
 
+  $ aslspec unsubstitutable_prose_var.spec
+  Specification Error: unsubstitutable_prose_var.spec:14:3: The prose template "combining {left} and {right} yields" for relation combine contains variables that cannot be substituted in the application combine(pair): left, right. Name an enclosing formal argument and use that name in the template.
+  [1]
+
 # Check that all type terms are well-formed
   $ aslspec --render instantiation_expansion.spec
   Generated LaTeX macros into generated_macros.tex

@@ -1,6 +1,10 @@
 typedef N;
 typedef Bool;
 
+// Checks that the fallback for a constant without a prose description uses
+// the indivisible prose-math rendering.
+constant predicate_without_prose_description : Bool;
+
 operator assign[T](lhs: T, rhs: T) -> Bool
 {
   math_macro = \eqdef,
@@ -35,6 +39,7 @@ variadic operator num_plus(addends: list1(N)) -> N
 typing relation f(a: N, b: N, c: N, S: powerset(N)) -> N {
   prose_application = "operating on {a}, {b}, {c}, and {S} yields"
 } =
+    predicate_without_prose_description;
     a + b = c;
     d := if a in S then b else c;
     at_limit := a + b + c;

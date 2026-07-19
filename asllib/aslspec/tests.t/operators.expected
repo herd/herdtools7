@@ -10,6 +10,7 @@
 \newcommand\N[0]{ \hyperlink{type-N}{\textsf{N}} } % Generated from N
 \newcommand\f[0]{ \hyperlink{relation-f}{\textit{f}} } % Generated from f
 \newcommand\none[0]{ \hyperlink{constant-none}{\textsf{none}} } % Generated from none
+\newcommand\predicatewithoutprosedescription[0]{ \hyperlink{constant-predicatewithoutprosedescription}{\textsf{predicate\_without\_prose\_description}} } % Generated from predicate_without_prose_description
 
 % -------------------
 % Macros for elements
@@ -31,6 +32,8 @@
 
 \DefineType{Bool}{\texthypertarget{type-Bool}$\Bool$} % EndDefineType
 
+\DefineConstant{predicate_without_prose_description}{\texthypertarget{constant-predicatewithoutprosedescription}$\predicatewithoutprosedescription$} % EndDefineConstant
+
 \DefineRelation{f}{
 The relation
 \[
@@ -40,7 +43,8 @@ The relation
 
 \DefineRule{f}{
 \begin{mathpar}
-\inferrule{ { { { \texttt{a}\intplus\texttt{b} } \equal \texttt{c} } } \hva\\
+\inferrule{ { \predicatewithoutprosedescription } \hva\\
+ { { { \texttt{a}\intplus\texttt{b} } \equal \texttt{c} } } \hva\\
  { { \texttt{d} \eqdef { \ifthenelseop[H]{{ \texttt{a} \member \texttt{S} }}{\texttt{b}}{\texttt{c}} } } } \hva\\
  { { \texttt{at\_limit} \eqdef { \texttt{a}\intplus{ \texttt{b}\intplus\texttt{c} } } } } \hva\\
  { { \texttt{above\_limit} \eqdef { \texttt{a}\intplus{ \texttt{a}\intplus{ \texttt{b}\intplus\texttt{c} } } } } } }{
@@ -52,6 +56,7 @@ The relation
 \DefineProse{f}{
 \AllApply
   \begin{itemize}
+    \item \ProseMath{\predicatewithoutprosedescription}
     \item \ProseMath{{ \texttt{a}\intplus\texttt{b} }} is equal to \ProseMath{\texttt{c}}
     \item define \ProseMath{\texttt{d}} as: if \ProseMath{{ \texttt{a} \member \texttt{S} }} then \ProseMath{\texttt{b}} else \ProseMath{\texttt{c}}
     \item define \ProseMath{\texttt{at\_limit}} as: \ProseMath{{ \texttt{a}\intplus{ \texttt{b}\intplus\texttt{c} } }}
