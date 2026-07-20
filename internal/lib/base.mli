@@ -40,6 +40,20 @@ module Fun : sig
 
 end
 
+module Seq : sig
+  val split_at : int -> 'a Seq.t -> ('a Seq.t * 'a Seq.t)
+  (** [split_at k seq] returns a pair of sequences, the first one containing
+      the first [k] elements of [seq], and the second one the rest. When [k]
+      less than 0, it's processed as it if were 0. When [seq] has less elements
+      than [k], the first element contains all the elements and the second one
+      is empty. Calling this function evaluates the first [k] elements of
+      [seq]. *)
+
+  val for_every_element : ('a -> bool) -> 'a Seq.t -> bool
+  (** [for_all p seq] returns whether all elements in the finite sequence [seq]
+      hold the property [p]. Every element in the sequence is evaluated. *)
+end
+
 module List : sig
   include module type of List
 

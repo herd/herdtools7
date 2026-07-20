@@ -47,6 +47,19 @@ let rec remove_recursive path =
       Sys.remove path
   end
 
+let list_dir dir () =
+  let handle = Unix.opendir dir in
+  let close () = Unix.closedir handle in
+  let rec read () =
+    try
+      let entry = Unix.readdir handle in
+      Seq.Cons (entry, read)
+    with End_of_file -> close () ; Seq.Nil
+       | e -> close (); raise e
+    
+  in
+  read ()
+
 let new_temp_dir () =
   let path = ref "" in
   Command.run ~stdout:(fun c -> path := input_line c) "mktemp" ["-d"] ;

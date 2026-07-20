@@ -43,6 +43,10 @@ Build
 Testing
 -------
 
+For testing, additional dependencies are needed, this can be installed using opam:
+
+    % opam install --deps-only -with-test .
+
 The optionnal dependency `qcheck` can be installed with `opam` as follows:
 
     % opam install qcheck
