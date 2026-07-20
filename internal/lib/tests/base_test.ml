@@ -83,6 +83,38 @@ let tests = [
       )
       tests
   );
+
+  "Base.List.for_every_element", (fun () ->
+    let specs = [
+      ("Empty list", ((fun _ -> false), []), true)
+    ; ("All are zero [0]", ((fun x -> x = 0), [0]), true)
+    ; ("All are zero [1; 0]", ((fun x -> x = 0), [1; 0]), false)
+    ; ("All are zero [0; 1]", ((fun x -> x = 0), [0; 1]), false)
+    ] in
+
+    let evaluation_test () =
+      let expected = 10 in
+      let actual = ref 0 in
+      let sum = (fun x -> actual := x + !actual; false) in
+      ignore (Base.List.for_every_element sum ([1; 2; 3; 4]) : bool) ;
+      let msg = "Function was called for all elements" in
+      if !actual <> expected then
+        Test.fail (Printf.sprintf "%s: expected %i, got %i" msg expected !actual)
+    in
+    let test name (p, input) expected () =
+      let actual = Base.List.for_every_element p input in
+      let msg = "Booleans must match" in
+      if actual <> expected then
+        Test.fail (Printf.sprintf "[%s] %s: expected %b, got %b" name msg expected actual)
+      in
+    evaluation_test () ;
+    List.iter
+        (fun (name, args, expected) ->
+           let name = Printf.sprintf "for_every_element: %s" name in
+           test name args expected ()
+        )
+        specs
+  );
 ]
 
 let () = Test.run tests

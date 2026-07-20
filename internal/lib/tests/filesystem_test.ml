@@ -14,9 +14,32 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open! Base.Fun.Syntax
+
 (** Filesystem and file utilities. *)
 
 let pp_string_list = Test.pp_string_list
+
+let with_dir f =
+  let root = Filesystem.new_temp_dir () in
+  let destroy () = Filesystem.remove_recursive root in
+  Fun.protect ~finally:destroy (fun () -> f root)
+
+let files_in_dir root =
+    let listed = ref [] in
+    let () =
+      let@ entry = Filesystem.list_dir root in
+      match entry with 
+      | "." | ".." -> ()
+      | e -> listed := e :: !listed
+    in
+    !listed
+
+let touch_file filepath =
+  let fd = Unix.openfile filepath Unix.[O_WRONLY; O_CREAT] 0o600 in
+  Unix.close fd
+
+let ( // ) = Filename.concat
 
 let tests = [
   "Filesystem.read_file and Filesystem.write_file", (fun () ->
@@ -106,6 +129,21 @@ let tests = [
     if Sys.file_exists tmp_dir then
       Test.fail "Directory not removed"
   );
+  "Filesystem.files in dir lists fules correctly", (fun () ->
+    let@ root = with_dir in
+    let actual = files_in_dir root in
+
+    if actual <> [] then
+      Test.fail "Firectory is not empty"
+    ;
+
+    touch_file (root // "file_1") ;
+    touch_file (root // "file_2") ;
+
+    let actual = files_in_dir root |> List.length in
+    if actual != 2 then
+      Test.fail "Directory doesn't contain 2 files"
+  )
 ]
 
 let () = Test.run tests

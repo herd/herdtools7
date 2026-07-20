@@ -23,6 +23,10 @@ module Fun : sig
       all circumstances. *)
   val open_out_protect : (out_channel -> 'a) -> string -> 'a
 
+  module Syntax : sig
+    val (let@) : ('a -> 'b) -> 'a -> 'b
+    (** [let@ result = f in ... in] is f (fun result -> ...) in *)
+  end
 end
 
 module List : sig
@@ -33,6 +37,10 @@ module List : sig
    *  [to_ocaml_string String.to_ocaml_string ["a"; "b"]] returns
    *  "[\"a\"; \"b\"]". *)
   val to_ocaml_string : ('a -> string) -> 'a list -> string
+
+  val for_every_element : ('a -> bool) -> 'a list -> bool
+  (** [for_every_element p lst] returns whether all elements in [lst] hold the
+      property [p]. Every element in the list is evaluated. *)
 end
 
 module String : sig
