@@ -354,7 +354,13 @@ let do_op1 op cst =
       | Concrete (S_BitVector bv) ->
           return_concrete (ASLScalar.of_int (BV.length bv))
       | _ -> None)
-  | OA -> None (* Delay always *)
+  | OA ->
+    if true then
+      let open Constant in
+      match cst with
+      | PteVal pte -> Some (Symbolic (oa2symbol pte.AArch64PteVal.oa))
+      | _ -> None
+    else None (* Delay always *)
 
 let shift_address_right _ _ = None
 
