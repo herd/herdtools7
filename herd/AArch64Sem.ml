@@ -1627,8 +1627,16 @@ module Make
           (fun a_virt ma  ->
              let mm = mop Access.VIR in
              let ft = Some FaultType.AArch64.TagCheck in
+             let noact = M.mk_singleton_es Act.NoAction ii in
              delayed_check_tags a_virt None ma ii
-               (fun ma -> mm ma |> branch)
+               (fun ma ->
+                  let open Precision in
+                  let ma = match C.mte_precision, dir with
+                  | Asynchronous, _
+                  | Asymmetric, Dir.W -> ma >>*== (fun a -> noact >>! a)
+                  | _, _ -> ma in
+                  mm ma |> branch
+                )
                (lift_fault_memtag
                   (mk_fault (Some a_virt) dir an ii ft None) mm dir ii))
 
