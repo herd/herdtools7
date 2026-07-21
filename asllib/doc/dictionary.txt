@@ -556,6 +556,7 @@ current
 currently
 custom
 customers
+cutting
 cycle
 cyclic
 data
@@ -745,6 +746,7 @@ encounters
 end
 endian
 ending
+ends
 enforce
 enforced
 england
@@ -798,12 +800,14 @@ event
 every
 exact
 exactly
+examined
 examining
 example
 examples
 exceed
 exceeded
 exceeding
+exceeds
 except
 exception
 exceptional
@@ -830,11 +834,13 @@ existent
 existing
 exists
 exit
+exits
 expand
 expanded
 expanding
 expands
 expansion
+expectations
 expected
 expecting
 expects
@@ -1000,6 +1006,7 @@ groups
 guarantee
 guaranteed
 guarantees
+guard
 guards
 guideline
 guidelines
@@ -1010,6 +1017,7 @@ handled
 handles
 handling
 hands
+happen
 happens
 hardware
 has
@@ -1456,6 +1464,7 @@ numeral
 numerator
 numeric
 numerous
+obey
 obeys
 object
 observable
@@ -1494,6 +1503,7 @@ operational
 operations
 operator
 operators
+opposite
 optimisation
 optimised
 option
@@ -1616,6 +1626,7 @@ positive
 possibility
 possible
 possibly
+postcondition
 potential
 potentially
 power
@@ -1629,6 +1640,7 @@ preceding
 precise
 precisely
 precision
+precondition
 predicate
 predicates
 predictability
@@ -1733,6 +1745,7 @@ re
 re-reading
 reachable
 reached
+reaching
 read
 readability
 readable
@@ -1858,6 +1871,7 @@ respect
 respected
 respective
 respectively
+response
 responsible
 rest
 restore
@@ -1932,6 +1946,7 @@ see
 seem
 seems
 seen
+selected
 selecting
 selection
 selectors
@@ -2055,6 +2070,7 @@ stand
 standard
 stands
 start
+started
 starting
 starts
 state
@@ -2070,9 +2086,11 @@ stay
 step
 steps
 still
+stopping
 storage
 store
 stored
+storing
 strictly
 string
 strings
@@ -2176,6 +2194,7 @@ terminals
 terminate
 terminates
 terminating
+termination
 terms
 test
 tested
@@ -2254,6 +2273,7 @@ translated
 translates
 translating
 translation
+transliterates
 transliteration
 traversing
 treat
