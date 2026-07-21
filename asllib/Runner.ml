@@ -159,6 +159,7 @@ let run_with (args : args) : unit =
       || Option.is_some args.print_lisp
       || args.print_serialized_typed
 
+    let complete_type_annotations = false
     let use_field_getter_extension = args.use_field_getter_extension
     let override_mode = args.override_mode
 

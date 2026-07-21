@@ -142,6 +142,7 @@ module type ANNOTATE_CONFIG = sig
   val check : strictness
   val output_format : Error.output_format
   val print_typed : bool
+  val complete_type_annotations : bool
   val use_field_getter_extension : bool
   val fine_grained_side_effects : bool
   val use_conflicting_side_effects_extension : bool
@@ -4353,7 +4354,19 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       let () = List.iter (check_global_pragma env) pragmas in
       (List.rev ast_rev, env)
 
-  let type_check_ast ast = type_check_ast_in_env empty_global ast
+  let type_check_ast ast =
+    let typed_ast, env = type_check_ast_in_env empty_global ast in
+    let should_complete_type_annotations =
+      match C.check with
+      | TypeCheck | TypeCheckNoWarn -> C.complete_type_annotations
+      | Warn | Silence -> false
+    in
+    let typed_ast =
+      if should_complete_type_annotations then
+        TypeAnnotations.complete ~validate:false env typed_ast
+      else typed_ast
+    in
+    (typed_ast, env)
 
   (* Note: produces a *dynamic* error if the main function cannot be found *)
   let find_main env =
@@ -4374,6 +4387,7 @@ module TypeCheckDefault = Annotate (struct
   let check = TypeCheck
   let output_format = Error.HumanReadable
   let print_typed = false
+  let complete_type_annotations = false
   let use_field_getter_extension = false
   let fine_grained_side_effects = false
   let use_conflicting_side_effects_extension = false

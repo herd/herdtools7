@@ -38,6 +38,13 @@ module type ANNOTATE_CONFIG = sig
   val check : strictness
   val output_format : Error.output_format
   val print_typed : bool
+
+  val complete_type_annotations : bool
+  (** Whether to run the conservative type-annotation completion post-pass after
+      normal typechecking.
+      {b This post-pass is not part of the ASL type system, and annotations it
+         inserts are not typechecker results.} *)
+
   val use_field_getter_extension : bool
   val fine_grained_side_effects : bool
   val use_conflicting_side_effects_extension : bool

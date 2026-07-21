@@ -76,7 +76,13 @@
  (modules
   (:standard \ aslref primitives_to_ml))
  (public_name aslref)
- (private_modules Parser0 Gparser0 Lexer0 SimpleLexer0 RepeatableLexer)
+ (private_modules
+  Parser0
+  Gparser0
+  Lexer0
+  SimpleLexer0
+  RepeatableLexer
+  TypeAnnotations)
  (modules_without_implementation Backend AST ParserConfig)
  (flags
   (:standard -w -40-42-48))
