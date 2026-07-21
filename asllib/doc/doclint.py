@@ -934,7 +934,7 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
     ]
     extract_patterns = [
         # Patterns for extracting words from specific macros:
-        r"\\ASLListing\{(.*?)\}\{.*?\}\{.*?\}",
+        r"\\ASLListing\{(.*?)\}\s*\{.*?\}\s*\{.*?\}",
         r"\\hyperlink{.*?}{(.*?)}",
     ]
     num_errors = 0
