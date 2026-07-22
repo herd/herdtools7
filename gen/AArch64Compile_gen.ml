@@ -227,7 +227,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let do_csel v r1 r2 r3 = I_CSEL (v,r1,r2,r3,EQ,Cpy)
     let do_cinc v r1 r2 r3 = I_CSEL (v,r1,r2,r3,EQ,Inc)
 
-    let cmp r1 r2 = op3r vloc SUBS ZR r1 r2
+    let do_cmp v r1 r2 = op3r v SUBS ZR r1 r2
+    let cmp r1 r2 = do_cmp vloc r1 r2
 
     let b lbl = I_B (BranchTarget.Lbl lbl)
     let bne lbl = I_BC (NE,BranchTarget.Lbl lbl)
@@ -2277,8 +2278,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          fun dst src ->
            let r3,st = next_reg st in
            let r4,st = next_reg st in
-           [do_movi vdep r3 1; do_cmpi vdep src 0;
-            do_csel vdep dst r3 r4; andi vdep dst dst 2;],st
+           [do_cmp vdep src src; do_csel vdep dst r3 r4;],st
 
     let emit_access_dep_addr csel vdep st p init e rd =
       let r2,st = next_reg st in
@@ -2752,8 +2752,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | OkCsel ->
          let r2,st = next_reg st in
          let r3,st = next_reg st in
+         let r4,st = next_reg st in
          pseudo
-           [do_cmpi vdep r 0; do_cinc vdep r2 r3 r2;]@
+           [do_cmp vdep r r; do_cinc vdep r2 r3 r4;]@
            emit_ctrl vdep r2,
          st
 
