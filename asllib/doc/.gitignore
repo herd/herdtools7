@@ -11,7 +11,7 @@
 *.blg
 *.dvi
 generated_macros.tex
-generated_console_macros.tex
+generated_console_output.stamp
 generated_console_output/
 __pycache__
 ASLReference.synctex(busy)
