@@ -294,6 +294,10 @@ let is_builtin_type id (t : Type.t) = String.equal id t.name
 let is_builtin_constant id (c : Constant.t) = String.equal id c.name
 let is_builtin_relation id (r : Relation.t) = String.equal id r.name
 
+(** [operator_parameter_owner_name name] describes the operator [name] in type
+    parameter diagnostics. *)
+let operator_parameter_owner_name name = "operator " ^ name
+
 let is_cond_operator_name (spec : t) id =
   is_builtin_relation id spec.cond_operator
 
@@ -352,6 +356,58 @@ let record_variant_for_expr spec expr =
 
 let is_defined_id self id = StringMap.mem id self.id_to_defining_node
 let elements self = self.ast
+
+(** Low-level, error-free transformations of explicit type parameters in type
+    terms. Parameter binding inference, which depends on type unification, is
+    implemented by [TypeInference.TypeParameterInference]. *)
+module TypeParameterOps = struct
+  (** [substitute parameter_env term] replaces parameters in [term] using the
+      bindings in [parameter_env]. *)
+  let rec substitute parameter_env term =
+    let substitute_in_term = substitute parameter_env in
+    let open Term in
+    match term with
+    | Parameter { name } -> (
+        match StringMap.find_opt name parameter_env with
+        | Some substituted_type -> substituted_type
+        | None -> term)
+    | Label _ | ConstantsSet _ -> term
+    | TypeOperator ({ term = name_opt, sub_term } as node) ->
+        TypeOperator
+          { node with term = (name_opt, substitute_in_term sub_term) }
+    | ParamType ({ term = name_opt, sub_term } as node) ->
+        ParamType { node with term = (name_opt, substitute_in_term sub_term) }
+    | Tuple ({ args } as node) ->
+        Tuple
+          {
+            node with
+            args =
+              List.map
+                (fun (name_opt, sub_term) ->
+                  (name_opt, substitute_in_term sub_term))
+                args;
+          }
+    | Record ({ fields } as node) ->
+        Record
+          {
+            node with
+            fields =
+              List.map
+                (fun ({ Term.term = field_term; _ } as field) ->
+                  { field with term = substitute_in_term field_term })
+                fields;
+          }
+    | Function
+        ({ from_type = from_name, from_term; to_type = to_name, to_term } as
+         node) ->
+        Function
+          {
+            node with
+            from_type = (from_name, substitute_in_term from_term);
+            to_type = (to_name, substitute_in_term to_term);
+          }
+
+end
 
 (** [is_variadic_operator id_to_defining_node id] checks if [id] represents a
     variadic operator. That is, an operator whose only argument is a list type.
@@ -796,7 +852,8 @@ module Check = struct
         List.fold_left
           (fun seen parameter ->
             if StringSet.mem parameter seen then
-              Error.duplicate_type_parameter loc ~owner:("operator " ^ name)
+              Error.duplicate_type_parameter loc
+                ~owner:(operator_parameter_owner_name name)
                 parameter
             else StringSet.add parameter seen)
           StringSet.empty parameters
@@ -2219,35 +2276,44 @@ module Check = struct
       in
       Utils.list_get_all_option unified_args_opt
 
-    module InstantiateOperator : sig
-      val instantiate_operator_types_from_inferred_types :
+    (** Infers bindings for explicit type parameters using the enclosing type
+        inference module's unification operations. Operations that can report
+        errors take an [owner] argument describing the calling definition,
+        allowing this machinery to be used for both operators and parameterized
+        types. Low-level substitution and typedef expansion are provided by
+        [TypeParameterOps]. *)
+    module TypeParameterInference : sig
+      type env
+
+      val infer :
         spec_type ->
-        string ->
-        int ->
-        use_def_mode * Term.t list ->
-        context_expr:Expr.t ->
-        Term.t list * Term.t
-      (** [instantiate_operator_types_from_inferred_types spec relation_name
-           num_actual_args (mode, inferred_types) ~context_expr] instantiates
-          the types of the arguments and output of the operator [relation_name]
-          given the number of actual arguments [num_actual_args] and the
-          [inferred_types] for either its arguments or its output depending on
-          [mode]. The [context_expr] is used for error reporting. When mode is
-          [Use], the [inferred_types] correspond to the argument types. When
-          mode is [Def], the [inferred_types] correspond to the output type. By
-          instantiating we mean substituting type parameters in the operator
-          definition with concrete types inferred for a given operator
-          invocation expression. *)
+        owner:string ->
+        parameters:string list ->
+        formal_terms:Term.t list ->
+        actual_terms:Term.t list ->
+        loc:source_location ->
+        env
+      (** [infer spec ~owner ~parameters ~formal_terms ~actual_terms ~loc]
+          infers a consistent type for every declared parameter by matching
+          formal and actual terms in lockstep. [owner] identifies the
+          parameterized definition in diagnostics. [parameters] must not contain
+          duplicates. *)
+
+      val substitute : env -> Term.t -> Term.t
+      (** [substitute env term] replaces parameters in [term] with their
+          inferred types from [env]. *)
     end = struct
-      (** [unify_parameter_type spec ~relation_name parameter_name
-           parameter_type type_env] attempts to unify [parameter_type] with any
-          existing type for [parameter_name] in [type_env]. If unification is
-          successful, returns an updated [type_env] with the unified type.
+      type env = type_env
+
+      (** [unify_parameter_type spec ~owner parameter_name parameter_type
+           type_env] attempts to unify [parameter_type] with any existing type
+          for [parameter_name] in [type_env]. If unification is successful,
+          returns an updated [type_env] with the unified type.
           @raise [SpecError]
             if [parameter_type] cannot be unified with an existing type for
             [parameter_name]. *)
-      let unify_parameter_type spec loc ~relation_name parameter_name
-          parameter_type type_env =
+      let unify_parameter_type spec loc ~owner parameter_name parameter_type
+          type_env =
         StringMap.update parameter_name
           (function
             | None -> Some parameter_type
@@ -2255,7 +2321,7 @@ module Check = struct
                 match unify_terms spec parameter_type existing_type with
                 | Some unified_type -> Some unified_type
                 | None ->
-                    Error.parameter_type_unification_failure loc ~relation_name
+                    Error.parameter_type_unification_failure loc ~owner
                       parameter_name existing_type parameter_type))
           type_env
 
@@ -2269,16 +2335,14 @@ module Check = struct
           same parameter may appear multiple times in [formal_type], unification
           is used to find a single term consistent with all concrete terms
           associated with the parameter. *)
-      let rec infer_parameter_type spec ~relation_name formal_type arg_type
-          type_env =
+      let rec infer_parameter_type spec ~owner formal_type arg_type type_env =
         let open CheckTypeInstantiations in
         let formal_type = reduce_term spec formal_type in
         let arg_type = reduce_term spec arg_type in
         let open Term in
         match (formal_type, arg_type) with
         | Parameter { name = formal_id; loc }, _ ->
-            unify_parameter_type spec loc ~relation_name formal_id arg_type
-              type_env
+            unify_parameter_type spec loc ~owner formal_id arg_type type_env
         | Tuple { args = formal_args }, Tuple { args = actual_args } ->
             let () =
               if not (List.compare_lengths formal_args actual_args = 0) then
@@ -2288,7 +2352,7 @@ module Check = struct
             in
             List.fold_left2
               (fun curr_type_env (_, formal_term) (_, arg_term) ->
-                infer_parameter_type spec ~relation_name formal_term arg_term
+                infer_parameter_type spec ~owner formal_term arg_term
                   curr_type_env)
               type_env formal_args actual_args
         | Record { fields = formal_fields }, Record { fields = arg_fields } ->
@@ -2312,98 +2376,62 @@ module Check = struct
             Function { from_type = _, arg_from_term; to_type = _, arg_to_term }
           ) ->
             let type_env =
-              infer_parameter_type spec ~relation_name formal_from_term
-                arg_from_term type_env
+              infer_parameter_type spec ~owner formal_from_term arg_from_term
+                type_env
             in
-            infer_parameter_type spec ~relation_name formal_to_term arg_to_term
-              type_env
+            infer_parameter_type spec ~owner formal_to_term arg_to_term type_env
         | ( TypeOperator { op = formal_op; term = _, formal_inner_term },
             TypeOperator { op = arg_op; term = _, arg_inner_term } ) ->
             let () =
               if
                 not (CheckTypeInstantiations.operator_subsumed arg_op formal_op)
               then
-                Error.type_operator_instantiation_failure ~relation_name
-                  formal_type arg_type
+                Error.type_operator_instantiation_failure ~owner formal_type
+                  arg_type
             in
-            infer_parameter_type spec ~relation_name formal_inner_term
-              arg_inner_term type_env
+            infer_parameter_type spec ~owner formal_inner_term arg_inner_term
+              type_env
         | ( ParamType { typename = formal_typename; term = _, formal_inner_term },
             ParamType { typename = arg_typename; term = _, arg_inner_term } ) ->
             let () =
               if not (String.equal formal_typename arg_typename) then
-                Error.param_type_instantiation_failure ~relation_name
-                  formal_type arg_type
+                Error.param_type_instantiation_failure ~owner formal_type
+                  arg_type
             in
-            infer_parameter_type spec ~relation_name formal_inner_term
-              arg_inner_term type_env
+            infer_parameter_type spec ~owner formal_inner_term arg_inner_term
+              type_env
         | _ -> type_env
 
-      (** [substitute_type_parameters term parameter_env] substitutes type
-          parameters appearing as sub-terms in [term] by their corresponding
-          terms in [parameter_env]. *)
-      let rec substitute_type_parameters term parameter_env =
-        let open Term in
-        match term with
-        | Parameter { name } -> (
-            match StringMap.find_opt name parameter_env with
-            | Some substituted_type -> substituted_type
-            | None -> term)
-        | Label _ -> term
-        | Tuple ({ args } as node) ->
-            let substituted_args =
-              List.map
-                (fun (name, sub_term) ->
-                  (name, substitute_type_parameters sub_term parameter_env))
-                args
-            in
-            Tuple { node with args = substituted_args }
-        | Record ({ fields } as node) ->
-            let substituted_fields =
-              List.map
-                (fun ({ term = field_term } as field) ->
-                  {
-                    field with
-                    term = substitute_type_parameters field_term parameter_env;
-                  })
-                fields
-            in
-            Record { node with fields = substituted_fields }
-        | Function
-            ({ from_type = from_name, from_term; to_type = to_name, to_term } as
-             node) ->
-            let substituted_from_term =
-              substitute_type_parameters from_term parameter_env
-            in
-            let substituted_to_term =
-              substitute_type_parameters to_term parameter_env
-            in
-            Function
-              {
-                node with
-                from_type = (from_name, substituted_from_term);
-                to_type = (to_name, substituted_to_term);
-              }
-        | TypeOperator ({ term = term_name, inner_term } as node) ->
-            let substituted_inner_term =
-              substitute_type_parameters inner_term parameter_env
-            in
-            TypeOperator
-              { node with term = (term_name, substituted_inner_term) }
-        | ParamType ({ term = term_name, inner_term } as node) ->
-            let substituted_inner_term =
-              substitute_type_parameters inner_term parameter_env
-            in
-            ParamType { node with term = (term_name, substituted_inner_term) }
-        | ConstantsSet _ -> term
+      (** [substitute parameter_env term] replaces parameters in [term] using
+          the bindings in [parameter_env]. *)
+      let substitute parameter_env term =
+        TypeParameterOps.substitute parameter_env term
 
+      (** [infer spec ~owner ~parameters ~formal_terms ~actual_terms ~loc]
+          infers bindings for [parameters] from corresponding formal and actual
+          terms. [owner] and [loc] are used for error reporting. *)
+      let infer spec ~owner ~parameters ~formal_terms ~actual_terms ~loc =
+        let parameter_env =
+          List.fold_left2
+            (fun curr_env formal_type arg_type ->
+              infer_parameter_type spec ~owner formal_type arg_type curr_env)
+            StringMap.empty formal_terms actual_terms
+        in
+        let () =
+          List.iter
+            (fun param ->
+              if not (StringMap.mem param parameter_env) then
+                Error.uninstantiated_parameter loc param ~owner)
+            parameters
+        in
+        parameter_env
+    end
+
+    (** Adapts the shared type-parameter operations to operator applications. *)
+    module InstantiateOperator = struct
       (** [make_operator_formals_for_actual_num_of_args spec operator_name
-           actual_num_of_args] returns the list of formal argument types for the
-          operator [operator_name] given that it is being invoked with
-          [actual_num_of_args] arguments. If the operator is not variadic, it is
-          just the list of its defined formal argument types. If the operator is
-          variadic, the list contains [actual_num_of_args] copies of its element
-          type. *)
+           actual_num_of_args] returns the operator's formal argument types,
+          expanding a variadic formal to [actual_num_of_args] element types. *)
       let make_operator_formals_for_actual_num_of_args spec operator_name
           actual_num_of_args =
         let { Relation.input; is_variadic } =
@@ -2418,8 +2446,6 @@ module Check = struct
               "operator %s expects %d arguments but received %d" operator_name
               (List.length input) actual_num_of_args
         in
-        (* For a variadic operator we want n copies of its element type,
-         where n is the number of actual arguments. *)
         if is_variadic_operator spec operator_name then
           let arg_type =
             match List.hd input with
@@ -2430,64 +2456,18 @@ module Check = struct
           List.init actual_num_of_args (fun _ -> arg_type)
         else List.map snd input
 
-      (** [infer_parameter_types spec relation_name parameters formal_terms
-           actual_terms ~context_expr] infers the types of parameters in
-          [parameters] given the [formal_terms] and the corresponding
-          [actual_terms], returning a parameter environment mapping parameter
-          names to their inferred types. The [context_expr] is used for error
-          reporting. *)
-      let infer_parameter_types spec relation_name parameters formal_terms
-          actual_terms ~context_expr =
-        let parameter_env =
-          List.fold_left2
-            (fun curr_env formal_type arg_type ->
-              infer_parameter_type spec ~relation_name formal_type arg_type
-                curr_env)
-            StringMap.empty formal_terms actual_terms
-        in
-        let () =
-          List.iter
-            (fun param ->
-              if not (StringMap.mem param parameter_env) then
-                Error.uninstantiated_parameter_in_relation param relation_name
-                  ~context_expr)
-            parameters
-        in
-        parameter_env
-
-      (** [instantiate_operator_types_from_env parameter_env formal_arg_types
-           formal_output_type] instantiates the types of the arguments,
-          [formal_arg_types], and output type, [formal_output_type], of an
-          operator given a [parameter_env] mapping type parameter names to their
-          inferred types. The result is the list of instantiated argument types
-          and the instantiated output type. *)
-      let instantiate_operator_types_from_env parameter_env formal_arg_types
-          formal_output_type =
-        if StringMap.is_empty parameter_env then
-          (formal_arg_types, formal_output_type)
-        else
-          let instantiated_arg_types =
-            List.map
-              (fun arg_type ->
-                let instantiated_arg_type =
-                  substitute_type_parameters arg_type parameter_env
-                in
-                instantiated_arg_type)
-              formal_arg_types
-          in
-          let instantiated_output_type =
-            substitute_type_parameters formal_output_type parameter_env
-          in
-          (instantiated_arg_types, instantiated_output_type)
-
-      let instantiate_operator_types_from_inferred_types spec relation_name
+      (** [instantiate_types_from_inferred_types spec operator_name
+           num_actual_args (mode, inferred_types) ~context_expr] infers the
+          operator's parameter bindings from its inputs in [Use] mode or output
+          in [Def] mode, then instantiates its input and output types. *)
+      let instantiate_types_from_inferred_types spec operator_name
           num_actual_args (mode, inferred_types) ~context_expr =
         let formal_arg_types =
-          make_operator_formals_for_actual_num_of_args spec relation_name
+          make_operator_formals_for_actual_num_of_args spec operator_name
             num_actual_args
         in
         let { Relation.parameters; output } =
-          relation_for_id spec relation_name
+          relation_for_id spec operator_name
         in
         let formal_output_type =
           match output with [ t ] -> t | _ -> assert false
@@ -2498,11 +2478,15 @@ module Check = struct
           | Def -> [ formal_output_type ]
         in
         let parameter_env =
-          infer_parameter_types spec relation_name parameters formal_types
-            inferred_types ~context_expr
+          TypeParameterInference.infer spec
+            ~owner:(operator_parameter_owner_name operator_name)
+            ~parameters ~formal_terms:formal_types ~actual_terms:inferred_types
+            ~loc:(Expr.loc_of context_expr)
         in
-        instantiate_operator_types_from_env parameter_env formal_arg_types
-          formal_output_type
+        ( List.map
+            (TypeParameterInference.substitute parameter_env)
+            formal_arg_types,
+          TypeParameterInference.substitute parameter_env formal_output_type )
     end
 
     (** A module for matching assignable expressions to candidate type terms. *)
@@ -2819,8 +2803,8 @@ module Check = struct
             (* Instantiate the operator's input/output types based on the types inferred
                for its arguments. *)
             let instantiated_arg_types, instantiated_output_type =
-              InstantiateOperator.instantiate_operator_types_from_inferred_types
-                spec name (List.length args) (Use, arg_types) ~context_expr:expr
+              InstantiateOperator.instantiate_types_from_inferred_types spec
+                name (List.length args) (Use, arg_types) ~context_expr:expr
             in
             let () =
               if false then
@@ -3053,9 +3037,8 @@ module Check = struct
           apply_type spec type_env arg op_arg_type
       | Expr.Relation { name; args; is_operator = true }, _ ->
           let instantiated_arg_types, instantiated_output_type =
-            InstantiateOperator.instantiate_operator_types_from_inferred_types
-              spec name (List.length args) (Def, [ target_type ])
-              ~context_expr:expr
+            InstantiateOperator.instantiate_types_from_inferred_types spec name
+              (List.length args) (Def, [ target_type ]) ~context_expr:expr
           in
           let () =
             if

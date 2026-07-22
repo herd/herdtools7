@@ -64,7 +64,7 @@
   Specification Error: operator_arity.bad:7:10: The application of relation unary in expression unary(a, b) has an invalid number of arguments: expected 1 but found 2
   [1]
   $ aslspec variadic_operator_type.bad
-  Specification Error: variadic_operator_type.bad:3:46: Could not unify types N and Bool for parameter T of relation make_set
+  Specification Error: variadic_operator_type.bad:3:46: Could not unify types N and Bool for parameter T of operator make_set
   [1]
   $ aslspec record_extra_field.bad
   Specification Error: record_extra_field.bad:8:5: The record expression [rf : a, rg : a] has missing or invalid field names: expected rf but found rf, rg
