@@ -40,21 +40,19 @@ let get_ie edge =
   let open Code in
   match edge with
   | Id | Po _ | Dp _ | Fenced _ | Rmw _ -> Int
-  | Rf ie | Fr ie | Ws ie -> ie
+  | Communication (_, ie) -> ie
   | Leave _ | Back _ | Hat -> Ext
   | Insert _ | Store | Node _ -> Int
 
 let set_ie ie (edge : E.tedge) =
   match edge with
-  | Rf _ -> E.Rf ie
-  | Fr _ -> Fr ie
-  | Ws _ -> Ws ie
+  | Communication (com, _) -> E.Communication (com, ie)
   | _ -> raise (Invalid_argument "Cannot set ie on this edge kind")
 
 let get_sd (edge : E.tedge) =
   match edge with
   | Po (sd, _, _) | Dp (_, sd, _) | Fenced (_, sd, _, _) -> sd
-  | Leave _ | Back _ | Hat | Id | Rf _ | Fr _ | Ws _ | Rmw _ -> Same
+  | Leave _ | Back _ | Hat | Id | Communication _ | Rmw _ -> Same
   | Insert _ | Store | Node _ -> raise (Invalid_argument "Unexpected edge kind")
 
 let set_sd sd (edge : E.tedge) =
@@ -142,9 +140,9 @@ let build_tedges : prim_rel -> E.tedge list =
   let dp_tedges dp csel = [ E.Dp ((dp, csel), UnspecLoc, Code.Irr) ] in
   function
   | Prim "po" -> [ E.(Po (UnspecLoc, Code.Irr, Code.Irr)) ]
-  | Prim "fr" -> [ E.Fr UnspecCom ]
-  | Prim "co" -> [ E.Ws UnspecCom ]
-  | Prim "rf" -> [ E.Rf UnspecCom ]
+  | Prim "fr" -> [ E.Communication (Fr, UnspecCom) ]
+  | Prim "co" -> [ E.Communication (Co, UnspecCom) ]
+  | Prim "rf" -> [ E.Communication (Rf, UnspecCom) ]
   | Fence f -> [ E.Fenced (A.Barrier f, UnspecLoc, Code.Irr, Code.Irr) ]
   | Prim "amo" -> [ E.Rmw A.RMW.AllAmo ]
   | Prim "lxsx" -> [ E.Rmw A.RMW.LrSc ]

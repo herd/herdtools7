@@ -172,7 +172,7 @@ let checks =
 
 
 (* Com relation *)
-type com =  CRf | CFr | CWs
+type com =  Rf | Fr | Co
 
 let equal_com c1 c2 = match c1,c2 with
   | CRf,CRf
@@ -181,11 +181,11 @@ let equal_com c1 c2 = match c1,c2 with
   | (CRf|CFr|CWs),_ -> false
 
 let pp_com = function
-  | CRf -> "Rf"
-  | CFr -> "Fr"
-  | CWs -> "Co"
+  | Rf -> "Rf"
+  | Fr -> "Fr"
+  | Co -> "Co"
 
-let fold_com f r = f CRf (f CFr (f CWs r))
+let fold_com f r = f Co (f Fr (f Rf r))
 
 (* Info in tests *)
 type info = (string * string) list

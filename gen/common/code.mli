@@ -76,7 +76,7 @@ val pp_check : check -> string
 val checks : string list
 
 (* Com *)
-type com =  CRf | CFr | CWs
+type com =  Rf | Fr | Co
 
 val equal_com : com -> com -> bool
 val pp_com : com -> string
