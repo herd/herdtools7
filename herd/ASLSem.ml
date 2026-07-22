@@ -115,6 +115,7 @@ module Make (Conf : Config) = struct
 
     let output_format = Asllib.Error.HumanReadable
     let print_typed = false
+    let complete_type_annotations = false
     let use_field_getter_extension = false
     let fine_grained_side_effects = false
     let use_conflicting_side_effects_extension = false
