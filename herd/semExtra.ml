@@ -302,6 +302,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
        * (2) to ensure is_non_mixed_offset works with that *)
       | Physical (s,o) -> is_non_mixed_offset test s o
       | TagAddr _
+      | EventReg _
       | System ((PTE|PTE2|TLB),_)  -> true
 
 (* Exported labels:
