@@ -1,0 +1,7 @@
+(executable
+ (name main)
+ (public_name litmus2desc)
+ (package herdtools7)
+ (flags
+  (:standard -w -42))
+ (libraries herdtools litmus2desc))

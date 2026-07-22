@@ -1,0 +1,8 @@
+(cram
+ (deps
+  (glob_files barrier_litmus_tests/*.litmus)
+  (glob_files other_litmus_tests/*.litmus)
+  (glob_files rg_litmus_tests/*.litmus)
+  (source_tree libdir)
+  %{bin:herd7}
+  %{bin:litmus2desc}))

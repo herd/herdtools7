@@ -410,3 +410,11 @@ module Option : sig
   val apply : ('a -> 'b) t -> 'a t -> 'b t
   val get_or_exn : exn -> 'a option -> 'a
 end
+
+module Result : sig
+  include module type of Result
+
+  module Syntax : sig
+    val (let*) : ('a, 'e) result -> ('a -> ('b, 'e) result) -> ('b, 'e) result
+  end
+end
