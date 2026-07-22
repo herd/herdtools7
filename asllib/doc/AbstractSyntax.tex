@@ -27,39 +27,9 @@ type system. If so, it is considered valid and the type system rules
 generate a \typedast.
 
 \ChapterOutline
-\begin{itemize}
-  \item \secref{AbstractSyntaxTrees} defines the type of Abstract Syntax Trees (ASTs) used by ASL;
-  \item \secref{AbstractSyntaxGrammar} defines notations used to define the ASTs of ASL;
-  \item \secref{UntypedAbstractGrammar} defines the AST nodes for the \untypedast:
-  \begin{itemize}
-    \item \secref{Identifiers} defines the AST for identifiers;
-    \item \secref{ASTLiterals} defines the AST for literal values;
-    \item \secref{Operators} defines the AST for operators;
-    \item \secref{Expressions} defines the AST for expressions;
-    \item \secref{Patterns} defines the AST for patterns;
-    \item \secref{Slices} defines the AST for slices;
-    \item \secref{SubprogramCalls} defines the AST for subprogram calls;
-    \item \secref{Types} defines the AST for types;
-    \item \secref{Constraints} defines the AST for constraints;
-    \item \secref{BitFields} defines the AST for bitfields;
-    \item \secref{FieldsAndTypedIdentifiers} defines the AST for fields and typed identifiers;
-    \item \secref{AssignableExpressions} defines the AST for assignable expressions;
-    \item \secref{LocalDeclarations} defines the AST for local declarations;
-    \item \secref{Statements} defines the AST for statements;
-    \item \secref{CaseAlternatives} defines the AST for case alternatives;
-    \item \secref{ExceptionCatchers} defines the AST for exception catchers;
-    \item \secref{Subprograms} defines the AST for subprograms;
-    \item \secref{GlobalDeclarations} defines the AST for global declarations;
-    \item \secref{Specifications} defines the AST for specifications;
-  \end{itemize}
-  \item \secref{TypedAbstractSyntax} defines the \typedast;
-  \item \secref{BuildingAbstractSyntaxTrees} explains how we use inference rules to transform a parse tree into an \untypedast;
-  \item \secref{BuildingParameterisedProductions} presents rules for building ASTs from parameterised productions;
-  \item \secref{LeftToRight} maps \assignableexpressions{} to right-hand side expressions;
-  \item \secref{AbstractSyntaxAbbreviations} defines AST abbreviations used by inference rules throughout this reference.
-\end{itemize}
 
-\section{Abstract Syntax Trees\label{sec:AbstractSyntaxTrees}}
+\SectionDef[defines the type of Abstract Syntax Trees (ASTs) used by ASL;]
+  {AbstractSyntaxTrees}{Abstract Syntax Trees}
 
 In an ASL abstract syntax tree, a node is one of the following data types:
 \begin{description}
@@ -79,7 +49,8 @@ In an ASL abstract syntax tree, a node is one of the following data types:
 The function $\substrecordfield(r, f, n)$ takes a record AST node $r$, a field name $f$ and an AST node $n$
 and returns an AST record node $r'$ where the $f$ field is bound to $n$.
 
-\section{Abstract Syntax Grammar\label{sec:AbstractSyntaxGrammar}}
+\SectionDef[defines notations used to define the ASTs of ASL;]
+  {AbstractSyntaxGrammar}{Abstract Syntax Grammar}
 
 An abstract syntax is defined in terms of derivation rules containing variables (also referred to as non-terminals).
 %
@@ -99,23 +70,24 @@ Node types are defined recursively as follows:
 
 An abstract syntax consists of a set of derivation rules and a start non-terminal.
 
-\section{Untyped Abstract Grammar\label{sec:UntypedAbstractGrammar}}
+\SectionDef[defines the AST nodes for the \untypedast:]
+  {UntypedAbstractGrammar}{Untyped Abstract Grammar}
 
 The abstract syntax of ASL is given in terms of the derivation rules below and the start non-terminal $\spec$.
 %
 Some extra details are given by using the notation $\overtext{\textit{symbol}}{\text{detail}}$.
 
-\subsection{Identifiers \label{sec:Identifiers}}
+\OutlineSubsectionDef[defines the AST for identifiers;]{Identifiers}{Identifiers}
 Identifiers in the AST, denoted $\Identifier$ are simply strings representing ASL identifiers.
 Those are obtained directly from the values of identifier tokens, $\Tidentifier(s)$.
 
-\subsection{Literal Values \label{sec:ASTLiterals}}
+\OutlineSubsectionDef[defines the AST for literal values;]{ASTLiterals}{Literal Values}
 The following rules correspond to literal values of the following ASL data types:
 integers, Booleans, real numbers, bitvectors, and strings.
 
 \RenderType{literal}
 
-\subsection{Operators\label{sec:Operators}}
+\OutlineSubsectionDef[defines the AST for operators;]{Operators}{Operators}
 The following rules correspond to unary operators and binary operators,
 which can be used in unary expressions and binary expressions.
 
@@ -171,7 +143,7 @@ The following table shows the token associated to each binary operator:
 \end{tabular}
 \end{center}
 
-\subsection{Expressions \label{sec:Expressions}}
+\OutlineSubsectionDef[defines the AST for expressions;]{Expressions}{Expressions}
 The following rules correspond to various types of expressions:
 literal expressions, variable expressions, type assertions, binary operation expressions, unary operation expressions,
 call expressions, slicing expressions, conditional expressions, array access expressions, single-field access expressions, multiple-field access expressions,
@@ -180,29 +152,30 @@ and pattern matching expressions.
 
 \RenderTypes{untyped_expr}
 
-\subsection{Patterns \label{sec:Patterns}}
+\OutlineSubsectionDef[defines the AST for patterns;]{Patterns}{Patterns}
 \hypertarget{constant-zerobit}{}
 \hypertarget{constant-onebit}{}
 \hypertarget{constant-xbit}{}
 \RenderType{pattern}
 
-\subsection{Slices \label{sec:Slices}}
+\OutlineSubsectionDef[defines the AST for slices;]{Slices}{Slices}
 \RenderTypes{untyped_slice}
 
-\subsection{Subprogram calls \label{sec:SubprogramCalls}}
+\OutlineSubsectionDef[defines the AST for subprogram calls;]{SubprogramCalls}{Subprogram calls}
 \RenderType{call}
 
-\subsection{Types \label{sec:Types}}
+\OutlineSubsectionDef[defines the AST for types;]{Types}{Types}
 \RenderType{ty}
 
-\subsection{Constraints \label{sec:Constraints}}
+\OutlineSubsectionDef[defines the AST for constraints;]{Constraints}{Constraints}
 \RenderTypes{untyped_constraint_kind}
 \RenderType{int_constraint}
 
-\subsection{Bit Fields \label{sec:BitFields}}
+\OutlineSubsectionDef[defines the AST for bitfields;]{BitFields}{Bit Fields}
 \RenderType{bitfield}
 
-\subsection{Fields and Typed Identifiers \label{sec:FieldsAndTypedIdentifiers}}
+\OutlineSubsectionDef[defines the AST for fields and typed identifiers;]
+  {FieldsAndTypedIdentifiers}{Fields and Typed Identifiers}
 
 The following rule corresponds to a field of a record-like structure:
 \RenderType{field}
@@ -210,11 +183,13 @@ The following rule corresponds to a field of a record-like structure:
 The following rule corresponds to an identifier with its associated type:
 \RenderType{typed_identifier}
 
-\subsection{Assignable Expressions \label{sec:AssignableExpressions}}
+\OutlineSubsectionDef[defines the AST for assignable expressions;]
+  {AssignableExpressions}{Assignable Expressions}
 The following rules define the types of left-hand side of assignments:
 \RenderTypes{untyped_lexpr}
 
-\subsection{Local Declarations \label{sec:LocalDeclarations}}
+\OutlineSubsectionDef[defines the AST for local declarations;]
+  {LocalDeclarations}{Local Declarations}
 A local declaration keyword specifies whether a local storage declaration is mutable or immutable:
 \RenderType{local_decl_keyword}
 
@@ -230,32 +205,35 @@ the local declaration item is
 
 \RenderType{local_decl_item}
 
-\subsection{Statements \label{sec:Statements}}
+\OutlineSubsectionDef[defines the AST for statements;]{Statements}{Statements}
 \RenderTypes{untyped_stmt}
 \RenderType{for_direction}
 
-\subsection{Case Alternatives \label{sec:CaseAlternatives}}
+\OutlineSubsectionDef[defines the AST for case alternatives;]
+  {CaseAlternatives}{Case Alternatives}
 \RenderType{case_alt}
 
-\subsection{Exception Catchers \label{sec:ExceptionCatchers}}
+\OutlineSubsectionDef[defines the AST for exception catchers;]
+  {ExceptionCatchers}{Exception Catchers}
 \RenderType{catcher}
 
-\subsection{Subprograms \label{sec:Subprograms}}
+\OutlineSubsectionDef[defines the AST for subprograms;]{Subprograms}{Subprograms}
 \RenderType{subprogram_type}
 \RenderType{func_qualifier}
 \RenderType{override_info}
 \RenderType{func}
 
-\subsection{Global Declarations \label{sec:GlobalDeclarations}}
+\OutlineSubsectionDef[defines the AST for global declarations;]
+  {GlobalDeclarations}{Global Declarations}
 Declaration keyword for global storage elements:
 \RenderType{global_decl_keyword}
 \RenderType{global_decl}
 \RenderType{decl}
 
-\subsection{Specifications \label{sec:Specifications}}
+\OutlineSubsectionDef[defines the AST for specifications;]{Specifications}{Specifications}
 \RenderType{spec}
 
-\section{Typed Abstract Syntax\label{sec:TypedAbstractSyntax}}
+\SectionDef[defines the \typedast;]{TypedAbstractSyntax}{Typed Abstract Syntax}
 
 The derivation rules for the typed abstract syntax are the same as the rules for the untyped abstract syntax,
 except for the following differences.
@@ -310,7 +288,8 @@ always contains an expression (that is, it is never $\none$).
 Global pragma declarations $\DPragma$ are removed from the \untypedast\ once their expressions have been typechecked and do not appear in the \typedast.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Building Abstract Syntax Trees\label{sec:BuildingAbstractSyntaxTrees}}
+\SectionDef[explains how we use inference rules to transform a parse tree into an \untypedast;]
+  {BuildingAbstractSyntaxTrees}{Building Abstract Syntax Trees}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 This section defines how to transform a parse tree into the corresponding AST
 via recursively traversing the parse tree and applying a \emph{builder} function
@@ -403,7 +382,8 @@ In our example, this results in the abbreviated rule notation
 \end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Building Parameterised Productions\label{sec:BuildingParameterisedProductions}}
+\SectionDef[presents rules for building ASTs from parameterised productions;]
+  {BuildingParameterisedProductions}{Building Parameterised Productions}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 This section defines builder relations for the
 subset of macro productions in \secref{ParametricProductions}
@@ -570,7 +550,8 @@ to terminals.
 \end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Transforming Assignable Expressions\label{sec:LeftToRight}}
+\SectionDef[maps \assignableexpressions{} to right-hand side expressions;]
+  {LeftToRight}{Transforming Assignable Expressions}
 \RenderRelation{rexpr}
 This function is utilised by both the type system and the dynamic semantics.
 
@@ -578,7 +559,8 @@ Notice that $\LESetFields$ has two cases --- one for the \untypedast{} and one f
 
 \RenderProseAndFormally{rexpr}
 
-\section{Abstract Syntax Abbreviations\label{sec:AbstractSyntaxAbbreviations}}
+\SectionDef[defines AST abbreviations used by inference rules throughout this reference.]
+  {AbstractSyntaxAbbreviations}{Abstract Syntax Abbreviations}
 We employ the following abbreviations for various AST nodes:
 \begin{center}
 \begin{tabular}{ll}

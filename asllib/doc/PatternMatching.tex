@@ -9,19 +9,9 @@ matches a value specified by the \emph{pattern} $p$.
 \ASLListing{Examples of patterns}{Patterns}{\definitiontests/Patterns.asl}
 
 \ChapterOutline
-\begin{itemize}
-  \item \FormalRelationsRef{Patterns} defines the formal relations for patterns;
-  \item \secref{MatchingAllValues} defines the match-all-values pattern;
-  \item \secref{MatchingASingleValue} defines the match-a-single-value pattern;
-  \item \secref{MatchingARangeOfIntegers} defines the match-a-range-of-integers pattern;
-  \item \secref{MatchingAnUpperBoundedRangeOfIntegers} defines the match-integers-less-than pattern;
-  \item \secref{MatchingALowerBoundedRangeOfIntegers} defines the match-integers-greater-than pattern;
-  \item \secref{MatchingABitmask} defines the bitmask pattern;
-  \item \secref{MatchingPatternLists} defines positive and negative matching against pattern lists.
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef{Patterns}
+\FormalRelationsDef[defines the formal relations for patterns;]{Patterns}
 \paragraph{Syntax:} Patterns are grammatically derived from $\Npattern$.
 
 \paragraph{Abstract Syntax:} Patterns are derived in the abstract grammar from $\pattern$
@@ -39,7 +29,8 @@ transforms a pattern parse node $\vparsednode$ into a pattern AST node $\vastnod
 \paragraph{Semantics:} Patterns are evaluated by $\evalpattern$.
 \RenderRelation{eval_pattern}
 
-\section{Matching All Values\label{sec:MatchingAllValues}}
+\SectionDef[defines the match-all-values pattern;]
+  {MatchingAllValues}{Matching All Values}
 \hypertarget{any-pattern}{}
 \ASLListing{Matching any value}{semantics-pall}{\semanticstests/SemanticsRule.PAll.asl}
 
@@ -76,7 +67,8 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 \RenderProseAndFormally{eval_pattern_PAll}
 \CodeSubsection{\EvalPAllBegin}{\EvalPAllEnd}{../Interpreter.ml}
 
-\section{Matching a Single Value\label{sec:MatchingASingleValue}}
+\SectionDef[defines the match-a-single-value pattern;]
+  {MatchingASingleValue}{Matching a Single Value}
 \subsection{Syntax}
 \begin{flalign*}
 \Npattern \derives\ & \Nexpr &
@@ -117,7 +109,8 @@ In \listingref{semantics-psingle},
 \RenderProseAndFormally{eval_pattern_PSingle}
 \CodeSubsection{\EvalPSingleBegin}{\EvalPSingleEnd}{../Interpreter.ml}
 
-\section{Matching a Range of Integers\label{sec:MatchingARangeOfIntegers}}
+\SectionDef[defines the match-a-range-of-integers pattern;]
+  {MatchingARangeOfIntegers}{Matching a Range of Integers}
 \subsection{Syntax}
 \begin{flalign*}
 \Npattern \derives\ & \Nexpr \parsesep \Tslicing \parsesep \Nexpr &
@@ -165,7 +158,8 @@ range given by \texttt{3..42}.
 \RenderProseAndFormally{eval_pattern_PRange}
 \CodeSubsection{\EvalPRangeBegin}{\EvalPRangeEnd}{../Interpreter.ml}
 
-\section{Matching an Upper Bounded Range of Integers\label{sec:MatchingAnUpperBoundedRangeOfIntegers}}
+\SectionDef[defines the less-than-or-equal pattern;]
+  {MatchingAnUpperBoundedRangeOfIntegers}{Matching an Upper Bounded Range of Integers}
 \subsection{Syntax}
 \begin{flalign*}
 \Npattern \derives\ & \Tleq \parsesep \Nexpr &
@@ -207,7 +201,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \RenderProseAndFormally{eval_pattern_PLeq}
 \CodeSubsection{\EvalPLeqBegin}{\EvalPLeqEnd}{../Interpreter.ml}
 
-\section{Matching a Lower Bounded Range of Integers\label{sec:MatchingALowerBoundedRangeOfIntegers}}
+\SectionDef[defines the greater-than-or-equal pattern;]
+  {MatchingALowerBoundedRangeOfIntegers}{Matching a Lower Bounded Range of Integers}
 \subsection{Syntax}
 \begin{flalign*}
 \Npattern \derives\ & \Tgeq \parsesep \Nexpr &
@@ -249,7 +244,8 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 \RenderProseAndFormally{eval_pattern_PGeq}
 \CodeSubsection{\EvalPGeqBegin}{\EvalPGeqEnd}{../Interpreter.ml}
 
-\section{Matching a Bitmask\label{sec:MatchingABitmask}}
+\SectionDef[defines the bitmask pattern;]
+  {MatchingABitmask}{Matching a Bitmask}
 Bitmasks are used to match sets of bitvectors where occurrences of $\xbit$,
 and bit sequences in parentheses represent, don't-care values.
 
@@ -310,7 +306,8 @@ It is defined by the following table where the rows correspond to values of the 
 \CodeSubsection{\EvalPMaskBegin}{\EvalPMaskEnd}{../Interpreter.ml}
 
 
-\section{Matching Pattern Lists\label{sec:MatchingPatternLists}}
+\SectionDef[defines positive and negative matching against pattern lists.]
+  {MatchingPatternLists}{Matching Pattern Lists}
 Pattern-list forms are the only set-like pattern syntax. They appear at the top level
 of an \texttt{IN} expression or a case alternative, and their elements are simple
 patterns, that is, patterns derived from \Npattern. The forms \verb|{...}| and

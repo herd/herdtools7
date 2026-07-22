@@ -16,17 +16,9 @@ One can think of other combinations where, for example, semantic evaluation is
 replaced with a translation to a hardware description language.
 
 \ChapterOutline
-\begin{itemize}
-  \item \secref{Example Interpreter} presents an example of how to construct an ASL interpreter;
-  \item \secref{Renaming Local Storage Elements in the Standard Library} explains how local storage
-        elements of the standard library can be renamed to allow them to be correctly combined into
-        arbitrary specifications;
-  \item \secref{Marking Standard Library Functions} defines how to mark subprograms in the standard
-        library to allow distinguishing them from other subprograms.
-\end{itemize}
 
-\section{Example Interpreter\label{sec:Example Interpreter}}
-
+\SectionDef[presents an example of how to construct an ASL interpreter;]
+  {Example Interpreter}{Example Interpreter}
 \NotImportedToASLSpecYet{
 \hypertarget{def-checkandinterpret}{}
 The relation
@@ -100,7 +92,10 @@ or a \dynamicerrorterm{}.
 %% Beginning of rename locals-related functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Renaming Local Storage Elements in the Standard Library\label{sec:Renaming Local Storage Elements in the Standard Library}}
+\SectionDef[explains how local storage
+        elements of the standard library can be renamed to allow them to be correctly combined into
+        arbitrary specifications;]
+  {Renaming Local Storage Elements in the Standard Library}{Renaming Local Storage Elements in the Standard Library}
 % Transliteration comment: this transformation only applies to untyped AST node types.
 
 In order to combine the standard library declarations with a given specification,
@@ -1564,8 +1559,9 @@ renames the identifiers corresponding to local storage elements that appear in t
 %% End of rename locals-related functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Marking Standard Library Functions\label{sec:Marking Standard Library Functions}}
-
+\SectionDef[defines how to mark subprograms in the standard
+        library to allow distinguishing them from other subprograms.]
+  {Marking Standard Library Functions}{Marking Standard Library Functions}
 \ASTRuleDef{SetBuiltin}
 \NotImportedToASLSpecYet{
 \hypertarget{def-setbuiltin}{}

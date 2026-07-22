@@ -23,18 +23,10 @@ The mathematical background needed to understand the mathematical formalisation
 of the ASL dynamic semantics appears in \chapref{FormalSystem}.
 
 \ChapterOutline
-\begin{itemize}
-  \item \secref{MeaningfulASLSpecifications} explains which ASL specifications have a dynamic semantics
-        assigned to them;
-  \item \secref{Sequential Semantics and Dynamic Semantics} explains how this reference defines both the
-        sequential semantics and concurrent semantics for ASL;
-  \item \secref{Dynamic Semantics Configurations} defines the configurations used by the dynamic semantics;
-  \item \secref{nativevalues} defines the concept of \nativevaluesterm{};
-  \item \secref{Semantic Evaluation} explains how the dynamic semantics rules are used to evaluate specifications; and
-  \item \secref{Semantics of Diverging Specifications} defines the semantics of diverging specifications.
-\end{itemize}
 
-\section{Meaningful ASL Specifications\label{sec:MeaningfulASLSpecifications}}
+\SectionDef[explains which ASL specifications have a dynamic semantics
+        assigned to them;]
+  {MeaningfulASLSpecifications}{Meaningful ASL Specifications}
 The ASL dynamic semantics defined here assign meaning only to \emph{well-typed specifications}.
 More specifically, the semantics are only defined for a \typedast{} produced by the typechecker
 from some \untypedast{} (rather than a \typingerrorterm{}).
@@ -53,7 +45,9 @@ infinite.
 the ASL dynamic semantics rules to assign meaning to both terminating specifications
 and diverging specifications.
 
-\section{Sequential Semantics and Dynamic Semantics\label{sec:Sequential Semantics and Dynamic Semantics}}
+\SectionDef[explains how this reference defines both the
+        sequential semantics and concurrent semantics for ASL;]
+  {Sequential Semantics and Dynamic Semantics}{Sequential Semantics and Dynamic Semantics}
 \hypertarget{def-semanticconfiguration}{}
 The ASL dynamic semantics are given by relations between
 \emph{\semanticsconfigurationsterm}~\cite{SemanticsWithApplicationsBook}
@@ -90,7 +84,8 @@ of execution; notice that ASL does not contain any concurrency constructs.
 Technically, the sequential semantics are defined by omitting the concurrent execution graph components
 from all \semanticsconfigurationsterm{}.
 
-\section{Dynamic Semantics Configurations\label{sec:Dynamic Semantics Configurations}}
+\SectionDef[defines the configurations used by the dynamic semantics;]
+  {Dynamic Semantics Configurations}{Dynamic Semantics Configurations}
 This section defines the mathematical types over which our dynamic semantics are defined.
 An \hyperlink{eval-example}{example} of semantic evaluation appears at the end.
 
@@ -119,7 +114,8 @@ The rest of this section defines the components comprising \semanticsconfigurati
 
 \hypertarget{def-nativevalue}{}
 \hypertarget{def-nativevalues}{}
-\section{Native Values\label{sec:nativevalues}}
+\SectionDef[defines the concept of \nativevaluesterm{};]
+  {nativevalues}{Native Values}
 Semantic evaluation binds values to storage elements when a specification is semantically evaluated.
 To formalise this, we define the set of \emph{\nativevaluesterm} as follows
 (\texttt{NV} stands for Native Value):
@@ -449,7 +445,8 @@ like $C$ where the environment component, if one exists, is substituted with $\e
 \]
 \end{small}
 
-\section{Semantic Evaluation\label{sec:Semantic Evaluation}}
+\SectionDef[explains how the dynamic semantics rules define the evaluation of ASL constructs; and]
+  {Semantic Evaluation}{Semantic Evaluation}
 \hypertarget{def-evalrel}{}
 The semantics of ASL is given by the relation\footnote{The reason that a relation, rather than a function, is used is due to
 the non-determinism inherent in the \ARBITRARY{} expression.}
@@ -639,7 +636,8 @@ In particular, each line prints \verb|123| when executed.
 \end{Verbatim}
 % CONSOLE_END
 
-\section{Semantics of Diverging Specifications\label{sec:Semantics of Diverging Specifications}}
+\SectionDef[defines the semantics of diverging specifications.]
+  {Semantics of Diverging Specifications}{Semantics of Diverging Specifications}
 While typical specifications are intended to always terminate,
 diverging specifications can be potentially useful.
 For example, simulating the fetch-decode-execute cycle of a given processor,

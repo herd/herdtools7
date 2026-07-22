@@ -16,16 +16,9 @@ and their corresponding types in comments:
 \ASLListing{Examples of literals and their corresponding types}{literals1}{\typingtests/TypingRule.Lit.asl}
 
 \ChapterOutline
-\begin{itemize}
-  \item \FormalRelationsRef{Literals} defines the formal relations for literals;
-  \item \SyntaxRef{Literals} defines the syntax for literals;
-  \item \AbstractSyntaxRef{Literals} defines the abstract syntax and the abstract syntax builders for literals;
-  \item \TypeRulesRef{Literals} defines the typing of literals; and
-  \item \SemanticsRulesRef{Literals} defines the semantics of literals.
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef{Literals}
+\FormalRelationsDef[defines the formal relations for literals;]{Literals}
 \paragraph{Syntax:} Literals are grammatically derived from $\Nvalue$.
 \paragraph{Abstract Syntax:} Literals are derived in abstract syntax from $\literal$.
   The function $\buildvalue$ transforms a parse node for $\Nvalue$, except for enumeration labels,
@@ -35,7 +28,7 @@ and their corresponding types in comments:
   (see \SemanticsRulesRef{Literals}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SyntaxDef{Literals}
+\SyntaxDef[defines the syntax for literals;]{Literals}
 \begin{flalign*}
 \Nvalue \derives         \ & \Tintlit &\\
                         |\ & \Tboollit &\\
@@ -45,7 +38,7 @@ and their corresponding types in comments:
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\AbstractSyntaxDef{Literals}
+\AbstractSyntaxDef[defines the abstract syntax and the abstract syntax builders for literals;]{Literals}
 \RenderType[remove_hypertargets]{literal}
 
 \subsection{ASTRule.Value \label{sec:ASTRule.Value}}
@@ -95,7 +88,7 @@ into an AST node $\vastnode$ for $\literal$.
 \end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\TypeRulesDef{Literals}
+\TypeRulesDef[defines the typing of literals; and]{Literals}
 See \ExampleRef{Literals}.
 
 \TypingRuleDef{Lit}
@@ -106,7 +99,7 @@ See \ExampleRef{Literals}.
 \CodeSubsection{\LitBegin}{\LitEnd}{../Typing.ml}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SemanticsRulesDef{Literals}
+\SemanticsRulesDef[defines the semantics of literals.]{Literals}
 A literal $\vl$ is represented in the dynamic semantics by the \nativevalueterm{} $\NVLiteral(\vl)$.
 
 \ExampleDef{Converting a Literal to a Value}
