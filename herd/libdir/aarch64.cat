@@ -61,7 +61,7 @@ with IC-after from (all-IC-Imp_Instr_R-enums local-hw-reqs)
 
 (** Explicitly-hazard-ordered-before **)
 let Exp-haz-ob =
-  [Exp & R]; (po & same-loc); [Exp & R]; sca-class?; [Exp & R]; (ca & ext); [Exp & W | HU]; sca-class?; [Exp & W | HU]
+  [Exp & R]; (po & same-loc); [Exp & R]; sca-class?; [Exp & R]; (ca & ext); [Exp & W | Imp & TTD & W]; sca-class?; [Exp & W | Imp & TTD & W]
 
 (** TLBI-ordered-before **)
 
@@ -110,11 +110,11 @@ let Tag-obs =
 
 (* TLBUncacheable-coherence-after *)
 let TLBuncacheable-ca =
-  [range([TLBUncacheable & FAULT]; tr-ib^-1; [Imp & TTD & R])]; ca; [Exp & W | HU]
+  [range([TLBUncacheable & FAULT]; tr-ib^-1; [Imp & TTD & R])]; ca; [Exp & W | Imp & TTD & W]
 
 (* Hardware-update-coherence-after *)
 let HU-ca =
-  [Exp & R]; ca; [HU]
+  [Exp & R]; ca; [Imp & TTD & W]
 
 (* TLBI-coherence-after *)
 let TLBI-ca =
@@ -125,7 +125,7 @@ let TTD-obs =
     [Imp & TTD]; rf | rf; [Imp & TTD]
     | TLBuncacheable-ca
     | HU-ca
-    | [HU]; ca; [W] | [W]; ca; [HU]
+    | [Imp & TTD & W]; ca; [W] | [W]; ca; [Imp & TTD & W]
     | TLBI-ca
 
 (** Instr-observed-by **)

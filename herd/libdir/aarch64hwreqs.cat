@@ -93,12 +93,12 @@ let IFB-ob =
 let dob =
  addr
  | data
- | ctrl; [Exp & W | HU | TLBI | DC.CVAU | IC]
- | addr; [Exp & M]; po; [Exp & W | HU]
+ | ctrl; [Exp & W | Imp & TTD & W | TLBI | DC.CVAU | IC]
+ | addr; [Exp & M]; po; [Exp & W | Imp & TTD & W]
  | addr; [Exp & M]; lmrs; [Exp & R | Imp & Tag & R]
  | data; [Exp & M]; lmrs; [Exp & R | Imp & Tag & R]
- | [Imp & TTD & R]; tr-ib; [Exp & M]; po; [Exp & W | HU]
- | [Imp & Tag & R]; tc-before; [Exp & M]; po; [Exp & W | HU]
+ | [Imp & TTD & R]; tr-ib; [Exp & M]; po; [Exp & W | Imp & TTD & W]
+ | [Imp & Tag & R]; tc-before; [Exp & M]; po; [Exp & W | Imp & TTD & W]
 
 (* Fetch-ordered-before *)
 let f-ob =
@@ -113,16 +113,16 @@ let intr-ob =
 
 (* Pick-ordered-before *)
 let pob = 
- pick-addr-dep; [Exp & W | HU | TLBI | DC.CVAU | IC]
+ pick-addr-dep; [Exp & W | Imp & TTD & W | TLBI | DC.CVAU | IC]
  | pick-data-dep
- | pick-ctrl-dep; [Exp & W | HU | TLBI | DC.CVAU | IC]
- | pick-addr-dep; [Exp & M]; po; [Exp & W | HU]
+ | pick-ctrl-dep; [Exp & W | Imp & TTD & W | TLBI | DC.CVAU | IC]
+ | pick-addr-dep; [Exp & M]; po; [Exp & W | Imp & TTD & W]
 
 (* Atomic-ordered-before *)
 let aob =
  [Exp & M]; rmw; [Exp & M]
  | [Exp & M]; rmw; lmrs; [(Exp & R & A) | (Exp & R & Q)]
- | [Imp & TTD & R]; rmw; [HU]
+ | [Imp & TTD & R]; rmw; [Imp & TTD & W]
 
 (* Barrier-ordered-before *)
 let bob =
