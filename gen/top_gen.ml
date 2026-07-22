@@ -547,11 +547,15 @@ let max_set = IntSet.max_elt
 
   let do_add_load bank st p i f x v =
     let r,i,c,st = Comp.emit_obs bank st p i x in
-    let v =
+    let f =
       match bank with
-      | Pair -> v+v
-      | _ -> v in
-    i,c,F.add_final_v p r (IntSet.singleton v) f,st
+      | Pair ->
+          let f = F.add_final_v p r (IntSet.singleton v) f in
+          List.fold_left
+            (fun f r -> F.add_final_v p r (IntSet.singleton v) f)
+            f (A.get_friends st r)
+      | _ -> F.add_final_v p r (IntSet.singleton v) f in
+    i,c,f,st
 
   let do_add_loop st p i f x v w =
     let r,i,c,st = Comp.emit_obs_not_value st p i x v in
