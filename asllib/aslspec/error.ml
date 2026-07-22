@@ -287,6 +287,12 @@ let parameter_type_unification_failure loc ~relation_name parameter_name term1
        "Could not unify types %a and %a for parameter %s of relation %s"
        PP.pp_type_term term1 PP.pp_type_term term2 parameter_name relation_name
 
+(** Raises a specification error because [owner] declares [parameter] more than
+    once. *)
+let duplicate_type_parameter loc ~owner parameter =
+  spec_error loc
+  @@ Format.asprintf "Duplicate type parameter %s in %s" parameter owner
+
 let only_single_output_relations_supported name ~context_expr =
   spec_error_loc_of_expr context_expr
   @@ Format.asprintf

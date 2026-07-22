@@ -54,6 +54,9 @@
   $ aslspec parameterized_type_instantiation.bad
   Specification Error: parameterized_type_instantiation.bad:12:3: Unable to determine that `Leaf(Int)` is subsumed by `Leaf(value: T)`
   [1]
+  $ aslspec operator_duplicate_parameter.bad
+  Specification Error: operator_duplicate_parameter.bad:1:1: Duplicate type parameter T in operator duplicate
+  [1]
   $ aslspec relation_unnamed_arguments.bad
   Specification Error: relation_unnamed_arguments.bad:6:38: The term Num in relation unnamed_arg_has_rule does not provide a name for at least one of its sub-terms.
   [1]

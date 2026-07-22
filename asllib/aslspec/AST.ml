@@ -214,7 +214,7 @@ module Term = struct
     | Parameter of { loc : source_location; name : string }
         (** A named type parameter. The parser constructs an instance of
             [Label], which is later substituted by an instance of [Parameter] in
-            [SubstituteTypeParameters]. *)
+            [ResolveTypeParameters]. *)
     | TypeOperator of {
         loc : source_location;
         op : type_operator;

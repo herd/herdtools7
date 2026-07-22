@@ -353,22 +353,6 @@ let record_variant_for_expr spec expr =
 let is_defined_id self id = StringMap.mem id self.id_to_defining_node
 let elements self = self.ast
 
-(** [symbol_table_for_id id_to_defining_node id] returns the symbol table for
-    the scope of the definition with identifier [id]. If [id] corresponds to a
-    relation definition, the parameters of the relation definition are added. *)
-let symbol_table_for_id id_to_defining_node id =
-  match StringMap.find_opt id id_to_defining_node with
-  | Some (Node_Relation { Relation.parameters; loc }) ->
-      List.fold_left
-        (fun curr_table param ->
-          let type_for_param =
-            Type.make loc ~type_kind:TypeKind_Generic ~name:param
-              ~param_opt:None ~variants:[] ~attribute_pairs:[]
-          in
-          StringMap.add param (Node_Type type_for_param) curr_table)
-        id_to_defining_node parameters
-  | _ -> id_to_defining_node
-
 (** [is_variadic_operator id_to_defining_node id] checks if [id] represents a
     variadic operator. That is, an operator whose only argument is a list type.
     Variadic operators accept any number of actual arguments. *)
@@ -804,6 +788,25 @@ let filter_rule_for_path { Relation.name; rule_opt; loc } path_str =
   filter_rule_elements (Option.get rule_opt) path
 
 module Check = struct
+  (** [check_unique_parameters spec] checks that every parameterized relation
+      declares each type parameter at most once. *)
+  let check_unique_parameters { ast; _ } =
+    let check_relation { Relation.loc; name; parameters; _ } =
+      let _ =
+        List.fold_left
+          (fun seen parameter ->
+            if StringSet.mem parameter seen then
+              Error.duplicate_type_parameter loc ~owner:("operator " ^ name)
+                parameter
+            else StringSet.add parameter seen)
+          StringSet.empty parameters
+      in
+      ()
+    in
+    List.iter
+      (function Elem_Relation relation -> check_relation relation | _ -> ())
+      ast
+
   (** [check spec] checks that all math layout attributes in [spec] match the
       structure of their respective AST nodes, raising a [SpecError] if any
       check fails. *)
@@ -1123,10 +1126,6 @@ module Check = struct
         | Elem_RenderRule { RuleRender.relation_name } -> [ relation_name ]
       in
       let elem_name = elem_name elem in
-      (* Update the symbol table by introducing types for parameters. *)
-      let id_to_defining_node =
-        symbol_table_for_id id_to_defining_node elem_name
-      in
       List.iter
         (fun id ->
           if not (StringMap.mem id id_to_defining_node) then
@@ -1750,7 +1749,7 @@ module Check = struct
       *)
       check_well_instantiated spec term
 
-    let check ({ ast; id_to_defining_node } as spec) =
+    let check ({ ast; _ } as spec) =
       List.iter
         (fun elem ->
           match elem with
@@ -1759,15 +1758,7 @@ module Check = struct
               ()
           | Elem_Constant { opt_type = Some type_term } ->
               check_well_typed spec type_term
-          | Elem_Relation { name; input; output } ->
-              (* The check must be made in a symbol table that contains the relation parameters. *)
-              let spec =
-                {
-                  spec with
-                  id_to_defining_node =
-                    symbol_table_for_id id_to_defining_node name;
-                }
-              in
+          | Elem_Relation { input; output } ->
               List.iter (fun (_, term) -> check_well_typed spec term) input;
               List.iter (check_well_typed spec) output
           | Elem_Type { Type.variants; _ } ->
@@ -2268,9 +2259,9 @@ module Check = struct
                       parameter_name existing_type parameter_type))
           type_env
 
-      (** [infer_parameter_type parameters formal_type arg_type type_env] infers
-          the types of parameters in [parameters] given [formal_type] and the
-          corresponding [arg_type], updating the [type_env] accordingly.
+      (** [infer_parameter_type formal_type arg_type type_env] infers the types
+          of parameters in [formal_type] given the corresponding [arg_type],
+          updating the [type_env] accordingly.
 
           This is achieved by recursing into [formal_type] and [arg_type] in
           lockstep, and when a sub-term of [formal_type] is a parameter, mapping
@@ -2278,19 +2269,16 @@ module Check = struct
           same parameter may appear multiple times in [formal_type], unification
           is used to find a single term consistent with all concrete terms
           associated with the parameter. *)
-      let rec infer_parameter_type spec ~relation_name parameters formal_type
-          arg_type type_env =
-        let is_parameter id = List.exists (String.equal id) parameters in
+      let rec infer_parameter_type spec ~relation_name formal_type arg_type
+          type_env =
         let open CheckTypeInstantiations in
         let formal_type = reduce_term spec formal_type in
         let arg_type = reduce_term spec arg_type in
         let open Term in
         match (formal_type, arg_type) with
-        | Label { label = formal_id; loc }, _ ->
-            if is_parameter formal_id then
-              unify_parameter_type spec loc ~relation_name formal_id arg_type
-                type_env
-            else type_env
+        | Parameter { name = formal_id; loc }, _ ->
+            unify_parameter_type spec loc ~relation_name formal_id arg_type
+              type_env
         | Tuple { args = formal_args }, Tuple { args = actual_args } ->
             let () =
               if not (List.compare_lengths formal_args actual_args = 0) then
@@ -2300,8 +2288,8 @@ module Check = struct
             in
             List.fold_left2
               (fun curr_type_env (_, formal_term) (_, arg_term) ->
-                infer_parameter_type spec ~relation_name parameters formal_term
-                  arg_term curr_type_env)
+                infer_parameter_type spec ~relation_name formal_term arg_term
+                  curr_type_env)
               type_env formal_args actual_args
         | Record { fields = formal_fields }, Record { fields = arg_fields } ->
             let formal_field_names =
@@ -2324,11 +2312,11 @@ module Check = struct
             Function { from_type = _, arg_from_term; to_type = _, arg_to_term }
           ) ->
             let type_env =
-              infer_parameter_type spec ~relation_name parameters
-                formal_from_term arg_from_term type_env
+              infer_parameter_type spec ~relation_name formal_from_term
+                arg_from_term type_env
             in
-            infer_parameter_type spec ~relation_name parameters formal_to_term
-              arg_to_term type_env
+            infer_parameter_type spec ~relation_name formal_to_term arg_to_term
+              type_env
         | ( TypeOperator { op = formal_op; term = _, formal_inner_term },
             TypeOperator { op = arg_op; term = _, arg_inner_term } ) ->
             let () =
@@ -2338,8 +2326,8 @@ module Check = struct
                 Error.type_operator_instantiation_failure ~relation_name
                   formal_type arg_type
             in
-            infer_parameter_type spec ~relation_name parameters
-              formal_inner_term arg_inner_term type_env
+            infer_parameter_type spec ~relation_name formal_inner_term
+              arg_inner_term type_env
         | ( ParamType { typename = formal_typename; term = _, formal_inner_term },
             ParamType { typename = arg_typename; term = _, arg_inner_term } ) ->
             let () =
@@ -2347,8 +2335,8 @@ module Check = struct
                 Error.param_type_instantiation_failure ~relation_name
                   formal_type arg_type
             in
-            infer_parameter_type spec ~relation_name parameters
-              formal_inner_term arg_inner_term type_env
+            infer_parameter_type spec ~relation_name formal_inner_term
+              arg_inner_term type_env
         | _ -> type_env
 
       (** [substitute_type_parameters term parameter_env] substitutes type
@@ -2357,10 +2345,11 @@ module Check = struct
       let rec substitute_type_parameters term parameter_env =
         let open Term in
         match term with
-        | Label { label = name } | Parameter { name } -> (
+        | Parameter { name } -> (
             match StringMap.find_opt name parameter_env with
             | Some substituted_type -> substituted_type
             | None -> term)
+        | Label _ -> term
         | Tuple ({ args } as node) ->
             let substituted_args =
               List.map
@@ -2452,8 +2441,8 @@ module Check = struct
         let parameter_env =
           List.fold_left2
             (fun curr_env formal_type arg_type ->
-              infer_parameter_type spec ~relation_name parameters formal_type
-                arg_type curr_env)
+              infer_parameter_type spec ~relation_name formal_type arg_type
+                curr_env)
             StringMap.empty formal_terms actual_terms
         in
         let () =
@@ -3664,15 +3653,18 @@ module ExtendConstantsWithTypes = struct
     update_spec_ast spec (List.rev ast)
 end
 
-(** A module for resolving type-parameter references inside type definitions.
+(** Resolves references to type parameters in parameterized definitions.
 
-    Within a parameterized type definition, a term [Label param] denotes the
-    type parameter rather than a label/type with the same name. This pass makes
-    that distinction explicit by rewriting those occurrences to
-    [Parameter param]. *)
-module SubstituteTypeParameters : sig
+    The parser initially represents all bare identifiers in type terms as
+    [Term.Label]. This pass rewrites identifiers bound by a typedef or operator
+    parameter declaration to [Term.Parameter]. *)
+module ResolveTypeParameters : sig
   val resolve : AST.t -> AST.t
+  (** [resolve ast] replaces bound type-parameter references in parameterized
+      typedef and operator signatures with [Term.Parameter] nodes. *)
 end = struct
+  (** [resolve_type_term param term] replaces every reference to the type
+      parameter [param] in [term] with an explicit [Term.Parameter] node. *)
   let rec resolve_type_term param term =
     let open Term in
     match term with
@@ -3719,9 +3711,13 @@ end = struct
             to_type = (to_name_opt, resolve_type_term param to_term);
           }
 
+  (** [resolve_variant param variant] resolves references to [param] in
+      [variant]. *)
   let resolve_variant param ({ TypeVariant.term } as variant) =
     { variant with term = resolve_type_term param term }
 
+  (** [resolve_type type_def] resolves the parameter declared by [type_def]
+      throughout its variants, if it has one. *)
   let resolve_type ({ Type.param_opt; variants } as type_def) =
     match param_opt with
     | None -> type_def
@@ -3729,10 +3725,30 @@ end = struct
         let variants = List.map (resolve_variant param) variants in
         { type_def with variants }
 
+  (** [resolve_relation relation] resolves every parameter declared by
+      [relation] throughout its input and output types. *)
+  let resolve_relation ({ Relation.parameters; input; output } as relation) =
+    let resolve_with_parameters term =
+      List.fold_left
+        (fun term parameter -> resolve_type_term parameter term)
+        term parameters
+    in
+    let input =
+      List.map
+        (fun (name_opt, term) -> (name_opt, resolve_with_parameters term))
+        input
+    in
+    let output = List.map resolve_with_parameters output in
+    { relation with input; output }
+
+  (** [resolve ast] resolves type parameters in every parameterized definition
+      in [ast]. *)
   let resolve ast =
     List.map
       (function
-        | Elem_Type type_def -> Elem_Type (resolve_type type_def) | elem -> elem)
+        | Elem_Type type_def -> Elem_Type (resolve_type type_def)
+        | Elem_Relation relation -> Elem_Relation (resolve_relation relation)
+        | elem -> elem)
       ast
 end
 
@@ -3833,7 +3849,7 @@ let prepend_ast_with_builtins ast id_to_defining_node =
     Parsing.parse_spec_from_string ~spec:Builtins.builtin_spec_str
       ~filename:"builtins.ml"
   in
-  let builtin_ast = SubstituteTypeParameters.resolve builtin_ast in
+  let builtin_ast = ResolveTypeParameters.resolve builtin_ast in
   List.fold_right
     (fun elem acc_elems ->
       let elem_name = ASTUtils.elem_name elem in
@@ -3844,7 +3860,7 @@ let prepend_ast_with_builtins ast id_to_defining_node =
 (** [make_spec_with_builtins ast] constructs a specification containing the
     builtin definitions. *)
 let make_spec_with_builtins ast =
-  let ast = SubstituteTypeParameters.resolve ast in
+  let ast = ResolveTypeParameters.resolve ast in
 
   let id_to_defining_node = make_symbol_table ast in
   let ast = prepend_ast_with_builtins ast id_to_defining_node in
@@ -3886,6 +3902,7 @@ let remove_bottom_constant spec =
 
 let from_ast ast =
   let spec = make_spec_with_builtins ast in
+  let () = Check.check_unique_parameters spec in
   let () = Check.check_no_undefined_ids spec in
   let () = Check.check_relation_outputs spec in
   let () = Check.CheckTypeInstantiations.check spec in
