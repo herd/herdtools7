@@ -127,6 +127,25 @@
 \usepackage{mathpartir}  % For deduction rules and equations paragraphs
 \newcommand\hva[0]{} % Disable the macro, just for the current PR.
 \usepackage{fancyvrb}
+
+% Render the output produced by running aslref on a test file:
+%   \RenderConsoleFor[<options>]{<ID>}{<test-file>}
+%
+% <ID> must be unique and consist of letters, digits, and hyphens, beginning
+% with a letter. <test-file> must use one of \definitiontests, \syntaxtests,
+% \typingtests, or \semanticstests. Both identify the generated output; TeX
+% itself uses only <ID>.
+%
+% <options> contains options passed to aslref. It may additionally contain the
+% generator directives `expect-error`, to capture stdout and stderr from an
+% intentionally failing test, and `show-command`, to include the command in the
+% rendered output. The complete invocation must occupy one source line so that
+% doclint.py can find it. The Makefile regenerates the console-output text files
+% before building the document.
+\newcommand\RenderConsoleFor[3][]{%
+  \VerbatimInput[fontsize=\footnotesize,frame=single]{generated_console_output/#2.txt}%
+}
+
 \usepackage[
   % Notes on the right, should be less than outer
   marginparwidth=100pt,

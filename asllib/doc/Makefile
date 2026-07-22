@@ -1,8 +1,11 @@
-ASLREF=../../_build/install/default/bin/aslref
+ASLREF=../../_build/default/asllib/aslref.exe
 LATEX=pdflatex
 BIBTEX=bibtex
 
 GENERATED_MACROS_TEX=generated_macros.tex
+# Empty file marking successful generation of every file in generated_console_output/.
+GENERATED_CONSOLE_OUTPUT_STAMP=generated_console_output.stamp
+ASL_TESTS=$(shell find ../tests -name '*.asl')
 
 # HeVeA and Hacha can emit warnings on stderr while still exiting with success.
 # Capture stderr from the command, preserve real command failures, and make
@@ -29,7 +32,7 @@ all: ASLReference.pdf
 
 LATEXMK=latexmk
 
-ASLReference.pdf: generated_spec *.tex *.bib
+ASLReference.pdf: generated_spec $(GENERATED_CONSOLE_OUTPUT_STAMP) *.tex *.bib
 	if command -v $(LATEXMK) >/dev/null 2>&1; \
 	then \
 		$(LATEXMK) -pdf ASLReference.tex; \
@@ -40,9 +43,16 @@ ASLReference.pdf: generated_spec *.tex *.bib
 		$(BIBTEX) ASLReference; \
 		$(LATEX) ASLReference.tex; \
 	fi
-	python3 doclint.py --console_macros --aslref $(ASLREF)
+	python3 doclint.py
 
-html: generated_spec *.tex *.bib *.hva
+$(GENERATED_CONSOLE_OUTPUT_STAMP): extended_macros.py doclint.py $(ASLREF) $(ASL_TESTS) $(wildcard *.tex)
+	python3 doclint.py --console-macros-only --aslref $(ASLREF)
+
+$(ASLREF):
+	@# Build the aslref target in the parent asllib directory.
+	dune build ../aslref.exe
+
+html: generated_spec $(GENERATED_CONSOLE_OUTPUT_STAMP) *.tex *.bib *.hva
 	mkdir -p HTML
 	@# The first run is expected to generate warnings because bibhva
 	@# and the second hevea pass have not run, so we silence them via -s.
@@ -63,6 +73,8 @@ generated_spec: asl.spec
 clean:
 	/bin/rm -f $(PDFS)
 	/bin/rm -f $(GENERATED_MACROS_TEX)
+	/bin/rm -f $(GENERATED_CONSOLE_OUTPUT_STAMP)
+	/bin/rm -rf generated_console_output
 	/bin/rm -f *.aux *.log *.fls *.log *.toc *.fdb_latexmk *~
 	/bin/rm -f $(CONTROLS)
 	/bin/rm -f comment.cut
