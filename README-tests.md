@@ -16,6 +16,8 @@
 
 The basic litmus test consists in compiling series of tests. Some series are also executed but not all of them. Tests that are not run by default would take too much time or raise errors.
 
+The litmus tests require the package `qemu-system` in order to run the tests that use kvm mode.
+
   + `make litmus-x86_64-test`, for x86_64. All tests are executed by default.
   + `make litmus-aarch64-test`, for armv8. Some tests are executed some other are not.
       - `make litmus-aarch64-run` to compile and execute the test series that are executed by default.
