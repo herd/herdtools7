@@ -1,0 +1,14 @@
+Test RW+RR+rel+acq+PteOA Allowed
+States 4
+0:X1=1; 1:X1=1;
+0:X1=1; 1:X1=2;
+0:X1=2; 1:X1=1;
+0:X1=2; 1:X1=2;
+Ok
+Witnesses
+Positive: 2 Negative: 6
+Flag Warning-BBM-expected
+Condition exists (0:X1=2 /\ 1:X1=1)
+Observation RW+RR+rel+acq+PteOA Sometimes 2 6
+Hash=2679c3daefc5c2fefdfa8b6eb6c93e54
+

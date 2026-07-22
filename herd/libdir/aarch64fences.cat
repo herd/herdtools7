@@ -45,5 +45,5 @@ let dsb.full = DSB.NSH | DSB.ISH | DSB.OSH | DSB.SY
 let dsb.ld = DSB.NSHLD | DSB.ISHLD | DSB.OSHLD | DSB.LD
 flag ~empty (DSB.NSHLD | DSB.ISHLD | DSB.OSHLD) as Maintenance-scope-for-DSB-LD-is-deprecated
 let dsb.st = DSB.NSHST | DSB.ISHST | DSB.OSHST | DSB.ST
-flag ~empty (DSB.NSHST | DSB.ISHST | DSB.OSHST) as Maintnenace-scope-for-DSB-ST-is-deprecated
+flag ~empty (DSB.NSHST | DSB.ISHST | DSB.OSHST) as Maintenance-scope-for-DSB-ST-is-deprecated
 

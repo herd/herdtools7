@@ -648,7 +648,30 @@ end = struct
           | Some s1,Some s2 -> A.V.Cst.PteVal.same_oa s1 s2
           | _,_ -> false) in
 
-      [("inv-domain",inv_domain_act); ("alias",alias_act);]
+      let pte_to_pa_act =
+        let ptevals act =
+          let get_pteval =
+            let open Constant in
+            function
+            | Some (A.V.Val (PteVal v)) -> Some v
+            | Some _ | None -> None in
+          List.filter_map get_pteval [read_of act; written_of act] in
+        let is_physical_location pteval act =
+          match A.V.Cst.PteVal.as_physical pteval, location_of act with
+          | Some s, Some loc ->
+              begin match A.symbol loc with
+              | Some (Constant.Physical (s', _)) -> Misc.string_eq s s'
+              | _ -> false
+              end
+          | None, _ | _, None -> false in
+        fun act1 act2 ->
+          is_pt act1 && is_mem act2 &&
+          List.exists (fun pteval -> is_physical_location pteval act2)
+            (ptevals act1) in
+
+      [("inv-domain",inv_domain_act);
+       ("alias",alias_act);
+       ("PTEtoPA",pte_to_pa_act);]
     else []
 
   let arch_dirty =

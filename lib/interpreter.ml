@@ -1179,26 +1179,9 @@ module Make
       let r = prim_as_rel ks arg in
       V.Rel (E.EventRel.restrict_rel U.same_oa r)
 
-    and check_two pred ks arg = match arg with
-      | V.Tuple [vset; vrel; ] ->
-          let ws = prim_as_set ks vset
-          and m = prim_as_rel ks vrel in
-          let ws =
-            E.EventSet.filter
-              (fun w ->
-                 E.is_store w && E.is_pt w &&
-                 begin
-                   match E.EventSet.as_singleton (E.EventRel.succs m w) with
-                   | Some p -> pred w p
-  (* w does not qualify when zero of two or more prec-related events *)
-                   | None -> false
-                 end)
-              ws in
-          V.Set ws
-      | _ -> arg_mismatch ()
-
-    let oa_changes = check_two (fun w p -> not (U.same_oa w p))
-    and at_least_one_writable = check_two U.writable2
+    and at_least_one_writable ks arg =
+      let r = prim_as_rel ks arg in
+      V.Rel (E.EventRel.restrict_rel U.writable2 r)
 
     let as_transitive =
       function
@@ -1210,7 +1193,6 @@ module Make
       add_prims m
         [
           "at-least-one-writable",at_least_one_writable ks;
-          "oa-changes",oa_changes ks;
           "same-oa",same_oaRel ks;
           "different-values",different_values ks;
           "fromto",fromto ks;

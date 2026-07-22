@@ -5,3 +5,6 @@ if "cos-opt"
 else
   include "cos-no-opt.cat"
 end
+
+(*** Coherence-after ***)
+let ca = fr | co

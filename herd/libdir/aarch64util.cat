@@ -55,12 +55,13 @@ let ii_data = [DATA]; (iico_data|iico_ctrl)+
  * -variant vmsa
 *)
 
-let PTE = if "vmsa" then PTE else emptyset
-let PTEV = if "vmsa" then PTEV else emptyset
-let PTEINV = if "vmsa" then PTEINV else emptyset
+let TTD = if "vmsa" then PTE else emptyset
+let TTDV = if "vmsa" then PTEV else emptyset
+let TTDINV = if "vmsa" then PTEINV else emptyset
+let TTDAF0 = if "vmsa" then PTEAF0 else emptyset
 let inv-domain = if "vmsa" then inv-domain else 0
-let D-PTE = if "vmsa" then D-PTE else emptyset
-let I-PTE = if "vmsa" && "ifetch" then PTE \ D-PTE else emptyset
+let D-TTD = if "vmsa" then D-PTE else emptyset
+let I-TTD = if "vmsa" && "ifetch" then PTE \ D-PTE else emptyset
 let AF = if "vmsa" then AF else emptyset
 let DB = if "vmsa" then DB else emptyset
 let MMU = if "vmsa" then MMU else emptyset
@@ -97,7 +98,6 @@ let IC = IC.IALLUIS | IC.IALLU | IC.IVAU
 let Imp = NExp
 let SPONTANEOUS = SPURIOUS
 let inv-scope = inv-domain
-let TTD = PTE
 let D-TTD = if "vmsa" then D-PTE else emptyset
 let I-TTD = if "vmsa" then I-PTE else emptyset
 let Tag = T
