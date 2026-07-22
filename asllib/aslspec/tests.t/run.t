@@ -51,8 +51,9 @@
   $ aslspec instantiation_recursion.bad
   Specification Error: instantiation_recursion.bad:9:11: Unable to determine that `B` is subsumed by `A`
   [1]
-  $ aslspec parameterized_type_instantiation.bad
-  Specification Error: parameterized_type_instantiation.bad:12:3: Unable to determine that `Leaf(Int)` is subsumed by `Leaf(value: T)`
+  $ aslspec parameterized_type_instantiation.spec
+  $ aslspec parameterized_type_unification.bad
+  Specification Error: parameterized_type_unification.bad:5:31: Could not unify types Int and Bool for parameter T of type Pair
   [1]
   $ aslspec operator_duplicate_parameter.bad
   Specification Error: operator_duplicate_parameter.bad:1:1: Duplicate type parameter T in operator duplicate

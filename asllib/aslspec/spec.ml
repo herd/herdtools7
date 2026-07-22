@@ -244,12 +244,21 @@ let make_variant_id_to_containing_type ast =
         acc_map variants)
     StringMap.empty typedefs
 
-let make_field_to_containing_variant ast =
+type containing_record = {
+  record_variant : TypeVariant.t;
+  containing_type : Type.t;
+}
+(** A record variant together with the type definition containing it. *)
+
+(** [make_field_to_containing_record ast] maps each record field in [ast] to its
+    record variant and the type definition containing that variant. Record field
+    names are globally unique. *)
+let make_field_to_containing_record ast =
   let typedefs =
     List.filter_map (function Elem_Type def -> Some def | _ -> None) ast
   in
   List.fold_left
-    (fun acc_map { Type.variants } ->
+    (fun acc_map ({ Type.variants; _ } as containing_type) ->
       List.fold_left
         (fun acc_map ({ TypeVariant.term } as variant) ->
           match term with
@@ -257,7 +266,9 @@ let make_field_to_containing_variant ast =
               let field_names = List.map (fun { Term.name } -> name) fields in
               List.fold_left
                 (fun acc_map field_name ->
-                  StringMap.add field_name variant acc_map)
+                  StringMap.add field_name
+                    { record_variant = variant; containing_type }
+                    acc_map)
                 acc_map field_names
           | _ -> acc_map)
         acc_map variants)
@@ -270,10 +281,10 @@ type t = {
   variant_id_to_containing_type : string StringMap.t;
       (** Associates variant labels with the name of the type that contains
           them. *)
-  field_to_containing_variant : TypeVariant.t StringMap.t;
-      (** Associates field names with the variant containing them. Since field
-          names are unique, there is only one variant containing a given field.
-      *)
+  field_to_containing_record : containing_record StringMap.t;
+      (** Associates field names with the record variant and type definition
+          containing them. Since field names are unique, there is only one
+          record containing a given field. *)
   assign : Relation.t;
   reverse_assign : Relation.t;
   bottom_constant : Constant.t;
@@ -298,6 +309,10 @@ let is_builtin_relation id (r : Relation.t) = String.equal id r.name
     parameter diagnostics. *)
 let operator_parameter_owner_name name = "operator " ^ name
 
+(** [type_parameter_owner_name name] describes the type [name] in type parameter
+    diagnostics. *)
+let type_parameter_owner_name name = "type " ^ name
+
 let is_cond_operator_name (spec : t) id =
   is_builtin_relation id spec.cond_operator
 
@@ -315,7 +330,7 @@ let update_spec_ast spec ast =
     ast;
     id_to_defining_node = make_symbol_table ast;
     variant_id_to_containing_type = make_variant_id_to_containing_type ast;
-    field_to_containing_variant = make_field_to_containing_variant ast;
+    field_to_containing_record = make_field_to_containing_record ast;
   }
 
 let defined_ids self =
@@ -347,7 +362,10 @@ let record_variant_for_expr spec expr =
         | (field_name, _) :: _ -> field_name
         | _ -> failwith "Record expression must have a non-empty list of fields"
       in
-      StringMap.find first_field_name spec.field_to_containing_variant
+      let { record_variant; _ } =
+        StringMap.find first_field_name spec.field_to_containing_record
+      in
+      record_variant
   | _ ->
       let msg =
         Format.asprintf "Expected record expression, found %a" PP.pp_expr expr
@@ -407,6 +425,21 @@ module TypeParameterOps = struct
             to_type = (to_name, substitute_in_term to_term);
           }
 
+  (** [variants spec typename argument] returns the variants of the
+      parameterized type [typename], with its parameter replaced by [argument].
+  *)
+  let variants spec typename argument =
+    match defining_node_opt_for_id spec typename with
+    | Some (Node_Type { Type.param_opt = Some parameter; variants; _ }) ->
+        List.map
+          (fun ({ TypeVariant.term; _ } as variant) ->
+            {
+              variant with
+              TypeVariant.term =
+                substitute (StringMap.singleton parameter argument) term;
+            })
+          variants
+    | _ -> []
 end
 
 (** [is_variadic_operator id_to_defining_node id] checks if [id] represents a
@@ -1380,7 +1413,10 @@ module Check = struct
           simplifies handling tuple types.
 
         - If [term] is a label referencing a type with a single variant, it is
-          reduced to that variant's term. *)
+          reduced to that variant's term.
+
+        - If [term] instantiates a parameterized type with a single variant, it
+          is replaced by the variant with its parameter substituted. *)
   end = struct
     open Term
 
@@ -1422,8 +1458,19 @@ module Check = struct
           reduce_term spec referenced_term
       | _ -> term
 
+    and reduce_single_variant_param_type spec term =
+      match term with
+      | ParamType { typename; term = _, argument } -> (
+          match TypeParameterOps.variants spec typename argument with
+          | [ { TypeVariant.term = variant_term } ] ->
+              reduce_term spec variant_term
+          | _ -> term)
+      | _ -> term
+
     and reduce_term spec term =
-      reduce_type_reference spec term |> reduce_single_variant_type spec
+      reduce_type_reference spec term
+      |> reduce_single_variant_type spec
+      |> reduce_single_variant_param_type spec
 
     (** [subsumed sub_op super_op] is true if all values in the domain of
         [TypeOperator { op = sub_op; term }] are also in the domain of
@@ -1563,6 +1610,31 @@ module Check = struct
             String.equal sub_typename super_typename
             && subsumed_rec spec expansion_limit expanded_types sub_term
                  super_term
+        | _, ParamType { typename; term = _, argument } ->
+            if expansion_count typename expanded_types >= expansion_limit then
+              false
+            else
+              let expanded_types =
+                increment_expansion_count typename expanded_types
+              in
+              TypeParameterOps.variants spec typename argument
+              |> List.exists (fun { TypeVariant.term = super_term } ->
+                  subsumed_rec spec expansion_limit expanded_types sub
+                    super_term)
+        | ParamType { typename; term = _, argument }, _ ->
+            if expansion_count typename expanded_types >= expansion_limit then
+              false
+            else
+              let expanded_types =
+                increment_expansion_count typename expanded_types
+              in
+              let variants = TypeParameterOps.variants spec typename argument in
+              (not (Utils.list_is_empty variants))
+              && List.for_all
+                   (fun { TypeVariant.term = sub_term } ->
+                     subsumed_rec spec expansion_limit expanded_types sub_term
+                       super)
+                   variants
         | Parameter { name = sub_name }, Parameter { name = super_name } ->
             String.equal sub_name super_name
         | ( Tuple { label_opt = sub_label_opt; args = sub_components },
@@ -2128,13 +2200,6 @@ module Check = struct
                 "Encountered an untyped variable '%s' in %a." id PP.pp_expr
                 context_expr)
 
-    (** [type_term_for_field spec id] returns the type term associated with the
-        record field with identifier [id]. *)
-    let type_term_for_field spec id =
-      match defining_node_opt_for_id spec id with
-      | Some (Node_RecordField { term }) -> term
-      | _ -> failwith "Expected a record field definition node."
-
     (** Pretty-prints a type environment for debugging. *)
     let pp_type_env fmt type_env =
       let var_to_type = StringMap.bindings type_env in
@@ -2356,12 +2421,10 @@ module Check = struct
                   curr_type_env)
               type_env formal_args actual_args
         | Record { fields = formal_fields }, Record { fields = arg_fields } ->
-            let formal_field_names =
-              List.map field_name formal_fields |> List.sort String.compare
-            in
-            let arg_field_names =
-              List.map field_name arg_fields |> List.sort String.compare
-            in
+            let formal_fields = ASTUtils.sort_record_fields formal_fields in
+            let arg_fields = ASTUtils.sort_record_fields arg_fields in
+            let formal_field_names = List.map field_name formal_fields in
+            let arg_field_names = List.map field_name arg_fields in
             let () =
               if
                 not (List.equal String.equal formal_field_names arg_field_names)
@@ -2370,7 +2433,11 @@ module Check = struct
                   ~expected_length:(List.length formal_fields)
                   ~actual_length:(List.length arg_fields)
             in
-            type_env
+            List.fold_left2
+              (fun curr_type_env formal_field arg_field ->
+                infer_parameter_type spec ~owner formal_field.Term.term
+                  arg_field.Term.term curr_type_env)
+              type_env formal_fields arg_fields
         | ( Function
               { from_type = _, formal_from_term; to_type = _, formal_to_term },
             Function { from_type = _, arg_from_term; to_type = _, arg_to_term }
@@ -2426,6 +2493,77 @@ module Check = struct
         in
         parameter_env
     end
+
+    (** [containing_type_for_variant spec variant] returns the type definition
+        containing [variant]. Labelled variants are found through their label;
+        record variants are found through one of their globally unique fields.
+    *)
+    let containing_type_for_variant spec { TypeVariant.term; _ } =
+      match term with
+      | Term.Record { fields = { Term.name; _ } :: _; _ } ->
+          StringMap.find_opt name spec.field_to_containing_record
+          |> Option.map (fun { containing_type; _ } -> containing_type)
+      | Term.Label { label } | Term.Tuple { label_opt = Some label; _ } -> (
+          match StringMap.find_opt label spec.variant_id_to_containing_type with
+          | Some type_name -> (
+              match StringMap.find_opt type_name spec.id_to_defining_node with
+              | Some (Node_Type type_def) -> Some type_def
+              | _ -> None)
+          | None -> None)
+      | Term.Parameter _ | Term.TypeOperator _ | Term.ParamType _
+      | Term.Tuple { label_opt = None; _ }
+      | Term.Record { fields = []; _ }
+      | Term.ConstantsSet _ | Term.Function _ ->
+          None
+
+    (** [instantiate_variant_for_type spec inferred_type variant] instantiates
+        parameters in [variant] by matching it against [inferred_type]. *)
+    let instantiate_variant_for_type spec inferred_type
+        ({ TypeVariant.term = formal_type; _ } as variant) =
+      match containing_type_for_variant spec variant with
+      | Some { Type.param_opt = None; _ } -> formal_type
+      | Some { Type.loc; name; param_opt = Some parameter; _ } ->
+          let parameter_env =
+            TypeParameterInference.infer spec
+              ~owner:(type_parameter_owner_name name)
+              ~parameters:[ parameter ] ~formal_terms:[ formal_type ]
+              ~actual_terms:[ inferred_type ] ~loc
+          in
+          TypeParameterInference.substitute parameter_env formal_type
+      | None -> assert false
+
+    (** [type_term_for_field spec base_type id] returns the type of field [id]
+        when it is accessible through [base_type], and [None] otherwise. The
+        result is instantiated when [base_type] is parameterized. For example,
+        given the variant [BoxRecord(field: T)] of [Box[[T]]], a [base_type] of
+        [Box[[Int]]] maps [field] to [Some Int].
+
+        Field identifiers are globally unique, so [id] cannot occur in more than
+        one variant. Therefore, a field is accessible through a type only when
+        that type has a single record variant containing [id]. For example, if
+        [A] has the variants [RA(foo: N)] and [RB(bar: Z)], a value of type [A]
+        cannot safely access [foo], since it might have the variant [RB]. *)
+    let rec type_term_for_field spec base_type id =
+      let type_term_for_variants variants =
+        match variants with
+        | [ { TypeVariant.term } ] -> type_term_for_field spec term id
+        | [] | _ :: _ :: _ -> None
+      in
+      match base_type with
+      | Term.Record { fields; _ } ->
+          List.find_map
+            (fun { Term.name; term; _ } ->
+              if String.equal name id then Some term else None)
+            fields
+      | Term.ParamType { typename; term = _, argument } ->
+          TypeParameterOps.variants spec typename argument
+          |> type_term_for_variants
+      | Term.Label { label } -> (
+          match defining_node_opt_for_id spec label with
+          | Some (Node_Type { Type.variants; _ }) ->
+              type_term_for_variants variants
+          | _ -> None)
+      | _ -> None
 
     (** Adapts the shared type-parameter operations to operator applications. *)
     module InstantiateOperator = struct
@@ -2514,6 +2652,10 @@ module Check = struct
         let rec list_structured_terms_for_one_term spec term =
           let open Term in
           match term with
+          | ParamType { typename; term = _, argument } ->
+              TypeParameterOps.variants spec typename argument
+              |> List.concat_map (fun { TypeVariant.term = variant } ->
+                  list_structured_terms_for_one_term spec variant)
           | Label { label }
           | Term.Tuple
               { label_opt = None; args = [ (_, Term.Label { label }) ] }
@@ -2617,22 +2759,6 @@ module Check = struct
         | None -> term
     end
 
-    (** [is_field_accessible spec base_type field_name] checks if an expression
-        [x.field_name] is valid given that [x] has type [base_type]. *)
-    let rec is_field_accessible spec base_type field_name =
-      match base_type with
-      | Term.Record { fields; _ } ->
-          List.exists (fun { Term.name } -> String.equal name field_name) fields
-      | Term.Label { label } -> (
-          match defining_node_opt_for_id spec label with
-          | Some (Node_Type { Type.variants; _ }) ->
-              List.for_all
-                (fun { TypeVariant.term } ->
-                  is_field_accessible spec term field_name)
-                variants
-          | _ -> false)
-      | _ -> false
-
     (** [infer_type_in_env spec type_env expr] infers the type of [expr] using
         [spec] and [type_env] the types of variables. The type environment is
         also updated in cases where sub-expressions of [expr] define variables.
@@ -2650,12 +2776,13 @@ module Check = struct
             (id_type, type_env)
         | FieldAccess { base; field } ->
             let base_type, type_env = infer_type_in_env spec type_env base in
-            let () =
-              if not (is_field_accessible spec base_type field) then
-                Error.undefined_field_in_record ~context_expr:expr base_type
-                  field
+            let field_type =
+              match type_term_for_field spec base_type field with
+              | Some field_type -> field_type
+              | None ->
+                  Error.undefined_field_in_record ~context_expr:expr base_type
+                    field
             in
-            let field_type = type_term_for_field spec field in
             (field_type, type_env)
         | ListIndex { list_var; index } ->
             (* list_var should be a list-typed variable and index must be the
@@ -2663,6 +2790,7 @@ module Check = struct
             *)
             let list_base_type =
               type_of_id ~context_expr:expr spec type_env list_var
+              |> CheckTypeInstantiations.reduce_term spec
             in
             let elem_type =
               match list_base_type with
@@ -2699,8 +2827,9 @@ module Check = struct
               in
               Term.Record { loc; label_opt; fields = record_fields }
             in
-            let { TypeVariant.term = declared_type } =
-              record_variant_for_expr spec expr
+            let variant = record_variant_for_expr spec expr in
+            let declared_type =
+              instantiate_variant_for_type spec inferred_type variant
             in
             let () =
               if
@@ -2717,7 +2846,10 @@ module Check = struct
               infer_type_in_env spec type_env record_expr
             in
             let open Term in
-            match CheckTypeInstantiations.reduce_term spec record_type with
+            let record_type_term =
+              CheckTypeInstantiations.reduce_term spec record_type
+            in
+            match record_type_term with
             | Record { fields } ->
                 let field_map =
                   List.map (fun field -> (field.name, field.term)) fields
@@ -2761,7 +2893,10 @@ module Check = struct
               match label_opt with
               | Some label -> (
                   match StringMap.find label spec.id_to_defining_node with
-                  | Node_TypeVariant { TypeVariant.term = declared_type } ->
+                  | Node_TypeVariant variant ->
+                      let declared_type =
+                        instantiate_variant_for_type spec inferred_type variant
+                      in
                       if
                         not
                           (CheckTypeInstantiations.subsumed spec inferred_type
@@ -2880,6 +3015,7 @@ module Check = struct
             in
             let list_var_type =
               type_of_id ~context_expr:expr spec type_env list_var
+              |> CheckTypeInstantiations.reduce_term spec
             in
             let () =
               match list_var_type with
@@ -3867,7 +4003,7 @@ let make_spec_with_builtins ast =
     some_operator = get_builtin_relation "some";
     cond_operator = get_builtin_relation "cond_op";
     variant_id_to_containing_type = make_variant_id_to_containing_type ast;
-    field_to_containing_variant = make_field_to_containing_variant ast;
+    field_to_containing_record = make_field_to_containing_record ast;
   }
 
 (** [remove_bottom_constant spec] removes the bottom constant from [spec], since
