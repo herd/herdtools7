@@ -23,10 +23,10 @@ Requirements
 - logs
 
 We strongly recommend to have this base software installed through the opam
-package manager. This means an opam switch needs to be prepared to install the
-software:
+package manager. This means an opam switch needs to be prepared before
+installing the dependecies of the project. For example:
 
-    % opam switch create herdtools7 ocaml.4.14.4
+    % opam switch create herdtools7 ocaml.5.5.0
     % eval $(opam config env --switch=herdtool7 --set-switch)
     % opam install . --deps-only
 
