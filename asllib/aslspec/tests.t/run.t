@@ -51,8 +51,12 @@
   $ aslspec instantiation_recursion.bad
   Specification Error: instantiation_recursion.bad:9:11: Unable to determine that `B` is subsumed by `A`
   [1]
-  $ aslspec parameterized_type_instantiation.bad
-  Specification Error: parameterized_type_instantiation.bad:12:3: Unable to determine that `Leaf(Int)` is subsumed by `Leaf(value: T)`
+  $ aslspec parameterized_type_instantiation.spec
+  $ aslspec parameterized_type_unification.bad
+  Specification Error: parameterized_type_unification.bad:5:31: Could not unify types Int and Bool for parameter T of type Pair
+  [1]
+  $ aslspec operator_duplicate_parameter.bad
+  Specification Error: operator_duplicate_parameter.bad:1:1: Duplicate type parameter T in operator duplicate
   [1]
   $ aslspec relation_unnamed_arguments.bad
   Specification Error: relation_unnamed_arguments.bad:6:38: The term Num in relation unnamed_arg_has_rule does not provide a name for at least one of its sub-terms.
@@ -61,7 +65,7 @@
   Specification Error: operator_arity.bad:7:10: The application of relation unary in expression unary(a, b) has an invalid number of arguments: expected 1 but found 2
   [1]
   $ aslspec variadic_operator_type.bad
-  Specification Error: variadic_operator_type.bad:3:46: Could not unify types N and Bool for parameter T of relation make_set
+  Specification Error: variadic_operator_type.bad:3:46: Could not unify types N and Bool for parameter T of operator make_set
   [1]
   $ aslspec record_extra_field.bad
   Specification Error: record_extra_field.bad:8:5: The record expression [rf : a, rg : a] has missing or invalid field names: expected rf but found rf, rg
