@@ -237,6 +237,10 @@ and cons_seqs (fs:exp list) (es:exp list) =
     (************************************************)
 
 
+    let is_primitive_relation = function
+      | "same-oa" | "at-least-one-writable" | "different-values" -> true
+      | _ -> false
+
     let rec get_type = function
       | Konst (_,(Empty ty|Universe ty)) -> Some ty
       | Op (_,(Seq|Cartesian),_)
@@ -246,6 +250,8 @@ and cons_seqs (fs:exp list) (es:exp list) =
          get_type2 e1 e2
       | Op (_,(Union|Inter|Diff),es) ->
          get_types es
+      | App (_,Var (_,id),_) when is_primitive_relation id ->
+         Some RLN
       | Var (_,id) ->
          get_id_type id
       | _ -> None
@@ -415,6 +421,8 @@ and cons_seqs (fs:exp list) (es:exp list) =
          tr_rel e1 e2 (opt_expr loc e)
       | Op1 (loc,Star,e) ->
          tr_rel e1 e2 (star_expr loc e)
+      | App (_,Var (locf,id),arg) when is_primitive_relation id ->
+         tr_primitive_rel e1 e2 locf id arg
       | App (_, Var (_locf,"intervening"),
              Op (_loc,Tuple,[evts; Op (_,op,es)])) ->
          let e3 = Next.next () in
@@ -429,6 +437,14 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | e -> tr_fail (ASTUtils.exp2loc e)
 
     and tr_evts_from_rel e1 e2 = tr_evts e1 @@ flatten_if_not e2
+
+    and tr_primitive_rel e1 e2 locf id arg =
+      let rel = tr_rel_id e1 e2 locf id in
+      match flatten_if_not arg with
+      | Op (_,Cartesian,[a;b]) ->
+         mk_list Inter [tr_evts_from_rel e1 a; rel; tr_evts_from_rel e2 b;]
+      | arg ->
+         mk_list Inter [tr_rel e1 e2 arg; rel;]
 
     and tr_rel_not e1 e2 = function
       | Op1 (_,ToId,e) -> tr_evts_not e1 @@ flatten_if_not e
