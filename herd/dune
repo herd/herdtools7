@@ -1,6 +1,8 @@
-(dirs :standard \ tests/instructions libdir)
-
 (data_only_dirs libdir)
+
+(subdir
+ tests
+ (data_only_dirs instructions))
 
 (rule
  (copy ../Version.ml Version.ml))

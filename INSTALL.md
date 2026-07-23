@@ -21,7 +21,7 @@ Requirements
 ------------
 
 - OCaml (version >= 4.14.0)
-- dune (version >= 3.11.0)
+- dune (version >= 3.12.0)
 - menhir (version >= 20231231)
 - zarith
 - logs
@@ -42,6 +42,10 @@ Build
 
 Testing
 -------
+
+For testing, additional dependencies are needed, this can be installed using opam:
+
+    % opam install --deps-only -with-test .
 
 The optionnal dependency `qcheck` can be installed with `opam` as follows:
 

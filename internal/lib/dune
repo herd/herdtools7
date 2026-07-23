@@ -1,7 +1,13 @@
 (library
  (name internal_lib)
+ (modules :standard \ base_test filesystem_test)
  (libraries herdtools str unix)
  (modes native)
  (wrapped false))
 
 (ocamllex lexState)
+
+(tests
+ (names base_test filesystem_test)
+ (modules base_test filesystem_test)
+ (libraries alcotest internal_lib))

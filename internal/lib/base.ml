@@ -42,7 +42,6 @@ module Fun = struct
   let open_out_protect f name =
     let out = open_out name in
     protect ~finally:(fun () -> close_out out) (fun () -> f out)
-
 end
 
 module List = struct
@@ -78,4 +77,26 @@ module Iter = struct
       match !r with
       | [] -> None
       | x::xs -> r := xs ; Some x
+end
+
+module Seq = struct
+  let split_at n seq =
+    let rec loop k acc seq =
+      let first_n () = acc |> Stdlib.List.rev |> Stdlib.List.to_seq in
+      if k < 1 then
+        first_n (), seq
+      else
+        match seq () with
+        | Stdlib.Seq.Nil -> first_n (), Stdlib.Seq.empty
+        | Stdlib.Seq.Cons (v, seq) -> loop (k - 1) (v :: acc) seq
+    in
+    loop n [] seq
+
+  let for_every_element p seq =
+    let rec loop acc seq =
+      match seq () with
+      | Stdlib.Seq.Nil -> acc
+      | Stdlib.Seq.Cons (v, seq) -> loop (p v && acc) seq
+    in
+    loop true seq
 end

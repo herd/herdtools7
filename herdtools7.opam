@@ -16,12 +16,14 @@ install: [make "install-herdtools" "PREFIX=%{prefix}%"]
 # @todo Add "build-test" field
 depends: [
   "ocaml" {>= "4.14.0"}
-  "dune"  {>= "3.11.0" }
+  "dune"  {>= "3.12.0" }
   "menhir" {>= "20231231"}
   "zarith" {>= "1.13"}
   "conf-which"
   "logs"
+  "alcotest" {>= "1.9.0" & with-test}
   "conf-python-3" {= "9.0.0" & with-test}
+  "conf-gcc" {with-test}
 ]
 conflicts: ["ocaml-option-bytecode-only"]
 url {
