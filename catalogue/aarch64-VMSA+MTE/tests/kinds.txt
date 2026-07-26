@@ -1,0 +1,27 @@
+LDR-TaggedNormal                Forbidden
+STR-TaggedNormal                Forbidden
+STR-Normal-red                  Forbidden
+
+STR-TaggedNormal-v0             Forbidden
+STR-TaggedNormal-db0            Forbidden
+STR-TaggedNormal-db0red         Forbidden
+STR-TaggedNormal-red            Forbidden
+STR-TaggedNormal-red-async      Forbidden
+STR-TaggedNormal-HA             Forbidden
+STR-TaggedNormal-HD             Forbidden
+
+STRred-NormalXorV0              Forbidden
+STRred-NormalXorV0-async        Forbidden
+STRred-NormalXorRW-1            Allowed
+STRred-NormalXorRW-2            Allowed
+STRred-NormalXorRW-1-BBM        Allowed
+STRred-NormalXorRW-1-AF         Forbidden
+STRred-NormalXorRW-1-DB         Allowed
+STRred-NormalXorRW-1-DB-2       Forbidden
+STRred-TaggedNormalXorV0        Forbidden
+STRred-TaggedNormalXorV0-async  Forbidden
+STRred-NormalXorRW-DB+SWP-1     Allowed
+STRred-NormalXorRW-DB+SWP-2     Allowed
+
+STRgreen-TaggedNormalXorV0      Forbidden
+

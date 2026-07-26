@@ -1,0 +1,14 @@
+AArch64 STR-TaggedNormal-HA
+Variant=vmsa,mte,sync
+TTHM=HA
+{
+ [PTE(x)]=(af:0,attrs:(TaggedNormal));
+ 0:X0=x:green;
+}
+ P0          ;
+ MOV W1,#1   ;
+L0:          ;
+ STR W1,[X0] ;
+exists([x]=0)
+
+(* forall([x]=1 /\ [PTE(x)]=(oa:PA(x),af:1,attrs:(TaggedNormal))) *)
