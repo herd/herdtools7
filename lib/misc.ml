@@ -898,3 +898,9 @@ module Option = struct
     let* x = x_opt in
     Some (f x)
 end
+
+module Result = struct
+  module Syntax = struct
+    let (let*) = Result.bind
+  end
+end
