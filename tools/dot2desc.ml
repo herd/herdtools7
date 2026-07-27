@@ -913,25 +913,14 @@ module DotGraph = struct
       cmp_nodes n1.ParsedNode.name n2.ParsedNode.name
     ) parsed_nodes in
 
-    (* Compute the regex to search for in the label, which is the read param,
-      preceded by an optional thread number and followed by an optional
-      access size. These two can be present when the param is a gp register *)
+    (* Compute the regex to search for in the label, which is the read param
+      followed by an optional access size. The R/W thread prefix in effect
+      labels is removed separately before these replacements are applied. *)
     let param_replacements = List.map (fun (key, v) ->
-      let str1 = "\\(R\\|W\\)[0-9]:" ^ key ^ "[bhwqs]?" in
-      let str2 = "\\([0-9]:\\)?" ^ key ^ "[bhwqs]?" in
-      let regex1 = Str.regexp str1 in
-      let regex2 = Str.regexp str2 in
-      let v1 = "\\1 " ^ v in
-      regex1, v1, regex2, v
+      let regex = Str.regexp (key ^ "[bhwqs]?") in
+      regex, v
     ) graph_param_pairs in
-    (* In case -instr was not passed, we need to just get rid of access sizes *)
-    let param_replacements = if param_replacements = [] then
-      let regex1 = Str.regexp {|\(R\|W\)[0-9]:\([A-Z\._]+x?[0-9]*\)[bhwqs]?|} in
-      let v1 = "\\1 \\2" in
-      let regex2 = Str.regexp {|\([0-9]:\)?\([A-Z\._]+x?[0-9]*\)[bhwqs]?|} in
-      let v2 = "\\2" in
-      [regex1, v1, regex2, v2]
-    else param_replacements in
+    let effect_reg_prefix = Str.regexp {|\(R\|W\)[0-9]:|} in
 
     (* Convert read to instr params, remove access sizes and tag every effect with Ei,
       where i is its index in the topological order, and get rid of everything
@@ -945,9 +934,9 @@ module DotGraph = struct
         let templ = tag ^ ":" in
         Str.replace_first tag_regex templ value
       else value in
-      let value = List.fold_left (fun value (regex1, v1, regex2, v2) ->
-        let value = Str.global_replace regex1 v1 value in
-        Str.global_replace regex2 v2 value
+      let value = Str.global_replace effect_reg_prefix "\\1 " value in
+      let value = List.fold_left (fun value (regex, replacement) ->
+        Str.global_replace regex replacement value
       ) value param_replacements in
       let value = try
         let pos = Str.search_forward newline_regex value 0 in
