@@ -63,13 +63,7 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
             end
           module X = RunTest.Make (AArch64S) (P) (AArch64M) (Conf)
         end
-(*
- * Markers START/END below are for excluding source
- * when compiling the web interface
- *)
-
         let run =
-(* START NOTWWW *)
           if is_morello then
             let module  AArch64Value = CapabilityValue.Make(ConfMorello) in
             let module X = AArch64Make(AArch64Value) in
@@ -83,7 +77,6 @@ module Make(Conf:RunTest.Config)(ModelConfig:MemCat.Config) = struct
             let module X = AArch64Make(AArch64Value) in
             X.X.run
           else
-(* END NOTWWW *)
             let module AArch64Value = AArch64Value.Make(ConfMorello) in
             let module X = AArch64Make(AArch64Value) in
             X.X.run
