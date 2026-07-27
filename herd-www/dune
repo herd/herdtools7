@@ -1,30 +1,13 @@
-(copy_files
- (files ../herd/*.{ml,mli}))
-
 (executable
  (name jerd)
  (modes js)
  (optional)
- (libraries herdtools js_of_ocaml zarith_stubs_js)
- (preprocessor_deps
-  (file notwww.awk))
+ (libraries herdtools herd_core js_of_ocaml zarith_stubs_js)
+ (modules jerd webInput webRun)
  (preprocess
   (per_module
    ((pps js_of_ocaml-ppx)
     jerd
-    webInput)
-   ((action
-     (system "awk -f herd-www/notwww.awk %{input-file}"))
-    AArch64ParseTest
-    ParseTest
-    Top_herd)))
+    webInput)))
  (js_of_ocaml
-  (flags --disable genprim))
- (modules_without_implementation
-  AArch64Sig
-  action
-  arch_herd
-  monad
-  sem
-  XXXMem
-  port))
+  (flags --disable genprim)))

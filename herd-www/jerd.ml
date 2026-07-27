@@ -17,6 +17,7 @@
 (** Entry point to Herd  *)
 open Js_of_ocaml
 open Printf
+open Herd_core
 open Opts
 open OptNames
 
