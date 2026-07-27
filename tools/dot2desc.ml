@@ -192,6 +192,97 @@ module DescDict = struct
     StringMap.add "iico_order" iico_order
 end
 
+let check_regex regex value = Str.string_match regex value 0
+
+module InstrTemplate = struct
+  (* A single operand slot in -instr. Alternatives separated by | all render in
+     descriptions, while writeback uses the first one only. Brackets are only
+     part of the instruction syntax and are stripped from rendered operands. *)
+  type operand = {
+    alts: string list;
+  }
+
+  type t = {
+    mnemonic: string;
+    operands: operand list;
+  }
+
+  let reg_param =
+    Str.regexp {|\(ZA\|[CXWVBHSDQZP]\)\([a-z0-9_()+-]+\)$|}
+
+  let valid_param = Str.regexp {|[a-zA-Z0-9\._()+-]+$|}
+
+  let invalid_instr () =
+    Warn.fatal "Invalid format for command. Command must have arguments \
+      separated by commas. The mnemonic and the first argument are separated \
+      by exactly one space (eg. LDR Xn,[Xm])"
+
+  let strip_alt_brackets s =
+    let s = String.trim s in
+    let len = String.length s in
+    let starts_with_bracket = len > 0 && s.[0] = '[' in
+    let ends_with_bracket = len > 0 && s.[len - 1] = ']' in
+    if starts_with_bracket <> ends_with_bracket then
+      invalid_instr ();
+    let s =
+      if starts_with_bracket then
+        String.sub s 1 (len - 2)
+      else
+        s in
+    if String.contains s '[' || String.contains s ']' then
+      (* Nested brackets - eg. [[Xn]] not allowed *)
+      invalid_instr ();
+    String.trim s
+
+  let strip_operand_brackets s =
+    let s = String.trim s in
+    let len = String.length s in
+    if len > 1 && s.[0] = '[' && s.[len - 1] = ']' then begin
+      let inner = String.sub s 1 (len - 2) in
+      if String.contains inner '[' || String.contains inner ']' then
+        (* [Xn]|[Xm] shape *)
+        None
+      else
+        Some inner
+    end else
+      None
+
+  let parse_operand s =
+    let alts = match strip_operand_brackets s with
+    | Some s -> List.map String.trim (String.split_on_char '|' s)
+    | None -> List.map strip_alt_brackets (String.split_on_char '|' s) in
+    if List.exists (fun s -> s = "") alts then
+      Warn.fatal "Invalid empty operand in instr parameter";
+    if List.exists (fun s -> not (check_regex valid_param s)) alts then
+      invalid_instr ();
+    { alts; }
+
+  let parse instr =
+    let regex = Str.regexp {|\([A-Z]+\)\( \(.*\)\)?$|} in
+    if not (check_regex regex instr) then
+      invalid_instr ();
+    let mnemonic = Str.matched_group 1 instr in
+    let operands = try
+      let params = Str.matched_group 3 instr in
+      let params = String.split_on_char ',' (String.trim params) in
+      List.map parse_operand params
+    with Not_found -> [] in
+    { mnemonic; operands; }
+
+  let markdown_param param =
+    if check_regex reg_param param then
+      Str.matched_group 1 param ^ "~" ^ Str.matched_group 2 param ^ "~"
+    else param
+
+  let markdown_operand op =
+    String.concat " or " (List.map markdown_param op.alts)
+
+  let writeback_operand op =
+    match op.alts with
+    | alt :: _ -> alt
+    | [] -> Warn.fatal "Invalid empty operand in instr parameter"
+end
+
 module DotGraph = struct
   module Edge = struct
     type kind = Data | Control | Order
@@ -282,8 +373,6 @@ module DotGraph = struct
 
   let make_monospace str =
     Printf.sprintf "`%s`" str
-
-  let check_regex regex value = Str.string_match regex value 0
 
   (** Makes use of Str.string_match. If caller uses matching functions on
       previously used regexes, make sure this function is called after
@@ -670,28 +759,16 @@ module DotGraph = struct
     replace concrete registers like [X1], and [X2] with architectural registers
     like [Xn] and [Xm]. For example, the dot graph nodes contain
     [CAS X0, X1, [X2]] in their label, and [instr] is [CAS Xs, Xt, [Xn]]. The map
-    will contain the entries [X0] -> [Xs], [X1] -> [Xt] and [X2] -> [Xn]. *)
+    will contain the entries [X0] -> [Xs], [X1] -> [Xt] and [X2] -> [Xn].
+    If an [instr] operand has alternatives, all alternatives are used for the
+    markdown description and the first alternative is used for writeback. *)
   let get_param_maps stmts instr =
-    let regex = Str.regexp {|\([A-Z]+\)\( \([][, a-zA-Z0-9\._]+\)\)?$|} in
-    if not (check_regex regex instr) then
-      Warn.fatal "Instr validation did not work. %s is malformed" instr;
-    let instr_mnemonic = Str.matched_group 1 instr in
-    let instr_params = try
-      let params = Str.matched_group 3 instr in
-      String.split_on_char ',' params
-    with Not_found -> [] in
-    let instr_params = List.map String.trim instr_params in
-    let gpreg_regex = Str.regexp {|\[?\([BHWXQ]\)\([a-z0-9]+\)\]?|} in
-    let md_instr_params = List.map (fun param ->
-      if check_regex gpreg_regex param then
-        Str.matched_group 1 param ^ "~" ^ Str.matched_group 2 param ^ "~"
-      else param
-    ) instr_params in
-    let graph_instr_params = List.map (fun param ->
-      if check_regex gpreg_regex param then
-        Str.matched_group 1 param ^ Str.matched_group 2 param
-      else param
-    ) instr_params in
+    let instr_template = InstrTemplate.parse instr in
+    let instr_mnemonic = instr_template.InstrTemplate.mnemonic in
+    let md_instr_params =
+      List.map InstrTemplate.markdown_operand instr_template.InstrTemplate.operands in
+    let graph_instr_params =
+      List.map InstrTemplate.writeback_operand instr_template.InstrTemplate.operands in
 
     let str = instr_mnemonic ^ {|\( \([][, a-zA-Z0-9\._]+\)\)?$|} in
     let regex = Str.regexp str in
@@ -1043,11 +1120,7 @@ let () =
     begin match !instr with
     | None -> ()
     | Some s ->
-      let instr_regex = Str.regexp {|\([A-Z]+\)\( \([][a-zA-Z0-9\._]+\)\(, *\([][a-zA-Z0-9\._]+\)\)*\)?$|} in
-      if not (Str.string_match instr_regex s 0) then
-        invalid_arg "Invalid format for command. Command must have arguments separated by \
-        commas. The mnemonic and the first argument are separated by exactly one \
-        space (eg. LDR Xn,[Xm])"
+      ignore (InstrTemplate.parse s)
     end;
 
     let module Run = Make(struct
