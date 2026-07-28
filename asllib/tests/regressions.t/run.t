@@ -472,7 +472,7 @@ Required tests:
   File records-2.bad.asl, line 36, characters 9 to 34:
     assert equal_a_record_ty (a, aa);
            ^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: No subprogram declaration matches the invocation:
+  ASL Type error (TE_BC): No subprogram declaration matches the invocation:
     equal_a_record_ty(a_record_ty, aa_record_ty).
   [1]
   $ aslref records.asl
@@ -483,27 +483,31 @@ Required tests:
     characters 2 to 45:
     var animalLegs: AnimalLegs = centipedeLegs;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: a subtype of AnimalLegs was expected, provided InsectLegs.
+  ASL Type error (TE_UT): a subtype of AnimalLegs was expected,
+    provided InsectLegs.
   [1]
   $ aslref --no-exec subtype-satisfaction-shape-to-animal.bad.asl
   File subtype-satisfaction-shape-to-animal.bad.asl, line 9, characters 2 to 42:
     var dogLegs: AnimalLegs = myCircleSides;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: a subtype of AnimalLegs was expected, provided ShapeSides.
+  ASL Type error (TE_UT): a subtype of AnimalLegs was expected,
+    provided ShapeSides.
   [1]
   $ aslref --no-exec subtype-satisfaction-word-count-to-packet-length.bad.asl
   File subtype-satisfaction-word-count-to-packet-length.bad.asl, line 9,
     characters 2 to 16:
     myPacketLength = myWordCount;
     ^^^^^^^^^^^^^^
-  ASL Type error: a subtype of PacketLength was expected, provided WordCount.
+  ASL Type error (TE_UT): a subtype of PacketLength was expected,
+    provided WordCount.
   [1]
   $ aslref --no-exec subtype-satisfaction-packet-length-to-word-count.bad.asl
   File subtype-satisfaction-packet-length-to-word-count.bad.asl, line 9,
     characters 2 to 13:
     myWordCount = myPacketLength;
     ^^^^^^^^^^^
-  ASL Type error: a subtype of WordCount was expected, provided PacketLength.
+  ASL Type error (TE_UT): a subtype of WordCount was expected,
+    provided PacketLength.
   [1]
   $ aslref tuples.asl
   $ aslref tuple-return.asl
@@ -520,7 +524,7 @@ Required tests:
   begin
     pass;
   end;
-  ASL Type error: cannot declare already declared element "f1".
+  ASL Type error (TE_IAD): cannot declare already declared element "f1".
   [1]
   $ aslref string_concat.asl
   $ aslref approx-expr-binop.asl

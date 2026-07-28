@@ -314,6 +314,7 @@ module ErrorCode = struct
         None
     (********** Other **********)
     | BadSlices (Dynamic, _, _) -> None (* only used in Native.ml *)
+    | ObsoleteSyntax _ -> None
 end
 
 module PrintContext = struct
@@ -845,6 +846,7 @@ module CSV = struct
     | UnexpectedCollection -> "UnexpectedCollection"
     | BadPrimitiveArgument _ -> "BadPrimitiveArgument"
     | NoEntryPoint -> "NoEntryPoint"
+    | ObsoleteSyntax _ -> "ObsoleteSyntax"
 
   let warning_label = function
     | NoLoopLimit -> "NoLoopLimit"
