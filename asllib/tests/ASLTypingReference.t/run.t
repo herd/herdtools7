@@ -44,11 +44,10 @@ ASL Typing Tests:
   [1]
   $ aslref --no-exec TypingRule.TypeClashes.asl
   $ aslref --no-exec TypingRule.TypeClashes.bad.asl
-  File TypingRule.TypeClashes.bad.asl, line 3, characters 0 to 55:
-  func structured_procedure(r: SuperRec) begin pass; end;
-  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_IAD): cannot declare already declared element
-    "structured_procedure".
+  File TypingRule.TypeClashes.bad.asl, line 2, characters 0 to 32:
+  func f(r: time) begin pass; end;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_IAD): cannot declare already declared element "f".
   [1]
   $ aslref TypingRule.LowestCommonAncestor.asl
   $ aslref TypingRule.LowestCommonAncestor.bad.asl
@@ -454,8 +453,8 @@ ASL Typing Tests / annotating types:
   File TypingRule.LESetBadField.asl, line 10, characters 4 to 5:
       x.RED = 42;
       ^
-  ASL Type error (TE_UT): array [[Color]] of integer does not subtype any of:
-    bits(-), record {  }, exception {  }, collection {  }.
+  ASL Type error (TE_UT): integer does not subtype any of: bits(-),
+    record {  }, exception {  }, collection {  }.
   [1]
   $ aslref TypingRule.LESetFields.asl
   $ aslref TypingRule.LESlice.bad.asl
@@ -494,7 +493,7 @@ ASL Typing Tests / annotating types:
                     ^
   ASL Grammar error: Cannot parse. Declarations using `let` must have
     initialising expressions.
-
+    
   [1]
   $ aslref TypingRule.SAssert.bad.asl
   File TypingRule.SAssert.bad.asl, line 11, characters 10 to 23:
@@ -748,7 +747,7 @@ ASL Typing Tests / annotating types:
   ASL Grammar error: Cannot parse. A `config` declaration must introduce a
     single name, and have both a type annotation and initialising expression:
       config name : type = initial_expression;
-
+    
   [1]
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.non_config.asl
   $ aslref --no-exec TypingRule.DeclareGlobalStorage.non_config.bad.asl
@@ -1225,10 +1224,10 @@ ASL Typing Tests / annotating types:
   ASL Type error (TE_IAD): cannot declare already declared element "f".
   [1]
   $ aslref --no-exec TypingRule.AddNewFunc.bad2.asl
-  File TypingRule.AddNewFunc.bad2.asl, line 22, characters 4 to 20:
-      g(myShape, 0.1); // illegal
-      ^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of square was expected, provided shape.
+  File TypingRule.AddNewFunc.bad2.asl, line 18, characters 4 to 21:
+      g(myCircle, 0.1); // illegal
+      ^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_UT): a subtype of square was expected, provided circle.
   [1]
   $ aslref --no-exec TypingRule.AddNewFunc.bad3.asl
   File TypingRule.AddNewFunc.bad3.asl, line 8, character 0 to line 11,
