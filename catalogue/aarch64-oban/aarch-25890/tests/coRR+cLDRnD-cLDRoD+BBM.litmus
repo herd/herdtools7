@@ -1,0 +1,18 @@
+AArch64 coRR+cLDRnD-cLDRoD+BBM
+Variant=vmsa,mte,sync
+{
+ PTE(x)=(attrs:(TaggedNormal));
+ [tag(x)]=:green; [x]=1;  (* old *)
+ [tag(y)]=:green; [y]=2;  (* new *)
+ 0:X1=x:green; 1:X1=x;
+ 1:X0=(valid:0); 1:X3=PTE(x);
+ 1:X4=(oa:PA(y),attrs:(TaggedNormal));
+}
+ P0           | P1             ;
+L0:           | STR X0,[X3]    ;
+  LDR W2,[X1] | DSB ISHST      ;
+L1:           | LSR X9,X1,#12  ;
+  LDR W4,[X1] | TLBI VAAE1IS,X9;
+              | DSB ISH        ;
+              | STR X4,[X3]    ;
+exists(0:X2=2 /\ 0:X4=1)
