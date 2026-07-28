@@ -40,6 +40,9 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: dune,menhir,zarith,js_of_ocaml,js_of_ocaml-ppx,zarith_stubs_js,logs
+      - name: Install herd-www dependencies
+        working-directory: herd-www
+        run: opam install . --deps-only --yes
       - run: |
           opam exec -- make Version.ml
           opam exec -- dune build tools/cat2html.exe
