@@ -1,0 +1,18 @@
+AArch64 RRRR+BBM
+Variant=vmsa,sync
+{
+ int x[2]={1,1};  (* old *)
+ int y[2]={2,2};  (* new *)
+ 0:X1=x; 1:X1=x;
+ 1:X0=(valid:0); 1:X3=PTE(x);
+ 1:X4=(oa:PA(y));
+}
+ P0              | P1               ;
+L0:              | STR X0,[X3]      ;
+  LDR W2,[X1]    | DSB ISHST        ;
+  LDR W6,[X1,#4] | LSR X9,X1,#12   ;
+L1:              | TLBI VAAE1IS,X9 ;
+  LDR W4,[X1]    | DSB ISH          ;
+  LDR W8,[X1,#4] | STR X4,[X3]      ;
+                 
+exists((0:X2=2 /\ 0:X4=1) \/ (0:X6=2 /\ 0:X8=1))
