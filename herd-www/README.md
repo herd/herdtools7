@@ -12,12 +12,10 @@ Contact: diy-devel@inria.fr
 Compilation and installation
 ============================
 
-Dependencies.
-- ocaml, dune, menhir, js_of_ocaml, js_of_ocaml-ppx, zarith_stubs_js
-
-Install all those with opam!
+Dependencies are declared in `herd-www.opam`. From this directory, use opam to
+solve and install them:
 ```
-% opam install dune menhir js_of_ocaml js_of_ocaml-ppx  zarith_stubs_js
+% opam install . --deps-only
 ```
 
 Build
