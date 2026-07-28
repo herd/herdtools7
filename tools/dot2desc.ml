@@ -325,6 +325,50 @@ module DotGraph = struct
       true
     with Not_found -> false
 
+  let access_annots = [
+    "";
+    "Acq*"; "Acq"; "AcqPc*"; "AcqPc";
+    "Rel*"; "Rel";
+    "*"; "NoRet"; "^s"; "NT"; "EX"; "AcqEx"; "RelEx";
+  ]
+
+  let explicit_annots = [
+    "";
+    "Exp"; "NExp"; "IFetch"; "NExpAF"; "NExpDB"; "NExpAFDB"; "GCS";
+  ]
+
+  (* Not every combination is possible, but this is good enough for our purposes *)
+  let access_suffixes =
+    List.concat (List.map (fun annot ->
+      List.map (fun explicit -> annot ^ explicit) explicit_annots
+    ) access_annots)
+
+  let is_access_size = function
+    | 'b' | 'h' | 'w' | 'q' | 's' -> true
+    | _ -> false
+
+  let is_access_suffix suffix =
+    List.exists ((=) suffix) access_suffixes
+
+  let strip_bracket_access_size value =
+    let len = String.length value in
+    match String.index_from_opt value 0 ']' with
+    | None -> value
+    | Some bracket_pos ->
+        match String.index_from_opt value bracket_pos '=' with
+        | None -> value
+        | Some eq_pos when eq_pos > bracket_pos + 1 ->
+            let size_pos = eq_pos - 1 in
+            let suffix_start = bracket_pos + 1 in
+            let suffix_len = size_pos - suffix_start in
+            let suffix = String.sub value suffix_start suffix_len in
+            if is_access_size value.[size_pos] && is_access_suffix suffix then
+              String.sub value 0 size_pos ^
+              String.sub value eq_pos (len - eq_pos)
+            else
+              value
+        | Some _ -> value
+
   module ParsedNode = ParsedDotGraph.Node
   module ParsedAttr = ParsedDotGraph.Attr
   module ParsedStmt = ParsedDotGraph.Stmt
@@ -913,14 +957,15 @@ module DotGraph = struct
       cmp_nodes n1.ParsedNode.name n2.ParsedNode.name
     ) parsed_nodes in
 
-    (* Compute the regex to search for in the label, which is the read param
-      followed by an optional access size. The R/W thread prefix in effect
-      labels is removed separately before these replacements are applied. *)
+    (* Compute the regex to search for in the label, which is the read param.
+      The R/W thread prefix in effect labels and access sizes are removed
+      separately before these replacements are applied. *)
     let param_replacements = List.map (fun (key, v) ->
-      let regex = Str.regexp (key ^ "[bhwqs]?") in
+      let regex = Str.regexp key in
       regex, v
     ) graph_param_pairs in
     let effect_reg_prefix = Str.regexp {|\(R\|W\)[0-9]:|} in
+    let access_size = Str.regexp {|\([A-Z\._]+x?[0-9]*\)[bhwqs]|} in
 
     (* Convert read to instr params, remove access sizes and tag every effect with Ei,
       where i is its index in the topological order, and get rid of everything
@@ -935,6 +980,8 @@ module DotGraph = struct
         Str.replace_first tag_regex templ value
       else value in
       let value = Str.global_replace effect_reg_prefix "\\1 " value in
+      let value = Str.global_replace access_size "\\1" value in
+      let value = strip_bracket_access_size value in
       let value = List.fold_left (fun value (regex, replacement) ->
         Str.global_replace regex replacement value
       ) value param_replacements in
