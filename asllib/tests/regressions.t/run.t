@@ -72,8 +72,7 @@ Global ignored:
   File global_ignored.asl, line 1, characters 4 to 5:
   var - = 3 / 0;
       ^
-  ASL Grammar error (BE_PE): Cannot parse. A global declaration must declare a
-    name.
+  ASL Grammar error (BE_BD): A global declaration must declare a name.
   [1]
 
   $ aslref shadow-banning-bug.asl
@@ -338,16 +337,16 @@ Parameterized integers:
   File same-precedence.asl, line 6, characters 10 to 15:
     let x = a + b - c;
             ^^^^^
-  ASL Grammar error (BE_PE): Cannot parse. Operators `-` and `+` have the same
-    priority - parenthesise to disambiguate.
+  ASL Grammar error (BE_BOP):
+    Operators `-` and `+` have the same priority - parenthesise to disambiguate.
   [1]
 
   $ aslref same-precedence2.asl
   File same-precedence2.asl, line 6, characters 10 to 17:
     let d = a ==> b <=> c;
             ^^^^^^^
-  ASL Grammar error (BE_PE): Cannot parse. Operators `<=>` and `==>` have the
-    same priority - parenthesise to disambiguate.
+  ASL Grammar error (BE_BOP):
+    Operators `<=>` and `==>` have the same priority - parenthesise to disambiguate.
   [1]
 
   $ aslref rdiv_checks.asl
@@ -716,7 +715,7 @@ Left-hand sides
   File lhs-tuple-fields-same-field.asl, line 8, characters 2 to 4:
     bv.(fld, -, fld) = ('11', TRUE, '11');
     ^^
-  ASL Grammar error: multiple writes to "bv.fld".
+  ASL Grammar error (BE_PE): multiple writes to "bv.fld".
   [1]
   $ aslref lhs-tuple-same-var.asl
   $ aslref lhs-expressivity.asl
@@ -809,7 +808,7 @@ If test environment reversion bug
   File SliceFromZero.asl, line 4, characters 11 to 13:
     assert x[:3] == '100';
              ^^
-  ASL Grammar error: Obsolete syntax:
+  ASL Grammar error (BE_PE): Obsolete syntax:
     Deprecated slice syntax, use "0 +: 3" instead.
   [1]
   $ aslref --version-eac1 SliceStar.asl
@@ -817,6 +816,6 @@ If test environment reversion bug
   File SliceStar.asl, line 4, characters 11 to 15:
     assert x[3*:2] == '11';
              ^^^^
-  ASL Grammar error: Obsolete syntax:
+  ASL Grammar error (BE_PE): Obsolete syntax:
     Deprecated slice syntax, use "3*2 +: 2" instead.
   [1]

@@ -4,14 +4,15 @@
   File binop-read-write.asl, line 11, characters 10 to 31:
     let y = set_and_return () + X;
             ^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: conflicting side effects WritesGlobal "X" and ReadsGlobal "X"
+  ASL Type error (TE_SEV):
+    conflicting side effects WritesGlobal "X" and ReadsGlobal "X"
   [1]
   $ aslref binop-write-write.asl
   $ aslref --use-conflicting-side-effects-extension binop-write-write.asl
   File binop-write-write.asl, line 11, characters 10 to 47:
     let y = set_and_return () + set_and_return ();
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error:
+  ASL Type error (TE_SEV):
     conflicting side effects WritesGlobal "X" and WritesGlobal "X"
   [1]
   $ aslref binop-read-write-diff.asl
@@ -29,7 +30,7 @@
   File binop-throw-write.asl, line 18, characters 12 to 43:
       let y = throwing () + set_and_return ();
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error:
+  ASL Type error (TE_SEV):
     conflicting side effects ThrowsException "E" and WritesGlobal "X"
   [1]
   $ aslref binop-throw-throw.asl
@@ -38,7 +39,7 @@
   File binop-throw-throw.asl, line 11, characters 12 to 37:
       let y = throwing () + throwing ();
               ^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error:
+  ASL Type error (TE_SEV):
     conflicting side effects ThrowsException "E" and ThrowsException "E"
   [1]
   $ aslref binop-throw-caught.asl
@@ -49,7 +50,7 @@
   File binop-throw-not-caught.asl, line 21, characters 12 to 37:
       let x = throws_E () + caught_F ();
               ^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error:
+  ASL Type error (TE_SEV):
     conflicting side effects ThrowsException "E" and ThrowsException "E"
   [1]
   $ aslref binop-throw-otherwised.asl
@@ -66,7 +67,7 @@
   File binop-throw-atc.asl, line 16, characters 12 to 41:
       let y = throwing () + performs_atc ();
               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error:
+  ASL Type error (TE_SEV):
     conflicting side effects ThrowsException "E" and PerformsAssertions
   [1]
   $ aslref binop-write-atc.asl
@@ -142,7 +143,8 @@
     for i = 0 to x do
       x = y * y + x;
     end;
-  ASL Type error: conflicting side effects ReadsLocal "x" and WritesLocal "x"
+  ASL Type error (TE_SEV):
+    conflicting side effects ReadsLocal "x" and WritesLocal "x"
   [1]
   $ aslref for-read-write-global.asl
   $ aslref --use-conflicting-side-effects-extension for-read-write-global.asl
@@ -150,7 +152,8 @@
     for i = 0 to read_X () do
       X = y * y + x ;
     end;
-  ASL Type error: conflicting side effects ReadsGlobal "X" and WritesGlobal "X"
+  ASL Type error (TE_SEV):
+    conflicting side effects ReadsGlobal "X" and WritesGlobal "X"
   [1]
   $ aslref while-var-edits.asl
   $ aslref repeat-var-edits.asl
@@ -364,7 +367,7 @@
   File rec-binop-atc-throw.asl, line 15, characters 10 to 54:
     let x = throwing (n - 1, FALSE) * (2 as integer {3});
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error:
+  ASL Type error (TE_SEV):
     conflicting side effects CallsRecursive "throwing" and PerformsAssertions
   [1]
   $ aslref rec-binop-read-throw.asl
@@ -383,7 +386,7 @@
   File rec-binop-read-throw.asl, line 22, characters 10 to 45:
     let x = throwing (n - 1, FALSE) * read_X ();
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error:
+  ASL Type error (TE_SEV):
     conflicting side effects CallsRecursive "throwing" and ReadsGlobal "X"
   [1]
   $ aslref rec-binop-unknown.asl
@@ -399,7 +402,7 @@
   File rec-binop-read.asl, line 17, characters 10 to 42:
     let x = not_throwing (n - 1) * read_X ();
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error:
+  ASL Type error (TE_SEV):
     conflicting side effects CallsRecursive "not_throwing" and ReadsGlobal "X"
   [1]
   $ aslref rec-binop-read-local.asl
@@ -415,7 +418,7 @@
   File rec-binop-write.asl, line 18, characters 10 to 43:
     let x = not_throwing (n - 1) * write_X ();
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error:
+  ASL Type error (TE_SEV):
     conflicting side effects CallsRecursive "not_throwing" and WritesGlobal "X"
   [1]
   $ aslref rec-assert.asl
@@ -436,7 +439,7 @@
   File rec-assert.asl, line 9, characters 10 to 51:
     let x = not_throwing (n - 1) * (2 as integer {3});
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error:
+  ASL Type error (TE_SEV):
     conflicting side effects CallsRecursive "not_throwing" and PerformsAssertions
   [1]
   $ aslref rec-binop-atc.asl
@@ -457,7 +460,7 @@
   File rec-binop-atc.asl, line 9, characters 10 to 51:
     let x = not_throwing (n - 1) * (2 as integer {3});
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error:
+  ASL Type error (TE_SEV):
     conflicting side effects CallsRecursive "not_throwing" and PerformsAssertions
   [1]
   $ aslref rec-binop-read-write.asl
@@ -472,7 +475,7 @@
   File rec-binop-read-write.asl, line 17, characters 10 to 42:
     let x = not_throwing (n - 1) * read_X ();
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error:
+  ASL Type error (TE_SEV):
     conflicting side effects CallsRecursive "not_throwing" and ReadsGlobal "X"
   [1]
   $ aslref rec-binop-write-throw.asl
@@ -491,7 +494,7 @@
   File rec-binop-write-throw.asl, line 23, characters 10 to 46:
     let x = throwing (n - 1, FALSE) * write_X ();
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error:
+  ASL Type error (TE_SEV):
     conflicting side effects CallsRecursive "throwing" and WritesGlobal "X"
   [1]
   $ aslref rec-constant.asl
@@ -521,7 +524,7 @@
   File rec-binop-rec.asl, line 9, characters 10 to 35:
     let x = bar (n - 1) * bar (n - 2);
             ^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error:
+  ASL Type error (TE_SEV):
     conflicting side effects CallsRecursive "bar" and CallsRecursive "bar"
   [1]
 

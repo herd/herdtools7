@@ -45,7 +45,7 @@ Explicit parameter tests:
   File argument-omission.asl, line 3, characters 21 to 28:
     let x : bits(64) = Zeros{};
                        ^^^^^^^
-  ASL Grammar error: Obsolete syntax:
+  ASL Grammar error (BE_PE): Obsolete syntax:
     Deprecated elided parameter call syntax, pass parameters explicitly.
   [1]
 
