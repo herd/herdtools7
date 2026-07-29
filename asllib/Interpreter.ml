@@ -1360,8 +1360,8 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Continuation in the positive case. *)
     let loop env =
       let loop_desc = ("for loop", body) in
-      bind_maybe_unroll loop_desc undet (eval_block env body) @@ fun env1 ->
       let* next_limit_opt = tick_loop_limit body env limit_opt in
+      bind_maybe_unroll loop_desc undet (eval_block env body) @@ fun env1 ->
       let*| v_step, env2 = step env1 index_name v_start dir in
       eval_for loop_msg undet env2 index_name next_limit_opt v_step dir v_end
         body

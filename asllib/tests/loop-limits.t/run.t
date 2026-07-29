@@ -165,3 +165,10 @@ Recursion limits:
                     ^^^^^^^^^^^^^
   ASL Dynamic error: recursion limit reached.
   [1]
+
+  $ aslref for-loop-zero.asl
+  File for-loop-zero.asl, line 4, characters 6 to 21:
+        println "BODY";
+        ^^^^^^^^^^^^^^^
+  ASL Dynamic error: loop limit reached.
+  [1]
