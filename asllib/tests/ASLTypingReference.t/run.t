@@ -54,7 +54,7 @@ ASL Typing Tests:
   File TypingRule.LowestCommonAncestor.bad.asl, line 10, characters 13 to 53:
       var o  = if ARBITRARY : boolean then arr1 else ex;
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: cannot find a common ancestor to those two types
+  ASL Type error (TE_LCA): cannot find a common ancestor to those two types
     array [[8]] of Word1 and Exc.
   [1]
   $ aslref --no-exec TypingRule.LowestCommonAncestor2.asl
@@ -231,7 +231,8 @@ ASL Typing Tests / annotating types:
   File TypingRule.ExtractParameters-bad1.asl, line 3, characters 15 to 36:
       arg0: bits(N as integer{8,16,32}),
                  ^^^^^^^^^^^^^^^^^^^^^
-  ASL Static error: Unsupported expression N as integer {8, 16, 32}.
+  ASL Type error (TE_BSPD):
+    unsupported expression N as integer {8, 16, 32} in a subprogram parameter definition.
   [1]
   $ aslref TypingRule.BuiltinAggregateTypes.asl
   $ aslref --no-exec TypingRule.BuiltinExceptionType.asl
@@ -613,8 +614,8 @@ ASL Typing Tests / annotating types:
   File TypingRule.PSingle.bad.asl, line 4, characters 11 to 30:
       assert '101' IN { '1100' };
              ^^^^^^^^^^^^^^^^^^^
-  ASL Type error: cannot find a common ancestor to those two types bits(3) and
-    bits(4).
+  ASL Type error (TE_UT):
+    bitvector types bits(3) and bits(4) must have equal widths.
   [1]
   $ aslref TypingRule.PRange.asl
   $ aslref TypingRule.PRange.bad.asl
@@ -842,7 +843,8 @@ ASL Typing Tests / annotating types:
   File TypingRule.ParametersOfExpr.bad.asl, line 4, characters 15 to 27:
       z: integer{(D, E).item0}) => // Illegal expression in argument type
                  ^^^^^^^^^^^^
-  ASL Static error: Unsupported expression (D, E).item0.
+  ASL Type error (TE_BSPD):
+    unsupported expression (D, E).item0 in a subprogram parameter definition.
   [1]
   $ aslref --no-exec TypingRule.FuncSigTypes.asl
   $ aslref --no-exec TypingRule.SubprogramTypesClash.asl

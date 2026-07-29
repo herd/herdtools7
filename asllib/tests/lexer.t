@@ -103,8 +103,8 @@ Some problems with bitvectors and bitmasks:
   File masks0.asl, line 4, characters 17 to 28:
       let expr_a = '' IN {'1'};
                    ^^^^^^^^^^^
-  ASL Type error: cannot find a common ancestor to those two types bits(0) and
-    bits(1).
+  ASL Type error (TE_UT):
+    bitvector types bits(0) and bits(1) must have equal widths.
   [1]
 
 Check that variables starting with `__` are reserved:

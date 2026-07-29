@@ -17,13 +17,10 @@
   ASL Type error (TE_UT): unexpected collection.
   [1]
   $ aslref with-non-bitvector-arg.asl
-  File with-non-bitvector-arg.asl, line 1, character 0 to line 4, character 2:
-  var MyCollection : collection {
-    field1: bits(1),
+  File with-non-bitvector-arg.asl, line 3, characters 10 to 17:
     field2: integer,
-  };
-  ASL Static error:
-    Unsupported type collection { field1: bits(1), field2: integer }.
+            ^^^^^^^
+  ASL Type error (TE_UT): a bitvector type was expected, provided integer.
   [1]
   $ aslref on-function-return-type.asl
   File on-function-return-type.asl, line 6, characters 15 to 25:

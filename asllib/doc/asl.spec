@@ -5177,8 +5177,7 @@ typing relation annotate_pattern(tenv: static_envs, t: ty, p: pattern) ->
     case bits {
       ast_label(t_struct) = label_T_Bits;
       te_check(ast_label(t_struct) = ast_label(t_e_struct), TE_BO) -> True;
-      check_bits_equal_width(tenv, t_struct, t_e_struct) -> b;
-      te_check(b, TE_BO) -> True;
+      check_bits_equal_width(tenv, t_struct, t_e_struct) -> True;
       --
       (Pattern_Single(e'), ses);
     }

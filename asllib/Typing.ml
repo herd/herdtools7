@@ -594,7 +594,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   let check_structure_bits ~loc env t =
     check_true (has_structure_bits env t) @@ fun () ->
-    conflict ~loc [ default_t_bits ] t
+    fatal_from ~loc (Error.ExpectedBitvectorType t)
   (* End *)
 
   (* Begin CheckUnderlyingInteger *)
@@ -678,7 +678,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let check_bits_equal_width ~loc env t1 t2 () =
     try check_bits_equal_width' env t1 t2 ()
     with TypingAssumptionFailed ->
-      fatal_from ~loc (Error.UnreconcilableTypes (t1, t2))
+      fatal_from ~loc (Error.MismatchedBitvectorWidths (t1, t2))
   (* End *)
 
   let binop_is_ordered : binop -> bool = function
@@ -1373,9 +1373,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | T_Collection _ ->
             assert (not decl);
             let+ () =
-              check_true
-                (List.for_all (fun (_, t) -> has_structure_bits env t) fields)
-              @@ fun () -> fatal_from ~loc Error.(UnsupportedTy (Static, ty))
+             fun () ->
+              List.iter
+                (fun (_, ty) -> check_structure_bits ~loc:ty env ty ())
+                fields'
             in
             (T_Collection fields' |> here, ses) |: TypingRule.TStructuredDecl
         | _ -> assert false
@@ -1972,7 +1973,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           best_effort t_true (fun _ ->
               match Types.lowest_common_ancestor ~loc:e env t_true t_false with
               | None ->
-                  fatal_from ~loc (Error.UnreconcilableTypes (t_true, t_false))
+                  fatal_from ~loc (Error.NoCommonAncestor (t_true, t_false))
               | Some t -> t)
         in
         let ses = SES.union3 ses_cond ses_true ses_false in
@@ -3378,8 +3379,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | E_Cond (e, e1, e2) ->
           parameters_of_expr ~env e @ parameters_of_expr ~env e1
           @ parameters_of_expr ~env e2
-      | E_Tuple _ | _ ->
-          Error.fatal_from (to_pos e) (Error.UnsupportedExpr (Static, e))
+      | E_Tuple _ | _ -> Error.fatal_from (to_pos e) (Error.BadParameterExpr e)
     in
     let parameters_of_constraint ~env c =
       match c with

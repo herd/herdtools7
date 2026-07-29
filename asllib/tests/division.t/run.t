@@ -190,7 +190,9 @@ Other polynomial equations:
   [1]
 
   $ aslref rat-poly-01.asl
-  ASL Dynamic error: Cannot extract from bitvector of length 0 slice 0+:-2.
+  File ASL Standard Library, line 561, characters 9 to 17:
+  ASL Dynamic error (DE_BI):
+    invalid slice 0+:-2: start and length must be non-negative.
   [1]
 
 Division as POW:
