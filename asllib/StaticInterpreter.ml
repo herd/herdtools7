@@ -59,11 +59,13 @@ let static_eval (senv : SEnv.env) (e : expr) : literal =
     in
     { global; local }
   in
-  match eval_from ~loc:e env e with
-  | SI.Normal (Native.NV_Literal l, _env) ->
-      l |: Instrumentation.TypingRule.StaticEval
-  | SI.Normal _ | SI.Throwing _ | SI.Cutoff ->
-      Error.fatal_from e (UnsupportedExpr (Static, e))
+  try
+    match eval_from ~loc:e env e with
+    | SI.Normal (Native.NV_Literal l, _env) ->
+        l |: Instrumentation.TypingRule.StaticEval
+    | SI.Normal _ | SI.Throwing _ | SI.Cutoff ->
+        Error.fatal_from e (StaticEvaluationFailure (e, None))
+  with Error.ASLException cause -> Error.fatal_from_static_evaluation e cause
 (* End *)
 
 let static_eval_to_int env e =

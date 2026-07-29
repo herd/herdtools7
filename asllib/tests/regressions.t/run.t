@@ -799,7 +799,29 @@ Bounds checks
      ^^^^^^^^
   ASL Dynamic error (DE_BI): index 100 is outside the valid range 0..3.
   [1]
-
+  $ aslref static-evaluation-bad-index.asl
+  File static-evaluation-bad-index.asl, line 1, characters 13 to 22:
+  constant X = '0000'[4];
+               ^^^^^^^^^
+  ASL Type error (TE_SEF):
+    static evaluation failed for expression '0000'[4+:1]:
+    caused by: index 4 is outside the valid range 0..3.
+  [1]
+  $ aslref static-evaluation-type-assertion.asl
+  File static-evaluation-type-assertion.asl, line 1, characters 13 to 29:
+  constant X = 2 as integer {1};
+               ^^^^^^^^^^^^^^^^
+  ASL Type error (TE_SEF):
+    static evaluation failed for expression 2 as integer {1}:
+    caused by: value 2 does not satisfy the asserted type integer {1}.
+  [1]
+  $ aslref tuple-arity-mismatch.asl
+  File tuple-arity-mismatch.asl, line 3, characters 2 to 25:
+    let (x, y) = (1, 2, 3);
+    ^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_UT): tuple arity mismatch:
+    2 elements expected and 3 provided.
+  [1]
 If test environment reversion bug
   $ aslref if-test-env-updated.asl
 

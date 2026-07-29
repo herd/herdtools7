@@ -40,6 +40,10 @@ type bad_declaration =
   | EmptyCollectionTypeDeclaration
   | ElidedParameterWithoutBitvectorType
 
+type static_evaluation_failure_reason =
+  | IndexOutOfBounds of int * int
+  | ValueOutsideAssertedType of string * type_desc
+
 type error_desc =
   | ReservedIdentifier of string
   | BadField of string * ty
@@ -56,11 +60,14 @@ type error_desc =
       found_call_type : subprogram_type;
     }
   | BadArity of error_handling_time * identifier * int * int
+  | BadCallArity of identifier * int * int
+  | BadTupleArity of { expected : int; actual : int }
   | BadParameterArity of error_handling_time * version * identifier * int * int
   | UnsupportedBinop of error_handling_time * binop * literal * literal
   | UnsupportedUnop of error_handling_time * unop * literal
   | UnsupportedExpr of error_handling_time * expr
-  | UnsupportedTy of error_handling_time * ty
+  | StaticEvaluationFailure of expr * static_evaluation_failure_reason option
+  | BadParameterType of ty
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
   | ConflictingTypes of type_desc list * ty
@@ -280,9 +287,9 @@ module ErrorCode = struct
     | ConflictingTypes _ | AssignToTupleElement _ | ConstrainedIntegerExpected _
     | UnexpectedPendingConstrained | ExpectedSingularType _
     | ExpectedNamedType _ | UnexpectedCollection | MismatchedBitvectorWidths _
-    | ExpectedBitvectorType _ ->
+    | ExpectedBitvectorType _ | BadTupleArity _ ->
         Some (Typing UT)
-    | MismatchedCallType _
+    | MismatchedCallType _ | BadCallArity _
     | BadParameterArity (Static, _, _, _, _)
     | NoCallCandidate _ ->
         Some (Typing BC)
@@ -294,7 +301,7 @@ module ErrorCode = struct
     | AssignToImmutable _ -> Some (Typing AIM)
     | AlreadyDeclaredIdentifier _ -> Some (Typing IAD)
     | BadReturnStmt _ | BadParameterDecl _ | NonReturningFunction _
-    | NoreturnViolation _ | BadParameterExpr _ ->
+    | NoreturnViolation _ | BadParameterExpr _ | BadParameterType _ ->
         Some (Typing BSPD)
     | UncaughtException _ -> Some (Dynamic UE)
     | OverlappingSlices (_, Dynamic) -> Some (Dynamic OSA)
@@ -311,13 +318,12 @@ module ErrorCode = struct
         Some (Typing OE)
     | PrecisionLostDefining -> Some (Typing PLD)
     | NoEntryPoint -> Some (Dynamic NEP)
-    | RecursionLimitReached Static -> Some (Typing SEF)
+    | RecursionLimitReached Static | StaticEvaluationFailure _ ->
+        Some (Typing SEF)
     | NoCommonAncestor _ -> Some (Typing LCA)
     (********** TODO tidy up - does not cleanly correspond to a code **********)
     | BadArity (Static, _, _, _) (* also used for tuple unpacking *) -> None
-    | UnsupportedExpr _ | UnsupportedTy _
-    (* For static interpretation and parameters *) ->
-        None
+    | UnsupportedExpr _ (* For static interpretation *) -> None
     | MismatchType _
     (* Backend type mismatches and mismatched integers for loop limits. *) ->
         None
@@ -339,6 +345,25 @@ module ErrorCode = struct
     (********** Other **********)
     | ObsoleteSyntax _ -> Some (Build PE)
 end
+
+let fatal_from_static_evaluation e cause =
+  match ErrorCode.of_error cause with
+  | Some (ErrorCode.Dynamic (ErrorCode.BI | ErrorCode.TAF)) ->
+      let reason =
+        match cause.desc with
+        | BadIndex (index, length) -> Some (IndexOutOfBounds (index, length))
+        | DynamicATCFailure (value, ty) ->
+            Some (ValueOutsideAssertedType (value, ty))
+        | _ -> None
+      in
+      fatal_from e (StaticEvaluationFailure (e, reason))
+  | Some
+      (ErrorCode.Dynamic
+         ( ErrorCode.UNR | ErrorCode.DAF | ErrorCode.AET | ErrorCode.BO
+         | ErrorCode.LE | ErrorCode.UE | ErrorCode.OSA | ErrorCode.NAL
+         | ErrorCode.NEP )) ->
+      fatal_from e (StaticEvaluationFailure (e, None))
+  | Some (ErrorCode.Build _ | ErrorCode.Typing _) | None -> fatal cause
 
 module PrintContext = struct
   (* Straight out of stdlib v5.2 *)
@@ -414,18 +439,8 @@ module PrintContext = struct
     else None
 end
 
-(** TODO
-    - Various errors are overused in several places - need to clearly
-      distinguish between ASL1 errors and e.g. ASL0 non-typechecked errors,
-      assertion failures, cases we don't expect to hit etc.
-    - TypingRule.TInt mismatch on empty case *)
-(* TODO: check_implementations_unique should be TE_OE in reference - instead just generic #TE *)
-(* TODO: BE_RI unused in reference *)
-(* TODO: following not recoverable from implementation:
-- TE_TSF
-- TE_SEF
-- TE_BTI
-*)
+(* TODO: check_implementations_unique in asl.spec should report TE_OE. *)
+(* TODO: distinguish TE_TSF and TE_BTI in the implementation. *)
 
 module PPrint = struct
   open Format
@@ -463,6 +478,13 @@ module PPrint = struct
     | Static -> static
     | Dynamic -> dynamic
 
+  let pp_bad_index f (index, length) =
+    fprintf f "index %d is outside the valid range 0..%d." index (length - 1)
+
+  let pp_value_outside_asserted_type f (value, ty) =
+    fprintf f "value %s does not satisfy the asserted type %a." value
+      pp_type_desc ty
+
   let pp_error_desc f e =
     let pp_err s fmt = fprintf_err f s (ErrorCode.of_error e) fmt in
     match e.desc with
@@ -481,8 +503,18 @@ module PPrint = struct
         pp_err
           (error_handling_time_to_string t)
           "Unsupported expression %a." pp_expr e
-    | UnsupportedTy (t, ty) ->
-        pp_err (error_handling_time_to_string t) "Unsupported type %a." pp_ty ty
+    | StaticEvaluationFailure (e, None) ->
+        pp_err typing "static evaluation failed for expression %a." pp_expr e
+    | StaticEvaluationFailure (e, Some (IndexOutOfBounds (index, length))) ->
+        pp_err typing
+          "static evaluation failed for expression %a:@ caused by: %a" pp_expr e
+          pp_bad_index (index, length)
+    | StaticEvaluationFailure (e, Some (ValueOutsideAssertedType (value, ty)))
+      ->
+        pp_err typing
+          "static evaluation failed for expression %a:@ caused by: %a" pp_expr e
+          pp_value_outside_asserted_type (value, ty)
+    | BadParameterType ty -> pp_err typing "Unsupported type %a." pp_ty ty
     | InvalidExpr e -> pp_err typing "invalid expression %a." pp_expr e
     | MismatchType (v, [ ty ]) ->
         pp_err dynamic "Mismatch type:@ value %s does not belong to type %a." v
@@ -514,8 +546,7 @@ module PPrint = struct
         pp_err static "Cannot extract from bitvector of length %d slice %a."
           length pp_slice_list slices
     | BadIndex (index, length) ->
-        pp_err dynamic "index %d is outside the valid range 0..%d." index
-          (length - 1)
+        pp_err dynamic "%a" pp_bad_index (index, length)
     | BadSlice slice -> pp_err static "invalid slice %a." pp_slice slice
     | TypeInferenceNeeded ->
         pp_err internal "Interpreter blocked. Type inference needed."
@@ -542,6 +573,15 @@ module PPrint = struct
           "Arity error while calling '%s':@ %d arguments expected and %d \
            provided."
           name expected provided
+    | BadCallArity (name, expected, provided) ->
+        pp_err typing
+          "Arity error while calling '%s':@ %d arguments expected and %d \
+           provided."
+          name expected provided
+    | BadTupleArity { expected; actual } ->
+        pp_err typing
+          "tuple arity mismatch:@ %d elements expected and %d provided."
+          expected actual
     | BadParameterArity (t, version, name, expected, provided) -> (
         match (t, version) with
         | Static, V0 ->
@@ -656,8 +696,7 @@ module PPrint = struct
           "cannot@ perform@ Asserted@ Type@ Conversion@ on@ %a@ by@ %a." pp_ty
           t1 pp_ty t2
     | DynamicATCFailure (value, ty) ->
-        pp_err dynamic "value %s does not satisfy the asserted type %a." value
-          pp_type_desc ty
+        pp_err dynamic "%a" pp_value_outside_asserted_type (value, ty)
     | SetterWithoutCorrespondingGetter func ->
         let ret, args =
           match func.args with
@@ -856,11 +895,14 @@ module CSV = struct
     | UndefinedIdentifier _ -> "UndefinedIdentifier"
     | MismatchedCallType _ -> "MismatchedCallType"
     | BadArity _ -> "BadArity"
+    | BadCallArity _ -> "BadCallArity"
+    | BadTupleArity _ -> "BadTupleArity"
     | BadParameterArity _ -> "BadParameterArity"
     | UnsupportedBinop _ -> "UnsupportedBinop"
     | UnsupportedUnop _ -> "UnsupportedUnop"
     | UnsupportedExpr _ -> "UnsupportedExpr"
-    | UnsupportedTy _ -> "UnsupportedTy"
+    | StaticEvaluationFailure _ -> "StaticEvaluationFailure"
+    | BadParameterType _ -> "BadParameterType"
     | InvalidExpr _ -> "InvalidExpr"
     | MismatchType _ -> "MismatchType"
     | ConflictingTypes _ -> "ConflictingTypes"
