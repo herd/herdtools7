@@ -31,6 +31,7 @@ type error_desc =
   | BadField of string * ty
   | MissingField of string list * ty
   | BadSlices of error_handling_time * slice list * int
+  | BadIndex of int * int
   | BadSlice of slice
   | EmptySlice
   | TypeInferenceNeeded
@@ -69,6 +70,7 @@ type error_desc =
   | BadRecursiveDecls of identifier list
   | UnrespectedParserInvariant
   | BadATC of ty * ty  (** asserting, asserted *)
+  | DynamicATCFailure of string * type_desc
   | BadPattern of pattern * ty
   | ConstrainedIntegerExpected of ty
   | ParameterWithoutDecl of identifier
@@ -251,6 +253,8 @@ module ErrorCode = struct
     | OverlappingSlices (_, Static)
     | BitfieldsDontAlign _ ->
         Some (Typing BS) (* TODO: consider combining BadSlices and BadSlice *)
+    | BadSlices (Dynamic, _, _) -> Some (Dynamic BI)
+    | BadIndex _ -> Some (Dynamic BI)
     | UndefinedIdentifier (Static, _) -> Some (Typing UI)
     | ConflictingTypes _ | AssignToTupleElement _ | ConstrainedIntegerExpected _
     | UnexpectedPendingConstrained | ExpectedSingularType _
@@ -273,6 +277,7 @@ module ErrorCode = struct
     | OverlappingSlices (_, Dynamic) -> Some (Dynamic OSA)
     | BadLDI _ | BadRecursiveDecls _ -> Some (Typing BD)
     | BadATC _ -> Some (Typing TAF)
+    | DynamicATCFailure _ -> Some (Dynamic TAF)
     | BaseValueEmptyType _ | BaseValueNonSymbolic _ -> Some (Typing NBV)
     | ArbitraryEmptyType _ -> Some (Dynamic AET)
     | UnreachableReached -> Some (Dynamic UNR)
@@ -300,8 +305,7 @@ module ErrorCode = struct
     (* For desugaring, but uses `check_no_duplicates` which is always TE_IAD? *)
       ->
         None
-    | UnexpectedInitialisationThrow _ (* not represented in reference? *) ->
-        None
+    | UnexpectedInitialisationThrow _ -> Some (Dynamic UE)
     (********** Should not happen **********)
     (* e.g. skipped type-checking, ASL0, internal option or invariant *)
     | TypeInferenceNeeded
@@ -313,7 +317,6 @@ module ErrorCode = struct
     | ConflictingSideEffects _ | ConstantTimeBroken _ ->
         None
     (********** Other **********)
-    | BadSlices (Dynamic, _, _) -> None (* only used in Native.ml *)
     | ObsoleteSyntax _ -> None
 end
 
@@ -490,11 +493,16 @@ module PPrint = struct
         pp_err static
           "cannot slice with empty slicing operator. This might also be due to \
            an incorrect getter/setter invocation."
-    | BadSlices (t, slices, length) ->
-        pp_err
-          (error_handling_time_to_string t)
-          "Cannot extract from bitvector of length %d slice %a." length
+    | BadSlices (Dynamic, slices, _) ->
+        pp_err dynamic
+          "invalid slice %a: start and length must be non-negative."
           pp_slice_list slices
+    | BadSlices (Static, slices, length) ->
+        pp_err static "Cannot extract from bitvector of length %d slice %a."
+          length pp_slice_list slices
+    | BadIndex (index, length) ->
+        pp_err dynamic "index %d is outside the valid range 0..%d." index
+          (length - 1)
     | BadSlice slice -> pp_err static "invalid slice %a." pp_slice slice
     | TypeInferenceNeeded ->
         pp_err internal "Interpreter blocked. Type inference needed."
@@ -625,6 +633,9 @@ module PPrint = struct
         pp_err typing
           "cannot@ perform@ Asserted@ Type@ Conversion@ on@ %a@ by@ %a." pp_ty
           t1 pp_ty t2
+    | DynamicATCFailure (value, ty) ->
+        pp_err dynamic "value %s does not satisfy the asserted type %a." value
+          pp_type_desc ty
     | SetterWithoutCorrespondingGetter func ->
         let ret, args =
           match func.args with
@@ -784,6 +795,7 @@ module CSV = struct
     | BadPattern _ -> "BadPattern"
     | MissingField _ -> "MissingField"
     | BadSlices _ -> "BadSlices"
+    | BadIndex _ -> "BadIndex"
     | BadSlice _ -> "BadSlice"
     | EmptySlice -> "EmptySlice"
     | TypeInferenceNeeded -> "TypeInferenceNeeded"
@@ -817,6 +829,7 @@ module CSV = struct
     | BadRecursiveDecls _ -> "BadRecursiveDecls"
     | UnrespectedParserInvariant -> "UnrespectedParserInvariant"
     | BadATC _ -> "BadATC"
+    | DynamicATCFailure _ -> "DynamicATCFailure"
     | ConstrainedIntegerExpected _ -> "ConstrainedIntegerExpected"
     | ParameterWithoutDecl _ -> "ParameterWithoutDecl"
     | BadParameterDecl _ -> "BadParameterDecl"

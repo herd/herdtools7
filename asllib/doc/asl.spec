@@ -9148,9 +9148,17 @@ semantics relation build_genv(tenv: static_envs, typed_spec: spec) -> (new_env: 
  prose_transition = "building the \environmentterm{} and \executiongraphterm{} from {typed_spec} starting in the context of {tenv} yields",
 } =
   env := (tenv, empty_denv);
-  eval_globals(typed_spec, (env, empty_graph)) -> (new_env, new_g) | DynErrorConfig(), DivergingConfig();
-  --
-  (new_env, new_g);
+  case normal {
+    eval_globals(typed_spec, (env, empty_graph)) -> (new_env, new_g) | DynErrorConfig(), DivergingConfig();
+    --
+    (new_env, new_g);
+  }
+
+  case throwing {
+    eval_globals(typed_spec, (env, empty_graph)) -> Throwing(_, _, _, _) | DynErrorConfig(), DivergingConfig();
+    --
+    DynamicError(DE_UE);
+  }
 ;
 
 //////////////////////////////////////////////////

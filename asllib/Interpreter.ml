@@ -529,7 +529,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let* b = is_val_of_type e1 env v t in
         (if b then return_normal (v, new_env)
          else
-           fatal_from e1 env (Error.MismatchType (B.debug_value v, [ t.desc ])))
+           fatal_from e1 env (Error.DynamicATCFailure (B.debug_value v, t.desc)))
         |: SemanticsRule.ATC
     (* End *)
     (* Begin EvalEVar *)
@@ -653,13 +653,13 @@ module Make (B : Backend.S) (C : Config) = struct
         let*^ m_index, new_env = eval_expr env1 e_index in
         let* v_array = m_array and* v_index = m_index in
         let i_index = v_to_int ~loc:e v_index in
-        let* v = B.get_index i_index v_array in
+        let* v = B.get_index ~loc:e i_index v_array in
         return_normal (v, new_env) |: SemanticsRule.EGetArray
     (* End *)
     (* Begin EvalEGetTupleItem *)
     | E_GetItem (e_tuple, index) ->
         let** v_tuple, new_env = eval_expr env e_tuple in
-        let* v = B.get_index index v_tuple in
+        let* v = B.get_index ~loc:e index v_tuple in
         return_normal (v, new_env) |: SemanticsRule.EGetTupleItem
     (* End *)
     (* Begin EvalERecord *)
@@ -807,7 +807,7 @@ module Make (B : Backend.S) (C : Config) = struct
       | T_Tuple tys ->
           let fold (i, prev) ty' =
             let m =
-              let* v' = B.get_index i v in
+              let* v' = B.get_index ~loc i v in
               let* here = in_values v' ty' in
               prev >>= B.binop `BAND here
             in
@@ -869,7 +869,7 @@ module Make (B : Backend.S) (C : Config) = struct
           let* () =
             check_non_overlapping_slices ~pos:le env slices slice_ranges
           in
-          B.write_to_bitvector slice_ranges v_rhs v_bv_lhs
+          B.write_to_bitvector ~loc:le slice_ranges v_rhs v_bv_lhs
         in
         eval_lexpr ver e_bv env2 new_m_bv |: SemanticsRule.LESlice
     (* End *)
@@ -879,7 +879,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let*^ m_index, env2 = eval_expr env1 e_index in
         let m1 =
           let* v = m and* v_index = m_index and* rv_array = rm_array in
-          B.set_index (v_to_int ~loc:e_index v_index) v rv_array
+          B.set_index ~loc:e_index (v_to_int ~loc:e_index v_index) v rv_array
         in
         eval_lexpr ver re_array env2 m1 |: SemanticsRule.LESetArray
     (* End *)
@@ -897,7 +897,7 @@ module Make (B : Backend.S) (C : Config) = struct
         (* The index-out-of-bound on the vector are done either in typing,
            either in [B.get_index]. *)
         let n = List.length le_list in
-        let nmonads = List.init n (fun i -> m >>= B.get_index i) in
+        let nmonads = List.init n (fun i -> m >>= B.get_index ~loc:le i) in
         multi_assign ver env le_list nmonads |: SemanticsRule.LEDestructuring
     (* End *)
     (* Begin EvalLESetFields *)
@@ -1063,7 +1063,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (* End *)
   (* Evaluation of Local Declarations *)
   (* -------------------------------- *)
-  and eval_local_decl ldi env m_init : env maybe_exception m =
+  and eval_local_decl ~loc ldi env m_init : env maybe_exception m =
     let () =
       if false then Format.eprintf "Evaluating %a.@." PP.pp_local_decl_item ldi
     in
@@ -1078,7 +1078,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | LDI_Tuple ldis ->
         let n = List.length ldis in
         let* vm = m_init in
-        let liv = List.init n (fun i -> B.return vm >>= B.get_index i) in
+        let liv = List.init n (fun i -> B.return vm >>= B.get_index ~loc i) in
         (* Begin DeclareLDITuple( *)
         let folder envm x vm =
           let**| env = envm in
@@ -1223,7 +1223,7 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalSDecl *)
     | S_Decl (_ldk, ldi, _ty_opt, Some e_init) ->
         let*^ m_init, env1 = eval_expr env e_init in
-        let**| new_env = eval_local_decl ldi env1 m_init in
+        let**| new_env = eval_local_decl ~loc:s ldi env1 m_init in
         return_continue new_env |: SemanticsRule.SDecl
     | S_Decl (_ldk, _ldi, _ty_opt, None) -> fatal_from s env TypeInferenceNeeded
     (* End *)
@@ -1567,7 +1567,7 @@ module Make (B : Backend.S) (C : Config) = struct
       match monads with
       | [ m ] ->
           let n = List.length les in
-          let nmonads = List.init n (fun i -> m >>= B.get_index i) in
+          let nmonads = List.init n (fun i -> m >>= B.get_index ~loc:pos i) in
           multi_assign ver env les nmonads
       | _ ->
           fatal_from pos env

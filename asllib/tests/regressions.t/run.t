@@ -189,8 +189,8 @@ Runtime checks:
   File runtime-type-sat1.asl, line 3, characters 23 to 24:
     let x: integer {1} = 2 as integer {1};
                          ^
-  ASL Dynamic error: Mismatch type:
-    value 2 does not belong to type integer {1}.
+  ASL Dynamic error (DE_TAF):
+    value 2 does not satisfy the asserted type integer {1}.
   [1]
 
   $ cat >runtime-type-sat2.asl <<EOF
@@ -208,8 +208,8 @@ Runtime checks:
   File runtime-type-sat2.asl, line 2, characters 10 to 18:
     let x = Zeros{4} as bits(size);
             ^^^^^^^^
-  ASL Dynamic error: Mismatch type:
-    value 0x0 does not belong to type bits(size).
+  ASL Dynamic error (DE_TAF):
+    value 0x0 does not satisfy the asserted type bits(size).
   [1]
 
   $ aslref under-constrained-used.asl
@@ -240,8 +240,8 @@ Parameterized integers:
   File bad-underconstrained-ctc.asl, line 3, characters 12 to 13:
     return x[(N as integer {N - 1})];
               ^
-  ASL Dynamic error: Mismatch type:
-    value 4 does not belong to type integer {(N - 1)}.
+  ASL Dynamic error (DE_TAF):
+    value 4 does not satisfy the asserted type integer {(N - 1)}.
   [1]
   $ aslref bad-underconstrained-return.asl
   File bad-underconstrained-return.asl, line 3, characters 2 to 15:
@@ -263,11 +263,19 @@ Parameterized integers:
 
   $ aslref empty-slice.asl
   0x0
-  ASL Dynamic error: Cannot extract from bitvector of length 0 slice 4+:-1.
+  File empty-slice.asl, line 4, characters 10 to 16:
+    println z[x:y];
+            ^^^^^^
+  ASL Dynamic error (DE_BI):
+    invalid slice 4+:-1: start and length must be non-negative.
   [1]
 
   $ aslref bad-slices.asl
-  ASL Dynamic error: Cannot extract from bitvector of length 0 slice 4+:-23.
+  File bad-slices.asl, line 4, characters 10 to 18:
+    let y = x[-20:4];
+            ^^^^^^^^
+  ASL Dynamic error (DE_BI):
+    invalid slice 4+:-23: start and length must be non-negative.
   [1]
 
   $ aslref bad-shift.asl
@@ -363,8 +371,10 @@ Parameterized integers:
 
   $ aslref array-lca.asl
   $ aslref array-index-error.asl
-  ASL Dynamic error: Mismatch type:
-    value 14 does not belong to type integer {0..4}.
+  File array-index-error.asl, line 9, characters 10 to 19:
+    let x = arr[[14]];
+            ^^^^^^^^^
+  ASL Dynamic error (DE_BI): index 14 is outside the valid range 0..4.
   [1]
 
 Parameters bugs:
@@ -585,7 +595,7 @@ Required tests:
 
   $ aslref --gnu-errors gnu-errors.asl
   aslref: gnu-errors.asl:1:0: ASL Warning: the recursive function fact has no recursive limit annotation.
-  aslref: :0:-1: ASL Dynamic error: Mismatch type: value 11 does not belong to type integer {0..9}.
+  aslref: gnu-errors.asl:10:6: ASL Dynamic error (DE_BI): index 11 is outside the valid range 0..9.
   [1]
 
   $ aslref
@@ -729,42 +739,66 @@ Outdated syntax
 
 Bounds checks
   $ aslref bounds-checks-read-bitvector-1.asl
-  ASL Dynamic error: Cannot extract from bitvector of length 0 slice -1+:1.
+  File bounds-checks-read-bitvector-1.asl, line 4, characters 9 to 15:
+       - = bv[-1];
+           ^^^^^^
+  ASL Dynamic error (DE_BI):
+    invalid slice -1+:1: start and length must be non-negative.
   [1]
   $ aslref bounds-checks-read-bitvector-2.asl
-  ASL Dynamic error: Mismatch type:
-    value 4 does not belong to type integer {0..3}.
+  File bounds-checks-read-bitvector-2.asl, line 4, characters 9 to 14:
+       - = bv[4];
+           ^^^^^
+  ASL Dynamic error (DE_BI): index 4 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-write-bitvector-1.asl
-  ASL Dynamic error: Cannot extract from bitvector of length 0 slice -1+:1.
+  File bounds-checks-write-bitvector-1.asl, line 4, characters 6 to 10:
+      bv[-1] = '1';
+        ^^^^
+  ASL Dynamic error (DE_BI):
+    invalid slice -1+:1: start and length must be non-negative.
   [1]
   $ aslref bounds-checks-write-bitvector-2.asl
-  ASL Dynamic error: Mismatch type:
-    value 5 does not belong to type integer {0..3}.
+  File bounds-checks-write-bitvector-2.asl, line 4, characters 6 to 9:
+      bv[5] = '1';
+        ^^^
+  ASL Dynamic error (DE_BI): index 5 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-read-array-1.asl
-  ASL Dynamic error: Mismatch type:
-    value -1 does not belong to type integer {0..3}.
+  File bounds-checks-read-array-1.asl, line 4, characters 8 to 17:
+      - = arr[[-1]];
+          ^^^^^^^^^
+  ASL Dynamic error (DE_BI): index -1 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-read-array-2.asl
-  ASL Dynamic error: Mismatch type:
-    value 4 does not belong to type integer {0..3}.
+  File bounds-checks-read-array-2.asl, line 4, characters 8 to 16:
+      - = arr[[4]];
+          ^^^^^^^^
+  ASL Dynamic error (DE_BI): index 4 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-write-array-1.asl
-  ASL Dynamic error: Mismatch type:
-    value -1 does not belong to type integer {0..3}.
+  File bounds-checks-write-array-1.asl, line 4, characters 9 to 11:
+      arr[[-1]] = 1;
+           ^^
+  ASL Dynamic error (DE_BI): index -1 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-write-array-2.asl
-  ASL Dynamic error: Mismatch type:
-    value 4 does not belong to type integer {0..3}.
+  File bounds-checks-write-array-2.asl, line 4, characters 9 to 10:
+      arr[[4]] = 1;
+           ^
+  ASL Dynamic error (DE_BI): index 4 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-read-zero-width-slice.asl
-  ASL Dynamic error: Mismatch type:
-    value 100 does not belong to type integer {0..3}.
+  File bounds-checks-read-zero-width-slice.asl, line 4, characters 6 to 15:
+    - = x[100+:0];
+        ^^^^^^^^^
+  ASL Dynamic error (DE_BI): index 100 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-write-zero-width-slice.asl
-  ASL Dynamic error: Mismatch type:
-    value 100 does not belong to type integer {0..3}.
+  File bounds-checks-write-zero-width-slice.asl, line 4, characters 3 to 11:
+    x[100+:0] = Zeros{0};
+     ^^^^^^^^
+  ASL Dynamic error (DE_BI): index 100 is outside the valid range 0..3.
   [1]
 
 If test environment reversion bug

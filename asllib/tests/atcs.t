@@ -10,8 +10,8 @@ Deferred to execution ATCs
   File atcs1.asl, line 2, characters 11 to 12:
     let x = (3 as integer {42});
              ^
-  ASL Dynamic error: Mismatch type:
-    value 3 does not belong to type integer {42}.
+  ASL Dynamic error (DE_TAF):
+    value 3 does not satisfy the asserted type integer {42}.
   [1]
 
 Bad structure ATCs
@@ -80,8 +80,9 @@ ATCs on other types
   File atcs6.asl, line 3, characters 11 to 25:
     let x = ((42, Zeros{4}) as myty);
              ^^^^^^^^^^^^^^
-  ASL Dynamic error: Mismatch type:
-    value [42, 0x0] does not belong to type (integer {0..10}, bits(4)).
+  ASL Dynamic error (DE_TAF):
+    value [42, 0x0] does not satisfy the asserted type (integer {0..10},
+                                                       bits(4)).
   [1]
 
   $ cat > atcs7.asl <<EOF

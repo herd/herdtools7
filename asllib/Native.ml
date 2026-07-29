@@ -127,26 +127,23 @@ module NativeBackend (C : Config) = struct
   let v_record li = return (NV_Record (IMap.of_list li))
   let v_exception li = v_record li
   let non_tuple_exception v = mismatch_type v [ T_Tuple [] ]
-
-  let bad_index i n =
-    mismatch_type (v_of_int i)
-      [ integer_range' zero_expr (expr_of_int (n - 1)) ]
+  let bad_index ~loc i n = Error.fatal_from loc (Error.BadIndex (i, n))
 
   let doesnt_have_fields_exception v =
     mismatch_type v [ T_Record []; T_Exception []; T_Collection [] ]
 
-  let get_index i vec =
+  let get_index ~loc i vec =
     match vec with
     | NV_Vector li ->
         let n = List.length li in
-        if i < 0 || i >= n then bad_index i n else List.nth li i |> return
+        if i < 0 || i >= n then bad_index ~loc i n else List.nth li i |> return
     | v -> non_tuple_exception v
 
-  let set_index i v vec =
+  let set_index ~loc i v vec =
     match vec with
     | NV_Vector li ->
         let n = List.length li in
-        if i < 0 || i >= n then bad_index i n
+        if i < 0 || i >= n then bad_index ~loc i n
         else list_update i (Fun.const v) li |> v_tuple
     | v -> non_tuple_exception v
 
@@ -175,20 +172,20 @@ module NativeBackend (C : Config) = struct
   let bitvector_to_value bv = L_BitVector bv |> nv_literal |> return
   let int_max x y = if x >= y then x else y
 
-  let bad_slices positions =
+  let bad_slices ~loc positions =
     let slices =
       List.map
         (fun (start, length) ->
           Slice_Length (expr_of_int start, expr_of_int length))
         positions
     in
-    Error.(fatal_unknown_pos (BadSlices (C.error_handling_time, slices, 0)))
+    Error.fatal_from loc (Error.BadSlices (C.error_handling_time, slices, 0))
 
-  let slices_to_positions positions =
+  let slices_to_positions ~loc positions =
     List.map
       (fun (start, length) ->
         let start = as_int start and length = as_int length in
-        if start < 0 || length < 0 then bad_slices [ (start, length) ]
+        if start < 0 || length < 0 then bad_slices ~loc [ (start, length) ]
         else (start, length))
       positions
     |> slices_to_positions Fun.id
@@ -202,7 +199,7 @@ module NativeBackend (C : Config) = struct
 
   let read_from_bitvector ~loc slices v =
     let max_pos = max_pos_of_slices slices in
-    let positions = slices_to_positions slices in
+    let positions = slices_to_positions ~loc slices in
     let () =
       List.iter
         (fun x -> if x < 0 then mismatch_type v [ default_t_bits ])
@@ -212,7 +209,7 @@ module NativeBackend (C : Config) = struct
       match v with
       | NV_Literal (L_BitVector bv) ->
           if max_pos < Bitvector.length bv then bv
-          else bad_index max_pos (Bitvector.length bv)
+          else bad_index ~loc max_pos (Bitvector.length bv)
       | NV_Literal (L_Int i) -> Bitvector.of_z (max_pos + 1) i
       | _ ->
           let ( ~! ) = add_pos_from loc in
@@ -222,10 +219,10 @@ module NativeBackend (C : Config) = struct
     let res = Bitvector.extract_slice bv positions in
     bitvector_to_value res
 
-  let write_to_bitvector slices src dst =
+  let write_to_bitvector ~loc slices src dst =
     let dst = as_bitvector dst
     and src = as_bitvector src
-    and positions = slices_to_positions slices in
+    and positions = slices_to_positions ~loc slices in
     let () =
       List.iter
         (fun x ->
@@ -242,7 +239,7 @@ module NativeBackend (C : Config) = struct
     let max_pos = max_pos_of_slices slices in
     let () =
       if not (max_pos < Bitvector.length dst) then
-        bad_index max_pos (Bitvector.length dst)
+        bad_index ~loc max_pos (Bitvector.length dst)
     in
     Bitvector.write_slice dst src positions |> bitvector_to_value
 
