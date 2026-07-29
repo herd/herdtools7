@@ -292,7 +292,7 @@ module ErrorCode = struct
     | MismatchType _
     (* dynamic ATC but also mismatched integers for loop limits *) ->
         None
-    | CannotParse _ (* used in lexing too *) -> None
+    | CannotParse _ (* used in lexing too *) -> Some (Build PE)
     | UnreconcilableTypes _ (* both LCA and check_bit_widths_equal *) -> None
     | EmptyConstraints (* does this need to be reflected in reference? *) ->
         None

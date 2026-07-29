@@ -72,7 +72,8 @@ Global ignored:
   File global_ignored.asl, line 1, characters 4 to 5:
   var - = 3 / 0;
       ^
-  ASL Grammar error: Cannot parse. A global declaration must declare a name.
+  ASL Grammar error (BE_PE): Cannot parse. A global declaration must declare a
+    name.
   [1]
 
   $ aslref shadow-banning-bug.asl
@@ -300,14 +301,14 @@ Parameterized integers:
   File setter_without_getter.asl, line 6, characters 0 to 3:
   end;
   ^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
 
   $ aslref getter_without_setter.asl
   File getter_without_setter.asl, line 6, characters 0 to 3:
   end;
   ^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
 
   $ aslref tuple_items.asl
@@ -316,7 +317,7 @@ Parameterized integers:
   File duplicated-otherwise.asl, line 7, characters 8 to 12:
           when 0.0 => println "2.0";
           ^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref duplicate_expr_record.asl
   File duplicate_expr_record.asl, line 5, characters 12 to 27:
@@ -329,16 +330,16 @@ Parameterized integers:
   File same-precedence.asl, line 6, characters 10 to 15:
     let x = a + b - c;
             ^^^^^
-  ASL Grammar error: Cannot parse. Operators `-` and `+` have the same priority
-    - parenthesise to disambiguate.
+  ASL Grammar error (BE_PE): Cannot parse. Operators `-` and `+` have the same
+    priority - parenthesise to disambiguate.
   [1]
 
   $ aslref same-precedence2.asl
   File same-precedence2.asl, line 6, characters 10 to 17:
     let d = a ==> b <=> c;
             ^^^^^^^
-  ASL Grammar error: Cannot parse. Operators `<=>` and `==>` have the same
-    priority - parenthesise to disambiguate.
+  ASL Grammar error (BE_PE): Cannot parse. Operators `<=>` and `==>` have the
+    same priority - parenthesise to disambiguate.
   [1]
 
   $ aslref rdiv_checks.asl
@@ -423,7 +424,7 @@ Required tests:
   File asl0-patterns.asl, line 7, characters 25 to 29:
       if x[0+:4] IN '10x1' then // invalid
                            ^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref -0 unreachable-v0.asl
   $ aslref assign1.asl
@@ -436,7 +437,7 @@ Required tests:
   File concat-empty.asl, line 3, characters 45 to 46:
     let empty_concatenation_should_not_parse = [];
                                                ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref concat01.asl
   $ aslref concat02.asl
@@ -565,7 +566,7 @@ Required tests:
   File empty-function.asl, line 3, characters 0 to 3:
   end;
   ^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
 
   $ aslref --no-type-check throw-local-env.asl
@@ -662,7 +663,7 @@ Getters/setters
   File pattern-masks-no-braces.asl, line 4, characters 19 to 24:
     assert ('111' IN '1xx') == TRUE;
                      ^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
 
 ASLRef Field getter extension
@@ -723,7 +724,7 @@ Outdated syntax
   File noreturn_function.asl, line 2, characters 26 to 28:
   noreturn func returning() => integer
                             ^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
 
 Bounds checks

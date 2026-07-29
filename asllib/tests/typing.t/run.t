@@ -506,7 +506,7 @@ C Tests
   File CNegative12.asl, line 2, characters 56 to 57:
   func negative12{N}(bv : bits(N), N: integer, bv2 : bits({0..N}))
                                                           ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
 
 Extra tests by ASLRef team
