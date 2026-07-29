@@ -2617,6 +2617,12 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
           TypeError(TE_BF);
         }
       }
+      case collection_bad_base {
+        L = label_T_Collection;
+        e2 != E_Var(_);
+        --
+        TypeError(TE_UT);
+      }
     }
 
     case bitfield {
@@ -2702,6 +2708,12 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
       --
       (T_Bits(e_slice_width, empty_list), E_GetCollectionFields(base_collection_name, fields), ses_base)
       { math_layout = [_, [_] ] };
+    }
+    case collection_bad_base {
+      make_anonymous(tenv, t_base_annot) -> T_Collection(_);
+      e_base_annot != E_Var(_);
+      --
+      TypeError(TE_UT);
     }
     case error {
       make_anonymous(tenv, t_base_annot) -> t_base_annot_anon;
@@ -3497,6 +3509,12 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
       (LE_SetCollectionFields(collection_var_name, make_singleton_list(field_name), make_singleton_list((zero, n))), ses)
       { math_layout = [_] };
     }
+    case collection_bad_base {
+      t_le1_anon =: T_Collection(_);
+      le2 != LE_Var(_);
+      --
+      TypeError(TE_UT);
+    }
 
     case bitfield {
       t_le1_anon =: T_Bits(_, bitfields);
@@ -3578,6 +3596,13 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
      --
      (LE_SetCollectionFields(base_name, le_fields, slices), ses_base)
      { math_layout = [_, [_] ] };
+   }
+
+   case collection_bad_base {
+     t_base_anon =: T_Collection(_);
+     le_base != LE_Var(_);
+     --
+     TypeError(TE_UT);
    }
 
    case error {

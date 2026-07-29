@@ -81,6 +81,7 @@ type error_desc =
   | MismatchedPurity of string  (** Used for coarse-grained analysis *)
   | MismatchedBitvectorWidths of ty * ty
   | ExpectedBitvectorType of ty
+  | CollectionBaseNotVariable of expr
   | NoCommonAncestor of ty * ty
   | AssignToImmutable of string
   | AssignToTupleElement of lexpr
@@ -287,7 +288,7 @@ module ErrorCode = struct
     | ConflictingTypes _ | AssignToTupleElement _ | ConstrainedIntegerExpected _
     | UnexpectedPendingConstrained | ExpectedSingularType _
     | ExpectedNamedType _ | UnexpectedCollection | MismatchedBitvectorWidths _
-    | ExpectedBitvectorType _ | BadTupleArity _ ->
+    | ExpectedBitvectorType _ | CollectionBaseNotVariable _ | BadTupleArity _ ->
         Some (Typing UT)
     | MismatchedCallType _ | BadCallArity _
     | BadParameterArity (Static, _, _, _, _)
@@ -636,6 +637,11 @@ module PPrint = struct
           t1 pp_ty t2
     | ExpectedBitvectorType ty ->
         pp_err typing "a bitvector type was expected, provided %a." pp_ty ty
+    | CollectionBaseNotVariable e ->
+        pp_err typing
+          "collection fields can only be accessed through a variable;@ \
+           provided base: %a."
+          pp_expr e
     | NoCommonAncestor (t1, t2) ->
         pp_err typing
           "cannot@ find@ a@ common@ ancestor@ to@ those@ two@ types@ %a@ and@ \
@@ -916,6 +922,7 @@ module CSV = struct
     | MismatchedPurity _ -> "MismatchedPurity"
     | MismatchedBitvectorWidths _ -> "MismatchedBitvectorWidths"
     | ExpectedBitvectorType _ -> "ExpectedBitvectorType"
+    | CollectionBaseNotVariable _ -> "CollectionBaseNotVariable"
     | NoCommonAncestor _ -> "NoCommonAncestor"
     | AssignToImmutable _ -> "AssignToImmutable"
     | AssignToTupleElement _ -> "AssignToTupleElement"

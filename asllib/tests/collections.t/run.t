@@ -4,6 +4,14 @@
                          ^^^^^^^^^^
   ASL Grammar error (BE_PE): Cannot parse.
   [1]
+  $ aslref non-variable-base.asl
+  File non-variable-base.asl, line 5, characters 10 to 41:
+    let x = (if TRUE then C1 else C2).field;
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_UT):
+    collection fields can only be accessed through a variable;
+    provided base: if TRUE then C1 else C2.
+  [1]
   $ aslref on-local-func-arg.asl
   File on-local-func-arg.asl, line 6, characters 15 to 25:
   func foo (col: collection {
