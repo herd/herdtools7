@@ -2,13 +2,13 @@
   File on-arbitrary.asl, line 3, characters 23 to 33:
     var col = ARBITRARY: collection {
                          ^^^^^^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref on-local-func-arg.asl
   File on-local-func-arg.asl, line 6, characters 15 to 25:
   func foo (col: collection {
                  ^^^^^^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref on-local-var.asl
   File on-local-var.asl, line 8, characters 2 to 25:
@@ -29,7 +29,7 @@
   File on-function-return-type.asl, line 6, characters 15 to 25:
   func foo () => collection {
                  ^^^^^^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
 
   $ aslref on-local-tuple.asl
@@ -50,5 +50,5 @@
   File on-type-declaration.asl, line 1, characters 21 to 31:
   type MyCollection of collection {
                        ^^^^^^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]

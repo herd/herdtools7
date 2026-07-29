@@ -104,7 +104,7 @@ Examples used in ASL High-level Definition:
   File GuideRule.AnonymousEnumerations.bad.asl, line 4, characters 12 to 23:
       var x : enumeration {RED, GREEN, BLUE};
               ^^^^^^^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref GuideRule.TupleImmutability.asl
   File GuideRule.TupleImmutability.asl, line 7, characters 6 to 11:
@@ -118,7 +118,7 @@ Examples used in ASL High-level Definition:
   File ParameterOmission.bad.asl, line 6, characters 17 to 18:
       result = LSL{}(result, 3);
                    ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref --no-exec NamedTypes.asl
   $ aslref --no-exec NamedTypes2.asl
@@ -207,5 +207,5 @@ Examples used in ASL High-level Definition:
   File EmptyTuple.asl, line 1, characters 11 to 12:
   type T of ();
              ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
