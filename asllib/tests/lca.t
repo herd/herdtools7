@@ -77,8 +77,8 @@
   File lca5.asl, line 3, characters 10 to 48:
     let x = if ARBITRARY: boolean then TRUE else 3;
             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: cannot find a common ancestor to those two types boolean and
-    integer {3}.
+  ASL Type error (TE_LCA): cannot find a common ancestor to those two types
+    boolean and integer {3}.
   [1]
 
   $ cat >lca6.asl <<EOF

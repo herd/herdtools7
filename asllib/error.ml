@@ -58,7 +58,9 @@ type error_desc =
   | ImpureExpression of expr * SideEffect.SES.t
       (** used for fine-grained analysis *)
   | MismatchedPurity of string  (** Used for coarse-grained analysis *)
-  | UnreconcilableTypes of ty * ty
+  | MismatchedBitvectorWidths of ty * ty
+  | ExpectedBitvectorType of ty
+  | NoCommonAncestor of ty * ty
   | AssignToImmutable of string
   | AssignToTupleElement of lexpr
   | AlreadyDeclaredIdentifier of string
@@ -76,6 +78,7 @@ type error_desc =
   | ParameterWithoutDecl of identifier
   | BadParameterDecl of identifier * identifier list * identifier list
       (** name, expected, actual *)
+  | BadParameterExpr of expr
   | BaseValueEmptyType of ty
   | ArbitraryEmptyType of ty
   | BaseValueNonSymbolic of ty * expr
@@ -258,7 +261,8 @@ module ErrorCode = struct
     | UndefinedIdentifier (Static, _) -> Some (Typing UI)
     | ConflictingTypes _ | AssignToTupleElement _ | ConstrainedIntegerExpected _
     | UnexpectedPendingConstrained | ExpectedSingularType _
-    | ExpectedNamedType _ | UnexpectedCollection ->
+    | ExpectedNamedType _ | UnexpectedCollection | MismatchedBitvectorWidths _
+    | ExpectedBitvectorType _ ->
         Some (Typing UT)
     | MismatchedCallType _
     | BadParameterArity (Static, _, _, _, _)
@@ -271,7 +275,7 @@ module ErrorCode = struct
     | AssignToImmutable _ -> Some (Typing AIM)
     | AlreadyDeclaredIdentifier _ -> Some (Typing IAD)
     | BadReturnStmt _ | BadParameterDecl _ | NonReturningFunction _
-    | NoreturnViolation _ ->
+    | NoreturnViolation _ | BadParameterExpr _ ->
         Some (Typing BSPD)
     | UncaughtException _ -> Some (Dynamic UE)
     | OverlappingSlices (_, Dynamic) -> Some (Dynamic OSA)
@@ -289,16 +293,16 @@ module ErrorCode = struct
     | PrecisionLostDefining -> Some (Typing PLD)
     | NoEntryPoint -> Some (Dynamic NEP)
     | RecursionLimitReached Static -> Some (Typing SEF)
+    | NoCommonAncestor _ -> Some (Typing LCA)
     (********** TODO tidy up - does not cleanly correspond to a code **********)
     | BadArity (Static, _, _, _) (* also used for tuple unpacking *) -> None
     | UnsupportedExpr _ | UnsupportedTy _
-    (* For static interpretation, parameters, and collections *) ->
+    (* For static interpretation and parameters *) ->
         None
     | MismatchType _
     (* Backend type mismatches and mismatched integers for loop limits. *) ->
         None
     | CannotParse _ (* used in lexing too *) -> Some (Build PE)
-    | UnreconcilableTypes _ (* both LCA and check_bit_widths_equal *) -> None
     | EmptyConstraints (* does this need to be reflected in reference? *) ->
         None
     | MultipleWrites _
@@ -405,7 +409,6 @@ end
 - BE_BOP
 - BE_BD
 - TE_TSF
-- TE_LCA
 - TE_SEF
 - TE_BTI
 *)
@@ -573,7 +576,12 @@ module PPrint = struct
           pp_expr e SideEffect.SES.pp_print ses
     | MismatchedPurity s ->
         pp_err typing "expected@ a@ %s@ expression/subprogram." s
-    | UnreconcilableTypes (t1, t2) ->
+    | MismatchedBitvectorWidths (t1, t2) ->
+        pp_err typing "bitvector types %a and %a must have equal widths." pp_ty
+          t1 pp_ty t2
+    | ExpectedBitvectorType ty ->
+        pp_err typing "a bitvector type was expected, provided %a." pp_ty ty
+    | NoCommonAncestor (t1, t2) ->
         pp_err typing
           "cannot@ find@ a@ common@ ancestor@ to@ those@ two@ types@ %a@ and@ \
            %a."
@@ -616,6 +624,10 @@ module PPrint = struct
           expected
           (pp_comma_list pp_print_string)
           actual
+    | BadParameterExpr e ->
+        pp_err typing
+          "unsupported expression %a in a subprogram parameter definition."
+          pp_expr e
     | ArbitraryEmptyType t ->
         pp_err dynamic "ARBITRARY of empty type %a." pp_ty t
     | BaseValueEmptyType t ->
@@ -813,7 +825,9 @@ module CSV = struct
     | BadTypesForBinop _ -> "BadTypesForBinop"
     | ImpureExpression _ -> "ImpureExpression"
     | MismatchedPurity _ -> "MismatchedPurity"
-    | UnreconcilableTypes _ -> "UnreconcilableTypes"
+    | MismatchedBitvectorWidths _ -> "MismatchedBitvectorWidths"
+    | ExpectedBitvectorType _ -> "ExpectedBitvectorType"
+    | NoCommonAncestor _ -> "NoCommonAncestor"
     | AssignToImmutable _ -> "AssignToImmutable"
     | AssignToTupleElement _ -> "AssignToTupleElement"
     | AlreadyDeclaredIdentifier _ -> "AlreadyDeclaredIdentifier"
@@ -829,6 +843,7 @@ module CSV = struct
     | ConstrainedIntegerExpected _ -> "ConstrainedIntegerExpected"
     | ParameterWithoutDecl _ -> "ParameterWithoutDecl"
     | BadParameterDecl _ -> "BadParameterDecl"
+    | BadParameterExpr _ -> "BadParameterExpr"
     | BaseValueEmptyType _ -> "BaseValueEmptyType"
     | ArbitraryEmptyType _ -> "ArbitraryEmptyType"
     | BaseValueNonSymbolic _ -> "BaseValueNonSymbolic"
