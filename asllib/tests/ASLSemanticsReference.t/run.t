@@ -28,8 +28,10 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.ECall.asl
   $ aslref SemanticsRule.EGetArray.asl
   $ aslref SemanticsRule.EGetArrayTooSmall.asl
-  ASL Dynamic error: Mismatch type:
-    value 3 does not belong to type integer {0..2}.
+  File SemanticsRule.EGetArrayTooSmall.asl, line 7, characters 10 to 23:
+    println my_array[[3]];
+            ^^^^^^^^^^^^^
+  ASL Dynamic error (DE_BI): index 3 is outside the valid range 0..2.
   [1]
   $ aslref SemanticsRule.ERecord.asl
   $ aslref SemanticsRule.EGetItem.asl
@@ -215,8 +217,8 @@ ASL Semantics Tests:
   File SemanticsRule.ATCVariousErrors.asl, line 8, characters 28 to 29:
     var c: integer{4, 5, 6} = 2 as integer{4, 5, 6}; // A dynamic error
                               ^
-  ASL Dynamic error: Mismatch type:
-    value 2 does not belong to type integer {4, 5, 6}.
+  ASL Dynamic error (DE_TAF):
+    value 2 does not satisfy the asserted type integer {4, 5, 6}.
   [1]
   $ aslref SemanticsRule.CatchNoThrow.asl
   No exception raised
@@ -270,7 +272,11 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.ReadIdentifier.asl
   $ aslref SemanticsRule.SlicesToPositions.asl
   $ aslref SemanticsRule.SlicesToPositions.bad.asl
-  ASL Dynamic error: Cannot extract from bitvector of length 0 slice -1+:6.
+  File SemanticsRule.SlicesToPositions.bad.asl, line 5, characters 11 to 22:
+      assert bv[from+:6] == '001 101';
+             ^^^^^^^^^^^
+  ASL Dynamic error (DE_BI):
+    invalid slice -1+:6: start and length must be non-negative.
   [1]
   $ aslref SemanticsRule.GetIndex.asl
   $ aslref SemanticsRule.GetField.asl
@@ -278,6 +284,6 @@ ASL Semantics Tests:
   File SemanticsRule.EvalGlobals.bad1.asl, line 10, characters 0 to 12:
   var x = f();
   ^^^^^^^^^^^^
-  ASL Dynamic error: unexpected exception MyException thrown during the
+  ASL Dynamic error (DE_UE): unexpected exception MyException thrown during the
     evaluation of the initialisation of the global storage element "x".
   [1]
