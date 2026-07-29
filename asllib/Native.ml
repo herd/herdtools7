@@ -399,7 +399,7 @@ let rec unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef ty =
           let n = Z.to_int n in
           if n >= 0 then
             NV_Vector (List.init n (fun _ -> unknown_of_type t_elem))
-          else Error.(fatal_from ty (UnsupportedExpr (Dynamic, e_length)))
+          else Error.(fatal_from ty (ArbitraryEmptyType ty))
       | _ -> (* Bad types *) assert false)
   | T_Record fields | T_Exception fields ->
       fields
