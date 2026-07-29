@@ -2,8 +2,8 @@
   File binop-non-associative.asl, line 1, characters 8 to 13:
   let x = a - b - c;
           ^^^^^
-  ASL Grammar error (BE_PE): Cannot parse. Binary operator `-` is not
-    associative - parenthesise to disambiguate.
+  ASL Grammar error (BE_BOP):
+    Binary operator `-` is not associative - parenthesise to disambiguate.
   [1]
 
   $ aslref no-expression-elsif.asl
@@ -26,8 +26,8 @@
   File discard-locals.asl, line 3, characters 6 to 12:
     let (-, -) = (1, 2);
         ^^^^^^
-  ASL Grammar error (BE_PE): Cannot parse. A local declaration must declare at
-    least one name.
+  ASL Grammar error (BE_BD):
+    A local declaration must declare at least one name.
   [1]
 
   $ aslref hyphenated-pending-constraint.asl
@@ -42,8 +42,8 @@
   File local-constant.asl, line 3, characters 2 to 10:
     constant x = 1;
     ^^^^^^^^
-  ASL Grammar error (BE_PE): Cannot parse. Local constant declarations are not
-    valid ASL1. Did you mean `let`?.
+  ASL Grammar error (BE_BD):
+    Local constant declarations are not valid ASL1. Did you mean `let`?
   [1]
 
   $ aslref single-implication.asl
@@ -57,24 +57,23 @@
   File binop-same-precedence.asl, line 1, characters 8 to 13:
   let x = a + b - c;
           ^^^^^
-  ASL Grammar error (BE_PE): Cannot parse. Operators `-` and `+` have the same
-    priority - parenthesise to disambiguate.
+  ASL Grammar error (BE_BOP):
+    Operators `-` and `+` have the same priority - parenthesise to disambiguate.
   [1]
 
   $ aslref empty-record.asl
   File empty-record.asl, line 1, characters 10 to 16:
   type X of record;
             ^^^^^^
-  ASL Grammar error (BE_PE): Cannot parse. Empty record types must be declared
-    with empty field list `{-}`.
+  ASL Grammar error (BE_BD):
+    Empty record types must be declared with empty field list `{-}`.
   [1]
 
   $ aslref global-ignored.asl
   File global-ignored.asl, line 1, characters 4 to 5:
   var - = 1;
       ^
-  ASL Grammar error (BE_PE): Cannot parse. A global declaration must declare a
-    name.
+  ASL Grammar error (BE_BD): A global declaration must declare a name.
   [1]
 
   $ aslref global-let-comma.asl

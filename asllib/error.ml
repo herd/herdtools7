@@ -26,6 +26,20 @@ open AST
 
 type error_handling_time = Static | Dynamic
 
+type bad_binop_priority =
+  | NonAssociativeBinop of binop
+  | SamePriorityBinops of binop * binop
+
+type bad_declaration =
+  | LocalDeclarationWithoutName
+  | LocalTupleDeclarationWithoutName
+  | GlobalDeclarationWithoutName
+  | LocalConstantDeclaration
+  | EmptyRecordTypeDeclaration
+  | EmptyExceptionTypeDeclaration
+  | EmptyCollectionTypeDeclaration
+  | ElidedParameterWithoutBitvectorType
+
 type error_desc =
   | ReservedIdentifier of string
   | BadField of string * ty
@@ -112,6 +126,8 @@ type error_desc =
   | BadPrimitiveArgument of identifier * string
   | NoEntryPoint
   | ObsoleteSyntax of (Format.formatter -> unit)
+  | BadBinopPriority of bad_binop_priority
+  | BadDeclarationSyntax of bad_declaration
 
 type error = error_desc annotated
 
@@ -246,6 +262,8 @@ module ErrorCode = struct
     (********** Errors that correspond to error codes **********)
     | ReservedIdentifier _ -> Some (Build RI)
     | UnknownSymbol _ -> Some (Build LE)
+    | BadBinopPriority _ -> Some (Build BOP)
+    | BadDeclarationSyntax _ -> Some (Build BD)
     | BadField _ | MissingField _ -> Some (Typing BF)
     | BadPattern _ | BadTypesForBinop _
     | UnsupportedUnop (Static, _, _)
@@ -271,7 +289,8 @@ module ErrorCode = struct
     | UnsupportedUnop (Dynamic, _, _) | UnsupportedBinop (Dynamic, _, _, _) ->
         Some (Dynamic BO)
     | AssertionFailed _ | BadPrimitiveArgument _ -> Some (Dynamic DAF)
-    | ImpureExpression _ | MismatchedPurity _ -> Some (Typing SEV)
+    | ImpureExpression _ | MismatchedPurity _ | ConflictingSideEffects _ ->
+        Some (Typing SEV)
     | AssignToImmutable _ -> Some (Typing AIM)
     | AlreadyDeclaredIdentifier _ -> Some (Typing IAD)
     | BadReturnStmt _ | BadParameterDecl _ | NonReturningFunction _
@@ -305,10 +324,7 @@ module ErrorCode = struct
     | CannotParse _ (* used in lexing too *) -> Some (Build PE)
     | EmptyConstraints (* does this need to be reflected in reference? *) ->
         None
-    | MultipleWrites _
-    (* For desugaring, but uses `check_no_duplicates` which is always TE_IAD? *)
-      ->
-        None
+    | MultipleWrites _ -> Some (Build PE)
     | UnexpectedInitialisationThrow _ -> Some (Dynamic UE)
     (********** Should not happen **********)
     (* e.g. skipped type-checking, ASL0, internal option or invariant *)
@@ -318,10 +334,10 @@ module ErrorCode = struct
     | BadParameterArity (Dynamic, _, _, _, _)
     | InvalidExpr _ | UnexpectedSideEffect _ | UnrespectedParserInvariant
     | ParameterWithoutDecl _ | SetterWithoutCorrespondingGetter _
-    | ConflictingSideEffects _ | ConstantTimeBroken _ ->
+    | ConstantTimeBroken _ ->
         None
     (********** Other **********)
-    | ObsoleteSyntax _ -> None
+    | ObsoleteSyntax _ -> Some (Build PE)
 end
 
 module PrintContext = struct
@@ -738,6 +754,38 @@ module PPrint = struct
           "no entrypoint supplied. Have you defined `func main() => integer`, \
            or did you mean to pass `--no-exec`?"
     | ObsoleteSyntax fmt -> pp_err parse "Obsolete syntax:@ @[%t@]" fmt
+    | BadBinopPriority (NonAssociativeBinop op) ->
+        pp_err parse
+          "Binary operator `%s` is not associative - parenthesise to \
+           disambiguate."
+          (binop_to_string op)
+    | BadBinopPriority (SamePriorityBinops (op1, op2)) ->
+        pp_err parse
+          "Operators `%s` and `%s` have the same priority - parenthesise to \
+           disambiguate."
+          (binop_to_string op1) (binop_to_string op2)
+    | BadDeclarationSyntax LocalDeclarationWithoutName ->
+        pp_err parse "A local declaration must declare a name."
+    | BadDeclarationSyntax LocalTupleDeclarationWithoutName ->
+        pp_err parse "A local declaration must declare at least one name."
+    | BadDeclarationSyntax GlobalDeclarationWithoutName ->
+        pp_err parse "A global declaration must declare a name."
+    | BadDeclarationSyntax LocalConstantDeclaration ->
+        pp_err parse
+          "Local constant declarations are not valid ASL1. Did you mean `let`?"
+    | BadDeclarationSyntax EmptyRecordTypeDeclaration ->
+        pp_err parse
+          "Empty record types must be declared with empty field list `{-}`."
+    | BadDeclarationSyntax EmptyExceptionTypeDeclaration ->
+        pp_err parse
+          "Empty exception types must be declared with empty field list `{-}`."
+    | BadDeclarationSyntax EmptyCollectionTypeDeclaration ->
+        pp_err parse
+          "Empty collection types must be declared with empty field list `{-}`."
+    | BadDeclarationSyntax ElidedParameterWithoutBitvectorType ->
+        pp_err parse
+          "Cannot desugar elided parameter: left-hand side must have a \
+           `bits(...)` type annotation."
 
   let fprintf_warn f =
     kdprintf (fun msg -> fprintf f "@[ASL Warning:@ %t@]" msg)
@@ -876,6 +924,8 @@ module CSV = struct
     | BadPrimitiveArgument _ -> "BadPrimitiveArgument"
     | NoEntryPoint -> "NoEntryPoint"
     | ObsoleteSyntax _ -> "ObsoleteSyntax"
+    | BadBinopPriority _ -> "BadBinopPriority"
+    | BadDeclarationSyntax _ -> "BadDeclarationSyntax"
 
   let warning_label = function
     | NoLoopLimit -> "NoLoopLimit"
