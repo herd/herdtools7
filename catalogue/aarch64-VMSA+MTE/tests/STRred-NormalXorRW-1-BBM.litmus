@@ -1,0 +1,18 @@
+AArch64 STRred-NormalXorRW-1-BBM
+Variant=vmsa,mte,sync
+{
+ [tag(x)]=:green;
+ [PTE(x)]=(oa:PA(x),db:1,attrs:(TaggedNormal));
+ 0:X0=x:red;
+ 1:X4=PTE(x); 1:X2=(valid:0);
+ 1:X3=(oa:PA(x),db:0,attrs:(Normal));
+}
+ P0          | P1              ;
+ MOV W1,#1   | STR X2,[X4]     ;
+L0:          | DSB ISHST       ;
+ STR W1,[X0] | LSR X9,X5,#12   ;
+             | TLBI VAAE1IS,X9 ;
+             | DSB ISH         ;
+             | STR X3,[X4]     ;
+locations[fault(P0:L0);]
+exists(x=1 /\ [PTE(x)]=(oa:PA(x),db:0,attrs:(Normal)))

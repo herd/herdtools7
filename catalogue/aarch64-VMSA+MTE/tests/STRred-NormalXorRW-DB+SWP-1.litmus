@@ -1,0 +1,15 @@
+AArch64 STRred-NormalXorRW-DB+SWP-1
+TTHM=HD
+Variant=vmsa,fatal,mte,sync
+{
+   [tag(x)]=:green;
+   [PTE(x)]=(oa:PA(x),db:0,dbm:1,attrs:(TaggedNormal));
+   0:X0=x:red;
+   1:X4=PTE(x); 1:X3=(oa:PA(x),db:0,dbm:1,attrs:(Normal));
+}
+   P0          | P1             ;
+   MOV W1,#1   | SWP X3,X5,[X4] ;
+L0:            |                ;
+   STR W1,[X0] |                ;
+locations[fault(P0:L0);]
+exists([x]=1 /\ 1:X5=(oa:PA(x),db:1,dbm:1,attrs:(TaggedNormal)))
