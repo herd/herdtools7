@@ -1304,53 +1304,61 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* Atomic loads and stores *)
 (***************************)
 
-    let get_xload_addon (a,_m) r1 = match a with
-      | Plain a
-      | Acq a -> emit_ldr_addon a r1
+    let get_xload_addon atom r1 = match atom with
+      | { access_type = (OrdinaryAccess|AccessSize _);
+          access_order = (OrderPlain|OrderAcquire); } ->
+          emit_ldr_addon None r1
+      | { access_type = CapaAccess;
+          access_order = (OrderPlain|OrderAcquire); } ->
+          emit_ldr_addon (Some Capability) r1
       | _ -> []
 
     let get_xload = function
-      | (Plain None,None) ->ldxr
-      | (Plain Some Capability,None) -> ldxr_sz XX MachSize.S128
-      | (Plain None,Some (sz,_)) -> ldxr_sz XX sz
-      | (Acq None,None)   -> ldaxr
-      | (Acq Some Capability,None) -> ldxr_sz AX MachSize.S128
-      | (Acq None,Some (sz,_)) -> ldxr_sz AX sz
-      | (AcqPc _,_) -> Warn.fatal "AcqPC annotation on xload"
-      | (Tag,_)|(CapaTag,_)|(CapaSeal,_) -> Warn.fatal "variant annotation on xload"
-      | a ->
-         Warn.fatal "Bad annotation for Lx: %s\n" (A.pp_atom a)
+      | { access_type = OrdinaryAccess; access_order = OrderPlain; } -> ldxr
+      | { access_type = CapaAccess; access_order = OrderPlain; } -> ldxr_sz XX MachSize.S128
+      | { access_type = AccessSize (sz,_); access_order = OrderPlain; } -> ldxr_sz XX sz
+      | { access_type = OrdinaryAccess; access_order = OrderAcquire; } -> ldaxr
+      | { access_type = CapaAccess; access_order = OrderAcquire; } -> ldxr_sz AX MachSize.S128
+      | { access_type = AccessSize (sz,_); access_order = OrderAcquire; } -> ldxr_sz AX sz
+      | { access_order = OrderAcquirePc; _ } -> Warn.fatal "AcqPC annotation on xload"
+      | { access_type = (TagAccess|CapaTagAccess|CapaSealAccess); _ } -> Warn.fatal "variant annotation on xload"
+      | atom -> Warn.fatal "Bad annotation for Lx: %s\n" (pp atom)
 
 
     and get_xstore = function
-      | (Plain None,None) -> stxr
-      | (Plain Some Capability,None) -> stxr_sz YY MachSize.S128
-      | (Plain None,Some (sz,_)) -> stxr_sz YY sz
-      | (Rel None,None) -> stlxr
-      | (Rel Some Capability,None) -> stxr_sz LY MachSize.S128
-      | (Rel None,Some (sz,_)) -> stxr_sz LY sz
-      | (Tag,_)|(CapaTag,_)|(CapaSeal,_) -> Warn.fatal "variant annotation on xstore"
-      | a ->
-         Warn.fatal "Bad annotation for Sx: %s\n" (A.pp_atom a)
+      | { access_type = OrdinaryAccess; access_order = OrderPlain; } -> stxr
+      | { access_type = CapaAccess; access_order = OrderPlain; } -> stxr_sz YY MachSize.S128
+      | { access_type = AccessSize (sz,_); access_order = OrderPlain; } -> stxr_sz YY sz
+      | { access_type = OrdinaryAccess; access_order = OrderRelease; } -> stlxr
+      | { access_type = CapaAccess; access_order = OrderRelease; } -> stxr_sz LY MachSize.S128
+      | { access_type = AccessSize (sz,_); access_order = OrderRelease; } -> stxr_sz LY sz
+      | { access_type = (TagAccess|CapaTagAccess|CapaSealAccess); _ } -> Warn.fatal "variant annotation on xstore"
+      | atom -> Warn.fatal "Bad annotation for Sx: %s\n" (pp atom)
 
-    let get_xstore_addon (a,_m) r2 r3 e init st p = match a with
-    | Plain a
-    | Rel a -> emit_str_addon st p init r2 r3 a e
-    | _ -> init,[],st
+    let get_xstore_addon atom r2 r3 e init st p = match atom with
+      | { access_type = (OrdinaryAccess|AccessSize _);
+          access_order = (OrderPlain|OrderRelease); } ->
+          emit_str_addon st p init r2 r3 None e
+      | { access_type = CapaAccess;
+          access_order = (OrderPlain|OrderRelease); } ->
+          emit_str_addon st p init r2 r3 (Some Capability) e
+      | _ -> init,[],st
 
-    let get_rmw_addrs arw st rA = match arw with
-    | (_,(None|Some (_,0))),(_,(None|Some (_,0)))
+    let get_rmw_addrs (ar,aw) st rA =
+      let get_access atom = get_access_atom (Some atom) in
+      match get_access ar,get_access aw with
+    | (None|Some (_,0)),(None|Some (_,0))
       -> rA,rA,[],st
-    | (_,Some (_,o1)),(_,Some (_,o2)) when o1=o2 ->
+    | Some (_,o1),Some (_,o2) when o1=o2 ->
         let r,cs,st = sumi_addr st rA o1 in
         r,r,cs,st
-    |  (_,(None|Some (_,0))),(_,Some (_,o)) ->
+    | (None|Some (_,0)),Some (_,o) ->
         let  r,cs,st = sumi_addr st rA o in
         rA,r,cs,st
-    |  (_,Some (_,o)),(_,(None|Some (_,0))) ->
+    | Some (_,o),(None|Some (_,0)) ->
         let  r,cs,st = sumi_addr st rA o in
         r,rA,cs,st
-    | (_,Some (_,o1)),(_,Some (_,o2)) ->
+    | Some (_,o1),Some (_,o2) ->
         let  r1,cs1,st = sumi_addr_gen tempo1 st rA o1 in
         let  r2,cs2,st = sumi_addr_gen tempo2 st rA o2 in
         r1,r2,cs1@cs2,st
@@ -1361,15 +1369,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
            sig
 
              type load_regs
-             val load : A.atom -> load_regs -> A.reg -> A.ins list
-             val load_addon : A.atom -> load_regs -> A.ins list
+             val load : StructuredAtom.t -> load_regs -> A.reg -> A.ins list
+             val load_addon : StructuredAtom.t -> load_regs -> A.ins list
            end)
         (Store:
          sig
            type store_regs
-           val store : A.atom -> A.reg -> store_regs -> A.reg -> A.ins list
+           val store : StructuredAtom.t -> A.reg -> store_regs -> A.reg -> A.ins list
            val store_addon :
-             A.atom -> store_regs -> A.reg ->
+             StructuredAtom.t -> store_regs -> A.reg ->
                  C.event -> A.init -> A.st -> Proc.t ->
                    A.init * A.pseudo list * A.st
          end) =
@@ -1460,12 +1468,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let load ar (r1,r2) rA =
         let a =
           match ar with
-          | Pair ((`Pa),_),None -> XP
-          | Pair ((`PaIQ),_),None -> AXP
-          | Pair ((`PaA),_),None -> AXP
+          | { access_type = PairAccess (`Pa,_); access_order = OrderPlain; } -> XP
+          | { access_type = PairAccess (`PaIQ,_); access_order = OrderPlain; } -> AXP
+          | { access_type = PairAccess (`PaA,_); access_order = OrderPlain; } -> AXP
           | _ ->
              Warn.fatal
-               "Illegal %s annotaton on load exclusive pair" (pp_atom ar)  in
+               "Illegal %s annotaton on load exclusive pair" (pp ar)  in
         [do_ldxp a r1 r2 rA; add vloc r1 r2 r1;]
       let load_addon _ _ =
         assert (not (do_morello)); []
@@ -1476,12 +1484,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let store aw r (r1,r2) rA =
         let a =
           match aw with
-          | Pair ((`Pa),_),_ -> YY
-          | Pair ((`PaIL),_),_ -> LY
-          | Pair ((`PaL),_),_ -> LY
+          | { access_type = PairAccess (`Pa,_); access_order = OrderPlain; } -> YY
+          | { access_type = PairAccess (`PaIL,_); access_order = OrderPlain; } -> LY
+          | { access_type = PairAccess (`PaL,_); access_order = OrderPlain; } -> LY
           | _ ->
              Warn.fatal
-               "Illegal %s annotaton on store exclusive pair" (pp_atom aw)  in
+               "Illegal %s annotaton on store exclusive pair" (pp aw)  in
         [dec r2 r1; do_stxp a r r2 r1 rA;]
       let store_addon _ _ _ _ init st _ =
         assert (not (do_morello)); init,[],st
@@ -1492,14 +1500,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* Translate annotations *)
 
     let tr_rw = function
-      | PP -> (Plain None,None),(Plain None,None)
-      | PL -> (Plain None,None),(Rel None,None)
-      | AP -> (Acq None,None),(Plain None,None)
-      | AL -> (Acq None,None),(Rel None,None)
+      | PP -> plain,plain
+      | PL -> plain,make OrdinaryAccess OrderRelease
+      | AP -> make OrdinaryAccess OrderAcquire,plain
+      | AL -> make OrdinaryAccess OrderAcquire,make OrdinaryAccess OrderRelease
 
     let tr_none = function
-      | None -> Plain None,None
-      | Some p -> p
+      | None -> plain
+      | Some atom -> of_legacy atom
 
 
 (********************)
@@ -1507,8 +1515,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (********************)
 
     let emit_pair_mixed sz o rw =
-      let arw = match tr_rw rw with
-      | (a1,_),(a2,_) -> (a1,Some (sz,o)),(a2,Some (sz,o)) in
+      let a1,a2 = tr_rw rw in
+      let set_access atom = match set_access_atom (Some atom) (sz,o) with
+      | Some atom -> atom
+      | None -> assert false in
+      let arw = set_access a1,set_access a2 in
       XSingle.emit_pair arw
 
 (********************************)
@@ -1854,6 +1865,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             | CapaAccess -> emit_ldr_addon (Some Capability) r
             | _ -> emit_ldr_addon None r in
             Some (Some r,init,cs@pseudo cs2,st)
+        | R,Some { access_type = OrdinaryAccess; access_order = OrderAtomic rw; } ->
+            let r,init,cs,st = emit_lda (tr_rw rw) st p init loc in
+            Some (Some r,init,cs,st)
+        | R,Some { access_type = AccessSize (sz,o); access_order = OrderAtomic rw; } ->
+            let r,init,cs,st = emit_lda_mixed sz o rw st p init loc in
+            Some (Some r,init,cs,st)
         | W,None ->
             let init,cs,st =
               STR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
@@ -1895,6 +1912,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 end) in
             let init,cs,st = S.emit_store st p init loc (Value.to_int e.C.v) addon e in
             Some (None,init,cs,st)
+        | W,Some { access_type = OrdinaryAccess; access_order = OrderAtomic rw; } ->
+            let r,init,cs,st = emit_sta (tr_rw rw) st p init loc (Value.to_int e.C.v) in
+            Some (Some r,init,cs,st)
+        | W,Some { access_type = AccessSize (sz,o); access_order = OrderAtomic rw; } ->
+            let r,init,cs,st = emit_sta_mixed sz o rw st p init loc (Value.to_int e.C.v) in
+            Some (Some r,init,cs,st)
         | R,Some { access_type = NeonAccess n; access_order = OrderPlain; } ->
            let emit_load = match n with
              | SIMD.NeRel -> Warn.fatal "No laod release"
@@ -2010,20 +2033,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,None -> assert false
         | R,Some (Rel _,_) ->
             Warn.fatal "No load release"
-        | R,Some (Atomic rw,None) ->
-            let r,init,cs,st = emit_lda (tr_rw rw) st p init loc  in
-            Some r,init,cs,st
-        | R,Some (Atomic rw,Some (sz,o)) ->
-            let r,init,cs,st = emit_lda_mixed sz o rw st p init loc  in
-            Some r,init,cs,st
         | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
         | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
-        | W,Some (Atomic rw,None) ->
-            let r,init,cs,st = emit_sta (tr_rw rw) st p init loc (Value.to_int e.C.v) in
-            Some r,init,cs,st
-        | W,Some (Atomic rw,Some (sz,o)) ->
-            let r,init,cs,st = emit_sta_mixed sz o rw st p init loc (Value.to_int e.C.v) in
-            Some r,init,cs,st
         | d,Some (Pte _,_ as a) ->
             Warn.fatal
               "Atom %s does not apply to direction %s"
@@ -2036,6 +2047,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | (R|W),Some (Pair _,_) -> assert false
         | (R|W),Some (Neon _,_) -> assert false
         | (R|W),Some (Instr,_) -> assert false
+        | (R|W),Some (Atomic _,_) -> assert false
         end in
         (* Add a label to instructions `cs`, when a fault check is required. *)
         let cs = add_label_to_last_instructions e cs in
@@ -2053,8 +2065,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           "Refuse to generate constrained unpredictable, use -variant CU to accept"
 
     let check_arw_lxsx er ew =
-      let _,szr as ar = tr_none er.C.atom
-      and _,szw as aw = tr_none ew.C.atom in
+      let ar = tr_none er.C.atom
+      and aw = tr_none ew.C.atom in
+      let szr = get_access_atom (Some ar)
+      and szw = get_access_atom (Some aw) in
       check_cu (not (A64.do_cu || same_sz szr szw)) ;
       ar,aw
 
@@ -2114,15 +2128,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_exch12 = do_emit_exch12 emit_addr_simple
 
     let emit_exch st p init er ew =
-      let ar,_ = tr_none er.C.atom
-      and aw,_ = tr_none ew.C.atom in
-      match ar,aw with
-      | (Pair _,Pair _) ->
+      let ar = tr_none er.C.atom
+      and aw = tr_none ew.C.atom in
+      match ar.access_type,aw.access_type with
+      | PairAccess _,PairAccess _ ->
          emit_exch22 st p init er ew
-      | (Pair _,_) ->
+      | PairAccess _,_ ->
          check_cu (not A64.do_cu) ;
          emit_exch21 st p init er ew
-      | (_,Pair _) ->
+      | _,PairAccess _ ->
          check_cu (not A64.do_cu) ;
          emit_exch12 st p init er ew
       | _,_ ->
@@ -2133,16 +2147,30 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       else
         Warn.fatal "Amo instructions with different sizes or offsets"
 
-    let do_rmw_type a1 a2 = match a1,a2 with
-    | Plain o1,Plain o2 when o1 = o2 -> RMW_P,o1
-    | Acq o1,Plain o2 when o1 = o2   -> RMW_A,o1
-    | Plain o1,Rel o2 when o1 = o2   -> RMW_L,o1
-    | Acq o1,Rel o2 when o1 = o2     -> RMW_AL,o1
-    | _,_ ->
-        Warn.fatal "Bad annotation for Amo: R=%s, W=%s"
-          (pp_atom_acc a1) (pp_atom_acc a2)
+    let do_rmw_type a1 a2 =
+      let capa_opt = function
+      | OrdinaryAccess|AccessSize _ -> Some None
+      | CapaAccess -> Some (Some Capability)
+      | (CapaTagAccess|CapaSealAccess|TagAccess|PteAccess _
+        | NeonAccess _|PairAccess _|InstrAccess) -> None in
+      match capa_opt a1.access_type,capa_opt a2.access_type with
+      | Some o1,Some o2 when o1 = o2 ->
+          begin match a1.access_order,a2.access_order with
+          | OrderPlain,OrderPlain -> RMW_P,o1
+          | OrderAcquire,OrderPlain -> RMW_A,o1
+          | OrderPlain,OrderRelease -> RMW_L,o1
+          | OrderAcquire,OrderRelease -> RMW_AL,o1
+          | _,_ ->
+              Warn.fatal "Bad annotation for Amo: R=%s, W=%s"
+                (pp a1) (pp a2)
+          end
+      | _,_ ->
+          Warn.fatal "Bad annotation for Amo: R=%s, W=%s"
+            (pp a1) (pp a2)
 
-    let do_rmw_annot (ar,szr) (aw,szw) =
+    let do_rmw_annot ar aw =
+      let szr = get_access_atom (Some ar)
+      and szw = get_access_atom (Some aw) in
       let sz =  do_sz szr szw in
       let a,opt = do_rmw_type ar aw in
       sz,a,opt
@@ -2206,15 +2234,17 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       emit_cas_rA st p init er ew rA
 
     let emit_stop_rA op st p init er ew rA =
-      let a,sz1 = tr_none ew.C.atom
-      and b,sz2 = tr_none er.C.atom in
+      let a = tr_none ew.C.atom
+      and b = tr_none er.C.atom in
+      let sz1 = get_access_atom (Some a)
+      and sz2 = get_access_atom (Some b) in
       let sz = do_sz sz1 sz2 in
-      let a = match b,a with
-      | Plain _,Plain _-> W_P
-      | Plain _,Rel _ -> W_L
+      let a = match b.access_order,a.access_order with
+      | OrderPlain,OrderPlain -> W_P
+      | OrderPlain,OrderRelease -> W_L
       | _ ->
           Warn.fatal "Unexpected atoms in STOP instruction: %s,%s"
-            (pp_atom_acc b)  (pp_atom_acc a) in
+            (pp b) (pp a) in
       let rW,init,csi,st = mk_emit_mov sz st p init (Value.to_int ew.C.v) in
       let cs,st = match sz with
       | None -> [stop op a rW rA],st
@@ -2401,6 +2431,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              | CapaAccess -> emit_ldr_addon (Some Capability) r
              | _ -> emit_ldr_addon None r in
              Some (Some r,init,pseudo cs0@cs@pseudo cs2,st)
+          | R,Some { access_type = OrdinaryAccess; access_order = OrderAtomic rw; } ->
+              let r,init,cs,st =
+                do_emit_lda_idx vdep (tr_rw rw) st p init loc r2 in
+              Some (Some r,init,pseudo cs0@cs,st)
+          | R,Some { access_type = AccessSize (sz,o); access_order = OrderAtomic rw; } ->
+              let r,init,cs,st =
+                do_emit_lda_mixed_idx vdep sz o rw st p init loc r2 in
+              Some (Some r,init,pseudo cs0@cs,st)
           | W,None ->
               let module STR =
                 STORE
@@ -2468,6 +2506,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) addon e in
               Some (None,init,pseudo cs0@cs,st)
+          | W,Some { access_type = OrdinaryAccess; access_order = OrderAtomic rw; } ->
+              let r,init,cs,st =
+                emit_sta_idx (tr_rw rw) st p init loc r2 (Value.to_int e.C.v) in
+              Some (Some r,init,pseudo cs0@cs,st)
+          | W,Some { access_type = AccessSize (sz,o); access_order = OrderAtomic rw; } ->
+              let r,init,cs,st =
+                emit_sta_mixed_idx sz o rw st p init loc r2 (Value.to_int e.C.v) in
+              Some (Some r,init,pseudo cs0@cs,st)
           | R,Some { access_type = NeonAccess n; access_order = OrderPlain; } ->
               let emit_load_idx = match n with
                 | SIMD.NeRel -> Warn.fatal "No laod release"
@@ -2562,23 +2608,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | R,None -> assert false
           | R,Some (Rel _,_) ->
               Warn.fatal "No load release"
-          | R,Some (Atomic rw,None) ->
-              let r,init,cs,st =
-                do_emit_lda_idx vdep (tr_rw rw) st p init loc r2 in
-              Some r,init, pseudo cs0@cs,st
-          | R,Some (Atomic rw,Some (sz,o)) ->
-              let r,init,cs,st =
-                do_emit_lda_mixed_idx vdep sz o rw st p init loc r2 in
-              Some r,init, pseudo cs0@cs,st
           | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
           | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
-          | W,Some (Atomic rw,None) ->
-              let r,init,cs,st =
-                emit_sta_idx (tr_rw rw) st p init loc r2 (Value.to_int e.C.v) in
-              Some r,init,pseudo cs0@cs,st
-          | W,Some (Atomic rw,Some (sz,o)) ->
-              let r,init,cs,st = emit_sta_mixed_idx sz o rw st p init loc r2 (Value.to_int e.C.v) in
-              Some r,init,pseudo cs0@cs,st
          | (W|R) as d,Some (Pte _,_ as a) ->
              Warn.fatal
                "Annotation %s does not apply to direction %s"
@@ -2591,6 +2622,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,None -> assert false
           | W,Some ((Plain _|Rel _),_) -> assert false
           | (R|W),Some (Instr,_) -> assert false
+          | (R|W),Some (Atomic _,_) -> assert false
           end in
           (* Add a label to instructions `cs`, when a fault check is required. *)
           regs,inits,(add_label_to_last_instructions e cs),st
@@ -2629,15 +2661,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         st p init er ew
 
     let emit_exch_dep_addr csel vdep st p init er ew rd =
-      let ar,_ = tr_none er.C.atom
-      and aw,_ = tr_none ew.C.atom in
-      match ar,aw with
-      | (Pair _,Pair _)->
+      let ar = tr_none er.C.atom
+      and aw = tr_none ew.C.atom in
+      match ar.access_type,aw.access_type with
+      | PairAccess _,PairAccess _ ->
          emit_exch_dep_addr22 csel vdep st p init er ew rd
-      | (Pair _,_) ->
+      | PairAccess _,_ ->
          check_cu (not A64.do_cu);
          emit_exch_dep_addr21 csel vdep st p init er ew rd
-      | (_,Pair _) ->
+      | _,PairAccess _ ->
          check_cu (not A64.do_cu);
          emit_exch_dep_addr12 csel vdep st p init er ew rd
       | _,_ ->
@@ -2774,6 +2806,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_reg st p init loc r2 addon e in
               Some (None,init,cs2@cs,st)
+          | Some { access_type = OrdinaryAccess; access_order = OrderAtomic rw; } ->
+              let r,init,cs,st = emit_sta_reg (tr_rw rw) st p init loc r2 in
+              Some (Some r,init,cs2@cs,st)
+          | Some { access_type = AccessSize (sz,o); access_order = OrderAtomic rw; } ->
+              let r,init,cs,st = emit_sta_mixed_reg sz o rw st p init loc r2 in
+              Some (Some r,init,cs2@cs,st)
           | Some { access_type = PairAccess (opt,idx); access_order = OrderPlain; } ->
               let init,cs,st =
                 stp_emit_store_reg (pair_opt_to_st opt) idx st p init loc r2 in
@@ -2832,12 +2870,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some result -> result
           | None -> begin match atom with
           | None -> assert false
-          | Some (Atomic rw,None) ->
-              let r,init,cs,st = emit_sta_reg (tr_rw rw) st p init loc r2 in
-              Some r,init,cs2@cs,st
-          | Some (Atomic rw,Some (sz,o)) ->
-              let r,init,cs,st = emit_sta_mixed_reg sz o rw st p init loc r2 in
-              Some r,init,cs2@cs,st
           | Some (Acq _,_) ->
               Warn.fatal "No store acquire"
           | Some (AcqPc _,_) ->
@@ -2849,6 +2881,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (Neon _,_) -> assert false
           | Some (Pair _,_) -> assert false
           | Some (Instr,_) -> assert false
+          | Some (Atomic _,_) -> assert false
           end
           end
       (* END of `Some W` *)
