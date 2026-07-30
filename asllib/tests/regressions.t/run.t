@@ -618,7 +618,7 @@ Required tests:
   File asl0-error-handling-time.asl, line 2, characters 8 to 9:
     if reg[1] == '1' then 62 else 63 +: 1 field,
           ^
-  ASL Static error (TE_UI): Undefined identifier: 'reg'
+  ASL Static error: Undefined identifier: 'reg'
   [1]
 
 Base values
@@ -821,6 +821,39 @@ Bounds checks
     ^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error (TE_UT): tuple arity mismatch:
     2 elements expected and 3 provided.
+  [1]
+  $ aslref --gnu-errors implementation-integer-overflow.asl
+  aslref: implementation-integer-overflow.asl:3:9: ASL Internal error: integer 18446744073709551616 exceeds aslref implementation limits.
+  [1]
+  $ aslref --no-type-check --gnu-errors unchecked-type-mismatch.asl
+  aslref: unchecked-type-mismatch.asl:3:9: ASL Dynamic error: Type mismatch: value TRUE does not belong to type integer.
+  [1]
+  $ aslref --no-type-check unchecked-argument-arity.asl
+  File unchecked-argument-arity.asl, line 6, characters 9 to 12:
+    return f();
+           ^^^
+  ASL Dynamic error: Arity error while calling 'f':
+    1 argument expected and 0 provided.
+  [1]
+  $ aslref --no-type-check unchecked-parameter-arity.asl
+  File unchecked-parameter-arity.asl, line 6, characters 9 to 29:
+    return f{8, 16}('00000000');
+           ^^^^^^^^^^^^^^^^^^^^
+  ASL Dynamic error: Arity error while calling 'f':
+    1 parameter expected and 2 provided.
+  [1]
+  $ aslref --no-type-check unchecked-assignment-arity.asl
+  File unchecked-assignment-arity.asl, line 8, characters 2 to 15:
+    (a, b) = f();
+    ^^^^^^^^^^^^^
+  ASL Dynamic error: Multi-assignment expected 2 values but received 3.
+  [1]
+  $ aslref --no-type-check unchecked-unexpected-throw.asl
+  File unchecked-unexpected-throw.asl, line 10, characters 18 to 28:
+    var xs : array[[throwing()]] of integer;
+                    ^^^^^^^^^^
+  ASL Dynamic error:
+    Side-effect-free expression throwing() unexpectedly threw an exception of type E.
   [1]
 If test environment reversion bug
   $ aslref if-test-env-updated.asl

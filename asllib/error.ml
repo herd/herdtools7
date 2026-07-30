@@ -26,6 +26,37 @@ open AST
 
 type error_handling_time = Static | Dynamic
 
+(** Failures that evaluation may encounter when it runs without full type
+    checking. They have no error codes. *)
+type unchecked_execution_error =
+  | TypeMismatch of string * type_desc list
+      (** The displayed runtime value and the types it was expected to have. *)
+  | TypeInferenceNeeded
+      (** Type information normally resolved during typing is absent. *)
+  | MissingIdentifier of identifier
+      (** An identifier normally resolved during typing is absent. *)
+  | ArgumentArityMismatch of {
+      name : identifier;
+      expected : int;
+      provided : int;
+    }  (** A call has a different number of arguments from its declaration. *)
+  | ParameterArityMismatch of {
+      name : identifier;
+      expected : int;
+      provided : int;
+    }  (** A call has a different number of parameters from its declaration. *)
+  | AssignmentArityMismatch of { expected : int; provided : int }
+      (** A multi-assignment has a different number of targets and values. *)
+  | EntrypointResultArityMismatch of {
+      name : identifier;
+      expected : int;
+      provided : int;
+    }
+      (** The entrypoint (main function) returned a different number of values
+          than required. *)
+  | UnexpectedThrow of ty * expr
+      (** A side-effect-free expression unexpectedly threw an exception. *)
+
 type bad_binop_priority =
   | NonAssociativeBinop of binop
   | SamePriorityBinops of binop * binop
@@ -44,6 +75,15 @@ type static_evaluation_failure_reason =
   | IndexOutOfBounds of int * int
   | ValueOutsideAssertedType of string * type_desc
 
+(** Violations of invariants between internal processing stages. They are not
+    ASL errors and therefore have no error codes. *)
+type internal_invariant_error =
+  | TypedArrayExpressionInAnnotation
+  | UninitialisedImmutableLocal
+  | SetterWithoutValueArgument
+  | GlobalWithoutTypeOrInitialiser
+  | ParameterizedIntegerAtRuntime
+
 type error_desc =
   | ReservedIdentifier of string
   | BadField of string * ty
@@ -52,24 +92,22 @@ type error_desc =
   | BadIndex of int * int
   | BadSlice of slice
   | EmptySlice
-  | TypeInferenceNeeded
-  | UndefinedIdentifier of error_handling_time * identifier
+  | UndefinedIdentifier of identifier
   | MismatchedCallType of {
       subprogram_name : string;
       expected_call_type : subprogram_type;
       found_call_type : subprogram_type;
     }
-  | BadArity of error_handling_time * identifier * int * int
   | BadCallArity of identifier * int * int
   | BadTupleArity of { expected : int; actual : int }
-  | BadParameterArity of error_handling_time * version * identifier * int * int
+  | BadParameterArity of version * identifier * int * int
   | UnsupportedBinop of error_handling_time * binop * literal * literal
   | UnsupportedUnop of error_handling_time * unop * literal
-  | UnsupportedExpr of error_handling_time * expr
   | StaticEvaluationFailure of expr * static_evaluation_failure_reason option
+  | ImplementationIntegerOverflow of Z.t
   | BadParameterType of ty
   | InvalidExpr of expr
-  | MismatchType of string * type_desc list
+  | UncheckedExecutionError of error_handling_time * unchecked_execution_error
   | ConflictingTypes of type_desc list * ty
   | AssertionFailed of expr
   | CannotParse of string option
@@ -87,12 +125,11 @@ type error_desc =
   | AssignToTupleElement of lexpr
   | AlreadyDeclaredIdentifier of string
   | BadReturnStmt of ty option
-  | UnexpectedSideEffect of string
   | UncaughtException of string
   | OverlappingSlices of slice list * error_handling_time
   | BadLDI of AST.local_decl_item
   | BadRecursiveDecls of identifier list
-  | UnrespectedParserInvariant
+  | InternalInvariantError of internal_invariant_error
   | BadATC of ty * ty  (** asserting, asserted *)
   | DynamicATCFailure of string * type_desc
   | BadPattern of pattern * ty
@@ -284,14 +321,13 @@ module ErrorCode = struct
         Some (Typing BS) (* TODO: consider combining BadSlices and BadSlice *)
     | BadSlices (Dynamic, _, _) -> Some (Dynamic BI)
     | BadIndex _ -> Some (Dynamic BI)
-    | UndefinedIdentifier (Static, _) -> Some (Typing UI)
+    | UndefinedIdentifier _ -> Some (Typing UI)
     | ConflictingTypes _ | AssignToTupleElement _ | ConstrainedIntegerExpected _
     | UnexpectedPendingConstrained | ExpectedSingularType _
     | ExpectedNamedType _ | UnexpectedCollection | MismatchedBitvectorWidths _
     | ExpectedBitvectorType _ | CollectionBaseNotVariable _ | BadTupleArity _ ->
         Some (Typing UT)
-    | MismatchedCallType _ | BadCallArity _
-    | BadParameterArity (Static, _, _, _, _)
+    | MismatchedCallType _ | BadCallArity _ | BadParameterArity _
     | NoCallCandidate _ ->
         Some (Typing BC)
     | UnsupportedUnop (Dynamic, _, _) | UnsupportedBinop (Dynamic, _, _, _) ->
@@ -322,28 +358,30 @@ module ErrorCode = struct
     | RecursionLimitReached Static | StaticEvaluationFailure _ ->
         Some (Typing SEF)
     | NoCommonAncestor _ -> Some (Typing LCA)
-    (********** TODO tidy up - does not cleanly correspond to a code **********)
-    | BadArity (Static, _, _, _) (* also used for tuple unpacking *) -> None
-    | UnsupportedExpr _ (* For static interpretation *) -> None
-    | MismatchType _
-    (* Backend type mismatches and mismatched integers for loop limits. *) ->
-        None
+    (********** Errors that do not cleanly correspond to a code **********)
+    (* When type checking is skipped, evaluation can lack inferred type
+       information or encounter mismatches that would normally be reported
+       during typing. The specification therefore assigns these failures no
+       dynamic error code. *)
+    | UncheckedExecutionError _ -> None
     | CannotParse _ (* also used for targeted lexer diagnostics *) ->
         Some (Build PE)
-    | EmptyConstraints (* does this need to be reflected in reference? *) ->
-        None
+    (* [WellConstrained] contains a non-empty list in the specification, and
+       the parser prevents source programs from violating that invariant. *)
+    | EmptyConstraints -> None
+    (* Implementation limitations are not ASL errors and have no specification
+       error code. *)
+    | ImplementationIntegerOverflow _ -> None
     | MultipleWrites _ -> Some (Build PE)
     | UnexpectedInitialisationThrow _ -> Some (Dynamic UE)
-    (********** Should not happen **********)
-    (* e.g. skipped type-checking, ASL0, internal option or invariant *)
-    | TypeInferenceNeeded
-    | UndefinedIdentifier (Dynamic, _)
-    | BadArity (Dynamic, _, _, _)
-    | BadParameterArity (Dynamic, _, _, _, _)
-    | InvalidExpr _ | UnexpectedSideEffect _ | UnrespectedParserInvariant
-    | ParameterWithoutDecl _ | SetterWithoutCorrespondingGetter _
-    | ConstantTimeBroken _ ->
+    (********** Errors without specification codes **********)
+    (* ASLv0 diagnostics have no ASLv1 specification error codes. *)
+    | InvalidExpr _ | ParameterWithoutDecl _
+    | SetterWithoutCorrespondingGetter _ ->
         None
+    (* Internal invariant violations are not ASL errors. *)
+    | InternalInvariantError _ -> None
+    | ConstantTimeBroken _ -> None
     (********** Other **********)
     | ObsoleteSyntax _ -> Some (Build PE)
 end
@@ -501,10 +539,6 @@ module PPrint = struct
           (error_handling_time_to_string t)
           "Illegal application of operator %s for value@ %a."
           (unop_to_string op) pp_literal v
-    | UnsupportedExpr (t, e) ->
-        pp_err
-          (error_handling_time_to_string t)
-          "Unsupported expression %a." pp_expr e
     | StaticEvaluationFailure (e, None) ->
         pp_err typing "static evaluation failed for expression %a." pp_expr e
     | StaticEvaluationFailure (e, Some (IndexOutOfBounds (index, length))) ->
@@ -516,14 +550,20 @@ module PPrint = struct
         pp_err typing
           "static evaluation failed for expression %a:@ caused by: %a" pp_expr e
           pp_value_outside_asserted_type (value, ty)
+    | ImplementationIntegerOverflow z ->
+        pp_err internal "integer %a exceeds aslref implementation limits."
+          Z.pp_print z
     | BadParameterType ty -> pp_err typing "Unsupported type %a." pp_ty ty
     | InvalidExpr e -> pp_err typing "invalid expression %a." pp_expr e
-    | MismatchType (v, [ ty ]) ->
-        pp_err dynamic "Mismatch type:@ value %s does not belong to type %a." v
-          pp_type_desc ty
-    | MismatchType (v, li) ->
-        pp_err dynamic
-          "Mismatch type:@ value %s@ does not subtype any of those types:@ %a" v
+    | UncheckedExecutionError (t, TypeMismatch (v, [ ty ])) ->
+        pp_err
+          (error_handling_time_to_string t)
+          "Type mismatch:@ value %s does not belong to type %a." v pp_type_desc
+          ty
+    | UncheckedExecutionError (t, TypeMismatch (v, li)) ->
+        pp_err
+          (error_handling_time_to_string t)
+          "Type mismatch:@ value %s@ does not subtype any of those types:@ %a" v
           (pp_comma_list pp_type_desc)
           li
     | BadField (s, ty) ->
@@ -550,10 +590,50 @@ module PPrint = struct
     | BadIndex (index, length) ->
         pp_err dynamic "%a" pp_bad_index (index, length)
     | BadSlice slice -> pp_err static "invalid slice %a." pp_slice slice
-    | TypeInferenceNeeded ->
-        pp_err internal "Interpreter blocked. Type inference needed."
-    | UndefinedIdentifier (t, s) ->
+    | UncheckedExecutionError (t, TypeInferenceNeeded) ->
+        pp_err
+          (error_handling_time_to_string t)
+          "evaluation requires type information unavailable without type \
+           checking."
+    | UncheckedExecutionError (t, MissingIdentifier s) ->
         pp_err (error_handling_time_to_string t) "Undefined identifier:@ '%s'" s
+    | UncheckedExecutionError
+        (t, ArgumentArityMismatch { name; expected; provided }) ->
+        pp_err
+          (error_handling_time_to_string t)
+          "Arity error while calling '%s':@ %d %s expected and %d provided."
+          name expected
+          (if expected = 1 then "argument" else "arguments")
+          provided
+    | UncheckedExecutionError
+        (t, ParameterArityMismatch { name; expected; provided }) ->
+        pp_err
+          (error_handling_time_to_string t)
+          "Arity error while calling '%s':@ %d %s expected and %d provided."
+          name expected
+          (if expected = 1 then "parameter" else "parameters")
+          provided
+    | UncheckedExecutionError (t, AssignmentArityMismatch { expected; provided })
+      ->
+        pp_err
+          (error_handling_time_to_string t)
+          "Multi-assignment expected %d %s but received %d." expected
+          (if expected = 1 then "value" else "values")
+          provided
+    | UncheckedExecutionError
+        (t, EntrypointResultArityMismatch { name; expected; provided }) ->
+        pp_err
+          (error_handling_time_to_string t)
+          "Entrypoint '%s' returned %d %s; expected %d." name provided
+          (if provided = 1 then "value" else "values")
+          expected
+    | UncheckedExecutionError (t, UnexpectedThrow (ty, e)) ->
+        pp_err
+          (error_handling_time_to_string t)
+          "Side-effect-free expression %a unexpectedly threw an exception of \
+           type %a."
+          pp_expr e pp_ty ty
+    | UndefinedIdentifier s -> pp_err static "Undefined identifier:@ '%s'" s
     | MismatchedCallType
         { subprogram_name = s; expected_call_type; found_call_type } ->
         let call_type_description call_type =
@@ -569,12 +649,6 @@ module PPrint = struct
           s
           (call_type_description expected_call_type)
           (call_type_description found_call_type)
-    | BadArity (t, name, expected, provided) ->
-        pp_err
-          (error_handling_time_to_string t)
-          "Arity error while calling '%s':@ %d arguments expected and %d \
-           provided."
-          name expected provided
     | BadCallArity (name, expected, provided) ->
         pp_err typing
           "Arity error while calling '%s':@ %d arguments expected and %d \
@@ -584,17 +658,15 @@ module PPrint = struct
         pp_err typing
           "tuple arity mismatch:@ %d elements expected and %d provided."
           expected actual
-    | BadParameterArity (t, version, name, expected, provided) -> (
-        match (t, version) with
-        | Static, V0 ->
-            pp_err
-              (error_handling_time_to_string t)
+    | BadParameterArity (version, name, expected, provided) -> (
+        match version with
+        | V0 ->
+            pp_err static
               "Could not infer all parameters while calling '%s':@ %d \
                parameters expected and %d inferred"
               name expected provided
-        | _ ->
-            pp_err
-              (error_handling_time_to_string t)
+        | V1 ->
+            pp_err static
               "Arity error while calling '%s':@ %d parameters expected and %d \
                provided"
               name expected provided)
@@ -656,7 +728,6 @@ module PPrint = struct
         pp_err typing "cannot@ declare@ already@ declared@ element@ %S." x
     | BadReturnStmt None ->
         pp_err typing "cannot return something from a procedure."
-    | UnexpectedSideEffect s -> pp_err dynamic "Unexpected side-effect: %s." s
     | UncaughtException s -> pp_err dynamic "Uncaught exception: %s." s
     | OverlappingSlices (slices, t) ->
         pp_err
@@ -668,7 +739,18 @@ module PPrint = struct
         pp_err typing "multiple recursive declarations:@ @[%a@]."
           (pp_comma_list (fun f -> fprintf f "%S"))
           decls
-    | UnrespectedParserInvariant -> pp_err typing "Parser invariant broke."
+    | InternalInvariantError TypedArrayExpressionInAnnotation ->
+        pp_err internal
+          "typed-only array expression reached expression annotation."
+    | InternalInvariantError UninitialisedImmutableLocal ->
+        pp_err internal "immutable local declaration has no initializer."
+    | InternalInvariantError SetterWithoutValueArgument ->
+        pp_err internal "setter has no value argument."
+    | InternalInvariantError GlobalWithoutTypeOrInitialiser ->
+        pp_err internal
+          "global declaration has neither a type nor an initializer."
+    | InternalInvariantError ParameterizedIntegerAtRuntime ->
+        pp_err internal "parameterized integer type reached dynamic evaluation."
     | ConstrainedIntegerExpected t ->
         pp_err typing "constrained@ integer@ expected,@ provided@ %a." pp_ty t
     | ParameterWithoutDecl s ->
@@ -898,20 +980,18 @@ module CSV = struct
     | BadIndex _ -> "BadIndex"
     | BadSlice _ -> "BadSlice"
     | EmptySlice -> "EmptySlice"
-    | TypeInferenceNeeded -> "TypeInferenceNeeded"
     | UndefinedIdentifier _ -> "UndefinedIdentifier"
     | MismatchedCallType _ -> "MismatchedCallType"
-    | BadArity _ -> "BadArity"
     | BadCallArity _ -> "BadCallArity"
     | BadTupleArity _ -> "BadTupleArity"
     | BadParameterArity _ -> "BadParameterArity"
     | UnsupportedBinop _ -> "UnsupportedBinop"
     | UnsupportedUnop _ -> "UnsupportedUnop"
-    | UnsupportedExpr _ -> "UnsupportedExpr"
     | StaticEvaluationFailure _ -> "StaticEvaluationFailure"
+    | ImplementationIntegerOverflow _ -> "ImplementationIntegerOverflow"
     | BadParameterType _ -> "BadParameterType"
     | InvalidExpr _ -> "InvalidExpr"
-    | MismatchType _ -> "MismatchType"
+    | UncheckedExecutionError _ -> "UncheckedExecutionError"
     | ConflictingTypes _ -> "ConflictingTypes"
     | AssertionFailed _ -> "AssertionFailed"
     | CannotParse _ -> "CannotParse"
@@ -928,12 +1008,11 @@ module CSV = struct
     | AssignToTupleElement _ -> "AssignToTupleElement"
     | AlreadyDeclaredIdentifier _ -> "AlreadyDeclaredIdentifier"
     | BadReturnStmt _ -> "BadReturnStmt"
-    | UnexpectedSideEffect _ -> "UnexpectedSideEffect"
     | UncaughtException _ -> "UncaughtException"
     | OverlappingSlices _ -> "OverlappingSlices"
     | BadLDI _ -> "BadLDI"
     | BadRecursiveDecls _ -> "BadRecursiveDecls"
-    | UnrespectedParserInvariant -> "UnrespectedParserInvariant"
+    | InternalInvariantError _ -> "InternalInvariantError"
     | BadATC _ -> "BadATC"
     | DynamicATCFailure _ -> "DynamicATCFailure"
     | ConstrainedIntegerExpected _ -> "ConstrainedIntegerExpected"
