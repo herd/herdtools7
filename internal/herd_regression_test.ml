@@ -158,7 +158,7 @@ type wrapper = Promote | Test
 let do_run_test_par wrapper j flags =
   let _dbg = false in
   let herd = flags.herd
-  and args =
+  and herd_args =
     TestHerd.herd_args ~bell:None ~cat:None ~conf:flags.conf
       ~variants:flags.variants ~libdir:flags.libdir ~timeout:None
       ~checkfilter:None ~speedcheck:None in

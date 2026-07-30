@@ -18,12 +18,7 @@
 
 let litmus = Sys.argv.(Array.length Sys.argv -1)
 
-let rec to_list k =
-  if k+1 >= Array.length Sys.argv then []
-  else Sys.argv.(k)::to_list (k+1)
-
-let com = Sys.argv.(1)
-let args = to_list 2
+let _, com, args = Args.split_wrapper_args (Array.to_list Sys.argv)
 
 let () =
   if false then
