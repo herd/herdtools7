@@ -70,3 +70,18 @@ val is_file : spec -> spec
  *  Arg.spec that raises Arg.Bad if the argument is not a valid path to a
  *  directory. *)
 val is_dir : spec -> spec
+
+type wrapper_args = {
+  args : string list; (** Arguments for wrapper *)
+  com : string; (** Path of wrapped command *)
+  wrapped : string list; (** Arguments for [com] *)
+  litmus : string; (** Path for litmus file *)
+}
+
+val split_wrapper_args : String.t array -> wrapper_args
+(** [split_wrapper_args inp] returns [{args; com; wrapped; litmus}], where
+    [args] is the shortest prefix of elements in [inp] that are not "--", [com]
+    is the argument immediately after "--", [wrapped] is the rest of the
+    arguments except the last one, without the argument "--"; and [litmus] is
+    the last argument.
+ *)

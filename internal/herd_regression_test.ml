@@ -155,7 +155,7 @@ type wrapper = Promote | Test
 let do_run_test_par wrapper j flags =
   let _dbg = false in
   let herd = flags.herd
-  and args =
+  and herd_args =
     TestHerd.herd_args ~bell:None ~cat:None ~conf:flags.conf
       ~variants:flags.variants ~libdir:flags.libdir ~timeout:None
       ~checkfilter:None ~speedcheck:None in
@@ -164,9 +164,9 @@ let do_run_test_par wrapper j flags =
   let args = match wrapper with
   | Test ->
     TestHerd.mapply_herd_test_args ~litmuses ~j ~verbose:flags.verbose
-      ~nohash:flags.nohash ~check:flags.check ~herd args
+      ~nohash:flags.nohash ~check:flags.check ~herd herd_args
   | Promote ->
-    TestHerd.mapply_herd_promote_args ~litmuses ~j ~check:flags.check ~herd args
+    TestHerd.mapply_herd_promote_args ~litmuses ~j ~check:flags.check ~herd herd_args
   in
   let () =
     if _dbg then

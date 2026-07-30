@@ -194,7 +194,7 @@ let herd_wrapper_args ~nohash ~verbose ~check ~herd args =
   let nohash = if nohash then ["-nohash"] else [] in
   let check = match check with All -> [] | Obs -> ["-checkobs"] | Sta -> ["-checkstates"] in
   let wrapper_only_args = verbose @ nohash @ check in
-  wrapper_only_args @ herd :: args
+  wrapper_only_args @ "--" :: herd :: args
 
 let full_path_of exe_name = Filename.(concat (dirname Sys.argv.(0))) exe_name
 
