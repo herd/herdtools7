@@ -16,11 +16,6 @@
 
 (** A tool that runs herd and promotes its output as reference *)
 
-let () =
-  if false then
-    let xs = Array.to_list Sys.argv in
-    Printf.eprintf "%s\n%!" (String.concat " " xs)
-
 let litmus = Sys.argv.(Array.length Sys.argv -1)
 
 let rec to_list k =
@@ -29,6 +24,11 @@ let rec to_list k =
 
 let com = Sys.argv.(1)
 let args = to_list 2
+
+let () =
+  if false then
+    Printf.eprintf "%s called with com: %s and args: [%s]\n%!"
+      Sys.argv.(0) com (String.concat "; " args)
 
 let () =
   let st = TestHerd.run_herd_args com args litmus in
