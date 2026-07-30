@@ -2616,6 +2616,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           assert (Misc.is_none m) ;
           Some (a,Some (MachSize.S128,0))
         | _ -> Some (a,m) end in
+      let structured_atom = Option.map of_legacy e.C.atom in
       let regs,inits,cs,st = match e.C.dir,e.C.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some R,_ -> Warn.fatal "data dependency to load"
@@ -2674,16 +2675,23 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             | Some(Neon _, None) -> r2,cs2,init,st
             | _ -> r2,cs2@pseudo addi,init,st in
           let loc = add_tag e.C.atom loc e.C.tag in
-          begin match atom with
+          let ordinary_store = match structured_atom with
           | None ->
               let init,cs,st =
                 STR.emit_store_reg st p init loc r2 None C.evt_null in
-              None,init,cs2@cs,st
-          | Some (Rel _,None) ->
+              Some (None,init,cs2@cs,st)
+          | Some { access_type = OrdinaryAccess; access_order = OrderRelease; } ->
               let init,cs,st =
                 STLR.emit_store_reg st p init loc r2 None C.evt_null in
-              None,init,cs2@cs,st
-          | Some (Rel a,Some (sz,o)) ->
+              Some (None,init,cs2@cs,st)
+          | Some ({ access_type = CapaAccess; access_order = OrderRelease; } as atom)
+          | Some ({ access_type = AccessSize _; access_order = OrderRelease; } as atom) ->
+              let sz,o = match get_access_atom (Some atom) with
+              | Some sz -> sz
+              | None -> MachSize.S128,0 in
+              let addon = match atom.access_type with
+              | CapaAccess -> Some Capability
+              | _ -> None in
               let module S =
                 STORE
                   (struct
@@ -2691,20 +2699,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                     let store_idx _st _r1 _r2 _idx = assert false
                     let emit_mov = emit_mov_sz sz
                   end) in
-              let init,cs,st = S.emit_store_reg st p init loc r2 a e in
-              None,init,cs2@cs,st
-          | Some (Atomic rw,None) ->
-              let r,init,cs,st = emit_sta_reg (tr_rw rw) st p init loc r2 in
-              Some r,init,cs2@cs,st
-          | Some (Atomic rw,Some (sz,o)) ->
-              let r,init,cs,st = emit_sta_mixed_reg sz o rw st p init loc r2 in
-              Some r,init,cs2@cs,st
-          | Some (Acq _,_) ->
-              Warn.fatal "No store acquire"
-          | Some (AcqPc _,_) ->
-              Warn.fatal "No store acquirePc"
-          | Some (Instr, _) -> Warn.fatal "No Plain Write to label (code location)"
-          | Some (Plain a,Some (sz,o)) ->
+              let init,cs,st = S.emit_store_reg st p init loc r2 addon e in
+              Some (None,init,cs2@cs,st)
+          | Some ({ access_type = CapaAccess; access_order = OrderPlain; } as atom)
+          | Some ({ access_type = AccessSize _; access_order = OrderPlain; } as atom) ->
+              let sz,o = match get_access_atom (Some atom) with
+              | Some sz -> sz
+              | None -> MachSize.S128,0 in
+              let addon = match atom.access_type with
+              | CapaAccess -> Some Capability
+              | _ -> None in
               let module S =
                 STORE
                   (struct
@@ -2717,8 +2721,24 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       cs,st
                     let emit_mov = emit_mov_sz sz
                   end) in
-              let init,cs,st = S.emit_store_reg st p init loc r2 a e in
-              None,init,cs2@cs,st
+              let init,cs,st = S.emit_store_reg st p init loc r2 addon e in
+              Some (None,init,cs2@cs,st)
+          | _ -> None in
+          begin match ordinary_store with
+          | Some result -> result
+          | None -> begin match atom with
+          | None -> assert false
+          | Some (Atomic rw,None) ->
+              let r,init,cs,st = emit_sta_reg (tr_rw rw) st p init loc r2 in
+              Some r,init,cs2@cs,st
+          | Some (Atomic rw,Some (sz,o)) ->
+              let r,init,cs,st = emit_sta_mixed_reg sz o rw st p init loc r2 in
+              Some r,init,cs2@cs,st
+          | Some (Acq _,_) ->
+              Warn.fatal "No store acquire"
+          | Some (AcqPc _,_) ->
+              Warn.fatal "No store acquirePc"
+          | Some (Instr, _) -> Warn.fatal "No Plain Write to label (code location)"
           | Some (Tag, None) ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
@@ -2738,7 +2758,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               None,init,cs2@cs,st
           | Some ((Pte _,Some _)|(Pte (Read|ReadAcq|ReadAcqPc|ReadHAAcq|ReadHAAcqPc),_))
             -> assert false
-          | Some (Plain _,None) -> assert false
+          | Some ((Plain _|Rel _),_) -> assert false
           | Some (Tag,Some _) -> assert false
           | Some (CapaTag,None) ->
               if (Value.to_int e.C.v) > 1 then Warn.fatal "Capability tags can't be incremented above 1";
@@ -2772,6 +2792,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              let init,cs,st = stp_emit_store_reg (pair_opt_to_st opt) idx st p init loc r2 in
              None,init,cs2@cs,st
           | Some (Pair _,Some _) -> assert false
+          end
           end
       (* END of `Some W` *)
       | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e) in
