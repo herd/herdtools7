@@ -30,10 +30,7 @@ module TimeFrame = SideEffect.TimeFrame
 
 let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let fatal_from ~loc = Error.fatal_from loc
-
-let undefined_identifier ~loc x =
-  fatal_from ~loc (Error.UndefinedIdentifier (Static, x))
-
+let undefined_identifier ~loc x = fatal_from ~loc (Error.UndefinedIdentifier x)
 let add_pos_from ~loc = add_pos_from loc
 
 let conflict ~loc expected provided =
@@ -1596,11 +1593,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       if List.compare_lengths func_sig.parameters params != 0 then
         fatal_from ~loc
         @@ Error.BadParameterArity
-             ( Static,
-               V1,
-               name,
-               List.length func_sig.parameters,
-               List.length params )
+             (V1, name, List.length func_sig.parameters, List.length params)
       else if List.compare_lengths func_sig.args args != 0 then
         fatal_from ~loc
         @@ Error.BadCallArity (name, List.length func_sig.args, List.length args)
@@ -1858,7 +1851,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       @@ fun () ->
       fatal_from ~loc
         (Error.BadParameterArity
-           (Static, V0, name, List.length callee.parameters, List.length params))
+           (V0, name, List.length callee.parameters, List.length params))
     in
     ( { name = name1; args = args1; params; call_type = callee.subprogram_type },
       ret_ty_opt,
@@ -1985,7 +1978,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let ses = ses_non_conflicting_unions ~loc sess in
         (T_Tuple ts |> here, E_Tuple es |> here, ses) |: TypingRule.ETuple
     (* End *)
-    | E_Array _ -> fatal_from ~loc UnrespectedParserInvariant
+    | E_Array _ ->
+        fatal_from ~loc
+          (InternalInvariantError TypedArrayExpressionInAnnotation)
     (* Begin ERecord *)
     | E_Record (ty, fields) ->
         (* Rule WBCQ: The identifier in a record expression must be a named type
@@ -3073,7 +3068,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     ses_t' )
                   |: TypingRule.LDUninitialisedTyped)
             |: TypingRule.SDecl
-        | LDK_Let, None -> fatal_from ~loc UnrespectedParserInvariant)
+        | LDK_Let, None ->
+            fatal_from ~loc (InternalInvariantError UninitialisedImmutableLocal)
+        )
     (* SDecl.None) *)
     (* End *)
     (* Begin SThrow *)
@@ -3798,7 +3795,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | ST_Setter ->
         let ret_type, arg_types =
           match func_sig.args with
-          | [] -> fatal_from ~loc Error.UnrespectedParserInvariant
+          | [] ->
+              fatal_from ~loc
+                Error.(InternalInvariantError SetterWithoutValueArgument)
           | (_, ret_type) :: args -> (ret_type, List.map snd args)
         in
         let _, _, func_sig', _ =
@@ -3967,7 +3966,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let+ () = check_is_not_collection ~loc env t_e in
           let+ () = check_purity ~loc typed_e in
           (typed_e, None, t_e)
-      | None, None -> fatal_from ~loc UnrespectedParserInvariant
+      | None, None ->
+          fatal_from ~loc
+            (InternalInvariantError GlobalWithoutTypeOrInitialiser)
       (* AnnotateTyOptInitialValue) *)
     in
     let genv1 = add_global_storage ~loc name keyword genv declared_t in

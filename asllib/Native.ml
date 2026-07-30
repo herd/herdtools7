@@ -53,8 +53,10 @@ let rec pp_native_value f =
 
 let native_value_to_string = Format.asprintf "%a" pp_native_value
 
-let mismatch_type v types =
-  Error.fatal_unknown_pos (Error.MismatchType (native_value_to_string v, types))
+let mismatch_type time v types =
+  Error.fatal_unknown_pos
+    (Error.UncheckedExecutionError
+       (time, Error.TypeMismatch (native_value_to_string v, types)))
 
 module type Config = sig
   val error_handling_time : Error.error_handling_time
@@ -72,6 +74,14 @@ module NativeBackend (C : Config) = struct
   type value = native_value
   type value_range = value * value
   type primitive = value m list -> value m list -> value list m
+
+  let mismatch_type = mismatch_type C.error_handling_time
+
+  let argument_arity_mismatch name expected provided =
+    Error.fatal_unknown_pos
+      (Error.UncheckedExecutionError
+         ( C.error_handling_time,
+           Error.ArgumentArityMismatch { name; expected; provided } ))
 
   let is_undetermined _ = false
   let v_of_int i = L_Int (Z.of_int i) |> nv_literal
@@ -165,6 +175,8 @@ module NativeBackend (C : Config) = struct
     | NV_Literal (L_BitVector bits) -> bits
     | v -> mismatch_type v [ default_t_bits ]
 
+  (* TODO: Raise [ImplementationIntegerOverflow] here on overflow, and audit the
+     remaining unchecked [Z.to_int] conversions. *)
   let as_int = function
     | NV_Literal (L_Int i) -> Z.to_int i
     | v -> mismatch_type v [ integer' ]
@@ -261,17 +273,13 @@ module NativeBackend (C : Config) = struct
       | [ NV_Literal (L_BitVector bv) ] ->
           L_Int (Bitvector.to_z_unsigned bv) |> nv_literal |> return_one
       | [ v ] -> mismatch_type v [ default_t_bits ]
-      | li ->
-          Error.fatal_unknown_pos
-          @@ Error.BadArity (Dynamic, "UInt", 1, List.length li)
+      | li -> argument_arity_mismatch "UInt" 1 (List.length li)
 
     let sint = function
       | [ NV_Literal (L_BitVector bv) ] ->
           L_Int (Bitvector.to_z_signed bv) |> nv_literal |> return_one
       | [ v ] -> mismatch_type v [ default_t_bits ]
-      | li ->
-          Error.fatal_unknown_pos
-          @@ Error.BadArity (Dynamic, "SInt", 1, List.length li)
+      | li -> argument_arity_mismatch "SInt" 1 (List.length li)
 
     let floor_log2 = function
       | [ NV_Literal (L_Int i) ] ->
@@ -280,9 +288,7 @@ module NativeBackend (C : Config) = struct
             Error.fatal_unknown_pos
             @@ Error.BadPrimitiveArgument ("FloorLog2", "greater than 0")
       | [ v ] -> mismatch_type v [ integer' ]
-      | li ->
-          Error.fatal_unknown_pos
-          @@ Error.BadArity (Dynamic, "Log2", 1, List.length li)
+      | li -> argument_arity_mismatch "Log2" 1 (List.length li)
 
     let truncate q = Q.to_bigint q
 
@@ -299,9 +305,7 @@ module NativeBackend (C : Config) = struct
     let wrap_real_to_int name f = function
       | [ NV_Literal (L_Real q) ] -> L_Int (f q) |> nv_literal |> return_one
       | [ v ] -> mismatch_type v [ T_Real ]
-      | li ->
-          Error.fatal_unknown_pos
-          @@ Error.BadArity (Dynamic, name, 1, List.length li)
+      | li -> argument_arity_mismatch name 1 (List.length li)
 
     let round_down = wrap_real_to_int "RoundDown" floor
     let round_up = wrap_real_to_int "RoundUp" ceiling
@@ -408,7 +412,9 @@ let rec unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef ty =
       |> fun record -> NV_Record record
   | T_Enum li -> NV_Literal (L_Label (List.hd li))
   | T_Tuple types -> NV_Vector (List.map (fun t -> unknown_of_type t) types)
-  | T_Collection _ | T_Named _ -> Error.(fatal_from ty TypeInferenceNeeded)
+  | T_Collection _ | T_Named _ ->
+      Error.(
+        fatal_from ty (UncheckedExecutionError (Dynamic, TypeInferenceNeeded)))
 
 module DeterministicBackend = struct
   include NativeBackend (struct
@@ -480,7 +486,7 @@ module DeterministicInterpreterSingleSetInstr =
 
 let exit_value = function
   | NV_Literal (L_Int i) -> i |> Z.to_int
-  | v -> mismatch_type v [ integer' ]
+  | v -> mismatch_type Error.Dynamic v [ integer' ]
 
 let interpret ?instrumentation static_env main_name ast =
   match instrumentation with
