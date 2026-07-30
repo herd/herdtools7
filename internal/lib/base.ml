@@ -29,6 +29,18 @@ module List = struct
 
   let to_ocaml_string f xs =
     Printf.sprintf "[%s]" (String.concat "; " (List.map f xs))
+
+  let split_when p lst =
+    let rec loop acc rest =
+      match rest with
+      | [] ->
+          (lst, [])
+      | x :: _ when p x ->
+          (List.rev acc, rest)
+      | x :: xs ->
+          loop (x :: acc) xs
+    in
+    loop [] lst
 end
 
 module Option = struct
