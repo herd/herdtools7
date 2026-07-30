@@ -33,6 +33,11 @@ module List : sig
    *  [to_ocaml_string String.to_ocaml_string ["a"; "b"]] returns
    *  "[\"a\"; \"b\"]". *)
   val to_ocaml_string : ('a -> string) -> 'a list -> string
+
+  val split_when : ('a -> bool) -> 'a list -> 'a list * 'a list
+  (** [split_when p lst] returns a a pair of lists [(l1, l2)] where [l1] is the
+      shortest prefix of [lst] of elements that do not satisy [p], and [l2] is
+      the rest. *)
 end
 
 module String : sig
