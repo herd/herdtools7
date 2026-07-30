@@ -2334,37 +2334,135 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               assert (Misc.is_none m) ;
               Some (a,Some (MachSize.S128,0))
             | _ -> Some (a,m) end in
-          let regs,inits,cs,st = begin match d,atom with
+          let structured_atom = Option.map of_legacy e.C.atom in
+          let ordinary_access = match d,structured_atom with
           | R,None ->
               let r,init,cs,st =
                 LDR.emit_load_idx_var vloc vdep st p init loc r2 in
-              Some r,init, pseudo cs0@cs,st
-          | R,Some (Acq _,None) ->
+              Some (Some r,init,pseudo cs0@cs,st)
+          | R,Some (OrdinaryAccess `Acquire) ->
               let r,init,cs,st =
                 LDAR.emit_load_idx_var vloc vdep st p init loc r2 in
-              Some r,init, pseudo cs0@cs,st
-          | R,Some (Acq a,Some (sz,o)) ->
+              Some (Some r,init,pseudo cs0@cs,st)
+          | R,Some ((MorelloAccess `Acquire|MixedSizeAccess (`Acquire,_)) as atom) ->
+              let sz,o = match get_access_atom (Some atom) with
+              | Some sz -> sz
+              | None -> MachSize.S128,0 in
              let load =
                do_emit_load_idx_var
                  next_reg_sz
                  (fun sz _ ->  do_ldar_mixed_idx vdep AA sz o)
                  sz sz in
               let r,init,cs,st = load st p init loc r2 in
-              let cs2 = emit_ldr_addon a r in
-              Some r,init,pseudo cs0@cs@pseudo cs2,st
-          | R,Some (AcqPc _,None) ->
+              let cs2 = match atom with
+              | MorelloAccess `Acquire -> emit_ldr_addon (Some Capability) r
+              | _ -> emit_ldr_addon None r in
+              Some (Some r,init,pseudo cs0@cs@pseudo cs2,st)
+          | R,Some (OrdinaryAccess `AcquirePC) ->
               let r,init,cs,st =
                 LDAPR.emit_load_idx_var vloc vdep st p init loc r2 in
-              Some r,init, pseudo cs0@cs,st
-          | R,Some (AcqPc a,Some (sz,o)) ->
+              Some (Some r,init,pseudo cs0@cs,st)
+          | R,Some ((MorelloAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)) as atom) ->
+              let sz,o = match get_access_atom (Some atom) with
+              | Some sz -> sz
+              | None -> MachSize.S128,0 in
              let load =
                do_emit_load_idx_var
                  next_reg_sz
                  (fun sz _ ->  do_ldar_mixed_idx vdep AQ sz o)
                  sz sz in
               let r,init,cs,st = load st p init loc r2 in
-              let cs2 = emit_ldr_addon a r in
-              Some r,init,pseudo cs0@cs@pseudo cs2,st
+              let cs2 = match atom with
+              | MorelloAccess `AcquirePC -> emit_ldr_addon (Some Capability) r
+              | _ -> emit_ldr_addon None r in
+              Some (Some r,init,pseudo cs0@cs@pseudo cs2,st)
+          | R,Some ((MorelloAccess `Plain|MixedSizeAccess (`Plain,_)) as atom) ->
+             let sz,o = match get_access_atom (Some atom) with
+             | Some sz -> sz
+             | None -> MachSize.S128,0 in
+             let load_idx sz _ st r1 r2 idx =
+               let cs = [ldr_mixed_idx vdep r1 r2 idx sz] in
+               let cs = match o with
+                 | 0 -> cs
+                 | _ -> do_addi vdep idx idx o::cs in
+               cs,st in
+             let load =
+               do_emit_load_idx_var next_reg_sz load_idx sz sz in
+             let r,init,cs,st = load st p init loc r2 in
+             let cs2 = match atom with
+             | MorelloAccess `Plain -> emit_ldr_addon (Some Capability) r
+             | _ -> emit_ldr_addon None r in
+             Some (Some r,init,pseudo cs0@cs@pseudo cs2,st)
+          | W,None ->
+              let module STR =
+                STORE
+                  (struct
+                    let store = wrap_st str
+                    let store_idx st rA rB idx =
+                      [do_str_idx vdep rA rB idx],st
+                    let emit_mov = U.emit_mov
+                  end) in
+              let init,cs,st = STR.emit_store_idx st p init loc r2 (Value.to_int e.C.v) None C.evt_null in
+              Some (None,init,pseudo cs0@cs,st)
+          | W,Some (OrdinaryAccess `Release) ->
+              let module STLR =
+                STORE
+                  (struct
+                    let store = wrap_st stlr
+                    let store_idx st rA rB idx =
+                      let r,ins,st = do_sum_addr vdep st rB idx in
+                      ins@[stlr rA r],st
+                      let emit_mov = U.emit_mov
+                  end) in
+              let init,cs,st = STLR.emit_store_idx st p init loc r2 (Value.to_int e.C.v) None C.evt_null in
+              Some (None,init,pseudo cs0@cs,st)
+          | W,Some ((MorelloAccess `Release|MixedSizeAccess (`Release,_)) as atom) ->
+              let sz,o = match get_access_atom (Some atom) with
+              | Some sz -> sz
+              | None -> MachSize.S128,0 in
+              let addon = match atom with
+              | MorelloAccess `Release -> Some Capability
+              | _ -> None in
+              let module S =
+                STORE
+                  (struct
+                    let store = stlr_mixed sz o
+                    let store_idx st r1 r2 idx =
+                      let cs,st = stlr_mixed_idx sz st r1 r2 idx in
+                      let cs = match o with
+                      | 0 -> cs
+                      | _ -> addi idx idx o::cs in
+                      cs,st
+                      let emit_mov = emit_mov_sz sz
+                  end) in
+              let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) addon e in
+              Some (None,init,pseudo cs0@cs,st)
+          | W,Some ((MorelloAccess `Plain|MixedSizeAccess (`Plain,_)) as atom) ->
+              let sz,o = match get_access_atom (Some atom) with
+              | Some sz -> sz
+              | None -> MachSize.S128,0 in
+              let addon = match atom with
+              | MorelloAccess `Plain -> Some Capability
+              | _ -> None in
+              let module S =
+                STORE
+                  (struct
+                    let store = wrap_st (str_mixed sz o)
+                    let store_idx st r1 r2 idx =
+                      let cs = [str_mixed_idx sz vdep r1 r2 idx] in
+                      let cs = match o with
+                      | 0 -> cs
+                      | _ -> do_addi vdep idx idx o::cs in
+                      cs,st
+                    let emit_mov = emit_mov_sz sz
+                  end) in
+              let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) addon e in
+              Some (None,init,pseudo cs0@cs,st)
+          | _,_ -> None in
+          let regs,inits,cs,st = match ordinary_access with
+          | Some result -> result
+          | None -> begin match d,atom with
+          | R,None -> assert false
           | R,Some (Rel _,_) ->
               Warn.fatal "No load release"
           | R,Some (Atomic rw,None) ->
@@ -2409,44 +2507,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 emit_ldp_idx_var (pair_opt_to_ld opt) idx vdep st p init loc r2 in
               Some r,init, pseudo cs0@cs,st
           | R,Some ((Neon _|Pair _),Some _) -> assert false
-          | W,None ->
-              let module STR =
-                STORE
-                  (struct
-                    let store = wrap_st str
-                    let store_idx st rA rB idx =
-                      [do_str_idx vdep rA rB idx],st
-                    let emit_mov = U.emit_mov
-                  end) in
-              let init,cs,st = STR.emit_store_idx st p init loc r2 (Value.to_int e.C.v) None C.evt_null in
-              None,init,pseudo cs0@cs,st
-          | W,Some (Rel _,None) ->
-              let module STLR =
-                STORE
-                  (struct
-                    let store = wrap_st stlr
-                    let store_idx st rA rB idx =
-                      let r,ins,st = do_sum_addr vdep st rB idx in
-                      ins@[stlr rA r],st
-                      let emit_mov = U.emit_mov
-                  end) in
-              let init,cs,st = STLR.emit_store_idx st p init loc r2 (Value.to_int e.C.v) None C.evt_null in
-              None,init,pseudo cs0@cs,st
-          | W,Some (Rel a,Some (sz,o)) ->
-              let module S =
-                STORE
-                  (struct
-                    let store = stlr_mixed sz o
-                    let store_idx st r1 r2 idx =
-                      let cs,st = stlr_mixed_idx sz st r1 r2 idx in
-                      let cs = match o with
-                      | 0 -> cs
-                      | _ -> addi idx idx o::cs in
-                      cs,st
-                      let emit_mov = emit_mov_sz sz
-                  end) in
-              let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) a e in
-              None,init,pseudo cs0@cs,st
           | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
           | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
           | (R|W), Some (Instr, _) -> Warn.fatal "No dependency to code location"
@@ -2457,33 +2517,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (Atomic rw,Some (sz,o)) ->
               let r,init,cs,st = emit_sta_mixed_idx sz o rw st p init loc r2 (Value.to_int e.C.v) in
               Some r,init,pseudo cs0@cs,st
-          | R,Some (Plain a,Some (sz,o)) ->
-             let load_idx sz _ st r1 r2 idx =
-               let cs = [ldr_mixed_idx vdep r1 r2 idx sz] in
-               let cs = match o with
-                 | 0 -> cs
-                 | _ -> do_addi vdep idx idx o::cs in
-               cs,st in
-             let load =
-               do_emit_load_idx_var next_reg_sz load_idx sz sz in
-             let r,init,cs,st = load st p init loc r2 in
-             let cs2 = emit_ldr_addon a r in
-             Some r,init,pseudo cs0@cs@pseudo cs2,st
-          | W,Some (Plain a,Some (sz,o)) ->
-              let module S =
-                STORE
-                  (struct
-                    let store = wrap_st (str_mixed sz o)
-                    let store_idx st r1 r2 idx =
-                      let cs = [str_mixed_idx sz vdep r1 r2 idx] in
-                      let cs = match o with
-                      | 0 -> cs
-                      | _ -> do_addi vdep idx idx o::cs in
-                      cs,st
-                    let emit_mov = emit_mov_sz sz
-                  end) in
-              let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) a e in
-              None,init,pseudo cs0@cs,st
           | W,Some (Tag, None) ->
               let init,cs,st = STG.emit_store_idx vdep st p init e r2 in
               None,init,pseudo cs0@cs,st
@@ -2547,7 +2580,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              let init,cs,st = emit_store_idx vdep st p init loc r2 (Value.to_int e.C.v) in
               None,init,pseudo cs0@cs,st
           | W,Some (Neon _,Some _) -> assert false
-          | _,Some (Plain _,None) -> assert false
+          | R,Some ((Plain _|Acq _|AcqPc _),_) -> assert false
+          | W,None -> assert false
+          | W,Some ((Plain _|Rel _),_) -> assert false
           end in
           (* Add a label to instructions `cs`, when a fault check is required. *)
           regs,inits,(add_label_to_last_instructions e cs),st
