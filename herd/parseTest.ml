@@ -206,11 +206,9 @@ end) = struct
       | `LISA ->
          let module X = LISAParseTest.Make(Conf)(ModelConfig) in
          X.run dirty ~filename ~contents env splitted
-(* START NOTWWW *)
       | `ASL ->
          let module X = ASLParseTest.Make(Conf)(ModelConfig) in
          X.run dirty ~filename ~contents env splitted
-(* END NOTWWW *)
       | arch -> Warn.fatal "no support for arch '%s'" (Archs.pp arch)
     end else env, None
 
