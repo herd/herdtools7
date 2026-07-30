@@ -21,38 +21,28 @@ let () =
     let xs = Array.to_list Sys.argv in
     Printf.eprintf "%s\n%!" (String.concat " " xs)
 
-let litmus = Sys.argv.(Array.length Sys.argv -1)
-
-let rec to_list k =
-  if k+1 >= Array.length Sys.argv then []
-  else Sys.argv.(k)::to_list (k+1)
-
 type flags = { verbose:bool; nohash:bool; check:TestHerd.check; }
 let noflags = { verbose=false; nohash=false; check=TestHerd.All; }
 
-let flags,comidx =
-  let rec check_rec k =
-    if k+1 >= Array.length Sys.argv then
-      noflags,k
-    else match Sys.argv.(k) with
-      | "-verbose" ->
-          let f,comidx = check_rec (k+1) in
-          { f with verbose=true; },comidx
-      | "-checkstates" ->
-          let f,comidx = check_rec (k+1) in
-          { f with check=TestHerd.Sta},comidx
-      | "-checkobs" ->
-          let f,comidx = check_rec (k+1) in
-          { f with check=TestHerd.Obs; },comidx
-      | "-nohash" ->
-          let f,comidx = check_rec (k+1) in
-          { f with nohash=true; },comidx
-      | _ ->
-          noflags,k in
-  check_rec 1
+let Args.{args; com; wrapped; litmus} = Args.split_wrapper_args Sys.argv
 
-let com = Sys.argv.(comidx)
-let args = to_list (comidx+1)
+let flags =
+  let rec gather_args flags args =
+    match args with
+    | [] ->
+        flags
+    | "-verbose" :: args ->
+        gather_args {flags with verbose=true} args
+    | "-checkstates" :: args ->
+        gather_args {flags with check=TestHerd.Sta} args
+    | "-checkobs" :: args ->
+        gather_args {flags with check=TestHerd.Obs} args
+    | "-nohash" :: args ->
+        gather_args {flags with nohash=true} args
+    | _ :: args ->
+        gather_args flags args
+  in
+  gather_args noflags args
 
 let () =
   let expected = TestHerd.expected_of_litmus litmus
@@ -60,7 +50,7 @@ let () =
   and expected_warn = TestHerd.expected_warn_of_litmus litmus in
   if
     TestHerd.herd_args_output_matches_expected
-      ~verbose:flags.verbose ~check:flags.check com ~nohash:flags.nohash args litmus
+      ~verbose:flags.verbose ~check:flags.check com ~nohash:flags.nohash wrapped litmus
       expected expected_failure expected_warn
   then
     exit 0
@@ -68,6 +58,6 @@ let () =
     let () =
       if false then
         Printf.printf "Test not ok: %s %s\n%!"
-          (String.concat " " (com::args)) litmus in
+          (String.concat " " (com::wrapped)) litmus in
     exit 1
   end
