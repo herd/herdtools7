@@ -40,6 +40,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let ppo _f k = k
 
     include A64
+    open! StructuredAtom
 
 (* Nop instr code *)
     let nop = "NOP"
@@ -1791,20 +1792,20 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             assert (Misc.is_none m) ;
             Some (a,Some (MachSize.S128,0))
           | _ -> Some (a,m) end in
-        (* Compile the node.
-           - `regs`, registers
-           - `inits`, initial values
-           - `cs`, instructions
-           - `st`, states
-        *)
-        let regs,inits,cs,st = begin match d,atom with
+        (* Use structured atoms for ordinary non-dependent loads. Special
+           accesses and stores remain in the legacy dispatch below. *)
+        let structured_atom = Option.map of_legacy e.C.atom in
+        let ordinary_load = match d,structured_atom with
         | R,None ->
             let r,init,cs,st = LDR.emit_load st p init loc in
-            Some r,init,cs,st
-        | R,Some (Acq _,None) ->
+            Some (Some r,init,cs,st)
+        | R,Some (OrdinaryAccess `Acquire) ->
             let r,init,cs,st = LDAR.emit_load st p init loc in
-            Some r,init,cs,st
-        | R,Some (Acq a,Some (sz,o)) ->
+            Some (Some r,init,cs,st)
+        | R,Some ((MorelloAccess `Acquire|MixedSizeAccess (`Acquire,_)) as atom) ->
+            let sz,o = match get_access_atom (Some atom) with
+            | Some sz -> sz
+            | None -> MachSize.S128,0 in
             let module L =
               LOAD
                 (struct
@@ -1815,12 +1816,17 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   let next_reg = next_reg_sz
                 end) in
             let r,init,cs,st = L.emit_load st p init loc in
-            let cs2 = emit_ldr_addon a r in
-            Some r,init,cs@pseudo cs2,st
-        | R,Some (AcqPc _,None) ->
+            let cs2 = match atom with
+            | MorelloAccess `Acquire -> emit_ldr_addon (Some Capability) r
+            | _ -> emit_ldr_addon None r in
+            Some (Some r,init,cs@pseudo cs2,st)
+        | R,Some (OrdinaryAccess `AcquirePC) ->
             let r,init,cs,st = LDAPR.emit_load st p init loc in
-            Some r,init,cs,st
-        | R,Some (AcqPc a,Some (sz,o)) ->
+            Some (Some r,init,cs,st)
+        | R,Some ((MorelloAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)) as atom) ->
+            let sz,o = match get_access_atom (Some atom) with
+            | Some sz -> sz
+            | None -> MachSize.S128,0 in
             let module L =
               LOAD
                 (struct
@@ -1831,8 +1837,31 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   let next_reg = next_reg_sz
                 end) in
             let r,init,cs,st = L.emit_load st p init loc in
-            let cs2 = emit_ldr_addon a r in
-            Some r,init,cs@pseudo cs2,st
+            let cs2 = match atom with
+            | MorelloAccess `AcquirePC -> emit_ldr_addon (Some Capability) r
+            | _ -> emit_ldr_addon None r in
+            Some (Some r,init,cs@pseudo cs2,st)
+        | R,Some ((MorelloAccess `Plain|MixedSizeAccess (`Plain,_)) as atom) ->
+            let sz,o = match get_access_atom (Some atom) with
+            | Some sz -> sz
+            | None -> MachSize.S128,0 in
+            let r,init,cs,st = emit_load_mixed sz o st p init loc in
+            let cs2 = match atom with
+            | MorelloAccess `Plain -> emit_ldr_addon (Some Capability) r
+            | _ -> emit_ldr_addon None r in
+            Some (Some r,init,cs@pseudo cs2,st)
+        | _,_ -> None in
+        (* Compile the node. Use the structured ordinary-load result when
+           available, otherwise continue with the legacy dispatch.
+           - `regs`, registers
+           - `inits`, initial values
+           - `cs`, instructions
+           - `st`, states
+        *)
+        let regs,inits,cs,st = match ordinary_load with
+        | Some result -> result
+        | None -> begin match d,atom with
+        | R,None -> assert false
         | R,Some (Rel _,_) ->
             Warn.fatal "No load release"
         | R,Some (Atomic rw,None) ->
@@ -1841,10 +1870,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some (Atomic rw,Some (sz,o)) ->
             let r,init,cs,st = emit_lda_mixed sz o rw st p init loc  in
             Some r,init,cs,st
-        | R,Some (Plain a,Some (sz,o)) ->
-            let r,init,cs,st = emit_load_mixed sz o st p init loc in
-            let cs2 = emit_ldr_addon a r in
-            Some r,init,cs@pseudo cs2,st
         | R,Some (Tag,None) ->
             let r,init,cs,st = LDG.emit_load st p init loc  in
             Some r,init,cs,st
@@ -1962,7 +1987,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             Warn.fatal
               "Atom %s does not apply to direction %s"
               (A.pp_atom a) (Code.pp_dir d)
-        | _,Some (Plain _,None) -> assert false
+        | R,Some ((Plain _|Acq _|AcqPc _),_) -> assert false
+        | W,Some (Plain _,None) -> assert false
         | _,Some (Tag,_) -> assert false
         | W,Some (CapaTag,None) ->
             let init,cs,st = STCT.emit_store st p init loc (Value.to_int e.C.v) in
