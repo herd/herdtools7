@@ -17,7 +17,7 @@ Requirements
 ------------
 
 - OCaml (version >= 4.14.0)
-- dune (version >= 3.11.0)
+- dune (version >= 3.14.0)
 - menhir (version >= 20231231)
 - zarith
 - logs

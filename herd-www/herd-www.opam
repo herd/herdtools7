@@ -10,7 +10,7 @@ bug-reports: "http://github.com/herd/herdtools7/issues/"
 license: "CECILL-B"
 depends: [
   "ocaml" {>= "5.1.0"}
-  "dune"  {>= "3.11.0" }
+  "dune"  {>= "3.14.0" }
   "menhir" {>= "20231231"}
   "js_of_ocaml" {>= "6.4.0"}
   "js_of_ocaml-ppx" {>= "6.4.0"}
