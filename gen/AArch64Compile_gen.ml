@@ -1792,10 +1792,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             assert (Misc.is_none m) ;
             Some (a,Some (MachSize.S128,0))
           | _ -> Some (a,m) end in
-        (* Use structured atoms for ordinary non-dependent loads. Special
-           accesses and stores remain in the legacy dispatch below. *)
+        (* Use structured atoms for ordinary non-dependent accesses. Special
+           accesses remain in the legacy dispatch below. *)
         let structured_atom = Option.map of_legacy e.C.atom in
-        let ordinary_load = match d,structured_atom with
+        let ordinary_access = match d,structured_atom with
         | R,None ->
             let r,init,cs,st = LDR.emit_load st p init loc in
             Some (Some r,init,cs,st)
@@ -1850,15 +1850,54 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             | MorelloAccess `Plain -> emit_ldr_addon (Some Capability) r
             | _ -> emit_ldr_addon None r in
             Some (Some r,init,cs@pseudo cs2,st)
+        | W,None ->
+            let init,cs,st =
+              STR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
+            Some (None,init,cs,st)
+        | W,Some (OrdinaryAccess `Release) ->
+            let init,cs,st =
+              STLR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
+            Some (None,init,cs,st)
+        | W,Some ((MorelloAccess `Plain|MixedSizeAccess (`Plain,_)) as atom) ->
+            let sz,o = match get_access_atom (Some atom) with
+            | Some sz -> sz
+            | None -> MachSize.S128,0 in
+            let addon = match atom with
+            | MorelloAccess `Plain -> Some Capability
+            | _ -> None in
+            let init,cs,st =
+              emit_store_mixed sz o st p init loc (Value.to_int e.C.v) addon e in
+            Some (None,init,cs,st)
+        | W,Some ((MorelloAccess `Release|MixedSizeAccess (`Release,_)) as atom) ->
+            let sz,o = match get_access_atom (Some atom) with
+            | Some sz -> sz
+            | None -> MachSize.S128,0 in
+            let addon = match atom with
+            | MorelloAccess `Release -> Some Capability
+            | _ -> None in
+            let module S =
+              STORE
+                (struct
+                  let store = stlr_mixed sz o
+                  let store_idx st r1 r2 idx =
+                    let cs,st = stlr_mixed_idx sz st r1 r2 idx in
+                    let cs = match o with
+                    | 0 -> cs
+                    | _ -> addi idx idx o::cs in
+                    cs,st
+                  let emit_mov = emit_mov_sz sz
+                end) in
+            let init,cs,st = S.emit_store st p init loc (Value.to_int e.C.v) addon e in
+            Some (None,init,cs,st)
         | _,_ -> None in
-        (* Compile the node. Use the structured ordinary-load result when
+        (* Compile the node. Use the structured ordinary-access result when
            available, otherwise continue with the legacy dispatch.
            - `regs`, registers
            - `inits`, initial values
            - `cs`, instructions
            - `st`, states
         *)
-        let regs,inits,cs,st = match ordinary_load with
+        let regs,inits,cs,st = match ordinary_access with
         | Some result -> result
         | None -> begin match d,atom with
         | R,None -> assert false
@@ -1900,14 +1939,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let r,init,cs,st = emit_ldp (pair_opt_to_ld opt) idx st p init loc in
           Some r,init,cs,st
         | R,Some (Pair _,Some _) -> assert false
-        | W,None ->
-            let init,cs,st =
-              STR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
-            None,init,cs,st
-        | W,Some (Rel _,None) ->
-            let init,cs,st =
-              STLR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
-            None,init,cs,st
         | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
         | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
         | W,Some (Atomic rw,None) ->
@@ -1916,24 +1947,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Atomic rw,Some (sz,o)) ->
             let r,init,cs,st = emit_sta_mixed sz o rw st p init loc (Value.to_int e.C.v) in
             Some r,init,cs,st
-        | W,Some (Plain a,Some (sz,o)) ->
-            let init,cs,st = emit_store_mixed sz o st p init loc (Value.to_int e.C.v) a e in
-            None,init,cs,st
-        | W,Some (Rel a,Some (sz,o)) ->
-            let module S =
-              STORE
-                (struct
-                  let store = stlr_mixed sz o
-                  let store_idx st r1 r2 idx =
-                    let cs,st = stlr_mixed_idx sz st r1 r2 idx in
-                    let cs = match o with
-                    | 0 -> cs
-                    | _ -> addi idx idx o::cs in
-                    cs,st
-                  let emit_mov = emit_mov_sz sz
-                end) in
-            let init,cs,st = S.emit_store st p init loc (Value.to_int e.C.v) a e in
-            None,init,cs,st
         | W,Some (Tag,None) ->
             let init,cs,st = STG.emit_store st p init e in
             None,init,cs,st
@@ -1988,7 +2001,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               "Atom %s does not apply to direction %s"
               (A.pp_atom a) (Code.pp_dir d)
         | R,Some ((Plain _|Acq _|AcqPc _),_) -> assert false
-        | W,Some (Plain _,None) -> assert false
+        | W,None -> assert false
+        | W,Some ((Plain _|Rel _),_) -> assert false
         | _,Some (Tag,_) -> assert false
         | W,Some (CapaTag,None) ->
             let init,cs,st = STCT.emit_store st p init loc (Value.to_int e.C.v) in
