@@ -16,21 +16,14 @@
 
 (** A tool that runs herd and promotes its output as reference *)
 
-let litmus = Sys.argv.(Array.length Sys.argv -1)
-
-let rec to_list k =
-  if k+1 >= Array.length Sys.argv then []
-  else Sys.argv.(k)::to_list (k+1)
-
-let com = Sys.argv.(1)
-let args = to_list 2
+let Args.{com; wrapped; litmus; _} = Args.split_wrapper_args Sys.argv
 
 let () =
   if false then
     Printf.eprintf "%s called with com: %s and args: [%s]\n%!"
-      Sys.argv.(0) com (String.concat "; " args)
+      Sys.argv.(0) com (String.concat "; " wrapped)
 
 let () =
-  let st = TestHerd.run_herd_args com args litmus in
+  let st = TestHerd.run_herd_args com wrapped litmus in
   let ok = TestHerd.promote litmus st in
   exit (if ok then 0 else 1)
