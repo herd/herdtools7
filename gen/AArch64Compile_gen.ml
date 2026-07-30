@@ -1894,6 +1894,22 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 end) in
             let init,cs,st = S.emit_store st p init loc (Value.to_int e.C.v) addon e in
             Some (None,init,cs,st)
+        | R,Some { access_type = CapaTagAccess; access_order = OrderPlain; } ->
+            let r,init,cs,st = LDCT.emit_load st p init loc in
+            Some (Some r,init,cs,st)
+        | R,Some { access_type = CapaSealAccess; access_order = OrderPlain; } ->
+            let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init loc in
+            Some (Some r,init,cs@lift_code [gctype r r],st)
+        | W,Some { access_type = CapaTagAccess; access_order = OrderPlain; } ->
+            let init,cs,st = STCT.emit_store st p init loc (Value.to_int e.C.v) in
+            Some (None,init,cs,st)
+        | W,Some { access_type = CapaSealAccess; access_order = OrderPlain; } ->
+            let rA,init,st = U.next_init st p init loc in
+            let rB,init,csi,st = U.emit_mov st p init e.C.ord in
+            let init,cs,st =
+              emit_str_addon
+                st p init rB rA (Some Capability) {e with C.cseal = (Value.to_int e.C.v)} in
+            Some (None,init,csi@cs@lift_code [str_mixed MachSize.S128 0 rB rA],st)
         | _,_ -> None in
         (* Compile the node. Use the structured ordinary-access result when
            available, otherwise continue with the legacy dispatch.
@@ -1917,14 +1933,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some (Tag,None) ->
             let r,init,cs,st = LDG.emit_load st p init loc  in
             Some r,init,cs,st
-        | R,Some (CapaTag,None) ->
-            let r,init,cs,st = LDCT.emit_load st p init loc in
-            Some r,init,cs,st
-        | R,Some (CapaTag,Some _) -> assert false
-        | R,Some (CapaSeal,None) ->
-            let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init loc in
-            Some r,init,cs@lift_code [gctype r r],st
-        | R,Some (CapaSeal,Some _) -> assert false
         | R,Some (Neon n, None) ->
            let emit_load = match n with
              | SIMD.NeRel -> Warn.fatal "No laod release"
@@ -2009,18 +2017,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,None -> assert false
         | W,Some ((Plain _|Rel _),_) -> assert false
         | _,Some (Tag,_) -> assert false
-        | W,Some (CapaTag,None) ->
-            let init,cs,st = STCT.emit_store st p init loc (Value.to_int e.C.v) in
-            None,init,cs,st
-        | W,Some (CapaTag,Some _) -> assert false
-        | W,Some (CapaSeal,None) ->
-            let rA,init,st = U.next_init st p init loc in
-            let rB,init,csi,st = U.emit_mov st p init e.C.ord in
-            let init,cs,st =
-              emit_str_addon
-                st p init rB rA (Some Capability) {e with C.cseal = (Value.to_int e.C.v)} in
-            None,init,csi@cs@lift_code [str_mixed MachSize.S128 0 rB rA],st
-        | W,Some (CapaSeal,Some _) -> assert false
+        | (R|W),Some ((CapaTag|CapaSeal),_) -> assert false
         | W,Some (Neon n, None) ->
            let emit_store = match n with
              | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
@@ -2468,6 +2465,28 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) addon e in
               Some (None,init,pseudo cs0@cs,st)
+          | R,Some { access_type = CapaTagAccess; access_order = OrderPlain; } ->
+              (* TODO: don't waste r2 *)
+              let r,init,cs,st = LDCT.emit_load_idx st p init loc rd in
+              Some (Some r,init,cs,st)
+          | R,Some { access_type = CapaSealAccess; access_order = OrderPlain; } ->
+              (* TODO: don't waste r2 *)
+              let (_,rA),init,cs,st = seal_dp_addr init p loc st rd e.C.dep in
+              let rB,st = next_reg st in
+              Some (Some rB,init,cs@lift_code [ldr_mixed rB rA MachSize.S128 0; gctype rB rB],st)
+          | W,Some { access_type = CapaTagAccess; access_order = OrderPlain; } ->
+              (* TODO: don't waste r2 *)
+              let init,cs,st = STCT.emit_store_idx st p init loc rd (Value.to_int e.C.v) in
+              Some (None,init,cs,st)
+          | W,Some { access_type = CapaSealAccess; access_order = OrderPlain; } ->
+              (* TODO: don't waste r2 *)
+              let (rA,rB),init,csi,st =
+                seal_dp_addr init p loc st rd e.C.dep in
+              let rC,init,csi2,st = U.emit_mov st p init e.C.ord in
+              let init,cs,st = emit_str_addon st p init rC rA (Some Capability)
+                {e with C.cseal = (Value.to_int e.C.v)} in
+              Some (None,init,
+                csi@csi2@cs@lift_code [str_mixed MachSize.S128 0 rC rB],st)
           | _,_ -> None in
           let regs,inits,cs,st = match ordinary_access with
           | Some result -> result
@@ -2487,17 +2506,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let r,init,cs,st = LDG.emit_load_idx vdep st p init loc r2 in
               Some r,init, pseudo cs0@cs,st
           | R,Some (Tag,Some _) -> assert false
-          | R,Some (CapaTag,None) ->
-              (* TODO: don't waste r2 *)
-              let r,init,cs,st = LDCT.emit_load_idx st p init loc rd in
-              Some r,init,cs,st
-          | R,Some (CapaTag,Some _) -> assert false
-          | R,Some (CapaSeal,None) ->
-              (* TODO: don't waste r2 *)
-              let (_,rA),init,cs,st = seal_dp_addr init p loc st rd e.C.dep in
-              let rB,st = next_reg st in
-              Some rB,init,cs@lift_code [ldr_mixed rB rA MachSize.S128 0; gctype rB rB],st
-          | R,Some (CapaSeal,Some _) -> assert false
           | R,Some (Neon n,None) ->
               let emit_load_idx = match n with
                 | SIMD.NeRel -> Warn.fatal "No laod release"
@@ -2560,21 +2568,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                "Annotation %s does not apply to direction %s"
                (A64.pp_atom a) (Code.pp_dir d)
           | W,Some (Tag,Some _) -> assert false
-          | W,Some (CapaTag,None) ->
-              (* TODO: don't waste r2 *)
-              let init,cs,st = STCT.emit_store_idx st p init loc rd (Value.to_int e.C.v) in
-              None,init,cs,st
-          | W,Some (CapaTag,Some _) -> assert false
-          | W,Some (CapaSeal,None) ->
-              (* TODO: don't waste r2 *)
-              let (rA,rB),init,csi,st =
-                seal_dp_addr init p loc st rd e.C.dep in
-              let rC,init,csi2,st = U.emit_mov st p init e.C.ord in
-              let init,cs,st = emit_str_addon st p init rC rA (Some Capability)
-                {e with C.cseal = (Value.to_int e.C.v)} in
-              None,init,
-              csi@csi2@cs@lift_code [str_mixed MachSize.S128 0 rC rB],st
-          | W,Some (CapaSeal,Some _) -> assert false
+          | (R|W),Some ((CapaTag|CapaSeal),_) -> assert false
           | W,Some (Neon n,None) ->
              let emit_store_idx = match n with
                | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
@@ -2763,6 +2757,17 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_reg st p init loc r2 addon e in
               Some (None,init,cs2@cs,st)
+          | Some { access_type = CapaTagAccess; access_order = OrderPlain; } ->
+              if (Value.to_int e.C.v) > 1 then
+                Warn.fatal "Capability tags can't be incremented above 1";
+              let init,cs,st = STCT.emit_store_reg st p init loc r2 in
+              Some (None,init,cs2@cs,st)
+          | Some { access_type = CapaSealAccess; access_order = OrderPlain; } ->
+              let rA,init,st = U.next_init st p init loc in
+              let init,cs,st =
+                emit_str_addon
+                  st p init r2 rA (Some Capability) {e with C.cseal = (Value.to_int e.C.v)} in
+              Some (None,init,cs2@cs@lift_code [str_mixed MachSize.S128 0 r2 rA],st)
           | _ -> None in
           begin match ordinary_store with
           | Some result -> result
@@ -2800,18 +2805,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             -> assert false
           | Some ((Plain _|Rel _),_) -> assert false
           | Some (Tag,Some _) -> assert false
-          | Some (CapaTag,None) ->
-              if (Value.to_int e.C.v) > 1 then Warn.fatal "Capability tags can't be incremented above 1";
-              let init,cs,st = STCT.emit_store_reg st p init loc r2 in
-              None,init,cs2@cs,st
-          | Some (CapaTag,Some _) -> assert false
-          | Some (CapaSeal,None) ->
-              let rA,init,st = U.next_init st p init loc in
-              let init,cs,st =
-                emit_str_addon
-                  st p init r2 rA (Some Capability) {e with C.cseal = (Value.to_int e.C.v)} in
-              None,init,cs2@cs@lift_code [str_mixed MachSize.S128 0 r2 rA],st
-          | Some (CapaSeal,Some _) -> assert false
+          | Some ((CapaTag|CapaSeal),_) -> assert false
           | Some (Neon n,None) ->
              let rA,init,st = U.next_init st p init loc in
              let emit_store_dep = match n with
