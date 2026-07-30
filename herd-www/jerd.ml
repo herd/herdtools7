@@ -345,7 +345,35 @@ let run_herd bell cat litmus cfg cat_label =
         let bell_model_info = bi
         include Config end) in
 
+  let module SP =
+    Splitter.Make
+      (struct
+        let debug = Config.debug.Debug_herd.lexer
+        let check_rename = Config.check_rename
+      end) in
+
+  (* Standalone (non-AArch64) ASL tests are outside Jerd's supported architectures.
+     AArch64+ASL additionally needs pseudocode assets that are not deployed.
+     See also: https://github.com/herd/herdtools7/pull/1933 *)
+  let check_supported_litmus f =
+    let splitted = SP.split_string f litmus in
+    match splitted.Splitter.arch with
+    | `ASL -> Warn.user_error "ASL architecture is not supported"
+    | _ ->
+        let module TestConf =
+          TestVariant.Make
+            (struct
+              include Config
+              module Opt = Variant
+              let info = splitted.Splitter.info
+            end)
+        in
+        if TestConf.variant Variant.ASL then
+          Warn.user_error "ASL variant is not supported"
+  in
+
   let from_file f =
+    check_supported_litmus f ;
     SymbValue.reset_gensym () ;
     T.from_file f in
 
