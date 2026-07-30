@@ -1,5 +1,6 @@
 AArch64 MP+rel+acq
 {
+ int64_t x; int64_t y;
  0:X1=x; 0:X3=y;
  1:X1=x; 1:X3=y;
 }

@@ -275,4 +275,5 @@ let () =
     | _ -> exit_with_error "Must provide one command of: show, test, promote"
   with
   | Error msg ->
-      Printf.printf "Fatal error: %s\n" msg
+      Printf.eprintf "Fatal error: %s\n%!" msg ;
+      exit 1
