@@ -1,17 +1,18 @@
 "C11"
-withsc
-withinit
 
 (* Translation of C11 memory model from "Common Compiler Optimisations are *)
 (* Invalid in the C11 Memory Model and what we can do about it" (POPL '15) *)
 
 include "library.cat"
+include "c11_cos.cat"
+include "withsc.cat"
 
 (* Simple aliases *)
 let sb = singlestep(po) (* except po is a total per-thread order *)
 let mo = co
 let C = rmw
-let scTotal = S (* total order over all SC actions due to 'withsc' option *)
+ (* total order over all SC actions due to 'include "withsc.cat"' *)
+let scTotal = S
 let imm = singlestep
 
 (* --------------------------------------------------------------------------*)
