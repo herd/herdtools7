@@ -4361,7 +4361,7 @@ typing function bitfield_slice_to_positions(tenv: static_envs, is_static: Bool, 
   slice =: Slice_Length(e1, e2);
   eval_slice_expr(tenv, is_static, e1) -> some(offset);
   eval_slice_expr(tenv, is_static, e2) -> some(length);
-  te_check(offset <= (offset + length - one), TE_BS) -> True;
+  te_check(length >= one, TE_BS) -> True;
   --
   some(range_set(offset, offset + length - one)) { math_layout = [_] };
 ;

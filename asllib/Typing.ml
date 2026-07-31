@@ -458,8 +458,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | _ -> assert false
       in
       let offset = eval_slice_expr env e1 and length = eval_slice_expr env e2 in
-      if offset > offset + length - 1 then
-        fatal_from ~loc @@ Error.(BadSlice slice)
+      if length <= 0 then
+        fatal_from ~loc @@ Error.(BadSlices (NonPositiveLength slice))
       else
         DI.Interval.make offset (offset + length - 1)
         |: TypingRule.BitfieldSliceToPositions
@@ -827,7 +827,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let min_pos = Diet.Int.min_elt diet and max_pos = Diet.Int.max_elt diet in
     if 0 <= min_pos && max_pos < width then
       () |: TypingRule.CheckPositionsInWidth
-    else fatal_from ~loc (BadSlices (Error.Static, slices, width))
+    else fatal_from ~loc (BadSlices (OutOfBitvectorBounds (slices, width)))
   (* End *)
 
   (* Begin CheckSlicesInWidth *)
@@ -2062,7 +2062,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             | T_Int _ | T_Bits _ ->
                 let+ () =
                   check_true (not (list_is_empty slices)) @@ fun () ->
-                  fatal_from ~loc Error.EmptySlice
+                  fatal_from ~loc Error.V0EmptySlice
                 in
                 (* TODO: check that:
                    - Rule SNQJ: An expression or subexpression which
@@ -2539,7 +2539,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let+ () = check_disjoint_slices ~loc env slices_annotated in
             let+ () =
               check_true (not (list_is_empty slices_annotated)) @@ fun () ->
-              fatal_from ~loc Error.EmptySlice
+              fatal_from ~loc Error.V0EmptySlice
             in
             let ses = ses_non_conflicting_union ~loc ses1 ses_slices in
             (t, LE_Slice (le2, slices_annotated) |> here, ses)
@@ -2554,7 +2554,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 (t, le3, ses3)
             | _ ->
                 let e = expr_of_lexpr le1 in
-                fatal_from ~loc:e (Error.InvalidExpr e))
+                fatal_from ~loc:e (Error.V0InvalidExpr e))
         | _ -> conflict ~loc:le1 [ default_t_bits ] t_le1
         (* End *))
     | LE_SetField (le1, field) ->
@@ -3516,7 +3516,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         List.filter (fun x -> not (ISet.mem x defining)) inferred_parameters
       in
       check_true (list_is_empty undefined_parameters) @@ fun () ->
-      fatal_from ~loc (ParameterWithoutDecl (List.hd undefined_parameters))
+      fatal_from ~loc (V0ParameterWithoutDecl (List.hd undefined_parameters))
     in
     (* Annotate and declare parameters from arguments *)
     let (env_with_params, ses_with_params), typed_parameters =
@@ -3789,7 +3789,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let check_setter_has_getter ~loc env (func_sig : AST.func) =
     assert (loc.version = V0);
     let fail () =
-      fatal_from ~loc (Error.SetterWithoutCorrespondingGetter func_sig)
+      fatal_from ~loc (Error.V0SetterWithoutCorrespondingGetter func_sig)
     in
     let check_true thing = check_true thing fail in
     match func_sig.subprogram_type with
@@ -3799,7 +3799,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           match func_sig.args with
           | [] ->
               fatal_from ~loc
-                Error.(InternalInvariantError SetterWithoutValueArgument)
+                Error.(InternalInvariantError V0SetterWithoutValueArgument)
           | (_, ret_type) :: args -> (ret_type, List.map snd args)
         in
         let _, _, func_sig', _ =

@@ -80,7 +80,7 @@ type static_evaluation_failure_reason =
 type internal_invariant_error =
   | TypedArrayExpressionInAnnotation
   | UninitialisedImmutableLocal
-  | SetterWithoutValueArgument
+  | V0SetterWithoutValueArgument
   | GlobalWithoutTypeOrInitialiser
   | ParameterizedIntegerAtRuntime
 
@@ -88,15 +88,19 @@ type internal_invariant_error =
     specification's type-satisfaction check. *)
 type conflicting_types_reason = UnexpectedType | TypeSatisfaction
 
+type bad_slices =
+  | NonPositiveLength of slice
+  | OutOfBitvectorBounds of slice list * int
+  | NegativeStartOrLength of error_handling_time * slice list
+
 type error_desc =
   | ReservedIdentifier of string
   | BadField of string * ty
   | MissingField of string list * ty
-  | BadSlices of error_handling_time * slice list * int
+  | BadSlices of bad_slices
   | BadIndex of int * int
   | BadTupleIndex of int * int
-  | BadSlice of slice
-  | EmptySlice
+  | V0EmptySlice
   | UndefinedIdentifier of identifier
   | MismatchedCallType of {
       subprogram_name : string;
@@ -111,7 +115,7 @@ type error_desc =
   | StaticEvaluationFailure of expr * static_evaluation_failure_reason option
   | ImplementationIntegerOverflow of Z.t
   | BadParameterType of ty
-  | InvalidExpr of expr
+  | V0InvalidExpr of expr
   | UncheckedExecutionError of error_handling_time * unchecked_execution_error
   | ConflictingTypes of conflicting_types_reason * type_desc list * ty
   | AssertionFailed of expr
@@ -139,14 +143,14 @@ type error_desc =
   | DynamicATCFailure of string * type_desc
   | BadPattern of pattern * ty
   | ConstrainedIntegerExpected of ty
-  | ParameterWithoutDecl of identifier
+  | V0ParameterWithoutDecl of identifier
   | BadParameterDecl of identifier * identifier list * identifier list
       (** name, expected, actual *)
   | BadParameterExpr of expr
   | BaseValueEmptyType of ty
   | ArbitraryEmptyType of ty
   | BaseValueNonSymbolic of ty * expr
-  | SetterWithoutCorrespondingGetter of func
+  | V0SetterWithoutCorrespondingGetter of func
   | NonReturningFunction of identifier
   | NoreturnViolation of identifier
   | ConflictingSideEffects of SideEffect.t * SideEffect.t
@@ -319,12 +323,14 @@ module ErrorCode = struct
     | UnsupportedUnop (Static, _, _)
     | UnsupportedBinop (Static, _, _, _) ->
         Some (Typing BO)
-    | BadSlices (Static, _, _)
-    | BadSlice _ | EmptySlice
+    | BadSlices (NonPositiveLength _)
+    | BadSlices (OutOfBitvectorBounds _)
+    | BadSlices (NegativeStartOrLength (Static, _))
+    | V0EmptySlice
     | OverlappingSlices (_, Static)
     | BitfieldsDontAlign _ ->
-        Some (Typing BS) (* TODO: consider combining BadSlices and BadSlice *)
-    | BadSlices (Dynamic, _, _) -> Some (Dynamic BI)
+        Some (Typing BS)
+    | BadSlices (NegativeStartOrLength (Dynamic, _)) -> Some (Dynamic BI)
     | BadIndex _ -> Some (Dynamic BI)
     | BadTupleIndex _ -> Some (Typing BTI)
     | UndefinedIdentifier _ -> Some (Typing UI)
@@ -385,8 +391,8 @@ module ErrorCode = struct
     | UnexpectedInitialisationThrow _ -> Some (Dynamic UE)
     (********** Errors without specification codes **********)
     (* ASLv0 diagnostics have no ASLv1 specification error codes. *)
-    | InvalidExpr _ | ParameterWithoutDecl _
-    | SetterWithoutCorrespondingGetter _ ->
+    | V0InvalidExpr _ | V0ParameterWithoutDecl _
+    | V0SetterWithoutCorrespondingGetter _ ->
         None
     (* Internal invariant violations are not ASL errors. *)
     | InternalInvariantError _ -> None
@@ -559,7 +565,7 @@ module PPrint = struct
         pp_err internal "integer %a exceeds aslref implementation limits."
           Z.pp_print z
     | BadParameterType ty -> pp_err typing "Unsupported type %a." pp_ty ty
-    | InvalidExpr e -> pp_err typing "invalid expression %a." pp_expr e
+    | V0InvalidExpr e -> pp_err typing "invalid expression %a." pp_expr e
     | UncheckedExecutionError (t, TypeMismatch (v, [ ty ])) ->
         pp_err
           (error_handling_time_to_string t)
@@ -580,16 +586,17 @@ module PPrint = struct
           pp_ty ty
           (pp_print_list ~pp_sep:pp_print_space pp_print_string)
           fields
-    | EmptySlice ->
+    | V0EmptySlice ->
         assert (e.version = V0);
         pp_err static
           "cannot slice with empty slicing operator. This might also be due to \
            an incorrect getter/setter invocation."
-    | BadSlices (Dynamic, slices, _) ->
-        pp_err dynamic
+    | BadSlices (NegativeStartOrLength (t, slices)) ->
+        pp_err
+          (error_handling_time_to_string t)
           "invalid slice %a: start and length must be non-negative."
           pp_slice_list slices
-    | BadSlices (Static, slices, length) ->
+    | BadSlices (OutOfBitvectorBounds (slices, length)) ->
         pp_err static "Cannot extract from bitvector of length %d slice %a."
           length pp_slice_list slices
     | BadIndex (index, length) ->
@@ -597,7 +604,8 @@ module PPrint = struct
     | BadTupleIndex (index, length) ->
         pp_err typing "tuple index %d is outside the valid range 0..%d." index
           (length - 1)
-    | BadSlice slice -> pp_err static "invalid slice %a." pp_slice slice
+    | BadSlices (NonPositiveLength slice) ->
+        pp_err static "invalid slice %a." pp_slice slice
     | UncheckedExecutionError (t, TypeInferenceNeeded) ->
         pp_err
           (error_handling_time_to_string t)
@@ -752,7 +760,7 @@ module PPrint = struct
           "typed-only array expression reached expression annotation."
     | InternalInvariantError UninitialisedImmutableLocal ->
         pp_err internal "immutable local declaration has no initializer."
-    | InternalInvariantError SetterWithoutValueArgument ->
+    | InternalInvariantError V0SetterWithoutValueArgument ->
         pp_err internal "setter has no value argument."
     | InternalInvariantError GlobalWithoutTypeOrInitialiser ->
         pp_err internal
@@ -761,7 +769,7 @@ module PPrint = struct
         pp_err internal "parameterized integer type reached dynamic evaluation."
     | ConstrainedIntegerExpected t ->
         pp_err typing "constrained@ integer@ expected,@ provided@ %a." pp_ty t
-    | ParameterWithoutDecl s ->
+    | V0ParameterWithoutDecl s ->
         pp_err typing
           "explicit@ parameter@ %S@ does@ not@ have@ a@ corresponding@ \
            defining@ argument."
@@ -794,7 +802,7 @@ module PPrint = struct
           t1 pp_ty t2
     | DynamicATCFailure (value, ty) ->
         pp_err dynamic "%a" pp_value_outside_asserted_type (value, ty)
-    | SetterWithoutCorrespondingGetter func ->
+    | V0SetterWithoutCorrespondingGetter func ->
         let ret, args =
           match func.args with
           | (_, ret) :: args -> (ret, List.map snd args)
@@ -987,8 +995,7 @@ module CSV = struct
     | BadSlices _ -> "BadSlices"
     | BadIndex _ -> "BadIndex"
     | BadTupleIndex _ -> "BadTupleIndex"
-    | BadSlice _ -> "BadSlice"
-    | EmptySlice -> "EmptySlice"
+    | V0EmptySlice -> "V0EmptySlice"
     | UndefinedIdentifier _ -> "UndefinedIdentifier"
     | MismatchedCallType _ -> "MismatchedCallType"
     | BadCallArity _ -> "BadCallArity"
@@ -999,7 +1006,7 @@ module CSV = struct
     | StaticEvaluationFailure _ -> "StaticEvaluationFailure"
     | ImplementationIntegerOverflow _ -> "ImplementationIntegerOverflow"
     | BadParameterType _ -> "BadParameterType"
-    | InvalidExpr _ -> "InvalidExpr"
+    | V0InvalidExpr _ -> "V0InvalidExpr"
     | UncheckedExecutionError _ -> "UncheckedExecutionError"
     | ConflictingTypes _ -> "ConflictingTypes"
     | AssertionFailed _ -> "AssertionFailed"
@@ -1025,13 +1032,14 @@ module CSV = struct
     | BadATC _ -> "BadATC"
     | DynamicATCFailure _ -> "DynamicATCFailure"
     | ConstrainedIntegerExpected _ -> "ConstrainedIntegerExpected"
-    | ParameterWithoutDecl _ -> "ParameterWithoutDecl"
+    | V0ParameterWithoutDecl _ -> "V0ParameterWithoutDecl"
     | BadParameterDecl _ -> "BadParameterDecl"
     | BadParameterExpr _ -> "BadParameterExpr"
     | BaseValueEmptyType _ -> "BaseValueEmptyType"
     | ArbitraryEmptyType _ -> "ArbitraryEmptyType"
     | BaseValueNonSymbolic _ -> "BaseValueNonSymbolic"
-    | SetterWithoutCorrespondingGetter _ -> "SetterWithoutCorrespondingGetter"
+    | V0SetterWithoutCorrespondingGetter _ ->
+        "V0SetterWithoutCorrespondingGetter"
     | NonReturningFunction _ -> "NonReturningFunction"
     | NoreturnViolation _ -> "NoreturnViolation"
     | UnreachableReached -> "UnreachableReached"
