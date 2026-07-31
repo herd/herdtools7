@@ -1889,12 +1889,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 end) in
             let init,cs,st = S.emit_store st p init loc (Value.to_int e.C.v) addon e in
             Some (None,init,cs,st)
+        | R,Some MemoryTagAccess ->
+            let r,init,cs,st = LDG.emit_load st p init loc in
+            Some (Some r,init,cs,st)
         | R,Some MorelloTagAccess ->
             let r,init,cs,st = LDCT.emit_load st p init loc in
             Some (Some r,init,cs,st)
         | R,Some MorelloSealAccess ->
             let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init loc in
             Some (Some r,init,cs@lift_code [gctype r r],st)
+        | W,Some MemoryTagAccess ->
+            let init,cs,st = STG.emit_store st p init e in
+            Some (None,init,cs,st)
         | W,Some MorelloTagAccess ->
             let init,cs,st = STCT.emit_store st p init loc (Value.to_int e.C.v) in
             Some (None,init,cs,st)
@@ -1925,9 +1931,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some (Atomic rw,Some (sz,o)) ->
             let r,init,cs,st = emit_lda_mixed sz o rw st p init loc  in
             Some r,init,cs,st
-        | R,Some (Tag,None) ->
-            let r,init,cs,st = LDG.emit_load st p init loc  in
-            Some r,init,cs,st
         | R,Some (Neon n, None) ->
            let emit_load = match n with
              | SIMD.NeRel -> Warn.fatal "No laod release"
@@ -1955,9 +1958,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Atomic rw,Some (sz,o)) ->
             let r,init,cs,st = emit_sta_mixed sz o rw st p init loc (Value.to_int e.C.v) in
             Some r,init,cs,st
-        | W,Some (Tag,None) ->
-            let init,cs,st = STG.emit_store st p init e in
-            None,init,cs,st
         | W,Some (Pair (opt,idx),None) ->
           let init,cs,st = emit_stp (pair_opt_to_st opt) idx st p init loc e in
           None,init,cs,st
@@ -2011,7 +2011,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some ((Plain _|Acq _|AcqPc _),_) -> assert false
         | W,None -> assert false
         | W,Some ((Plain _|Rel _),_) -> assert false
-        | _,Some (Tag,_) -> assert false
+        | (R|W),Some (Tag,_) -> assert false
         | (R|W),Some ((CapaTag|CapaSeal),_) -> assert false
         | W,Some (Neon n, None) ->
            let emit_store = match n with
@@ -2455,6 +2455,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) addon e in
               Some (None,init,pseudo cs0@cs,st)
+          | R,Some MemoryTagAccess ->
+              let r,init,cs,st = LDG.emit_load_idx vdep st p init loc r2 in
+              Some (Some r,init,pseudo cs0@cs,st)
           | R,Some MorelloTagAccess ->
               (* TODO: don't waste r2 *)
               let r,init,cs,st = LDCT.emit_load_idx st p init loc rd in
@@ -2464,6 +2467,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let (_,rA),init,cs,st = seal_dp_addr init p loc st rd e.C.dep in
               let rB,st = next_reg st in
               Some (Some rB,init,cs@lift_code [ldr_mixed rB rA MachSize.S128 0; gctype rB rB],st)
+          | W,Some MemoryTagAccess ->
+              let init,cs,st = STG.emit_store_idx vdep st p init e r2 in
+              Some (None,init,pseudo cs0@cs,st)
           | W,Some MorelloTagAccess ->
               (* TODO: don't waste r2 *)
               let init,cs,st = STCT.emit_store_idx st p init loc rd (Value.to_int e.C.v) in
@@ -2492,10 +2498,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let r,init,cs,st =
                 do_emit_lda_mixed_idx vdep sz o rw st p init loc r2 in
               Some r,init, pseudo cs0@cs,st
-          | R,Some (Tag,None) ->
-              let r,init,cs,st = LDG.emit_load_idx vdep st p init loc r2 in
-              Some r,init, pseudo cs0@cs,st
-          | R,Some (Tag,Some _) -> assert false
           | R,Some (Neon n,None) ->
               let emit_load_idx = match n with
                 | SIMD.NeRel -> Warn.fatal "No laod release"
@@ -2525,9 +2527,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (Atomic rw,Some (sz,o)) ->
               let r,init,cs,st = emit_sta_mixed_idx sz o rw st p init loc r2 (Value.to_int e.C.v) in
               Some r,init,pseudo cs0@cs,st
-          | W,Some (Tag, None) ->
-              let init,cs,st = STG.emit_store_idx vdep st p init e r2 in
-              None,init,pseudo cs0@cs,st
           | W,Some (Pair (opt,idx),None) ->
               let init,cs,st =
                 emit_stp_idx_var (pair_opt_to_st opt) idx vdep st p init loc e r2 in
@@ -2557,7 +2556,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              Warn.fatal
                "Annotation %s does not apply to direction %s"
                (A64.pp_atom a) (Code.pp_dir d)
-          | W,Some (Tag,Some _) -> assert false
+          | (R|W),Some (Tag,_) -> assert false
           | (R|W),Some ((CapaTag|CapaSeal),_) -> assert false
           | W,Some (Neon n,None) ->
              let emit_store_idx = match n with
@@ -2745,6 +2744,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_reg st p init loc r2 addon e in
               Some (None,init,cs2@cs,st)
+          | Some MemoryTagAccess ->
+              let init,cs,st = STG.emit_store_reg st p init loc r2 in
+              Some (None,init,cs2@cs,st)
           | Some MorelloTagAccess ->
               if (Value.to_int e.C.v) > 1 then
                 Warn.fatal "Capability tags can't be incremented above 1";
@@ -2772,9 +2774,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (AcqPc _,_) ->
               Warn.fatal "No store acquirePc"
           | Some (Instr, _) -> Warn.fatal "No Plain Write to label (code location)"
-          | Some (Tag, None) ->
-              let init,cs,st = STG.emit_store_reg st p init loc r2 in
-              None,init,cs2@cs,st
           | Some (Pte (Set pte),None) when StructuredAtom.is_tthm pte ->
               let init,cs,st =
                 STR.emit_store_reg st p init loc r2 None C.evt_null in
@@ -2792,7 +2791,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some ((Pte _,Some _)|(Pte (Read|ReadAcq|ReadAcqPc|ReadHAAcq|ReadHAAcqPc),_))
             -> assert false
           | Some ((Plain _|Rel _),_) -> assert false
-          | Some (Tag,Some _) -> assert false
+          | Some (Tag,_) -> assert false
           | Some ((CapaTag|CapaSeal),_) -> assert false
           | Some (Neon n,None) ->
              let rA,init,st = U.next_init st p init loc in
