@@ -212,16 +212,8 @@ let contain_valid_pte_fields set =
     ) set |> WPTESet.cardinal )
 
 type atom_pte =
-  | Read|ReadAcq|ReadAcqPc
+  | Read
   | Set of WPTESet.t
-  | SetRel of WPTESet.t
-  (* Special `Acq` and `AcqPc` read case for `HA`
-     Note that the plain read for `HA` share the
-     same internal data structure as `Set of WPTESet.t`.
-     Due to  `diy` parsing limitation, it is impossible
-     to introduce `PteHA` to different internal
-     representation. *)
-  | ReadHAAcq | ReadHAAcqPc
 
 let pp_w_pte ws = WPTESet.pp_str "." WPTE.pp ws
 
@@ -347,27 +339,11 @@ module StructuredAtom = struct
     | c -> c
 
   let compare_atom_pte p1 p2 =
-    let rank = function
-      | Read -> 0
-      | ReadAcq -> 1
-      | ReadAcqPc -> 2
-      | Set _ -> 3
-      | SetRel _ -> 4
-      | ReadHAAcq -> 5
-      | ReadHAAcqPc -> 6 in
-    match Int.compare (rank p1) (rank p2) with
-    | 0 -> begin
-        match p1,p2 with
-        | Set s1,Set s2
-        | SetRel s1,SetRel s2 -> WPTESet.compare s1 s2
-        | (Read,Read)
-        | (ReadAcq,ReadAcq)
-        | (ReadAcqPc,ReadAcqPc)
-        | (ReadHAAcq,ReadHAAcq)
-        | (ReadHAAcqPc,ReadHAAcqPc) -> 0
-        | _,_ -> assert false
-      end
-    | c -> c
+    match p1,p2 with
+    | Read,Read -> 0
+    | Read,Set _ -> -1
+    | Set _,Read -> 1
+    | Set s1,Set s2 -> WPTESet.compare s1 s2
 
   let compare_neon n1 n2 =
     let open SIMD in
@@ -521,9 +497,6 @@ module StructuredAtom = struct
     | { access_type = PairAccess (opt,idx); access_order = OrderPlain; } ->
         sprintf "Pa%s%s" (pp_pair_opt opt) (pp_pair_idx idx)
     | { access_type = InstrAccess; access_order = OrderPlain; } -> "I"
-    | { access_type =
-          PteAccess (ReadAcq|ReadAcqPc|SetRel _|ReadHAAcq|ReadHAAcqPc); _ } ->
-        assert false
     | { access_type =
           (CapaTagAccess|CapaSealAccess|TagAccess|PteAccess _
           |NeonAccess _|PairAccess _|InstrAccess);
@@ -884,9 +857,8 @@ module Value = struct
         List.fold_left ( fun acc atom_pte ->
           (* Toggle values for further process *)
           match atom_pte with
-          | Set(field_set)|SetRel(field_set) -> WPTESet.fold precise_set_field field_set acc
-          | ReadHAAcq | ReadHAAcqPc -> precise_set_field HA acc
-          | _ -> acc
+          | Set field_set -> WPTESet.fold precise_set_field field_set acc
+          | Read -> acc
         ) (None,None,None,None,default_pte_loc) pte_atom_list in
       (* Create a new WPTESet to adjust the inital value.
          Collapse None to false as it means no need to change default value *)
@@ -902,13 +874,11 @@ module Value = struct
     let do_setpteval flags pte loc =
       let open WPTE in
       match flags with
-        | Set f|SetRel f when WPTESet.mem HA f || WPTESet.mem HD f ->
+        | Set f when WPTESet.mem HA f || WPTESet.mem HD f ->
           Warn.user_error "Atom `HD` or `HA` is not a pteval write"
-        | Set f|SetRel f -> toggle_pte f pte loc
-        | Read|ReadAcq|ReadAcqPc ->
+        | Set f -> toggle_pte f pte loc
+        | Read ->
           Warn.user_error "Atom `Read|ReadAcq|ReadAcqPc` is not a pteval write"
-        | ReadHAAcq | ReadHAAcqPc ->
-          Warn.user_error "Atom `HA` is not a pteval write"
 
     let set_pteval a p =
       match a.StructuredAtom.access_type with
@@ -923,9 +893,8 @@ module Value = struct
     let affect_pte_field field pte =
       let open WPTE in
       match pte with
-      | Read | ReadAcq | ReadAcqPc -> false
-      | ReadHAAcq | ReadHAAcqPc -> field = AF
-      | Set pte_fields | SetRel pte_fields ->
+      | Read -> false
+      | Set pte_fields ->
         WPTESet.mem (One field) pte_fields
         || WPTESet.mem (Zero field) pte_fields
         (* special case for `HD` and `HA` *)
