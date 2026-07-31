@@ -48,7 +48,7 @@ Checking that --no-primitives option actually removes OCaml primitives
 (different errors are produced)
   $ aslref no-primitives-test.asl
   ASL Dynamic error (DE_DAF):
-    FloorLog2 (primitive) expected an argument greater than 0
+    Primitive "FloorLog2" expected its argument to be greater than 0.
   [1]
   $ aslref --no-primitives no-primitives-test.asl
   File ASL Standard Library, line 80, characters 11 to 16:

@@ -37,8 +37,8 @@ File ../tests/ASLDefinition.t/TypingErrorReporting.asl, line 3,
   characters 11 to 22:
     return 5 + "hello";
            ^^^^^^^^^^^
-ASL Type error (TE_BO): Illegal application of operator + on types
-  integer {5} and string.
+ASL Type error (TE_BO): Operator + is not defined for types integer {5}
+  and string.
 \end{Verbatim}
 % CONSOLE_END
 
@@ -57,8 +57,7 @@ followed by an example of a report from \aslrefterm{} in a \linuxbashshellterm.
 % CONSOLE_BEGIN CONSOLE_STDERR CONSOLE_CMD aslref \definitiontests/DynamicErrorReporting.asl
 \begin{Verbatim}[fontsize=\footnotesize, frame=single]
 > aslref ../tests/ASLDefinition.t/DynamicErrorReporting.asl
-ASL Dynamic error (DE_BO): Illegal application of operator DIV for values 128
-  and 7.
+ASL Dynamic error (DE_BO): Operator DIV is not defined for values 128 and 7.
 \end{Verbatim}
 % CONSOLE_END
 
@@ -101,7 +100,7 @@ File ../tests/ASLDefinition.t/UnreachableStatement.asl, line 5,
   characters 8 to 20:
         unreachable;
         ^^^^^^^^^^^^
-ASL Dynamic error (DE_UNR): unreachable reached.
+ASL Dynamic error (DE_UNR): Execution reached an unreachable statement.
 \end{Verbatim}
 % CONSOLE_END
 

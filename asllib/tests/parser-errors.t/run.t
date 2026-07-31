@@ -3,7 +3,7 @@
   let x = a - b - c;
           ^^^^^
   ASL Grammar error (BE_BOP):
-    Binary operator `-` is not associative - parenthesise to disambiguate.
+    Binary operator `-` is not associative; parenthesise to disambiguate.
   [1]
 
   $ aslref no-expression-elsif.asl
@@ -58,7 +58,7 @@
   let x = a + b - c;
           ^^^^^
   ASL Grammar error (BE_BOP):
-    Operators `-` and `+` have the same priority - parenthesise to disambiguate.
+    Operators `-` and `+` have the same priority; parenthesise to disambiguate.
   [1]
 
   $ aslref empty-record.asl
