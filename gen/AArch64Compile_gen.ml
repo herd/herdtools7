@@ -1720,13 +1720,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (**********)
 
     let add_tag atom loc tag = match atom with
-      | Some (Pte _,_) -> loc
+      | Some { access_type = PteAccess _; _ } -> loc
       | _ ->
         if do_memtag then Code.add_tag loc tag
         else if do_morello then Code.add_capability loc 0
         else loc
 
-    let get_tagged_loc e = add_tag e.C.atom (as_data e.C.loc) e.C.tag
+    let get_tagged_loc e =
+      let atom = Option.map of_legacy e.C.atom in
+      add_tag atom (as_data e.C.loc) e.C.tag
 
     let add_label_to_last_instructions e cs =
       match e.C.check_fault with
@@ -1793,7 +1795,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               (pp_dir d) (C.debug_evt e)
         end
     | Some d,Data loc ->
-        let loc = add_tag e.C.atom loc e.C.tag in
+        let loc = add_tag structured_atom loc e.C.tag in
         let ordinary_access = match d,structured_atom with
         | R,None ->
             let r,init,cs,st = LDR.emit_load st p init loc in
@@ -2343,8 +2345,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       match e.C.dir,e.C.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some d,Data loc ->
-          let loc = add_tag e.C.atom loc e.C.tag in
           let structured_atom = Option.map of_legacy e.C.atom in
+          let loc = add_tag structured_atom loc e.C.tag in
           let ordinary_access = match d,structured_atom with
           | R,None ->
               let r,init,cs,st =
@@ -2691,7 +2693,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 r2,cs2,init,st,[]
             | Some { access_type = TagAccess; access_order = OrderPlain; } ->
                 let cs0,st = calc0_gen csel st vdep r2 r1 in
-                let rA,init,st = U.next_init st p init (add_tag e.C.atom loc (Value.to_int e.C.v)) in
+                let rA,init,st = U.next_init st p init (add_tag structured_atom loc (Value.to_int e.C.v)) in
                 let rB,cB,st = sum_addr st rA r2 in
                 rB,pseudo (cs0@cB),init,st,[]
             | Some { access_type = AccessSize (sz,_); _ } ->
@@ -2727,7 +2729,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 let cs2 = pseudo cs2 in
                 r2,cs2,init,st,addi in
           let r2,cs2,init,st = r2,cs2@pseudo addi,init,st in
-          let loc = add_tag e.C.atom loc e.C.tag in
+          let loc = add_tag structured_atom loc e.C.tag in
           let ordinary_store = match structured_atom with
           | None ->
               let init,cs,st =
