@@ -2502,6 +2502,27 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 {e with C.cseal = (Value.to_int e.C.v)} in
               Some (None,init,
                 csi@csi2@cs@lift_code [str_mixed MachSize.S128 0 rC rB],st)
+          | W,Some { access_type = PteAccess (Set _); access_order = OrderPlain; } ->
+              let init,cs,st =
+                emit_set_pteval_idx false vdep r2 st p init
+                  (Value.to_pte e.C.v) (Misc.add_pte loc) in
+              Some (None,init,pseudo cs0@cs,st)
+          | W,Some { access_type = PteAccess (Set _); access_order = OrderRelease; } ->
+              let init,cs,st =
+                emit_set_pteval_idx true vdep r2 st p init
+                  (Value.to_pte e.C.v) (Misc.add_pte loc) in
+              Some (None,init,pseudo cs0@cs,st)
+          | R,Some { access_type = PteAccess Read; access_order; } ->
+              let emit = match access_order with
+              | OrderPlain -> LDR.emit_load_var_reg
+              | OrderAcquire -> LDAR.emit_load_var_reg
+              | OrderAcquirePc -> LDAPR.emit_load_var_reg
+              | (OrderRelease|OrderAtomic _) -> assert false in
+              let loc = Misc.add_pte loc in
+              let rA,init,st = U.next_init st p init loc in
+              let rA,cs1,st = do_sum_addr vdep st rA r2 in
+              let r,init,cs,st = emit A64.V64 st p init rA in
+              Some (Some r,init,pseudo cs0@pseudo cs1@cs,st)
           | _,_ -> None in
           let regs,inits,cs,st = match ordinary_access with
           | Some result -> result
@@ -2542,26 +2563,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (Atomic rw,Some (sz,o)) ->
               let r,init,cs,st = emit_sta_mixed_idx sz o rw st p init loc r2 (Value.to_int e.C.v) in
               Some r,init,pseudo cs0@cs,st
-          | (W,(Some (Pte (Set _),None))) ->
-              let init,cs,st =
-                emit_set_pteval_idx false vdep r2 st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
-              None,init,pseudo cs0@cs,st
-          | (W,(Some (Pte (SetRel _),None))) ->
-              let init,cs,st =
-                emit_set_pteval_idx true vdep r2 st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
-              None,init,pseudo cs0@cs,st
-          | (R,(Some (Pte (Read|ReadAcq|ReadAcqPc as rk),None)))
-            ->
-              let emit = match rk with
-              | Read -> LDR.emit_load_var_reg
-              | ReadAcq -> LDAR.emit_load_var_reg
-              | ReadAcqPc -> LDAPR.emit_load_var_reg
-              | _ -> assert false in
-              let loc = Misc.add_pte loc in
-              let rA,init,st = U.next_init st p init loc in
-              let rA,cs1,st = do_sum_addr vdep st rA r2 in
-              let r,init,cs,st = emit A64.V64 st p init rA in
-              Some r,init,pseudo cs0@pseudo cs1@cs,st
          | (W|R) as d,Some (Pte _,_ as a) ->
              Warn.fatal
                "Annotation %s does not apply to direction %s"
