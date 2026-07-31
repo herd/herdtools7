@@ -2855,17 +2855,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       ropt,init,insert_isb isb c cs,st
 
     let tr_atom = function
-      | Some ((Tag|Pte _),_) -> V64
-      | at ->
-         begin match A64.get_access_atom at with
+      | Some MemoryTagAccess
+      | Some (PteAccess _) -> V64
+      | atom ->
+         begin match get_access_atom atom with
          | Some (sz,_) -> sz2v sz
          | None -> vloc
          end
 
     let node2vdep n =
       let e = n.C.evt in
-      let at = e.C.atom in
-      tr_atom at
+      let atom = Option.map of_legacy e.C.atom in
+      tr_atom atom
 
     let emit_access_dep st p init e (dp,csel) r1 n1 =
       let vdep = node2vdep n1 in
