@@ -2627,7 +2627,24 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
           let r2,cs2,init,st,addi =
             let r2,st = next_reg st in
-            match atom with
+            match structured_atom with
+            | Some (PteAccess (PteSet (_,pte)))
+              when not (StructuredAtom.is_tthm pte) ->
+                let rA,init,st = U.emit_pteval st p init (Value.to_pte e.C.v) in
+                let cs,st =
+                  match vdep with
+                  | A64.V128 ->
+                      Warn.fatal "128 bit dependency to pte access"
+                  | A64.V64 ->
+                      calc0_gen csel st A64.V64 r2 r1
+                  | A64.V32 ->
+                      let r3,st = tempo1 st in
+                      let cs0,st = calc0_gen csel st A64.V64 r2 r3 in
+                      sxtw r3 r1::cs0,st in
+                let addi = [add A64.V64 r2 r2 rA] in
+                let cs2 = pseudo cs in
+                r2,cs2,init,st,addi
+            | _ -> begin match atom with
             | Some (Tag,None) ->
                 let cs0,st = calc0_gen csel st vdep r2 r1 in
                 let rA,init,st = U.next_init st p init (add_tag e.C.atom loc (Value.to_int e.C.v)) in
@@ -2644,22 +2661,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 let cs2 = pseudo cs0 in
                 let addi = [addi r2 r2 e.C.ord] in
                 r2,cs2,init,st,addi
-            | Some (Pte (Set pte|SetRel pte),None)
-              when not (StructuredAtom.is_tthm pte) ->
-                let rA,init,st = U.emit_pteval st p init (Value.to_pte e.C.v) in
-                let cs,st =
-                  match vdep with
-                  | A64.V128 ->
-                      Warn.fatal "128 bit dependency to pte access"
-                  | A64.V64 ->
-                      calc0_gen csel st A64.V64 r2 r1
-                  | A64.V32 ->
-                      let r3,st = tempo1 st in
-                      let cs0,st = calc0_gen csel st A64.V64 r2 r3 in
-                      sxtw r3 r1::cs0,st in
-                let addi = [add A64.V64 r2 r2 rA] in
-                let cs2 = pseudo cs in
-                r2,cs2,init,st,addi
             | _ ->
                 let cs2,st =
                   match vdep,vloc with
@@ -2673,7 +2674,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       sxtw r2 r3::cs,st in
                 let addi = [addi r2 r2 (Value.to_int e.C.v)] in
                 let cs2 = pseudo cs2 in
-                r2,cs2,init,st,addi in
+                r2,cs2,init,st,addi end in
           let r2,cs2,init,st = match atom with
             | Some(Neon _, None) -> r2,cs2,init,st
             | _ -> r2,cs2@pseudo addi,init,st in
@@ -2742,6 +2743,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 emit_str_addon
                   st p init r2 rA (Some Capability) {e with C.cseal = (Value.to_int e.C.v)} in
               Some (None,init,cs2@cs@lift_code [str_mixed MachSize.S128 0 r2 rA],st)
+          | Some (PteAccess (PteSet (order,pte)))
+            when StructuredAtom.is_tthm pte ->
+              let emit = match order with
+              | `Plain -> STR.emit_store_reg
+              | `Release -> STLR.emit_store_reg in
+              let init,cs,st =
+                emit st p init loc r2 None C.evt_null in
+              Some (None,init,cs2@cs,st)
+          | Some (PteAccess (PteSet (order,_))) ->
+              let init,cs,st =
+                emit_set_pteval_reg (order = `Release)
+                  st p init r2 (Misc.add_pte loc) in
+              Some (None,init,cs2@cs,st)
           | _ -> None in
           begin match ordinary_store with
           | Some result -> result
@@ -2758,22 +2772,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some (AcqPc _,_) ->
               Warn.fatal "No store acquirePc"
           | Some (Instr, _) -> Warn.fatal "No Plain Write to label (code location)"
-          | Some (Pte (Set pte),None) when StructuredAtom.is_tthm pte ->
-              let init,cs,st =
-                STR.emit_store_reg st p init loc r2 None C.evt_null in
-              None,init,cs2@cs,st
-          | Some (Pte (SetRel pte),None) when StructuredAtom.is_tthm pte ->
-              let init,cs,st =
-                STLR.emit_store_reg st p init loc r2 None C.evt_null in
-              None,init,cs2@cs,st
-          | Some (Pte (Set _),None) ->
-              let init,cs,st = emit_set_pteval_reg false st p init r2 (Misc.add_pte loc) in
-              None,init,cs2@cs,st
-          | Some (Pte (SetRel _),None) ->
-              let init,cs,st = emit_set_pteval_reg true st p init r2 (Misc.add_pte loc) in
-              None,init,cs2@cs,st
-          | Some ((Pte _,Some _)|(Pte (Read|ReadAcq|ReadAcqPc|ReadHAAcq|ReadHAAcqPc),_))
-            -> assert false
+          | Some (Pte _,_) -> assert false
           | Some ((Plain _|Rel _),_) -> assert false
           | Some (Tag,_) -> assert false
           | Some ((CapaTag|CapaSeal),_) -> assert false
