@@ -121,16 +121,17 @@ let apply_prim_set : partial_effect -> prim_set -> partial_effect option =
   let build_atom_eff eff a =
     Option.map
       (fun atom -> { eff with atom; explicit_mem = true })
-      (merge_atomo_opt eff.atom (Some (a, None)))
+      (merge_atomo_opt eff.atom (Some a))
   in
+  let open A.StructuredAtom in
   fun eff x ->
     match x with
     | Prim "R" -> build_dir_eff eff Code.R
     | Prim "W" -> build_dir_eff eff Code.W
     | Prim "M" -> Some { eff with explicit_mem = true }
-    | Prim "A" -> build_atom_eff eff (A.Acq None)
-    | Prim "Q" -> build_atom_eff eff (A.AcqPc None)
-    | Prim "L" -> build_atom_eff eff (A.Rel None)
+    | Prim "A" -> build_atom_eff eff (OrdinaryAccess `Acquire)
+    | Prim "Q" -> build_atom_eff eff (OrdinaryAccess `AcquirePC)
+    | Prim "L" -> build_atom_eff eff (OrdinaryAccess `Release)
     | _ -> None
 
 let build_effect : partial_effect -> prim_set list -> partial_effect option =
