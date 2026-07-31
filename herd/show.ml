@@ -72,7 +72,7 @@ module Make(O:PrettyConf.S) = struct
     with_temp_file ~keep:keep_tmp_pdf name_ps @@ fun () ->
     run_cmds
       [
-        sprintf "%s -T%s %s -o %s" generator ext name_dot name_ps;
+        sprintf "%s -T%s %s > %s" generator ext name_dot name_ps;
         sprintf "%s %s" prog name_ps;
       ]
 
