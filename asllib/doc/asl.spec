@@ -8382,7 +8382,8 @@ typing function check_implementations_unique(impls: list0(func)) ->
 
   case non_empty {
     impls =: match_cons(h, t);
-    INDEX(i, t: signatures_match(h, t[i]) -> False);
+    INDEX(i, t: signatures_match(h, t[i]) -> matches[i]);
+    te_check(not_single(list_or(matches)), TE_OE) -> True;
     check_implementations_unique(t) -> True;
     --
     True;

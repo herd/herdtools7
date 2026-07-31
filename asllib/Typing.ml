@@ -33,8 +33,8 @@ let fatal_from ~loc = Error.fatal_from loc
 let undefined_identifier ~loc x = fatal_from ~loc (Error.UndefinedIdentifier x)
 let add_pos_from ~loc = add_pos_from loc
 
-let conflict ~loc expected provided =
-  fatal_from ~loc (Error.ConflictingTypes (expected, provided))
+let conflict ?(reason = Error.UnexpectedType) ~loc expected provided =
+  fatal_from ~loc (Error.ConflictingTypes (reason, expected, provided))
 
 let plus e1 e2 = binop `ADD e1 e2
 let minus e1 e2 = binop `SUB e1 e2
@@ -573,7 +573,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       if false then
         Format.eprintf "@[<hv 2>Checking %a@ <: %a@]@." PP.pp_ty t1 PP.pp_ty t2
     in
-    if Types.type_satisfies env t1 t2 then () else conflict ~loc [ t2.desc ] t1
+    if Types.type_satisfies env t1 t2 then ()
+    else conflict ~reason:Error.TypeSatisfaction ~loc [ t2.desc ] t1
 
   (* CheckStructureBoolean *)
 
@@ -2177,7 +2178,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     E_GetItem (e2, index) |> add_pos_from ~loc:e,
                     ses1 )
                 else
-                  fatal_from ~loc (Error.BadField (field_name, t_e2))
+                  fatal_from ~loc (Error.BadTupleIndex (index, List.length tys))
                   |: TypingRule.EGetTupleItem
             (* End *)
             (* Begin EGetBadField *)
@@ -2734,7 +2735,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | _ -> Types.type_satisfies env t s
 
   let check_can_be_initialized_with ~loc env s t () =
-    if can_be_initialized_with env s t then () else conflict ~loc [ s.desc ] t
+    if can_be_initialized_with env s t then ()
+    else conflict ~reason:Error.TypeSatisfaction ~loc [ s.desc ] t
   (* End *)
 
   (* Begin ShouldRememberImmutableExpression *)
