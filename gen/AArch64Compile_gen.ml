@@ -3040,10 +3040,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let open WPTE in
       (* collect distinct tthm *)
       let tthm_value = C.fold ( fun node acc ->
-        match node.C.edge.E.a1 with
-        | Some(Pte (Set e|SetRel e), _) when StructuredAtom.is_tthm e ->
-            WPTESet.union e acc
-        | Some(Pte (ReadHAAcq|ReadHAAcqPc), _) -> WPTESet.add HA acc
+        let atom = Option.map of_legacy node.C.edge.E.a1 in
+        match atom with
+        | Some { access_type = PteAccess (Set pte);
+                 access_order = (OrderPlain|OrderRelease); }
+          when StructuredAtom.is_tthm pte ->
+            WPTESet.union pte acc
+        | Some { access_type = PteAccess (Set pte);
+                 access_order = (OrderAcquire|OrderAcquirePc); }
+          when pte = WPTESet.singleton HA ->
+            WPTESet.add HA acc
         | _ -> acc
         ) n WPTESet.empty
       |> WPTESet.pp_str " " WPTE.pp in
