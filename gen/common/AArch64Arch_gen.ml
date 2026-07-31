@@ -224,17 +224,20 @@ let contain_valid_pte_fields set =
     | p -> p
     ) set |> WPTESet.cardinal )
 
+type access_read = [ `Plain | `Acquire | `AcquirePC ]
+type access_write = [ `Plain | `Release ]
+type access_order = [ access_read | access_write ]
+let compare_access_order (o1 : access_order) (o2 : access_order) =
+  Stdlib.compare o1 o2
+let compare_mixed (sz1,o1) (sz2,o2) =
+  match MachSize.compare sz1 sz2 with
+  | 0 -> Misc.int_compare o1 o2
+  | c -> c
+
 type atom_pte =
-  | Read|ReadAcq|ReadAcqPc
-  | Set of WPTESet.t
-  | SetRel of WPTESet.t
-  (* Special `Acq` and `AcqPc` read case for `HA`
-     Note that the plain read for `HA` share the
-     same internal data structure as `Set of WPTESet.t`.
-     Due to  `diy` parsing limitation, it is impossible
-     to introduce `PteHA` to different internal
-     representation. *)
-  | ReadHAAcq | ReadHAAcqPc
+  | Read of access_read
+  | ReadHA of access_read
+  | Set of access_write * WPTESet.t
 
 let pp_w_pte ws = WPTESet.pp_str "." WPTE.pp ws
 
@@ -270,14 +273,9 @@ type rmw = LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas | AllAmo
   | SafeAmo
 
 module StructuredAtom : sig
-  type access_read = [ `Plain | `Acquire | `AcquirePC ]
-  type access_write = [ `Plain | `Release ]
-  type access_order = [ access_read | access_write ]
-
-  type pte_access =
-    | PteRead of access_read
-    | PteReadHA of access_read
-    | PteSet of access_write * WPTESet.t
+  type nonrec access_read = access_read
+  type nonrec access_write = access_write
+  type nonrec access_order = access_order
 
   type atomic_access =
     | AtomicOrdinary
@@ -287,7 +285,7 @@ module StructuredAtom : sig
     | OrdinaryAccess of access_order
     | MixedSizeAccess of access_order * MachMixed.t
     | MorelloAccess of access_order
-    | PteAccess of pte_access
+    | PteAccess of atom_pte
     | NeonAccess of neon_opt
     | Atomic of atom_rw * atomic_access
     | MorelloTagAccess
@@ -318,20 +316,9 @@ module StructuredAtom : sig
   val merge : t -> t -> t option
   val fold : (t -> 'a -> 'a) -> 'a -> 'a
 end = struct
-  type access_read = [ `Plain | `Acquire | `AcquirePC ]
-  type access_write = [ `Plain | `Release ]
-  type access_order = [ access_read | access_write ]
-  let compare_access_order (o1 : access_order) (o2 : access_order) =
-    Stdlib.compare o1 o2
-  let compare_mixed (sz1,o1) (sz2,o2) =
-    match MachSize.compare sz1 sz2 with
-    | 0 -> Misc.int_compare o1 o2
-    | c -> c
-
-  type pte_access =
-    | PteRead of access_read
-    | PteReadHA of access_read
-    | PteSet of access_write * WPTESet.t
+  type nonrec access_read = access_read
+  type nonrec access_write = access_write
+  type nonrec access_order = access_order
 
   type atomic_access =
     | AtomicOrdinary
@@ -350,7 +337,7 @@ end = struct
     (* Morello capability data access, as in `Pc`, `Ac`, `Qc`, or `Lc`. *)
     | MorelloAccess of access_order
     (* VMSA PTE access, as in `Pte`, `PteA`, `PteV1`, or `PteHA`. *)
-    | PteAccess of pte_access
+    | PteAccess of atom_pte
     (* SIMD/Neon/SVE/SME access, as in `NeP` or `Ne1`. *)
     | NeonAccess of neon_opt
     | Atomic of atom_rw * atomic_access
@@ -366,17 +353,17 @@ end = struct
 
   let compare_atom_pte p1 p2 =
     let rank = function
-      | PteRead _ -> 0
-      | PteReadHA _ -> 1
-      | PteSet _ -> 2 in
+      | Read _ -> 0
+      | ReadHA _ -> 1
+      | Set _ -> 2 in
     match Misc.int_compare (rank p1) (rank p2) with
     | 0 -> begin
         match p1,p2 with
-        | PteRead o1,PteRead o2
-        | PteReadHA o1,PteReadHA o2 ->
+        | Read o1,Read o2
+        | ReadHA o1,ReadHA o2 ->
             compare_access_order
               (o1 :> access_order) (o2 :> access_order)
-        | PteSet (o1,s1),PteSet (o2,s2) ->
+        | Set (o1,s1),Set (o2,s2) ->
             Misc.pair_compare compare_access_order WPTESet.compare
               ((o1 :> access_order),s1) ((o2 :> access_order),s2)
         | _,_ -> assert false
@@ -404,8 +391,8 @@ end = struct
 
   let access_order = function
     | OrdinaryAccess o|MixedSizeAccess (o,_)|MorelloAccess o -> Some o
-    | PteAccess (PteRead o|PteReadHA o) -> Some (o :> access_order)
-    | PteAccess (PteSet (o,_)) -> Some (o :> access_order)
+    | PteAccess (Read o|ReadHA o) -> Some (o :> access_order)
+    | PteAccess (Set (o,_)) -> Some (o :> access_order)
     | Atomic _|MorelloTagAccess|MorelloSealAccess|MemoryTagAccess
     | NeonAccess _|PairAccess _|InstrAccess -> None
 
@@ -467,15 +454,15 @@ end = struct
     | MorelloTagAccess -> "Ct"
     | MorelloSealAccess -> "Cs"
     | MemoryTagAccess -> "T"
-    | PteAccess (PteRead `Plain) -> "Pte"
-    | PteAccess (PteRead `Acquire) -> "PteA"
-    | PteAccess (PteRead `AcquirePC) -> "PteQ"
-    | PteAccess (PteReadHA `Plain) -> "PteHA"
-    | PteAccess (PteReadHA `Acquire) -> "PteHAA"
-    | PteAccess (PteReadHA `AcquirePC) -> "PteHAQ"
-    | PteAccess (PteSet (`Plain,p)) ->
+    | PteAccess (Read `Plain) -> "Pte"
+    | PteAccess (Read `Acquire) -> "PteA"
+    | PteAccess (Read `AcquirePC) -> "PteQ"
+    | PteAccess (ReadHA `Plain) -> "PteHA"
+    | PteAccess (ReadHA `Acquire) -> "PteHAA"
+    | PteAccess (ReadHA `AcquirePC) -> "PteHAQ"
+    | PteAccess (Set (`Plain,p)) ->
         sprintf "Pte%s" (pp_w_pte p)
-    | PteAccess (PteSet (`Release,p)) ->
+    | PteAccess (Set (`Release,p)) ->
         sprintf "Pte%sL" (pp_w_pte p)
     | NeonAccess n -> SIMD.pp n
     | PairAccess opt -> sprintf "Pa%s" (pp_pair_opt opt)
@@ -534,14 +521,14 @@ end = struct
     | _ -> false
 
   let get_machine_feature = function
-    | Some (PteAccess (PteSet (_,pte))) ->
+    | Some (PteAccess (Set (_,pte))) ->
         let open WPTE in
         WPTESet.fold
           (fun field features -> match field with
             | HA|HD -> StringSet.add (WPTE.pp field) features
             | _ -> features)
           pte StringSet.empty
-    | Some (PteAccess (PteReadHA _)) -> StringSet.singleton (WPTE.pp WPTE.HA)
+    | Some (PteAccess (ReadHA _)) -> StringSet.singleton (WPTE.pp WPTE.HA)
     | Some _|None -> StringSet.empty
 
   let applies a d =
@@ -554,9 +541,9 @@ end = struct
       |MorelloAccess (`Acquire|`AcquirePC)),R -> true
     | (OrdinaryAccess `Release|MixedSizeAccess (`Release,_)
       |MorelloAccess `Release),W -> true
-    | PteAccess (PteRead _|PteReadHA _),R -> true
-    | PteAccess (PteSet (`Plain,pte)),R when WPTESet.mem WPTE.HA pte -> true
-    | PteAccess (PteSet _),W -> true
+    | PteAccess (Read _|ReadHA _),R -> true
+    | PteAccess (Set (`Plain,pte)),R when WPTESet.mem WPTE.HA pte -> true
+    | PteAccess (Set _),W -> true
     | InstrAccess,R -> true
     | (OrdinaryAccess `Plain|MixedSizeAccess (`Plain,_)
       |MorelloAccess `Plain),(R|W)
@@ -597,10 +584,10 @@ end = struct
 
   let to_bank = function
     | MemoryTagAccess -> Code.Tag
-    | PteAccess (PteSet (_,p))
+    | PteAccess (Set (_,p))
       when is_tthm p -> Code.Ord
-    | PteAccess (PteReadHA _) -> Code.Ord
-    | PteAccess (PteRead _|PteSet _) -> Code.Pte
+    | PteAccess (ReadHA _) -> Code.Ord
+    | PteAccess (Read _|Set _) -> Code.Pte
     | MorelloTagAccess -> Code.CapaTag
     | MorelloSealAccess -> Code.CapaSeal
     | NeonAccess n -> Code.VecReg n
@@ -635,35 +622,25 @@ end = struct
           | order1,order2 when m1 = m2 && order1 = order2 -> Some a1
           | _,_ -> None
         end
-    | Atomic (rw,(AtomicOrdinary|AtomicSize _)),
-      MixedSizeAccess (`Plain,m)
-    | MixedSizeAccess (`Plain,m),
-      Atomic (rw,(AtomicOrdinary|AtomicSize _)) ->
+    | Atomic (rw,(AtomicOrdinary|AtomicSize _)),MixedSizeAccess (`Plain,m)
+    | MixedSizeAccess (`Plain,m),Atomic (rw,(AtomicOrdinary|AtomicSize _)) ->
         Some (Atomic (rw,AtomicSize m))
-    | PteAccess (PteRead `Plain),
-      OrdinaryAccess ((`Acquire|`AcquirePC) as order)
-    | OrdinaryAccess ((`Acquire|`AcquirePC) as order),
-      PteAccess (PteRead `Plain) ->
-        Some (PteAccess (PteRead order))
-    | PteAccess (PteSet (`Plain,set)),
-      OrdinaryAccess ((`Acquire|`AcquirePC) as order)
-    | OrdinaryAccess ((`Acquire|`AcquirePC) as order),
-      PteAccess (PteSet (`Plain,set))
+    | PteAccess (Read `Plain),OrdinaryAccess ((`Acquire|`AcquirePC) as order)
+    | OrdinaryAccess ((`Acquire|`AcquirePC) as order),PteAccess (Read `Plain) ->
+        Some (PteAccess (Read order))
+    | PteAccess (Set (`Plain,set)),OrdinaryAccess ((`Acquire|`AcquirePC) as order)
+    | OrdinaryAccess ((`Acquire|`AcquirePC) as order),PteAccess (Set (`Plain,set))
       when set = WPTESet.singleton HA ->
-        Some (PteAccess (PteReadHA order))
-    | PteAccess (PteSet (`Plain,set)),OrdinaryAccess `Release
-    | OrdinaryAccess `Release,PteAccess (PteSet (`Plain,set)) ->
-        Some (PteAccess (PteSet (`Release,set)))
-    | PteAccess (PteRead `Plain),PteAccess (PteSet (`Plain,set))
-    | PteAccess (PteSet (`Plain,set)),PteAccess (PteRead `Plain)
-      when WPTESet.mem HA set ->
-        Some (PteAccess (PteSet (`Plain,set)))
-    | PteAccess (PteSet (o1,set1)),PteAccess (PteSet (o2,set2)) ->
+        Some (PteAccess (ReadHA order))
+    | PteAccess (Set (`Plain,set)),OrdinaryAccess `Release
+    | OrdinaryAccess `Release,PteAccess (Set (`Plain,set)) ->
+        Some (PteAccess (Set (`Release,set)))
+    | PteAccess (Set (o1,set1)),PteAccess (Set (o2,set2)) ->
         let set = WPTESet.union set1 set2 in
         begin match merge_order o1 o2 with
         | Some order
           when contain_valid_pte_fields set || contain_valid_tthm_fields set ->
-            Some (PteAccess (PteSet (order,set)))
+            Some (PteAccess (Set (order,set)))
         | Some _|None -> None
         end
     | _,_ -> if equal a1 a2 then Some a1 else None
@@ -673,18 +650,18 @@ end = struct
   let fold_pte_access f r =
     let open WPTE in
     let fold_set set r =
-      f (PteAccess (PteSet (`Plain,set)))
-        (f (PteAccess (PteSet (`Release,set))) r) in
+      f (PteAccess (Set (`Plain,set)))
+        (f (PteAccess (Set (`Release,set))) r) in
     let r =
       List.fold_left
         (fun r pte -> fold_set (WPTESet.singleton pte) r)
         r WPTE.all in
     r
-    |> f (PteAccess (PteRead `Plain))
-    |> f (PteAccess (PteRead `Acquire))
-    |> f (PteAccess (PteRead `AcquirePC))
-    |> f (PteAccess (PteReadHA `Acquire))
-    |> f (PteAccess (PteReadHA `AcquirePC))
+    |> f (PteAccess (Read `Plain))
+    |> f (PteAccess (Read `Acquire))
+    |> f (PteAccess (Read `AcquirePC))
+    |> f (PteAccess (ReadHA `Acquire))
+    |> f (PteAccess (ReadHA `AcquirePC))
 
   let fold_neon_access fold f r =
     fold (fun n -> f (NeonAccess n)) r
@@ -836,9 +813,9 @@ module Value = struct
         List.fold_left ( fun acc atom_pte ->
           (* Toggle values for further process *)
           match atom_pte with
-          | StructuredAtom.PteSet (_,field_set) ->
+          | Set (_,field_set) ->
               WPTESet.fold precise_set_field field_set acc
-          | StructuredAtom.PteReadHA _ -> precise_set_field HA acc
+          | ReadHA _ -> precise_set_field HA acc
           | _ -> acc
         ) (None,None,None,None,default_pte_loc) pte_atom_list in
       (* Create a new WPTESet to adjust the inital value.
@@ -855,12 +832,12 @@ module Value = struct
     let do_setpteval flags pte loc =
       let open WPTE in
       match flags with
-        | StructuredAtom.PteSet (_,f) when WPTESet.mem HA f || WPTESet.mem HD f ->
+        | Set (_,f) when WPTESet.mem HA f || WPTESet.mem HD f ->
           Warn.user_error "Atom `HD` or `HA` is not a pteval write"
-        | StructuredAtom.PteSet (_,f) -> toggle_pte f pte loc
-        | StructuredAtom.PteRead _ ->
+        | Set (_,f) -> toggle_pte f pte loc
+        | Read _ ->
           Warn.user_error "Atom `Read|ReadAcq|ReadAcqPc` is not a pteval write"
-        | StructuredAtom.PteReadHA _ ->
+        | ReadHA _ ->
           Warn.user_error "Atom `HA` is not a pteval write"
 
     let set_pteval a p =
@@ -876,9 +853,9 @@ module Value = struct
     let affect_pte_field field pte =
       let open WPTE in
       match pte with
-      | StructuredAtom.PteRead _ -> false
-      | StructuredAtom.PteReadHA _ -> field = AF
-      | StructuredAtom.PteSet (_,pte_fields) ->
+      | Read _ -> false
+      | ReadHA _ -> field = AF
+      | Set (_,pte_fields) ->
         WPTESet.mem (One field) pte_fields
         || WPTESet.mem (Zero field) pte_fields
         (* special case for `HD` and `HA` *)
