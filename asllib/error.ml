@@ -313,91 +313,102 @@ module ErrorCode = struct
 
   let of_error e =
     match e.desc with
-    (********** Errors that correspond to error codes **********)
-    | ReservedIdentifier _ -> Some (Build RI)
-    | UnknownSymbol _ -> Some (Build LE)
+    (********** Build errors **********)
     | BadBinopPriority _ -> Some (Build BOP)
     | BadDeclarationSyntax _ -> Some (Build BD)
-    | BadField _ | MissingField _ -> Some (Typing BF)
-    | BadPattern _ | BadTypesForBinop _
-    | UnsupportedUnop (Static, _, _)
-    | UnsupportedBinop (Static, _, _, _) ->
-        Some (Typing BO)
-    | BadSlices (NonPositiveLength _)
-    | BadSlices (OutOfBitvectorBounds _)
-    | BadSlices (NegativeStartOrLength (Static, _))
-    | V0EmptySlice
-    | OverlappingSlices (_, Static)
-    | BitfieldsDontAlign _ ->
-        Some (Typing BS)
-    | BadSlices (NegativeStartOrLength (Dynamic, _)) -> Some (Dynamic BI)
-    | BadIndex _ -> Some (Dynamic BI)
-    | BadTupleIndex _ -> Some (Typing BTI)
-    | UndefinedIdentifier _ -> Some (Typing UI)
-    | ConflictingTypes (UnexpectedType, _, _)
-    | AssignToTupleElement _ | ConstrainedIntegerExpected _
-    | UnexpectedPendingConstrained | ExpectedSingularType _
-    | ExpectedNamedType _ | UnexpectedCollection | MismatchedBitvectorWidths _
-    | ExpectedBitvectorType _ | CollectionBaseNotVariable _ | BadTupleArity _ ->
-        Some (Typing UT)
-    | ConflictingTypes (TypeSatisfaction, _, _) -> Some (Typing TSF)
-    | MismatchedCallType _ | BadCallArity _ | BadParameterArity _
-    | NoCallCandidate _ ->
-        Some (Typing BC)
-    | UnsupportedUnop (Dynamic, _, _) | UnsupportedBinop (Dynamic, _, _, _) ->
-        Some (Dynamic BO)
-    | AssertionFailed _ | BadPrimitiveArgument _ -> Some (Dynamic DAF)
-    | ImpureExpression _ | MismatchedPurity _ | ConflictingSideEffects _
-    | ConstantTimeBroken _ ->
-        Some (Typing SEV)
-    | AssignToImmutable _ -> Some (Typing AIM)
-    | AlreadyDeclaredIdentifier _ -> Some (Typing IAD)
-    | BadReturnStmt _ | BadParameterDecl _ | NonReturningFunction _
-    | NoreturnViolation _ | BadParameterExpr _ | BadParameterType _ ->
-        Some (Typing BSPD)
-    | UncaughtException _ -> Some (Dynamic UE)
-    | OverlappingSlices (_, Dynamic) -> Some (Dynamic OSA)
-    | BadLDI _ | BadRecursiveDecls _ -> Some (Typing BD)
-    | BadATC _ -> Some (Typing TAF)
-    | DynamicATCFailure _ -> Some (Dynamic TAF)
-    | BaseValueEmptyType _ | BaseValueNonSymbolic _ -> Some (Typing NBV)
-    | ArbitraryEmptyType _ -> Some (Dynamic AET)
-    | UnreachableReached -> Some (Dynamic UNR)
-    | LoopLimitReached | RecursionLimitReached Dynamic -> Some (Dynamic LE)
-    | NegativeArrayLength _ -> Some (Dynamic NAL)
-    | MultipleImplementations _ | NoOverrideCandidate
-    | TooManyOverrideCandidates _ ->
-        Some (Typing OE)
-    | PrecisionLostDefining -> Some (Typing PLD)
-    | NoEntryPoint -> Some (Dynamic NEP)
-    | RecursionLimitReached Static | StaticEvaluationFailure _ ->
-        Some (Typing SEF)
-    | NoCommonAncestor _ -> Some (Typing LCA)
-    (********** Errors that do not cleanly correspond to a code **********)
-    (* When type checking is skipped, evaluation can lack inferred type
-       information or encounter mismatches that would normally be reported
-       during typing. The specification therefore assigns these failures no
-       dynamic error code. *)
-    | UncheckedExecutionError _ -> None
     | CannotParse _ (* also used for targeted lexer diagnostics *) ->
         Some (Build PE)
+    | MultipleWrites _ -> Some (Build PE)
+    | ObsoleteSyntax _ -> Some (Build PE)
+    | ReservedIdentifier _ -> Some (Build RI)
+    | UnknownSymbol _ -> Some (Build LE)
+    (********** Typing errors **********)
+    | AlreadyDeclaredIdentifier _ -> Some (Typing IAD)
+    | AssignToImmutable _ -> Some (Typing AIM)
+    | AssignToTupleElement _ -> Some (Typing UT)
+    | BadATC _ -> Some (Typing TAF)
+    | BadCallArity _ -> Some (Typing BC)
+    | BadField _ -> Some (Typing BF)
+    | BadLDI _ -> Some (Typing BD)
+    | BadParameterArity _ -> Some (Typing BC)
+    | BadParameterDecl _ | BadParameterExpr _ | BadParameterType _ ->
+        Some (Typing BSPD)
+    | BadPattern _ -> Some (Typing BO)
+    | BadRecursiveDecls _ -> Some (Typing BD)
+    | BadReturnStmt _ -> Some (Typing BSPD)
+    | BadSlices (NonPositiveLength _)
+    | BadSlices (OutOfBitvectorBounds _)
+    | BadSlices (NegativeStartOrLength (Static, _)) ->
+        Some (Typing BS)
+    | BadTupleArity _ -> Some (Typing UT)
+    | BadTupleIndex _ -> Some (Typing BTI)
+    | BadTypesForBinop _ -> Some (Typing BO)
+    | BaseValueEmptyType _ | BaseValueNonSymbolic _ -> Some (Typing NBV)
+    | BitfieldsDontAlign _ -> Some (Typing BS)
+    | CollectionBaseNotVariable _ -> Some (Typing UT)
+    | ConflictingSideEffects _ -> Some (Typing SEV)
+    | ConflictingTypes (TypeSatisfaction, _, _) -> Some (Typing TSF)
+    | ConflictingTypes (UnexpectedType, _, _) -> Some (Typing UT)
+    | ConstantTimeBroken _ -> Some (Typing SEV)
+    | ConstrainedIntegerExpected _ -> Some (Typing UT)
+    | ExpectedBitvectorType _ | ExpectedNamedType _ | ExpectedSingularType _ ->
+        Some (Typing UT)
+    | ImpureExpression _ -> Some (Typing SEV)
+    | MismatchedBitvectorWidths _ -> Some (Typing UT)
+    | MismatchedCallType _ -> Some (Typing BC)
+    | MismatchedPurity _ -> Some (Typing SEV)
+    | MissingField _ -> Some (Typing BF)
+    | MultipleImplementations _ -> Some (Typing OE)
+    | NoCallCandidate _ -> Some (Typing BC)
+    | NoCommonAncestor _ -> Some (Typing LCA)
+    | NonReturningFunction _ -> Some (Typing BSPD)
+    | NoOverrideCandidate -> Some (Typing OE)
+    | NoreturnViolation _ -> Some (Typing BSPD)
+    | OverlappingSlices (_, Static) -> Some (Typing BS)
+    | PrecisionLostDefining -> Some (Typing PLD)
+    | RecursionLimitReached Static -> Some (Typing SEF)
+    | StaticEvaluationFailure _ -> Some (Typing SEF)
+    | TooManyOverrideCandidates _ -> Some (Typing OE)
+    | UndefinedIdentifier _ -> Some (Typing UI)
+    | UnexpectedCollection | UnexpectedPendingConstrained -> Some (Typing UT)
+    | UnsupportedBinop (Static, _, _, _) | UnsupportedUnop (Static, _, _) ->
+        Some (Typing BO)
+    | V0EmptySlice -> Some (Typing BS)
+    (********** Dynamic errors **********)
+    | ArbitraryEmptyType _ -> Some (Dynamic AET)
+    | AssertionFailed _ -> Some (Dynamic DAF)
+    | BadIndex _ -> Some (Dynamic BI)
+    | BadPrimitiveArgument _ -> Some (Dynamic DAF)
+    | BadSlices (NegativeStartOrLength (Dynamic, _)) -> Some (Dynamic BI)
+    | DynamicATCFailure _ -> Some (Dynamic TAF)
+    | LoopLimitReached -> Some (Dynamic LE)
+    | NegativeArrayLength _ -> Some (Dynamic NAL)
+    | NoEntryPoint -> Some (Dynamic NEP)
+    | OverlappingSlices (_, Dynamic) -> Some (Dynamic OSA)
+    | RecursionLimitReached Dynamic -> Some (Dynamic LE)
+    | UncaughtException _ -> Some (Dynamic UE)
+    | UnexpectedInitialisationThrow _ -> Some (Dynamic UE)
+    | UnreachableReached -> Some (Dynamic UNR)
+    | UnsupportedBinop (Dynamic, _, _, _) | UnsupportedUnop (Dynamic, _, _) ->
+        Some (Dynamic BO)
+    (********** Errors without specification codes **********)
     (* [WellConstrained] contains a non-empty list in the specification, and
        the parser prevents source programs from violating that invariant. *)
     | EmptyConstraints -> None
     (* Implementation limitations are not ASL errors and have no specification
        error code. *)
     | ImplementationIntegerOverflow _ -> None
-    | MultipleWrites _ -> Some (Build PE)
-    | UnexpectedInitialisationThrow _ -> Some (Dynamic UE)
-    (********** Errors without specification codes **********)
-    (* ASLv0 diagnostics have no ASLv1 specification error codes. *)
+    (* Internal invariant violations are not ASL errors. *)
+    | InternalInvariantError _ -> None
+    (* When type checking is skipped, evaluation can lack inferred type
+       information or encounter mismatches that would normally be reported
+       during typing. The specification therefore assigns these failures no
+       dynamic error code. *)
+    | UncheckedExecutionError _ -> None
+    (* These ASLv0 diagnostics have no ASLv1 specification error codes. *)
     | V0InvalidExpr _ | V0ParameterWithoutDecl _
     | V0SetterWithoutCorrespondingGetter _ ->
         None
-    (* Internal invariant violations are not ASL errors. *)
-    | InternalInvariantError _ -> None
-    (********** Other **********)
-    | ObsoleteSyntax _ -> Some (Build PE)
 end
 
 let fatal_from_static_evaluation e cause =
