@@ -1922,6 +1922,49 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               emit_str_addon
                 st p init rB rA (Some Capability) {e with C.cseal = (Value.to_int e.C.v)} in
             Some (None,init,csi@cs@lift_code [str_mixed MachSize.S128 0 rB rA],st)
+        | R,Some { access_type = PteAccess Read; access_order; } ->
+            let emit = match access_order with
+            | OrderPlain -> LDR.emit_load_var
+            | OrderAcquire -> LDAR.emit_load_var
+            | OrderAcquirePc -> LDAPR.emit_load_var
+            | (OrderRelease|OrderAtomic _) -> assert false in
+            let r,init,cs,st = emit A64.V64 st p init (Misc.add_pte loc) in
+            Some (Some r,init,cs,st)
+        (* A special case for TTHM HA on read. *)
+        | R,Some { access_type = PteAccess (Set pte); access_order = OrderPlain; }
+          when WPTESet.mem HA pte ->
+            let r,init,cs,st = LDR.emit_load st p init loc in
+            Some (Some r,init,cs,st)
+        | R,Some { access_type = PteAccess (Set pte); access_order = OrderAcquire; }
+          when pte = WPTESet.singleton HA ->
+            let r,init,cs,st = LDAR.emit_load st p init loc in
+            Some (Some r,init,cs,st)
+        | R,Some { access_type = PteAccess (Set pte); access_order = OrderAcquirePc; }
+          when pte = WPTESet.singleton HA ->
+            let r,init,cs,st = LDAPR.emit_load st p init loc in
+            Some (Some r,init,cs,st)
+        (* Special cases for TTHM.
+           - `HA` is on both read and write
+           - `HD` is only on write *)
+        | W,Some { access_type = PteAccess (Set pte); access_order = OrderPlain; }
+          when StructuredAtom.is_tthm pte ->
+            let init,cs,st =
+              STR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
+            Some (None,init,cs,st)
+        | W,Some { access_type = PteAccess (Set pte); access_order = OrderRelease; }
+          when StructuredAtom.is_tthm pte ->
+            let init,cs,st =
+              STLR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
+            Some (None,init,cs,st)
+        (* END special cases for TTHM. *)
+        | W,Some { access_type = PteAccess (Set _); access_order = OrderPlain; } ->
+            let init,cs,st =
+              emit_set_pteval false st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
+            Some (None,init,cs,st)
+        | W,Some { access_type = PteAccess (Set _); access_order = OrderRelease; } ->
+            let init,cs,st =
+              emit_set_pteval true st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
+            Some (None,init,cs,st)
         | _,_ -> None in
         (* Compile the node. Use the structured ordinary-access result when
            available, otherwise continue with the legacy dispatch.
@@ -1966,47 +2009,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let r,init,cs,st = emit_sta_mixed sz o rw st p init loc (Value.to_int e.C.v) in
             Some r,init,cs,st
         | (R|W), Some (Instr, _) -> Warn.fatal "Instr annotation did not create code location %s" (C.debug_evt e)
-        | R,Some (Pte (Read|ReadAcq|ReadAcqPc as rk),None) ->
-            let emit = match rk with
-            | Read -> LDR.emit_load_var
-            | ReadAcq -> LDAR.emit_load_var
-            | ReadAcqPc -> LDAPR.emit_load_var
-            | _ -> assert false in
-            let r,init,cs,st = emit A64.V64 st p init (Misc.add_pte loc) in
-            Some r,init,cs,st
-        (* A special case for TTHM HA on read. *)
-        | R,Some (Pte (Set pte),None) when WPTESet.mem HA pte ->
-            let r,init,cs,st = LDR.emit_load st p init loc in
-            Some r,init,cs,st
-        (* Special cases for TTHM.
-           - `HA` is on both read and write
-           - `HD` is only on write *)
-        | R,Some(Pte (Set pte),None) when pte = WPTESet.singleton HA ->
-            let r,init,cs,st = LDR.emit_load st p init loc in
-            Some r,init,cs,st
-        | R,Some(Pte ReadHAAcq,None) ->
-            let r,init,cs,st = LDAR.emit_load st p init loc in
-            Some r,init,cs,st
-        | R,Some(Pte ReadHAAcqPc,None) ->
-            let r,init,cs,st = LDAPR.emit_load st p init loc in
-            Some r,init,cs,st
-        | W,Some (Pte (Set pte),None) when StructuredAtom.is_tthm pte ->
-            let init,cs,st =
-              STR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
-            None,init,cs,st
-        | W,Some (Pte (SetRel pte),None) when StructuredAtom.is_tthm pte ->
-            let init,cs,st =
-              STLR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
-            None,init,cs,st
-        (* END special cases for TTHM. *)
-        | W,Some (Pte (Set _),None) ->
-            let init,cs,st =
-              emit_set_pteval false st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
-            None,init,cs,st
-        | W,Some (Pte (SetRel _),None) ->
-            let init,cs,st =
-              emit_set_pteval true st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
-            None,init,cs,st
         | d,Some (Pte _,_ as a) ->
             Warn.fatal
               "Atom %s does not apply to direction %s"
