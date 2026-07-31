@@ -1755,8 +1755,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     match e.C.dir,e.C.loc with
     | None,_ -> Warn.fatal "AArchCompile.emit_access"
     | Some d,Code lab ->
-        begin match d,e.C.atom with
-        | R,Some (Instr, None) ->
+        let structured_atom = Option.map of_legacy e.C.atom in
+        begin match d,structured_atom with
+        | R,Some InstrAccess ->
             let r,init,cs,st = LDR.emit_fetch st p init lab in
             Some r,init,cs,st
         (* Plain read from an instruction label is currently not supported,
@@ -1764,7 +1765,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R, None ->
             let r,init,cs,st = LDR.emit_load st p init lab in
             Some r,init,cs,st
-        | W, Some(Instr, None)  *)
+        | W, Some InstrAccess  *)
         | W, None ->
             let init,cs,st = STR.emit_store_nop st p init lab in
             None,init,cs,st
@@ -1972,6 +1973,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
            in
            let init,cs,st = emit_store st p init loc (Value.to_int e.C.v) in
            Some (None,init,cs,st)
+        | (R|W),Some InstrAccess ->
+            Warn.fatal "Instr annotation did not create code location %s" (C.debug_evt e)
         | _,_ -> None in
         (* Compile the node. Use the structured ordinary-access result when
            available, otherwise continue with the legacy dispatch.
@@ -2000,7 +2003,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Atomic rw,Some (sz,o)) ->
             let r,init,cs,st = emit_sta_mixed sz o rw st p init loc (Value.to_int e.C.v) in
             Some r,init,cs,st
-        | (R|W), Some (Instr, _) -> Warn.fatal "Instr annotation did not create code location %s" (C.debug_evt e)
         | d,Some (Pte _,_ as a) ->
             Warn.fatal
               "Atom %s does not apply to direction %s"
@@ -2012,6 +2014,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | (R|W),Some ((CapaTag|CapaSeal),_) -> assert false
         | (R|W),Some (Pair _,_) -> assert false
         | (R|W),Some (Neon _,_) -> assert false
+        | (R|W),Some (Instr,_) -> assert false
         end in
         (* Add a label to instructions `cs`, when a fault check is required. *)
         let cs = add_label_to_last_instructions e cs in
@@ -2518,6 +2521,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              in
              let init,cs,st = emit_store_idx vdep st p init loc r2 (Value.to_int e.C.v) in
               Some (None,init,pseudo cs0@cs,st)
+          | (R|W),Some InstrAccess ->
+              Warn.fatal "No dependency to code location"
           | _,_ -> None in
           let regs,inits,cs,st = match ordinary_access with
           | Some result -> result
@@ -2535,7 +2540,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               Some r,init, pseudo cs0@cs,st
           | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
           | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
-          | (R|W), Some (Instr, _) -> Warn.fatal "No dependency to code location"
           | W,Some (Atomic rw,None) ->
               let r,init,cs,st =
                 emit_sta_idx (tr_rw rw) st p init loc r2 (Value.to_int e.C.v) in
@@ -2554,6 +2558,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | R,Some ((Plain _|Acq _|AcqPc _),_) -> assert false
           | W,None -> assert false
           | W,Some ((Plain _|Rel _),_) -> assert false
+          | (R|W),Some (Instr,_) -> assert false
           end in
           (* Add a label to instructions `cs`, when a fault check is required. *)
           regs,inits,(add_label_to_last_instructions e cs),st
@@ -2780,6 +2785,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              in
              let init,cs,st = emit_store_dep r2 st init rA (Value.to_int e.C.v) in
              Some (None,init,cs2@cs,st)
+          | Some InstrAccess ->
+              Warn.fatal "No Plain Write to label (code location)"
           | _ -> None in
           begin match ordinary_store with
           | Some result -> result
@@ -2795,13 +2802,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               Warn.fatal "No store acquire"
           | Some (AcqPc _,_) ->
               Warn.fatal "No store acquirePc"
-          | Some (Instr, _) -> Warn.fatal "No Plain Write to label (code location)"
           | Some (Pte _,_) -> assert false
           | Some ((Plain _|Rel _),_) -> assert false
           | Some (Tag,_) -> assert false
           | Some ((CapaTag|CapaSeal),_) -> assert false
           | Some (Neon _,_) -> assert false
           | Some (Pair _,_) -> assert false
+          | Some (Instr,_) -> assert false
           end
           end
       (* END of `Some W` *)
