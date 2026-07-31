@@ -1868,6 +1868,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some { access_type = CapaSealAccess; access_order = OrderPlain; } ->
             let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init loc in
             Some (Some r,init,cs@lift_code [gctype r r],st)
+        | R,Some { access_type = NeonAccess SIMD.NeP;
+                   access_order = OrderAcquirePc; } ->
+            let r,init,cs,st = LDAPUR.emit_load st p init loc in
+            Some (Some r,init,cs,st)
         | R,Some { access_type = NeonAccess n; access_order = OrderPlain; } ->
            let emit_load = match n with
              | SIMD.NeRel -> Warn.fatal "No laod release"
@@ -1993,6 +1997,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               emit_str_addon
                 st p init rB rA (Some Capability) {e with C.cseal = (Value.to_int e.C.v)} in
             Some (None,init,csi@cs@lift_code [str_mixed MachSize.S128 0 rB rA],st)
+        | W,Some { access_type = NeonAccess SIMD.NeP;
+                   access_order = OrderRelease; } ->
+            let init,cs,st =
+              STLUR.emit_store st p init loc (Value.to_int e.C.v) in
+            Some (None,init,cs,st)
         | W,Some { access_type = NeonAccess n; access_order = OrderPlain; } ->
            let emit_store = match n with
              | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
@@ -2409,6 +2418,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let (_,rA),init,cs,st = seal_dp_addr init p loc st rd e.C.dep in
               let rB,st = next_reg st in
               Some (Some rB,init,cs@lift_code [ldr_mixed rB rA MachSize.S128 0; gctype rB rB],st)
+          | R,Some { access_type = NeonAccess SIMD.NeP;
+                     access_order = OrderAcquirePc; } ->
+              let rB,init,cs,st =
+                LDAPUR.emit_load_idx vdep st p init loc r2 in
+              Some (Some rB,init,pseudo cs0@cs,st)
           | R,Some { access_type = NeonAccess n; access_order = OrderPlain; } ->
               let emit_load_idx = match n with
                 | SIMD.NeRel -> Warn.fatal "No laod release"
@@ -2563,6 +2577,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 {e with C.cseal = (Value.to_int e.C.v)} in
               Some (None,init,
                 csi@csi2@cs@lift_code [str_mixed MachSize.S128 0 rC rB],st)
+          | W,Some { access_type = NeonAccess SIMD.NeP;
+                     access_order = OrderRelease; } ->
+              let init,cs,st =
+                STLUR.emit_store_idx
+                  vdep st p init loc r2 (Value.to_int e.C.v) in
+              Some (None,init,pseudo cs0@cs,st)
           | W,Some { access_type = NeonAccess n; access_order = OrderPlain; } ->
              let emit_store_idx = match n with
                | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
@@ -2677,7 +2697,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 let addi = [add A64.V64 r2 r2 rA] in
                 let cs2 = pseudo cs in
                 r2,cs2,init,st,addi
-            | Some { access_type = NeonAccess _; access_order = OrderPlain; } ->
+            | Some { access_type = NeonAccess _;
+                     access_order = (OrderPlain|OrderRelease); } ->
                 let cs2,st =
                   match vdep,vloc with
                   | (V128,_)|(_,V128) ->
@@ -2817,6 +2838,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 emit_str_addon
                   st p init r2 rA (Some Capability) {e with C.cseal = (Value.to_int e.C.v)} in
               Some (None,init,cs2@cs@lift_code [str_mixed MachSize.S128 0 r2 rA],st)
+          | Some { access_type = NeonAccess SIMD.NeP;
+                   access_order = OrderRelease; } ->
+             let rA,init,st = U.next_init st p init loc in
+             let init,cs,st =
+               STLUR.emit_store_dep r2 st init rA (Value.to_int e.C.v) in
+             Some (None,init,cs2@cs,st)
           | Some { access_type = NeonAccess n; access_order = OrderPlain; } ->
              let rA,init,st = U.next_init st p init loc in
              let emit_store_dep = match n with

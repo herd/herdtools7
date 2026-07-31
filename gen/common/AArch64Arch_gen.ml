@@ -59,7 +59,6 @@ module SIMD = struct
              |NeP|NeAcqPc|NeRel|Ne1|Ne2|Ne3|Ne4|Ne2i|Ne3i|Ne4i|NePa|NePaN
 
   let fold_neon f r = r |>
-    f NeAcqPc |> f NeRel |>
     f NeP |>
     f NePa |> f NePaN |>
     f Ne1 |> f Ne2 |> f Ne3 |> f Ne4 |>
@@ -309,6 +308,8 @@ module StructuredAtom = struct
     | PteAccess (Set p),(OrderAcquire|OrderAcquirePc)
       when p = WPTESet.singleton WPTE.HA ->
         true
+    | NeonAccess SIMD.NeP,(OrderAcquirePc|OrderRelease) ->
+        true
     | (CapaTagAccess|CapaSealAccess|TagAccess|NeonAccess _
       |PairAccess _|InstrAccess),OrderPlain ->
         true
@@ -493,6 +494,10 @@ module StructuredAtom = struct
         assert (p = WPTESet.singleton WPTE.HA) ; "PteHAA"
     | { access_type = PteAccess (Set p); access_order = OrderAcquirePc; } ->
         assert (p = WPTESet.singleton WPTE.HA) ; "PteHAQ"
+    | { access_type = NeonAccess SIMD.NeP; access_order = OrderAcquirePc; } ->
+        "NeQ"
+    | { access_type = NeonAccess SIMD.NeP; access_order = OrderRelease; } ->
+        "NeL"
     | { access_type = NeonAccess n; access_order = OrderPlain; } -> SIMD.pp n
     | { access_type = PairAccess (opt,idx); access_order = OrderPlain; } ->
         sprintf "Pa%s%s" (pp_pair_opt opt) (pp_pair_idx idx)
@@ -565,8 +570,8 @@ module StructuredAtom = struct
   let applies a d =
     let open WPTE in
     match a.access_type,a.access_order,d with
-    | NeonAccess SIMD.NeAcqPc,_,W
-    | NeonAccess SIMD.NeRel,_,R -> false
+    | NeonAccess SIMD.NeP,OrderAcquirePc,R -> true
+    | NeonAccess SIMD.NeP,OrderRelease,W -> true
     | (OrdinaryAccess|AccessSize _|CapaAccess),(OrderAcquire|OrderAcquirePc),R -> true
     | (OrdinaryAccess|AccessSize _|CapaAccess),OrderRelease,W -> true
     | PteAccess Read,(OrderPlain|OrderAcquire|OrderAcquirePc),R -> true
@@ -620,6 +625,10 @@ module StructuredAtom = struct
     | { access_type = PteAccess (Read|Set _); _ } -> Code.Pte
     | { access_type = CapaTagAccess; access_order = OrderPlain; } -> Code.CapaTag
     | { access_type = CapaSealAccess; access_order = OrderPlain; } -> Code.CapaSeal
+    | { access_type = NeonAccess SIMD.NeP; access_order = OrderAcquirePc; } ->
+        Code.VecReg SIMD.NeAcqPc
+    | { access_type = NeonAccess SIMD.NeP; access_order = OrderRelease; } ->
+        Code.VecReg SIMD.NeRel
     | { access_type = NeonAccess n; access_order = OrderPlain; } -> Code.VecReg n
     | { access_type = PairAccess (_,UnspecLoc); access_order = OrderPlain; } -> Code.Pair
     | { access_type = InstrAccess; access_order = OrderPlain; } -> Code.Instr
