@@ -1,5 +1,5 @@
 (* diyone7 -arch AArch64 -variant morello -metadata false -oneloc Amo.Swp Cs Rfi *)
 (*
 [2]
-Fatal error: exception File "gen/AArch64Compile_gen.ml", line 2153, characters 6-12: Assertion failed
+Fatal error: exception File "gen/AArch64Compile_gen.ml", line 2152, characters 6-12: Assertion failed
 *)

@@ -1880,6 +1880,20 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 end) in
             let init,cs,st = S.emit_store st p init loc (Value.to_int e.C.v) addon e in
             Some (None,init,cs,st)
+        | R,Some (NeonAccess n) ->
+           let emit_load = match n with
+             | SIMD.NeRel -> Warn.fatal "No laod release"
+             | SIMD.NeAcqPc -> LDAPUR.emit_load
+             | SIMD.NeP -> LDUR.emit_load
+             | SIMD.NePa  -> LDP.emit_load A64.TT
+             | SIMD.NePaN -> LDP.emit_load A64.NT
+             | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i -> LDNW.emit_load n
+             | SIMD.SvV -> LD1G.emit_load n
+             | SIMD.SmV | SIMD.SmH -> LD1T.emit_load n
+             | _ -> LDN.emit_load n
+           in
+           let r,init,cs,st = emit_load st p init loc in
+            Some (Some r,init,cs,st)
         | R,Some (PairAccess opt) ->
             let r,init,cs,st = emit_ldp (pair_opt_to_ld opt) st p init loc in
             Some (Some r,init,cs,st)
@@ -1944,6 +1958,20 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               emit_set_pteval (order = `Release)
                 st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
             Some (None,init,cs,st)
+        | W,Some (NeonAccess n) ->
+           let emit_store = match n with
+             | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
+             | SIMD.NeRel -> STLUR.emit_store
+             | SIMD.NeP -> STUR.emit_store
+             | SIMD.NePa  -> STP.emit_store A64.TT
+             | SIMD.NePaN -> STP.emit_store A64.NT
+             | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i-> STNW.emit_store n
+             | SIMD.SvV -> ST1S.emit_store n
+             | SIMD.SmV | SIMD.SmH -> ST1T.emit_store n
+             | _ -> STN.emit_store n
+           in
+           let init,cs,st = emit_store st p init loc (Value.to_int e.C.v) in
+           Some (None,init,cs,st)
         | _,_ -> None in
         (* Compile the node. Use the structured ordinary-access result when
            available, otherwise continue with the legacy dispatch.
@@ -1964,21 +1992,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some (Atomic rw,Some (sz,o)) ->
             let r,init,cs,st = emit_lda_mixed sz o rw st p init loc  in
             Some r,init,cs,st
-        | R,Some (Neon n, None) ->
-           let emit_load = match n with
-             | SIMD.NeRel -> Warn.fatal "No laod release"
-             | SIMD.NeAcqPc -> LDAPUR.emit_load
-             | SIMD.NeP -> LDUR.emit_load
-             | SIMD.NePa  -> LDP.emit_load A64.TT
-             | SIMD.NePaN -> LDP.emit_load A64.NT
-             | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i -> LDNW.emit_load n
-             | SIMD.SvV -> LD1G.emit_load n
-             | SIMD.SmV | SIMD.SmH -> LD1T.emit_load n
-             | _ -> LDN.emit_load n
-           in
-           let r,init,cs,st = emit_load st p init loc in
-            Some r,init,cs,st
-        | R,Some (Neon _,Some _) -> assert false
         | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
         | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
         | W,Some (Atomic rw,None) ->
@@ -1998,21 +2011,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | (R|W),Some (Tag,_) -> assert false
         | (R|W),Some ((CapaTag|CapaSeal),_) -> assert false
         | (R|W),Some (Pair _,_) -> assert false
-        | W,Some (Neon n, None) ->
-           let emit_store = match n with
-             | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
-             | SIMD.NeRel -> STLUR.emit_store
-             | SIMD.NeP -> STUR.emit_store
-             | SIMD.NePa  -> STP.emit_store A64.TT
-             | SIMD.NePaN -> STP.emit_store A64.NT
-             | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i-> STNW.emit_store n
-             | SIMD.SvV -> ST1S.emit_store n
-             | SIMD.SmV | SIMD.SmH -> ST1T.emit_store n
-             | _ -> STN.emit_store n
-           in
-           let init,cs,st = emit_store st p init loc (Value.to_int e.C.v) in
-           None,init,cs,st
-        | W,Some (Neon _,Some _) -> assert false
+        | (R|W),Some (Neon _,_) -> assert false
         end in
         (* Add a label to instructions `cs`, when a fault check is required. *)
         let cs = add_label_to_last_instructions e cs in
