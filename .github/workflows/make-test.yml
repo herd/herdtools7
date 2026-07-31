@@ -30,7 +30,7 @@ jobs:
             dune-cache: "enabled"
 
             # Maximal version: this will automatically select the most recent version compatible.
-          - ocaml-compiler: "dune,zarith,menhir,logs"
+          - ocaml-compiler: "dune,zarith,menhir,logs,yaml"
             with-type-check-asl: true
             dune-cache: "enabled-except-user-rules"
             job-name: "OCaml latest lts"
@@ -79,7 +79,7 @@ jobs:
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: ocamlformat.0.28.1
+          ocaml-compiler: ocamlformat.0.28.1,yaml
           dune-cache: true
 
       - run: opam exec -- dune fmt
