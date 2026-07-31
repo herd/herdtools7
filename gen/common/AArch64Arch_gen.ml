@@ -473,10 +473,6 @@ end = struct
       (p2 : [ld_pair_opt | st_pair_opt]) =
     Stdlib.compare p1 p2
 
-  let compare_pair_idx idx1 idx2 =
-    match idx1,idx2 with
-    | UnspecLoc,UnspecLoc -> 0
-
   let access_rank atom =
     match atom with
     | OrdinaryAccess _ -> 0
@@ -503,9 +499,7 @@ end = struct
         | AtomicAccess (rw1,a1),AtomicAccess (rw2,a2) ->
             Misc.pair_compare compare_atom_rw compare_atomic_access
               (rw1,a1) (rw2,a2)
-        | PairAccess (p1,i1),PairAccess (p2,i2) ->
-            Misc.pair_compare compare_pair_opt compare_pair_idx
-              (p1,i1) (p2,i2)
+        | PairAccess p1,PairAccess p2 -> compare_pair_opt p1 p2
         | MorelloTagAccess,MorelloTagAccess
         | MorelloSealAccess,MorelloSealAccess
         | MemoryTagAccess,MemoryTagAccess
@@ -531,9 +525,6 @@ end = struct
     | `PaIL -> "IL"
     | `PaA -> "A"
     | `PaL -> "L"
-
-  let pp_pair_idx = function
-    | UnspecLoc -> ""
 
   let pp = function
     | OrdinaryAccess `Plain -> "P"
@@ -565,8 +556,7 @@ end = struct
     | PteAccess (PteSet (`Release,p)) ->
         sprintf "Pte%sL" (pp_w_pte p)
     | NeonAccess n -> SIMD.pp n
-    | PairAccess (opt,idx) ->
-        sprintf "Pa%s%s" (pp_pair_opt opt) (pp_pair_idx idx)
+    | PairAccess opt -> sprintf "Pa%s" (pp_pair_opt opt)
     | InstrAccess -> "I"
 
   let get_access_atom = function
@@ -651,8 +641,8 @@ end = struct
     | AtomicAccess _,(R|W)
     | (MemoryTagAccess|MorelloTagAccess|MorelloSealAccess),(R|W)
     | NeonAccess _,(R|W) -> true
-    | PairAccess ((`Pa|`PaN|`PaIQ|`PaA),_),R -> true
-    | PairAccess ((`Pa|`PaN|`PaIL|`PaL),_),W -> true
+    | PairAccess (`Pa|`PaN|`PaIQ|`PaA),R -> true
+    | PairAccess (`Pa|`PaN|`PaIL|`PaL),W -> true
     | _ -> false
 
   let applies_rmw rmw ar aw =
@@ -692,7 +682,7 @@ end = struct
     | MorelloTagAccess -> Code.CapaTag
     | MorelloSealAccess -> Code.CapaSeal
     | NeonAccess n -> Code.VecReg n
-    | PairAccess (_,UnspecLoc) -> Code.Pair
+    | PairAccess _ -> Code.Pair
     | InstrAccess -> Code.Instr
     | (OrdinaryAccess _|MixedSizeAccess _|MorelloAccess _|AtomicAccess _) -> Code.Ord
 
@@ -775,7 +765,7 @@ end = struct
     fold (fun n -> f (NeonAccess n)) r
 
   let fold_pair_access f r =
-    let add opt = f (PairAccess (opt,UnspecLoc)) in
+    let add opt = f (PairAccess opt) in
     r |> add `Pa |> add `PaN |> add `PaIQ |> add `PaIL |> add `PaA |> add `PaL
 
   let fold_mixed f r =

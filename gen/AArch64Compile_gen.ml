@@ -1460,9 +1460,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let load ar (r1,r2) rA =
         let a =
           match ar with
-          | Pair ((`Pa),_),None -> XP
-          | Pair ((`PaIQ),_),None -> AXP
-          | Pair ((`PaA),_),None -> AXP
+          | Pair (`Pa,_),None -> XP
+          | Pair (`PaIQ,_),None -> AXP
+          | Pair (`PaA,_),None -> AXP
           | _ ->
              Warn.fatal
                "Illegal %s annotaton on load exclusive pair" (pp_atom ar)  in
@@ -1476,9 +1476,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let store aw r (r1,r2) rA =
         let a =
           match aw with
-          | Pair ((`Pa),_),_ -> YY
-          | Pair ((`PaIL),_),_ -> LY
-          | Pair ((`PaL),_),_ -> LY
+          | Pair (`Pa,_),_ -> YY
+          | Pair (`PaIL,_),_ -> LY
+          | Pair (`PaL,_),_ -> LY
           | _ ->
              Warn.fatal
                "Illegal %s annotaton on store exclusive pair" (pp_atom aw)  in
@@ -1622,19 +1622,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let r1,r2,st = next_reg2 st in
       r1,init,pseudo [do_ldp opt r1 r2 rA;add vloc r1 r1 r2;],st
 
-    let emit_ldp_reg opt idx st _p init rA =
-      match opt,idx with
-      |  _,UnspecLoc ->
-          emit_ldp_reg opt st init rA
-
-    let emit_ldp opt idx st p init loc =
+    let emit_ldp opt st p init loc =
       let rA,init,st =  U.next_init st p init loc in
-      emit_ldp_reg opt idx st p init rA
+      emit_ldp_reg opt st init rA
 
-    let emit_ldp_idx_var opt idx vdep st p init loc ridx =
+    let emit_ldp_idx_var opt vdep st p init loc ridx =
       let rA,init,st =  U.next_init st p init loc in
       let rA,csA,st = do_sum_addr vdep st rA ridx in
-      let r,init,cs,st = emit_ldp_reg opt idx st p init rA in
+      let r,init,cs,st = emit_ldp_reg opt st init rA in
       r,init,pseudo csA@cs,st
 
     let do_emit_stp_reg opt st p init v rA =
@@ -1642,27 +1637,23 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let r2,st = next_reg st in
       init,csi1@pseudo [dec r2 r1; do_stp opt r2 r1 rA;],st
 
-    let emit_stp_reg opt idx st p init rA e =
-      match opt,idx with
-      | _,UnspecLoc ->
+    let emit_stp_reg opt st p init rA e =
       do_emit_stp_reg opt st p init (Value.to_int e.C.v) rA
 
-    let emit_stp opt idx st p init loc e =
+    let emit_stp opt st p init loc e =
       let rA,init,st =  U.next_init st p init loc in
-      emit_stp_reg opt idx st p init rA e
+      emit_stp_reg opt st p init rA e
 
-    let emit_stp_idx_var opt idx vdep st p init loc e ridx =
+    let emit_stp_idx_var opt vdep st p init loc e ridx =
       let rA,init,st =  U.next_init st p init loc in
       let rA,csA,st = do_sum_addr vdep st rA ridx in
-      let init,cs,st = emit_stp_reg opt idx st p init rA e in
+      let init,cs,st = emit_stp_reg opt st p init rA e in
       init,pseudo csA@cs,st
 
-    let stp_emit_store_reg opt idx st p init loc r1 =
+    let stp_emit_store_reg opt st p init loc r1 =
       let rA,init,st =  U.next_init st p init loc in
       let r2,st = next_reg st in
-      match idx with
-      | UnspecLoc ->
-         init,pseudo [dec r2 r1; do_stp opt r2 r1 rA;],st
+      init,pseudo [dec r2 r1; do_stp opt r2 r1 rA;],st
 
 (**************)
 (* For export *)
@@ -1696,7 +1687,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          | _ -> LDN.emit_load n
        in
        emit_load
-    | Code.Pair -> emit_ldp (`Pa) UnspecLoc
+    | Code.Pair -> emit_ldp `Pa
 
 
     let emit_obs_not_value = OBS.emit_load_not_value
@@ -1889,6 +1880,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 end) in
             let init,cs,st = S.emit_store st p init loc (Value.to_int e.C.v) addon e in
             Some (None,init,cs,st)
+        | R,Some (PairAccess opt) ->
+            let r,init,cs,st = emit_ldp (pair_opt_to_ld opt) st p init loc in
+            Some (Some r,init,cs,st)
         | R,Some MemoryTagAccess ->
             let r,init,cs,st = LDG.emit_load st p init loc in
             Some (Some r,init,cs,st)
@@ -1898,6 +1892,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Some MorelloSealAccess ->
             let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init loc in
             Some (Some r,init,cs@lift_code [gctype r r],st)
+        | W,Some (PairAccess opt) ->
+            let init,cs,st = emit_stp (pair_opt_to_st opt) st p init loc e in
+            Some (None,init,cs,st)
         | W,Some MemoryTagAccess ->
             let init,cs,st = STG.emit_store st p init e in
             Some (None,init,cs,st)
@@ -1946,10 +1943,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
            let r,init,cs,st = emit_load st p init loc in
             Some r,init,cs,st
         | R,Some (Neon _,Some _) -> assert false
-        | R,Some (Pair (opt,idx),None) ->
-          let r,init,cs,st = emit_ldp (pair_opt_to_ld opt) idx st p init loc in
-          Some r,init,cs,st
-        | R,Some (Pair _,Some _) -> assert false
         | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
         | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
         | W,Some (Atomic rw,None) ->
@@ -1958,10 +1951,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (Atomic rw,Some (sz,o)) ->
             let r,init,cs,st = emit_sta_mixed sz o rw st p init loc (Value.to_int e.C.v) in
             Some r,init,cs,st
-        | W,Some (Pair (opt,idx),None) ->
-          let init,cs,st = emit_stp (pair_opt_to_st opt) idx st p init loc e in
-          None,init,cs,st
-        | W,Some (Pair _,Some _) -> assert false
         | (R|W), Some (Instr, _) -> Warn.fatal "Instr annotation did not create code location %s" (C.debug_evt e)
         | R,Some (Pte (Read|ReadAcq|ReadAcqPc as rk),None) ->
             let emit = match rk with
@@ -2013,6 +2002,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some ((Plain _|Rel _),_) -> assert false
         | (R|W),Some (Tag,_) -> assert false
         | (R|W),Some ((CapaTag|CapaSeal),_) -> assert false
+        | (R|W),Some (Pair _,_) -> assert false
         | W,Some (Neon n, None) ->
            let emit_store = match n with
              | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
@@ -2455,6 +2445,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) addon e in
               Some (None,init,pseudo cs0@cs,st)
+          | R,Some (PairAccess opt) ->
+              let r,init,cs,st =
+                emit_ldp_idx_var (pair_opt_to_ld opt) vdep st p init loc r2 in
+              Some (Some r,init,pseudo cs0@cs,st)
           | R,Some MemoryTagAccess ->
               let r,init,cs,st = LDG.emit_load_idx vdep st p init loc r2 in
               Some (Some r,init,pseudo cs0@cs,st)
@@ -2467,6 +2461,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let (_,rA),init,cs,st = seal_dp_addr init p loc st rd e.C.dep in
               let rB,st = next_reg st in
               Some (Some rB,init,cs@lift_code [ldr_mixed rB rA MachSize.S128 0; gctype rB rB],st)
+          | W,Some (PairAccess opt) ->
+              let init,cs,st =
+                emit_stp_idx_var (pair_opt_to_st opt) vdep st p init loc e r2 in
+              Some (None,init,pseudo cs0@cs,st)
           | W,Some MemoryTagAccess ->
               let init,cs,st = STG.emit_store_idx vdep st p init e r2 in
               Some (None,init,pseudo cs0@cs,st)
@@ -2512,11 +2510,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               in
               let rB,init,cs,st = emit_load_idx vdep st p init loc r2 in
               Some rB,init,pseudo cs0@cs,st
-          | R,Some (Pair (opt,idx),None) ->
-              let r,init,cs,st =
-                emit_ldp_idx_var (pair_opt_to_ld opt) idx vdep st p init loc r2 in
-              Some r,init, pseudo cs0@cs,st
-          | R,Some ((Neon _|Pair _),Some _) -> assert false
+          | R,Some (Neon _,Some _) -> assert false
           | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
           | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
           | (R|W), Some (Instr, _) -> Warn.fatal "No dependency to code location"
@@ -2527,11 +2521,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (Atomic rw,Some (sz,o)) ->
               let r,init,cs,st = emit_sta_mixed_idx sz o rw st p init loc r2 (Value.to_int e.C.v) in
               Some r,init,pseudo cs0@cs,st
-          | W,Some (Pair (opt,idx),None) ->
-              let init,cs,st =
-                emit_stp_idx_var (pair_opt_to_st opt) idx vdep st p init loc e r2 in
-              None,init, pseudo cs0@cs,st
-          | W,Some (Pair _,Some _) -> assert false
           | (W,(Some (Pte (Set _),None))) ->
               let init,cs,st =
                 emit_set_pteval_idx false vdep r2 st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
@@ -2558,6 +2547,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                (A64.pp_atom a) (Code.pp_dir d)
           | (R|W),Some (Tag,_) -> assert false
           | (R|W),Some ((CapaTag|CapaSeal),_) -> assert false
+          | (R|W),Some (Pair _,_) -> assert false
           | W,Some (Neon n,None) ->
              let emit_store_idx = match n with
                | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
@@ -2744,6 +2734,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_reg st p init loc r2 addon e in
               Some (None,init,cs2@cs,st)
+          | Some (PairAccess opt) ->
+              let init,cs,st =
+                stp_emit_store_reg (pair_opt_to_st opt) st p init loc r2 in
+              Some (None,init,cs2@cs,st)
           | Some MemoryTagAccess ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               Some (None,init,cs2@cs,st)
@@ -2809,10 +2803,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              let init,cs,st = emit_store_dep r2 st init rA (Value.to_int e.C.v) in
              None,init,cs2@cs,st
           | Some (Neon _,Some _) -> assert false
-          | Some (Pair (opt,idx),None) ->
-             let init,cs,st = stp_emit_store_reg (pair_opt_to_st opt) idx st p init loc r2 in
-             None,init,cs2@cs,st
-          | Some (Pair _,Some _) -> assert false
+          | Some (Pair _,_) -> assert false
           end
           end
       (* END of `Some W` *)
