@@ -1,0 +1,6 @@
+mode: no-exec
+outcome: FAILURE
+error: BE_PE
+error_line: 3
+info: |
+  Keyword "case" cannot be parsed as a local identifier.
