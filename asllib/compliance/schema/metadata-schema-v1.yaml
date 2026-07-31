@@ -1,0 +1,106 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://github.com/herd/herdtools7/asllib/compliance/schema/metadata-schema-v1.yaml
+title: ASL compliance test metadata schema
+type: object
+additionalProperties: false
+
+required:
+  - outcome
+
+properties:
+  mode:
+    description: >
+      Whether to execute the ASL specification after parsing and type-checking.
+      Omit this field for the default exec mode.
+    enum:
+      - exec
+      - no-exec
+
+  outcome:
+    description: Expected test outcome.
+    enum:
+      - SUCCESS
+      - FAILURE
+
+  output:
+    description: Expected ASL print/println output.
+    type: string
+
+  error:
+    description: ASL Reference error code expected when outcome is FAILURE.
+    $ref: "#/$defs/asl1_error_code"
+
+  error_line:
+    description: Earliest line associated with a typing error, when applicable.
+    type: integer
+    minimum: 1
+
+  info:
+    description: Optional. Tool-specific information outside the compliance result.
+    type: string
+
+allOf:
+  - if:
+      properties:
+        outcome:
+          const: SUCCESS
+    then:
+      not:
+        anyOf:
+          - required:
+              - error
+          - required:
+              - error_line
+
+  - if:
+      properties:
+        outcome:
+          const: FAILURE
+    then:
+      required:
+        - error
+
+$defs:
+  asl1_error_code:
+    description: Error code listed in the ASL Reference.
+    oneOf:
+      # Build-time errors: lexical, parsing, and grammar-level failures.
+      - const: BE_LE
+      - const: BE_PE
+      - const: BE_RI
+      - const: BE_BOP
+      - const: BE_BD
+
+      # Type errors: static type-checking and static semantic failures.
+      - const: TE_UI
+      - const: TE_IAD
+      - const: TE_AIM
+      - const: TE_TSF
+      - const: TE_LCA
+      - const: TE_NBV
+      - const: TE_TAF
+      - const: TE_SEF
+      - const: TE_BO
+      - const: TE_UT
+      - const: TE_BTI
+      - const: TE_BS
+      - const: TE_BF
+      - const: TE_BSPD
+      - const: TE_BD
+      - const: TE_BC
+      - const: TE_SEV
+      - const: TE_OE
+      - const: TE_PLD
+
+      # Dynamic errors: failures encountered while executing a typed program.
+      - const: DE_UNR
+      - const: DE_DAF
+      - const: DE_TAF
+      - const: DE_AET
+      - const: DE_BO
+      - const: DE_LE
+      - const: DE_UE
+      - const: DE_BI
+      - const: DE_OSA
+      - const: DE_NAL
+      - const: DE_NEP

@@ -1,0 +1,6 @@
+mode: no-exec
+outcome: FAILURE
+error: BE_BOP
+error_line: 6
+info: |
+  Operators "+" and "-" at the same priority must be parenthesized.
