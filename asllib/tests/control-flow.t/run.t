@@ -1,6 +1,6 @@
   $ aslref no-return.asl
-  ASL Type error (TE_BSPD): not all control flow paths of the function "main"
-    are guaranteed to either return, raise an exception, or invoke unreachable.
+  ASL Type error (TE_BSPD): Not all control flow paths of function "main" are
+    guaranteed to either return, raise an exception, or invoke unreachable.
   [1]
 
   $ aslref with-return.asl
@@ -12,7 +12,7 @@
     let x = always_throws ();
     ^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error (TE_BSPD):
-    not all control flow paths of the function "inherited_always_throws" are
+    Not all control flow paths of function "inherited_always_throws" are
     guaranteed to either return, raise an exception, or invoke unreachable.
   [1]
 
@@ -20,8 +20,8 @@
   File if-return.asl, line 3, characters 2 to 31:
     if n >= 0 then return 1; end;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_BSPD): not all control flow paths of the function "sign"
-    are guaranteed to either return, raise an exception, or invoke unreachable.
+  ASL Type error (TE_BSPD): Not all control flow paths of function "sign" are
+    guaranteed to either return, raise an exception, or invoke unreachable.
   [1]
 
   $ aslref if-return-return.asl
@@ -33,8 +33,8 @@
     if n <= 0 then return -1;
     else if n >= 0 then return 1; end;
     end;
-  ASL Type error (TE_BSPD): not all control flow paths of the function "sign"
-    are guaranteed to either return, raise an exception, or invoke unreachable.
+  ASL Type error (TE_BSPD): Not all control flow paths of function "sign" are
+    guaranteed to either return, raise an exception, or invoke unreachable.
   [1]
 
   $ aslref try-00.asl
@@ -43,8 +43,8 @@
   File try-01.asl, line 5, character 2 to line 6, character 40:
     try return 0;
     catch when E => print "caught E"; end;
-  ASL Type error (TE_BSPD): not all control flow paths of the function "test0"
-    are guaranteed to either return, raise an exception, or invoke unreachable.
+  ASL Type error (TE_BSPD): Not all control flow paths of function "test0" are
+    guaranteed to either return, raise an exception, or invoke unreachable.
   [1]
 
   $ aslref try-02.asl
@@ -58,8 +58,8 @@
       when E => return 1;
       otherwise => println "Otherwise";
     end;
-  ASL Type error (TE_BSPD): not all control flow paths of the function "test0"
-    are guaranteed to either return, raise an exception, or invoke unreachable.
+  ASL Type error (TE_BSPD): Not all control flow paths of function "test0" are
+    guaranteed to either return, raise an exception, or invoke unreachable.
   [1]
 
   $ aslref try-05.asl
@@ -70,8 +70,8 @@
       when F => println "Caught F";
       otherwise => throw E {-};
     end;
-  ASL Type error (TE_BSPD): not all control flow paths of the function "test0"
-    are guaranteed to either return, raise an exception, or invoke unreachable.
+  ASL Type error (TE_BSPD): Not all control flow paths of function "test0" are
+    guaranteed to either return, raise an exception, or invoke unreachable.
   [1]
 
   $ aslref try-06.asl
@@ -81,8 +81,8 @@
       when E => return 1;
       otherwise => throw E {-};
     end;
-  ASL Type error (TE_BSPD): not all control flow paths of the function "test0"
-    are guaranteed to either return, raise an exception, or invoke unreachable.
+  ASL Type error (TE_BSPD): Not all control flow paths of function "test0" are
+    guaranteed to either return, raise an exception, or invoke unreachable.
   [1]
 
   $ aslref --no-exec while-noreturn.asl
@@ -90,8 +90,8 @@
     while b looplimit 10 do
       throw myexception{-};
     end;
-  ASL Type error (TE_BSPD): the function "Foo" is qualified with noreturn but
-    may return on some control flow path.
+  ASL Type error (TE_BSPD): Function "Foo" is qualified with noreturn but may
+    return on some control flow path.
   [1]
 
   $ aslref --no-exec for-noreturn.asl
@@ -99,8 +99,8 @@
     for i = 1 to 0 do
       throw myexception{-};
     end;
-  ASL Type error (TE_BSPD): the function "Foo" is qualified with noreturn but
-    may return on some control flow path.
+  ASL Type error (TE_BSPD): Function "Foo" is qualified with noreturn but may
+    return on some control flow path.
   [1]
 
   $ aslref --no-exec repeat-noreturn.asl

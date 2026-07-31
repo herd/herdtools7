@@ -33,8 +33,8 @@ Simple pragma examples
   File pragma_invalid.asl, line 1, characters 10 to 18:
   pragma p1 2 + TRUE;
             ^^^^^^^^
-  ASL Type error (TE_BO): Illegal application of operator + on types
-    integer {2} and boolean.
+  ASL Type error (TE_BO): Operator + is not defined for types integer {2}
+    and boolean.
   [1]
 
   $ aslref pragma_invalid_stmt.asl
@@ -45,6 +45,6 @@ Simple pragma examples
   File pragma_invalid_stmt.asl, line 3, characters 21 to 26:
       pragma fail "test" + 1;
                        ^^^^^
-  ASL Type error (TE_BO): Illegal application of operator + on types string
+  ASL Type error (TE_BO): Operator + is not defined for types string
     and integer {1}.
   [1]

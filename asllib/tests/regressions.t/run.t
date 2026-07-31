@@ -11,7 +11,7 @@ Type-checking errors:
   File anonymous-types-example.asl, line 21, characters 2 to 6:
     pair = (1, dataT2);
     ^^^^
-  ASL Type error (TE_TSF): a subtype of pairT was expected,
+  ASL Type error (TE_TSF): Expected a subtype of pairT;
     provided (integer {1}, T2).
   [1]
 
@@ -21,7 +21,7 @@ Type-checking errors:
   begin
     pass;
   end;
-  ASL Type error (TE_IAD): cannot declare already declared element "i".
+  ASL Type error (TE_IAD): Identifier "i" is already declared.
   [1]
 
   $ aslref duplicate_record_fields.asl
@@ -31,14 +31,14 @@ Type-checking errors:
     j: boolean,
     i: integer
   };
-  ASL Type error (TE_IAD): cannot declare already declared element "i".
+  ASL Type error (TE_IAD): Identifier "i" is already declared.
   [1]
 
   $ aslref duplicate_enumeration_items.asl
   File duplicate_enumeration_items.asl, line 1, characters 10 to 33:
   type t of enumeration { i, j, i };
             ^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_IAD): cannot declare already declared element "i".
+  ASL Type error (TE_IAD): Identifier "i" is already declared.
   [1]
 
   $ aslref constant-zeros.asl
@@ -50,14 +50,14 @@ Bad types:
     [23: 0] a,
     [10: 0, 3+: 2] b,
   };
-  ASL Static error (TE_BS): overlapping slices 0+:11, 3+:2.
+  ASL Static error (TE_BS): Slices 0+:11, 3+:2 overlap.
   [1]
 
   $ aslref bad-inclusion-in-symbolic-type.asl
   File bad-inclusion-in-symbolic-type.asl, line 2, characters 0 to 26:
   var ah: integer{2..A} = 1;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of integer {2..A} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {2..A};
     provided integer {1}.
   [1]
 
@@ -79,7 +79,7 @@ Global ignored:
   File shadow-banning-bug.asl, line 5, characters 4 to 16:
       var g = 0.0;
       ^^^^^^^^^^^^
-  ASL Type error (TE_IAD): cannot declare already declared element "g".
+  ASL Type error (TE_IAD): Identifier "g" is already declared.
   [1]
 
   $ aslref shadow-banning-bug-2.asl
@@ -87,7 +87,7 @@ Global ignored:
     for i = 0 to 1 do
      pass;
     end;
-  ASL Type error (TE_IAD): cannot declare already declared element "i".
+  ASL Type error (TE_IAD): Identifier "i" is already declared.
   [1]
 
 Constrained-type satisfaction:
@@ -104,7 +104,7 @@ Constrained-type satisfaction:
   File type-sat1.asl, line 5, characters 2 to 3:
     x = y; // illegal as domain of x is not a subset of domain of y
     ^
-  ASL Type error (TE_TSF): a subtype of integer {8, 16} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {8, 16};
     provided integer {8, 16, 32}.
   [1]
 
@@ -121,7 +121,7 @@ Constrained-type satisfaction:
   File type-sat2.asl, line 5, characters 2 to 3:
     x = y; // illegal
     ^
-  ASL Type error (TE_TSF): a subtype of integer {8, 16} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {8, 16};
     provided integer.
   [1]
 
@@ -129,7 +129,7 @@ Constrained-type satisfaction:
   File type_satisfaction_illegal_f3.asl, line 9, characters 4 to 17:
       invoke_me(x); // illegal as domains doesn't match
       ^^^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of integer {8, 16} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {8, 16};
     provided integer.
   [1]
 
@@ -137,7 +137,7 @@ Constrained-type satisfaction:
   File type_satisfaction_illegal_f4.asl, line 9, characters 4 to 17:
       invoke_me(x);
       ^^^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of integer {8, 16} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {8, 16};
     provided integer {8..64}.
   [1]
 
@@ -154,7 +154,7 @@ Constrained-type satisfaction:
   File type-sat3.asl, line 4, characters 2 to 29:
     var x: integer { 2, 4} = N;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of integer {2, 4} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {2, 4};
     provided integer {N}.
   [1]
 
@@ -171,7 +171,7 @@ Constrained-type satisfaction:
   File type-sat4.asl, line 4, characters 2 to 29:
     var x: integer { 2, 4} = N;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of integer {2, 4} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {2, 4};
     provided integer {N}.
   [1]
 
@@ -189,7 +189,7 @@ Runtime checks:
     let x: integer {1} = 2 as integer {1};
                          ^
   ASL Dynamic error (DE_TAF):
-    value 2 does not satisfy the asserted type integer {1}.
+    Value 2 does not satisfy the asserted type integer {1}.
   [1]
 
   $ cat >runtime-type-sat2.asl <<EOF
@@ -208,7 +208,7 @@ Runtime checks:
     let x = Zeros{4} as bits(size);
             ^^^^^^^^
   ASL Dynamic error (DE_TAF):
-    value 0x0 does not satisfy the asserted type bits(size).
+    Value 0x0 does not satisfy the asserted type bits(size).
   [1]
 
   $ aslref under-constrained-used.asl
@@ -218,21 +218,21 @@ Parameterized integers:
   File bad-underconstrained-call.asl, line 9, characters 9 to 26:
     return GetBitAt{M}(x, M);
            ^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of integer {0..(M - 1)} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {0..(M - 1)};
     provided integer {M}.
   [1]
   $ aslref bad-underconstrained-call-02.asl
   File bad-underconstrained-call-02.asl, line 8, characters 2 to 15:
     foo{M}(x, 3);
     ^^^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of integer {M} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {M};
     provided integer {3}.
   [1]
   $ aslref bad-underconstrained-call-03.asl
   File bad-underconstrained-call-03.asl, line 8, characters 2 to 19:
     foo{M}(x, M + 1);
     ^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of integer {M} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {M};
     provided integer {(M + 1)}.
   [1]
   $ aslref bad-underconstrained-ctc.asl
@@ -240,20 +240,20 @@ Parameterized integers:
     return x[(N as integer {N - 1})];
               ^
   ASL Dynamic error (DE_TAF):
-    value 4 does not satisfy the asserted type integer {(N - 1)}.
+    Value 4 does not satisfy the asserted type integer {(N - 1)}.
   [1]
   $ aslref bad-underconstrained-return.asl
   File bad-underconstrained-return.asl, line 3, characters 2 to 15:
     return N + 1;
     ^^^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of integer {0..N} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {0..N};
     provided integer {(N + 1)}.
   [1]
   $ aslref bad-underconstrained-return-02.asl
   File bad-underconstrained-return-02.asl, line 3, characters 2 to 11:
     return 5;
     ^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of integer {0..N} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {0..N};
     provided integer {5}.
   [1]
 
@@ -266,7 +266,7 @@ Parameterized integers:
     println z[x:y];
             ^^^^^^
   ASL Dynamic error (DE_BI):
-    invalid slice 4+:-1: start and length must be non-negative.
+    Slice 4+:-1 is invalid: its start and length must be non-negative.
   [1]
 
   $ aslref bad-slices.asl
@@ -274,7 +274,7 @@ Parameterized integers:
     let y = x[-20:4];
             ^^^^^^^^
   ASL Dynamic error (DE_BI):
-    invalid slice 4+:-23: start and length must be non-negative.
+    Slice 4+:-23 is invalid: its start and length must be non-negative.
   [1]
 
   $ aslref non-positive-bitfield-slice.asl
@@ -283,7 +283,7 @@ Parameterized integers:
   type T of bits(4) {
       [0:3] bad
   };
-  ASL Static error (TE_BS): invalid slice 3+:-2.
+  ASL Static error (TE_BS): Slice 3+:-2 has a non-positive length.
   [1]
 
   $ aslref bad-shift.asl
@@ -293,15 +293,15 @@ Parameterized integers:
   File unreachable.asl, line 3, characters 2 to 14:
     unreachable;
     ^^^^^^^^^^^^
-  ASL Dynamic error (DE_UNR): unreachable reached.
+  ASL Dynamic error (DE_UNR): Execution reached an unreachable statement.
   [1]
 
   $ aslref assign-to-global-immutable.asl
   File assign-to-global-immutable.asl, line 5, characters 2 to 21:
     my_immutable_global = 4;
     ^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_AIM): cannot assign to immutable storage
-    "my_immutable_global".
+  ASL Type error (TE_AIM):
+    Cannot assign to immutable storage "my_immutable_global".
   [1]
 
   $ aslref equality.asl
@@ -309,7 +309,7 @@ Parameterized integers:
   File bad-equality.asl, line 3, characters 10 to 25:
     println (1, 2) == (1,2);
             ^^^^^^^^^^^^^^^
-  ASL Type error (TE_BO): Illegal application of operator == on types
+  ASL Type error (TE_BO): Operator == is not defined for types
     (integer {1}, integer {2}) and (integer {1}, integer {2}).
   [1]
 
@@ -339,7 +339,7 @@ Parameterized integers:
   File duplicate_expr_record.asl, line 5, characters 12 to 27:
       var x = A{h = 5, h = 9};
               ^^^^^^^^^^^^^^^
-  ASL Type error (TE_IAD): cannot declare already declared element "h".
+  ASL Type error (TE_IAD): Identifier "h" is already declared.
   [1]
 
   $ aslref same-precedence.asl
@@ -347,7 +347,7 @@ Parameterized integers:
     let x = a + b - c;
             ^^^^^
   ASL Grammar error (BE_BOP):
-    Operators `-` and `+` have the same priority - parenthesise to disambiguate.
+    Operators `-` and `+` have the same priority; parenthesise to disambiguate.
   [1]
 
   $ aslref same-precedence2.asl
@@ -355,15 +355,14 @@ Parameterized integers:
     let d = a ==> b <=> c;
             ^^^^^^^
   ASL Grammar error (BE_BOP):
-    Operators `<=>` and `==>` have the same priority - parenthesise to disambiguate.
+    Operators `<=>` and `==>` have the same priority; parenthesise to disambiguate.
   [1]
 
   $ aslref rdiv_checks.asl
   File rdiv_checks.asl, line 3, characters 12 to 25:
       var x = 5.3 / "hello";
               ^^^^^^^^^^^^^
-  ASL Type error (TE_BO): Illegal application of operator / on types real
-    and string.
+  ASL Type error (TE_BO): Operator / is not defined for types real and string.
   [1]
 
   $ aslref record-getfields.asl
@@ -372,7 +371,7 @@ Parameterized integers:
   File integer-accessed-bitvector.asl, line 4, characters 2 to 3:
     x[0] = '1';
     ^
-  ASL Type error (TE_UT): a subtype of bits(-) was expected, provided integer.
+  ASL Type error (TE_UT): Expected a subtype of bits(-); provided integer.
   [1]
 
   $ aslref slice-width-shorthand.asl
@@ -382,7 +381,7 @@ Parameterized integers:
   File array-index-error.asl, line 9, characters 10 to 19:
     let x = arr[[14]];
             ^^^^^^^^^
-  ASL Dynamic error (DE_BI): index 14 is outside the valid range 0..4.
+  ASL Dynamic error (DE_BI): Index 14 is outside the valid range 0..4.
   [1]
 
 Parameters bugs:
@@ -390,46 +389,48 @@ Parameters bugs:
   File bug1.asl, line 5, characters 21 to 29:
     let foo: bits(x) = Zeros{y};
                        ^^^^^^^^
-  ASL Type error (TE_UT): constrained integer expected, provided integer.
+  ASL Type error (TE_UT):
+    Expected a constrained integer type; provided integer.
   [1]
   $ aslref bug2.asl
   File bug2.asl, line 5, characters 10 to 17:
     let t = y[x: 0];
             ^^^^^^^
-  ASL Type error (TE_UT): constrained integer expected, provided integer.
+  ASL Type error (TE_UT):
+    Expected a constrained integer type; provided integer.
   [1]
   $ aslref bug3.asl
   File bug3.asl, line 4, characters 10 to 18:
     let t = Zeros{x};
             ^^^^^^^^
-  ASL Type error (TE_UT): constrained integer expected, provided integer.
+  ASL Type error (TE_UT):
+    Expected a constrained integer type; provided integer.
   [1]
   $ aslref bug4.asl
   File bug4.asl, line 5, characters 11 to 31:
     let pb = Zeros{a} OR Zeros{b};
              ^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_BO): Illegal application of operator OR on types bits(3)
+  ASL Type error (TE_BO): Operator OR is not defined for types bits(3)
     and bits(4).
   [1]
   $ aslref arg-as-param-call.asl
   File arg-as-param-call.asl, line 8, characters 4 to 21:
       test{10}('1111');
       ^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of bits(10) was expected,
-    provided bits(4).
+  ASL Type error (TE_TSF): Expected a subtype of bits(10); provided bits(4).
   [1]
   $ aslref typed-param-call.asl
   File typed-param-call.asl, line 8, characters 4 to 18:
       test{2}('11');
       ^^^^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of integer {5..10} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {5..10};
     provided integer {2}.
   [1]
   $ aslref typed-arg-as-param-call.asl
   File typed-arg-as-param-call.asl, line 8, characters 4 to 18:
       test{2}('11');
       ^^^^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of integer {5..10} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {5..10};
     provided integer {2}.
   [1]
   $ aslref --no-exec defining_param.asl
@@ -503,14 +504,14 @@ Required tests:
     characters 2 to 45:
     var animalLegs: AnimalLegs = centipedeLegs;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of AnimalLegs was expected,
+  ASL Type error (TE_TSF): Expected a subtype of AnimalLegs;
     provided InsectLegs.
   [1]
   $ aslref --no-exec subtype-satisfaction-shape-to-animal.bad.asl
   File subtype-satisfaction-shape-to-animal.bad.asl, line 9, characters 2 to 42:
     var dogLegs: AnimalLegs = myCircleSides;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of AnimalLegs was expected,
+  ASL Type error (TE_TSF): Expected a subtype of AnimalLegs;
     provided ShapeSides.
   [1]
   $ aslref --no-exec subtype-satisfaction-word-count-to-packet-length.bad.asl
@@ -518,7 +519,7 @@ Required tests:
     characters 2 to 16:
     myPacketLength = myWordCount;
     ^^^^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of PacketLength was expected,
+  ASL Type error (TE_TSF): Expected a subtype of PacketLength;
     provided WordCount.
   [1]
   $ aslref --no-exec subtype-satisfaction-packet-length-to-word-count.bad.asl
@@ -526,7 +527,7 @@ Required tests:
     characters 2 to 13:
     myWordCount = myPacketLength;
     ^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of WordCount was expected,
+  ASL Type error (TE_TSF): Expected a subtype of WordCount;
     provided PacketLength.
   [1]
   $ aslref tuples.asl
@@ -544,7 +545,7 @@ Required tests:
   begin
     pass;
   end;
-  ASL Type error (TE_IAD): cannot declare already declared element "f1".
+  ASL Type error (TE_IAD): Identifier "f1" is already declared.
   [1]
   $ aslref string_concat.asl
   $ aslref approx-expr-binop.asl
@@ -555,25 +556,25 @@ Required tests:
   File no-tabs.asl, line 3, characters 2 to 3:
     	// <-- this is a tab character
     ^
-  ASL Lexical error (BE_LE): Unknown symbol (ASCII code point(s): 9).
+  ASL Lexical error (BE_LE): Unknown symbol with byte value(s): 9.
   [1]
   $ aslref no-tabs-in-line-comments.asl
   File no-tabs-in-line-comments.asl, line 3, characters 4 to 5:
     //	<-- this is a tab character
       ^
-  ASL Lexical error (BE_LE): Unknown symbol (ASCII code point(s): 9).
+  ASL Lexical error (BE_LE): Unknown symbol with byte value(s): 9.
   [1]
   $ aslref no-tabs-in-block-comments.asl
   File no-tabs-in-block-comments.asl, line 3, characters 4 to 5:
     /*	<-- this is a tab character*/
       ^
-  ASL Lexical error (BE_LE): Unknown symbol (ASCII code point(s): 9).
+  ASL Lexical error (BE_LE): Unknown symbol with byte value(s): 9.
   [1]
   $ aslref no-tabs-in-strings.asl
   File no-tabs-in-strings.asl, line 3, characters 11 to 12:
     let x = "	"; // this string contains a tab character
              ^
-  ASL Lexical error (BE_LE): Unknown symbol (ASCII code point(s): 9).
+  ASL Lexical error (BE_LE): Unknown symbol with byte value(s): 9.
   [1]
   $ aslref accessor-overloading-2.asl
   nullary setter
@@ -592,19 +593,19 @@ Required tests:
   File throw-local-env.asl, line 10, characters 13 to 14:
         assert y == 5; // y should not be found in dynamic environment here
                ^
-  ASL Dynamic error: Undefined identifier: 'y'
+  ASL Dynamic error: Undefined identifier "y".
   [1]
 
   $ aslref undeclared-variable.asl
   File undeclared-variable.asl, line 3, characters 2 to 5:
     bar = (32 - 46) * 0;
     ^^^
-  ASL Static error (TE_UI): Undefined identifier: 'bar'
+  ASL Static error (TE_UI): Undefined identifier "bar".
   [1]
 
   $ aslref --gnu-errors gnu-errors.asl
   aslref: gnu-errors.asl:1:0: ASL Warning: the recursive function fact has no recursive limit annotation.
-  aslref: gnu-errors.asl:10:6: ASL Dynamic error (DE_BI): index 11 is outside the valid range 0..9.
+  aslref: gnu-errors.asl:10:6: ASL Dynamic error (DE_BI): Index 11 is outside the valid range 0..9.
   [1]
 
   $ aslref
@@ -612,13 +613,13 @@ Required tests:
   [1]
 
   $ aslref no-main.asl
-  ASL Dynamic error (DE_NEP): no entrypoint supplied. Have you defined `func
-    main() => integer`, or did you mean to pass `--no-exec`?
+  ASL Dynamic error (DE_NEP): No entry point was supplied.
+    Define `func main() => integer`, or pass `--no-exec` to disable execution.
   [1]
 
   $ aslref main-wrong-type.asl
-  ASL Dynamic error (DE_NEP): no entrypoint supplied. Have you defined `func
-    main() => integer`, or did you mean to pass `--no-exec`?
+  ASL Dynamic error (DE_NEP): No entry point was supplied.
+    Define `func main() => integer`, or pass `--no-exec` to disable execution.
   [1]
 
   $ aslref overloaded-main.asl
@@ -628,7 +629,7 @@ Required tests:
   File asl0-error-handling-time.asl, line 2, characters 8 to 9:
     if reg[1] == '1' then 62 else 63 +: 1 field,
           ^
-  ASL Static error: Undefined identifier: 'reg'
+  ASL Static error: Undefined identifier "reg".
   [1]
 
 Base values
@@ -636,16 +637,16 @@ Base values
   File base_values.asl, line 5, characters 2 to 28:
     var x: integer {N..M, 42};
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_NBV): base value of type integer {42, N..M} cannot be
-    symbolically reduced since it consists of N.
+  ASL Type error (TE_NBV): Cannot symbolically determine a base value for type
+    integer {42, N..M} from expression N.
   [1]
 
   $ aslref base_values_empty.asl
   File base_values_empty.asl, line 3, characters 2 to 24:
     var x: integer {N..M};
     ^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_NBV): base value of type integer {N..M} cannot be
-    symbolically reduced since it consists of N.
+  ASL Type error (TE_NBV): Cannot symbolically determine a base value for type
+    integer {N..M} from expression N.
   [1]
 
   $ aslref base_values_tuple.asl
@@ -656,13 +657,13 @@ Getters/setters
   File nonempty-getter-called-without-slices.asl, line 14, characters 10 to 12:
     let x = f1;
             ^^
-  ASL Static error (TE_UI): Undefined identifier: 'f1'
+  ASL Static error (TE_UI): Undefined identifier "f1".
   [1]
   $ aslref nonempty-setter-called-without-slices.asl
   File nonempty-setter-called-without-slices.asl, line 14, characters 2 to 4:
     f1 = 4;
     ^^
-  ASL Static error (TE_UI): Undefined identifier: 'f1'
+  ASL Static error (TE_UI): Undefined identifier "f1".
   [1]
   $ aslref setter_subfield.asl
   $ aslref setter_subslice.asl
@@ -675,8 +676,8 @@ Getters/setters
   File bad-pattern.asl, line 4, characters 7 to 12:
     when '101' => println ("Cannot happen");
          ^^^^^
-  ASL Type error (TE_BO): Erroneous pattern '101' for expression of type
-    integer {3}.
+  ASL Type error (TE_BO):
+    Pattern '101' is incompatible with expression type integer {3}.
   [1]
   $ aslref pattern-masks-no-braces.asl
   File pattern-masks-no-braces.asl, line 4, characters 19 to 24:
@@ -697,7 +698,7 @@ Inherit integer constraints on left-hand sides
   File inherit-integer-constraints-bad-basic.asl, line 4, characters 2 to 11:
     return x;
     ^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of integer {43} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {43};
     provided integer {42}.
   [1]
 
@@ -705,8 +706,8 @@ Inherit integer constraints on left-hand sides
   File inherit-integer-constraints-bad-tuple.asl, line 4, characters 2 to 28:
     return (y.item0, y.item2);
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_TSF): a subtype of (integer {42}, integer {0})
-    was expected, provided (integer {42}, integer {43}).
+  ASL Type error (TE_TSF): Expected a subtype of (integer {42}, integer {0});
+    provided (integer {42}, integer {43}).
   [1]
 
   $ aslref inherit-integer-constraints-bad-type.asl
@@ -716,7 +717,7 @@ Inherit integer constraints on left-hand sides
       a : integer{},
       c : integer
   };
-  ASL Type error (TE_UT): a pending constrained integer is illegal here.
+  ASL Type error (TE_UT): A pending constrained integer is not permitted here.
   [1]
 
 Left-hand sides
@@ -725,7 +726,8 @@ Left-hand sides
   File lhs-tuple-fields-same-field.asl, line 8, characters 2 to 4:
     bv.(fld, -, fld) = ('11', TRUE, '11');
     ^^
-  ASL Grammar error (BE_PE): multiple writes to "bv.fld".
+  ASL Grammar error (BE_PE):
+    Storage element "bv.fld" is written more than once.
   [1]
   $ aslref lhs-tuple-same-var.asl
   $ aslref lhs-expressivity.asl
@@ -752,88 +754,87 @@ Bounds checks
        - = bv[-1];
            ^^^^^^
   ASL Dynamic error (DE_BI):
-    invalid slice -1+:1: start and length must be non-negative.
+    Slice -1+:1 is invalid: its start and length must be non-negative.
   [1]
   $ aslref bounds-checks-read-bitvector-2.asl
   File bounds-checks-read-bitvector-2.asl, line 4, characters 9 to 14:
        - = bv[4];
            ^^^^^
-  ASL Dynamic error (DE_BI): index 4 is outside the valid range 0..3.
+  ASL Dynamic error (DE_BI): Index 4 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-write-bitvector-1.asl
   File bounds-checks-write-bitvector-1.asl, line 4, characters 6 to 10:
       bv[-1] = '1';
         ^^^^
   ASL Dynamic error (DE_BI):
-    invalid slice -1+:1: start and length must be non-negative.
+    Slice -1+:1 is invalid: its start and length must be non-negative.
   [1]
   $ aslref bounds-checks-write-bitvector-2.asl
   File bounds-checks-write-bitvector-2.asl, line 4, characters 6 to 9:
       bv[5] = '1';
         ^^^
-  ASL Dynamic error (DE_BI): index 5 is outside the valid range 0..3.
+  ASL Dynamic error (DE_BI): Index 5 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-read-array-1.asl
   File bounds-checks-read-array-1.asl, line 4, characters 8 to 17:
       - = arr[[-1]];
           ^^^^^^^^^
-  ASL Dynamic error (DE_BI): index -1 is outside the valid range 0..3.
+  ASL Dynamic error (DE_BI): Index -1 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-read-array-2.asl
   File bounds-checks-read-array-2.asl, line 4, characters 8 to 16:
       - = arr[[4]];
           ^^^^^^^^
-  ASL Dynamic error (DE_BI): index 4 is outside the valid range 0..3.
+  ASL Dynamic error (DE_BI): Index 4 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-write-array-1.asl
   File bounds-checks-write-array-1.asl, line 4, characters 9 to 11:
       arr[[-1]] = 1;
            ^^
-  ASL Dynamic error (DE_BI): index -1 is outside the valid range 0..3.
+  ASL Dynamic error (DE_BI): Index -1 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-write-array-2.asl
   File bounds-checks-write-array-2.asl, line 4, characters 9 to 10:
       arr[[4]] = 1;
            ^
-  ASL Dynamic error (DE_BI): index 4 is outside the valid range 0..3.
+  ASL Dynamic error (DE_BI): Index 4 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-read-zero-width-slice.asl
   File bounds-checks-read-zero-width-slice.asl, line 4, characters 6 to 15:
     - = x[100+:0];
         ^^^^^^^^^
-  ASL Dynamic error (DE_BI): index 100 is outside the valid range 0..3.
+  ASL Dynamic error (DE_BI): Index 100 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-write-zero-width-slice.asl
   File bounds-checks-write-zero-width-slice.asl, line 4, characters 3 to 11:
     x[100+:0] = Zeros{0};
      ^^^^^^^^
-  ASL Dynamic error (DE_BI): index 100 is outside the valid range 0..3.
+  ASL Dynamic error (DE_BI): Index 100 is outside the valid range 0..3.
   [1]
   $ aslref static-evaluation-bad-index.asl
   File static-evaluation-bad-index.asl, line 1, characters 13 to 22:
   constant X = '0000'[4];
                ^^^^^^^^^
-  ASL Type error (TE_SEF):
-    static evaluation failed for expression '0000'[4+:1]:
-    caused by: index 4 is outside the valid range 0..3.
+  ASL Type error (TE_SEF): Static evaluation of expression '0000'[4+:1] failed:
+    Index 4 is outside the valid range 0..3.
   [1]
   $ aslref static-evaluation-type-assertion.asl
   File static-evaluation-type-assertion.asl, line 1, characters 13 to 29:
   constant X = 2 as integer {1};
                ^^^^^^^^^^^^^^^^
   ASL Type error (TE_SEF):
-    static evaluation failed for expression 2 as integer {1}:
-    caused by: value 2 does not satisfy the asserted type integer {1}.
+    Static evaluation of expression 2 as integer {1} failed:
+    Value 2 does not satisfy the asserted type integer {1}.
   [1]
   $ aslref tuple-arity-mismatch.asl
   File tuple-arity-mismatch.asl, line 3, characters 2 to 25:
     let (x, y) = (1, 2, 3);
     ^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): tuple arity mismatch:
-    2 elements expected and 3 provided.
+  ASL Type error (TE_UT): Tuple arity mismatch:
+    expected 2 element(s); provided 3.
   [1]
   $ aslref --gnu-errors implementation-integer-overflow.asl
-  aslref: implementation-integer-overflow.asl:3:9: ASL Internal error: integer 18446744073709551616 exceeds aslref implementation limits.
+  aslref: implementation-integer-overflow.asl:3:9: ASL Internal error: Integer 18446744073709551616 exceeds aslref implementation limits.
   [1]
   $ aslref --no-type-check --gnu-errors unchecked-type-mismatch.asl
   aslref: unchecked-type-mismatch.asl:3:9: ASL Dynamic error: Type mismatch: value TRUE does not belong to type integer.
@@ -842,21 +843,22 @@ Bounds checks
   File unchecked-argument-arity.asl, line 6, characters 9 to 12:
     return f();
            ^^^
-  ASL Dynamic error: Arity error while calling 'f':
-    1 argument expected and 0 provided.
+  ASL Dynamic error: Call to "f" has incorrect argument arity:
+    expected 1 argument(s); provided 0.
   [1]
   $ aslref --no-type-check unchecked-parameter-arity.asl
   File unchecked-parameter-arity.asl, line 6, characters 9 to 29:
     return f{8, 16}('00000000');
            ^^^^^^^^^^^^^^^^^^^^
-  ASL Dynamic error: Arity error while calling 'f':
-    1 parameter expected and 2 provided.
+  ASL Dynamic error: Call to "f" has incorrect parameter arity:
+    expected 1 parameter(s); provided 2.
   [1]
   $ aslref --no-type-check unchecked-assignment-arity.asl
   File unchecked-assignment-arity.asl, line 8, characters 2 to 15:
     (a, b) = f();
     ^^^^^^^^^^^^^
-  ASL Dynamic error: Multi-assignment expected 2 values but received 3.
+  ASL Dynamic error: Multi-assignment arity mismatch:
+    expected 2 value(s); provided 3.
   [1]
   $ aslref --no-type-check unchecked-unexpected-throw.asl
   File unchecked-unexpected-throw.asl, line 10, characters 18 to 28:
