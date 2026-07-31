@@ -733,6 +733,10 @@ end = struct
     | PteAccess (PteSet (`Plain,set)),OrdinaryAccess `Release
     | OrdinaryAccess `Release,PteAccess (PteSet (`Plain,set)) ->
         Some (PteAccess (PteSet (`Release,set)))
+    | PteAccess (PteRead `Plain),PteAccess (PteSet (`Plain,set))
+    | PteAccess (PteSet (`Plain,set)),PteAccess (PteRead `Plain)
+      when WPTESet.mem HA set ->
+        Some (PteAccess (PteSet (`Plain,set)))
     | PteAccess (PteSet (o1,set1)),PteAccess (PteSet (o2,set2)) ->
         let set = WPTESet.union set1 set2 in
         begin match merge_order o1 o2 with
