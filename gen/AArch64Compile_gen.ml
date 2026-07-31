@@ -1507,7 +1507,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let tr_none = function
       | None -> plain
-      | Some atom -> of_legacy atom
+      | Some atom -> atom
 
 
 (********************)
@@ -1727,8 +1727,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         else loc
 
     let get_tagged_loc e =
-      let atom = Option.map of_legacy e.C.atom in
-      add_tag atom (as_data e.C.loc) e.C.tag
+      add_tag e.C.atom (as_data e.C.loc) e.C.tag
 
     let add_label_to_last_instructions e cs =
       match e.C.check_fault with
@@ -1773,7 +1772,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       do_rec cs
 
     let emit_access st p init e =
-    let structured_atom = Option.map of_legacy e.C.atom in
+    let structured_atom = e.C.atom in
     let open WPTE in
     match e.C.dir,e.C.loc with
     | None,_ -> Warn.fatal "AArchCompile.emit_access"
@@ -2345,7 +2344,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       match e.C.dir,e.C.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some d,Data loc ->
-          let structured_atom = Option.map of_legacy e.C.atom in
+          let structured_atom = e.C.atom in
           let loc = add_tag structured_atom loc e.C.tag in
           let ordinary_access = match d,structured_atom with
           | R,None ->
@@ -2652,7 +2651,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          emit_exch_dep_addr1 csel vdep st p init er ew rd
 
     let emit_access_dep_data csel vdep st p init e  r1 =
-      let structured_atom = Option.map of_legacy e.C.atom in
+      let structured_atom = e.C.atom in
       let regs,inits,cs,st = match e.C.dir,e.C.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some R,_ -> Warn.fatal "data dependency to load"
@@ -2894,8 +2893,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let node2vdep n =
       let e = n.C.evt in
-      let atom = Option.map of_legacy e.C.atom in
-      tr_atom atom
+      tr_atom e.C.atom
 
     let emit_access_dep st p init e (dp,csel) r1 n1 =
       let vdep = node2vdep n1 in
@@ -3042,7 +3040,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let open WPTE in
       (* collect distinct tthm *)
       let tthm_value = C.fold ( fun node acc ->
-        let atom = Option.map of_legacy node.C.edge.E.a1 in
+        let atom = node.C.edge.E.a1 in
         match atom with
         | Some { access_type = PteAccess (Set pte);
                  access_order = (OrderPlain|OrderRelease); }
