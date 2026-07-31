@@ -2051,7 +2051,11 @@ lines ``\textit{key} \textit{arg}'' are interpreted
 as setting the value of parameter~\textit{key} to \textit{arg}.
 Each parameter has a corresponding option,
 usually \opt{-}\textit{key}, except for the single letter
-option \opt{-v} whose parameter is \opt{verbose}.
+options \opt{-v} whose parameter is \opt{verbose} and
+\opt{-I} whose parameter is \opt{include}. Additionally,
+the special syntax \opt{include $dirname} is recognised:
+it results in adding the directory name of the
+configuration file to the search path.
 
 As command line option are processed left-to-right,
 settings from a configuration file (option \opt{-conf})
