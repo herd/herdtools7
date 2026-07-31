@@ -70,9 +70,6 @@ type t =
   | PTE2
 (* Optimise Rf enumeration leading to rmw *)
   | OptRfRMW
-(* Allow some constrained unpredictable, behaviours.
-   AArch64: LDXR / STXR of different size or address may succeed. *)
-  | ConstrainedUnpredictable
 (* Perform experiment *)
   | Exp
 (* Instruction-fetch support (AKA "self-modifying code" mode) *)
