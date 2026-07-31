@@ -98,7 +98,7 @@ Examples used in ASL High-level Definition:
   File GuideRule.TupleElementAccess.bad.asl, line 5, characters 18 to 25:
       x = (x.item1, x.item2);
                     ^^^^^^^
-  ASL Type error (TE_BF): There is no field 'item2' on type (integer, integer).
+  ASL Type error (TE_BTI): tuple index 2 is outside the valid range 0..1.
   [1]
   $ aslref GuideRule.AnonymousEnumerations.bad.asl
   File GuideRule.AnonymousEnumerations.bad.asl, line 4, characters 12 to 23:
@@ -128,7 +128,7 @@ Examples used in ASL High-level Definition:
   File NamedTypes.bad.asl, line 8, characters 4 to 5:
       b = K; // Illegal: a Char cannot be directly assigned to a Byte
       ^
-  ASL Type error (TE_UT): a subtype of Byte was expected, provided Char.
+  ASL Type error (TE_TSF): a subtype of Byte was expected, provided Char.
   [1]
   $ aslref --no-exec GuideRule.GlobalStorageCycles.bad1.asl
   File GuideRule.GlobalStorageCycles.bad1.asl, line 4, characters 0 to 10:
@@ -182,14 +182,14 @@ Examples used in ASL High-level Definition:
   File ConstrainedIntegers.bad.asl, line 7, characters 4 to 5:
       B = A; // illegal: {2,4,8} is not a subset of {2,4}.
       ^
-  ASL Type error (TE_UT): a subtype of integer {2, 4} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {2, 4} was expected,
     provided integer {2, 4, 8}.
   [1]
   $ aslref --no-exec ConstrainedIntegers.bad2.asl
   File ConstrainedIntegers.bad2.asl, line 8, characters 4 to 10:
       myIntA = myIntB; // Illegal even though at this point
       ^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {1..10} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {1..10} was expected,
     provided integer {0..20}.
   [1]
   $ aslref --no-exec PrimitiveOperations.asl

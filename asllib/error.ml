@@ -84,12 +84,17 @@ type internal_invariant_error =
   | GlobalWithoutTypeOrInitialiser
   | ParameterizedIntegerAtRuntime
 
+(** Whether conflicting types arose from a general structural expectation or the
+    specification's type-satisfaction check. *)
+type conflicting_types_reason = UnexpectedType | TypeSatisfaction
+
 type error_desc =
   | ReservedIdentifier of string
   | BadField of string * ty
   | MissingField of string list * ty
   | BadSlices of error_handling_time * slice list * int
   | BadIndex of int * int
+  | BadTupleIndex of int * int
   | BadSlice of slice
   | EmptySlice
   | UndefinedIdentifier of identifier
@@ -108,7 +113,7 @@ type error_desc =
   | BadParameterType of ty
   | InvalidExpr of expr
   | UncheckedExecutionError of error_handling_time * unchecked_execution_error
-  | ConflictingTypes of type_desc list * ty
+  | ConflictingTypes of conflicting_types_reason * type_desc list * ty
   | AssertionFailed of expr
   | CannotParse of string option
   | UnknownSymbol of string
@@ -321,19 +326,23 @@ module ErrorCode = struct
         Some (Typing BS) (* TODO: consider combining BadSlices and BadSlice *)
     | BadSlices (Dynamic, _, _) -> Some (Dynamic BI)
     | BadIndex _ -> Some (Dynamic BI)
+    | BadTupleIndex _ -> Some (Typing BTI)
     | UndefinedIdentifier _ -> Some (Typing UI)
-    | ConflictingTypes _ | AssignToTupleElement _ | ConstrainedIntegerExpected _
+    | ConflictingTypes (UnexpectedType, _, _)
+    | AssignToTupleElement _ | ConstrainedIntegerExpected _
     | UnexpectedPendingConstrained | ExpectedSingularType _
     | ExpectedNamedType _ | UnexpectedCollection | MismatchedBitvectorWidths _
     | ExpectedBitvectorType _ | CollectionBaseNotVariable _ | BadTupleArity _ ->
         Some (Typing UT)
+    | ConflictingTypes (TypeSatisfaction, _, _) -> Some (Typing TSF)
     | MismatchedCallType _ | BadCallArity _ | BadParameterArity _
     | NoCallCandidate _ ->
         Some (Typing BC)
     | UnsupportedUnop (Dynamic, _, _) | UnsupportedBinop (Dynamic, _, _, _) ->
         Some (Dynamic BO)
     | AssertionFailed _ | BadPrimitiveArgument _ -> Some (Dynamic DAF)
-    | ImpureExpression _ | MismatchedPurity _ | ConflictingSideEffects _ ->
+    | ImpureExpression _ | MismatchedPurity _ | ConflictingSideEffects _
+    | ConstantTimeBroken _ ->
         Some (Typing SEV)
     | AssignToImmutable _ -> Some (Typing AIM)
     | AlreadyDeclaredIdentifier _ -> Some (Typing IAD)
@@ -380,7 +389,6 @@ module ErrorCode = struct
         None
     (* Internal invariant violations are not ASL errors. *)
     | InternalInvariantError _ -> None
-    | ConstantTimeBroken _ -> None
     (********** Other **********)
     | ObsoleteSyntax _ -> Some (Build PE)
 end
@@ -477,9 +485,6 @@ module PrintContext = struct
       Some lines
     else None
 end
-
-(* TODO: check_implementations_unique in asl.spec should report TE_OE. *)
-(* TODO: distinguish TE_TSF and TE_BTI in the implementation. *)
 
 module PPrint = struct
   open Format
@@ -588,6 +593,9 @@ module PPrint = struct
           length pp_slice_list slices
     | BadIndex (index, length) ->
         pp_err dynamic "%a" pp_bad_index (index, length)
+    | BadTupleIndex (index, length) ->
+        pp_err typing "tuple index %d is outside the valid range 0..%d." index
+          (length - 1)
     | BadSlice slice -> pp_err static "invalid slice %a." pp_slice slice
     | UncheckedExecutionError (t, TypeInferenceNeeded) ->
         pp_err
@@ -669,10 +677,10 @@ module PPrint = struct
               "Arity error while calling '%s':@ %d parameters expected and %d \
                provided"
               name expected provided)
-    | ConflictingTypes ([ expected ], provided) ->
+    | ConflictingTypes (_, [ expected ], provided) ->
         pp_err typing "a subtype of@ %a@ was expected,@ provided %a."
           pp_type_desc expected pp_ty provided
-    | ConflictingTypes (expected, provided) ->
+    | ConflictingTypes (_, expected, provided) ->
         pp_err typing "%a does@ not@ subtype@ any@ of:@ %a." pp_ty provided
           (pp_comma_list pp_type_desc)
           expected
@@ -977,6 +985,7 @@ module CSV = struct
     | MissingField _ -> "MissingField"
     | BadSlices _ -> "BadSlices"
     | BadIndex _ -> "BadIndex"
+    | BadTupleIndex _ -> "BadTupleIndex"
     | BadSlice _ -> "BadSlice"
     | EmptySlice -> "EmptySlice"
     | UndefinedIdentifier _ -> "UndefinedIdentifier"

@@ -18,21 +18,21 @@ H Examples
   File HExample16.asl, line 10, characters 19 to 36:
     let x: bits(a) = Reverse{a}(bv, b);
                      ^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {1..a} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {1..a} was expected,
     provided integer {8, 16, 32, 64}.
   [1]
   $ aslref --no-exec HExample17.asl
   File HExample17.asl, line 11, characters 19 to 36:
     let x: bits(a) = Reverse{a}(bv, b);
                      ^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {1..a} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {1..a} was expected,
     provided integer {32}.
   [1]
   $ aslref --no-exec HExample18.asl
   File HExample18.asl, line 12, characters 20 to 39:
     let x: bits(a2) = Reverse{a2}(bv, a2);
                       ^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {1..a2} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {1..a2} was expected,
     provided integer {8, 16, 32, 64}.
   [1]
 
@@ -45,21 +45,21 @@ Assignments of constrained integers
   File TNegative2-0.asl, line 4, characters 4 to 41:
       let testA : integer {0..2}    = size;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..2} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..2} was expected,
     provided integer {0..3}.
   [1]
   $ aslref --no-exec TNegative2-1.asl
   File TNegative2-1.asl, line 4, characters 4 to 42:
       let testB : integer {8,16,32} = size2;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {8, 16, 32} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {8, 16, 32} was expected,
     provided integer {8, 16, 32, 64}.
   [1]
   $ aslref --no-exec TNegative2-2.asl
   File TNegative2-2.asl, line 4, characters 4 to 42:
       let testC : integer {8,16,32} = myInt; // assignment of unconstrained integers to constrained integers is also illegal without a ATC
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {8, 16, 32} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {8, 16, 32} was expected,
     provided integer.
   [1]
 
@@ -75,14 +75,14 @@ Use of global vars in constraints
   File TPositive4-1.asl, line 5, characters 4 to 54:
       let testB : integer {LET_ALLOWED_NUMS_B}     = 16;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {8} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {8} was expected,
     provided integer {16}.
   [1]
   $ aslref --no-exec TPositive4-2.asl
   File TPositive4-2.asl, line 8, characters 4 to 54:
       let testC : integer {LET_ALLOWED_NUMS_C}     = 16;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {LET_ALLOWED_NUMS_C}
+  ASL Type error (TE_TSF): a subtype of integer {LET_ALLOWED_NUMS_C}
     was expected, provided integer {16}.
   [1]
   $ aslref --no-exec TPositive4-3.asl
@@ -90,7 +90,7 @@ Use of global vars in constraints
   File TPositive4-4.asl, line 9, characters 4 to 54:
       let testF : integer {CONFIG_ALLOWED_NUMS}    = 16;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {CONFIG_ALLOWED_NUMS}
+  ASL Type error (TE_TSF): a subtype of integer {CONFIG_ALLOWED_NUMS}
     was expected, provided integer {16}.
   [1]
   $ aslref --no-exec TPositive4-5.asl
@@ -98,14 +98,14 @@ Use of global vars in constraints
   File TReconsider4-0.asl, line 13, characters 4 to 54:
       let testA : integer {CONST_ALLOWED_NUMS}     = 16;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {8} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {8} was expected,
     provided integer {16}.
   [1]
   $ aslref --no-exec TReconsider4-1.asl
   File TReconsider4-1.asl, line 14, characters 4 to 54:
       let testB : integer {0..CONST_ALLOWED_NUMS}  = 10;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..8} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..8} was expected,
     provided integer {10}.
   [1]
   $ aslref --no-exec TNegative4.asl
@@ -129,7 +129,7 @@ Asserted type conversions
   File TNegative5-0.asl, line 5, characters 4 to 38:
       let testA : integer {0..3} = temp; // illegal as value of type integer {8,16} can't be assigned to var of type integer {0..3}.
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..3} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..3} was expected,
     provided integer {8, 16}.
   [1]
   $ aslref --no-exec TNegative5-1.asl
@@ -150,7 +150,7 @@ Named types
   File TNegative7.asl, line 7, characters 4 to 36:
       let testA : MyOtherSizes = size; // illegal as testA and size are different named types, even though they are the same structure and domain
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of MyOtherSizes was expected,
+  ASL Type error (TE_TSF): a subtype of MyOtherSizes was expected,
     provided MyBitsSizes.
   [1]
   $ aslref --no-exec KPositive01.asl
@@ -161,35 +161,35 @@ Loops
   File TPositive8-1.asl, line 5, characters 8 to 40:
           let testK : integer {8..31} = i;
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {8..31} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {8..31} was expected,
     provided integer {100..110}.
   [1]
   $ aslref --no-exec TNegative8-0.asl
   File TNegative8-0.asl, line 5, characters 8 to 40:
           let testA : integer {0..7}  = i; // N is an unconstrained integer, so i is also unconstrained
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..7} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..7} was expected,
     provided integer.
   [1]
   $ aslref --no-exec TNegative8-1.asl
   File TNegative8-1.asl, line 5, characters 8 to 40:
           let testB : integer {0..7}  = i; // N is an unconstrained integer, so i is also unconstrained
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..7} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..7} was expected,
     provided integer.
   [1]
   $ aslref --no-exec TNegative8-2.asl
   File TNegative8-2.asl, line 5, characters 8 to 40:
           let testC : integer {7..31} = i; // N is an unconstrained integer, so i is also unconstrained
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {7..31} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {7..31} was expected,
     provided integer.
   [1]
   $ aslref --no-exec TNegative8-3.asl
   File TNegative8-3.asl, line 5, characters 8 to 40:
           let testD : integer {7..31} = i; // N is an unconstrained integer, so i is also unconstrained
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {7..31} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {7..31} was expected,
     provided integer.
   [1]
 
@@ -200,20 +200,21 @@ Bit vector widths defined by constrained integers
   File TNegative9-0.asl, line 3, characters 4 to 36:
       let testA : bits(8) = Zeros{16};
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of bits(8) was expected, provided bits(16).
+  ASL Type error (TE_TSF): a subtype of bits(8) was expected,
+    provided bits(16).
   [1]
   $ aslref --no-exec TNegative9-1.asl
   File TNegative9-1.asl, line 3, characters 4 to 59:
       let testB : bits(N) = Zeros{N DIV 4} :: Zeros{N DIV 2}; // bits(3N/4) != bits(N)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of bits(N) was expected,
+  ASL Type error (TE_TSF): a subtype of bits(N) was expected,
     provided bits(((3 * N) DIV 4)).
   [1]
   $ aslref --no-exec TNegative9-2.asl
   File TNegative9-2.asl, line 3, characters 4 to 35:
       let testC : bits(M) = Zeros{N};
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of bits(M) was expected, provided bits(N).
+  ASL Type error (TE_TSF): a subtype of bits(M) was expected, provided bits(N).
   [1]
   $ aslref --no-exec TNegative9-3.asl
   File TNegative9-3.asl, line 3, characters 26 to 34:
@@ -225,7 +226,7 @@ Bit vector widths defined by constrained integers
   File TNegative9-4.asl, line 3, characters 4 to 35:
       let testE : bits(N) = Zeros{8}; // N != 8, even though 8 is in the constraint set for N. N could be 16 after all.
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of bits(N) was expected, provided bits(8).
+  ASL Type error (TE_TSF): a subtype of bits(N) was expected, provided bits(8).
   [1]
 
 Symbolic execution of bit vector widths expressions
@@ -243,14 +244,14 @@ Symbolic execution of bit vector widths expressions
   File TNegative10-0.asl, line 16, characters 4 to 53:
       let testB : bits(letWidthN1) = Zeros{letWidthN2}; // illegal as type bits(letWidthN1) is different from bits(letWidthN2).
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of bits(letWidthN1) was expected,
+  ASL Type error (TE_TSF): a subtype of bits(letWidthN1) was expected,
     provided bits(letWidthN2).
   [1]
   $ aslref --no-exec TNegative10-1.asl
   File TNegative10-1.asl, line 28, characters 4 to 49:
       let testC : bits(tempC3A)   = Zeros{tempC3B}; // illegal, type bits(tempC1) != bits(tempC3B)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of bits(tempC3A) was expected,
+  ASL Type error (TE_TSF): a subtype of bits(tempC3A) was expected,
     provided bits(tempC3B).
   [1]
 
@@ -259,7 +260,7 @@ Complex symbolic execution of bit vector widths expressions
   File TPositive11.asl, line 11, characters 4 to 64:
       let testA : bits(numBits)            = ZerosBytes{numBytes};
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of bits(numBits) was expected,
+  ASL Type error (TE_TSF): a subtype of bits(numBits) was expected,
     provided bits((8 * numBytes)).
   [1]
   $ aslref --no-exec TPositive11-0.asl
@@ -351,14 +352,14 @@ Named types for bit vector widths
   File TNegative14-0.asl, line 6, characters 4 to 32:
       let tempA : NamedTypeB = w1;        // illegal, not the same type
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of NamedTypeB was expected,
+  ASL Type error (TE_TSF): a subtype of NamedTypeB was expected,
     provided NamedTypeA.
   [1]
   $ aslref --no-exec TNegative14-1.asl
   File TNegative14-1.asl, line 7, characters 4 to 39:
       let testB : bits(w1)   = Zeros{w2}; // illegal, just because w1 and w2 are the same type doesn't mean they are the same value, so
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of bits(w1) was expected,
+  ASL Type error (TE_TSF): a subtype of bits(w1) was expected,
     provided bits(w2).
   [1]
 
@@ -396,7 +397,7 @@ C Tests
   File CPositive1-1.asl, line 5, characters 4 to 30:
       let z: integer {0..N} = y;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..N} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..N} was expected,
     provided integer.
   [1]
   $ aslref --no-exec CPositive2.asl
@@ -404,7 +405,7 @@ C Tests
   File CPositive3.asl, line 5, characters 4 to 31:
       var a : integer {0..N} = b;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..N} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..N} was expected,
     provided integer {0}.
   [1]
   $ aslref --no-exec CPositive4.asl
@@ -414,7 +415,7 @@ C Tests
   File CPositive7.asl, line 4, characters 4 to 31:
       var a: integer{0..2*N} = x;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..(2 * N)} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..(2 * N)} was expected,
     provided integer {0..N}.
   [1]
   $ aslref --no-exec CPositive9.asl
@@ -426,14 +427,14 @@ C Tests
   File CNegative1.asl, line 5, characters 4 to 31:
       var a : integer {0..N} = b; // illegal
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..N} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..N} was expected,
     provided integer {-1}.
   [1]
   $ aslref --no-exec CNegative2.asl
   File CNegative2.asl, line 4, characters 2 to 11:
     return 3; // illegal
     ^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {N} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {N} was expected,
     provided integer {3}.
   [1]
   $ aslref --no-exec CNegative3.asl
@@ -448,7 +449,7 @@ C Tests
   File CNegative3.asl, line 12, characters 8 to 9:
           z = z + 1; // should be illegal without ATC
           ^
-  ASL Type error (TE_UT): a subtype of integer {N} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {N} was expected,
     provided integer {(N + 1)}.
   [1]
   $ aslref --no-exec CNegative4.asl
@@ -457,49 +458,49 @@ C Tests
           Ones{5} ::
           x
       );
-  ASL Type error (TE_UT): a subtype of bits(64) was expected,
+  ASL Type error (TE_TSF): a subtype of bits(64) was expected,
     provided bits((N + 5)).
   [1]
   $ aslref --no-exec CNegative5.asl
   File CNegative5.asl, line 13, characters 2 to 33:
     printLengths{12}(3, Zeros{12}); // illegal
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {12} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {12} was expected,
     provided integer {3}.
   [1]
   $ aslref --no-exec CNegative6.asl
   File CNegative6.asl, line 4, characters 2 to 15:
     return N + 1; // illegal
     ^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..N} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..N} was expected,
     provided integer {(N + 1)}.
   [1]
   $ aslref --no-exec CNegative7.asl
   File CNegative7.asl, line 8, characters 9 to 26:
     return GetBitAt{M}(x, M); // illegal
            ^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..(M - 1)} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..(M - 1)} was expected,
     provided integer {M}.
   [1]
   $ aslref --no-exec CNegative8.asl
   File CNegative8.asl, line 7, characters 4 to 5:
       a = b; // illegal, would require ATC
       ^
-  ASL Type error (TE_UT): a subtype of integer {0..N} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..N} was expected,
     provided integer {0..M}.
   [1]
   $ aslref --no-exec CNegative10.asl
   File CNegative10.asl, line 7, characters 8 to 9:
           a = b; // illegal; only the static type is considered for type-checking
           ^
-  ASL Type error (TE_UT): a subtype of integer {0..N} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..N} was expected,
     provided integer {0..M}.
   [1]
   $ aslref --no-exec CNegative11.asl
   File CNegative11.asl, line 5, characters 4 to 5:
       z = M; // illegal
       ^
-  ASL Type error (TE_UT): a subtype of integer {0..N} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..N} was expected,
     provided integer {M}.
   [1]
   $ aslref --no-exec CNegative12.asl
@@ -514,7 +515,7 @@ Extra tests by ASLRef team
   File NegParam.asl, line 3, characters 2 to 28:
     let x: integer {0..N} = 0;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..N} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..N} was expected,
     provided integer {0}.
   [1]
 

@@ -175,7 +175,7 @@ Other example from typing.t:
   File TNegative9-1.asl, line 3, characters 4 to 59:
       let testB : bits(N) = Zeros{N DIV 4} :: Zeros{N DIV 2}; // bits(3N/4) != bits(N)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of bits(N) was expected,
+  ASL Type error (TE_TSF): a subtype of bits(N) was expected,
     provided bits(((3 * N) DIV 4)).
   [1]
   $ aslref --no-exec TPositive9.asl
