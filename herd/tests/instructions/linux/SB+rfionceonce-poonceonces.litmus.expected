@@ -1,0 +1,13 @@
+Test SB+rfionceonce-poonceonces Allowed
+States 4
+0:r1=1; 0:r2=0; 1:r3=1; 1:r4=0; [x]=1; [y]=1;
+0:r1=1; 0:r2=0; 1:r3=1; 1:r4=1; [x]=1; [y]=1;
+0:r1=1; 0:r2=1; 1:r3=1; 1:r4=0; [x]=1; [y]=1;
+0:r1=1; 0:r2=1; 1:r3=1; 1:r4=1; [x]=1; [y]=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:r2=0 /\ 1:r4=0)
+Observation SB+rfionceonce-poonceonces Sometimes 1 3
+Hash=40de8418c4b395388f6501cafd1ed38d
+

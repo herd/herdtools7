@@ -1,0 +1,12 @@
+Test MP+polocks Allowed
+States 3
+1:r0=0; 1:r1=0;
+1:r0=0; 1:r1=1;
+1:r0=1; 1:r1=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (1:r0=1 /\ 1:r1=0)
+Observation MP+polocks Never 0 3
+Hash=fdace35cda1d35a18cccb93ae37d3b77
+

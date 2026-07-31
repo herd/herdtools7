@@ -1,0 +1,12 @@
+Test MP+pooncerelease+poacquireonce Allowed
+States 3
+1:r0=0; 1:r1=0;
+1:r0=0; 1:r1=1;
+1:r0=1; 1:r1=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (1:r0=1 /\ 1:r1=0)
+Observation MP+pooncerelease+poacquireonce Never 0 3
+Hash=f259d8efc86e0b40c7168bf58524ab49
+

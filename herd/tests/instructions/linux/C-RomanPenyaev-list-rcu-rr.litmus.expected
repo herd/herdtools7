@@ -1,0 +1,16 @@
+Test C-RomanPenyaev-list-rcu-rr Allowed
+States 7
+0:r1=w; 1:r1=w; 1:r2=y; 1:r3=y; 1:r4=z; [c]=z; [v]=w; [w]=y; [x]=0; [y]=z;
+0:r1=x; 1:r1=w; 1:r2=x; 1:r3=w; 1:r4=y; [c]=y; [v]=w; [w]=y; [x]=0; [y]=z;
+0:r1=x; 1:r1=w; 1:r2=x; 1:r3=x; 1:r4=y; [c]=0; [v]=w; [w]=y; [x]=0; [y]=z;
+0:r1=x; 1:r1=w; 1:r2=x; 1:r3=x; 1:r4=y; [c]=y; [v]=w; [w]=y; [x]=0; [y]=z;
+0:r1=y; 1:r1=w; 1:r2=x; 1:r3=x; 1:r4=y; [c]=y; [v]=w; [w]=y; [x]=0; [y]=z;
+0:r1=y; 1:r1=w; 1:r2=y; 1:r3=y; 1:r4=z; [c]=z; [v]=w; [w]=y; [x]=0; [y]=z;
+0:r1=z; 1:r1=w; 1:r2=y; 1:r3=y; 1:r4=z; [c]=z; [v]=w; [w]=y; [x]=0; [y]=z;
+No
+Witnesses
+Positive: 0 Negative: 7
+Condition exists (1:r1=0 \/ 1:r2=0 \/ 1:r3=0 \/ 1:r4=0)
+Observation C-RomanPenyaev-list-rcu-rr Never 0 7
+Hash=81ddf6a12ded1accf54318919160be87
+

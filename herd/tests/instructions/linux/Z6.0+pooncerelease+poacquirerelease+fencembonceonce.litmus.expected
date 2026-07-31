@@ -1,0 +1,17 @@
+Test Z6.0+pooncerelease+poacquirerelease+fencembonceonce Allowed
+States 8
+1:r0=0; 2:r1=0; [z]=1;
+1:r0=0; 2:r1=0; [z]=2;
+1:r0=0; 2:r1=1; [z]=1;
+1:r0=0; 2:r1=1; [z]=2;
+1:r0=1; 2:r1=0; [z]=1;
+1:r0=1; 2:r1=0; [z]=2;
+1:r0=1; 2:r1=1; [z]=1;
+1:r0=1; 2:r1=1; [z]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (1:r0=1 /\ [z]=2 /\ 2:r1=0)
+Observation Z6.0+pooncerelease+poacquirerelease+fencembonceonce Sometimes 1 7
+Hash=1634e8944e89091776568b8db9d02158
+
