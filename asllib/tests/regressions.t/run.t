@@ -277,6 +277,15 @@ Parameterized integers:
     invalid slice 4+:-23: start and length must be non-negative.
   [1]
 
+  $ aslref non-positive-bitfield-slice.asl
+  File non-positive-bitfield-slice.asl, line 1, character 10 to line 3,
+    character 1:
+  type T of bits(4) {
+      [0:3] bad
+  };
+  ASL Static error (TE_BS): invalid slice 3+:-2.
+  [1]
+
   $ aslref bad-shift.asl
   0x00
 
