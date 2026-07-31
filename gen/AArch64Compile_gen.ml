@@ -2439,6 +2439,20 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) addon e in
               Some (None,init,pseudo cs0@cs,st)
+          | R,Some (NeonAccess n) ->
+              let emit_load_idx = match n with
+                | SIMD.NeRel -> Warn.fatal "No laod release"
+                | SIMD.NeAcqPc -> LDAPUR.emit_load_idx
+                | SIMD.NeP -> LDUR.emit_load_idx
+                | SIMD.NePa -> LDP.emit_load_idx A64.TT
+                | SIMD.NePaN -> LDP.emit_load_idx A64.NT
+                | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i -> LDNW.emit_load_idx n
+                | SIMD.SvV -> LD1G.emit_load_idx n
+                | SIMD.SmV | SIMD.SmH -> LD1T.emit_load_idx n
+                | _ -> LDN.emit_load_idx n
+              in
+              let rB,init,cs,st = emit_load_idx vdep st p init loc r2 in
+              Some (Some rB,init,pseudo cs0@cs,st)
           | R,Some (PairAccess opt) ->
               let r,init,cs,st =
                 emit_ldp_idx_var (pair_opt_to_ld opt) vdep st p init loc r2 in
@@ -2490,6 +2504,20 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let rA,cs1,st = do_sum_addr vdep st rA r2 in
               let r,init,cs,st = emit A64.V64 st p init rA in
               Some (Some r,init,pseudo cs0@pseudo cs1@cs,st)
+          | W,Some (NeonAccess n) ->
+             let emit_store_idx = match n with
+               | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
+               | SIMD.NeRel -> STLUR.emit_store_idx
+               | SIMD.NeP -> STUR.emit_store_idx
+               | SIMD.NePa ->  STP.emit_store_idx A64.TT
+               | SIMD.NePaN -> STP.emit_store_idx A64.NT
+               | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i -> STNW.emit_store_idx n
+               | SIMD.SvV -> ST1S.emit_store_idx n
+               | SIMD.SmV | SIMD.SmH -> ST1T.emit_store_idx n
+               | _ -> STN.emit_store_idx n
+             in
+             let init,cs,st = emit_store_idx vdep st p init loc r2 (Value.to_int e.C.v) in
+              Some (None,init,pseudo cs0@cs,st)
           | _,_ -> None in
           let regs,inits,cs,st = match ordinary_access with
           | Some result -> result
@@ -2505,21 +2533,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let r,init,cs,st =
                 do_emit_lda_mixed_idx vdep sz o rw st p init loc r2 in
               Some r,init, pseudo cs0@cs,st
-          | R,Some (Neon n,None) ->
-              let emit_load_idx = match n with
-                | SIMD.NeRel -> Warn.fatal "No laod release"
-                | SIMD.NeAcqPc -> LDAPUR.emit_load_idx
-                | SIMD.NeP -> LDUR.emit_load_idx
-                | SIMD.NePa -> LDP.emit_load_idx A64.TT
-                | SIMD.NePaN -> LDP.emit_load_idx A64.NT
-                | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i -> LDNW.emit_load_idx n
-                | SIMD.SvV -> LD1G.emit_load_idx n
-                | SIMD.SmV | SIMD.SmH -> LD1T.emit_load_idx n
-                | _ -> LDN.emit_load_idx n
-              in
-              let rB,init,cs,st = emit_load_idx vdep st p init loc r2 in
-              Some rB,init,pseudo cs0@cs,st
-          | R,Some (Neon _,Some _) -> assert false
           | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
           | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
           | (R|W), Some (Instr, _) -> Warn.fatal "No dependency to code location"
@@ -2537,21 +2550,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | (R|W),Some (Tag,_) -> assert false
           | (R|W),Some ((CapaTag|CapaSeal),_) -> assert false
           | (R|W),Some (Pair _,_) -> assert false
-          | W,Some (Neon n,None) ->
-             let emit_store_idx = match n with
-               | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
-               | SIMD.NeRel -> STLUR.emit_store_idx
-               | SIMD.NeP -> STUR.emit_store_idx
-               | SIMD.NePa ->  STP.emit_store_idx A64.TT
-               | SIMD.NePaN -> STP.emit_store_idx A64.NT
-               | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i -> STNW.emit_store_idx n
-               | SIMD.SvV -> ST1S.emit_store_idx n
-               | SIMD.SmV | SIMD.SmH -> ST1T.emit_store_idx n
-               | _ -> STN.emit_store_idx n
-             in
-             let init,cs,st = emit_store_idx vdep st p init loc r2 (Value.to_int e.C.v) in
-              None,init,pseudo cs0@cs,st
-          | W,Some (Neon _,Some _) -> assert false
+          | (R|W),Some (Neon _,_) -> assert false
           | R,Some ((Plain _|Acq _|AcqPc _),_) -> assert false
           | W,None -> assert false
           | W,Some ((Plain _|Rel _),_) -> assert false
@@ -2643,6 +2642,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 let addi = [add A64.V64 r2 r2 rA] in
                 let cs2 = pseudo cs in
                 r2,cs2,init,st,addi
+            | Some (NeonAccess _) ->
+                let cs2,st =
+                  match vdep,vloc with
+                  | (V128,_)|(_,V128) ->
+                      Warn.fatal "dependance from 128 bits access"
+                  | (V32,V32)|(V64,V64)|(V64,V32) ->
+                     calc0_gen csel st vdep r2 r1
+                  | (V32,V64) ->
+                      let r3,st = tempo1 st in
+                      let cs,st = calc0_gen csel st vdep r3 r1 in
+                      sxtw r2 r3::cs,st in
+                let cs2 = pseudo cs2 in
+                r2,cs2,init,st,[]
             | _ -> begin match atom with
             | Some (Tag,None) ->
                 let cs0,st = calc0_gen csel st vdep r2 r1 in
@@ -2674,9 +2686,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 let addi = [addi r2 r2 (Value.to_int e.C.v)] in
                 let cs2 = pseudo cs2 in
                 r2,cs2,init,st,addi end in
-          let r2,cs2,init,st = match atom with
-            | Some(Neon _, None) -> r2,cs2,init,st
-            | _ -> r2,cs2@pseudo addi,init,st in
+          let r2,cs2,init,st = r2,cs2@pseudo addi,init,st in
           let loc = add_tag e.C.atom loc e.C.tag in
           let ordinary_store = match structured_atom with
           | None ->
@@ -2755,6 +2765,21 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 emit_set_pteval_reg (order = `Release)
                   st p init r2 (Misc.add_pte loc) in
               Some (None,init,cs2@cs,st)
+          | Some (NeonAccess n) ->
+             let rA,init,st = U.next_init st p init loc in
+             let emit_store_dep = match n with
+               | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
+               | SIMD.NeRel -> STLUR.emit_store_dep
+               | SIMD.NeP -> STUR.emit_store_dep
+               | SIMD.NePa ->  STP.emit_store_dep A64.TT
+               | SIMD.NePaN -> STP.emit_store_dep A64.NT
+               | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i -> STNW.emit_store_dep n
+               | SIMD.SvV -> ST1S.emit_store_dep n
+               | SIMD.SmV | SIMD.SmH -> ST1T.emit_store_dep n
+               | _ -> STN.emit_store_dep n
+             in
+             let init,cs,st = emit_store_dep r2 st init rA (Value.to_int e.C.v) in
+             Some (None,init,cs2@cs,st)
           | _ -> None in
           begin match ordinary_store with
           | Some result -> result
@@ -2775,22 +2800,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some ((Plain _|Rel _),_) -> assert false
           | Some (Tag,_) -> assert false
           | Some ((CapaTag|CapaSeal),_) -> assert false
-          | Some (Neon n,None) ->
-             let rA,init,st = U.next_init st p init loc in
-             let emit_store_dep = match n with
-               | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
-               | SIMD.NeRel -> STLUR.emit_store_dep
-               | SIMD.NeP -> STUR.emit_store_dep
-               | SIMD.NePa ->  STP.emit_store_dep A64.TT
-               | SIMD.NePaN -> STP.emit_store_dep A64.NT
-               | SIMD.Sv1 | SIMD.Sv2i | SIMD.Sv3i | SIMD.Sv4i -> STNW.emit_store_dep n
-               | SIMD.SvV -> ST1S.emit_store_dep n
-               | SIMD.SmV | SIMD.SmH -> ST1T.emit_store_dep n
-               | _ -> STN.emit_store_dep n
-             in
-             let init,cs,st = emit_store_dep r2 st init rA (Value.to_int e.C.v) in
-             None,init,cs2@cs,st
-          | Some (Neon _,Some _) -> assert false
+          | Some (Neon _,_) -> assert false
           | Some (Pair _,_) -> assert false
           end
           end
