@@ -80,14 +80,6 @@ module Make(S : SemExtra.S) = struct
 (* Got all scope relations *)
 (***************************)
 
-(* Classify acording to proc *)
-module IntMap =
-  MyMap.Make
-    (struct
-      type t = int
-      let compare = Misc.int_compare
-    end)
-
 let by_proc evts =
   let m = IntMap.empty in
   let m =
@@ -435,6 +427,18 @@ let lift_proc_info i evts =
         | Some loc -> LocEnv.accumulate loc e k
         | None -> k) es LocEnv.empty in
     LocEnv.fold (fun _ evts k -> E.EventSet.of_list evts::k) env []
+
+(****************************)
+(* Collect by program order *)
+(****************************)
+
+let group_by_po es =
+  List.fold_left
+    (fun m e ->
+      match E.progorder_of e with
+      | Some po -> IntMap.accumulate po e m
+      | None -> m)
+    IntMap.empty es
 
 (********************************************)
 (* Write serialization candidate generator. *)

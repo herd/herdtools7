@@ -103,8 +103,15 @@ module Make : functor (S: SemExtra.S) -> sig
       * (Proc.t * S.event list) list
       * S.event list
 
-(* Partition by location *)
+(** Partition by location *)
   val partition_events : S.event_set -> S.event_set list
+
+(*
+ * Group events by program order index (i.e. by instruction instance).
+ * Warning: events _must_ belong to the same thread, otherwise
+ * events from different threads may be grouped together.
+ *)
+  val group_by_po : S.event list -> S.event list IntMap.t
 
 (* Utilities for relations *)
   val restrict_to_mem_stores : S.event_rel -> S.event_rel
