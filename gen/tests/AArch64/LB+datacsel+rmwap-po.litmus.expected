@@ -8,5 +8,5 @@ Witnesses
 Positive: 0 Negative: 12
 Condition exists ([y]=2 /\ 0:X1=1 /\ 1:X1=1)
 Observation LB+datacsel+rmwap-po Never 0 12
-Hash=8065427579f058a3a447e759632ae2cc
+Hash=6df0810676c23fb53aa4563292bea0b6
 
