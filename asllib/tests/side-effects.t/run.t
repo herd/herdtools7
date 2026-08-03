@@ -71,9 +71,9 @@
     Side effects ThrowsException "E" and PerformsAssertions conflict.
   [1]
   $ aslref binop-write-atc.asl
-  File binop-write-atc.asl, line 5, characters 10 to 11:
+  File binop-write-atc.asl, line 5, characters 10 to 26:
     return (1 as integer {2});
-            ^
+            ^^^^^^^^^^^^^^^^
   ASL Dynamic error (DE_TAF):
     Value 1 does not satisfy the asserted type integer {2}.
   [1]
@@ -228,9 +228,9 @@
   [1]
   $ aslref config-uses-constant-through-func.asl
   $ aslref config-uses-atc.asl
-  File config-uses-atc.asl, line 3, characters 9 to 10:
+  File config-uses-atc.asl, line 3, characters 9 to 26:
     return 0 as integer {10};
-           ^
+           ^^^^^^^^^^^^^^^^^
   ASL Dynamic error (DE_TAF):
     Value 0 does not satisfy the asserted type integer {10}.
   [1]
@@ -256,9 +256,9 @@
   ASL Type error (TE_SEV): Expected a readonly expression or subprogram.
   [1]
   $ aslref assert-atc.asl
-  File assert-atc.asl, line 3, characters 9 to 10:
+  File assert-atc.asl, line 3, characters 9 to 25:
     assert 0 as integer {3} == 2;
-           ^
+           ^^^^^^^^^^^^^^^^
   ASL Dynamic error (DE_TAF):
     Value 0 does not satisfy the asserted type integer {3}.
   [1]
@@ -295,9 +295,9 @@
   ASL Type error (TE_SEV): Expected a pure expression or subprogram.
   [1]
   $ aslref type-func-atc.asl
-  File type-func-atc.asl, line 3, characters 9 to 10:
+  File type-func-atc.asl, line 3, characters 9 to 25:
     assert 0 as integer {3} == 2;
-           ^
+           ^^^^^^^^^^^^^^^^
   ASL Dynamic error (DE_TAF):
     Value 0 does not satisfy the asserted type integer {3}.
   [1]
@@ -317,9 +317,9 @@
   [1]
 
   $ aslref assert-atc.asl
-  File assert-atc.asl, line 3, characters 9 to 10:
+  File assert-atc.asl, line 3, characters 9 to 25:
     assert 0 as integer {3} == 2;
-           ^
+           ^^^^^^^^^^^^^^^^
   ASL Dynamic error (DE_TAF):
     Value 0 does not satisfy the asserted type integer {3}.
   [1]
@@ -357,9 +357,9 @@
   end;
   ASL Warning: the mutually-recursive functions throwing, foo have no recursive
   limit annotation.
-  File rec-binop-atc-throw.asl, line 15, characters 37 to 38:
+  File rec-binop-atc-throw.asl, line 15, characters 37 to 53:
     let x = throwing (n - 1, FALSE) * (2 as integer {3});
-                                       ^
+                                       ^^^^^^^^^^^^^^^^
   ASL Dynamic error (DE_TAF):
     Value 2 does not satisfy the asserted type integer {3}.
   [1]
@@ -429,9 +429,9 @@
   end;
   ASL Warning: the mutually-recursive functions not_throwing, foo have no
   recursive limit annotation.
-  File rec-assert.asl, line 9, characters 34 to 35:
+  File rec-assert.asl, line 9, characters 34 to 50:
     let x = not_throwing (n - 1) * (2 as integer {3});
-                                    ^
+                                    ^^^^^^^^^^^^^^^^
   ASL Dynamic error (DE_TAF):
     Value 2 does not satisfy the asserted type integer {3}.
   [1]
@@ -450,9 +450,9 @@
   end;
   ASL Warning: the mutually-recursive functions not_throwing, foo have no
   recursive limit annotation.
-  File rec-binop-atc.asl, line 9, characters 34 to 35:
+  File rec-binop-atc.asl, line 9, characters 34 to 50:
     let x = not_throwing (n - 1) * (2 as integer {3});
-                                    ^
+                                    ^^^^^^^^^^^^^^^^
   ASL Dynamic error (DE_TAF):
     Value 2 does not satisfy the asserted type integer {3}.
   [1]

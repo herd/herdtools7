@@ -80,8 +80,9 @@ val type_clashes : env -> ty -> ty -> bool
 val subprogram_clashes : env -> func -> func -> bool
 (** Subprogram clashing relation. *)
 
-val lowest_common_ancestor : loc:_ t_annotated -> env -> ty -> ty -> ty option
-(** Lowest common ancestor. *)
+val lowest_common_ancestor : loc:_ t_annotated -> env -> ty -> ty -> ty
+(** Lowest common ancestor. Raises [Error.ASLException] carrying
+    [Error.NoCommonAncestor] if none exists. *)
 
 val type_equal : env -> ty -> ty -> bool
 (** A conservative type equivalence test for types in env. *)

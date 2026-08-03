@@ -137,7 +137,9 @@ module NativeBackend (C : Config) = struct
   let v_record li = return (NV_Record (IMap.of_list li))
   let v_exception li = v_record li
   let non_tuple_exception v = mismatch_type v [ T_Tuple [] ]
-  let bad_index ~loc i n = Error.fatal_from loc (Error.BadIndex (i, n))
+
+  let bad_index ~loc i n =
+    Error.fatal_from loc (Error.BadIndex (C.error_handling_time, i, n))
 
   let doesnt_have_fields_exception v =
     mismatch_type v [ T_Record []; T_Exception []; T_Collection [] ]

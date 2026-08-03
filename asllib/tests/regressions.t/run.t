@@ -185,9 +185,9 @@ Runtime checks:
   > EOF
 
   $ aslref runtime-type-sat1.asl
-  File runtime-type-sat1.asl, line 3, characters 23 to 24:
+  File runtime-type-sat1.asl, line 3, characters 23 to 39:
     let x: integer {1} = 2 as integer {1};
-                         ^
+                         ^^^^^^^^^^^^^^^^
   ASL Dynamic error (DE_TAF):
     Value 2 does not satisfy the asserted type integer {1}.
   [1]
@@ -204,9 +204,9 @@ Runtime checks:
   > EOF
 
   $ aslref runtime-type-sat2.asl
-  File runtime-type-sat2.asl, line 2, characters 10 to 18:
+  File runtime-type-sat2.asl, line 2, characters 10 to 32:
     let x = Zeros{4} as bits(size);
-            ^^^^^^^^
+            ^^^^^^^^^^^^^^^^^^^^^^
   ASL Dynamic error (DE_TAF):
     Value 0x0 does not satisfy the asserted type bits(size).
   [1]
@@ -236,9 +236,9 @@ Parameterized integers:
     provided integer {(M + 1)}.
   [1]
   $ aslref bad-underconstrained-ctc.asl
-  File bad-underconstrained-ctc.asl, line 3, characters 12 to 13:
+  File bad-underconstrained-ctc.asl, line 3, characters 12 to 32:
     return x[(N as integer {N - 1})];
-              ^
+              ^^^^^^^^^^^^^^^^^^^^
   ASL Dynamic error (DE_TAF):
     Value 4 does not satisfy the asserted type integer {(N - 1)}.
   [1]
@@ -283,7 +283,8 @@ Parameterized integers:
   type T of bits(4) {
       [0:3] bad
   };
-  ASL Static error (TE_BS): Slice 3+:-2 has a non-positive length.
+  ASL Static error (TE_BS):
+    Slice 3+:-2 has length -2; slice lengths must be at least 1.
   [1]
 
   $ aslref bad-shift.asl
@@ -446,6 +447,7 @@ Required tests:
                            ^^^^
   ASL Grammar error (BE_PE): Cannot parse.
   [1]
+  $ aslref -0 SemanticsRule.LEUndefIdentV0.asl
   $ aslref -0 unreachable-v0.asl
   $ aslref assign1.asl
   $ aslref big-ints.asl
@@ -815,15 +817,14 @@ Bounds checks
   File static-evaluation-bad-index.asl, line 1, characters 13 to 22:
   constant X = '0000'[4];
                ^^^^^^^^^
-  ASL Type error (TE_SEF): Static evaluation of expression '0000'[4+:1] failed:
+  ASL Type error (TE_SEF): Static evaluation failed:
     Index 4 is outside the valid range 0..3.
   [1]
   $ aslref static-evaluation-type-assertion.asl
   File static-evaluation-type-assertion.asl, line 1, characters 13 to 29:
   constant X = 2 as integer {1};
                ^^^^^^^^^^^^^^^^
-  ASL Type error (TE_SEF):
-    Static evaluation of expression 2 as integer {1} failed:
+  ASL Type error (TE_SEF): Static evaluation failed:
     Value 2 does not satisfy the asserted type integer {1}.
   [1]
   $ aslref tuple-arity-mismatch.asl

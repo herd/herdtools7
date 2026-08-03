@@ -7,9 +7,9 @@ Deferred to execution ATCs
   > EOF
 
   $ aslref atcs1.asl
-  File atcs1.asl, line 2, characters 11 to 12:
+  File atcs1.asl, line 2, characters 11 to 28:
     let x = (3 as integer {42});
-             ^
+             ^^^^^^^^^^^^^^^^^
   ASL Dynamic error (DE_TAF):
     Value 3 does not satisfy the asserted type integer {42}.
   [1]
@@ -77,9 +77,9 @@ ATCs on other types
   > EOF
 
   $ aslref atcs6.asl
-  File atcs6.asl, line 3, characters 11 to 25:
+  File atcs6.asl, line 3, characters 11 to 33:
     let x = ((42, Zeros{4}) as myty);
-             ^^^^^^^^^^^^^^
+             ^^^^^^^^^^^^^^^^^^^^^^
   ASL Dynamic error (DE_TAF):
     Value [42, 0x0] does not satisfy the asserted type (integer {0..10},
                                                        bits(4)).

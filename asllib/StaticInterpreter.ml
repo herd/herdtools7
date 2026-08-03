@@ -44,8 +44,16 @@ module SI = Interpreter.Make (Native.StaticBackend) (InterpConf)
 
 let eval_from ~loc env e =
   try SI.eval_expr env e
-  with Error.(ASLException exn) when is_dummy_pos exn ->
+  with
+  | Error.(ASLException exn)
+  when (not (Printexc.backtrace_status ())) && is_dummy_pos exn
+  ->
     Error.fatal_from loc exn.desc
+
+let is_dynamic_error cause =
+  match Error.ErrorCode.of_error cause with
+  | Some (Error.ErrorCode.Dynamic _) -> true
+  | Some Error.ErrorCode.(Build _ | Typing _) | None -> false
 
 (* Begin StaticEval *)
 let static_eval (senv : SEnv.env) (e : expr) : literal =
@@ -64,8 +72,12 @@ let static_eval (senv : SEnv.env) (e : expr) : literal =
     | SI.Normal (Native.NV_Literal l, _env) ->
         l |: Instrumentation.TypingRule.StaticEval
     | SI.Normal _ | SI.Throwing _ | SI.Cutoff ->
-        Error.fatal_from e (StaticEvaluationFailure (e, None))
-  with Error.ASLException cause -> Error.fatal_from_static_evaluation e cause
+        Error.fatal_from e (StaticEvaluationFailure e)
+  with
+  | Error.ASLException cause
+  when (not (Printexc.backtrace_status ())) && is_dynamic_error cause
+  ->
+    Error.fatal_from e (StaticEvaluationFailure e)
 (* End *)
 
 let static_eval_to_int env e =
