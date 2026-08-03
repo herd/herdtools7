@@ -50,7 +50,7 @@
   File single-implication.asl, line 1, characters 10 to 13:
   let x = a --> b;
             ^^^
-  ASL Grammar error (BE_PE): Cannot parse. Did you mean `==>`?
+  ASL Lexical error (BE_LE): Unknown symbol "-->". Did you mean `==>`?
   [1]
 
   $ aslref binop-same-precedence.asl
@@ -126,7 +126,7 @@
   File single-biimplication.asl, line 1, characters 10 to 13:
   let x = a <-> b;
             ^^^
-  ASL Grammar error (BE_PE): Cannot parse. Did you mean `<=>`?
+  ASL Lexical error (BE_LE): Unknown symbol "<->". Did you mean `<=>`?
   [1]
 
   $ aslref uninitialised-config.asl

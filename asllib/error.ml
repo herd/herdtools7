@@ -120,7 +120,7 @@ type error_desc =
   | ConflictingTypes of conflicting_types_reason * type_desc list * ty
   | AssertionFailed of expr
   | CannotParse of string option
-  | UnknownSymbol of string
+  | UnknownSymbol of string * string option
   | NoCallCandidate of string * ty list
   | BadTypesForBinop of binop * ty * ty
   | ImpureExpression of expr * SideEffect.SES.t
@@ -188,6 +188,11 @@ type error = error_desc annotated
 exception ASLException of error
 
 type 'a result = ('a, error) Result.t
+
+let unknown_symbol id = UnknownSymbol (id, None)
+
+let unknown_symbol_with_alternative ~lexeme ~alternative_lexeme =
+  UnknownSymbol (lexeme, Some alternative_lexeme)
 
 let fatal e = raise (ASLException e)
 let fatal_from pos e = fatal (ASTUtils.add_pos_from pos e)
@@ -316,8 +321,7 @@ module ErrorCode = struct
     (********** Build errors **********)
     | BadBinopPriority _ -> Some (Build BOP)
     | BadDeclarationSyntax _ -> Some (Build BD)
-    | CannotParse _ (* also used for targeted lexer diagnostics *) ->
-        Some (Build PE)
+    | CannotParse _ -> Some (Build PE)
     | MultipleWrites _ -> Some (Build PE)
     | ObsoleteSyntax _ -> Some (Build PE)
     | ReservedIdentifier _ -> Some (Build RI)
@@ -704,15 +708,24 @@ module PPrint = struct
         match s with
         | None -> pp_err parse "Cannot parse."
         | Some s -> pp_err parse "Cannot parse.@ %a" pp_print_text s)
-    | UnknownSymbol s ->
+    | UnknownSymbol (s, alternative_symbol_opt) ->
+        let pp_alternative_symbol f = function
+          | None -> ()
+          | Some alternative_symbol ->
+              fprintf f "@ Did you mean `%s`?" alternative_symbol
+        in
         let codes = List.map Char.code (List.of_seq (String.to_seq s)) in
         let not_printable code = code < 33 || code > 126 in
-        if String.length s = 0 then pp_err lexical "Unknown symbol."
+        if String.length s = 0 then
+          pp_err lexical "Unknown symbol.%a" pp_alternative_symbol
+            alternative_symbol_opt
         else if List.exists not_printable codes then
-          pp_err lexical "Unknown symbol with byte value(s): %a."
+          pp_err lexical "Unknown symbol with byte value(s): %a.%a"
             (pp_comma_list pp_print_int)
-            codes
-        else pp_err lexical "Unknown symbol %S." s
+            codes pp_alternative_symbol alternative_symbol_opt
+        else
+          pp_err lexical "Unknown symbol %S.%a" s pp_alternative_symbol
+            alternative_symbol_opt
     | NoCallCandidate (name, types) ->
         pp_err typing
           "No subprogram declaration matches the invocation:@ %s(%a)." name
