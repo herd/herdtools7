@@ -28,13 +28,13 @@ jobs:
     steps:
       - name: Checkout PR head ref (if provided)
         if: ${{ github.event.inputs.pr_number != '' }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: refs/pull/${{ github.event.inputs.pr_number }}/head
 
       - name: Checkout default branch
         if: ${{ github.event.inputs.pr_number == '' }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set-up OCaml 5
         uses: ocaml/setup-ocaml@v3
@@ -49,7 +49,7 @@ jobs:
           opam exec -- make -C herd-www
       - name: Upload www artifact (manual only)
         if: ${{ inputs.upload_artifact }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: www
           path: |
@@ -60,7 +60,7 @@ jobs:
 
     steps:
       - name: Checkout head
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set-up OCaml 5
         uses: ocaml/setup-ocaml@v3
