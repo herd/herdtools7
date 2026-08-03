@@ -1200,8 +1200,8 @@ module Make (B : Backend.S) (C : Config) = struct
             |> Option.some
         in
         let*> env3 =
-          eval_for loop_msg undet env2 index_name limit_opt start_v dir end_v
-            body
+          eval_for ~loc:s loop_msg undet env2 index_name limit_opt start_v dir
+            end_v body
         in
         let env4 = if undet then IEnv.tick_pop env3 else env3 in
         IEnv.remove_local index_name env4
@@ -1341,8 +1341,8 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Evaluation of for loops *)
   (* ----------------------- *)
   (* Begin EvalFor *)
-  and eval_for loop_msg undet env index_name limit_opt v_start dir v_end body :
-      stmt_eval_type =
+  and eval_for ~loc loop_msg undet env index_name limit_opt v_start dir v_end
+      body : stmt_eval_type =
     (* Evaluate the condition: "has the for loop terminated?" *)
     let cond_m =
       let comp_for_dir = match dir with Up -> `LT | Down -> `GT in
@@ -1360,11 +1360,11 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Continuation in the positive case. *)
     let loop env =
       let loop_desc = ("for loop", body) in
-      let* next_limit_opt = tick_loop_limit body env limit_opt in
+      let* next_limit_opt = tick_loop_limit loc env limit_opt in
       bind_maybe_unroll loop_desc undet (eval_block env body) @@ fun env1 ->
       let*| v_step, env2 = step env1 index_name v_start dir in
-      eval_for loop_msg undet env2 index_name next_limit_opt v_step dir v_end
-        body
+      eval_for ~loc loop_msg undet env2 index_name next_limit_opt v_step dir
+        v_end body
     in
     (* Real logic: if the condition holds, we continue to the next
        loop iteration, otherwise we loop. *)
