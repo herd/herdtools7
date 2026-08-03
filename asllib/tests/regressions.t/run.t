@@ -283,7 +283,8 @@ Parameterized integers:
   type T of bits(4) {
       [0:3] bad
   };
-  ASL Static error (TE_BS): Slice 3+:-2 has a non-positive length.
+  ASL Static error (TE_BS):
+    Slice 3+:-2 has length -2; slice lengths must be at least 1.
   [1]
 
   $ aslref bad-shift.asl
@@ -446,6 +447,7 @@ Required tests:
                            ^^^^
   ASL Grammar error (BE_PE): Cannot parse.
   [1]
+  $ aslref -0 SemanticsRule.LEUndefIdentV0.asl
   $ aslref -0 unreachable-v0.asl
   $ aslref assign1.asl
   $ aslref big-ints.asl

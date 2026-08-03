@@ -6330,7 +6330,7 @@ typing function check_type_satisfies(tenv: static_envs, t: ty, s: ty) -> CheckRe
 typing relation lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (ty: ty) | type_error
 {
   "returns the \Proselca{} of types {t} and {s} in the \staticenvironmentterm{} {tenv}, yielding {ty}.
-  If a \Proselca{} does not exist or a \typingerrorterm{} is detected, the result is a \typingerrorterm{}.",
+  If a \Proselca{} does not exist, the result is a \typingerrorterm{}.",
   prose_transition = "the \Proselca{} of {t} and {s} in {tenv} is",
   math_macro = \lca,
 } =
@@ -9155,7 +9155,7 @@ semantics relation eval_spec(tenv: static_envs, spec: spec) ->
   }
 
   case throwing {
-    eval_subprogram(env, name', empty_list, empty_list) -> Throwing(_, _, _, _)| DynErrorConfig(), DivergingConfig();
+    eval_subprogram(env, name', empty_list, empty_list) -> Throwing(_, _, _, _) | DivergingConfig();
     --
     DynamicError(DE_UE);
   }
@@ -11453,15 +11453,18 @@ typing function paramsofty(tenv: static_envs, ty: ty) ->
   case other {
     or(
       ast_label(ty) in make_set(label_T_Array, label_T_Bool, label_T_Named, label_T_Real, label_T_String),
-      is_unconstrained_integer(ty),
-      is_parameterized_integer(ty)
+      is_unconstrained_integer(ty)
     ) { [_] };
     --
     empty_list;
   }
 
   case error {
-    binary_or(ast_label(ty) = label_T_Enum, is_structured(ty));
+    or(
+      ast_label(ty) = label_T_Enum,
+      is_parameterized_integer(ty),
+      is_structured(ty)
+    ) { [_] };
     --
     TypeError(TE_BSPD);
   }
@@ -11500,12 +11503,25 @@ typing function params_of_expr(tenv: static_envs, e: expr) ->
     concat(ids1, ids2);
   }
 
+  case e_literal {
+    e =: E_Literal(_);
+    --
+    empty_list;
+  }
+
   case e_tuple {
     e =: E_Tuple(es);
     es =: make_singleton_list(e1);
     params_of_expr(tenv, e1) -> ids;
     --
     ids;
+  }
+
+  case e_tuple_error {
+    e =: E_Tuple(es);
+    list_len(es) != one;
+    --
+    TypeError(TE_BSPD);
   }
 
   case e_cond {
@@ -11518,7 +11534,7 @@ typing function params_of_expr(tenv: static_envs, e: expr) ->
   }
 
   case other {
-    ast_label(e) not_in make_set(label_E_Binop, label_E_Tuple, label_E_Unop, label_E_Var);
+    ast_label(e) not_in make_set(label_E_Binop, label_E_Cond, label_E_Literal, label_E_Tuple, label_E_Unop, label_E_Var);
     --
     TypeError(TE_BSPD);
   }

@@ -161,7 +161,12 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.PSingle.asl
   $ aslref SemanticsRule.PMask.asl
   $ aslref SemanticsRule.ATCValue.asl
-  $ aslref -0 SemanticsRule.LEUndefIdentV0.asl
+  $ aslref SemanticsRule.LEUndefIdentV1.asl
+  File SemanticsRule.LEUndefIdentV1.asl, line 5, characters 2 to 3:
+    y = 3;
+    ^
+  ASL Static error (TE_UI): Undefined identifier "y".
+  [1]
   $ aslref --no-type-check SemanticsRule.LEUndefIdentV1.asl
   File SemanticsRule.LEUndefIdentV1.asl, line 5, characters 2 to 3:
     y = 3;

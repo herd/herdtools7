@@ -55,7 +55,7 @@ ASL Typing Tests:
       var o  = if ARBITRARY : boolean then arr1 else ex;
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error (TE_LCA):
-    Types array [[8]] of Word1 and Exc have no common ancestor.
+    Types array [[8]] of Word1 and exception { i: integer } have no common ancestor.
   [1]
   $ aslref --no-exec TypingRule.LowestCommonAncestor2.asl
   $ aslref TypingRule.ApplyUnopType.asl

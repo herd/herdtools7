@@ -31,7 +31,10 @@ val static_eval : StaticEnv.env -> AST.expr -> AST.literal
       following: [E_Literal], [E_Var], [E_Binop], [E_Unop], [E_Slice], or
       [E_Cond].
     @raise StaticEvaluationFailure
-      if the given expression cannot evaluate to a literal. *)
+      if the given expression cannot evaluate to a literal.
+    @raise other
+      static exceptions if they are triggered by the static interpreter, such as
+      [RecursionLimitReached (Static, _)] *)
 
 val static_eval_to_int : StaticEnv.env -> AST.expr -> int
 (** [static_eval_to_int env e] statically evaluates an integer-typed expression

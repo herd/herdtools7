@@ -33,8 +33,13 @@ let fatal_from ~loc = Error.fatal_from loc
 let undefined_identifier ~loc x = fatal_from ~loc (Error.UndefinedIdentifier x)
 let add_pos_from ~loc = add_pos_from loc
 
-let conflict ?(reason = Error.UnexpectedType) ~loc expected provided =
-  fatal_from ~loc (Error.ConflictingTypes (reason, expected, provided))
+let conflict ~loc expected provided =
+  fatal_from ~loc
+    (Error.ConflictingTypes (Error.UnexpectedType, expected, provided))
+
+let type_satisfaction_conflict ~loc expected provided =
+  fatal_from ~loc
+    (Error.ConflictingTypes (Error.TypeSatisfaction, expected, provided))
 
 let plus e1 e2 = binop `ADD e1 e2
 let minus e1 e2 = binop `SUB e1 e2
@@ -459,7 +464,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       in
       let offset = eval_slice_expr env e1 and length = eval_slice_expr env e2 in
       if length <= 0 then
-        fatal_from ~loc @@ Error.(BadSlices (NonPositiveLength slice))
+        fatal_from ~loc Error.(BadSlices (NonPositiveLength { slice; length }))
       else
         DI.Interval.make offset (offset + length - 1)
         |: TypingRule.BitfieldSliceToPositions
@@ -574,7 +579,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         Format.eprintf "@[<hv 2>Checking %a@ <: %a@]@." PP.pp_ty t1 PP.pp_ty t2
     in
     if Types.type_satisfies env t1 t2 then ()
-    else conflict ~reason:Error.TypeSatisfaction ~loc [ t2.desc ] t1
+    else type_satisfaction_conflict ~loc [ t2.desc ] t1
 
   (* CheckStructureBoolean *)
 
@@ -1293,7 +1298,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (match constraints with
           | PendingConstrained ->
               fatal_from ~loc Error.UnexpectedPendingConstrained
-          | WellConstrained ([], _) -> fatal_from ~loc Error.EmptyConstraints
+          | WellConstrained ([], _) ->
+              fatal_from ~loc
+                Error.(InternalInvariantError EmptyWellConstrainedInteger)
           | WellConstrained (constraints, precision) ->
               let new_constraints, sess =
                 list_map_split (annotate_constraint ~loc env) constraints
@@ -1594,10 +1601,20 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       if List.compare_lengths func_sig.parameters params != 0 then
         fatal_from ~loc
         @@ Error.BadParameterArity
-             (V1, name, List.length func_sig.parameters, List.length params)
+             {
+               version = V1;
+               name;
+               expected = List.length func_sig.parameters;
+               provided = List.length params;
+             }
       else if List.compare_lengths func_sig.args args != 0 then
         fatal_from ~loc
-        @@ Error.BadCallArity (name, List.length func_sig.args, List.length args)
+        @@ Error.BadCallArity
+             {
+               name;
+               expected = List.length func_sig.args;
+               provided = List.length args;
+             }
     in
     (* Check that call parameters are statically evaluable and type-satisfy the
        declaration parameters *)
@@ -1713,7 +1730,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let () =
       if List.compare_lengths callee.args args1 != 0 then
         fatal_from ~loc
-        @@ Error.BadCallArity (name, List.length callee.args, List.length args1)
+        @@ Error.BadCallArity
+             {
+               name;
+               expected = List.length callee.args;
+               provided = List.length args1;
+             }
     in
     let eqs2 =
       let folder acc (_x, ty) (t_e, _e, _ses) =
@@ -1852,7 +1874,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       @@ fun () ->
       fatal_from ~loc
         (Error.BadParameterArity
-           (V0, name, List.length callee.parameters, List.length params))
+           {
+             version = V0;
+             name;
+             expected = List.length callee.parameters;
+             provided = List.length params;
+           })
     in
     ( { name = name1; args = args1; params; call_type = callee.subprogram_type },
       ret_ty_opt,
@@ -1963,10 +1990,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         and t_false, e_false', ses_false = annotate_expr env e_false in
         let t =
           best_effort t_true (fun _ ->
-              match Types.lowest_common_ancestor ~loc:e env t_true t_false with
-              | None ->
-                  fatal_from ~loc (Error.NoCommonAncestor (t_true, t_false))
-              | Some t -> t)
+              Types.lowest_common_ancestor ~loc:e env t_true t_false)
         in
         let ses = SES.union3 ses_cond ses_true ses_false in
         (t, E_Cond (e_cond', e_true', e_false') |> here, ses)
@@ -2062,7 +2086,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             | T_Int _ | T_Bits _ ->
                 let+ () =
                   check_true (not (list_is_empty slices)) @@ fun () ->
-                  fatal_from ~loc Error.V0EmptySlice
+                  fatal_from ~loc Error.(V0Error EmptySlice)
                 in
                 (* TODO: check that:
                    - Rule SNQJ: An expression or subexpression which
@@ -2539,7 +2563,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let+ () = check_disjoint_slices ~loc env slices_annotated in
             let+ () =
               check_true (not (list_is_empty slices_annotated)) @@ fun () ->
-              fatal_from ~loc Error.V0EmptySlice
+              fatal_from ~loc Error.(V0Error EmptySlice)
             in
             let ses = ses_non_conflicting_union ~loc ses1 ses_slices in
             (t, LE_Slice (le2, slices_annotated) |> here, ses)
@@ -2554,7 +2578,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 (t, le3, ses3)
             | _ ->
                 let e = expr_of_lexpr le1 in
-                fatal_from ~loc:e (Error.V0InvalidExpr e))
+                fatal_from ~loc:e Error.(V0Error (InvalidExpr e)))
         | _ -> conflict ~loc:le1 [ default_t_bits ] t_le1
         (* End *))
     | LE_SetField (le1, field) ->
@@ -2736,7 +2760,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   let check_can_be_initialized_with ~loc env s t () =
     if can_be_initialized_with env s t then ()
-    else conflict ~reason:Error.TypeSatisfaction ~loc [ s.desc ] t
+    else type_satisfaction_conflict ~loc [ s.desc ] t
   (* End *)
 
   (* Begin ShouldRememberImmutableExpression *)
@@ -3373,7 +3397,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | E_Cond (e, e1, e2) ->
           parameters_of_expr ~env e @ parameters_of_expr ~env e1
           @ parameters_of_expr ~env e2
-      | E_Tuple _ | _ -> Error.fatal_from (to_pos e) (Error.BadParameterExpr e)
+      | _ -> Error.fatal_from (to_pos e) (Error.BadParameterExpr e)
     in
     let parameters_of_constraint ~env c =
       match c with
@@ -3516,7 +3540,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         List.filter (fun x -> not (ISet.mem x defining)) inferred_parameters
       in
       check_true (list_is_empty undefined_parameters) @@ fun () ->
-      fatal_from ~loc (V0ParameterWithoutDecl (List.hd undefined_parameters))
+      fatal_from ~loc
+        (V0Error (ParameterWithoutDecl (List.hd undefined_parameters)))
     in
     (* Annotate and declare parameters from arguments *)
     let (env_with_params, ses_with_params), typed_parameters =
@@ -3789,7 +3814,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let check_setter_has_getter ~loc env (func_sig : AST.func) =
     assert (loc.version = V0);
     let fail () =
-      fatal_from ~loc (Error.V0SetterWithoutCorrespondingGetter func_sig)
+      fatal_from ~loc
+        Error.(V0Error (SetterWithoutCorrespondingGetter func_sig))
     in
     let check_true thing = check_true thing fail in
     match func_sig.subprogram_type with
