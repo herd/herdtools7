@@ -3838,37 +3838,6 @@ Arguments:
         and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
         M.short read write m
 
-      (*
-       * Basically copy of lift_memop which allows mop to drive control flow
-       * (handy for BL{R}/RET instructions with GCS enabled)
-       *)
-      let lift_shadow_stack dir updatedb mop ma mv an ii =
-        let domain = DISide.Data in
-        let mop = apply_mv mop mv in
-        if kvm then
-          let mphy ma a_virt =
-            let ma = get_oa a_virt ma in
-              mop Access.PHY ma
-          in
-          (* lift_kvm dir updatedb mop ma an ii mphy in *)
-          let mfault ma a ft = emit_fault (Some a) ma dir an ft None ii in
-          let maccess a ma =
-            check_ptw ii.AArch64.proc dir updatedb false a ma an ii
-            (mop (Access.PTE domain) ma)
-            mphy
-            mfault
-            domain in
-          M.delay_kont "shadow_stack"
-          ma
-          (fun a ma ->
-            match Act.access_of_location_std (A.Location_global a) with
-            | Access.VIR|Access.PTE _ when not (A.V.is_instrloc a) ->
-              maccess a ma
-            | ac ->
-              mop ac ma)
-        else
-          mop Access.VIR ma
-
       let blop v_ret write_linkreg branch bop ii =
         let open AArch64Base in
         let an = Annot.N
@@ -3879,7 +3848,7 @@ Arguments:
             GCSSem.write ac an a v ii >>|
             write_reg rA a_virt ii >>|
             write_linkreg >>= M.ignore in
-          lift_shadow_stack Dir.W true
+          do_lift_memop rA Dir.W true false
           (fun ac ma mv ->
             let m =
               if is_branching && Access.is_physical ac then
@@ -3891,10 +3860,13 @@ Arguments:
             let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
             and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
             M.short read write m)
+          (to_perms "w" quad)
           (M.unitT a_virt)
           (M.unitT v_ret)
           an
           ii
+          Fun.id
+          DISide.Data
 
       let retop test i r ii =
         let open AArch64Base in
@@ -3902,7 +3874,7 @@ Arguments:
         and rA = SysReg GCSPR_EL1
         and off = MachSize.nbytes quad in
         read_reg_addr rA ii >>= fun a_virt ->
-          lift_shadow_stack Dir.R false
+          do_lift_memop rA Dir.R false false
           (fun ac ma mv ->
             let m =
               mv >>|
@@ -3932,10 +3904,13 @@ Arguments:
               let m = M.short read write m in
               (* Branch depends on destination register (or LR) *)
               M.short (is_this_reg r) (E.is_bcc) m)
+          (to_perms "r" quad)
           (M.unitT a_virt)
           (read_reg_ord r ii)
           an
           ii
+          Fun.id
+          DISide.Data
 
       let gcsss1 r ii =
         let open AArch64Base in
