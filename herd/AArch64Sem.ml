@@ -2264,13 +2264,13 @@ Arguments:
           (rmw_to_read rmw)
           ii
 
-      let do_cas_fail do_wb sz an rn ma mv mop tagcheck ii =
+      let do_cas_fail_with lift do_wb sz an rn ma mv mop tagcheck ii =
         let action checked ma =
           let do_action updatedb checked ma =
               (* Dir.W would force check for dbm bit:                  *)
               (* - if set then either update or not db bit per R_TXGHB *)
               (* - if unset raise Permission fault                     *)
-              lift_memop ~tag:"FAIL" rn Dir.W updatedb checked mop (to_perms "rw" sz) ma mv an ii
+              lift ~tag:"FAIL" rn Dir.W updatedb checked mop (to_perms "rw" sz) ma mv an ii
           in
           if do_wb then
             do_action true checked ma
@@ -2304,14 +2304,13 @@ Arguments:
         else
           action memtag ma
 
-      let do_cas_fail_with_wb = do_cas_fail true
-      let do_cas_fail_no_wb = do_cas_fail false
-
-      let do_cas sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb tagcheck ii =
+      let do_cas_with lift sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb tagcheck ii =
+        let do_cas_fail_with_wb = do_cas_fail_with lift true in
+        let do_cas_fail_no_wb = do_cas_fail_with lift false in
         M.altT (
           (* CAS succeeds and generates an Explicit Write Effect *)
           (* there must be an update to the dirty bit of the TTD *)
-          lift_memop ~tag:"CAS" rn Dir.W true tagcheck mop_success (to_perms "rw" sz) ma mv an ii
+          lift ~tag:"CAS" rn Dir.W true tagcheck mop_success (to_perms "rw" sz) ma mv an ii
         )( (* CAS fails *)
           M.altT (
             (* CAS generates an Explicit Write Effect              *)
@@ -2321,6 +2320,8 @@ Arguments:
             do_cas_fail_no_wb sz an rn ma mv mop_fail_no_wb tagcheck ii
           )
         )
+
+      let do_cas = do_cas_with (fun ~tag -> lift_memop ~tag)
 
       let cas sz rmw rs rt rn ii =
         let an = rmw_to_read rmw in
@@ -3818,7 +3819,7 @@ Arguments:
             in
             (* Write to Rd depends on read from Shadow Stack *)
             M.short (E.is_mem_load) (is_this_reg rd) m in
-          lift_memop rA Dir.R false false
+          do_lift_memop rA Dir.R false false
           (fun ac ma _mv ->
             if Access.is_physical ac then
               M.bind_ctrldata ma (mop ac)
@@ -3828,7 +3829,10 @@ Arguments:
           (M.unitT a_virt)
           mzero
           an
-          ii in
+          ii
+          Fun.id
+          DISide.Data
+        in
         (* Value writen to GCSPR depends on previous read *)
         let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
         and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
@@ -3951,7 +3955,7 @@ Arguments:
                 branch >>*=
                 fun () -> write_reg rA incoming ii >>= fun () -> B.nextSetT rA incoming in
               M.op Op.Eq data v >>= fun cond ->  (* if data == cmpoperand then                             *)
-              M.assertT cond mok >>= M.ignore   (*     SetCurrentGCSPointer(incoming_pointer[63:3]:'000'); *)
+              M.assertT cond mok                (*     SetCurrentGCSPointer(incoming_pointer[63:3]:'000'); *)
           in
           let fault data =
              GCSSem.make_valid incoming >>= fun v ->
@@ -3960,7 +3964,7 @@ Arguments:
               (fun cond action ->
                 let open FaultType.AArch64 in (*     GCSDataCheckException(GCSInstType_SS1);  *)
                 let mno = GCSSem.mk_fault action (GCSCheck SS1) ii in
-                M.assertT cond mno >>= M.ignore)
+                M.assertT cond mno)
           in
           let branch a =
             let cond1 = Some (Printf.sprintf "Valid([%s])" (V.pp_v a)) in
@@ -4008,7 +4012,9 @@ Arguments:
             )
           in
           let mv = read_reg_data rA ii in
-          do_cas quad Annot.N r ma mv mop_success mop_fail_with_wb mop_fail_no_wb false ii)
+          let lift_memop ~tag rA dir updatedb checked mop perms ma mv an ii =
+            do_lift_memop ~tag rA dir updatedb checked mop perms ma mv an ii Fun.id DISide.Data in
+          do_cas_with lift_memop quad Annot.N r ma mv mop_success mop_fail_with_wb mop_fail_no_wb false ii)
 
     let gcsss2 r ii =
       let open AArch64Base in
@@ -4058,7 +4064,7 @@ Arguments:
         (* Register write and write to other stack depend on load from Shadow Stack *)
         let store e = (E.is_mem_store e) || (is_this_reg r e) in
         M.short (E.is_mem_load) store m in
-      lift_memop rA Dir.R false false
+      do_lift_memop rA Dir.R false false
       (fun ac ma _mv ->
         if Access.is_physical ac then
           M.bind_ctrldata ma (mop ac)
@@ -4068,7 +4074,9 @@ Arguments:
       ma
       mzero
       an
-      ii) in
+      ii
+      Fun.id
+      DISide.Data) in
       (* Value writen to GCSPR depends on previous read *)
       let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
       and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in

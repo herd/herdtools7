@@ -1,0 +1,11 @@
+Test G010 Required
+States 1
+0:X2=0; Fault(P0:L0,GCS:SS2);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Guarded-Control-Stack-is-work-in-progress
+Condition forall (fault(P0:L0,GCS:SS2) /\ 0:X2=0)
+Observation G010 Always 1 0
+Hash=fe95805b028a64198d39c03774439baf
+
