@@ -577,7 +577,7 @@ Monad type:
     let do_aarch64_cas_ok
         (is_physical:bool) (prov_data: [`DataFromRRs | `DataFromRx])
         (read_rn:'loc t) (read_rs:'v t) (read_rt: 'v t)
-        (write_rs:'v-> unit t)
+        (write_rs:'v-> 'a t)
         (read_mem: 'loc -> 'v t) (write_mem: 'loc -> 'v -> unit t)
         (branch: 'loc -> unit t)
         (req: 'v -> 'v -> unit t)
@@ -597,7 +597,7 @@ Monad type:
             let ov,cl_rm,es_rm = Evt.as_singleton_nospecul read_mem
             and (),cl_wm,es_wm= Evt.as_singleton_nospecul write_mem in
             let eiid,write_rs = write_rs ov eiid in
-            let (),cl_wrs,es_wrs = Evt.as_singleton_nospecul write_rs in
+            let r,cl_wrs,es_wrs = Evt.as_singleton_nospecul write_rs in
             let eiid,branch = branch a eiid in
             let (),cl_br,es_br =  Evt.as_singleton_nospecul branch in
             let eiid,eqm = req ov cv eiid in
@@ -606,7 +606,7 @@ Monad type:
             let es =
               E.aarch64_cas is_physical prov_data es_rn es_rs es_rt es_wrs es_rm es_wm es_br in
             let cls = cl_a@cl_cv@cl_nv@cl_rm@cl_wm@cl_wrs@cl_br@cl_eq  in
-            eiid,Evt.add ((),cls,es) acts)
+            eiid,Evt.add (r,cls,es) acts)
           acts_rn (eiid,Evt.empty) in
       eiid,(acts, None)
 
@@ -656,7 +656,7 @@ Monad type:
              write_mem)
 
     let aarch64_cas_ok (is_physical: bool) (read_rn: 'loc t) (read_rs: 'v t)
-        (read_rt: 'v t) (write_rs: 'v -> unit t) (read_mem: 'loc -> 'v t)
+        (read_rt: 'v t) (write_rs: 'v -> 'a t) (read_mem: 'loc -> 'v t)
         (write_mem: 'loc -> 'v -> unit t) (branch: 'loc -> unit t) (req: 'v -> 'v -> unit t) =
       let do_ prov_data =
         do_aarch64_cas_ok is_physical prov_data read_rn read_rs read_rt
@@ -665,7 +665,7 @@ Monad type:
       altT (do_ `DataFromRRs) (do_ `DataFromRx)
 
     let aarch64_cas_no (is_physical: bool) (read_rn: 'loc t)
-        (read_rs: 'v t) (write_rs: 'v -> unit t) (read_mem: 'loc -> 'v t)
+        (read_rs: 'v t) (write_rs: 'v -> 'a t) (read_mem: 'loc -> 'v t)
         (write_mem: 'loc -> 'v -> unit t) (branch: 'loc -> unit t) (rne: 'v -> 'v -> unit t)
         eiid =
       let eiid,read_rn = read_rn eiid in
@@ -681,7 +681,7 @@ Monad type:
             let eiid,write_mem = write_mem a ov eiid in
             let (),cl_wm,es_wm= Evt.as_singleton_nospecul write_mem in
             let eiid,write_rs = write_rs ov eiid in
-            let (),cl_wrs,es_wrs = Evt.as_singleton_nospecul write_rs in
+            let r,cl_wrs,es_wrs = Evt.as_singleton_nospecul write_rs in
             let eiid,branch = branch a eiid in
             let (),cl_br,es_br =  Evt.as_singleton_nospecul branch in
             let eiid,(acts_n,spec_n) = rne ov cv eiid in
@@ -700,7 +700,7 @@ Monad type:
                     es_wm
                     es_br in
                 let cls = cl_a@cl_cv@cl_rm@cl_wm@cl_wrs@cl_br@cl_ne  in
-                eiid,Evt.add ((),cls,es) acts) acts_n (eiid,acts))
+                eiid,Evt.add (r,cls,es) acts) acts_n (eiid,acts))
           acts_rn (eiid,Evt.empty) in
       eiid,(acts, None)
 
