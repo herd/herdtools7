@@ -16,9 +16,6 @@
 
 (** A tool that runs regression tests of herd7, against .expected files. *)
 
-module Fun = Base.Fun
-
-
 (* Flags. *)
 
 type path = string
