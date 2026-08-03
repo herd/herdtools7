@@ -59,7 +59,14 @@ let list_dir dir k =
   in
   Fun.protect ~finally:close read
 
+let temp_name root =
+  let name = Random.bits64 () in
+  Printf.sprintf "%s/%Ld" root name
+
 let new_temp_dir () =
-  let path = ref "" in
-  Command.run ~stdout:(fun c -> path := input_line c) "mktemp" ["-d"] ;
-  !path
+  let rec try_name counter =
+    let name = temp_name (Filename.get_temp_dir_name ()) in
+    try Sys.mkdir name 0o700 ; name
+    with Sys_error _ as e ->
+      if counter >= 10 then raise e else try_name (counter + 1)
+  in try_name 0
