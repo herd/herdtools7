@@ -1,0 +1,13 @@
+AArch64 G007
+variant=shadowstack
+{
+  SS(x,1) = ssval_t: {1};
+  0:GCSPR_EL1=&x[0];
+}
+
+ P0          ;
+L0:          ;
+ GCSPOPM X1  ;
+ MOV X2,#1   ;
+
+forall fault(P0:L0,GCS:POPM) /\ 0:X2=0

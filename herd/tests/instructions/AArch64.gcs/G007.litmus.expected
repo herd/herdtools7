@@ -1,0 +1,11 @@
+Test G007 Required
+States 1
+0:X2=0; Fault(P0:L0,GCS:POPM);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Guarded-Control-Stack-is-work-in-progress
+Condition forall (fault(P0:L0,GCS:POPM) /\ 0:X2=0)
+Observation G007 Always 1 0
+Hash=6a7093cbe2a7bbb87e5456efe4cf9513
+

@@ -1,0 +1,15 @@
+AArch64 G008
+variant=shadowstack
+{
+  SS(x,1) = ssval_t: {1};
+  0:GCSPR_EL1=&x[0];
+}
+
+ P0          ;
+ ADR X29,L1  ;
+L0:          ;
+ RET X29     ;
+ MOV X2,#1   ;
+L1:          ;
+
+forall fault(P0:L0,GCS:PRET) /\ 0:X2=0
