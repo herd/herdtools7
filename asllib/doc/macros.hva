@@ -160,10 +160,10 @@
     \newtokens{\csname ASLChapterOutlineSubsections@#1@#2\endcsname}%
   }{}%
   \addtokens{\csname ASLChapterOutlineSubsections@#1@#2\endcsname}
-    {\item \secref{#3} #4}}
+    {\item \secref{#3} #4;}}
 
 \newcommand{\my@ASLChapterOutlineSection}[3]{%
-  \item \secref{#2} #3%
+  \item \secref{#2} #3;%
   \@ifundefined{ASLChapterOutlineSubsections@#1@#2}{}{%
     \begin{itemize}%
       \csname ASLChapterOutlineSubsections@#1@#2\endcsname

@@ -18,7 +18,7 @@ and their corresponding types in comments:
 \ChapterOutline
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef[defines the formal relations for literals;]{Literals}
+\FormalRelationsDef[defines the formal relations for literals]{Literals}
 \paragraph{Syntax:} Literals are grammatically derived from $\Nvalue$.
 \paragraph{Abstract Syntax:} Literals are derived in abstract syntax from $\literal$.
   The function $\buildvalue$ transforms a parse node for $\Nvalue$, except for enumeration labels,
@@ -28,7 +28,7 @@ and their corresponding types in comments:
   (see \SemanticsRulesRef{Literals}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SyntaxDef[defines the syntax for literals;]{Literals}
+\SyntaxDef[defines the syntax for literals]{Literals}
 \begin{flalign*}
 \Nvalue \derives         \ & \Tintlit &\\
                         |\ & \Tboollit &\\
@@ -38,7 +38,7 @@ and their corresponding types in comments:
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\AbstractSyntaxDef[defines the abstract syntax and the abstract syntax builders for literals;]{Literals}
+\AbstractSyntaxDef[defines the abstract syntax and the abstract syntax builders for literals]{Literals}
 \RenderType[remove_hypertargets]{literal}
 
 \subsection{ASTRule.Value \label{sec:ASTRule.Value}}

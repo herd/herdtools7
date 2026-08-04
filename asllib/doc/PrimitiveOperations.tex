@@ -21,7 +21,7 @@ on \nativevaluesterm{} via $\evalunop$ and $\evalbinop$.
 
 \ChapterOutline
 
-\FormalRelationsDef[defines the formal relations for primitive operations;]{Primitive Operations}
+\FormalRelationsDef[defines the formal relations for primitive operations]{Primitive Operations}
 \paragraph{Syntax:} primitive operations are grammatically derived from $\Nunop$ and $\Nbinop$.
 
 \paragraph{Abstract Syntax:} primitive operations are derived in the abstract syntax from $\unop$
@@ -41,7 +41,7 @@ on \nativevaluesterm{} via $\evalunop$ and $\evalbinop$.
   and binary operations are dynamically evaluated via
   $\evalbinop$ (see \SemanticsRuleRef{BinopValues}).
 
-\SyntaxDef[defines the syntax for unary operations and binary operations;]{Primitive Operations}
+\SyntaxDef[defines the syntax for unary operations and binary operations]{Primitive Operations}
 \begin{flalign*}
 \Nunop \derivesinline\ & \Tbnot \;|\; \Tminus \;|\; \Tnot &\\
 \Nbinop \derivesinline\ & \Tand \;|\; \Tband \;|\; \Tbor \;|\; \Tbeq \;|\; \Tdiv \;|\; \Tdivrm \;|\; \Txor \;|\; \Teqop \;|\; \Tneq &\\
@@ -49,7 +49,7 @@ on \nativevaluesterm{} via $\evalunop$ and $\evalbinop$.
                       |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon \;|\; \Tplusplus
 \end{flalign*}
 
-\AbstractSyntaxDef[defines the AST for unary operations and binary operations;]{Primitive Operations}
+\AbstractSyntaxDef[defines the AST for unary operations and binary operations]{Primitive Operations}
 \RenderTypes[remove_hypertargets]{unop_and_binop}
 
 
@@ -243,7 +243,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\SectionDef[defines the signatures for all primitive operations;]
+\SectionDef[defines the signatures for all primitive operations]
   {PrimitiveOperationSignatures}{Primitive Operation Signatures}
 ASL follows the mathematical and programming language tradition of allowing operators such as \texttt{+} to be overloaded
 to refer to one of several different operations.
@@ -490,7 +490,7 @@ $\Tneq$   & $\LLabel$ & $\LLabel$ & $\LBool$ & $\neenum$\\
 \end{table}
 
 \clearpage
-\SectionDef[defines the valid sets of operand values for primitive operations;]
+\SectionDef[defines the valid sets of operand values for primitive operations]
   {PrimitiveOperationDomains}{Primitive Operation Domains}
 The unary operations ($\aslnotbool$, $\negateint$, $\negatereal$, and $\notbits$) are valid for all possible literal values,
 and most binary operations are also valid for all possible combinations of literal values of their operands.
@@ -529,7 +529,7 @@ $\nebits$         & length of $a$ = length of $b$\\
 \end{tabular}
 \end{center}
 
-\TypeRulesDef[defines the static evaluation of primitive operations for literal values;]{Primitive Operations}
+\TypeRulesDef[defines the static evaluation of primitive operations for literal values]{Primitive Operations}
 \TypingRuleDef{UnopLiterals}
 \RenderRelation{unop_literals}
 

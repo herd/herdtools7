@@ -27,7 +27,7 @@ and a slice of the form \texttt{[$\veone$+:$\vetwo$]} as a \lengthslice.
 
 \ChapterOutline
 
-\SectionDef[describes nested bitfields;]
+\SectionDef[describes nested bitfields]
   {Nested Bitfields}{Nested Bitfields}
 Bitfields may have nested bitfields. This can have several uses, one of which is being able to define two
 different views of a register.
@@ -87,7 +87,7 @@ defined for each bitfield.
 \ASLListing{A bitvector type with nested bitfields}{nestedbitfields}{\definitiontests/Bitfields_nested.asl}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef[defines the formal relations for bitfields;]{Bitfields}
+\FormalRelationsDef[defines the formal relations for bitfields]{Bitfields}
 \paragraph{Syntax:} Bitfields are grammatically derived from $\Nbitfield$
   and lists of bitfields are grammatically derived from $\Nbitfields$.
 
@@ -102,7 +102,7 @@ defined for each bitfield.
   $\evallexpr$ (see \secref{BitvectorSliceAssignmentExpressions}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SyntaxDef[defines the syntax of bitfields;]{Bitfields}
+\SyntaxDef[defines the syntax of bitfields]{Bitfields}
 \begin{flalign*}
 \Nbitfields \derives \ & \Tlbrace \parsesep \TClistZero{\Nbitfield} \parsesep \Trbrace &\\
 \Nbitfield \derives \ & \Nslices \parsesep \Tidentifier &\\
@@ -111,7 +111,7 @@ defined for each bitfield.
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\AbstractSyntaxDef[defines the abstract syntax of bitfields;]{Bitfields}
+\AbstractSyntaxDef[defines the abstract syntax of bitfields]{Bitfields}
 \RenderType[remove_hypertargets]{bitfield}
 
 \ASTRuleDef{Bitfields}

@@ -11,7 +11,7 @@ ASL also supports tuples of (mutable or immutable) local storage declarations.
 \ChapterOutline
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef[defines the formal relations for local storage declarations;]{Local Storage Declarations}
+\FormalRelationsDef[defines the formal relations for local storage declarations]{Local Storage Declarations}
 \paragraph{Syntax:} Local storage declarations are grammatically derived from statements ($\Nstmt$)
   via dedicated rules (see \SyntaxRef{Local Storage Declarations}).
 
@@ -31,7 +31,7 @@ has already been evaluated, yielding $\vm$ (see, for example, \SemanticsRuleRef{
 This is used to evaluate both single local storage declarations and tuples of local storage declarations.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SyntaxDef[defines the syntax of local storage declarations;]{Local Storage Declarations}
+\SyntaxDef[defines the syntax of local storage declarations]{Local Storage Declarations}
 \hypertarget{def-localdeclarationkeyword}{}
 \hypertarget{def-localdeclarationitem}{}
 A \localdeclarationkeyword\ is either \texttt{var} or \texttt{let}.
@@ -55,7 +55,7 @@ Declaring a local storage element is done via the following grammar rules:
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\AbstractSyntaxDef[defines the abstract syntax of local storage declarations;]{Local Storage Declarations}
+\AbstractSyntaxDef[defines the abstract syntax of local storage declarations]{Local Storage Declarations}
 \RenderTypes[remove_hypertargets]{local_decl_keyword_and_item}
 
 
@@ -151,7 +151,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 }
 \end{mathpar}
 
-\SectionDef[defines the type rules of local variable declarations;]
+\SectionDef[defines the type rules of local variable declarations]
   {Typing of Local Variable Declarations}{Typing of Local Variable Declarations}
 \TypingRuleDef{LDVar}
 \ExampleDef{Well-typed Local Variable Declarations}
@@ -200,7 +200,7 @@ In \listingref{checkisnotcollection}, the statement
 
 \CodeSubsection{\CheckIsNotCollectionBegin}{\CheckIsNotCollectionEnd}{../Typing.ml}
 
-\SectionDef[defines the dynamic semantics of local variable declarations;]
+\SectionDef[defines the dynamic semantics of local variable declarations]
   {Semantics of Local Variable Declarations}{Semantics of Local Variable Declarations}
 \SemanticsRuleDef{LDVar}
 \ExampleDef{Evaluation of a Local Variable Declaration}
@@ -211,7 +211,7 @@ to the evaluation of \texttt{3} in $\env$.
 \RenderProseAndFormally{eval_local_decl_LDI_Var}
 \CodeSubsection{\EvalLDVarBegin}{\EvalLDVarEnd}{../Interpreter.ml}
 
-\SectionDef[defines the type rules of tuples of local storage declarations;]
+\SectionDef[defines the type rules of tuples of local storage declarations]
   {Typing of Tuple Declarations}{Typing of Tuple Declarations}
 \TypingRuleDef{LDTuple}
 \ExampleDef{Well-typed Tuple Declarations}

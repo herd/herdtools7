@@ -8,7 +8,7 @@ Statements update storage elements and determine the flow of control in a subpro
 \ChapterOutline
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef[defines the formal relations used for statements;]{Statements}
+\FormalRelationsDef[defines the formal relations used for statements]{Statements}
 \paragraph{Syntax:} Statements are grammatically derived from $\Nstmt$.
 
 \paragraph{Abstract Syntax:} Statements are derived in the abstract syntax from $\stmt$
@@ -30,7 +30,7 @@ transforms a statement parse node $\vparsednode$ into a statement AST node $\vas
 \RenderRelation{eval_stmt}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SectionDef[defines pass statements;]
+\SectionDef[defines pass statements]
   {PassStatements}{Pass Statements}
 \hypertarget{def-passstatementterm}{}
 
@@ -74,7 +74,7 @@ In \listingref{semantics-spass}, \texttt{pass;} does not modify the environment.
 \CodeSubsection{\EvalSPassBegin}{\EvalSPassEnd}{../Interpreter.ml}
 
 \hypertarget{def-assignmentstatementterm}{}
-\SectionDef[defines assignment statements;]
+\SectionDef[defines assignment statements]
   {AssignmentStatements}{Assignment Statements}
 \subsection{Syntax}
 \begin{flalign*}
@@ -160,7 +160,7 @@ and \verb|-| is a discarded \assignableexpression{}.
 
 \RenderProseAndFormally{lexpr_is_var}
 
-\SectionDef[defines setter assignment statements;]
+\SectionDef[defines setter assignment statements]
   {SetterAssignmentStatements}{Setter Assignment Statements}
 \subsection{Syntax}
 \begin{flalign*}
@@ -377,7 +377,7 @@ builds a sequence of statements to read from the getter invocation $\vcall.\call
 As given by applying the relevant rules to the desugared AST.
 
 \hypertarget{def-declarationstatementterm}{}
-\SectionDef[defines declaration statements;]
+\SectionDef[defines declaration statements]
   {DeclarationStatements}{Declaration Statements}
 \subsection{Syntax}
 \begin{flalign*}
@@ -516,7 +516,7 @@ In \listingref{semantics-sdeclnone},
 \RenderProseAndFormally{eval_stmt_SDecl}
 \CodeSubsection{\EvalSDeclBegin}{\EvalSDeclEnd}{../Interpreter.ml}
 
-\SectionDef[defines sequencing statements;]
+\SectionDef[defines sequencing statements]
   {SequencingStatement}{Sequencing Statements}
 \hypertarget{def-sequencestatementterm}{}
 
@@ -632,7 +632,7 @@ evaluates \texttt{let y = x + 1}.
 \RenderProseAndFormally{eval_stmt_SSeq}
 \CodeSubsection{\EvalSSeqBegin}{\EvalSSeqEnd}{../Interpreter.ml}
 
-\SectionDef[defines call statements;]
+\SectionDef[defines call statements]
   {CallStatements}{Call Statements}
 \hypertarget{def-callstatementterm}{}
 Call statements are used to invoke procedures and setters.
@@ -704,7 +704,7 @@ assigns \verb|'1101 111'| to the global variable \verb|g|.
 
 
 \hypertarget{def-conditionalstatementterm}{}
-\SectionDef[defines conditional statements;]
+\SectionDef[defines conditional statements]
   {ConditionalStatements}{Conditional Statements}
 A conditional statement evaluates its \texttt{then} statement list if the
 condition expression evaluates to $\True$. If the condition expression
@@ -813,7 +813,7 @@ The specification in \listingref{semantics-scond4} does not result in any error.
 \CodeSubsection{\EvalSCondBegin}{\EvalSCondEnd}{../Interpreter.ml}
 
 \hypertarget{def-casestatementterm}{}
-\SectionDef[defines case statements;]
+\SectionDef[defines case statements]
   {CaseStatements}{Case Statements}
 Case statements allow executing different statements, based on which
 condition an expression satisfies.
@@ -1187,7 +1187,7 @@ In \listingref{CaseStatement.where} the expression \verb|a| will be evaluated tw
 \ASLListing{Evaluating case alternative sub-expressions}{CaseStatement.where}{\definitiontests/CaseStatement.where.asl}
 
 \hypertarget{def-assertionstatementterm}{}
-\SectionDef[defines assertion statements;]
+\SectionDef[defines assertion statements]
   {AssertionStatements}{Assertion Statements}
 Assertion statements are used to check that certain conditions are satisfied.
 They take a single \booleantypeterm{} operand, which we refer to as the
@@ -1254,7 +1254,7 @@ evaluating \texttt{assert (42 == 3);} results in an \DynamicAssertionFailure{} e
 \CodeSubsection{\EvalSAssertBegin}{\EvalSAssertEnd}{../Interpreter.ml}
 
 
-\SectionDef[defines while statements;]
+\SectionDef[defines while statements]
   {WhileStatements}{While Statements}
 \hypertarget{def-whilestatementterm}{}
 
@@ -1435,7 +1435,7 @@ so the loop limit is immediately reached, resulting in a \dynamicerrorterm{} wit
 
 \RenderProseAndFormally{tick_loop_limit}
 
-\SectionDef[defines repeat statements;]
+\SectionDef[defines repeat statements]
   {RepeatStatements}{Repeat Statements}
 \hypertarget{def-repeatstatementterm}{}
 
@@ -1504,7 +1504,7 @@ i = 4
 \RenderProseAndFormally{eval_stmt_SRepeat}
 \CodeSubsection{\EvalSRepeatBegin}{\EvalSRepeatEnd}{../Interpreter.ml}
 
-\SectionDef[defines for-looping statements;]
+\SectionDef[defines for-looping statements]
   {ForStatements}{For Statements}
 \hypertarget{def-forstatementterm}{}
 
@@ -1680,7 +1680,7 @@ See \ExampleRef{Overall Evaluation of For Statements}.
 \RenderProseAndFormally{eval_for_step}
 
 \hypertarget{def-throwstatementterm}{}
-\SectionDef[defines throw statements;]
+\SectionDef[defines throw statements]
   {ThrowStatements}{Throw Statements}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1722,7 +1722,7 @@ terminates successfully. That is, no \dynamicerrorterm{} occurs.
 \CodeSubsection{\EvalSThrowBegin}{\EvalSThrowEnd}{../Interpreter.ml}
 
 \hypertarget{def-trystatementterm}{}
-\SectionDef[defines try statements;]
+\SectionDef[defines try statements]
   {TryStatements}{Try Statements}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1815,7 +1815,7 @@ does not result in any Assertion error, and the specification terminates with th
 \CodeSubsection{\EvalSTryBegin}{\EvalSTryEnd}{../Interpreter.ml}
 
 \hypertarget{def-returnstatementterm}{}
-\SectionDef[defines return statements;]
+\SectionDef[defines return statements]
   {ReturnStatements}{Return Statements}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1901,7 +1901,7 @@ empty \executiongraphterm{}.
 \RenderProseAndFormally{write_folder}
 
 \hypertarget{def-printstatementterm}{}
-\SectionDef[defines print statements;]
+\SectionDef[defines print statements]
   {PrintStatements}{Print Statements}
 \subsection{Syntax}
 \begin{flalign*}
@@ -2065,7 +2065,7 @@ with no other effect.
 }
 \end{mathpar}
 
-\SectionDef[defines the unreachable statement;]
+\SectionDef[defines the unreachable statement]
   {UnreachableStatement}{The Unreachable Statement}
 \hypertarget{def-unreachablestatementterm}{}
 \listingref{UnreachableStatement} shows an example of using an \unreachablestatementterm{}

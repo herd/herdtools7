@@ -97,7 +97,7 @@ We use a standard approach here:
 
 \ChapterOutline
 
-\SectionDef[defines \emph{inlined derivations};]
+\SectionDef[defines \emph{inlined derivations}]
   {InlinedDerivations}{Inlined Derivations}
 Context-free grammars consist of a list of \emph{derivations} $N \derives \KleeneStar{S}$
 where $N$ is a non-terminal symbol and $S$ is a list of non-terminal symbols and terminal symbols,
@@ -149,7 +149,7 @@ By defining the derivations of $\Nbinop$ as inlined, we achieve the same effect 
 Barring mutually-recursive derivations involving inlined derivations, it is possible to expand
 all inlined derivations to obtain a context-free grammar without any inlined derivations.
 
-\SectionDef[defines \emph{parametric productions};]
+\SectionDef[defines \emph{parametric productions}]
   {ParametricProductions}{Parametric Productions}
 A parametric production has the form
 $N(p_{1..m}) \derives R_1 \;|\; \ldots \;|\; R_k$
@@ -257,7 +257,7 @@ We define the following parametric productions for various types of lists and op
 \TClistZero{x}   \derives \ & \option{\TClistOne{x}} &\\
 \end{flalign*}
 
-\SectionDef[defines the ASL grammar;]
+\SectionDef[defines the ASL grammar]
   {ASLGrammar}{ASL Grammar}
 We now present the list of derivations for the ASL Grammar where the start non-terminal is $\Nspec$.
 %
@@ -677,7 +677,7 @@ it must declare a new variable.
                      |\ & \Tor \;|\; \Trdiv \;|\; \Tshl \;|\; \Tshr \;|\; \Tpow \;|\; \Tcoloncolon \;|\; \Tplusplus
 \end{flalign*}
 
-\SectionDef[defines parse trees;]
+\SectionDef[defines parse trees]
   {ParseTrees}{Parse Trees}
 We now define \emph{parse trees} for the ASL expanded grammar. Those are later used to build Abstract Syntax Trees.
 

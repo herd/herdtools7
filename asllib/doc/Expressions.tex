@@ -19,7 +19,7 @@ as indicated by respective comments.
 \ChapterOutline
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef[defines the formal relations for expressions;]{Expressions}
+\FormalRelationsDef[defines the formal relations for expressions]{Expressions}
 \paragraph{Syntax:} Expressions are grammatically derived from $\Nexpr$.
 
 \paragraph{Abstract Syntax:} Expressions are derived in the abstract syntax from $\expr$,
@@ -45,7 +45,7 @@ variables with constant values are substituted by their constant values.
 \paragraph{Semantics:}
 \RenderRelation{eval_expr}
 \hypertarget{def-literalexpressionterm}{}
-\SectionDef[defines \literalexpressionsterm;]
+\SectionDef[defines \literalexpressionsterm]
   {LiteralExpressions}{Literal Expressions}
 A literal expression represents a literal as an expression.
 
@@ -86,7 +86,7 @@ In \listingref{literalssemantics}, each of the expressions \texttt{3} evaluates 
 \CodeSubsection{\EvalELitBegin}{\EvalELitEnd}{../Interpreter.ml}
 
 \hypertarget{def-variableexpressionterm}{}
-\SectionDef[defines \variableexpressionsterm;]
+\SectionDef[defines \variableexpressionsterm]
   {VariableExpressions}{Variable Expressions}
 A variable expression consists of an identifier for a storage element.
 
@@ -142,7 +142,7 @@ This is enforced by \TypingRuleRef{LDVar},
 \TypingRuleRef{DeclareGlobalStorage}, and \TypingRuleRef{DeclareOneFunc}.
 
 \hypertarget{def-binopexpressionterm}{}
-\SectionDef[defines \binopexpressionsterm;]
+\SectionDef[defines \binopexpressionsterm]
   {BinaryExpressions}{Binary Expressions}
 Binary expressions apply a binary operator to two sub-expressions.
 
@@ -521,7 +521,7 @@ The rule above applies to many binary operators, including $\EQ$ (which is used 
 as well as \texttt{==}).
 
 \hypertarget{def-unopexpressionterm}{}
-\SectionDef[defines \unopexpressionsterm;]
+\SectionDef[defines \unopexpressionsterm]
   {UnaryExpressions}{Unary Expressions}
 \subsection{Syntax}
 \begin{flalign*}
@@ -561,7 +561,7 @@ the expression \texttt{NOT '1010'} evaluates to the value \texttt{'0101'}.
 \CodeSubsection{\EvalUnopBegin}{\EvalUnopEnd}{../Interpreter.ml}
 
 \hypertarget{def-conditionexpressionterm}{}
-\SectionDef[defines \condexpressionsterm;]
+\SectionDef[defines \condexpressionsterm]
   {ConditionalExpressions}{Conditional Expressions}
 \subsection{Syntax}
 \begin{flalign*}
@@ -628,7 +628,7 @@ evaluate to either \texttt{3} or \texttt{Return42()}, depending on the
 \CodeSubsection{\EvalECondBegin}{\EvalECondEnd}{../Interpreter.ml}
 
 \hypertarget{def-callexpressionterm}{}
-\SectionDef[defines \callexpressionsterm;]
+\SectionDef[defines \callexpressionsterm]
   {CallExpressions}{Call Expressions}
 \ASLListing{Call expressions}{semantics-ecall}{\semanticstests/SemanticsRule.ECall.asl}
 
@@ -736,7 +736,7 @@ and the values they evaluate to, as assertions on the values assigned.
 \CodeSubsection{\EvalECallBegin}{\EvalECallEnd}{../Interpreter.ml}
 
 \hypertarget{def-slicingexpressionsterm}{}
-\SectionDef[defines \slicingexpressionsterm;]
+\SectionDef[defines \slicingexpressionsterm]
   {SlicingExpressions}{Slicing Expressions}
 This section details the high-level form of the syntax and abstract syntax of slicing expressions,
 and defines the semantics of bitvector slices.
@@ -810,7 +810,7 @@ the function $\readfrombitvector$ takes care of converting integers to bitvector
 
 \hypertarget{def-arrayaccessexpressionsterm}{}
 \hypertarget{def-getarrayexpressionterm}{}
-\SectionDef[defines \arrayaccessexpressionsterm;]
+\SectionDef[defines \arrayaccessexpressionsterm]
   {ArrayAccessExpressions}{Array Access Expressions}
 This section details the syntax, abstract syntax, semantics, and typing of array read expressions.
 
@@ -876,7 +876,7 @@ which has indexes \texttt{0}, \texttt{1} and \texttt{2} only.
 \CodeSubsection{\EvalEGetArrayBegin}{\EvalEGetArrayEnd}{../Interpreter.ml}
 
 \hypertarget{def-getfieldexpressionterm}{}
-\SectionDef[defines field reading expressions;]
+\SectionDef[defines field reading expressions]
   {FieldReadingExpressions}{Field Reading Expressions}
 \subsection{Syntax}
 \begin{flalign*}
@@ -987,7 +987,7 @@ the expression \verb|t.item1| evaluates to the value \texttt{2}.
 \CodeSubsection{\EvalEGetTupleItemBegin}{\EvalEGetTupleItemEnd}{../Interpreter.ml}
 
 \hypertarget{def-getfieldsexpressionterm}{}
-\SectionDef[defines multi-field reading expressions;]
+\SectionDef[defines multi-field reading expressions]
   {MultiFieldReadingExpressions}{Multi-field Reading Expressions}
 \subsection{Syntax}
 \begin{flalign*}
@@ -1088,7 +1088,7 @@ in \verb|MyCollection|.
 \CodeSubsection{\EvalEGetCollectionFieldsBegin}{\EvalEGetCollectionFieldsEnd}{../Interpreter.ml}
 
 \hypertarget{def-atceexpressionterm}{}
-\SectionDef[defines asserting type conversion expressions;]
+\SectionDef[defines asserting type conversion expressions]
   {AssertingTypeConversionExpressions}{Asserting Type Conversion Expressions}
 The rule about domains in the definitions of subtype-satisfaction and
 type-satisfaction means that it is illegal to use the unconstrained integer
@@ -1261,7 +1261,7 @@ that expressions appearing in types are all \sideeffectfreeterm{}.
 \RenderProseAndFormally{is_constraint_sat}
 
 \hypertarget{def-patternexpressionterm}{}
-\SectionDef[defines pattern matching expressions;]
+\SectionDef[defines pattern matching expressions]
   {PatternMatchingExpressions}{Pattern Matching Expressions}
 The binary operator $\Tin$ tests whether a value (referred to as the discriminant) matches any item from a $\Npatternset$.
 Patterns can also be used to test whether an expression matches a bitmask.
@@ -1346,7 +1346,7 @@ succeed.
 \CodeSubsection{\EvalEPatternBegin}{\EvalEPatternEnd}{../Interpreter.ml}
 
 \hypertarget{def-arbitraryexpressionterm}{}
-\SectionDef[defines arbitrary value expressions;]
+\SectionDef[defines arbitrary value expressions]
   {ArbitraryValueExpressions}{Arbitrary Value Expressions}
 An expression of the form \texttt{ARBITRARY: ty} evaluates to an arbitrary value in the
 domain of \texttt{ty}.
@@ -1416,7 +1416,7 @@ demonstrates how to obtain an arbitrary array, \texttt{int\_array}.
 Notice that this rule introduces non-determinism.
 
 
-\SectionDef[defines structured type construction expressions;]
+\SectionDef[defines structured type construction expressions]
   {StructuredTypeConstructionExpressions}{Structured Type Construction Expressions}
 \hypertarget{def-recordexpressionterm}{}
 \listingref{semantics-egetfield} shows an example of a well-typed record construction expression.
@@ -1511,7 +1511,7 @@ $\NVRecord(\va\mapsto\nvint(3), \vb\mapsto\nvint(42))$.
 \RenderProseAndFormally{eval_expr_ERecord}
 \CodeSubsection{\EvalERecordBegin}{\EvalERecordEnd}{../Interpreter.ml}
 
-\SectionDef[defines tuple expressions;]
+\SectionDef[defines tuple expressions]
   {TupleExpressions}{Tuple Expressions}
 \hypertarget{def-tupleexpressionterm}{}
 
@@ -1554,7 +1554,7 @@ the expression \texttt{(3, Return42())} evaluates to the value \texttt{(3, 42)}.
 \RenderProseAndFormally{eval_expr_ETuple}
 \CodeSubsection{\EvalETupleBegin}{\EvalETupleEnd}{../Interpreter.ml}
 
-\SectionDef[defines parenthesised expressions;]
+\SectionDef[defines parenthesised expressions]
   {ParenthesisedExpressions}{Parenthesised Expressions}
 A single expression inside parentheses is not considered to be a tuple, but rather the element
 inside the parenthesis.
@@ -1587,7 +1587,7 @@ we ignore the parenthesis (see \TypingRuleRef{ETuple}.\textsc{PARENTHESISED}).
 }
 \end{mathpar}
 
-\SectionDef[defines array construction expressions;]
+\SectionDef[defines array construction expressions]
   {ArrayConstructionExpressions}{Array Construction Expressions}
 Array construction expression are used by the type system to express the initialisation
 of array-typed variables. Since there is no syntax to initialise arrays, there are also
@@ -1614,7 +1614,7 @@ which evaluates to
 \RenderProseAndFormally{eval_expr_EArray}
 \CodeSubsection{\EvalEArrayBegin}{\EvalEArrayEnd}{../Interpreter.ml}
 
-\SectionDef[defines \sideeffectfreeexpressionsterm{};]
+\SectionDef[defines \sideeffectfreeexpressionsterm{}]
   {SideEffectFreeExpressions}{Side-effect-free Expressions}
 \subsection{Typing}
 \texthypertarget{def-sideeffectfreeexpressionterm}

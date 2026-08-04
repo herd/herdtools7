@@ -11,7 +11,7 @@ matches a value specified by the \emph{pattern} $p$.
 \ChapterOutline
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef[defines the formal relations for patterns;]{Patterns}
+\FormalRelationsDef[defines the formal relations for patterns]{Patterns}
 \paragraph{Syntax:} Patterns are grammatically derived from $\Npattern$.
 
 \paragraph{Abstract Syntax:} Patterns are derived in the abstract grammar from $\pattern$
@@ -29,7 +29,7 @@ transforms a pattern parse node $\vparsednode$ into a pattern AST node $\vastnod
 \paragraph{Semantics:} Patterns are evaluated by $\evalpattern$.
 \RenderRelation{eval_pattern}
 
-\SectionDef[defines the match-all-values pattern;]
+\SectionDef[defines the match-all-values pattern]
   {MatchingAllValues}{Matching All Values}
 \hypertarget{any-pattern}{}
 \ASLListing{Matching any value}{semantics-pall}{\semanticstests/SemanticsRule.PAll.asl}
@@ -67,7 +67,7 @@ since \texttt{-} matches any value and \texttt{42} in particular.
 \RenderProseAndFormally{eval_pattern_PAll}
 \CodeSubsection{\EvalPAllBegin}{\EvalPAllEnd}{../Interpreter.ml}
 
-\SectionDef[defines the match-a-single-value pattern;]
+\SectionDef[defines the match-a-single-value pattern]
   {MatchingASingleValue}{Matching a Single Value}
 \subsection{Syntax}
 \begin{flalign*}
@@ -109,7 +109,7 @@ In \listingref{semantics-psingle},
 \RenderProseAndFormally{eval_pattern_PSingle}
 \CodeSubsection{\EvalPSingleBegin}{\EvalPSingleEnd}{../Interpreter.ml}
 
-\SectionDef[defines the match-a-range-of-integers pattern;]
+\SectionDef[defines the match-a-range-of-integers pattern]
   {MatchingARangeOfIntegers}{Matching a Range of Integers}
 \subsection{Syntax}
 \begin{flalign*}
@@ -158,7 +158,7 @@ range given by \texttt{3..42}.
 \RenderProseAndFormally{eval_pattern_PRange}
 \CodeSubsection{\EvalPRangeBegin}{\EvalPRangeEnd}{../Interpreter.ml}
 
-\SectionDef[defines the less-than-or-equal pattern;]
+\SectionDef[defines the less-than-or-equal pattern]
   {MatchingAnUpperBoundedRangeOfIntegers}{Matching an Upper Bounded Range of Integers}
 \subsection{Syntax}
 \begin{flalign*}
@@ -201,7 +201,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{42} is not less
 \RenderProseAndFormally{eval_pattern_PLeq}
 \CodeSubsection{\EvalPLeqBegin}{\EvalPLeqEnd}{../Interpreter.ml}
 
-\SectionDef[defines the greater-than-or-equal pattern;]
+\SectionDef[defines the greater-than-or-equal pattern]
   {MatchingALowerBoundedRangeOfIntegers}{Matching a Lower Bounded Range of Integers}
 \subsection{Syntax}
 \begin{flalign*}
@@ -244,7 +244,7 @@ whereas \texttt{match\_false} evaluates to \False, since \texttt{3} is not great
 \RenderProseAndFormally{eval_pattern_PGeq}
 \CodeSubsection{\EvalPGeqBegin}{\EvalPGeqEnd}{../Interpreter.ml}
 
-\SectionDef[defines the bitmask pattern;]
+\SectionDef[defines the bitmask pattern]
   {MatchingABitmask}{Matching a Bitmask}
 Bitmasks are used to match sets of bitvectors where occurrences of $\xbit$,
 and bit sequences in parentheses represent, don't-care values.

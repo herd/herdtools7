@@ -18,7 +18,7 @@ All global declarations in \listingref{TypecheckDecl} are well-typed.
 
 \ChapterOutline
 
-\SectionDef[defines the formal relations used for specifications;]
+\SectionDef[defines the formal relations used for specifications]
   {Formal Relations for Specifications}{Formal Relations for Specifications}
 \hypertarget{def-specificationterm}{}
 
@@ -72,7 +72,7 @@ Therefore, they have no corresponding rule to implement $\typecheckdecl$.
   $\evalglobals$ and subprogram declarations are evaluated via $\evalcall$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SectionDef[defines the syntax of specifications;]
+\SectionDef[defines the syntax of specifications]
   {Syntax of Specifications}{Syntax of Specifications}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{flalign*}
@@ -80,7 +80,7 @@ Therefore, they have no corresponding rule to implement $\typecheckdecl$.
 \end{flalign*}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SectionDef[defines the abstract syntax of specifications;]
+\SectionDef[defines the abstract syntax of specifications]
   {Abstract Syntax of Specifications}{Abstract Syntax of Specifications}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \RenderType[remove_hypertargets]{spec}
@@ -108,7 +108,7 @@ We define this function for subprogram declarations, type declarations, and glob
 \end{mathpar}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SectionDef[defines the type rules for specifications;]
+\SectionDef[defines the type rules for specifications]
   {Typing Specifications}{Typing Specifications}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -304,7 +304,7 @@ and the subprogram with the \realtypeterm{} argument is named \verb|increment-1|
 
 \RenderProseAndFormally{add_subprogram_decls}
 
-\SectionDef[defines subprogram overriding and the associated type rules;]
+\SectionDef[defines subprogram overriding and the associated type rules]
   {Overriding Subprograms}{Overriding Subprograms}
 This section defines how to override subprograms in a specification.
 In particular, a subprogram marked by \texttt{impdef} can be overridden by a subprogram marked by \\
@@ -396,7 +396,7 @@ In particular, though the ill-typed subprogram is overridden and will not be use
 
 \RenderProseAndFormally{rename_subprograms}
 
-\SectionDef[defines defined-used relations used to sort global declarations;]
+\SectionDef[defines defined-used relations used to sort global declarations]
   {TopologicalOrdering}{Defined-Used Dependencies for Global Declarations}
 This section defines how to construct a graph of \defusedependenciesterm\ between the identifiers associated
 with global declarations.
@@ -589,7 +589,7 @@ and the identifiers used by it, appearing in comments to its right.
 
 \RenderProseAndFormally{use_catcher}
 
-\SectionDef[defines how the global declarations in a specification are sorted;]
+\SectionDef[defines how the global declarations in a specification are sorted]
   {Dependencies}{Ordering Global Declarations via Defined-Used Dependencies}
 \begin{definition}[Strongly Connected Components]
 \hypertarget{relation-scc}{}

@@ -170,13 +170,11 @@
 \newcommand\NotImportedToASLSpecYet[1]{#1}
 
 \newcommand\FormalRelationsDef[2][]{\SectionDef[#1]{Formal Relations for #2}{Formal Relations for #2}}
-\newcommand\FormalRelationsRef[1]{\secref{Formal Relations for #1}} % DO NOT LINT: public convenience macro.
 \newcommand\SyntaxDef[2][]{\SectionDef[#1]{Syntax of #2}{Syntax of #2}}
 \newcommand\SyntaxRef[1]{\secref{Syntax of #1}}
 \newcommand\AbstractSyntaxDef[2][]{\SectionDef[#1]{Abstract Syntax of #2}{Abstract Syntax of #2}}
 \newcommand\AbstractSyntaxRef[1]{\secref{Abstract Syntax of #1}}
 \newcommand\TypeRulesDef[2][]{\SectionDef[#1]{Type Rules for #2}{Type Rules for #2}}
-\newcommand\TypeRulesRef[1]{\secref{Type Rules for #1}} % DO NOT LINT: public convenience macro.
 \newcommand\SemanticsRulesDef[2][]{\SectionDef[#1]{Dynamic Semantics Rules for #2}{Dynamic Semantics Rules for #2}}
 \newcommand\SemanticsRulesRef[1]{\secref{Dynamic Semantics Rules for #1}}
 \newcommand\textfunc[1]{\textit{#1}}
@@ -307,7 +305,7 @@
 %
 % Define an outlined section as follows:
 %
-%   \SectionDef[defines the relevant concepts;]{StableLabel}{Displayed Title}
+%   \SectionDef[defines the relevant concepts]{StableLabel}{Displayed Title}
 %
 % The optional first argument is the text printed after the section reference
 % in the outline.  It should include its final punctuation.  The second
@@ -323,7 +321,7 @@
 % Most subsections should continue to use \subsection and do not appear in the
 % chapter outline.  To include a selected subsection, use:
 %
-%   \OutlineSubsectionDef[defines a special case;]{StableLabel}{Displayed Title}
+%   \OutlineSubsectionDef[defines a special case]{StableLabel}{Displayed Title}
 %
 % It is nested under the most recent \SectionDef in the same chapter, so it must
 % follow its intended parent section.
@@ -339,7 +337,7 @@
   \def\ASLChapterOutlineDescription{#3}%
   \ifx\ASLChapterOutlineDescription\@empty
   \else
-    \space #3%
+    \space #3;%
   \fi
   \@ifundefined{ASLChapterOutlineSubsections@#1@#2}{}{%
     \begin{itemize}%
@@ -371,7 +369,7 @@
       \def\ASLChapterOutlineDescription{#4}%
       \ifx\ASLChapterOutlineDescription\@empty
       \else
-        \space #4%
+        \space #4;%
       \fi
     }%
   }{}%

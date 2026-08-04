@@ -42,7 +42,7 @@ To achieve this, $\torexpr(\record)$ is used to obtain an \rhsexpression, which 
 using $\texttt{eval\_expr}$ to evaluate it.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\SyntaxDef[defines the syntax for \assignableexpressions;]{Assignable Expressions}
+\SyntaxDef[defines the syntax for \assignableexpressions]{Assignable Expressions}
 \begin{flalign*}
 \Nlexpr \derives\
    & \Tminus &\\
@@ -439,7 +439,7 @@ is defined via the following rules:
 \end{mathpar}
 
 \hypertarget{def-discardlexprterm}{}
-\SectionDef[defines discarding assignment expressions;]
+\SectionDef[defines discarding assignment expressions]
   {DiscardingAssignmentExpressions}{Discarding Assignment Expressions}
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_discard}
@@ -466,7 +466,7 @@ In \listingref{semantics-lediscard}, the assignment \texttt{- = 42;} does not af
 \CodeSubsection{\EvalLEDiscardBegin}{\EvalLEDiscardEnd}{../Interpreter.ml}
 
 \hypertarget{def-varlexprterm}{}
-\SectionDef[defines variable assignment expressions;]
+\SectionDef[defines variable assignment expressions]
   {VariableAssignmentExpressions}{Variable Assignment Expressions}
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_var}
@@ -507,7 +507,7 @@ In \listingref{semantics-leglobalvar},
 \RenderProseAndFormally{eval_lexpr_LEVar}
 \CodeSubsection{\EvalLEVarBegin}{\EvalLEVarEnd}{../Interpreter.ml}
 
-\SectionDef[defines multi-assignment expressions;]
+\SectionDef[defines multi-assignment expressions]
   {MultiAssignmentExpressions}{Multi-assignment Expressions}
 \hypertarget{def-destructuringlexprterm}{}
 \ASLListing{Assignment to multiple left-hand-side expressions}{semantics-ledestructuring}{\semanticstests/SemanticsRule.LEDestructuring.asl}
@@ -583,7 +583,7 @@ and \ExampleRef{Multi-assignments}.
 \RenderRule{protected_multi_assign}
 
 \hypertarget{def-setarraylexprterm}{}
-\SectionDef[defines array assignment expressions;]
+\SectionDef[defines array assignment expressions]
   {ArrayAssignmentExpressions}{Array Assignment Expressions}
 This section details the syntax, abstract syntax, semantics, and typing of array write expressions.
 
@@ -623,7 +623,7 @@ via \TypingRuleRef{LESetArray}.
 See \SyntacticSugarRef{SetterFieldAssignment}.
 
 \hypertarget{def-slicelexprterm}{}
-\SectionDef[defines bitvector slice assignment expressions;]
+\SectionDef[defines bitvector slice assignment expressions]
   {BitvectorSliceAssignmentExpressions}{Bitvector Slice Assignment Expressions}
 \ASLListing{Assignable slice expressions}{semantics-leslice}{\semanticstests/SemanticsRule.LESlice.asl}
 
@@ -690,7 +690,7 @@ See \ExampleRef{Checking Slices for Overlaps}.
 \RenderProseAndFormally{check_two_ranges_non_overlapping}
 
 \hypertarget{def-setfieldlexprterm}{}
-\SectionDef[defines structured type field assignment expressions;]
+\SectionDef[defines structured type field assignment expressions]
   {StructuredTypeFieldAssignmentExpressions}{Structured Type Field Assignment Expressions}
 \subsection{Abstract Syntax}
 \RenderTypes[remove_hypertargets]{lexpr_setfield}
@@ -748,7 +748,7 @@ via \TypingRuleRef{LESetStructuredField}.
 
 See \SyntacticSugarRef{SetterFieldAssignment}.
 
-\SectionDef[defines structured type multi-field assignment expressions;]
+\SectionDef[defines structured type multi-field assignment expressions]
   {StructuredTypeMultiFieldAssignmentExpressions}{Structured Type Multi-field Assignment Expressions}
 \ASLListing{Multi-field assignment expression}{lesetfields}{\typingtests/TypingRule.LESetFields.asl}
 
