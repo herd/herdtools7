@@ -545,6 +545,11 @@ let max_set = IntSet.max_elt
 
       (* Local check of coherence *)
 
+  let observer_bank_of_cell cell = match Array.length cell with
+    | 1 -> Ord
+    | 2 -> Pair
+    | n -> Warn.fatal "No local observer for %d coherence cells" n
+
   let do_add_load bank st p i f x cell =
     let r,i,c,st = Comp.emit_obs bank st p i x in
     let rs = match bank with Pair -> r::A.get_friends st r | _ -> [r] in
@@ -612,7 +617,7 @@ let max_set = IntSet.max_elt
     let lst = Misc.last ns in
     if U.check_here lst then
       match lst.C.evt.C.loc,lst.C.evt.C.bank with
-      | Data x,(Ord|Pair|Instr) -> (* TODO check for -obs local mode and pairs *)
+      | Data x,(Ord|Pair|Instr) ->
          let nxt = lst.C.next.C.evt in
          let bank = nxt.C.bank in
          begin match bank with
@@ -628,10 +633,7 @@ let max_set = IntSet.max_elt
             then
               i,code,F.cons_int_set (A.Location.Location_global x,IntSet.singleton v) f,st
             else
-              let bank =
-                match bank with
-                | Pair -> Pair
-                | _ -> Ord in
+              let bank = observer_bank_of_cell nxt.C.cell in
               do_observe_local bank O.obs_type st p i code f x (Some prev_v) nxt.C.cell
          end
       | Data x,Tag ->
@@ -653,6 +655,7 @@ let max_set = IntSet.max_elt
          let bank = nxt.C.bank in
          begin match bank with
          | Ord|Pair ->
+            let bank = observer_bank_of_cell nxt.C.cell in
             do_observe_local bank O.obs_type st p i code f x None nxt.C.cell
          | VecReg _ ->
             do_observe_local_simd st p i code f x bank nxt
