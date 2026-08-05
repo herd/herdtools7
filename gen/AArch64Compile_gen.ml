@@ -1673,7 +1673,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 
     let emit_obs t = match t with
-    | Code.Ord | Code.Instr-> emit_load_mixed naturalsize 0
+    | Code.Ord | Code.Instr->
+        fun st p init loc ->
+        let r,init,cs,st = emit_load_mixed naturalsize 0 st p init loc in
+        let st = A.add_type (A.of_reg p r) Cfg.typ st in
+        r,init,cs,st
     | Code.Pte->
         fun st p init loc ->
         let r,init,cs,st = LDR.emit_load_var A64.V64 st p init (Misc.add_pte loc) in
