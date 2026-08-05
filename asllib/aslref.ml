@@ -236,5 +236,5 @@ let parse_args () =
 let () =
   try
     let args = parse_args () in
-    run_with args
+    run_to_exit args
   with Exit n -> exit n

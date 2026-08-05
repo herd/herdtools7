@@ -47,7 +47,7 @@ let run_asl code version exec =
       Js_of_ocaml.Sys_js.update_file ~name:"web-input.asl" ~content:_code
   in
 
-  try Runner.run_with argv with
+  try Runner.run_to_exit argv with
   | Asllib.Error.ASLException _ ->
       (* Unreachable due to the use of [or_exit] in Runner.ml:
          any [ASLException] is intercepted and re-raised as an [Exit]. *)

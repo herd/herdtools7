@@ -77,13 +77,9 @@ let default_args =
 
 exception Exit of int
 
-(** Run ASLRef with the supplied arguments. This function never returns: it
-    raises an [Exit] exception containing ASLRef's exit code.
-
-    [on_error] is called with the structured ASLRef error before [Exit 1] is
-    raised. By default, it prints the error using [args.output_format].
-    [on_completed] is called before [Exit exit_code] is raised. *)
-let run_with ?on_error ?(on_completed = fun () -> ()) (args : args) : unit =
+(** Run ASLRref with the supplied arguments. This function returns the exit code
+    from ASLRef, or raises and ASLException. *)
+let run (args : args) : int =
   let parser_config =
     let v0_use_split_chunks = args.v0_use_split_chunks in
     let version_eac1 = args.version_eac1 in
@@ -91,31 +87,10 @@ let run_with ?on_error ?(on_completed = fun () -> ()) (args : args) : unit =
     { v0_use_split_chunks; version_eac1 }
   in
 
-  let default_on_error e =
-    let module EP = Error.ErrorPrinter (struct
-      let output_format = args.output_format
-    end) in
-    EP.eprintln e
-  in
-
-  let on_error = Option.value on_error ~default:default_on_error in
-
-  let or_exit f =
-    if Printexc.backtrace_status () then f ()
-    else
-      match Error.intercept f () with
-      | Ok res -> res
-      | Error e ->
-          on_error e;
-          raise (Exit 1)
-  in
-
   let extra_main =
     match args.opn with
     | None -> []
-    | Some fname ->
-        or_exit @@ fun () ->
-        Builder.from_file ~ast_type:`Opn ~parser_config `ASLv1 fname
+    | Some fname -> Builder.from_file ~ast_type:`Opn ~parser_config `ASLv1 fname
   in
 
   let ast =
@@ -130,7 +105,7 @@ let run_with ?on_error ?(on_completed = fun () -> ()) (args : args) : unit =
       | NormalV0 | NormalV1 -> List.rev_append this_ast ast
       | PatchV1 | PatchV0 -> ASTUtils.patch ~src:ast ~patches:this_ast
     in
-    or_exit @@ fun () -> List.fold_right folder args.files []
+    List.fold_right folder args.files []
   in
 
   let ast = List.rev_append extra_main ast in
@@ -180,7 +155,7 @@ let run_with ?on_error ?(on_completed = fun () -> ()) (args : args) : unit =
       args.use_conflicting_side_effects_extension
   end in
   let module T = Annotate (C) in
-  let typed_ast, static_env = or_exit @@ fun () -> T.type_check_ast ast in
+  let typed_ast, static_env = T.type_check_ast ast in
 
   let () =
     if args.print_serialized_typed then
@@ -214,7 +189,6 @@ let run_with ?on_error ?(on_completed = fun () -> ()) (args : args) : unit =
   let exit_code, used_rules =
     if args.exec then
       let instrumentation = if args.show_rules then true else false in
-      or_exit @@ fun () ->
       let main_name = T.find_main static_env in
       Native.interpret ~instrumentation static_env main_name typed_ast
     else (0, [])
@@ -227,8 +201,25 @@ let run_with ?on_error ?(on_completed = fun () -> ()) (args : args) : unit =
         (pp_print_list ~pp_sep:pp_print_cut Instrumentation.SemanticsRule.pp)
         used_rules
   in
-  on_completed ();
-  raise (Exit exit_code)
+
+  exit_code
+
+(** Run ASLRef with the supplied arguments. This function never returns: it
+    raises an [Exit] exception containing ASLRef's exit code. *)
+let run_to_exit (args : args) : unit =
+  let or_exit f =
+    if Printexc.backtrace_status () then f ()
+    else
+      match Error.intercept f () with
+      | Ok res -> res
+      | Error e ->
+          let module EP = Error.ErrorPrinter (struct
+            let output_format = args.output_format
+          end) in
+          EP.eprintln e;
+          raise (Exit 1)
+  in
+  or_exit @@ fun () -> raise (Exit (run args))
 
 (** Structured result interface for callers that need to inspect ASLRef's
     outcome instead of handling the [Exit] exception raised by [run_with]. *)
@@ -266,21 +257,13 @@ module RunResult = struct
       raising [Exit]. Errors are captured in the returned value and are not
       printed. *)
   let run_with_result args =
-    let completed = ref None in
-    let failed = ref None in
-    let on_completed () =
-      completed :=
-        Some
-          {
-            outcome = Success;
-            error_code = None;
-            error_line = None;
-            diagnostic = None;
-          }
-    in
-    let on_error error = failed := Some (of_error error) in
-    (try run_with ~on_error ~on_completed args with Exit _ -> ());
-    match (!failed, !completed) with
-    | Some result, _ | None, Some result -> result
-    | None, None -> assert false
+    match Error.intercept (fun () -> run args) () with
+    | Ok _exit_code ->
+        {
+          outcome = Success;
+          error_code = None;
+          error_line = None;
+          diagnostic = None;
+        }
+    | Error error -> of_error error
 end
