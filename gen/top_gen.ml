@@ -612,7 +612,7 @@ let max_set = IntSet.max_elt
     let lst = Misc.last ns in
     if U.check_here lst then
       match lst.C.evt.C.loc,lst.C.evt.C.bank with
-      | Data x,(Ord|Pair|Instr) -> (* TODO check for -obs local mode and pairs *)
+      | Data x,(Ord|Pair|Instr as prev_bank) ->
          let nxt = lst.C.next.C.evt in
          let bank = nxt.C.bank in
          begin match bank with
@@ -629,8 +629,8 @@ let max_set = IntSet.max_elt
               i,code,F.cons_int_set (A.Location.Location_global x,IntSet.singleton v) f,st
             else
               let bank =
-                match bank with
-                | Pair -> Pair
+                match prev_bank,bank with
+                | Pair,_|_,Pair -> Pair
                 | _ -> Ord in
               do_observe_local bank O.obs_type st p i code f x (Some prev_v) nxt.C.cell
          end
