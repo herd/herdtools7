@@ -219,7 +219,7 @@ let parse_args () =
   let () =
     if !show_version then
       let () = Printf.printf "aslref version %s\n%!" Version.version in
-      raise (Exit 0)
+      exit 0
   in
 
   let () =
@@ -228,13 +228,17 @@ let parse_args () =
         Printf.eprintf
           "No files supplied! Run `aslref --help` for information on usage.\n"
       in
-      raise (Exit 1)
+      exit 1
   in
 
   args
 
 let () =
-  try
-    let args = parse_args () in
-    run_with args
-  with Exit n -> exit n
+  let args = parse_args () in
+  let exit_code =
+    (* If the user wants to see a backtrace, we do not catch errors and OCaml
+       handle them. OCaml by default does not have backtrace on, so the default
+       behaviour for aslref is [safe_run]. *)
+    if Printexc.backtrace_status () then run args else safe_run args
+  in
+  exit exit_code
