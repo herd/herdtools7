@@ -458,7 +458,11 @@ let find_non_pseudo_prev m = find_edge_prev non_pseudo m
 
   let is_pair n = match n.evt.loc with
       | Data loc ->
-         if E.is_pair n.edge then Some loc
+         if E.is_pair n.edge ||
+            match E.get_access_atom n.evt.atom with
+            | Some (sz,_) -> sz = O.naturalsize
+            | None -> false
+         then Some loc
          else None
       | Code _ -> None
 
