@@ -3987,7 +3987,7 @@ Arguments:
             )
           in
           let mv = read_reg_data rA ii in
-          let lift_memop ?(tag = "") rA dir updatedb checked mop perms ma mv an ii =
+          let lift_memop ~tag rA dir updatedb checked mop perms ma mv an ii =
             do_lift_memop ~tag rA dir updatedb checked mop perms ma mv an ii Fun.id DISide.Data in
           do_cas_with (fun ~tag -> lift_memop ~tag) quad Annot.N r ma mv mop_success mop_fail_with_wb mop_fail_no_wb false ii)
 
