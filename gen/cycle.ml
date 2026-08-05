@@ -1172,7 +1172,7 @@ let set_read_individual_v n cell check_value =
   let idx,atom = split_access_atom e.atom in
   let v = E.extract_value cell.(idx) atom in
 (* eprintf "SET READ: cell=0x%x, v=0x%x\n" cell v ; *)
-  let e = { e with v=v; check_value } in
+  let e = { e with v=v; cell=[|v|]; check_value } in
   n.evt <- e
 (* eprintf "AFTER %a\n" debug_node n *)
 
@@ -1180,8 +1180,7 @@ let set_read_pair_v n cell check_value =
   let e = n.evt in
   let v0 = E.extract_value cell.(0) e.atom
   and v1 = E.extract_value cell.(1) e.atom in
-  let v = Value.from_int (Value.to_int v0 + Value.to_int v1) in
-  let e = { e with v; cell=[|v0;v1|]; check_value } in
+  let e = { e with v=v0; cell=[|v0;v1|]; check_value } in
   n.evt <- e
 
 (* Assume all the events are for the same location,
