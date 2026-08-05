@@ -204,22 +204,22 @@ let run (args : args) : int =
 
   exit_code
 
+(** Run ASLRef with the supplied arguments. If an ASLException happens, it is
+    displayed and the exit code 1 is returned. *)
+let safe_run (args : args) : int =
+  try run args
+  with Error.ASLException e ->
+    let module EP = Error.ErrorPrinter (struct
+      let output_format = args.output_format
+    end) in
+    EP.eprintln e;
+    1
+
 (** Run ASLRef with the supplied arguments. This function never returns: it
     raises an [Exit] exception containing ASLRef's exit code. *)
 let run_to_exit (args : args) : unit =
-  let or_exit f =
-    if Printexc.backtrace_status () then f ()
-    else
-      match Error.intercept f () with
-      | Ok res -> res
-      | Error e ->
-          let module EP = Error.ErrorPrinter (struct
-            let output_format = args.output_format
-          end) in
-          EP.eprintln e;
-          raise (Exit 1)
-  in
-  or_exit @@ fun () -> raise (Exit (run args))
+  let exit_code = safe_run args in
+  raise (Exit exit_code)
 
 (** Structured result interface for callers that need to inspect ASLRef's
     outcome instead of handling the [Exit] exception raised by [run_with]. *)
