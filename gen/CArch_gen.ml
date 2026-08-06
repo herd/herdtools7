@@ -221,12 +221,7 @@ let rec is_nop = function
 
 (* Dependencies, no CTRLISYNC *)
 
-include CDep
-
-let pp_dp = function
-  | ADDR -> "Addr"
-  | DATA -> "Data"
-  | CTRL -> "Ctrl"
+include Dep.Basic
 
 
 (* Read-Modify-Write *)

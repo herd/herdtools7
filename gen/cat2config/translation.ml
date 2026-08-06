@@ -148,12 +148,12 @@ let build_tedges : prim_rel -> E.tedge list =
   | Prim "amo" -> [ E.Rmw A.RMW.AllAmo ]
   | Prim "lxsx" -> [ E.Rmw A.RMW.LrSc ]
   | Prim "rmw" -> [ E.Rmw A.RMW.LrSc; E.Rmw A.RMW.AllAmo ]
-  | Prim "addr" -> dp_tedges Dep.ADDR A.NoCsel
-  | Prim "ctrl" -> dp_tedges Dep.CTRL A.NoCsel
-  | Prim "data" -> dp_tedges Dep.DATA A.NoCsel
-  | Prim "pick-addr-dep" -> dp_tedges Dep.ADDR A.OkCsel
-  | Prim "pick-ctrl-dep" -> dp_tedges Dep.CTRL A.OkCsel
-  | Prim "pick-data-dep" -> dp_tedges Dep.DATA A.OkCsel
+  | Prim "addr" -> dp_tedges Dep.Full.ADDR A.NoCsel
+  | Prim "ctrl" -> dp_tedges Dep.Full.CTRL A.NoCsel
+  | Prim "data" -> dp_tedges Dep.Full.DATA A.NoCsel
+  | Prim "pick-addr-dep" -> dp_tedges Dep.Full.ADDR A.OkCsel
+  | Prim "pick-ctrl-dep" -> dp_tedges Dep.Full.CTRL A.OkCsel
+  | Prim "pick-data-dep" -> dp_tedges Dep.Full.DATA A.OkCsel
   | _ -> []
 
 let apply_prim_rel (ed : partial_edge) (r : prim_rel) : partial_edge option =

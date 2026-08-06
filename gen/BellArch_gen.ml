@@ -258,7 +258,7 @@ let var_fence f = match varatom with
 (* Deps *)
 (********)
 
-include ClassicDep
+include Dep.Bell
 module RMW = Rmw.No(struct type nonrec atom = atom end)
 include
     ArchExtra_gen.Make

@@ -87,7 +87,7 @@ module Make(C:Config)  =
 (********)
 (* Deps *)
 (********)
-    include Dep
+    include Dep.Full
 
     let pp_dp = function
       | ADDR -> "Addr"
