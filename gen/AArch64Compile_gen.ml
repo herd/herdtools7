@@ -2193,11 +2193,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_swp =  do_emit_ldop swp swp_mixed
     and emit_ldop op = do_emit_ldop (ldop op) (ldop_mixed op)
 
-    let emit_cas_rA st p init er ew rA =
+    let emit_cas_rA emit_data st p init er ew rA =
       check_rmw_metadata er ew;
       let sz,a,opt = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
       let rS,init,csS,st = mk_emit_mov_fresh sz st p init (Value.to_int er.C.v) in
       let rT,init,csT,st = mk_emit_mov sz st p init (Value.to_int ew.C.v) in
+      let cdata,st = emit_data sz rT st in
       let sz = get_rmw_size opt sz in
       let init,csS2,st = emit_str_addon st p init rS rA opt er in
       let init,csT2,st = emit_str_addon st p init rT rA opt ew in
@@ -2208,12 +2209,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           cs@[cas_mixed sz a rS rT rA],st in
       let cs = add_label_to_last_instructions er (pseudo cs) in
       let cs2 = emit_ldr_addon opt rS in
-      rS,init,csS@csS2@csT@csT2@cs@pseudo cs2,st
+      rS,init,csS@csS2@csT@cdata@csT2@cs@pseudo cs2,st
 
     let emit_cas  st p init er ew =
       let rA,init,st =
         U.next_init st p init (get_tagged_loc er) in
-      emit_cas_rA st p init er ew rA
+      emit_cas_rA emit_data_rmw_simple st p init er ew rA
 
     let emit_stop_rA op st p init er ew rA =
       let a = tr_none ew.C.atom
@@ -2869,13 +2870,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | D.ADDR ->
        let rA,init,caddr,st =
          emit_addr_dep csel vdep st p init (get_tagged_loc er) rd in
-        let rR,init,cs,st = emit_cas_rA st p init er ew rA in
+        let rR,init,cs,st = emit_cas_rA emit_data_rmw_simple st p init er ew rA in
         rR,init,caddr@cs,st
     | D.CTRL|D.CTRLISYNC ->
         let c,st = emit_ctrl_gen csel st vdep rd in
         let rR,init,cs,st = emit_cas st p init er ew in
         rR,init,insert_isb (is_ctrlisync dp) c cs,st
-    | D.DATA -> Warn.fatal "Data dependency to CAS"
+    | D.DATA ->
+        let emit_data = emit_data_rmw_dep csel vdep rd in
+        let rA,init,st = U.next_init st p init (get_tagged_loc er) in
+        emit_cas_rA emit_data st p init er ew rA
 
     let emit_stop_dep  op st p init er ew (dp,csel) rd n =
       let vdep = node2vdep n in
