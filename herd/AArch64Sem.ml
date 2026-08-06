@@ -2260,7 +2260,7 @@ Arguments:
               r1 r2 w1 w2)
           (to_perms "rw" sz)
           (read_reg_addr r3 ii)
-          (read_reg_ord_sz sz r1 ii)
+          (read_reg_data_sz sz r1 ii)
           (rmw_to_read rmw)
           ii
 
