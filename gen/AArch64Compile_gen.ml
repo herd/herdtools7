@@ -2164,7 +2164,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         U.next_init st p init (get_tagged_loc er) in
       emit_cas_rA emit_data_rmw_simple st p init er ew rA
 
-    let emit_stop_rA op st p init er ew rA =
+    let emit_stop_rA emit_data op st p init er ew rA =
       let a,sz1 = tr_none ew.C.atom
       and b,sz2 = tr_none er.C.atom in
       let sz = do_sz sz1 sz2 in
@@ -2175,18 +2175,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           Warn.fatal "Unexpected atoms in STOP instruction: %s,%s"
             (pp_atom_acc b)  (pp_atom_acc a) in
       let rW,init,csi,st = mk_emit_mov sz st p init (Value.to_int ew.C.v) in
+      let cdata,st = emit_data sz rW st in
       let cs,st = match sz with
       | None -> [stop op a rW rA],st
       | Some (sz,o) ->
           let rA,cs,st = sumi_addr st rA o in
           cs@[stop_mixed op sz a rW rA],st in
       let cs = add_label_to_last_instructions er (pseudo cs) in
-      None,init,csi@cs,st
+      None,init,csi@cdata@cs,st
 
     let emit_stop  op st p init er ew =
       let rA,init,st =
         U.next_init st p init (get_tagged_loc er) in
-      emit_stop_rA op st p init er ew rA
+      emit_stop_rA emit_data_rmw_simple op st p init er ew rA
 
     let map_some f st p init er ew =
       let r,init,cs,st = f  st p init er ew in
@@ -2812,13 +2813,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | D.ADDR ->
          let rA,init,caddr,st =
            emit_addr_dep csel vdep st p init (get_tagged_loc er) rd in
-         let rR,init,cs,st = emit_stop_rA op st p init er ew rA in
+         let rR,init,cs,st = emit_stop_rA emit_data_rmw_simple op st p init er ew rA in
          rR,init,caddr@cs,st
       | D.CTRL|D.CTRLISYNC ->
          let c,st = emit_ctrl_gen csel st vdep rd in
          let rR,init,cs,st = emit_stop op st p init er ew in
          rR,init,insert_isb (is_ctrlisync dp) c cs,st
-      | D.DATA -> Warn.fatal "Data dependency to STOP"
+      | D.DATA ->
+         let emit_data = emit_data_rmw_dep csel vdep rd in
+         let rA,init,st = U.next_init st p init (get_tagged_loc er) in
+         emit_stop_rA emit_data op st p init er ew rA
 
 
     let map_some_dp f st p init er ew dp rd n =
