@@ -2017,71 +2017,71 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rA,init,st = U.next_init st p init (get_tagged_loc er) in
       rA,init,[],st
 
-    let do_emit_exch1 emit_addr st p init er ew =
+    let emit_data_simple _rW st = [],st
+
+    let do_emit_exch1 emit_data emit_addr st p init er ew =
       let rA,init,caddr,st = emit_addr st p init er in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
+      let cdata,st = emit_data rW st in
       let arw = check_arw_lxsx er ew in
       let init,cs,st = XSingle.emit_pair arw p st init rR rW rA ew in
       let cs = add_label_to_exclusive_load_and_store er cs in
-      rR,init,csi@caddr@cs,st
+      rR,init,csi@cdata@caddr@cs,st
 
-    let emit_exch1 = do_emit_exch1 emit_addr_simple
-
-    let do_emit_exch22 emit_addr st p init er ew =
+    let do_emit_exch22 emit_data emit_addr st p init er ew =
       let rA,init,caddr,st = emit_addr st p init er in
       let rR1,rR2,st = next_reg2 st in
       let rW1,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
+      let cdata,st = emit_data rW1 st in
       let rW2,st = next_reg st in
       let arw = check_arw_lxsx er ew in
       let init,cs,st =
         XPair.emit_pair arw p st init (rR1,rR2) (rW1,rW2) rA ew in
       let cs = add_label_to_exclusive_load_and_store er cs in
-      rR1,init,csi@caddr@cs,st
+      rR1,init,csi@cdata@caddr@cs,st
 
-    let emit_exch22 = do_emit_exch22 emit_addr_simple
-
-    let do_emit_exch21 emit_addr st p init er ew =
+    let do_emit_exch21 emit_data emit_addr st p init er ew =
       let rA,init,caddr,st = emit_addr st p init er in
       let rR1,rR2,st = next_reg2 st in
       let rW,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
+      let cdata,st = emit_data rW st in
       let arw = check_arw_lxsx er ew in
       let module X = ExclusivePair(XLoadPair)(XStore) in
       let init,cs,st =
         X.emit_pair arw p st init (rR1,rR2) rW rA ew in
       let cs = add_label_to_exclusive_load_and_store er cs in
-      rR1,init,csi@caddr@cs,st
+      rR1,init,csi@cdata@caddr@cs,st
 
-    let emit_exch21 = do_emit_exch21 emit_addr_simple
-
-    let do_emit_exch12 emit_addr st p init er ew =
+    let do_emit_exch12 emit_data emit_addr st p init er ew =
       let rA,init,caddr,st = emit_addr st p init er in
       let rR,st = next_reg st in
       let rW1,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
+      let cdata,st = emit_data rW1 st in
       let rW2,st = next_reg st in
       let arw = check_arw_lxsx er ew in
       let module X = ExclusivePair(XLoad)(XStorePair) in
       let init,cs,st =
         X.emit_pair arw p st init rR (rW1,rW2) rA ew in
       let cs = add_label_to_exclusive_load_and_store er cs in
-      rR,init,csi@caddr@cs,st
+      rR,init,csi@cdata@caddr@cs,st
 
-    let emit_exch12 = do_emit_exch12 emit_addr_simple
-
-    let emit_exch st p init er ew =
+    let do_emit_exch emit_data emit_addr st p init er ew =
       let ar,_ = tr_none er.C.atom
       and aw,_ = tr_none ew.C.atom in
       match ar,aw with
       | (Pair _,Pair _) ->
-         emit_exch22 st p init er ew
+         do_emit_exch22 emit_data emit_addr st p init er ew
       | (Pair _,_) ->
          check_cu (not A64.do_cu) ;
-         emit_exch21 st p init er ew
+         do_emit_exch21 emit_data emit_addr st p init er ew
       | (_,Pair _) ->
          check_cu (not A64.do_cu) ;
-         emit_exch12 st p init er ew
+         do_emit_exch12 emit_data emit_addr st p init er ew
       | _,_ ->
-         emit_exch1 st p init er ew
+         do_emit_exch1 emit_data emit_addr st p init er ew
+
+    let emit_exch = do_emit_exch emit_data_simple emit_addr_simple
 
     let do_sz sz1 sz2 =
       if same_sz sz1 sz2 then sz1
@@ -2521,44 +2521,21 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rA,csum,st = do_sum_addr vdep st rA r2 in
       rA,init,pseudo (cs0@csum),st
 
-    let emit_exch_dep_addr1 csel vdep st p init er ew rd =
-      do_emit_exch1
-        (fun st p init er ->
-          emit_addr_dep csel vdep st p init (get_tagged_loc er) rd)
-        st p init er ew
+    let emit_addr_rmw_dep csel vdep rd st p init er =
+      emit_addr_dep csel vdep st p init (get_tagged_loc er) rd
 
-    let emit_exch_dep_addr22 csel vdep st p init er ew rd =
-      do_emit_exch22
-        (fun st p init er ->
-          emit_addr_dep csel vdep st p init (get_tagged_loc er) rd)
-        st p init er ew
-
-    let emit_exch_dep_addr21 csel vdep st p init er ew rd =
-      do_emit_exch21
-        (fun st p init er ->
-          emit_addr_dep csel vdep st p init (get_tagged_loc er) rd)
-        st p init er ew
-
-    let emit_exch_dep_addr12 csel vdep st p init er ew rd =
-      do_emit_exch12
-        (fun st p init er ->
-          emit_addr_dep csel vdep st p init (get_tagged_loc er) rd)
-        st p init er ew
+    let emit_data_rmw_dep csel vdep rd v rW st =
+      let rD,st = next_reg st in
+      let cs,st = calc0_gen csel st vdep rD rd in
+      pseudo (cs@[add v rW rW rD]),st
 
     let emit_exch_dep_addr csel vdep st p init er ew rd =
-      let ar,_ = tr_none er.C.atom
-      and aw,_ = tr_none ew.C.atom in
-      match ar,aw with
-      | (Pair _,Pair _)->
-         emit_exch_dep_addr22 csel vdep st p init er ew rd
-      | (Pair _,_) ->
-         check_cu (not A64.do_cu);
-         emit_exch_dep_addr21 csel vdep st p init er ew rd
-      | (_,Pair _) ->
-         check_cu (not A64.do_cu);
-         emit_exch_dep_addr12 csel vdep st p init er ew rd
-      | _,_ ->
-         emit_exch_dep_addr1 csel vdep st p init er ew rd
+      let emit_addr = emit_addr_rmw_dep csel vdep rd in
+      do_emit_exch emit_data_simple emit_addr st p init er ew
+
+    let emit_exch_dep_data csel vdep st p init er ew rd =
+      let emit_data = emit_data_rmw_dep csel vdep rd vloc in
+      do_emit_exch emit_data emit_addr_simple st p init er ew
 
     let emit_access_dep_data csel vdep st p init e  r1 =
       let atom = match e.C.atom with
@@ -2785,7 +2762,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_exch_dep st p init er ew (dp,csel) vdep rd = match dp with
     | D.ADDR -> emit_exch_dep_addr csel vdep st p init er ew rd
-    | D.DATA -> Warn.fatal "not data dependency to RMW"
+    | D.DATA -> emit_exch_dep_data csel vdep st p init er ew rd
     | D.CTRL -> emit_exch_ctrl csel vdep false st p init er ew rd
     | D.CTRLISYNC -> emit_exch_ctrl csel vdep true st p init er ew rd
 
