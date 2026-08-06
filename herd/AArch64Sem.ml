@@ -1720,6 +1720,9 @@ Arguments:
           else if checked then
             let mop ma = lift_memtag_virt mop ma dir an ii branch in
             if pac then
+              (* `force_next` is used to preserve existing behaviour of PAC+MTE.
+                 See also: PR #1953.
+                 Note that PAC+MTE without VMSA is not fully supported yet. *)
               let force_next m = m >>= M.ignore >>= B.next1T in
               lift_pac_virt mop ma dir an ii force_next domain
             else mop ma
