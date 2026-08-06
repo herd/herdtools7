@@ -156,6 +156,7 @@ val map :
 val mk_sym_virtual_label : Proc.t -> Label.t -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_virtual_label_with_offset : Proc.t -> Label.t -> offset -> ('scalar,'pte,'addrreg,'instr) t
 val unmk_sym_virtual_label_with_offset : ('scalar,'pte,'addrreg,'instr) t -> Proc.t * Label.t * offset
+val virt_lbl_eq_mod_offset : ('scalar,'pte,'addrreg,'instr) t -> ('scalar,'pte,'addrreg,'instr) t -> bool
 val mk_sym_virtual : string -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym : string -> ('scalar,'pte,'addrreg,'instr) t
 val mk_sym_with_index : string -> int -> ('scalar,'pte,'addrreg,'instr) t
