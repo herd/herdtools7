@@ -2110,11 +2110,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | None ->  U.emit_mov_fresh
     | Some (sz,_) ->  emit_mov_sz_fresh sz
 
-    let do_emit_ldop_rA  ins ins_mixed st p init er ew rA =
+    let emit_data_rmw_simple _sz _rW st = [],st
+
+    let do_emit_ldop_rA emit_data ins ins_mixed st p init er ew rA =
       assert (er.C.ctag = ew.C.ctag && er.C.cseal = ew.C.cseal) ;
       let sz,a,opt = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
       let rR,st = next_reg st in
       let rW,init,csi,st = mk_emit_mov sz st p init (Value.to_int ew.C.v) in
+      let cdata,st = emit_data sz rW st in
       let sz = match opt with
       | None -> sz
       | Some Capability -> assert (Misc.is_none sz) ; Some (MachSize.S128, 0) in
@@ -2126,12 +2129,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           cs@[ins_mixed sz a rW rR rA],st in
       let cs = add_label_to_last_instructions er (pseudo cs) in
       let cs2 = emit_ldr_addon opt rR in
-      rR,init,(csi@csi2@cs@pseudo cs2),st
+      rR,init,(csi@cdata@csi2@cs@pseudo cs2),st
 
     let do_emit_ldop ins ins_mixed st p init er ew =
       let rA,init,st =
         U.next_init st p init (get_tagged_loc er) in
-      do_emit_ldop_rA ins ins_mixed st p init er ew rA
+      do_emit_ldop_rA emit_data_rmw_simple ins ins_mixed st p init er ew rA
 
     let emit_swp =  do_emit_ldop swp swp_mixed
     and emit_ldop op = do_emit_ldop (ldop op) (ldop_mixed op)
@@ -2524,7 +2527,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_addr_rmw_dep csel vdep rd st p init er =
       emit_addr_dep csel vdep st p init (get_tagged_loc er) rd
 
-    let emit_data_rmw_dep csel vdep rd v rW st =
+    let emit_data_rmw_dep csel vdep rd sz rW st =
+      let v = match sz with
+      | None -> vloc
+      | Some (sz,_) -> sz2v sz in
       let rD,st = next_reg st in
       let cs,st = calc0_gen csel st vdep rD rd in
       pseudo (cs@[add v rW rW rD]),st
@@ -2534,7 +2540,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       do_emit_exch emit_data_simple emit_addr st p init er ew
 
     let emit_exch_dep_data csel vdep st p init er ew rd =
-      let emit_data = emit_data_rmw_dep csel vdep rd vloc in
+      let emit_data rW st = emit_data_rmw_dep csel vdep rd None rW st in
       do_emit_exch emit_data emit_addr_simple st p init er ew
 
     let emit_access_dep_data csel vdep st p init e  r1 =
@@ -2772,13 +2778,17 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
        let rA,init,caddr,st =
          emit_addr_dep csel vdep st p init
            (get_tagged_loc er) rd in
-        let rR,init,cs,st = do_emit_ldop_rA ins ins_mixed st p init er ew rA in
+        let rR,init,cs,st =
+          do_emit_ldop_rA emit_data_rmw_simple ins ins_mixed st p init er ew rA in
         rR,init,caddr@cs,st
     | D.CTRL|D.CTRLISYNC ->
         let c = emit_ctrl vdep rd in
         let rR,init,cs,st = do_emit_ldop ins ins_mixed st p init er ew in
         rR,init,insert_isb (is_ctrlisync dp) c cs,st
-    | D.DATA -> Warn.fatal "Data dependency to LDOP"
+    | D.DATA ->
+        let emit_data = emit_data_rmw_dep csel vdep rd in
+        let rA,init,st = U.next_init st p init (get_tagged_loc er) in
+        do_emit_ldop_rA emit_data ins ins_mixed st p init er ew rA
 
     let emit_cas_dep  st p init er ew (dp,csel) vdep rd = match dp with
     | D.ADDR ->
