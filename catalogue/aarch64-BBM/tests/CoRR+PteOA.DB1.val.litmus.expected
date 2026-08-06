@@ -1,0 +1,11 @@
+Test CoRR+PteOA.DB1.val Allowed
+States 1
+1:X0=1; 1:X2=1;
+Ok
+Witnesses
+Positive: 4 Negative: 0
+Flag Warning-BBM-expected
+Condition exists (1:X0=1 /\ 1:X2=1)
+Observation CoRR+PteOA.DB1.val Always 4 0
+Hash=dedcc3a3f218bd04eeae79c75470693e
+

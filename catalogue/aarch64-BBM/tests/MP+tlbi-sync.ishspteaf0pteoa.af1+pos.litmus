@@ -1,0 +1,17 @@
+AArch64 MP+tlbi-sync.ishspteaf0pteoa.af1+pos
+Variant=vmsa
+{
+ [x]=1;
+ [y]=2;
+ 0:X0=PTE(x); 0:X1=(oa:PA(x), af:0); 0:X2=(oa:PA(y)); 0:X3=x;
+ 1:X3=x;
+}
+ P0              | P1               ;
+ STR X1,[X0]     | L01: LDR W4,[X3] ;
+ DSB ISH         | L00: LDR W5,[X3] ;
+ LSR X4,X3,#12   |                  ;
+ TLBI VAAE1IS,X4 |                  ;
+ DSB ISH         |                  ;
+ STR X2,[X0]     |                  ;
+
+exists (1:X4=2 /\ 1:X5=1)
