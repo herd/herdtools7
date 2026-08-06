@@ -161,7 +161,7 @@ and type edge = E.edge
                     f (bc_fence fe sd e (Dir W)) k)
                   k) k in
           let k =
-            F.fold_dpw
+            F.fold_dp
               (fun dpw k ->
                 Code.fold_sd wildcard
                   (fun sd k -> f (bc_dp dpw sd (Dir W)) k)
@@ -241,7 +241,7 @@ and type edge = E.edge
 (* ALL *)
         let allR sd d =
           er (E.Po (sd,Dir R,Dir d))::
-          (match d with R -> F.fold_dpr | W -> F.fold_dpw)
+          F.fold_dp
             (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
             (all_fences sd R d [])
 

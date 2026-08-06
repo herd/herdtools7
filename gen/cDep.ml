@@ -24,8 +24,7 @@ let equal_dp dp1 dp2 = match dp1,dp2 with
   | CTRL,CTRL -> true
   | (ADDR|DATA|CTRL),_ -> false
 
-let fold_dpr f r =  f ADDR (f CTRL r)
-let fold_dpw f r =  f ADDR (f DATA (f CTRL r))
+let fold_dp f r =  f ADDR (f DATA (f CTRL r))
 
 let ddr_default = Some ADDR
 let ddw_default = Some DATA
@@ -40,6 +39,10 @@ let is_addr = function
   | ADDR -> true
   | _ -> false
 
+let is_data = function
+  | DATA -> true
+  | _ -> false
+
 let fst_dp = function
   | CTRL -> [CTRL]
   | ADDR|DATA -> []
@@ -47,8 +50,3 @@ let fst_dp = function
 let sequence_dp d1 d2 = match d1 with
 | ADDR -> [d2]
 | DATA|CTRL -> []
-
-open Code
-let expand_dp_dir = function
-  | CTRL | ADDR -> [R;W]
-  | DATA -> [W]
