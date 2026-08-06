@@ -25,25 +25,27 @@ The document uses a few checked-in asset directories:
 - `litmus-descriptions/` contains generated LaTeX prose descriptions for selected litmus tests.
 - `figures/` contains the PDF figures included by `ReadersGuide.tex`.
 
-### Refreshing generated litmus descriptions
+The description files are automatically generated from `.litmus` sources using
+the `litmus2desc` tool. They are kept checked into version control so that the
+Readers Guide can be built without having an OCaml toolchain installed. They
+also serve as authoritative snapshots for the `litmus2desc` test suite.
 
-We assume the tool `litmus2desc` is installed.
+## Refreshing generated litmus descriptions
 
 To regenerate the prose description files `litmus-descriptions/*.tex`, run:
 
 ```sh
-make descriptions
+opam exec -- dune build --root .. tools/litmus2desc/bin/main.exe  # Build litmus2desc
+make descriptions                                                 # Generate descriptions
 ```
 
-This will re-generate descriptions for a subset of the litmus tests stored in
-`litmus-tests/`. Note that litmus description files `litmus-descriptions/*.tex`
-are already under version control, so this `make descriptions` step is
-necessary _only if_ the contents of `litmus-tests/` has changed.
+Note that this step is _not_ needed for normal builds of the Reader's Guide PDF.
+It is only needed to refresh litmus test descriptions after changing a
+corresponding litmus test, the cat model, or `litmus2desc` itself.
 
-If `litmus2desc` lives elsewhere, pass its location explicitly. If the herd
-library directory needs to be set, use the standard `HERDLIB` environment
-variable understood by herdtools:
+By default, `litmus2desc` uses the development cat model in `herd/libdir`.
+Override its location with `HERDLIB`:
 
 ```sh
-HERDLIB=/path/to/herd make descriptions LITMUS2DESC=/path/to/litmus2desc
+make descriptions HERDLIB=/path/to/herd/libdir
 ```
