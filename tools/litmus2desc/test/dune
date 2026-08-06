@@ -2,7 +2,8 @@
  (deps
   (glob_files barrier_litmus_tests/*.litmus)
   (glob_files other_litmus_tests/*.litmus)
-  (glob_files rg_litmus_tests/*.litmus)
+  (glob_files ../../../readers-guide/litmus-tests/*.litmus)
+  (glob_files ../../../readers-guide/litmus-descriptions/*.tex)
   (source_tree libdir)
   %{bin:herd7}
   %{bin:litmus2desc}))
