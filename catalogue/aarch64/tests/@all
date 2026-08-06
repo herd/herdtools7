@@ -55,3 +55,4 @@ MP+rel+addr-lrs-acq.litmus
 MP+rel+data-lrs-acq.litmus
 MP+rel+ctrl-lrs-acq.litmus
 MP+rel+rmw-lrs-acq.litmus
+LB+dmb.sy+data-amo.swp.litmus

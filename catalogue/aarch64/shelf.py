@@ -97,4 +97,5 @@ illustrative_tests = [
      "tests/MP+rel+data-lrs-acq.litmus",
      "tests/MP+rel+ctrl-lrs-acq.litmus",
      "tests/MP+rel+rmw-lrs-acq.litmus",
+     "tests/LB+dmb.sy+data-amo.swp.litmus",
 ]
