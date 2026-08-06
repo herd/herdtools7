@@ -1564,7 +1564,7 @@ module Make
  * +iico_data dependency between the event `ma` and `mop` or `mfault`, and an
  * iico_data dependency between `mv` and `mop` in case of a success.
  *)
-      let lift_pac_virt mop ma dir an ii domain =
+      let lift_pac_virt mop ma dir an ii branch domain =
         (* Addresses of memory operations must be canonical for the construction
          * of the rf, co and fr maps... *)
         let mfault ma a ft =
@@ -1574,7 +1574,7 @@ module Make
             None ii
           >>! B.fault [AArch64Base.elr_el1, lbl_v]
         in
-        let mok ma = mop ma >>= M.ignore >>= B.next1T in
+        let mok ma = mop ma |> branch in
         check_pac_va_range mok ma mfault ii domain
 
       let lift_memtag_phy dir mop ma an ii mphy =
@@ -1719,9 +1719,9 @@ Arguments:
             M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
           else if checked then
             let mop ma = lift_memtag_virt mop ma dir an ii branch in
-            if pac then lift_pac_virt mop ma dir an ii domain else mop ma
+            if pac then lift_pac_virt mop ma dir an ii Fun.id domain else mop ma
           else if pac then
-            lift_pac_virt (mop Access.VIR) ma dir an ii domain
+            lift_pac_virt (mop Access.VIR) ma dir an ii branch domain
           else
             mop Access.VIR ma |> branch
 
