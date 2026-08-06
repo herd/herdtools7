@@ -162,3 +162,62 @@ let expand_dp_dir = function
   | CTRL | CTRLISYNC | ADDR -> [R;W]
   | DATA -> [W]
 end
+
+module AArch64 = struct
+  type csel = OkCsel | NoCsel
+  type dp = Full.dp * csel
+
+  let equal_csel c1 c2 = match c1,c2 with
+    | OkCsel,OkCsel
+    | NoCsel,NoCsel -> true
+    | (OkCsel|NoCsel),_ -> false
+
+  let equal_dp (d1,c1) (d2,c2) =
+    Full.equal_dp d1 d2 && equal_csel c1 c2
+
+  let pp_dp (d,c) =
+    let pp_d = match d with
+    | Full.ADDR -> "Addr"
+    | Full.DATA -> "Data"
+    | Full.CTRL -> "Ctrl"
+    | Full.CTRLISYNC -> "CtrlIsb" in
+    match c with
+    | NoCsel -> pp_d
+    | OkCsel -> pp_d^"Csel"
+
+  let fold_dp f r =
+    Full.fold_dp
+      (fun d r -> f (d,NoCsel) (f (d,OkCsel) r))
+      r
+
+  let fold_dpr f r =
+    Full.fold_dpr
+      (fun d r -> f (d,NoCsel) (f (d,OkCsel) r))
+      r
+
+  let fold_dpw f r =
+    Full.fold_dpw
+      (fun d r -> f (d,NoCsel) (f (d,OkCsel) r))
+      r
+
+  let lift_default = Misc.app_opt (fun d -> d,NoCsel)
+  let ddr_default = lift_default Full.ddr_default
+  let ddw_default = lift_default Full.ddw_default
+  let ctrlr_default = lift_default Full.ctrlr_default
+  let ctrlw_default = lift_default Full.ctrlw_default
+
+  let lift_pred p (d,_) = p d
+  let is_ctrlr dp = lift_pred Full.is_ctrlr dp
+  let is_addr dp = lift_pred Full.is_addr dp
+  let is_data dp = lift_pred Full.is_data dp
+
+  let fst_dp (d,c) = match c with
+    | NoCsel -> List.map (fun d -> d,NoCsel) (Full.fst_dp d)
+    | OkCsel -> []
+
+  let sequence_dp (d1,c1) (d2,c2) = match c1 with
+    | NoCsel -> List.map (fun d -> d,c2) (Full.sequence_dp d1 d2)
+    | OkCsel -> []
+
+  let expand_dp_dir (d,_) = Full.expand_dp_dir d
+end

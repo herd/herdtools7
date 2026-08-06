@@ -58,3 +58,9 @@ module Full : sig
   type dp = ADDR | DATA | CTRL | CTRLISYNC
   include S with type dp := dp
 end
+
+module AArch64 : sig
+  type csel = OkCsel | NoCsel
+  type dp = Full.dp * csel
+  include S with type dp := dp
+end
