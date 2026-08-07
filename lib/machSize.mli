@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type sz = Byte | Short | Word | Double | S128
+type sz = Byte | Short | Word | Double | Quad
 
 val pp : sz -> string
 val pp_short : sz -> string

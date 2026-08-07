@@ -156,7 +156,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let vloc = let open TypBase in
       let sz = match Cfg.typ with
-      | Std (_,MachSize.S128) -> V128
+      | Std (_,MachSize.Quad) -> V128
       | Std (_,MachSize.Double) -> V64
       | Int |Std (_,MachSize.Word) -> V32
       | Std (_,(MachSize.Short|MachSize.Byte)) -> V32
@@ -169,12 +169,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       function
         | Byte|Short|Word -> V32
         | Double -> V64
-        | S128 -> V128
+        | Quad -> V128
 
     and v2sz =
       let open MachSize in
       function
-      | V128 -> S128
+      | V128 -> Quad
       | V64 -> Double
       | V32 -> Word
 
@@ -187,7 +187,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let sz =
         let open MachSize in
         match sz with
-        | S128 -> Double (* MOV C?,#X is not recognized *)
+        | Quad -> Double (* MOV C?,#X is not recognized *)
         | Byte|Short|Word|Double -> sz in
       let v = sz2v sz in I_MOV (v,r,i)
 
@@ -273,7 +273,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short -> I_LDRBH (H,r1,r2,idx)
       | Word -> I_LDR (V32,r1,r2,idx)
       | Double -> I_LDR (V64,r1,r2,idx)
-      | S128 -> I_LDR (V128,r1,r2,idx)
+      | Quad -> I_LDR (V128,r1,r2,idx)
 
     let do_ldr v r1 r2 = I_LDR (v,r1,r2,MemExt.Imm(0,Idx))
     let ldg r1 r2 = I_LDG (r1,r2,0)
@@ -317,7 +317,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short -> I_LDRBH (H,r1,r2,idx)
       | Word -> I_LDR (V32,r1,r2,idx)
       | Double -> I_LDR (V64,r1,r2,idx)
-      | S128 -> I_LDR (V128,r1,r2,idx)
+      | Quad -> I_LDR (V128,r1,r2,idx)
 
     let str_mixed sz o r1 r2 =
       let idx = MemExt.Imm (o,Idx) in
@@ -327,7 +327,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short -> I_STRBH (H,r1,r2,idx)
       | Word -> I_STR (V32,r1,r2,idx)
       | Double -> I_STR (V64,r1,r2,idx)
-      | S128 -> I_STR (V128,r1,r2,idx)
+      | Quad -> I_STR (V128,r1,r2,idx)
 
     let do_str v r1 r2 = I_STR (v,r1,r2,MemExt.Imm (0,Idx))
     let str = do_str vloc
@@ -365,7 +365,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short -> I_STXRBH (H,t,r1,r2,r3)
       | Word -> I_STXR (V32,t,r1,r2,r3)
       | Double -> I_STXR (V64,t,r1,r2,r3)
-      | S128 -> I_STXR (V128,t,r1,r2,r3)
+      | Quad -> I_STXR (V128,t,r1,r2,r3)
 
     let ldxr_sz t sz r1 r2 =
       let open MachSize in
@@ -374,7 +374,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short -> I_LDARBH (H,t,r1,r2)
       | Word -> I_LDAR (V32,t,r1,r2)
       | Double -> I_LDAR (V64,t,r1,r2)
-      | S128 -> I_LDAR (V128,t,r1,r2)
+      | Quad -> I_LDAR (V128,t,r1,r2)
 
     let sumi_addr_gen tempo st rA o = match o with
     | 0 -> rA,[],st
@@ -392,7 +392,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short -> I_STRBH (H,r1,r2,idx)
       | Word -> I_STR (V32,r1,r2,idx)
       | Double -> I_STR (V64,r1,r2,idx)
-      | S128 -> I_STR (V128,r1,r2,idx)
+      | Quad -> I_STR (V128,r1,r2,idx)
 
     let swp_mixed sz a rS rT rN =
       let open MachSize in
@@ -401,7 +401,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short ->  I_SWPBH (H,a,rS,rT,rN)
       | Word ->  I_SWP (V32,a,rS,rT,rN)
       | Double ->  I_SWP (V64,a,rS,rT,rN)
-      | S128 ->  I_SWP (V128,a,rS,rT,rN)
+      | Quad ->  I_SWP (V128,a,rS,rT,rN)
 
     let swp a rS rT rN =  I_SWP (vloc,a,rS,rT,rN)
 
@@ -414,7 +414,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short ->  I_CASBH (H,a,rS,rT,rN)
       | Word ->  I_CAS (V32,a,rS,rT,rN)
       | Double ->  I_CAS (V64,a,rS,rT,rN)
-      | S128 ->  I_CAS (V128,a,rS,rT,rN)
+      | Quad ->  I_CAS (V128,a,rS,rT,rN)
 
     let cas a rS rT rN =  I_CAS (vloc,a,rS,rT,rN)
 
@@ -425,7 +425,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short ->  I_LDOPBH (op,H,a,rS,rT,rN)
       | Word ->  I_LDOP (op,V32,a,rS,rT,rN)
       | Double ->  I_LDOP (op,V64,a,rS,rT,rN)
-      | S128 ->  I_LDOP (op,V128,a,rS,rT,rN)
+      | Quad ->  I_LDOP (op,V128,a,rS,rT,rN)
 
     let ldop op a rS rT rN =  I_LDOP (op,vloc,a,rS,rT,rN)
 
@@ -436,7 +436,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short ->  I_STOPBH (op,H,a,rS,rN)
       | Word ->  I_STOP (op,V32,a,rS,rN)
       | Double ->  I_STOP (op,V64,a,rS,rN)
-      | S128 ->  I_STOP (op,V128,a,rS,rN)
+      | Quad ->  I_STOP (op,V128,a,rS,rN)
 
     let stop op a rS rN =  I_STOP (op,vloc,a,rS,rN)
 
@@ -456,7 +456,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Short -> I_STLRBH (H,r1,r2)
       | Word -> I_STLR (V32,r1,r2)
       | Double -> I_STLR (V64,r1,r2)
-      | S128 -> I_STLR (V128,r1,r2)
+      | Quad -> I_STLR (V128,r1,r2)
 
     let stlr_mixed sz o st r1 r2 =
       let rA,cs_sum,st = sumi_addr st r2 o in
@@ -475,7 +475,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Short -> I_LDARBH (H,t,r1,rA)
         | Word -> I_LDAR (V32,t,r1,rA)
         | Double -> I_LDAR (V64,t,r1,rA)
-        | S128 -> I_LDAR (V128,t,r1,rA) in
+        | Quad -> I_LDAR (V128,t,r1,rA) in
       cs@[ld],st
 
     let do_ldar_mixed_idx v t sz o st r1 r2 idx =
@@ -488,7 +488,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Short -> I_LDARBH (H,t,r1,rA)
         | Word -> I_LDAR (V32,t,r1,rA)
         | Double -> I_LDAR (V64,t,r1,rA)
-        | S128 -> I_LDAR (V128,t,r1,rA) in
+        | Quad -> I_LDAR (V128,t,r1,rA) in
       cs1@cs2@[ld],st
 
     let ldar_mixed_idx = do_ldar_mixed_idx vloc
@@ -1310,10 +1310,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let get_xload = function
       | (Plain None,None) ->ldxr
-      | (Plain Some Capability,None) -> ldxr_sz XX MachSize.S128
+      | (Plain Some Capability,None) -> ldxr_sz XX MachSize.Quad
       | (Plain None,Some (sz,_)) -> ldxr_sz XX sz
       | (Acq None,None)   -> ldaxr
-      | (Acq Some Capability,None) -> ldxr_sz AX MachSize.S128
+      | (Acq Some Capability,None) -> ldxr_sz AX MachSize.Quad
       | (Acq None,Some (sz,_)) -> ldxr_sz AX sz
       | (AcqPc _,_) -> Warn.fatal "AcqPC annotation on xload"
       | (Tag,_)|(CapaTag,_)|(CapaSeal,_) -> Warn.fatal "variant annotation on xload"
@@ -1323,10 +1323,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     and get_xstore = function
       | (Plain None,None) -> stxr
-      | (Plain Some Capability,None) -> stxr_sz YY MachSize.S128
+      | (Plain Some Capability,None) -> stxr_sz YY MachSize.Quad
       | (Plain None,Some (sz,_)) -> stxr_sz YY sz
       | (Rel None,None) -> stlxr
-      | (Rel Some Capability,None) -> stxr_sz LY MachSize.S128
+      | (Rel Some Capability,None) -> stxr_sz LY MachSize.Quad
       | (Rel None,Some (sz,_)) -> stxr_sz LY sz
       | (Tag,_)|(CapaTag,_)|(CapaSeal,_) -> Warn.fatal "variant annotation on xstore"
       | a ->
@@ -1680,7 +1680,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | Code.Tag -> LDG.emit_load
     | Code.CapaTag -> LDCT.emit_load
     | Code.CapaSeal -> fun st p init x ->
-      let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init x in
+      let r,init,cs,st = emit_load_mixed MachSize.Quad 0 st p init x in
       let cs2 = lift_code [gctype r r] in
       r,init,cs@cs2,st
     | Code.VecReg n ->
@@ -1789,7 +1789,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | AcqPc Some Capability
           | Rel Some Capability ->
             assert (Misc.is_none m) ;
-            Some (a,Some (MachSize.S128,0))
+            Some (a,Some (MachSize.Quad,0))
           | _ -> Some (a,m) end in
         (* Compile the node.
            - `regs`, registers
@@ -1853,7 +1853,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             Some r,init,cs,st
         | R,Some (CapaTag,Some _) -> assert false
         | R,Some (CapaSeal,None) ->
-            let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init loc in
+            let r,init,cs,st = emit_load_mixed MachSize.Quad 0 st p init loc in
             Some r,init,cs@lift_code [gctype r r],st
         | R,Some (CapaSeal,Some _) -> assert false
         | R,Some (Neon n, None) ->
@@ -1974,7 +1974,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let init,cs,st =
               emit_str_addon
                 st p init rB rA (Some Capability) {e with C.cseal = (Value.to_int e.C.v)} in
-            None,init,csi@cs@lift_code [str_mixed MachSize.S128 0 rB rA],st
+            None,init,csi@cs@lift_code [str_mixed MachSize.Quad 0 rB rA],st
         | W,Some (CapaSeal,Some _) -> assert false
         | W,Some (Neon n, None) ->
            let emit_store = match n with
@@ -2117,7 +2117,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rW,init,csi,st = mk_emit_mov sz st p init (Value.to_int ew.C.v) in
       let sz = match opt with
       | None -> sz
-      | Some Capability -> assert (Misc.is_none sz) ; Some (MachSize.S128, 0) in
+      | Some Capability -> assert (Misc.is_none sz) ; Some (MachSize.Quad, 0) in
       let init,csi2,st = emit_str_addon st p init rW rA opt ew in
       let cs,st = match sz with
       | None -> [ins a rW rR rA],st
@@ -2143,7 +2143,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rT,init,csT,st = mk_emit_mov sz st p init (Value.to_int ew.C.v) in
       let sz = match opt with
       | None -> sz
-      | Some Capability -> assert (Misc.is_none sz) ; Some (MachSize.S128, 0) in
+      | Some Capability -> assert (Misc.is_none sz) ; Some (MachSize.Quad, 0) in
       let init,csS2,st = emit_str_addon st p init rS rA opt er in
       let init,csT2,st = emit_str_addon st p init rT rA opt ew in
       let cs,st = match sz with
@@ -2292,7 +2292,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             | AcqPc Some Capability
             | Rel Some Capability ->
               assert (Misc.is_none m) ;
-              Some (a,Some (MachSize.S128,0))
+              Some (a,Some (MachSize.Quad,0))
             | _ -> Some (a,m) end in
           let regs,inits,cs,st = begin match d,atom with
           | R,None ->
@@ -2348,7 +2348,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               (* TODO: don't waste r2 *)
               let (_,rA),init,cs,st = seal_dp_addr init p loc st rd e.C.dep in
               let rB,st = next_reg st in
-              Some rB,init,cs@lift_code [ldr_mixed rB rA MachSize.S128 0; gctype rB rB],st
+              Some rB,init,cs@lift_code [ldr_mixed rB rA MachSize.Quad 0; gctype rB rB],st
           | R,Some (CapaSeal,Some _) -> assert false
           | R,Some (Neon n,None) ->
               let emit_load_idx = match n with
@@ -2490,7 +2490,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let init,cs,st = emit_str_addon st p init rC rA (Some Capability)
                 {e with C.cseal = (Value.to_int e.C.v)} in
               None,init,
-              csi@csi2@cs@lift_code [str_mixed MachSize.S128 0 rC rB],st
+              csi@csi2@cs@lift_code [str_mixed MachSize.Quad 0 rC rB],st
           | W,Some (CapaSeal,Some _) -> assert false
           | W,Some (Neon n,None) ->
              let emit_store_idx = match n with
@@ -2569,7 +2569,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | AcqPc Some Capability
         | Rel Some Capability ->
           assert (Misc.is_none m) ;
-          Some (a,Some (MachSize.S128,0))
+          Some (a,Some (MachSize.Quad,0))
         | _ -> Some (a,m) end in
       let regs,inits,cs,st = match e.C.dir,e.C.loc with
       | None,_ -> Warn.fatal "TODO"
@@ -2704,7 +2704,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let init,cs,st =
                 emit_str_addon
                   st p init r2 rA (Some Capability) {e with C.cseal = (Value.to_int e.C.v)} in
-              None,init,cs2@cs@lift_code [str_mixed MachSize.S128 0 r2 rA],st
+              None,init,cs2@cs@lift_code [str_mixed MachSize.Quad 0 r2 rA],st
           | Some (CapaSeal,Some _) -> assert false
           | Some (Neon n,None) ->
              let rA,init,st = U.next_init st p init loc in

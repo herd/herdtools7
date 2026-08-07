@@ -1214,7 +1214,7 @@ let pp_variant = function
 let tr_variant = function
   | V32 -> MachSize.Word
   | V64 -> MachSize.Double
-  | V128 -> MachSize.S128
+  | V128 -> MachSize.Quad
 
 let container_size = function
   | RV16 _ -> MachSize.Short
@@ -1227,7 +1227,7 @@ let tr_simd_variant = function
   | VSIMD16 -> MachSize.Short
   | VSIMD32 -> MachSize.Word
   | VSIMD64 -> MachSize.Double
-  | VSIMD128 -> MachSize.S128
+  | VSIMD128 -> MachSize.Quad
 
 let simd_variant_nbytes v = tr_simd_variant v |> MachSize.nbytes
 

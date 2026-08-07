@@ -57,7 +57,7 @@ let size_of maximal = function
 | "int64_t" | "uint64_t" -> MachSize.Double
 | "__int128_t" | "__uint128_t"
 | "__int128" | "__uint128"
-| "int128_t" | "uint128_t" -> MachSize.S128
+| "int128_t" | "uint128_t" -> MachSize.Quad
 | "intptr_t" | "uintptr_t" | "pteval_t" | "parel1_t"
   -> maximal (* Maximal size = ptr size *)
 | t -> Warn.fatal "Cannot find the size of type %s" t

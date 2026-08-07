@@ -319,7 +319,7 @@ let memo_load = function
   | MachSize.Short -> "lhz"
   | MachSize.Word -> "lwz"
   | MachSize.Double -> "ld"
-  | MachSize.S128 -> assert false
+  | MachSize.Quad -> assert false
 
 let memo_loadx sz = memo_load sz ^ "x"
 
@@ -328,7 +328,7 @@ let memo_store = function
   | MachSize.Short -> "sth"
   | MachSize.Word -> "stw"
   | MachSize.Double -> "std"
-  | MachSize.S128 -> assert false
+  | MachSize.Quad -> assert false
 
 let memo_storex sz = memo_store sz ^ "x"
 
@@ -745,9 +745,9 @@ let norm_ins ins =
   | Pcomment _
   | Plmw _|Pstmw _
           -> ins
-  | Pload (S128, _, _, _)|Ploadx (S128, _, _, _)|Pstore (S128, _, _, _)
-  | Plwax (S128, _, _, _)
-  | Pstorex (S128, _, _, _) -> assert false
+  | Pload (Quad, _, _, _)|Ploadx (Quad, _, _, _)|Pstore (Quad, _, _, _)
+  | Plwax (Quad, _, _, _)
+  | Pstorex (Quad, _, _, _) -> assert false
 
 let is_valid _ = true
 

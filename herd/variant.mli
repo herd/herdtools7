@@ -101,7 +101,7 @@ type t =
 (* UDF control in ASL+AArch64 mode *)
   | ASL_AArch64_UDF
 (* Signed Int128 types *)
-  | S128
+  | Quad
 (* Strict interpretation of variant, e.g. -variant asl,strict *)
   | Strict
 (* Semi-strict interpretation of variant, e.g. -variant asl,warn *)

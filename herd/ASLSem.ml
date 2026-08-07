@@ -255,7 +255,7 @@ module Make (Conf : Config) = struct
       | 16 -> MachSize.Short
       | 32 -> MachSize.Word
       | 64 -> MachSize.Double
-      | 128 -> MachSize.S128
+      | 128 -> MachSize.Quad
       | _ ->
           Warn.fatal
             "Cannot access a register or memory with size %s" (V.pp_v v)

@@ -14,14 +14,14 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type sz = Byte | Short | Word | Double | S128
+type sz = Byte | Short | Word | Double | Quad
 
 let pp = function
   | Byte -> "byte"
   | Short -> "short"
   | Word -> "word"
   | Double -> "double"
-  | S128 -> "s128"
+  | Quad -> "quad"
 
 
 let pp_short = function
@@ -29,28 +29,28 @@ let pp_short = function
   | Short -> "h"
   | Word -> "w"
   | Double -> "d"
-  | S128 -> "s"
+  | Quad -> "q"
 
 let debug = function
   | Byte -> "Byte"
   | Short -> "Short"
   | Word -> "Word"
   | Double -> "Double"
-  | S128 -> "S128"
+  | Quad -> "Quad"
 
 let nbytes = function
   | Byte -> 1
   | Short -> 2
   | Word -> 4
   | Double -> 8
-  | S128 -> 16
+  | Quad -> 16
 
 let log2bytes = function
   | Byte -> 0
   | Short -> 1
   | Word -> 2
   | Double -> 3
-  | S128 -> 4
+  | Quad -> 4
 
 let nbits sz = nbytes sz * 8
 
@@ -78,7 +78,7 @@ let tr_endian sz = match sz with
 | Byte -> fun x -> x
 | Short -> swap16
 | Word|Double -> swap (nbits sz)
-| S128 -> assert false
+| Quad -> assert false
 
 
 let l0 = [0;]
@@ -95,39 +95,39 @@ let l0123456789abcdef = [0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;]
 
 let off_byte = function
   | Byte -> l0
-  | Short|Word|Double|S128 -> []
+  | Short|Word|Double|Quad -> []
 
 let off_short = function
   | Byte -> l01
   | Short -> l0
-  | Word|Double|S128 -> []
+  | Word|Double|Quad -> []
 
 let off_word = function
   | Byte -> l0123
   | Short -> l02
   | Word -> l0
-  | Double|S128 -> []
+  | Double|Quad -> []
 
 let off_double = function
   | Byte -> l01234567
   | Short -> l0246
   | Word ->  l04
   | Double -> l0
-  | S128 -> []
+  | Quad -> []
 
-let off_s128 = function
+let off_quad = function
   | Byte -> l0123456789abcdef
   | Short -> l02468ace
   | Word -> l048c
   | Double -> l08
-  | S128 -> l0
+  | Quad -> l0
 
 let get_off sz = match sz with
 | Byte -> off_byte
 | Short -> off_short
 | Word -> off_word
 | Double -> off_double
-| S128 -> off_s128
+| Quad -> off_quad
 
 let get_off_reduced sz = match sz with
 | Byte -> off_byte
@@ -142,28 +142,28 @@ let get_off_reduced sz = match sz with
     | Byte|Short -> []
     | _ -> off_double sz
     end
-| S128 ->
+| Quad ->
     begin fun sz -> match sz with
     | Byte|Short|Word -> []
-    | _ -> off_s128 sz
+    | _ -> off_quad sz
   end
 
 let compare sz1 sz2 = match sz1,sz2 with
-| (Byte,(Short|Word|Double|S128))
-| (Short,(Word|Double|S128))
-| (Word,(Double|S128))
-| (Double,S128)
+| (Byte,(Short|Word|Double|Quad))
+| (Short,(Word|Double|Quad))
+| (Word,(Double|Quad))
+| (Double,Quad)
   -> -1
 | (Byte,Byte)
 | (Short,Short)
 | (Word,Word)
 | (Double,Double)
-| (S128,S128)
+| (Quad,Quad)
   -> 0
-| ((Short|Word|Double|S128),Byte)
-| ((Word|Double|S128),Short)
-| ((Double|S128),Word)
-| (S128,Double)
+| ((Short|Word|Double|Quad),Byte)
+| ((Word|Double|Quad),Short)
+| ((Double|Quad),Word)
+| (Quad,Double)
     -> 1
 
 let equal sz1 sz2 = compare sz1 sz2 = 0
@@ -183,10 +183,10 @@ let pred = function
   | Byte|Short -> Byte
   | Word -> Short
   | Double -> Word
-  | S128 -> Double
+  | Quad -> Double
 
 let at_least_word = function
-  | Double|S128 as sz -> sz
+  | Double|Quad as sz -> sz
   | Word|Short|Byte -> Word
 
 module Tag = struct
@@ -199,8 +199,8 @@ module Tag = struct
   | "byte" -> Some (Size Byte)
   | "short" -> Some (Size Short)
   | "word" -> Some (Size Word)
-  | "double"|"quad" -> Some (Size Double)
-  | "s128" -> Some (Size S128)
+  | "double" -> Some (Size Double)
+  | "quad"|"s128" -> Some (Size Quad)
   | "auto" -> Some Auto
   | _      -> None
 
@@ -219,7 +219,7 @@ type lr_sc =
 
 (* MTE granule *)
 
-let granule = S128
+let granule = Quad
 
 let granule_nbytes = nbytes granule
 

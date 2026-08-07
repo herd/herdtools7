@@ -36,10 +36,10 @@ module TypBase = struct
     | "uint32_t" -> Some (Std (Unsigned, Word))
     | "int64_t" -> Some (Std (Signed, Double))
     | "uint64_t" -> Some (Std (Unsigned, Double))
-    | "int128_t" -> Some (Std (Signed, S128))
-    | "uint128_t" -> Some (Std (Unsigned, S128))
-    | "__int128" -> Some (Std (Signed, S128))
-    | "__uint128" -> Some (Std (Unsigned, S128))
+    | "int128_t" -> Some (Std (Signed, Quad))
+    | "uint128_t" -> Some (Std (Unsigned, Quad))
+    | "__int128" -> Some (Std (Signed, Quad))
+    | "__uint128" -> Some (Std (Unsigned, Quad))
     | _ -> None
 
   let pp = function
@@ -52,8 +52,8 @@ module TypBase = struct
     | Std (Unsigned, Word) -> "uint32_t"
     | Std (Signed, Double) -> "int64_t"
     | Std (Unsigned, Double) -> "uint64_t"
-    | Std (Signed, S128) -> "__int128"
-    | Std (Unsigned, S128) -> "__uint128"
+    | Std (Signed, Quad) -> "__int128"
+    | Std (Unsigned, Quad) -> "__uint128"
     | Pteval -> "pteval_t"
 
   let sign_equal s1 s2 =
@@ -82,7 +82,7 @@ let pseudo l = List.map (fun i -> Instruction i) l
 let vloc =
   let open TypBase in
   match TypBase.default with
-  | Std (_, MachSize.S128) -> V128
+  | Std (_, MachSize.Quad) -> V128
   | Std (_, MachSize.Double) -> V64
   | Int | Std (_, MachSize.Word) -> V32
   | Std (_, (MachSize.Short | MachSize.Byte)) -> V32
@@ -90,11 +90,11 @@ let vloc =
 
 let sz2v =
   let open MachSize in
-  function Byte | Short | Word -> V32 | Double -> V64 | S128 -> V128
+  function Byte | Short | Word -> V32 | Double -> V64 | Quad -> V128
 
 and v2sz =
   let open MachSize in
-  function V128 -> S128 | V64 -> Double | V32 -> Word
+  function V128 -> Quad | V64 -> Double | V32 -> Word
 
 let szloc = v2sz vloc
 let do_movi vdep r (i : int) = I_MOV (vdep, r, K i)
@@ -104,7 +104,7 @@ let mov_mixed sz r i =
   let sz =
     let open MachSize in
     match sz with
-    | S128 -> Double (* MOV C?,#X is not recognized *)
+    | Quad -> Double (* MOV C?,#X is not recognized *)
     | Byte | Short | Word | Double -> sz
   in
   let v = sz2v sz in
@@ -181,7 +181,7 @@ let ldr_mixed r1 r2 sz o =
   | Short -> I_LDRBH (H, r1, r2, idx)
   | Word -> I_LDR (V32, r1, r2, idx)
   | Double -> I_LDR (V64, r1, r2, idx)
-  | S128 -> I_LDR (V128, r1, r2, idx)
+  | Quad -> I_LDR (V128, r1, r2, idx)
 
 let do_ldr v r1 r2 = I_LDR (v, r1, r2, MemExt.Imm (0, Idx))
 let ldg r1 r2 = I_LDG (r1, r2, 0)
@@ -205,7 +205,7 @@ let ldr_mixed_idx v r1 r2 idx sz =
   | Short -> I_LDRBH (H, r1, r2, idx)
   | Word -> I_LDR (V32, r1, r2, idx)
   | Double -> I_LDR (V64, r1, r2, idx)
-  | S128 -> I_LDR (V128, r1, r2, idx)
+  | Quad -> I_LDR (V128, r1, r2, idx)
 
 let str_mixed sz o r1 r2 =
   let idx = MemExt.Imm (o, Idx) in
@@ -215,7 +215,7 @@ let str_mixed sz o r1 r2 =
   | Short -> I_STRBH (H, r1, r2, idx)
   | Word -> I_STR (V32, r1, r2, idx)
   | Double -> I_STR (V64, r1, r2, idx)
-  | S128 -> I_STR (V128, r1, r2, idx)
+  | Quad -> I_STR (V128, r1, r2, idx)
 
 let do_str v r1 r2 = I_STR (v, r1, r2, MemExt.Imm (0, Idx))
 let str = do_str vloc
@@ -235,7 +235,7 @@ let stxr_sz t sz r1 r2 r3 =
   | Short -> I_STXRBH (H, t, r1, r2, r3)
   | Word -> I_STXR (V32, t, r1, r2, r3)
   | Double -> I_STXR (V64, t, r1, r2, r3)
-  | S128 -> I_STXR (V128, t, r1, r2, r3)
+  | Quad -> I_STXR (V128, t, r1, r2, r3)
 
 let ldxr_sz t sz r1 r2 =
   let open MachSize in
@@ -244,7 +244,7 @@ let ldxr_sz t sz r1 r2 =
   | Short -> I_LDARBH (H, t, r1, r2)
   | Word -> I_LDAR (V32, t, r1, r2)
   | Double -> I_LDAR (V64, t, r1, r2)
-  | S128 -> I_LDAR (V128, t, r1, r2)
+  | Quad -> I_LDAR (V128, t, r1, r2)
 
 let sumi_addr_gen tempo st rA o =
   match o with
@@ -261,7 +261,7 @@ let str_mixed_idx sz v r1 r2 idx =
   | Short -> I_STRBH (H, r1, r2, idx)
   | Word -> I_STR (V32, r1, r2, idx)
   | Double -> I_STR (V64, r1, r2, idx)
-  | S128 -> I_STR (V128, r1, r2, idx)
+  | Quad -> I_STR (V128, r1, r2, idx)
 
 let swp_mixed sz a rS rT rN =
   let open MachSize in
@@ -270,7 +270,7 @@ let swp_mixed sz a rS rT rN =
   | Short -> I_SWPBH (H, a, rS, rT, rN)
   | Word -> I_SWP (V32, a, rS, rT, rN)
   | Double -> I_SWP (V64, a, rS, rT, rN)
-  | S128 -> I_SWP (V128, a, rS, rT, rN)
+  | Quad -> I_SWP (V128, a, rS, rT, rN)
 
 let swp a rS rT rN = I_SWP (vloc, a, rS, rT, rN)
 let sctag a rN rM = I_SC (SCTAG, a, rN, rM)
@@ -282,7 +282,7 @@ let cas_mixed sz a rS rT rN =
   | Short -> I_CASBH (H, a, rS, rT, rN)
   | Word -> I_CAS (V32, a, rS, rT, rN)
   | Double -> I_CAS (V64, a, rS, rT, rN)
-  | S128 -> I_CAS (V128, a, rS, rT, rN)
+  | Quad -> I_CAS (V128, a, rS, rT, rN)
 
 let cas a rS rT rN = I_CAS (vloc, a, rS, rT, rN)
 
@@ -293,7 +293,7 @@ let ldop_mixed op sz a rS rT rN =
   | Short -> I_LDOPBH (op, H, a, rS, rT, rN)
   | Word -> I_LDOP (op, V32, a, rS, rT, rN)
   | Double -> I_LDOP (op, V64, a, rS, rT, rN)
-  | S128 -> I_LDOP (op, V128, a, rS, rT, rN)
+  | Quad -> I_LDOP (op, V128, a, rS, rT, rN)
 
 let ldop op a rS rT rN = I_LDOP (op, vloc, a, rS, rT, rN)
 
@@ -304,7 +304,7 @@ let stop_mixed op sz a rS rN =
   | Short -> I_STOPBH (op, H, a, rS, rN)
   | Word -> I_STOP (op, V32, a, rS, rN)
   | Double -> I_STOP (op, V64, a, rS, rN)
-  | S128 -> I_STOP (op, V128, a, rS, rN)
+  | Quad -> I_STOP (op, V128, a, rS, rN)
 
 let stop op a rS rN = I_STOP (op, vloc, a, rS, rN)
 
@@ -315,7 +315,7 @@ let stlr_of_sz sz r1 r2 =
   | Short -> I_STLRBH (H, r1, r2)
   | Word -> I_STLR (V32, r1, r2)
   | Double -> I_STLR (V64, r1, r2)
-  | S128 -> I_STLR (V128, r1, r2)
+  | Quad -> I_STLR (V128, r1, r2)
 
 let do_ldp opt r1 r2 rA = I_LDP (opt, vloc, r1, r2, rA, (0, Idx))
 and do_ldxp opt r1 r2 rA = I_LDXP (vloc, opt, r1, r2, rA)

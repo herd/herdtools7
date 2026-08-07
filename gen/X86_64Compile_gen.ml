@@ -28,7 +28,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       | Int | Std (_,Word) -> Word
       | Std (_,Short) -> Short
       | Std (_,Byte) -> Byte
-      | Std (_,S128) | Pteval
+      | Std (_,Quad) | Pteval
         -> assert false
 
 
@@ -39,7 +39,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       | Short -> I16b
       | Word -> I32b
       | Double -> I64b
-      | S128 -> assert false
+      | Quad -> assert false
 
     let size_to_reg_size =
       let open X86_64Base in
@@ -48,7 +48,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       | Short -> R16b
       | Word -> R32b
       | Double -> R64b
-      | S128 -> assert false
+      | Quad -> assert false
 
     let size_reg_part = size_to_reg_size mach_size
 

@@ -42,10 +42,10 @@ let parse s = match s with
 | "uint32_t" -> Some (Std (Unsigned,Word))
 | "int64_t" -> Some (Std (Signed,Double))
 | "uint64_t" -> Some (Std (Unsigned,Double))
-| "int128_t" -> Some (Std (Signed,S128))
-| "uint128_t" -> Some (Std (Unsigned,S128))
-| "__int128" -> Some (Std (Signed,S128))
-| "__uint128" -> Some (Std (Unsigned,S128))
+| "int128_t" -> Some (Std (Signed,Quad))
+| "uint128_t" -> Some (Std (Unsigned,Quad))
+| "__int128" -> Some (Std (Signed,Quad))
+| "__uint128" -> Some (Std (Unsigned,Quad))
 | _ -> None
 
 let pp = function
@@ -58,8 +58,8 @@ let pp = function
 | Std (Unsigned,Word) ->  "uint32_t"
 | Std (Signed,Double) ->  "int64_t"
 | Std (Unsigned,Double) ->  "uint64_t"
-| Std (Signed,S128) ->  "__int128"
-| Std (Unsigned,S128) ->  "__uint128"
+| Std (Signed,Quad) ->  "__int128"
+| Std (Unsigned,Quad) ->  "__uint128"
 | Pteval -> "pteval_t"
 
 

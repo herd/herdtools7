@@ -47,7 +47,7 @@ let mask sz =
   | Short -> fun v -> logand v 0xffffL
   | Word -> fun v ->  logand v 0xffffffffL
   | Double -> fun v -> v
-  | S128 -> fun v -> Warn.fatal "mask 64 bit value %s with s128 mask" (pp_unsigned true v)
+  | Quad -> fun v -> Warn.fatal "mask 64 bit value %s with quad mask" (pp_unsigned true v)
 
 let sxt sz v =
   let open MachSize in
