@@ -15,6 +15,33 @@ A test for no metadata, `-metadata false`
    L00: LDR W4,[X3] ;
   
   exists (fault(P0:L00,x))
+A diy7 predicate merge test for before/after boundary predicates
+  $ diy7 -arch AArch64 -cycleonly true -size 4 -relax '[@before(Po) PodRW Rfe @after(Po)]' -safe Po 2>&1 | grep -v '^# Version' | grep -v '^Relaxations tested:'
+  # diy7 -arch AArch64 -cycleonly true -size 4 -relax [@before(Po) PodRW Rfe @after(Po)] -safe Po
+  Generator produced 2 tests
+  LB000: PosRR PodRW Rfe PosRR PodRW Rfe
+  LB001: PodRR PodRW Rfe PodRR PodRW Rfe
+A diy7 predicate merge test for repeated after predicates
+  $ diy7 -arch AArch64 -cycleonly true -size 4 -relax '[PodRW Rfe @after(PodRW) @after(Rfe)]' 2>&1 | grep -v '^# Version' | grep -v '^Relaxations tested:'
+  # diy7 -arch AArch64 -cycleonly true -size 4 -relax [PodRW Rfe @after(PodRW) @after(Rfe)]
+  Generator produced 3 tests
+  LB000: PodRW Rfe PodRW Rfe
+  3.LB000: PodRW Rfe PodRW Rfe PodRW Rfe
+  4.LB000: PodRW Rfe PodRW Rfe PodRW Rfe PodRW Rfe
+A diy7 predicate merge test for after on composite relaxations
+  $ diy7 -arch AArch64 -cycleonly true -size 4 -relax '[PodRW Rfe @after([PodRW Rfe])]' 2>&1 | grep -v '^# Version' | grep -v '^Relaxations tested:'
+  # diy7 -arch AArch64 -cycleonly true -size 4 -relax [PodRW Rfe @after([PodRW Rfe])]
+  Generator produced 3 tests
+  LB000: PodRW Rfe PodRW Rfe
+  3.LB000: PodRW Rfe PodRW Rfe PodRW Rfe
+  4.LB000: PodRW Rfe PodRW Rfe PodRW Rfe PodRW Rfe
+A diy7 predicate merge test for before on composite relaxations
+  $ diy7 -arch AArch64 -cycleonly true -size 4 -relax '[@before([PodRW Rfe]) PodRW Rfe]' 2>&1 | grep -v '^# Version' | grep -v '^Relaxations tested:'
+  # diy7 -arch AArch64 -cycleonly true -size 4 -relax [@before([PodRW Rfe]) PodRW Rfe]
+  Generator produced 3 tests
+  LB000: PodRW Rfe PodRW Rfe
+  3.LB000: PodRW Rfe PodRW Rfe PodRW Rfe
+  4.LB000: PodRW Rfe PodRW Rfe PodRW Rfe PodRW Rfe
 A VMSA test for a negated exists check, `-neg true`
   $ diyone7 -arch AArch64 -variant vmsa Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -neg true -info "User-define=User-define"
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0

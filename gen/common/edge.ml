@@ -199,7 +199,7 @@ and module RMW = A.RMW = struct
   let pre_parse_string s =
     let parsed_result = Lexing.from_string (String.trim s)
     |> LexUtil.parse Parser.main
-    |> Ast.expand in
+    |> Ast.expand (fun _ -> Warn.fatal "predicate should not exist.") in
     match parsed_result with
       | [x] -> x
       | _ ->
