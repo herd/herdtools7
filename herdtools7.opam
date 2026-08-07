@@ -19,6 +19,7 @@ depends: [
   "dune"  {>= "3.14.0" }
   "menhir" {>= "20231231"}
   "zarith" {>= "1.13"}
+  "yaml" {= "3.2.0" & with-test}
   "conf-which"
   "logs"
   "conf-python-3" {= "9.0.0" & with-test}

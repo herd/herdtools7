@@ -78,8 +78,12 @@ let default_args =
 exception Exit of int
 
 (** Run ASLRef with the supplied arguments. This function never returns: it
-    raises an [Exit] exception containing ASLRef's exit code. *)
-let run_with (args : args) : unit =
+    raises an [Exit] exception containing ASLRef's exit code.
+
+    [on_error] is called with the structured ASLRef error before [Exit 1] is
+    raised. By default, it prints the error using [args.output_format].
+    [on_completed] is called before [Exit exit_code] is raised. *)
+let run_with ?on_error ?(on_completed = fun () -> ()) (args : args) : unit =
   let parser_config =
     let v0_use_split_chunks = args.v0_use_split_chunks in
     let version_eac1 = args.version_eac1 in
@@ -87,16 +91,22 @@ let run_with (args : args) : unit =
     { v0_use_split_chunks; version_eac1 }
   in
 
+  let default_on_error e =
+    let module EP = Error.ErrorPrinter (struct
+      let output_format = args.output_format
+    end) in
+    EP.eprintln e
+  in
+
+  let on_error = Option.value on_error ~default:default_on_error in
+
   let or_exit f =
     if Printexc.backtrace_status () then f ()
     else
       match Error.intercept f () with
       | Ok res -> res
       | Error e ->
-          let module EP = Error.ErrorPrinter (struct
-            let output_format = args.output_format
-          end) in
-          EP.eprintln e;
+          on_error e;
           raise (Exit 1)
   in
 
@@ -217,4 +227,60 @@ let run_with (args : args) : unit =
         (pp_print_list ~pp_sep:pp_print_cut Instrumentation.SemanticsRule.pp)
         used_rules
   in
+  on_completed ();
   raise (Exit exit_code)
+
+(** Structured result interface for callers that need to inspect ASLRef's
+    outcome instead of handling the [Exit] exception raised by [run_with]. *)
+module RunResult = struct
+  (** Whether ASLRef completed successfully or reported an ASL error. *)
+  type outcome = Success | Failure
+
+  type t = {
+    outcome : outcome;
+        (** Success or failure, matching the compliance metadata outcome. *)
+    error_code : string option;
+        (** Specification error code, when ASLRef reports a mapped ASL error. *)
+    error_line : int option;
+        (** Source line carried by the structured error location, when known. *)
+    diagnostic : string option;
+        (** Human-readable diagnostic text without the source location prefix.
+        *)
+  }
+  (** Structured outcome of an ASLRef run. *)
+
+  (** Convert an ASLRef error into the structured error fields needed by
+      consumers that should not parse rendered diagnostic text. *)
+  let of_error error =
+    let error_code =
+      Option.map Error.ErrorCode.to_string (Error.ErrorCode.of_error error)
+    in
+    let error_line =
+      if ASTUtils.is_dummy_pos error then None
+      else Some error.pos_start.pos_lnum
+    in
+    let diagnostic = Some (Error.error_desc_to_string error) in
+    { outcome = Failure; error_code; error_line; diagnostic }
+
+  (** Run ASLRef with [args] and return its structured outcome instead of
+      raising [Exit]. Errors are captured in the returned value and are not
+      printed. *)
+  let run_with_result args =
+    let completed = ref None in
+    let failed = ref None in
+    let on_completed () =
+      completed :=
+        Some
+          {
+            outcome = Success;
+            error_code = None;
+            error_line = None;
+            diagnostic = None;
+          }
+    in
+    let on_error error = failed := Some (of_error error) in
+    (try run_with ~on_error ~on_completed args with Exit _ -> ());
+    match (!failed, !completed) with
+    | Some result, _ | None, Some result -> result
+    | None, None -> assert false
+end

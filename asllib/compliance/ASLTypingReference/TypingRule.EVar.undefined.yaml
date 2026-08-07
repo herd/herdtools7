@@ -1,0 +1,6 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_UI
+error_line: 3
+info: |
+  Identifier "t" is used before it is declared.

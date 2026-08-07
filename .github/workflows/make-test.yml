@@ -24,13 +24,13 @@ jobs:
           - ubuntu-latest
         cfg:
           # Minimal versions: we want to test both ends of the supported space
-          - ocaml-compiler: "ocaml-base-compiler.4.14.0,dune.3.15.3,zarith.1.13,menhir.20231231,logs.0.7.0"
+          - ocaml-compiler: "ocaml-base-compiler.4.14.0,dune.3.15.3,zarith.1.13,menhir.20231231,logs.0.7.0,yaml.3.2.0"
             with-type-check-asl: false
             job-name: "OCaml v4.14.0"
             dune-cache: "enabled"
 
             # Maximal version: this will automatically select the most recent version compatible.
-          - ocaml-compiler: "dune,zarith,menhir,logs"
+          - ocaml-compiler: "dune,zarith,menhir,logs,yaml.3.2.0"
             with-type-check-asl: true
             dune-cache: "enabled-except-user-rules"
             job-name: "OCaml latest lts"
@@ -79,7 +79,7 @@ jobs:
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: ocamlformat.0.28.1
+          ocaml-compiler: ocamlformat.0.28.1,yaml.3.2.0
           dune-cache: true
 
       - run: opam exec -- dune fmt

@@ -1,0 +1,10 @@
+(executable
+ (name asltest)
+ (libraries yaml asllib unix))
+
+(rule
+ (alias runtest)
+ (deps
+  (source_tree .))
+ (action
+  (run ./asltest.exe --suite %{workspace_root}/asllib/compliance)))

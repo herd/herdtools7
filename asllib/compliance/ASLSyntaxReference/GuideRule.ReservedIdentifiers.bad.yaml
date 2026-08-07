@@ -1,0 +1,5 @@
+mode: no-exec
+outcome: FAILURE
+error: BE_RI
+info: |
+  Reserved identifier "__internal_var" is rejected during lexical analysis.
