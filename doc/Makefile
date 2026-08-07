@@ -195,7 +195,7 @@ BASIC-img:
 	mkdir -p $@
 
 BASIC-img/index.tex: BASIC-img tst-co/basic/@all
-	$(MAPPLY) -com tools/img3.sh -comargs tools/UTCP.sh,BASIC-img tst-co/basic/@all > $@
+	$(MAPPLY) tst-co/basic/@all -- tools/img3.sh tools/UTCP.sh BASIC-img > $@
 
 
 MPPOSS.tex:tst-co/MPPOSS/@all MPPOSS-img/index.tex
@@ -205,7 +205,7 @@ MPPOSS-img:
 	mkdir -p $@
 
 MPPOSS-img/index.tex: MPPOSS-img tst-co/MPPOSS/@all
-	$(MAPPLY) -com tools/img3.sh -comargs tools/UTCP.sh,MPPOSS-img tst-co/MPPOSS/@all > $@
+	$(MAPPLY) tst-co/MPPOSS/@all -- tools/img3.sh tools/UTCP.sh MPPOSS-img > $@
 
 
 
