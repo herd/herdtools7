@@ -200,10 +200,7 @@ let full_path_of exe_name = Filename.(concat (dirname Sys.argv.(0))) exe_name
 
 let mapply_args ?(litmuses=[]) ?(exits=false) ~j ~com args =
   let exit = if exits then ["-exit"; "true"] else [] in
-  let comargs = String.concat "," args in
-  exit
-  @ ["-com"; com; "-j" ; Printf.sprintf "%i" j; "-comargs"; comargs;]
-  @ litmuses
+  exit @ "-j" :: string_of_int j :: litmuses @ "--" :: com :: args
 
 let mapply_herd_wrapper_args ?(verbose=false) ?(nohash=false) ~litmuses ~j
     ~check ~exits ~wrapper ~herd args
