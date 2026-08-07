@@ -119,7 +119,11 @@ let handle_key dir main key arg = match key with
 | "verbose" ->  lex_int verbose arg
 | "suffix" ->  suffix := arg
 | "include" ->
-   includes := !includes @ [arg]
+     let arg =
+       match arg with
+       | "$dirname" -> dir
+       | _ -> arg in
+     includes := !includes @ [arg]
 | "timeout" ->
    lex_float_opt timeout arg
 | "debug" ->

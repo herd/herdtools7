@@ -1,0 +1,11 @@
+Test dep+plain Allowed
+States 2
+[x]=0; [y]=0;
+[x]=1; [y]=1;
+Ok
+Witnesses
+Positive: 1 Negative: 2
+Condition exists ([x]=1 /\ [y]=1)
+Observation dep+plain Sometimes 1 2
+Hash=1102012196f22009a029cbe6d4253943
+

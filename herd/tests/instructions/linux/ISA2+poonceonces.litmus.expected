@@ -1,0 +1,17 @@
+Test ISA2+poonceonces Allowed
+States 8
+1:r0=0; 2:r0=0; 2:r1=0;
+1:r0=0; 2:r0=0; 2:r1=1;
+1:r0=0; 2:r0=1; 2:r1=0;
+1:r0=0; 2:r0=1; 2:r1=1;
+1:r0=1; 2:r0=0; 2:r1=0;
+1:r0=1; 2:r0=0; 2:r1=1;
+1:r0=1; 2:r0=1; 2:r1=0;
+1:r0=1; 2:r0=1; 2:r1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (1:r0=1 /\ 2:r0=1 /\ 2:r1=0)
+Observation ISA2+poonceonces Sometimes 1 7
+Hash=ccef1d83a0aa6a5abc79b6586d39e3ef
+

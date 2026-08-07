@@ -1,0 +1,17 @@
+Test MP+polockonce+poacquiresilsil Allowed
+States 8
+1:r1=0; 1:r2=0; 1:r3=0;
+1:r1=0; 1:r2=0; 1:r3=1;
+1:r1=0; 1:r2=1; 1:r3=0;
+1:r1=0; 1:r2=1; 1:r3=1;
+1:r1=1; 1:r2=0; 1:r3=0;
+1:r1=1; 1:r2=0; 1:r3=1;
+1:r1=1; 1:r2=1; 1:r3=0;
+1:r1=1; 1:r2=1; 1:r3=1;
+Ok
+Witnesses
+Positive: 1 Negative: 11
+Condition exists (1:r1=1 /\ 1:r2=0 /\ 1:r3=1)
+Observation MP+polockonce+poacquiresilsil Sometimes 1 11
+Hash=578685d59747e95fbb264ca418b0aea1
+

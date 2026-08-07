@@ -1,0 +1,16 @@
+Test MP+polockmbonce+poacquiresilsil Allowed
+States 7
+1:r1=0; 1:r2=0; 1:r3=0;
+1:r1=0; 1:r2=0; 1:r3=1;
+1:r1=0; 1:r2=1; 1:r3=0;
+1:r1=0; 1:r2=1; 1:r3=1;
+1:r1=1; 1:r2=0; 1:r3=0;
+1:r1=1; 1:r2=1; 1:r3=0;
+1:r1=1; 1:r2=1; 1:r3=1;
+No
+Witnesses
+Positive: 0 Negative: 9
+Condition exists (1:r1=1 /\ 1:r2=0 /\ 1:r3=1)
+Observation MP+polockmbonce+poacquiresilsil Never 0 9
+Hash=fd83e1b033cf0f9b47afaa8872335edd
+

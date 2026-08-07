@@ -1,0 +1,10 @@
+Test CoWW+poonceonce Allowed
+States 1
+[x]=2;
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition exists ([x]=1)
+Observation CoWW+poonceonce Never 0 1
+Hash=260aac15e0895506fb610570ef05debc
+

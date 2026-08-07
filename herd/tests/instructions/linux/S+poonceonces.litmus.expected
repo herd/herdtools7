@@ -1,0 +1,13 @@
+Test S+poonceonces Allowed
+States 4
+1:r0=0; [x]=1;
+1:r0=0; [x]=2;
+1:r0=1; [x]=1;
+1:r0=1; [x]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([x]=2 /\ 1:r0=1)
+Observation S+poonceonces Sometimes 1 3
+Hash=696942ff9c74183ff5d97898969e38ca
+
