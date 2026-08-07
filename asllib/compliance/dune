@@ -1,6 +1,5 @@
 (executable
  (name asltest)
- (public_name asltest)
  (libraries yaml asllib unix))
 
 (rule
