@@ -1619,7 +1619,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_ldp_reg opt st init rA =
       let r1,r2,st = next_reg2 st in
-      r1,init,pseudo [do_ldp opt r1 r2 rA;add vloc r1 r1 r2;],st
+      let st = A.set_friends r1 [r2] st in
+      r1,init,pseudo [do_ldp opt r1 r2 rA;],st
 
     let emit_ldp_reg opt idx st _p init rA =
       match opt,idx with
@@ -1672,7 +1673,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 
     let emit_obs t = match t with
-    | Code.Ord | Code.Instr-> emit_load_mixed naturalsize 0
+    | Code.Ord | Code.Instr->
+        fun st p init loc ->
+        let r,init,cs,st = emit_load_mixed naturalsize 0 st p init loc in
+        let st = A.add_type (A.of_reg p r) Cfg.typ st in
+        r,init,cs,st
     | Code.Pte->
         fun st p init loc ->
         let r,init,cs,st = LDR.emit_load_var A64.V64 st p init (Misc.add_pte loc) in

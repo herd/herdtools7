@@ -545,25 +545,26 @@ let max_set = IntSet.max_elt
 
       (* Local check of coherence *)
 
-  let do_add_load bank st p i f x v =
+  let do_add_load bank st p i f x cell =
     let r,i,c,st = Comp.emit_obs bank st p i x in
-    let v =
-      match bank with
-      | Pair -> v+v
-      | _ -> v in
-    i,c,F.add_final_v p r (IntSet.singleton v) f,st
+    let rs = match bank with Pair -> r::A.get_friends st r | _ -> [r] in
+    let f = List.fold_left2
+      (fun f r v -> F.add_final_v p r (IntSet.singleton (C.Value.to_int v)) f)
+      f rs (Array.to_list cell) in
+    i,c,f,st
 
   let do_add_loop st p i f x v w =
     let r,i,c,st = Comp.emit_obs_not_value st p i x v in
     i,c,F.add_final_v p r (IntSet.singleton w) f,st
 
-  let rec do_observe_local bank obs_type st p i code f x prev_v v =
+  let rec do_observe_local bank obs_type st p i code f x prev_v cell =
+    let v = C.Value.to_int cell.(0) in
     match obs_type with
     | Config.Straight ->
-        let i,c,f,st = do_add_load bank st p i f x v in
+        let i,c,f,st = do_add_load bank st p i f x cell in
         i,code@c,f,st
     |  Config.Fenced ->
-        let i,c,f,st = do_add_load bank st p i f x v in
+        let i,c,f,st = do_add_load bank st p i f x cell in
         let i,c',st = Comp.emit_fence st p i C.nil Comp.stronger_fence in
         let c = c'@c in
         i,code@c,f,st
@@ -578,7 +579,7 @@ let max_set = IntSet.max_elt
           let i,c,f,st = do_add_loop st p i f x prev_v v in
           i,code@c,f,st
        | None ->
-          do_observe_local bank Config.Fenced st p i code f x None v
+          do_observe_local bank Config.Fenced st p i code f x None cell
        end
 
   let do_observe_local_simd st p i code f x bank nxt =
@@ -611,7 +612,7 @@ let max_set = IntSet.max_elt
     let lst = Misc.last ns in
     if U.check_here lst then
       match lst.C.evt.C.loc,lst.C.evt.C.bank with
-      | Data x,(Ord|Pair|Instr) -> (* TODO check for -obs local mode and pairs *)
+      | Data x,(Ord|Pair|Instr as prev_bank) ->
          let nxt = lst.C.next.C.evt in
          let bank = nxt.C.bank in
          begin match bank with
@@ -628,10 +629,10 @@ let max_set = IntSet.max_elt
               i,code,F.cons_int_set (A.Location.Location_global x,IntSet.singleton v) f,st
             else
               let bank =
-                match bank with
-                | Pair -> Pair
+                match prev_bank,bank with
+                | Pair,_|_,Pair -> Pair
                 | _ -> Ord in
-              do_observe_local  bank O.obs_type st p i code f x (Some prev_v) v
+              do_observe_local bank O.obs_type st p i code f x (Some prev_v) nxt.C.cell
          end
       | Data x,Tag ->
           let v = C.Value.to_int lst.C.next.C.evt.C.v in
@@ -652,8 +653,7 @@ let max_set = IntSet.max_elt
          let bank = nxt.C.bank in
          begin match bank with
          | Ord|Pair ->
-            let v = C.Value.to_int nxt.C.v in
-            do_observe_local bank O.obs_type st p i code f x None v
+            do_observe_local bank O.obs_type st p i code f x None nxt.C.cell
          | VecReg _ ->
             do_observe_local_simd st p i code f x bank nxt
          | _ -> Warn.user_error "Mixing SIMD and other variants"
