@@ -747,13 +747,9 @@ module Make(C:Builder.S)
       let k = er (Po (Same, Dir R, Dir R))::k in
       let k = fold_all_fences (fun fe sd d1 d2 k -> er (Fenced (fe,sd,d1,d2))::k) k in
       let k =
-        C.A.fold_dpr
+        C.A.fold_dp
           (fun dp k ->
-            fold_sd (fun sd k -> er (Dp(dp,sd,Dir R))::k) k) k in
-      let k =
-        C.A.fold_dpw
-          (fun dp k ->
-            fold_sd (fun sd k -> er (Dp(dp,sd,Dir W))::k) k) k in
+            fold_sd (fun sd k -> er (Dp(dp,sd,Dir R))::er (Dp(dp,sd,Dir W))::k) k) k in
       let k = fold_ie (fun ie k -> er (Rf ie)::k) k in
       let k = fold_cum (fun fe sd d1 d2 k -> ac_fence fe sd d1 d2::k) k in
       let k = fold_cum (fun fe sd d1 d2 k -> bc_fence fe sd d1 d2::k) k in

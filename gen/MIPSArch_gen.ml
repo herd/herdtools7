@@ -71,18 +71,12 @@ let pp_dp = function
   | DATA -> "Data"
   | CTRL -> "Ctrl"
 
-let fold_dpr f r =  f ADDR (f CTRL r)
-let fold_dpw f r =  f ADDR (f DATA (f CTRL r))
+let fold_dp f r =  f ADDR (f DATA (f CTRL r))
 
 let ddr_default = Some ADDR
 let ddw_default = Some DATA
 let ctrlr_default = Some CTRL
 let ctrlw_default = Some CTRL
-
-open Code
-let expand_dp_dir = function
-  | CTRL | ADDR -> [R;W]
-  | DATA -> [W]
 
 let is_ctrlr = function
   | CTRL -> true
@@ -90,6 +84,10 @@ let is_ctrlr = function
 
 let is_addr = function
   | ADDR -> true
+  | _ -> false
+
+let is_data = function
+  | DATA -> true
   | _ -> false
 
 let fst_dp = function

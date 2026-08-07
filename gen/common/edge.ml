@@ -69,6 +69,7 @@ module type S = sig
   val is_insert_store : tedge -> bool
   val is_non_pseudo : tedge -> bool
   val is_dp_addr : tedge -> bool
+  val is_dp_data : tedge -> bool
   val compute_rmw : RMW.rmw -> value -> value -> value
   val is_valid_rmw : RMW.rmw list -> bool
 
@@ -268,6 +269,10 @@ and module RMW = A.RMW = struct
     |Dp (dp, _, _) -> F.is_addr dp
     |_ -> false
 
+  let is_dp_data = function
+    |Dp (dp, _, _) -> F.is_data dp
+    |_ -> false
+
   type edge = { edge: tedge;  a1:atom option; a2: atom option; }
 
   let can_merge e = not @@ is_insert_store e.edge
@@ -399,15 +404,8 @@ let fold_tedges f r =
         fold_sd_extr_extr wildcard
           (fun sd e1 e2 -> f (Fenced (fe,sd,e1,e2)))) r in
   let r =
-    F.fold_dpr
-      (fun dp -> fold_sd wildcard (fun sd -> f (Dp (dp,sd,Dir R)))) r in
-  let r =
-    F.fold_dpw
-      (fun dp -> fold_sd wildcard (fun sd -> f (Dp (dp,sd,Dir W)))) r in
-  let r =
-    if wildcard then F.fold_dpw
-      (fun dp -> fold_sd wildcard (fun sd -> f (Dp (dp,sd,Irr)))) r
-    else r in
+    F.fold_dp
+      (fun dp -> fold_sd_extr wildcard (fun sd e -> f (Dp (dp,sd,e)))) r in
   let r = f Id r in
   let r = f (Node R) (f (Node W) r) in
   let r = f Hat r in
@@ -756,12 +754,6 @@ let fold_tedges f r =
     expand_dir e1
       (fun d1 -> expand_dir e2 (fun d2 -> f d1 d2))
 
-  let expand_dp_dir dp sd f acc = match sd with
-  | Dir _|NoDir -> f sd acc
-  | Irr ->
-    let expand_dir_list = F.expand_dp_dir dp in
-    List.fold_left (fun acc sd -> f (Dir sd) acc) acc expand_dir_list
-
   let do_expand_edge e f acc =
     match e.edge with
     | Insert _|Store|Id|Node _
@@ -774,7 +766,7 @@ let fold_tedges f r =
         let expand_rmw_list = A.RMW.expand_rmw rmw in
         List.fold_left ( fun acc new_rmw -> f {e with edge=Rmw(new_rmw);} acc) acc expand_rmw_list
     | Dp (dp,sd,expr) ->
-      expand_dp_dir dp expr (fun new_expr ->
+      expand_dir expr (fun new_expr ->
         expand_loc sd ( fun new_sd -> f {e with edge=Dp(dp,new_sd,new_expr);})) acc
     | Po(sd,e1,e2) ->
         expand_dir2 e1 e2 (fun d1 d2 ->

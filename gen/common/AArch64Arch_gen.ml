@@ -957,12 +957,8 @@ let equal_csel c1 c2 = match c1,c2 with
 
 let equal_dp (d1,c1) (d2,c2) = D.equal_dp d1 d2 && equal_csel c1 c2
 
-let fold_dpr f r =
-  D.fold_dpr
-    (fun d r -> f (d,NoCsel) (f (d,OkCsel) r))
-    r
-let fold_dpw f r =
-  D.fold_dpw
+let fold_dp f r =
+  D.fold_dp
     (fun d r -> f (d,NoCsel) (f (d,OkCsel) r))
     r
 
@@ -987,6 +983,7 @@ let ctrlw_default = lift_dd  D.ctrlw_default
 let lift_pred p (d,_) = p d
 let is_ctrlr dc = lift_pred D.is_ctrlr dc
 let is_addr dc = lift_pred D.is_addr dc
+let is_data dc = lift_pred D.is_data dc
 
 let fst_dp (d,c) = match c with
   | NoCsel -> List.map (fun d -> (d,NoCsel)) (D.fst_dp d)
@@ -995,8 +992,6 @@ let fst_dp (d,c) = match c with
 let sequence_dp (d1,c1) (d2,c2) = match c1 with
   | NoCsel -> List.map (fun d -> d,c2) (D.sequence_dp d1 d2)
   | OkCsel -> []
-
-let expand_dp_dir (dir,_) = D.expand_dp_dir dir
 
 (* Read-Modify-Write *)
 module RMW = struct

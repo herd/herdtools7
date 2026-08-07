@@ -836,6 +836,12 @@ let by_loc xvs =
   |> group
 
 let check_cycle c =
+  fold
+    (fun n () ->
+      if E.is_dp_data n.edge.E.edge && n.next.evt.dir = Some R &&
+         not n.next.evt.rmw then
+        Warn.fatal "Data dependency to a read must be followed by an RMW")
+    c () ;
   (* Collect all the rmw edges, organise by location
      and then check if all the rmw edges per locations are valid *)
   fold ( fun n lst ->
