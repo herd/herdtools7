@@ -269,7 +269,9 @@ let do_op1 op cst =
   | ToBV sz -> (
       match cst,sz with
       | Constant.Concrete s,_ -> ASLScalar.convert_to_bv sz s |> return_concrete
-      | (Constant.(Symbolic _|PteVal _|Instruction _),64)
+      | (Constant.PteVal _,64)
+      | Constant.(Symbolic (Virtual _ | System (PTE, _)), 64)
+      | Constant.(Symbolic (Physical _), 56)
       | (Constant.Instruction _,32) (* Instructions are 32bit wide *)
         -> Some cst
       | _ -> None)

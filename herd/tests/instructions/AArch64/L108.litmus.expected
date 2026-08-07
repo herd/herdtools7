@@ -1,0 +1,11 @@
+Test L108 Allowed
+States 2
+[x]=0;
+[x]=1;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists ([x]=1)
+Observation L108 Sometimes 1 1
+Hash=fe56da72b59776945a99551d9c110513
+

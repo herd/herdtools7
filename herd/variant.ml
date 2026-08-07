@@ -32,7 +32,6 @@ type t =
   | SplittedRMW     (* Splitted RMW events for riscv *)
   | SwitchDepScWrite  (* Switch dependency on sc mem write, riscv, aarch64 *)
   | SwitchDepScResult  (* Switch dependency from address read to sc result register,  aarch64 *)
-  | LrScDiffOk      (* Lr/Sc paired to <> addresses may succeed (!) *)
   | NotWeakPredicated (* NOT "Weak" predicated instructions, not performing non-selected events, aarch64 *)
   | LKMMVersion of [
         `lkmmv1 (* Legacy mode, e.g., wrapp rmw[Mb] instructions with explicit Mb fences *)
@@ -136,7 +135,6 @@ let (mode_variants, arch_variants) : t list * t list =
   | SplittedRMW -> SplittedRMW
   | SwitchDepScWrite -> SwitchDepScWrite
   | SwitchDepScResult -> SwitchDepScResult
-  | LrScDiffOk -> LrScDiffOk
   | Mixed -> Mixed
   | Unaligned -> Unaligned
   | DontCheckMixed -> DontCheckMixed
@@ -200,7 +198,7 @@ let (mode_variants, arch_variants) : t list * t list =
     List.map f
       [ Success; Instr; SpecialX0; NoRMW; AcqRelAsFence;
         BackCompat; FullScDepend; SplittedRMW; SwitchDepScWrite;
-        SwitchDepScResult; LrScDiffOk;
+        SwitchDepScResult;
         NotWeakPredicated;
         LKMMVersion `lkmmv1; LKMMVersion `lkmmv2;
         CutOff; Morello; Deps; Instances;
@@ -248,7 +246,6 @@ let parse s = match Misc.lowercase s with
 | "splittedrmw" -> Some SplittedRMW
 | "switchdepscwrite" -> Some  SwitchDepScWrite
 | "switchdepscresult" -> Some  SwitchDepScResult
-| "lrscdiffok" -> Some  LrScDiffOk
 | "mixed" -> Some Mixed
 | "unaligned" -> Some Unaligned
 | "dontcheckmixed" -> Some DontCheckMixed
@@ -355,7 +352,6 @@ let pp = function
   | SplittedRMW -> "SplittedRMW"
   | SwitchDepScWrite -> "SwitchDepScWrite"
   | SwitchDepScResult -> "SwitchDepScResult"
-  | LrScDiffOk -> "LrScDiffOk"
   | Mixed -> "mixed"
   | Unaligned -> "unaligned"
   | DontCheckMixed -> "DontCheckMixed"
@@ -430,7 +426,6 @@ let pp = function
   | SplittedRMW -> ""
   | SwitchDepScWrite -> ""
   | SwitchDepScResult -> ""
-  | LrScDiffOk -> ""
   | Mixed -> "Use mixed-sized semantics, where accesses can have different sizes"
   | Unaligned -> "When using mixed-sized semantics, allow unaligned accesses"
   | DontCheckMixed -> "Do not check (and reject early) mixed size tests in non-mixed-size mode"
