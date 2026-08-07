@@ -204,10 +204,7 @@ let redirect_with_args ?(verbose=false) ~com args =
 
 let mapply_args ?(litmuses=[]) ?(exits=false) ~j ~com args =
   let exit = if exits then ["-exit"; "true"] else [] in
-  let comargs = String.concat "," args in
-  exit
-  @ ["-com"; com; "-j" ; Printf.sprintf "%i" j; "-comargs"; comargs;]
-  @ litmuses
+  exit @ "-j" :: string_of_int j :: litmuses @ "--" :: com :: args
 
 let mapply_redirect_args ?(verbose=false) ~j ~com args =
   let redirect, redirect_args = redirect_with_args ~verbose ~com args in
