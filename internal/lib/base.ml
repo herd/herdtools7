@@ -18,31 +18,13 @@
  *  earlier versions of OCaml, or to add extra functionality. *)
 
 module Fun = struct
-  exception Finally_raised of exn
-
-  let negate f =
-    fun a -> not (f a)
-
-  let protect ~finally f =
-    let finally' () =
-      try finally ()
-      with e -> raise (Finally_raised e)
-    in
-    let ret =
-      try
-        f ()
-      with e -> begin
-        finally' () ;
-        raise e
-      end
-    in
-    finally' () ;
-    ret
-
   let open_out_protect f name =
     let out = open_out name in
-    protect ~finally:(fun () -> close_out out) (fun () -> f out)
+    Stdlib.Fun.protect ~finally:(fun () -> close_out out) (fun () -> f out)
 
+  module Syntax = struct
+    let ( let@ ) f x = f x
+  end
 end
 
 module List = struct
@@ -50,6 +32,10 @@ module List = struct
 
   let to_ocaml_string f xs =
     Printf.sprintf "[%s]" (String.concat "; " (List.map f xs))
+
+  let for_every_element p lst =
+    let rec loop acc = function [] -> acc | v :: xs -> loop (p v && acc) xs in
+    loop true lst
 end
 
 module Option = struct

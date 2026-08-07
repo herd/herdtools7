@@ -29,5 +29,8 @@ val write_file : string -> (out_channel -> 'a) -> 'a
 (** [remove_recursive path] removes [path] and all of its children, a la `rm -rf`. *)
 val remove_recursive : string -> unit
 
+val list_dir : string -> (string -> unit) -> unit
+(** [list_dir dir k] calls [k] for every entry present in directorory [dir]. *)
+
 (** [new_temp_dir ()] creates a new temporary directory, and returns the path. *)
 val new_temp_dir : unit -> string

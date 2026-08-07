@@ -16,7 +16,6 @@
 
 (** Utilities for running commands. *)
 
-module Fun = Base.Fun
 module Option = Base.Option
 
 type error = {

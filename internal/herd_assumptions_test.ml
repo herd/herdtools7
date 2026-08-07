@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open! Base.Fun.Syntax
+
 type path = string
 
 type flags = {
@@ -83,24 +85,15 @@ let get_dirs_and_confs filename =
       loop [])
     filename
 
+let ( // ) = Filename.concat
+
 let get_each_litmus_in_dir dir =
-  let handle = Unix.opendir dir in
-  let readdir () = try Some (Unix.readdir handle) with End_of_file -> None in
-  let rec next_litmus () =
-    match readdir () with
-    | Some name ->
-        if TestHerd.is_litmus name then Some (Filename.concat dir name)
-        else next_litmus ()
-    | None -> None
+  let litmuses = ref [] in
+  let () =
+    let@ entry = Filesystem.list_dir dir in
+    if TestHerd.is_litmus entry then litmuses := dir // entry :: !litmuses
   in
-  let rec loop acc =
-    match next_litmus () with
-    | Some litmus -> loop (litmus :: acc)
-    | None ->
-        Unix.closedir handle;
-        acc
-  in
-  loop []
+  !litmuses
 
 let run flags =
   let cat_flags = get_cat_flags flags.assumptions_file flags.libdir in
