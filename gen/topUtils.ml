@@ -212,9 +212,9 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           let wb = write_before n
           and wa = write_after n in
           begin match wb,wa with
-          | true,true -> Ws Ext
-          | true,false -> Rf Ext
-          | false,true -> Fr Ext
+          | true,true -> Communication (Co,Ext)
+          | true,false -> Communication (Rf,Ext)
+          | false,true -> Communication (Fr,Ext)
           | false,false ->
               Warn.fatal "Incorrect Hat: read chains are not allowed"
           end
@@ -225,9 +225,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         (fun ns ->
           let open C.E in
           match last_edge ns with
-          | Fr _|Leave CFr|Back CFr -> "Fr"
-          | Rf _|Leave CRf|Back CRf -> "Rf"
-          | Ws _|Leave CWs|Back CWs -> "Co"
+          | Communication (com,_)|Leave com|Back com -> pp_com com
           | _ -> assert false)
         nss
 
@@ -287,10 +285,9 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     let is_load_init e = e.C.C.dir = Some R && e.C.C.v = C.C.Value.from_int 0
 
     let check_edge = function
-      | C.E.Ws Ext
-      | C.E.Fr Ext
-      | C.E.Leave (CFr|CWs)
-      | C.E.Back(CFr|CWs)  -> true
+      | C.E.Communication ((Fr|Co),Ext)
+      | C.E.Leave (Fr|Co)
+      | C.E.Back(Fr|Co)  -> true
       | _-> false
 
     let check_here n = match n.C.C.evt.C.C.bank with
@@ -308,15 +305,15 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     let do_poll n =
       match O.poll,n.C.C.prev.C.C.edge.C.E.edge,n.C.C.evt.C.C.v with
       | true,
-        (C.E.Rf Ext|C.E.Leave CRf|C.E.Back CRf),C.C.Value.Plain 1 -> true
+        (C.E.Communication (Rf,Ext)|C.E.Leave Rf|C.E.Back Rf),C.C.Value.Plain 1 -> true
       | _,_,_ -> false
 
     (* TODO is this simple lift from 2,1,0 to Plain * correct *)
     let fetch_val n =
       let n = C.C.find_node (fun n -> C.E.is_com n.C.C.edge) n.C.C.prev in
       ( match n.C.C.edge.C.E.edge with
-      | C.E.Rf _-> 2
-      | C.E.Fr _ -> 1
+      | C.E.Communication (Rf,_)-> 2
+      | C.E.Communication (Fr,_) -> 1
       | _ -> 0 )
       |> C.C.Value.from_int
   end

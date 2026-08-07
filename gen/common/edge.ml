@@ -50,7 +50,7 @@ module type S = sig
 
 (* edge proper *)
   type tedge =
-    | Rf of ie | Fr of ie | Ws of ie
+    | Communication of com * ie
     | Po of sd*extr*extr | Fenced of fence*sd*extr*extr
     | Dp of dp*sd*extr
     | Leave of com (* Leave thread *)
@@ -230,7 +230,7 @@ and module RMW = A.RMW = struct
 
 (* edge proper *)
   type tedge =
-    | Rf of ie | Fr of ie | Ws of ie
+    | Communication of com * ie
     | Po of sd*extr*extr | Fenced of fence*sd*extr*extr
     | Dp of dp*sd*extr
     | Leave of com
@@ -245,23 +245,23 @@ and module RMW = A.RMW = struct
 
   let is_id = function
     | Id -> true
-    | Store|Insert _|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Store|Insert _|Hat|Rmw _|Communication _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
 
   let is_insert_store = function
     | Store|Insert _ -> true
-    | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Id|Hat|Rmw _|Communication _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
 
   let is_node = function
     | Node _ -> true
-    | Id|Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Id|Hat|Rmw _|Communication _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Insert _
     | Store -> false
 
   let is_non_pseudo = function
     | Store|Insert _ |Id|Node _-> false
-    | Hat|Rmw _|Rf _|Fr _|Ws _|Po (_, _, _)
+    | Hat|Rmw _|Communication _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> true
 
   let is_dp_addr = function
@@ -287,13 +287,16 @@ and module RMW = A.RMW = struct
   | _, None, None -> ""
   | _, _, _ -> sprintf "%s%s" (pp_atom_option a1) (pp_atom_option a2)
 
+  let pp_communication_compat compat com ie =
+    let com = match com with
+    | Co when compat -> "Ws"
+    | _ -> pp_com com in
+    match ie with
+    | UnspecCom -> com
+    | _ -> sprintf "%s%s" com (pp_ie ie)
+
   let pp_tedge_compat compat = function
-    | Rf UnspecCom -> sprintf "Rf"
-    | Fr UnspecCom -> sprintf "Fr"
-    | Ws UnspecCom -> if compat then sprintf "Ws" else sprintf "Co"
-    | Rf ie -> sprintf "Rf%s" (pp_ie ie)
-    | Fr ie -> sprintf "Fr%s" (pp_ie ie)
-    | Ws ie -> if compat then sprintf "Ws%s" (pp_ie ie) else sprintf "Co%s" (pp_ie ie)
+    | Communication (com,ie) -> pp_communication_compat compat com ie
     | Po (UnspecLoc,Irr,Irr) -> "Po"
     | Po (sd,e1,e2) ->
       sprintf "Po%s%s%s" (pp_sd sd) (pp_extr e1) (pp_extr e2)
@@ -346,17 +349,18 @@ and module RMW = A.RMW = struct
 let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
   let do_dir_tgt_com = function
-    | CRf -> Dir R
-    | CWs|CFr -> Dir W
+    | Rf -> Dir R
+    | Co|Fr -> Dir W
 
  and do_dir_src_com = function
-   | CRf|CWs -> Dir W
-   | CFr -> Dir R
+   | Rf|Co -> Dir W
+   | Fr -> Dir R
 
   let do_dir_tgt e = match e with
   | Po(_,_,e)| Fenced(_,_,_,e)|Dp (_,_,e) -> e
-  | Rf _| Hat -> Dir R
-  | Ws _|Fr _|Rmw _  -> Dir W
+  | Hat -> Dir R
+  | Rmw _  -> Dir W
+  | Communication (c, _)
   | Leave c|Back c -> do_dir_tgt_com c
   | Id -> NoDir
   | Insert _ -> NoDir
@@ -366,8 +370,8 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
   and do_dir_src e = match e with
   | Po(_,e,_)| Fenced(_,_,e,_) -> e
-  | Dp _|Fr _|Hat|Rmw _ -> Dir R
-  | Ws _|Rf _ -> Dir W
+  | Dp _|Hat|Rmw _ -> Dir R
+  | Communication(c, _)
   | Leave c|Back c -> do_dir_src_com c
   | Id -> NoDir
   | Insert _ -> NoDir
@@ -376,19 +380,17 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
 
   let do_loc_sd e = match e with
   | Po (sd,_,_) | Fenced (_,sd,_,_) | Dp (_,sd,_) -> sd
-  | Insert _|Store|Node _|Fr _|Ws _|Rf _|Hat|Rmw _|Id|Leave _|Back _ -> Same
+  | Insert _|Store|Node _|Communication _|Hat|Rmw _|Id|Leave _|Back _ -> Same
 
   let do_is_diff e = Code.is_diff_loc @@ do_loc_sd e
 
 let fold_tedges_compat f r =
-  let r = fold_ie wildcard (fun ie -> f (Ws ie)) r in
+  let r = fold_ie wildcard (fun ie -> f (Communication (Co,ie))) r in
   let r = RMW.fold_rmw_compat (fun rmw -> f (Rmw rmw)) r
   in r
 
 let fold_tedges f r =
-  let r = fold_ie wildcard (fun ie -> f (Rf ie)) r in
-  let r = fold_ie wildcard (fun ie -> f (Fr ie)) r in
-  let r = fold_ie wildcard (fun ie -> f (Ws ie)) r in
+  let r = fold_com (fun com r -> fold_ie wildcard (fun ie -> f (Communication (com,ie))) r) r in
   let r = RMW.fold_rmw wildcard (fun rmw -> f (Rmw rmw)) r in
   let r = fold_sd_extr_extr wildcard (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
   let r = F.fold_all_fences (fun fe -> f (Insert fe)) r in
@@ -575,10 +577,10 @@ let fold_tedges f r =
     if do_self && instr_atom != None then
       iter_ie
         (fun ie ->
-           add_lxm_edge (sprintf "Iff%s" (pp_ie ie)) { a1=None; a2=instr_atom; edge=(Rf ie); } ;
-           add_lxm_edge (sprintf "Irf%s" (pp_ie ie)) { a1=None; a2=instr_atom; edge=(Rf ie); } ;
-           add_lxm_edge (sprintf "Fif%s" (pp_ie ie)) { a1=instr_atom; a2=None; edge=(Fr ie); } ;
-           add_lxm_edge (sprintf "Ifr%s" (pp_ie ie)) { a1=instr_atom; a2=None; edge=(Fr ie); });
+           add_lxm_edge (sprintf "Iff%s" (pp_ie ie)) { a1=None; a2=instr_atom; edge=(Communication (Rf,ie)); } ;
+           add_lxm_edge (sprintf "Irf%s" (pp_ie ie)) { a1=None; a2=instr_atom; edge=(Communication (Rf,ie)); } ;
+           add_lxm_edge (sprintf "Fif%s" (pp_ie ie)) { a1=instr_atom; a2=None; edge=(Communication (Fr,ie)); } ;
+           add_lxm_edge (sprintf "Ifr%s" (pp_ie ie)) { a1=instr_atom; a2=None; edge=(Communication (Fr,ie)); });
     ()
 
   let fold_pp_edges f =
@@ -669,14 +671,14 @@ let fold_tedges f r =
   | Po(sd,src,_) -> Po (sd,src,Dir d)
   | Fenced(f,sd,src,_) -> Fenced(f,sd,src,Dir d)
   | Dp (dp,sd,_) -> Dp (dp,sd,Dir d)
-  | Rf _ | Hat
-  | Insert _|Store|Id|Node _|Ws _|Fr _|Rmw _|Leave _|Back _-> e
+  | Communication _ | Hat
+  | Insert _|Store|Id|Node _|Rmw _|Leave _|Back _-> e
 
   and do_set_src d e = match e with
   | Po(sd,_,tgt) -> Po(sd,Dir d,tgt)
   | Fenced(f,sd,_,tgt) -> Fenced(f,sd,Dir d,tgt)
-  | Fr _|Hat|Dp _
-  | Insert _|Store|Id|Node _|Ws _|Rf _|Rmw _|Leave _|Back _ -> e
+  | Communication _|Hat|Dp _
+  | Insert _|Store|Id|Node _|Rmw _|Leave _|Back _ -> e
 
   let set_tgt d e = { e with edge = do_set_tgt d e.edge ; }
   and set_src d e = { e with edge = do_set_src d e.edge ; }
@@ -686,7 +688,7 @@ let fold_tedges f r =
 
   let get_ie e = match e.edge with
   | Id |Po _|Dp _|Fenced _|Rmw _ -> Int
-  | Rf ie|Fr ie|Ws ie -> ie
+  | Communication (_,ie) -> ie
   | Leave _|Back _|Hat -> Ext
   | Insert _|Store|Node _ -> Int
 
@@ -712,17 +714,17 @@ let fold_tedges f r =
       end
 
   let is_ext e = match e.edge with
-  | Rf Ext|Fr Ext|Ws Ext
+  | Communication (_,Ext)
   | Leave _|Back _ -> true
   | _ -> false
 
   let is_com e = match e.edge with
-  | Rf _|Fr _|Ws _|Leave _|Back _| Hat -> true
+  | Communication _|Leave _|Back _| Hat -> true
   | _ -> false
 
   let is_fetch e = match e.edge with
-  | Rf _ -> is_ifetch e.a2
-  | Fr _ -> is_ifetch e.a1
+  | Communication (Rf,_) -> is_ifetch e.a2
+  | Communication (Fr,_) -> is_ifetch e.a1
   | _ -> is_ifetch e.a1 || ( loc_sd e = Same && is_ifetch e.a2)
 
   let compat_atoms a1 a2 = match merge_atoms a1 a2 with
@@ -767,9 +769,8 @@ let fold_tedges f r =
     | Insert _|Store|Id|Node _
     | Hat |Leave _|Back _
       -> f e acc
-    | Rf com -> expand_com com ( fun new_com -> f {e with edge = Rf(new_com)}) acc
-    | Fr com -> expand_com com ( fun new_com -> f {e with edge = Fr(new_com)}) acc
-    | Ws com -> expand_com com ( fun new_com -> f {e with edge = Ws(new_com)}) acc
+    | Communication (com,ie) ->
+        expand_com ie (fun new_ie -> f {e with edge=Communication (com,new_ie)}) acc
     | Rmw rmw ->
         let expand_rmw_list = A.RMW.expand_rmw rmw in
         List.fold_left ( fun acc new_rmw -> f {e with edge=Rmw(new_rmw);} acc) acc expand_rmw_list
@@ -1059,9 +1060,10 @@ let fold_tedges f r =
     [plain_edge (Po (seq_sd e1 e2,dir_src e1,dir_tgt e2))]::k
 
   let com e1 e2 k = match e1.edge,e2.edge with
-  | Ws _,Ws _
-  | Fr _,Ws _ -> [e1]::k
-  | Rf _,Fr _ -> [plain_edge (Ws Int)]::k
+  | Communication (Co,_),Communication (Co,_)
+  | Communication (Fr,_),Communication (Co,_) -> [e1]::k
+  | Communication (Rf,_),Communication (Fr,_) ->
+      [plain_edge (Communication (Co,Int))]::k
   | _,_ -> k
 
   let compact_sequence xs ys e1 e2 =

@@ -68,9 +68,9 @@ struct
   Also notice that we are more tolerant for Rfi.
  *)
 (* Assuming Dp is safe *)
-    | (Rf Int|Po(Same,Dir W,Dir R)),Dp _
-    | Dp _,(Rf Int|Po(Same,Dir W,Dir R)) -> true
-    | Dp (_,sd,_),(Ws Int|Po(Same,Dir W,Dir W)|Fr Int|Po(Same,Dir R,Dir W)) ->
+    | (Communication (Rf,Int)|Po(Same,Dir W,Dir R)),Dp _
+    | Dp _,(Communication (Rf,Int)|Po(Same,Dir W,Dir R)) -> true
+    | Dp (_,sd,_),(Communication (Co,Int)|Po(Same,Dir W,Dir W)|Communication (Fr,Int)|Po(Same,Dir R,Dir W)) ->
         not (po_safe sd (dir_src e1) (dir_tgt e2))
     | Po (sd1,_,_), Dp (_,sd2,_) ->
         not (po_safe sd1 (dir_src e1) (dir_tgt e1)) &&
@@ -81,10 +81,10 @@ struct
 (* Check Po is safe *)
     | Po (sd1,_,_),Po (sd2,_,_) ->
         not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
-    | Rf Int,Po (sd,_,_) ->
+    | Communication (Rf,Int),Po (sd,_,_) ->
         po_safe sd (dir_src e2) (dir_tgt e2) &&
         not (po_safe sd (dir_src e1) (dir_tgt e2))
-    | Po (sd,_,_),Rf Int ->
+    | Po (sd,_,_),Communication (Rf,Int) ->
         po_safe sd (dir_src e1) (dir_tgt e1) &&
         not (po_safe sd (dir_src e1) (dir_tgt e2))
 (* Allow Rmw *)
@@ -104,17 +104,17 @@ struct
 (*
   Now accept some internal with internal composition
  *)
-      | (Ws Int|Po(Same,Dir W,Dir W)
-        |Rf Int|Po(Same,Dir W,Dir R)
-        |Fr Int|Po(Same,Dir R,Dir W)|Insert _),(Dp (_,_,_)|Po (Diff,_,_))
+      | (Communication (Co,Int)|Po(Same,Dir W,Dir W)
+        |Communication (Rf,Int)|Po(Same,Dir W,Dir R)
+        |Communication (Fr,Int)|Po(Same,Dir R,Dir W)|Insert _),(Dp (_,_,_)|Po (Diff,_,_))
       | (Dp (_,_,_)|Po (Diff,_,_)),
-        (Ws Int|Po(Same,Dir W,Dir W)
-        |Rf Int|Po(Same,Dir W,Dir R)
-        |Fr Int|Po(Same,Dir R,Dir W)|Insert _)
+        (Communication (Co,Int)|Po(Same,Dir W,Dir W)
+        |Communication (Rf,Int)|Po(Same,Dir W,Dir R)
+        |Communication (Fr,Int)|Po(Same,Dir R,Dir W)|Insert _)
       | Dp (_,Diff,_),Po (Diff,_,_)
       | Po (Diff,_,_),Dp (_,Diff,_)
-      | (Rf Int|Po(Same,Dir W,Dir R)),Po (Same,_,_)
-      | Po (Same,_,_),(Rf Int|Po(Same,Dir W,Dir R))
+      | (Communication (Rf,Int)|Po(Same,Dir W,Dir R)),Po (Same,_,_)
+      | Po (Same,_,_),(Communication (Rf,Int)|Po(Same,Dir W,Dir R))
       | (Rmw _,_)|(_,Rmw _) -> true
       | _,_ ->
           (* Reject other internal followed by internal sequences *)
@@ -131,8 +131,8 @@ struct
       let r =
         match e1.edge,e2.edge with
 (* Two cases of allowed com composition *)
-        | (Ws _|Leave CWs|Back CWs|Fr _|Leave CFr|Back CFr),
-          (Rf _|Leave CRf|Back CRf) -> true
+        | (Communication (Co,_)|Leave Co|Back Co|Communication (Fr,_)|Leave Fr|Back Fr),
+          (Communication (Rf,_)|Leave Rf|Back Rf) -> true
 (* Rmw allowed to compose arbitrarily *)
         | (Rmw _,_)|(_,Rmw _) -> true
 (* Otherwise require alternance *)
@@ -143,8 +143,8 @@ struct
       let r =
         match e1.edge,e2.edge with
 (* Two cases of allowed com composition *)
-        | (Ws _|Leave CWs|Back CWs|Fr _|Leave CFr|Back CFr),
-          (Rf _|Leave CRf|Back CRf) -> true
+        | (Communication (Co,_)|Leave Co|Back Co|Communication (Fr,_)|Leave Fr|Back Fr),
+          (Communication (Rf,_)|Leave Rf|Back Rf) -> true
 (* Rmw allowed to compose arbitrarily *)
         | (Rmw _,_)|(_,Rmw _) -> true
 (* Otherwise accept composition *)
@@ -164,11 +164,11 @@ struct
 (*      eprintf "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ; *)
       r
     let choice_uni e1 e2 =  match e1.edge,e2.edge with
-    | (Ws _,Ws _)
-    | (Fr _,Ws _)
-    | (Rf _,Fr _)
-    | (Rf _,Hat)
-    | (Hat,Fr _)
+    | (Communication (Co,_),Communication (Co,_))
+    | (Communication (Fr,_),Communication (Co,_))
+    | (Communication (Rf,_),Communication (Fr,_))
+    | (Communication (Rf,_),Hat)
+    | (Hat,Communication (Fr,_))
       -> C.E.get_ie e1 <> C.E.get_ie e2 (* Allow alternance *)
     | Po _,Po _ -> false
     | _,_ -> true
@@ -176,16 +176,16 @@ struct
     let choice_id _ _ = true
 
     let choice_free e1 e2 = match e1.edge,e2.edge with
-    | (Ws _,Ws _)
-    | (Fr _,Ws _)
-    | (Rf _,Fr _)
+    | (Communication (Co,_),Communication (Co,_))
+    | (Communication (Fr,_),Communication (Co,_))
+    | (Communication (Rf,_),Communication (Fr,_))
       -> false
     | _,_ -> true
 
     let choice_free_alt e1 e2 = match e1.edge,e2.edge with
-    | (Ws _,Ws _)
-    | (Fr _,Ws _)
-    | (Rf _,Fr _)
+    | (Communication (Co,_),Communication (Co,_))
+    | (Communication (Fr,_),Communication (Co,_))
+    | (Communication (Rf,_),Communication (Fr,_))
       -> C.E.get_ie e1 <> C.E.get_ie e2 (* Allow alternance *)
     | _,_ -> true
 
@@ -252,10 +252,10 @@ struct
  *)
     | Hat,Hat   (* Hat *)
 (* Ext Ext Only? *)
-    | Ws _,Ws _ (* -> Ws *)
-    | Fr _,Ws _ (* -> Fr*)
-    | Rf _,Fr _ (* -> Ws *)
-(*    Rf _,Fr _ (* -> Ws *) May be interesting, because
+    | Communication (Co,_),Communication (Co,_) (* -> Ws *)
+    | Communication (Fr,_),Communication (Co,_) (* -> Fr*)
+    | Communication (Rf,_),Communication (Fr,_) (* -> Ws *)
+(*    Communication (Rf,_),Communication (Fr,_) (* -> Ws *) May be interesting, because
       values are observed by outcome itself,
       also useful to add Fre after B-cumulativity *)
       ->  C.E.get_ie e1 <> C.E.get_ie e2 (* Allow alternance *)
@@ -263,8 +263,8 @@ struct
     | Id,_ -> compat_id e1.a2 (dir_src e2)
     | _,Id -> compat_id e2.a1 (dir_tgt e1)
 (* Fence cumulativity *)
-    | Rf _,Fenced (f,_,_,_)
-    | Fenced (f,_,_,_),Rf _ ->
+    | Communication (Rf,_),Fenced (f,_,_,_)
+    | Fenced (f,_,_,_),Communication (Rf,_) ->
         is_cumul f && choose O.choice safes po_safe xs ys e1 e2
     | _,_ -> choose O.choice safes po_safe xs ys e1 e2
 end
@@ -739,7 +739,11 @@ module Make(C:Builder.S)
     let er e = [plain_edge e]
     let safe =
       let k = [] in
-      let k = fold_ie (fun ie k -> er (Ws ie)::er (Fr ie)::k) k in k
+      let k =
+        fold_ie
+          (fun ie k ->
+            er (Communication (Co,ie))::er (Communication (Fr,ie))::k)
+          k in k
 
     let relax =
       let k = [] in
@@ -754,7 +758,7 @@ module Make(C:Builder.S)
         C.A.fold_dpw
           (fun dp k ->
             fold_sd (fun sd k -> er (Dp(dp,sd,Dir W))::k) k) k in
-      let k = fold_ie (fun ie k -> er (Rf ie)::k) k in
+      let k = fold_ie (fun ie k -> er (Communication (Rf,ie))::k) k in
       let k = fold_cum (fun fe sd d1 d2 k -> ac_fence fe sd d1 d2::k) k in
       let k = fold_cum (fun fe sd d1 d2 k -> bc_fence fe sd d1 d2::k) k in
       let k = er (Hat)::k in

@@ -133,16 +133,17 @@ open C.R
   let er e = [plain_edge e]
 
   let gen_thin n =
-    let lr = [er (Rf Int); er (Rf Ext)]
+    let lr = [er (Communication (Rf,Int)); er (Communication (Rf,Ext))]
     and ls = C.ppo Misc.cons [] in
     M.gen ~relax:lr ~safe:ls n
 
 
   let gen_uni n =
-    let lr = [er (Rf Int); er (Rf Ext)]
+    let lr = [er (Communication (Rf,Int)); er (Communication (Rf,Ext))]
     and ls =
-      [er (Ws Int); er (Ws Ext); er (Fr Int);
-       er (Fr Ext); er (Po (Same,Irr,Irr))] in
+      [er (Communication (Co,Int)); er (Communication (Co,Ext));
+       er (Communication (Fr,Int)); er (Communication (Fr,Ext));
+       er (Po (Same,Irr,Irr))] in
     M.gen ~relax:lr ~safe:ls n
 
   let go n (*size*) orl olr ols (*relax and safe lists*) =
