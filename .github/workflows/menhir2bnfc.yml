@@ -38,7 +38,7 @@ jobs:
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: dune,zarith,menhir,conf-which,feat,qcheck,re,logs,cmdliner,yaml
+          ocaml-compiler: dune,zarith,menhir,conf-which,feat,qcheck,re,logs,cmdliner,yaml.3.2.0
           dune-cache: true
 
       - name: Update apt database
@@ -48,7 +48,7 @@ jobs:
         run: sudo apt-get install --quiet --yes bnfc
 
       - name: Install herdtools and carpenter dependencies
-        run: opam install dune zarith menhir feat qcheck re logs cmdliner yaml
+        run: opam install dune zarith menhir feat qcheck re logs cmdliner yaml.3.2.0
 
       - run: opam exec -- make build DUNE_PROFILE=dev
 
