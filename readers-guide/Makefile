@@ -14,7 +14,8 @@ all: $(BIB_SOURCE)
 	$(MAKE) check-latex-log
 
 LITMUS_DIR := litmus-tests
-LITMUS2DESC ?= litmus2desc
+LITMUS2DESC ?= ../_build/default/tools/litmus2desc/bin/main.exe
+HERDLIB := ../herd/libdir
 LITMUS_TESTS := \
     coWW \
     coRW1 \
@@ -55,7 +56,7 @@ LITMUS_TEX := $(addprefix litmus-descriptions/,$(addsuffix .tex,$(LITMUS_TESTS))
 
 $(LITMUS_TEX): litmus-descriptions/%.tex: $(LITMUS_DIR)/%.litmus
 	@mkdir -p $(dir $@)
-	$(LITMUS2DESC) --latex $< > $@
+	HERDLIB="$(HERDLIB)" $(LITMUS2DESC) --latex --describe-dep-path $< > $@
 
 .PHONY: check-latex-log
 check-latex-log:
@@ -65,9 +66,8 @@ check-latex-log:
 		exit 1; \
 	fi
 
-.PHONY: descriptions
-descriptions:
-	$(MAKE) $(LITMUS_TEX)
+.PHONY: descriptions $(LITMUS_TEX)
+descriptions: $(LITMUS_TEX)
 
 .PHONY: clean
 clean:
