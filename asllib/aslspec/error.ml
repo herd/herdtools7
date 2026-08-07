@@ -260,32 +260,35 @@ let type_instantiation_length_failure formal_type arg_type ~expected_length
        PP.pp_type_term formal_type PP.pp_type_term arg_type expected_length
        actual_length
 
-let type_operator_instantiation_failure ~relation_name formal_type arg_type =
+let type_operator_instantiation_failure ~owner formal_type arg_type =
   spec_error_loc_of_term arg_type
   @@ Format.asprintf
-       "The type term `%a` cannot be instantiated with `%a` for operator `%s` \
-        since there are incompatible argument types for it"
-       PP.pp_type_term formal_type PP.pp_type_term arg_type relation_name
+       "The type term `%a` cannot be instantiated with `%a` for %s since there \
+        are incompatible argument types for it"
+       PP.pp_type_term formal_type PP.pp_type_term arg_type owner
 
-let param_type_instantiation_failure ~relation_name formal_type arg_type =
+let param_type_instantiation_failure ~owner formal_type arg_type =
   spec_error_loc_of_term arg_type
   @@ Format.asprintf
-       "The type term `%a` cannot be instantiated with `%a` in relation `%s` \
-        since the parameterized types do not match"
-       PP.pp_type_term formal_type PP.pp_type_term arg_type relation_name
+       "The type term `%a` cannot be instantiated with `%a` for %s since the \
+        parameterized types do not match"
+       PP.pp_type_term formal_type PP.pp_type_term arg_type owner
 
-let uninstantiated_parameter_in_relation param relation_name ~context_expr =
-  spec_error_loc_of_expr context_expr
-  @@ Format.asprintf
-       "The type parameter %s of relation %s could not be instantiated in %a"
-       param relation_name PP.pp_expr context_expr
-
-let parameter_type_unification_failure loc ~relation_name parameter_name term1
-    term2 =
+let uninstantiated_parameter loc param ~owner =
   spec_error loc
-  @@ Format.asprintf
-       "Could not unify types %a and %a for parameter %s of relation %s"
-       PP.pp_type_term term1 PP.pp_type_term term2 parameter_name relation_name
+  @@ Format.asprintf "The type parameter %s of %s could not be instantiated"
+       param owner
+
+let parameter_type_unification_failure loc ~owner parameter_name term1 term2 =
+  spec_error loc
+  @@ Format.asprintf "Could not unify types %a and %a for parameter %s of %s"
+       PP.pp_type_term term1 PP.pp_type_term term2 parameter_name owner
+
+(** Raises a specification error because [owner] declares [parameter] more than
+    once. *)
+let duplicate_type_parameter loc ~owner parameter =
+  spec_error loc
+  @@ Format.asprintf "Duplicate type parameter %s in %s" parameter owner
 
 let only_single_output_relations_supported name ~context_expr =
   spec_error_loc_of_expr context_expr
