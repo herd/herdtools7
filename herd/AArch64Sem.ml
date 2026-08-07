@@ -108,7 +108,7 @@ module Make
 
     let atomic_pair_allowed _ _ = true
 
-    let quad = MachSize.Quad (* This machine natural size *)
+    let quad = MachSize.Double (* This machine natural size *)
     and aexp = AArch64Explicit.Exp    (* Explicit accesses *)
 
     let tnt2annot =
@@ -197,7 +197,7 @@ module Make
         match ty with
         | V32 -> fun v -> uxtw_op v >>= m
         | V64 when not morello -> m
-        | V64 -> fun v -> uxt_op MachSize.Quad v >>= m
+        | V64 -> fun v -> uxt_op MachSize.Double v >>= m
         | V128 -> m
 
 (*  Promotion/Demotion *)
@@ -286,8 +286,8 @@ module Make
 
       let read_reg_sz port sz r ii = match sz with
       | MachSize.S128 -> read_reg_morello port r ii
-      | MachSize.Quad when not morello -> read_reg port r ii
-      | MachSize.Quad|MachSize.Word|MachSize.Short|MachSize.Byte ->
+      | MachSize.Double when not morello -> read_reg port r ii
+      | MachSize.Double|MachSize.Word|MachSize.Short|MachSize.Byte ->
           read_reg port r ii >>= uxt_op sz
 
       let read_reg_ord = read_reg_sz Port.No quad
@@ -614,8 +614,8 @@ module Make
       | AArch64.ZR -> M.unitT ()
       | _ -> match sz with
         | MachSize.S128 -> write_reg_morello r v ii
-        | MachSize.Quad when not morello -> write_reg r v ii
-        | MachSize.Quad|MachSize.Word|MachSize.Short|MachSize.Byte ->
+        | MachSize.Double when not morello -> write_reg r v ii
+        | MachSize.Double|MachSize.Word|MachSize.Short|MachSize.Byte ->
             mop sz v >>= fun v -> write_reg r v ii
 
       let write_reg_sz = do_write_reg_sz uxt_op
@@ -629,7 +629,7 @@ module Make
         | _ ->
            match sz with
            | MachSize.S128 -> write_reg_morello r v ii
-           | MachSize.Quad|MachSize.Word|MachSize.Short|MachSize.Byte ->
+           | MachSize.Double|MachSize.Word|MachSize.Short|MachSize.Byte ->
               op v >>= fun v -> write_reg r v ii
 
       let write_reg_sz_non_mixed =
@@ -666,7 +666,7 @@ module Make
         | AArch64Base.Vreg(_,(nelem,esize)) -> nelem * esize
         | _ -> assert false in
         match size with
-          | 64 -> MachSize.Quad
+          | 64 -> MachSize.Double
           | 128 -> MachSize.S128
           | _ -> assert false
 
@@ -1844,11 +1844,11 @@ Arguments:
               | UXTB -> Op.Mask  Byte
               | UXTH -> Op.Mask Short
               | UXTW -> Op.Mask Word
-              | UXTX ->  Op.Mask Quad
+              | UXTX ->  Op.Mask Double
               | SXTB -> Op.Sxt  Byte
               | SXTH -> Op.Sxt Short
               | SXTW -> Op.Sxt Word
-              | SXTX ->  Op.Sxt Quad
+              | SXTX ->  Op.Sxt Double
             end
 
 (* Apply a shift as monadic op *)
@@ -1881,7 +1881,7 @@ Arguments:
             read_reg_addr rs ii
         | K k, s -> (* Immediate with offset, with shift *)
             read_reg_addr rs ii
-            >>= fun v -> shift MachSize.Quad s (V.intToV k)
+            >>= fun v -> shift MachSize.Double s (V.intToV k)
             >>= M.add v
         | RV(v,r), S_NOEXT -> (* register, no shift *)
             (read_reg_addr rs ii >>| read_reg_addr_sz (tr_variant v) r ii)
@@ -1953,7 +1953,7 @@ Arguments:
          * then sign extend based on register size (var)
          *)
         let op = match var with
-          | MachSize.Quad -> sxt_op sz
+          | MachSize.Double -> sxt_op sz
           | MachSize.Word ->
              fun v -> sxt_op sz v >>=  uxt_op MachSize.Word
           | _ -> assert false in
@@ -2901,7 +2901,7 @@ Arguments:
         let open AArch64 in
         let nelem = scalable_nbytes / simd_variant_nbytes v in
         let off = predicate_count pat nelem * k in
-        let sz = MachSize.Quad in
+        let sz = MachSize.Double in
         (match op with
          | CNT -> mzero
          | INC -> read_reg_ord_sz sz r ii)
@@ -4283,7 +4283,7 @@ Arguments:
             !(simd_add r1 r2 r3 ii)
         | I_ADD_SIMD_S(r1,r2,r3) ->
             check_neon inst;
-            let sz = MachSize.Quad in
+            let sz = MachSize.Double in
             !(read_reg_neon Port.No r3 ii >>|
               read_reg_neon Port.No r2 ii >>= sum_elems
               >>= fun v -> write_reg_neon_sz sz r1 v ii)
@@ -4557,11 +4557,11 @@ Arguments:
         | I_RDVL (rd,k) ->
            check_sve inst;
            let v = scalable_nbytes * k |> V.intToV in
-           write_reg_sz_dest MachSize.Quad rd v ii
+           write_reg_sz_dest MachSize.Double rd v ii
            >>= nextSet rd
         |I_ADDVL (rd,rn,k) ->
            check_sve inst;
-           let sz = MachSize.Quad in
+           let sz = MachSize.Double in
            let off = scalable_nbytes * k in
            read_reg_ord_sz sz rn ii
            >>= M.op1 (Op.AddK off)
@@ -4779,8 +4779,8 @@ Arguments:
             | GCTAG -> M.op1 Op.CapaGetTag c
             | GCTYPE -> M.op1 (Op.LeftShift 18) c >>= fun v ->
                 M.op1 (Op.LogicalRightShift 113) v
-            | GCVALUE -> M.op1 (Op.Mask MachSize.Quad) c
-            end >>= fun v -> write_reg_sz MachSize.Quad rd v ii)
+            | GCVALUE -> M.op1 (Op.Mask MachSize.Double) c
+            end >>= fun v -> write_reg_sz MachSize.Double rd v ii)
         | I_SC(op,rd,rn,rm) ->
             check_morello inst ;
             !(begin
@@ -5078,7 +5078,7 @@ Arguments:
  * as an argument to the MRS and MSR instructions.
  *)
         | I_MSR (sreg,xt) -> begin
-            let sz = MachSize.Quad in
+            let sz = MachSize.Double in
             match sreg with
             | SYS_NZCV ->
               read_reg_ord_sz sz xt ii
@@ -5107,7 +5107,7 @@ Arguments:
                >>= fun v -> write_reg_dest xt v ii
                >>= nextSet xt
             | _ -> begin
-              let sz = MachSize.Quad in
+              let sz = MachSize.Double in
               let off = AArch64.sysreg_nv2off sreg in
               match C.variant Variant.NV2, off with
               | true, Some off ->

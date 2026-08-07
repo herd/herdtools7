@@ -157,7 +157,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let vloc = let open TypBase in
       let sz = match Cfg.typ with
       | Std (_,MachSize.S128) -> V128
-      | Std (_,MachSize.Quad) -> V64
+      | Std (_,MachSize.Double) -> V64
       | Int |Std (_,MachSize.Word) -> V32
       | Std (_,(MachSize.Short|MachSize.Byte)) -> V32
       | Pteval -> V64 in
@@ -168,14 +168,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let open MachSize in
       function
         | Byte|Short|Word -> V32
-        | Quad -> V64
+        | Double -> V64
         | S128 -> V128
 
     and v2sz =
       let open MachSize in
       function
       | V128 -> S128
-      | V64 -> Quad
+      | V64 -> Double
       | V32 -> Word
 
     let szloc = v2sz vloc
@@ -187,8 +187,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let sz =
         let open MachSize in
         match sz with
-        | S128 -> Quad (* MOV C?,#X is not recognized *)
-        | Byte|Short|Word|Quad -> sz in
+        | S128 -> Double (* MOV C?,#X is not recognized *)
+        | Byte|Short|Word|Double -> sz in
       let v = sz2v sz in I_MOV (v,r,i)
 
     let mov_reg_addr r1 r2 =  I_MOV (V64,r1,RV (V64,r2))
@@ -272,7 +272,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Byte -> I_LDRBH (B,r1,r2,idx)
       | Short -> I_LDRBH (H,r1,r2,idx)
       | Word -> I_LDR (V32,r1,r2,idx)
-      | Quad -> I_LDR (V64,r1,r2,idx)
+      | Double -> I_LDR (V64,r1,r2,idx)
       | S128 -> I_LDR (V128,r1,r2,idx)
 
     let do_ldr v r1 r2 = I_LDR (v,r1,r2,MemExt.Imm(0,Idx))
@@ -316,7 +316,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Byte -> I_LDRBH (B,r1,r2,idx)
       | Short -> I_LDRBH (H,r1,r2,idx)
       | Word -> I_LDR (V32,r1,r2,idx)
-      | Quad -> I_LDR (V64,r1,r2,idx)
+      | Double -> I_LDR (V64,r1,r2,idx)
       | S128 -> I_LDR (V128,r1,r2,idx)
 
     let str_mixed sz o r1 r2 =
@@ -326,7 +326,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Byte -> I_STRBH (B,r1,r2,idx)
       | Short -> I_STRBH (H,r1,r2,idx)
       | Word -> I_STR (V32,r1,r2,idx)
-      | Quad -> I_STR (V64,r1,r2,idx)
+      | Double -> I_STR (V64,r1,r2,idx)
       | S128 -> I_STR (V128,r1,r2,idx)
 
     let do_str v r1 r2 = I_STR (v,r1,r2,MemExt.Imm (0,Idx))
@@ -364,7 +364,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Byte -> I_STXRBH (B,t,r1,r2,r3)
       | Short -> I_STXRBH (H,t,r1,r2,r3)
       | Word -> I_STXR (V32,t,r1,r2,r3)
-      | Quad -> I_STXR (V64,t,r1,r2,r3)
+      | Double -> I_STXR (V64,t,r1,r2,r3)
       | S128 -> I_STXR (V128,t,r1,r2,r3)
 
     let ldxr_sz t sz r1 r2 =
@@ -373,7 +373,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Byte -> I_LDARBH (B,t,r1,r2)
       | Short -> I_LDARBH (H,t,r1,r2)
       | Word -> I_LDAR (V32,t,r1,r2)
-      | Quad -> I_LDAR (V64,t,r1,r2)
+      | Double -> I_LDAR (V64,t,r1,r2)
       | S128 -> I_LDAR (V128,t,r1,r2)
 
     let sumi_addr_gen tempo st rA o = match o with
@@ -391,7 +391,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Byte -> I_STRBH (B,r1,r2,idx)
       | Short -> I_STRBH (H,r1,r2,idx)
       | Word -> I_STR (V32,r1,r2,idx)
-      | Quad -> I_STR (V64,r1,r2,idx)
+      | Double -> I_STR (V64,r1,r2,idx)
       | S128 -> I_STR (V128,r1,r2,idx)
 
     let swp_mixed sz a rS rT rN =
@@ -400,7 +400,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Byte -> I_SWPBH (B,a,rS,rT,rN)
       | Short ->  I_SWPBH (H,a,rS,rT,rN)
       | Word ->  I_SWP (V32,a,rS,rT,rN)
-      | Quad ->  I_SWP (V64,a,rS,rT,rN)
+      | Double ->  I_SWP (V64,a,rS,rT,rN)
       | S128 ->  I_SWP (V128,a,rS,rT,rN)
 
     let swp a rS rT rN =  I_SWP (vloc,a,rS,rT,rN)
@@ -413,7 +413,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Byte -> I_CASBH (B,a,rS,rT,rN)
       | Short ->  I_CASBH (H,a,rS,rT,rN)
       | Word ->  I_CAS (V32,a,rS,rT,rN)
-      | Quad ->  I_CAS (V64,a,rS,rT,rN)
+      | Double ->  I_CAS (V64,a,rS,rT,rN)
       | S128 ->  I_CAS (V128,a,rS,rT,rN)
 
     let cas a rS rT rN =  I_CAS (vloc,a,rS,rT,rN)
@@ -424,7 +424,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Byte -> I_LDOPBH (op,B,a,rS,rT,rN)
       | Short ->  I_LDOPBH (op,H,a,rS,rT,rN)
       | Word ->  I_LDOP (op,V32,a,rS,rT,rN)
-      | Quad ->  I_LDOP (op,V64,a,rS,rT,rN)
+      | Double ->  I_LDOP (op,V64,a,rS,rT,rN)
       | S128 ->  I_LDOP (op,V128,a,rS,rT,rN)
 
     let ldop op a rS rT rN =  I_LDOP (op,vloc,a,rS,rT,rN)
@@ -435,7 +435,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Byte -> I_STOPBH (op,B,a,rS,rN)
       | Short ->  I_STOPBH (op,H,a,rS,rN)
       | Word ->  I_STOP (op,V32,a,rS,rN)
-      | Quad ->  I_STOP (op,V64,a,rS,rN)
+      | Double ->  I_STOP (op,V64,a,rS,rN)
       | S128 ->  I_STOP (op,V128,a,rS,rN)
 
     let stop op a rS rN =  I_STOP (op,vloc,a,rS,rN)
@@ -455,7 +455,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Byte  -> I_STLRBH (B,r1,r2)
       | Short -> I_STLRBH (H,r1,r2)
       | Word -> I_STLR (V32,r1,r2)
-      | Quad -> I_STLR (V64,r1,r2)
+      | Double -> I_STLR (V64,r1,r2)
       | S128 -> I_STLR (V128,r1,r2)
 
     let stlr_mixed sz o st r1 r2 =
@@ -474,7 +474,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Byte -> I_LDARBH (B,t,r1,rA)
         | Short -> I_LDARBH (H,t,r1,rA)
         | Word -> I_LDAR (V32,t,r1,rA)
-        | Quad -> I_LDAR (V64,t,r1,rA)
+        | Double -> I_LDAR (V64,t,r1,rA)
         | S128 -> I_LDAR (V128,t,r1,rA) in
       cs@[ld],st
 
@@ -487,7 +487,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Byte -> I_LDARBH (B,t,r1,rA)
         | Short -> I_LDARBH (H,t,r1,rA)
         | Word -> I_LDAR (V32,t,r1,rA)
-        | Quad -> I_LDAR (V64,t,r1,rA)
+        | Double -> I_LDAR (V64,t,r1,rA)
         | S128 -> I_LDAR (V128,t,r1,rA) in
       cs1@cs2@[ld],st
 

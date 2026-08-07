@@ -215,7 +215,7 @@ module
           | MIPS.LD (r1,k,r2) ->
               read_reg_addr r2 ii >>=
               (fun a -> M.add a (imm16ToV k)) >>=
-              (fun ea -> read_mem MachSize.Quad ea ii) >>=
+              (fun ea -> read_mem MachSize.Double ea ii) >>=
               (fun v -> write_reg r1 v ii)  >>= B.next1T
           | MIPS.SW (r1,k,r2) ->
               (read_reg_data r1 ii >>| read_reg_addr r2 ii) >>=

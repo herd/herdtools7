@@ -53,7 +53,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       let open TypBase in
       let open MachSize in
       match Cfg.typ with
-      | Std (_,MachSize.Quad) -> AV.Double
+      | Std (_,MachSize.Double) -> AV.Double
       | Int |Std (_,(Word|Short|Byte)) -> AV.Word
       | Pteval
       | Std (_,MachSize.S128) -> assert false
@@ -99,7 +99,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       | MachSize.Byte -> AV.Byte
       | MachSize.Short -> AV.Half
       | MachSize.Word -> AV.Word
-      | MachSize.Quad -> AV.Double
+      | MachSize.Double -> AV.Double
       | MachSize.S128 -> assert false
 
     let ldr_mixed r1 r2 sz o = AV.Load (tr_sz sz,Signed,AV.Rlx,r1,o,r2)

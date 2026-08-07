@@ -90,7 +90,7 @@ let mask sz =
      fun (_,v) -> false, Uint128.logand v (Uint128.of_uint16 Uint16.max_int)
   | Word ->
      fun (_,v) -> false, Uint128.logand v (Uint128.of_uint32 Uint32.max_int)
-  | Quad ->
+  | Double ->
      fun (_,v) -> false, Uint128.logand v (Uint128.of_uint64 Uint64.max_int)
   | S128 ->
      fun (t,v) -> t, v

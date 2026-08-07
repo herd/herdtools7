@@ -43,7 +43,7 @@ type t =
   | S_Label of String.t
   | S_String of String.t
 
-let machsize = MachSize.Quad (* Irrelevant here? *)
+let machsize = MachSize.Double (* Irrelevant here? *)
 let unique_zero = false
 let zero = S_Int Z.zero
 let one = S_Int Z.one

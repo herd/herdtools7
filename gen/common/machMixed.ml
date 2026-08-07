@@ -54,7 +54,7 @@ module Make(C:Config)(Value:Value_gen.S) = struct
     let r = do_fold f Byte (get_off Byte) r in
     let r = do_fold f Short (get_off Short) r in
     let r = do_fold f Word (get_off Word) r in
-    let r = do_fold f Quad (get_off Quad) r in
+    let r = do_fold f Double (get_off Double) r in
     let r = do_fold f S128 (get_off S128) r in
     r
 
@@ -64,7 +64,7 @@ module Make(C:Config)(Value:Value_gen.S) = struct
       | Byte -> v
       | Short -> v lsl 8 + v
       | Word ->  v lsl 24 + v lsl 16 + v lsl 8 + v
-      | Quad ->
+      | Double ->
           let x = do_rec Word v in
           x lsl 32 + x
       | S128 -> assert false in
@@ -113,7 +113,7 @@ module Vals(C:ValsConfig)(Value:Value_gen.S) = struct
     let mask =
       match sz with
       | S128 -> assert false
-      | Quad -> -1
+      | Double -> -1
       | _ -> (1 lsl sz_bits) - 1 in
     let r = (v lsr nshift) land mask in
 (*      Printf.eprintf "EXTRACT (%s,%i)[0x%x]: 0x%x -> 0x%x\n"

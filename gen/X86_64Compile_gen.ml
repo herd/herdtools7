@@ -24,7 +24,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let mach_size =
       let open TypBase in
       match Cfg.typ with
-      | Std (_,Quad) -> Quad
+      | Std (_,Double) -> Double
       | Int | Std (_,Word) -> Word
       | Std (_,Short) -> Short
       | Std (_,Byte) -> Byte
@@ -38,7 +38,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       | Byte -> I8b
       | Short -> I16b
       | Word -> I32b
-      | Quad -> I64b
+      | Double -> I64b
       | S128 -> assert false
 
     let size_to_reg_size =
@@ -47,7 +47,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
       | Byte -> R8bL
       | Short -> R16b
       | Word -> R32b
-      | Quad -> R64b
+      | Double -> R64b
       | S128 -> assert false
 
     let size_reg_part = size_to_reg_size mach_size

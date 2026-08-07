@@ -318,7 +318,7 @@ let memo_load = function
   | MachSize.Byte -> "lbz"
   | MachSize.Short -> "lhz"
   | MachSize.Word -> "lwz"
-  | MachSize.Quad -> "ld"
+  | MachSize.Double -> "ld"
   | MachSize.S128 -> assert false
 
 let memo_loadx sz = memo_load sz ^ "x"
@@ -327,7 +327,7 @@ let memo_store = function
   | MachSize.Byte -> "stb"
   | MachSize.Short -> "sth"
   | MachSize.Word -> "stw"
-  | MachSize.Quad -> "std"
+  | MachSize.Double -> "std"
   | MachSize.S128 -> assert false
 
 let memo_storex sz = memo_store sz ^ "x"
@@ -715,11 +715,11 @@ let get_next = function
 let norm_ins ins =
   let open MachSize in
   match ins with
-  | Pload(Quad,r1,cst,r2) -> Pload(Word,r1,cst,r2)
-  | Ploadx(Quad,r1,r2,r3) -> Ploadx(Word,r1,r2,r3)
-  | Plwax(Quad,r1,r2,r3) -> Plwax(Word,r1,r2,r3)
-  | Pstore(Quad,r1,cst,r2) -> Pstore(Word,r1,cst,r2)
-  | Pstorex(Quad,r1,r2,r3) -> Pstorex(Word,r1,r2,r3)
+  | Pload(Double,r1,cst,r2) -> Pload(Word,r1,cst,r2)
+  | Ploadx(Double,r1,r2,r3) -> Ploadx(Word,r1,r2,r3)
+  | Plwax(Double,r1,r2,r3) -> Plwax(Word,r1,r2,r3)
+  | Pstore(Double,r1,cst,r2) -> Pstore(Word,r1,cst,r2)
+  | Pstorex(Double,r1,r2,r3) -> Pstorex(Word,r1,r2,r3)
   | Pnop
   | Pload ((Byte|Short|Word),_,_,_)
   | Ploadx ((Byte|Short|Word),_,_,_)

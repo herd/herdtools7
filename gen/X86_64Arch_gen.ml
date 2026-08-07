@@ -87,7 +87,7 @@ module Make
         fold_acc (fun acc r -> f (acc,None) r) r
 
       let apply_mix f acc m r = match acc,m with
-      | (NonTemporal,(None|Some ((MachSize.Quad|MachSize.Word),_)))
+      | (NonTemporal,(None|Some ((MachSize.Double|MachSize.Word),_)))
       | ((Plain|Atomic),_) ->
           f (acc,m) r
       |  (NonTemporal,Some ((MachSize.Short|MachSize.Byte),_))

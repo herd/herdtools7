@@ -49,7 +49,7 @@ let mask sz =
   | Byte -> fun v -> Uint128.logand v (Uint128.of_uint8 Uint8.max_int)
   | Short -> fun v -> Uint128.logand v (Uint128.of_uint16 Uint16.max_int)
   | Word -> fun v ->  Uint128.logand v (Uint128.of_uint32 Uint32.max_int)
-  | Quad -> fun v -> Uint128.logand v (Uint128.of_uint64 Uint64.max_int)
+  | Double -> fun v -> Uint128.logand v (Uint128.of_uint64 Uint64.max_int)
   | S128 -> fun v -> v
 
 let sxt sz v = match sz with
