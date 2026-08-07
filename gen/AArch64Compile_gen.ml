@@ -40,6 +40,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let ppo _f k = k
 
     include A64
+    open! StructuredAtom
 
 (* Nop instr code *)
     let nop = "NOP"
@@ -1303,53 +1304,61 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* Atomic loads and stores *)
 (***************************)
 
-    let get_xload_addon (a,_m) r1 = match a with
-      | Plain a
-      | Acq a -> emit_ldr_addon a r1
+    let get_xload_addon atom r1 = match atom with
+      | { access_type = (OrdinaryAccess|AccessSize _);
+          access_order = (OrderPlain|OrderAcquire); } ->
+          emit_ldr_addon None r1
+      | { access_type = CapaAccess;
+          access_order = (OrderPlain|OrderAcquire); } ->
+          emit_ldr_addon (Some Capability) r1
       | _ -> []
 
     let get_xload = function
-      | (Plain None,None) ->ldxr
-      | (Plain Some Capability,None) -> ldxr_sz XX MachSize.S128
-      | (Plain None,Some (sz,_)) -> ldxr_sz XX sz
-      | (Acq None,None)   -> ldaxr
-      | (Acq Some Capability,None) -> ldxr_sz AX MachSize.S128
-      | (Acq None,Some (sz,_)) -> ldxr_sz AX sz
-      | (AcqPc _,_) -> Warn.fatal "AcqPC annotation on xload"
-      | (Tag,_)|(CapaTag,_)|(CapaSeal,_) -> Warn.fatal "variant annotation on xload"
-      | a ->
-         Warn.fatal "Bad annotation for Lx: %s\n" (A.pp_atom a)
+      | { access_type = OrdinaryAccess; access_order = OrderPlain; } -> ldxr
+      | { access_type = CapaAccess; access_order = OrderPlain; } -> ldxr_sz XX MachSize.S128
+      | { access_type = AccessSize (sz,_); access_order = OrderPlain; } -> ldxr_sz XX sz
+      | { access_type = OrdinaryAccess; access_order = OrderAcquire; } -> ldaxr
+      | { access_type = CapaAccess; access_order = OrderAcquire; } -> ldxr_sz AX MachSize.S128
+      | { access_type = AccessSize (sz,_); access_order = OrderAcquire; } -> ldxr_sz AX sz
+      | { access_order = OrderAcquirePc; _ } -> Warn.fatal "AcqPC annotation on xload"
+      | { access_type = (TagAccess|CapaTagAccess|CapaSealAccess); _ } -> Warn.fatal "variant annotation on xload"
+      | atom -> Warn.fatal "Bad annotation for Lx: %s\n" (pp atom)
 
 
     and get_xstore = function
-      | (Plain None,None) -> stxr
-      | (Plain Some Capability,None) -> stxr_sz YY MachSize.S128
-      | (Plain None,Some (sz,_)) -> stxr_sz YY sz
-      | (Rel None,None) -> stlxr
-      | (Rel Some Capability,None) -> stxr_sz LY MachSize.S128
-      | (Rel None,Some (sz,_)) -> stxr_sz LY sz
-      | (Tag,_)|(CapaTag,_)|(CapaSeal,_) -> Warn.fatal "variant annotation on xstore"
-      | a ->
-         Warn.fatal "Bad annotation for Sx: %s\n" (A.pp_atom a)
+      | { access_type = OrdinaryAccess; access_order = OrderPlain; } -> stxr
+      | { access_type = CapaAccess; access_order = OrderPlain; } -> stxr_sz YY MachSize.S128
+      | { access_type = AccessSize (sz,_); access_order = OrderPlain; } -> stxr_sz YY sz
+      | { access_type = OrdinaryAccess; access_order = OrderRelease; } -> stlxr
+      | { access_type = CapaAccess; access_order = OrderRelease; } -> stxr_sz LY MachSize.S128
+      | { access_type = AccessSize (sz,_); access_order = OrderRelease; } -> stxr_sz LY sz
+      | { access_type = (TagAccess|CapaTagAccess|CapaSealAccess); _ } -> Warn.fatal "variant annotation on xstore"
+      | atom -> Warn.fatal "Bad annotation for Sx: %s\n" (pp atom)
 
-    let get_xstore_addon (a,_m) r2 r3 e init st p = match a with
-    | Plain a
-    | Rel a -> emit_str_addon st p init r2 r3 a e
-    | _ -> init,[],st
+    let get_xstore_addon atom r2 r3 e init st p = match atom with
+      | { access_type = (OrdinaryAccess|AccessSize _);
+          access_order = (OrderPlain|OrderRelease); } ->
+          emit_str_addon st p init r2 r3 None e
+      | { access_type = CapaAccess;
+          access_order = (OrderPlain|OrderRelease); } ->
+          emit_str_addon st p init r2 r3 (Some Capability) e
+      | _ -> init,[],st
 
-    let get_rmw_addrs arw st rA = match arw with
-    | (_,(None|Some (_,0))),(_,(None|Some (_,0)))
+    let get_rmw_addrs (ar,aw) st rA =
+      let get_access atom = get_access_atom (Some atom) in
+      match get_access ar,get_access aw with
+    | (None|Some (_,0)),(None|Some (_,0))
       -> rA,rA,[],st
-    | (_,Some (_,o1)),(_,Some (_,o2)) when o1=o2 ->
+    | Some (_,o1),Some (_,o2) when o1=o2 ->
         let r,cs,st = sumi_addr st rA o1 in
         r,r,cs,st
-    |  (_,(None|Some (_,0))),(_,Some (_,o)) ->
+    | (None|Some (_,0)),Some (_,o) ->
         let  r,cs,st = sumi_addr st rA o in
         rA,r,cs,st
-    |  (_,Some (_,o)),(_,(None|Some (_,0))) ->
+    | Some (_,o),(None|Some (_,0)) ->
         let  r,cs,st = sumi_addr st rA o in
         r,rA,cs,st
-    | (_,Some (_,o1)),(_,Some (_,o2)) ->
+    | Some (_,o1),Some (_,o2) ->
         let  r1,cs1,st = sumi_addr_gen tempo1 st rA o1 in
         let  r2,cs2,st = sumi_addr_gen tempo2 st rA o2 in
         r1,r2,cs1@cs2,st
@@ -1360,15 +1369,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
            sig
 
              type load_regs
-             val load : A.atom -> load_regs -> A.reg -> A.ins list
-             val load_addon : A.atom -> load_regs -> A.ins list
+             val load : StructuredAtom.t -> load_regs -> A.reg -> A.ins list
+             val load_addon : StructuredAtom.t -> load_regs -> A.ins list
            end)
         (Store:
          sig
            type store_regs
-           val store : A.atom -> A.reg -> store_regs -> A.reg -> A.ins list
+           val store : StructuredAtom.t -> A.reg -> store_regs -> A.reg -> A.ins list
            val store_addon :
-             A.atom -> store_regs -> A.reg ->
+             StructuredAtom.t -> store_regs -> A.reg ->
                  C.event -> A.init -> A.st -> Proc.t ->
                    A.init * A.pseudo list * A.st
          end) =
@@ -1459,12 +1468,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let load ar (r1,r2) rA =
         let a =
           match ar with
-          | Pair ((`Pa),_),None -> XP
-          | Pair ((`PaIQ),_),None -> AXP
-          | Pair ((`PaA),_),None -> AXP
+          | { access_type = PairAccess (`Pa,_); access_order = OrderPlain; } -> XP
+          | { access_type = PairAccess (`PaIQ,_); access_order = OrderPlain; } -> AXP
+          | { access_type = PairAccess (`PaA,_); access_order = OrderPlain; } -> AXP
           | _ ->
              Warn.fatal
-               "Illegal %s annotaton on load exclusive pair" (pp_atom ar)  in
+               "Illegal %s annotaton on load exclusive pair" (pp ar)  in
         [do_ldxp a r1 r2 rA; add vloc r1 r2 r1;]
       let load_addon _ _ =
         assert (not (do_morello)); []
@@ -1475,12 +1484,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let store aw r (r1,r2) rA =
         let a =
           match aw with
-          | Pair ((`Pa),_),_ -> YY
-          | Pair ((`PaIL),_),_ -> LY
-          | Pair ((`PaL),_),_ -> LY
+          | { access_type = PairAccess (`Pa,_); access_order = OrderPlain; } -> YY
+          | { access_type = PairAccess (`PaIL,_); access_order = OrderPlain; } -> LY
+          | { access_type = PairAccess (`PaL,_); access_order = OrderPlain; } -> LY
           | _ ->
              Warn.fatal
-               "Illegal %s annotaton on store exclusive pair" (pp_atom aw)  in
+               "Illegal %s annotaton on store exclusive pair" (pp aw)  in
         [dec r2 r1; do_stxp a r r2 r1 rA;]
       let store_addon _ _ _ _ init st _ =
         assert (not (do_morello)); init,[],st
@@ -1491,14 +1500,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* Translate annotations *)
 
     let tr_rw = function
-      | PP -> (Plain None,None),(Plain None,None)
-      | PL -> (Plain None,None),(Rel None,None)
-      | AP -> (Acq None,None),(Plain None,None)
-      | AL -> (Acq None,None),(Rel None,None)
+      | PP -> plain,plain
+      | PL -> plain,make OrdinaryAccess OrderRelease
+      | AP -> make OrdinaryAccess OrderAcquire,plain
+      | AL -> make OrdinaryAccess OrderAcquire,make OrdinaryAccess OrderRelease
 
     let tr_none = function
-      | None -> Plain None,None
-      | Some p -> p
+      | None -> plain
+      | Some atom -> atom
 
 
 (********************)
@@ -1506,8 +1515,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (********************)
 
     let emit_pair_mixed sz o rw =
-      let arw = match tr_rw rw with
-      | (a1,_),(a2,_) -> (a1,Some (sz,o)),(a2,Some (sz,o)) in
+      let a1,a2 = tr_rw rw in
+      let set_access atom = match set_access_atom (Some atom) (sz,o) with
+      | Some atom -> atom
+      | None -> assert false in
+      let arw = set_access a1,set_access a2 in
       XSingle.emit_pair arw
 
 (********************************)
@@ -1708,13 +1720,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (**********)
 
     let add_tag atom loc tag = match atom with
-      | Some (Pte _,_) -> loc
+      | Some { access_type = PteAccess _; _ } -> loc
       | _ ->
         if do_memtag then Code.add_tag loc tag
         else if do_morello then Code.add_capability loc 0
         else loc
 
-    let get_tagged_loc e = add_tag e.C.atom (as_data e.C.loc) e.C.tag
+    let get_tagged_loc e =
+      add_tag e.C.atom (as_data e.C.loc) e.C.tag
 
     let add_label_to_last_instructions e cs =
       match e.C.check_fault with
@@ -1759,12 +1772,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       do_rec cs
 
     let emit_access st p init e =
+    let structured_atom = e.C.atom in
     let open WPTE in
     match e.C.dir,e.C.loc with
     | None,_ -> Warn.fatal "AArchCompile.emit_access"
     | Some d,Code lab ->
-        begin match d,e.C.atom with
-        | R,Some (Instr, None) ->
+        begin match d,structured_atom with
+        | R,Some { access_type = InstrAccess; access_order = OrderPlain; } ->
             let r,init,cs,st = LDR.emit_fetch st p init lab in
             Some r,init,cs,st
         (* Plain read from an instruction label is currently not supported,
@@ -1772,7 +1786,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R, None ->
             let r,init,cs,st = LDR.emit_load st p init lab in
             Some r,init,cs,st
-        | W, Some(Instr, None)  *)
+        | W, Some { access_type = InstrAccess; access_order = OrderPlain; }  *)
         | W, None ->
             let init,cs,st = STR.emit_store_nop st p init lab in
             None,init,cs,st
@@ -1780,31 +1794,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               (pp_dir d) (C.debug_evt e)
         end
     | Some d,Data loc ->
-        let loc = add_tag e.C.atom loc e.C.tag in
-        let atom = match e.C.atom with
-        | None -> None
-        | Some (a,m) -> begin match a with
-          | Plain Some Capability
-          | Acq Some Capability
-          | AcqPc Some Capability
-          | Rel Some Capability ->
-            assert (Misc.is_none m) ;
-            Some (a,Some (MachSize.S128,0))
-          | _ -> Some (a,m) end in
-        (* Compile the node.
-           - `regs`, registers
-           - `inits`, initial values
-           - `cs`, instructions
-           - `st`, states
-        *)
-        let regs,inits,cs,st = begin match d,atom with
+        let loc = add_tag structured_atom loc e.C.tag in
+        let ordinary_access = match d,structured_atom with
         | R,None ->
             let r,init,cs,st = LDR.emit_load st p init loc in
-            Some r,init,cs,st
-        | R,Some (Acq _,None) ->
+            Some (Some r,init,cs,st)
+        | R,Some { access_type = OrdinaryAccess; access_order = OrderAcquire; } ->
             let r,init,cs,st = LDAR.emit_load st p init loc in
-            Some r,init,cs,st
-        | R,Some (Acq a,Some (sz,o)) ->
+            Some (Some r,init,cs,st)
+        | R,Some ({ access_type = CapaAccess; access_order = OrderAcquire; } as atom)
+        | R,Some ({ access_type = AccessSize _; access_order = OrderAcquire; } as atom) ->
+            let sz,o = match get_access_atom (Some atom) with
+            | Some sz -> sz
+            | None -> MachSize.S128,0 in
             let module L =
               LOAD
                 (struct
@@ -1815,12 +1817,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   let next_reg = next_reg_sz
                 end) in
             let r,init,cs,st = L.emit_load st p init loc in
-            let cs2 = emit_ldr_addon a r in
-            Some r,init,cs@pseudo cs2,st
-        | R,Some (AcqPc _,None) ->
+            let cs2 = match atom.access_type with
+            | CapaAccess -> emit_ldr_addon (Some Capability) r
+            | _ -> emit_ldr_addon None r in
+            Some (Some r,init,cs@pseudo cs2,st)
+        | R,Some { access_type = OrdinaryAccess; access_order = OrderAcquirePc; } ->
             let r,init,cs,st = LDAPR.emit_load st p init loc in
-            Some r,init,cs,st
-        | R,Some (AcqPc a,Some (sz,o)) ->
+            Some (Some r,init,cs,st)
+        | R,Some ({ access_type = CapaAccess; access_order = OrderAcquirePc; } as atom)
+        | R,Some ({ access_type = AccessSize _; access_order = OrderAcquirePc; } as atom) ->
+            let sz,o = match get_access_atom (Some atom) with
+            | Some sz -> sz
+            | None -> MachSize.S128,0 in
             let module L =
               LOAD
                 (struct
@@ -1831,32 +1839,40 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   let next_reg = next_reg_sz
                 end) in
             let r,init,cs,st = L.emit_load st p init loc in
-            let cs2 = emit_ldr_addon a r in
-            Some r,init,cs@pseudo cs2,st
-        | R,Some (Rel _,_) ->
-            Warn.fatal "No load release"
-        | R,Some (Atomic rw,None) ->
-            let r,init,cs,st = emit_lda (tr_rw rw) st p init loc  in
-            Some r,init,cs,st
-        | R,Some (Atomic rw,Some (sz,o)) ->
-            let r,init,cs,st = emit_lda_mixed sz o rw st p init loc  in
-            Some r,init,cs,st
-        | R,Some (Plain a,Some (sz,o)) ->
+            let cs2 = match atom.access_type with
+            | CapaAccess -> emit_ldr_addon (Some Capability) r
+            | _ -> emit_ldr_addon None r in
+            Some (Some r,init,cs@pseudo cs2,st)
+        | R,Some { access_type = OrdinaryAccess; access_order = OrderAtomic rw; } ->
+            let r,init,cs,st = emit_lda (tr_rw rw) st p init loc in
+            Some (Some r,init,cs,st)
+        | R,Some { access_type = AccessSize (sz,o); access_order = OrderAtomic rw; } ->
+            let r,init,cs,st = emit_lda_mixed sz o rw st p init loc in
+            Some (Some r,init,cs,st)
+        | R,Some ({ access_type = CapaAccess; access_order = OrderPlain; } as atom)
+        | R,Some ({ access_type = AccessSize _; access_order = OrderPlain; } as atom) ->
+            let sz,o = match get_access_atom (Some atom) with
+            | Some sz -> sz
+            | None -> MachSize.S128,0 in
             let r,init,cs,st = emit_load_mixed sz o st p init loc in
-            let cs2 = emit_ldr_addon a r in
-            Some r,init,cs@pseudo cs2,st
-        | R,Some (Tag,None) ->
-            let r,init,cs,st = LDG.emit_load st p init loc  in
-            Some r,init,cs,st
-        | R,Some (CapaTag,None) ->
+            let cs2 = match atom.access_type with
+            | CapaAccess -> emit_ldr_addon (Some Capability) r
+            | _ -> emit_ldr_addon None r in
+            Some (Some r,init,cs@pseudo cs2,st)
+        | R,Some { access_type = TagAccess; access_order = OrderPlain; } ->
+            let r,init,cs,st = LDG.emit_load st p init loc in
+            Some (Some r,init,cs,st)
+        | R,Some { access_type = CapaTagAccess; access_order = OrderPlain; } ->
             let r,init,cs,st = LDCT.emit_load st p init loc in
-            Some r,init,cs,st
-        | R,Some (CapaTag,Some _) -> assert false
-        | R,Some (CapaSeal,None) ->
+            Some (Some r,init,cs,st)
+        | R,Some { access_type = CapaSealAccess; access_order = OrderPlain; } ->
             let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init loc in
-            Some r,init,cs@lift_code [gctype r r],st
-        | R,Some (CapaSeal,Some _) -> assert false
-        | R,Some (Neon n, None) ->
+            Some (Some r,init,cs@lift_code [gctype r r],st)
+        | R,Some { access_type = NeonAccess SIMD.NeP;
+                   access_order = OrderAcquirePc; } ->
+            let r,init,cs,st = LDAPUR.emit_load st p init loc in
+            Some (Some r,init,cs,st)
+        | R,Some { access_type = NeonAccess n; access_order = OrderPlain; } ->
            let emit_load = match n with
              | SIMD.NeRel -> Warn.fatal "No laod release"
              | SIMD.NeAcqPc -> LDAPUR.emit_load
@@ -1869,32 +1885,43 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              | _ -> LDN.emit_load n
            in
            let r,init,cs,st = emit_load st p init loc in
-            Some r,init,cs,st
-        | R,Some (Neon _,Some _) -> assert false
-        | R,Some (Pair (opt,idx),None) ->
-          let r,init,cs,st = emit_ldp (pair_opt_to_ld opt) idx st p init loc in
-          Some r,init,cs,st
-        | R,Some (Pair _,Some _) -> assert false
+            Some (Some r,init,cs,st)
+        | R,Some { access_type = PairAccess (opt,idx); access_order = OrderPlain; } ->
+            let r,init,cs,st = emit_ldp (pair_opt_to_ld opt) idx st p init loc in
+            Some (Some r,init,cs,st)
         | W,None ->
             let init,cs,st =
               STR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
-            None,init,cs,st
-        | W,Some (Rel _,None) ->
+            Some (None,init,cs,st)
+        | W,Some { access_type = OrdinaryAccess; access_order = OrderRelease; } ->
             let init,cs,st =
               STLR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
-            None,init,cs,st
-        | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
-        | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
-        | W,Some (Atomic rw,None) ->
+            Some (None,init,cs,st)
+        | W,Some { access_type = OrdinaryAccess; access_order = OrderAtomic rw; } ->
             let r,init,cs,st = emit_sta (tr_rw rw) st p init loc (Value.to_int e.C.v) in
-            Some r,init,cs,st
-        | W,Some (Atomic rw,Some (sz,o)) ->
+            Some (Some r,init,cs,st)
+        | W,Some { access_type = AccessSize (sz,o); access_order = OrderAtomic rw; } ->
             let r,init,cs,st = emit_sta_mixed sz o rw st p init loc (Value.to_int e.C.v) in
-            Some r,init,cs,st
-        | W,Some (Plain a,Some (sz,o)) ->
-            let init,cs,st = emit_store_mixed sz o st p init loc (Value.to_int e.C.v) a e in
-            None,init,cs,st
-        | W,Some (Rel a,Some (sz,o)) ->
+            Some (Some r,init,cs,st)
+        | W,Some ({ access_type = CapaAccess; access_order = OrderPlain; } as atom)
+        | W,Some ({ access_type = AccessSize _; access_order = OrderPlain; } as atom) ->
+            let sz,o = match get_access_atom (Some atom) with
+            | Some sz -> sz
+            | None -> MachSize.S128,0 in
+            let addon = match atom.access_type with
+            | CapaAccess -> Some Capability
+            | _ -> None in
+            let init,cs,st =
+              emit_store_mixed sz o st p init loc (Value.to_int e.C.v) addon e in
+            Some (None,init,cs,st)
+        | W,Some ({ access_type = CapaAccess; access_order = OrderRelease; } as atom)
+        | W,Some ({ access_type = AccessSize _; access_order = OrderRelease; } as atom) ->
+            let sz,o = match get_access_atom (Some atom) with
+            | Some sz -> sz
+            | None -> MachSize.S128,0 in
+            let addon = match atom.access_type with
+            | CapaAccess -> Some Capability
+            | _ -> None in
             let module S =
               STORE
                 (struct
@@ -1907,76 +1934,75 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                     cs,st
                   let emit_mov = emit_mov_sz sz
                 end) in
-            let init,cs,st = S.emit_store st p init loc (Value.to_int e.C.v) a e in
-            None,init,cs,st
-        | W,Some (Tag,None) ->
+            let init,cs,st = S.emit_store st p init loc (Value.to_int e.C.v) addon e in
+            Some (None,init,cs,st)
+        | W,Some { access_type = TagAccess; access_order = OrderPlain; } ->
             let init,cs,st = STG.emit_store st p init e in
-            None,init,cs,st
-        | W,Some (Pair (opt,idx),None) ->
-          let init,cs,st = emit_stp (pair_opt_to_st opt) idx st p init loc e in
-          None,init,cs,st
-        | W,Some (Pair _,Some _) -> assert false
-        | (R|W), Some (Instr, _) -> Warn.fatal "Instr annotation did not create code location %s" (C.debug_evt e)
-        | R,Some (Pte (Read|ReadAcq|ReadAcqPc as rk),None) ->
-            let emit = match rk with
-            | Read -> LDR.emit_load_var
-            | ReadAcq -> LDAR.emit_load_var
-            | ReadAcqPc -> LDAPR.emit_load_var
-            | _ -> assert false in
+            Some (None,init,cs,st)
+        | W,Some { access_type = PairAccess (opt,idx); access_order = OrderPlain; } ->
+            let init,cs,st = emit_stp (pair_opt_to_st opt) idx st p init loc e in
+            Some (None,init,cs,st)
+        | (R|W),Some { access_type = InstrAccess; _ } ->
+            Warn.fatal "Instr annotation did not create code location %s" (C.debug_evt e)
+        | R,Some { access_type = PteAccess Read; access_order; } ->
+            let emit = match access_order with
+            | OrderPlain -> LDR.emit_load_var
+            | OrderAcquire -> LDAR.emit_load_var
+            | OrderAcquirePc -> LDAPR.emit_load_var
+            | (OrderRelease|OrderAtomic _) -> assert false in
             let r,init,cs,st = emit A64.V64 st p init (Misc.add_pte loc) in
-            Some r,init,cs,st
+            Some (Some r,init,cs,st)
         (* A special case for TTHM HA on read. *)
-        | R,Some (Pte (Set pte),None) when WPTESet.mem HA pte ->
+        | R,Some { access_type = PteAccess (Set pte); access_order = OrderPlain; }
+          when WPTESet.mem HA pte ->
             let r,init,cs,st = LDR.emit_load st p init loc in
-            Some r,init,cs,st
+            Some (Some r,init,cs,st)
+        | R,Some { access_type = PteAccess (Set pte); access_order = OrderAcquire; }
+          when pte = WPTESet.singleton HA ->
+            let r,init,cs,st = LDAR.emit_load st p init loc in
+            Some (Some r,init,cs,st)
+        | R,Some { access_type = PteAccess (Set pte); access_order = OrderAcquirePc; }
+          when pte = WPTESet.singleton HA ->
+            let r,init,cs,st = LDAPR.emit_load st p init loc in
+            Some (Some r,init,cs,st)
         (* Special cases for TTHM.
            - `HA` is on both read and write
            - `HD` is only on write *)
-        | R,Some(Pte (Set pte),None) when pte = WPTESet.singleton HA ->
-            let r,init,cs,st = LDR.emit_load st p init loc in
-            Some r,init,cs,st
-        | R,Some(Pte ReadHAAcq,None) ->
-            let r,init,cs,st = LDAR.emit_load st p init loc in
-            Some r,init,cs,st
-        | R,Some(Pte ReadHAAcqPc,None) ->
-            let r,init,cs,st = LDAPR.emit_load st p init loc in
-            Some r,init,cs,st
-        | W,Some (Pte (Set pte),None) when is_tthm pte ->
+        | W,Some { access_type = PteAccess (Set pte); access_order = OrderPlain; }
+          when StructuredAtom.is_tthm pte ->
             let init,cs,st =
               STR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
-            None,init,cs,st
-        | W,Some (Pte (SetRel pte),None) when is_tthm pte ->
+            Some (None,init,cs,st)
+        | W,Some { access_type = PteAccess (Set pte); access_order = OrderRelease; }
+          when StructuredAtom.is_tthm pte ->
             let init,cs,st =
               STLR.emit_store st p init loc (Value.to_int e.C.v) None C.evt_null in
-            None,init,cs,st
+            Some (None,init,cs,st)
         (* END special cases for TTHM. *)
-        | W,Some (Pte (Set _),None) ->
+        | W,Some { access_type = PteAccess (Set _); access_order = OrderPlain; } ->
             let init,cs,st =
               emit_set_pteval false st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
-            None,init,cs,st
-        | W,Some (Pte (SetRel _),None) ->
+            Some (None,init,cs,st)
+        | W,Some { access_type = PteAccess (Set _); access_order = OrderRelease; } ->
             let init,cs,st =
               emit_set_pteval true st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
-            None,init,cs,st
-        | d,Some (Pte _,_ as a) ->
-            Warn.fatal
-              "Atom %s does not apply to direction %s"
-              (A.pp_atom a) (Code.pp_dir d)
-        | _,Some (Plain _,None) -> assert false
-        | _,Some (Tag,_) -> assert false
-        | W,Some (CapaTag,None) ->
+            Some (None,init,cs,st)
+        | W,Some { access_type = CapaTagAccess; access_order = OrderPlain; } ->
             let init,cs,st = STCT.emit_store st p init loc (Value.to_int e.C.v) in
-            None,init,cs,st
-        | W,Some (CapaTag,Some _) -> assert false
-        | W,Some (CapaSeal,None) ->
+            Some (None,init,cs,st)
+        | W,Some { access_type = CapaSealAccess; access_order = OrderPlain; } ->
             let rA,init,st = U.next_init st p init loc in
             let rB,init,csi,st = U.emit_mov st p init e.C.ord in
             let init,cs,st =
               emit_str_addon
                 st p init rB rA (Some Capability) {e with C.cseal = (Value.to_int e.C.v)} in
-            None,init,csi@cs@lift_code [str_mixed MachSize.S128 0 rB rA],st
-        | W,Some (CapaSeal,Some _) -> assert false
-        | W,Some (Neon n, None) ->
+            Some (None,init,csi@cs@lift_code [str_mixed MachSize.S128 0 rB rA],st)
+        | W,Some { access_type = NeonAccess SIMD.NeP;
+                   access_order = OrderRelease; } ->
+            let init,cs,st =
+              STLUR.emit_store st p init loc (Value.to_int e.C.v) in
+            Some (None,init,cs,st)
+        | W,Some { access_type = NeonAccess n; access_order = OrderPlain; } ->
            let emit_store = match n with
              | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
              | SIMD.NeRel -> STLUR.emit_store
@@ -1989,8 +2015,34 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              | _ -> STN.emit_store n
            in
            let init,cs,st = emit_store st p init loc (Value.to_int e.C.v) in
-           None,init,cs,st
-        | W,Some (Neon _,Some _) -> assert false
+           Some (None,init,cs,st)
+        | _,_ -> None in
+        (* Compile the node.
+           - `regs`, registers
+           - `inits`, initial values
+           - `cs`, instructions
+           - `st`, states
+        *)
+        let regs,inits,cs,st = match ordinary_access with
+        | Some result -> result
+        | None -> begin match d,structured_atom with
+        | R,None -> assert false
+        | R,Some { access_order = OrderRelease; _ } ->
+            Warn.fatal "No load release"
+        | W,Some { access_order = OrderAcquire; _ } ->
+            Warn.fatal "No store acquire"
+        | W,Some { access_order = OrderAcquirePc; _ } ->
+            Warn.fatal "No store acquirePc"
+        | d,Some ({ access_type = PteAccess _; _ } as atom) ->
+            Warn.fatal
+              "Atom %s does not apply to direction %s"
+              (StructuredAtom.pp atom) (Code.pp_dir d)
+        | R,Some { access_order = (OrderPlain|OrderAcquire|OrderAcquirePc); _ } ->
+            assert false
+        | W,None -> assert false
+        | W,Some { access_order = (OrderPlain|OrderRelease); _ } ->
+            assert false
+        | (R|W),Some _ -> assert false
         end in
         (* Add a label to instructions `cs`, when a fault check is required. *)
         let cs = add_label_to_last_instructions e cs in
@@ -2008,8 +2060,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           "Refuse to generate constrained unpredictable, use -variant CU to accept"
 
     let check_arw_lxsx er ew =
-      let _,szr as ar = tr_none er.C.atom
-      and _,szw as aw = tr_none ew.C.atom in
+      let ar = tr_none er.C.atom
+      and aw = tr_none ew.C.atom in
+      let szr = get_access_atom (Some ar)
+      and szw = get_access_atom (Some aw) in
       check_cu (not (A64.do_cu || same_sz szr szw)) ;
       ar,aw
 
@@ -2069,15 +2123,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_exch12 = do_emit_exch12 emit_addr_simple
 
     let emit_exch st p init er ew =
-      let ar,_ = tr_none er.C.atom
-      and aw,_ = tr_none ew.C.atom in
-      match ar,aw with
-      | (Pair _,Pair _) ->
+      let ar = tr_none er.C.atom
+      and aw = tr_none ew.C.atom in
+      match ar.access_type,aw.access_type with
+      | PairAccess _,PairAccess _ ->
          emit_exch22 st p init er ew
-      | (Pair _,_) ->
+      | PairAccess _,_ ->
          check_cu (not A64.do_cu) ;
          emit_exch21 st p init er ew
-      | (_,Pair _) ->
+      | _,PairAccess _ ->
          check_cu (not A64.do_cu) ;
          emit_exch12 st p init er ew
       | _,_ ->
@@ -2088,16 +2142,30 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       else
         Warn.fatal "Amo instructions with different sizes or offsets"
 
-    let do_rmw_type a1 a2 = match a1,a2 with
-    | Plain o1,Plain o2 when o1 = o2 -> RMW_P,o1
-    | Acq o1,Plain o2 when o1 = o2   -> RMW_A,o1
-    | Plain o1,Rel o2 when o1 = o2   -> RMW_L,o1
-    | Acq o1,Rel o2 when o1 = o2     -> RMW_AL,o1
-    | _,_ ->
-        Warn.fatal "Bad annotation for Amo: R=%s, W=%s"
-          (pp_atom_acc a1) (pp_atom_acc a2)
+    let do_rmw_type a1 a2 =
+      let capa_opt = function
+      | OrdinaryAccess|AccessSize _ -> Some None
+      | CapaAccess -> Some (Some Capability)
+      | (CapaTagAccess|CapaSealAccess|TagAccess|PteAccess _
+        | NeonAccess _|PairAccess _|InstrAccess) -> None in
+      match capa_opt a1.access_type,capa_opt a2.access_type with
+      | Some o1,Some o2 when o1 = o2 ->
+          begin match a1.access_order,a2.access_order with
+          | OrderPlain,OrderPlain -> RMW_P,o1
+          | OrderAcquire,OrderPlain -> RMW_A,o1
+          | OrderPlain,OrderRelease -> RMW_L,o1
+          | OrderAcquire,OrderRelease -> RMW_AL,o1
+          | _,_ ->
+              Warn.fatal "Bad annotation for Amo: R=%s, W=%s"
+                (pp a1) (pp a2)
+          end
+      | _,_ ->
+          Warn.fatal "Bad annotation for Amo: R=%s, W=%s"
+            (pp a1) (pp a2)
 
-    let do_rmw_annot (ar,szr) (aw,szw) =
+    let do_rmw_annot ar aw =
+      let szr = get_access_atom (Some ar)
+      and szw = get_access_atom (Some aw) in
       let sz =  do_sz szr szw in
       let a,opt = do_rmw_type ar aw in
       sz,a,opt
@@ -2161,15 +2229,17 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       emit_cas_rA st p init er ew rA
 
     let emit_stop_rA op st p init er ew rA =
-      let a,sz1 = tr_none ew.C.atom
-      and b,sz2 = tr_none er.C.atom in
+      let a = tr_none ew.C.atom
+      and b = tr_none er.C.atom in
+      let sz1 = get_access_atom (Some a)
+      and sz2 = get_access_atom (Some b) in
       let sz = do_sz sz1 sz2 in
-      let a = match b,a with
-      | Plain _,Plain _-> W_P
-      | Plain _,Rel _ -> W_L
+      let a = match b.access_order,a.access_order with
+      | OrderPlain,OrderPlain -> W_P
+      | OrderPlain,OrderRelease -> W_L
       | _ ->
           Warn.fatal "Unexpected atoms in STOP instruction: %s,%s"
-            (pp_atom_acc b)  (pp_atom_acc a) in
+            (pp b) (pp a) in
       let rW,init,csi,st = mk_emit_mov sz st p init (Value.to_int ew.C.v) in
       let cs,st = match sz with
       | None -> [stop op a rW rA],st
@@ -2283,74 +2353,77 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       match e.C.dir,e.C.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some d,Data loc ->
-          let loc = add_tag e.C.atom loc e.C.tag in
-          let atom = match e.C.atom with
-          | None -> None
-          | Some (a,m) -> begin match a with
-            | Plain Some Capability
-            | Acq Some Capability
-            | AcqPc Some Capability
-            | Rel Some Capability ->
-              assert (Misc.is_none m) ;
-              Some (a,Some (MachSize.S128,0))
-            | _ -> Some (a,m) end in
-          let regs,inits,cs,st = begin match d,atom with
+          let structured_atom = e.C.atom in
+          let loc = add_tag structured_atom loc e.C.tag in
+          let ordinary_access = match d,structured_atom with
           | R,None ->
               let r,init,cs,st =
                 LDR.emit_load_idx_var vloc vdep st p init loc r2 in
-              Some r,init, pseudo cs0@cs,st
-          | R,Some (Acq _,None) ->
+              Some (Some r,init,pseudo cs0@cs,st)
+          | R,Some { access_type = OrdinaryAccess; access_order = OrderAcquire; } ->
               let r,init,cs,st =
                 LDAR.emit_load_idx_var vloc vdep st p init loc r2 in
-              Some r,init, pseudo cs0@cs,st
-          | R,Some (Acq a,Some (sz,o)) ->
+              Some (Some r,init,pseudo cs0@cs,st)
+          | R,Some ({ access_type = CapaAccess; access_order = OrderAcquire; } as atom)
+          | R,Some ({ access_type = AccessSize _; access_order = OrderAcquire; } as atom) ->
+              let sz,o = match get_access_atom (Some atom) with
+              | Some sz -> sz
+              | None -> MachSize.S128,0 in
              let load =
                do_emit_load_idx_var
                  next_reg_sz
                  (fun sz _ ->  do_ldar_mixed_idx vdep AA sz o)
                  sz sz in
               let r,init,cs,st = load st p init loc r2 in
-              let cs2 = emit_ldr_addon a r in
-              Some r,init,pseudo cs0@cs@pseudo cs2,st
-          | R,Some (AcqPc _,None) ->
+              let cs2 = match atom.access_type with
+              | CapaAccess -> emit_ldr_addon (Some Capability) r
+              | _ -> emit_ldr_addon None r in
+              Some (Some r,init,pseudo cs0@cs@pseudo cs2,st)
+          | R,Some { access_type = OrdinaryAccess; access_order = OrderAcquirePc; } ->
               let r,init,cs,st =
                 LDAPR.emit_load_idx_var vloc vdep st p init loc r2 in
-              Some r,init, pseudo cs0@cs,st
-          | R,Some (AcqPc a,Some (sz,o)) ->
+              Some (Some r,init,pseudo cs0@cs,st)
+          | R,Some ({ access_type = CapaAccess; access_order = OrderAcquirePc; } as atom)
+          | R,Some ({ access_type = AccessSize _; access_order = OrderAcquirePc; } as atom) ->
+              let sz,o = match get_access_atom (Some atom) with
+              | Some sz -> sz
+              | None -> MachSize.S128,0 in
              let load =
                do_emit_load_idx_var
                  next_reg_sz
                  (fun sz _ ->  do_ldar_mixed_idx vdep AQ sz o)
                  sz sz in
               let r,init,cs,st = load st p init loc r2 in
-              let cs2 = emit_ldr_addon a r in
-              Some r,init,pseudo cs0@cs@pseudo cs2,st
-          | R,Some (Rel _,_) ->
-              Warn.fatal "No load release"
-          | R,Some (Atomic rw,None) ->
+              let cs2 = match atom.access_type with
+              | CapaAccess -> emit_ldr_addon (Some Capability) r
+              | _ -> emit_ldr_addon None r in
+              Some (Some r,init,pseudo cs0@cs@pseudo cs2,st)
+          | R,Some { access_type = OrdinaryAccess; access_order = OrderAtomic rw; } ->
               let r,init,cs,st =
                 do_emit_lda_idx vdep (tr_rw rw) st p init loc r2 in
-              Some r,init, pseudo cs0@cs,st
-          | R,Some (Atomic rw,Some (sz,o)) ->
+              Some (Some r,init,pseudo cs0@cs,st)
+          | R,Some { access_type = AccessSize (sz,o); access_order = OrderAtomic rw; } ->
               let r,init,cs,st =
                 do_emit_lda_mixed_idx vdep sz o rw st p init loc r2 in
-              Some r,init, pseudo cs0@cs,st
-          | R,Some (Tag,None) ->
+              Some (Some r,init,pseudo cs0@cs,st)
+          | R,Some { access_type = TagAccess; access_order = OrderPlain; } ->
               let r,init,cs,st = LDG.emit_load_idx vdep st p init loc r2 in
-              Some r,init, pseudo cs0@cs,st
-          | R,Some (Tag,Some _) -> assert false
-          | R,Some (CapaTag,None) ->
+              Some (Some r,init,pseudo cs0@cs,st)
+          | R,Some { access_type = CapaTagAccess; access_order = OrderPlain; } ->
               (* TODO: don't waste r2 *)
               let r,init,cs,st = LDCT.emit_load_idx st p init loc rd in
-              Some r,init,cs,st
-          | R,Some (CapaTag,Some _) -> assert false
-          | R,Some (CapaSeal,None) ->
+              Some (Some r,init,cs,st)
+          | R,Some { access_type = CapaSealAccess; access_order = OrderPlain; } ->
               (* TODO: don't waste r2 *)
               let (_,rA),init,cs,st = seal_dp_addr init p loc st rd e.C.dep in
               let rB,st = next_reg st in
-              Some rB,init,cs@lift_code [ldr_mixed rB rA MachSize.S128 0; gctype rB rB],st
-          | R,Some (CapaSeal,Some _) -> assert false
-          | R,Some (Neon n,None) ->
+              Some (Some rB,init,cs@lift_code [ldr_mixed rB rA MachSize.S128 0; gctype rB rB],st)
+          | R,Some { access_type = NeonAccess SIMD.NeP;
+                     access_order = OrderAcquirePc; } ->
+              let rB,init,cs,st =
+                LDAPUR.emit_load_idx vdep st p init loc r2 in
+              Some (Some rB,init,pseudo cs0@cs,st)
+          | R,Some { access_type = NeonAccess n; access_order = OrderPlain; } ->
               let emit_load_idx = match n with
                 | SIMD.NeRel -> Warn.fatal "No laod release"
                 | SIMD.NeAcqPc -> LDAPUR.emit_load_idx
@@ -2363,12 +2436,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 | _ -> LDN.emit_load_idx n
               in
               let rB,init,cs,st = emit_load_idx vdep st p init loc r2 in
-              Some rB,init,pseudo cs0@cs,st
-          | R,Some (Pair (opt,idx),None) ->
+              Some (Some rB,init,pseudo cs0@cs,st)
+          | R,Some { access_type = PairAccess (opt,idx); access_order = OrderPlain; } ->
               let r,init,cs,st =
                 emit_ldp_idx_var (pair_opt_to_ld opt) idx vdep st p init loc r2 in
-              Some r,init, pseudo cs0@cs,st
-          | R,Some ((Neon _|Pair _),Some _) -> assert false
+              Some (Some r,init,pseudo cs0@cs,st)
           | W,None ->
               let module STR =
                 STORE
@@ -2379,8 +2451,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                     let emit_mov = U.emit_mov
                   end) in
               let init,cs,st = STR.emit_store_idx st p init loc r2 (Value.to_int e.C.v) None C.evt_null in
-              None,init,pseudo cs0@cs,st
-          | W,Some (Rel _,None) ->
+              Some (None,init,pseudo cs0@cs,st)
+          | W,Some { access_type = OrdinaryAccess; access_order = OrderRelease; } ->
               let module STLR =
                 STORE
                   (struct
@@ -2391,8 +2463,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       let emit_mov = U.emit_mov
                   end) in
               let init,cs,st = STLR.emit_store_idx st p init loc r2 (Value.to_int e.C.v) None C.evt_null in
-              None,init,pseudo cs0@cs,st
-          | W,Some (Rel a,Some (sz,o)) ->
+              Some (None,init,pseudo cs0@cs,st)
+          | W,Some ({ access_type = CapaAccess; access_order = OrderRelease; } as atom)
+          | W,Some ({ access_type = AccessSize _; access_order = OrderRelease; } as atom) ->
+              let sz,o = match get_access_atom (Some atom) with
+              | Some sz -> sz
+              | None -> MachSize.S128,0 in
+              let addon = match atom.access_type with
+              | CapaAccess -> Some Capability
+              | _ -> None in
               let module S =
                 STORE
                   (struct
@@ -2405,19 +2484,23 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       cs,st
                       let emit_mov = emit_mov_sz sz
                   end) in
-              let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) a e in
-              None,init,pseudo cs0@cs,st
-          | W,Some (Acq _,_) -> Warn.fatal "No store acquire"
-          | W,Some (AcqPc _,_) -> Warn.fatal "No store acquirePc"
-          | (R|W), Some (Instr, _) -> Warn.fatal "No dependency to code location"
-          | W,Some (Atomic rw,None) ->
+              let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) addon e in
+              Some (None,init,pseudo cs0@cs,st)
+          | (R|W),Some { access_type = InstrAccess; _ } ->
+              Warn.fatal "No dependency to code location"
+          | W,Some { access_type = OrdinaryAccess; access_order = OrderAtomic rw; } ->
               let r,init,cs,st =
                 emit_sta_idx (tr_rw rw) st p init loc r2 (Value.to_int e.C.v) in
-              Some r,init,pseudo cs0@cs,st
-          | W,Some (Atomic rw,Some (sz,o)) ->
-              let r,init,cs,st = emit_sta_mixed_idx sz o rw st p init loc r2 (Value.to_int e.C.v) in
-              Some r,init,pseudo cs0@cs,st
-          | R,Some (Plain a,Some (sz,o)) ->
+              Some (Some r,init,pseudo cs0@cs,st)
+          | W,Some { access_type = AccessSize (sz,o); access_order = OrderAtomic rw; } ->
+              let r,init,cs,st =
+                emit_sta_mixed_idx sz o rw st p init loc r2 (Value.to_int e.C.v) in
+              Some (Some r,init,pseudo cs0@cs,st)
+          | R,Some ({ access_type = CapaAccess; access_order = OrderPlain; } as atom)
+          | R,Some ({ access_type = AccessSize _; access_order = OrderPlain; } as atom) ->
+             let sz,o = match get_access_atom (Some atom) with
+             | Some sz -> sz
+             | None -> MachSize.S128,0 in
              let load_idx sz _ st r1 r2 idx =
                let cs = [ldr_mixed_idx vdep r1 r2 idx sz] in
                let cs = match o with
@@ -2427,9 +2510,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              let load =
                do_emit_load_idx_var next_reg_sz load_idx sz sz in
              let r,init,cs,st = load st p init loc r2 in
-             let cs2 = emit_ldr_addon a r in
-             Some r,init,pseudo cs0@cs@pseudo cs2,st
-          | W,Some (Plain a,Some (sz,o)) ->
+             let cs2 = match atom.access_type with
+             | CapaAccess -> emit_ldr_addon (Some Capability) r
+             | _ -> emit_ldr_addon None r in
+             Some (Some r,init,pseudo cs0@cs@pseudo cs2,st)
+          | W,Some ({ access_type = CapaAccess; access_order = OrderPlain; } as atom)
+          | W,Some ({ access_type = AccessSize _; access_order = OrderPlain; } as atom) ->
+              let sz,o = match get_access_atom (Some atom) with
+              | Some sz -> sz
+              | None -> MachSize.S128,0 in
+              let addon = match atom.access_type with
+              | CapaAccess -> Some Capability
+              | _ -> None in
               let module S =
                 STORE
                   (struct
@@ -2442,57 +2534,56 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       cs,st
                     let emit_mov = emit_mov_sz sz
                   end) in
-              let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) a e in
-              None,init,pseudo cs0@cs,st
-          | W,Some (Tag, None) ->
+              let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) addon e in
+              Some (None,init,pseudo cs0@cs,st)
+          | W,Some { access_type = TagAccess; access_order = OrderPlain; } ->
               let init,cs,st = STG.emit_store_idx vdep st p init e r2 in
-              None,init,pseudo cs0@cs,st
-          | W,Some (Pair (opt,idx),None) ->
+              Some (None,init,pseudo cs0@cs,st)
+          | W,Some { access_type = PairAccess (opt,idx); access_order = OrderPlain; } ->
               let init,cs,st =
                 emit_stp_idx_var (pair_opt_to_st opt) idx vdep st p init loc e r2 in
-              None,init, pseudo cs0@cs,st
-          | W,Some (Pair _,Some _) -> assert false
-          | (W,(Some (Pte (Set _),None))) ->
+              Some (None,init,pseudo cs0@cs,st)
+          | W,Some { access_type = PteAccess (Set _); access_order = OrderPlain; } ->
               let init,cs,st =
-                emit_set_pteval_idx false vdep r2 st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
-              None,init,pseudo cs0@cs,st
-          | (W,(Some (Pte (SetRel _),None))) ->
+                emit_set_pteval_idx false vdep r2 st p init
+                  (Value.to_pte e.C.v) (Misc.add_pte loc) in
+              Some (None,init,pseudo cs0@cs,st)
+          | W,Some { access_type = PteAccess (Set _); access_order = OrderRelease; } ->
               let init,cs,st =
-                emit_set_pteval_idx true vdep r2 st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
-              None,init,pseudo cs0@cs,st
-          | (R,(Some (Pte (Read|ReadAcq|ReadAcqPc as rk),None)))
-            ->
-              let emit = match rk with
-              | Read -> LDR.emit_load_var_reg
-              | ReadAcq -> LDAR.emit_load_var_reg
-              | ReadAcqPc -> LDAPR.emit_load_var_reg
-              | _ -> assert false in
+                emit_set_pteval_idx true vdep r2 st p init
+                  (Value.to_pte e.C.v) (Misc.add_pte loc) in
+              Some (None,init,pseudo cs0@cs,st)
+          | R,Some { access_type = PteAccess Read; access_order; } ->
+              let emit = match access_order with
+              | OrderPlain -> LDR.emit_load_var_reg
+              | OrderAcquire -> LDAR.emit_load_var_reg
+              | OrderAcquirePc -> LDAPR.emit_load_var_reg
+              | (OrderRelease|OrderAtomic _) -> assert false in
               let loc = Misc.add_pte loc in
               let rA,init,st = U.next_init st p init loc in
               let rA,cs1,st = do_sum_addr vdep st rA r2 in
               let r,init,cs,st = emit A64.V64 st p init rA in
-              Some r,init,pseudo cs0@pseudo cs1@cs,st
-         | (W|R) as d,Some (Pte _,_ as a) ->
-             Warn.fatal
-               "Annotation %s does not apply to direction %s"
-               (A64.pp_atom a) (Code.pp_dir d)
-          | W,Some (Tag,Some _) -> assert false
-          | W,Some (CapaTag,None) ->
+              Some (Some r,init,pseudo cs0@pseudo cs1@cs,st)
+          | W,Some { access_type = CapaTagAccess; access_order = OrderPlain; } ->
               (* TODO: don't waste r2 *)
               let init,cs,st = STCT.emit_store_idx st p init loc rd (Value.to_int e.C.v) in
-              None,init,cs,st
-          | W,Some (CapaTag,Some _) -> assert false
-          | W,Some (CapaSeal,None) ->
+              Some (None,init,cs,st)
+          | W,Some { access_type = CapaSealAccess; access_order = OrderPlain; } ->
               (* TODO: don't waste r2 *)
               let (rA,rB),init,csi,st =
                 seal_dp_addr init p loc st rd e.C.dep in
               let rC,init,csi2,st = U.emit_mov st p init e.C.ord in
               let init,cs,st = emit_str_addon st p init rC rA (Some Capability)
                 {e with C.cseal = (Value.to_int e.C.v)} in
-              None,init,
-              csi@csi2@cs@lift_code [str_mixed MachSize.S128 0 rC rB],st
-          | W,Some (CapaSeal,Some _) -> assert false
-          | W,Some (Neon n,None) ->
+              Some (None,init,
+                csi@csi2@cs@lift_code [str_mixed MachSize.S128 0 rC rB],st)
+          | W,Some { access_type = NeonAccess SIMD.NeP;
+                     access_order = OrderRelease; } ->
+              let init,cs,st =
+                STLUR.emit_store_idx
+                  vdep st p init loc r2 (Value.to_int e.C.v) in
+              Some (None,init,pseudo cs0@cs,st)
+          | W,Some { access_type = NeonAccess n; access_order = OrderPlain; } ->
              let emit_store_idx = match n with
                | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
                | SIMD.NeRel -> STLUR.emit_store_idx
@@ -2505,9 +2596,28 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                | _ -> STN.emit_store_idx n
              in
              let init,cs,st = emit_store_idx vdep st p init loc r2 (Value.to_int e.C.v) in
-              None,init,pseudo cs0@cs,st
-          | W,Some (Neon _,Some _) -> assert false
-          | _,Some (Plain _,None) -> assert false
+              Some (None,init,pseudo cs0@cs,st)
+          | _,_ -> None in
+          let regs,inits,cs,st = match ordinary_access with
+          | Some result -> result
+          | None -> begin match d,structured_atom with
+          | R,None -> assert false
+          | R,Some { access_order = OrderRelease; _ } ->
+              Warn.fatal "No load release"
+          | W,Some { access_order = OrderAcquire; _ } ->
+              Warn.fatal "No store acquire"
+          | W,Some { access_order = OrderAcquirePc; _ } ->
+              Warn.fatal "No store acquirePc"
+         | (W|R) as d,Some ({ access_type = PteAccess _; _ } as atom) ->
+             Warn.fatal
+               "Annotation %s does not apply to direction %s"
+               (StructuredAtom.pp atom) (Code.pp_dir d)
+          | R,Some { access_order = (OrderPlain|OrderAcquire|OrderAcquirePc); _ } ->
+              assert false
+          | W,None -> assert false
+          | W,Some { access_order = (OrderPlain|OrderRelease); _ } ->
+              assert false
+          | (R|W),Some _ -> assert false
           end in
           (* Add a label to instructions `cs`, when a fault check is required. *)
           regs,inits,(add_label_to_last_instructions e cs),st
@@ -2546,31 +2656,22 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         st p init er ew
 
     let emit_exch_dep_addr csel vdep st p init er ew rd =
-      let ar,_ = tr_none er.C.atom
-      and aw,_ = tr_none ew.C.atom in
-      match ar,aw with
-      | (Pair _,Pair _)->
+      let ar = tr_none er.C.atom
+      and aw = tr_none ew.C.atom in
+      match ar.access_type,aw.access_type with
+      | PairAccess _,PairAccess _ ->
          emit_exch_dep_addr22 csel vdep st p init er ew rd
-      | (Pair _,_) ->
+      | PairAccess _,_ ->
          check_cu (not A64.do_cu);
          emit_exch_dep_addr21 csel vdep st p init er ew rd
-      | (_,Pair _) ->
+      | _,PairAccess _ ->
          check_cu (not A64.do_cu);
          emit_exch_dep_addr12 csel vdep st p init er ew rd
       | _,_ ->
          emit_exch_dep_addr1 csel vdep st p init er ew rd
 
     let emit_access_dep_data csel vdep st p init e  r1 =
-      let atom = match e.C.atom with
-      | None -> None
-      | Some (a,m) -> begin match a with
-        | Plain Some Capability
-        | Acq Some Capability
-        | AcqPc Some Capability
-        | Rel Some Capability ->
-          assert (Misc.is_none m) ;
-          Some (a,Some (MachSize.S128,0))
-        | _ -> Some (a,m) end in
+      let structured_atom = e.C.atom in
       let regs,inits,cs,st = match e.C.dir,e.C.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some R,_ -> Warn.fatal "data dependency to load"
@@ -2578,24 +2679,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
           let r2,cs2,init,st,addi =
             let r2,st = next_reg st in
-            match atom with
-            | Some (Tag,None) ->
-                let cs0,st = calc0_gen csel st vdep r2 r1 in
-                let rA,init,st = U.next_init st p init (add_tag e.C.atom loc (Value.to_int e.C.v)) in
-                let rB,cB,st = sum_addr st rA r2 in
-                rB,pseudo (cs0@cB),init,st,[]
-            | Some (_,Some (sz,_)) ->
-                let cs0,st = calc0_gen csel st vdep r2 r1 in
-                let rA,init,csA,st = emit_mov_sz sz st p init (Value.to_int e.C.v) in
-                let cs2 = pseudo cs0 in
-                let addi = [add (sz2v sz) r2 r2 rA] in
-                r2,csA@cs2,init,st,addi
-            | Some (CapaSeal,None) ->
-                let cs0,st = calc0_gen csel st vdep r2 r1 in
-                let cs2 = pseudo cs0 in
-                let addi = [addi r2 r2 e.C.ord] in
-                r2,cs2,init,st,addi
-            | Some (Pte (Set pte|SetRel pte),None) when (not @@ is_tthm pte) ->
+            match structured_atom with
+            | Some { access_type = PteAccess (Set pte);
+                     access_order = (OrderPlain|OrderRelease); }
+              when not (StructuredAtom.is_tthm pte) ->
                 let rA,init,st = U.emit_pteval st p init (Value.to_pte e.C.v) in
                 let cs,st =
                   match vdep with
@@ -2609,6 +2696,43 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       sxtw r3 r1::cs0,st in
                 let addi = [add A64.V64 r2 r2 rA] in
                 let cs2 = pseudo cs in
+                r2,cs2,init,st,addi
+            | Some { access_type = NeonAccess _;
+                     access_order = (OrderPlain|OrderRelease); } ->
+                let cs2,st =
+                  match vdep,vloc with
+                  | (V128,_)|(_,V128) ->
+                      Warn.fatal "dependance from 128 bits access"
+                  | (V32,V32)|(V64,V64)|(V64,V32) ->
+                     calc0_gen csel st vdep r2 r1
+                  | (V32,V64) ->
+                      let r3,st = tempo1 st in
+                      let cs,st = calc0_gen csel st vdep r3 r1 in
+                      sxtw r2 r3::cs,st in
+                let cs2 = pseudo cs2 in
+                r2,cs2,init,st,[]
+            | Some { access_type = TagAccess; access_order = OrderPlain; } ->
+                let cs0,st = calc0_gen csel st vdep r2 r1 in
+                let rA,init,st = U.next_init st p init (add_tag structured_atom loc (Value.to_int e.C.v)) in
+                let rB,cB,st = sum_addr st rA r2 in
+                rB,pseudo (cs0@cB),init,st,[]
+            | Some { access_type = AccessSize (sz,_); _ } ->
+                let cs0,st = calc0_gen csel st vdep r2 r1 in
+                let rA,init,csA,st = emit_mov_sz sz st p init (Value.to_int e.C.v) in
+                let cs2 = pseudo cs0 in
+                let addi = [add (sz2v sz) r2 r2 rA] in
+                r2,csA@cs2,init,st,addi
+            | Some { access_type = CapaAccess; _ } ->
+                let cs0,st = calc0_gen csel st vdep r2 r1 in
+                let rA,init,csA,st =
+                  emit_mov_sz MachSize.S128 st p init (Value.to_int e.C.v) in
+                let cs2 = pseudo cs0 in
+                let addi = [add A64.V128 r2 r2 rA] in
+                r2,csA@cs2,init,st,addi
+            | Some { access_type = CapaSealAccess; access_order = OrderPlain; } ->
+                let cs0,st = calc0_gen csel st vdep r2 r1 in
+                let cs2 = pseudo cs0 in
+                let addi = [addi r2 r2 e.C.ord] in
                 r2,cs2,init,st,addi
             | _ ->
                 let cs2,st =
@@ -2624,20 +2748,25 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 let addi = [addi r2 r2 (Value.to_int e.C.v)] in
                 let cs2 = pseudo cs2 in
                 r2,cs2,init,st,addi in
-          let r2,cs2,init,st = match atom with
-            | Some(Neon _, None) -> r2,cs2,init,st
-            | _ -> r2,cs2@pseudo addi,init,st in
-          let loc = add_tag e.C.atom loc e.C.tag in
-          begin match atom with
+          let r2,cs2,init,st = r2,cs2@pseudo addi,init,st in
+          let loc = add_tag structured_atom loc e.C.tag in
+          let ordinary_store = match structured_atom with
           | None ->
               let init,cs,st =
                 STR.emit_store_reg st p init loc r2 None C.evt_null in
-              None,init,cs2@cs,st
-          | Some (Rel _,None) ->
+              Some (None,init,cs2@cs,st)
+          | Some { access_type = OrdinaryAccess; access_order = OrderRelease; } ->
               let init,cs,st =
                 STLR.emit_store_reg st p init loc r2 None C.evt_null in
-              None,init,cs2@cs,st
-          | Some (Rel a,Some (sz,o)) ->
+              Some (None,init,cs2@cs,st)
+          | Some ({ access_type = CapaAccess; access_order = OrderRelease; } as atom)
+          | Some ({ access_type = AccessSize _; access_order = OrderRelease; } as atom) ->
+              let sz,o = match get_access_atom (Some atom) with
+              | Some sz -> sz
+              | None -> MachSize.S128,0 in
+              let addon = match atom.access_type with
+              | CapaAccess -> Some Capability
+              | _ -> None in
               let module S =
                 STORE
                   (struct
@@ -2645,20 +2774,24 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                     let store_idx _st _r1 _r2 _idx = assert false
                     let emit_mov = emit_mov_sz sz
                   end) in
-              let init,cs,st = S.emit_store_reg st p init loc r2 a e in
-              None,init,cs2@cs,st
-          | Some (Atomic rw,None) ->
+              let init,cs,st = S.emit_store_reg st p init loc r2 addon e in
+              Some (None,init,cs2@cs,st)
+          | Some { access_type = OrdinaryAccess; access_order = OrderAtomic rw; } ->
               let r,init,cs,st = emit_sta_reg (tr_rw rw) st p init loc r2 in
-              Some r,init,cs2@cs,st
-          | Some (Atomic rw,Some (sz,o)) ->
+              Some (Some r,init,cs2@cs,st)
+          | Some { access_type = AccessSize (sz,o); access_order = OrderAtomic rw; } ->
               let r,init,cs,st = emit_sta_mixed_reg sz o rw st p init loc r2 in
-              Some r,init,cs2@cs,st
-          | Some (Acq _,_) ->
-              Warn.fatal "No store acquire"
-          | Some (AcqPc _,_) ->
-              Warn.fatal "No store acquirePc"
-          | Some (Instr, _) -> Warn.fatal "No Plain Write to label (code location)"
-          | Some (Plain a,Some (sz,o)) ->
+              Some (Some r,init,cs2@cs,st)
+          | Some { access_type = InstrAccess; _ } ->
+              Warn.fatal "No Plain Write to label (code location)"
+          | Some ({ access_type = CapaAccess; access_order = OrderPlain; } as atom)
+          | Some ({ access_type = AccessSize _; access_order = OrderPlain; } as atom) ->
+              let sz,o = match get_access_atom (Some atom) with
+              | Some sz -> sz
+              | None -> MachSize.S128,0 in
+              let addon = match atom.access_type with
+              | CapaAccess -> Some Capability
+              | _ -> None in
               let module S =
                 STORE
                   (struct
@@ -2671,42 +2804,47 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       cs,st
                     let emit_mov = emit_mov_sz sz
                   end) in
-              let init,cs,st = S.emit_store_reg st p init loc r2 a e in
-              None,init,cs2@cs,st
-          | Some (Tag, None) ->
+              let init,cs,st = S.emit_store_reg st p init loc r2 addon e in
+              Some (None,init,cs2@cs,st)
+          | Some { access_type = TagAccess; access_order = OrderPlain; } ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
-              None,init,cs2@cs,st
-          | Some (Pte (Set pte),None) when is_tthm pte ->
+              Some (None,init,cs2@cs,st)
+          | Some { access_type = PteAccess (Set pte); access_order = OrderPlain; }
+            when StructuredAtom.is_tthm pte ->
               let init,cs,st =
                 STR.emit_store_reg st p init loc r2 None C.evt_null in
-              None,init,cs2@cs,st
-          | Some (Pte (SetRel pte),None) when is_tthm pte ->
+              Some (None,init,cs2@cs,st)
+          | Some { access_type = PteAccess (Set pte); access_order = OrderRelease; }
+            when StructuredAtom.is_tthm pte ->
               let init,cs,st =
                 STLR.emit_store_reg st p init loc r2 None C.evt_null in
-              None,init,cs2@cs,st
-          | Some (Pte (Set _),None) ->
-              let init,cs,st = emit_set_pteval_reg false st p init r2 (Misc.add_pte loc) in
-              None,init,cs2@cs,st
-          | Some (Pte (SetRel _),None) ->
-              let init,cs,st = emit_set_pteval_reg true st p init r2 (Misc.add_pte loc) in
-              None,init,cs2@cs,st
-          | Some ((Pte _,Some _)|(Pte (Read|ReadAcq|ReadAcqPc|ReadHAAcq|ReadHAAcqPc),_))
-            -> assert false
-          | Some (Plain _,None) -> assert false
-          | Some (Tag,Some _) -> assert false
-          | Some (CapaTag,None) ->
-              if (Value.to_int e.C.v) > 1 then Warn.fatal "Capability tags can't be incremented above 1";
+              Some (None,init,cs2@cs,st)
+          | Some { access_type = PteAccess (Set _); access_order = OrderPlain; } ->
+              let init,cs,st =
+                emit_set_pteval_reg false st p init r2 (Misc.add_pte loc) in
+              Some (None,init,cs2@cs,st)
+          | Some { access_type = PteAccess (Set _); access_order = OrderRelease; } ->
+              let init,cs,st =
+                emit_set_pteval_reg true st p init r2 (Misc.add_pte loc) in
+              Some (None,init,cs2@cs,st)
+          | Some { access_type = CapaTagAccess; access_order = OrderPlain; } ->
+              if (Value.to_int e.C.v) > 1 then
+                Warn.fatal "Capability tags can't be incremented above 1";
               let init,cs,st = STCT.emit_store_reg st p init loc r2 in
-              None,init,cs2@cs,st
-          | Some (CapaTag,Some _) -> assert false
-          | Some (CapaSeal,None) ->
+              Some (None,init,cs2@cs,st)
+          | Some { access_type = CapaSealAccess; access_order = OrderPlain; } ->
               let rA,init,st = U.next_init st p init loc in
               let init,cs,st =
                 emit_str_addon
                   st p init r2 rA (Some Capability) {e with C.cseal = (Value.to_int e.C.v)} in
-              None,init,cs2@cs@lift_code [str_mixed MachSize.S128 0 r2 rA],st
-          | Some (CapaSeal,Some _) -> assert false
-          | Some (Neon n,None) ->
+              Some (None,init,cs2@cs@lift_code [str_mixed MachSize.S128 0 r2 rA],st)
+          | Some { access_type = NeonAccess SIMD.NeP;
+                   access_order = OrderRelease; } ->
+             let rA,init,st = U.next_init st p init loc in
+             let init,cs,st =
+               STLUR.emit_store_dep r2 st init rA (Value.to_int e.C.v) in
+             Some (None,init,cs2@cs,st)
+          | Some { access_type = NeonAccess n; access_order = OrderPlain; } ->
              let rA,init,st = U.next_init st p init loc in
              let emit_store_dep = match n with
                | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
@@ -2720,12 +2858,22 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                | _ -> STN.emit_store_dep n
              in
              let init,cs,st = emit_store_dep r2 st init rA (Value.to_int e.C.v) in
-             None,init,cs2@cs,st
-          | Some (Neon _,Some _) -> assert false
-          | Some (Pair (opt,idx),None) ->
-             let init,cs,st = stp_emit_store_reg (pair_opt_to_st opt) idx st p init loc r2 in
-             None,init,cs2@cs,st
-          | Some (Pair _,Some _) -> assert false
+             Some (None,init,cs2@cs,st)
+          | Some { access_type = PairAccess (opt,idx); access_order = OrderPlain; } ->
+              let init,cs,st =
+                stp_emit_store_reg (pair_opt_to_st opt) idx st p init loc r2 in
+              Some (None,init,cs2@cs,st)
+          | _ -> None in
+          begin match ordinary_store with
+          | Some result -> result
+          | None -> begin match structured_atom with
+          | None -> assert false
+          | Some { access_order = OrderAcquire; _ } ->
+              Warn.fatal "No store acquire"
+          | Some { access_order = OrderAcquirePc; _ } ->
+              Warn.fatal "No store acquirePc"
+          | Some _ -> assert false
+          end
           end
       (* END of `Some W` *)
       | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e) in
@@ -2763,17 +2911,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       ropt,init,insert_isb isb c cs,st
 
     let tr_atom = function
-      | Some ((Tag|Pte _),_) -> V64
-      | at ->
-         begin match A64.get_access_atom at with
+      | Some { access_type = (TagAccess|PteAccess _); _ } -> V64
+      | atom ->
+         begin match get_access_atom atom with
          | Some (sz,_) -> sz2v sz
          | None -> vloc
          end
 
     let node2vdep n =
       let e = n.C.evt in
-      let at = e.C.atom in
-      tr_atom at
+      tr_atom e.C.atom
 
     let emit_access_dep st p init e (dp,csel) r1 n1 =
       let vdep = node2vdep n1 in
@@ -2920,9 +3067,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let open WPTE in
       (* collect distinct tthm *)
       let tthm_value = C.fold ( fun node acc ->
-        match node.C.edge.E.a1 with
-        | Some(Pte (Set e|SetRel e), _) when is_tthm e -> WPTESet.union e acc
-        | Some(Pte (ReadHAAcq|ReadHAAcqPc), _) -> WPTESet.add HA acc
+        let atom = node.C.edge.E.a1 in
+        match atom with
+        | Some { access_type = PteAccess (Set pte);
+                 access_order = (OrderPlain|OrderRelease); }
+          when StructuredAtom.is_tthm pte ->
+            WPTESet.union pte acc
+        | Some { access_type = PteAccess (Set pte);
+                 access_order = (OrderAcquire|OrderAcquirePc); }
+          when pte = WPTESet.singleton HA ->
+            WPTESet.add HA acc
         | _ -> acc
         ) n WPTESet.empty
       |> WPTESet.pp_str " " WPTE.pp in

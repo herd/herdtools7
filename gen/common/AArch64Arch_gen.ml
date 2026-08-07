@@ -59,7 +59,6 @@ module SIMD = struct
              |NeP|NeAcqPc|NeRel|Ne1|Ne2|Ne3|Ne4|Ne2i|Ne3i|Ne4i|NePa|NePaN
 
   let fold_neon f r = r |>
-    f NeAcqPc |> f NeRel |>
     f NeP |>
     f NePa |> f NePaN |>
     f Ne1 |> f Ne2 |> f Ne3 |> f Ne4 |>
@@ -212,40 +211,557 @@ let contain_valid_pte_fields set =
     ) set |> WPTESet.cardinal )
 
 type atom_pte =
-  | Read|ReadAcq|ReadAcqPc
+  | Read
   | Set of WPTESet.t
-  | SetRel of WPTESet.t
-  (* Special `Acq` and `AcqPc` read case for `HA`
-     Note that the plain read for `HA` share the
-     same internal data structure as `Set of WPTESet.t`.
-     Due to  `diy` parsing limitation, it is impossible
-     to introduce `PteHA` to different internal
-     representation. *)
-  | ReadHAAcq | ReadHAAcqPc
 
 let pp_w_pte ws = WPTESet.pp_str "." WPTE.pp ws
-
-let pp_atom_pte = function
-  | Read -> ""
-  | ReadAcq -> "A"
-  | ReadAcqPc -> "Q"
-  | ReadHAAcq -> "HAA"
-  | ReadHAAcqPc -> "HAQ"
-  | Set set -> pp_w_pte set
-  | SetRel set -> pp_w_pte set ^"L"
 
 type neon_opt = SIMD.atom
 
 type pair_idx = UnspecLoc
 
-type atom_acc =
-  | Plain of capa_opt | Acq of capa_opt | AcqPc of capa_opt | Rel of capa_opt
-  | Atomic of atom_rw | Tag | CapaTag | CapaSeal | Pte of atom_pte | Neon of neon_opt
-  | Pair of [ld_pair_opt | st_pair_opt] * pair_idx | Instr
+type rmw = LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas | AllAmo
+  (* `SafeAmo` unfolds to
+     `[Swp; Cas; LdOp A_ADD; StOp A_ADD]`, that is,
+     edges `[Amo.Swp; Amo.Cas; Amo.LdAdd; Amo.StAdd]` and
+     the corresponding instructions `[SWP; CAS; LDADD; STADD]`.
+     These edges, `Amo.R`, can be safely used to generate cycles.
+     That is, for any `Amo.R`,
+     (1) given a value `a` (of a location), e.g. 0,
+     (2) given the current operand `b`, e.g. 1, where `b` is picked
+     by `diy` internally from an incremental counter starting from 1,
+     then the result value of `a Amo.R b` should be
+     distinct from the initial value `a`. Hence we can distinguish
+     whether `Amo.R` takes effect by reading the value of `a Amo.R b`,
+     making it safe to use when generating tests.
+     A counterexample is
+     `diyone7 -arch AArch64 "PodWR Amo.LdClr Rfe PodRW Coe"`
+     ```
+     P0               | P1          ;
+     ...              | LDR W0,[X2] ;
+     MOV W4,#1        | ...         ;
+     LDCLR W4,W3,[X2] |             ;
+     exists (... /\ 0:X3=0 /\ 1:X0=0)
+     ```
+     Here the initial value is observed by `0:X3 = 0`, the instruction
+     calculates `0 LDCLR 1`, and the result is observed by `1:X1 = 0`.
+     The problem here is `1:X1 = 0:X3`, thus the test cannot
+     distinguish whether `LDCLR` or `Amo.LdClr` takes effect. *)
+  | SafeAmo
 
-let  plain = Plain None
+module StructuredAtom = struct
+  type access_order =
+    (* Plain access order, as in `P` or the order part of `h0`. *)
+    | OrderPlain
+    (* Acquire load order, as in `A`. *)
+    | OrderAcquire
+    (* Acquire-PC load order, as in `Q`. *)
+    | OrderAcquirePc
+    (* Release store order, as in `L`. *)
+    | OrderRelease
+    (* Atomic/RMW order, as in `X`, `XA`, `XL`, or `XAL`. *)
+    | OrderAtomic of atom_rw
 
-type atom = atom_acc * MachMixed.t option
+  type access_type =
+    (* Ordinary integer/general-purpose data access. *)
+    | OrdinaryAccess
+    (* Mixed-size slice of an ordinary access, as in `b0`, `h0`, or `w0`. *)
+    | AccessSize of MachMixed.t
+    (* Morello capability data access, as in `Pc`, `Ac`, `Qc`, or `Lc`. *)
+    | CapaAccess
+    (* Morello capability-tag access, as in `Ct`. *)
+    | CapaTagAccess
+    (* Morello capability-seal access, as in `Cs`. *)
+    | CapaSealAccess
+    (* MemTag allocation-tag access, as in `T`. *)
+    | TagAccess
+    (* VMSA PTE access, as in `Pte`, `PteA`, `PteV1`, or `PteHA`. *)
+    | PteAccess of atom_pte
+    (* SIMD/Neon/SVE/SME access, as in `NeP` or `Ne1`. *)
+    | NeonAccess of neon_opt
+    (* Pair access, as in `Pa`, `PaN`, `PaIQ`, `PaA`, `PaIL`, or `PaL`. *)
+    | PairAccess of [ld_pair_opt | st_pair_opt] * pair_idx
+    (* Instruction-fetch access used by the ifetch variant, printed as `I`. *)
+    | InstrAccess
+
+  type t =
+    { access_type : access_type;
+      access_order : access_order; }
+
+  let make access_type access_order = { access_type; access_order; }
+
+  let plain = make OrdinaryAccess OrderPlain
+  let default = make OrdinaryAccess (OrderAtomic PP)
+  let instr = make InstrAccess OrderPlain
+
+  let is_valid a =
+    match a.access_type,a.access_order with
+    | (OrdinaryAccess|AccessSize _),(OrderPlain|OrderAcquire|OrderAcquirePc
+                                    |OrderRelease|OrderAtomic _) ->
+        true
+    | CapaAccess,(OrderPlain|OrderAcquire|OrderAcquirePc|OrderRelease) ->
+        true
+    | PteAccess Read,(OrderPlain|OrderAcquire|OrderAcquirePc) ->
+        true
+    | PteAccess (Set _),(OrderPlain|OrderRelease) ->
+        true
+    | PteAccess (Set p),(OrderAcquire|OrderAcquirePc)
+      when p = WPTESet.singleton WPTE.HA ->
+        true
+    | NeonAccess SIMD.NeP,(OrderAcquirePc|OrderRelease) ->
+        true
+    | (CapaTagAccess|CapaSealAccess|TagAccess|NeonAccess _
+      |PairAccess _|InstrAccess),OrderPlain ->
+        true
+    | _,_ ->
+        false
+
+  let compare_atom_rw rw1 rw2 =
+    let rank = function
+      | PP -> 0
+      | PL -> 1
+      | AP -> 2
+      | AL -> 3 in
+    Int.compare (rank rw1) (rank rw2)
+
+  let compare_mach_size sz1 sz2 =
+    let open MachSize in
+    let rank = function
+      | Byte -> 0
+      | Short -> 1
+      | Word -> 2
+      | Quad -> 3
+      | S128 -> 4 in
+    Int.compare (rank sz1) (rank sz2)
+
+  let compare_mixed (sz1,o1) (sz2,o2) =
+    match compare_mach_size sz1 sz2 with
+    | 0 -> Int.compare o1 o2
+    | c -> c
+
+  let compare_atom_pte p1 p2 =
+    match p1,p2 with
+    | Read,Read -> 0
+    | Read,Set _ -> -1
+    | Set _,Read -> 1
+    | Set s1,Set s2 -> WPTESet.compare s1 s2
+
+  let compare_neon n1 n2 =
+    let open SIMD in
+    let rank = function
+      | SmV -> 0
+      | SmH -> 1
+      | SvV -> 2
+      | Sv1 -> 3
+      | Sv2i -> 4
+      | Sv3i -> 5
+      | Sv4i -> 6
+      | NeP -> 7
+      | NeAcqPc -> 8
+      | NeRel -> 9
+      | Ne1 -> 10
+      | Ne2 -> 11
+      | Ne3 -> 12
+      | Ne4 -> 13
+      | Ne2i -> 14
+      | Ne3i -> 15
+      | Ne4i -> 16
+      | NePa -> 17
+      | NePaN -> 18 in
+    Int.compare (rank n1) (rank n2)
+
+  let compare_pair_opt p1 p2 =
+    let rank = function
+      | `Pa -> 0
+      | `PaN -> 1
+      | `PaIQ -> 2
+      | `PaIL -> 3
+      | `PaA -> 4
+      | `PaL -> 5 in
+    Int.compare (rank p1) (rank p2)
+
+  let compare_pair_idx idx1 idx2 =
+    match idx1,idx2 with
+    | UnspecLoc,UnspecLoc -> 0
+
+  let compare_access_order o1 o2 =
+    let rank = function
+      | OrderPlain -> 0
+      | OrderAcquire -> 1
+      | OrderAcquirePc -> 2
+      | OrderRelease -> 3
+      | OrderAtomic _ -> 4 in
+    match Int.compare (rank o1) (rank o2) with
+    | 0 -> begin
+        match o1,o2 with
+        | OrderAtomic rw1,OrderAtomic rw2 -> compare_atom_rw rw1 rw2
+        | (OrderPlain,OrderPlain)
+        | (OrderAcquire,OrderAcquire)
+        | (OrderAcquirePc,OrderAcquirePc)
+        | (OrderRelease,OrderRelease) -> 0
+        | _,_ -> assert false
+      end
+    | c -> c
+
+  let compare_access_type t1 t2 =
+    let rank = function
+      | OrdinaryAccess -> 0
+      | AccessSize _ -> 1
+      | CapaAccess -> 2
+      | CapaTagAccess -> 3
+      | CapaSealAccess -> 4
+      | TagAccess -> 5
+      | PteAccess _ -> 6
+      | NeonAccess _ -> 7
+      | PairAccess _ -> 8
+      | InstrAccess -> 9 in
+    match Int.compare (rank t1) (rank t2) with
+    | 0 -> begin
+        match t1,t2 with
+        | AccessSize m1,AccessSize m2 -> compare_mixed m1 m2
+        | PteAccess p1,PteAccess p2 -> compare_atom_pte p1 p2
+        | NeonAccess n1,NeonAccess n2 -> compare_neon n1 n2
+        | PairAccess (p1,idx1),PairAccess (p2,idx2) -> begin
+            match compare_pair_opt p1 p2 with
+            | 0 -> compare_pair_idx idx1 idx2
+            | c -> c
+          end
+        | (OrdinaryAccess,OrdinaryAccess)
+        | (CapaAccess,CapaAccess)
+        | (CapaTagAccess,CapaTagAccess)
+        | (CapaSealAccess,CapaSealAccess)
+        | (TagAccess,TagAccess)
+        | (InstrAccess,InstrAccess) -> 0
+        | _,_ -> assert false
+      end
+    | c -> c
+
+  let compare a1 a2 =
+    match compare_access_type a1.access_type a2.access_type with
+    | 0 -> compare_access_order a1.access_order a2.access_order
+    | c -> c
+
+  let equal a1 a2 = compare a1 a2 = 0
+  let pp_mixed (sz,o) =
+    sprintf "%s%i" (MachSize.pp_short sz) o
+
+  let pp_atom_rw = function
+    | PP -> ""
+    | PL -> "L"
+    | AP -> "A"
+    | AL -> "AL"
+
+  let pp_order = function
+    | OrderPlain -> "P"
+    | OrderAcquire -> "A"
+    | OrderAcquirePc -> "Q"
+    | OrderRelease -> "L"
+    | OrderAtomic rw -> sprintf "X%s" (pp_atom_rw rw)
+
+  let pp_pair_opt = function
+    | `Pa -> ""
+    | `PaN -> "N"
+    | `PaIQ -> "IQ"
+    | `PaIL -> "IL"
+    | `PaA -> "A"
+    | `PaL -> "L"
+
+  let pp_pair_idx = function
+    | UnspecLoc -> ""
+
+  let pp = function
+    | { access_type = OrdinaryAccess; access_order = OrderPlain; } -> "P"
+    | { access_type = OrdinaryAccess; access_order; } -> pp_order access_order
+    | { access_type = AccessSize m; access_order = OrderPlain; } -> pp_mixed m
+    | { access_type = AccessSize m; access_order; } ->
+        sprintf "%s.%s" (pp_order access_order) (pp_mixed m)
+    | { access_type = CapaAccess; access_order = OrderPlain; } -> "Pc"
+    | { access_type = CapaAccess; access_order = OrderAcquire; } -> "Ac"
+    | { access_type = CapaAccess; access_order = OrderAcquirePc; } -> "Qc"
+    | { access_type = CapaAccess; access_order = OrderRelease; } -> "Lc"
+    | { access_type = CapaAccess; access_order = OrderAtomic _; } -> assert false
+    | { access_type = CapaTagAccess; access_order = OrderPlain; } -> "Ct"
+    | { access_type = CapaSealAccess; access_order = OrderPlain; } -> "Cs"
+    | { access_type = TagAccess; access_order = OrderPlain; } -> "T"
+    | { access_type = PteAccess Read; access_order = OrderPlain; } -> "Pte"
+    | { access_type = PteAccess Read; access_order = OrderAcquire; } -> "PteA"
+    | { access_type = PteAccess Read; access_order = OrderAcquirePc; } -> "PteQ"
+    | { access_type = PteAccess (Set p); access_order = OrderPlain; } ->
+        sprintf "Pte%s" (pp_w_pte p)
+    | { access_type = PteAccess (Set p); access_order = OrderRelease; } ->
+        sprintf "Pte%sL" (pp_w_pte p)
+    | { access_type = PteAccess (Set p); access_order = OrderAcquire; } ->
+        assert (p = WPTESet.singleton WPTE.HA) ; "PteHAA"
+    | { access_type = PteAccess (Set p); access_order = OrderAcquirePc; } ->
+        assert (p = WPTESet.singleton WPTE.HA) ; "PteHAQ"
+    | { access_type = NeonAccess SIMD.NeP; access_order = OrderAcquirePc; } ->
+        "NeQ"
+    | { access_type = NeonAccess SIMD.NeP; access_order = OrderRelease; } ->
+        "NeL"
+    | { access_type = NeonAccess n; access_order = OrderPlain; } -> SIMD.pp n
+    | { access_type = PairAccess (opt,idx); access_order = OrderPlain; } ->
+        sprintf "Pa%s%s" (pp_pair_opt opt) (pp_pair_idx idx)
+    | { access_type = InstrAccess; access_order = OrderPlain; } -> "I"
+    | { access_type =
+          (CapaTagAccess|CapaSealAccess|TagAccess|PteAccess _
+          |NeonAccess _|PairAccess _|InstrAccess);
+        access_order = (OrderAcquire|OrderAcquirePc|OrderRelease|OrderAtomic _); } ->
+        assert false
+
+  let get_access_atom = function
+    | None -> None
+    | Some { access_type = AccessSize m; _ } -> Some m
+    | Some _ -> None
+
+  let set_access_atom atom m =
+    match atom with
+    | None -> Some (make (AccessSize m) OrderPlain)
+    | Some ({ access_type = (OrdinaryAccess|AccessSize _); _ } as atom) ->
+        Some { atom with access_type = AccessSize m }
+    | Some atom -> Some atom
+
+  let overlap a1 a2 =
+    match a1.access_type,a2.access_type with
+    | AccessSize sz1,AccessSize sz2 -> MachMixed.overlap sz1 sz2
+    | _,_ -> true
+
+  let is_ifetch = function
+    | Some { access_type = InstrAccess; _ } -> true
+    | _ -> false
+
+  let is_pair = function
+    | Some { access_type = PairAccess _; _ } -> true
+    | _ -> false
+
+  let as_integers atom =
+    let neon_as_integers =
+      let open SIMD in
+      function
+      | NeP | NeAcqPc | NeRel -> 1
+      | NePa | NePaN -> 2
+      | SmV | SmH
+      | SvV | Sv1 | Ne1 -> 4
+      | Sv2i | Ne2 | Ne2i -> 8
+      | Sv3i | Ne3 | Ne3i -> 12
+      | Sv4i | Ne4 | Ne4i -> 16 in
+    match atom with
+    | Some { access_type = NeonAccess n; _ } ->
+        begin match neon_as_integers n with
+        | 1 -> None
+        | n -> Some n
+        end
+    | Some { access_type = PairAccess _; _ } -> Some 2
+    | Some _|None -> None
+
+  let worth_final = function
+    | { access_order = OrderAtomic _; _ } -> true
+    | _ -> false
+
+  let get_machine_feature = function
+    | Some { access_type = PteAccess (Set pte); _ } ->
+        let open WPTE in
+        WPTESet.fold
+          (fun field features -> match field with
+            | HA|HD -> StringSet.add (WPTE.pp field) features
+            | _ -> features)
+          pte StringSet.empty
+    | Some _|None -> StringSet.empty
+
+  let applies a d =
+    let open WPTE in
+    match a.access_type,a.access_order,d with
+    | NeonAccess SIMD.NeP,OrderAcquirePc,R -> true
+    | NeonAccess SIMD.NeP,OrderRelease,W -> true
+    | (OrdinaryAccess|AccessSize _|CapaAccess),(OrderAcquire|OrderAcquirePc),R -> true
+    | (OrdinaryAccess|AccessSize _|CapaAccess),OrderRelease,W -> true
+    | PteAccess Read,(OrderPlain|OrderAcquire|OrderAcquirePc),R -> true
+    | PteAccess (Set p),OrderPlain,R when WPTESet.mem HA p -> true
+    | PteAccess (Set p),(OrderAcquire|OrderAcquirePc),R
+      when p = WPTESet.singleton HA -> true
+    | PteAccess (Set _),(OrderPlain|OrderRelease),W -> true
+    | InstrAccess,OrderPlain,R -> true
+    | (OrdinaryAccess|AccessSize _|CapaAccess),OrderPlain,(R|W) -> true
+    | (OrdinaryAccess|AccessSize _),OrderAtomic _,(R|W) -> true
+    | (TagAccess|CapaTagAccess|CapaSealAccess|NeonAccess _),OrderPlain,(R|W) ->
+        true
+    | PairAccess ((`Pa|`PaN|`PaIQ|`PaA),_),OrderPlain,R -> true
+    | PairAccess ((`Pa|`PaN|`PaIL|`PaL),_),OrderPlain,W -> true
+    | _ -> false
+
+  let applies_rmw rmw ar aw =
+    let ok_rw ar aw = match ar,aw with
+      | (None|Some {
+          access_type = (OrdinaryAccess|AccessSize _|CapaAccess);
+          access_order = (OrderPlain|OrderAcquire); }),
+        (None|Some {
+          access_type = (OrdinaryAccess|AccessSize _|CapaAccess);
+          access_order = (OrderPlain|OrderRelease); }) -> true
+      | _,_ -> false in
+    let ok_w ar aw = match ar,aw with
+      | (None|Some {
+          access_type = (OrdinaryAccess|AccessSize _|CapaAccess);
+          access_order = OrderPlain; }),
+        (None|Some {
+          access_type = (OrdinaryAccess|AccessSize _|CapaAccess);
+          access_order = (OrderPlain|OrderRelease); }) -> true
+      | _,_ -> false in
+    let same_mixed =
+      Misc.opt_eq MachMixed.equal
+        (get_access_atom ar) (get_access_atom aw) in
+    match rmw with
+    | LrSc -> ok_rw ar aw && (do_cu || same_mixed)
+    | Swp|Cas|LdOp _|AllAmo|SafeAmo -> ok_rw ar aw && same_mixed
+    | StOp _ -> ok_w ar aw && same_mixed
+
+  let is_tthm fields =
+    let open WPTE in
+    WPTESet.mem HD fields || WPTESet.mem HA fields
+
+  let to_bank = function
+    | { access_type = TagAccess; access_order = OrderPlain; } -> Code.Tag
+    | { access_type = PteAccess (Set p); access_order =
+          (OrderPlain|OrderAcquire|OrderAcquirePc|OrderRelease); }
+      when is_tthm p -> Code.Ord
+    | { access_type = PteAccess (Read|Set _); _ } -> Code.Pte
+    | { access_type = CapaTagAccess; access_order = OrderPlain; } -> Code.CapaTag
+    | { access_type = CapaSealAccess; access_order = OrderPlain; } -> Code.CapaSeal
+    | { access_type = NeonAccess SIMD.NeP; access_order = OrderAcquirePc; } ->
+        Code.VecReg SIMD.NeAcqPc
+    | { access_type = NeonAccess SIMD.NeP; access_order = OrderRelease; } ->
+        Code.VecReg SIMD.NeRel
+    | { access_type = NeonAccess n; access_order = OrderPlain; } -> Code.VecReg n
+    | { access_type = PairAccess (_,UnspecLoc); access_order = OrderPlain; } -> Code.Pair
+    | { access_type = InstrAccess; access_order = OrderPlain; } -> Code.Instr
+    | { access_type = (OrdinaryAccess|AccessSize _|CapaAccess); _ } -> Code.Ord
+    | _ -> assert false
+
+  let merge a1 a2 =
+    let open WPTE in
+    let merge_order o1 o2 = match o1,o2 with
+    | OrderPlain,o
+    | o,OrderPlain -> Some o
+    | o1,o2 when o1 = o2 -> Some o1
+    | _,_ -> None in
+    match a1,a2 with
+    | { access_type = OrdinaryAccess; access_order = OrderPlain; },
+      { access_type = InstrAccess; _ }
+    | { access_type = InstrAccess; _ },
+      { access_type = OrdinaryAccess; access_order = OrderPlain; } ->
+        None
+    | { access_type = OrdinaryAccess; access_order = OrderPlain; }, a
+    | a, { access_type = OrdinaryAccess; access_order = OrderPlain; } ->
+        Some a
+    | { access_type = AccessSize m; access_order = OrderPlain; },
+      { access_type = OrdinaryAccess; access_order; }
+    | { access_type = OrdinaryAccess; access_order; },
+      { access_type = AccessSize m; access_order = OrderPlain; } ->
+        Some (make (AccessSize m) access_order)
+    | { access_type = AccessSize m; access_order = o1; },
+      { access_type = OrdinaryAccess; access_order = o2; }
+      when o1 = o2 ->
+        Some (make (AccessSize m) o1)
+    | { access_type = OrdinaryAccess; access_order = o1; },
+      { access_type = AccessSize m; access_order = o2; }
+      when o1 = o2 ->
+        Some (make (AccessSize m) o1)
+    | { access_type = AccessSize m1; access_order = OrderPlain; },
+      { access_type = AccessSize m2; access_order; }
+      when m1 = m2 ->
+        Some (make (AccessSize m1) access_order)
+    | { access_type = AccessSize m1; access_order; },
+      { access_type = AccessSize m2; access_order = OrderPlain; }
+      when m1 = m2 ->
+        Some (make (AccessSize m1) access_order)
+    | { access_type = PteAccess p; access_order = OrderPlain; },
+      { access_type = OrdinaryAccess; access_order; }
+    | { access_type = OrdinaryAccess; access_order; },
+      { access_type = PteAccess p; access_order = OrderPlain; } ->
+        let atom = make (PteAccess p) access_order in
+        if is_valid atom then Some atom else None
+    | { access_type = PteAccess (Set set1); access_order = order1; },
+      { access_type = PteAccess (Set set2); access_order = order2; } ->
+        let set = WPTESet.union set1 set2 in
+        begin match merge_order order1 order2 with
+        | Some access_order
+          when contain_valid_pte_fields set || contain_valid_tthm_fields set ->
+            let atom = make (PteAccess (Set set)) access_order in
+            if is_valid atom then Some atom else None
+        | Some _|None -> None
+        end
+    | _,_ ->
+        if equal a1 a2 then Some a1 else None
+
+  let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
+
+  let fold_access_order f r =
+    let r = f OrderPlain r in
+    let r = f OrderAcquire r in
+    let r = f OrderAcquirePc r in
+    let r = f OrderRelease r in
+    fold_atom_rw (fun rw -> f (OrderAtomic rw)) r
+
+  let fold_pte_access f r =
+    let open WPTE in
+    let fold_set set r =
+      f (PteAccess (Set set)) r in
+    let r =
+      List.fold_left
+        (fun r pte -> fold_set (WPTESet.singleton pte) r)
+        r WPTE.all in
+    r
+    |> f (PteAccess Read)
+
+  let fold_neon_access fold f r =
+    fold (fun n -> f (NeonAccess n)) r
+
+  let fold_pair_access f r =
+    let add opt = f (PairAccess (opt,UnspecLoc)) in
+    r |> add `Pa |> add `PaN |> add `PaIQ |> add `PaIL |> add `PaA |> add `PaL
+
+  let fold_mixed f r =
+    let open MachSize in
+    let get_off =
+      (if C.fullmixed then get_off else get_off_reduced) C.naturalsize in
+    let fold_size sz r =
+      List.fold_right (fun o r -> f (sz,o) r) (get_off sz) r in
+    r |> fold_size Byte |> fold_size Short |> fold_size Word
+      |> fold_size Quad |> fold_size S128
+
+  let fold_access_type f r =
+    let r = f OrdinaryAccess r in
+    let r = if do_mixed then fold_mixed (fun m -> f (AccessSize m)) r else r in
+    let r = if do_kvm then fold_pte_access f r else r in
+    let r = if do_neon then fold_neon_access SIMD.fold_neon f r else r in
+    let r = if do_sve then fold_neon_access SIMD.fold_sve f r else r in
+    let r = if do_sme then fold_neon_access SIMD.fold_sme f r else r in
+    let r = if do_mixed then r else fold_pair_access f r in
+    let r = if do_memtag then f TagAccess r else r in
+    let r = if do_self then f InstrAccess r else r in
+    if do_morello then
+      r
+      |> f CapaAccess
+      |> f CapaTagAccess
+      |> f CapaSealAccess
+    else r
+
+  let fold f r =
+    fold_access_type
+      (fun access_type ->
+        fold_access_order
+          (fun access_order r ->
+            let atom = make access_type access_order in
+            let is_component = match access_type,access_order with
+            | PteAccess _,(OrderAcquire|OrderAcquirePc|OrderRelease|OrderAtomic _) ->
+                false
+            | _,_ -> true in
+            if is_component && is_valid atom && (applies atom R || applies atom W)
+            then f atom r
+            else r))
+      r
+
+end
+
+type atom = StructuredAtom.t
 
 module Value = struct
 
@@ -278,8 +794,8 @@ module Value = struct
       let open WPTE in
       let default_pte_loc = default_pte loc in
       let pte_atom_list = List.filter_map
-        ( fun (atom, _mach_size) -> match atom with
-          | Pte(pte_atom) -> Some(pte_atom)
+        ( fun atom -> match atom.StructuredAtom.access_type with
+          | StructuredAtom.PteAccess pte_atom -> Some pte_atom
           | _ -> None
         ) pte_atom_list in
       (* A dummy function that return the default physical address `*` *)
@@ -350,9 +866,8 @@ module Value = struct
         List.fold_left ( fun acc atom_pte ->
           (* Toggle values for further process *)
           match atom_pte with
-          | Set(field_set)|SetRel(field_set) -> WPTESet.fold precise_set_field field_set acc
-          | ReadHAAcq | ReadHAAcqPc -> precise_set_field HA acc
-          | _ -> acc
+          | Set field_set -> WPTESet.fold precise_set_field field_set acc
+          | Read -> acc
         ) (None,None,None,None,default_pte_loc) pte_atom_list in
       (* Create a new WPTESet to adjust the inital value.
          Collapse None to false as it means no need to change default value *)
@@ -368,17 +883,15 @@ module Value = struct
     let do_setpteval flags pte loc =
       let open WPTE in
       match flags with
-        | Set f|SetRel f when WPTESet.mem HA f || WPTESet.mem HD f ->
+        | Set f when WPTESet.mem HA f || WPTESet.mem HD f ->
           Warn.user_error "Atom `HD` or `HA` is not a pteval write"
-        | Set f|SetRel f -> toggle_pte f pte loc
-        | Read|ReadAcq|ReadAcqPc ->
+        | Set f -> toggle_pte f pte loc
+        | Read ->
           Warn.user_error "Atom `Read|ReadAcq|ReadAcqPc` is not a pteval write"
-        | ReadHAAcq | ReadHAAcqPc ->
-          Warn.user_error "Atom `HA` is not a pteval write"
 
     let set_pteval a p =
-      match a with
-      | Pte f,None -> do_setpteval f p
+      match a.StructuredAtom.access_type with
+      | StructuredAtom.PteAccess f -> do_setpteval f p
       | _ -> Warn.user_error "Atom is not a pteval write"
 
     let can_fault dir pte_val =
@@ -389,9 +902,8 @@ module Value = struct
     let affect_pte_field field pte =
       let open WPTE in
       match pte with
-      | Read | ReadAcq | ReadAcqPc -> false
-      | ReadHAAcq | ReadHAAcqPc -> field = AF
-      | Set pte_fields | SetRel pte_fields ->
+      | Read -> false
+      | Set pte_fields ->
         WPTESet.mem (One field) pte_fields
         || WPTESet.mem (Zero field) pte_fields
         (* special case for `HD` and `HA` *)
@@ -401,9 +913,9 @@ module Value = struct
     let need_check_fault atom =
       let open WPTE in
       match atom with
-      | Some (Pte pte, None)
+      | Some { StructuredAtom.access_type = StructuredAtom.PteAccess pte; _ }
         when (affect_pte_field AF pte || affect_pte_field VALID pte) -> Irr
-      | Some (Pte pte, None)
+      | Some { StructuredAtom.access_type = StructuredAtom.PteAccess pte; _ }
         when affect_pte_field DB pte -> Dir W
       | _ -> NoDir
 
@@ -434,62 +946,14 @@ module Mixed =
       let fullmixed = C.fullmixed
     end)(Value)
 
-let default_atom = Atomic PP,None
-let instr_atom = Some (Instr,None)
+let default_atom = StructuredAtom.default
+let instr_atom = Some StructuredAtom.instr
 
-let applies_atom (a,_) d =
-  let open WPTE in
-  match a,d with
-  | Neon SIMD.NeAcqPc,W
-  | Neon SIMD.NeRel,R -> false
-  | Acq _,R
-  | AcqPc _,R
-  | Rel _,W
-  | Pte (Read|ReadAcq|ReadAcqPc),R
-  | Instr, R
-  | (Plain _|Atomic _|Tag|CapaTag|CapaSeal|Neon _),(R|W)
-    -> true
-  | Pair ((`Pa|`PaN|`PaIQ|`PaA),_),R -> true
-  | Pair ((`Pa|`PaN|`PaIL|`PaL),_),W -> true
-  (* special case for TTHM HA for read *)
-  | Pte (Set p),R when WPTESet.mem HA p -> true
-  | Pte (ReadHAAcq|ReadHAAcqPc),R -> true
-  | Pte (Set _|SetRel _),W -> true
-  | _ -> false
+let applies_atom = StructuredAtom.applies
 
-let is_ifetch a = match a with
-| Some (Instr,_) -> true
-| _ -> false
+let is_ifetch = StructuredAtom.is_ifetch
 
-let is_tthm fields =
-  let open WPTE in
-    WPTESet.mem HD fields || WPTESet.mem HA fields
-
-   let pp_plain = "P"
-(* Annotation A is taken by load aquire *)
-   let pp_as_a = None
-
-   let pp_atom_rw = function
-     | PP -> ""
-     | PL -> "L"
-     | AP -> "A"
-     | AL -> "AL"
-
-   let pp_opt = function
-     | None -> ""
-     | Some Capability -> "c"
-
-   let pp_pair_opt = function
-     | `Pa -> ""
-     | `PaN -> "N"
-     | `PaIQ -> "IQ"
-     | `PaIL -> "IL"
-     | `PaA -> "A"
-     | `PaL -> "L"
-
-   and pp_pair_idx = function
-     | UnspecLoc -> ""
-
+   let pp_plain = StructuredAtom.pp StructuredAtom.plain
    let pair_opt_to_ld : [ld_pair_opt | st_pair_opt] -> ld_pair_opt = function
      | `Pa -> `Pa | `PaN -> `PaN | `PaIQ -> `PaIQ | `PaA -> `PaA
      | `PaIL | `PaL -> assert false
@@ -498,283 +962,40 @@ let is_tthm fields =
      | `Pa -> `Pa | `PaN -> `PaN | `PaIL -> `PaIL | `PaL -> `PaL
      | `PaIQ | `PaA -> assert false
 
-   let pp_atom_acc = function
-     | Atomic rw -> sprintf "X%s" (pp_atom_rw rw)
-     | Rel o -> sprintf "L%s" (pp_opt o)
-     | Acq o -> sprintf "A%s" (pp_opt o)
-     | AcqPc o -> sprintf "Q%s" (pp_opt o)
-     | Plain o -> sprintf "P%s" (pp_opt o)
-     | Tag -> "T"
-     | CapaTag -> "Ct"
-     | CapaSeal -> "Cs"
-     | Pte p -> sprintf "Pte%s" (pp_atom_pte p)
-     | Neon n -> SIMD.pp n
-     | Pair (opt,idx)
-       -> sprintf "Pa%s%s" (pp_pair_opt opt) (pp_pair_idx idx)
-     | Instr -> "I"
+   let pp_atom atom =
+     if StructuredAtom.equal atom StructuredAtom.plain then ""
+     else StructuredAtom.pp atom
 
-   let pp_atom (a,m) = match a with
-   | Plain o ->
-      let prefix = match o with
-      | None -> ""
-      | Some Capability -> "Pc" in
-       begin
-         match m with
-         | None -> prefix
-         | Some m ->
-            if String.length prefix > 0
-            then sprintf "%s.%s" prefix (Mixed.pp_mixed m)
-            else Mixed.pp_mixed m
-       end
-   | _ ->
-     let pp_acc = pp_atom_acc a in
-     match m with
-     | None -> pp_acc
-     | Some m -> sprintf "%s.%s" pp_acc  (Mixed.pp_mixed m)
+   let compare_atom = StructuredAtom.compare
 
-   let compare_atom = compare
+   let equal_atom = StructuredAtom.equal
 
-   let equal_atom a1 a2 = a1 = a2
+   let get_access_atom = StructuredAtom.get_access_atom
 
-   include
-     MachMixed.Util
-       (struct
-         type at = atom_acc
-         let plain = plain
-       end)
+   let set_access_atom = StructuredAtom.set_access_atom
 
-   let fold_mixed f r =
-     if do_mixed then
-       Mixed.fold_mixed
-         (fun m r -> f (Plain None,Some m) r)
-         r
-     else
-       r
+   let fold_atom = StructuredAtom.fold
 
-   let fold_pte f r =
-     if do_kvm then
-       let open WPTE in
-       let fold_singleton_wpte f r =
-         List.fold_left (fun acc pte -> f (WPTESet.singleton pte) acc) r WPTE.all in
-       let fold_pte_set fs r = r |> f (SetRel fs) |> f (Set fs) in
-       r |> fold_singleton_wpte fold_pte_set |> f Read |> f ReadAcq |> f ReadAcqPc
-         |> f ReadHAAcq |> f ReadHAAcqPc
-     else r
-
-   let fold_atom_rw f r = f PP (f PL (f AP (f AL r)))
-
-   let fold_tag =
-     if do_memtag then fun f r -> f Tag r
-     else fun _f r -> r
-
-   let fold_morello =
-     if do_morello then fun f r -> f CapaSeal (f CapaTag r)
-     else fun _f r -> r
-
-   let fold_neon =
-     if do_neon then
-       fun f -> SIMD.fold_neon (fun n -> f (Neon n))
-     else
-       fun _ r -> r
-
-   let fold_sve =
-     if do_sve then
-       fun f -> SIMD.fold_sve (fun n -> f (Neon n))
-     else
-       fun _ r -> r
-
-   let fold_sme =
-     if do_sme then
-       fun f -> SIMD.fold_sme (fun n -> f (Neon n))
-     else
-       fun _ r -> r
-
-      let fold_pair f r =
-        if do_mixed then r
-        else
-          let f opt idx r =
-            f (Pair (opt, idx)) r in
-          r |>
-          f `Pa UnspecLoc |>
-          f `PaN UnspecLoc |>
-          f `PaIQ UnspecLoc |>
-          f `PaIL UnspecLoc |>
-          f `PaA UnspecLoc |>
-          f `PaL UnspecLoc
-
-      let fold_acc_opt o f r =
-        let r = f (Acq o) r in
-        let r = f (AcqPc o) r in
-        let r = f (Rel o) r in
-        r
-
-   let fold_self f r = if do_self then f Instr r else r
-
-   let fold_acc mixed f r =
-     let r = if mixed then r else fold_pte (fun p r -> f (Pte p) r) r in
-     let r = fold_morello f r in
-     let r = fold_tag f r in
-     let r = fold_neon f r in
-     let r = fold_sve f r in
-     let r = fold_sme f r in
-     let r = fold_pair f r in
-     let r = fold_acc_opt None f r in
-     let r = fold_self f r in
-     let r =
-       if do_morello then
-         let r = f (Plain (Some Capability)) r in
-         let r = fold_acc_opt (Some Capability) f r in
-         r
-       else r in
-     let r = fold_atom_rw (fun rw -> f (Atomic rw)) r in
-     r
-
-   let fold_non_mixed f r = fold_acc false (fun acc r -> f (acc,None) r) r
-
-   let fold_atom f r =
-     let r = fold_non_mixed f r in
-     if do_mixed then
-       fold_acc true
-         (fun acc r -> Mixed.fold_mixed (fun m r -> f (acc,Some m) r) r)
-         (Mixed.fold_mixed
-            (fun m r -> f (Plain None,Some m) r)
-            r)
-     else r
-
-   let worth_final (a,_) = match a with
-     | Atomic _ -> true
-     | Acq _|AcqPc _|Rel _|Plain _|Tag|Instr
-     | CapaTag|CapaSeal
-     | Pte _|Neon _
-     | Pair _
-       -> false
+   let worth_final = StructuredAtom.worth_final
 
 
 
    let varatom_dir _d f r = f None r
 
-   let merge_atoms a1 a2 =
-   let open WPTE in
-   match a1,a2 with
-(* Plain and Instr do not merge *)
-   | ((Plain _,_),(Instr,_))
-   | ((Instr,_),(Plain _,_)) ->
-       None
-(* Eat Plain *)
-   | ((Plain None,None),a)
-   | (a,(Plain None,None)) ->
-       Some a
-(* Add size to ordinary annotations *)
-   | ((Plain None,(Some _ as sz)),
-      ((Acq None|AcqPc None|Rel None|Atomic _ as a),None))
-   | (((Acq None|AcqPc None|Rel None|Atomic _ as a),None),
-      (Plain None,(Some _ as sz)))
-     -> Some (a,sz)
-(* No sizes for Pte and tags *)
-   | (((Pte _|Tag),_),(_,Some _))
-   | ((_,Some _),((Pte _|Tag),_)) ->
-       None
-(* Merge Pte *)
-   | ((Pte (Read|ReadAcq),None),((Pte ReadAcq|Acq None),None))
-   | (((Acq None|Pte ReadAcq),None),(Pte (Read|ReadAcq),None))
-       -> Some (Pte ReadAcq,None)
-   | ((Pte (Read|ReadAcqPc),None),((Pte ReadAcqPc|AcqPc None),None))
-   | (((Pte ReadAcqPc|AcqPc None),None),(Pte (Read|ReadAcqPc),None))
-       -> Some (Pte ReadAcqPc,None)
-   (* A few special cases for TTHM HA on read *)
-   | ((Pte (Set p),None),((Pte ReadHAAcq|Acq None),None))
-   | (((Acq None|Pte ReadHAAcq),None),(Pte (Set p),None))
-     when p = WPTESet.singleton HA
-       -> Some (Pte ReadHAAcq,None)
-   | ((Pte ReadHAAcq,None),((Pte ReadHAAcq|Acq None),None))
-   | ((Acq None,None),(Pte ReadHAAcq,None))
-       -> Some (Pte ReadHAAcq,None)
-   | ((Pte (Set p),None),((Pte ReadHAAcqPc|AcqPc None),None))
-   | (((Pte ReadHAAcqPc|AcqPc None),None),(Pte (Set p),None))
-     when p = WPTESet.singleton HA
-       -> Some (Pte ReadHAAcqPc,None)
-   | ((Pte ReadHAAcqPc,None),((Pte ReadHAAcqPc|AcqPc None),None))
-   | ((AcqPc None,None),(Pte ReadHAAcqPc,None))
-       -> Some (Pte ReadHAAcqPc,None)
-   (* END special cases for TTHM HA on read *)
-   | ((Pte (Set set|SetRel set),None),(Rel None,None))
-   | ((Rel None,None),(Pte (Set set|SetRel set),None))
-       -> Some (Pte (SetRel set),None)
-   | (Pte (Set set1),None),(Pte (Set set2),None)
-     -> let set = WPTESet.union set1 set2 in
-        if contain_valid_pte_fields set
-          || contain_valid_tthm_fields set
-        then Some (Pte (Set set),None)
-        else None
-   | ((Pte (Set set1),None),(Pte (SetRel set2),None))
-   | ((Pte (SetRel set1),None),(Pte (Set set2),None))
-   | ((Pte (SetRel set1),None),(Pte (SetRel set2),None))
-     -> let set = WPTESet.union set1 set2 in
-        if contain_valid_pte_fields set
-          || contain_valid_tthm_fields set
-        then Some (Pte (SetRel set),None)
-        else None
-(* Add size when (ordinary) annotation equal *)
-   | ((Acq None as a,None),(Acq None,(Some _ as sz)))
-   | ((Acq None as a,(Some _ as sz)),(Acq None,None))
-   | ((AcqPc None as a,None),(AcqPc None,(Some _ as sz)))
-   | ((AcqPc None as a,(Some _ as sz)),(AcqPc None,None))
-   | ((Rel None as a,None),(Rel None,(Some _ as sz)))
-   | ((Rel None as a,(Some _ as sz)),(Rel None,None))
-   | ((Atomic PP as a,None),(Atomic PP,(Some _ as sz)))
-   | ((Atomic PP as a,(Some _ as sz)),(Atomic PP,None))
-   | ((Atomic AP as a,None),(Atomic AP,(Some _ as sz)))
-   | ((Atomic AP as a,(Some _ as sz)),(Atomic AP,None))
-   | ((Atomic PL as a,None),(Atomic PL,(Some _ as sz)))
-   | ((Atomic PL as a,(Some _ as sz)),(Atomic PL,None))
-   | ((Atomic AL as a,None),(Atomic AL,(Some _ as sz)))
-   | ((Atomic AL as a,(Some _ as sz)),(Atomic AL,None))
-     -> Some (a,sz)
-(* Remove plain when size equal *)
-   | ((Plain None,sz1),(a,sz2))
-   | ((a,sz1),(Plain None,sz2)) when sz1=sz2 -> Some (a,sz1)
-   | _,_ ->
-       if equal_atom a1 a2 then Some a1 else None
+   let merge_atoms = StructuredAtom.merge
 
-   let overlap_atoms a1 a2 = match a1,a2 with
-     | ((_,None),(_,_))|((_,_),(_,None)) -> true
-     | ((_,Some sz1),(_,Some sz2)) ->
-         MachMixed.overlap  sz1 sz2
+   let overlap_atoms = StructuredAtom.overlap
 
-   let neon_as_integers =
-     let open SIMD in
-     function
-     | NeP | NeAcqPc | NeRel -> 1
-     | NePa | NePaN -> 2
-     | SmV | SmH
-     | SvV | Sv1  | Ne1 -> 4
-     | Sv2i | Ne2 | Ne2i -> 8
-     | Sv3i | Ne3 | Ne3i -> 12
-     | Sv4i | Ne4 | Ne4i -> 16
-
-   let atom_to_bank = function
-   | Tag,None -> Code.Tag
-   (* TTHM feature only apply to ordinary R/W *)
-   | Pte (Set p|SetRel p),None when is_tthm p -> Code.Ord
-   | Pte (ReadHAAcq|ReadHAAcqPc),None -> Code.Ord
-   | Pte _,None -> Code.Pte
-   | CapaTag,None -> Code.CapaTag
-   | CapaSeal,None -> Code.CapaSeal
-   | Neon n,None -> Code.VecReg n
-   | Pair (_,UnspecLoc),_ -> Code.Pair
-   | Instr,_ -> Code.Instr
-   | (Tag|CapaTag|CapaSeal|Pte _|Neon _),Some _ -> assert false
-   | (Plain _|Acq _|AcqPc _|Rel _|Atomic _),_
-     -> Code.Ord
+   let atom_to_bank = StructuredAtom.to_bank
 
 
 (**************)
 (* Mixed size *)
 (**************)
 
-   let tr_value ao v = match ao with
-   | None| Some (_,None) -> v
-   | Some (_,Some (sz,_)) -> Mixed.tr_value sz v
+   let tr_value ao v = match get_access_atom ao with
+   | None -> v
+   | Some (sz,_) -> Mixed.tr_value sz v
 
    module ValsMixed =
      MachMixed.Vals
@@ -783,56 +1004,21 @@ let is_tthm fields =
          let endian = endian
        end)(Value)
 
-let overwrite_value v ao w = match ao with
-| None
-| Some
-    ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|
-    Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _|Instr),None)
-  -> w (* total overwrite *)
-| Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Neon _|Instr),Some (sz,o)) ->
-   ValsMixed.overwrite_value v sz o w
-| Some ((Tag|CapaTag|CapaSeal|Pte _|Pair _),Some _) ->
-    assert false
+let overwrite_value v ao w = match get_access_atom ao with
+| None -> w (* total overwrite *)
+| Some (sz,o) -> ValsMixed.overwrite_value v sz o w
 
- let extract_value v ao = match ao with
-  | None
-  | Some
-      ((Atomic _|Acq _|AcqPc _|Rel _|Plain _
-        |Tag|CapaTag|CapaSeal|Pte _|Neon _|Pair _|Instr),None) -> v
-  | Some ((Atomic _|Acq _|AcqPc _|Rel _|Plain _|Tag|CapaTag|CapaSeal|Neon _),Some (sz,o)) ->
-     ValsMixed.extract_value v sz o
-  | Some ((Pte _|Pair _|Instr),Some _) -> assert false
+ let extract_value v ao = match get_access_atom ao with
+ | None -> v
+ | Some (sz,o) -> ValsMixed.extract_value v sz o
 
 (* Wide accesses *)
 
-   let as_integers a =
-     Misc.seq_opt
-       (function
-        | Neon n,_ -> (match neon_as_integers n with
-                       | 1 -> None
-                       | n -> Some n)
-        | Pair _,_ -> Some 2
-        | _ -> None)
-       a
+   let as_integers = StructuredAtom.as_integers
 
-   let is_pair a =
-     match a with
-     | Some (Pair _,_) -> true
-     | Some _|None -> false
+   let is_pair = StructuredAtom.is_pair
 
-  let get_machine_feature atom =
-    let open WPTE in
-    match atom with
-    | Some(Pte(Set pte|SetRel pte), _) ->
-      WPTESet.fold (fun f acc ->
-        match f with
-        | HA -> StringSet.add (WPTE.pp HA) acc
-        | HD -> StringSet.add (WPTE.pp HD) acc
-        | _ -> acc
-      ) pte StringSet.empty
-    | Some(Pte(ReadHAAcq|ReadHAAcqPc), _) ->
-      StringSet.singleton (WPTE.pp HA)
-    | _ -> StringSet.empty
+  let get_machine_feature = StructuredAtom.get_machine_feature
 
 (* End of atoms *)
 
@@ -1000,34 +1186,14 @@ let expand_dp_dir (dir,_) = D.expand_dp_dir dir
 
 (* Read-Modify-Write *)
 module RMW = struct
-type rmw =  LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas | AllAmo
-  (* `SafeAmo` unfolds to
-     `[Swp; Cas; LdOp A_ADD; StOp A_ADD]`, that is,
-     edges `[Amo.Swp; Amo.Cas; Amo.LdAdd; Amo.StAdd]` and
-     the corresponding instructions `[SWP; CAS; LDADD; STADD]`.
-     These edges, `Amo.R`, can be safely used to generate cycles.
-     That is, for any `Amo.R`,
-     (1) given a value `a` (of a location), e.g. 0,
-     (2) given the current operand `b`, e.g. 1, where `b` is picked
-     by `diy` internally from an incremental counter starting from 1,
-     then the result value of `a Amo.R b` should be
-     distinct from the initial value `a`. Hence we can distinguish
-     whether `Amo.R` takes effect by reading the value of `a Amo.R b`,
-     making it safe to use when generating tests.
-     A counterexample is
-     `diyone7 -arch AArch64 "PodWR Amo.LdClr Rfe PodRW Coe"`
-     ```
-     P0               | P1          ;
-     ...              | LDR W0,[X2] ;
-     MOV W4,#1        | ...         ;
-     LDCLR W4,W3,[X2] |             ;
-     exists (... /\ 0:X3=0 /\ 1:X0=0)
-     ```
-     Here the initial value is observed by `0:X3 = 0`, the instruction
-     calculates `0 LDCLR 1`, and the result is observed by `1:X1 = 0`.
-     The problem here is `1:X1 = 0:X3`, thus the test cannot
-     distinguish whether `LDCLR` or `Amo.LdClr` takes effect. *)
-            | SafeAmo
+type nonrec rmw = rmw =
+  | LrSc
+  | LdOp of atomic_op
+  | StOp of atomic_op
+  | Swp
+  | Cas
+  | AllAmo
+  | SafeAmo
 
 type nonrec atom = atom
 
@@ -1042,17 +1208,6 @@ let pp_rmw compat = function
   | AllAmo -> sprintf "Amo"
   | SafeAmo -> sprintf "Amo.Safe"
 
-let equal_aop op1 op2 = match op1,op2 with
-  | A_ADD,A_ADD
-  | A_EOR,A_EOR
-  | A_SET,A_SET
-  | A_CLR,A_CLR
-  | A_SMAX,A_SMAX
-  | A_SMIN,A_SMIN
-  | A_UMAX,A_UMAX
-  | A_UMIN,A_UMIN -> true
-  | (A_ADD|A_EOR|A_SET|A_CLR|A_SMAX|A_SMIN|A_UMAX|A_UMIN),_ -> false
-
 let equal_rmw rmw1 rmw2 = match rmw1,rmw2 with
   | LrSc,LrSc
   | Swp,Swp
@@ -1060,7 +1215,7 @@ let equal_rmw rmw1 rmw2 = match rmw1,rmw2 with
   | AllAmo,AllAmo
   | SafeAmo,SafeAmo -> true
   | LdOp op1,LdOp op2
-  | StOp op1,StOp op2 -> equal_aop op1 op2
+  | StOp op1,StOp op2 -> atomic_op_equal op1 op2
   | (LrSc|LdOp _|StOp _|Swp|Cas|AllAmo|SafeAmo),_ -> false
 
 let is_one_instruction = function
@@ -1096,30 +1251,8 @@ let fold_rmw_compat f r = f LrSc r
 
 (* Check legal anotation for AMO instructions and LxSx pairs *)
 
-let ok_rw ar aw =
-  match ar,aw with
-  | (Some ((Acq _|Plain _),_)|None),(Some ((Rel _|Plain _),_)|None)
-    -> true
-  | _ -> false
-
-let ok_w  ar aw =
-  match ar,aw with
-  | (Some (Plain _,_)|None),(Some ((Rel _|Plain _),_)|None)
-    -> true
-  | _ -> false
-
-let same_mixed (a1:atom option) (a2:atom option) =
-  let a1 = get_access_atom a1
-  and a2 = get_access_atom a2 in
-  Misc.opt_eq MachMixed.equal a1 a2
-
-let applies_atom_rmw rmw ar aw = match rmw with
-  | LrSc ->
-     ok_rw ar aw && (do_cu || same_mixed ar aw)
-  | Swp|Cas|LdOp _ | AllAmo | SafeAmo ->
-     ok_rw ar aw && same_mixed ar aw
-  | StOp _ ->
-     ok_w ar aw && same_mixed ar aw
+let applies_atom_rmw rmw ar aw =
+  StructuredAtom.applies_rmw rmw ar aw
 
 let show_rmw_reg = function
 | StOp _ -> false
