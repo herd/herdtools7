@@ -74,7 +74,7 @@ let show_tests ?j flags =
       Channel.write_lines stdout
         (List.map command_of_litmus litmus_paths)
   | Some j ->
-      let index = Filename.concat tmp_dir "@all" in
+      let index = [Filename.concat tmp_dir "@all"] in
       let args =
         TestHerd.herd_args
           ~bell:None ~cat:None
@@ -84,10 +84,11 @@ let show_tests ?j flags =
           ~timeout:None ~checkfilter:None ~speedcheck:None in
       let herd_dir = Filename.dirname flags.herd in
       let mapply = Filename.concat herd_dir "mapply7" in
-      let args =
-        String.concat " " (TestHerd.apply_redirect_args flags.herd j args) in
-      Channel.write_lines stdout
-        [Printf.sprintf "%s %s %s" mapply args index;]
+      let args = String.concat " "
+        (TestHerd.mapply_herd_redirect_args
+          ~litmuses:index ~j ~herd:flags.herd args)
+      in
+      Channel.write_lines stdout [Printf.sprintf "%s %s" mapply args;]
 
 let run_tests ?j flags =
   let tmp_dir,litmuses = run_diycross flags in
