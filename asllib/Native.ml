@@ -53,8 +53,10 @@ let rec pp_native_value f =
 
 let native_value_to_string = Format.asprintf "%a" pp_native_value
 
-let mismatch_type v types =
-  Error.fatal_unknown_pos (Error.MismatchType (native_value_to_string v, types))
+let mismatch_type time v types =
+  Error.fatal_unknown_pos
+    (Error.UncheckedExecutionError
+       (time, Error.TypeMismatch (native_value_to_string v, types)))
 
 module type Config = sig
   val error_handling_time : Error.error_handling_time
@@ -72,6 +74,14 @@ module NativeBackend (C : Config) = struct
   type value = native_value
   type value_range = value * value
   type primitive = value m list -> value m list -> value list m
+
+  let mismatch_type = mismatch_type C.error_handling_time
+
+  let argument_arity_mismatch name expected provided =
+    Error.fatal_unknown_pos
+      (Error.UncheckedExecutionError
+         ( C.error_handling_time,
+           Error.ArgumentArityMismatch { name; expected; provided } ))
 
   let is_undetermined _ = false
   let v_of_int i = L_Int (Z.of_int i) |> nv_literal
@@ -128,25 +138,24 @@ module NativeBackend (C : Config) = struct
   let v_exception li = v_record li
   let non_tuple_exception v = mismatch_type v [ T_Tuple [] ]
 
-  let bad_index i n =
-    mismatch_type (v_of_int i)
-      [ integer_range' zero_expr (expr_of_int (n - 1)) ]
+  let bad_index ~loc i n =
+    Error.fatal_from loc (Error.BadIndex (C.error_handling_time, i, n))
 
   let doesnt_have_fields_exception v =
     mismatch_type v [ T_Record []; T_Exception []; T_Collection [] ]
 
-  let get_index i vec =
+  let get_index ~loc i vec =
     match vec with
     | NV_Vector li ->
         let n = List.length li in
-        if i < 0 || i >= n then bad_index i n else List.nth li i |> return
+        if i < 0 || i >= n then bad_index ~loc i n else List.nth li i |> return
     | v -> non_tuple_exception v
 
-  let set_index i v vec =
+  let set_index ~loc i v vec =
     match vec with
     | NV_Vector li ->
         let n = List.length li in
-        if i < 0 || i >= n then bad_index i n
+        if i < 0 || i >= n then bad_index ~loc i n
         else list_update i (Fun.const v) li |> v_tuple
     | v -> non_tuple_exception v
 
@@ -168,6 +177,8 @@ module NativeBackend (C : Config) = struct
     | NV_Literal (L_BitVector bits) -> bits
     | v -> mismatch_type v [ default_t_bits ]
 
+  (* TODO: Raise [ImplementationIntegerOverflow] here on overflow, and audit the
+     remaining unchecked [Z.to_int] conversions. *)
   let as_int = function
     | NV_Literal (L_Int i) -> Z.to_int i
     | v -> mismatch_type v [ integer' ]
@@ -175,20 +186,21 @@ module NativeBackend (C : Config) = struct
   let bitvector_to_value bv = L_BitVector bv |> nv_literal |> return
   let int_max x y = if x >= y then x else y
 
-  let bad_slices positions =
+  let bad_slices ~loc positions =
     let slices =
       List.map
         (fun (start, length) ->
           Slice_Length (expr_of_int start, expr_of_int length))
         positions
     in
-    Error.(fatal_unknown_pos (BadSlices (C.error_handling_time, slices, 0)))
+    Error.fatal_from loc
+      Error.(BadSlices (NegativeStartOrLength (C.error_handling_time, slices)))
 
-  let slices_to_positions positions =
+  let slices_to_positions ~loc positions =
     List.map
       (fun (start, length) ->
         let start = as_int start and length = as_int length in
-        if start < 0 || length < 0 then bad_slices [ (start, length) ]
+        if start < 0 || length < 0 then bad_slices ~loc [ (start, length) ]
         else (start, length))
       positions
     |> slices_to_positions Fun.id
@@ -202,7 +214,7 @@ module NativeBackend (C : Config) = struct
 
   let read_from_bitvector ~loc slices v =
     let max_pos = max_pos_of_slices slices in
-    let positions = slices_to_positions slices in
+    let positions = slices_to_positions ~loc slices in
     let () =
       List.iter
         (fun x -> if x < 0 then mismatch_type v [ default_t_bits ])
@@ -212,7 +224,7 @@ module NativeBackend (C : Config) = struct
       match v with
       | NV_Literal (L_BitVector bv) ->
           if max_pos < Bitvector.length bv then bv
-          else bad_index max_pos (Bitvector.length bv)
+          else bad_index ~loc max_pos (Bitvector.length bv)
       | NV_Literal (L_Int i) -> Bitvector.of_z (max_pos + 1) i
       | _ ->
           let ( ~! ) = add_pos_from loc in
@@ -222,10 +234,10 @@ module NativeBackend (C : Config) = struct
     let res = Bitvector.extract_slice bv positions in
     bitvector_to_value res
 
-  let write_to_bitvector slices src dst =
+  let write_to_bitvector ~loc slices src dst =
     let dst = as_bitvector dst
     and src = as_bitvector src
-    and positions = slices_to_positions slices in
+    and positions = slices_to_positions ~loc slices in
     let () =
       List.iter
         (fun x ->
@@ -242,7 +254,7 @@ module NativeBackend (C : Config) = struct
     let max_pos = max_pos_of_slices slices in
     let () =
       if not (max_pos < Bitvector.length dst) then
-        bad_index max_pos (Bitvector.length dst)
+        bad_index ~loc max_pos (Bitvector.length dst)
     in
     Bitvector.write_slice dst src positions |> bitvector_to_value
 
@@ -264,17 +276,13 @@ module NativeBackend (C : Config) = struct
       | [ NV_Literal (L_BitVector bv) ] ->
           L_Int (Bitvector.to_z_unsigned bv) |> nv_literal |> return_one
       | [ v ] -> mismatch_type v [ default_t_bits ]
-      | li ->
-          Error.fatal_unknown_pos
-          @@ Error.BadArity (Dynamic, "UInt", 1, List.length li)
+      | li -> argument_arity_mismatch "UInt" 1 (List.length li)
 
     let sint = function
       | [ NV_Literal (L_BitVector bv) ] ->
           L_Int (Bitvector.to_z_signed bv) |> nv_literal |> return_one
       | [ v ] -> mismatch_type v [ default_t_bits ]
-      | li ->
-          Error.fatal_unknown_pos
-          @@ Error.BadArity (Dynamic, "SInt", 1, List.length li)
+      | li -> argument_arity_mismatch "SInt" 1 (List.length li)
 
     let floor_log2 = function
       | [ NV_Literal (L_Int i) ] ->
@@ -283,9 +291,7 @@ module NativeBackend (C : Config) = struct
             Error.fatal_unknown_pos
             @@ Error.BadPrimitiveArgument ("FloorLog2", "greater than 0")
       | [ v ] -> mismatch_type v [ integer' ]
-      | li ->
-          Error.fatal_unknown_pos
-          @@ Error.BadArity (Dynamic, "Log2", 1, List.length li)
+      | li -> argument_arity_mismatch "Log2" 1 (List.length li)
 
     let truncate q = Q.to_bigint q
 
@@ -302,9 +308,7 @@ module NativeBackend (C : Config) = struct
     let wrap_real_to_int name f = function
       | [ NV_Literal (L_Real q) ] -> L_Int (f q) |> nv_literal |> return_one
       | [ v ] -> mismatch_type v [ T_Real ]
-      | li ->
-          Error.fatal_unknown_pos
-          @@ Error.BadArity (Dynamic, name, 1, List.length li)
+      | li -> argument_arity_mismatch name 1 (List.length li)
 
     let round_down = wrap_real_to_int "RoundDown" floor
     let round_up = wrap_real_to_int "RoundUp" ceiling
@@ -402,7 +406,7 @@ let rec unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef ty =
           let n = Z.to_int n in
           if n >= 0 then
             NV_Vector (List.init n (fun _ -> unknown_of_type t_elem))
-          else Error.(fatal_from ty (UnsupportedExpr (Dynamic, e_length)))
+          else Error.(fatal_from ty (ArbitraryEmptyType ty))
       | _ -> (* Bad types *) assert false)
   | T_Record fields | T_Exception fields ->
       fields
@@ -411,7 +415,9 @@ let rec unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef ty =
       |> fun record -> NV_Record record
   | T_Enum li -> NV_Literal (L_Label (List.hd li))
   | T_Tuple types -> NV_Vector (List.map (fun t -> unknown_of_type t) types)
-  | T_Collection _ | T_Named _ -> Error.(fatal_from ty TypeInferenceNeeded)
+  | T_Collection _ | T_Named _ ->
+      Error.(
+        fatal_from ty (UncheckedExecutionError (Dynamic, TypeInferenceNeeded)))
 
 module DeterministicBackend = struct
   include NativeBackend (struct
@@ -483,7 +489,7 @@ module DeterministicInterpreterSingleSetInstr =
 
 let exit_value = function
   | NV_Literal (L_Int i) -> i |> Z.to_int
-  | v -> mismatch_type v [ integer' ]
+  | v -> mismatch_type Error.Dynamic v [ integer' ]
 
 let interpret ?instrumentation static_env main_name ast =
   match instrumentation with

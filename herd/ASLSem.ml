@@ -515,8 +515,11 @@ module Make (Conf : Config) = struct
       | V.Val (Constant.Frozen i) -> return (V.Var i)
       | v -> return v
 
-    let get_index i v = M.op1 (Op.ArchOp1 (ASLOp.GetIndex i)) v >>= unfreeze
-    let set_index i v vec = M.op (Op.ArchOp (ASLOp.SetIndex i)) vec (freeze v)
+    let get_index ~loc:_ i v =
+      M.op1 (Op.ArchOp1 (ASLOp.GetIndex i)) v >>= unfreeze
+
+    let set_index ~loc:_ i v vec =
+      M.op (Op.ArchOp (ASLOp.SetIndex i)) vec (freeze v)
 
     let get_field name v =
       M.op1 (Op.ArchOp1 (ASLOp.GetField name)) v >>= unfreeze
@@ -529,7 +532,7 @@ module Make (Conf : Config) = struct
       let arch_op1 = ASLOp.BVSlice positions in
       M.op1 (Op.ArchOp1 arch_op1) bvs
 
-    let write_to_bitvector positions w v =
+    let write_to_bitvector ~loc:_ positions w v =
       let positions = Asllib.ASTUtils.slices_to_positions v_as_int positions in
       M.op (Op.ArchOp (ASLOp.BVSliceSet positions)) v w
 

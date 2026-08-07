@@ -58,10 +58,7 @@ let desugar_elided_parameter ty (call : call annotated) =
         (* For example, let x = foo{,M}(args); cannot be desugared as there is
            no bits(_) annotation on the left-hand side *)
         Error.fatal_from (to_pos call)
-          (CannotParse
-             (Some
-                "Cannot desugar elided parameter: left-hand side must have a \
-                 `bits(...)` type annotation."))
+          (BadDeclarationSyntax ElidedParameterWithoutBitvectorType)
   in
   let params = bits_e :: call.desc.params in
   let rhs = E_Call { call.desc with params } |> add_pos_from call in

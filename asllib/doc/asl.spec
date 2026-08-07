@@ -2617,6 +2617,12 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
           TypeError(TE_BF);
         }
       }
+      case collection_bad_base {
+        L = label_T_Collection;
+        e2 != E_Var(_);
+        --
+        TypeError(TE_UT);
+      }
     }
 
     case bitfield {
@@ -2702,6 +2708,12 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
       --
       (T_Bits(e_slice_width, empty_list), E_GetCollectionFields(base_collection_name, fields), ses_base)
       { math_layout = [_, [_] ] };
+    }
+    case collection_bad_base {
+      make_anonymous(tenv, t_base_annot) -> T_Collection(_);
+      e_base_annot != E_Var(_);
+      --
+      TypeError(TE_UT);
     }
     case error {
       make_anonymous(tenv, t_base_annot) -> t_base_annot_anon;
@@ -3497,6 +3509,12 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
       (LE_SetCollectionFields(collection_var_name, make_singleton_list(field_name), make_singleton_list((zero, n))), ses)
       { math_layout = [_] };
     }
+    case collection_bad_base {
+      t_le1_anon =: T_Collection(_);
+      le2 != LE_Var(_);
+      --
+      TypeError(TE_UT);
+    }
 
     case bitfield {
       t_le1_anon =: T_Bits(_, bitfields);
@@ -3578,6 +3596,13 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
      --
      (LE_SetCollectionFields(base_name, le_fields, slices), ses_base)
      { math_layout = [_, [_] ] };
+   }
+
+   case collection_bad_base {
+     t_base_anon =: T_Collection(_);
+     le_base != LE_Var(_);
+     --
+     TypeError(TE_UT);
    }
 
    case error {
@@ -4336,7 +4361,7 @@ typing function bitfield_slice_to_positions(tenv: static_envs, is_static: Bool, 
   slice =: Slice_Length(e1, e2);
   eval_slice_expr(tenv, is_static, e1) -> some(offset);
   eval_slice_expr(tenv, is_static, e2) -> some(length);
-  te_check(offset <= (offset + length - one), TE_BS) -> True;
+  te_check(length >= one, TE_BS) -> True;
   --
   some(range_set(offset, offset + length - one)) { math_layout = [_] };
 ;
@@ -5177,8 +5202,7 @@ typing relation annotate_pattern(tenv: static_envs, t: ty, p: pattern) ->
     case bits {
       ast_label(t_struct) = label_T_Bits;
       te_check(ast_label(t_struct) = ast_label(t_e_struct), TE_BO) -> True;
-      check_bits_equal_width(tenv, t_struct, t_e_struct) -> b;
-      te_check(b, TE_BO) -> True;
+      check_bits_equal_width(tenv, t_struct, t_e_struct) -> True;
       --
       (Pattern_Single(e'), ses);
     }
@@ -6306,7 +6330,7 @@ typing function check_type_satisfies(tenv: static_envs, t: ty, s: ty) -> CheckRe
 typing relation lowest_common_ancestor(tenv: static_envs, t: ty, s: ty) -> (ty: ty) | type_error
 {
   "returns the \Proselca{} of types {t} and {s} in the \staticenvironmentterm{} {tenv}, yielding {ty}.
-  If a \Proselca{} does not exist or a \typingerrorterm{} is detected, the result is a \typingerrorterm{}.",
+  If a \Proselca{} does not exist, the result is a \typingerrorterm{}.",
   prose_transition = "the \Proselca{} of {t} and {s} in {tenv} is",
   math_macro = \lca,
 } =
@@ -8358,7 +8382,8 @@ typing function check_implementations_unique(impls: list0(func)) ->
 
   case non_empty {
     impls =: match_cons(h, t);
-    INDEX(i, t: signatures_match(h, t[i]) -> False);
+    INDEX(i, t: signatures_match(h, t[i]) -> matches[i]);
+    te_check(not_single(list_or(matches)), TE_OE) -> True;
     check_implementations_unique(t) -> True;
     --
     True;
@@ -9130,7 +9155,7 @@ semantics relation eval_spec(tenv: static_envs, spec: spec) ->
   }
 
   case throwing {
-    eval_subprogram(env, name', empty_list, empty_list) -> Throwing(_, _, _, _)| DynErrorConfig(), DivergingConfig();
+    eval_subprogram(env, name', empty_list, empty_list) -> Throwing(_, _, _, _) | DivergingConfig();
     --
     DynamicError(DE_UE);
   }
@@ -9148,9 +9173,17 @@ semantics relation build_genv(tenv: static_envs, typed_spec: spec) -> (new_env: 
  prose_transition = "building the \environmentterm{} and \executiongraphterm{} from {typed_spec} starting in the context of {tenv} yields",
 } =
   env := (tenv, empty_denv);
-  eval_globals(typed_spec, (env, empty_graph)) -> (new_env, new_g) | DynErrorConfig(), DivergingConfig();
-  --
-  (new_env, new_g);
+  case normal {
+    eval_globals(typed_spec, (env, empty_graph)) -> (new_env, new_g) | DynErrorConfig(), DivergingConfig();
+    --
+    (new_env, new_g);
+  }
+
+  case throwing {
+    eval_globals(typed_spec, (env, empty_graph)) -> Throwing(_, _, _, _) | DynErrorConfig(), DivergingConfig();
+    --
+    DynamicError(DE_UE);
+  }
 ;
 
 //////////////////////////////////////////////////
@@ -11420,15 +11453,18 @@ typing function paramsofty(tenv: static_envs, ty: ty) ->
   case other {
     or(
       ast_label(ty) in make_set(label_T_Array, label_T_Bool, label_T_Named, label_T_Real, label_T_String),
-      is_unconstrained_integer(ty),
-      is_parameterized_integer(ty)
+      is_unconstrained_integer(ty)
     ) { [_] };
     --
     empty_list;
   }
 
   case error {
-    binary_or(ast_label(ty) = label_T_Enum, is_structured(ty));
+    or(
+      ast_label(ty) = label_T_Enum,
+      is_parameterized_integer(ty),
+      is_structured(ty)
+    ) { [_] };
     --
     TypeError(TE_BSPD);
   }
@@ -11467,12 +11503,25 @@ typing function params_of_expr(tenv: static_envs, e: expr) ->
     concat(ids1, ids2);
   }
 
+  case e_literal {
+    e =: E_Literal(_);
+    --
+    empty_list;
+  }
+
   case e_tuple {
     e =: E_Tuple(es);
     es =: make_singleton_list(e1);
     params_of_expr(tenv, e1) -> ids;
     --
     ids;
+  }
+
+  case e_tuple_error {
+    e =: E_Tuple(es);
+    list_len(es) != one;
+    --
+    TypeError(TE_BSPD);
   }
 
   case e_cond {
@@ -11485,7 +11534,7 @@ typing function params_of_expr(tenv: static_envs, e: expr) ->
   }
 
   case other {
-    ast_label(e) not_in make_set(label_E_Binop, label_E_Tuple, label_E_Unop, label_E_Var);
+    ast_label(e) not_in make_set(label_E_Binop, label_E_Cond, label_E_Literal, label_E_Tuple, label_E_Unop, label_E_Var);
     --
     TypeError(TE_BSPD);
   }

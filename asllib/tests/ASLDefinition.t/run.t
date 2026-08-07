@@ -1,7 +1,7 @@
 Examples used in ASL High-level Definition:
   $ aslref main0.asl
   $ aslref main_uncaught.asl
-  ASL Dynamic error: Uncaught exception: MyException {}.
+  ASL Dynamic error (DE_UE): Uncaught exception: MyException {}.
   [1]
   $ aslref --no-exec spec1.asl
   $ aslref --no-exec spec2.asl
@@ -27,7 +27,7 @@ Examples used in ASL High-level Definition:
   File CaseStatement.no_otherwise.asl, line 17, characters 9 to 30:
       case test_and_increment(x) of
            ^^^^^^^^^^^^^^^^^^^^^
-  ASL Dynamic error: unreachable reached.
+  ASL Dynamic error (DE_UNR): Execution reached an unreachable statement.
   [1]
   $ aslref CaseStatement.where.asl
 
@@ -36,26 +36,26 @@ Examples used in ASL High-level Definition:
   File UnreachableStatement.asl, line 5, characters 8 to 20:
           unreachable;
           ^^^^^^^^^^^^
-  ASL Dynamic error: unreachable reached.
+  ASL Dynamic error (DE_UNR): Execution reached an unreachable statement.
   [1]
 
   $ aslref AssertionStatement.asl
   File AssertionStatement.asl, line 5, characters 11 to 22:
       assert a + b < 256;
              ^^^^^^^^^^^
-  ASL Dynamic error: Assertion failed: ((a + b) < 256).
+  ASL Dynamic error (DE_DAF): Assertion failed: ((a + b) < 256).
   [1]
 
   $ aslref TypingErrorReporting.asl
   File TypingErrorReporting.asl, line 3, characters 11 to 22:
       return 5 + "hello";
              ^^^^^^^^^^^
-  ASL Type error: Illegal application of operator + on types integer {5}
+  ASL Type error (TE_BO): Operator + is not defined for types integer {5}
     and string.
   [1]
 
   $ aslref DynamicErrorReporting.asl
-  ASL Dynamic error: Illegal application of operator DIV for values 128 and 7.
+  ASL Dynamic error (DE_BO): Operator DIV is not defined for values 128 and 7.
   [1]
 
   $ aslref --no-exec Accessor.asl
@@ -66,9 +66,10 @@ Examples used in ASL High-level Definition:
   begin
     return Zeros{N};
   end;
-  ASL Type error: multiple overlapping `implementation` functions for Foo:
+  ASL Type error (TE_OE):
+    Multiple overlapping `implementation` functions exist for "Foo":
     File OverridingBad.asl, line 1, character 0 to line 4, character 4
-    File OverridingBad.asl, line 11, character 0 to line 14, character 4
+    File OverridingBad.asl, line 11, character 0 to line 14, character 4.
   [1]
 
   $ aslref GlobalNamespace.asl
@@ -97,19 +98,19 @@ Examples used in ASL High-level Definition:
   File GuideRule.TupleElementAccess.bad.asl, line 5, characters 18 to 25:
       x = (x.item1, x.item2);
                     ^^^^^^^
-  ASL Type error: There is no field 'item2' on type (integer, integer).
+  ASL Type error (TE_BTI): Tuple index 2 is outside the valid range 0..1.
   [1]
   $ aslref GuideRule.AnonymousEnumerations.bad.asl
   File GuideRule.AnonymousEnumerations.bad.asl, line 4, characters 12 to 23:
       var x : enumeration {RED, GREEN, BLUE};
               ^^^^^^^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref GuideRule.TupleImmutability.asl
   File GuideRule.TupleImmutability.asl, line 7, characters 6 to 11:
       x.item1 = '1'; // Illegal: tuples are immutable.
         ^^^^^
-  ASL Type error: cannot assign to the (immutable) tuple value x.
+  ASL Type error (TE_UT): Cannot assign to an element of immutable tuple x.
   [1]
 
   $ aslref ParameterOmission.asl
@@ -117,7 +118,7 @@ Examples used in ASL High-level Definition:
   File ParameterOmission.bad.asl, line 6, characters 17 to 18:
       result = LSL{}(result, 3);
                    ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref --no-exec NamedTypes.asl
   $ aslref --no-exec NamedTypes2.asl
@@ -127,19 +128,23 @@ Examples used in ASL High-level Definition:
   File NamedTypes.bad.asl, line 8, characters 4 to 5:
       b = K; // Illegal: a Char cannot be directly assigned to a Byte
       ^
-  ASL Type error: a subtype of Byte was expected, provided Char.
+  ASL Type error (TE_TSF): Expected a subtype of Byte; provided Char.
   [1]
   $ aslref --no-exec GuideRule.GlobalStorageCycles.bad1.asl
   File GuideRule.GlobalStorageCycles.bad1.asl, line 4, characters 0 to 10:
   var b = a;
   ^^^^^^^^^^
-  ASL Type error: multiple recursive declarations: "b", "a".
+  ASL Type error (TE_BD):
+    Only subprogram declarations may be mutually recursive; cycle contains:
+    "b", "a".
   [1]
   $ aslref --no-exec GuideRule.GlobalStorageCycles.bad2.asl
   File GuideRule.GlobalStorageCycles.bad2.asl, line 3, characters 0 to 23:
   var var1 : bits(size1); // cycle -- the type of var1 depends on size1 which depends
   ^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: multiple recursive declarations: "var1", "size1".
+  ASL Type error (TE_BD):
+    Only subprogram declarations may be mutually recursive; cycle contains:
+    "var1", "size1".
   [1]
   $ aslref --no-exec SubprogramDeclarations.asl
   $ aslref --no-exec GlobalPragma.asl
@@ -164,7 +169,7 @@ Examples used in ASL High-level Definition:
   File MutualRecursion.bad.asl, line 3, characters 11 to 17:
       return bar(a);
              ^^^^^^
-  ASL Dynamic error: recursion limit reached.
+  ASL Dynamic error (DE_LE): Recursion limit reached.
   [1]
   $ aslref --no-exec Guide.OperatorPriority.asl
   $ aslref --no-exec TupleExpressions.asl
@@ -181,14 +186,14 @@ Examples used in ASL High-level Definition:
   File ConstrainedIntegers.bad.asl, line 7, characters 4 to 5:
       B = A; // illegal: {2,4,8} is not a subset of {2,4}.
       ^
-  ASL Type error: a subtype of integer {2, 4} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {2, 4};
     provided integer {2, 4, 8}.
   [1]
   $ aslref --no-exec ConstrainedIntegers.bad2.asl
   File ConstrainedIntegers.bad2.asl, line 8, characters 4 to 10:
       myIntA = myIntB; // Illegal even though at this point
       ^^^^^^
-  ASL Type error: a subtype of integer {1..10} was expected,
+  ASL Type error (TE_TSF): Expected a subtype of integer {1..10};
     provided integer {0..20}.
   [1]
   $ aslref --no-exec PrimitiveOperations.asl
@@ -206,5 +211,5 @@ Examples used in ASL High-level Definition:
   File EmptyTuple.asl, line 1, characters 11 to 12:
   type T of ();
              ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]

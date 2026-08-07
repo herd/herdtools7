@@ -87,25 +87,13 @@ let check_is_associative ~loc (op : AST.binop) =
       ()
   | _ ->
       Error.(
-        fatal_from loc
-          (CannotParse
-             (Some
-                (Format.sprintf
-                   "Binary operator `%s` is not associative - parenthesise to \
-                    disambiguate."
-                   (PP.binop_to_string op)))))
+        fatal_from loc (BadBinopPriority (NonAssociativeBinop op)))
 
 
 let check_not_same_prec loc op op' =
   if prec op = prec op' then
     Error.(
-      fatal_from loc
-        (CannotParse
-           (Some
-              (Format.sprintf
-                 "Operators `%s` and `%s` have the same priority - parenthesise \
-                  to disambiguate."
-                 (PP.binop_to_string op) (PP.binop_to_string op')))))
+      fatal_from loc (BadBinopPriority (SamePriorityBinops (op, op'))))
 
 let check_not_binop_same_prec op e =
   match e.desc with
@@ -392,10 +380,10 @@ let ty_decl := ty |
     | ENUMERATION; l=braced(tclist1(IDENTIFIER));       < T_Enum       >
     | RECORD [@internal true];
       { Error.fatal_here $startpos $endpos @@
-          Error.CannotParse (Some "Empty record types must be declared with empty field list `{-}`.") }
+          Error.(BadDeclarationSyntax EmptyRecordTypeDeclaration) }
     | EXCEPTION [@internal true];
       { Error.fatal_here $startpos $endpos @@
-          Error.CannotParse (Some "Empty exception types must be declared with empty field list `{-}`.") }
+          Error.(BadDeclarationSyntax EmptyExceptionTypeDeclaration) }
     | RECORD; l=fields;                                 < T_Record     >
     | EXCEPTION; l=fields;                              < T_Exception  >
   )
@@ -411,7 +399,7 @@ let ty_or_collection :=
   | annotated (
     | COLLECTION [@internal true];
       { Error.fatal_here $startpos $endpos @@
-          Error.CannotParse (Some "Empty collection types must be declared with empty field list `{-}`.") }
+          Error.(BadDeclarationSyntax EmptyCollectionTypeDeclaration) }
     | COLLECTION; l=fields;                         < T_Collection >
   )
 (* End *)
@@ -473,13 +461,13 @@ let discard_or_identifier :=
 let decl_item :=
   | MINUS [@internal true]           ; {
       Error.fatal_here $startpos $endpos @@
-        Error.CannotParse (Some "A local declaration must declare a name.")
+        Error.(BadDeclarationSyntax LocalDeclarationWithoutName)
     }
   | ~=IDENTIFIER                     ; < LDI_Var >
   | vs=plist2(discard_or_identifier) ; {
       if List.for_all is_local_ignored vs then
         Error.fatal_here $startpos $endpos @@
-          Error.CannotParse (Some "A local declaration must declare at least one name.")
+          Error.(BadDeclarationSyntax LocalTupleDeclarationWithoutName)
       else LDI_Tuple vs
     }
 
@@ -490,7 +478,7 @@ let local_decl_keyword ==
   | LET       ; { LDK_Let       }
   | CONSTANT [@internal true]; {
       Error.fatal_here $startpos $endpos @@
-        Error.CannotParse (Some "Local constant declarations are not valid ASL1. Did you mean `let`?.")
+        Error.(BadDeclarationSyntax LocalConstantDeclaration)
   }
   | VAR       ; { LDK_Var       }
 
@@ -619,7 +607,7 @@ let recurse_limit := ioption(RECURSELIMIT; expr)
 let ignored_or_identifier :=
   | MINUS [@internal true]; {
       Error.fatal_here $startpos $endpos @@
-        Error.CannotParse (Some "A global declaration must declare a name.")
+        Error.(BadDeclarationSyntax GlobalDeclarationWithoutName)
     }
   | IDENTIFIER
 

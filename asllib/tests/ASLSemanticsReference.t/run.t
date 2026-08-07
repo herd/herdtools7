@@ -12,7 +12,7 @@ ASL Semantics Tests:
   File SemanticsRule.EUndefIdent.asl, line 5, characters 9 to 10:
     assert y;
            ^
-  ASL Static error: Undefined identifier: 'y'
+  ASL Static error (TE_UI): Undefined identifier "y".
   [1]
 //  $ aslref SemanticsRule.EBinopPlusPrint.asl
   $ aslref SemanticsRule.EBinopPlusAssert.asl
@@ -22,14 +22,16 @@ ASL Semantics Tests:
   File SemanticsRule.ECondARBITRARY3or42.asl, line 10, characters 9 to 13:
     assert x==3;
            ^^^^
-  ASL Dynamic error: Assertion failed: (x == 3).
+  ASL Dynamic error (DE_DAF): Assertion failed: (x == 3).
   [1]
   $ aslref SemanticsRule.ESlice.asl
   $ aslref SemanticsRule.ECall.asl
   $ aslref SemanticsRule.EGetArray.asl
   $ aslref SemanticsRule.EGetArrayTooSmall.asl
-  ASL Dynamic error: Mismatch type:
-    value 3 does not belong to type integer {0..2}.
+  File SemanticsRule.EGetArrayTooSmall.asl, line 7, characters 10 to 23:
+    println my_array[[3]];
+            ^^^^^^^^^^^^^
+  ASL Dynamic error (DE_BI): Index 3 is outside the valid range 0..2.
   [1]
   $ aslref SemanticsRule.ERecord.asl
   $ aslref SemanticsRule.EGetItem.asl
@@ -40,7 +42,7 @@ ASL Semantics Tests:
   File SemanticsRule.EArbitraryInteger3.asl, line 5, characters 9 to 13:
     assert x==3;
            ^^^^
-  ASL Dynamic error: Assertion failed: (x == 3).
+  ASL Dynamic error (DE_DAF): Assertion failed: (x == 3).
   [1]
   $ aslref SemanticsRule.EArbitraryIntegerRange3-42-3.asl
   $ aslref SemanticsRule.EArbitraryIntegerRange3-42-42.asl
@@ -48,7 +50,7 @@ ASL Semantics Tests:
     characters 9 to 14:
     assert x==42;
            ^^^^^
-  ASL Dynamic error: Assertion failed: (x == 42).
+  ASL Dynamic error (DE_DAF): Assertion failed: (x == 42).
   [1]
   $ aslref SemanticsRule.EArbitraryArray.asl
   $ aslref SemanticsRule.EPattern.asl
@@ -70,7 +72,7 @@ ASL Semantics Tests:
       assert i <= 3;
       i = i + 1;
      end;
-  ASL Dynamic error: loop limit reached.
+  ASL Dynamic error (DE_LE): Loop limit reached.
   [1]
   $ aslref SemanticsRule.SWhile.negative_limit.asl
   File SemanticsRule.SWhile.negative_limit.asl, line 4, character 2 to line 6,
@@ -78,7 +80,7 @@ ASL Semantics Tests:
     while TRUE looplimit -1 do
       println "This should not be printed";
     end;
-  ASL Dynamic error: loop limit reached.
+  ASL Dynamic error (DE_LE): Loop limit reached.
   [1]
   $ aslref SemanticsRule.SRepeat.asl
   File SemanticsRule.SRepeat.asl, line 24, character 4 to line 31, character 17:
@@ -118,9 +120,6 @@ ASL Semantics Tests:
   #ones in x = 5
   $ aslref SemanticsRule.SFor.nop.asl
   $ aslref SemanticsRule.SThrowSomeTyped.asl
-  $ aslref SemanticsRule.SThrowSTry.asl
-  aslref cannot find file "SemanticsRule.SThrowSTry.asl"
-  [1]
   $ aslref SemanticsRule.SPrint.asl
   string_number_1
   0
@@ -146,13 +145,13 @@ ASL Semantics Tests:
   File SemanticsRule.CatchNone.asl, line 15, characters 8 to 24:
     catch MyExceptionType1;
           ^^^^^^^^^^^^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref SemanticsRule.FUndefIdent.asl
   File SemanticsRule.FUndefIdent.asl, line 4, characters 5 to 12:
        foo ();
        ^^^^^^^
-  ASL Static error: Undefined identifier: 'foo'
+  ASL Static error (TE_UI): Undefined identifier "foo".
   [1]
   $ aslref SemanticsRule.FCall.asl
   $ aslref SemanticsRule.PAll.asl
@@ -162,12 +161,17 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.PSingle.asl
   $ aslref SemanticsRule.PMask.asl
   $ aslref SemanticsRule.ATCValue.asl
-  $ aslref -0 SemanticsRule.LEUndefIdentV0.asl
   $ aslref SemanticsRule.LEUndefIdentV1.asl
   File SemanticsRule.LEUndefIdentV1.asl, line 5, characters 2 to 3:
     y = 3;
     ^
-  ASL Static error: Undefined identifier: 'y'
+  ASL Static error (TE_UI): Undefined identifier "y".
+  [1]
+  $ aslref --no-type-check SemanticsRule.LEUndefIdentV1.asl
+  File SemanticsRule.LEUndefIdentV1.asl, line 5, characters 2 to 3:
+    y = 3;
+    ^
+  ASL Dynamic error: Undefined identifier "y".
   [1]
   $ aslref SemanticsRule.LESlice.asl
   $ aslref SemanticsRule.LESetField.asl
@@ -200,25 +204,25 @@ ASL Semantics Tests:
   File SemanticsRule.SAssertNo.asl, line 4, characters 10 to 17:
     assert (42 == 3);
             ^^^^^^^
-  ASL Dynamic error: Assertion failed: (42 == 3).
+  ASL Dynamic error (DE_DAF): Assertion failed: (42 == 3).
   [1]
   $ aslref SemanticsRule.LEDiscard.asl
   $ aslref SemanticsRule.LDDiscard.asl
   File SemanticsRule.LDDiscard.asl, line 4, characters 6 to 7:
     var - : integer;
         ^
-  ASL Grammar error: Cannot parse. A local declaration must declare a name.
+  ASL Grammar error (BE_BD): A local declaration must declare a name.
   [1]
 
   $ aslref EvalCatchers.asl
   21
   $ aslref SemanticsRule.ATCNotDynamicErrorIfFalse.asl
   $ aslref SemanticsRule.ATCVariousErrors.asl
-  File SemanticsRule.ATCVariousErrors.asl, line 8, characters 28 to 29:
+  File SemanticsRule.ATCVariousErrors.asl, line 8, characters 28 to 49:
     var c: integer{4, 5, 6} = 2 as integer{4, 5, 6}; // A dynamic error
-                              ^
-  ASL Dynamic error: Mismatch type:
-    value 2 does not belong to type integer {4, 5, 6}.
+                              ^^^^^^^^^^^^^^^^^^^^^
+  ASL Dynamic error (DE_TAF):
+    Value 2 does not satisfy the asserted type integer {4, 5, 6}.
   [1]
   $ aslref SemanticsRule.CatchNoThrow.asl
   No exception raised
@@ -229,13 +233,13 @@ ASL Semantics Tests:
   File SemanticsRule.SCond3.asl, line 3, characters 9 to 14:
     assert FALSE;
            ^^^^^
-  ASL Dynamic error: Assertion failed: FALSE.
+  ASL Dynamic error (DE_DAF): Assertion failed: FALSE.
   [1]
   $ aslref SemanticsRule.SCond4.asl
   $ aslref SemanticsRule.STry.asl
   $ aslref SemanticsRule.CheckNonOverlappingSlices.asl
   $ aslref SemanticsRule.CheckNonOverlappingSlices.bad.asl
-  ASL Dynamic error: overlapping slices (N - 2)+:2, 0+:1.
+  ASL Dynamic error (DE_OSA): Slices (N - 2)+:2, 0+:1 overlap.
   [1]
   $ aslref SemanticsRule.DeclareGlobal.asl
   $ aslref SemanticsRule.EvalGlobals.asl
@@ -255,7 +259,7 @@ ASL Semantics Tests:
     characters 37 to 53:
       return if n == 0 then 1 else n * factorial(n - 1);
                                        ^^^^^^^^^^^^^^^^
-  ASL Dynamic error: recursion limit reached.
+  ASL Dynamic error (DE_LE): Recursion limit reached.
   [1]
   $ aslref SemanticsRule.AssignArgs.asl
   $ aslref SemanticsRule.Call.asl
@@ -272,7 +276,11 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.ReadIdentifier.asl
   $ aslref SemanticsRule.SlicesToPositions.asl
   $ aslref SemanticsRule.SlicesToPositions.bad.asl
-  ASL Dynamic error: Cannot extract from bitvector of length 0 slice -1+:6.
+  File SemanticsRule.SlicesToPositions.bad.asl, line 5, characters 11 to 22:
+      assert bv[from+:6] == '001 101';
+             ^^^^^^^^^^^
+  ASL Dynamic error (DE_BI):
+    Slice -1+:6 is invalid: its start and length must be non-negative.
   [1]
   $ aslref SemanticsRule.GetIndex.asl
   $ aslref SemanticsRule.GetField.asl
@@ -280,6 +288,6 @@ ASL Semantics Tests:
   File SemanticsRule.EvalGlobals.bad1.asl, line 10, characters 0 to 12:
   var x = f();
   ^^^^^^^^^^^^
-  ASL Dynamic error: unexpected exception MyException thrown during the
-    evaluation of the initialisation of the global storage element "x".
+  ASL Dynamic error (DE_UE): Unexpected exception MyException
+    was thrown while initialising global storage element "x".
   [1]

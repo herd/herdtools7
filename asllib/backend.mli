@@ -124,11 +124,11 @@ module type S = sig
   val create_exception : (AST.identifier * value) list -> value m
   (** Creates an exception, with the indicated names. *)
 
-  val get_index : int -> value -> value m
-  (** [get_i i vec] returns value at index [i] inside [vec].*)
+  val get_index : loc:_ AST.t_annotated -> int -> value -> value m
+  (** [get_index ~loc i vec] returns the value at index [i] inside [vec]. *)
 
-  val set_index : int -> value -> value -> value m
-  (** [set_i i v vec] returns [vec] with index [i] replaced by [v].*)
+  val set_index : loc:_ AST.t_annotated -> int -> value -> value -> value m
+  (** [set_index ~loc i v vec] returns [vec] with index [i] replaced by [v]. *)
 
   val get_field : string -> value -> value m
   (** [get_field "foo" v] is the value mapped by "foo" in the record [v]. *)
@@ -170,9 +170,10 @@ module type S = sig
     loc:_ AST.t_annotated -> value_range list -> value -> value m
   (** Read a slice (represented by a list of value ranges) from a bitvector. *)
 
-  val write_to_bitvector : value_range list -> value -> value -> value m
-  (** [write_to_bitvector value_ranges w v] writes the bits of [w] into [v] at
-      the positions specified by [value_range]. *)
+  val write_to_bitvector :
+    loc:_ AST.t_annotated -> value_range list -> value -> value -> value m
+  (** [write_to_bitvector ~loc value_ranges w v] writes the bits of [w] into [v]
+      at the positions specified by [value_ranges]. *)
 
   val concat_bitvectors : value list -> value m
   (** Similar to Bitvector.concat, but monadic style obviously. *)

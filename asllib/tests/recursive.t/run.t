@@ -29,42 +29,50 @@
   File recursive-constant.asl, line 1, characters 13 to 14:
   constant x = x + 3;
                ^
-  ASL Static error: Undefined identifier: 'x'
+  ASL Static error (TE_UI): Undefined identifier "x".
   [1]
 
   $ aslref double-recursive-constant.asl
   File double-recursive-constant.asl, line 2, characters 0 to 19:
   constant y = x + 2;
   ^^^^^^^^^^^^^^^^^^^
-  ASL Type error: multiple recursive declarations: "y", "x".
+  ASL Type error (TE_BD):
+    Only subprogram declarations may be mutually recursive; cycle contains:
+    "y", "x".
   [1]
 
   $ aslref recursive-type.asl
   File recursive-type.asl, line 1, characters 13 to 34:
   type tree of (tree, integer, tree);
                ^^^^^^^^^^^^^^^^^^^^^
-  ASL Static error: Undefined identifier: 'tree'
+  ASL Static error (TE_UI): Undefined identifier "tree".
   [1]
 
   $ aslref double-recursive-types.asl
   File double-recursive-types.asl, line 2, characters 0 to 29:
   type node of (integer, tree);
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: multiple recursive declarations: "node", "tree".
+  ASL Type error (TE_BD):
+    Only subprogram declarations may be mutually recursive; cycle contains:
+    "node", "tree".
   [1]
 
   $ aslref fn-val-recursive.asl
   File fn-val-recursive.asl, line 1, characters 0 to 17:
   var x = f (4, 5);
   ^^^^^^^^^^^^^^^^^
-  ASL Type error: multiple recursive declarations: "f", "x".
+  ASL Type error (TE_BD):
+    Only subprogram declarations may be mutually recursive; cycle contains:
+    "f", "x".
   [1]
 
   $ aslref type-val-recursive.asl
   File type-val-recursive.asl, line 3, characters 0 to 24:
   type MyT of integer {x};
   ^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: multiple recursive declarations: "MyT", "x".
+  ASL Type error (TE_BD):
+    Only subprogram declarations may be mutually recursive; cycle contains:
+    "MyT", "x".
   [1]
 
   $ aslref enum-fn-recursive.asl
@@ -91,5 +99,5 @@
   File procedure-hits-limit.asl, line 6, characters 2 to 13:
     foo(x - 1);
     ^^^^^^^^^^^
-  ASL Dynamic error: recursion limit reached.
+  ASL Dynamic error (DE_LE): Recursion limit reached.
   [1]
