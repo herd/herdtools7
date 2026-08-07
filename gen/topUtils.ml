@@ -67,7 +67,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
            (String.concat "," (List.map pp_v (Array.to_list t)))
 
     let pp_coherence cos0 =
-      eprintf "COHERENCE: " ;
+      eprintf "COHERENCE (from physical addresses to ordered lists of pairs of values and observable processes):\n" ;
       Misc.pp_list stderr ""
         (fun chan (x,vs) ->
           fprintf chan "<%s:%a>" x
@@ -262,9 +262,15 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           match e.C.C.atom,e.C.C.loc with
           | (None,_)|(_,Code _) -> k
           | Some a,Data loc ->
-              if C.A.worth_final a then
-                StringSet.add loc k
-              else k in
+              if C.A.worth_final a then begin
+                match e.C.C.pa with
+                (* Keep both physical address `pa` and virtual address `loc`
+                   interesting, because a virtual address initially
+                   maps to itself, while address-translation updates may make
+                   the physical location differ from the virtual one. *)
+                | Data pa -> StringSet.add pa k |> StringSet.add loc
+                | Code _ -> StringSet.add loc k
+              end else k in
         k in
       do_rec n0
 
