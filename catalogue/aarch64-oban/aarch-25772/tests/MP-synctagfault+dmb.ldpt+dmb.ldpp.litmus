@@ -1,0 +1,13 @@
+AArch64 MP-synctagfault+dmb.ldpt+dmb.ldpp
+Variant=memtag,sync
+{
+0:X1=x:green; 1:X1=x:green;
+0:X3=y; 1:X3=y;
+0:X5=x:red;
+}
+P0           | P1               | P1.F           ;
+ MOV W2,#1   | L0: LDR WZR,[X1] | ADR X8,L1      ;
+ STR W2,[X3] | L1: DMB LD       | MSR ELR_EL1,X8 ;
+ DMB LD      |     LDR W2,[X3]  | ERET           ;
+ STG X5,[X1] |                  |                ;
+exists Fault(P1,TagCheck) /\ not (1:X2=1)
