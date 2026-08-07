@@ -147,11 +147,7 @@ That is, no \dynamicerrorterm{} occurs.
 \SemanticsRuleDef{CatchNamed}
 \ExampleDef{Catching a Named Exception}
 The specification in \listingref{semantics-catchnamed} prints the following:
-% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.CatchNamed.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-caught MyExceptionType with msg=42
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{semanticsrule-catchnamed}{\semanticstests/SemanticsRule.CatchNamed.asl}
 \ASLListing{Catching a named exception}{semantics-catchnamed}{\semanticstests/SemanticsRule.CatchNamed.asl}
 
 \RenderProseAndFormally{eval_catchers_catch_named}
@@ -160,11 +156,7 @@ caught MyExceptionType with msg=42
 \SemanticsRuleDef{CatchOtherwise}
 \ExampleDef{Evaluation of a Catch with an Otherwise}
 The specification in \listingref{semantics-catchotherwise} prints the following:
-% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.CatchOtherwise.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-Otherwise
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{semanticsrule-catchotherwise}{\semanticstests/SemanticsRule.CatchOtherwise.asl}
 \ASLListing{Catching an exception with \texttt{otherwise}}{semantics-catchotherwise}{\semanticstests/SemanticsRule.CatchOtherwise.asl}
 
 \RenderProseAndFormally{eval_catchers_catch_otherwise}
@@ -183,11 +175,7 @@ that matches the exception type (\texttt{MyExceptionType1}).
 \SemanticsRuleDef{CatchNoThrow}
 \ExampleDef{Evaluation of a Try Statement that Does Not Raise an Exception}
 The specification in \listingref{semantics-nothrow} prints the following:
-% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.CatchNoThrow.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-No exception raised
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{semanticsrule-catchnothrow}{\semanticstests/SemanticsRule.CatchNoThrow.asl}
 \ASLListing{A \texttt{try} statement that does not raise an exception}{semantics-nothrow}{\semanticstests/SemanticsRule.CatchNoThrow.asl}
 
 \RenderProseAndFormally{eval_catchers_no_throw}
