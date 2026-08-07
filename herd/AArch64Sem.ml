@@ -39,7 +39,6 @@ module Make
     let kvm = C.variant Variant.VMSA
     let is_branching = kvm && not (C.variant Variant.NoPteBranch)
     let pte2 = kvm && (C.variant Variant.PTE2 || C.variant Variant.ASL)
-    let do_cu = C.variant Variant.ConstrainedUnpredictable
     let self = C.variant Variant.Ifetch
     let pauth1 = C.variant (Variant.PacVersion `PAuth1)
     let pauth2 = C.variant (Variant.PacVersion `PAuth2)
@@ -1273,7 +1272,7 @@ module Make
       let write_mem_atomic sz an anexp ac a v resa ii =
         check_morello_for_write
           (fun a ->
-            ((if do_cu (* If CU allowed, write may succeed whatever the address _a_ is *)
+            ((if false (* Write canot succeed without checking reservation. *)
               then M.unitT () else M.assign a resa)
              >>| check_mixed_write_mem sz an anexp ac a v ii)
             >>! ())
@@ -2185,8 +2184,8 @@ Arguments:
                 match ii.env.lx_sz with
                 | None -> true (* No LoadExcl at all. always fail *)
                 | Some szr ->
-                   (* Some, must fail when size differ and cu is disallowed *)
-                   not (do_cu || MachSize.equal szr sz)
+                   (* Some, must fail when size differ *)
+                   not (MachSize.equal szr sz)
               end in
             M.aarch64_store_conditional must_fail
               (read_reg_ord ResAddr ii)
