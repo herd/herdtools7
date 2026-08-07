@@ -19,7 +19,7 @@
  (synopsis "Architecture Specification Language reference implementation")
  (depends
    (ocaml (>= 4.14))
-   dune
+   (dune (>= 3.14))
    (menhir (>= 20231231))
    (zarith (>= 1.13)))
  (depopts
