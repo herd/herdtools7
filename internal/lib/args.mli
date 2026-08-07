@@ -70,3 +70,15 @@ val is_file : spec -> spec
  *  Arg.spec that raises Arg.Bad if the argument is not a valid path to a
  *  directory. *)
 val is_dir : spec -> spec
+
+(** [split_wrapper_args args] returns the triplet [(l1, com, l2)], where [l1]
+    is the shortest prefix of elements in [args] that are not "--", [com] is
+    the argument immediately after "--" and [l2] is the rest of the arguments,
+    without the argument "--". This function is meant for handling parameter
+    lists for programs that launch other programs that have arguments
+    themselves. The caller can easily separate the arguments for both using the
+    argument "--", e.g.
+    [parallel_launcher -j 12 -- wrapper -verbose -- tester -random-seed].
+ *)
+val split_wrapper_args :
+  String.t list -> String.t list * String.t * String.t list

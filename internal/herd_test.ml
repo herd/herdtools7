@@ -23,36 +23,28 @@ let () =
 
 let litmus = Sys.argv.(Array.length Sys.argv -1)
 
-let rec to_list k =
-  if k+1 >= Array.length Sys.argv then []
-  else Sys.argv.(k)::to_list (k+1)
-
 type flags = { verbose:bool; nohash:bool; check:TestHerd.check; }
 let noflags = { verbose=false; nohash=false; check=TestHerd.All; }
 
-let flags,comidx =
-  let rec check_rec k =
-    if k+1 >= Array.length Sys.argv then
-      noflags,k
-    else match Sys.argv.(k) with
-      | "-verbose" ->
-          let f,comidx = check_rec (k+1) in
-          { f with verbose=true; },comidx
-      | "-checkstates" ->
-          let f,comidx = check_rec (k+1) in
-          { f with check=TestHerd.Sta},comidx
-      | "-checkobs" ->
-          let f,comidx = check_rec (k+1) in
-          { f with check=TestHerd.Obs; },comidx
-      | "-nohash" ->
-          let f,comidx = check_rec (k+1) in
-          { f with nohash=true; },comidx
-      | _ ->
-          noflags,k in
-  check_rec 1
+let args_own, com, args = Args.split_wrapper_args (Array.to_list Sys.argv)
 
-let com = Sys.argv.(comidx)
-let args = to_list (comidx+1)
+let flags =
+  let rec gather_args flags args =
+    match args with
+    | [] ->
+        flags
+    | "-verbose" :: args ->
+        gather_args {flags with verbose=true} args
+    | "-checkstates" :: args ->
+        gather_args {flags with check=TestHerd.Sta} args
+    | "-checkobs" :: args ->
+        gather_args {flags with check=TestHerd.Obs} args
+    | "-nohash" :: args ->
+        gather_args {flags with nohash=true} args
+    | _ :: args ->
+        gather_args flags args
+  in
+  gather_args noflags args_own
 
 let () =
   let expected = TestHerd.expected_of_litmus litmus

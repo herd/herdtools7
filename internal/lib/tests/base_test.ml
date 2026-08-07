@@ -97,6 +97,35 @@ let tests = [
       tests
   );
 
+  "Base.List.split_when", (fun () ->
+    let tests = [
+      (([], (fun _ -> true)), ([], [])) ;
+      ((['a'; 'b'; 'c'], (Char.equal 'a')), ([], ['a'; 'b'; 'c'])) ;
+      ((['a'; 'b'; 'c'], (Char.equal 'b')), (['a'], ['b'; 'c'])) ;
+      ((['a'; 'b'; 'c'], (Char.equal 'c')), (['a'; 'b'], ['c'])) ;
+      ((['a'; 'b'; 'c'], (Char.equal 'd')), (['a'; 'b'; 'c'], [])) ;
+    ] in
+
+    let tuple_to_string a_str b_str (a, b) =
+      Printf.sprintf "(%s, %s)" (a_str a) (b_str b)
+    in
+
+    let charlist_to_string = Base.List.to_ocaml_string (String.make 1) in
+    let result_to_string =
+      tuple_to_string charlist_to_string charlist_to_string
+    in
+
+    List.iter
+      (fun ((xs, p), expected) ->
+        let actual = Base.List.split_when p xs in
+        if not (actual = expected)  then
+          let expected = result_to_string expected in
+          let actual = result_to_string actual in
+          Test.fail (Printf.sprintf "expected %s, got %s" expected actual)
+      )
+      tests
+  );
+
   "Base.Option.compare", (fun () ->
     let tests = [
       None, None, 0 ;
