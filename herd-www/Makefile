@@ -11,7 +11,7 @@ WWW_LIB=www/weblib
 JSON_SHELVES=$(foreach book,$(BOOKS),$(WWW_CATALOGUE)/$(book)/shelf.json)
 ARM_ARM_RELEASES=$(wildcard ../herd/libdir/aarch64/*)
 ENV_PAIRS := $(foreach d,$(ARM_ARM_RELEASES),-env $(notdir $(d))=$(d))
-CATINCLUDES=../herd/libdir linux $(foreach b,$(BOOKS),$(HERD_CATALOGUE)/$(b)/cats)
+CATINCLUDES=../herd/libdir $(foreach b,$(BOOKS),$(HERD_CATALOGUE)/$(b)/cats)
 DUNETGT=../_build/default/herd-www
 all: web
 
