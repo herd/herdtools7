@@ -303,7 +303,10 @@ module Make (B : Backend.S) (C : Config) = struct
               let init_expr =
                 match initial_value with
                 | Some e -> e
-                | None -> fatal_from d env TypeInferenceNeeded
+                | None ->
+                    fatal_from d env
+                      (UncheckedExecutionError
+                         (C.error_handling_time, TypeInferenceNeeded))
               in
               let* eval_res = eval_expr env init_expr in
               match eval_res with
@@ -395,16 +398,12 @@ module Make (B : Backend.S) (C : Config) = struct
   let v_to_int ~loc v =
     match B.v_to_z v with
     | Some z when Z.fits_int z -> Z.to_int z
-    | Some z ->
-        Printf.eprintf
-          "Overflow in asllib: cannot convert back to 63-bit integer the \
-           integer %a.\n\
-           %!"
-          Z.output z;
-        fatal_from_no_env loc
-          Error.(UnsupportedExpr (C.error_handling_time, loc))
+    | Some z -> fatal_from_no_env loc (Error.ImplementationIntegerOverflow z)
     | None ->
-        fatal_from_no_env loc (MismatchType (B.debug_value v, [ integer' ]))
+        fatal_from_no_env loc
+          (UncheckedExecutionError
+             ( C.error_handling_time,
+               TypeMismatch (B.debug_value v, [ integer' ]) ))
 
   let sync_list ms =
     let folder m vsm =
@@ -529,7 +528,8 @@ module Make (B : Backend.S) (C : Config) = struct
         let* b = is_val_of_type e1 env v t in
         (if b then return_normal (v, new_env)
          else
-           fatal_from e1 env (Error.MismatchType (B.debug_value v, [ t.desc ])))
+           fatal_from e env
+             (Error.ATCFailure (C.error_handling_time, B.debug_value v, t.desc)))
         |: SemanticsRule.ATC
     (* End *)
     (* Begin EvalEVar *)
@@ -543,7 +543,8 @@ module Make (B : Backend.S) (C : Config) = struct
               return_normal (v, env)
           | NotFound ->
               fatal_from e env
-              @@ Error.UndefinedIdentifier (C.error_handling_time, x))
+              @@ Error.UncheckedExecutionError
+                   (C.error_handling_time, Error.MissingIdentifier x))
         |: SemanticsRule.EVar
     (* End *)
     | E_Binop (((`BAND | `BOR | `IMPL) as op), e1, e2)
@@ -653,13 +654,13 @@ module Make (B : Backend.S) (C : Config) = struct
         let*^ m_index, new_env = eval_expr env1 e_index in
         let* v_array = m_array and* v_index = m_index in
         let i_index = v_to_int ~loc:e v_index in
-        let* v = B.get_index i_index v_array in
+        let* v = B.get_index ~loc:e i_index v_array in
         return_normal (v, new_env) |: SemanticsRule.EGetArray
     (* End *)
     (* Begin EvalEGetTupleItem *)
     | E_GetItem (e_tuple, index) ->
         let** v_tuple, new_env = eval_expr env e_tuple in
-        let* v = B.get_index index v_tuple in
+        let* v = B.get_index ~loc:e index v_tuple in
         return_normal (v, new_env) |: SemanticsRule.EGetTupleItem
     (* End *)
     (* Begin EvalERecord *)
@@ -754,13 +755,9 @@ module Make (B : Backend.S) (C : Config) = struct
     eval_expr env e >>= function
     | Normal (v, _env) -> return v
     | Throwing (_, ty, _) ->
-        let msg =
-          Format.asprintf
-            "@[<hov 2>An exception of type @[<hv>%a@]@ was@ thrown@ when@ \
-             evaluating@ %a@]@."
-            PP.pp_ty ty PP.pp_expr e
-        in
-        fatal_from e env (Error.UnexpectedSideEffect msg)
+        fatal_from e env
+          (Error.UncheckedExecutionError
+             (C.error_handling_time, Error.UnexpectedThrow (ty, e)))
     | Cutoff -> assert false
   (* End *)
 
@@ -776,14 +773,15 @@ module Make (B : Backend.S) (C : Config) = struct
       | T_Int (Parameterized _) ->
           (* This cannot happen, because:
              1. Forgetting now about named types, or any kind of compound types,
-                you cannot ask: [expr as ty] if ty is the unconstrained integer
+                you cannot ask: [expr as ty] if ty is the parameterized integer
                 because there is no syntax for it.
              2. You cannot construct a type that is an alias for the
                 parameterized integer type.
              3. You cannot put the parameterized integer type in a compound
                 type.
           *)
-          fatal_from loc env Error.UnrespectedParserInvariant
+          fatal_from loc env
+            Error.(InternalInvariantError ParameterizedIntegerAtRuntime)
       | T_Bits (e, _) ->
           (* The call to [eval_expr_sef] is justified since annotate_type
              checks that all expressions on which a type depends are statically
@@ -807,7 +805,7 @@ module Make (B : Backend.S) (C : Config) = struct
       | T_Tuple tys ->
           let fold (i, prev) ty' =
             let m =
-              let* v' = B.get_index i v in
+              let* v' = B.get_index ~loc i v in
               let* here = in_values v' ty' in
               prev >>= B.binop `BAND here
             in
@@ -849,7 +847,8 @@ module Make (B : Backend.S) (C : Config) = struct
             (* Begin EvalLEUndefIdentOne *)
             | V1 ->
                 fatal_from le env
-                @@ Error.UndefinedIdentifier (C.error_handling_time, x)
+                @@ Error.UncheckedExecutionError
+                     (C.error_handling_time, Error.MissingIdentifier x)
                 |: SemanticsRule.LEUndefIdentV1
             (* End *)
             (* Begin EvalLEUndefIdentZero *)
@@ -869,7 +868,7 @@ module Make (B : Backend.S) (C : Config) = struct
           let* () =
             check_non_overlapping_slices ~pos:le env slices slice_ranges
           in
-          B.write_to_bitvector slice_ranges v_rhs v_bv_lhs
+          B.write_to_bitvector ~loc:le slice_ranges v_rhs v_bv_lhs
         in
         eval_lexpr ver e_bv env2 new_m_bv |: SemanticsRule.LESlice
     (* End *)
@@ -879,7 +878,7 @@ module Make (B : Backend.S) (C : Config) = struct
         let*^ m_index, env2 = eval_expr env1 e_index in
         let m1 =
           let* v = m and* v_index = m_index and* rv_array = rm_array in
-          B.set_index (v_to_int ~loc:e_index v_index) v rv_array
+          B.set_index ~loc:e_index (v_to_int ~loc:e_index v_index) v rv_array
         in
         eval_lexpr ver re_array env2 m1 |: SemanticsRule.LESetArray
     (* End *)
@@ -897,14 +896,17 @@ module Make (B : Backend.S) (C : Config) = struct
         (* The index-out-of-bound on the vector are done either in typing,
            either in [B.get_index]. *)
         let n = List.length le_list in
-        let nmonads = List.init n (fun i -> m >>= B.get_index i) in
+        let nmonads = List.init n (fun i -> m >>= B.get_index ~loc:le i) in
         multi_assign ver env le_list nmonads |: SemanticsRule.LEDestructuring
     (* End *)
     (* Begin EvalLESetFields *)
     | LE_SetFields (le_record, fields, slices) ->
         let () =
           if List.compare_lengths fields slices != 0 then
-            fatal_from le env Error.TypeInferenceNeeded
+            fatal_from le env
+              Error.(
+                UncheckedExecutionError
+                  (C.error_handling_time, TypeInferenceNeeded))
         in
         let*^ rm_record, env1 = expr_of_lexpr le_record |> eval_expr env in
         let onwrite _ m = m in
@@ -1063,7 +1065,7 @@ module Make (B : Backend.S) (C : Config) = struct
   (* End *)
   (* Evaluation of Local Declarations *)
   (* -------------------------------- *)
-  and eval_local_decl ldi env m_init : env maybe_exception m =
+  and eval_local_decl ~loc ldi env m_init : env maybe_exception m =
     let () =
       if false then Format.eprintf "Evaluating %a.@." PP.pp_local_decl_item ldi
     in
@@ -1078,7 +1080,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | LDI_Tuple ldis ->
         let n = List.length ldis in
         let* vm = m_init in
-        let liv = List.init n (fun i -> B.return vm >>= B.get_index i) in
+        let liv = List.init n (fun i -> B.return vm >>= B.get_index ~loc i) in
         (* Begin DeclareLDITuple( *)
         let folder envm x vm =
           let**| env = envm in
@@ -1213,7 +1215,10 @@ module Make (B : Backend.S) (C : Config) = struct
         let name = throw_identifier () and scope = B.Scope.global ~init:false in
         let* () = B.on_write_identifier name scope v in
         return (Throwing ((v, name, scope), t, new_env)) |: SemanticsRule.SThrow
-    | S_Throw (_e, None) -> fatal_from s env Error.TypeInferenceNeeded
+    | S_Throw (_e, None) ->
+        fatal_from s env
+          Error.(
+            UncheckedExecutionError (C.error_handling_time, TypeInferenceNeeded))
     (* End *)
     (* Begin EvalSTry *)
     | S_Try (s1, catchers, otherwise_opt) ->
@@ -1223,9 +1228,11 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalSDecl *)
     | S_Decl (_ldk, ldi, _ty_opt, Some e_init) ->
         let*^ m_init, env1 = eval_expr env e_init in
-        let**| new_env = eval_local_decl ldi env1 m_init in
+        let**| new_env = eval_local_decl ~loc:s ldi env1 m_init in
         return_continue new_env |: SemanticsRule.SDecl
-    | S_Decl (_ldk, _ldi, _ty_opt, None) -> fatal_from s env TypeInferenceNeeded
+    | S_Decl (_ldk, _ldi, _ty_opt, None) ->
+        fatal_from s env
+          (UncheckedExecutionError (C.error_handling_time, TypeInferenceNeeded))
     (* End *)
     (* Begin EvalSPrint *)
     | S_Print { args = e_list; newline; debug } ->
@@ -1279,7 +1286,10 @@ module Make (B : Backend.S) (C : Config) = struct
         | Some limit -> return (Some limit)
         | None ->
             fatal_from e_limit env
-              (Error.MismatchType (B.debug_value v_limit, [ integer' ])))
+              Error.(
+                UncheckedExecutionError
+                  ( C.error_handling_time,
+                    TypeMismatch (B.debug_value v_limit, [ integer' ]) )))
 
   and check_recurse_limit pos name env e_limit_opt =
     let check_recurse_cutoff pending_calls =
@@ -1459,7 +1469,8 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalFUndefIdent *)
     | None ->
         fatal_from_genv pos genv
-        @@ Error.UndefinedIdentifier (C.error_handling_time, name)
+        @@ Error.UncheckedExecutionError
+             (C.error_handling_time, Error.MissingIdentifier name)
         |: SemanticsRule.FUndefIdent
     (* End *)
     (* Begin EvalFPrimitive *)
@@ -1490,21 +1501,26 @@ module Make (B : Backend.S) (C : Config) = struct
     | Some ({ args = arg_decls; _ }, _)
       when List.compare_lengths args arg_decls <> 0 ->
         fatal_from_genv pos genv
-        @@ Error.BadArity
+        @@ Error.UncheckedExecutionError
              ( C.error_handling_time,
-               name,
-               List.length arg_decls,
-               List.length args )
+               Error.ArgumentArityMismatch
+                 {
+                   name;
+                   expected = List.length arg_decls;
+                   provided = List.length args;
+                 } )
         |: SemanticsRule.FBadArity
     | Some ({ parameters = parameter_decls; _ }, _)
       when List.compare_lengths params parameter_decls <> 0 ->
         fatal_from_genv pos genv
-        @@ Error.BadParameterArity
+        @@ Error.UncheckedExecutionError
              ( C.error_handling_time,
-               V1,
-               name,
-               List.length parameter_decls,
-               List.length params )
+               Error.ParameterArityMismatch
+                 {
+                   name;
+                   expected = List.length parameter_decls;
+                   provided = List.length params;
+                 } )
         |: SemanticsRule.FBadArity
     (* End *)
     (* Begin EvalFCall *)
@@ -1560,22 +1576,22 @@ module Make (B : Backend.S) (C : Config) = struct
   (** [protected_multi_assign les ms] is [multi_assign les ms] if [les] and
       [mes] have the same length. Otherwise if [ms] is a singleton, it performs
       tuple reads to access the elements corresponding to [les]. Otherwise, it
-      raises a [BadArity] Error. *)
+      raises an [AssignmentArityMismatch] error. *)
   and protected_multi_assign ver env pos les monads : env maybe_exception m =
     if List.compare_lengths les monads = 0 then multi_assign ver env les monads
     else
       match monads with
       | [ m ] ->
           let n = List.length les in
-          let nmonads = List.init n (fun i -> m >>= B.get_index i) in
+          let nmonads = List.init n (fun i -> m >>= B.get_index ~loc:pos i) in
           multi_assign ver env les nmonads
       | _ ->
           fatal_from pos env
-          @@ Error.BadArity
+          @@ Error.UncheckedExecutionError
                ( C.error_handling_time,
-                 "tuple construction",
-                 List.length les,
-                 List.length monads )
+                 Error.AssignmentArityMismatch
+                   { expected = List.length les; provided = List.length monads }
+               )
 
   (* Begin EvalSpec *)
   let run_typed_env env (static_env : StaticEnv.global) main_name (ast : AST.t)
@@ -1592,7 +1608,14 @@ module Make (B : Backend.S) (C : Config) = struct
              being type checked. *)
           Error.(
             fatal_unknown_pos
-              (BadArity (C.error_handling_time, main_name, 1, List.length values)))
+              (UncheckedExecutionError
+                 ( C.error_handling_time,
+                   EntrypointResultArityMismatch
+                     {
+                       name = main_name;
+                       expected = 1;
+                       provided = List.length values;
+                     } )))
       | Throwing ((v, _, _), ty, _genv) ->
           let msg = Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v) in
           Error.fatal_unknown_pos (Error.UncaughtException msg)

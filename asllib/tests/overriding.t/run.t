@@ -27,7 +27,8 @@ Implementation without impdef
   begin
     return Zeros{N};
   end;
-  ASL Type error: no `impdef` for `implementation` function.
+  ASL Type error (TE_OE):
+    No matching `impdef` declaration exists for the `implementation` function.
   [1]
   $ aslref --no-exec --overriding-warn-all-impdefs-overridden implementation-only.asl
   File implementation-only.asl, line 1, character 0 to line 4, character 4:
@@ -35,7 +36,8 @@ Implementation without impdef
   begin
     return Zeros{N};
   end;
-  ASL Type error: no `impdef` for `implementation` function.
+  ASL Type error (TE_OE):
+    No matching `impdef` declaration exists for the `implementation` function.
   [1]
   $ aslref --no-exec --overriding-warn-implementations implementation-only.asl
   File implementation-only.asl, line 1, character 0 to line 4, character 4:
@@ -52,11 +54,12 @@ Clashing implementations
   begin
     return Zeros{N};
   end;
-  ASL Type error: multiple overlapping `implementation` functions for Foo:
+  ASL Type error (TE_OE):
+    Multiple overlapping `implementation` functions exist for "Foo":
     File clashing-implementations.asl, line 1, character 0 to line 4,
       character 4
     File clashing-implementations.asl, line 6, character 0 to line 9,
-      character 4
+      character 4.
   [1]
   $ aslref --no-exec --overriding-warn-all-impdefs-overridden clashing-implementations.asl
   File clashing-implementations.asl, line 1, character 0 to line 4, character 4:
@@ -64,11 +67,12 @@ Clashing implementations
   begin
     return Zeros{N};
   end;
-  ASL Type error: multiple overlapping `implementation` functions for Foo:
+  ASL Type error (TE_OE):
+    Multiple overlapping `implementation` functions exist for "Foo":
     File clashing-implementations.asl, line 1, character 0 to line 4,
       character 4
     File clashing-implementations.asl, line 6, character 0 to line 9,
-      character 4
+      character 4.
   [1]
   $ aslref --no-exec --overriding-warn-implementations clashing-implementations.asl
   File clashing-implementations.asl, line 1, character 0 to line 4, character 4:
@@ -76,11 +80,12 @@ Clashing implementations
   begin
     return Zeros{N};
   end;
-  ASL Type error: multiple overlapping `implementation` functions for Foo:
+  ASL Type error (TE_OE):
+    Multiple overlapping `implementation` functions exist for "Foo":
     File clashing-implementations.asl, line 1, character 0 to line 4,
       character 4
     File clashing-implementations.asl, line 6, character 0 to line 9,
-      character 4
+      character 4.
   [1]
 
 Clashing impdefs
@@ -90,9 +95,10 @@ Clashing impdefs
   begin
     return Zeros{N};
   end;
-  ASL Type error: multiple `impdef` candidates for `implementation`:
+  ASL Type error (TE_OE):
+    Multiple `impdef` declarations match the `implementation` function:
     File clashing-impdefs.asl, line 1, character 0 to line 4, character 4
-    File clashing-impdefs.asl, line 6, character 0 to line 9, character 4
+    File clashing-impdefs.asl, line 6, character 0 to line 9, character 4.
   [1]
   $ aslref --no-exec --overriding-permissive clashing-impdefs-without-implementation.asl
   File clashing-impdefs-without-implementation.asl, line 6, character 0 to
@@ -101,7 +107,7 @@ Clashing impdefs
   begin
     return Zeros{N};
   end;
-  ASL Type error: cannot declare already declared element "Foo".
+  ASL Type error (TE_IAD): Identifier "Foo" is already declared.
   [1]
 
 Bad implementations
@@ -111,7 +117,8 @@ Bad implementations
   begin
     return Ones{N};
   end;
-  ASL Type error: no `impdef` for `implementation` function.
+  ASL Type error (TE_OE):
+    No matching `impdef` declaration exists for the `implementation` function.
   [1]
   $ aslref --no-exec --overriding-permissive bad-implementation-param.asl
   File bad-implementation-param.asl, line 6, character 0 to line 9, character 4:
@@ -119,7 +126,8 @@ Bad implementations
   begin
     return Ones{N};
   end;
-  ASL Type error: no `impdef` for `implementation` function.
+  ASL Type error (TE_OE):
+    No matching `impdef` declaration exists for the `implementation` function.
   [1]
   $ aslref --no-exec --overriding-permissive bad-implementation-arg.asl
   File bad-implementation-arg.asl, line 6, character 0 to line 9, character 4:
@@ -127,7 +135,8 @@ Bad implementations
   begin
     return Ones{N};
   end;
-  ASL Type error: no `impdef` for `implementation` function.
+  ASL Type error (TE_OE):
+    No matching `impdef` declaration exists for the `implementation` function.
   [1]
   $ aslref --no-exec --overriding-permissive bad-implementation-return.asl
   File bad-implementation-return.asl, line 6, character 0 to line 9,
@@ -136,7 +145,8 @@ Bad implementations
   begin
     return Ones{N};
   end;
-  ASL Type error: no `impdef` for `implementation` function.
+  ASL Type error (TE_OE):
+    No matching `impdef` declaration exists for the `implementation` function.
   [1]
 
 Interactions with other features
@@ -146,5 +156,6 @@ Interactions with other features
   File type-check-impdef.asl, line 3, characters 2 to 20:
     return Zeros{N+1};
     ^^^^^^^^^^^^^^^^^^
-  ASL Type error: a subtype of bits(N) was expected, provided bits((N + 1)).
+  ASL Type error (TE_TSF): Expected a subtype of bits(N);
+    provided bits((N + 1)).
   [1]

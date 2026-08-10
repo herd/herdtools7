@@ -30,15 +30,14 @@ module TimeFrame = SideEffect.TimeFrame
 
 let ( |: ) = Instrumentation.TypingNoInstr.use_with
 let fatal_from ~loc = Error.fatal_from loc
-
-let undefined_identifier ~loc x =
-  fatal_from ~loc (Error.UndefinedIdentifier (Static, x))
-
-let invalid_expr e = fatal_from ~loc:e (Error.InvalidExpr e)
+let undefined_identifier ~loc x = fatal_from ~loc (Error.UndefinedIdentifier x)
 let add_pos_from ~loc = add_pos_from loc
 
-let conflict ~loc expected provided =
-  fatal_from ~loc (Error.ConflictingTypes (expected, provided))
+let unexpected_type ~loc expected provided =
+  fatal_from ~loc (Error.UnexpectedType (expected, provided))
+
+let type_satisfaction_failure ~loc expected provided =
+  fatal_from ~loc (Error.TypeSatisfactionFailure (expected, provided))
 
 let plus e1 e2 = binop `ADD e1 e2
 let minus e1 e2 = binop `SUB e1 e2
@@ -206,6 +205,7 @@ module Property (C : ANNOTATE_CONFIG) = struct
   let assumption_failed () = raise TypingAssumptionFailed [@@inline]
   let ok () = () [@@inline]
   let check_true b fail () = if b then () else fail () [@@inline]
+  let check_all li f () = List.iter (fun x1 -> f x1 ()) li
   let check_all2 li1 li2 f () = List.iter2 (fun x1 x2 -> f x1 x2 ()) li1 li2
 end
 
@@ -356,7 +356,6 @@ module FunctionRenaming (C : ANNOTATE_CONFIG) = struct
             fatal_from ~loc
               (Error.MismatchedCallType
                  {
-                   error_handling_time = Static;
                    subprogram_name = name;
                    expected_call_type = call_type;
                    found_call_type = func_sig.subprogram_type;
@@ -463,8 +462,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | _ -> assert false
       in
       let offset = eval_slice_expr env e1 and length = eval_slice_expr env e2 in
-      if offset > offset + length - 1 then
-        fatal_from ~loc @@ Error.(BadSlice slice)
+      if length <= 0 then
+        fatal_from ~loc Error.(BadSlices (NonPositiveLength { slice; length }))
       else
         DI.Interval.make offset (offset + length - 1)
         |: TypingRule.BitfieldSliceToPositions
@@ -561,7 +560,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   let get_bitvector_width ~loc env t =
     try get_bitvector_width' env t |: TypingRule.GetBitvectorWidth
-    with TypingAssumptionFailed -> conflict ~loc [ default_t_bits ] t
+    with TypingAssumptionFailed -> unexpected_type ~loc [ default_t_bits ] t
   (* End *)
 
   (* Begin GetBitvectorConstWidth *)
@@ -578,7 +577,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       if false then
         Format.eprintf "@[<hv 2>Checking %a@ <: %a@]@." PP.pp_ty t1 PP.pp_ty t2
     in
-    if Types.type_satisfies env t1 t2 then () else conflict ~loc [ t2.desc ] t1
+    if Types.type_satisfies env t1 t2 then ()
+    else type_satisfaction_failure ~loc [ t2.desc ] t1
 
   (* CheckStructureBoolean *)
 
@@ -587,7 +587,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let check_structure_boolean ~loc env t1 () =
     match (Types.get_structure env t1).desc with
     | T_Bool -> ()
-    | _ -> conflict ~loc [ T_Bool ] t1
+    | _ -> unexpected_type ~loc [ T_Bool ] t1
   (* End *)
 
   (* CheckStructureBits *)
@@ -596,7 +596,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   let check_structure_bits ~loc env t =
     check_true (has_structure_bits env t) @@ fun () ->
-    conflict ~loc [ default_t_bits ] t
+    fatal_from ~loc (Error.ExpectedBitvectorType t)
   (* End *)
 
   (* Begin CheckUnderlyingInteger *)
@@ -607,7 +607,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     in
     match (Types.make_anonymous env t).desc with
     | T_Int _ -> ()
-    | _ -> conflict ~loc [ integer' ] t
+    | _ -> unexpected_type ~loc [ integer' ] t
   (* End *)
 
   (* Begin CheckConstrainedInteger *)
@@ -616,7 +616,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Int UnConstrained ->
         fatal_from ~loc Error.(ConstrainedIntegerExpected t)
     | T_Int (WellConstrained _ | Parameterized _) -> ()
-    | _ -> conflict ~loc [ integer' ] t
+    | _ -> unexpected_type ~loc [ integer' ] t
   (* End *)
 
   (* Begin CheckStructureException *)
@@ -624,7 +624,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let t_struct = Types.get_structure env t in
     match t_struct.desc with
     | T_Exception _ -> ()
-    | _ -> conflict ~loc [ T_Exception [] ] t_struct
+    | _ -> unexpected_type ~loc [ T_Exception [] ] t_struct
   (* End *)
 
   let conflicting_side_effects_error ~loc (s1, s2) =
@@ -680,7 +680,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let check_bits_equal_width ~loc env t1 t2 () =
     try check_bits_equal_width' env t1 t2 ()
     with TypingAssumptionFailed ->
-      fatal_from ~loc (Error.UnreconcilableTypes (t1, t2))
+      fatal_from ~loc (Error.MismatchedBitvectorWidths (t1, t2))
   (* End *)
 
   let binop_is_ordered : binop -> bool = function
@@ -831,7 +831,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let min_pos = Diet.Int.min_elt diet and max_pos = Diet.Int.max_elt diet in
     if 0 <= min_pos && max_pos < width then
       () |: TypingRule.CheckPositionsInWidth
-    else fatal_from ~loc (BadSlices (Error.Static, slices, width))
+    else fatal_from ~loc (BadSlices (OutOfBitvectorBounds (slices, width)))
   (* End *)
 
   (* Begin CheckSlicesInWidth *)
@@ -1297,7 +1297,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (match constraints with
           | PendingConstrained ->
               fatal_from ~loc Error.UnexpectedPendingConstrained
-          | WellConstrained ([], _) -> fatal_from ~loc Error.EmptyConstraints
+          | WellConstrained ([], _) ->
+              fatal_from ~loc
+                Error.(InternalInvariantError EmptyWellConstrainedInteger)
           | WellConstrained (constraints, precision) ->
               let new_constraints, sess =
                 list_map_split (annotate_constraint ~loc env) constraints
@@ -1375,9 +1377,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | T_Collection _ ->
             assert (not decl);
             let+ () =
-              check_true
-                (List.for_all (fun (_, t) -> has_structure_bits env t) fields)
-              @@ fun () -> fatal_from ~loc Error.(UnsupportedTy (Static, ty))
+              check_all fields' @@ fun (_, ty) ->
+              check_structure_bits ~loc:ty env ty
             in
             (T_Collection fields' |> here, ses) |: TypingRule.TStructuredDecl
         | _ -> assert false
@@ -1597,15 +1598,20 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       if List.compare_lengths func_sig.parameters params != 0 then
         fatal_from ~loc
         @@ Error.BadParameterArity
-             ( Static,
-               V1,
-               name,
-               List.length func_sig.parameters,
-               List.length params )
+             {
+               version = V1;
+               name;
+               expected = List.length func_sig.parameters;
+               provided = List.length params;
+             }
       else if List.compare_lengths func_sig.args args != 0 then
         fatal_from ~loc
-        @@ Error.BadArity
-             (Static, name, List.length func_sig.args, List.length args)
+        @@ Error.BadCallArity
+             {
+               name;
+               expected = List.length func_sig.args;
+               provided = List.length args;
+             }
     in
     (* Check that call parameters are statically evaluable and type-satisfy the
        declaration parameters *)
@@ -1659,7 +1665,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           fatal_from ~loc
             (Error.MismatchedCallType
                {
-                 error_handling_time = Static;
                  subprogram_name = name;
                  expected_call_type = call_type;
                  found_call_type = func_sig.subprogram_type;
@@ -1693,7 +1698,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       fatal_from ~loc
         (MismatchedCallType
            {
-             error_handling_time = Static;
              subprogram_name = name;
              expected_call_type = call_type;
              found_call_type = callee.subprogram_type;
@@ -1723,8 +1727,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let () =
       if List.compare_lengths callee.args args1 != 0 then
         fatal_from ~loc
-        @@ Error.BadArity
-             (Static, name, List.length callee.args, List.length args1)
+        @@ Error.BadCallArity
+             {
+               name;
+               expected = List.length callee.args;
+               provided = List.length args1;
+             }
     in
     let eqs2 =
       let folder acc (_x, ty) (t_e, _e, _ses) =
@@ -1847,7 +1855,6 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           fatal_from ~loc
             (Error.MismatchedCallType
                {
-                 error_handling_time = Static;
                  subprogram_name = name;
                  expected_call_type = call_type;
                  found_call_type = callee.subprogram_type;
@@ -1864,7 +1871,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       @@ fun () ->
       fatal_from ~loc
         (Error.BadParameterArity
-           (Static, V0, name, List.length callee.parameters, List.length params))
+           {
+             version = V0;
+             name;
+             expected = List.length callee.parameters;
+             provided = List.length params;
+           })
     in
     ( { name = name1; args = args1; params; call_type = callee.subprogram_type },
       ret_ty_opt,
@@ -1975,10 +1987,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         and t_false, e_false', ses_false = annotate_expr env e_false in
         let t =
           best_effort t_true (fun _ ->
-              match Types.lowest_common_ancestor ~loc:e env t_true t_false with
-              | None ->
-                  fatal_from ~loc (Error.UnreconcilableTypes (t_true, t_false))
-              | Some t -> t)
+              Types.lowest_common_ancestor ~loc:e env t_true t_false)
         in
         let ses = SES.union3 ses_cond ses_true ses_false in
         (t, E_Cond (e_cond', e_true', e_false') |> here, ses)
@@ -1991,7 +2000,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let ses = ses_non_conflicting_unions ~loc sess in
         (T_Tuple ts |> here, E_Tuple es |> here, ses) |: TypingRule.ETuple
     (* End *)
-    | E_Array _ -> fatal_from ~loc UnrespectedParserInvariant
+    | E_Array _ ->
+        fatal_from ~loc
+          (InternalInvariantError TypedArrayExpressionInAnnotation)
     (* Begin ERecord *)
     | E_Record (ty, fields) ->
         (* Rule WBCQ: The identifier in a record expression must be a named type
@@ -2009,7 +2020,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let field_types =
           match (Types.make_anonymous env ty).desc with
           | T_Exception fields | T_Record fields | T_Collection fields -> fields
-          | _ -> conflict ~loc [ T_Record [] ] ty
+          | _ -> unexpected_type ~loc [ T_Record [] ] ty
         in
         (* Rule DYQZ: A record expression shall assign every field of the record. *)
         let () =
@@ -2072,7 +2083,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             | T_Int _ | T_Bits _ ->
                 let+ () =
                   check_true (not (list_is_empty slices)) @@ fun () ->
-                  fatal_from ~loc Error.EmptySlice
+                  fatal_from ~loc Error.(V0Error EmptySlice)
                 in
                 (* TODO: check that:
                    - Rule SNQJ: An expression or subexpression which
@@ -2092,10 +2103,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 match slices with
                 | [ Slice_Single e_index ] ->
                     annotate_get_array ~loc env ty' (e'', ses1, e_index)
-                | _ -> conflict ~loc [ integer'; default_t_bits ] t_e')
+                | _ -> unexpected_type ~loc [ integer'; default_t_bits ] t_e')
             (* Begin ESliceError *)
             | _ ->
-                conflict ~loc [ integer'; default_t_bits ] t_e'
+                unexpected_type ~loc [ integer'; default_t_bits ] t_e'
                 |: TypingRule.ESliceError
             (* End *)))
     | E_GetField (e1, field_name) -> (
@@ -2131,7 +2142,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 let collection_var_name =
                   match e2.desc with
                   | E_Var x -> x
-                  | _ -> fatal_from ~loc Error.(UnsupportedExpr (Static, e))
+                  | _ -> fatal_from ~loc (Error.CollectionBaseNotVariable e2)
                 in
                 match List.assoc_opt field_name fields with
                 | None ->
@@ -2188,7 +2199,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     E_GetItem (e2, index) |> add_pos_from ~loc:e,
                     ses1 )
                 else
-                  fatal_from ~loc (Error.BadField (field_name, t_e2))
+                  fatal_from ~loc (Error.BadTupleIndex (index, List.length tys))
                   |: TypingRule.EGetTupleItem
             (* End *)
             (* Begin EGetBadField *)
@@ -2247,7 +2258,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 let base_collection_name =
                   match e_base_annot.desc with
                   | E_Var x -> x
-                  | _ -> fatal_from ~loc Error.(UnsupportedExpr (Static, e))
+                  | _ ->
+                      fatal_from ~loc
+                        (Error.CollectionBaseNotVariable e_base_annot)
                 in
                 let get_bitfield_width name =
                   match List.assoc_opt name base_fields with
@@ -2264,7 +2277,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   E_GetCollectionFields (base_collection_name, fields) |> here,
                   ses_base )
                 |: TypingRule.EGetFields
-            | _ -> conflict ~loc [ default_t_bits ] t_base_annot))
+            | _ -> unexpected_type ~loc [ default_t_bits ] t_base_annot))
     (* End *)
     (* Begin EPattern *)
     | E_Pattern (e1, pat) ->
@@ -2312,8 +2325,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         match t_anon_base.desc with
         | T_Array (_, t_elem) ->
             annotate_get_array ~loc env t_elem (e_base', ses_base, e_index)
-        | _ -> conflict ~loc [ default_array_ty ] t_base |: TypingRule.EGetArray
-        )
+        | _ ->
+            unexpected_type ~loc [ default_array_ty ] t_base
+            |: TypingRule.EGetArray)
     (* End *)
     | E_GetItem _ | E_GetCollectionFields _ -> assert false
 
@@ -2514,11 +2528,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_Tuple tys ->
               if List.compare_lengths tys les != 0 then
                 Error.fatal_from le
-                  (Error.BadArity
-                     ( Static,
-                       "LEDestructuring",
-                       List.length tys,
-                       List.length les ))
+                  (Error.BadTupleArity
+                     { expected = List.length les; actual = List.length tys })
               else
                 let lhs_tys, les', sess =
                   List.map2 (annotate_lexpr_ty env) les tys |> list_split3
@@ -2528,7 +2539,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   SES.unions sess
                 in
                 (T_Tuple lhs_tys |> here, LE_Destructuring les' |> here, ses)
-          | _ -> conflict ~loc [ T_Tuple [] ] t_e)
+          | _ -> unexpected_type ~loc [ T_Tuple [] ] t_e)
         |: TypingRule.LEDestructuring
     (* End *)
     | LE_Slice (le1, slices) -> (
@@ -2550,7 +2561,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let+ () = check_disjoint_slices ~loc env slices_annotated in
             let+ () =
               check_true (not (list_is_empty slices_annotated)) @@ fun () ->
-              fatal_from ~loc Error.EmptySlice
+              fatal_from ~loc Error.(V0Error EmptySlice)
             in
             let ses = ses_non_conflicting_union ~loc ses1 ses_slices in
             (t, LE_Slice (le2, slices_annotated) |> here, ses)
@@ -2563,8 +2574,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                   annotate_set_array ~loc:le env t t_e (le2, ses2, e_index)
                 in
                 (t, le3, ses3)
-            | _ -> invalid_expr (expr_of_lexpr le1))
-        | _ -> conflict ~loc:le1 [ default_t_bits ] t_le1
+            | _ ->
+                let e = expr_of_lexpr le1 in
+                fatal_from ~loc:e Error.(V0Error (InvalidExpr e)))
+        | _ -> unexpected_type ~loc:le1 [ default_t_bits ] t_le1
         (* End *))
     | LE_SetField (le1, field) ->
         (let t_le1, _, _ = expr_of_lexpr le1 |> annotate_expr env in
@@ -2586,7 +2599,11 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
          (* Begin LESetCollectionField *)
          | T_Collection fields ->
              let collection_var_name =
-               match le2.desc with LE_Var x -> x | _ -> assert false
+               match le2.desc with
+               | LE_Var x -> x
+               | _ ->
+                   fatal_from ~loc
+                     (Error.CollectionBaseNotVariable (expr_of_lexpr le2))
              in
              let t =
                match List.assoc_opt field fields with
@@ -2626,7 +2643,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
          (* Begin LESetBadField *)
          | T_Tuple _ -> fatal_from ~loc @@ Error.AssignToTupleElement le1
          | _ ->
-             conflict ~loc:le1
+             unexpected_type ~loc:le1
                [ default_t_bits; T_Record []; T_Exception []; T_Collection [] ]
                t_le1)
         |: TypingRule.LESetBadField
@@ -2673,7 +2690,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               | LE_Var x -> x
               | _ ->
                   fatal_from ~loc
-                    Error.(UnsupportedExpr (Static, expr_of_lexpr le))
+                    (Error.CollectionBaseNotVariable (expr_of_lexpr le_base))
             in
             let fold_bitvector_fields field (start, slices) =
               match List.assoc_opt field base_fields with
@@ -2693,8 +2710,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               LE_SetCollectionFields (collection_var_name, le_fields, slices)
               |> here,
               ses_base )
-        | _ -> conflict ~loc [ default_t_bits ] t_base |: TypingRule.LESetFields
-        )
+        | _ ->
+            unexpected_type ~loc [ default_t_bits ] t_base
+            |: TypingRule.LESetFields)
     (* End *)
     (* Begin LESetArray *)
     | LE_SetArray (e_base, e_index) -> (
@@ -2707,7 +2725,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               annotate_set_array ~loc env t_elem t_e (e_base', ses_base, e_index)
             in
             (t_elem, le', ses)
-        | _ -> conflict ~loc [ default_array_ty ] t_base)
+        | _ -> unexpected_type ~loc [ default_array_ty ] t_base)
     (* End *)
     | LE_SetFields (_, _, _ :: _) | LE_SetCollectionFields _ -> assert false
 
@@ -2740,7 +2758,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | _ -> Types.type_satisfies env t s
 
   let check_can_be_initialized_with ~loc env s t () =
-    if can_be_initialized_with env s t then () else conflict ~loc [ s.desc ] t
+    if can_be_initialized_with env s t then ()
+    else type_satisfaction_failure ~loc [ s.desc ] t
   (* End *)
 
   (* Begin ShouldRememberImmutableExpression *)
@@ -2785,11 +2804,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | T_Tuple lhs_tys, T_Tuple rhs_tys ->
         if List.compare_lengths lhs_tys rhs_tys != 0 then
           fatal_from ~loc
-            (Error.BadArity
-               ( Static,
-                 "tuple initialization",
-                 List.length rhs_tys,
-                 List.length lhs_tys ))
+            (Error.BadTupleArity
+               { expected = List.length lhs_tys; actual = List.length rhs_tys })
         else
           let lhs_tys' =
             List.map2
@@ -2823,12 +2839,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | T_Tuple tys when List.compare_lengths tys names = 0 -> tys
           | T_Tuple tys ->
               fatal_from ~loc
-                (Error.BadArity
-                   ( Static,
-                     "tuple initialization",
-                     List.length tys,
-                     List.length names ))
-          | _ -> conflict ~loc [ T_Tuple [] ] ty
+                (Error.BadTupleArity
+                   { expected = List.length names; actual = List.length tys })
+          | _ -> unexpected_type ~loc [ T_Tuple [] ] ty
         in
         let new_env =
           List.fold_right2
@@ -3003,8 +3016,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               in
               WellConstrained
                 ([ Constraint_Range (e_bot, e_top) ], Precision_Full)
-          | T_Int _, _ -> conflict ~loc [ integer' ] end_t
-          | _, _ -> conflict ~loc [ integer' ] start_t
+          | T_Int _, _ -> unexpected_type ~loc [ integer' ] end_t
+          | _, _ -> unexpected_type ~loc [ integer' ] start_t
           (* only happens in relaxed type-checking mode because of check_underlying_integer earlier. *)
           (* TypingRule.ForConstraint) *)
         in
@@ -3080,7 +3093,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     ses_t' )
                   |: TypingRule.LDUninitialisedTyped)
             |: TypingRule.SDecl
-        | LDK_Let, None -> fatal_from ~loc UnrespectedParserInvariant)
+        | LDK_Let, None ->
+            fatal_from ~loc (InternalInvariantError UninitialisedImmutableLocal)
+        )
     (* SDecl.None) *)
     (* End *)
     (* Begin SThrow *)
@@ -3381,8 +3396,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | E_Cond (e, e1, e2) ->
           parameters_of_expr ~env e @ parameters_of_expr ~env e1
           @ parameters_of_expr ~env e2
-      | E_Tuple _ | _ ->
-          Error.fatal_from (to_pos e) (Error.UnsupportedExpr (Static, e))
+      | _ -> Error.fatal_from (to_pos e) (Error.BadParameterExpr e)
     in
     let parameters_of_constraint ~env c =
       match c with
@@ -3400,7 +3414,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | T_Int UnConstrained
       | T_Real | T_String | T_Bool | T_Array _ | T_Named _ ->
           []
-      | _ -> Error.fatal_from (to_pos ty) (Error.UnsupportedTy (Static, ty))
+      | _ -> Error.fatal_from (to_pos ty) (Error.BadParameterType ty)
     in
     let types = func_sig_types func_sig in
     let all_parameters = List.concat_map (parameters_of_ty ~env) types in
@@ -3525,7 +3539,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         List.filter (fun x -> not (ISet.mem x defining)) inferred_parameters
       in
       check_true (list_is_empty undefined_parameters) @@ fun () ->
-      fatal_from ~loc (ParameterWithoutDecl (List.hd undefined_parameters))
+      fatal_from ~loc
+        (V0Error (ParameterWithoutDecl (List.hd undefined_parameters)))
     in
     (* Annotate and declare parameters from arguments *)
     let (env_with_params, ses_with_params), typed_parameters =
@@ -3798,7 +3813,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let check_setter_has_getter ~loc env (func_sig : AST.func) =
     assert (loc.version = V0);
     let fail () =
-      fatal_from ~loc (Error.SetterWithoutCorrespondingGetter func_sig)
+      fatal_from ~loc
+        Error.(V0Error (SetterWithoutCorrespondingGetter func_sig))
     in
     let check_true thing = check_true thing fail in
     match func_sig.subprogram_type with
@@ -3806,7 +3822,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | ST_Setter ->
         let ret_type, arg_types =
           match func_sig.args with
-          | [] -> fatal_from ~loc Error.UnrespectedParserInvariant
+          | [] ->
+              fatal_from ~loc
+                Error.(InternalInvariantError V0SetterWithoutValueArgument)
           | (_, ret_type) :: args -> (ret_type, List.map snd args)
         in
         let _, _, func_sig', _ =
@@ -3975,7 +3993,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           let+ () = check_is_not_collection ~loc env t_e in
           let+ () = check_purity ~loc typed_e in
           (typed_e, None, t_e)
-      | None, None -> fatal_from ~loc UnrespectedParserInvariant
+      | None, None ->
+          fatal_from ~loc
+            (InternalInvariantError GlobalWithoutTypeOrInitialiser)
       (* AnnotateTyOptInitialValue) *)
     in
     let genv1 = add_global_storage ~loc name keyword genv declared_t in

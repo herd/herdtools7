@@ -8,8 +8,8 @@
           [0] sub
       }
   };
-  ASL Type error:
-    bitfields `sub` and `sub.sub` are in the same scope but define different slices of the containing bitvector type: [1:0] and [0], respectively.
+  ASL Type error (TE_BS):
+    Bitfields `sub` and `sub.sub` are in the same scope but define different slices of the containing bitvector type: [1:0] and [0], respectively.
   [1]
 
   $ aslref --no-exec bad-scope2.asl
@@ -21,8 +21,8 @@
           }
       }
   };
-  ASL Type error:
-    bitfields `sub` and `sub.sub.sub` are in the same scope but define different slices of the containing bitvector type: [1:0] and [1], respectively.
+  ASL Type error (TE_BS):
+    Bitfields `sub` and `sub.sub.sub` are in the same scope but define different slices of the containing bitvector type: [1:0] and [1], respectively.
   [1]
 
   $ aslref --no-exec bad-scope3.asl
@@ -36,25 +36,25 @@
   
       [1,0] lowest
   };
-  ASL Type error:
-    bitfields `sub.sub.lowest` and `lowest` are in the same scope but define different slices of the containing bitvector type: [0, 1] and [1:0], respectively.
+  ASL Type error (TE_BS):
+    Bitfields `sub.sub.lowest` and `lowest` are in the same scope but define different slices of the containing bitvector type: [0, 1] and [1:0], respectively.
   [1]
 
   $ aslref non-constant-width.asl
   File non-constant-width.asl, line 4, characters 29 to 34:
     let x = Zeros{64} as (bits(sub_k) {[0] flag});
                                ^^^^^
-  ASL Type error: expected a pure expression/subprogram.
+  ASL Type error (TE_SEV): Expected a pure expression or subprogram.
   [1]
   $ aslref non-constant-global-width.asl
   File non-constant-global-width.asl, line 3, characters 21 to 26:
   type my_type of bits(sub_k) {
                        ^^^^^
-  ASL Type error: expected a pure expression/subprogram.
+  ASL Type error (TE_SEV): Expected a pure expression or subprogram.
   [1]
   $ aslref config-global-width.asl
   File config-global-width.asl, line 3, characters 21 to 26:
   type my_type of bits(sub_k) {
                        ^^^^^
-  ASL Type error: expected a pure expression/subprogram.
+  ASL Type error (TE_SEV): Expected a pure expression or subprogram.
   [1]

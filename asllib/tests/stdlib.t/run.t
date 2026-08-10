@@ -47,11 +47,12 @@ Tests using ASLRef OCaml primitives for some stdlib functions
 Checking that --no-primitives option actually removes OCaml primitives
 (different errors are produced)
   $ aslref no-primitives-test.asl
-  ASL Dynamic error: FloorLog2 (primitive) expected an argument greater than 0
+  ASL Dynamic error (DE_DAF):
+    Primitive "FloorLog2" expected its argument to be greater than 0.
   [1]
   $ aslref --no-primitives no-primitives-test.asl
   File ASL Standard Library, line 80, characters 11 to 16:
-  ASL Dynamic error: Assertion failed: (__stdlib_local_a > 0).
+  ASL Dynamic error (DE_DAF): Assertion failed: (__stdlib_local_a > 0).
   [1]
 
 Tests using ASL stdlib only

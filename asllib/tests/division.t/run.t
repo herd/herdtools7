@@ -9,7 +9,7 @@ Division by zero:
   File static-div-zero.asl, line 3, characters 19 to 26:
     let x: integer = 6 DIV 0;
                      ^^^^^^^
-  ASL Type error: Illegal application of operator DIV on types integer {6}
+  ASL Type error (TE_BO): Operator DIV is not defined for types integer {6}
     and integer {0}.
   [1]
 
@@ -19,7 +19,7 @@ Division by zero:
   File static-divrm-zero.asl, line 3, characters 19 to 28:
     let x: integer = 6 DIVRM 0;
                      ^^^^^^^^^
-  ASL Type error: Illegal application of operator DIVRM on types integer {6}
+  ASL Type error (TE_BO): Operator DIVRM is not defined for types integer {6}
     and integer {0}.
   [1]
 
@@ -29,7 +29,7 @@ Division by zero:
   File static-mod-zero.asl, line 3, characters 19 to 26:
     let x: integer = 6 MOD 0;
                      ^^^^^^^
-  ASL Type error: Illegal application of operator MOD on types integer {6}
+  ASL Type error (TE_BO): Operator MOD is not defined for types integer {6}
     and integer {0}.
   [1]
 
@@ -41,7 +41,7 @@ Unsupported divisions (caught at type-checking time):
   File static-div-neg.asl, line 3, characters 19 to 27:
     let x: integer = 6 DIV -3;
                      ^^^^^^^^
-  ASL Type error: Illegal application of operator DIV on types integer {6}
+  ASL Type error (TE_BO): Operator DIV is not defined for types integer {6}
     and integer {(- 3)}.
   [1]
 
@@ -51,7 +51,7 @@ Unsupported divisions (caught at type-checking time):
   File static-divrm-neg.asl, line 3, characters 19 to 29:
     let x: integer = 6 DIVRM -3;
                      ^^^^^^^^^^
-  ASL Type error: Illegal application of operator DIVRM on types integer {6}
+  ASL Type error (TE_BO): Operator DIVRM is not defined for types integer {6}
     and integer {(- 3)}.
   [1]
 
@@ -61,7 +61,7 @@ Unsupported divisions (caught at type-checking time):
   File static-mod-neg.asl, line 3, characters 19 to 27:
     let x: integer = 6 MOD -3;
                      ^^^^^^^^
-  ASL Type error: Illegal application of operator MOD on types integer {6}
+  ASL Type error (TE_BO): Operator MOD is not defined for types integer {6}
     and integer {(- 3)}.
   [1]
 
@@ -71,7 +71,7 @@ Unsupported divisions (caught at type-checking time):
   File static-div-undiv.asl, line 3, characters 19 to 26:
     let x: integer = 5 DIV 3;
                      ^^^^^^^
-  ASL Type error: Illegal application of operator DIV on types integer {5}
+  ASL Type error (TE_BO): Operator DIV is not defined for types integer {5}
     and integer {3}.
   [1]
   $ aslref --no-exec static-div-undiv-bis.asl
@@ -80,7 +80,7 @@ Unsupported divisions (caught at type-checking time):
   File static-div-undiv-bis.asl, line 3, characters 11 to 18:
     let x = (1 DIV 2) as integer {3, 4};
              ^^^^^^^
-  ASL Type error: Illegal application of operator DIV on types integer {1}
+  ASL Type error (TE_BO): Operator DIV is not defined for types integer {1}
     and integer {2}.
   [1]
   $ aslref static-div-undiv-bis.asl
@@ -89,7 +89,7 @@ Unsupported divisions (caught at type-checking time):
   File static-div-undiv-bis.asl, line 3, characters 11 to 18:
     let x = (1 DIV 2) as integer {3, 4};
              ^^^^^^^
-  ASL Type error: Illegal application of operator DIV on types integer {1}
+  ASL Type error (TE_BO): Operator DIV is not defined for types integer {1}
     and integer {2}.
   [1]
   $ aslref --no-exec static-div-undiv-ter.asl
@@ -101,36 +101,36 @@ Unsupported divisions (caught at type-checking time):
 For completeness, those operations are dynamic errors:
 
   $ aslref dynamic-div-neg.asl
-  ASL Dynamic error: Illegal application of operator DIV for values 6 and -3.
+  ASL Dynamic error (DE_BO): Operator DIV is not defined for values 6 and -3.
   [1]
 
   $ aslref dynamic-divrm-neg.asl
-  ASL Dynamic error: Illegal application of operator DIVRM for values 6 and -3.
+  ASL Dynamic error (DE_BO): Operator DIVRM is not defined for values 6 and -3.
   [1]
 
   $ aslref dynamic-mod-neg.asl
-  ASL Dynamic error: Illegal application of operator MOD for values 6 and -3.
+  ASL Dynamic error (DE_BO): Operator MOD is not defined for values 6 and -3.
   [1]
 
   $ aslref dynamic-div-zero.asl
-  ASL Dynamic error: Illegal application of operator DIV for values 6 and 0.
+  ASL Dynamic error (DE_BO): Operator DIV is not defined for values 6 and 0.
   [1]
 
   $ aslref dynamic-divrm-zero.asl
-  ASL Dynamic error: Illegal application of operator DIVRM for values 6 and 0.
+  ASL Dynamic error (DE_BO): Operator DIVRM is not defined for values 6 and 0.
   [1]
 
   $ aslref dynamic-mod-zero.asl
-  ASL Dynamic error: Illegal application of operator MOD for values 6 and 0.
+  ASL Dynamic error (DE_BO): Operator MOD is not defined for values 6 and 0.
   [1]
 
   $ aslref dynamic-div-undiv.asl
-  ASL Dynamic error: Illegal application of operator DIV for values 5 and 3.
+  ASL Dynamic error (DE_BO): Operator DIV is not defined for values 5 and 3.
   [1]
 
 Parametric examples:
   $ aslref param-div-2.asl
-  ASL Dynamic error: Illegal application of operator DIV for values 3 and 2.
+  ASL Dynamic error (DE_BO): Operator DIV is not defined for values 3 and 2.
   [1]
 
 More complicated examples
@@ -138,7 +138,7 @@ More complicated examples
 
 Fails because N typing cannot infer that N + 1 is strictly positive.
   $ aslref div-by-param.asl
-  ASL Dynamic error: Illegal application of operator DIV for values 5 and 2.
+  ASL Dynamic error (DE_BO): Operator DIV is not defined for values 5 and 2.
   [1]
 
 Examples with multiple constraints in slices:
@@ -157,7 +157,7 @@ Example with constant:
   File div-constants.asl, line 3, characters 22 to 29:
   constant z: integer = x DIV y;
                         ^^^^^^^
-  ASL Static error: Illegal application of operator DIV for values 1 and 2.
+  ASL Static error (TE_BO): Operator DIV is not defined for values 1 and 2.
   [1]
 
 Other example from typing.t:
@@ -165,7 +165,7 @@ Other example from typing.t:
   File TNegative9-1.asl, line 3, characters 4 to 59:
       let testB : bits(N) = Zeros{N DIV 4} :: Zeros{N DIV 2}; // bits(3N/4) != bits(N)
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: a subtype of bits(N) was expected,
+  ASL Type error (TE_TSF): Expected a subtype of bits(N);
     provided bits(((3 * N) DIV 4)).
   [1]
   $ aslref --no-exec TPositive9.asl
@@ -175,17 +175,19 @@ Other polynomial equations:
   File rat-poly-00.asl, line 15, characters 9 to 19:
     assert c == '000';
            ^^^^^^^^^^
-  ASL Type error: Illegal application of operator == on types bits((7 DIV 2))
+  ASL Type error (TE_BO): Operator == is not defined for types bits((7 DIV 2))
     and bits(3).
   [1]
 
   $ aslref rat-poly-01.asl
-  ASL Dynamic error: Cannot extract from bitvector of length 0 slice 0+:-2.
+  File ASL Standard Library, line 561, characters 9 to 17:
+  ASL Dynamic error (DE_BI):
+    Slice 0+:-2 is invalid: its start and length must be non-negative.
   [1]
 
 Division as POW:
   $ aslref zero-pow-neg.asl
-  ASL Dynamic error: Illegal application of operator ^ for values (0.0 / 1.0)
+  ASL Dynamic error (DE_BO): Operator ^ is not defined for values (0.0 / 1.0)
     and -1.
   [1]
 
