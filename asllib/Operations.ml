@@ -2,14 +2,6 @@ open AST
 open ASTUtils
 open Error
 
-let value_as_int pos = function
-  | L_Int i -> (
-      try Z.to_int i
-      with Z.Overflow ->
-        failwith "Cannot slice with an integer more than machine size.")
-  | v ->
-      fatal_from pos (Error.MismatchType (PP.literal_to_string v, [ integer' ]))
-
 let is_positive z = Z.sign z != -1
 let is_strict_positive z = Z.sign z = 1
 let bv_same_length b1 b2 = Bitvector.(length b1 = length b2)
