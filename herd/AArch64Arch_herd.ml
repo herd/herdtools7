@@ -50,6 +50,10 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       | NExp IFetch -> true
       | NExp (AF|DB|AFDB|Other|GCS)|Exp -> false
 
+    let is_gcs = function
+      | NExp GCS -> true
+      | NExp (AF|DB|AFDB|IFetch|Other)|Exp -> false
+
     let is_barrier b1 b2 = barrier_compare b1 b2 = 0
 
     let is_af = function (* Setting of access flag *)
@@ -130,11 +134,11 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let ifetch_value_sets = [("Restricted-CMODX",is_cmodx_restricted_value)]
 
     let barrier_sets =
-      do_fold_dmb_dsb
+      fold_barrier
         (fun b k ->
           let tag = pp_barrier_dot b in
           (tag,is_barrier b)::k)
-        ["ISB",is_barrier ISB]
+        []
 
     let cmo_sets =
       DC.fold_op

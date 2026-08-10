@@ -302,6 +302,11 @@ end = struct
     | Access _|Barrier _|Commit _
     | Amo _|Fault _|CutOff _|Inv _|CMO _|Arch _|NoAction-> false
 
+  let is_gcs = function
+    | Access (_,A.Location_global _,_,_,exp,_,_) ->
+      A.is_gcs exp
+    | _ -> false
+
   let is_inv = function
     | Inv _ -> true
     | Access _|Amo _|Commit _|Barrier _|Fault _|CutOff _|CMO _|Arch _|NoAction -> false
@@ -562,6 +567,7 @@ end = struct
         A.TLBI.sets
     in
     ("T",is_tag)::
+    ("GCS",is_gcs)::
     ("TLBI",is_inv)::
     ("no-loc", fun a -> Misc.is_none (location_of a))::
     (if kvm then
