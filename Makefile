@@ -293,10 +293,12 @@ test.herd.cata-extended.%:
 		-herd-path $(HERD) \
 		-libdir-path ./herd/libdir \
 		-litmus-dir  catalogue/$*/tests \
+		-conf catalogue/$*/cfgs/ci.cfg \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 catalogue extended $* tests: OK"
 
 cata-test-all:: test.herd.cata-extended.aarch64-BBM
+cata-test:: test.herd.cata-extended.linux
 
 test.herd-mixed.cata.%:
 	@ echo

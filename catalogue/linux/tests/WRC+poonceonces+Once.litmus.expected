@@ -1,0 +1,17 @@
+Test WRC+poonceonces+Once Allowed
+States 8
+1:r0=0; 2:r0=0; 2:r1=0;
+1:r0=0; 2:r0=0; 2:r1=1;
+1:r0=0; 2:r0=1; 2:r1=0;
+1:r0=0; 2:r0=1; 2:r1=1;
+1:r0=1; 2:r0=0; 2:r1=0;
+1:r0=1; 2:r0=0; 2:r1=1;
+1:r0=1; 2:r0=1; 2:r1=0;
+1:r0=1; 2:r0=1; 2:r1=1;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (1:r0=1 /\ 2:r0=1 /\ 2:r1=0)
+Observation WRC+poonceonces+Once Sometimes 1 7
+Hash=fb66830df5109eaa42fdf0150ba74c5e
+

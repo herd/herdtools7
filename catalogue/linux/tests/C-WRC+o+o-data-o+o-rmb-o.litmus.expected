@@ -1,0 +1,15 @@
+Test C-WRC+o+o-data-o+o-rmb-o Allowed
+States 6
+1:r1=0; 2:r2=0; 2:r3=0;
+1:r1=0; 2:r2=0; 2:r3=1;
+1:r1=1; 2:r2=0; 2:r3=0;
+1:r1=1; 2:r2=0; 2:r3=1;
+1:r1=1; 2:r2=1; 2:r3=0;
+1:r1=1; 2:r2=1; 2:r3=1;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (1:r1=1 /\ 2:r2=1 /\ 2:r3=0)
+Observation C-WRC+o+o-data-o+o-rmb-o Sometimes 1 7
+Hash=8010c537fea84cf2e0a373456768341a
+

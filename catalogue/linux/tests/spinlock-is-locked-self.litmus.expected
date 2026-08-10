@@ -1,0 +1,10 @@
+Test spinlock-is-locked-self Allowed
+States 1
+0:r1=0; 0:r2=1; 0:r3=0;
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition exists (not (0:r1=0 /\ 0:r2=1 /\ 0:r3=0))
+Observation spinlock-is-locked-self Never 0 1
+Hash=20aeb50fcfe4e2837e68e40c42546216
+

@@ -1,0 +1,13 @@
+Test C-SB-OMCA+o-o-rmb-o+o-o-rmb-o Allowed
+States 4
+0:r1=2; 0:r2=0; 1:r1=2; 1:r2=0;
+0:r1=2; 0:r2=0; 1:r1=2; 1:r2=2;
+0:r1=2; 0:r2=2; 1:r1=2; 1:r2=0;
+0:r1=2; 0:r2=2; 1:r1=2; 1:r2=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (1:r2=0 /\ 0:r2=0 /\ 1:r1=2 /\ 0:r1=2)
+Observation C-SB-OMCA+o-o-rmb-o+o-o-rmb-o Sometimes 1 3
+Hash=2a58163e63039ca4d290ff6dcd26fbe3
+

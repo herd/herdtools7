@@ -1,0 +1,10 @@
+Test C-LB+o-cgt-o+o-cgt-o Allowed
+States 1
+0:r1=0; 1:r2=0;
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition exists (0:r1=1 /\ 1:r2=1)
+Observation C-LB+o-cgt-o+o-cgt-o Never 0 1
+Hash=dc25d1b559d05ca5370f5123632c6100
+

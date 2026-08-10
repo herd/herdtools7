@@ -1,0 +1,13 @@
+Test C-2+2W+o-o+o-o Allowed
+States 4
+[x0]=1; [x1]=1;
+[x0]=1; [x1]=2;
+[x0]=2; [x1]=1;
+[x0]=2; [x1]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists ([x0]=1 /\ [x1]=1)
+Observation C-2+2W+o-o+o-o Sometimes 1 3
+Hash=1a792dee75edb833d102fab919a2f031
+

@@ -1,0 +1,12 @@
+Test S+fencewmbonceonce+poacquireonce Allowed
+States 3
+1:r0=0; [x]=1;
+1:r0=0; [x]=2;
+1:r0=1; [x]=1;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists ([x]=2 /\ 1:r0=1)
+Observation S+fencewmbonceonce+poacquireonce Never 0 3
+Hash=c9ba02a9b2cbfb9a4d745aa4e0e586cb
+

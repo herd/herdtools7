@@ -1,0 +1,19 @@
+Test C-WWC+o-cge-o+o-cge-o+o+dstb Allowed
+States 10
+0:r1=0; 1:r2=0; [x]=1;
+0:r1=0; 1:r2=0; [x]=2;
+0:r1=0; 1:r2=1; [x]=1;
+0:r1=0; 1:r2=1; [x]=2;
+0:r1=1; 1:r2=0; [x]=1;
+0:r1=1; 1:r2=0; [x]=2;
+0:r1=2; 1:r2=0; [x]=1;
+0:r1=2; 1:r2=0; [x]=2;
+0:r1=2; 1:r2=1; [x]=1;
+0:r1=2; 1:r2=1; [x]=2;
+Ok
+Witnesses
+Positive: 6 Negative: 54
+Condition exists (0:r1=2 /\ 1:r2=1 /\ [x]=2)
+Observation C-WWC+o-cge-o+o-cge-o+o+dstb Sometimes 6 54
+Hash=81b299200a2bf7ee45301702d4dc4e55
+

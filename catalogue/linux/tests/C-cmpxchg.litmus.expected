@@ -1,0 +1,11 @@
+Test C-cmpxchg Allowed
+States 2
+0:r1=0; 1:r1=0; [x]=1;
+0:r1=1; 1:r1=0; [x]=2;
+No
+Witnesses
+Positive: 0 Negative: 2
+Condition exists (0:r1=1 /\ not ([x]=2))
+Observation C-cmpxchg Never 0 2
+Hash=1720691890ea69e35615997626680d6f
+

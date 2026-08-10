@@ -1,0 +1,11 @@
+Test LB+fencembonceonce+ctrlonceonce Allowed
+States 2
+0:r0=0; 1:r0=0;
+0:r0=1; 1:r0=0;
+No
+Witnesses
+Positive: 0 Negative: 2
+Condition exists (0:r0=1 /\ 1:r0=1)
+Observation LB+fencembonceonce+ctrlonceonce Never 0 2
+Hash=e5260556f6de495fd39b556d1b831c3b
+

@@ -1,0 +1,19 @@
+Test C-WWC+o-cge-o+o-cge-o+o Allowed
+States 10
+0:r1=0; 1:r2=0; [x]=1;
+0:r1=0; 1:r2=0; [x]=2;
+0:r1=0; 1:r2=1; [x]=1;
+0:r1=0; 1:r2=1; [x]=2;
+0:r1=1; 1:r2=0; [x]=1;
+0:r1=1; 1:r2=0; [x]=2;
+0:r1=2; 1:r2=0; [x]=1;
+0:r1=2; 1:r2=0; [x]=2;
+0:r1=2; 1:r2=1; [x]=1;
+0:r1=2; 1:r2=1; [x]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 9
+Condition exists (0:r1=2 /\ 1:r2=1 /\ [x]=2)
+Observation C-WWC+o-cge-o+o-cge-o+o Sometimes 1 9
+Hash=507bcf7d10b5782904e6f15935da0911
+
