@@ -685,14 +685,14 @@ Alignment filter behaviour between local `Pos**` and internal communication in `
 Backward-compatible edge aliases are accepted by the edge parser
   $ diy7 -arch AArch64 -relax 'Dp** Ctrl** DpData' -unfold-only 2>&1
   ***relax***
-  DpAddrsW DpAddrsR DpAddrdW DpAddrdR DpDatasW DpDatadW DpCtrlIsbsW DpCtrlIsbsR DpCtrlIsbdW DpCtrlIsbdR
+  DpAddrsW DpAddrsR DpAddrdW DpAddrdR DpDatasW DpDatasR DpDatadW DpDatadR DpCtrlIsbsW DpCtrlIsbsR DpCtrlIsbdW DpCtrlIsbdR
   ***safe***
   
   ***reject***
   
   $ diy7 -arch AArch64 -relax 'DpAddr*W DpAddrd* DpData' -unfold-only 2>&1
   ***relax***
-  DpAddrsW DpAddrdW DpAddrdR DpDatasW DpDatadW
+  DpAddrsW DpAddrdW DpAddrdR DpDatasW DpDatasR DpDatadW DpDatadR
   ***safe***
   
   ***reject***

@@ -225,8 +225,7 @@ module Make
       let equal_dp _ _ = assert false
       let pp_dp _ = assert false
 
-      let fold_dpr _f r =  r
-      let fold_dpw _f r =  r
+      let fold_dp _f r =  r
 
       let ddr_default = None
       let ddw_default = None
@@ -235,10 +234,10 @@ module Make
 
       let is_ctrlr _ = assert false
       let is_addr _ = assert false
+      let is_data _ = assert false
+
       let fst_dp _ = assert false
       let sequence_dp _ _ = assert false
-      let expand_dp_dir _ = assert false
-
       (*******)
       (* RWM *)
       (*******)
