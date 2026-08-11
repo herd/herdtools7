@@ -1,0 +1,17 @@
+Test R+poppa+popap Allowed
+States 8
+1:X4=0; y={1,2};
+1:X4=0; y={1,4};
+1:X4=0; y={3,2};
+1:X4=0; y={3,4};
+1:X4=1; y={1,2};
+1:X4=1; y={1,4};
+1:X4=1; y={3,2};
+1:X4=1; y={3,4};
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (y={3,4} /\ 1:X4=0)
+Observation R+poppa+popap Sometimes 1 7
+Hash=ea9e5d90c933ce274ededef23cd60250
+

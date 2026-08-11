@@ -1,0 +1,17 @@
+Test R+popw4+popapa Allowed
+States 8
+0:X4=0; 0:X5=1; 1:X4=0; 1:X5=0;
+0:X4=0; 0:X5=1; 1:X4=1; 1:X5=0;
+0:X4=0; 0:X5=3; 1:X4=0; 1:X5=0;
+0:X4=0; 0:X5=3; 1:X4=1; 1:X5=0;
+0:X4=2; 0:X5=1; 1:X4=0; 1:X5=0;
+0:X4=2; 0:X5=1; 1:X4=1; 1:X5=0;
+0:X4=2; 0:X5=3; 1:X4=0; 1:X5=0;
+0:X4=2; 0:X5=3; 1:X4=1; 1:X5=0;
+Ok
+Witnesses
+Positive: 1 Negative: 11
+Condition exists (0:X5=3 /\ 0:X4=2 /\ 1:X4=0 /\ 1:X5=0)
+Observation R+popw4+popapa Sometimes 1 11
+Hash=626de75da6370364371227b913b6835d
+
