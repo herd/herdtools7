@@ -72,9 +72,6 @@ type t =
   | PTE2
 (* Optimise Rf enumeration leading to rmw *)
   | OptRfRMW
-(* Allow some constrained unpredictable, behaviours.
-   AArch64: LDXR / STXR of different size or address may succeed. *)
-  | ConstrainedUnpredictable
 (* Perform experiment *)
   | Exp
 (* Instruction-fetch support (AKA "self-modifying code" mode) *)
@@ -167,7 +164,6 @@ let (mode_variants, arch_variants) : t list * t list =
   | NoPteBranch -> NoPteBranch
   | PTE2 -> PTE2
   | OptRfRMW -> OptRfRMW
-  | ConstrainedUnpredictable -> ConstrainedUnpredictable
   | Exp -> Exp
   | Ifetch -> Ifetch
   | DIC -> DIC
@@ -204,7 +200,7 @@ let (mode_variants, arch_variants) : t list * t list =
         NotWeakPredicated;
         LKMMVersion `lkmmv1; LKMMVersion `lkmmv2;
         CutOff; Morello; Deps; Instances;
-        OptRfRMW; ConstrainedUnpredictable;
+        OptRfRMW;
         Exp; CosOpt; Test; T 0;
         ASL; ASL_AArch64; ASLVersion `ASLv0; ASLVersion `ASLv1;
         S128; Strict; Warn;
@@ -275,7 +271,6 @@ let parse s = match Misc.lowercase s with
 | "noptebranch"|"nobranch" -> Some NoPteBranch
 | "pte2" | "pte-squared" -> Some PTE2
 | "optrfrmw" -> Some OptRfRMW
-| "constrainedunpredictable"|"cu" -> Some ConstrainedUnpredictable
 | "exp" -> Some Exp
 | "ifetch"|"self" -> Some Ifetch
 | "dic" -> None
@@ -385,7 +380,6 @@ let pp = function
   | NoPteBranch -> "NoPteBranch"
   | PTE2 -> "pte-squared"
   | OptRfRMW -> "OptRfRMW"
-  | ConstrainedUnpredictable -> "ConstrainedUnpredictable"
   | Exp -> "exp"
   | Ifetch -> "ifetch"
   | DIC -> "dic"
@@ -470,7 +464,6 @@ let pp = function
   | NoPteBranch -> "Disable branching events between PTE reads and accesses"
   | PTE2 -> "Perform a table walk for each memory access, including page tables"
   | OptRfRMW -> ""
-  | ConstrainedUnpredictable -> ""
   | Exp -> ""
   | Ifetch -> "Enable instruction fetch for self-modifying code"
   | DIC -> "Skip instruction cache invalidation for data to instruction coherence"
