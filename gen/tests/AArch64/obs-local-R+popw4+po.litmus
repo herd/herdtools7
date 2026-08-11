@@ -1,0 +1,15 @@
+(* diyone7 -arch AArch64 -metadata false -obs local PodWW w4 Coe PodWR Fre *)
+AArch64 R+popw4+po
+{
+ int y[2]={0,0};
+ 0:X1=x; uint32_t 0:X2=0; 0:X3=y;
+ 1:X1=x; 1:X3=y;
+}
+ P0             | P1          ;
+ MOV W0,#1      | MOV W0,#2   ;
+ STR W0,[X1]    | STR W0,[X3] ;
+ MOV W2,#1      | LDR W2,[X1] ;
+ STR W2,[X3,#4] |             ;
+ LDP W4,W5,[X3] |             ;
+
+exists (0:X5=1 /\ 0:X4=2 /\ 1:X2=0)
