@@ -108,9 +108,10 @@ Double loops
 For loops
   $ aslref for-correct.asl
   $ aslref for-incorrect.asl
-  File for-incorrect.asl, line 5, characters 4 to 26:
+  File for-incorrect.asl, line 4, character 2 to line 6, character 6:
+    for i = 1 to n looplimit 10 do
       counter = counter + 1;
-      ^^^^^^^^^^^^^^^^^^^^^^
+    end;
   ASL Dynamic error: loop limit reached.
   [1]
   $ aslref for-exact.asl
@@ -164,4 +165,12 @@ Recursion limits:
     else return 1 + recurse (n+1); end;
                     ^^^^^^^^^^^^^
   ASL Dynamic error: recursion limit reached.
+  [1]
+
+  $ aslref for-loop-zero.asl
+  File for-loop-zero.asl, line 3, character 2 to line 5, character 6:
+    for index = 0 to 0 looplimit 0 do
+        println "BODY";
+    end;
+  ASL Dynamic error: loop limit reached.
   [1]
