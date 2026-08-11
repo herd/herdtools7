@@ -1,0 +1,25 @@
+C C-MP-OMCA+o-o-o+o-rmb-o
+{
+}
+
+				//\fcvexclude
+P0(int *x, int *y)
+{
+	int r0;
+
+	WRITE_ONCE(*x, 1);	//\lnlbl[P0:st]
+	r0 = READ_ONCE(*x);	//\lnlbl[P0:ld]
+	WRITE_ONCE(*y, r0);	//\lnlbl[P0:y]
+}
+
+P1(int *x, int *y)
+{
+	int r1;
+	int r2;
+
+	r1 = READ_ONCE(*y);	//\lnlbl[P1:y]
+	smp_rmb();		//\lnlbl[P1:rmb]
+	r2 = READ_ONCE(*x);	//\lnlbl[P1:x]
+}
+
+exists (1:r1=1 /\ 1:r2=0)	(* \lnlbl[exists] *)

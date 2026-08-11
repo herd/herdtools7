@@ -1,0 +1,13 @@
+Test C-WWC+o-cgt-o+o-cgt-o+o+dstb Allowed
+States 4
+0:r1=0; 1:r2=0; [x]=2;
+0:r1=2; 1:r2=0; [x]=2;
+0:r1=2; 1:r2=1; [x]=1;
+0:r1=2; 1:r2=1; [x]=2;
+Ok
+Witnesses
+Positive: 6 Negative: 12
+Condition exists (0:r1=2 /\ 1:r2=1 /\ [x]=2)
+Observation C-WWC+o-cgt-o+o-cgt-o+o+dstb Sometimes 6 12
+Hash=99c4c8dae1268c9ee14f37eb21ed71da
+

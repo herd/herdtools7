@@ -1,0 +1,17 @@
+Test C-Z6.2+o-r+a-o+o-mb-o Allowed
+States 8
+1:r1=0; 2:r2=0; [z]=1;
+1:r1=0; 2:r2=0; [z]=2;
+1:r1=0; 2:r2=1; [z]=1;
+1:r1=0; 2:r2=1; [z]=2;
+1:r1=1; 2:r2=0; [z]=1;
+1:r1=1; 2:r2=0; [z]=2;
+1:r1=1; 2:r2=1; [z]=1;
+1:r1=1; 2:r2=1; [z]=2;
+Ok
+Witnesses
+Positive: 1 Negative: 7
+Condition exists (1:r1=1 /\ 2:r2=0 /\ [z]=2)
+Observation C-Z6.2+o-r+a-o+o-mb-o Sometimes 1 7
+Hash=d757283b9158cd9a1d139cf5cbae7169
+

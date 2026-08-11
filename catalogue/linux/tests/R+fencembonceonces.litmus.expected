@@ -1,0 +1,12 @@
+Test R+fencembonceonces Allowed
+States 3
+1:r0=0; [y]=1;
+1:r0=1; [y]=1;
+1:r0=1; [y]=2;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists ([y]=2 /\ 1:r0=0)
+Observation R+fencembonceonces Never 0 3
+Hash=ca0b9c6c2fac803b694c4465a750b9bd
+

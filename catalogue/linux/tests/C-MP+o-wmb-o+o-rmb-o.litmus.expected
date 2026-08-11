@@ -1,0 +1,12 @@
+Test C-MP+o-wmb-o+o-rmb-o Allowed
+States 3
+1:r2=0; 1:r3=0;
+1:r2=0; 1:r3=2;
+1:r2=2; 1:r3=2;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (1:r2=2 /\ 1:r3=0)
+Observation C-MP+o-wmb-o+o-rmb-o Never 0 3
+Hash=b5ecd42a3a4275644947279697fbb3a6
+

@@ -1,0 +1,14 @@
+Test C-WWC+o+o-data-o+o-addr-o Allowed
+States 5
+1:r1=a; 2:r2=a; [x]=x;
+1:r1=a; 2:r2=b; [x]=x;
+1:r1=x; 2:r2=b; [x]=x;
+1:r1=x; 2:r2=x; [x]=a;
+1:r1=x; 2:r2=x; [x]=x;
+Ok
+Witnesses
+Positive: 1 Negative: 4
+Condition exists (1:r1=x /\ 2:r2=x /\ [x]=x)
+Observation C-WWC+o+o-data-o+o-addr-o Sometimes 1 4
+Hash=f907d71e18ea5a3a1ef6b50c982e8388
+

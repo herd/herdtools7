@@ -1,0 +1,13 @@
+Test LB+poonceonces Allowed
+States 4
+0:r0=0; 1:r0=0;
+0:r0=0; 1:r0=1;
+0:r0=1; 1:r0=0;
+0:r0=1; 1:r0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (0:r0=1 /\ 1:r0=1)
+Observation LB+poonceonces Sometimes 1 3
+Hash=d96b009b18c3b7a0f61fc31b99c956d4
+

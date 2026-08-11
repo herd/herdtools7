@@ -1,0 +1,11 @@
+Test C-S+o-wmb-o+o-addr-o Allowed
+States 2
+1:r2=x0; [x0]=3;
+1:r2=y; [x0]=2;
+No
+Witnesses
+Positive: 0 Negative: 2
+Condition exists (1:r2=x0 /\ [x0]=2)
+Observation C-S+o-wmb-o+o-addr-o Never 0 2
+Hash=59df963d77a7087ee7f18a7b1f2a0d01
+

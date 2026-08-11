@@ -1,0 +1,21 @@
+C C-cmpxchg
+{
+}
+
+
+P0(int *x)
+{
+	int r1;
+
+	r1 = cmpxchg(x, 1, 2);
+}
+
+P1(int *x)
+{
+	int r1;
+
+	r1 = cmpxchg(x, 0, 1);
+}
+
+locations [1:r1]
+exists (0:r1=1 /\ ~x=2)

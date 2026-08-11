@@ -1,0 +1,11 @@
+Test add_unless_mb Allowed
+States 2
+1:r0=0; [x]=1; [z]=1;
+1:r0=1; [x]=2; [z]=1;
+No
+Witnesses
+Positive: 0 Negative: 2
+Condition exists (1:r0=1 /\ [x]=1)
+Observation add_unless_mb Never 0 2
+Hash=740ecaca893f828d9079c0c827815245
+

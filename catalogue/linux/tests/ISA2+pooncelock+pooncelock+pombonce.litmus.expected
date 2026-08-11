@@ -1,0 +1,16 @@
+Test ISA2+pooncelock+pooncelock+pombonce Allowed
+States 7
+1:r0=0; 2:r1=0; 2:r2=0;
+1:r0=0; 2:r1=0; 2:r2=1;
+1:r0=0; 2:r1=1; 2:r2=0;
+1:r0=0; 2:r1=1; 2:r2=1;
+1:r0=1; 2:r1=0; 2:r2=0;
+1:r0=1; 2:r1=1; 2:r2=0;
+1:r0=1; 2:r1=1; 2:r2=1;
+No
+Witnesses
+Positive: 0 Negative: 7
+Condition exists (1:r0=1 /\ 2:r2=1 /\ 2:r1=0)
+Observation ISA2+pooncelock+pooncelock+pombonce Never 0 7
+Hash=f03540ea3ccbe271bad6a91de525f2fc
+

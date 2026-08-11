@@ -1,0 +1,26 @@
+C C-S+o-wmb-o+o-addr-o
+
+{
+int y=1;
+int *x1 = &y;
+}
+
+				//\fcvexclude
+P0(int* x0, int** x1) {
+
+	WRITE_ONCE(*x0, 2);	//\lnlbl[P0:x0]
+	smp_wmb();
+	WRITE_ONCE(*x1, x0);
+
+}
+
+P1(int** x1) {
+
+	int *r2;
+
+	r2 = READ_ONCE(*x1);		//\lnlbl[P1:x1]
+	WRITE_ONCE(*r2, 3);		//\lnlbl[P1:r2]
+
+}
+
+exists (1:r2=x0 /\ x0=2)		(* \lnlbl[exists] *)

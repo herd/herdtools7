@@ -1,0 +1,14 @@
+Test C-WRC+o+o-r+a-o Allowed
+States 5
+1:r1=0; 2:r2=0; 2:r3=0;
+1:r1=0; 2:r2=0; 2:r3=1;
+1:r1=1; 2:r2=0; 2:r3=0;
+1:r1=1; 2:r2=0; 2:r3=1;
+1:r1=1; 2:r2=1; 2:r3=1;
+No
+Witnesses
+Positive: 0 Negative: 7
+Condition exists (1:r1=1 /\ 2:r2=1 /\ 2:r3=0)
+Observation C-WRC+o+o-r+a-o Never 0 7
+Hash=00ffaf7fcc606b9bb0c884a16ea196be
+

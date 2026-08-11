@@ -1,0 +1,22 @@
+C spinlock-is-locked-self
+
+(*
+ * Result: Never
+ *)
+
+{}
+
+P0(spinlock_t *lo)
+{
+	int r1;
+	int r2;
+	int r3;
+
+	r1 = spin_is_locked(lo);
+	spin_lock(lo);
+	r2 = spin_is_locked(lo);
+	spin_unlock(lo);
+	r3 = spin_is_locked(lo);
+}
+
+exists (not (0:r1=0 /\ 0:r2=1 /\ 0:r3=0)) (* Bad outcome. *)

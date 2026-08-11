@@ -1,0 +1,16 @@
+Test C-LB+o-data-o+o-data-o+o-data-o Allowed
+States 7
+0:r2=0; 1:r2=0; 2:r2=0;
+0:r2=0; 1:r2=0; 2:r2=2;
+0:r2=0; 1:r2=1; 2:r2=1;
+0:r2=0; 1:r2=1; 2:r2=2;
+0:r2=1; 1:r2=1; 2:r2=1;
+0:r2=2; 1:r2=1; 2:r2=2;
+0:r2=2; 1:r2=2; 2:r2=2;
+No
+Witnesses
+Positive: 0 Negative: 7
+Condition exists (0:r2=2 /\ 1:r2=0 /\ 2:r2=1)
+Observation C-LB+o-data-o+o-data-o+o-data-o Never 0 7
+Hash=e2d8e0dfb67b660172a40c34a9acb88f
+

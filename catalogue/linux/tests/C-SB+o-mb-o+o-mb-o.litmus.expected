@@ -1,0 +1,12 @@
+Test C-SB+o-mb-o+o-mb-o Allowed
+States 3
+0:r2=0; 1:r2=2;
+0:r2=2; 1:r2=0;
+0:r2=2; 1:r2=2;
+No
+Witnesses
+Positive: 0 Negative: 3
+Condition exists (1:r2=0 /\ 0:r2=0)
+Observation C-SB+o-mb-o+o-mb-o Never 0 3
+Hash=ae3989f3955d3066422d7b956d200dcc
+

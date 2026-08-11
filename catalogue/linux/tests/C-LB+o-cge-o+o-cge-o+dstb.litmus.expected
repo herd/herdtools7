@@ -1,0 +1,12 @@
+Test C-LB+o-cge-o+o-cge-o+dstb Allowed
+States 3
+0:r1=0; 1:r2=0;
+0:r1=0; 1:r2=1;
+0:r1=1; 1:r2=0;
+No
+Witnesses
+Positive: 0 Negative: 12
+Condition exists (0:r1=1 /\ 1:r2=1)
+Observation C-LB+o-cge-o+o-cge-o+dstb Never 0 12
+Hash=18d7ce8d588ff2d7819fe76f98fd25f4
+
