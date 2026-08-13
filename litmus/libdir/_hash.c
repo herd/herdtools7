@@ -17,7 +17,7 @@
 /* Notice: this file contains public domain code by Bob Jenkins */
 
 typedef struct {
-  log_t key ;
+  hashlog_t key ;
 #ifdef STATS
   param_t p ;
 #endif
@@ -50,10 +50,10 @@ static void pp_hash_ok(FILE *fp,hash_t *t,char **group) {
 }
 #endif
 
-static void log_init(log_t *p) {
+static void log_init(hashlog_t *p) {
   uint32_t *q = (uint32_t *)p ;
 
-  for (int k = sizeof(log_t)/sizeof(uint32_t) ; k > 0 ; k--)
+  for (int k = sizeof(hashlog_t)/sizeof(uint32_t) ; k > 0 ; k--)
     *q++ = -1 ;
 }
 
@@ -127,14 +127,14 @@ size_t          length)              /* the length of the key, in uint32_ts */
   return c;
 }
 
-static uint32_t hash_log (log_t *key) {
-  return hashword((uint32_t *)key,sizeof(log_t)/sizeof(uint32_t)) ;
+static uint32_t hash_log (hashlog_t *key) {
+  return hashword((uint32_t *)key,sizeof(hashlog_t)/sizeof(uint32_t)) ;
 }
 
 #ifdef STATS
-static int hash_add(hash_t *t,log_t *key, param_t *v,count_t c,int ok) {
+static int hash_add(hash_t *t,hashlog_t *key, param_t *v,count_t c,int ok) {
 #else
-static int hash_add(hash_t *t,log_t *key, count_t c,int ok) {
+static int hash_add(hash_t *t,hashlog_t *key, count_t c,int ok) {
 #endif
   uint32_t h = hash_log(key) ;
   h = h % HASHSZ ;
