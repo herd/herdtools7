@@ -30,18 +30,22 @@ static void barrier_init (sense_t *p,int n) {
 
 /* C coding, play it safe with mbar's */
 
+inline static void mbar_loc(void) {
+  asm __volatile__ ("fence rw,rw" ::: "memory");
+}
+
 __attribute__ ((noinline)) static void barrier_wait(sense_t *p) {
-  mbar() ;
+  mbar_loc() ;
   int sense = p->sense ;
-  mbar();
+  mbar_loc();
   int rem = __sync_add_and_fetch(&p->c,-1) ;
-  mbar() ;
+  mbar_loc() ;
   if (rem == 0) {
     p->c = p->n ;
-    mbar();
+    mbar_loc();
     p->sense = 1-sense ;
   } else {
     while (p->sense == sense) ;
   }
-  mbar() ;
+  mbar_loc() ;
 }
