@@ -313,45 +313,62 @@ module Make(C:Builder.S)
     let relaxs_with_work_edges rs =
       List.map (fun r -> (r, r)) rs
 
+    let make_adjacency safes po_safe chunks =
+      let ids = Hashtbl.create (List.length chunks) in
+      List.iteri (fun id chunk -> Hashtbl.replace ids chunk id) chunks ;
+      let table = Array.make_matrix (List.length chunks) (List.length chunks) false in
+      List.iter
+        (fun next ->
+          List.iter
+            (fun exist ->
+              table.(Hashtbl.find ids next).(Hashtbl.find ids exist) <-
+                can_precede safes po_safe next [exist])
+            chunks)
+        chunks ;
+      fun next exist -> match exist with
+      | [] -> true
+      | head::_ -> table.(Hashtbl.find ids next).(Hashtbl.find ids head)
+
 (* Functional for recursive call of generators *)
 
-    let sz (_,es) =
-      if List.for_all (fun e -> is_id e.edge) es then 0 else 1
+    let procedure_count c es =
+      List.fold_left
+        (fun count e ->
+          match e.edge with
+          | Id|Back _|Leave _ -> count
+          | _ ->
+              match get_ie e with
+              | Int -> count
+              | Ext -> count + 1
+              | UnspecCom -> assert false)
+        c es
 
-    let c_minprocs_es c =
-      List.fold_left ( fun c e ->
-        match e.C.E.edge,get_ie e with
-        | (Back _|Leave _),_
-        | _,Int -> c
-        | _,Ext -> c + 1
-        | _,UnspecCom -> assert false
-      ) c
+    let max_edges_in_procedure c es =
+      List.fold_left
+        (fun (current_edges,longest_edges) e ->
+          match e.edge with
+          | Id|Back _|Leave _ -> current_edges,longest_edges
+          | _ ->
+              match get_ie e with
+              | Ext -> 0,max current_edges longest_edges
+              | Int -> current_edges+1,longest_edges
+              | UnspecCom -> assert false)
+        c es
 
-    let c_minprocs_suff c =
-      List.fold_left ( fun c (_,es) -> c_minprocs_es c es) c
-
-    let minprocs suff =
-      let r = c_minprocs_suff 0 suff in
-      if O.verbose > 3 then eprintf "MIN [%s] => %i\n" (pp_ess suff) r ;
+    let procedure_count_chunks chunks =
+      let r =
+        List.fold_left
+          (fun c (_,edges) -> procedure_count c edges)
+          0 chunks in
+      if O.verbose > 3 then eprintf "PROCS [%s] => %i\n" (pp_ess chunks) r ;
       r
 
-    let rec c_minint_es c = function
-      | [] -> false,c
-      | {edge=Id; _}::es ->  c_minint_es c es
-      | e::es ->
-          match get_ie e with
-          | Ext -> true,c
-          | Int -> c_minint_es (c+1) es
-          | UnspecCom -> assert false
-
-    let rec c_minint c = function
-      | [] -> c
-      | (_,es)::suff ->
-          let stop,c = c_minint_es c es in
-          if stop then c
-          else c_minint c suff
-
-    let minint suff = c_minint 0 suff
+    let max_instruction_count_chunks chunks =
+      let current,longest =
+        List.fold_left
+          (fun c (_,edges) -> max_edges_in_procedure c edges)
+          (0,0) chunks in
+      max current longest
 
 (* Prefix *)
     let () =
@@ -365,12 +382,11 @@ module Make(C:Builder.S)
 
     let prefixes = List.map relaxs_with_work_edges O.prefix
 
-    let rec mk_can_prefix = function
-      | [] -> (fun _ _ -> true)
-      | [x] -> (fun p -> p x)
-      | _::xs -> mk_can_prefix xs
-
-    let can_prefix prefix = mk_can_prefix prefix
+    let can_prefix prefix can_precede_relax r_suff = match prefix with
+      | [] -> can_precede_relax (Misc.last r_suff) r_suff
+      | _::_ ->
+          can_precede_relax (Misc.last prefix) r_suff &&
+          can_precede_relax (Misc.last r_suff) prefix
 
     let rec is_prefix l rl =
       match rl,l with
@@ -385,23 +401,24 @@ module Make(C:Builder.S)
 
 
     (* This function is used `zyva` *)
-    let call_rec_base prefix f0 safes po_safe over n r suff f_rec k ?(reject=[])=
+    let call_rec_base prefix f0 po_safe can_precede_relax
+        over n r suff f_rec k ?(reject=[])=
+      let r_suff = r::suff in
       if
-        can_precede safes po_safe r suff &&
-        minprocs suff <= O.nprocs &&
-        minint (r::suff) <= O.max_ins-1 &&
-        check_cycle (r::suff) reject
+        can_precede_relax r suff &&
+        procedure_count_chunks r_suff <= O.nprocs &&
+        max_instruction_count_chunks r_suff <= O.max_ins-1 &&
+        check_cycle r_suff reject
       then
-        let suff = r::suff
-        and n = n-sz r in
-        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess suff) ;
+        let n = n-1 in
+        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess r_suff) ;
         let k =
           if
             over &&
             (n = 0 || (n > 0 && O.upto)) &&
-            can_prefix prefix (can_precede safes po_safe) suff
+            can_prefix prefix can_precede_relax r_suff
           then begin
-            let tr =  prefix@suff in
+            let tr = prefix@r_suff in
             if O.verbose > 2 then
             eprintf "TRY: '%s'\n"
               (C.E.pp_edges (List.flatten (List.map snd tr))) ;
@@ -415,7 +432,7 @@ module Make(C:Builder.S)
               raise e
           end else k in
         if n <= 0 then k
-        else f_rec n suff k
+        else f_rec n r_suff k
       else k
     (* END of call_rec_base *)
 
@@ -453,6 +470,8 @@ module Make(C:Builder.S)
       let relax = relaxs_with_work_edges relax in
       let safe = relaxs_with_work_edges safe in
       let po_safe = extract_po safe in
+      let can_precede_relax =
+        make_adjacency aset po_safe (prefix@relax@safe) in
 
       (* ********************************** *)
       (* iterates over all relax edges `rs` *)
@@ -461,7 +480,9 @@ module Make(C:Builder.S)
       List.fold_left (fun k relex_edge ->
         (* Build simple cycles for relaxation `relex_edge` *)
         (* Partially apply function `call_rec_base` *)
-        let call_rec_add_safe = call_rec_base prefix (f [fst relex_edge]) aset po_safe ~reject:reject in
+        let call_rec_add_safe =
+          call_rec_base prefix (f [fst relex_edge]) po_safe can_precede_relax
+            ~reject:reject in
         (* Add safe edge to suffix *)
         let rec add_safe over ss n suf k =
           List.fold_left ( fun k s -> call_rec_add_safe over n s suf (add_relaxs over) k ) k ss
@@ -496,7 +517,7 @@ module Make(C:Builder.S)
               let nrs = List.length rs in
               if nrs > O.max_relax || nrs < O.min_relax then k
               else f rs po_safe suff k)
-            aset po_safe ~reject:reject in
+            po_safe can_precede_relax ~reject:reject in
 
         (* Add a one edge to suffix *)
         let rec add_one over rs ss n suf k =
@@ -527,7 +548,8 @@ module Make(C:Builder.S)
       (* ***************************************************** *)
       let rec no_relax ss n suf k =
         (* Partially apply function `call_rec_base` *)
-        let call_rec_no_relax = call_rec_base prefix (f []) aset po_safe ~reject:reject in
+        let call_rec_no_relax =
+          call_rec_base prefix (f []) po_safe can_precede_relax ~reject:reject in
         List.fold_left (fun k s ->
           call_rec_no_relax true n s suf (no_relax safe) k
         ) k ss in
@@ -592,9 +614,10 @@ module Make(C:Builder.S)
     let last_check_call rej aset f rs po_safe res k =
       if is_empty_list res then k else
           let lst = Misc.last res in
-          if can_precede aset po_safe lst res then
-            let es = List.map snd res in
-            let le = List.flatten es in
+          let le = List.map snd res |> List.flatten in
+          if procedure_count 0 le <= O.nprocs &&
+             (max_edges_in_procedure (0,0) (le@le) |> snd) <= O.max_ins-1 &&
+             can_precede aset po_safe lst res then
             try
               if
                 (match O.choice with
