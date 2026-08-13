@@ -1753,6 +1753,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       match ii.A.inst with
        (* Specific -> get TLBI key *)
       | I_OP3 (V64,LSR,_,_,OpExt.Imm (12,0))
+       (* Unsupported by the Arm ARM since M.c: only SY is supported. *)
+      | I_FENCE (DMB ((NSH | OSH | ISH), _))
       (* Register or zero comparison, 64 is for addresses and pteval,
          32 is for instructions *)
       | I_OP3 ((V64|V32),SUBS,ZR,_,
