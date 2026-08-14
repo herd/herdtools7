@@ -79,7 +79,7 @@ begin
     write_memory_gen{size}(desc.paddress.address, value,accdesc,eventaccess);
 
   elsif accdesc.acctype == AccessType_TTW then
-   WritePtePrimitive{size}(desc.paddress.address, value, accdesc.write);
+   WritePtePrimitive{size}(desc.paddress.address, value);
 
   else unreachable;
   end;
@@ -107,6 +107,7 @@ func PhysMemRead{size : PhysMemSize}
   (desc : AddressDescriptor, accdesc : AccessDescriptor)
   => (PhysMemRetStatus, bits(size))
 begin
+  // Explicit reads
   if accdesc.acctype == AccessType_GPR then
     // Event access for herd7
     let eventaccess = _PhysEventAccess(desc.vaddress);
@@ -122,21 +123,27 @@ begin
 
     return (PhysMemRetStatus_NoFault, value);
 
+  // Implicit reads
   elsif accdesc.acctype == AccessType_TTW then
     if accdesc.atomicop then
-      let value = ReadPteAgainPrimitive{size}(desc.paddress.address, accdesc.write);
+      // Here we are in the second call to PhysMemRead. This call happens when
+      // a translation table descriptor has to be updated. The semantics in
+      // herd do not perform this read, so we ignore it. We simply return the
+      // value read before, stored in PteRead128 or PteRead64.
 
-      // Does not type-check, and pteread128 tests do not pass until we store
-      // size information with symbolic bitvectors
+      // The following line does not type-check, and pteread128 tests do not
+      // pass until we store size information with symbolic bitvectors
       let pte_read = if size == 128 then PteRead128 /* as bits(size) */
                                     else PteRead64 /* as bits(size) */;
-      CheckEq(value, pte_read);
 
       return (PhysMemRetStatus_NoFault, pte_read);
 
     else
+      // First read to a PTE
       let value = ReadPtePrimitive{size}(desc.paddress.address);
 
+      // We store the value read in PteRead128 or PteRead64 so that the next
+      // call to PhysMemRead can simply return this value.
       if size == 128 then
         PteRead128 = value /* as bits(128) */;
       else
@@ -146,6 +153,7 @@ begin
 
       return (PhysMemRetStatus_NoFault, value);
     end;
+
   else unreachable;
   end;
 end;

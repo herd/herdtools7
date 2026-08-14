@@ -102,29 +102,17 @@ begin pass; end;
 // physmem-vmsa.asl. It creates an Implicit Memory Read Effect, without an
 // atomic annotation. It is only called in the case of an implicit TTD read,
 // i.e. when the acctype field of accdesc is set to AccessType_TTW. It is only
-// called for the first TTD read of an address translation, that is the
-// non-atomic one.
+// called for the first TTD read of an address translation.
 
 func ReadPtePrimitive{N}(addr: bits(56)) => bits(N)
 begin return ARBITRARY: bits(N); end;
-
-// ReadPteAgainPrimitive() is called by our re-implementation of the function
-// AArch64.MemSwapTableDesc() in patches-vmsa.asl. It performs an atomic
-// version of ReadPtePrimitive(), i.e. it creates an Implicit Memory Read
-// effect, with an atomic annotation. As MemSwapTableDesc(), it is called when
-// the translation system finds out that the page table descriptor for an
-// address needs to be updated, in our case only when the AF or nDB bits need
-// to be changed in memory.
-
-func ReadPteAgainPrimitive{N}(addr: bits(56), is_write: boolean) => bits(N)
-begin pass; end;
 
 // WritePtePrimitive() is the counterpart of the ReadPteAgainPrimitive(). It is
 // called by AArch64.MemSwapTableDesc() in patches-vmsa.asl, and is to write
 // back the updated page table descriptor in memory. It creates an Implicit
 // Memory Write Effect, with an atomic annotation.
 
-func WritePtePrimitive{N}(addr: bits(56), data: bits(N), is_write: boolean)
+func WritePtePrimitive{N}(addr: bits(56), data: bits(N))
 begin pass; end;
 
 // Not used by AArch64, simplifications for the `pseudo-arch` mode.
