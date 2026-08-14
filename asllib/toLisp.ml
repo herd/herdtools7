@@ -379,7 +379,8 @@ module Make (Conf : PrinterConf) = struct
           [ key "S_WHILE"; of_expr x; of_option of_expr y; of_stmt s ]
       | S_Repeat (s, x, y) ->
           [ key "S_REPEAT"; of_stmt s; of_expr x; of_option of_expr y ]
-      | S_Throw (x, t) -> [ key "S_THROW"; of_expr x; of_option of_ty t ]
+      | S_Throw (x, t) ->
+          [ key "S_THROW"; of_expr x; of_option of_identifier t ]
       | S_Try (s1, c, s2) ->
           [
             key "S_TRY";

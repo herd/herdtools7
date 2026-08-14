@@ -350,10 +350,10 @@ type stmt_desc =
     }
   | S_While of expr * expr option * stmt
   | S_Repeat of stmt * expr * expr option
-  | S_Throw of (expr * ty option)
-      (** The ty option is a type annotation added by the type-checker to be
-          matched later with the catch guards. It is always None for the untyped
-          AST and never None for the typed AST. *)
+  | S_Throw of (expr * identifier option)
+      (** The identifier option is a type annotation added by the type-checker
+          to be matched later with the catch guards. It is always None for the
+          untyped AST and never None for the typed AST. *)
   | S_Try of stmt * catcher list * stmt option
       (** The stmt option is the optional otherwise guard. *)
   | S_Print of { args : expr list; newline : bool; debug : bool }
