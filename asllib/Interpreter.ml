@@ -36,7 +36,7 @@ module type S = sig
 
   type 'a maybe_exception =
     | Normal of 'a
-    | Throwing of value_read_from * AST.ty * IEnv.env
+    | Throwing of value_read_from * AST.identifier * IEnv.env
     | Cutoff
   (* the [Cutoff] variant is an implementation only variant, used to
      short-cut executions that do not comply with loop unrolling parameters.
@@ -90,7 +90,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   type 'a maybe_exception =
     | Normal of 'a
-    | Throwing of value_read_from * ty * env
+    | Throwing of value_read_from * identifier * env
     | Cutoff
 
   (** An intermediate result of a statement. *)
@@ -309,8 +309,9 @@ module Make (B : Backend.S) (C : Config) = struct
               let* eval_res = eval_expr env init_expr in
               match eval_res with
               | Normal (v, env2) -> return (v, env2)
-              | Throwing (_, ty, _env2) ->
-                  fatal_from d env (UnexpectedInitialisationThrow (ty, name))
+              | Throwing (_, ty_name, _env2) ->
+                  fatal_from d env
+                    (UnexpectedInitialisationThrow (ty_name, name))
               | Cutoff ->
                   Printf.eprintf "Unexpected initialisation cutoff.\n%!";
                   assert false)
@@ -750,12 +751,12 @@ module Make (B : Backend.S) (C : Config) = struct
   and eval_expr_sef env e : B.value m =
     eval_expr env e >>= function
     | Normal (v, _env) -> return v
-    | Throwing (_, ty, _) ->
+    | Throwing (_, ty_name, _) ->
         let msg =
           Format.asprintf
-            "@[<hov 2>An exception of type @[<hv>%a@]@ was@ thrown@ when@ \
+            "@[<hov 2>An exception of type @[<hv>%s@]@ was@ thrown@ when@ \
              evaluating@ %a@]@."
-            PP.pp_ty ty PP.pp_expr e
+            ty_name PP.pp_expr e
         in
         fatal_from e env (Error.UnexpectedSideEffect msg)
     | Cutoff -> assert false
@@ -1381,24 +1382,18 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Evaluation of Catchers *)
   (* ---------------------- *)
   and eval_catchers catchers otherwise_opt s_m : stmt_eval_type =
-    (* [catcher_matches t c] returns true if the catcher [c] match the raised
-       exception type [t]. *)
-    (* Begin EvalFindCatcher *)
-    let catcher_matches v_ty (_e_name, e_ty_name, _stmt) =
-      match v_ty.desc with
-      | T_Named s1 -> String.equal s1 e_ty_name |: SemanticsRule.FindCatcher
-      | _ -> false
-      (* End *)
-    in
-    (* Main logic: *)
     (* If an explicit throw has been made in the [try] block: *)
     B.bind_seq s_m @@ function
     (*  Begin CatchNoThrow *)
     | (Normal _ | Cutoff) as res -> return res |: SemanticsRule.CatchNoThrow
     (* End *)
-    | Throwing (v, v_ty, env_throw) -> (
+    | Throwing (v, v_ty_name, env_throw) -> (
         (* We compute the environment in which to compute the catch statements. *)
-        match List.find_opt (catcher_matches v_ty) catchers with
+        match
+          List.find_opt
+            (fun (_, ty_name, _) -> String.equal v_ty_name ty_name)
+            catchers
+        with
         (* If any catcher matches the exception type: *)
         | Some catcher -> (
             (* Begin EvalCatch *)
@@ -1598,7 +1593,7 @@ module Make (B : Backend.S) (C : Config) = struct
             fatal_unknown_pos
               (BadArity (C.error_handling_time, main_name, 1, List.length values)))
       | Throwing ((v, _, _), ty, _genv) ->
-          let msg = Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v) in
+          let msg = Format.asprintf "%s %s" ty (B.debug_value v) in
           Error.fatal_unknown_pos (Error.UncaughtException msg)
       | Cutoff -> return zero)
     |: SemanticsRule.Spec

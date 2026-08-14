@@ -3105,7 +3105,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           match t_e.desc with T_Named s -> s | _ -> assert false
         in
         let ses2 = SES.add_thrown_exception exn_name ses1 in
-        (S_Throw (e', Some t_e) |> here, env, ses2) |: TypingRule.SThrow
+        (S_Throw (e', Some exn_name) |> here, env, ses2) |: TypingRule.SThrow
     (* Begin STry *)
     | S_Try (s', catchers, otherwise) ->
         let s'', ses1 = try_annotate_block env s' in
