@@ -134,7 +134,8 @@ type error_desc =
   | ConstantTimeBroken of expr * SideEffect.SES.t
   | MultipleWrites of identifier
   | UnexpectedInitialisationThrow of
-      ty * identifier (* Exception type and global storage element name. *)
+      identifier
+      * identifier (* Exception type and global storage element name. *)
   | NegativeArrayLength of error_handling_time * expr * int
   | MultipleImplementations of func annotated * func annotated
   | NoOverrideCandidate
@@ -789,12 +790,12 @@ module PPrint = struct
           "bitfields `%s` and `%s` are in the same scope but define different \
            slices of the containing bitvector type: %s and %s, respectively."
           field1_absname field2_absname field1_absslices field2_absslices
-    | UnexpectedInitialisationThrow (exception_ty, global_storage_element_name)
-      ->
+    | UnexpectedInitialisationThrow
+        (exception_ty_name, global_storage_element_name) ->
         pp_err Dynamic
-          "unexpected@ exception@ %a@ thrown@ during@ the@ evaluation@ of@ \
+          "unexpected@ exception@ %s@ thrown@ during@ the@ evaluation@ of@ \
            the@ initialisation@ of@ the global@ storage@ element@ %S."
-          pp_ty exception_ty global_storage_element_name
+          exception_ty_name global_storage_element_name
     | PrecisionLostDefining ->
         pp_err Typing
           "type@ used@ to@ define@ storage@ item@ is@ the@ result@ of@ \

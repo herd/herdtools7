@@ -381,7 +381,7 @@ module Make (C : Config.S) = struct
       block ** exprs |> map make_s_repeat |> pay
     and s_throw =
       let make_s_throw opt = S_Throw opt in
-      exprs ** option tys |> map make_s_throw |> pay
+      exprs ** option names |> map make_s_throw |> pay
     and s_try =
       let make_s_try (s, (catchers, s_opt)) = S_Try (s, catchers, s_opt) in
       let catcher = tuple3 (option names) names block in
