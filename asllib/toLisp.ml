@@ -411,7 +411,7 @@ module Make (Conf : PrinterConf) = struct
   and of_case_alt x = of_annotated of_case_alt_desc x
 
   and of_catcher (i, t, s) =
-    of_list [ of_option of_identifier i; of_ty t; of_stmt s ]
+    of_list [ of_option of_identifier i; of_identifier t; of_stmt s ]
 
   (* -------------------------------------------------------------------------
 

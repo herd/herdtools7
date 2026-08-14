@@ -381,7 +381,7 @@ and case_alt_desc = {
 
 and case_alt = case_alt_desc annotated
 
-and catcher = identifier option * ty * stmt
+and catcher = identifier option * identifier * stmt
 (** The optional name of the matched exception, the guard type and the statement
     to be executed if the guard matches. *)
 
