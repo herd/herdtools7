@@ -829,8 +829,8 @@ let rename_locals map_name ast =
   and map_pattern_matcher (ps, pk) = (List.map map_pattern ps, pk)
   (* End *)
   (* Begin RenameCatcher *)
-  and map_catcher (opt_exn_name, exn_ty, when_stmt) =
-    (Option.map map_name opt_exn_name, map_t exn_ty, map_s when_stmt)
+  and map_catcher (opt_exn_name, exn_ty_name, when_stmt) =
+    (Option.map map_name opt_exn_name, exn_ty_name, map_s when_stmt)
   (* End *)
   (* Begin RenameLocals *)
   and map_decl d =

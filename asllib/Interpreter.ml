@@ -1384,10 +1384,9 @@ module Make (B : Backend.S) (C : Config) = struct
     (* [catcher_matches t c] returns true if the catcher [c] match the raised
        exception type [t]. *)
     (* Begin EvalFindCatcher *)
-    let catcher_matches v_ty (_e_name, e_ty, _stmt) =
-      match (v_ty.desc, e_ty.desc) with
-      | T_Named s1, T_Named s2 ->
-          String.equal s1 s2 |: SemanticsRule.FindCatcher
+    let catcher_matches v_ty (_e_name, e_ty_name, _stmt) =
+      match v_ty.desc with
+      | T_Named s1 -> String.equal s1 e_ty_name |: SemanticsRule.FindCatcher
       | _ -> false
       (* End *)
     in

@@ -3171,9 +3171,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* End *)
 
   (* Begin Catcher *)
-  and annotate_catcher ~loc env ses_in (name_opt, ty, stmt) =
-    let ty', ses_ty = annotate_type ~loc env ty in
-    let+ () = check_structure_exception ~loc:ty' env ty' in
+  and annotate_catcher ~loc env ses_in (name_opt, ty_name, stmt) =
+    let ty = T_Named ty_name |> add_pos_from ~loc in
+    let _, ses_ty = annotate_type ~loc env ty in
+    let+ () = check_structure_exception ~loc env ty in
     let new_stmt, ses_block =
       let env' =
         match name_opt with
@@ -3184,13 +3185,12 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       in
       try_annotate_block env' stmt
     and ses_filtered =
-      let ty_name = match ty'.desc with T_Named s -> s | _ -> assert false in
       SES.filter_thrown_exceptions
         (fun s -> not (String.equal s ty_name))
         ses_in
     in
     let ses = SES.union ses_block ses_ty in
-    (ses_filtered, ((name_opt, ty, new_stmt), ses)) |: TypingRule.Catcher
+    (ses_filtered, ((name_opt, ty_name, new_stmt), ses)) |: TypingRule.Catcher
   (* End *)
 
   (* Begin Block *)
