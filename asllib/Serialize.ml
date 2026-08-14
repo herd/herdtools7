@@ -309,8 +309,9 @@ let rec pp_stmt =
   in
   fun f s -> pp_annotated pp_desc f s
 
-and pp_catcher f (name, ty, s) =
-  bprintf f "(%a, %a, %a)" (pp_option pp_string) name pp_ty ty pp_stmt s
+and pp_catcher f (name, ty_name, s) =
+  bprintf f "(%a, %a, %a)" (pp_option pp_string) name pp_string ty_name pp_stmt
+    s
 
 let pp_gdk f gdk =
   addb f

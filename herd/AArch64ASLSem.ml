@@ -31,9 +31,7 @@ let return_0 = return_i 0
 let catch_silent_exit body =
   let open Asllib.AST in
   let open Asllib.ASTUtils in
-  let exit_type : Asllib.AST.ty =
-    add_dummy_pos (T_Named "SilentExit") in
-  let catcher = (None,exit_type,return_0) in
+  let catcher = (None,"SilentExit",return_0) in
   add_dummy_pos (S_Try (body,[catcher],None))
 
 let setup_registers is_vmsa =
