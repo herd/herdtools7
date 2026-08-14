@@ -2,9 +2,12 @@ build
 aarch64
 other-instrs
 shared_pseudocode.asl
+all_instructions.asl
+all_system_registers.asl
+pmu_event_types.asl
 features.asl
 *notice.html
 system_registers.asl
 *.log
-ISA_A64_xml_A_profile-*
-SysReg_xml_A_profile-*
+ISA_A64_xml_A_profile*
+SysReg_xml_A_profile*
