@@ -1,0 +1,35 @@
+  $ run_herd () {
+  >   variant="$1"
+  >   test="$2"
+  >   herd7 -set-libdir ../libdir -variant "$variant" "$test"   \
+  >     -show all -showevents all -showinitwrites false -o . > /dev/null && \
+  >   grep eiid "${test%.litmus}.dot"
+  > }
+
+Check GCSPUSHM dot output under shadowstack.
+
+  $ run_herd shadowstack GCSPUSHM.litmus
+  eiid0 [label="a: W[x]GCSq=4\lproc:P0 poi:0\lGCSPUSHM X0", shape="box", color="blue"];
+  eiid2 [label="c: R0:GCSPR_EL1q=x+8 (addr)\lproc:P0 poi:0\lGCSPUSHM X0", shape="box", color="blue"];
+  eiid3 [label="d: W0:GCSPR_EL1q=x\lproc:P0 poi:0\lGCSPUSHM X0", shape="box", color="blue"];
+  eiid4 [label="e: R0:X0q=4 (data)\lproc:P0 poi:0\lGCSPUSHM X0", shape="box", color="blue"];
+  eiid2 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+  eiid2 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
+  eiid4 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+
+Check GCSPUSHM dot output under shadowstack,vmsa.
+
+  $ run_herd shadowstack,vmsa GCSPUSHM.litmus
+  eiid0 [label="a: R[PTE(x)]NExpq=(oa:PA(x))\lproc:P0 poi:0\lGCSPUSHM X0", shape="box", color="blue"];
+  eiid1 [label="b: W[PA(x)]GCSq=4\lproc:P0 poi:0\lGCSPUSHM X0", shape="box", color="blue"];
+  eiid4 [label="e: R0:GCSPR_EL1q=x+8 (addr)\lproc:P0 poi:0\lGCSPUSHM X0", shape="box", color="blue"];
+  eiid5 [label="f: Branching(pred)(valid:1 && af:1 && db:1)\lproc:P0 poi:0\lGCSPUSHM X0", shape="box", color="blue"];
+  eiid6 [label="g: W0:GCSPR_EL1q=x\lproc:P0 poi:0\lGCSPUSHM X0", shape="box", color="blue"];
+  eiid7 [label="h: R0:X0q=4 (data)\lproc:P0 poi:0\lGCSPUSHM X0", shape="box", color="blue"];
+  eiid0 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
+  eiid0 -> eiid5 [label="iico_data", color="black", fontcolor="black"];
+  eiid4 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+  eiid4 -> eiid6 [label="iico_data", color="black", fontcolor="black"];
+  eiid7 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
+  eiid5 -> eiid1 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid5 -> eiid6 [label="iico_ctrl", color="grey", fontcolor="grey"];
