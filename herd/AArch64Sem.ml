@@ -128,10 +128,12 @@ module Make
       let (>>=) = M.(>>=)
       let (let*) = M.(>>=)
       let (>>==) = M.(>>==)
+      let (let**) = M.(>>==)
       let (>>*=) = M.(>>*=)
       let (>>*==) = M.(>>*==)
       let (>>**==) = M.(>>**==)
       let (>>|) = M.(>>|)
+      let (and*) = M.(>>|)
       let (>>||) = M.para_atomic
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
@@ -2501,7 +2503,6 @@ Arguments:
       (* Neon/SVE/SME instructions *)
       let (let>*) = M.bind_control_set_data_input_first
       let (let>=) = M.(>>=)
-      let (and*) = M.(>>|)
       let (let<>=) = M.bind_data_to_output
 
       (* Utility that performes an `N`-bit load as two independent `N/2`-bit
@@ -3762,32 +3763,37 @@ Arguments:
       let gcspushm rs ii =
         let open AArch64Base in
         let an = Annot.N
-        and rA = SysReg GCSPR_EL1
-        and off = MachSize.nbytes quad in
-        let m =
-          read_reg_addr rA ii >>= fun addr ->
-            M.add addr (V.intToV (-off)) >>= fun a_virt ->
-            let mop ac a _v =
-                write_reg rA a_virt ii >>|
-                M.data_input_next
-                (read_reg_data rs ii)
-                (fun v -> GCSSem.write ac an a v ii)
-                >>= M.ignore >>= fun () -> B.nextSetT rA a_virt in
-            lift_memop rA Dir.W true false
-            (fun ac ma mv ->
-              if is_branching && Access.is_physical ac then
-                M.bind_ctrldata_data ma mv (fun a v -> mop ac a v)
-              else
-                ma >>| mv >>= fun (a,v) -> mop ac a v)
-            (to_perms "w" quad)
-            (M.unitT a_virt)
-            mzero
-            an
-            ii in
-        (* Value writen to GCSPR depends on previous read *)
-        let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
-        and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
-        M.short read write m
+        and rA = SysReg GCSPR_EL1 in
+        let ma =
+          let off = V.intToV (-MachSize.nbytes quad) in
+          let* a = read_reg_addr rA ii in
+          M.add a off in
+        let do_gcspushm a_virt ma =
+          let mv = read_reg_data rs ii
+          and mop ac ma mv =
+            if is_branching && Access.is_physical ac then
+              let do_gcs_write a v = GCSSem.write ac an a v ii in
+              let mop a =
+                let* () = write_reg rA a_virt ii
+                and* () = M.data_input_next mv (do_gcs_write a) in
+                B.nextSetT rA a in
+              let m = ma >>*= mop in
+              M.short E.is_mem_load E.is_mem_store m
+            else
+              let* a =
+                let** a = ma in
+                let* () = write_reg rA a ii in
+                M.unitT a
+              and* v = mv in
+              let* () = GCSSem.write ac an a v ii in
+              B.nextSetT rA v in
+          let m = lift_memop rA Dir.W true false mop (to_perms "w" quad) ma mv an ii in
+          (* Value writen to GCSPR depends on previous read *)
+          let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
+          and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
+          M.short read write m in
+        M.delay_kont "gcspushm" ma do_gcspushm
+
 
       let gcspopm rd ii =
         let open AArch64Base in
