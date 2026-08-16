@@ -598,23 +598,7 @@ To assist reliable translation of ASL to other representations that may not spec
 \listingref{evaluation-order} shows examples of the constructs above, followed by output to the console from running the specification.
 \textbf{Note:} the ordering for slicing expressions may, at first glance, seem not to follow the evaluation order specification; this is because some forms of slice are elaborated during typechecking (see \TypingRuleRef{Slice}).
 \ASLListing{Evaluation order}{evaluation-order}{\definitiontests/EvaluationOrder.asl}
-% CONSOLE_BEGIN aslref \definitiontests/EvaluationOrder.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-Function calls:
-1234
-Tuples:
-12
-Non-short-circuiting binary operations:
-123
-Array-indexing:
-1
-2
-Record construction:
-12
-Print statements:
-12341234
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{evaluationorder}{\definitiontests/EvaluationOrder.asl}
 
 \ExampleDef{Evaluation Order and Parenthesis}
 
@@ -631,13 +615,7 @@ across all three statements, due to ASL's defined evaluation order.
 In particular, each line prints \verb|123| when executed.
 
 \ASLListing{Evaluation order and parenthesis}{evaluation-order-and-parenthesis}{\definitiontests/EvaluationOrderAndParenthesis.asl}
-% CONSOLE_BEGIN aslref \definitiontests/EvaluationOrderAndParenthesis.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-123
-123
-123
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{evaluationorderandparenthesis}{\definitiontests/EvaluationOrderAndParenthesis.asl}
 
 \section{Semantics of Diverging Specifications\label{sec:Semantics of Diverging Specifications}}
 While typical specifications are intended to always terminate,
