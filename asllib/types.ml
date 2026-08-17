@@ -581,22 +581,14 @@ let subprogram_clashes env (f1 : func) (f2 : func) =
 
 (* --------------------------------------------------------------------------*)
 
-(** [unpack_options li] is [Some [x1; ... x_n]] if [li] is
-    [[Some x1; ... Some x_n]], [None] otherwise *)
-let unpack_options li =
-  let exception NoneFound in
-  let unpack_one = function Some elt -> elt | None -> raise NoneFound in
-  try Some (List.map unpack_one li) with NoneFound -> None
-
 (* Begin LowestCommonAncestor *)
 let rec lowest_common_ancestor ~loc env s t =
   let here = add_pos_from loc in
-  let ( let+ ) o f = Option.map f o in
   (* The lowest common ancestor of types S and T is: *)
   (match (s.desc, t.desc) with
     | _, _ when type_equal env s t ->
         (* If S and T are the same type: S (or T). *)
-        Some s
+        s
     | T_Named s_name, T_Named t_name ->
         assert (not (String.equal s_name t_name));
         let anon_s = make_anonymous env s and anon_t = make_anonymous env t in
@@ -604,12 +596,12 @@ let rec lowest_common_ancestor ~loc env s t =
     | _, T_Named _ | T_Named _, _ ->
         let anon_s = make_anonymous env s and anon_t = make_anonymous env t in
         if type_equal env anon_s anon_t then
-          Some (match s.desc with T_Named _ -> s | _ -> t)
+          match s.desc with T_Named _ -> s | _ -> t
         else lowest_common_ancestor ~loc env anon_s anon_t
     | T_Int _, T_Int UnConstrained | T_Int UnConstrained, T_Int _ ->
         (* If either S or T is an unconstrained integer type: the unconstrained
          integer type. *)
-        Some integer
+        integer
     | T_Int _, T_Int (Parameterized _) | T_Int (Parameterized _), T_Int _ ->
         lowest_common_ancestor ~loc env (to_well_constrained s)
           (to_well_constrained t)
@@ -617,23 +609,20 @@ let rec lowest_common_ancestor ~loc env s t =
         (* If S and T both are well-constrained integer types: the
          well-constrained integer type with domain the union of the
          domains of S and T. *)
-        Some (well_constrained ~precision:(precision_join p1 p2) (cs_s @ cs_t))
+        well_constrained ~precision:(precision_join p1 p2) (cs_s @ cs_t)
     | T_Bits (e_s, _), T_Bits (e_t, _) when expr_equal env e_s e_t ->
         (* We forget the bitfields if they are not equal. *)
-        Some (T_Bits (e_s, []) |> here)
+        T_Bits (e_s, []) |> here
     | T_Array (length_s, ty_s), T_Array (length_t, ty_t)
       when expr_equal env length_s length_t ->
-        let+ t = lowest_common_ancestor ~loc env ty_s ty_t in
+        let t = lowest_common_ancestor ~loc env ty_s ty_t in
         T_Array (length_s, t) |> here
     | T_Tuple li_s, T_Tuple li_t when List.compare_lengths li_s li_t = 0 ->
         (* If S and T both are tuple types with the same number of elements:
          the tuple type with the type of each element the lowest common ancestor
          of the types of the corresponding elements of S and T. *)
-        let+ li =
-          List.map2 (lowest_common_ancestor ~loc env) li_s li_t
-          |> unpack_options
-        in
+        let li = List.map2 (lowest_common_ancestor ~loc env) li_s li_t in
         here (T_Tuple li)
-    | _ -> None)
+    | _ -> Error.fatal_from loc (Error.UnreconcilableTypes (s, t)))
   |: TypingRule.LowestCommonAncestor
 (* End *)

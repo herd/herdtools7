@@ -1971,10 +1971,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         and t_false, e_false', ses_false = annotate_expr env e_false in
         let t =
           best_effort t_true (fun _ ->
-              match Types.lowest_common_ancestor ~loc:e env t_true t_false with
-              | None ->
-                  fatal_from ~loc (Error.UnreconcilableTypes (t_true, t_false))
-              | Some t -> t)
+              Types.lowest_common_ancestor ~loc:e env t_true t_false)
         in
         let ses = SES.union3 ses_cond ses_true ses_false in
         (t, E_Cond (e_cond', e_true', e_false') |> here, ses)
