@@ -281,7 +281,8 @@ module NativeBackend (C : Config) = struct
           if Z.gt i Z.zero then [ L_Int (Z.log2 i |> Z.of_int) |> nv_literal ]
           else
             Error.fatal_unknown_pos
-            @@ Error.BadPrimitiveArgument ("FloorLog2", "greater than 0")
+            @@ Error.BadPrimitiveArgument
+                 (C.error_handling_time, "FloorLog2", "greater than 0")
       | [ v ] -> mismatch_type v [ integer' ]
       | li ->
           Error.fatal_unknown_pos

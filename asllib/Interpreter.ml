@@ -705,7 +705,8 @@ module Make (B : Backend.S) (C : Config) = struct
         let () =
           if n_length < 0 then
             fatal_from e_length env
-              (Error.NegativeArrayLength (e_length, n_length))
+              (Error.NegativeArrayLength
+                 (C.error_handling_time, e_length, n_length))
         in
         let* v = B.create_vector (List.init n_length (Fun.const v_value)) in
         return_normal (v, new_env) |: SemanticsRule.EArray
@@ -1164,7 +1165,8 @@ module Make (B : Backend.S) (C : Config) = struct
         let*= env2, b = choice ~pos:s env1 v true false in
         if b then return_continue env2
         else
-          fatal_from e env2 @@ Error.AssertionFailed e |: SemanticsRule.SAssert
+          fatal_from e env2 @@ Error.AssertionFailed (C.error_handling_time, e)
+          |: SemanticsRule.SAssert
     (* End *)
     (* Begin EvalSWhile *)
     | S_While (e, e_limit_opt, body) ->
@@ -1253,7 +1255,8 @@ module Make (B : Backend.S) (C : Config) = struct
         return_continue new_env |: SemanticsRule.SPrint
     (* End *)
     | S_Pragma _ -> assert false
-    | S_Unreachable -> fail_from s env Error.UnreachableReached
+    | S_Unreachable ->
+        fail_from s env (Error.UnreachableReached C.error_handling_time)
 
   (* Evaluation of Blocks *)
   (* -------------------- *)
@@ -1317,7 +1320,7 @@ module Make (B : Backend.S) (C : Config) = struct
     | Some limit ->
         let new_limit = Z.pred limit in
         if Z.sign new_limit >= 0 then return (Some new_limit)
-        else fatal_from loc env Error.LoopLimitReached
+        else fatal_from loc env (Error.LoopLimitReached C.error_handling_time)
 
   (* Begin EvalLoop *)
   and eval_loop loc is_while env limit_opt e_cond body : stmt_eval_type =
