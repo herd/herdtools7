@@ -62,6 +62,7 @@ module LL =
       let int32 = true
       let acceptBig = true
       let faulttype = true
+      let datafault = true
     end)
 
 let add_name =
