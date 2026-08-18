@@ -31,7 +31,8 @@
    helpers
    ConstraintBinops
    Lexer
-   check_no_missing_file_in_run))
+   check_no_missing_file_in_run
+   capture_output))
  (flags
   (:standard -w -40-42))
  (action
@@ -39,6 +40,12 @@
    ASL_LIBDIR
    %{project_root}/asllib/libdir/
    (run %{test} -e))))
+
+(test
+ (name capture_output)
+ (modules capture_output)
+ (libraries asllib)
+ (deps capture_output.asl))
 
 (test
  (name Lexer)
