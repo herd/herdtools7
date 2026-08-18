@@ -16,6 +16,8 @@
 
 type t
 
+val equal_node : t -> t -> bool
+
 val as_hashed  : string option -> t
 
 val as_t : t -> string option

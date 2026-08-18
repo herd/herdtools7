@@ -133,6 +133,15 @@ let pair_compare cmpx cmpy (x1,y1) (x2,y2) =
 
 let pair_eq eqx eqy (x1,y1) (x2,y2) =  eqx x1 x2 &&  eqy y1 y2
 
+let tuple4_compare cmp1 cmp2 cmp3 cmp4 (x1,x2,x3,x4) (y1,y2,y3,y4) =
+  let c1 = cmp1 x1 y1 in
+  if c1 != 0 then c1 else
+    let c2 = cmp2 x2 y2 in
+    if c2 != 0 then c2 else
+      let c3 = cmp3 x3 y3 in
+      if c3 != 0 then c3 else
+        cmp4 x4 y4
+
 let char_uppercase = Char.uppercase_ascii
 let lowercase = String.lowercase_ascii
 let uppercase = String.uppercase_ascii
