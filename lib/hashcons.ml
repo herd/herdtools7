@@ -52,6 +52,8 @@ module type S =
     val clear : t -> unit
     val hashcons : t -> key -> node
     val iter : (node -> unit) -> t -> unit
+    (* Equality in constant time *)
+    val equal_node : node -> node -> bool
   end
 
 module Make(H : HashedType) : (S with type key = H.t) = struct
@@ -170,5 +172,7 @@ module Make(H : HashedType) : (S with type key = H.t) = struct
       end
     in
     loop 0
+
+  let equal_node = (==)
 
 end

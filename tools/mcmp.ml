@@ -30,6 +30,7 @@ module type Opt = sig
   val pos : string option
   val neg : string option
   val faulttype : bool
+  val datafault : bool
 end
 
 module Make(O:Opt) = struct
@@ -44,6 +45,7 @@ module Make(O:Opt) = struct
         let int32 = true
         let acceptBig = true
         let faulttype = O.faulttype
+        let datafault = O.datafault
       end)
 
   module LS = LogState.Make(O)
@@ -97,6 +99,7 @@ let neg = ref None
 let quiet = ref false
 let same = ref false
 let faulttype = ref true
+let datafault = ref true
 
 let options =
   [
@@ -112,6 +115,8 @@ let options =
    ("-neg",
      Arg.String (fun s -> neg := Some s),
     "<file> dump negative differences, default "^ (match !neg with None -> "don't dump" | Some s -> s));
+   CheckName.parse_faulttype faulttype;
+   CheckName.parse_datafault datafault;
  ]@parse_withselect
 let logs = ref []
 
@@ -146,6 +151,7 @@ module M =
       let pos = !pos
       let neg = !neg
       let faulttype = !faulttype
+      let datafault = !datafault
     end)
 
 let f1,f2 = match !logs with
