@@ -719,12 +719,18 @@ type output_format = HumanReadable | CSV | GNU
 
 module type ERROR_PRINTER_CONFIG = sig
   val output_format : output_format
+  val err_buffer : Buffer.t option
 end
 
 module ErrorPrinter (C : ERROR_PRINTER_CONFIG) = struct
+  let err_formatter =
+    match C.err_buffer with
+    | None -> Format.err_formatter
+    | Some buf -> Format.formatter_of_buffer buf
+
   let eprintln e =
     match C.output_format with
-    | HumanReadable -> Format.eprintf "@[<2>%a@]@." pp_error e
+    | HumanReadable -> Format.fprintf err_formatter "@[<2>%a@]@." pp_error e
     | CSV -> Printf.eprintf "%a\n" pp_error_csv e
     | GNU -> Printf.eprintf "%a\n" (pp_gnu pp_error_desc) e
 

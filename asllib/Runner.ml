@@ -49,6 +49,8 @@ type args = {
   no_stdlib0 : bool;
   v0_use_split_chunks : bool;
   version_eac1 : bool;
+  capture_output : (Buffer.t * Buffer.t) option;
+      (** Capture stdout/stderr (respectively) into the supplied buffers. *)
 }
 
 let default_args =
@@ -73,6 +75,7 @@ let default_args =
     no_stdlib0 = false;
     v0_use_split_chunks = false;
     version_eac1 = false;
+    capture_output = None;
   }
 
 (** Run ASLRef with the supplied arguments, and returns the exit code from the
@@ -153,6 +156,8 @@ let run (args : args) : int =
 
     let use_conflicting_side_effects_extension =
       args.use_conflicting_side_effects_extension
+
+    let err_buffer = Option.map snd args.capture_output
   end in
   let module T = Annotate (C) in
   let typed_ast, static_env = T.type_check_ast ast in
@@ -190,7 +195,9 @@ let run (args : args) : int =
     if args.exec then
       let instrumentation = if args.show_rules then true else false in
       let main_name = T.find_main static_env in
-      Native.interpret ~instrumentation static_env main_name typed_ast
+      let out_buffer = Option.map fst args.capture_output in
+      Native.interpret ~instrumentation ?out_buffer static_env main_name
+        typed_ast
     else (0, [])
   in
 
@@ -210,6 +217,7 @@ let safe_run args : int =
   with Error.ASLException e ->
     let module EP = Error.ErrorPrinter (struct
       let output_format = args.output_format
+      let err_buffer = Option.map snd args.capture_output
     end) in
     EP.eprintln e;
     1

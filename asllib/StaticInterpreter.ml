@@ -37,6 +37,10 @@ module InterpConf = struct
   let display_call_stack_on_error = false
   let track_symbolic_path = false
   let bit_clear_optimisation = false
+
+  (** Printing is considered impure by the type system, so we do not expect to
+      statically interpret print statements - no need to capture output. *)
+  let out_buffer = None
 end
 
 module SB = Native.StaticBackend

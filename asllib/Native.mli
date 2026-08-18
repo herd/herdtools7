@@ -46,6 +46,7 @@ module DeterministicInterpreter (I : Instrumentation.SEMINSTR) :
 
 val interpret :
   ?instrumentation:bool ->
+  ?out_buffer:Buffer.t ->
   StaticEnv.global ->
   AST.identifier ->
   AST.t ->

@@ -193,6 +193,7 @@ let parse_args () =
       no_stdlib0 = !no_stdlib0;
       v0_use_split_chunks = !v0_use_split_chunks;
       version_eac1 = !version_eac1;
+      capture_output = None;
     }
   in
 
