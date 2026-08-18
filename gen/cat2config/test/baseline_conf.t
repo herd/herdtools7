@@ -7,11 +7,11 @@
   
   ### Exp-haz-ob
   ## [Exp & R]; (po & same-loc); [Exp & R]; (ca & ext); [Exp & W]
-  -safe [PosRR, Fre]
+  -safe [PosRR,Fre]
   
   ### haz-ob
   ## Exp-haz-ob
-  -safe [PosRR, Fre]
+  -safe [PosRR,Fre]
   
   ### Exp-obs
   ## [Exp & M]; (rf & ext); [Exp & M]
@@ -29,15 +29,15 @@
   
   ### IFB-ob
   ## [Exp & R]; ctrl; [IFB]; po
-  -safe [DpCtrl, ISB]
+  -safe [DpCtrl,ISB]
   ## [Exp & R]; pick-ctrl-dep; [IFB]; po
-  -safe [DpCtrlCsel, ISB]
+  -safe [DpCtrlCsel,ISB]
   ## [Exp & R]; addr; [Exp & M]; po; [IFB]; po
-  -safe [DpAddr, ISB***]
+  -safe [DpAddr,ISB***]
   ## [Exp & R]; pick-addr-dep; [Exp & M]; po; [IFB]; po
-  -safe [DpAddrCsel, ISB***]
+  -safe [DpAddrCsel,ISB***]
   ## DSB-ob; [IFB]; po
-  -safe [DSB.SY***, ISB] [DSB.LD*R*, ISB] [DSB.ST*W*, ISB]
+  -safe [DSB.SY***,ISB] [DSB.LD*R*,ISB] [DSB.ST*W*,ISB]
   
   ### dob
   ## addr
@@ -47,11 +47,11 @@
   ## ctrl; [(Exp & W) | HU | TLBI | DC.CVAU | IC]
   -safe DpCtrl*W
   ## addr; [Exp & M]; po; [(Exp & W) | HU]
-  -safe [DpAddr, Po**W]
+  -safe [DpAddr,Po**W]
   ## addr; [Exp & M]; lrs; [(Exp & R) | (Imp & (Tag & R))]
-  -safe [DpAddr*W, PosWR]
+  -safe [DpAddr*W,PosWR]
   ## data; [Exp & M]; lrs; [(Exp & R) | (Imp & (Tag & R))]
-  -safe [DpData*W, PosWR]
+  -safe [DpData*W,PosWR]
   
   ### pob
   ## pick-addr-dep; [(Exp & W) | HU | TLBI | DC.CVAU | IC]
@@ -61,13 +61,13 @@
   ## pick-ctrl-dep; [(Exp & W) | HU | TLBI | DC.CVAU | IC]
   -safe DpCtrlCsel*W
   ## pick-addr-dep; [Exp & M]; po; [(Exp & W) | HU]
-  -safe [DpAddrCsel, Po**W]
+  -safe [DpAddrCsel,Po**W]
   
   ### aob
   ## [Exp & M]; rmw; [Exp & M]
   -safe LxSx Amo
   ## [Exp & M]; rmw; lrs; [A | Q]
-  -safe [LxSx, PosWRPA] [Amo, PosWRPA] [LxSx, PosWRPA, AmoAP] [Amo, PosWRPA, AmoAP] [LxSx, PosWRPQ] [Amo, PosWRPQ] [LxSx, PosWRPQ, AmoQP] [Amo, PosWRPQ, AmoQP]
+  -safe [LxSx,PosWRPA] [Amo,PosWRPA] [LxSx,PosWRPA,AmoAP] [Amo,PosWRPA,AmoAP] [LxSx,PosWRPQ] [Amo,PosWRPQ] [LxSx,PosWRPQ,AmoQP] [Amo,PosWRPQ,AmoQP]
   
   ### bob
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [dmb.full]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
@@ -77,13 +77,13 @@
   ## [Exp & W]; po; [dmb.st]; po; [(Exp & W) | (MMU & FAULT)]
   -safe DMB.ST*WW
   ## [range([A]; amo; [L])]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe [AmoAL, PoLP]
+  -safe [AmoAL,PoLP]
   ## [L]; po; [A]
-  -safe PoLA [PoLA, AmoAP] [AmoPL, PoLA] [AmoPL, PoLA, AmoAP]
+  -safe PoLA [PoLA,AmoAP] [AmoPL,PoLA] [AmoPL,PoLA,AmoAP]
   ## [A | Q]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe PoAP [AmoAP, Po] PoQP [AmoQP, Po]
+  -safe PoAP [AmoAP,Po] PoQP [AmoQP,Po]
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [L]
-  -safe PoPL [Po, AmoPL]
+  -safe PoPL [Po,AmoPL]
   
   ### lwfs
   ## [(Exp & M) | (Imp & (Tag & R))]; (po & same-loc); [Exp & W]
