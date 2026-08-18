@@ -31,7 +31,7 @@ SYSREGS_OFILE := system_registers.asl
 SYSREGS_TAR_GZ := $(SYSREGS_NAME).tar.gz
 
 FEATURES_DIR := Exploration-Tools-Arm-Architecture-Features/AARCHMRS
-FEATURES_NAME := Features.json
+FEATURES_NAME := AARCHMRS_A_profile_FAT-$(ARCHITECTURE_RELEASE)/Features.json
 FEATURES_OFILE := features.asl
 FEATURES_TAR_GZ := AARCHMRS_A_profile_FAT-$(ARCHITECTURE_RELEASE).tar.gz
 
