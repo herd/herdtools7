@@ -46,31 +46,43 @@ let as_hash h = h.Hashcons.hkey
 
 let warn_once = ref true
 
-let compare h1 h2 =
-  let p1,lab1,x1,ft1 = as_tt h1
-  and p2,lab2,x2,ft2 = as_tt h2 in
-  match Misc.int_compare p1 p2 with
-  | 0 -> begin  match HashedStringOpt.compare lab1 lab2 with
-         | 0 -> begin match HashedStringOpt.compare x1 x2 with
-                | 0 -> begin match HashedStringOpt.as_t ft1, HashedStringOpt.as_t ft2 with
-                       | Some ft1, Some ft2 -> String.compare ft1 ft2
-                       | None, _ | _, None ->
-                          if !warn_once then begin
-                            Warn.warn_always "Comparing faults with and without fault type, \
-                                              assuming same type";
-                            warn_once := false;
-                            end;
-                          0
-                       end
-                | r -> r
-                end
-         | r -> r
-  end
-  | r -> r
+let compare_ftype_names s1 s2 =
+  match
+    FaultType.strip_diprefix s1,
+    FaultType.strip_diprefix s2
+  with
+  | None,Some s2 -> String.compare s1 s2
+  | Some s1,None -> String.compare s1 s2
+  | _,_ -> String.compare s1 s2
 
-let has_fault_type h =
+let compare_ftypes ft1 ft2 =
+  match HashedStringOpt.as_t ft1, HashedStringOpt.as_t ft2 with
+  | Some ft1, Some ft2 -> compare_ftype_names ft1 ft2
+  | None, None -> 0
+  | None, Some _ | Some _, None ->
+      if !warn_once then begin
+        Warn.warn_always "Comparing faults with and without fault type, \
+                          assuming same type";
+        warn_once := false;
+      end;
+      0
+
+let compare h1 h2 =
+  Misc.tuple4_compare
+    Misc.int_compare  HashedStringOpt.compare
+    HashedStringOpt.compare compare_ftypes
+    (as_tt h1) (as_tt h2)
+
+type ft_kind =
+  | No (* No name *)
+  | DIPrefix (* Prefixed with "D-" or "I-" *)
+  | Other    (* All other names *)
+
+let compare_kinds = Misc.polymorphic_compare
+
+let get_fault_type h =
   let _,_,_,ft = as_tt h in
   let ft = HashedStringOpt.as_t ft in
   match ft with
-  | Some _ -> true
-  | None -> false
+  | Some ft -> if FaultType.has_diprefix ft then DIPrefix else Other
+  | None -> No

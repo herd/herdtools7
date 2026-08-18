@@ -26,6 +26,7 @@ let acceptempty = ref false
 let hexa = ref false
 let int32 = ref true
 let faulttype = ref true
+let datafault = ref true
 let neg = ref false
 
 let options =
@@ -95,6 +96,7 @@ module LL =
       let int32 = int32
       let acceptBig = false
       let faulttype = !faulttype
+      let datafault = !datafault
     end)
 
 let acceptempty = !acceptempty

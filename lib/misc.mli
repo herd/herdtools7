@@ -88,6 +88,10 @@ val pair_compare :
     ('a -> 'a -> int) -> ('b -> 'b -> int) -> 'a * 'b -> 'a * 'b -> int
 val pair_eq :
   ('a -> 'a -> bool) -> ('b -> 'b -> bool) -> 'a * 'b -> 'a * 'b -> bool
+val tuple4_compare :
+  ('a -> 'a -> int) -> ('b -> 'b -> int)
+  -> ('c -> 'c -> int) -> ('d -> 'd -> int)
+  -> 'a * 'b * 'c * 'd -> 'a * 'b * 'c * 'd -> int
 
 val char_uppercase : char -> char
 val lowercase : string -> string

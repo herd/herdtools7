@@ -14,7 +14,13 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Make(I:sig type elt end)  =
+module
+  Make
+    (I:sig
+         type elt
+         val equal_node :
+           elt Hashcons.hash_consed -> elt Hashcons.hash_consed -> bool
+       end)  =
   struct
     type elt = I.elt
     type elt_hashed = elt Hashcons.hash_consed
@@ -31,12 +37,14 @@ module Make(I:sig type elt end)  =
           | Nil,Nil -> true
           | (_,Nil)|(Nil,_) -> false
           | Cons (x1,r1),Cons (x2,r2) ->
-              x1 == x2 && r1 == r2
+              I.equal_node x1 x2 && r1 == r2
           let hash = function
             | Nil -> 0
             | Cons (x,r) ->
                 abs ((19 * x.Hashcons.hkey) + r.Hashcons.hkey + 1)
         end)
+
+    let equal_node = M.equal_node
 
     let as_hash h = h.Hashcons.hkey
 
@@ -58,6 +66,10 @@ module Make(I:sig type elt end)  =
     let rec map f xs = match xs.Hashcons.node with
     | Cons (x,r) -> f x :: map f r
     | Nil        -> []
+
+    let rec fold_left f k xs = match xs.Hashcons.node with
+      | Nil  -> k
+      | Cons (x,r) -> fold_left f (f k x) r
 
     let pp pp_elt nh =
       let pps = map pp_elt nh in

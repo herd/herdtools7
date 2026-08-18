@@ -15,7 +15,12 @@
 (****************************************************************************)
 
 module Make :
-    functor (I:sig type elt end) ->
+    functor
+      (I:sig
+           type elt
+           val equal_node :
+             elt Hashcons.hash_consed -> elt Hashcons.hash_consed -> bool
+         end) ->
       sig
         type elt = I.elt
         type elt_hashed = elt Hashcons.hash_consed
@@ -25,6 +30,7 @@ module Make :
           | Nil
           | Cons of elt_hashed * t
 
+        val equal_node : t -> t -> bool
 
         val as_hash : t -> int
 
@@ -35,5 +41,6 @@ module Make :
 
         val iter : (elt_hashed -> unit) -> t -> unit
         val map : (elt_hashed -> 'a) -> t -> 'a list
+        val fold_left : ('a -> elt_hashed -> 'a) -> 'a -> t -> 'a
         val pp : (elt_hashed -> string) -> t -> string
       end

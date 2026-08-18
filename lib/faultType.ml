@@ -209,3 +209,9 @@ module No = struct
 end
 
 let is = AArch64.is
+
+let has_diprefix s = String.(starts_with ~prefix:"D-" s || starts_with ~prefix:"I-" s)
+
+let strip_diprefix s =
+  if has_diprefix s then Some String.(sub s 2 (length s-2))
+  else None

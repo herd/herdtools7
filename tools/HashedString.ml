@@ -22,9 +22,11 @@ end
 
 module H = Hashcons.Make(S)
 
-type t = string Hashcons.hash_consed
+type t = H.node
 
 let table = H.create 101
+
+let equal_node = H.equal_node
 
 let as_hashed s = H.hashcons table s
 

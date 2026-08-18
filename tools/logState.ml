@@ -19,10 +19,20 @@
 (**********************************)
 
 (* Hashed list of bindings *)
-module HashedEnv = HashedList.Make (struct type elt = HashedBinding.key end)
+module HashedEnv =
+  HashedList.Make
+    (struct
+      type elt = HashedBinding.key
+      let equal_node = HashedBinding.equal_node
+    end)
 
 (* Hashed list of faults *)
-module HashedFaults = HashedList.Make(struct type elt = HashedFault.key end)
+module HashedFaults =
+  HashedList.Make
+    (struct
+      type elt = HashedFault.key
+      let equal_node = HashedFault.equal_node
+    end)
 
 (* Hashed pair of triples *)
 module HashedState = struct
@@ -34,7 +44,9 @@ module HashedState = struct
     let equal
       {e=e1; f=f1; a=a1;}
       {e=e2; f=f2; a=a2;} =
-      e1 == e2 && f1 == f2 && a1=a2
+      HashedEnv.equal_node e1 e2
+      && HashedFaults.equal_node f1 f2
+      && HashedFaults.equal_node a1 a2
 
     let hash {e; f; a;} =
       let eh = HashedEnv.as_hash e
@@ -75,8 +87,8 @@ type parsed_topologies = topology list
 type sts = parsed_sts (* + sorted *)
 
 let do_equal_states xs ys =
-  (* Ignore counts, outcomes are hash-consed. *)
-  List.equal (fun x y -> x.p_st == y.p_st) xs ys
+  (* Ignore counts, outcomes are sorted list of hash-consed states . *)
+  List.equal (fun x y -> HashedState.M.equal_node x.p_st y.p_st) xs ys
 
 let equal_states sts1 sts2 = do_equal_states sts1.p_sts sts2.p_sts
 
@@ -381,14 +393,31 @@ let select_absent st1 st2 =
   | (_,Cons _) -> st2
   | (Nil,Nil)-> st1
 
-let state_has_fault_type st =
+let state_get_fault_type st =
   let open HashedState in
   let open HashedFaults in
   let {S.e=_; f=f1; a=_;} = as_t st.p_st in
-  let rec fault_type st = match st.Hashcons.node with
-    | Nil -> false
-    | Cons (p, st) -> HashedFault.has_fault_type p || fault_type st in
+  let rec fault_type st =
+    let open HashedFault in
+    match st.Hashcons.node with
+    | Nil -> No
+    | Cons (p, st) ->
+        match  HashedFault.get_fault_type p with
+        | No -> fault_type st
+        | DIPrefix ->  DIPrefix
+        | Other ->
+            begin
+              match fault_type st with
+              | No|Other -> Other
+              | DIPrefix -> DIPrefix
+            end in
   fault_type f1
+
+let state_has_fault_type st =
+  let open HashedFault in
+  match state_get_fault_type st with
+  | No -> false
+  | DIPrefix|Other -> true
 
 (* Select state with the most explicit information.
  * This works because explicit fault types have been
@@ -396,13 +425,25 @@ let state_has_fault_type st =
  * the presence of fault type implies that explicit
  * absent faults are also here (if some fault is
  * absent, of course).
+ * Notice that MMU fault types have been made even
+ * more precise by prefixing then with "D-" or "I-".
  *)
 let select_newer st1 st2 =
-  if st1 == st2 || state_has_fault_type st1 then st1
-  else if state_has_fault_type st2 then st2
+  if HashedState.M.equal_node st1.p_st st2.p_st then st1
   else
-    (* No state has fault types, select one with explicit absent faults *)
-    select_absent st1 st2
+    let ft1 = state_get_fault_type st1
+    and ft2 = state_get_fault_type st2 in
+    let open HashedFault in
+    match ft1,ft2 with
+    | (DIPrefix,_)
+    | (Other,No)
+      -> st1
+    | (_,DIPrefix)
+    | ((Other|No),Other)
+      -> st2
+    | No,No ->
+      (* No state has fault types, select one with explicit absent faults *)
+      select_absent st1 st2
 
 let rec do_diff_states sts1 sts2 sts2_retry do_retry = match sts1,sts2 with
 | [],_ -> []
@@ -428,6 +469,25 @@ let rec do_diff_states sts1 sts2 sts2_retry do_retry = match sts1,sts2 with
         | _, _ -> sts2_retry, do_retry in
       do_diff_states sts1 sts2 sts2_retry do_retry
 
+(* Same structure as above, check difference being empty:
+   computes do_diff_states sts1 sts2 sts2_retry do_retry |> List.is_empty *)
+
+let rec do_diff_states_empty sts1 sts2 sts2_retry do_retry =
+  match sts1,sts2 with
+  | [],_ -> true
+  | _::_,[] -> do_retry && do_diff_states_empty sts1 sts2_retry [] false
+  | st1::rem1,st2::rem2 ->
+      let r = compare_state false st1 st2 in
+      if r < 0 then false
+      else if r > 0 then do_diff_states_empty sts1 rem2 sts2_retry do_retry
+      else
+        let sts2_retry, do_retry =
+          match state_has_fault_type st1, state_has_fault_type st2 with
+          | true, false -> st2::sts2_retry, true
+          | _, _ -> sts2_retry, do_retry in
+        do_diff_states_empty rem1 rem2 sts2_retry do_retry
+
+
 let comp_nouts sts =
   List.fold_left (fun k st -> Int64.add k st.p_noccs) Int64.zero sts
 
@@ -438,6 +498,8 @@ let diff_states sts1 sts2 =
    p_nouts = n_outs ;
    p_sts = sts  ;
   }
+
+let diff_states_empty sts1 sts2 = do_diff_states_empty sts1 sts2 [] true
 
 let rec do_union_states sts1 sts2 =  match sts1,sts2 with
 | ([],sts)|(sts,[]) -> sts
@@ -1297,6 +1359,39 @@ let simple_same out1 out2 t1 t2 k =
       else do_rec r1 r2 k in
   do_rec t1.s_tests t2.s_tests k
 
+(* Check presence of fault with no fault type in state *)
+let has_no_fault_type st =
+  let rec exists_no_type fs =
+    let open HashedFaults in
+    let open HashedFault in
+    match fs.Hashcons.node with
+    | Nil -> false
+    | Cons (p, fs) ->
+        match  HashedFault.get_fault_type p with
+        | No -> true
+        | DIPrefix|Other ->  exists_no_type fs in
+  exists_no_type HashedState.((as_t st).S.f)
+
+(* Select appropriate diff function *)
+let select_diff safe opt xs ys =
+  if
+    List.exists has_no_fault_type xs
+    || List.exists has_no_fault_type ys
+  then safe xs ys
+  else opt xs ys
+
+(* Non optimised diff, to be used when fault comparison is required *)
+
+let to_parsed_sts xs =
+    List.map (fun x -> { p_noccs=Int64.one; p_st=x; }) xs
+    |> normalize_sts
+
+let diff_safe_not_empty xs ys =
+  let xs = to_parsed_sts xs
+  and ys = to_parsed_sts ys in
+  not @@ diff_states_empty xs ys
+
+(* Generic, optimised diff *)
 let simple_diff_gen diff out t1 t2 k =
  let rec do_diff ts1 ts2 k = match ts1,ts2 with
   | ([],_)|(_,[]) -> k
@@ -1314,6 +1409,7 @@ let simple_diff_gen diff out t1 t2 k =
   do_diff t1.s_tests t2.s_tests k
 
 (* Answers true if X/Y not empty *)
+
 let rec diff_not_empty  xs ys = match xs,ys with
 | [],_ -> false
 | _,[] -> true
@@ -1324,12 +1420,27 @@ let rec diff_not_empty  xs ys = match xs,ys with
     else diff_not_empty rx ry
 
 let simple_diff_not_empty out t1 t2 k =
-  simple_diff_gen diff_not_empty out t1 t2 k
-
+  simple_diff_gen
+    (select_diff
+       (fun xs ys -> diff_safe_not_empty xs ys)
+       diff_not_empty)
+    out t1 t2 k
 
 let diff_simple_states xs ys =
-  not (List.equal ( == ) xs ys)
+  select_diff
+    (fun xs ys ->
+      let xs = to_parsed_sts xs
+      and ys = to_parsed_sts ys in
+      not (diff_states_empty xs ys && diff_states_empty ys xs))
+    (fun xs ys ->
+       not
+         (List.equal
+            (fun st1 st2 ->
+               HashedState.M.equal_node st1 st2)
+            xs ys))
+    xs ys
 
 let simple_diff out t1 t2 k =
   simple_diff_gen diff_simple_states out t1 t2 k
+
 end

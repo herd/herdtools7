@@ -20,4 +20,13 @@ val as_hashed  : Fault_tools.t -> node
 val as_t :  node -> Fault_tools.t
 val as_hash :  node -> int
 val compare :  node ->  node -> int
-val has_fault_type :  node -> bool
+
+(* Three kinds of fault names *)
+
+type ft_kind =
+  | No (* No name *)
+  | DIPrefix (* Prefixed with "D-" or "I-" *)
+  | Other    (* All other names *)
+
+val compare_kinds : ft_kind -> ft_kind -> int
+val get_fault_type :  node -> ft_kind
