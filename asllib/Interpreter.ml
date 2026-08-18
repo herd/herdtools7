@@ -66,6 +66,7 @@ module type Config = sig
   val display_call_stack_on_error : bool
   val track_symbolic_path : bool
   val bit_clear_optimisation : bool
+  val out_buffer : Buffer.t option
 end
 
 module Make (B : Backend.S) (C : Config) = struct
@@ -1239,9 +1240,15 @@ module Make (B : Backend.S) (C : Config) = struct
               e_list
               (pp_print_list ~pp_sep:pp_print_space pp_value)
               v_list
-          else (
-            List.map B.debug_value v_list |> String.concat "" |> print_string;
-            if newline then print_newline () else ())
+          else
+            let output = List.map B.debug_value v_list |> String.concat "" in
+            match C.out_buffer with
+            | None ->
+                print_string output;
+                if newline then print_newline ()
+            | Some buf ->
+                Buffer.add_string buf output;
+                if newline then Buffer.add_string buf "\n"
         in
         return_continue new_env |: SemanticsRule.SPrint
     (* End *)

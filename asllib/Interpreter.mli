@@ -80,6 +80,9 @@ module type Config = sig
 
   val bit_clear_optimisation : bool
   (** Interpret [a AND NOT b] as [a BIC b]. *)
+
+  val out_buffer : Buffer.t option
+  (** Print ASL output to stdout when [None], or to [buf] when [Some buf]. *)
 end
 
 module Make (B : Backend.S) (C : Config) : S with module B = B

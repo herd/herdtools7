@@ -119,6 +119,7 @@ module Make (Conf : Config) = struct
     let fine_grained_side_effects = false
     let use_conflicting_side_effects_extension = false
     let override_mode = Asllib.Typing.Permissive
+    let err_buffer = None
   end)
 
   module ASLInterpreterConfig = struct
@@ -135,6 +136,7 @@ module Make (Conf : Config) = struct
     let display_call_stack_on_error = Conf.C.debug.Debug_herd.asl_stack
     let track_symbolic_path = true
     let bit_clear_optimisation = true
+    let out_buffer = None
 
     module Instr = Asllib.Instrumentation.SemanticsNoInstr
   end

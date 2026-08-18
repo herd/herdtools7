@@ -459,7 +459,12 @@ module DeterministicBackend = struct
     deterministic_unknown_of_type ~eval_expr_sef ty
 end
 
-module NativeConfig (I : Instrumentation.SEMINSTR) = struct
+module NativeConfig
+    (I : Instrumentation.SEMINSTR)
+    (S : sig
+      val out_buffer : Buffer.t option
+    end) =
+struct
   let unroll = 0
   let recursive_unroll _ = None
   let error_handling_time = Error.Dynamic
@@ -468,35 +473,56 @@ module NativeConfig (I : Instrumentation.SEMINSTR) = struct
   let display_call_stack_on_error = false
   let track_symbolic_path = false
   let bit_clear_optimisation = false
+  let out_buffer = S.out_buffer
 
   module Instr = I
 end
 
+module UseStdout = struct
+  let out_buffer = None
+end
+
 module DeterministicInterpreter (I : Instrumentation.SEMINSTR) =
-  Interpreter.Make (DeterministicBackend) (NativeConfig (I))
+  Interpreter.Make (DeterministicBackend) (NativeConfig (I) (UseStdout))
 
 module DeterministicInterpreterNoInstr =
   DeterministicInterpreter (Instrumentation.SemanticsNoInstr)
-
-module DeterministicInterpreterSingleSetInstr =
-  DeterministicInterpreter (Instrumentation.SemanticsSingleSetInstr)
+(** Fast path for interpretation: no instrumentation and no custom output *)
 
 let exit_value = function
   | NV_Literal (L_Int i) -> i |> Z.to_int
   | v -> mismatch_type v [ integer' ]
 
-let interpret ?instrumentation static_env main_name ast =
-  match instrumentation with
-  | Some true ->
-      let module B = Instrumentation.SemanticsSingleSetBuffer in
-      B.reset ();
-      let res =
-        DeterministicInterpreterSingleSetInstr.run_typed static_env main_name
-          ast
-      in
-      (exit_value res, B.get ())
-  | Some false | None ->
+let interpret ?(instrumentation = false) ?out_buffer static_env main_name ast =
+  match (instrumentation, out_buffer) with
+  | false, None ->
       let res =
         DeterministicInterpreterNoInstr.run_typed static_env main_name ast
       in
       (exit_value res, [])
+  | false, Some buf ->
+      let module Interpret =
+        Interpreter.Make
+          (DeterministicBackend)
+          (NativeConfig
+             (Instrumentation.SemanticsNoInstr)
+             (struct
+               let out_buffer = Some buf
+             end))
+      in
+      let res = Interpret.run_typed static_env main_name ast in
+      (exit_value res, [])
+  | true, _ ->
+      let module B = Instrumentation.SemanticsSingleSetBuffer in
+      B.reset ();
+      let module Interpret =
+        Interpreter.Make
+          (DeterministicBackend)
+          (NativeConfig
+             (Instrumentation.SemanticsSingleSetInstr)
+             (struct
+               let out_buffer = out_buffer
+             end))
+      in
+      let res = Interpret.run_typed static_env main_name ast in
+      (exit_value res, B.get ())
