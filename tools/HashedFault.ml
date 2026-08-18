@@ -46,6 +46,16 @@ let as_hash h = h.Hashcons.hkey
 
 let warn_once = ref true
 
+let compare_ftype s1 s2 =
+  match
+    FaultType.split_at_diprefix s1,
+    FaultType.split_at_diprefix s2
+  with
+  | (("",s1),(_,s2))
+  | ((_,s1),("",s2))
+    -> String.compare s1 s2
+  | _,_ -> String.compare s1 s2
+
 let compare h1 h2 =
   let p1,lab1,x1,ft1 = as_tt h1
   and p2,lab2,x2,ft2 = as_tt h2 in
@@ -53,7 +63,7 @@ let compare h1 h2 =
   | 0 -> begin  match HashedStringOpt.compare lab1 lab2 with
          | 0 -> begin match HashedStringOpt.compare x1 x2 with
                 | 0 -> begin match HashedStringOpt.as_t ft1, HashedStringOpt.as_t ft2 with
-                       | Some ft1, Some ft2 -> String.compare ft1 ft2
+                       | Some ft1, Some ft2 -> compare_ftype ft1 ft2
                        | None, _ | _, None ->
                           if !warn_once then begin
                             Warn.warn_always "Comparing faults with and without fault type, \
@@ -68,9 +78,14 @@ let compare h1 h2 =
   end
   | r -> r
 
-let has_fault_type h =
+type ft_kind =
+  | No (* No name *)
+  | DIPrefix (* Prefixed with "D-" or "I-" *)
+  | Other    (* All other names *)
+
+let get_fault_type h =
   let _,_,_,ft = as_tt h in
   let ft = HashedStringOpt.as_t ft in
   match ft with
-  | Some _ -> true
-  | None -> false
+  | Some ft -> if FaultType.has_diprefix ft then DIPrefix else Other
+  | None -> No

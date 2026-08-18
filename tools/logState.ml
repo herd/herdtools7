@@ -381,14 +381,31 @@ let select_absent st1 st2 =
   | (_,Cons _) -> st2
   | (Nil,Nil)-> st1
 
-let state_has_fault_type st =
+let state_get_fault_type st =
   let open HashedState in
   let open HashedFaults in
   let {S.e=_; f=f1; a=_;} = as_t st.p_st in
-  let rec fault_type st = match st.Hashcons.node with
-    | Nil -> false
-    | Cons (p, st) -> HashedFault.has_fault_type p || fault_type st in
+  let rec fault_type st =
+    let open HashedFault in
+    match st.Hashcons.node with
+    | Nil -> No
+    | Cons (p, st) ->
+        match  HashedFault.get_fault_type p with
+        | No -> fault_type st
+        | DIPrefix ->  DIPrefix
+        | Other ->
+            begin
+              match fault_type st with
+              | No|Other -> Other
+              | DIPrefix -> DIPrefix
+            end in
   fault_type f1
+
+let state_has_fault_type st =
+  let open HashedFault in
+  match state_get_fault_type st with
+  | No -> false
+  | DIPrefix|Other -> true
 
 (* Select state with the most explicit information.
  * This works because explicit fault types have been
@@ -396,13 +413,25 @@ let state_has_fault_type st =
  * the presence of fault type implies that explicit
  * absent faults are also here (if some fault is
  * absent, of course).
+ * Notice that MMU fault types have been made even
+ * more precise by prefixing then with "D-" or "I-".
  *)
 let select_newer st1 st2 =
-  if st1 == st2 || state_has_fault_type st1 then st1
-  else if state_has_fault_type st2 then st2
+  if st1 == st2 then st1
   else
-    (* No state has fault types, select one with explicit absent faults *)
-    select_absent st1 st2
+    let ft1 = state_get_fault_type st1
+    and ft2 = state_get_fault_type st2 in
+    let open HashedFault in
+    match ft1,ft2 with
+    | (DIPrefix,_)
+    | (Other,No)
+      -> st1
+    | (_,DIPrefix)
+    | ((Other|No),Other)
+      -> st2
+    | No,No ->
+      (* No state has fault types, select one with explicit absent faults *)
+      select_absent st1 st2
 
 let rec do_diff_states sts1 sts2 sts2_retry do_retry = match sts1,sts2 with
 | [],_ -> []
