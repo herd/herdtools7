@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type relax (* Type of diy relaxations *)
+type relax (* Type of diy relaxations with predicates *)
 
 val pp_relax : relax -> string
 

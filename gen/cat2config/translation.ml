@@ -17,10 +17,13 @@
 module Log = (val Logs.src_log (Logs.Src.create "translation") : Logs.LOG)
 module UList = Util.List
 module A = AArch64Arch_gen.Make (AArch64Arch_gen.Config)
+
 module EdgeConfig = struct
   include Edge.Config
+
   let wildcard = true
 end
+
 module E = Edge.Make (EdgeConfig) (A : Fence.S) (A : Atom.S)
 module R = Relax.Make (A) (E)
 
@@ -85,11 +88,11 @@ let filter_by_sd (sd : Code.sd option) = function
   | { head = Macro name; _ } ->
       Warn.fatal "Macro %s must be unfolded before filter_by_sd" name
   | { head = Concrete _; _ } as tedge when Option.is_none sd -> [ tedge ]
-  | { head = Concrete edge; _ } as tedge ->
+  | { head = Concrete edge; _ } as tedge -> (
       let e_sd = get_sd edge in
       match sd with
       | None -> assert false
-      | Some sd -> if sd = e_sd then [ tedge ] else []
+      | Some sd -> if sd = e_sd then [ tedge ] else [])
 
 (* Keep macros in macro form unless Relax can parse them to a singleton edge.
    Communication macros receive their internal/external suffix directly, for
@@ -107,7 +110,8 @@ let filter_macro sd ie src tgt tedge name =
         match ie with
         | None -> name
         | Some ie -> Format.sprintf "%s%s" name (Code.pp_ie ie))
-    | name when Misc.is_prefix "Dp" name && (Option.is_some sd || tgt <> Code.Irr) ->
+    | name
+      when Misc.is_prefix "Dp" name && (Option.is_some sd || tgt <> Code.Irr) ->
         Format.sprintf "%s%s%s" name (pp_sd_option sd) (Code.pp_extr tgt)
     | "Po" when Option.is_some sd || src <> Code.Irr || tgt <> Code.Irr ->
         Format.sprintf "Po%s%s%s" (pp_sd_option sd) (Code.pp_extr src)
@@ -115,19 +119,22 @@ let filter_macro sd ie src tgt tedge name =
     | name when is_fence_macro name ->
         Format.sprintf "%s%s%s%s" name (pp_sd_option sd) (Code.pp_extr src)
           (Code.pp_extr tgt)
-    | _ -> name in
+    | _ -> name
+  in
   let head =
     match R.parse_expand_relaxs (Ast.One name) with
     | [] -> Warn.fatal "Macro %s expands to no relaxation" name
     | [ [ { E.edge; a1 = None; a2 = None } ] ] -> Concrete edge
-    | _ -> Macro name in
+    | _ -> Macro name
+  in
   [ { tedge with head } ]
 
 let filter_tedge sd ie src tgt tedge =
   let filter tedges =
     tedges
     |> List.concat_map (filter_by_sd sd)
-    |> List.concat_map (filter_by_ie ie) in
+    |> List.concat_map (filter_by_ie ie)
+  in
   match tedge with
   | { head = Concrete _; _ } -> filter [ tedge ]
   | { head = Macro name; _ } -> filter_macro sd ie src tgt tedge name
@@ -151,7 +158,12 @@ type partial_effect = {
   explicit_mem : bool;
 }
 
-type partial_edge = { tedges : tedge list option; ie : Code.ie option; sd : Code.sd option; }
+type partial_edge = {
+  tedges : tedge list option;
+  ie : Code.ie option;
+  sd : Code.sd option;
+}
+
 type prim_set = Ir.prim_set
 type prim_rel = Ir.prim_rel
 type seq_item = Ir.seq_item
@@ -159,8 +171,7 @@ type seq_item = Ir.seq_item
 let initial_effect : partial_effect =
   { extr = Code.Irr; atom = None; explicit_mem = false }
 
-let initial_edge : partial_edge =
-  { tedges = None; ie = None; sd = None }
+let initial_edge : partial_edge = { tedges = None; ie = None; sd = None }
 
 let apply_prim_set : partial_effect -> prim_set -> partial_effect option =
   let build_dir_eff eff d =
@@ -187,8 +198,7 @@ let apply_prim_set : partial_effect -> prim_set -> partial_effect option =
 let build_effect : partial_effect -> prim_set list -> partial_effect option =
   UList.fold_left_opt apply_prim_set
 
-let build_tedges : prim_rel -> tedge list =
-  function
+let build_tedges : prim_rel -> tedge list = function
   | Prim "po" -> [ mk_macro "Po" ]
   | Prim "fr" -> [ mk_macro "Fr" ]
   | Prim "co" -> [ mk_macro "Co" ]
@@ -207,12 +217,13 @@ let build_tedges : prim_rel -> tedge list =
 
 let apply_prim_rel (ed : partial_edge) (r : prim_rel) : partial_edge option =
   let tedges = build_tedges r in
-  if tedges <> [] && ed.tedges = None then
-    Some { ed with tedges = Some tedges }
+  if tedges <> [] && ed.tedges = None then Some { ed with tedges = Some tedges }
   else
     match r with
-    | Prim "loc" when ed.sd <> Some Code.Diff -> Some { ed with sd = Some Code.Same }
-    | Prim "ext" when ed.ie <> Some Code.Int -> Some { ed with ie = Some Code.Ext }
+    | Prim "loc" when ed.sd <> Some Code.Diff ->
+        Some { ed with sd = Some Code.Same }
+    | Prim "ext" when ed.ie <> Some Code.Int ->
+        Some { ed with ie = Some Code.Ext }
     | _ -> None
 
 let build_edge : partial_edge -> prim_rel list -> partial_edge option =
@@ -235,11 +246,16 @@ let implied_constraints (l : prim_rel list) :
        (fun (x, y, z) (x', y', z') -> (x @ x', y @ y', z @ z'))
        ([], [], [])
 
-type relax_edge = Concrete of E.edge | Macro of string
-type relax = Relax of relax_edge list
+type relax_item = Concrete of E.edge | Macro of string
+type relax = (string, relax_item) Ast.t
 
-let join_relax (Relax r1 : relax) (Relax r2 : relax) : relax =
-  Relax (List.append r1 r2)
+let concat_relax (relaxs : relax list) : relax =
+  let items =
+    List.concat_map
+      (function Ast.Seq items -> items | item -> [ item ])
+      relaxs
+  in
+  match items with [ item ] -> item | items -> Ast.Seq items
 
 let try_match_edge (left : prim_set list) (core : seq_item list)
     (right : prim_set list) : relax list option =
@@ -276,7 +292,9 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
      Set (Inter [ Fence (Some AArch64Base.ISB) ]);
      Rel (Inter [ Prim "po" ]);
     ] ->
-        let tedges = [ mk_macro_insert "DpCtrlCsel" (A.Barrier AArch64Base.ISB) ] in
+        let tedges =
+          [ mk_macro_insert "DpCtrlCsel" (A.Barrier AArch64Base.ISB) ]
+        in
         let pedge = { tedges = Some tedges; ie = Some Code.Int; sd = None } in
         Some ([], pedge, [])
     | [
@@ -299,13 +317,14 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
   let* _ = Util.Option.guard right.explicit_mem in
   let tedges =
     tedges
-    |> List.concat_map (filter_tedge pedge.sd pedge.ie left.extr right.extr) in
+    |> List.concat_map (filter_tedge pedge.sd pedge.ie left.extr right.extr)
+  in
   let pp_macro name =
     match (left.atom, right.atom) with
     | None, None -> name
     | a1, a2 ->
-        Format.sprintf "%s%s%s" name (E.pp_atom_option a1)
-          (E.pp_atom_option a2) in
+        Format.sprintf "%s%s%s" name (E.pp_atom_option a1) (E.pp_atom_option a2)
+  in
   let relaxs =
     tedges
     |> List.map (fun (tedge : tedge) ->
@@ -316,12 +335,14 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
               let edge = E.{ edge; a1 = left.atom; a2 = right.atom } in
               let edge = set_src left.extr edge in
               let edge = set_tgt right.extr edge in
-              [ Concrete edge ] in
+              [ Concrete edge ]
+        in
         let edges =
           match tedge.insert with
           | None -> edges
-          | Some insert -> edges @ [ Concrete (E.plain_edge (Insert insert)) ] in
-        Relax edges)
+          | Some insert -> edges @ [ Concrete (E.plain_edge (Insert insert)) ]
+        in
+        concat_relax (List.map (fun edge -> Ast.One edge) edges))
   in
   Some relaxs
 
@@ -364,7 +385,7 @@ let translate_seq (Seq l : seq_item Ir.seq) : relax list =
                     let open Util.List.Infix in
                     let* edge = edge_alts in
                     let* prev_edges = st.relaxs in
-                    [ join_relax prev_edges edge ]
+                    [ concat_relax [ prev_edges; edge ] ]
                   in
                   let left = st.right in
                   { relaxs; left; core = []; right = Inter [] }
@@ -376,7 +397,7 @@ let translate_seq (Seq l : seq_item Ir.seq) : relax list =
               else core @ [ Set st.right; Rel r ]
             in
             { st with core; right = Inter [] })
-      { relaxs = [ Relax [] ]; left = Inter []; core = []; right = Inter [] }
+      { relaxs = [ Ast.Seq [] ]; left = Inter []; core = []; right = Inter [] }
       l
   in
   if st.core = [] then st.relaxs else []
@@ -395,11 +416,8 @@ let translate ~binding (nf : Ir.rel_nf) : relax list =
   let relaxs = Util.List.uniq ~eq:( = ) relaxs in
   relaxs
 
-let pp_relax_edge = function
+let pp_relax_item = function
   | Concrete edge -> E.pp_edge edge
   | Macro name -> name
 
-let pp_relax : relax -> string = function
-  | Relax [ rlx ] -> pp_relax_edge rlx
-  | Relax rlxs ->
-      Format.sprintf "[%s]" (String.concat ", " (List.map pp_relax_edge rlxs))
+let pp_relax relax = Ast.pp Misc.identity pp_relax_item relax

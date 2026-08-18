@@ -5,9 +5,9 @@ aarch64.cat
   $ mcat2config7 --set-libdir ./libdir --let lrs libdir/aarch64.cat
   PosWR
   $ mcat2config7 --set-libdir ./libdir --let Exp-haz-ob libdir/aarch64.cat
-  [PosRR, Fre]
+  [PosRR,Fre]
   $ mcat2config7 --set-libdir ./libdir --let haz-ob libdir/aarch64.cat
-  [PosRR, Fre]
+  [PosRR,Fre]
   $ mcat2config7 --set-libdir ./libdir --let Exp-obs libdir/aarch64.cat
   Rfe
   Fre
@@ -18,51 +18,51 @@ aarch64hwreqs.cat
   DSB.LD*R*
   DSB.ST*W*
   $ mcat2config7 --set-libdir ./libdir --let IFB-ob libdir/aarch64.cat
-  [DpCtrl, ISB]
-  [DpCtrlCsel, ISB]
-  [DpAddr, ISB***]
-  [DpAddrCsel, ISB***]
-  [DSB.SY***, ISB]
-  [DSB.LD*R*, ISB]
-  [DSB.ST*W*, ISB]
+  [DpCtrl,ISB]
+  [DpCtrlCsel,ISB]
+  [DpAddr,ISB***]
+  [DpAddrCsel,ISB***]
+  [DSB.SY***,ISB]
+  [DSB.LD*R*,ISB]
+  [DSB.ST*W*,ISB]
   $ mcat2config7 --set-libdir ./libdir --let dob libdir/aarch64.cat
   DpAddr
   DpData*W
   DpCtrl*W
-  [DpAddr, Po**W]
-  [DpAddr*W, PosWR]
-  [DpData*W, PosWR]
+  [DpAddr,Po**W]
+  [DpAddr*W,PosWR]
+  [DpData*W,PosWR]
   $ mcat2config7 --set-libdir ./libdir --let pob libdir/aarch64.cat
   DpAddrCsel*W
   DpDataCsel
   DpCtrlCsel*W
-  [DpAddrCsel, Po**W]
+  [DpAddrCsel,Po**W]
   $ mcat2config7 --set-libdir ./libdir --let aob libdir/aarch64.cat
   LxSx
   Amo
-  [LxSx, PosWRPA]
-  [Amo, PosWRPA]
-  [LxSx, PosWRPA, AmoAP]
-  [Amo, PosWRPA, AmoAP]
-  [LxSx, PosWRPQ]
-  [Amo, PosWRPQ]
-  [LxSx, PosWRPQ, AmoQP]
-  [Amo, PosWRPQ, AmoQP]
+  [LxSx,PosWRPA]
+  [Amo,PosWRPA]
+  [LxSx,PosWRPA,AmoAP]
+  [Amo,PosWRPA,AmoAP]
+  [LxSx,PosWRPQ]
+  [Amo,PosWRPQ]
+  [LxSx,PosWRPQ,AmoQP]
+  [Amo,PosWRPQ,AmoQP]
   $ mcat2config7 --set-libdir ./libdir --let bob libdir/aarch64.cat
   DMB.SY***
   DMB.LD*R*
   DMB.ST*WW
-  [AmoAL, PoLP]
+  [AmoAL,PoLP]
   PoLA
-  [PoLA, AmoAP]
-  [AmoPL, PoLA]
-  [AmoPL, PoLA, AmoAP]
+  [PoLA,AmoAP]
+  [AmoPL,PoLA]
+  [AmoPL,PoLA,AmoAP]
   PoAP
-  [AmoAP, Po]
+  [AmoAP,Po]
   PoQP
-  [AmoQP, Po]
+  [AmoQP,Po]
   PoPL
-  [Po, AmoPL]
+  [Po,AmoPL]
 aarch64deps.cat
   $ mcat2config7 --set-libdir ./libdir --let lwfs libdir/aarch64.cat
   Pos*W
