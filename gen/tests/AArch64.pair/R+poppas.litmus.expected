@@ -1,0 +1,13 @@
+Test R+poppas Allowed
+States 4
+1:X3=0; 1:X4=0; y={1,2};
+1:X3=0; 1:X4=0; y={3,2};
+1:X3=1; 1:X4=0; y={1,2};
+1:X3=1; 1:X4=0; y={3,2};
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (y={3,2} /\ 1:X3=0 /\ 1:X4=0)
+Observation R+poppas Sometimes 1 3
+Hash=67e79ee2d3031c9b2b90d34b4a20584d
+

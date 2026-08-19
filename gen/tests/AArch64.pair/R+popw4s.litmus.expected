@@ -1,0 +1,10 @@
+Test R+popw4s Allowed
+States 1
+1:X2=0; y={2,1};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (y={2,1} /\ 1:X2=0)
+Observation R+popw4s Always 1 0
+Hash=b0d8a682333bfb5a9b1539818d45f62a
+

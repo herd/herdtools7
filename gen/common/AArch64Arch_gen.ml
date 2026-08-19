@@ -629,7 +629,11 @@ let is_tthm fields =
      let r = fold_atom_rw (fun rw -> f (Atomic rw)) r in
      r
 
-   let fold_non_mixed f r = fold_acc false (fun acc r -> f (acc,None) r) r
+   let fold_non_mixed f r =
+     let r = fold_acc false (fun acc r -> f (acc,None) r) r in
+     if do_mixed then r
+     (* Add an annotation to access the second cell of a pair. *)
+     else f (Plain None,Some (C.naturalsize,MachSize.nbytes C.naturalsize)) r
 
    let fold_atom f r =
      let r = fold_non_mixed f r in
@@ -805,6 +809,7 @@ let overwrite_value v ao w = match ao with
 
 (* Wide accesses *)
 
+   (* Return the number of cells required by size-access `atom`. *)
    let as_integers a =
      Misc.seq_opt
        (function
@@ -812,6 +817,9 @@ let overwrite_value v ao w = match ao with
                        | 1 -> None
                        | n -> Some n)
         | Pair _,_ -> Some 2
+        | (Plain _|Acq _|AcqPc _|Rel _|Atomic _),Some (_,o) ->
+            let n = o / MachSize.nbytes C.naturalsize + 1 in
+            if n > 1 then Some n else None
         | _ -> None)
        a
 

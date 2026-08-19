@@ -1,0 +1,11 @@
+Test R+popw4s Allowed
+States 2
+0:X4=0; 0:X5=1; 1:X2=0;
+0:X4=2; 0:X5=1; 1:X2=0;
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (0:X5=1 /\ 0:X4=2 /\ 1:X2=0)
+Observation R+popw4s Sometimes 1 1
+Hash=2fad29f797835608d73dd0176ae28be6
+

@@ -1,0 +1,11 @@
+Test R+poppa+popw4 Allowed
+States 2
+1:X3=0; y={1,2};
+1:X3=0; y={3,2};
+Ok
+Witnesses
+Positive: 1 Negative: 1
+Condition exists (y={3,2} /\ 1:X3=0)
+Observation R+poppa+popw4 Sometimes 1 1
+Hash=918138e1709e1a93b0a031becfa0fe9a
+

@@ -1,0 +1,13 @@
+Test R+poppa+pow4p Allowed
+States 4
+0:X5=1; 0:X6=2; 1:X3=0;
+0:X5=1; 0:X6=2; 1:X3=1;
+0:X5=1; 0:X6=3; 1:X3=0;
+0:X5=1; 0:X6=3; 1:X3=1;
+Ok
+Witnesses
+Positive: 1 Negative: 5
+Condition exists (0:X6=3 /\ 0:X5=1 /\ 1:X3=0)
+Observation R+poppa+pow4p Sometimes 1 5
+Hash=4515ab5f2187a0d69d2e7b7e5465d9fd
+

@@ -1,0 +1,13 @@
+Test R+popw4+popap Allowed
+States 4
+1:X4=0; y={2,1};
+1:X4=0; y={2,3};
+1:X4=1; y={2,1};
+1:X4=1; y={2,3};
+Ok
+Witnesses
+Positive: 1 Negative: 3
+Condition exists (y={2,3} /\ 1:X4=0)
+Observation R+popw4+popap Sometimes 1 3
+Hash=fd8176bd92a4a535b3cdbb401b119f6b
+
