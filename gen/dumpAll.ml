@@ -62,7 +62,7 @@ module Make(Config:Config)(T:Builder.S)
         if Config.canonical_only then
           let module Normer = Normaliser.Make(Config)(T.E) in
           fun cy ->
-            let ncy = Normer.normalise (T.E.resolve_edges cy) in
+            let ncy = Normer.normalise cy in
             if Config.verbose > 0 then
               eprintf "Changed %s -> %s\n"
                 (T.E.pp_edges cy)
@@ -166,51 +166,15 @@ module Make(Config:Config)(T:Builder.S)
           Buffer.clear buff ;
           r,sigs
 
-      let cycle_of_shift t k =
-        let sz = Array.length t in
-        assert(sz > 0) ;
-        let incr i = if i+1 >= sz then 0 else i+1 in
-        let rec do_rec i =
-          let es =
-            let j = incr i in
-            if j=k then [] else do_rec j in
-          t.(i)::es in
-        do_rec k
-
-      let find_min_shift t =
-
-        let sz = Array.length t in
-        assert (sz > 0) ;
-        let incr i = if i+1 >= sz then 0 else i+1 in
-
-        let rec c_rec k i1 i2 =
-          if k <= 0 then 0
-          else
-            let c = T.E.compare t.(i1) t.(i2) in
-            if c=0 then c_rec (k-1) (incr i1) (incr i2)
-            else c in
-
-        let rec find_rec k_min k =
-          if k >= sz then k_min
-          else if c_rec sz k k_min < 0 then find_rec k (k+1)
-          else find_rec k_min (k+1) in
-
-        find_rec 0 1
-
-      let comp_sig sigs es = match es with
-      | [] -> "",es,sigs
+      let have_seen sigs norm = match norm with
+      | [] -> false,sigs
       | _::_ ->
-          let t = Array.of_list es in
-          let k = find_min_shift t in
-          let s,sigs = sig_of_shift sigs t k in
-          s, cycle_of_shift t k,sigs
-
-      let have_seen sigs es =
-        let xxx,es,sigs = comp_sig sigs es in
-        if StringSet.mem xxx sigs.sig_set then
-          true,es,sigs
-        else
-          false,es,{ sigs with sig_set = StringSet.add xxx sigs.sig_set; }
+          let t = Array.of_list norm in
+          let xxx,sigs = sig_of_shift sigs t 0 in
+          if StringSet.mem xxx sigs.sig_set then
+            true,sigs
+          else
+            false,{ sigs with sig_set = StringSet.add xxx sigs.sig_set; }
 
 (******************)
 (* Internal state *)
@@ -227,8 +191,11 @@ module Make(Config:Config)(T:Builder.S)
 
       type check = edge list list -> bool
       type info = (string * string) list
-      type mk_info = edge list -> info * T.R.Set.t
-      let no_info _ = [],T.R.Set.empty
+      (* `mk_info` is part of the prepared-test stage and should stay pure:
+         it should only contain metadata derived earlier, not touch global
+         state, perform I/O, or depend on output ordering. *)
+      type mk_info = info * T.R.Set.t
+      let no_info = [],T.R.Set.empty
 
       type mk_name =  edge list -> string option
       let no_name _ = None
@@ -246,8 +213,8 @@ module Make(Config:Config)(T:Builder.S)
         let cys = List.rev_map T.E.parse_edges cys in
         List.fold_left
           (fun k es ->
-            let xxx,_,k = comp_sig k es in
-            { k with sig_set = StringSet.add xxx k.sig_set;} )
+            let _,k = have_seen k es in
+            k)
           empty_sig cys
 
       let empty_t =
@@ -267,13 +234,11 @@ module Make(Config:Config)(T:Builder.S)
 
 (* Compile & dump proper *)
 
-(* Test specification *)
-      type cycle =
+      type prepared =
           {
-           orig : T.E.edge list ;
-(* As given, for actually building the test & name. *)
-           norm : T.E.edge list;
-(* Normalized, for the cycle and info field. *)
+           es : T.E.edge list ;
+           relax_set : T.R.Set.t ;
+           t : T.test ;
          }
 
 (* Output test proper *)
@@ -294,11 +259,18 @@ module Make(Config:Config)(T:Builder.S)
 (*    printf "%s: %s\n" n (pp_edges cycle.orig) ; *)
         { res with ntests = res.ntests+1; }
 
-(* Dump from cycle, with specified scope tree *)
-      let dump_test_st keep_name
-          all_chan check init cycle info relaxed env n c mk_st res =
-        (* Build test (we need number of procs...) *)
-        let t = T.test_of_cycle n ~info ~check ~init cycle.orig c in
+      let build_test check es mk_info =
+        let es,c = T.C.resolve_edges es in
+        let c,init = T.C.finish c in
+        let cy = T.E.pp_edges es in
+        let info,relaxed = mk_info in
+        let info = Config.info@("Cycle",cy)::info in
+        let t = T.test_of_cycle "__tmp__" ~info ~check ~init es c in
+        { es; relax_set=relaxed; t; }
+
+(* Dump from prepared test, with specified scope tree *)
+      let dump_test_st keep_name all_chan generated_test env n mk_st res =
+        let t = generated_test.t in
         let st = mk_st (T.get_nprocs t) in
         let n =
           if keep_name then n
@@ -308,122 +280,101 @@ module Make(Config:Config)(T:Builder.S)
         let t = T.set_scope t st in
         let res =
           { res with
-            env; dup; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
+            env; dup; relaxed= T.R.SetSet.add generated_test.relax_set res.relaxed; } in
         do_dump_test all_chan t res
 
-      let dump_test all_chan check init cycle mk_info mk_name mk_scope c res =
-        let n,env = match mk_name cycle.orig with
+      let dump_test all_chan mk_name mk_scope generated_test res =
+        let es = generated_test.es in
+        let n,env = match mk_name es with
         | None ->
-            let fam = mk_base cycle.orig in
-            let n,env = global_mk_name res.env fam cycle.orig in
+            let fam = mk_base es in
+            let n,env = global_mk_name res.env fam es in
             n,env
         | Some n ->
             n,res.env in
-        let cy = T.E.pp_edges cycle.norm in
-        let info,relaxed = mk_info cycle.norm in
-        let info = Config.info@("Cycle",cy)::info in
 
         match Config.scope with
         | Scope.No ->
             let n,dup = dup_name res.dup n in
-            let t = T.test_of_cycle n ~info ~check ~init cycle.orig c in
+            let t = T.set_name generated_test.t n in
             let res =
               { res with
-                env; dup; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
+                env; dup; relaxed= T.R.SetSet.add generated_test.relax_set res.relaxed; } in
             do_dump_test all_chan t res
         | Scope.Default ->
             let keep_name,mk_st =
-              (match mk_scope cycle.orig with
+              (match mk_scope es with
               | None -> false,T.A.ScopeGen.default
               | Some st -> true,(fun _ -> st)) in
-            dump_test_st
-              keep_name all_chan check init
-              cycle info relaxed env n c mk_st res
+            dump_test_st keep_name all_chan generated_test env n mk_st res
         | Scope.One st ->
-            dump_test_st false all_chan check init cycle info relaxed env n c
+            dump_test_st false all_chan generated_test env n
               (fun _ -> st) res
         | Scope.Gen scs ->
-            let t =
-              T.test_of_cycle n ~info ~check ~init cycle.orig c in
             let res =
               { res with
-                env; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
-            T.A.ScopeGen.gen scs (T.get_nprocs t)
+                env; relaxed= T.R.SetSet.add generated_test.relax_set res.relaxed; } in
+            T.A.ScopeGen.gen scs (T.get_nprocs generated_test.t)
               (fun st res ->
                 let n = n ^ "+" ^ Namer.of_scope st in
                 let n,dup = dup_name res.dup n in
-                let t = T.set_name t n in
+                let t = T.set_name generated_test.t n in
                 let t = T.set_scope t st in
                 let res = { res with dup;} in
                 do_dump_test all_chan t res)
               res
         | Scope.All ->
-            let t =
-              T.test_of_cycle n ~info ~check ~init cycle.orig c in
             let res =
               { res with
-                env; relaxed= T.R.SetSet.add relaxed res.relaxed; } in
-            T.A.ScopeGen.all (T.get_nprocs t)
+                env; relaxed= T.R.SetSet.add generated_test.relax_set res.relaxed; } in
+            T.A.ScopeGen.all (T.get_nprocs generated_test.t)
               (fun st res ->
                 let n = n ^ "+" ^ Namer.of_scope st in
                 let n,dup = dup_name res.dup n in
-                let t = T.set_name t n in
+                let t = T.set_name generated_test.t n in
                 let t = T.set_scope t st in
                 let res = { res with dup;} in
                 do_dump_test all_chan t res)
               res
-(* Compose duplicate checker and dumper *)
-      let check_dump =
-        if Config.canonical_only then
-          fun all_chan check es mk_info mk_name mk_scope r  ->
-            let es,c = T.C.resolve_edges es in
-            let seen,nes,sigs = have_seen r.sigs es in
-            if seen then Warn.fatal "Duplicate" ;
-            let c,init = T.C.finish c in
-            dump_test all_chan check init { orig = es ; norm = nes }
-              mk_info mk_name mk_scope c { r with sigs = sigs; }
-        else
-          fun all_chan check es mk_info mk_name mk_scope r ->
-            let es,c = T.C.resolve_edges es in
-            let c,init = T.C.finish c in
-            dump_test all_chan check init { orig = es ; norm = es ; }
-              mk_info mk_name mk_scope c r
 
+      (* Duplication checks and dump the tests
+         `all_chan` is the shared @all output channel.
+         `check` is the last-minute cycle predicate.
+         `es` is the candidate edge list from the caller.
+         `mk_info`, `mk_name`, and `mk_scope` are caller-provided hooks.
+         `res` is the current dumper accumulator. *)
       let check_dump all_chan check es mk_info mk_name mk_scope res =
-        if Config.verbose > 0 then begin
-          eprintf "------------------------------------------------------\n" ;
-          eprintf "Cycle: %s\n" (T.E.pp_edges es) ;
-          let info,_ = mk_info es in
-          List.iter
-            (fun (tag,i) -> eprintf "%s: %s\n" tag i) info
-        end ;
         try
-          check_dump all_chan check es mk_info mk_name mk_scope res
-        with
-        | Misc.Fatal msg ->
-            if Config.verbose > 0 then begin
-              eprintf "Compilation failed: %s\n" msg
-            end ;
+          T.E.varatom es
+          |> List.fold_left
+            (fun res es ->
+              (* `T.E.resolve_edges` is the edge-level step: normalize the
+                 expanded edge list before logging and cycle construction. *)
+              let es = T.E.resolve_edges es |> normalise in
+              let res =
+                if Config.canonical_only then begin
+                  let seen,sigs = have_seen res.sigs es in
+                  if seen then Warn.fatal "Duplicate" ;
+                  { res with sigs }
+                end else res in
+              if Config.debug.Debug_gen.generator then begin
+                eprintf "------------------------------------------------------\n" ;
+                eprintf "Cycle: %s\n" (T.E.pp_edges es) ;
+              end;
+              let test = build_test check es mk_info in
+              dump_test all_chan mk_name mk_scope test res)
             res
+        with
+        (* `DupName` happens when the final emitted test name collides,
+           usually after scope/name decoration in the dump path. *)
         | DupName name ->
-            Warn.fatal
-              "Duplicate name %s"
-              name
-
-      let check_dump all_chan check es mk_info mk_name mk_scope res =
-        try
-          let es =
-            try normalise es
-            with Normaliser.CannotNormalise msg ->
-              Warn.fatal "Cannot normalise '%s'" msg in
-          T.E.varatom
-            es
-            (fun es res ->
-              if Config.debug.Debug_gen.generator then
-                eprintf "Atomic variation: %s\n" (T.E.pp_edges es) ;
-              check_dump all_chan check es mk_info mk_name mk_scope res)
-            res
-        with
+          if Config.verbose > 0 then
+            eprintf "Duplicate name: %s\n" name ;
+          res
+        | Normaliser.CannotNormalise msg ->
+          if Config.verbose > 0 then
+            eprintf "Cannot normalise error: %s\n" msg ;
+          res
         | Misc.Fatal msg|Misc.UserError msg ->
           if Config.verbose > 0 then
             eprintf "Fatal ignored: %s\n" msg ;
