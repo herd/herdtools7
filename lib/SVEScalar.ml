@@ -54,8 +54,8 @@ module BV = struct
     | Byte -> fun v -> Z.logand v mask8
     | Short -> fun v -> Z.logand v mask16
     | Word -> fun v ->  Z.logand v mask32
-    | Quad -> fun v -> logand v mask64
-    | S128 -> Misc.identity
+    | Double -> fun v -> logand v mask64
+    | Quad -> Misc.identity
 end
 
 module Translate = struct

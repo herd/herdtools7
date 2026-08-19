@@ -64,13 +64,13 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
       | I8b -> MachSize.Byte
       | I16b -> MachSize.Short
       | I32b | INSb -> MachSize.Word
-      | I64b -> MachSize.Quad
+      | I64b -> MachSize.Double
 
     let reg_part_to_mach_size = function
       | R8bL | R8bH ->  MachSize.Byte
       | R16b -> MachSize.Short
       | R32b -> MachSize.Word
-      | R64b -> MachSize.Quad
+      | R64b -> MachSize.Double
 
     let reg_to_mach_size r = match r with
       | Ireg (_,p) -> reg_part_to_mach_size p

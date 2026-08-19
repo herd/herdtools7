@@ -279,7 +279,7 @@ let tr_width = function
   | Byte -> MachSize.Byte
   | Half -> MachSize.Short
   | Word -> MachSize.Word
-  | Double -> MachSize.Quad
+  | Double -> MachSize.Double
 
 let pp_width = function
   | Byte -> "b"

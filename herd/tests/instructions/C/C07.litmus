@@ -1,6 +1,6 @@
 C C07
 
-Variant=S128
+Variant=Quad
 {}
 
 P0 (int128_t *x) {
