@@ -774,3 +774,36 @@ If test environment reversion bug
   ASL Grammar error: Obsolete syntax:
     Deprecated slice syntax, use "3*2 +: 2" instead.
   [1]
+
+Static errors:
+  $ aslref --no-exec static-unreachable.asl
+  File static-unreachable.asl, line 3, characters 2 to 14:
+    unreachable;
+    ^^^^^^^^^^^^
+  ASL Static error: unreachable reached.
+  [1]
+  $ aslref --no-exec static-assertion.asl
+  File static-assertion.asl, line 3, characters 9 to 14:
+    assert FALSE;
+           ^^^^^
+  ASL Static error: Assertion failed: FALSE.
+  [1]
+  $ aslref --no-exec static-looplimit.asl
+  File static-looplimit.asl, line 3, character 2 to line 5, character 6:
+    for i = 0 to 0 looplimit 0 do
+      pass;
+    end;
+  ASL Static error: loop limit reached.
+  [1]
+  $ aslref --no-exec static-negative-array-length.asl
+  File static-negative-array-length.asl, line 3, characters 19 to 21:
+    var arr : array[[-1]] of integer;
+                     ^^
+  ASL Static error: array length expression -1 has negative length: -1.
+  [1]
+  $ aslref --no-exec static-bad-primitive.asl
+  File static-bad-primitive.asl, line 7, characters 13 to 33:
+  constant y = 2 as integer{foo(2)};
+               ^^^^^^^^^^^^^^^^^^^^
+  ASL Static error: FloorLog2 (primitive) expected an argument greater than 0
+  [1]

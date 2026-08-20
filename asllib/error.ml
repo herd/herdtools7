@@ -49,7 +49,7 @@ type error_desc =
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
   | ConflictingTypes of type_desc list * ty
-  | AssertionFailed of expr
+  | AssertionFailed of error_handling_time * expr
   | CannotParse of string option
   | UnknownSymbol of string
   | NoCallCandidate of string * ty list
@@ -81,8 +81,8 @@ type error_desc =
   | NonReturningFunction of identifier
   | NoreturnViolation of identifier
   | ConflictingSideEffects of SideEffect.t * SideEffect.t
-  | UnreachableReached
-  | LoopLimitReached
+  | UnreachableReached of error_handling_time
+  | LoopLimitReached of error_handling_time
   | RecursionLimitReached of error_handling_time
   | EmptyConstraints
   | UnexpectedPendingConstrained
@@ -98,13 +98,13 @@ type error_desc =
   | MultipleWrites of identifier
   | UnexpectedInitialisationThrow of
       ty * identifier (* Exception type and global storage element name. *)
-  | NegativeArrayLength of expr * int
+  | NegativeArrayLength of error_handling_time * expr * int
   | MultipleImplementations of func annotated * func annotated
   | NoOverrideCandidate
   | TooManyOverrideCandidates of func annotated list
   | PrecisionLostDefining
   | UnexpectedCollection
-  | BadPrimitiveArgument of identifier * string
+  | BadPrimitiveArgument of error_handling_time * identifier * string
   | NoEntryPoint
   | ObsoleteSyntax of (Format.formatter -> unit)
 
@@ -336,7 +336,10 @@ module PPrint = struct
         pp_err typing "%a does@ not@ subtype@ any@ of:@ %a." pp_ty provided
           (pp_comma_list pp_type_desc)
           expected
-    | AssertionFailed e -> pp_err dynamic "Assertion failed:@ %a." pp_expr e
+    | AssertionFailed (t, e) ->
+        pp_err
+          (error_handling_time_to_string t)
+          "Assertion failed:@ %a." pp_expr e
     | CannotParse s -> (
         match s with
         | None -> pp_err parse "Cannot parse."
@@ -432,7 +435,8 @@ module PPrint = struct
     | BadPattern (p, t) ->
         pp_err typing "Erroneous@ pattern@ %a@ for@ expression@ of@ type@ %a."
           pp_pattern p pp_ty t
-    | UnreachableReached -> pp_err dynamic "unreachable reached."
+    | UnreachableReached t ->
+        pp_err (error_handling_time_to_string t) "unreachable reached."
     | NonReturningFunction name ->
         pp_err typing "not all control flow paths of the function %S@ %a." name
           pp_print_text
@@ -443,7 +447,8 @@ module PPrint = struct
           "is qualified with noreturn but may return on some control flow path"
     | RecursionLimitReached t ->
         pp_err (error_handling_time_to_string t) "recursion limit reached."
-    | LoopLimitReached -> pp_err dynamic "loop limit reached."
+    | LoopLimitReached t ->
+        pp_err (error_handling_time_to_string t) "loop limit reached."
     | ConflictingSideEffects (s1, s2) ->
         pp_err typing "conflicting side effects %a and %a" SideEffect.pp_print
           s1 SideEffect.pp_print s2
@@ -485,9 +490,10 @@ module PPrint = struct
         pp_err typing
           "type@ used@ to@ define@ storage@ item@ is@ the@ result@ of@ \
            precision@ loss."
-    | NegativeArrayLength (e_length, length) ->
-        pp_err dynamic
-          "array@ length@ expression@ %a@ has@ negative@ length@a: %i." pp_expr
+    | NegativeArrayLength (t, e_length, length) ->
+        pp_err
+          (error_handling_time_to_string t)
+          "array@ length@ expression@ %a@ has@ negative@ length:@ %i." pp_expr
           e_length length
     | MultipleWrites id -> pp_err parse "multiple@ writes@ to@ %S." id
     | MultipleImplementations (impl1, impl2) ->
@@ -501,8 +507,10 @@ module PPrint = struct
         pp_err typing
           "multiple@ `impdef`@ candidates@ for@ `implementation`:@ %a"
           (pp_print_list pp_pos) impdefs
-    | BadPrimitiveArgument (name, reason) ->
-        pp_err dynamic "%s (primitive) expected an argument %s" name reason
+    | BadPrimitiveArgument (t, name, reason) ->
+        pp_err
+          (error_handling_time_to_string t)
+          "%s (primitive) expected an argument %s" name reason
     | NoEntryPoint ->
         pp_err dynamic "%a" pp_print_text
           "no entrypoint supplied. Have you defined `func main() => integer`, \
@@ -620,8 +628,8 @@ module CSV = struct
     | SetterWithoutCorrespondingGetter _ -> "SetterWithoutCorrespondingGetter"
     | NonReturningFunction _ -> "NonReturningFunction"
     | NoreturnViolation _ -> "NoreturnViolation"
-    | UnreachableReached -> "UnreachableReached"
-    | LoopLimitReached -> "LoopLimitReached"
+    | UnreachableReached _ -> "UnreachableReached"
+    | LoopLimitReached _ -> "LoopLimitReached"
     | RecursionLimitReached _ -> "RecursionLimitReached"
     | EmptyConstraints -> "EmptyConstraints"
     | UnexpectedPendingConstrained -> "UnexpectedPendingConstrained"
