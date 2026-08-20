@@ -3,6 +3,7 @@
 
 (executable
  (name asltest)
+ (optional)
  (libraries yaml yojson jsonschema))
 
 (subdir

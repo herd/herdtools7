@@ -42,12 +42,14 @@ let generate_rules actual_stems base =
     {|
 (rule
   (deps ../tests/%s.asl ../tests/%s.yaml ../schema.yaml)
+  (enabled_if (and %%{lib-available:yaml} %%{lib-available:yojson} %%{lib-available:jsonschema}))
   (action
   (with-stdout-to ./%s.yaml.actual
     (run ../asltest.exe --base ../tests/%s))))
 
 (rule
   (alias runtest)
+  (enabled_if (and %%{lib-available:yaml} %%{lib-available:yojson} %%{lib-available:jsonschema}))
   (action
   (diff ../tests/%s.yaml %s.yaml.actual)))
 |}
