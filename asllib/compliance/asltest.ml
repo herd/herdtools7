@@ -93,12 +93,50 @@ let yaml_value_to_testcase ~base (yaml : Yaml.value) =
       { mode; outcome; output; error_code; error_line; info }
   | _ -> fatal ~base "expected top-level YAML object"
 
+module Validate = struct
+  let rec yaml_to_json ~base (yaml : Yaml.value) : Yojson.Basic.t =
+    match yaml with
+    | `Null -> `Null
+    | `Bool b -> `Bool b
+    | `Float f -> `Float f
+    | `String s -> `String s
+    | `A values -> `List (List.map (yaml_to_json ~base) values)
+    | `O map ->
+        let json_map = List.map (fun (k, v) -> (k, yaml_to_json ~base v)) map in
+        `Assoc json_map
+
+  let check_yaml ~base (yaml : Yaml.value) =
+    let schema_json =
+      let schema = "../schema.json" in
+      try Yojson.Basic.from_file schema
+      with Sys_error message | Yojson.Json_error message ->
+        fatal ~base (Printf.sprintf "failed to load schema:\n%s" message)
+    in
+    let validator =
+      match
+        Jsonschema.create_validator_from_json ~draft:Jsonschema.Draft2020_12
+          ~schema:schema_json ()
+      with
+      | Ok validator -> validator
+      | Error err ->
+          let msg = Format.asprintf "%a" Jsonschema.pp_compile_error err in
+          fatal ~base (Printf.sprintf "failed to compile schema:\n%s" msg)
+    in
+    let json = yaml_to_json ~base yaml in
+    match Jsonschema.validate validator json with
+    | Ok () -> Printf.printf "validated!\n"
+    | Error err ->
+        let msg = Format.asprintf "%a" Jsonschema.pp_validation_error err in
+        fatal ~base (Printf.sprintf "schema validation failed:\n%s" msg)
+end
+
 let read_testcase_from_file ~base =
   let yaml_value =
     match read_file (base ^ ".yaml") |> Yaml.of_string with
     | Ok y -> y
     | Error (`Msg s) -> fatal ~base s
   in
+  Validate.check_yaml ~base yaml_value;
   yaml_value_to_testcase ~base yaml_value
 
 let test_case_to_yaml testcase : Yaml.yaml =
