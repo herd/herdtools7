@@ -53,7 +53,7 @@ ASL Typing Tests:
       var o  = if ARBITRARY : boolean then arr1 else ex;
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error: cannot find a common ancestor to those two types
-    array [[8]] of Word1 and Exc.
+    array [[8]] of Word1 and exception { i: integer }.
   [1]
   $ aslref --no-exec TypingRule.LowestCommonAncestor2.asl
   $ aslref TypingRule.ApplyUnopType.asl

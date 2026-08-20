@@ -80,7 +80,7 @@ val type_clashes : env -> ty -> ty -> bool
 val subprogram_clashes : env -> func -> func -> bool
 (** Subprogram clashing relation. *)
 
-val lowest_common_ancestor : loc:_ t_annotated -> env -> ty -> ty -> ty option
+val lowest_common_ancestor : loc:_ t_annotated -> env -> ty -> ty -> ty
 (** Lowest common ancestor. *)
 
 val type_equal : env -> ty -> ty -> bool
