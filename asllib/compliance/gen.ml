@@ -41,7 +41,7 @@ let generate_rules actual_stems base =
   Printf.printf
     {|
 (rule
-  (deps ../tests/%s.asl ../tests/%s.yaml ../schema.json)
+  (deps ../tests/%s.asl ../tests/%s.yaml ../schema.yaml)
   (action
   (with-stdout-to ./%s.yaml.actual
     (run ../asltest.exe --base ../tests/%s))))

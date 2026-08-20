@@ -107,10 +107,13 @@ module Validate = struct
 
   let check_yaml ~base (yaml : Yaml.value) =
     let schema_json =
-      let schema = "../schema.json" in
-      try Yojson.Basic.from_file schema
-      with Sys_error message | Yojson.Json_error message ->
-        fatal ~base (Printf.sprintf "failed to load schema:\n%s" message)
+      let schema = "../schema.yaml" in
+      let schema_yaml =
+        match read_file schema |> Yaml.of_string with
+        | Ok y -> y
+        | Error (`Msg s) -> fatal ~base s
+      in
+      yaml_to_json ~base schema_yaml
     in
     let validator =
       match
