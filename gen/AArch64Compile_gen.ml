@@ -1313,19 +1313,20 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let get_xload_addon atom r1 = match atom with
       | (OrdinaryAccess (`Plain|`Acquire)
-        |MixedSizeAccess ((`Plain|`Acquire),_)) ->
-          emit_ldr_addon false r1
-      | MorelloAccess (`Plain|`Acquire) ->
-          emit_ldr_addon true r1
+        |MixedSizeAccess ((`Plain|`Acquire),_)
+        |MorelloAccess (`Plain|`Acquire)) as atom ->
+          emit_ldr_addon (is_morello_access atom) r1
       | _ -> []
 
     let get_xload = function
       | OrdinaryAccess `Plain -> ldxr
-      | MorelloAccess `Plain -> ldxr_sz XX MachSize.S128
-      | MixedSizeAccess (`Plain,(sz,_)) -> ldxr_sz XX sz
+      | (MorelloAccess `Plain|MixedSizeAccess (`Plain,_)) as atom ->
+          let sz,_ = get_access_size atom in
+          ldxr_sz XX sz
       | OrdinaryAccess `Acquire -> ldaxr
-      | MorelloAccess `Acquire -> ldxr_sz AX MachSize.S128
-      | MixedSizeAccess (`Acquire,(sz,_)) -> ldxr_sz AX sz
+      | (MorelloAccess `Acquire|MixedSizeAccess (`Acquire,_)) as atom ->
+          let sz,_ = get_access_size atom in
+          ldxr_sz AX sz
       | (OrdinaryAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
         |MorelloAccess `AcquirePC) -> Warn.fatal "AcqPC annotation on xload"
       | (MemoryTagAccess|MorelloTagAccess|MorelloSealAccess) -> Warn.fatal "variant annotation on xload"
@@ -1334,20 +1335,21 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     and get_xstore = function
       | OrdinaryAccess `Plain -> stxr
-      | MorelloAccess `Plain -> stxr_sz YY MachSize.S128
-      | MixedSizeAccess (`Plain,(sz,_)) -> stxr_sz YY sz
+      | (MorelloAccess `Plain|MixedSizeAccess (`Plain,_)) as atom ->
+          let sz,_ = get_access_size atom in
+          stxr_sz YY sz
       | OrdinaryAccess `Release -> stlxr
-      | MorelloAccess `Release -> stxr_sz LY MachSize.S128
-      | MixedSizeAccess (`Release,(sz,_)) -> stxr_sz LY sz
+      | (MorelloAccess `Release|MixedSizeAccess (`Release,_)) as atom ->
+          let sz,_ = get_access_size atom in
+          stxr_sz LY sz
       | (MemoryTagAccess|MorelloTagAccess|MorelloSealAccess) -> Warn.fatal "variant annotation on xstore"
       | atom -> Warn.fatal "Bad annotation for Sx: %s\n" (pp atom)
 
     let get_xstore_addon atom r2 r3 e init st p = match atom with
       | (OrdinaryAccess (`Plain|`Release)
-        |MixedSizeAccess ((`Plain|`Release),_)) ->
-          emit_str_addon st p init r2 r3 false e
-      | MorelloAccess (`Plain|`Release) ->
-          emit_str_addon st p init r2 r3 true e
+        |MixedSizeAccess ((`Plain|`Release),_)
+        |MorelloAccess (`Plain|`Release)) as atom ->
+          emit_str_addon st p init r2 r3 (is_morello_access atom) e
       | _ -> init,[],st
 
     let get_rmw_addrs (ar,aw) st rA =
@@ -2306,17 +2308,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 
 (* Dependencies *)
-    let calc0  =
-      if Cfg.realdep then
-        fun vdep dst src -> andi vdep dst src 128
-      else
-        fun vdep dst src -> eor vdep dst src src
+    let calc0 vdep dst src =
+      if Cfg.realdep then andi vdep dst src 128
+      else eor vdep dst src src
 
-    let calc0_gen csel st vdep = match csel with
-      | NoCsel -> fun src dst -> [calc0 vdep src dst],st
-      | OkCsel ->
-         fun dst src ->
-           [do_cmp vdep src src; do_csel vdep dst ZR ZR;],st
+    let calc0_gen csel st vdep dst src = match csel with
+      | NoCsel -> [calc0 vdep dst src],st
+      | OkCsel -> [do_cmp vdep src src; do_csel vdep dst ZR ZR;],st
 
     let emit_access_dep_addr csel vdep st p init e rd =
       let r2,st = next_reg st in
@@ -2653,20 +2651,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 let rA,init,st = U.next_init st p init (add_tag structured_atom loc (Value.to_int e.C.v)) in
                 let rB,cB,st = sum_addr st rA r2 in
                 rB,pseudo (cs0@cB),init,st,[]
-            | Some (MixedSizeAccess (`Plain,(sz,_))
-              |MixedSizeAccess (`Release,(sz,_))
-              |Atomic (_,AtomicSize (sz,_))) ->
+            | Some ((MixedSizeAccess (`Plain,_)
+              |MixedSizeAccess (`Release,_)
+              |Atomic (_,AtomicSize _)
+              |MorelloAccess `Plain|MorelloAccess `Release) as atom) ->
+                let sz,_ = get_access_size atom in
                 let cs0,st = calc0_gen csel st vdep r2 r1 in
                 let rA,init,csA,st = emit_mov_sz sz st p init (Value.to_int e.C.v) in
                 let cs2 = pseudo cs0 in
                 let addi = [add (sz2v sz) r2 r2 rA] in
-                r2,csA@cs2,init,st,addi
-            | Some (MorelloAccess `Plain|MorelloAccess `Release) ->
-                let cs0,st = calc0_gen csel st vdep r2 r1 in
-                let rA,init,csA,st =
-                  emit_mov_sz MachSize.S128 st p init (Value.to_int e.C.v) in
-                let cs2 = pseudo cs0 in
-                let addi = [add A64.V128 r2 r2 rA] in
                 r2,csA@cs2,init,st,addi
             | Some MorelloSealAccess ->
                 let cs0,st = calc0_gen csel st vdep r2 r1 in
