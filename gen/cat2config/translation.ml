@@ -220,7 +220,7 @@ let apply_prim_rel (ed : partial_edge) (r : prim_rel) : partial_edge option =
   if tedges <> [] && ed.tedges = None then Some { ed with tedges = Some tedges }
   else
     match r with
-    | Prim "loc" when ed.sd <> Some Code.Diff ->
+    | Prim ("loc" | "same-loc") when ed.sd <> Some Code.Diff ->
         Some { ed with sd = Some Code.Same }
     | Prim "ext" when ed.ie <> Some Code.Int ->
         Some { ed with ie = Some Code.Ext }
