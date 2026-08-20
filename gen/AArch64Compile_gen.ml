@@ -1802,16 +1802,17 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               (pp_dir d) (C.debug_evt e)
         end
     | Some d,Data loc ->
-        let loc = add_tag structured_atom loc e.C.tag in
+        let structured_atom = tr_none structured_atom in
+        let loc = add_tag (Some structured_atom) loc e.C.tag in
         let ordinary_access = match d,structured_atom with
-        | R,None ->
+        | R,OrdinaryAccess `Plain ->
             let r,init,cs,st = LDR.emit_load st p init loc in
             Some (Some r,init,cs,st)
-        | R,Some (OrdinaryAccess `Acquire) ->
+        | R,OrdinaryAccess `Acquire ->
             let r,init,cs,st = LDAR.emit_load st p init loc in
             Some (Some r,init,cs,st)
-        | R,Some (MorelloAccess `Acquire as atom)
-        | R,Some (MixedSizeAccess (`Acquire,_) as atom) ->
+        | R,(MorelloAccess `Acquire as atom)
+        | R,(MixedSizeAccess (`Acquire,_) as atom) ->
             let sz,o = get_access_size atom in
             let module L =
               LOAD
@@ -1825,11 +1826,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let r,init,cs,st = L.emit_load st p init loc in
             let cs2 = emit_ldr_addon (is_morello_access atom) r in
             Some (Some r,init,cs@pseudo cs2,st)
-        | R,Some (OrdinaryAccess `AcquirePC) ->
+        | R,OrdinaryAccess `AcquirePC ->
             let r,init,cs,st = LDAPR.emit_load st p init loc in
             Some (Some r,init,cs,st)
-        | R,Some (MorelloAccess `AcquirePC as atom)
-        | R,Some (MixedSizeAccess (`AcquirePC,_) as atom) ->
+        | R,(MorelloAccess `AcquirePC as atom)
+        | R,(MixedSizeAccess (`AcquirePC,_) as atom) ->
             let sz,o = get_access_size atom in
             let module L =
               LOAD
@@ -1843,28 +1844,28 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let r,init,cs,st = L.emit_load st p init loc in
             let cs2 = emit_ldr_addon (is_morello_access atom) r in
             Some (Some r,init,cs@pseudo cs2,st)
-        | R,Some (Atomic (rw,AtomicOrdinary)) ->
+        | R,Atomic (rw,AtomicOrdinary) ->
             let r,init,cs,st = emit_lda (tr_rw rw) st p init loc in
             Some (Some r,init,cs,st)
-        | R,Some (Atomic (rw,AtomicSize (sz,o))) ->
+        | R,Atomic (rw,AtomicSize (sz,o)) ->
             let r,init,cs,st = emit_lda_mixed sz o rw st p init loc in
             Some (Some r,init,cs,st)
-        | R,Some (MorelloAccess `Plain as atom)
-        | R,Some (MixedSizeAccess (`Plain,_) as atom) ->
+        | R,(MorelloAccess `Plain as atom)
+        | R,(MixedSizeAccess (`Plain,_) as atom) ->
             let sz,o = get_access_size atom in
             let r,init,cs,st = emit_load_mixed sz o st p init loc in
             let cs2 = emit_ldr_addon (is_morello_access atom) r in
             Some (Some r,init,cs@pseudo cs2,st)
-        | R,Some MemoryTagAccess ->
+        | R,MemoryTagAccess ->
             let r,init,cs,st = LDG.emit_load st p init loc in
             Some (Some r,init,cs,st)
-        | R,Some MorelloTagAccess ->
+        | R,MorelloTagAccess ->
             let r,init,cs,st = LDCT.emit_load st p init loc in
             Some (Some r,init,cs,st)
-        | R,Some MorelloSealAccess ->
+        | R,MorelloSealAccess ->
             let r,init,cs,st = emit_load_mixed MachSize.S128 0 st p init loc in
             Some (Some r,init,cs@lift_code [gctype r r],st)
-        | R,Some (NeonAccess n) ->
+        | R,NeonAccess n ->
            let emit_load = match n with
              | SIMD.NeRel -> Warn.fatal "No laod release"
              | SIMD.NeAcqPc -> LDAPUR.emit_load
@@ -1878,32 +1879,32 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
            in
            let r,init,cs,st = emit_load st p init loc in
             Some (Some r,init,cs,st)
-        | R,Some (PairAccess opt) ->
+        | R,PairAccess opt ->
             let r,init,cs,st = emit_ldp (pair_opt_to_ld opt) st p init loc in
             Some (Some r,init,cs,st)
-        | W,None ->
+        | W,OrdinaryAccess `Plain ->
             let init,cs,st =
               STR.emit_store st p init loc (Value.to_int e.C.v) false C.evt_null in
             Some (None,init,cs,st)
-        | W,Some (OrdinaryAccess `Release) ->
+        | W,OrdinaryAccess `Release ->
             let init,cs,st =
               STLR.emit_store st p init loc (Value.to_int e.C.v) false C.evt_null in
             Some (None,init,cs,st)
-        | W,Some (Atomic (rw,AtomicOrdinary)) ->
+        | W,Atomic (rw,AtomicOrdinary) ->
             let r,init,cs,st = emit_sta (tr_rw rw) st p init loc (Value.to_int e.C.v) in
             Some (Some r,init,cs,st)
-        | W,Some (Atomic (rw,AtomicSize (sz,o))) ->
+        | W,Atomic (rw,AtomicSize (sz,o)) ->
             let r,init,cs,st = emit_sta_mixed sz o rw st p init loc (Value.to_int e.C.v) in
             Some (Some r,init,cs,st)
-        | W,Some (MorelloAccess `Plain as atom)
-        | W,Some (MixedSizeAccess (`Plain,_) as atom) ->
+        | W,(MorelloAccess `Plain as atom)
+        | W,(MixedSizeAccess (`Plain,_) as atom) ->
             let sz,o = get_access_size atom in
             let is_morello = is_morello_access atom in
             let init,cs,st =
               emit_store_mixed sz o st p init loc (Value.to_int e.C.v) is_morello e in
             Some (None,init,cs,st)
-        | W,Some (MorelloAccess `Release as atom)
-        | W,Some (MixedSizeAccess (`Release,_) as atom) ->
+        | W,(MorelloAccess `Release as atom)
+        | W,(MixedSizeAccess (`Release,_) as atom) ->
             let sz,o = get_access_size atom in
             let is_morello = is_morello_access atom in
             let module S =
@@ -1920,15 +1921,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 end) in
             let init,cs,st = S.emit_store st p init loc (Value.to_int e.C.v) is_morello e in
             Some (None,init,cs,st)
-        | W,Some MemoryTagAccess ->
+        | W,MemoryTagAccess ->
             let init,cs,st = STG.emit_store st p init e in
             Some (None,init,cs,st)
-        | W,Some (PairAccess opt) ->
+        | W,PairAccess opt ->
             let init,cs,st = emit_stp (pair_opt_to_st opt) st p init loc e in
             Some (None,init,cs,st)
-        | (R|W),Some InstrAccess ->
+        | (R|W),InstrAccess ->
             Warn.fatal "Instr annotation did not create code location %s" (C.debug_evt e)
-        | R,Some (PteAccess (Read order)) ->
+        | R,PteAccess (Read order) ->
             let emit = match order with
             | `Plain -> LDR.emit_load_var
             | `Acquire -> LDAR.emit_load_var
@@ -1936,56 +1937,56 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let r,init,cs,st = emit A64.V64 st p init (Misc.add_pte loc) in
             Some (Some r,init,cs,st)
         (* A special case for TTHM HA on read. *)
-        | R,Some (PteAccess (ReadHA `Plain)) ->
+        | R,PteAccess (ReadHA `Plain) ->
             let r,init,cs,st = LDR.emit_load st p init loc in
             Some (Some r,init,cs,st)
-        | R,Some (PteAccess (Set (`Plain,pte)))
+        | R,PteAccess (Set (`Plain,pte))
           when WPTESet.mem HA pte ->
             let r,init,cs,st = LDR.emit_load st p init loc in
             Some (Some r,init,cs,st)
-        | R,Some (PteAccess (ReadHA `Acquire)) ->
+        | R,PteAccess (ReadHA `Acquire) ->
             let r,init,cs,st = LDAR.emit_load st p init loc in
             Some (Some r,init,cs,st)
-        | R,Some (PteAccess (ReadHA `AcquirePC)) ->
+        | R,PteAccess (ReadHA `AcquirePC) ->
             let r,init,cs,st = LDAPR.emit_load st p init loc in
             Some (Some r,init,cs,st)
-        | R,Some (PteAccess (Set (`Plain,pte)))
+        | R,PteAccess (Set (`Plain,pte))
           when WPTESet.mem HA pte ->
             let r,init,cs,st = LDR.emit_load st p init loc in
             Some (Some r,init,cs,st)
         (* Special cases for TTHM.
            - `HA` is on both read and write
            - `HD` is only on write *)
-        | W,Some (PteAccess (Set (`Plain,pte)))
+        | W,PteAccess (Set (`Plain,pte))
           when StructuredAtom.is_tthm pte ->
             let init,cs,st =
               STR.emit_store st p init loc (Value.to_int e.C.v) false C.evt_null in
             Some (None,init,cs,st)
-        | W,Some (PteAccess (Set (`Release,pte)))
+        | W,PteAccess (Set (`Release,pte))
           when StructuredAtom.is_tthm pte ->
             let init,cs,st =
               STLR.emit_store st p init loc (Value.to_int e.C.v) false C.evt_null in
             Some (None,init,cs,st)
         (* END special cases for TTHM. *)
-        | W,Some (PteAccess (Set (`Plain,_))) ->
+        | W,PteAccess (Set (`Plain,_)) ->
             let init,cs,st =
               emit_set_pteval false st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
             Some (None,init,cs,st)
-        | W,Some (PteAccess (Set (`Release,_))) ->
+        | W,PteAccess (Set (`Release,_)) ->
             let init,cs,st =
               emit_set_pteval true st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
             Some (None,init,cs,st)
-        | W,Some MorelloTagAccess ->
+        | W,MorelloTagAccess ->
             let init,cs,st = STCT.emit_store st p init loc (Value.to_int e.C.v) in
             Some (None,init,cs,st)
-        | W,Some MorelloSealAccess ->
+        | W,MorelloSealAccess ->
             let rA,init,st = U.next_init st p init loc in
             let rB,init,csi,st = U.emit_mov st p init e.C.ord in
             let init,cs,st =
               emit_str_addon
                 st p init rB rA true {e with C.cseal = (Value.to_int e.C.v)} in
             Some (None,init,csi@cs@lift_code [str_mixed MachSize.S128 0 rB rA],st)
-        | W,Some (NeonAccess n) ->
+        | W,NeonAccess n ->
            let emit_store = match n with
              | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
              | SIMD.NeRel -> STLUR.emit_store
@@ -2009,18 +2010,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let regs,inits,cs,st = match ordinary_access with
         | Some result -> result
         | None -> begin match d,structured_atom with
-        | R,None -> Warn.fatal "Cannot compile plain load"
-        | R,Some (OrdinaryAccess `Release|MixedSizeAccess (`Release,_)
+        | R,(OrdinaryAccess `Release|MixedSizeAccess (`Release,_)
           |MorelloAccess `Release) ->
             Warn.fatal "No load release"
-        | W,Some (OrdinaryAccess `Acquire|MixedSizeAccess (`Acquire,_)
+        | W,(OrdinaryAccess `Acquire|MixedSizeAccess (`Acquire,_)
           |MorelloAccess `Acquire) ->
             Warn.fatal "No store acquire"
-        | W,Some (OrdinaryAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
+        | W,(OrdinaryAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
           |MorelloAccess `AcquirePC) ->
             Warn.fatal "No store acquirePc"
-        | d,Some atom -> fatal_annotation d atom
-        | W,None -> Warn.fatal "Cannot compile plain store"
+        | d,atom -> fatal_annotation d atom
         end in
         (* Add a label to instructions `cs`, when a fault check is required. *)
         let cs = add_label_to_last_instructions e cs in
@@ -2334,19 +2333,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       match e.C.dir,e.C.loc with
       | None,_ -> Warn.fatal "TODO"
       | Some d,Data loc ->
-          let structured_atom = e.C.atom in
-          let loc = add_tag structured_atom loc e.C.tag in
+          let structured_atom = tr_none e.C.atom in
+          let loc = add_tag (Some structured_atom) loc e.C.tag in
           let ordinary_access = match d,structured_atom with
-          | R,None ->
+          | R,OrdinaryAccess `Plain ->
               let r,init,cs,st =
                 LDR.emit_load_idx_var vloc vdep st p init loc r2 in
               Some (Some r,init,pseudo cs0@cs,st)
-          | R,Some (OrdinaryAccess `Acquire) ->
+          | R,OrdinaryAccess `Acquire ->
               let r,init,cs,st =
                 LDAR.emit_load_idx_var vloc vdep st p init loc r2 in
               Some (Some r,init,pseudo cs0@cs,st)
-          | R,Some (MorelloAccess `Acquire as atom)
-          | R,Some (MixedSizeAccess (`Acquire,_) as atom) ->
+          | R,(MorelloAccess `Acquire as atom)
+          | R,(MixedSizeAccess (`Acquire,_) as atom) ->
               let sz,o = get_access_size atom in
              let load =
                do_emit_load_idx_var
@@ -2356,12 +2355,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let r,init,cs,st = load st p init loc r2 in
               let cs2 = emit_ldr_addon (is_morello_access atom) r in
               Some (Some r,init,pseudo cs0@cs@pseudo cs2,st)
-          | R,Some (OrdinaryAccess `AcquirePC) ->
+          | R,OrdinaryAccess `AcquirePC ->
               let r,init,cs,st =
                 LDAPR.emit_load_idx_var vloc vdep st p init loc r2 in
               Some (Some r,init,pseudo cs0@cs,st)
-          | R,Some (MorelloAccess `AcquirePC as atom)
-          | R,Some (MixedSizeAccess (`AcquirePC,_) as atom) ->
+          | R,(MorelloAccess `AcquirePC as atom)
+          | R,(MixedSizeAccess (`AcquirePC,_) as atom) ->
               let sz,o = get_access_size atom in
              let load =
                do_emit_load_idx_var
@@ -2371,27 +2370,27 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let r,init,cs,st = load st p init loc r2 in
               let cs2 = emit_ldr_addon (is_morello_access atom) r in
               Some (Some r,init,pseudo cs0@cs@pseudo cs2,st)
-          | R,Some (Atomic (rw,AtomicOrdinary)) ->
+          | R,Atomic (rw,AtomicOrdinary) ->
               let r,init,cs,st =
                 do_emit_lda_idx vdep (tr_rw rw) st p init loc r2 in
               Some (Some r,init,pseudo cs0@cs,st)
-          | R,Some (Atomic (rw,AtomicSize (sz,o))) ->
+          | R,Atomic (rw,AtomicSize (sz,o)) ->
               let r,init,cs,st =
                 do_emit_lda_mixed_idx vdep sz o rw st p init loc r2 in
               Some (Some r,init,pseudo cs0@cs,st)
-          | R,Some MemoryTagAccess ->
+          | R,MemoryTagAccess ->
               let r,init,cs,st = LDG.emit_load_idx vdep st p init loc r2 in
               Some (Some r,init,pseudo cs0@cs,st)
-          | R,Some MorelloTagAccess ->
+          | R,MorelloTagAccess ->
               (* TODO: don't waste r2 *)
               let r,init,cs,st = LDCT.emit_load_idx st p init loc rd in
               Some (Some r,init,cs,st)
-          | R,Some MorelloSealAccess ->
+          | R,MorelloSealAccess ->
               (* TODO: don't waste r2 *)
               let (_,rA),init,cs,st = seal_dp_addr init p loc st rd e.C.dep in
               let rB,st = next_reg st in
               Some (Some rB,init,cs@lift_code [ldr_mixed rB rA MachSize.S128 0; gctype rB rB],st)
-          | R,Some (NeonAccess n) ->
+          | R,NeonAccess n ->
               let emit_load_idx = match n with
                 | SIMD.NeRel -> Warn.fatal "No laod release"
                 | SIMD.NeAcqPc -> LDAPUR.emit_load_idx
@@ -2405,11 +2404,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               in
               let rB,init,cs,st = emit_load_idx vdep st p init loc r2 in
               Some (Some rB,init,pseudo cs0@cs,st)
-          | R,Some (PairAccess opt) ->
+          | R,PairAccess opt ->
               let r,init,cs,st =
                 emit_ldp_idx_var (pair_opt_to_ld opt) vdep st p init loc r2 in
               Some (Some r,init,pseudo cs0@cs,st)
-          | W,None ->
+          | W,OrdinaryAccess `Plain ->
               let module STR =
                 STORE
                   (struct
@@ -2420,7 +2419,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = STR.emit_store_idx st p init loc r2 (Value.to_int e.C.v) false C.evt_null in
               Some (None,init,pseudo cs0@cs,st)
-          | W,Some (OrdinaryAccess `Release) ->
+          | W,OrdinaryAccess `Release ->
               let module STLR =
                 STORE
                   (struct
@@ -2432,8 +2431,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = STLR.emit_store_idx st p init loc r2 (Value.to_int e.C.v) false C.evt_null in
               Some (None,init,pseudo cs0@cs,st)
-          | W,Some (MorelloAccess `Release as atom)
-          | W,Some (MixedSizeAccess (`Release,_) as atom) ->
+          | W,(MorelloAccess `Release as atom)
+          | W,(MixedSizeAccess (`Release,_) as atom) ->
               let sz,o = get_access_size atom in
               let is_morello = is_morello_access atom in
               let module S =
@@ -2450,18 +2449,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) is_morello e in
               Some (None,init,pseudo cs0@cs,st)
-          | (R|W),Some InstrAccess ->
+          | (R|W),InstrAccess ->
               Warn.fatal "No dependency to code location"
-          | W,Some (Atomic (rw,AtomicOrdinary)) ->
+          | W,Atomic (rw,AtomicOrdinary) ->
               let r,init,cs,st =
                 emit_sta_idx (tr_rw rw) st p init loc r2 (Value.to_int e.C.v) in
               Some (Some r,init,pseudo cs0@cs,st)
-          | W,Some (Atomic (rw,AtomicSize (sz,o))) ->
+          | W,Atomic (rw,AtomicSize (sz,o)) ->
               let r,init,cs,st =
                 emit_sta_mixed_idx sz o rw st p init loc r2 (Value.to_int e.C.v) in
               Some (Some r,init,pseudo cs0@cs,st)
-          | R,Some (MorelloAccess `Plain as atom)
-          | R,Some (MixedSizeAccess (`Plain,_) as atom) ->
+          | R,(MorelloAccess `Plain as atom)
+          | R,(MixedSizeAccess (`Plain,_) as atom) ->
              let sz,o = get_access_size atom in
              let load_idx sz _ st r1 r2 idx =
                let cs = [ldr_mixed_idx vdep r1 r2 idx sz] in
@@ -2474,8 +2473,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              let r,init,cs,st = load st p init loc r2 in
              let cs2 = emit_ldr_addon (is_morello_access atom) r in
              Some (Some r,init,pseudo cs0@cs@pseudo cs2,st)
-          | W,Some (MorelloAccess `Plain as atom)
-          | W,Some (MixedSizeAccess (`Plain,_) as atom) ->
+          | W,(MorelloAccess `Plain as atom)
+          | W,(MixedSizeAccess (`Plain,_) as atom) ->
               let sz,o = get_access_size atom in
               let is_morello = is_morello_access atom in
               let module S =
@@ -2492,24 +2491,24 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) is_morello e in
               Some (None,init,pseudo cs0@cs,st)
-          | W,Some MemoryTagAccess ->
+          | W,MemoryTagAccess ->
               let init,cs,st = STG.emit_store_idx vdep st p init e r2 in
               Some (None,init,pseudo cs0@cs,st)
-          | W,Some (PairAccess opt) ->
+          | W,PairAccess opt ->
               let init,cs,st =
                 emit_stp_idx_var (pair_opt_to_st opt) vdep st p init loc e r2 in
               Some (None,init,pseudo cs0@cs,st)
-          | W,Some (PteAccess (Set (`Plain,_))) ->
+          | W,PteAccess (Set (`Plain,_)) ->
               let init,cs,st =
                 emit_set_pteval_idx false vdep r2 st p init
                   (Value.to_pte e.C.v) (Misc.add_pte loc) in
               Some (None,init,pseudo cs0@cs,st)
-          | W,Some (PteAccess (Set (`Release,_))) ->
+          | W,PteAccess (Set (`Release,_)) ->
               let init,cs,st =
                 emit_set_pteval_idx true vdep r2 st p init
                   (Value.to_pte e.C.v) (Misc.add_pte loc) in
               Some (None,init,pseudo cs0@cs,st)
-          | R,Some (PteAccess (Read order)) ->
+          | R,PteAccess (Read order) ->
               let emit = match order with
               | `Plain -> LDR.emit_load_var_reg
               | `Acquire -> LDAR.emit_load_var_reg
@@ -2519,11 +2518,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let rA,cs1,st = do_sum_addr vdep st rA r2 in
               let r,init,cs,st = emit A64.V64 st p init rA in
               Some (Some r,init,pseudo cs0@pseudo cs1@cs,st)
-          | W,Some MorelloTagAccess ->
+          | W,MorelloTagAccess ->
               (* TODO: don't waste r2 *)
               let init,cs,st = STCT.emit_store_idx st p init loc rd (Value.to_int e.C.v) in
               Some (None,init,cs,st)
-          | W,Some MorelloSealAccess ->
+          | W,MorelloSealAccess ->
               (* TODO: don't waste r2 *)
               let (rA,rB),init,csi,st =
                 seal_dp_addr init p loc st rd e.C.dep in
@@ -2532,7 +2531,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 {e with C.cseal = (Value.to_int e.C.v)} in
               Some (None,init,
                 csi@csi2@cs@lift_code [str_mixed MachSize.S128 0 rC rB],st)
-          | W,Some (NeonAccess n) ->
+          | W,NeonAccess n ->
              let emit_store_idx = match n with
                | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
                | SIMD.NeRel -> STLUR.emit_store_idx
@@ -2550,18 +2549,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let regs,inits,cs,st = match ordinary_access with
           | Some result -> result
           | None -> begin match d,structured_atom with
-          | R,None -> Warn.fatal "Cannot compile plain dependent load"
-          | R,Some (OrdinaryAccess `Release|MixedSizeAccess (`Release,_)
+          | R,(OrdinaryAccess `Release|MixedSizeAccess (`Release,_)
             |MorelloAccess `Release) ->
               Warn.fatal "No load release"
-          | W,Some (OrdinaryAccess `Acquire|MixedSizeAccess (`Acquire,_)
+          | W,(OrdinaryAccess `Acquire|MixedSizeAccess (`Acquire,_)
             |MorelloAccess `Acquire) ->
               Warn.fatal "No store acquire"
-          | W,Some (OrdinaryAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
+          | W,(OrdinaryAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
             |MorelloAccess `AcquirePC) ->
               Warn.fatal "No store acquirePc"
-          | (W|R) as d,Some atom -> fatal_annotation d atom
-          | W,None -> Warn.fatal "Cannot compile plain dependent store"
+          | (W|R) as d,atom -> fatal_annotation d atom
           end in
           (* Add a label to instructions `cs`, when a fault check is required. *)
           regs,inits,(add_label_to_last_instructions e cs),st
@@ -2620,11 +2617,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | None,_ -> Warn.fatal "TODO"
       | Some R,_ -> Warn.fatal "data dependency to load"
       | Some W,Data loc ->
-
+          let structured_atom = tr_none structured_atom in
           let r2,cs2,init,st,addi =
             let r2,st = next_reg st in
             match structured_atom with
-            | Some (PteAccess (Set (_,pte)))
+            | PteAccess (Set (_,pte))
               when not (StructuredAtom.is_tthm pte) ->
                 let rA,init,st = U.emit_pteval st p init (Value.to_pte e.C.v) in
                 let cs,st =
@@ -2640,7 +2637,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 let addi = [add A64.V64 r2 r2 rA] in
                 let cs2 = pseudo cs in
                 r2,cs2,init,st,addi
-            | Some (NeonAccess _) ->
+            | NeonAccess _ ->
                 let cs2,st =
                   match vdep,vloc with
                   | (V128,_)|(_,V128) ->
@@ -2653,22 +2650,24 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       sxtw r2 r3::cs,st in
                 let cs2 = pseudo cs2 in
                 r2,cs2,init,st,[]
-            | Some MemoryTagAccess ->
+            | MemoryTagAccess ->
                 let cs0,st = calc0_gen csel st vdep r2 r1 in
-                let rA,init,st = U.next_init st p init (add_tag structured_atom loc (Value.to_int e.C.v)) in
+                let rA,init,st =
+                  U.next_init st p init
+                    (add_tag (Some structured_atom) loc (Value.to_int e.C.v)) in
                 let rB,cB,st = sum_addr st rA r2 in
                 rB,pseudo (cs0@cB),init,st,[]
-            | Some ((MixedSizeAccess (`Plain,_)
+            | (MixedSizeAccess (`Plain,_)
               |MixedSizeAccess (`Release,_)
               |Atomic (_,AtomicSize _)
-              |MorelloAccess `Plain|MorelloAccess `Release) as atom) ->
+              |MorelloAccess `Plain|MorelloAccess `Release) as atom ->
                 let sz,_ = get_access_size atom in
                 let cs0,st = calc0_gen csel st vdep r2 r1 in
                 let rA,init,csA,st = emit_mov_sz sz st p init (Value.to_int e.C.v) in
                 let cs2 = pseudo cs0 in
                 let addi = [add (sz2v sz) r2 r2 rA] in
                 r2,csA@cs2,init,st,addi
-            | Some MorelloSealAccess ->
+            | MorelloSealAccess ->
                 let cs0,st = calc0_gen csel st vdep r2 r1 in
                 let cs2 = pseudo cs0 in
                 let addi = [addi r2 r2 e.C.ord] in
@@ -2688,18 +2687,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 let cs2 = pseudo cs2 in
                 r2,cs2,init,st,addi in
           let r2,cs2,init,st = r2,cs2@pseudo addi,init,st in
-          let loc = add_tag structured_atom loc e.C.tag in
+          let loc = add_tag (Some structured_atom) loc e.C.tag in
           let ordinary_store = match structured_atom with
-          | None ->
+          | OrdinaryAccess `Plain ->
               let init,cs,st =
                 STR.emit_store_reg st p init loc r2 false C.evt_null in
               Some (None,init,cs2@cs,st)
-          | Some (OrdinaryAccess `Release) ->
+          | OrdinaryAccess `Release ->
               let init,cs,st =
                 STLR.emit_store_reg st p init loc r2 false C.evt_null in
               Some (None,init,cs2@cs,st)
-          | Some (MorelloAccess `Release as atom)
-          | Some (MixedSizeAccess (`Release,_) as atom) ->
+          | (MorelloAccess `Release as atom)
+          | (MixedSizeAccess (`Release,_) as atom) ->
               let sz,o = get_access_size atom in
               let is_morello = is_morello_access atom in
               let module S =
@@ -2712,16 +2711,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_reg st p init loc r2 is_morello e in
               Some (None,init,cs2@cs,st)
-          | Some (Atomic (rw,AtomicOrdinary)) ->
+          | Atomic (rw,AtomicOrdinary) ->
               let r,init,cs,st = emit_sta_reg (tr_rw rw) st p init loc r2 in
               Some (Some r,init,cs2@cs,st)
-          | Some (Atomic (rw,AtomicSize (sz,o))) ->
+          | Atomic (rw,AtomicSize (sz,o)) ->
               let r,init,cs,st = emit_sta_mixed_reg sz o rw st p init loc r2 in
               Some (Some r,init,cs2@cs,st)
-          | Some InstrAccess ->
+          | InstrAccess ->
               Warn.fatal "No Plain Write to label (code location)"
-          | Some (MorelloAccess `Plain as atom)
-          | Some (MixedSizeAccess (`Plain,_) as atom) ->
+          | (MorelloAccess `Plain as atom)
+          | (MixedSizeAccess (`Plain,_) as atom) ->
               let sz,o = get_access_size atom in
               let is_morello = is_morello_access atom in
               let module S =
@@ -2738,39 +2737,39 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_reg st p init loc r2 is_morello e in
               Some (None,init,cs2@cs,st)
-          | Some MemoryTagAccess ->
+          | MemoryTagAccess ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               Some (None,init,cs2@cs,st)
-          | Some (PteAccess (Set (`Plain,pte)))
+          | PteAccess (Set (`Plain,pte))
             when StructuredAtom.is_tthm pte ->
               let init,cs,st =
                 STR.emit_store_reg st p init loc r2 false C.evt_null in
               Some (None,init,cs2@cs,st)
-          | Some (PteAccess (Set (`Release,pte)))
+          | PteAccess (Set (`Release,pte))
             when StructuredAtom.is_tthm pte ->
               let init,cs,st =
                 STLR.emit_store_reg st p init loc r2 false C.evt_null in
               Some (None,init,cs2@cs,st)
-          | Some (PteAccess (Set (`Plain,_))) ->
+          | PteAccess (Set (`Plain,_)) ->
               let init,cs,st =
                 emit_set_pteval_reg false st p init r2 (Misc.add_pte loc) in
               Some (None,init,cs2@cs,st)
-          | Some (PteAccess (Set (`Release,_))) ->
+          | PteAccess (Set (`Release,_)) ->
               let init,cs,st =
                 emit_set_pteval_reg true st p init r2 (Misc.add_pte loc) in
               Some (None,init,cs2@cs,st)
-          | Some MorelloTagAccess ->
+          | MorelloTagAccess ->
               if (Value.to_int e.C.v) > 1 then
                 Warn.fatal "Capability tags can't be incremented above 1";
               let init,cs,st = STCT.emit_store_reg st p init loc r2 in
               Some (None,init,cs2@cs,st)
-          | Some MorelloSealAccess ->
+          | MorelloSealAccess ->
               let rA,init,st = U.next_init st p init loc in
               let init,cs,st =
                 emit_str_addon
                   st p init r2 rA true {e with C.cseal = (Value.to_int e.C.v)} in
               Some (None,init,cs2@cs@lift_code [str_mixed MachSize.S128 0 r2 rA],st)
-          | Some (NeonAccess n) ->
+          | NeonAccess n ->
              let rA,init,st = U.next_init st p init loc in
              let emit_store_dep = match n with
                | SIMD.NeAcqPc -> Warn.fatal "No store acquirePc"
@@ -2785,7 +2784,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              in
              let init,cs,st = emit_store_dep r2 st init rA (Value.to_int e.C.v) in
              Some (None,init,cs2@cs,st)
-          | Some (PairAccess opt) ->
+          | PairAccess opt ->
               let init,cs,st =
                 stp_emit_store_reg (pair_opt_to_st opt) st p init loc r2 in
               Some (None,init,cs2@cs,st)
@@ -2793,14 +2792,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           begin match ordinary_store with
           | Some result -> result
           | None -> begin match structured_atom with
-          | None -> Warn.fatal "Cannot compile plain data-dependent store"
-          | Some (OrdinaryAccess `Acquire|MixedSizeAccess (`Acquire,_)
+          | (OrdinaryAccess `Acquire|MixedSizeAccess (`Acquire,_)
             |MorelloAccess `Acquire) ->
               Warn.fatal "No store acquire"
-          | Some (OrdinaryAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
+          | (OrdinaryAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
             |MorelloAccess `AcquirePC) ->
               Warn.fatal "No store acquirePc"
-          | Some atom -> fatal_annotation W atom
+          | atom -> fatal_annotation W atom
           end
           end
       (* END of `Some W` *)
