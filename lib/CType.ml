@@ -219,8 +219,8 @@ let do_base_size =
   | "char"|"int8_t"|"uint8_t" -> Some Byte
   | "short"|"int16_t"|"uint16_t" -> Some Short
   | "int"|"int32_t"|"uint32_t" -> Some Word
-  | "int64_t"|"uint64_t" -> Some Quad
-  | "int128_t"|"uint128_t"|"__int128"|"__uint128" -> Some S128
+  | "int64_t"|"uint64_t" -> Some Double
+  | "int128_t"|"uint128_t"|"__int128"|"__uint128" -> Some Quad
   | _ -> None
 
 let rec base_size t = match t with

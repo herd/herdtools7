@@ -197,7 +197,7 @@ module
               | X86.I_MOV _|X86.I_MOVL _ -> MachSize.Word
               | X86.I_MOVB _ ->  MachSize.Byte
               | X86.I_MOVW _ ->  MachSize.Short
-              | X86.I_MOVQ _ -> MachSize.Quad
+              | X86.I_MOVQ _ -> MachSize.Double
               | _ -> assert false in
               let port = check_data ea in
               (lval_ea ea ii >>| rval_op port sz locked op ii) >>=
