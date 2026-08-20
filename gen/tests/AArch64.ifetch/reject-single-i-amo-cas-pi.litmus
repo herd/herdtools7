@@ -2,5 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+amo.caspi-rfiip [Amo.CasPI RfiIP] failed:
-instruction annotation to data bank not possible?
+instruction annotation on a data location is not possible
 *)
