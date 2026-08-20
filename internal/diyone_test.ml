@@ -55,7 +55,6 @@ let run_diyone flags command =
     "/bin/sh" ["-c";shell_command] in
   let comment =
     match status,!stderr with
-    | 0,"" -> ""
     | 0,stderr -> stderr
     | status,"" -> Printf.sprintf "[%d]" status
     | status,stderr -> Printf.sprintf "[%d]\n%s" status stderr in
