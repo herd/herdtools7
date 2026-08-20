@@ -2,5 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+ctrlspi-rfiip [DpCtrlsWPI RfiIP] failed:
-instruction annotation to data bank not possible?
+instruction annotation on a data location is not possible
 *)

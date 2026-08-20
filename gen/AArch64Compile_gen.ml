@@ -61,11 +61,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Vreg (r,(_,16)) -> A64.SIMDreg r
         | Vreg (r,(_,32)) -> A64.SIMDreg r
         | Vreg (r,(_,64)) -> A64.SIMDreg r
-        | _ -> assert false (* ? *)
+        | _ -> Warn.fatal "Invalid scalar SIMD register"
 
     let to_scalable_vec r = match r with
         | Vreg (r,(_,s)) -> A64.Zreg (r,s)
-        | _ -> assert false (* ? *)
+        | _ -> Warn.fatal "Invalid scalable vector register"
 
     let next_vreg x = A64.alloc_special x
     let next_scalar_reg x =
@@ -81,22 +81,22 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let with_mode m r = match r with
     | Preg (r,_) -> PMreg(r,m)
     | PMreg (r,_) -> PMreg(r,m)
-    | _ -> assert false
+    | _ -> Warn.fatal "Invalid predicate register"
 
     let with_direction dir r = match r with
     | ZAreg (tile,_,size) -> ZAreg (tile,Some dir,size)
-    | _ -> assert false
+    | _ -> Warn.fatal "Invalid ZA register"
 
     let next_zaslice n st =
       let dir = match n with
                 | SIMD.SmV -> Vertical
                 | SIMD.SmH -> Horizontal
-                | _ -> assert false
+                | _ -> Warn.fatal "Invalid SME annotation"
       in
       let (i,r),st = A64.alloc_special3 st in
     with_direction dir r,i,st
 
-    let pattern = function
+    let pattern n = match n with
     | 1 -> VL1
     | 2 -> VL2
     | 3 -> VL3
@@ -105,7 +105,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | 6 -> VL6
     | 7 -> VL7
     | 8 -> VL8
-    | _ -> assert false
+    | _ -> Warn.fatal "Invalid vector length %d" n
 
     let pseudo = List.map (fun i -> Instruction i)
 
@@ -127,7 +127,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Ne2 | Ne2i -> call_rec Ne1 st
         | Ne3 | Ne3i -> call_rec Ne2 st
         | Ne4 | Ne4i -> call_rec Ne3 st
-        | _ -> assert false
+        | _ -> Warn.fatal "Invalid Neon annotation"
       in
       fun n st ->
         let (r,rs),st = get_reg_list n st in
@@ -145,7 +145,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Sv2i -> call_rec Sv1 st
         | Sv3i -> call_rec Sv2i st
         | Sv4i -> call_rec Sv3i st
-        | _ -> assert false
+        | _ -> Warn.fatal "Invalid SVE annotation"
       in
       fun n st ->
         let (r,rs),st = get_reg_list n st in
@@ -299,7 +299,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Ne2i -> I_LD2M (rs,rt,K 0)
       | Ne3i -> I_LD3M (rs,rt,K 0)
       | Ne4i -> I_LD4M (rs,rt,K 0)
-      | _ -> assert false
+      | _ -> Warn.fatal "Invalid Neon load annotation"
 
     let ldnsv n rs pg rn idx=
       let open SIMD in
@@ -308,7 +308,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Sv2i -> I_LD2SP (VSIMD32,rs,with_mode Zero pg,rn,idx)
       | Sv3i -> I_LD3SP (VSIMD32,rs,with_mode Zero pg,rn,idx)
       | Sv4i -> I_LD4SP (VSIMD32,rs,with_mode Zero pg,rn,idx)
-      | _ -> assert false
+      | _ -> Warn.fatal "Invalid SVE load annotation"
 
     let ldr_mixed_idx v r1 r2 idx sz  =
       let idx = MemExt.v2idx_reg v idx in
@@ -348,7 +348,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Ne2i -> I_ST2M (rs,rt,K 0)
       | Ne3i -> I_ST3M (rs,rt,K 0)
       | Ne4i -> I_ST4M (rs,rt,K 0)
-      | _ -> assert false
+      | _ -> Warn.fatal "Invalid Neon store annotation"
 
     let stnsv n rs pg rn idx =
       let open SIMD in
@@ -357,7 +357,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Sv2i -> I_ST2SP (VSIMD32,rs,pg,rn,idx)
       | Sv3i -> I_ST3SP (VSIMD32,rs,pg,rn,idx)
       | Sv4i -> I_ST4SP (VSIMD32,rs,pg,rn,idx)
-      | _ -> assert false
+      | _ -> Warn.fatal "Invalid SVE store annotation"
 
     let stxr_sz t sz r1 r2 r3 =
       let open MachSize in
@@ -543,6 +543,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let is_morello_access = function
       | MorelloAccess _ -> true
       | _ -> false
+
+    let fatal_annotation d atom =
+      Warn.fatal
+        "Annotation %s does not apply to direction %s"
+        (StructuredAtom.pp atom) (Code.pp_dir d)
 
     let do_emit_load_idx_var next_reg_loc load_idx v1 v2  st p init x idx =
       let rA,st =
@@ -1484,7 +1489,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                "Illegal %s annotaton on load exclusive pair" (pp ar)  in
         [do_ldxp a r1 r2 rA; add vloc r1 r2 r1;]
       let load_addon _ _ =
-        assert (not (do_morello)); []
+        if do_morello then
+          Warn.fatal "Morello pair accesses are not supported"
+        else []
     end
 
     module XStorePair = struct
@@ -1500,7 +1507,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                "Illegal %s annotaton on store exclusive pair" (pp aw)  in
         [dec r2 r1; do_stxp a r r2 r1 rA;]
       let store_addon _ _ _ _ init st _ =
-        assert (not (do_morello)); init,[],st
+        if do_morello then
+          Warn.fatal "Morello pair accesses are not supported"
+        else init,[],st
     end
 
     module XPair = ExclusivePair(XLoadPair)(XStorePair)
@@ -1526,7 +1535,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let a1,a2 = tr_rw rw in
       let set_access atom = match set_access_atom (Some atom) (sz,o) with
       | Some atom -> atom
-      | None -> assert false in
+      | None -> Warn.fatal "Invalid mixed-size pair annotation" in
       let arw = set_access a1,set_access a2 in
       XSingle.emit_pair arw
 
@@ -1732,7 +1741,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       match e.C.check_fault with
       | Some (label_name, _) ->
         let rec do_rec = function
-          | [] -> assert false (* the `cs` should not be empty *)
+          | [] -> Warn.fatal "No instruction to label for fault"
           | [instr] -> [Label(label_name, instr)]
           | [instr;branch_instr] when is_branch_instruction branch_instr ->
               [Label(label_name, instr);branch_instr]
@@ -1760,7 +1769,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Some (label_name, _) -> Label(label_name, instr)
         | None -> instr in
       let rec do_rec = function
-        | [] -> assert false (* the `cs` should not be empty *)
+        | [] -> Warn.fatal "No exclusive instruction to label for fault"
         | (Label(_) as label)::rem -> label :: do_rec rem
         | instr::rem ->
             if (not do_store_only && is_ldxr instr)
@@ -2000,7 +2009,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let regs,inits,cs,st = match ordinary_access with
         | Some result -> result
         | None -> begin match d,structured_atom with
-        | R,None -> assert false
+        | R,None -> Warn.fatal "Cannot compile plain load"
         | R,Some (OrdinaryAccess `Release|MixedSizeAccess (`Release,_)
           |MorelloAccess `Release) ->
             Warn.fatal "No load release"
@@ -2010,13 +2019,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Some (OrdinaryAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
           |MorelloAccess `AcquirePC) ->
             Warn.fatal "No store acquirePc"
-        | d,Some (PteAccess _ as atom) ->
-            Warn.fatal
-              "Atom %s does not apply to direction %s"
-              (StructuredAtom.pp atom) (Code.pp_dir d)
-        | R,Some _ -> assert false
-        | W,None -> assert false
-        | W,Some _ -> assert false
+        | d,Some atom -> fatal_annotation d atom
+        | W,None -> Warn.fatal "Cannot compile plain store"
         end in
         (* Add a label to instructions `cs`, when a fault check is required. *)
         let cs = add_label_to_last_instructions e cs in
@@ -2151,14 +2155,23 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | None ->  U.emit_mov_fresh
     | Some (sz,_) ->  emit_mov_sz_fresh sz
 
+    let check_rmw_metadata er ew =
+      if er.C.ctag <> ew.C.ctag || er.C.cseal <> ew.C.cseal then
+        Warn.fatal "Bad Morello annotation for Amo"
+
+    let get_rmw_size is_morello sz =
+      if is_morello then begin
+        if not (Misc.is_none sz) then
+          Warn.fatal "Mixed-size Morello atomic operation is not supported";
+        Some (MachSize.S128,0)
+      end else sz
+
     let do_emit_ldop_rA  ins ins_mixed st p init er ew rA =
-      assert (er.C.ctag = ew.C.ctag && er.C.cseal = ew.C.cseal) ;
+      check_rmw_metadata er ew;
       let sz,a,opt = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
       let rR,st = next_reg st in
       let rW,init,csi,st = mk_emit_mov sz st p init (Value.to_int ew.C.v) in
-      let sz = if opt then begin
-        assert (Misc.is_none sz) ; Some (MachSize.S128, 0)
-      end else sz in
+      let sz = get_rmw_size opt sz in
       let init,csi2,st = emit_str_addon st p init rW rA opt ew in
       let cs,st = match sz with
       | None -> [ins a rW rR rA],st
@@ -2178,13 +2191,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     and emit_ldop op = do_emit_ldop (ldop op) (ldop_mixed op)
 
     let emit_cas_rA st p init er ew rA =
-      assert (er.C.ctag = ew.C.ctag && er.C.cseal = ew.C.cseal) ;
+      check_rmw_metadata er ew;
       let sz,a,opt = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
       let rS,init,csS,st = mk_emit_mov_fresh sz st p init (Value.to_int er.C.v) in
       let rT,init,csT,st = mk_emit_mov sz st p init (Value.to_int ew.C.v) in
-      let sz = if opt then begin
-        assert (Misc.is_none sz) ; Some (MachSize.S128, 0)
-      end else sz in
+      let sz = get_rmw_size opt sz in
       let init,csS2,st = emit_str_addon st p init rS rA opt er in
       let init,csT2,st = emit_str_addon st p init rT rA opt ew in
       let cs,st = match sz with
@@ -2239,7 +2250,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Cas -> map_some emit_cas
         | LdOp op -> map_some (emit_ldop op)
         | StOp op -> emit_stop op
-        | AllAmo | SafeAmo -> assert false
+        | AllAmo | SafeAmo ->
+            Warn.fatal "Cannot compile aggregate atomic operation"
 
 (* Fences *)
     let emit_cachesync s isb r =
@@ -2538,7 +2550,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let regs,inits,cs,st = match ordinary_access with
           | Some result -> result
           | None -> begin match d,structured_atom with
-          | R,None -> assert false
+          | R,None -> Warn.fatal "Cannot compile plain dependent load"
           | R,Some (OrdinaryAccess `Release|MixedSizeAccess (`Release,_)
             |MorelloAccess `Release) ->
               Warn.fatal "No load release"
@@ -2548,13 +2560,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | W,Some (OrdinaryAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
             |MorelloAccess `AcquirePC) ->
               Warn.fatal "No store acquirePc"
-          | (W|R) as d,Some (PteAccess _ as atom) ->
-              Warn.fatal
-                "Annotation %s does not apply to direction %s"
-                (StructuredAtom.pp atom) (Code.pp_dir d)
-          | R,Some _ -> assert false
-          | W,None -> assert false
-          | W,Some _ -> assert false
+          | (W|R) as d,Some atom -> fatal_annotation d atom
+          | W,None -> Warn.fatal "Cannot compile plain dependent store"
           end in
           (* Add a label to instructions `cs`, when a fault check is required. *)
           regs,inits,(add_label_to_last_instructions e cs),st
@@ -2699,7 +2706,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 STORE
                   (struct
                     let store = stlr_mixed sz o
-                    let store_idx _st _r1 _r2 _idx = assert false
+                    let store_idx _st _r1 _r2 _idx =
+                      Warn.fatal "Indexed release store is not supported"
                     let emit_mov = emit_mov_sz sz
                   end) in
               let init,cs,st = S.emit_store_reg st p init loc r2 is_morello e in
@@ -2785,14 +2793,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           begin match ordinary_store with
           | Some result -> result
           | None -> begin match structured_atom with
-          | None -> assert false
+          | None -> Warn.fatal "Cannot compile plain data-dependent store"
           | Some (OrdinaryAccess `Acquire|MixedSizeAccess (`Acquire,_)
             |MorelloAccess `Acquire) ->
               Warn.fatal "No store acquire"
           | Some (OrdinaryAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
             |MorelloAccess `AcquirePC) ->
               Warn.fatal "No store acquirePc"
-          | Some _ -> assert false
+          | Some atom -> fatal_annotation W atom
           end
           end
       (* END of `Some W` *)
@@ -2911,7 +2919,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Swp ->  map_some_dp (emit_ldop_dep swp swp_mixed)
         | Cas -> map_some_dp emit_cas_dep
         | StOp op -> emit_stop_dep op
-        | AllAmo | SafeAmo -> assert false
+        | AllAmo | SafeAmo ->
+            Warn.fatal "Cannot compile aggregate atomic operation"
 
     let emit_fence_dp st p init n f (dp,csel) r1 n1 =
       let vdep = node2vdep n1 in

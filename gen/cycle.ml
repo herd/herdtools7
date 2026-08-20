@@ -959,7 +959,7 @@ let check_cycle c =
           | Data _ ->
             let bank = n.evt.bank in
             begin match bank with
-            | Instr -> Warn.fatal "instruction annotation to data bank not possible?"
+            | Instr -> Warn.fatal "instruction annotation on a data location is not possible"
             | Ord ->
               let st = set_write_val_ord st n in
               let check_fault, st =
