@@ -1,0 +1,7 @@
+(cram
+ (alias runtest-litmus-cross-aarch64)
+ (runtest_alias false)
+ (deps
+  %{bin:litmus7}
+  (glob_files %{workspace_root}/herd/tests/instructions/AArch64/*.litmus)
+  (source_tree %{workspace_root}/litmus/libdir)))
