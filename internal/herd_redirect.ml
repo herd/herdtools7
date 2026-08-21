@@ -16,21 +16,27 @@
 
 (** A tool that runs herd, redirecting stderr and stdout *)
 
-let Args.{args; com; wrapped; litmus} = Args.split_wrapper_args Sys.argv
+let Args.{args; com; wrapped} = Args.split_wrapper_args Sys.argv
 
 type flags = {verbose:bool}
 let noflags = {verbose=false}
 
-let {verbose} =
-  let rec gather_args flags args =
+let {verbose}, litmus =
+  let get_litmus = function
+    | Some litmus -> litmus
+    | None ->
+         Printf.eprintf "%s: Could not find litmus among arguments: [%s]\n%!"
+           Sys.argv.(0) (String.concat "; " args) ;
+         exit 1 in
+  let rec gather_args (flags, litmus) args =
     match args with
-    | [] -> flags
+    | [] -> flags, get_litmus litmus
     | "-verbose" :: args ->
-        gather_args {verbose=true} args
+        gather_args ({verbose=true}, litmus) args
     | _ :: args ->
-        gather_args flags args
+        gather_args (flags, litmus) args
   in
-  gather_args noflags args
+  gather_args (noflags, None) args
 
 let out_name = TestHerd.outname litmus
 and err_name = TestHerd.errname litmus

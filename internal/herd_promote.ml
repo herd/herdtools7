@@ -16,7 +16,23 @@
 
 (** A tool that runs herd and promotes its output as reference *)
 
-let Args.{com; wrapped; litmus; _} = Args.split_wrapper_args Sys.argv
+let Args.{args; com; wrapped} = Args.split_wrapper_args Sys.argv
+
+let litmus =
+  let get = function
+    | Some litmus -> litmus
+    | None ->
+        Printf.eprintf "%s: Could not find litmus among arguments: [%s]\n%!"
+          Sys.argv.(0) (String.concat "; " args) ;
+        exit 1 in
+  let rec gather_args litmus = function
+    | [] -> get litmus
+    | arg :: args when String.ends_with ~suffix:".litmus" arg ->
+        gather_args (Some arg) args
+    | _ :: args ->
+        gather_args litmus args
+  in
+  gather_args None args
 
 let () =
   if false then
