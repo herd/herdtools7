@@ -297,6 +297,8 @@ module Make(C:Builder.S)
 
       val to_relax : chunk -> C.R.relax
       val process_count : chunk list -> int
+      val max_instruction_count : chunk list -> int
+      val max_instruction_count_cycle : chunk list -> int
       val pp_list : chunk list -> string
       val make :
         C.R.Set.t -> (sd -> extr -> extr -> bool) ->
@@ -309,6 +311,13 @@ module Make(C:Builder.S)
           id : int ;
           relax : C.R.relax ;
           process_count : int ;
+          (* Internal edges before the first external edge. *)
+          left_instruction_count : int ;
+          (* `None` means that all edges are internal,
+            and left and right both count every edge. *)
+          max_instruction_count_opt : int option ;
+          (* Internal edges after the last external edge. *)
+          right_instruction_count : int ;
         }
 
       type t = bool array array
@@ -337,12 +346,73 @@ module Make(C:Builder.S)
             | _ -> if is_int e then count else count + 1)
           0 es
 
+      let count_instructions es =
+        List.fold_left
+          (fun (left,max,right) e ->
+            match e.edge with
+            | Id|Back _|Leave _ -> left,max,right
+            | _ when is_int e ->
+                if Option.is_none max then left+1,max,right+1
+                else left,max,right+1
+            | _ ->
+                let max = match max with
+                  | None -> left
+                  | Some max -> Stdlib.max max right in
+                left,Some max,0)
+          (0,None,0) es
+
+      let combine_instruction_counts
+          (left_l,max_l,right_l) (left_r,max_r,right_r) =
+        let max = match max_l,max_r with
+          | None,None -> None
+          | left_max,right_max ->
+              let max = right_l+left_r in
+              let max = match left_max with
+                | None -> max
+                | Some left_max -> Stdlib.max left_max max in
+              let max = match right_max with
+                | None -> max
+                | Some right_max -> Stdlib.max right_max max in
+              Some max in
+        (if Option.is_none max_l then left_l+left_r else left_l),
+        max,
+        (if Option.is_none max_r then right_l+right_r else right_r)
+
+      let instruction_count chunks =
+        List.fold_left
+          (fun count chunk ->
+            combine_instruction_counts count
+              (chunk.left_instruction_count,
+               chunk.max_instruction_count_opt,
+               chunk.right_instruction_count))
+          (0,None,0) chunks
+
+      let max_instruction_count chunks =
+        let left,max,right = instruction_count chunks in
+        match max with
+        | None -> left
+        | Some max -> Stdlib.max max right
+
+      let max_instruction_count_cycle chunks =
+        let count = instruction_count chunks in
+        let _,max,_ = combine_instruction_counts count count in
+        Option.value ~default:0 max
+
       let make safes po_safe prefix relax safe =
         let next_id = ref 0 in
         let mk_chunk relax =
           let id = !next_id in
           incr next_id ;
-          { id; relax; process_count=count_processes relax; } in
+          let left_instruction_count,max_instruction_count_opt,
+              right_instruction_count = count_instructions relax in
+          {
+            id;
+            relax;
+            process_count=count_processes relax;
+            left_instruction_count;
+            max_instruction_count_opt;
+            right_instruction_count;
+          } in
         let prefix = List.map mk_chunk prefix in
         let relax = List.map mk_chunk relax in
         let safe = List.map mk_chunk safe in
@@ -368,25 +438,6 @@ module Make(C:Builder.S)
     let is_empty_list l = (l = [])
 
 (* Functional for recursive call of generators *)
-
-    let max_edges_in_process c es =
-      List.fold_left
-        (fun (current_edges,longest_edges) e ->
-          match e.edge with
-          | Id|Back _|Leave _ -> current_edges,longest_edges
-          | _ ->
-              match get_ie e with
-              | Ext -> 0,max current_edges longest_edges
-              | Int -> current_edges+1,longest_edges
-              | UnspecCom -> assert false)
-        c es
-
-    let max_instruction_count_chunks chunks =
-      let current,longest =
-        List.fold_left
-          (fun c chunk -> max_edges_in_process c (Chunk.to_relax chunk))
-          (0,0) chunks in
-      max current longest
 
 (* Prefix *)
     let () =
@@ -425,7 +476,7 @@ module Make(C:Builder.S)
       if
         can_precede_relax r suff &&
         Chunk.process_count r_suff <= O.nprocs &&
-        max_instruction_count_chunks r_suff <= O.max_ins-1 &&
+        Chunk.max_instruction_count r_suff <= O.max_ins-1 &&
         check_cycle r_suff reject
       then
         let n = n-1 in
@@ -637,7 +688,7 @@ module Make(C:Builder.S)
           let head = List.hd res in
           let le = List.map Chunk.to_relax res |> List.flatten in
           if Chunk.process_count res <= O.nprocs &&
-             (max_edges_in_process (0,0) (le@le) |> snd) <= O.max_ins-1 &&
+             Chunk.max_instruction_count_cycle res <= O.max_ins-1 &&
              FilterImpl.can_precede aset po_safe
                (Chunk.to_relax lst) (Chunk.to_relax head) then
             try
