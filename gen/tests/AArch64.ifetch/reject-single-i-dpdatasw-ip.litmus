@@ -2,5 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+datasip-rfipi [DpDatasWIP RfiPI] failed:
-Not Yet (#[1] W Lself00  ** fault_check:none value_check:true,dep_data)
+Data dependency to a code location is not supported
 *)

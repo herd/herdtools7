@@ -848,7 +848,7 @@ let check_cycle c =
       | None -> "" in
       let loc = match n.evt.loc with
       | Data s -> Data (s ^ access_suffix)
-      | _ -> assert false in
+      | Code _ -> Warn.fatal "RMW edge on a code location is not possible" in
       (loc,rmw)::lst
     | _ -> lst
   ) c []
