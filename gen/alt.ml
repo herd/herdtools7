@@ -454,17 +454,6 @@ module Make(C:Builder.S)
       else
         can_precede (to_relax next_edges) (to_relax exist_edges)
 
-    (* Check whether a candidate relaxation `next` can be prepended to the
-       current suffix `exist`. The suffix is stored newest-first, so only
-       its head must be checked against `next`; an empty suffix accepts any
-       first relaxation. *)
-    let can_precede safes po_safe xs k = match k with
-    | [] -> true
-    | ys::_ -> check_precede (FilterImpl.can_precede safes po_safe) xs ys
-
-    (* List.is_empty only supports for ocaml 5.1 afterwards *)
-    let is_empty_list l = (l = [])
-
     let parse_argument_ast input =
       String.trim input |> C.R.parse_ast Parser.diy7
 
@@ -557,65 +546,167 @@ module Make(C:Builder.S)
     let lift r = List.map (fun edge -> Plain edge) r
     let lift_list rs = List.map lift rs
 
-    let make_adjacency safes po_safe chunks =
-      let ids = Hashtbl.create (List.length chunks) in
-      List.iteri (fun id chunk -> Hashtbl.replace ids chunk id) chunks ;
-      let table = Array.make_matrix (List.length chunks) (List.length chunks) false in
-      List.iter
-        (fun next ->
-          List.iter
-            (fun exist ->
-              table.(Hashtbl.find ids next).(Hashtbl.find ids exist) <-
-                can_precede safes po_safe next [exist])
-            chunks)
-        chunks ;
-      fun next exist -> match exist with
-      | [] -> true
-      | head::_ -> table.(Hashtbl.find ids next).(Hashtbl.find ids head)
-
-(* Functional for recursive call of generators *)
-
-    let procedure_count c es =
-      List.fold_left
-        (fun count e ->
-          match e.edge with
-          | Id|Back _|Leave _ -> count
-          | _ ->
-              match get_ie e with
-              | Int -> count
-              | Ext -> count + 1
-              | UnspecCom -> assert false)
-        c es
-
-    let max_edges_in_procedure c es =
-      List.fold_left
-        (fun (current_edges,longest_edges) e ->
-          match e.edge with
-          | Id|Back _|Leave _ -> current_edges,longest_edges
-          | _ ->
-              match get_ie e with
-              | Ext -> 0,max current_edges longest_edges
-              | Int -> current_edges+1,longest_edges
-              | UnspecCom -> assert false)
-        c es
-
     let to_cycle_edges edges =
       List.filter_map (function Plain edge -> Some edge | _ -> None) edges
 
-    let procedure_count_chunks chunks =
-      let r =
-        List.fold_left
-          (fun c edges -> procedure_count c (to_cycle_edges edges))
-          0 chunks in
-      if O.verbose > 3 then eprintf "PROCS [%s] => %i\n" (pp_ess chunks) r ;
-      r
+    module Chunk : sig
+      type chunk
+      type t
 
-    let max_instruction_count_chunks chunks =
-      let current,longest =
+      val predicate_relax : chunk -> predicate_relax
+      val concrete_edges : chunk -> C.E.edge list
+      val process_count : chunk list -> int
+      val max_instruction_count : chunk list -> int
+      val max_instruction_count_cycle : chunk list -> int
+      val pp_list : chunk list -> string
+      val make :
+        C.R.Set.t -> (sd -> extr -> extr -> bool) ->
+        predicate_relax list -> predicate_relax list -> predicate_relax list ->
+        chunk list * chunk list * chunk list * t
+      val can_precede : t -> chunk -> chunk list -> bool
+    end = struct
+      type chunk = {
+        id : int;
+        predicate_relax : predicate_relax;
+        plain_relax : C.R.relax;
+        concrete_edges : C.E.edge list;
+        non_pseudo_edges : C.E.edge list;
+        process_count : int;
+        left_instruction_count : int;
+        max_instruction_count_opt : int option;
+        right_instruction_count : int;
+      }
+
+      type t = bool array array
+
+      let predicate_relax c = c.predicate_relax
+      let concrete_edges c = c.concrete_edges
+      let pp_list chunks =
+        String.concat " "
+          (List.map (fun chunk -> pp_predicate_relax chunk.predicate_relax) chunks)
+
+      let process_count chunks =
+        let count =
+          List.fold_left
+            (fun count chunk -> count + chunk.process_count) 0 chunks in
+        if O.verbose > 3 then
+          eprintf "PROCS [%s] => %i\n" (pp_list chunks) count ;
+        count
+
+      let count_processes edges =
         List.fold_left
-          (fun c edges -> max_edges_in_procedure c (to_cycle_edges edges))
-          (0,0) chunks in
-      max current longest
+          (fun count edge ->
+            match edge.edge with
+            | Id|Back _|Leave _ -> count
+            | _ -> if is_int edge then count else count + 1)
+          0 edges
+
+      let count_instructions edges =
+        List.fold_left
+          (fun (left,max,right) edge ->
+            match edge.edge with
+            | Id|Back _|Leave _ -> left,max,right
+            | _ when is_int edge ->
+                if Option.is_none max then left+1,max,right+1
+                else left,max,right+1
+            | _ ->
+                let max = match max with
+                  | None -> left
+                  | Some max -> Stdlib.max max right in
+                left,Some max,0)
+          (0,None,0) edges
+
+      let combine_instruction_counts
+          (left_l,max_l,right_l) (left_r,max_r,right_r) =
+        let max = match max_l,max_r with
+          | None,None -> None
+          | left_max,right_max ->
+              let max = right_l+left_r in
+              let max = match left_max with
+                | None -> max
+                | Some left_max -> Stdlib.max left_max max in
+              let max = match right_max with
+                | None -> max
+                | Some right_max -> Stdlib.max right_max max in
+              Some max in
+        (if Option.is_none max_l then left_l+left_r else left_l),
+        max,
+        (if Option.is_none max_r then right_l+right_r else right_r)
+
+      let instruction_count chunks =
+        List.fold_left
+          (fun count chunk ->
+            combine_instruction_counts count
+              (chunk.left_instruction_count,
+               chunk.max_instruction_count_opt,
+               chunk.right_instruction_count))
+          (0,None,0) chunks
+
+      let max_instruction_count chunks =
+        let left,max,right = instruction_count chunks in
+        match max with
+        | None -> left
+        | Some max -> Stdlib.max max right
+
+      let max_instruction_count_cycle chunks =
+        let count = instruction_count chunks in
+        let _,max,_ = combine_instruction_counts count count in
+        Option.value ~default:0 max
+
+      let edge_lists_can_precede next exist =
+        match next,exist with
+        | _::_,exist::_ -> C.E.can_precede (Misc.last next) exist
+        | _ -> true
+
+      let can_precede can_precede next exist =
+        if needs_merge next.predicate_relax exist.predicate_relax then
+          check_precede can_precede next.predicate_relax exist.predicate_relax
+        else
+          edge_lists_can_precede next.non_pseudo_edges exist.non_pseudo_edges
+          && check_precede
+               can_precede next.predicate_relax exist.predicate_relax
+
+      let make safes po_safe prefix relax safe =
+        let next_id = ref 0 in
+        let mk_chunk predicate_relax =
+          let id = !next_id in
+          incr next_id ;
+          let plain_relax = to_relax predicate_relax in
+          let concrete_edges = to_cycle_edges predicate_relax in
+          let left_instruction_count,max_instruction_count_opt,
+              right_instruction_count = count_instructions concrete_edges in
+          let non_pseudo_edges =
+            List.filter (fun edge -> C.E.is_non_pseudo edge.C.E.edge) concrete_edges in
+          {
+            id;
+            predicate_relax;
+            plain_relax;
+            concrete_edges;
+            non_pseudo_edges;
+            process_count=count_processes concrete_edges;
+            left_instruction_count;
+            max_instruction_count_opt;
+            right_instruction_count;
+          } in
+        let prefix = List.map mk_chunk prefix in
+        let relax = List.map mk_chunk relax in
+        let safe = List.map mk_chunk safe in
+        let chunks = prefix@relax@safe in
+        let table = Array.make_matrix !next_id !next_id false in
+        List.iter
+          (fun next ->
+            List.iter
+              (fun exist ->
+                table.(next.id).(exist.id) <-
+                  can_precede (FilterImpl.can_precede safes po_safe) next exist)
+              chunks)
+          chunks ;
+        prefix,relax,safe,table
+
+      let can_precede table next exist = match exist with
+        | [] -> true
+        | head::_ -> table.(next.id).(head.id)
+    end
 
 (* Prefix *)
     let parse_prefixes prefix =
@@ -654,9 +745,11 @@ module Make(C:Builder.S)
       | _, [] -> false (* end of l before end of rl*)
 
 
-    let check_cycle rsuff rl =
-      let rsuff = List.concat rsuff in
-      not (List.exists (fun rl -> is_prefix rsuff rl) rl)
+    let check_cycle rsuff = function
+      | [] -> true
+      | rejects ->
+          let rsuff = List.map Chunk.predicate_relax rsuff |> List.concat in
+          not (List.exists (fun reject -> is_prefix rsuff reject) rejects)
 
 
     (* This function is used `zyva` *)
@@ -665,22 +758,27 @@ module Make(C:Builder.S)
       let r_suff = r::suff in
       if
         can_precede_relax r suff &&
-        procedure_count_chunks r_suff <= O.nprocs &&
-        max_instruction_count_chunks r_suff <= O.max_ins-1 &&
+        Chunk.process_count r_suff <= O.nprocs &&
+        Chunk.max_instruction_count r_suff <= O.max_ins-1 &&
         check_cycle r_suff reject
       then
         let n = n-1 in
-        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (pp_ess r_suff) ;
+        if O.verbose > 2 then
+          eprintf "CALL: %i %s\n%!" n (Chunk.pp_list r_suff) ;
         let k =
           if
             over &&
             (n = 0 || (n > 0 && O.upto)) &&
             can_prefix prefix can_precede_relax r_suff
           then begin
+            (* Find an actual candidate cycle and add `prefix`. Predicate
+               edges have been resolved at this point, so remove them before
+               calling `test_generator`. *)
             let tr = prefix@r_suff in
             if O.verbose > 2 then
             eprintf "TRY: '%s'\n"
-              (C.E.pp_edges (List.concat_map to_cycle_edges tr)) ;
+              (C.E.pp_edges
+                 (List.flatten (List.map Chunk.concrete_edges tr))) ;
             try f0 po_safe tr k
             with  Misc.Exit -> k
             | Misc.Fatal msg |Misc.UserError msg ->
@@ -727,8 +825,10 @@ module Make(C:Builder.S)
     let zyva prefix aset relax safe reject n f =
 (*      let safes = C.R.Set.of_list safe in *)
       let po_safe = extract_po safe in
-      let can_precede_relax =
-        make_adjacency aset po_safe (prefix@relax@safe) in
+      let prefix,relax,safe,adjacency =
+        Chunk.make aset po_safe prefix relax safe in
+      let can_precede_relax next exist =
+        Chunk.can_precede adjacency next exist in
 
       (* ********************************** *)
       (* iterates over all relax edges `rs` *)
@@ -738,7 +838,8 @@ module Make(C:Builder.S)
         (* Build simple cycles for relaxation `relex_edge` *)
         (* Partially apply function `call_rec_base` *)
         let call_rec_add_safe =
-          call_rec_base prefix (f [relex_edge]) po_safe can_precede_relax
+          call_rec_base prefix (f [Chunk.predicate_relax relex_edge])
+            po_safe can_precede_relax
             ~reject:reject in
         (* Add safe edge to suffix *)
         let rec add_safe over ss n suf k =
@@ -750,7 +851,7 @@ module Make(C:Builder.S)
 
         (* Decide what is the accumulator `k` for the next iteration
            based on if `prefix` is empty *)
-        if is_empty_list prefix then
+        if Misc.nilp prefix then
           (* Optimise: start with a relax edge `relex_edge` *)
             call_rec_add_safe true n relex_edge [] (add_relaxs true) k
         else
@@ -761,9 +862,11 @@ module Make(C:Builder.S)
       (* Alternative: mix relaxation from relax list *)
       (* ******************************************* *)
       let all_relax k =
-        let relax_set = PredicateRelaxSet.of_list relax in
+        let relax_set =
+          PredicateRelaxSet.of_list (List.map Chunk.predicate_relax relax) in
         let extract_relaxs suff =
-          let suff_set = PredicateRelaxSet.of_list suff in
+          let suff_set =
+            PredicateRelaxSet.of_list (List.map Chunk.predicate_relax suff) in
           PredicateRelaxSet.inter suff_set relax_set
           |> PredicateRelaxSet.elements in
 
@@ -796,7 +899,7 @@ module Make(C:Builder.S)
 
         (* Function `all_relax` entry point depends on
            if `prefix` is empty. *)
-        if is_empty_list prefix then add_first relax k
+        if Misc.nilp prefix then add_first relax k
         else add_one false relax safe n [] k in
 
      (* New relax that does not enforce the first edge to be a relax *)
@@ -816,7 +919,7 @@ module Make(C:Builder.S)
       (* Function `zyva` starts after all the `let`-bindings *)
       (* *************************************************** *)
       fun k ->
-        if is_empty_list relax then no_relax safe n [] k
+        if Misc.nilp relax then no_relax safe n [] k
         else if O.mix && O.max_relax < 1 then k (* Let us stay logical *)
         else if O.mix && O.max_relax > 1 then all_relax k
         else choose_relax relax k
@@ -839,7 +942,7 @@ module Make(C:Builder.S)
 
     let build_safe relaxes candidate =
       PredicateRelaxSet.diff
-        (PredicateRelaxSet.of_list candidate)
+        (PredicateRelaxSet.of_list (List.map Chunk.predicate_relax candidate))
         (PredicateRelaxSet.of_list relaxes)
       |> PredicateRelaxSet.elements
 
@@ -882,50 +985,45 @@ module Make(C:Builder.S)
             pss)
       rej
 
-    let last_check_call rej aset f rs po_safe res k =
-      if is_empty_list res then k else
-          let lst = Misc.last res in
-          let head = List.hd res in
-          (* Predicate edges are search-only metadata. Keep them until the
-             final candidate check, then retain only concrete cycle edges. *)
-          let le = List.concat_map to_cycle_edges res in
-          if procedure_count 0 le <= O.nprocs &&
-             (max_edges_in_procedure (0,0) (le@le) |> snd) <= O.max_ins-1 &&
-             check_precede (FilterImpl.can_precede aset po_safe) lst head then
-            try
-              if
-                (match O.choice with
+    let last_check_call rej f rs _po_safe res k =
+      if Misc.nilp res then k else
+          let le = List.map Chunk.concrete_edges res |> List.flatten in
+          if Chunk.process_count res <= O.nprocs &&
+             Chunk.max_instruction_count_cycle res <= O.max_ins-1 &&
+             not
+               ((match O.choice with
                 | Default| Sc | Ppo | MixedCheck -> true
                 | Thin | Free | Uni | Critical | Transitive |Total -> false) &&
-                (count_ext le=1 || all_int le || count_changes le < 2) then k
-              else begin
-                  let ok = (* Check for rejected sequenes that span over cycle "cut" *)
-                  let rej = (* Keep non-trivial edge sequences only *)
-                    List.filter
-                      (function
-                       | []|[_] -> false
-                       | _::_::_ -> true)
-                      rej  in
-                  match rej with
-                  | [] -> true
-                  | _::_ ->
-                     let max_sz =
-                       List.fold_left (fun  k xs -> max k (List.length xs)) 0 rej in
-                     let pss = Misc.cuts max_sz (List.concat res) in
-                     not (substring_spanp rej pss) in
-                if ok then
-                  let ss = build_safe rs res in
-                  let mk_info =
-                    let info =
-                      [
-                        "Relax",pp_ess rs;
-                        "Safe",pp_ess ss;
-                      ] in
-                    info,pp_ess rs in
-                  f le mk_info D.no_name D.no_scope k
-                else k
-              end
-            with (Normaliser.CannotNormalise _) -> k
+                (count_ext le=1 || all_int le || count_changes le < 2)) then begin
+                let ok = (* Check for rejected sequenes that span over cycle "cut" *)
+                let rej = (* Keep non-trivial edge sequences only *)
+                  List.filter
+                    (function
+                     | []|[_] -> false
+                     | _::_::_ -> true)
+                    rej  in
+                match rej with
+                | [] -> true
+                | _::_ ->
+                   let max_sz =
+                     List.fold_left (fun  k xs -> max k (List.length xs)) 0 rej in
+                   let predicate_cycle =
+                     List.concat (List.map Chunk.predicate_relax res) in
+                   let pss = Misc.cuts max_sz predicate_cycle in
+                   not (substring_spanp rej pss) in
+              if ok then
+                let ss = build_safe rs res in
+                let mk_info =
+                  let info =
+                    [
+                      "Relax",pp_ess rs;
+                      "Safe",pp_ess ss;
+                    ] in
+                  info,pp_ess rs in
+                try f le mk_info D.no_name D.no_scope k
+                with Normaliser.CannotNormalise _ -> k
+              else k
+            end
           else k
 
     let rec prefixp xs ys =
@@ -996,7 +1094,7 @@ module Make(C:Builder.S)
         ~check:(last_minute plain_rej)
         (fun f ->
           zyva_prefix prefixes aset relax safe rej n
-            (last_check_call rej aset f))
+            (last_check_call rej f))
 
     let debug_rs chan rs =
       fprintf chan "%s\n" (pp_ess rs)

@@ -741,16 +741,61 @@ let fold_tedges f r =
   | Communication (Fr,_) -> is_ifetch e.a1
   | _ -> is_ifetch e.a1 || ( loc_sd e = Same && is_ifetch e.a2)
 
-  let compat_atoms a1 a2 = match merge_atoms a1 a2 with
-  | None -> false
-  | Some _ -> true
+  let set_a1 e a = match e.edge with
+  | Node _|Id -> { e with a1=a; a2=a;}
+  | _ -> { e with a1=a;}
+
+  let set_a2 e a = match e.edge with
+  | Node _|Id  -> { e with a1=a; a2=a;}
+  | _ -> { e with a2=a;}
+
+  (* Merges the end annotation and direction of `e1`
+     with the start of `e2`. *)
+  let merge_pair e1 e2 =
+    let update_dir (e1,e2) =
+      let d1 = dir_tgt e1 and d2 = dir_src e2 in
+      match d1,d2 with
+      | Irr,Dir d -> Some(set_tgt d e1,e2)
+      | Dir d,Irr -> Some(e1,set_src d e2)
+      | _,_ -> None in
+    let update_annotation (e1,e2) =
+      let a1 = e1.a2 and a2 = e2.a1 in
+      match a1,a2 with
+      | None,None -> None
+      | None,Some a
+      | Some a,None when is_ifetch (Some a) -> None
+      | None,Some _ -> Some(set_a2 e1 a2,e2)
+      | Some _,None -> Some(e1,set_a1 e2 a1)
+      | Some a1,Some a2 -> match merge_atoms a1 a2 with
+        | None -> None
+        | Some _ as atom -> Some(set_a2 e1 atom,set_a1 e2 atom) in
+    let input = (e1,e2) in
+    let r = update_dir input
+        |> ( function
+          (* Propagate result `f e` if changed *)
+          | Some e -> Some(Option.value (update_annotation e) ~default:e)
+          | None -> update_annotation input ) in
+    if dbg > 0 then begin
+      let i1,i2 = input in
+      let r1,r2 = Option.value ~default:input r in
+      eprintf "Merge pair <%s,%s> -> <%s,%s>\n"
+        (debug_edge i1) (debug_edge i2) (debug_edge r1) (debug_edge r2)
+    end ;
+    r
 
   let can_precede_atoms x y = match x.a2,y.a1 with
   | None,_
   | _,None -> true
-  | Some a1,Some a2 -> compat_atoms a1 a2
+  | Some a1,Some a2 -> Option.is_some (merge_atoms a1 a2)
 
-  let can_precede x y = can_precede_dirs  x y && can_precede_atoms x y
+  let valid_rmw_atoms edge = match edge.edge with
+    | Rmw rmw -> A.RMW.applies_atom_rmw rmw edge.a1 edge.a2
+    | _ -> true
+
+  let can_precede x y =
+    can_precede_dirs x y && can_precede_atoms x y &&
+    let merged_x,merged_y = Option.value ~default:(x,y) (merge_pair x y) in
+    valid_rmw_atoms merged_x && valid_rmw_atoms merged_y
 
 (*************************************************************)
 (* Expansion of irrelevant direction specifications in edges *)
@@ -827,50 +872,6 @@ let fold_tedges f r =
       else
         let bef,ni,aft = find_next_merge es in
         e::bef,ni,aft
-
-  let set_a1 e a = match e.edge with
-  | Node _|Id -> { e with a1=a; a2=a;}
-  | _ -> { e with a1=a;}
-
-  let set_a2 e a = match e.edge with
-  | Node _|Id  -> { e with a1=a; a2=a;}
-  | _ -> { e with a2=a;}
-
-  (* Merges the end annotation and direction of `e1`
-     with the start of `e2`. *)
-  let merge_pair e1 e2 =
-    let update_dir (e1,e2) =
-      let d1 = dir_tgt e1 and d2 = dir_src e2 in
-      match d1,d2 with
-      | Irr,Dir d -> Some(set_tgt d e1,e2)
-      | Dir d,Irr -> Some(e1,set_src d e2)
-      | _,_ -> None in
-    let update_annotation (e1,e2) =
-      let a1 = e1.a2 and a2 = e2.a1 in
-      match a1,a2 with
-      | None,None -> None
-      | None,Some a
-      | Some a,None when is_ifetch (Some a)-> None
-      | None,Some _ -> Some(set_a2 e1 a2,e2)
-      | Some _,None -> Some(e1, set_a1 e2 a1)
-      | Some a1,Some a2 ->
-        match merge_atoms a1 a2 with
-        | None -> None
-        | Some _ as a ->
-          Some(set_a2 e1 a,set_a1 e2 a) in
-    let input = (e1,e2) in
-    let r = update_dir input
-        |> ( function
-          (* Propagate result `f e` if changed *)
-          | Some e -> Some(Option.value (update_annotation e) ~default:e)
-          | None -> update_annotation input ) in
-    if dbg > 0 then begin
-      let i1,i2 = input in
-      let r1,r2 = Option.value ~default:input r in
-      eprintf "Merge pair <%s,%s> -> <%s,%s>\n"
-        (debug_edge i1) (debug_edge i2) (debug_edge r1) (debug_edge r2)
-    end ;
-    r
 
   (* Assume `e` is neither `Store` nor `Insert`.
      Repeatedly merge the next mergeable edge from `es` into `e` until no
