@@ -1,0 +1,19 @@
+(* diyone7 -arch AArch64 -variant ifetch -metadata false -oneloc CacheSyncIsbsWRPI FriIP *)
+AArch64 CoWR0+cachesyncisbspi-friip
+Variant=ifetch
+{
+ 0:X0=instr:"NOP"; 0:X1=P0:Lself00;
+}
+ P0              ;
+ STR W0,[X1]     ;
+ DC CVAU,X1      ;
+ DSB ISH         ;
+ IC IVAU,X1      ;
+ DSB ISH         ;
+ ISB             ;
+ Lself00: B .+12 ;
+ MOV W2,#2       ;
+ B .+8           ;
+ MOV W2,#1       ;
+
+exists (0:X2=1)

@@ -1,0 +1,24 @@
+(* diyone7 -arch C -metadata false PodWW Rfe DpAddrdR Fre *)
+(*
+Warning: optimised conditions are not supported by C arch
+*)
+C MP+po+addr
+"PodWW Rfe DpAddrdR Fre"
+Generator=diyone7 (version 7.58+1)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=PodWW Rfe DpAddrdR Fre
+
+{}
+
+P0 (volatile int* y,volatile int* x) {
+  *x = 1;
+  *y = 1;
+}
+
+P1 (volatile int* y,volatile int* x) {
+  int r0 = *y;
+  int r1 = *(x + (r0 & 128));
+}
+
+exists (1:r0=1 /\ 1:r1=0)

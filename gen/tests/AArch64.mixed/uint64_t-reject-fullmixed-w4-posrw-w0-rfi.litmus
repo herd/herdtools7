@@ -1,0 +1,5 @@
+(* diyone7 -hexa -arch AArch64 -variant fullmixed -type uint64_t -metadata false -oneloc w4 PosRW w0 Rfi *)
+(*
+[2]
+diyone7: Fatal error: Non overlapping accesses in PosRWw4w0, allow with `-variant MixedDisjoint`
+*)

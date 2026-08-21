@@ -1,0 +1,11 @@
+(* diyone7 -hexa -arch AArch64 -variant fullmixed -metadata false -oneloc A w0 PosRW Rfi *)
+AArch64 CoRW1+posa.w0w0-rfiw0a.w0
+Variant=mixed
+{
+ 0:X0=x; uint32_t 0:X1=0; uint32_t 0:X2=0x1010101;
+}
+ P0           ;
+ LDAR W1,[X0] ;
+ STR W2,[X0]  ;
+
+exists (0:X1=0x1010101)

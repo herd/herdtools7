@@ -1,0 +1,12 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc PosRW DMB.SY Rfi *)
+AArch64 CoRW1+pos-[dmb.sy]-rfi
+{
+ 0:X0=x;
+}
+ P0          ;
+ LDR W1,[X0] ;
+ DMB SY      ;
+ MOV W2,#1   ;
+ STR W2,[X0] ;
+
+exists (0:X1=1)

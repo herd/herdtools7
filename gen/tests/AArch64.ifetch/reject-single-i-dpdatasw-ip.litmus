@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -variant ifetch -metadata false -oneloc DpDatasWIP RfiPI *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+datasip-rfipi [DpDatasWIP RfiPI] failed:
+Data dependency to a code location is not supported
+*)

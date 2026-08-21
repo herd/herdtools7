@@ -1,0 +1,14 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc PosRW X Rfi *)
+AArch64 CoRW1+pospx-rfixp
+{
+ 0:X0=x;
+}
+ P0              ;
+ LDR W1,[X0]     ;
+ MOV W2,#1       ;
+ Loop00:         ;
+ LDXR W3,[X0]    ;
+ STXR W4,W2,[X0] ;
+ CBNZ W4,Loop00  ;
+
+exists ([x]=1 /\ 0:X1=1 /\ 0:X3=0)

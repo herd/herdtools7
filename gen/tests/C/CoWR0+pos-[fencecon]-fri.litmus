@@ -1,0 +1,19 @@
+(* diyone7 -arch C -metadata false -oneloc PosWR FenceCon Fri *)
+(*
+Warning: optimised conditions are not supported by C arch
+*)
+C CoWR0+pos-[fencecon]-fri
+"PosWR FenceCon Fri"
+Generator=diyone7 (version 7.58+1)
+Prefetch=
+Com=Fr
+Orig=PosWR FenceCon Fri
+
+{}
+
+P0 (volatile int* x) {
+  *x = 1;
+  int r0 = *x;
+}
+
+exists (0:r0=0)

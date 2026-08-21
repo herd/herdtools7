@@ -1,0 +1,22 @@
+(* diyone7 -arch AArch64 -variant neon -metadata false -oneloc DpDatasW Ne4i Rfi *)
+AArch64 CoRW1+dataspne4i-rfine4ip
+Variant=neon
+{
+ int x[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+ 0:X0=x;
+}
+ P0                                    ;
+ LDR W1,[X0]                           ;
+ EOR W2,W1,W1                          ;
+ DUP V4.4S,W2                          ;
+ MOVI V0.4S,#1                         ;
+ MOVI V1.4S,#2                         ;
+ MOVI V2.4S,#3                         ;
+ MOVI V3.4S,#4                         ;
+ ADD V0.4S,V0.4S,V4.4S                 ;
+ ADD V1.4S,V1.4S,V4.4S                 ;
+ ADD V2.4S,V2.4S,V4.4S                 ;
+ ADD V3.4S,V3.4S,V4.4S                 ;
+ ST4 {V0.4S, V1.4S, V2.4S, V3.4S},[X0] ;
+
+exists (0:X1=1)

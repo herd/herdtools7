@@ -1,0 +1,11 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc PosRW L L Rfi *)
+AArch64 CoRW1+pospl-rfilp
+{
+ 0:X0=x;
+}
+ P0           ;
+ LDR W1,[X0]  ;
+ MOV W2,#1    ;
+ STLR W2,[X0] ;
+
+exists (0:X1=1)

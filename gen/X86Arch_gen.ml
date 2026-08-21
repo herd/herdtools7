@@ -43,14 +43,10 @@ let overlap_atoms _ _ = true
 
 let pp_plain = Code.plain
 
-let pp_as_a = None
-
 let pp_atom = function
   | Atomic -> "A"
 
-let fold_non_mixed f k = f Atomic k
-
-let fold_atom f k =  fold_non_mixed f k
+let fold_atom f k = f Atomic k
 
 let worth_final _ = true
 

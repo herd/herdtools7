@@ -1,0 +1,7 @@
+(* diyone7 -hexa -arch AArch64 -variant fullmixed -metadata false -oneloc P LxSx X.w0 Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+rmww0x.w0-rfix.w0w0 [LxSxw0X.w0 RfiX.w0w0] failed:
+Bad annotation for Sx: X.w0
+
+*)

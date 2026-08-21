@@ -1,0 +1,14 @@
+(* diyone7 -hexa -arch AArch64 -variant fullmixed,CU -metadata false -oneloc b1 LxSx w0 Rfi *)
+AArch64 CoRW1+rmwb1w0-rfiw0b1
+Variant=ConstrainedUnpredictable mixed
+{
+ 0:X0=x; 0:X2=0x1010101;
+}
+ P0              ;
+ ADD X3,X0,#1    ;
+ Loop00:         ;
+ LDXRB W1,[X3]   ;
+ STXR W4,W2,[X0] ;
+ CBNZ W4,Loop00  ;
+
+exists (0:X1=0x1)

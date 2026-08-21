@@ -1,0 +1,5 @@
+(* diyone7 -arch AArch64 -variant neon -metadata false -oneloc PosRW Q Ne4i Rfi *)
+(*
+[2]
+diyone7: Fatal error: Annotations mismatch between Q Ne4i.
+*)

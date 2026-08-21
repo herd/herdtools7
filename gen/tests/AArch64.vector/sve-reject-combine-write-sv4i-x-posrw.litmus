@@ -1,0 +1,5 @@
+(* diyone7 -arch AArch64 -variant sve -metadata false -oneloc PosRW X Sv4i Rfi *)
+(*
+[2]
+diyone7: Fatal error: Annotations mismatch between X Sv4i.
+*)

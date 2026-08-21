@@ -117,15 +117,12 @@ let applies_atom = match bi with
 | Some bi -> (fun a d -> BellModel.check_event (tr_dir d) a bi)
 let is_ifetch _ = false
 let pp_plain = "P"
-let pp_as_a = None
-
 let pp_annots a = match a with
 | [] -> ""
 | _ ->
     String.concat "" (List.map pp_annot a)
 
 let pp_atom a =  pp_annots a
-
 let compare_atom a1 a2 =
   List.compare String.compare a1 a2
 
@@ -145,13 +142,11 @@ let fold_annots_dir bi d f r =
   fold_annots eg f r
 
 
-let fold_non_mixed = match bi with
+let fold_atom = match bi with
 | None -> fun _f r -> r
 | Some bi ->
     fun f r ->
       fold_annots_dir bi R f (fold_annots_dir bi W f r)
-
-let fold_atom = fold_non_mixed
 
 let worth_final _ = false
 

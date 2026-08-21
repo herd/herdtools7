@@ -1,0 +1,13 @@
+(* diyone7 -arch AArch64 -variant neon -metadata false -oneloc NeQ PosRW Rfi *)
+AArch64 CoRW1+posneqp-rfipneq
+Variant=neon
+{
+ 0:X0=x;
+}
+ P0             ;
+ LDAPUR S0,[X0] ;
+ FMOV W1,S0     ;
+ MOV W2,#1      ;
+ STR W2,[X0]    ;
+
+exists (0:X1=1)

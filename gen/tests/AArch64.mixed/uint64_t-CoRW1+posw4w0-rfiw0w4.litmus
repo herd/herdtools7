@@ -1,0 +1,12 @@
+(* diyone7 -hexa -arch AArch64 -variant fullmixed,MixedDisjoint -type uint64_t -metadata false -oneloc w4 PosRW w0 Rfi *)
+AArch64 CoRW1+posw4w0-rfiw0w4
+Variant=mixed
+{
+ uint64_t x=0;
+ uint32_t 0:X0=0; 0:X1=x; uint32_t 0:X2=0x1010101;
+}
+ P0             ;
+ LDR W0,[X1,#4] ;
+ STR W2,[X1]    ;
+
+exists (0:X0=0x0)

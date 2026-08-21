@@ -1,0 +1,5 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc Pa A PosRW Rfi *)
+(*
+[2]
+diyone7: Fatal error: Invalid extra annotation Pa
+*)

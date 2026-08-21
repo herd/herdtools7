@@ -1,0 +1,19 @@
+(* diyone7 -arch AArch64 -variant sve -metadata false -oneloc DpCtrlsW Sv4i Rfi *)
+AArch64 CoRW1+ctrlspsv4i-rfisv4ip
+Variant=sve
+{
+ int x[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+ 0:X0=x;
+}
+ P0                                 ;
+ LDR W1,[X0]                        ;
+ CBNZ W1,LC00                       ;
+ LC00:                              ;
+ MOV Z0.S,#1                        ;
+ MOV Z1.S,#2                        ;
+ MOV Z2.S,#3                        ;
+ MOV Z3.S,#4                        ;
+ PTRUE P0.S,VL4                     ;
+ ST4W {Z0.S,Z1.S,Z2.S,Z3.S},P0,[X0] ;
+
+exists (0:X1=1)
