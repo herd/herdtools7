@@ -75,12 +75,11 @@ type wrapper_args = {
   args : string list; (** Arguments for wrapper *)
   com : string; (** Path of wrapped command *)
   wrapped : string list; (** Arguments for [com] *)
-  litmus : string; (** Path for litmus file *)
 }
 
 val split_wrapper_args : String.t array -> wrapper_args
-(** [split_wrapper_args inp] returns [{args; com; wrapped; litmus}], where
-    [args] is the shortest prefix of elements in [inp] that are not "--", [com]
-    is the argument immediately after "--", and [wrapped] is the rest of the
-    arguments except the last one, without the argument "--"
+(** [split_wrapper_args inp] returns [{args; com; wrapped}], where [args] is
+    the shortest prefix of elements in [inp] that are not "--", [com] is the
+    argument immediately after "--", and [wrapped] is the rest of the
+    arguments, without the argument "--"
  *)
