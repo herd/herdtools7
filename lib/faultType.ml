@@ -209,3 +209,20 @@ module No = struct
 end
 
 let is = AArch64.is
+
+let has_diprefix s =
+  String.length s > 2
+  &&
+  begin
+    match s.[0],s.[1] with
+    | ('D'|'I'),'-' -> true
+    | _,_ -> false
+  end
+
+let split_at_diprefix s =
+  let len = String.length s in
+  if len > 2 then
+    match String.sub s 0 2 with
+    | ("D-"|"I-") as pref -> pref,String.sub s 2 (len-2)
+    | _ -> "",s
+  else "",s

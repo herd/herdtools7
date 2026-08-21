@@ -381,14 +381,31 @@ let select_absent st1 st2 =
   | (_,Cons _) -> st2
   | (Nil,Nil)-> st1
 
-let state_has_fault_type st =
+let state_get_fault_type st =
   let open HashedState in
   let open HashedFaults in
   let {S.e=_; f=f1; a=_;} = as_t st.p_st in
-  let rec fault_type st = match st.Hashcons.node with
-    | Nil -> false
-    | Cons (p, st) -> HashedFault.has_fault_type p || fault_type st in
+  let rec fault_type st =
+    let open HashedFault in
+    match st.Hashcons.node with
+    | Nil -> No
+    | Cons (p, st) ->
+        match  HashedFault.get_fault_type p with
+        | No -> fault_type st
+        | DIPrefix ->  DIPrefix
+        | Other ->
+            begin
+              match fault_type st with
+              | No|Other -> Other
+              | DIPrefix -> DIPrefix
+            end in
   fault_type f1
+
+let state_has_fault_type st =
+  let open HashedFault in
+  match state_get_fault_type st with
+  | No -> false
+  | DIPrefix|Other -> true
 
 (* Select state with the most explicit information.
  * This works because explicit fault types have been
@@ -396,13 +413,25 @@ let state_has_fault_type st =
  * the presence of fault type implies that explicit
  * absent faults are also here (if some fault is
  * absent, of course).
+ * Notice that MMU fault types have been made even
+ * more precise by prefixing then with "D-" or "I-".
  *)
 let select_newer st1 st2 =
-  if st1 == st2 || state_has_fault_type st1 then st1
-  else if state_has_fault_type st2 then st2
+  if st1 == st2 then st1
   else
-    (* No state has fault types, select one with explicit absent faults *)
-    select_absent st1 st2
+    let ft1 = state_get_fault_type st1
+    and ft2 = state_get_fault_type st2 in
+    let open HashedFault in
+    match ft1,ft2 with
+    | (DIPrefix,_)
+    | (Other,No)
+      -> st1
+    | (_,DIPrefix)
+    | ((Other|No),Other)
+      -> st2
+    | No,No ->
+      (* No state has fault types, select one with explicit absent faults *)
+      select_absent st1 st2
 
 let rec do_diff_states sts1 sts2 sts2_retry do_retry = match sts1,sts2 with
 | [],_ -> []
@@ -1297,6 +1326,39 @@ let simple_same out1 out2 t1 t2 k =
       else do_rec r1 r2 k in
   do_rec t1.s_tests t2.s_tests k
 
+(* Check presence of fault with no fault type in state *)
+let has_no_fault_type st =
+  let rec exists_no_type fs =
+   let open HashedFaults in
+   let open HashedFault in
+    match fs.Hashcons.node with
+    | Nil -> false
+    | Cons (p, fs) ->
+        match  HashedFault.get_fault_type p with
+        | No -> true
+        | DIPrefix|Other ->  exists_no_type fs in
+  exists_no_type HashedState.((as_t st).S.f)
+
+(* Select appropriate diff function *)
+let select_diff safe opt xs ys =
+  if
+    List.exists has_no_fault_type xs
+    || List.exists has_no_fault_type ys
+  then safe xs ys
+  else opt xs ys
+
+(* Non optimised diff, to be used when fault comparison is required *)
+
+let to_parsed_sts xs =
+    List.map (fun x -> { p_noccs=Int64.one; p_st=x; }) xs
+    |> normalize_sts
+
+let diff_safe xs ys =
+  let xs = to_parsed_sts xs
+  and ys = to_parsed_sts ys in
+  do_diff_states xs ys [] true
+
+(* Generic, optimised diff *)
 let simple_diff_gen diff out t1 t2 k =
  let rec do_diff ts1 ts2 k = match ts1,ts2 with
   | ([],_)|(_,[]) -> k
@@ -1323,13 +1385,25 @@ let rec diff_not_empty  xs ys = match xs,ys with
     else if tx > ty then diff_not_empty xs ry
     else diff_not_empty rx ry
 
+let diff_not_empty =
+  select_diff
+    (fun xs ys -> diff_safe xs ys |> Misc.consp)
+    diff_not_empty
+
 let simple_diff_not_empty out t1 t2 k =
   simple_diff_gen diff_not_empty out t1 t2 k
 
-
 let diff_simple_states xs ys =
-  not (List.equal ( == ) xs ys)
+  select_diff
+    (fun xs ys ->
+      let xs = to_parsed_sts xs
+      and ys = to_parsed_sts ys in
+      do_diff_states xs ys [] true |> Misc.consp
+      || do_diff_states ys xs [] true |> Misc.consp)
+    (fun xs ys -> not (List.equal ( == ) xs ys))
+    xs ys
 
 let simple_diff out t1 t2 k =
   simple_diff_gen diff_simple_states out t1 t2 k
+
 end

@@ -59,3 +59,7 @@ module No : S
 
 (* For parse disambiguation  *)
 val is : string -> bool
+
+(* For compatibility *)
+val has_diprefix : string -> bool
+val split_at_diprefix : string -> string * string

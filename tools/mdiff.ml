@@ -42,6 +42,7 @@ let parse_act r =
   "<diff|intersect> either diff or intersect the logs, default diff"
 
 let faulttype = ref true
+let datafault = ref true
 
 let options =
   let open CheckName in
@@ -55,6 +56,7 @@ let options =
    parse_emptyok emptyok;
    parse_act act;
    parse_faulttype faulttype;
+   parse_datafault datafault;
   ]@parse_withselect
 
 let prog =
@@ -84,6 +86,7 @@ let hexa = !hexa
 let int32 = !int32
 let emptyok = !emptyok
 let faulttype = !faulttype
+let datafault = !datafault
 
 let log1,log2 = match !logs with
 | [log1;log2;] -> log1,log2
@@ -112,6 +115,7 @@ module LL =
       let int32 = int32
       let acceptBig = false
       let faulttype = faulttype
+      let datafault = datafault
     end)
 
 let readlog log = match log with
