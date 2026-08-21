@@ -22,6 +22,9 @@ typedef struct {
   int id ;
   intmax_t *mem;
   log_t out;
+#ifdef HASHLOG
+  hashlog_t hout;
+#endif
 #ifdef SOME_PTR
   log_ptr_t out_ptr;
 #endif
@@ -43,7 +46,11 @@ static void instance_init(ctx_t *p, int id, intmax_t *mem) {
   p->id = id;
   p->mem = mem;
   hash_init(&p->t);
+#ifdef HASHLOG
+  log_init(&p->hout);
+#else
   log_init(&p->out);
+#endif
   barrier_init(&p->b,N);
   interval_init((int *)&p->ind,N);
   p->stop_now = 0;
