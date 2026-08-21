@@ -1,0 +1,10 @@
+Test A024 Required
+States 1
+[p]=x;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([p]=x)
+Observation A024 Always 1 0
+Hash=e6dc1586d57260311207cec9cac455a8
+

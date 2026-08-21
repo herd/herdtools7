@@ -50,8 +50,21 @@ module
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
 
-      let sxt_op sz = M.op1 (Op.Sxt sz)
-      and uxt_op sz = M.op1 (Op.Mask sz)
+      (*
+       * We definitely implement riscv64.
+       * Hence signed extension and masking of
+       * size 64 bits are nop's.
+       *)
+
+      let unit64 mop sz =
+        let open MachSize in
+        match sz with
+        | S128 -> Warn.fatal "S128 size for RISCV"
+        | Quad -> M.unitT
+        | sz -> mop sz
+
+      let sxt_op = unit64 (fun sz -> M.op1 (Op.Sxt sz))
+      and uxt_op = unit64 (fun sz -> M.op1 (Op.Mask sz))
 
       let sxtw = sxt_op MachSize.Word
       and uxtw = uxt_op MachSize.Word
