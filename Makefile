@@ -352,6 +352,26 @@ diyone-basic-test:
 	dune test gen/tests
 	@ echo "diy* basic test: OK"
 
+diy-test:: diy-default-cycleonly
+diy-default-cycleonly::
+	@ echo
+	$(DIY_REGRESSION_TEST) \
+		-diy-path $(DIY) \
+		-conf ./gen/tests/default.conf \
+		-expected ./gen/tests/default.cycle.expected \
+		$(REGRESSION_TEST_MODE)
+	@ echo "diy7 default configuration test: OK"
+
+diy-test:: diy-uni-cycleonly
+diy-uni-cycleonly::
+	@ echo
+	$(DIY_REGRESSION_TEST) \
+		-diy-path $(DIY) \
+		-conf ./gen/tests/uni.conf \
+		-expected ./gen/tests/uni.cycle.expected \
+		$(REGRESSION_TEST_MODE)
+	@ echo "diy7 uni configuration test: OK"
+
 diy-test:: diy-baseline-cycleonly
 diy-baseline-cycleonly::
 	@ echo
