@@ -78,19 +78,9 @@ type wrapper_args = {
   args: string list ;
   com: string ;
   wrapped: string list ;
-  litmus: string ;
 }
 
-let drop_last =
-  let rec loop acc = function
-  | [] | [_] -> List.rev acc
-  | x :: xs -> loop (x :: acc) xs
-  in
-  loop []
-
 let split_wrapper_args args =
-  let litmus_pos = Array.length args - 1 in
-  let litmus = args.(litmus_pos) in
   let wrapper, wrapped =
     args
     |> Array.to_list
@@ -98,7 +88,7 @@ let split_wrapper_args args =
   in
   match wrapped with
   | "--" :: com :: args ->
-    {args=wrapper; com; wrapped=drop_last args; litmus}
+    {args=wrapper; com; wrapped=args}
   | _ ->
       let msg =
         Printf.sprintf "%s: Malformed list of arguments: [%s]"
