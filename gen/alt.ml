@@ -296,6 +296,7 @@ module Make(C:Builder.S)
       type t
 
       val to_relax : chunk -> C.R.relax
+      val process_count : chunk list -> int
       val pp_list : chunk list -> string
       val make :
         C.R.Set.t -> (sd -> extr -> extr -> bool) ->
@@ -307,6 +308,7 @@ module Make(C:Builder.S)
         {
           id : int ;
           relax : C.R.relax ;
+          process_count : int ;
         }
 
       type t = bool array array
@@ -319,12 +321,28 @@ module Make(C:Builder.S)
             chunk.relax |> List.map pp_edge |> String.concat " ")
           |> String.concat " "
 
+      let process_count chunks =
+        let count =
+          List.fold_left
+            (fun count chunk -> count + chunk.process_count) 0 chunks in
+        if O.verbose > 3 then
+          eprintf "PROCS [%s] => %i\n" (pp_list chunks) count ;
+        count
+
+      let count_processes es =
+        List.fold_left
+          (fun count e ->
+            match e.edge with
+            | Id|Back _|Leave _ -> count
+            | _ -> if is_int e then count else count + 1)
+          0 es
+
       let make safes po_safe prefix relax safe =
         let next_id = ref 0 in
         let mk_chunk relax =
           let id = !next_id in
           incr next_id ;
-          { id; relax; } in
+          { id; relax; process_count=count_processes relax; } in
         let prefix = List.map mk_chunk prefix in
         let relax = List.map mk_chunk relax in
         let safe = List.map mk_chunk safe in
@@ -351,19 +369,7 @@ module Make(C:Builder.S)
 
 (* Functional for recursive call of generators *)
 
-    let procedure_count c es =
-      List.fold_left
-        (fun count e ->
-          match e.edge with
-          | Id|Back _|Leave _ -> count
-          | _ ->
-              match get_ie e with
-              | Int -> count
-              | Ext -> count + 1
-              | UnspecCom -> assert false)
-        c es
-
-    let max_edges_in_procedure c es =
+    let max_edges_in_process c es =
       List.fold_left
         (fun (current_edges,longest_edges) e ->
           match e.edge with
@@ -375,18 +381,10 @@ module Make(C:Builder.S)
               | UnspecCom -> assert false)
         c es
 
-    let procedure_count_chunks chunks =
-      let r =
-        List.fold_left
-          (fun c chunk -> procedure_count c (Chunk.to_relax chunk))
-          0 chunks in
-      if O.verbose > 3 then eprintf "PROCS [%s] => %i\n" (Chunk.pp_list chunks) r ;
-      r
-
     let max_instruction_count_chunks chunks =
       let current,longest =
         List.fold_left
-          (fun c chunk -> max_edges_in_procedure c (Chunk.to_relax chunk))
+          (fun c chunk -> max_edges_in_process c (Chunk.to_relax chunk))
           (0,0) chunks in
       max current longest
 
@@ -426,7 +424,7 @@ module Make(C:Builder.S)
       let r_suff = r::suff in
       if
         can_precede_relax r suff &&
-        procedure_count_chunks r_suff <= O.nprocs &&
+        Chunk.process_count r_suff <= O.nprocs &&
         max_instruction_count_chunks r_suff <= O.max_ins-1 &&
         check_cycle r_suff reject
       then
@@ -638,8 +636,8 @@ module Make(C:Builder.S)
           let lst = Misc.last res in
           let head = List.hd res in
           let le = List.map Chunk.to_relax res |> List.flatten in
-          if procedure_count 0 le <= O.nprocs &&
-             (max_edges_in_procedure (0,0) (le@le) |> snd) <= O.max_ins-1 &&
+          if Chunk.process_count res <= O.nprocs &&
+             (max_edges_in_process (0,0) (le@le) |> snd) <= O.max_ins-1 &&
              FilterImpl.can_precede aset po_safe
                (Chunk.to_relax lst) (Chunk.to_relax head) then
             try
