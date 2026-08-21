@@ -113,18 +113,16 @@ let show_tests_seq flags =
 let show_tests_par j flags =
   let herd = flags.herd
   and args =
-    TestHerd.herd_args
-      ~bell:None ~cat:None
-      ~conf:flags.conf
-      ~variants:flags.variants
-      ~libdir:flags.libdir
-      ~timeout:None ~checkfilter:None ~speedcheck:None in
-  let herd_test =
-    Filename.concat (Filename.dirname Sys.argv.(0)) "herd_test.exe" in
+    TestHerd.herd_args ~bell:None ~cat:None ~conf:flags.conf
+      ~variants:flags.variants ~libdir:flags.libdir ~timeout:None
+      ~checkfilter:None ~speedcheck:None in
   let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
-  let args = "-exit"::"true"::TestHerd.apply_args  herd_test j (herd::args) in
   let litmuses = read_litmus_dir flags.litmus_dir in
-  let com = Command.command mapply  (args @ litmuses) in
+  let args =
+    TestHerd.mapply_herd_test_args ~litmuses ~j ~verbose:false ~nohash:false
+      ~check:TestHerd.All ~herd args
+  in
+  let com = Command.command mapply args in
   Printf.printf "%s\n%!" com
 
   let show_tests ?j flags =
@@ -155,43 +153,35 @@ let show_tests_par j flags =
     exit 1
   end
 
+type wrapper = Promote | Test
+
 let do_run_test_par wrapper j flags =
-  let wrapper = Filename.concat (Filename.dirname Sys.argv.(0)) wrapper in
   let _dbg = false in
   let herd = flags.herd
-  and args =
+  and herd_args =
     TestHerd.herd_args ~bell:None ~cat:None ~conf:flags.conf
       ~variants:flags.variants ~libdir:flags.libdir ~timeout:None
-      ~speedcheck:None ~checkfilter:None
-  in
+      ~checkfilter:None ~speedcheck:None in
   let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
-  let args =
-    "-exit"::"true"::TestHerd.apply_args  wrapper j
-      (let args = herd::args in
-       let args =
-         let open TestHerd in
-         match flags.check with
-         | All -> args
-         | Obs -> "-checkobs"::args
-         | Sta -> "-checkstates"::args in
-       let args =
-         if flags.nohash then "-nohash"::args else args in
-      if flags.verbose then "-verbose"::args else args) in
-  let () =
-    if _dbg then
-      Printf.eprintf "Mapply arguments '%s'\n%!" (String.concat " " args) in
   let litmuses = read_litmus_dir flags.litmus_dir in
+  let args = match wrapper with
+  | Test ->
+    TestHerd.mapply_herd_test_args ~litmuses ~j ~verbose:flags.verbose
+      ~nohash:flags.nohash ~check:flags.check ~herd herd_args
+  | Promote ->
+    TestHerd.mapply_herd_promote_args ~litmuses ~j ~check:flags.check ~herd herd_args
+  in
   let () =
     if _dbg then
-      let com = Command.command mapply (args @ litmuses) in
+      let com = Command.command mapply args in
       Printf.eprintf "Will run: %s\n%!" com in
-  let st = Command.run_status mapply  (args @ litmuses) in
+  let st = Command.run_status mapply args in
   if st <> 0 then begin
     Printf.printf "Some tests had errors\n" ;
     exit 1
   end
 
-let run_test_par = do_run_test_par "herd_test.exe"
+let run_test_par = do_run_test_par Test
 
 let run_tests ?j flags =
   match j with
@@ -218,7 +208,7 @@ let promote_tests_seq flags =
     exit 1
   end
 
-let promote_tests_par = do_run_test_par "herd_promote.exe"
+let promote_tests_par = do_run_test_par Promote
 
 let promote_tests ?j flags =
   let flags = { flags with check = TestHerd.All; } in

@@ -16,21 +16,31 @@
 
 (** A tool that runs herd and promotes its output as reference *)
 
+let Args.{args; com; wrapped} = Args.split_wrapper_args Sys.argv
+
+let get_litmus = function
+  | Some litmus -> litmus
+  | None ->
+      Printf.eprintf "%s: Could not find litmus among arguments: [%s]\n%!"
+        Sys.argv.(0) (String.concat "; " args) ;
+      exit 1
+
+let litmus =
+  let rec gather_args litmus = function
+    | [] -> get_litmus litmus
+    | arg :: args when String.ends_with ~suffix:".litmus" arg ->
+        gather_args (Some arg) args
+    | _ :: args ->
+        gather_args litmus args
+  in
+  gather_args None args
+
 let () =
   if false then
-    let xs = Array.to_list Sys.argv in
-    Printf.eprintf "%s\n%!" (String.concat " " xs)
-
-let litmus = Sys.argv.(Array.length Sys.argv -1)
-
-let rec to_list k =
-  if k+1 >= Array.length Sys.argv then []
-  else Sys.argv.(k)::to_list (k+1)
-
-let com = Sys.argv.(1)
-let args = to_list 2
+    Printf.eprintf "%s called with com: %s and args: [%s]\n%!"
+      Sys.argv.(0) com (String.concat "; " wrapped)
 
 let () =
-  let st = TestHerd.run_herd_args com args litmus in
+  let st = TestHerd.run_herd_args com wrapped litmus in
   let ok = TestHerd.promote litmus st in
   exit (if ok then 0 else 1)

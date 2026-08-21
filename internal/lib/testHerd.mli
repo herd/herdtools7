@@ -24,6 +24,14 @@ type stderr_lines = string list
 (** Type for speedcheck argument *)
 type speedcheck = [`True | `False | `Fast]
 
+(** Type of comparison for stdout logs *)
+type check =
+  | All (** Complete, except non stable item such as time *)
+  | Obs (** Observation, _i.e._ Newver/Sometimes/Always *)
+  | Sta (** Final states *)
+
+val pp_check : check -> string
+
 (** Systematic file names for standard output and standard error , from test file name *)
 val outname : string -> string
 val errname : string -> string
@@ -47,14 +55,49 @@ val herd_args :
   checkfilter : bool option ->
   string list
 
-(** [apply_args herd j args] Format mapply command-line options as a list,
- *  where [herd] is path to herd command, [j] is concurrency leval and
- *  [args] is the list of [herd] command-line options. *)
-val apply_args : string -> int -> string list -> string list
+val mapply_args :
+  ?litmuses:string list ->
+  ?exits:bool ->
+  j:int ->
+  com:string ->
+  string list ->
+  string list
+(** [mapply_args ?litmuses ?exits ~j ~com args] returns the list of arguments
+    ready to be passed to mapply, where [litmuses] is the optional list of
+    litmus tests to process, [j] is the concurrency level, [com] is path to the
+    command to launch, and [args] is the list of [com] command-line options. *)
 
-(** Same as above, with additional redirection of output channels
- *  to conventional files. *)
-val apply_redirect_args : ?verbose:bool -> string -> int -> string list -> string list
+val mapply_redirect_args :
+  ?verbose:bool -> j:int -> com:string -> string list -> string list
+(** [mapply_redirect_args ?verbose ~j ~com args] similar to [mapply_args] it
+    returns a list of arguments ready to be passed to mapply. In this case
+    mapply is configured with additional redirection of output channels to
+    conventional files. *)
+
+val mapply_herd_promote_args :
+  litmuses:string list ->
+  j:int ->
+  check:check ->
+  herd:string ->
+  string list ->
+  string list
+(** [mapply_herd_promote_args ~litmuses ~j ~check ~herd args] returns a list of
+    arguments ready to be passed to mapply. These arguments will launch
+    [herd_promote.exe] with concurrency [j], running command [herd]. *)
+
+val mapply_herd_test_args :
+  litmuses:string list ->
+  j:int ->
+  ?verbose:bool ->
+  ?nohash:bool ->
+  check:check ->
+  herd:string ->
+  string list ->
+  string list
+(** [mapply_herd_test_args ~litmuses ~j ?verbose ?nohash ~check ~herd args]
+    returns a list of arguments ready to be passed to mapply. These arguments
+    will launch [herd_test.exe] with concurrency [j], running command [herd]. *)
+
 
 (** [herd_command ~bell ~cat ~conf ~variants ~libdir herd ?j litmuses] returns the
  *  command line that [run_herd] would run. *)
@@ -108,14 +151,6 @@ val run_herd_concurrent :
   variants : string list ->
   libdir   : path ->
      path -> j:int-> path list -> int
-
-(** Type of comparison for stdout logs *)
-type check =
-  | All (** Complete, except non stable item such as time *)
-  | Obs (** Observation, _i.e._ Newver/Sometimes/Always *)
-  | Sta (** Final states *)
-
-val pp_check : check -> string
 
 (** [herd_output_matches_expected check nohash litmus expected] returns true when
  * the output file produced by running [litmus] matches reference
