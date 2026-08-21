@@ -2,5 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+addrsip-rfipi [DpAddrsWIP RfiPI] failed:
-No dependency to code location
+DpAddr from an instruction access to a plain code write is not supported
 *)
