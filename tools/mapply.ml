@@ -76,8 +76,8 @@ module Task(A:TArg) = struct
         | [] -> ""
         | _::_ -> " " ^ String.concat " " args in
         match A.mode with
-        | File -> sprintf "%s%s %s>%s" cmd opts name oname
-        | Buff -> sprintf "%s%s %s" cmd opts name in
+        | File -> sprintf "%s %s%s>%s" cmd name opts oname
+        | Buff -> sprintf "%s %s%s" cmd name opts in
       if A.verbose > 2 then eprintf "Starting: '%s' on %02i\n" com idx ;
       let chan = Unix.open_process_in com in
       begin match A.mode with
@@ -297,7 +297,7 @@ let () =
   if !j <= 1 then
     let do_test name =
       let comargs = String.concat " " !comargs in
-      let com = sprintf "%s %s %s" !com comargs name in
+      let com = sprintf "%s %s %s" !com name comargs in
       ignore (Sys.command com) in
     Misc.iter_argv_or_stdin do_test names
   else
