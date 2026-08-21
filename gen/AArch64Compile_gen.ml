@@ -2560,7 +2560,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           end in
           (* Add a label to instructions `cs`, when a fault check is required. *)
           regs,inits,(add_label_to_last_instructions e cs),st
-        | _,Code _ -> Warn.fatal "No dependency to code location"
+        | _,Code _ -> Warn.fatal "DpAddr from an instruction access to a plain code write is not supported"
       (* END of emit_access_dep_addr *)
 
     let emit_addr_dep csel vdep st p init loc rd =
@@ -2800,7 +2800,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           end
           end
       (* END of `Some W` *)
-      | _,Code _ -> Warn.fatal "Not Yet (%s,dep_data)" (C.debug_evt e) in
+      | _,Code _ -> Warn.fatal "Data dependency to a code location is not supported" in
     regs,inits,(add_label_to_last_instructions e cs),st
     (* END of emit_access_dep_data *)
 
