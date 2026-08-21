@@ -1,0 +1,10 @@
+Test CoWR0+tlbi-sync.ishsW-pos-fri Allowed
+States 1
+0:X3=3; [x]=3;
+No
+Witnesses
+Positive: 0 Negative: 4
+Condition exists ([x]=3 /\ 0:X3=1)
+Observation CoWR0+tlbi-sync.ishsW-pos-fri Never 0 4
+Hash=926e49c1db819861c890e67e8a03a9ab
+
