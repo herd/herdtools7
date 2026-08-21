@@ -24,25 +24,34 @@ let () =
 type flags = { verbose:bool; nohash:bool; check:TestHerd.check; }
 let noflags = { verbose=false; nohash=false; check=TestHerd.All; }
 
-let Args.{args; com; wrapped; litmus} = Args.split_wrapper_args Sys.argv
+let Args.{args; com; wrapped} = Args.split_wrapper_args Sys.argv
 
-let flags =
-  let rec gather_args flags args =
+let get_litmus = function
+  | Some litmus -> litmus
+  | None ->
+      Printf.eprintf "%s: Could not find litmus among arguments: [%s]\n%!"
+        Sys.argv.(0) (String.concat "; " args) ;
+      exit 1
+
+let flags, litmus =
+  let rec gather_args (flags, litmus) args =
     match args with
     | [] ->
-        flags
+        flags, get_litmus litmus
     | "-verbose" :: args ->
-        gather_args {flags with verbose=true} args
+        gather_args ({flags with verbose=true}, litmus) args
     | "-checkstates" :: args ->
-        gather_args {flags with check=TestHerd.Sta} args
+        gather_args ({flags with check=TestHerd.Sta}, litmus) args
     | "-checkobs" :: args ->
-        gather_args {flags with check=TestHerd.Obs} args
+        gather_args ({flags with check=TestHerd.Obs}, litmus) args
     | "-nohash" :: args ->
-        gather_args {flags with nohash=true} args
+        gather_args ({flags with nohash=true}, litmus) args
+    | arg :: args when String.ends_with ~suffix:".litmus" arg ->
+        gather_args (flags, Some arg) args
     | _ :: args ->
-        gather_args flags args
+        gather_args (flags, litmus) args
   in
-  gather_args noflags args
+  gather_args (noflags, None) args
 
 let () =
   let expected = TestHerd.expected_of_litmus litmus
