@@ -1,0 +1,8 @@
+RISCV A024
+{
+  int *p; int x;
+  0:x1=p; 0:x2=x;
+}
+  P0          ;
+  sd x2,0(x1) ;
+forall [p]=x
