@@ -908,7 +908,9 @@ let fold_tedges f r =
           (pp_edge e) in
     (* Check `Id` edge are all pseudo annotation *)
     let check_pseudo_id e =
-      if is_id e.edge then
+      if is_id e.edge && (is_ifetch e.a1 || is_ifetch e.a2) then
+        Warn.fatal "Standalone instruction access annotation is not supported"
+      else if is_id e.edge then
         Warn.fatal "Invalid extra annotation %s" (pp_edge e) in
     List.iter (fun e -> check_mixed e; check_pseudo_id e) es;
     (* Match annotations between non-insert edges *)

@@ -1,5 +1,5 @@
 (* diyone7 -arch AArch64 -variant ifetch -metadata false -oneloc I PosRW Rfi *)
 (*
 [2]
-diyone7: Fatal error: Invalid extra annotation I
+diyone7: Fatal error: Standalone instruction access annotation is not supported
 *)
