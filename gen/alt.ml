@@ -434,9 +434,6 @@ module Make(C:Builder.S)
         | head::_ -> table.(next.id).(head.id)
     end
 
-    (* List.is_empty only supports for ocaml 5.1 afterwards *)
-    let is_empty_list l = (l = [])
-
 (* Functional for recursive call of generators *)
 
 (* Prefix *)
@@ -562,7 +559,7 @@ module Make(C:Builder.S)
 
         (* Decide what is the accumulator `k` for the next iteration
            based on if `prefix` is empty *)
-        if is_empty_list prefix then
+        if Misc.nilp prefix then
           (* Optimise: start with a relax edge `relex_edge` *)
             call_rec_add_safe true n relex_edge [] (add_relaxs true) k
         else
@@ -607,7 +604,7 @@ module Make(C:Builder.S)
 
         (* Function `all_relax` entry point depends on
            if `prefix` is empty. *)
-        if is_empty_list prefix then add_first relax k
+        if Misc.nilp prefix then add_first relax k
         else add_one false relax safe n [] k in
 
      (* New relax that does not enforce the first edge to be a relax *)
@@ -627,7 +624,7 @@ module Make(C:Builder.S)
       (* Function `zyva` starts after all the `let`-bindings *)
       (* *************************************************** *)
       fun k ->
-        if is_empty_list relax then no_relax safe n [] k
+        if Misc.nilp relax then no_relax safe n [] k
         else if O.mix && O.max_relax < 1 then k (* Let us stay logical *)
         else if O.mix && O.max_relax > 1 then all_relax k
         else choose_relax relax k
@@ -683,7 +680,7 @@ module Make(C:Builder.S)
       rej
 
     let last_check_call rej aset f rs po_safe res k =
-      if is_empty_list res then k else
+      if Misc.nilp res then k else
           let lst = Misc.last res in
           let head = List.hd res in
           let le = List.map Chunk.to_relax res |> List.flatten in
