@@ -473,3 +473,27 @@ remove_invalid_relaxes test (AArch64): [PodRW @before([Rfe Fre])]
 
 remove_invalid_relaxes test (AArch64): [@before([Rfe PodRW])]
 UserError: predicate before cannot be used without a relaxation.
+
+remove_invalid_relaxes test (AArch64): [Rfe @state(ImpTagObs)]
+[Rfe,@state(ImpTagObs)]
+
+remove_invalid_relaxes test (AArch64): [@state(ImpTagObs) PodWW L]
+[@state(ImpTagObs),PodWW,L]
+
+remove_invalid_relaxes test (AArch64): [@state(ImpTagObs)|@state(ExpObs) PodWW L]
+[@state(ImpTagObs),PodWW,L] [@state(ExpObs),PodWW,L]
+
+remove_invalid_relaxes test (AArch64): [@state(L) PodWR @state(A)]
+[@state(L),PodWR,@state(A)]
+
+remove_invalid_relaxes test (AArch64): [PodWW @state(A) Rfe]
+[]
+
+remove_invalid_relaxes test (AArch64): @state(ImpTagObs)
+UserError: predicate state(ImpTagObs) cannot be used without a relaxation.
+
+remove_invalid_relaxes test (AArch64): [PodWW @state([ImpTagObs ExpObs])]
+[PodWW,@state(ExpObs),@state(ImpTagObs)]
+
+remove_invalid_relaxes test (AArch64): [PodWW @state(ImpTagObs) @state(ExpObs)]
+[PodWW,@state(ImpTagObs),@state(ExpObs)]

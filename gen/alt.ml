@@ -307,51 +307,79 @@ module Make(C:Builder.S)
         | Plain of C.E.edge
         | Before of C.E.edge
         | After of C.E.edge
+        | State of StringSet.t
 
       let compare_edge lhs rhs =
         let rank = function
-          | Plain _ -> 0 | Before _ -> 1 | After _ -> 2 in
+          | Plain _ -> 0 | Before _ -> 1 | After _ -> 2 | State _ -> 3 in
         match Misc.int_compare (rank lhs) (rank rhs) with
         | 0 ->
             begin match lhs,rhs with
             | Plain lhs,Plain rhs
             | Before lhs,Before rhs
             | After lhs,After rhs -> C.E.compare lhs rhs
+            | State lhs,State rhs -> StringSet.compare lhs rhs
             | _,_ -> assert false
             end
         | r -> r
 
-      let parse_predicate_node pred ast =
-        let decorate make same = function
+      (* [ast] is the untouched predicate argument, while [parse_ast] parses
+         that argument as relaxation edges on demand. [parse_ast] is a thunk
+         which captures only the current predicate's child AST, not the
+         surrounding AST; its unit argument invokes the deferred recursive
+         mapping of that child. For example:
+         - [@state(ImpTagObs)] reads [ImpTagObs] directly from [ast]; parsing
+           it as an edge would fail.
+         - [@before(PodRW)] calls [parse_ast] so that [PodRW] becomes a
+           concrete edge before it is decorated. *)
+      let parse_predicate_node pred ast parse_ast =
+        let decorate make same conflict = function
           | Plain edge -> make edge
           | Before _ as edge when same edge -> edge
           | After _ as edge when same edge -> edge
-          | Before _ | After _ ->
+          | Before _ | After _ -> Warn.user_error "%s" conflict
+          | State _ ->
               Warn.user_error
-                "before and after predicates cannot apply to the same edge" in
-        match pred with
-        | "before" ->
-            Ast.bind ast
-              (fun edge ->
-                Ast.One
-                  (decorate
-                     (fun edge -> Before edge)
-                     (function Before _ -> true | _ -> false)
-                     edge))
-        | "after" ->
-            Ast.bind ast
-              (fun edge ->
-                Ast.One
-                  (decorate
-                     (fun edge -> After edge)
-                     (function After _ -> true | _ -> false)
-                     edge))
-        | pred -> Warn.user_error "predicate %s is not supported." pred
+                "predicate state cannot be decorated by before/after." in
+        let decorate_ast make same conflict =
+          (* Invoke the deferred transformation of the predicate argument. *)
+          Ast.bind (parse_ast ())
+            (fun edge -> Ast.One (decorate make same conflict edge)) in
+        let rec parse_state = function
+          | Ast.One state -> StringSet.singleton state
+          | Ast.Seq states ->
+              List.fold_left
+                (fun set state -> StringSet.union set (parse_state state))
+                StringSet.empty states
+          | Ast.Opt _|Ast.Choice _|Ast.Predicate _ ->
+              Warn.user_error
+                "predicate state expects a word or a sequence of words." in
+        match pred,ast with
+        | "state",ast -> Ast.One (State (parse_state ast))
+        | "before",_ ->
+            decorate_ast
+              (fun edge -> Before edge)
+              (function Before _ -> true | _ -> false)
+              "before and after predicates cannot apply to the same edge"
+        | "after",_ ->
+            decorate_ast
+              (fun edge -> After edge)
+              (function After _ -> true | _ -> false)
+              "before and after predicates cannot apply to the same edge"
+        | pred,_ -> Warn.user_error "predicate %s is not supported." pred
+
+      let pp_states states = match StringSet.elements states with
+        | [state] -> state
+        | states -> sprintf "[%s]" (String.concat " " states)
 
       let pp_edge = function
         | Plain edge -> pp_edge edge
         | Before edge -> sprintf "@before(%s)" (pp_edge edge)
         | After edge -> sprintf "@after(%s)" (pp_edge edge)
+        | State states ->
+            StringSet.elements states
+            |> List.map (sprintf "@state(%s)")
+            |> String.concat ","
 
       type t = edge list
 
@@ -371,8 +399,10 @@ module Make(C:Builder.S)
           end)
 
       let to_relax relax =
-        List.map
-          (function Plain edge | Before edge | After edge -> edge)
+        List.filter_map
+          (function
+            | Plain edge | Before edge | After edge -> Some edge
+            | State _ -> None)
           relax
 
       let parse_argument_ast input =
@@ -401,6 +431,7 @@ module Make(C:Builder.S)
         let reattach_predicates template_predicate_relax edges =
           let rec do_rec template edges = match template,edges with
             | [],[] -> []
+            | State state::template,edges -> State state::do_rec template edges
             | Plain _::template,edge::edges -> Plain edge::do_rec template edges
             | Before _::template,edge::edges -> Before edge::do_rec template edges
             | After _::template,edge::edges -> After edge::do_rec template edges
@@ -431,7 +462,31 @@ module Make(C:Builder.S)
           | Plain _::rest -> plain_then_after rest
           | After _::rest ->
               List.for_all (function After _ -> true | _ -> false) rest
-          | Before _::_ -> false in
+          | Before _::_ | State _::_ -> false in
+        let valid_state_boundaries relax =
+          let finish_leading states =
+            if StringSet.is_empty states then true
+            else
+              Warn.user_error
+                "predicate state(%s) cannot be used without a relaxation."
+                (pp_states states) in
+          let rec leading_boundary states = function
+            | Before _::rest -> leading_boundary states rest
+            | State state::rest ->
+                leading_boundary (StringSet.union states state) rest
+            (* Report state predicates that have no plain relaxation edge. *)
+            | [] -> finish_leading states
+            | rest -> plain_body rest
+          and plain_body = function
+            | [] -> true
+            | Plain _::rest -> plain_body rest
+            | (State _|After _)::_ as rest -> trailing_boundary rest
+            | Before _::_ -> false
+          and trailing_boundary = function
+            | [] -> true
+            | (After _|State _)::rest -> trailing_boundary rest
+            | Plain _::_ | Before _::_ -> false in
+          leading_boundary StringSet.empty relax in
         let has_plain_edge =
           List.exists (function Plain _ -> true | _ -> false) in
         let require_plain_edge relax =
@@ -444,12 +499,15 @@ module Make(C:Builder.S)
               Warn.user_error
                 "predicate after cannot be used without a relaxation."
           | [] -> false
+          | State _::_ -> false
           | Plain _::_ -> assert false in
         List.filter
           (fun relax ->
-            require_plain_edge relax
+            let edges = List.filter (function State _ -> false | _ -> true) relax in
+            valid_state_boundaries relax
+            && require_plain_edge edges
             && C.R.Set.mem (to_relax relax) valid_relaxes
-            && leading_before_trailing_after_predicate relax)
+            && leading_before_trailing_after_predicate edges)
           relaxes
 
       let parse_argument_ast_expanded ast =
@@ -458,7 +516,7 @@ module Make(C:Builder.S)
           |> Ast.map
                ~one:(fun edge -> Ast.One (Plain edge))
                ~predicate:
-                 (fun pred _ ->
+                 (fun pred _ _ ->
                    Warn.fatal
                      "unexpected predicate %s in relaxation expansion" pred) in
         Ast.map ~one:parse_one ~predicate:parse_predicate_node ast
@@ -530,6 +588,8 @@ module Make(C:Builder.S)
           non_pseudo_edges : C.E.edge list ;
           leading_before : C.E.edge list ;
           trailing_after : C.E.edge list ;
+          leading_state : StringSet.t ;
+          trailing_state : StringSet.t ;
           process_count : int ;
           left_instruction_count : int ;
           (** Internal edges before the first external edge. *)
@@ -659,20 +719,34 @@ module Make(C:Builder.S)
         && edge_lists_can_precede
              next.concrete_edges_with_atom exist.concrete_edges_with_atom
         && can_precede next.to_cycle exist.to_cycle
+      (* Resolve boundary metadata from the outside in:
+         - Require equal state sets.
+         - Match `before`/`after` predicates against neighbouring plain edges.
+         - Otherwise, check plain-edge adjacency with the internal filter. *)
       let can_precede can_precede next exist =
-        if next.trailing_after <> [] || exist.leading_before <> [] then
+        if not (StringSet.equal next.trailing_state exist.leading_state) then false
+        else if next.trailing_after <> [] || exist.leading_before <> [] then
           merge_predicate next exist
         else can_precede_edges can_precede next exist
 
       let rec leading_before = function
         | Before edge::rest -> edge::leading_before rest
+        | State _::rest -> leading_before rest
         | _ -> []
 
       let trailing_after relax =
         let rec do_rec = function
           | After edge::rest -> edge::do_rec rest
+          | State _::rest -> do_rec rest
           | _ -> [] in
         do_rec (List.rev relax) |> List.rev
+
+      let rec collect_state continue_pred states = function
+        | State state::rest ->
+            collect_state continue_pred (StringSet.union states state) rest
+        | edge::rest when continue_pred edge ->
+            collect_state continue_pred states rest
+        | _ -> states
 
       let make safes po_safe prefix relax safe =
         let next_id = ref 0 in
@@ -688,6 +762,14 @@ module Make(C:Builder.S)
               to_cycle in
           let non_pseudo_edges =
             List.filter (fun edge -> C.E.is_non_pseudo edge.C.E.edge) to_cycle in
+          let leading_state =
+            collect_state
+              (function Before _ -> true | _ -> false)
+              StringSet.empty predicate_relax in
+          let trailing_state =
+            collect_state
+              (function After _ -> true | _ -> false)
+              StringSet.empty (List.rev predicate_relax) in
           {
             id;
             predicate_relax;
@@ -696,6 +778,8 @@ module Make(C:Builder.S)
             non_pseudo_edges;
             leading_before=leading_before predicate_relax;
             trailing_after=trailing_after predicate_relax;
+            leading_state;
+            trailing_state;
             process_count=count_processes to_cycle;
             left_instruction_count;
             max_instruction_count_opt;
