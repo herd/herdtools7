@@ -473,9 +473,11 @@ module Make(C:Builder.S)
       | _, [] -> false (* end of l before end of rl*)
 
 
-    let check_cycle rsuff rl =
-      let rsuff = List.map Chunk.to_relax rsuff |> List.concat in
-      not (List.exists (fun rl -> is_prefix rsuff rl) rl)
+    let check_cycle rsuff = function
+      | [] -> true
+      | rejects ->
+          let rsuff = List.map Chunk.to_relax rsuff |> List.concat in
+          not (List.exists (fun rl -> is_prefix rsuff rl) rejects)
 
 
     (* This function is used `zyva` *)
