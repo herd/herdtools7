@@ -528,6 +528,8 @@ module Make(C:Builder.S)
           to_cycle : C.E.edge list ;
           concrete_edges_with_atom : C.E.edge list ;
           non_pseudo_edges : C.E.edge list ;
+          leading_before : C.E.edge list ;
+          trailing_after : C.E.edge list ;
           process_count : int ;
           left_instruction_count : int ;
           (** Internal edges before the first external edge. *)
@@ -614,12 +616,41 @@ module Make(C:Builder.S)
         let _,max,_ = combine_instruction_counts count count in
         Option.value ~default:0 max
 
+      (* Check whether `list` starts with `expected`, comparing edge atoms. *)
+      let rec starts_with_edges list expected =
+        match list, expected with
+        | _, [] -> true
+        | [], _::_  -> false
+        | hd :: tail, hd_expected :: tail_expected ->
+            C.E.equal_edge_atoms hd hd_expected
+            && starts_with_edges tail tail_expected
+
+      (* Check whether `list` ends with `expected`, comparing edge atoms. *)
+      let ends_with_edges list expected =
+        starts_with_edges (List.rev list) (List.rev expected)
+
+      (* Given `next = [....; after(..); after(..)]` and
+         `exist = [before(..); before(..); ....]`, check whether the optional
+         boundary predicates can be merged with the neighbouring concrete edge:
+           - `before` merges with concrete if edge matches.
+           - `after` merges with concrete if edge matches.
+           - `before` pairing with `after` fails. *)
+      let merge_predicate next exist =
+        (* Match `after` or `before` predicates when present. *)
+        match next.trailing_after,exist.leading_before with
+        | (_::_ as after),[] ->
+            starts_with_edges exist.to_cycle after
+        | [],(_::_ as before) ->
+            ends_with_edges next.to_cycle before
+        (* Reject an `after` predicate directly meeting a `before` predicate. *)
+        | [],[] | _::_,_::_ -> false
+
       let edge_lists_can_precede next exist =
         match next,exist with
         | _::_,exist::_ -> C.E.can_precede (Misc.last next) exist
         | _ -> true
 
-      let can_precede can_precede next exist =
+      let can_precede_edges can_precede next exist =
         (* Checking adjacency after removing all pseudo-edges rules out, for
            example, the AArch64 adjacency `PosRR Store -> PosRR ISB`. *)
         edge_lists_can_precede next.non_pseudo_edges exist.non_pseudo_edges
@@ -628,6 +659,20 @@ module Make(C:Builder.S)
         && edge_lists_can_precede
              next.concrete_edges_with_atom exist.concrete_edges_with_atom
         && can_precede next.to_cycle exist.to_cycle
+      let can_precede can_precede next exist =
+        if next.trailing_after <> [] || exist.leading_before <> [] then
+          merge_predicate next exist
+        else can_precede_edges can_precede next exist
+
+      let rec leading_before = function
+        | Before edge::rest -> edge::leading_before rest
+        | _ -> []
+
+      let trailing_after relax =
+        let rec do_rec = function
+          | After edge::rest -> edge::do_rec rest
+          | _ -> [] in
+        do_rec (List.rev relax) |> List.rev
 
       let make safes po_safe prefix relax safe =
         let next_id = ref 0 in
@@ -649,6 +694,8 @@ module Make(C:Builder.S)
             to_cycle;
             concrete_edges_with_atom;
             non_pseudo_edges;
+            leading_before=leading_before predicate_relax;
+            trailing_after=trailing_after predicate_relax;
             process_count=count_processes to_cycle;
             left_instruction_count;
             max_instruction_count_opt;
