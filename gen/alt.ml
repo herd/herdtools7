@@ -642,7 +642,12 @@ module Make(C:Builder.S)
         predicate_relax : predicate_relax;
         plain_relax : C.R.relax;
         concrete_edges : C.E.edge list;
+        concrete_edges_with_atom : C.E.edge list;
         non_pseudo_edges : C.E.edge list;
+        left_state : string option;
+        right_state : string option;
+        has_leading_before : bool;
+        has_trailing_after : bool;
         process_count : int;
         left_instruction_count : int;
         max_instruction_count_opt : int option;
@@ -731,12 +736,18 @@ module Make(C:Builder.S)
         | _ -> true
 
       let can_precede can_precede next exist =
-        if needs_merge next.predicate_relax exist.predicate_relax then
-          check_precede can_precede next.predicate_relax exist.predicate_relax
+        if O.verbose > 2 then
+          eprintf "next: %s, exists: %s\n"
+            (pp_predicate_relax next.predicate_relax)
+            (pp_predicate_relax exist.predicate_relax) ;
+        if not (state_compatible next.right_state exist.left_state) then false
+        else if next.has_trailing_after || exist.has_leading_before then
+          merge_predicate next.predicate_relax exist.predicate_relax
         else
           edge_lists_can_precede next.non_pseudo_edges exist.non_pseudo_edges
-          && check_precede
-               can_precede next.predicate_relax exist.predicate_relax
+          && edge_lists_can_precede
+               next.concrete_edges_with_atom exist.concrete_edges_with_atom
+          && can_precede next.plain_relax exist.plain_relax
 
       let make safes po_safe prefix relax safe =
         let next_id = ref 0 in
@@ -747,14 +758,25 @@ module Make(C:Builder.S)
           let concrete_edges = to_cycle_edges predicate_relax in
           let left_instruction_count,max_instruction_count_opt,
               right_instruction_count = count_instructions concrete_edges in
+          let concrete_edges_with_atom =
+            List.filter
+              (fun edge -> not (C.E.is_insert_store edge.C.E.edge))
+              concrete_edges in
           let non_pseudo_edges =
             List.filter (fun edge -> C.E.is_non_pseudo edge.C.E.edge) concrete_edges in
+          let _,left_state = boundary_states [] predicate_relax
+          and right_state,_ = boundary_states predicate_relax [] in
           {
             id;
             predicate_relax;
             plain_relax;
             concrete_edges;
+            concrete_edges_with_atom;
             non_pseudo_edges;
+            left_state;
+            right_state;
+            has_leading_before=needs_merge [] predicate_relax;
+            has_trailing_after=needs_merge predicate_relax [];
             process_count=count_processes concrete_edges;
             left_instruction_count;
             max_instruction_count_opt;
