@@ -447,3 +447,23 @@ remove_invalid_relaxes test (AArch64): [PodRW @before([Rfe Fre])]
 remove_invalid_relaxes test (AArch64): [@before([Rfe PodRW])]
 []
 
+parse_argument test (AArch64): [Rfe @state(ImpTagObs)]
+[Rfe,@state(ImpTagObs)]
+
+parse_argument test (AArch64): [@state(ImpTagObs) PodWW L]
+[@state(ImpTagObs),PodWW,L]
+
+parse_argument test (AArch64): [@state(ImpTagObs)|@state(ExpObs) PodWW L]
+[@state(ImpTagObs),PodWW,L] [@state(ExpObs),PodWW,L]
+
+parse_argument test (AArch64): [@state(L) PodWR @state(A)]
+[@state(L),PodWR,@state(A)]
+
+parse_argument test (AArch64): @state(ImpTagObs)
+UserError: predicate state(ImpTagObs) cannot be used without a relaxation.
+
+parse_argument test (AArch64): @state([ImpTagObs ExpObs])
+UserError: predicate state expects exactly one word argument.
+
+parse_argument test (AArch64): [PodWW @state(ImpTagObs) @state(ExpObs)]
+<empty>

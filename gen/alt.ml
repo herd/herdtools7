@@ -301,51 +301,61 @@ module Make(C:Builder.S)
       | Plain of C.E.edge
       | Before of C.E.edge
       | After of C.E.edge
+      | State of string
 
     let compare_predicate_edge lhs rhs =
       let rank = function
-        | Plain _ -> 0 | Before _ -> 1 | After _ -> 2 in
+        | Plain _ -> 0 | Before _ -> 1 | After _ -> 2 | State _ -> 3 in
       match Misc.int_compare (rank lhs) (rank rhs) with
       | 0 ->
           begin match lhs,rhs with
           | Plain lhs,Plain rhs
           | Before lhs,Before rhs
           | After lhs,After rhs -> C.E.compare lhs rhs
+          | State lhs,State rhs -> String.compare lhs rhs
           | _,_ -> assert false
           end
       | r -> r
 
-    let parse_predicate_node pred ast =
+    let parse_predicate_node pred pred_ast parse_ast =
       let decorate make same = function
         | Plain edge -> make edge
         | Before _ as edge when same edge -> edge
         | After _ as edge when same edge -> edge
         | Before _ | After _ ->
             Warn.user_error
-              "before and after predicates cannot apply to the same edge" in
-      match pred with
-      | "before" ->
-          Ast.bind ast
+              "before and after predicates cannot apply to the same edge"
+        | State _ ->
+            Warn.user_error
+              "predicate state cannot be decorated by before/after." in
+      match pred,pred_ast with
+      | "state",Ast.One state -> Ast.One (State state)
+      | "state",_ ->
+          Warn.user_error
+            "predicate state expects exactly one word argument."
+      | "before",_ ->
+          Ast.bind (parse_ast ())
             (fun edge ->
               Ast.One
                 (decorate
                    (fun edge -> Before edge)
                    (function Before _ -> true | _ -> false)
                    edge))
-      | "after" ->
-          Ast.bind ast
+      | "after",_ ->
+          Ast.bind (parse_ast ())
             (fun edge ->
               Ast.One
                 (decorate
                    (fun edge -> After edge)
                    (function After _ -> true | _ -> false)
                    edge))
-      | pred -> Warn.user_error "predicate %s is not supported." pred
+      | pred,_ -> Warn.user_error "predicate %s is not supported." pred
 
     let pp_predicate_edge = function
       | Plain edge -> pp_edge edge
       | Before edge -> sprintf "@before(%s)" (pp_edge edge)
       | After edge -> sprintf "@after(%s)" (pp_edge edge)
+      | State state -> sprintf "@state(%s)" state
 
     type predicate_relax = predicate_edge list
 
@@ -363,8 +373,10 @@ module Make(C:Builder.S)
         end)
 
     let to_relax relax =
-      List.map
-        (function Plain edge | Before edge | After edge -> edge)
+      List.filter_map
+        (function
+          | Plain edge | Before edge | After edge -> Some edge
+          | State _ -> None)
         relax
 
     let dbg = false
@@ -396,19 +408,21 @@ module Make(C:Builder.S)
          - `after` merges with concrete if edge matches.
          - `before` pairing with `after` fails. *)
     let merge_predicate next exist =
+      let next_edges = List.filter (function State _ -> false | _ -> true) next
+      and exist_edges = List.filter (function State _ -> false | _ -> true) exist in
       (* Separate the trailing `after` predicate from `next` *)
       let after =
         List.fold_right ( fun e (after,seen_non_after) ->
           match seen_non_after,e with
           | false,After _ -> e::after,false
-          | _,_ -> after,true) next ([],false)
+          | _,_ -> after,true) next_edges ([],false)
         |> fst in
       (* Separate the beginning `before` predicate from `exist` *)
       let before =
         List.fold_left ( fun (before,seen_non_before) e ->
           match seen_non_before,e with
           | false,Before _ -> e::before,false
-          | _,_ -> before,true) ([],false) exist
+          | _,_ -> before,true) ([],false) exist_edges
         |> fst |> List.rev in
       (* Match `after` or `before` predicates when present. *)
       match after,before with
@@ -418,24 +432,49 @@ module Make(C:Builder.S)
               | (Plain lhs|Before lhs|After lhs),After rhs ->
                   C.E.equal_edge_atoms lhs rhs
               | _,_ -> false)
-            exist after
+            exist_edges after
       | [],(_::_ as before) ->
           ends_with
             (fun lhs rhs -> match lhs,rhs with
               | (Plain lhs|Before lhs|After lhs),Before rhs ->
                   C.E.equal_edge_atoms lhs rhs
               | _,_ -> false)
-            next before
+            next_edges before
       (* Reject an `after` predicate directly meeting a `before` predicate. *)
       | [],[] | _::_,_::_ -> false
 
+    let boundary_states next exist =
+      let rec trailing_state = function
+        | State state::_ -> Some state
+        | After _::rest -> trailing_state rest
+        | Plain _::_ | Before _::_ | [] -> None in
+      let rec leading_state = function
+        | State state::_ -> Some state
+        | Before _::rest -> leading_state rest
+        | Plain _::_ | After _::_ | [] -> None in
+      let next_state = trailing_state (List.rev next)
+      and exist_state = leading_state exist in
+      next_state,exist_state
+
+    let needs_state_check next_state exist_state =
+      Option.is_some next_state || Option.is_some exist_state
+
+    let state_compatible next_state exist_state =
+      match next_state,exist_state with
+      | Some next_state,Some exist_state -> String.equal next_state exist_state
+      | None,None -> true
+      | None,Some _ | Some _,None -> false
+
     let needs_merge next exist =
       let trailing_edge =
-        List.fold_left (fun _ edge -> Some edge) None next in
-      let leading_edge = match exist with
+        List.fold_left
+          (fun edge -> function State _ -> edge | edge -> Some edge)
+          None next in
+      let rec leading_edge = function
+        | State _::rest -> leading_edge rest
         | edge::_ -> Some edge
         | [] -> None in
-      match trailing_edge,leading_edge with
+      match trailing_edge,leading_edge exist with
       | Some (After _),_ | _,Some (Before _) -> true
       | _,_ -> false
 
@@ -449,7 +488,10 @@ module Make(C:Builder.S)
         eprintf "next: %s, exists: %s\n"
           (pp_predicate_relax next_edges)
           (pp_predicate_relax exist_edges);
-      if needs_merge next_edges exist_edges then
+      let next_state,exist_state = boundary_states next_edges exist_edges in
+      if needs_state_check next_state exist_state &&
+         not (state_compatible next_state exist_state) then false
+      else if needs_merge next_edges exist_edges then
         merge_predicate next_edges exist_edges
       else
         can_precede (to_relax next_edges) (to_relax exist_edges)
@@ -480,6 +522,7 @@ module Make(C:Builder.S)
       let reattach_predicates template_predicate_relax edges =
         let rec do_rec template edges = match template,edges with
           | [],[] -> []
+          | State state::template,edges -> State state::do_rec template edges
           | Plain _::template,edge::edges -> Plain edge::do_rec template edges
           | Before _::template,edge::edges -> Before edge::do_rec template edges
           | After _::template,edge::edges -> After edge::do_rec template edges
@@ -509,14 +552,43 @@ module Make(C:Builder.S)
         | [] -> true
         | Plain _::rest -> plain_then_after rest
         | After _::rest -> List.for_all (function After _ -> true | _ -> false) rest
-        | Before _::_ -> false in
+        | Before _::_ | State _::_ -> false in
+      let valid_state_boundaries relax =
+        let rec leading state = function
+          | Before _::rest -> leading state rest
+          | State new_state::rest when Option.is_none state ->
+              leading (Some new_state) rest
+          | State _::_ -> false
+          | [] ->
+              begin match state with
+              | Some state ->
+                  Warn.user_error
+                    "predicate state(%s) cannot be used without a relaxation."
+                    state
+              | None -> true
+              end
+          | rest -> middle rest
+        and middle = function
+          | [] -> true
+          | Plain _::rest -> middle rest
+          | (State _|After _)::_ as rest -> trailing None rest
+          | Before _::_ -> false
+        and trailing state = function
+          | [] -> true
+          | After _::rest -> trailing state rest
+          | State new_state::rest when Option.is_none state ->
+              trailing (Some new_state) rest
+          | State _::_ | Plain _::_ | Before _::_ -> false in
+        leading None relax in
       let has_plain_edge =
         List.exists (function Plain _ -> true | _ -> false) in
       List.filter
         (fun relax ->
-          has_plain_edge relax
+          let edges = List.filter (function State _ -> false | _ -> true) relax in
+          valid_state_boundaries relax
+          && has_plain_edge edges
           && C.R.Set.mem (to_relax relax) valid_relaxes
-          && leading_before_trailing_after_predicate relax)
+          && leading_before_trailing_after_predicate edges)
         relaxes
 
     let parse_argument_ast_expanded ast =
@@ -525,7 +597,7 @@ module Make(C:Builder.S)
         |> Ast.map
              ~one:(fun edge -> Ast.One (Plain edge))
              ~predicate:
-               (fun pred _ ->
+               (fun pred _ _ ->
                  Warn.fatal "unexpected predicate %s in relaxation expansion" pred) in
       Ast.map ~one:parse_one ~predicate:parse_predicate_node ast
       |> Ast.expand (fun _ _ -> assert false)

@@ -34,11 +34,11 @@ let rec map ~one ~predicate ast =
   | Opt opt -> Opt (map_child opt)
   | Seq seq -> Seq (List.map map_child seq)
   | Choice choice -> Choice (List.map map_child choice)
-  | Predicate (pred,t) -> predicate pred (map_child t)
+  | Predicate (pred,t) -> predicate pred t (fun () -> map_child t)
 
 let bind ast func =
   map ~one:func
-    ~predicate:(fun pred child -> Predicate (pred, child))
+    ~predicate:(fun pred _ child -> Predicate (pred, child ()))
     ast
 
 let rec pp pp_pred pp_prim ast =

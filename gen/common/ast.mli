@@ -23,8 +23,12 @@ val map :
   one:('prim -> ('new_pred,'new_prim) t) ->
   predicate:
     ('pred ->
-     (* The result of recursively mapping the predicate's child AST. *)
-     ('new_pred,'new_prim) t ->
+     (* The original, untransformed predicate child. *)
+     ('pred,'prim) t ->
+     (* A thunk that transforms the predicate child when called. Leaving it
+        uncalled permits the predicate callback to inspect and replace the
+        original child without transforming it first. *)
+     (unit -> ('new_pred,'new_prim) t) ->
      ('new_pred,'new_prim) t) ->
   ('pred,'prim) t -> ('new_pred,'new_prim) t
 

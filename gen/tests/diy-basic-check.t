@@ -52,6 +52,46 @@ A diy7 predicate merge test for before on composite relaxations
   LB000: PodRW Rfe PodRW Rfe
   3.LB000: PodRW Rfe PodRW Rfe PodRW Rfe
   4.LB000: PodRW Rfe PodRW Rfe PodRW Rfe PodRW Rfe
+A diy7 state predicate unfold test preserves state tags
+  $ diy7 -arch AArch64 -relax '[@state(ImpTagObs)|@state(ExpObs) PodWW L]' -unfold-only 2>&1 | grep -v '^$'
+  ***relax***
+  [@state(ExpObs),PodWW,L] [@state(ImpTagObs),PodWW,L]
+  ***safe***
+  ***reject***
+A diy7 state predicate filter check accepts matching states
+  $ diy7 -arch AArch64 -filter-check '[PodRW Rfe @state(ImpTagObs)]' '[@state(ImpTagObs) PodRW Rfe]' 2>&1
+  Sequence `[PodRW,Rfe,@state(ImpTagObs)]` `[@state(ImpTagObs),PodRW,Rfe]` passes the internal filter in mode `default`
+A diy7 state predicate filter check rejects plain neighbours
+  $ diy7 -arch AArch64 -filter-check '[PodRW Rfe @state(ImpTagObs)]' '[PodRW Rfe]' 2>&1
+  Sequence `[PodRW,Rfe,@state(ImpTagObs)]` `[PodRW,Rfe]` is prohibited in the internal filter in mode `default`
+A diy7 state predicate filter check rejects different states
+  $ diy7 -arch AArch64 -filter-check '[PodRW Rfe @state(ImpTagObs)]' '[@state(ExpObs) PodRW Rfe]' 2>&1
+  Sequence `[PodRW,Rfe,@state(ImpTagObs)]` `[@state(ExpObs),PodRW,Rfe]` is prohibited in the internal filter in mode `default`
+A diy7 state predicate can be mixed with an after predicate
+  $ diy7 -arch AArch64 -filter-check '[PodRW Rfe @state(A) @after(PodRW)]' '[@state(A) PodRW Rfe]' 2>&1
+  Sequence `[PodRW,Rfe,@state(A),@after(PodRW)]` `[@state(A),PodRW,Rfe]` passes the internal filter in mode `default`
+A diy7 state predicate can be mixed with a before predicate
+  $ diy7 -arch AArch64 -filter-check '[PodRW Rfe @state(A)]' '[@before(Rfe) @state(A) PodRW Rfe]' 2>&1
+  Sequence `[PodRW,Rfe,@state(A)]` `[@before(Rfe),@state(A),PodRW,Rfe]` passes the internal filter in mode `default`
+A diy7 state predicate cycle test accepts matching state boundaries
+  $ diy7 -arch AArch64 -cycleonly true -size 4 -relax '[@state(A) PodRW Rfe @state(A)]' 2>&1 | grep -v '^# Version' | grep -v '^Relaxations tested:'
+  # diy7 -arch AArch64 -cycleonly true -size 4 -relax [@state(A) PodRW Rfe @state(A)]
+  Generator produced 3 tests
+  LB000: PodRW Rfe PodRW Rfe
+  3.LB000: PodRW Rfe PodRW Rfe PodRW Rfe
+  4.LB000: PodRW Rfe PodRW Rfe PodRW Rfe PodRW Rfe
+A diy7 state transition predicate command line is accepted
+  $ diy7 -arch AArch64 -cycleonly true -nprocs 2 -eprocs -safe "[@state(A) A @state(A)] [@state(A) PodRR Fre] [@state(L) L @state(L)] [@state(L) PodWR @state(A)] [ExpObs PodWW @state(L)]" 2>&1 | grep -v '^# Version' | grep -v '^Relaxations tested:'
+  # diy7 -arch AArch64 -cycleonly true -nprocs 2 -eprocs -safe [@state(A) A @state(A)] [@state(A) PodRR Fre] [@state(L) L @state(L)] [@state(L) PodWR @state(A)] [ExpObs PodWW @state(L)]
+  Generator produced 0 tests
+A diy7 bare state predicate reports an error
+  $ diy7 -arch AArch64 -relax '@state(ImpTagObs)' -unfold-only 2>&1
+  diy7: predicate state(ImpTagObs) cannot be used without a relaxation.
+  [2]
+A diy7 non-word state predicate reports an error
+  $ diy7 -arch AArch64 -relax '@state([ImpTagObs ExpObs])' -unfold-only 2>&1
+  diy7: predicate state expects exactly one word argument.
+  [2]
 A diy7 predicate reject cannot silently fall back to default relaxations
   $ diy7 -arch AArch64 -safe '[@before([PodRW Rfe]) PodRW Rfe]' -reject '[@before([PodRW Rfe]) PodRW Rfe]' -size 2 -exact -stdout 2>&1
   diy7: Fatal error: relaxations provided in safelist could not be used to generate cycles

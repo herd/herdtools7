@@ -189,6 +189,28 @@ let remove_invalid_relaxes_test_diy7 input =
   let filtered = List.map TestAlt.to_relax filtered in
   Printf.printf "%s\n" (pp_list TestBuilder.R.pp_relax filtered)
 
+let parse_argument_inputs_diy7 = [
+  "[Rfe @state(ImpTagObs)]";
+  "[@state(ImpTagObs) PodWW L]";
+  "[@state(ImpTagObs)|@state(ExpObs) PodWW L]";
+  "[@state(L) PodWR @state(A)]";
+  "@state(ImpTagObs)";
+  "@state([ImpTagObs ExpObs])";
+  "[PodWW @state(ImpTagObs) @state(ExpObs)]";
+]
+
+let parse_argument_test_diy7 input =
+  Printf.printf "parse_argument test (AArch64): %s\n" input ;
+  try
+    let output =
+      TestAlt.parse_argument input
+      |> TestAlt.remove_invalid_relaxes
+      |> TestAlt.pp_ess in
+    Printf.printf "%s\n" (if output = "" then "<empty>" else output)
+  with
+  | Misc.UserError msg -> Printf.printf "UserError: %s\n" msg
+  | Misc.Fatal msg -> Printf.printf "Fatal: %s\n" msg
+
 let () =
   List.iter
     (fun input ->
@@ -199,4 +221,9 @@ let () =
     (fun input ->
       remove_invalid_relaxes_test_diy7 input;
       Printf.printf "\n")
-    remove_invalid_relaxes_inputs_diy7
+    remove_invalid_relaxes_inputs_diy7 ;
+  List.iteri
+    (fun i input ->
+      if i > 0 then Printf.printf "\n" ;
+      parse_argument_test_diy7 input)
+    parse_argument_inputs_diy7
