@@ -16,8 +16,6 @@
 
 (** Tests for the Log module. *)
 
-module Fun = Base.Fun
-
 module LogList = struct
   let compare = Base.List.compare Log.compare
   let to_ocaml_string = Base.List.to_ocaml_string Log.to_ocaml_string

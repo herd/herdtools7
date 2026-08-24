@@ -18,21 +18,6 @@
  *  earlier versions of OCaml, or to add extra functionality. *)
 
 module Fun : sig
-  (** [Finally_raised e] is raised by [protect ~finally f] if [~finally] raises
-   *  an exception [e], to disambiguate it from exceptions raised by [f].
-   *  If [Finally_raised] is raised, it is either an unexpected exception (e.g.
-   *  [Out_of_memory]), or programmer error. *)
-  exception Finally_raised of exn
-
-  (** [negate f] negates the predicate function [f]. *)
-  val negate : ('a -> bool) -> ('a -> bool)
-
-  (** [protect ~finally f] calls [f], then calls [~finally]. If [f] raises an
-   *  exception [e], it calls [~finally] before re-raising [e]. If [~finally]
-   *  raises an exception [e], [e] is re-raised as [Finally_raised e].
-   *  It is equivalent to [Fun.protect] from OCaml >= 4.08. *)
-  val protect : finally:(unit -> unit) -> (unit -> 'a) -> 'a
-
   (** [open_out_protect f name] applies f to a channel
    *  to file whose name is [name]. Close the file under
       all circumstances. *)
