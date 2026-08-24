@@ -679,49 +679,43 @@ module Make(C:Builder.S)
             pss)
       rej
 
-    let last_check_call rej aset f rs po_safe res k =
+    let last_check_call rej f rs _po_safe res k =
       if Misc.nilp res then k else
-          let lst = Misc.last res in
-          let head = List.hd res in
           let le = List.map Chunk.to_relax res |> List.flatten in
           if Chunk.process_count res <= O.nprocs &&
              Chunk.max_instruction_count_cycle res <= O.max_ins-1 &&
-             FilterImpl.can_precede aset po_safe
-               (Chunk.to_relax lst) (Chunk.to_relax head) then
-            try
-              if
-                (match O.choice with
+             not
+               ((match O.choice with
                 | Default| Sc | Ppo | MixedCheck -> true
                 | Thin | Free | Uni | Critical | Transitive |Total -> false) &&
-                (count_ext le=1 || all_int le || count_changes le < 2) then k
-              else begin
-                  let ok = (* Check for rejected sequenes that span over cycle "cut" *)
-                  let rej = (* Keep non-trivial edge sequences only *)
-                    List.filter
-                      (function
-                       | []|[_] -> false
-                       | _::_::_ -> true)
-                      rej  in
-                  match rej with
-                  | [] -> true
-                  | _::_ ->
-                     let max_sz =
-                       List.fold_left (fun  k xs -> max k (List.length xs)) 0 rej in
-                     let pss = Misc.cuts max_sz le in
-                     not (substring_spanp rej pss) in
-                if ok then
-                  let mk_info =
-                    let ss = build_safe rs res in
-                    let info =
-                      [
-                        "Relax",pp_relax_list rs;
-                        "Safe", pp_relax_list ss;
-                      ] in
-                    info,C.R.Set.of_list rs in
-                  f le mk_info D.no_name D.no_scope k
-                else k
-              end
-            with (Normaliser.CannotNormalise _) -> k
+                (count_ext le=1 || all_int le || count_changes le < 2)) then begin
+                let ok = (* Check for rejected sequenes that span over cycle "cut" *)
+                let rej = (* Keep non-trivial edge sequences only *)
+                  List.filter
+                    (function
+                     | []|[_] -> false
+                     | _::_::_ -> true)
+                    rej  in
+                match rej with
+                | [] -> true
+                | _::_ ->
+                   let max_sz =
+                     List.fold_left (fun  k xs -> max k (List.length xs)) 0 rej in
+                   let pss = Misc.cuts max_sz le in
+                   not (substring_spanp rej pss) in
+              if ok then
+                let mk_info =
+                  let ss = build_safe rs res in
+                  let info =
+                    [
+                      "Relax",pp_relax_list rs;
+                      "Safe", pp_relax_list ss;
+                    ] in
+                  info,C.R.Set.of_list rs in
+                try f le mk_info D.no_name D.no_scope k
+                with Normaliser.CannotNormalise _ -> k
+              else k
+            end
           else k
 
     let rec prefixp xs ys =
@@ -782,7 +776,7 @@ module Make(C:Builder.S)
         ~check:(last_minute rej)
         (fun f ->
           zyva_prefix prefixes aset relax safe rej n
-            (last_check_call rej aset f))
+            (last_check_call rej f))
 
     let debug_rs chan rs =
       List.iter (fun r -> fprintf chan "%s\n" (pp_relax r)) rs
