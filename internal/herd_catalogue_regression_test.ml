@@ -84,12 +84,15 @@ let herd_kinds_of_permutation ?j ?timeout flags shelf_dir litmuses p =
       flags.herd ?j ?timeout
   in
   match cmd litmuses with
-  | 0,stdout, [] ->
+  | Ok (0, stdout, []) ->
       let kind_of_log l = Log.(l.name, Option.get l.kind) in
       List.map kind_of_log (Log.of_string_list stdout)
-  | _, _, stderr ->
+  | Ok (_, _, stderr) ->
       let lines = String.concat "\n" stderr in
       let msg = Printf.sprintf "Herd returned stderr:\n%s" lines in
+      raise (Error msg)
+  | Result.Error e ->
+      let msg = Printf.sprintf "Herd returned error: %s" (Command.string_of_error e) in
       raise (Error msg)
 
 
@@ -167,7 +170,7 @@ let run_tests ?j ?timeout flags =
       pf (String.concat "," excess) 
       end ;
     match diff with
-    | [] -> true
+    | [] -> Ok ()
     | rs ->
         let pp =
           List.map
@@ -178,9 +181,9 @@ let run_tests ?j ?timeout flags =
         Printf.printf "Kinds differs: kinds file = %s ; %s\n"
           kinds_path (string_of_permutation p) ;
         List.iter (Printf.printf "%s\n") pp ;
-        false in
+        Result.Error () in
   let passed = result_of_permutation flags.kinds_path cat in
-  if not passed then exit 1
+  if passed <> Ok () then exit 1
 
 
 let promote_tests ?j flags =
