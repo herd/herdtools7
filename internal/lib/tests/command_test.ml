@@ -23,6 +23,8 @@ module StringList = struct
   let to_ocaml_string = Base.List.to_ocaml_string Base.String.to_ocaml_string
 end
 
+let raise_e e = failwith (Command.string_of_error e)
+
 let tests = [
   "Command.command without args", (fun () ->
     let expected = "'foo'" in
@@ -52,7 +54,8 @@ let tests = [
     Sys.remove path ;
 
     (* Recreate it with `touch`. *)
-    Command.run "touch" [path] ;
+    Command.run "touch" [path]
+    |> Result.fold ~ok:Fun.id ~error:raise_e ;
 
     if not (Sys.file_exists path) then
       Test.fail "File doesn't exist after `touch`"
@@ -72,7 +75,8 @@ let tests = [
       (fun (bin, args, expected) ->
         let actual = ref None in
         let read_lines i = actual := Some (Channel.read_lines i) in
-        Command.run ~stdout:read_lines bin args ;
+        Command.run ~stdout:read_lines bin args
+        |> Result.fold ~ok:Fun.id ~error:raise_e ;
         let actual = Option.get !actual in
 
         if StringList.compare actual expected <> 0 then
@@ -96,7 +100,8 @@ let tests = [
 
     let actual = ref None in
     let read_lines i = actual := Some (Channel.read_lines i) in
-    Command.run ~stdin:echo ~stdout:read_lines "cat" [] ;
+    Command.run ~stdin:echo ~stdout:read_lines "cat" []
+    |> Result.fold ~ok:Fun.id ~error:raise_e ;
     let actual = Option.get !actual in
 
     if StringList.compare actual expected <> 0 then
@@ -121,7 +126,8 @@ let tests = [
     Command.run
       ~stdout:(read actual_stdout)
       ~stderr:(read actual_stderr)
-      bin args ;
+      bin args
+    |> Result.fold ~ok:Fun.id ~error:raise_e ;
     let actual_stdout = Option.get !actual_stdout in
     let actual_stderr = Option.get !actual_stderr in
 
