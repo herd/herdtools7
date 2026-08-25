@@ -199,13 +199,16 @@ and change_info found p buff = parse
     { incr_lineno lexbuf ;
       Buffer.add_char buff '\n' ;
       change_info found p buff lexbuf }
-| '\n'* '{' as lexed
-    { incr_lineno lexbuf ;
+| ('\n'* as nl) '{'
+    { for _k = 1 to String.length nl do
+        incr_lineno lexbuf ;
+        Buffer.add_char  buff '\n'
+      done ;
       if not found then begin
         let k,v = p in
         add_info buff k v
       end ;
-      Buffer.add_string buff lexed ;
+      Buffer.add_char buff '{' ;
       change_info found p buff lexbuf }
 | (name as key) blank* '=' blank* [^'\n']* '\n' as line
   { incr_lineno lexbuf ;
