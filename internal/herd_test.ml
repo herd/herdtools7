@@ -58,16 +58,14 @@ let () =
   let expected = TestHerd.expected_of_litmus litmus
   and expected_failure = Some (TestHerd.expected_failure_of_litmus litmus)
   and expected_warn = Some (TestHerd.expected_warn_of_litmus litmus) in
-  if
+  let test =
     TestHerd.herd_args_output_matches_expected
       ~verbose:flags.verbose ~check:flags.check com ~nohash:flags.nohash args litmus
       expected expected_failure expected_warn
-  then
-    exit 0
-  else begin
-    let () =
-      if false then
-        Printf.printf "Test not ok: %s %s\n%!"
-          (String.concat " " (com::args)) litmus in
-    exit 1
-  end
+  in
+  match test with
+  | Ok () -> exit 0
+  | Error e ->
+      Printf.printf "Test not ok: %s %s; error %s\n%!"
+          (String.concat " " (com::args)) litmus (TestHerd.pp_run_error e) ;
+      exit 1
