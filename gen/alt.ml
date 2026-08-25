@@ -310,6 +310,7 @@ module Make(C:Builder.S)
         {
           id : int ;
           relax : C.R.relax ;
+          non_pseudo_edges : C.E.edge list ;
           process_count : int ;
           (* Internal edges before the first external edge. *)
           left_instruction_count : int ;
@@ -398,6 +399,15 @@ module Make(C:Builder.S)
         let _,max,_ = combine_instruction_counts count count in
         Option.value ~default:0 max
 
+      let edge_lists_can_precede next exist =
+        match next,exist with
+        | _::_,exist::_ -> C.E.can_precede (Misc.last next) exist
+        | _ -> true
+
+      let can_precede can_precede next exist =
+        edge_lists_can_precede next.non_pseudo_edges exist.non_pseudo_edges
+        && can_precede next.relax exist.relax
+
       let make safes po_safe prefix relax safe =
         let next_id = ref 0 in
         let mk_chunk relax =
@@ -405,9 +415,12 @@ module Make(C:Builder.S)
           incr next_id ;
           let left_instruction_count,max_instruction_count_opt,
               right_instruction_count = count_instructions relax in
+          let non_pseudo_edges =
+            List.filter (fun edge -> C.E.is_non_pseudo edge.C.E.edge) relax in
           {
             id;
             relax;
+            non_pseudo_edges;
             process_count=count_processes relax;
             left_instruction_count;
             max_instruction_count_opt;
@@ -423,8 +436,7 @@ module Make(C:Builder.S)
             List.iter
               (fun exist ->
                 table.(next.id).(exist.id) <-
-                  FilterImpl.can_precede safes po_safe
-                    next.relax exist.relax)
+                  can_precede (FilterImpl.can_precede safes po_safe) next exist)
               chunks)
           chunks ;
         prefix,relax,safe,table
