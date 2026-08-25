@@ -86,7 +86,7 @@ val run_herd :
   libdir   : path ->
   path ->
   ?j:int -> ?timeout:float -> ?speedcheck:speedcheck -> ?checkfilter:bool ->
-  path list -> int * string list * string list
+  path list -> (int * string list * string list, Command.error) result
 
 (** [run_herd_args herd args litmus] similar in functionality  to
   * [run_herd] above but different as regards interface:
@@ -95,7 +95,7 @@ val run_herd :
   *)
 val run_herd_args :
   ?verbose:bool -> path -> string list -> path ->
-    int * string list * string list
+    (int * string list * string list, Command.error) result
 
 (** [run_herd_concurrent ~bell ~cat ~conf ~variants ~libdir herd j litmuses]
  *  Similar to [run_herd] except that output is stored into files specific
@@ -107,7 +107,7 @@ val run_herd_concurrent :
   conf     : path option ->
   variants : string list ->
   libdir   : path ->
-     path -> j:int-> path list -> int
+     path -> j:int-> path list -> (int, Command.error) result
 
 (** Type of comparison for stdout logs *)
 type check =
@@ -124,19 +124,30 @@ val pp_check : check -> string
 val output_matches_expected :
   ?check:check -> ?nohash:bool -> path -> path -> bool
 
+type run_error =
+  | Expected_missing (** The expected file for the litmus test is missing *)
+  | Expected_fail_missing
+      (** The expected failure file for the litmus test is missing *)
+  | Stdout_missing (** Herd didn't produce contents in stdout *)
+  | Stdout_mismatch (** The expected file contents and stdout were different *)
+  | Stderr_mismatch
+      (** The expected failure file contents and stderr were different *)
+  | Stderr_not_expected of string list
+      (** Stdout was present, but not expected *)
+  | Unknown_exit_code of int * bool * bool
+      (** Herd exited with an unknown exit code. Shows presence of stdout and stderr *)
+  | Command_error of Command.error
+      (** THere's was an error when running herd, see [Command.error] for more information *)
+
+val pp_run_error : run_error -> string
+
 (** [herd_output_matches_expected ~bell ~cat ~conf ~variants ~libdir herd
- *  litmus expected expected_failure expected_warn] runs the binary
- *  [herd] with a custom [libdir] on a [litmus] file,
- *  and compares the output with an [expected] file.
- *  If the run writes to stderr then we check [expected_failure]. If the
- *  contents of [expected_failure] match then it is an expected failure,
- *  otherwise it is an unexpected failure and will raise an Error.
- *  If the run writes to both stdout and stderr, stdout is checked
- *  against the [expected] file, while stderr is checked against
- *  the [expected_warn] file. If any file is missing or differs,
- *  an Error is raised.
- *  Paths to [cat], [bell], and [conf] files, as well as [variants], can also
- *  be passed in. *)
+    litmus expected expected_failure expected_warn] runs the binary [herd] with
+    a custom [libdir] on a [litmus] file, compares the output in stdout and
+    stderr, and compares it with an [expected] and [expected_failure] files,
+    respectively. It returns [Ok ()] if the command is successful and outputs
+    match, otherwise returns a {run_error} Error. Paths to [cat], [bell], and
+    [conf] files, as well as [variants], can also be passed in. *)
 val herd_output_matches_expected :
   ?verbose : bool ->
   ?check   : check ->
@@ -146,15 +157,15 @@ val herd_output_matches_expected :
   conf     : path option ->
   variants : string list ->
   libdir   : path ->
-  path -> path -> path -> path option -> path option -> bool
+  path -> path -> path -> path option -> path option -> (unit, run_error) result
 
-(** [herd_args_output_mathes_expected herd args litmus
-  *  expected expected_failure expected_warn] has the same functionality
-  *  as [herd_output_matches_expected] above but a different interface,
-  *   as command line options are given as the list [args]. *)
+(** [herd_args_output_mathes_expected herd args litmus expected
+    expected_failure expected_warn] has the same functionality as
+    [herd_output_matches_expected] above but a different interface, as command
+    line options are given as the list [args]. *)
 val herd_args_output_matches_expected :
   ?verbose:bool -> ?check:check -> ?nohash:bool -> path ->
-  string list -> path -> path -> path option -> path option -> bool
+  string list -> path -> path -> path option -> path option -> (unit, run_error) result
 
 (** [is_litmus filename] returns whether the [filename] is a .litmus file. *)
 val is_litmus : path -> bool

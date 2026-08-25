@@ -84,12 +84,15 @@ let herd_kinds_of_permutation ?j ?timeout flags shelf_dir litmuses p =
       flags.herd ?j ?timeout
   in
   match cmd litmuses with
-  | 0,stdout, [] ->
+  | Ok (0, stdout, []) ->
       let kind_of_log l = Log.(l.name, Option.get l.kind) in
       List.map kind_of_log (Log.of_string_list stdout)
-  | _, _, stderr ->
+  | Ok (_, _, stderr) ->
       let lines = String.concat "\n" stderr in
       let msg = Printf.sprintf "Herd returned stderr:\n%s" lines in
+      raise (Error msg)
+  | Result.Error e ->
+      let msg = Printf.sprintf "Herd returned error: %s" (Command.string_of_error e) in
       raise (Error msg)
 
 
