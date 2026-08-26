@@ -10,8 +10,7 @@ aarch64.cat
   [PosRR,Fre]
   $ mcat2config7 --set-libdir ./libdir --let Exp-obs libdir/aarch64.cat
   Rfe
-  Fre
-  Coe
+  [Fre|Coe]
 aarch64hwreqs.cat
   $ mcat2config7 --set-libdir ./libdir --let DSB-ob libdir/aarch64.cat
   DSB.SY***
@@ -22,9 +21,7 @@ aarch64hwreqs.cat
   [DpCtrlCsel,ISB]
   [DpAddr,ISB***]
   [DpAddrCsel,ISB***]
-  [DSB.SY***,ISB]
-  [DSB.LD*R*,ISB]
-  [DSB.ST*W*,ISB]
+  [[DSB.SY***|DSB.LD*R*|DSB.ST*W*],ISB]
   $ mcat2config7 --set-libdir ./libdir --let dob libdir/aarch64.cat
   DpAddr
   DpData*W
@@ -38,44 +35,16 @@ aarch64hwreqs.cat
   DpCtrlCsel*W
   [DpAddrCsel,Po**W]
   $ mcat2config7 --set-libdir ./libdir --let aob libdir/aarch64.cat
-  LxSx
-  Amo.Safe
-  [LxSx,PosWR,A]
-  [Amo.Safe,PosWR,A]
-  [LxSx,PosWR,A,LxSx]
-  [Amo.Safe,PosWR,A,LxSx]
-  [LxSx,PosWR,A,Amo.Safe]
-  [Amo.Safe,PosWR,A,Amo.Safe]
-  [LxSx,PosWR,Q]
-  [Amo.Safe,PosWR,Q]
-  [LxSx,PosWR,Q,LxSx]
-  [Amo.Safe,PosWR,Q,LxSx]
-  [LxSx,PosWR,Q,Amo.Safe]
-  [Amo.Safe,PosWR,Q,Amo.Safe]
+  [LxSx|Amo.Safe]
+  [[LxSx|Amo.Safe],PosWR,[A|Q],[LxSx|Amo.Safe]?]
   $ mcat2config7 --set-libdir ./libdir --let bob libdir/aarch64.cat
   DMB.SY***
   DMB.LD*R*
   DMB.ST*WW
-  [A,Amo.Safe,L,Po]
-  [Po,A,Amo.Safe,L,Po]
-  [L,Po,A]
-  [L,Po,A,LxSx]
-  [L,Po,A,Amo.Safe]
-  [LxSx,L,Po,A]
-  [Amo.Safe,L,Po,A]
-  [LxSx,L,Po,A,LxSx]
-  [Amo.Safe,L,Po,A,LxSx]
-  [LxSx,L,Po,A,Amo.Safe]
-  [Amo.Safe,L,Po,A,Amo.Safe]
-  [A,Po]
-  [A,LxSx,Po]
-  [A,Amo.Safe,Po]
-  [Q,Po]
-  [Q,LxSx,Po]
-  [Q,Amo.Safe,Po]
-  [Po,L]
-  [Po,LxSx,L]
-  [Po,Amo.Safe,L]
+  [Po?,A,Amo.Safe,L,Po]
+  [[LxSx|Amo.Safe]?,L,Po,A,[LxSx|Amo.Safe]?]
+  [[A|Q],[LxSx|Amo.Safe]?,Po]
+  [Po,[LxSx|Amo.Safe]?,L]
 aarch64deps.cat
   $ mcat2config7 --set-libdir ./libdir --let lwfs libdir/aarch64.cat
   Pos*W
