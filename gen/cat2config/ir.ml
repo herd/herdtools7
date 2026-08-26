@@ -290,9 +290,8 @@ let parse_rel_id (s : string) : rel_nf option =
   match s with
   | "po" | "loc" | "co" | "fr" | "rf" | "ext" | "addr" | "data" | "ctrl" | "rmw"
   | "amo" | "lxsx" | "pick-addr-dep" | "pick-data-dep" | "pick-ctrl-dep"
-  | "same-loc" | "sca-class" ->
+  | "same-loc" | "sca-class" | "intervening" ->
       Some (prim_rel (Prim s))
-  | "lrs" -> Some poswr
   | "pick-basic-dep" -> Some pick_basic_dep
   | "pick-dep" ->
       Some
