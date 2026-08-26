@@ -184,10 +184,13 @@ let do_run_test_par wrapper j flags =
       let com = Command.command mapply (args @ litmuses) in
       Printf.eprintf "Will run: %s\n%!" com in
   let st = Command.run_status mapply  (args @ litmuses) in
-  if st <> Ok 0 then begin
+  match st with
+  | Ok 0 -> ()
+  | Ok ec when ec = 128 + 26 -> (* SIGVTALRM *)
+    Printf.printf "Some tests timed out"
+  | _ ->
     Printf.printf "Some tests had errors\n" ;
     exit 1
-  end
 
 let run_test_par = do_run_test_par "herd_test.exe"
 

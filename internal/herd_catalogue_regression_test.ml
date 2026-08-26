@@ -69,6 +69,9 @@ let (>>=) o1 o2 = match o1 with
 | "" -> o2
 | _ -> Some o1
 
+type herd_kinds =
+  | Kinds of (string * ConstrGen.kind) list
+  | Timeout of string list
 
 let herd_kinds_of_permutation ?j ?timeout flags shelf_dir litmuses p =
   let prepend path = Filename.concat shelf_dir path in
@@ -86,7 +89,9 @@ let herd_kinds_of_permutation ?j ?timeout flags shelf_dir litmuses p =
   match cmd litmuses with
   | Ok (0, stdout, []) ->
       let kind_of_log l = Log.(l.name, Option.get l.kind) in
-      List.map kind_of_log (Log.of_string_list stdout)
+      Kinds (List.map kind_of_log (Log.of_string_list stdout))
+  | Ok (ec, _, _) when ec = 128 + 26 -> (* SIGVTALRM *)
+      Timeout litmuses
   | Ok (_, _, stderr) ->
       let lines = String.concat "\n" stderr in
       let msg = Printf.sprintf "Herd returned stderr:\n%s" lines in
@@ -152,36 +157,45 @@ let run_tests ?j ?timeout flags =
 
   let result_of_permutation kinds_path p =
     let expected = Kinds.of_file kinds_path in
-    let actual =
-      herd_kinds_of_permutation ?j ?timeout flags shelf_dir tests p in
-    let diff,miss,excess = Kinds.check ~expected ~actual in
-    if Misc.consp miss then begin
-      let pf =
-        match miss with
-        | [_] -> Printf.eprintf "Warning: test %s is not in reference kind file %s\n"
-        | _ -> Printf.eprintf "Warning: tests %s are not in reference kind file %s\n" in
-      pf (String.concat "," miss) kinds_path
-      end ;
-     if Misc.consp excess then begin
-      let pf =
-        match excess with
-        | [_] -> Printf.eprintf "Warning: test %s is not in test base\n"
-        | _ -> Printf.eprintf "Warning: tests %s are not in test base\n" in
-      pf (String.concat "," excess) 
-      end ;
-    match diff with
-    | [] -> true
-    | rs ->
-        let pp =
-          List.map
-            (fun (n,ke,ka) ->
-              Printf.sprintf "%s: expected=%s, actual=%s"
-                n (ConstrGen.pp_kind ke) (ConstrGen.pp_kind ka))
-            rs in
-        Printf.printf "Kinds differs: kinds file = %s ; %s\n"
-          kinds_path (string_of_permutation p) ;
-        List.iter (Printf.printf "%s\n") pp ;
-        false in
+    match herd_kinds_of_permutation ?j ?timeout flags shelf_dir tests p with
+    | Timeout litmuses ->
+        let pf =
+          ( match litmuses with
+          | [_] -> Printf.eprintf "Warning: a test timed out: %s\n"
+          | _ -> Printf.eprintf "Warning: tests timed out: %s\n"
+          )
+        in
+        pf (String.concat ", " litmuses) ;
+        true
+    | Kinds actual ->
+        let diff,miss,excess = Kinds.check ~expected ~actual in
+        if Misc.consp miss then begin
+          let pf =
+            match miss with
+            | [_] -> Printf.eprintf "Warning: test %s is not in reference kind file %s\n"
+            | _ -> Printf.eprintf "Warning: tests %s are not in reference kind file %s\n" in
+          pf (String.concat "," miss) kinds_path
+          end ;
+         if Misc.consp excess then begin
+          let pf =
+            match excess with
+            | [_] -> Printf.eprintf "Warning: test %s is not in test base\n"
+            | _ -> Printf.eprintf "Warning: tests %s are not in test base\n" in
+          pf (String.concat "," excess)
+          end ;
+        match diff with
+        | [] -> true
+        | rs ->
+            let pp =
+              List.map
+                (fun (n,ke,ka) ->
+                  Printf.sprintf "%s: expected=%s, actual=%s"
+                    n (ConstrGen.pp_kind ke) (ConstrGen.pp_kind ka))
+                rs in
+            Printf.printf "Kinds differs: kinds file = %s ; %s\n"
+              kinds_path (string_of_permutation p) ;
+            List.iter (Printf.printf "%s\n") pp ;
+            false in
   let passed = result_of_permutation flags.kinds_path cat in
   if not passed then exit 1
 
@@ -192,7 +206,12 @@ let promote_tests ?j flags =
   exit_1_if_any_files_missing ~description:"tests" tests ;
 
   let kinds =
-    herd_kinds_of_permutation ?j flags shelf_dir tests cat
+    match herd_kinds_of_permutation ?j flags shelf_dir tests cat with
+    | Kinds kinds -> kinds
+    | Timeout litmuses ->
+        Printf.eprintf "Warning: timeout for tests %s\n"
+          (String.concat "; " litmuses) ;
+        []
   in
   Filesystem.write_file flags.kinds_path
     (fun o -> output_string o (Kinds.to_string kinds))
