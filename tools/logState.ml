@@ -381,6 +381,7 @@ let compare_state same st1 st2 =
       | r -> r
       end
   | r -> r
+
 (* Betweenn two equal states, select the one with explicit absent faults *)
 let select_absent st1 st2 =
   let open HashedState in
@@ -1371,25 +1372,48 @@ let simple_same out1 out2 t1 t2 k =
   do_rec t1.s_tests t2.s_tests k
 
 (* Check presence of fault with no fault type in state *)
-let has_no_fault_type st =
-  let rec exists_no_type fs =
-    let open HashedFaults in
-    let open HashedFault in
-    match fs.Hashcons.node with
-    | Nil -> false
-    | Cons (p, fs) ->
-        match  HashedFault.get_fault_type p with
-        | No -> true
-        | DIPrefix|Other ->  exists_no_type fs in
-  exists_no_type HashedState.((as_t st).S.f)
+module FaultKinds =
+  MySet.Make
+    (struct
+      open HashedFault
+      type t = ft_kind
+      let compare = compare_kinds
+    end)
+
+let get_fault_kinds sts =
+  List.fold_left
+    (fun k st ->
+       HashedFaults.fold_left
+         (fun k f -> FaultKinds.add  (HashedFault.get_fault_type f) k)
+         k HashedState.((as_t st).S.f))
+    FaultKinds.empty
+    sts
 
 (* Select appropriate diff function *)
-let select_diff safe opt xs ys =
+
+let _dbg = false
+
+(*
+ * Simple diff cannot handle the various syntax of
+ * equivalent faults, because they rely on hashconsed nodes
+ * identity (see diff_not_empty and diff below)
+ * for comparison and that those identities differ
+ * with such syntactical differences. Hence, when the syntax of
+ * faults of the diff argument are different, we rely on complete
+ * diff, _i.e._ the one of **mcompare7**.
+ *)
+
+let select_diff safe opt name xs ys =
+  let fk1 = get_fault_kinds xs
+  and fk2 = get_fault_kinds ys in
   if
-    List.exists has_no_fault_type xs
-    || List.exists has_no_fault_type ys
-  then safe xs ys
-  else opt xs ys
+    _dbg &&
+    (FaultKinds.cardinal fk1 > 1 || FaultKinds.cardinal fk2 > 1)
+  then
+    Printf.eprintf "Found heterogeneous test %s\n%!" name ;
+  if FaultKinds.equal fk1 fk2
+  then opt xs ys
+  else safe xs ys
 
 (* Non optimised diff, to be used when fault comparison is required *)
 
@@ -1414,7 +1438,7 @@ let simple_diff_gen diff out t1 t2 k =
         Warn.fatal "Hashes for test %s differ\n" t1.s_tname
       else
         do_diff r1 r2
-          (if diff t1.s_states t2.s_states then begin
+          (if diff t1.s_tname t1.s_states t2.s_states then begin
             out t1.s_tname k
           end else k) in
   do_diff t1.s_tests t2.s_tests k
@@ -1437,18 +1461,18 @@ let simple_diff_not_empty out t1 t2 k =
        diff_not_empty)
     out t1 t2 k
 
+(* diff predicate: true when states differ. *)
+
+let diff sts1 sts2 =
+  List.equal HashedState.M.equal_node sts1 sts2 |> Bool.not
+
 let diff_simple_states xs ys =
   select_diff
     (fun xs ys ->
       let xs = to_parsed_sts xs
       and ys = to_parsed_sts ys in
       not (diff_states_empty xs ys && diff_states_empty ys xs))
-    (fun xs ys ->
-       not
-         (List.equal
-            (fun st1 st2 ->
-               HashedState.M.equal_node st1 st2)
-            xs ys))
+    diff
     xs ys
 
 let simple_diff out t1 t2 k =
