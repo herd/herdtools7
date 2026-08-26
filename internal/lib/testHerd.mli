@@ -117,11 +117,10 @@ type check =
 
 val pp_check : check -> string
 
-(** [herd_output_matches_expected check nohash litmus expected] returns true when
- * the output file produced by running [litmus] matches reference
- *  [expected]. If argument [nohash] is true, hashes are not compared.
- * If argument [check] specifies the valididy check
- * (see type check above). *)
+(** [herd_output_matches_expected ?check ?nohash litmus expected] returns true
+    when the output file produced by running [litmus] matches reference
+    [expected]. If argument [nohash] is true, hashes are not compared. If
+    argument [check] specifies the valididy check (see type check above). *)
 val output_matches_expected :
   ?check:check -> ?nohash:bool -> path -> path -> bool
 
@@ -147,15 +146,15 @@ val herd_output_matches_expected :
   conf     : path option ->
   variants : string list ->
   libdir   : path ->
-    path -> path -> path -> path -> path  -> bool
+  path -> path -> path -> path option -> path option -> bool
 
 (** [herd_args_output_mathes_expected herd args litmus
   *  expected expected_failure expected_warn] has the same functionality
   *  as [herd_output_matches_expected] above but a different interface,
   *   as command line options are given as the list [args]. *)
 val herd_args_output_matches_expected :
-  ?verbose:bool -> ?check:check -> ?nohash:bool ->
-  path -> string list -> path -> path -> path -> path  -> bool
+  ?verbose:bool -> ?check:check -> ?nohash:bool -> path ->
+  string list -> path -> path -> path option -> path option -> bool
 
 (** [is_litmus filename] returns whether the [filename] is a .litmus file. *)
 val is_litmus : path -> bool
