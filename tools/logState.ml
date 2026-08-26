@@ -501,6 +501,17 @@ let diff_states sts1 sts2 =
 
 let diff_states_empty sts1 sts2 = do_diff_states_empty sts1 sts2 [] true
 
+(*
+ * Notice that sts1 and sts2 may originate from logs of different ages.
+ * Indeed, fault syntax has changed over time. The `compare_state`
+ * function abstract on those difference, (see HashedFault.compare
+ * for details) making equal faults that syntactically differ
+ * (such as `Fault(L0,x)` in a very old logs, or
+ * `Fault(L0,x,"D-MMU:Permission")` in a "very new" log.
+ * For state bindinds to be sorted, it is important for various format
+ * not to mix together. The `select_newer` function below privileges the
+ * newer format.
+ *)
 let rec do_union_states sts1 sts2 =  match sts1,sts2 with
 | ([],sts)|(sts,[]) -> sts
 | st1::sts1,st2::sts2 ->

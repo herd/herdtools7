@@ -44,6 +44,30 @@ let as_t h =
 
 let as_hash h = h.Hashcons.hkey
 
+(********************)
+(* "Compare" faults *)
+(********************)
+
+(*
+ * It is important to notice that compare on fault does not
+ *  yield a transitive equality function. For instance
+ *   + compare Fault(L0,x,"MMU:Permission") Fault(L0,x) == 0
+ *   + compare Fault(L0,x) Fault(L0,x,"MMU:Translation") == 0
+ *   + compare  Fault(L0,x,"MMU:Permission")  Fault(L0,x,"MMU:Translation") !=0
+ * A similar example is possible with "prefixed" MMU faults:
+ *   + compare Fault(L0,x,"D-MMU:Permission") Fault(L0,x,"MMU:Permission") == 0
+ *   + compare Fault(L0,x,"MMU:Permission") Fault(L0,x,"I-MMU:Permission") == 0
+ *   + compare  Fault(L0,x,"D-MMU:Permission")  Fault(L0,x,"I-MMU:Permission") !=0
+ * Hence we have "old" faults (no fault type), "new" faults (with fault-types)
+ * and "very new" faults. As long as the three sets do not mix, teh compare
+ * function has the transivity properties that are expected from compare
+ * functions. Such properties are required for sort to operate 
+ * As the compare function is used to sort final states, it is important
+ * for these sets never to mix. Notice that this invariant holds naturally
+ * for initial logs. Moreover, when summing logs, the "newer" states are
+ * priviledged over "older" ones.
+ *)
+
 let warn_once = ref true
 
 let compare_ftype_names s1 s2 =
