@@ -67,7 +67,7 @@
   ## [Exp & M]; rmw; [Exp & M]
   -safe LxSx Amo
   ## [Exp & M]; rmw; lrs; [A | Q]
-  -safe [LxSx,PosWRPA] [Amo,PosWRPA] [LxSx,PosWRPA,AmoAP] [Amo,PosWRPA,AmoAP] [LxSx,PosWRPQ] [Amo,PosWRPQ] [LxSx,PosWRPQ,AmoQP] [Amo,PosWRPQ,AmoQP]
+  -safe [LxSx,PosWR,A] [Amo,PosWR,A] [LxSx,PosWR,A,Amo] [Amo,PosWR,A,Amo] [LxSx,PosWR,Q] [Amo,PosWR,Q] [LxSx,PosWR,Q,Amo] [Amo,PosWR,Q,Amo]
   
   ### bob
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [dmb.full]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
@@ -77,13 +77,13 @@
   ## [Exp & W]; po; [dmb.st]; po; [(Exp & W) | (MMU & FAULT)]
   -safe DMB.ST*WW
   ## [range([A]; amo; [L])]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe [AmoAL,PoLP]
+  -safe [A,Amo,L,Po]
   ## [L]; po; [A]
-  -safe PoLA [PoLA,AmoAP] [AmoPL,PoLA] [AmoPL,PoLA,AmoAP]
+  -safe [L,Po,A] [L,Po,A,Amo] [Amo,L,Po,A] [Amo,L,Po,A,Amo]
   ## [A | Q]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe PoAP [AmoAP,Po] PoQP [AmoQP,Po]
+  -safe [A,Po] [A,Amo,Po] [Q,Po] [Q,Amo,Po]
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [L]
-  -safe PoPL [Po,AmoPL]
+  -safe [Po,L] [Po,Amo,L]
   
   ### lwfs
   ## [(Exp & M) | (Imp & (Tag & R))]; (po & same-loc); [Exp & W]

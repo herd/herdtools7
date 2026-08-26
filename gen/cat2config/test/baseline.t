@@ -40,29 +40,29 @@ aarch64hwreqs.cat
   $ mcat2config7 --set-libdir ./libdir --let aob libdir/aarch64.cat
   LxSx
   Amo
-  [LxSx,PosWRPA]
-  [Amo,PosWRPA]
-  [LxSx,PosWRPA,AmoAP]
-  [Amo,PosWRPA,AmoAP]
-  [LxSx,PosWRPQ]
-  [Amo,PosWRPQ]
-  [LxSx,PosWRPQ,AmoQP]
-  [Amo,PosWRPQ,AmoQP]
+  [LxSx,PosWR,A]
+  [Amo,PosWR,A]
+  [LxSx,PosWR,A,Amo]
+  [Amo,PosWR,A,Amo]
+  [LxSx,PosWR,Q]
+  [Amo,PosWR,Q]
+  [LxSx,PosWR,Q,Amo]
+  [Amo,PosWR,Q,Amo]
   $ mcat2config7 --set-libdir ./libdir --let bob libdir/aarch64.cat
   DMB.SY***
   DMB.LD*R*
   DMB.ST*WW
-  [AmoAL,PoLP]
-  PoLA
-  [PoLA,AmoAP]
-  [AmoPL,PoLA]
-  [AmoPL,PoLA,AmoAP]
-  PoAP
-  [AmoAP,Po]
-  PoQP
-  [AmoQP,Po]
-  PoPL
-  [Po,AmoPL]
+  [A,Amo,L,Po]
+  [L,Po,A]
+  [L,Po,A,Amo]
+  [Amo,L,Po,A]
+  [Amo,L,Po,A,Amo]
+  [A,Po]
+  [A,Amo,Po]
+  [Q,Po]
+  [Q,Amo,Po]
+  [Po,L]
+  [Po,Amo,L]
 aarch64deps.cat
   $ mcat2config7 --set-libdir ./libdir --let lwfs libdir/aarch64.cat
   Pos*W
