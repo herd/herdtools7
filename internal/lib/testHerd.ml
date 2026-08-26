@@ -282,17 +282,14 @@ let run_herd_concurrent ?verbose ~bell ~cat ~conf ~variants ~libdir herd ~j litm
   r
 
 let read_some_file litmus name =
-  if name = "" then None
-  else
-    try Some (Filesystem.read_file name Channel.read_lines)
-    with _ ->
-      begin
-        Printf.printf "Failed %s : Missing file '%s'\n" litmus name ;
-        None
-      end
+  Option.bind name @@ fun name ->
+  try Some (Filesystem.read_file name Channel.read_lines)
+  with _ ->
+      Printf.printf "Failed %s : Missing file '%s'\n" litmus name ;
+      None
 
 let do_check_output
-    check nohash litmus expected  expected_failure expected_warn t =
+    check nohash litmus expected expected_failure expected_warn t =
   let () =
     let _,lines,_ = t in
     if false && lines <> [] then begin
@@ -302,6 +299,7 @@ let do_check_output
       List.iter prerr_endline lines ;
       ()
     end in
+  let expected = Some expected in
 
   match t with
     | 0,[],[] -> true (* Can occur in case of controlled timeout *)
@@ -388,7 +386,7 @@ let read_output_files litmus =
 let output_matches_expected ?(check=All) ?(nohash=false) litmus expected =
   try
     let o,e = read_output_files litmus in
-    do_check_output check nohash litmus expected "" "" (0,o,e)
+    do_check_output check nohash litmus expected None None (0,o,e)
   with Command.Error e ->
      Printf.printf "Failed %s : %s \n" litmus
        (Command.string_of_error e) ; false

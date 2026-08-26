@@ -122,7 +122,7 @@ let run_tests ?j flags =
            (* check if a `*.expected-warn` exists *)
            let warn_file = Filename.remove_extension e
                            |> TestHerd.expected_warn_of_litmus in
-           let warn_file = if Sys.file_exists warn_file then warn_file else "" in
+           let warn_file = if Sys.file_exists warn_file then Some warn_file else None in
             TestHerd.herd_output_matches_expected
               ~verbose:flags.verbose
               ~nohash:flags.nohash
@@ -130,7 +130,7 @@ let run_tests ?j flags =
              ~conf:flags.herd_conf
              ~variants:flags.variants
              ~libdir:flags.libdir
-             flags.herd l e "" warn_file)
+             flags.herd l e None warn_file)
          les
     | Some j ->
        ignore

@@ -139,8 +139,8 @@ let show_tests_par j flags =
         ~libdir:flags.libdir
         flags.herd l
       (TestHerd.expected_of_litmus l)
-      (TestHerd.expected_failure_of_litmus l)
-      (TestHerd.expected_warn_of_litmus l)
+      (Some (TestHerd.expected_failure_of_litmus l))
+      (Some (TestHerd.expected_warn_of_litmus l))
   in
   let everything_passed = ref true in
   for_each_litmus_in_dir flags.litmus_dir (fun l ->
