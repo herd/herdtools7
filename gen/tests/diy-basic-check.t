@@ -52,6 +52,32 @@ A diy7 predicate merge test for before on composite relaxations
   LB000: PodRW Rfe PodRW Rfe
   3.LB000: PodRW Rfe PodRW Rfe PodRW Rfe
   4.LB000: PodRW Rfe PodRW Rfe PodRW Rfe PodRW Rfe
+A diy7 with predicate unfolds composite arguments
+  $ diy7 -arch AArch64 -relax '[PodRW Rfe @with(PodRW Rfe)]' -unfold-only 2>&1 | grep -v '^$'
+  ***relax***
+  [PodRW,Rfe,@with(PodRW),@with(Rfe)]
+  ***safe***
+  ***reject***
+A diy7 with predicate accepts identical anchored boundaries
+  $ diy7 -arch AArch64 -filter-check '[PodRW Rfe @with(PodRW Rfe)]' '[@with(PodRW Rfe) PodRW Rfe]' 2>&1
+  Sequence `[PodRW,Rfe,@with(PodRW),@with(Rfe)]` `[@with(PodRW),@with(Rfe),PodRW,Rfe]` passes the internal filter in mode `default`
+A diy7 with predicate rejects an unmatched boundary
+  $ diy7 -arch AArch64 -filter-check '[PodRW Rfe @with(PodRW Rfe)]' '[PodRW Rfe]' 2>&1
+  Sequence `[PodRW,Rfe,@with(PodRW),@with(Rfe)]` `[PodRW,Rfe]` is prohibited in the internal filter in mode `default`
+A diy7 with predicate then checks remaining after predicates
+  $ diy7 -arch AArch64 -filter-check '[PodRW @after(Rfe) @with(PodRW)]' '[@with(PodRW) Rfe]' 2>&1
+  Sequence `[PodRW,@after(Rfe),@with(PodRW)]` `[@with(PodRW),Rfe]` passes the internal filter in mode `default`
+A diy7 with predicate rejects incompatible remaining after predicates
+  $ diy7 -arch AArch64 -filter-check '[PodRW @after(PodRW) @with(PodRW)]' '[@with(PodRW) Rfe]' 2>&1
+  Sequence `[PodRW,@after(PodRW),@with(PodRW)]` `[@with(PodRW),Rfe]` is prohibited in the internal filter in mode `default`
+A diy7 state predicate is transparent between with predicates
+  $ diy7 -arch AArch64 -filter-check '[PodRW @with(PodRW) @state(S) @with(Rfe)]' '[@with(PodRW) @state(S) @with(Rfe) Rfe]' 2>&1
+  Sequence `[PodRW,@with(PodRW),@state(S),@with(Rfe)]` `[@with(PodRW),@state(S),@with(Rfe),Rfe]` passes the internal filter in mode `default`
+A diy7 with predicate materialises one copy of the matched sequence
+  $ diy7 -arch AArch64 -cycleonly true -size 2 -exact -relax '[PodRW Rfe @with(PodRW Rfe)]' -safe '[@with(PodRW Rfe) PodRW Rfe]' 2>&1 | grep -v '^# Version' | grep -v '^Relaxations tested:'
+  # diy7 -arch AArch64 -cycleonly true -size 2 -exact -relax [PodRW Rfe @with(PodRW Rfe)] -safe [@with(PodRW Rfe) PodRW Rfe]
+  Generator produced 1 tests
+  3.LB000: PodRW Rfe PodRW Rfe PodRW Rfe
 A diy7 state predicate unfold test preserves state tags
   $ diy7 -arch AArch64 -relax '[@state(ImpTagObs)|@state(ExpObs) PodWW L]' -unfold-only 2>&1 | grep -v '^$'
   ***relax***
