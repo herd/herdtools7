@@ -255,7 +255,26 @@ let concat_relax (relaxs : relax list) : relax =
       (function Ast.Seq items -> items | item -> [ item ])
       relaxs
   in
+  let items =
+    List.fold_right
+      (fun item items ->
+        match (item, items) with
+        | Ast.One (Concrete e1), Ast.One (Concrete e2) :: _
+          when E.is_id e1.edge && E.compare e1 e2 = 0 ->
+            items
+        | _ -> item :: items)
+      items []
+  in
   match items with [ item ] -> item | items -> Ast.Seq items
+
+(* For example, wrapping `Macro "Po"` with `L` and `A` produces the
+   relaxation `[L,Po,A]`. *)
+let split_annotations item left right =
+  let annotation atom =
+    Concrete E.{ edge = Id; a1 = Some atom; a2 = Some atom }
+  in
+  let annotations = function None -> [] | Some atom -> [ annotation atom ] in
+  annotations left @ [ item ] @ annotations right
 
 let try_match_edge (left : prim_set list) (core : seq_item list)
     (right : prim_set list) : relax list option =
@@ -319,24 +338,19 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
     tedges
     |> List.concat_map (filter_tedge pedge.sd pedge.ie left.extr right.extr)
   in
-  let pp_macro name =
-    match (left.atom, right.atom) with
-    | None, None -> name
-    | a1, a2 ->
-        Format.sprintf "%s%s%s" name (E.pp_atom_option a1) (E.pp_atom_option a2)
-  in
   let relaxs =
     tedges
     |> List.map (fun (tedge : tedge) ->
-        let edges =
+        let item =
           match tedge.head with
-          | Macro name -> [ Macro (pp_macro name) ]
+          | Macro name -> Macro name
           | Concrete edge ->
-              let edge = E.{ edge; a1 = left.atom; a2 = right.atom } in
+              let edge = E.{ edge; a1 = None; a2 = None } in
               let edge = set_src left.extr edge in
               let edge = set_tgt right.extr edge in
-              [ Concrete edge ]
+              Concrete edge
         in
+        let edges = split_annotations item left.atom right.atom in
         let edges =
           match tedge.insert with
           | None -> edges
