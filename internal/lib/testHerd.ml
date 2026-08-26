@@ -305,6 +305,7 @@ type run_error =
   | Stdout_mismatch
   | Stderr_mismatch 
   | Stderr_not_expected of string list (** stderr *)
+  | Timed_out
   | Unknown_exit_code of int * bool * bool
       (** exit code, stdout present, stderr present *)
   | Command_error of Command.error
@@ -316,6 +317,7 @@ let pp_run_error = function
   | Stdout_mismatch -> "Stdout did not match Expected file"
   | Stderr_mismatch -> "Stderr did not match Expected_failure file"
   | Stderr_not_expected _ -> "Stderr found, but not expected"
+  | Timed_out -> "Timed out"
   | Unknown_exit_code (ec, stdout, stderr) ->
       Printf.sprintf "Unknown exit code: %i; stdout: %b; stderr: %b"
         ec stdout stderr
@@ -345,7 +347,12 @@ let do_check_output
   let ( let* ) = Result.bind in
   match t with
     | 0,[],[] -> Ok () (* Can occur in case of controlled timeout *)
-
+    | ec, _, stderr when ec = 128 + 26 -> (* Timeout with SIGVTALRM *)
+        let* expected_timeout_output =
+          read_some_file ~error:Timed_out litmus expected
+        in
+        let* () = check_stderr ~expected:expected_timeout_output stderr in
+        Error Timed_out
     | _,[],[] ->
         Error Stdout_missing
     | 0,(_::_ as stdout), [] -> (* Herd finished without errors - normal *)
