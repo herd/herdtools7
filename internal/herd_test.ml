@@ -54,8 +54,8 @@ let flags, litmus =
 
 let () =
   let expected = TestHerd.expected_of_litmus litmus
-  and expected_failure = TestHerd.expected_failure_of_litmus litmus
-  and expected_warn = TestHerd.expected_warn_of_litmus litmus in
+  and expected_failure = Some (TestHerd.expected_failure_of_litmus litmus)
+  and expected_warn = Some (TestHerd.expected_warn_of_litmus litmus) in
   if
     TestHerd.herd_args_output_matches_expected
       ~verbose:flags.verbose ~check:flags.check com ~nohash:flags.nohash wrapped litmus
