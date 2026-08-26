@@ -391,7 +391,9 @@ let filter_relations f (Ir.Union seqs) =
        seqs)
 
 let filter_unsupported_relations =
-  filter_relations (function Prim "sca-class" -> false | _ -> true)
+  filter_relations (function
+    | Prim ("sca-class" | "intervening") -> false
+    | _ -> true)
 
 let translate_seq (Seq l : seq_item Ir.seq) : relax list =
   let l = [ Ir.Set (Inter [ Prim "M" ]) ] @ l @ [ Set (Inter [ Prim "M" ]) ] in
