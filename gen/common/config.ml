@@ -172,7 +172,7 @@ let diycross_parser_syntax_doc =
 let diy7_parser_syntax_doc =
   parser_syntax_doc ^ "\n\
    In `diy7`, top-level plain separators denote choice, so '[A B] C [D E]' has canonical form `[[A,B]|C|[D,E]]`.\n\
-   `diy7` also accepts `@before(E)` and `@after(E)` predicate decorators; they constrain adjacent relaxation chunks without adding E to the generated cycle.\n" ^
+   `diy7` also accepts `@before(E)`, `@after(E)`, and `@with(...)` predicate decorators; they constrain adjacent relaxation chunks without adding E to the generated cycle.\n" ^
   "  `@before(E)` must be a leading prefix and requires the preceding chunk to end with E.\n" ^
   "  `@after(E)` must be a trailing suffix and requires the following chunk to start with E.\n" ^
   "E may be one edge or a sequence, and every edge in the sequence must match at that boundary. These decorators are not accepted by the shared `diyone7` or `diycross7` parsers."
