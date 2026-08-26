@@ -134,6 +134,7 @@ type run_error =
       (** The expected failure file contents and stderr were different *)
   | Stderr_not_expected of string list
       (** Stdout was present, but not expected *)
+  | Timed_out (** Herd timed out *)
   | Unknown_exit_code of int * bool * bool
       (** Herd exited with an unknown exit code. Shows presence of stdout and stderr *)
   | Command_error of Command.error
