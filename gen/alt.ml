@@ -307,17 +307,19 @@ module Make(C:Builder.S)
         | Plain of C.E.edge
         | Before of C.E.edge
         | After of C.E.edge
+        | With of C.E.edge
         | State of StringSet.t
 
       let compare_edge lhs rhs =
         let rank = function
-          | Plain _ -> 0 | Before _ -> 1 | After _ -> 2 | State _ -> 3 in
+          | Plain _ -> 0 | Before _ -> 1 | After _ -> 2 | With _ -> 3 | State _ -> 4 in
         match Misc.int_compare (rank lhs) (rank rhs) with
         | 0 ->
             begin match lhs,rhs with
             | Plain lhs,Plain rhs
             | Before lhs,Before rhs
-            | After lhs,After rhs -> C.E.compare lhs rhs
+            | After lhs,After rhs
+            | With lhs,With rhs -> C.E.compare lhs rhs
             | State lhs,State rhs -> StringSet.compare lhs rhs
             | _,_ -> assert false
             end
@@ -337,10 +339,11 @@ module Make(C:Builder.S)
           | Plain edge -> make edge
           | Before _ as edge when same edge -> edge
           | After _ as edge when same edge -> edge
-          | Before _ | After _ -> Warn.user_error "%s" conflict
+          | With _ as edge when same edge -> edge
+          | Before _ | After _ | With _ -> Warn.user_error "%s" conflict
           | State _ ->
               Warn.user_error
-                "predicate state cannot be decorated by before/after." in
+                "predicate state cannot be decorated by before/after/with." in
         let decorate_ast make same conflict =
           (* Invoke the deferred transformation of the predicate argument. *)
           Ast.bind (parse_ast ())
@@ -366,6 +369,11 @@ module Make(C:Builder.S)
               (fun edge -> After edge)
               (function After _ -> true | _ -> false)
               "before and after predicates cannot apply to the same edge"
+        | "with",_ ->
+            decorate_ast
+              (fun edge -> With edge)
+              (function With _ -> true | _ -> false)
+              "with predicate cannot decorate another predicate"
         | pred,_ -> Warn.user_error "predicate %s is not supported." pred
 
       let pp_states states = match StringSet.elements states with
@@ -376,6 +384,7 @@ module Make(C:Builder.S)
         | Plain edge -> pp_edge edge
         | Before edge -> sprintf "@before(%s)" (pp_edge edge)
         | After edge -> sprintf "@after(%s)" (pp_edge edge)
+        | With edge -> sprintf "@with(%s)" (pp_edge edge)
         | State states ->
             StringSet.elements states
             |> List.map (sprintf "@state(%s)")
@@ -401,7 +410,7 @@ module Make(C:Builder.S)
       let to_relax relax =
         List.filter_map
           (function
-            | Plain edge | Before edge | After edge -> Some edge
+            | Plain edge | Before edge | After edge | With edge -> Some edge
             | State _ -> None)
           relax
 
@@ -435,6 +444,7 @@ module Make(C:Builder.S)
             | Plain _::template,edge::edges -> Plain edge::do_rec template edges
             | Before _::template,edge::edges -> Before edge::do_rec template edges
             | After _::template,edge::edges -> After edge::do_rec template edges
+            | With _::template,edge::edges -> With edge::do_rec template edges
             | _,_ -> Warn.fatal "predicate expansion changed relaxation length" in
           do_rec template_predicate_relax edges in
         List.concat_map
@@ -442,6 +452,16 @@ module Make(C:Builder.S)
             varatom_es [to_relax predicate_relax]
             |> List.map (reattach_predicates predicate_relax))
           predicate_relaxes
+
+      let remove_leading_with =
+        let rec do_rec = function
+          | With _::rest -> do_rec rest
+          | State state::rest -> State state::do_rec rest
+          | rest -> rest in
+        do_rec
+
+      let remove_trailing_with edges =
+        remove_leading_with (List.rev edges) |> List.rev
 
       let remove_invalid_relaxes relaxes =
         let valid_relaxes =
@@ -462,7 +482,7 @@ module Make(C:Builder.S)
           | Plain _::rest -> plain_then_after rest
           | After _::rest ->
               List.for_all (function After _ -> true | _ -> false) rest
-          | Before _::_ | State _::_ -> false in
+          | Before _::_ | With _::_ | State _::_ -> false in
         let valid_state_boundaries relax =
           let finish_leading states =
             if StringSet.is_empty states then true
@@ -481,11 +501,11 @@ module Make(C:Builder.S)
             | [] -> true
             | Plain _::rest -> plain_body rest
             | (State _|After _)::_ as rest -> trailing_boundary rest
-            | Before _::_ -> false
+            | Before _::_ | With _::_ -> false
           and trailing_boundary = function
             | [] -> true
             | (After _|State _)::rest -> trailing_boundary rest
-            | Plain _::_ | Before _::_ -> false in
+            | Plain _::_ | Before _::_ | With _::_ -> false in
           leading_boundary StringSet.empty relax in
         let has_plain_edge =
           List.exists (function Plain _ -> true | _ -> false) in
@@ -499,12 +519,13 @@ module Make(C:Builder.S)
               Warn.user_error
                 "predicate after cannot be used without a relaxation."
           | [] -> false
-          | State _::_ -> false
+          | State _::_ | With _::_ -> false
           | Plain _::_ -> assert false in
         List.filter
           (fun relax ->
-            let edges = List.filter (function State _ -> false | _ -> true) relax in
-            valid_state_boundaries relax
+            let core = remove_leading_with relax |> remove_trailing_with in
+            let edges = List.filter (function State _ -> false | _ -> true) core in
+            valid_state_boundaries core
             && require_plain_edge edges
             && C.R.Set.mem (to_relax relax) valid_relaxes
             && leading_before_trailing_after_predicate edges)
@@ -548,9 +569,6 @@ module Make(C:Builder.S)
     let lift r = List.map (fun edge -> Plain edge) r
     let lift_list rs = List.map lift rs
 
-    let to_cycle_edges edges =
-      List.filter_map (function Plain edge -> Some edge | _ -> None) edges
-
     module Chunk : sig
       type chunk
       type t
@@ -586,8 +604,11 @@ module Make(C:Builder.S)
           to_cycle : C.E.edge list ;
           concrete_edges_with_atom : C.E.edge list ;
           non_pseudo_edges : C.E.edge list ;
+          concrete_edges : C.E.edge list ;
           leading_before : C.E.edge list ;
           trailing_after : C.E.edge list ;
+          leading_with : C.E.edge list ;
+          trailing_with : C.E.edge list ;
           leading_state : StringSet.t ;
           trailing_state : StringSet.t ;
           process_count : int ;
@@ -601,6 +622,25 @@ module Make(C:Builder.S)
         }
 
       type t = bool array array
+
+      let leading_with =
+        let rec do_rec = function
+          | With edge::rest -> edge::do_rec rest
+          | State _::rest -> do_rec rest
+          | _ -> [] in
+        do_rec
+
+      let trailing_with edges = leading_with (List.rev edges) |> List.rev
+
+      (** [to_cycle_edges edges] materialises plain edges and any trailing
+          [with] sequence in the current chunk. A leading [with] sequence is
+          only an anchor: its matching trailing sequence is materialised by the
+          preceding chunk. This runs before predicate resolution; unmatched
+          anchors are rejected later. *)
+      let to_cycle_edges edges =
+        let concrete =
+          List.filter_map (function Plain edge -> Some edge | _ -> None) edges in
+        concrete @ trailing_with edges
 
       let to_relax c = c.predicate_relax
       let to_cycle c = c.to_cycle
@@ -689,6 +729,12 @@ module Make(C:Builder.S)
       let ends_with_edges list expected =
         starts_with_edges (List.rev list) (List.rev expected)
 
+      let merge_with next exist =
+        match next.trailing_with,exist.leading_with with
+        | trailing,leading when trailing <> [] && leading <> [] ->
+            C.R.compare trailing leading = 0
+        | _ -> false
+
       (* Given `next = [....; after(..); after(..)]` and
          `exist = [before(..); before(..); ....]`, check whether the optional
          boundary predicates can be merged with the neighbouring concrete edge:
@@ -699,9 +745,9 @@ module Make(C:Builder.S)
         (* Match `after` or `before` predicates when present. *)
         match next.trailing_after,exist.leading_before with
         | (_::_ as after),[] ->
-            starts_with_edges exist.to_cycle after
+            starts_with_edges exist.concrete_edges after
         | [],(_::_ as before) ->
-            ends_with_edges next.to_cycle before
+            ends_with_edges next.concrete_edges before
         (* Reject an `after` predicate directly meeting a `before` predicate. *)
         | [],[] | _::_,_::_ -> false
 
@@ -721,23 +767,33 @@ module Make(C:Builder.S)
         && can_precede next.to_cycle exist.to_cycle
       (* Resolve boundary metadata from the outside in:
          - Require equal state sets.
+         - Match and remove any `with` predicates.
          - Match `before`/`after` predicates against neighbouring plain edges.
          - Otherwise, check plain-edge adjacency with the internal filter. *)
       let can_precede can_precede next exist =
         if not (StringSet.equal next.trailing_state exist.leading_state) then false
+        else if next.trailing_with <> [] || exist.leading_with <> [] then
+          if merge_with next exist then begin
+              (* Both relaxations are already valid. The matching `with`
+                 sequence concretises their shared boundary, leaving only any
+                 newly exposed boundary predicates to check. *)
+              if next.trailing_after <> [] || exist.leading_before <> []
+              then merge_predicate next exist
+              else true
+          end else false
         else if next.trailing_after <> [] || exist.leading_before <> [] then
           merge_predicate next exist
         else can_precede_edges can_precede next exist
 
       let rec leading_before = function
         | Before edge::rest -> edge::leading_before rest
-        | State _::rest -> leading_before rest
+        | State _::rest | With _::rest -> leading_before rest
         | _ -> []
 
       let trailing_after relax =
         let rec do_rec = function
           | After edge::rest -> edge::do_rec rest
-          | State _::rest -> do_rec rest
+          | State _::rest | With _::rest -> do_rec rest
           | _ -> [] in
         do_rec (List.rev relax) |> List.rev
 
@@ -762,13 +818,17 @@ module Make(C:Builder.S)
               to_cycle in
           let non_pseudo_edges =
             List.filter (fun edge -> C.E.is_non_pseudo edge.C.E.edge) to_cycle in
+          let concrete_edges =
+            List.filter_map
+              (function Plain edge -> Some edge | _ -> None)
+              predicate_relax in
           let leading_state =
             collect_state
-              (function Before _ -> true | _ -> false)
+              (function Before _|With _ -> true | _ -> false)
               StringSet.empty predicate_relax in
           let trailing_state =
             collect_state
-              (function After _ -> true | _ -> false)
+              (function After _|With _ -> true | _ -> false)
               StringSet.empty (List.rev predicate_relax) in
           {
             id;
@@ -776,8 +836,11 @@ module Make(C:Builder.S)
             to_cycle;
             concrete_edges_with_atom;
             non_pseudo_edges;
+            concrete_edges;
             leading_before=leading_before predicate_relax;
             trailing_after=trailing_after predicate_relax;
+            leading_with=leading_with predicate_relax;
+            trailing_with=trailing_with predicate_relax;
             leading_state;
             trailing_state;
             process_count=count_processes to_cycle;
