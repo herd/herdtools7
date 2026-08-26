@@ -17,7 +17,7 @@
   ## [Exp & M]; (rf & ext); [Exp & M]
   -safe Rfe
   ## [Exp & M]; (ca & ext); [Exp & M]
-  -safe Fre Coe
+  -safe [Fre|Coe]
   
   ### DSB-ob
   ## [M | DC.CVAU | IC]; po; [dsb.full]; po; [~((Imp & (TTD & M)) | (Imp & (Instr & R)))]
@@ -37,7 +37,7 @@
   ## [Exp & R]; pick-addr-dep; [Exp & M]; po; [IFB]; po
   -safe [DpAddrCsel,ISB***]
   ## DSB-ob; [IFB]; po
-  -safe [DSB.SY***,ISB] [DSB.LD*R*,ISB] [DSB.ST*W*,ISB]
+  -safe [[DSB.SY***|DSB.LD*R*|DSB.ST*W*],ISB]
   
   ### dob
   ## addr
@@ -65,9 +65,9 @@
   
   ### aob
   ## [Exp & M]; rmw; [Exp & M]
-  -safe LxSx Amo.Safe
+  -safe [LxSx|Amo.Safe]
   ## [Exp & M]; rmw; lrs; [A | Q]
-  -safe [LxSx,PosWR,A] [Amo.Safe,PosWR,A] [LxSx,PosWR,A,LxSx] [Amo.Safe,PosWR,A,LxSx] [LxSx,PosWR,A,Amo.Safe] [Amo.Safe,PosWR,A,Amo.Safe] [LxSx,PosWR,Q] [Amo.Safe,PosWR,Q] [LxSx,PosWR,Q,LxSx] [Amo.Safe,PosWR,Q,LxSx] [LxSx,PosWR,Q,Amo.Safe] [Amo.Safe,PosWR,Q,Amo.Safe]
+  -safe [[LxSx|Amo.Safe],PosWR,[A|Q],[LxSx|Amo.Safe]?]
   
   ### bob
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [dmb.full]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
@@ -77,13 +77,13 @@
   ## [Exp & W]; po; [dmb.st]; po; [(Exp & W) | (MMU & FAULT)]
   -safe DMB.ST*WW
   ## [range([A]; amo; [L])]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe [A,Amo.Safe,L,Po] [Po,A,Amo.Safe,L,Po]
+  -safe [Po?,A,Amo.Safe,L,Po]
   ## [L]; po; [A]
-  -safe [L,Po,A] [L,Po,A,LxSx] [L,Po,A,Amo.Safe] [LxSx,L,Po,A] [Amo.Safe,L,Po,A] [LxSx,L,Po,A,LxSx] [Amo.Safe,L,Po,A,LxSx] [LxSx,L,Po,A,Amo.Safe] [Amo.Safe,L,Po,A,Amo.Safe]
+  -safe [[LxSx|Amo.Safe]?,L,Po,A,[LxSx|Amo.Safe]?]
   ## [A | Q]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe [A,Po] [A,LxSx,Po] [A,Amo.Safe,Po] [Q,Po] [Q,LxSx,Po] [Q,Amo.Safe,Po]
+  -safe [[A|Q],[LxSx|Amo.Safe]?,Po]
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [L]
-  -safe [Po,L] [Po,LxSx,L] [Po,Amo.Safe,L]
+  -safe [Po,[LxSx|Amo.Safe]?,L]
   
   ### lwfs
   ## [(Exp & M) | (Imp & (Tag & R))]; (po & same-loc); [Exp & W]
