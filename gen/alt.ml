@@ -1336,7 +1336,16 @@ module Make(C:Builder.S)
         raise e
 
     let filter_check ~safe lhs rhs =
-      let safe_set = C.R.Set.of_list (List.map to_relax safe) in
+      let predicate_aset =
+        PredicateRelaxSet.of_list (lhs::rhs::safe) in
+      let aset =
+        PredicateRelaxSet.fold
+          (fun pred -> C.R.Set.add (to_relax pred))
+          predicate_aset C.R.Set.empty in
       let po_safe = extract_po safe in
-      check_precede (FilterImpl.can_precede safe_set po_safe) lhs rhs
+      let _,lhs,rhs,adjacency =
+        Chunk.make aset po_safe [] [lhs] [rhs] in
+      match lhs,rhs with
+      | [lhs],[rhs] -> Chunk.can_precede adjacency lhs [rhs]
+      | _,_ -> assert false
   end

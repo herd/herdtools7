@@ -70,9 +70,9 @@ A diy7 with predicate then checks remaining after predicates
 A diy7 with predicate rejects incompatible remaining after predicates
   $ diy7 -arch AArch64 -filter-check '[PodRW @after(PodRW) @with(PodRW)]' '[@with(PodRW) Rfe]' 2>&1
   Sequence `[PodRW,@after(PodRW),@with(PodRW)]` `[@with(PodRW),Rfe]` is prohibited in the internal filter in mode `default`
-A diy7 state predicate is transparent between with predicates
+A diy7 filter check applies cached concrete boundaries around state and with predicates
   $ diy7 -arch AArch64 -filter-check '[PodRW @with(PodRW) @state(S) @with(Rfe)]' '[@with(PodRW) @state(S) @with(Rfe) Rfe]' 2>&1
-  Sequence `[PodRW,@with(PodRW),@state(S),@with(Rfe)]` `[@with(PodRW),@state(S),@with(Rfe),Rfe]` passes the internal filter in mode `default`
+  Sequence `[PodRW,@with(PodRW),@state(S),@with(Rfe)]` `[@with(PodRW),@state(S),@with(Rfe),Rfe]` is prohibited in the internal filter in mode `default`
 A diy7 with predicate materialises one copy of the matched sequence
   $ diy7 -arch AArch64 -cycleonly true -size 2 -exact -relax '[PodRW Rfe @with(PodRW Rfe)]' -safe '[@with(PodRW Rfe) PodRW Rfe]' 2>&1 | grep -v '^# Version' | grep -v '^Relaxations tested:'
   # diy7 -arch AArch64 -cycleonly true -size 2 -exact -relax [PodRW Rfe @with(PodRW Rfe)] -safe [@with(PodRW Rfe) PodRW Rfe]
