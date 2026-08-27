@@ -186,3 +186,12 @@ remove_invalid_relaxes test (AArch64): [Rfe,Rfe]
 remove_invalid_relaxes test (AArch64): [Rfe,Fre]
 [[Rfe,Fre]]
 
+remove_invalid_relaxes test (AArch64): [A,Amo.StAdd,L]
+[]
+
+remove_invalid_relaxes test (AArch64): [P,Amo.StAdd,L]
+[[P,Amo.StAdd,L]]
+
+remove_invalid_relaxes test (AArch64): [A,Amo.LdAdd,L]
+[[A,Amo.LdAdd,L]]
+
