@@ -159,6 +159,9 @@ let remove_invalid_relaxes_inputs_main = [
   "[Po,Rfe]";
   "[Rfe,Rfe]";
   "[Rfe,Fre]";
+  "[A,Amo.StAdd,L]";
+  "[P,Amo.StAdd,L]";
+  "[A,Amo.LdAdd,L]";
 ]
 
 let remove_invalid_relaxes_test_main input =
