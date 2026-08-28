@@ -19,18 +19,7 @@ The following types do not have a \basevalueterm{}:
 \listingref{base-values} shows a specification with examples of well-typed \basevalueterm{}
 for various types, followed by the output to the console.
 \ASLListing{Well-typed Base Values}{base-values}{\typingtests/TypingRule.BaseValue.asl}
-% CONSOLE_BEGIN aslref \typingtests/TypingRule.BaseValue.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-global_base = 0, unconstrained_integer_base = 0, constrained_integer_base = -3
-bool_base = FALSE, real_base = 0, string_base = , enumeration_base = RED
-bits_base = 0x00
-tuple_base = (0, -3, RED)
-record_base      = {data=0x00, time=0, flag=FALSE}
-record_base_init = {data=0x00, time=0, flag=FALSE}
-exception_base = {msg=}
-integer_array_base = [[0, 0, 0, 0]]
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{typingrule-basevalue}{\typingtests/TypingRule.BaseValue.asl}
 
 \listingref{base-values-parameterised} shows a specification that relies on the base value of a \bitvectortypeterm{} whose width is a \parameterizedintegertypeterm{}.
 \ASLListing{Base Value for Parameterised Bitvector Width}{base-values-parameterised}{\typingtests/TypingRule.BaseValue.parameterized.asl}
