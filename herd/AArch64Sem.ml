@@ -3715,8 +3715,17 @@ Arguments:
 (* Guarded Control Stack *)
 (*************************)
       module GCSSem = struct
+        let base_mk_fault = mk_fault
+
         let mk_fault action ft ii =
           emit_fault None action Dir.R Annot.N (Some ft) None ii
+
+        let lift_fault dir txt ft ii =
+          let>* () = commit_pred_txt txt ii in
+          let lbl_v = get_instr_label ii.A.proc ii in
+          let* () = set_elr_el1 lbl_v ii
+          and* () = base_mk_fault None dir Annot.N ii ft None in
+          M.ignore () >>! B.fault [AArch64Base.elr_el1, lbl_v]
 
         let get_cap mask v =
           M.op1 Op.Offset v >>= M.op Op.And mask
@@ -3799,49 +3808,46 @@ Arguments:
         let open AArch64Base in
         let an = Annot.N
         and rA = SysReg GCSPR_EL1
-        and off = MachSize.nbytes quad in
-        let m =
-        read_reg_addr rA ii >>= fun a_virt ->
-          let mop ac a =
-            let m = GCSSem.read ac an a ii >>= fun v ->
-              let commit = commit_pred_txt (Some "PCAligned") ii in
+        and is_reg_read reg e =
+          (is_this_reg reg e) && (E.is_reg_load e ii.A.proc)
+        and is_reg_write reg e =
+          (is_this_reg reg e) && (E.is_reg_store e ii.A.proc) in
+        let do_gcspopm a_virt ma =
+          let do_gcs_read ac a =
+            let m =
+              let* v = GCSSem.read ac an a ii in
               let mok =
-                let(>>*=) = M.bind_control_set_data_input_first in
-                commit >>*= fun () ->
-                  M.add a_virt (V.intToV off) >>= fun new_addr ->
-                    write_reg rd v ii >>|
-                    write_reg rA new_addr ii
-                    >>= M.ignore >>= B.next1T in
-              let mask = V.intToV 0x3 in
-               GCSSem.get_cap mask v >>= fun cap ->
-               M.delay_kont "gcspopm(fault)"
-               (M.op Op.Ne cap V.zero)
-               (fun nonzero action ->
-                 let open FaultType.AArch64 in
-                 let mno = GCSSem.mk_fault action (GCSCheck POPM) ii in
-                 let mok = action >>= fun _ -> mok in
-                 M.choiceT nonzero mno mok)
+                let>* () = commit_pred_txt (Some "PCAligned") ii in
+                let* addr =
+                  let off = MachSize.nbytes quad in
+                  M.add a_virt (V.intToV off) in
+                let* () = write_reg rd v ii
+                and* () = write_reg rA addr ii in
+                B.nextT in
+              let mno =
+                let open FaultType.AArch64 in
+                let ft = Some (GCSCheck POPM) in
+                GCSSem.lift_fault Dir.R (Some "PCAligned") ft ii in
+              let* is_aligned =
+                let* cap =
+                  let mask = V.intToV 0x3 in
+                  GCSSem.get_cap mask v in
+                M.op Op.Eq cap V.zero in
+              M.choiceT is_aligned mok mno
             in
-            (* Write to Rd depends on read from Shadow Stack *)
-            M.short (E.is_mem_load) (is_this_reg rd) m in
-          do_lift_memop rA Dir.R false false
-          (fun ac ma _mv ->
-            if Access.is_physical ac then
-              M.bind_ctrldata ma (mop ac)
-            else
-              ma >>= mop ac)
-          (to_perms "r" quad)
-          (M.unitT a_virt)
-          mzero
-          an
-          ii
-          Fun.id
-          DISide.Data
-        in
-        (* Value writen to GCSPR depends on previous read *)
-        let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
-        and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
-        M.short read write m
+            M.short E.is_mem_load (is_reg_write rd) m in
+         do_lift_memop rA Dir.R false false
+            (fun ac ma _mv ->
+              let m =
+                if Access.is_physical ac then
+                  M.bind_ctrldata ma (do_gcs_read ac)
+                else
+                  ma >>= do_gcs_read ac in
+              M.short (is_reg_read rA) (is_reg_write rA) m)
+            (to_perms "r" quad) ma mzero an ii Fun.id DISide.Data
+          in
+        let ma = read_reg_addr rA ii in
+        M.delay_kont "gcspopm" ma do_gcspopm
 
       let blop v_ret write_linkreg branch bop ii =
         let open AArch64Base in
