@@ -33,3 +33,39 @@ Check GCSPUSHM dot output under shadowstack,vmsa.
   eiid7 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
   eiid5 -> eiid1 [label="iico_ctrl", color="grey", fontcolor="grey"];
   eiid5 -> eiid6 [label="iico_ctrl", color="grey", fontcolor="grey"];
+
+
+Check GCSPOPM dot output under shadowstack.
+
+  $ run_herd shadowstack GCSPOPM.litmus
+  eiid0 [label="a: R[x]GCSq=4\lproc:P0 poi:0\lGCSPOPM X1", shape="box", color="blue"];
+  eiid2 [label="c: R0:GCSPR_EL1q=x (addr)\lproc:P0 poi:0\lGCSPOPM X1", shape="box", color="blue"];
+  eiid3 [label="d: Branching(pred)(PCAligned)\lproc:P0 poi:0\lGCSPOPM X1", shape="box", color="blue"];
+  eiid4 [label="e: W0:X1q=4\lproc:P0 poi:0\lGCSPOPM X1", shape="box", color="blue"];
+  eiid5 [label="f: W0:GCSPR_EL1q=x+8\lproc:P0 poi:0\lGCSPOPM X1", shape="box", color="blue"];
+  eiid0 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
+  eiid0 -> eiid4 [label="iico_data", color="black", fontcolor="black"];
+  eiid2 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+  eiid2 -> eiid5 [label="iico_data", color="black", fontcolor="black"];
+  eiid3 -> eiid4 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid3 -> eiid5 [label="iico_ctrl", color="grey", fontcolor="grey"];
+
+Check GCSPOPM dot output under shadowstack,vmsa.
+
+  $ run_herd shadowstack,vmsa GCSPOPM.litmus
+  eiid0 [label="a: R[PTE(x)]NExpq=(oa:PA(x))\lproc:P0 poi:0\lGCSPOPM X1", shape="box", color="blue"];
+  eiid1 [label="b: R[PA(x)]GCSq=4\lproc:P0 poi:0\lGCSPOPM X1", shape="box", color="blue"];
+  eiid4 [label="e: R0:GCSPR_EL1q=x (addr)\lproc:P0 poi:0\lGCSPOPM X1", shape="box", color="blue"];
+  eiid5 [label="f: Branching(pred)(valid:1 && af:1)\lproc:P0 poi:0\lGCSPOPM X1", shape="box", color="blue"];
+  eiid6 [label="g: Branching(pred)(PCAligned)\lproc:P0 poi:0\lGCSPOPM X1", shape="box", color="blue"];
+  eiid7 [label="h: W0:X1q=4\lproc:P0 poi:0\lGCSPOPM X1", shape="box", color="blue"];
+  eiid8 [label="i: W0:GCSPR_EL1q=x+8\lproc:P0 poi:0\lGCSPOPM X1", shape="box", color="blue"];
+  eiid0 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
+  eiid0 -> eiid5 [label="iico_data", color="black", fontcolor="black"];
+  eiid1 -> eiid6 [label="iico_data", color="black", fontcolor="black"];
+  eiid1 -> eiid7 [label="iico_data", color="black", fontcolor="black"];
+  eiid4 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+  eiid4 -> eiid8 [label="iico_data", color="black", fontcolor="black"];
+  eiid5 -> eiid1 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid6 -> eiid7 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid6 -> eiid8 [label="iico_ctrl", color="grey", fontcolor="grey"];
