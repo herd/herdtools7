@@ -1,0 +1,14 @@
+AArch64 Load+Fault
+Variant=vmsa
+{
+int x=1;
+[PTE(x)]=(valid:0);
+0:X1=x;
+1:X1=PTE(x);
+1:X0=(oa:PA(x));
+}
+  P0         |  P1         ;
+L0:          | STR X0,[X1] ;  
+ LDR W0,[X1] |             ;
+
+forall 0:X0=1  \/ fault(P0)
