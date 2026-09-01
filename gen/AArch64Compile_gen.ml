@@ -1909,7 +1909,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 end) in
             let init,cs,st = S.emit_store st p init loc (Value.to_int e.C.v) a e in
             None,init,cs,st
-        | W,Some (Tag,None) ->
+        | W,Some ((Tag|TagFault),None) ->
             let init,cs,st = STG.emit_store st p init e in
             None,init,cs,st
         | W,Some (Pair (opt,idx),None) ->
@@ -1962,7 +1962,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             Warn.fatal
               "Atom %s does not apply to direction %s"
               (A.pp_atom a) (Code.pp_dir d)
+        | R,Some (TagFault,_) -> assert false
         | _,Some (Plain _,None) -> assert false
+        | _,Some (TagFault,Some _) -> assert false
         | _,Some (Tag,_) -> assert false
         | W,Some (CapaTag,None) ->
             let init,cs,st = STCT.emit_store st p init loc (Value.to_int e.C.v) in
@@ -2444,7 +2446,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) a e in
               None,init,pseudo cs0@cs,st
-          | W,Some (Tag, None) ->
+          | W,Some ((Tag|TagFault), None) ->
               let init,cs,st = STG.emit_store_idx vdep st p init e r2 in
               None,init,pseudo cs0@cs,st
           | W,Some (Pair (opt,idx),None) ->
@@ -2452,6 +2454,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 emit_stp_idx_var (pair_opt_to_st opt) idx vdep st p init loc e r2 in
               None,init, pseudo cs0@cs,st
           | W,Some (Pair _,Some _) -> assert false
+          | R,Some (TagFault,_) -> assert false
+          | W,Some (TagFault,Some _) -> assert false
           | (W,(Some (Pte (Set _),None))) ->
               let init,cs,st =
                 emit_set_pteval_idx false vdep r2 st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
@@ -2579,7 +2583,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let r2,cs2,init,st,addi =
             let r2,st = next_reg st in
             match atom with
-            | Some (Tag,None) ->
+            | Some ((Tag|TagFault),None) ->
                 let cs0,st = calc0_gen csel st vdep r2 r1 in
                 let rA,init,st = U.next_init st p init (add_tag e.C.atom loc (Value.to_int e.C.v)) in
                 let rB,cB,st = sum_addr st rA r2 in
@@ -2673,7 +2677,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_reg st p init loc r2 a e in
               None,init,cs2@cs,st
-          | Some (Tag, None) ->
+          | Some ((Tag|TagFault), None) ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               None,init,cs2@cs,st
           | Some (Pte (Set pte),None) when is_tthm pte ->
@@ -2693,6 +2697,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some ((Pte _,Some _)|(Pte (Read|ReadAcq|ReadAcqPc|ReadHAAcq|ReadHAAcqPc),_))
             -> assert false
           | Some (Plain _,None) -> assert false
+          | Some (TagFault,Some _) -> assert false
           | Some (Tag,Some _) -> assert false
           | Some (CapaTag,None) ->
               if (Value.to_int e.C.v) > 1 then Warn.fatal "Capability tags can't be incremented above 1";

@@ -502,6 +502,7 @@ module CoSt = struct
       (struct type t = E.SIMD.atom Code.bank let compare = compare end)
 
   type t = { map : int M.t;
+             access_tag : int;
              co_cell : Value.v array;
              pte_value : Value.pte;
              (* - Irr, checks both
@@ -512,11 +513,11 @@ module CoSt = struct
              check_value : bool;
              machine_feature: StringSet.t }
 
-  let create init_value sz pte_value check_value check_fault machine_feature =
+  let create init_value access_tag sz pte_value check_value check_fault machine_feature =
     let map = List.fold_left ( fun acc bank -> M.add bank init_value acc ) M.empty
                   [Tag; CapaTag; CapaSeal; Ord; ]
     and co_cell = Array.make (if sz <= 0 then 1 else sz) (Value.from_int init_value) in
-    { map; co_cell; pte_value; check_fault; check_value ; machine_feature }
+    { map; access_tag; co_cell; pte_value; check_fault; check_value ; machine_feature }
 
   let find_no_fail key map =
     try M.find key map with Not_found -> assert false
@@ -526,6 +527,9 @@ module CoSt = struct
   let set_co st bank v =
     let b = match bank with VecReg _ -> Ord | _ -> bank in
     { st with map=M.add b v st.map; }
+
+  let get_access_tag st = st.access_tag
+  let set_access_tag st access_tag = {st with access_tag;}
 
   let get_cell st = st.co_cell
   let set_cell st co_cell = {st with co_cell; }
@@ -574,7 +578,7 @@ module CoSt = struct
 
   (* Helper function returns a fresh label and a boolean for if it should fault,
      if a fault check is needed. Otherwise return `None`. *)
-  let fault_update st dir =
+  let fault_update st dir tag =
     let unset_check_fault st = {st with check_fault = NoDir } in
     let pte_val = get_pte_value st in
     match st.check_fault,dir with
@@ -590,7 +594,9 @@ module CoSt = struct
         None,st
     | _,R when do_store_only ->
         None,st
-    | _,_ when do_memtag || do_morello ->
+    | _,_ when do_memtag ->
+        Some ((Label.next_label "L"), tag <> Value.to_int (get_co st Tag)),st
+    | _,_ when do_morello ->
         Some ((Label.next_label "L"), false),st
     | _,_ -> None,unset_check_fault st
 
@@ -630,6 +636,18 @@ let pte_val_init ns loc =
         ( fun node -> node.evt.atom ) ns in
       Value.init_pte loc atom_list
     | _ -> pte_default
+
+let access_tag_init init ns =
+  let _,access_tag =
+    List.fold_left
+      (fun (tag,access_tag) n ->
+        match n.evt.bank,n.evt.dir with
+        | Tag,Some W ->
+            let tag = tag+1 in
+            tag,(if Value.is_tag_fault n.evt.atom then tag else access_tag)
+        | _ -> tag,access_tag)
+      (init,init) ns in
+  access_tag
 
 (****************************)
 (* Add events in edge cycle *)
@@ -958,7 +976,7 @@ let check_cycle c =
           (* No need to add fault check in read modify write situation,
              as the label will be assigned in read *)
           let fault_update_without_rmw st =
-            if n.evt.rmw then None,st else CoSt.fault_update st W in
+            if n.evt.rmw then None,st else CoSt.fault_update st W n.evt.tag in
           match n.evt.loc with
           | Data _ ->
             let bank = n.evt.bank in
@@ -1072,6 +1090,7 @@ let check_cycle c =
               let sz = get_wide_list ns in
               let init_val = if do_kvm then k else 0 in
               let pte_val = pte_val_init ns loc in
+              let access_tag = access_tag_init init_val ns in
               (* Since it is a cycle, the initial value of `check_value`
                  and `check_fault` depend on if there are write to
                  the variable and pte respectively. *)
@@ -1082,7 +1101,7 @@ let check_cycle c =
                   ( fun acc n ->
                     StringSet.union acc (E.get_machine_feature n.edge)
                   ) StringSet.empty ns in
-              let init_st = CoSt.create init_val sz pte_val check_value check_fault machine_feature in
+              let init_st = CoSt.create init_val access_tag sz pte_val check_value check_fault machine_feature in
               let next_x_ok,_st = do_set_write_val false init_st ns in
               let env = if init_val = 0 then env
                         else (Code.as_data loc,Value.from_int init_val)::env in
@@ -1179,6 +1198,7 @@ let do_set_read_v init =
       let st = if n.store == nil then st else CoSt.set_cell st n.store.evt.cell in
       let cell = CoSt.get_cell st in
       let bank = n.evt.bank in
+      if do_memtag && bank <> Tag then n.evt <- {n.evt with tag = CoSt.get_access_tag st;};
       begin match n.evt.dir with
       (* Assign the read value according to `cell` and `pte_cell` *)
       | Some R ->
@@ -1200,14 +1220,17 @@ let do_set_read_v init =
             (* because `rmw` is treated as both read and write,
                we should assign label to this read event.
                Here we assume write is stronger than read. *)
-            else if n.evt.rmw then CoSt.fault_update st W
-            else CoSt.fault_update st R in
-          n.evt <- { n.evt with check_fault };
+            else if n.evt.rmw then CoSt.fault_update st W n.evt.tag
+            else CoSt.fault_update st R n.evt.tag in
+          let check_value = match check_fault with
+            | Some (_,true) -> Some false
+            | _ -> check_value in
+          n.evt <- { n.evt with check_fault; check_value };
           st
         | Pair ->
           let st = CoSt.implicit_pte_update st R in
           set_read_pair_v n cell check_value;
-          let check_fault, st = CoSt.fault_update st R in
+          let check_fault, st = CoSt.fault_update st R n.evt.tag in
           n.evt <- { n.evt with check_fault };
           st
         | VecReg a ->
@@ -1216,7 +1239,7 @@ let do_set_read_v init =
           let v = E.SIMD.read a cell
                    |> E.SIMD.reduce
                    |> Value.from_int in
-          let check_fault, st = CoSt.fault_update st R in
+          let check_fault, st = CoSt.fault_update st R n.evt.tag in
           n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
           st
         | Tag ->
@@ -1242,7 +1265,9 @@ let do_set_read_v init =
         let st =
           match bank with
           | Tag ->
-            CoSt.set_co st bank (Value.to_int n.evt.v) |> CoSt.set_check_fault
+            let st = CoSt.set_co st bank (Value.to_int n.evt.v) in
+            let st = CoSt.set_access_tag st (if Value.is_tag_fault n.evt.atom then n.evt.tag else Value.to_int n.evt.v) in
+            CoSt.set_check_fault st
           |CapaTag|CapaSeal ->
             CoSt.set_co st bank (Value.to_int n.evt.v)
           |Ord|Pair|VecReg _ ->
@@ -1268,6 +1293,7 @@ let do_set_read_v init =
   | n::_ ->
     let sz = get_wide_list ns in
     let pte_val = pte_val_init ns n.evt.loc in
+    let access_tag = access_tag_init init ns in
     let check_value = exist_plain_value_write ns in
     let check_fault = exist_fault_related_write ns in
     let machine_feature =
@@ -1275,7 +1301,7 @@ let do_set_read_v init =
         ( fun acc n ->
           StringSet.union acc (E.get_machine_feature n.edge)
         ) StringSet.empty ns in
-    let init_st = CoSt.create init sz pte_val check_value check_fault machine_feature in
+    let init_st = CoSt.create init access_tag sz pte_val check_value check_fault machine_feature in
     let final_st = do_rec init_st ns in
     (CoSt.get_cell final_st).(0),CoSt.get_pte_value final_st
 
