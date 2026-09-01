@@ -3895,44 +3895,54 @@ Arguments:
         let an = Annot.N
         and rA = SysReg GCSPR_EL1
         and off = MachSize.nbytes quad in
-        read_reg_addr rA ii >>= fun a_virt ->
-          do_lift_memop rA Dir.R false false
-          (fun ac ma mv ->
-            let m =
-              mv >>|
-              (let(>>=) = if Access.is_physical ac then M.bind_ctrldata else (>>=) in
-                ma >>= fun addr ->
-                  GCSSem.read ac an addr ii) >>= fun (target,v) ->
-                    let commit =
-                      let cond = Printf.sprintf "target==%d:%s" ii.A.proc (A.pp_reg r) in
-                        commit_pred_txt (Some cond) ii in
-                    let mok =
-                      let(>>*=) = M.bind_control_set_data_input_first in
-                      commit >>*= fun () ->
-                        (M.add a_virt (V.intToV off) >>= fun new_addr ->
-                          write_reg rA new_addr ii) >>|
-                        do_indirect_jump test [] i ii target >>= fun (_, b) -> M.unitT b in
-                    M.delay_kont "ret(fault)"
-                    (M.op Op.Ne v target)
-                    (fun cond action ->
-                      let open FaultType.AArch64 in
-                      let mno = GCSSem.mk_fault action (GCSCheck PRET) ii in
-                      let mok = action >>= fun _ -> mok in
-                      M.choiceT cond mno mok)
-              in
-              (* Value writen to GCSPR depends on previous read *)
-              let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
-              and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
-              let m = M.short read write m in
-              (* Branch depends on destination register (or LR) *)
-              M.short (is_this_reg r) (E.is_bcc) m)
-          (to_perms "r" quad)
-          (M.unitT a_virt)
-          (read_reg_ord r ii)
-          an
-          ii
-          Fun.id
-          DISide.Data
+        let ma = read_reg_addr rA ii
+        and mv = read_reg_ord r ii in
+        let cond_txt =
+          Some (Printf.sprintf "target==%d:%s" ii.A.proc (A.pp_reg r)) in
+        let* a_virt, ma = M.delay ma in
+        let mop ac ma mv =
+          let do_gcs_read ac addr =
+            let (and**) = M.para_input_right in
+            let* target = mv
+            and** gcs_target = GCSSem.read ac an addr ii in
+            let* gcs_check = M.op Op.Eq gcs_target target in
+            let mok target =
+              let>* () = commit_pred_txt cond_txt ii in
+              let* new_addr = M.add a_virt (V.intToV off) in
+              let* () = write_reg rA new_addr ii
+              and* b =
+                let bds = [rA, new_addr] in
+                do_indirect_jump test bds i ii target in
+              M.unitT b
+            and mno =
+              let open FaultType.AArch64 in
+              let ft = Some (GCSCheck PRET) in
+              GCSSem.lift_fault Dir.R (Some "GCSCheck PRET") ft ii in
+            M.choiceT gcs_check (mok target) mno in
+          if Access.is_physical ac then
+            M.bind_ctrldata ma (do_gcs_read ac)
+          else
+            ma >>= do_gcs_read ac
+        in
+        let m = do_lift_memop rA Dir.R false false mop
+          (to_perms "r" quad) ma mv an ii Fun.id DISide.Data in
+        let m = GCSSem.bind_data_gcspr m ii in
+        let is_reg_read r e =
+          (is_this_reg r e) && (E.is_reg_load e ii.A.proc) in
+        let is_gcs_mem_read e =
+          E.is_mem_load e && Act.is_gcs e.E.action in
+        let m = M.short (is_reg_read r) (E.is_pred_txt cond_txt) m in
+        let* b, m = M.delay m in
+        match b with
+          | B.Fault _ ->
+              (* only one execution for the case that faults *)
+              m
+          | _ ->
+            (* The destination of RET can be determined by either
+            the GCS Memory Read Effect or the Register Read Effect*)
+            M.altT
+              (M.short is_gcs_mem_read E.is_bcc m)
+              (M.short (is_reg_read r) E.is_bcc m)
 
       let gcsss1 r ii =
         let open AArch64Base in

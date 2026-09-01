@@ -103,3 +103,108 @@ Check BLR dot output under shadowstack,vmsa.
   eiid5 -> eiid6 [label="iico_ctrl", color="grey", fontcolor="grey"];
   eiid5 -> eiid8 [label="iico_ctrl", color="grey", fontcolor="grey"];
   eiid5 -> eiid9 [label="iico_ctrl", color="grey", fontcolor="grey"];
+
+Check RET dot output under shadowstack.
+
+  $ run_herd shadowstack RET.litmus
+  eiid0 [label="a: R[x]GCSq=label:\"P0:L1\"\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid2 [label="c: R0:GCSPR_EL1q=x (addr)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid3 [label="d: R0:X29q=label:\"P0:L1\"\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid4 [label="e: Branching(pred)(target==0:X29)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid5 [label="f: W0:GCSPR_EL1q=x+8\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid6 [label="g: Branching(bcc)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid0 -> eiid4 [label="iico_data", color="black", fontcolor="black"];
+  eiid2 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+  eiid2 -> eiid5 [label="iico_data", color="black", fontcolor="black"];
+  eiid3 -> eiid4 [label="iico_data", color="black", fontcolor="black"];
+  eiid3 -> eiid6 [label="iico_data", color="black", fontcolor="black"];
+  eiid4 -> eiid5 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid4 -> eiid6 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid0 [label="a: R[x]GCSq=label:\"P0:L1\"\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid2 [label="c: R0:GCSPR_EL1q=x (addr)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid3 [label="d: R0:X29q=label:\"P0:L1\"\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid4 [label="e: Branching(pred)(target==0:X29)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid5 [label="f: W0:GCSPR_EL1q=x+8\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid6 [label="g: Branching(bcc)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid0 -> eiid4 [label="iico_data", color="black", fontcolor="black"];
+  eiid0 -> eiid6 [label="iico_data", color="black", fontcolor="black"];
+  eiid2 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+  eiid2 -> eiid5 [label="iico_data", color="black", fontcolor="black"];
+  eiid3 -> eiid4 [label="iico_data", color="black", fontcolor="black"];
+  eiid4 -> eiid5 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid4 -> eiid6 [label="iico_ctrl", color="grey", fontcolor="grey"];
+
+Check failed RET dot output under shadowstack.
+
+  $ run_herd shadowstack RET-fault.litmus
+  eiid0 [label="a: R[x]GCSq=label:\"P0:L0\"\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid3 [label="d: R0:GCSPR_EL1q=x (addr)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid4 [label="e: R0:X29q=label:\"P0:L1\"\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid5 [label="f: Branching(pred)(GCSCheck PRET)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid6 [label="g: W0:ELR_EL1q=100000\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid7 [label="h: ExcEntry(R,GCS:PRET)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid0 -> eiid5 [label="iico_data", color="black", fontcolor="black"];
+  eiid3 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+  eiid4 -> eiid5 [label="iico_data", color="black", fontcolor="black"];
+  eiid5 -> eiid6 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid5 -> eiid7 [label="iico_ctrl", color="grey", fontcolor="grey"];
+
+Check RET dot output under shadowstack,vmsa.
+
+  $ run_herd shadowstack,vmsa RET.litmus
+  eiid0 [label="a: R[PTE(x)]NExpq=(oa:PA(x))\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid1 [label="b: R[PA(x)]GCSq=label:\"P0:L1\"\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid4 [label="e: R0:GCSPR_EL1q=x (addr)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid5 [label="f: Branching(pred)(valid:1 && af:1)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid6 [label="g: R0:X29q=label:\"P0:L1\"\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid7 [label="h: Branching(pred)(target==0:X29)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid8 [label="i: W0:GCSPR_EL1q=x+8\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid9 [label="j: Branching(bcc)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid0 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
+  eiid0 -> eiid5 [label="iico_data", color="black", fontcolor="black"];
+  eiid1 -> eiid7 [label="iico_data", color="black", fontcolor="black"];
+  eiid4 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+  eiid4 -> eiid8 [label="iico_data", color="black", fontcolor="black"];
+  eiid6 -> eiid7 [label="iico_data", color="black", fontcolor="black"];
+  eiid6 -> eiid9 [label="iico_data", color="black", fontcolor="black"];
+  eiid5 -> eiid1 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid7 -> eiid8 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid7 -> eiid9 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid0 [label="a: R[PTE(x)]NExpq=(oa:PA(x))\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid1 [label="b: R[PA(x)]GCSq=label:\"P0:L1\"\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid4 [label="e: R0:GCSPR_EL1q=x (addr)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid5 [label="f: Branching(pred)(valid:1 && af:1)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid6 [label="g: R0:X29q=label:\"P0:L1\"\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid7 [label="h: Branching(pred)(target==0:X29)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid8 [label="i: W0:GCSPR_EL1q=x+8\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid9 [label="j: Branching(bcc)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid0 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
+  eiid0 -> eiid5 [label="iico_data", color="black", fontcolor="black"];
+  eiid1 -> eiid7 [label="iico_data", color="black", fontcolor="black"];
+  eiid1 -> eiid9 [label="iico_data", color="black", fontcolor="black"];
+  eiid4 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+  eiid4 -> eiid8 [label="iico_data", color="black", fontcolor="black"];
+  eiid6 -> eiid7 [label="iico_data", color="black", fontcolor="black"];
+  eiid5 -> eiid1 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid7 -> eiid8 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid7 -> eiid9 [label="iico_ctrl", color="grey", fontcolor="grey"];
+
+Check failed RET dot output under shadowstack,vmsa.
+
+  $ run_herd shadowstack,vmsa RET-fault.litmus
+  eiid0 [label="a: R[PTE(x)]NExpq=(oa:PA(x))\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid1 [label="b: R[PA(x)]GCSq=label:\"P0:L0\"\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid6 [label="g: R0:GCSPR_EL1q=x (addr)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid7 [label="h: Branching(pred)(valid:1 && af:1)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid8 [label="i: R0:X29q=label:\"P0:L1\"\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid9 [label="j: Branching(pred)(GCSCheck PRET)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid10 [label="k: W0:ELR_EL1q=100000\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid11 [label="l: ExcEntry(R,GCS:PRET)\lproc:P0 poi:0\lRET X29", shape="box", color="blue"];
+  eiid0 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
+  eiid0 -> eiid7 [label="iico_data", color="black", fontcolor="black"];
+  eiid1 -> eiid9 [label="iico_data", color="black", fontcolor="black"];
+  eiid6 -> eiid0 [label="iico_data", color="black", fontcolor="black"];
+  eiid8 -> eiid9 [label="iico_data", color="black", fontcolor="black"];
+  eiid7 -> eiid1 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid9 -> eiid10 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid9 -> eiid11 [label="iico_ctrl", color="grey", fontcolor="grey"];
