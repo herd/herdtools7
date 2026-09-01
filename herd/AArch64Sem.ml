@@ -3884,44 +3884,45 @@ Arguments:
         let an = Annot.N
         and rA = SysReg GCSPR_EL1
         and off = MachSize.nbytes quad in
-        read_reg_addr rA ii >>= fun a_virt ->
+        let ma = read_reg_addr rA ii
+        and mv = read_reg_ord r ii in
+        let is_reg_read r e =
+          (is_this_reg r e) && (E.is_reg_load e ii.A.proc)
+        and is_reg_write r e =
+          (is_this_reg r e) && (E.is_reg_store e ii.A.proc) in
+        let do_retop a_virt ma =
           do_lift_memop rA Dir.R false false
           (fun ac ma mv ->
+            let do_gcs_read ac addr =
+              let (and**) = M.para_input_right in
+              let* target = mv
+              and** gcs_target = GCSSem.read ac an addr ii in
+              let* gcs_check = M.op Op.Eq gcs_target target in
+              let mok target =
+                let>* () =
+                  let cond = Printf.sprintf "target==%d:%s" ii.A.proc (A.pp_reg r) in
+                  commit_pred_txt (Some cond) ii in
+                let* () =
+                  let* new_addr = M.add a_virt (V.intToV off) in
+                  write_reg rA new_addr ii
+                and* b = do_indirect_jump test [] i ii target in
+                M.unitT b
+              and mno =
+                let open FaultType.AArch64 in
+                let ft = Some (GCSCheck PRET) in
+                GCSSem.lift_fault Dir.R (Some "GCSCheck PRET") ft ii in
+              M.choiceT gcs_check (mok target) mno in
             let m =
-              mv >>|
-              (let(>>=) = if Access.is_physical ac then M.bind_ctrldata else (>>=) in
-                ma >>= fun addr ->
-                  GCSSem.read ac an addr ii) >>= fun (target,v) ->
-                    let commit =
-                      let cond = Printf.sprintf "target==%d:%s" ii.A.proc (A.pp_reg r) in
-                        commit_pred_txt (Some cond) ii in
-                    let mok =
-                      let(>>*=) = M.bind_control_set_data_input_first in
-                      commit >>*= fun () ->
-                        (M.add a_virt (V.intToV off) >>= fun new_addr ->
-                          write_reg rA new_addr ii) >>|
-                        do_indirect_jump test [] i ii target >>= fun (_, b) -> M.unitT b in
-                    M.delay_kont "ret(fault)"
-                    (M.op Op.Ne v target)
-                    (fun cond action ->
-                      let open FaultType.AArch64 in
-                      let mno = GCSSem.mk_fault action (GCSCheck PRET) ii in
-                      let mok = action >>= fun _ -> mok in
-                      M.choiceT cond mno mok)
-              in
-              (* Value writen to GCSPR depends on previous read *)
-              let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
-              and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
-              let m = M.short read write m in
-              (* Branch depends on destination register (or LR) *)
-              M.short (is_this_reg r) (E.is_bcc) m)
-          (to_perms "r" quad)
-          (M.unitT a_virt)
-          (read_reg_ord r ii)
-          an
-          ii
-          Fun.id
-          DISide.Data
+              if Access.is_physical ac then
+                M.bind_ctrldata ma (do_gcs_read ac)
+              else
+                ma >>= do_gcs_read ac in
+            M.short (is_reg_read r) (E.is_commit) m
+            )
+          (to_perms "r" quad) ma mv an ii Fun.id DISide.Data in
+        let m = M.delay_kont "retop" ma do_retop in
+        (* Value writen to GCSPR depends on previous read *)
+        M.short (is_reg_read rA) (is_reg_write rA) m
 
       let gcsss1 r ii =
         let open AArch64Base in
