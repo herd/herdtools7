@@ -195,3 +195,15 @@ remove_invalid_relaxes test (AArch64): [P,Amo.StAdd,L]
 remove_invalid_relaxes test (AArch64): [A,Amo.LdAdd,L]
 [[A,Amo.LdAdd,L]]
 
+remove_invalid_relaxes test (AArch64): [A,PosWW]
+[]
+
+remove_invalid_relaxes test (AArch64): [A,PosRW]
+[[A,PosRW]]
+
+remove_invalid_relaxes test (AArch64): [Q,PodWR]
+[]
+
+remove_invalid_relaxes test (AArch64): [Q,PodRR]
+[[Q,PodRR]]
+
