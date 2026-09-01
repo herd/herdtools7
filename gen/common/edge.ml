@@ -788,14 +788,20 @@ let fold_tedges f r =
   | _,None -> true
   | Some a1,Some a2 -> Option.is_some (merge_atoms a1 a2)
 
-  let valid_rmw_atoms edge = match edge.edge with
+  let valid_atoms edge =
+    let applies atom dir = match atom,dir with
+      | None,_ | _,(NoDir|Irr) -> true
+      | Some atom,Dir dir -> A.applies_atom atom dir in
+    applies edge.a1 (dir_src edge) && applies edge.a2 (dir_tgt edge) &&
+    (* Further filter on annotation on rmw *)
+    match edge.edge with
     | Rmw rmw -> A.RMW.applies_atom_rmw rmw edge.a1 edge.a2
     | _ -> true
 
   let can_precede x y =
     can_precede_dirs x y && can_precede_atoms x y &&
     let merged_x,merged_y = Option.value ~default:(x,y) (merge_pair x y) in
-    valid_rmw_atoms merged_x && valid_rmw_atoms merged_y
+    valid_atoms merged_x && valid_atoms merged_y
 
 (*************************************************************)
 (* Expansion of irrelevant direction specifications in edges *)
