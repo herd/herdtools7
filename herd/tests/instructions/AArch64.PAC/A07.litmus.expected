@@ -1,7 +1,7 @@
 Test A07 Allowed
 States 2
 0:X1=42;  ~Fault(P0,MMU:Translation); pacda(x,0x35)=x;
-0:X1=53; Fault(P0,x,MMU:Translation);
+0:X1=53; Fault(P0,x,D-MMU:Translation);
 Ok
 Witnesses
 Positive: 1 Negative: 1

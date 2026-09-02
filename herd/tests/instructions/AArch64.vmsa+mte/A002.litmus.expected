@@ -1,6 +1,6 @@
 Test A002 Required
 States 1
-[x]=0; Fault(P0:L0,x:green,MMU:Translation);
+[x]=0; Fault(P0:L0,x:green,D-MMU:Translation);
 Ok
 Witnesses
 Positive: 1 Negative: 0

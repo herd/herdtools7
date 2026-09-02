@@ -1,9 +1,9 @@
 Test A17 Required
 States 4
 0:X4=0;  ~Fault(P2,MMU:Translation); ~Fault(P1,MMU:Translation); pacia(x,0x2a)=x; pacda(x,0x35)=x;
-0:X4=0; Fault(P1,x,MMU:Translation); Fault(P2,x,MMU:Translation);
-0:X4=1; Fault(P1,x,MMU:Translation); ~Fault(P2,MMU:Translation); pacia(x,0x2a)=x;
-0:X4=1; Fault(P2,x,MMU:Translation); ~Fault(P1,MMU:Translation); pacda(x,0x35)=x;
+0:X4=0; Fault(P1,x,D-MMU:Translation); Fault(P2,x,D-MMU:Translation);
+0:X4=1; Fault(P1,x,D-MMU:Translation); ~Fault(P2,MMU:Translation); pacia(x,0x2a)=x;
+0:X4=1; Fault(P2,x,D-MMU:Translation); ~Fault(P1,MMU:Translation); pacda(x,0x35)=x;
 Ok
 Witnesses
 Positive: 4 Negative: 0
