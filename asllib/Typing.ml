@@ -679,7 +679,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let check_bits_equal_width ~loc env t1 t2 () =
     try check_bits_equal_width' env t1 t2 ()
     with TypingAssumptionFailed ->
-      fatal_from ~loc (Error.UnreconcilableTypes (t1, t2))
+      fatal_from ~loc (Error.MismatchedBitvectorWidths (t1, t2))
   (* End *)
 
   let binop_is_ordered : binop -> bool = function

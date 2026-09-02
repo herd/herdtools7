@@ -57,6 +57,7 @@ type error_desc =
   | ImpureExpression of expr * SideEffect.SES.t
       (** used for fine-grained analysis *)
   | MismatchedPurity of string  (** Used for coarse-grained analysis *)
+  | MismatchedBitvectorWidths of ty * ty
   | UnreconcilableTypes of ty * ty
   | CollectionBaseNotVariable of expr
   | AssignToImmutable of string
@@ -256,8 +257,8 @@ module ErrorCode = struct
     | UndefinedIdentifier (Static, _) -> Some (Typing UI)
     | ConflictingTypes _ | AssignToTupleElement _ | ConstrainedIntegerExpected _
     | UnexpectedPendingConstrained | ExpectedSingularType _
-    | ExpectedNamedType _ | UnexpectedCollection | CollectionBaseNotVariable _
-      ->
+    | ExpectedNamedType _ | UnexpectedCollection | MismatchedBitvectorWidths _
+    | CollectionBaseNotVariable _ ->
         Some (Typing UT)
     | MismatchedCallType _
     | BadParameterArity (Static, _, _, _, _)
@@ -304,7 +305,7 @@ module ErrorCode = struct
     (* dynamic ATC but also mismatched integers for loop limits *) ->
         None
     | CannotParse _ (* used in lexing too *) -> None
-    | UnreconcilableTypes _ (* both LCA and check_bit_widths_equal *) -> None
+    | UnreconcilableTypes _ (* LCA failures *) -> None
     | EmptyConstraints (* does this need to be reflected in reference? *) ->
         None
     | MultipleWrites _
@@ -594,6 +595,9 @@ module PPrint = struct
           pp_expr e SideEffect.SES.pp_print ses
     | MismatchedPurity s ->
         pp_err Typing "expected@ a@ %s@ expression/subprogram." s
+    | MismatchedBitvectorWidths (t1, t2) ->
+        pp_err Typing "bitvector types %a and %a must have equal widths." pp_ty
+          t1 pp_ty t2
     | UnreconcilableTypes (t1, t2) ->
         pp_err Typing
           "cannot@ find@ a@ common@ ancestor@ to@ those@ two@ types@ %a@ and@ \
@@ -840,6 +844,7 @@ module CSV = struct
     | BadTypesForBinop _ -> "BadTypesForBinop"
     | ImpureExpression _ -> "ImpureExpression"
     | MismatchedPurity _ -> "MismatchedPurity"
+    | MismatchedBitvectorWidths _ -> "MismatchedBitvectorWidths"
     | UnreconcilableTypes _ -> "UnreconcilableTypes"
     | CollectionBaseNotVariable _ -> "CollectionBaseNotVariable"
     | AssignToImmutable _ -> "AssignToImmutable"
