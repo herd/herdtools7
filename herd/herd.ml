@@ -574,7 +574,7 @@ let model,model_opts = match !model with
       let (fname,((b,_,_) as r)) = P.find_parse ~opt:true fname in
       Some (Model.Generic (fname,r)),b
     with
-    | Misc.Fatal msg as e ->
+    | (Misc.Fatal msg | Misc.UserError msg) as e ->
         eprintf "%s: %s\n" prog msg ;
         exit (exit_code_of_exn e)
     | Misc.Exit as e ->
