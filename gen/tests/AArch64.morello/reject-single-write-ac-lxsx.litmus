@@ -2,6 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+rmwpac-rfiacp [LxSxPAc RfiAcP] failed:
-Bad annotation for Sx: Ac
-
+Bad annotation for LxSx: R=P, W=Ac
 *)

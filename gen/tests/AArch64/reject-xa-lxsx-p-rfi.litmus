@@ -2,6 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+rmwxap-rfipxa [LxSxXAP RfiPXA] failed:
-Bad annotation for Lx: XA
-
+Bad annotation for LxSx: R=XA, W=P
 *)

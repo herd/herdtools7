@@ -2,6 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+rmwpsv4i-rfisv4ip [LxSxPSv4i RfiSv4iP] failed:
-Bad annotation for Sx: Sv4i
-
+Bad annotation for LxSx: R=P, W=Sv4i
 *)

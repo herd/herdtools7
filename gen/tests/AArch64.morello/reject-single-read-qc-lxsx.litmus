@@ -2,5 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+rmwqcp-rfipqc [LxSxQcP RfiPQc] failed:
-AcqPC annotation on xload
+Bad annotation for LxSx: R=Qc, W=P
 *)

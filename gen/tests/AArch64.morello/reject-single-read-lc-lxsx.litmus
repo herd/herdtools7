@@ -2,6 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+rmwlcp-rfiplc [LxSxLcP RfiPLc] failed:
-Bad annotation for Lx: Lc
-
+Bad annotation for LxSx: R=Lc, W=P
 *)

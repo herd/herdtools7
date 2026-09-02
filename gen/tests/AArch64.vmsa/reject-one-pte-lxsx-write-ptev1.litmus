@@ -2,5 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+rmwpptev1-rfiptev1p [LxSxPPteV1 RfiPteV1P] failed:
-Cannot convert to int
+Bad annotation for LxSx: R=P, W=PteV1
 *)

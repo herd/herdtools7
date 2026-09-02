@@ -2,6 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+rmww0x.w0-rfix.w0w0 [LxSxw0X.w0 RfiX.w0w0] failed:
-Bad annotation for Sx: X.w0
-
+Bad annotation for LxSx: R=w0, W=X.w0
 *)
