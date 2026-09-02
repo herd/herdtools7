@@ -409,7 +409,6 @@ end
       distinguish between ASL1 errors and e.g. ASL0 non-typechecked errors,
       assertion failures, cases we don't expect to hit etc.
     - TypingRule.TInt mismatch on empty case *)
-(* TODO: check_implementations_unique should be TE_OE in reference - instead just generic #TE *)
 (* TODO: BE_RI unused in reference *)
 (* TODO: following not recoverable from implementation:
 - BE_BOP
