@@ -58,6 +58,7 @@ type error_desc =
       (** used for fine-grained analysis *)
   | MismatchedPurity of string  (** Used for coarse-grained analysis *)
   | UnreconcilableTypes of ty * ty
+  | CollectionBaseNotVariable of expr
   | AssignToImmutable of string
   | AssignToTupleElement of lexpr
   | AlreadyDeclaredIdentifier of string
@@ -255,7 +256,8 @@ module ErrorCode = struct
     | UndefinedIdentifier (Static, _) -> Some (Typing UI)
     | ConflictingTypes _ | AssignToTupleElement _ | ConstrainedIntegerExpected _
     | UnexpectedPendingConstrained | ExpectedSingularType _
-    | ExpectedNamedType _ | UnexpectedCollection ->
+    | ExpectedNamedType _ | UnexpectedCollection | CollectionBaseNotVariable _
+      ->
         Some (Typing UT)
     | MismatchedCallType _
     | BadParameterArity (Static, _, _, _, _)
@@ -597,6 +599,11 @@ module PPrint = struct
           "cannot@ find@ a@ common@ ancestor@ to@ those@ two@ types@ %a@ and@ \
            %a."
           pp_ty t1 pp_ty t2
+    | CollectionBaseNotVariable e ->
+        pp_err Typing
+          "collection fields can only be accessed through a variable;@ \
+           provided base: %a."
+          pp_expr e
     | AssignToImmutable x ->
         pp_err Typing "cannot@ assign@ to@ immutable@ storage@ %S." x
     | AssignToTupleElement tuple_e ->
@@ -834,6 +841,7 @@ module CSV = struct
     | ImpureExpression _ -> "ImpureExpression"
     | MismatchedPurity _ -> "MismatchedPurity"
     | UnreconcilableTypes _ -> "UnreconcilableTypes"
+    | CollectionBaseNotVariable _ -> "CollectionBaseNotVariable"
     | AssignToImmutable _ -> "AssignToImmutable"
     | AssignToTupleElement _ -> "AssignToTupleElement"
     | AlreadyDeclaredIdentifier _ -> "AlreadyDeclaredIdentifier"

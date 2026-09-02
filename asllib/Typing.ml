@@ -2124,7 +2124,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 let collection_var_name =
                   match e2.desc with
                   | E_Var x -> x
-                  | _ -> fatal_from ~loc Error.(UnsupportedExpr (Static, e))
+                  | _ -> fatal_from ~loc (Error.CollectionBaseNotVariable e2)
                 in
                 match List.assoc_opt field_name fields with
                 | None ->
@@ -2240,7 +2240,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 let base_collection_name =
                   match e_base_annot.desc with
                   | E_Var x -> x
-                  | _ -> fatal_from ~loc Error.(UnsupportedExpr (Static, e))
+                  | _ ->
+                      fatal_from ~loc
+                        (Error.CollectionBaseNotVariable e_base_annot)
                 in
                 let get_bitfield_width name =
                   match List.assoc_opt name base_fields with
@@ -2581,7 +2583,13 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
          (* Begin LESetCollectionField *)
          | T_Collection fields ->
              let collection_var_name =
-               match le2.desc with LE_Var x -> x | _ -> assert false
+               match le2.desc with
+               | LE_Var x -> x
+               | _ ->
+                   (* assignable expressions start with an identifier,
+                      and collection types cannot be nested, so a collection
+                      base must be a variable. *)
+                   assert false
              in
              let t =
                match List.assoc_opt field fields with
@@ -2668,7 +2676,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               | LE_Var x -> x
               | _ ->
                   fatal_from ~loc
-                    Error.(UnsupportedExpr (Static, expr_of_lexpr le))
+                    (Error.CollectionBaseNotVariable (expr_of_lexpr le_base))
             in
             let fold_bitvector_fields field (start, slices) =
               match List.assoc_opt field base_fields with
