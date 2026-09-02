@@ -2277,11 +2277,11 @@ entry of~\texttt{x}. The thread $T_0$ then signals by writing the
 value one into the location~\texttt{y}. Concurrently, $T_1$ reads the
 signal location~\texttt{y} and then attemps to read~\texttt{x}.
 The final condition
-\verb+exists(1:X7=1 /\ Fault(P1:L0,x,MMU:Translation)+
+\verb+exists(1:X7=1 /\ Fault(P1:L0,x,D-MMU:Translation)+
 describes the situation when the signal has been received by~$T_1$
 (\texttt{1:X7=1}), while $T_1$ has not yet noticed that $T_0$ has made
 accessing to~\texttt{x} valid
---- The atom \texttt{Fault(P1:L0,x,MMU:Translation)} corresponds to a
+--- The atom \texttt{Fault(P1:L0,x,D-MMU:Translation)} corresponds to a
 faulting attempt by~$T_1$ to read the location~\texttt{x}.
 The two tests differ by their synchronisation
 instructions: \atest{MP-TTD+DMB.ST+DMB.LD} is synchronised by fences
@@ -2326,15 +2326,15 @@ there:
 ...
 Test MP-TTD+DMB.ST+DMB.LD Allowed
 Histogram (4 states)
-70    *>1:X7=1; fault(P1:L0,x,MMU:Translation);
-1975326:>1:X7=0; ~fault(P1:L0,x,MMU:Translation);
-21197 :>1:X7=0; fault(P1:L0,x,MMU:Translation);
-3407  :>1:X7=1; ~fault(P1:L0,x,MMU:Translation);
+70    *>1:X7=1; fault(P1:L0,x,D-MMU:Translation);
+1975326:>1:X7=0; ~fault(P1:L0,x,D-MMU:Translation);
+21197 :>1:X7=0; fault(P1:L0,x,D-MMU:Translation);
+3407  :>1:X7=1; ~fault(P1:L0,x,D-MMU:Translation);
 Ok
 
 Witnesses
 Positive: 70, Negative: 1999930
-Condition exists (1:X7=1 /\ fault(P1:L0,x,MMU:Translation)) is validated
+Condition exists (1:X7=1 /\ fault(P1:L0,x,D-MMU:Translation)) is validated
 Hash=e6d0396aa32c40b307db5f6921404c07
 EL0=P1
 Observation MP-TTD+DMB.ST+DMB.LD Sometimes 70 1999930
@@ -2346,14 +2346,14 @@ Time MP-TTD+DMB.ST+DMB.LD 15.14
 
 Test MP-TTD+DMB.ST+DSB-ISB Allowed
 Histogram (3 states)
-1991985:>1:X7=0; ~fault(P1:L0,x,MMU:Translation);
-5938  :>1:X7=0; fault(P1:L0,x,MMU:Translation);
-2077  :>1:X7=1; ~fault(P1:L0,x,MMU:Translation);
+1991985:>1:X7=0; ~fault(P1:L0,x,D-MMU:Translation);
+5938  :>1:X7=0; fault(P1:L0,x,D-MMU:Translation);
+2077  :>1:X7=1; ~fault(P1:L0,x,D-MMU:Translation);
 No
 
 Witnesses
 Positive: 0, Negative: 2000000
-Condition exists (1:X7=1 /\ fault(P1:L0,x,MMU:Translation)) is NOT validated
+Condition exists (1:X7=1 /\ fault(P1:L0,x,D-MMU:Translation)) is NOT validated
 Hash=18e9682c0e7ed43f7f059cbfc47d781d
 EL0=P1
 Observation MP-TTD+DMB.ST+DSB-ISB Never 0 2000000
