@@ -992,28 +992,6 @@ module Make(C:Config) (I:I) : S with module I = I
         then
           pp_st ^ pp_solver
         else
-          let data_intr_to_any_flt fault =
-            match fault with
-            | (lbl,loc, Some ft0, msg) ->
-                let any_flt =
-                  FaultAtomSet.fold
-                    (fun fatom k ->
-                      match fatom, k with
-                      | _, Some _ -> k
-                      | (_,_, Some ft_expected), None ->
-                          if check_one_fatom fault fatom
-                             && I.FaultType.matches ft0 ft_expected
-                          then Some ft_expected
-                          else None
-                      | _ -> k)
-                    fobs None
-                in
-                begin match any_flt with
-                | Some ft_expected -> (lbl,loc, Some ft_expected, msg)
-                | None -> fault
-                end
-            | _ -> fault
-          in
           let noflts =
             FaultAtomSet.fold
               (fun (((p,lbl),loc,ftype) as f0) k ->
@@ -1035,7 +1013,7 @@ module Make(C:Config) (I:I) : S with module I = I
                     (fun f0 -> check_one_fatom f f0) fobs)
                 flts in
           pp_st ^ " " ^
-          FaultSet.pp_str " "  (fun f -> pp_fault (data_intr_to_any_flt f) ^ ";")  flts ^
+          FaultSet.pp_str " "  (fun f -> pp_fault f ^ ";")  flts ^
           String.concat "" noflts ^
           pp_solver
 
