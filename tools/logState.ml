@@ -180,25 +180,17 @@ module W = Warn.Make(O)
 (* Bindings are ordered by their locations, identical locations
    in an outcome is an error *)
 
-let compare_binding p1 p2 =
-  match HashedBinding.compare_loc p1 p2 with
+let compare_binding bd1 bd2 =
+  match HashedBinding.compare_loc bd1 bd2 with
 | 0 -> assert false
 | r -> r
 
 (*
  * States are normalised by sorting lists of final outcomes
- * (_i.e_ lists of final location X value bindings + faults).
- * Although HashedFault.compare, does not, strictly speaking,
- * yield a total order on faults, it does on faults of the
- * same "generation" and is this appropriate to normalise states
- * whose faults are of the same kind.
- *   Moreover, given that the comparison on states is lexicographic
- * and compares the binding first, the invariant to maintain is
- * "same generation for final outcomes with identical bindings".
- * This is what will be done naturally when aggregating logs
- * with the union function below as the list of bindings
- * and faults are are not merged. Instead one of the two similar
- * outcomes is selected (the newer one).
+ * (_i.e_ lists of final "outcomes": location X value bindings
+ * + faults + absent faults).
+ *  It is thus simportant for compare functions on bindings and
+ * faults to yield total orders, which they do.
  *)
 
 let as_st_concrete bds fs abs =
@@ -349,12 +341,13 @@ let pp_validation = function
   | Run -> "Run"
   | Undef -> "Undef"
 
+(************************)
+(* Comparison on states *)
+(************************)
 
-let extract_loc h =
-  let loc,_ = HashedBinding.as_t h in
-  loc
-
-let mismatch s = raise (StateMismatch (extract_loc s))
+let mismatch s =
+  let loc,_ = HashedBinding.as_t s in
+  raise (StateMismatch loc)
 
 let rec compare_env st1 st2 =
   let open Hashcons in
@@ -373,37 +366,6 @@ let rec compare_env st1 st2 =
       | r ->
           mismatch (if r > 0 then p2 else p1)
 
-let rec compare_faults st1 st2 =
-  let open Hashcons in
-  let open HashedFaults in
-  match st1.node,st2.node with
-  | Nil,Nil -> 0
-  | (Nil,Cons _) -> -1
-  | (Cons _,Nil) -> 1
-  | Cons (p1,st1),Cons (p2,st2) ->
-      match HashedFault.compare p1 p2 with
-      | 0 -> compare_faults st1 st2
-      | r -> r
-
-
-(************************)
-(* Comparison on states *)
-(************************)
-
-let compare_state st1 st2 =
-  let open HashedState in
-  let {S.e=e1; f=f1; a=a1;} = as_t st1.p_st
-  and {S.e=e2; f=f2; a=a2;} = as_t st2.p_st in
-  match compare_env e1 e2 with
-  | 0 ->
-     (* This function is used on states from the same log,
-        that must have the same number of present + absent faults *)
-      begin match compare_faults f1 f2 with
-      | 0 -> assert (compare_faults a1 a2 = 0) ; 0
-      | r -> r
-      end
-  | r -> r
-
 (* Check bindings only *)
 
 let compare_state_by_env st1 st2 =
@@ -412,33 +374,24 @@ let compare_state_by_env st1 st2 =
   and {S.e=e2; _;} = as_t st2.p_st in
   compare_env e1 e2
 
-and compare_state_by_faults st1 st2 =
+let all_faults_included fs1 fs2 =
+  HashedFaults.for_all
+    (fun f1 -> HashedFaults.exists (HashedFault.equivalent f1) fs2)
+    fs1
+
+let same_faults st1 st2 =
   let open HashedState in
   let {S.f=f1; _;} = as_t st1.p_st
   and {S.f=f2; _;} = as_t st2.p_st in
-  compare_faults f1 f2
-
-let same_faults st1 st2 = compare_state_by_faults st1 st2 = 0
+  all_faults_included f1 f2 && all_faults_included f2 f1
 
 (* Group by identical bindings *)
 let group_by_env =
-  let rec group_rec st0 = function
-    | [] -> [],[]
-    | st::sts ->
-       let r = compare_state_by_env st0 st in
-       if r < 0 then
-         let sts,stss = group_rec st sts in
-         [],(st::sts)::stss
-       else begin
-         assert (r=0) ; (* sts is sorted w.r.t env *)
-         let sts,stss = group_rec st0 sts in
-         st::sts,stss
-         end in
-  function
-  | [] -> []
-  | st::sts ->
-     let sts,stss = group_rec st sts in
-     (st::sts)::stss
+  Misc.group_sorted
+    (fun st1 st2 ->
+       let r =  compare_state_by_env st1 st2 in
+       assert (r <= 0) ;
+       r = 0)
 
 (*
  * Diffing states. Leverage the total order on bindings
@@ -449,12 +402,10 @@ let group_by_env =
  * This does not harm as long as there are few faults to
  * compare, which is the case in practice.
  *)
+
 let diff_faults sts1 sts2 =
   List.filter
-    (fun st1 ->
-      List.for_all
-        (fun st2 -> compare_state_by_faults st1 st2 <> 0)
-        sts2)
+    (fun st1 -> Bool.not @@ List.exists (same_faults st1) sts2)
     sts1
 
 let cmp_by_env sts1 sts2 =
@@ -492,7 +443,7 @@ let diff_faults_empty sts1 sts2 =
   List.for_all
     (fun st1 ->
       List.exists
-        (fun st2 -> compare_state_by_faults st1 st2 = 0)
+        (fun st2 -> same_faults st1 st2)
         sts2)
     sts1
 
@@ -1232,13 +1183,48 @@ let exclude e t =
       t.tests in
   { t with tests = tests; }
 
-(*************)
-(* Normalize *)
-(*************)
+(*********************************)
+(* Normalize full log structures *)
+(*********************************)
 
-(* No duplicates in normalized lists of states *)
+(*
+ * Total "compare" function. Used exclusively for normalising
+ * states from the same log.
+ * Namely, there exist old litmus logs that contain
+ * several running logs of the same test following
+ * each other.
+ *)
 
-let rec  normalize_sts_uniq cmp sts = match sts with
+let rec compare_faults st1 st2 =
+  let open Hashcons in
+  let open HashedFaults in
+  match st1.node,st2.node with
+  | Nil,Nil -> 0
+  | (Nil,Cons _) -> -1
+  | (Cons _,Nil) -> 1
+  | Cons (f1,st1),Cons (f2,st2) ->
+      match HashedFault.compare f1 f2 with
+      | 0 -> compare_faults st1 st2
+      | r -> r
+
+let compare_state st1 st2 =
+  let open HashedState in
+  let {S.e=e1; f=f1; a=a1;} = as_t st1.p_st
+  and {S.e=e2; f=f2; a=a2;} = as_t st2.p_st in
+  match compare_env e1 e2 with
+  | 0 ->
+     (* This function is used on states from the same log,
+        that must have the same number of present + absent faults *)
+      begin match compare_faults f1 f2 with
+      | 0 -> assert (compare_faults a1 a2 = 0) ; 0
+      | r -> r
+      end
+  | r -> r
+
+(* No duplicates in normalized lists of states,
+   Duplicates are eliminated. *)
+
+let rec normalize_sts_uniq cmp sts = match sts with
   | []|[_] -> sts
   | st1::(st2::_ as sts) ->
      if cmp st1 st2=0 then
@@ -1493,12 +1479,15 @@ let select_diff safe opt name xs ys =
   then opt xs ys
   else safe xs ys
 
-(* Non optimised diff, to be used when fault comparison is required *)
-
+(* Lift simple states to complete ones, it is important
+   to sort outcomes by their environment component for
+   "diff" to operate correctly. See for instance
+   diff_states_empty above.  *)
 let to_parsed_sts xs =
-    List.map (fun x -> { p_noccs=Int64.one; p_st=x; }) xs
-    |> normalize_sts
+  List.map (fun x -> { p_noccs=Int64.one; p_st=x; }) xs
+  |> List.sort compare_state_by_env
 
+(* Non optimised diff, to be used when fault comparison is required *)
 let diff_safe_not_empty xs ys =
   let xs = to_parsed_sts xs
   and ys = to_parsed_sts ys in

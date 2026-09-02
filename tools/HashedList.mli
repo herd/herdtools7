@@ -42,5 +42,7 @@ module Make :
         val iter : (elt_hashed -> unit) -> t -> unit
         val map : (elt_hashed -> 'a) -> t -> 'a list
         val fold_left : ('a -> elt_hashed -> 'a) -> 'a -> t -> 'a
+        val exists :  (elt_hashed -> bool) -> t -> bool
+        val for_all :  (elt_hashed -> bool) -> t -> bool
         val pp : (elt_hashed -> string) -> t -> string
       end

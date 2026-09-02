@@ -59,14 +59,3 @@ module No : S
 
 (* For parse disambiguation  *)
 val is : string -> bool
-
-(*
- * MMU fault types changed over time as follows:
- *  + Initially, MMU fault types were simply as "MMU:Translation", "MMU:Permission" etc.
- *  + Later, a "D-" or "I-" prefix has been added to MMU fault types, in order to
- *    indicate whether the fault originates from data or instruction memory.
- * The following two helper functions check the presence of the "D-" or "I-" (di)
- * prefixes and strip them, if present.
- *)
-val has_diprefix : string -> bool
-val strip_diprefix : string -> string option

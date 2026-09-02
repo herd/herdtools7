@@ -33,6 +33,8 @@ type t = string option Hashcons.hash_consed
 
 let table = H.create 101
 
+let equal_node = H.equal_node
+
 let as_hashed s = H.hashcons table s
 
 let as_t h = h.Hashcons.node

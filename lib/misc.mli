@@ -161,7 +161,15 @@ val nsplit : int -> 'a list -> 'a list list
    WARNING, correct only when duplicates are in sequence *)
 val rem_dups : ('a -> 'a -> bool) -> 'a list -> 'a list
 
-(* group elements, efficient*)
+(*****************************)
+(* Group elements, efficient *)
+(*****************************)
+
+(* On already sorted lists, function is equality,
+   equal elements must follow each other. *)
+val group_sorted : ('a -> 'a -> bool) -> 'a list -> 'a list list
+
+(* On any list, function is compare function *)
 val group : ('a -> 'a -> int) -> 'a list -> 'a list list
 val group_iter : ('a -> 'a -> int) -> ('a -> 'a list -> unit) -> 'a list -> unit
 val group_iteri : ('a -> 'a -> int) -> (int -> 'a -> 'a list -> unit) -> 'a list -> unit

@@ -44,52 +44,67 @@ let as_t h =
 
 let as_hash h = h.Hashcons.hkey
 
-(********************)
-(* "Compare" faults *)
-(********************)
+(******************)
+(* Compare faults *)
+(******************)
+
 
 (*
- * It is important to notice that compare on fault does not
- *  yield a transitive equality function. For instance
- *   + compare Fault(L0,x,"MMU:Permission") Fault(L0,x) == 0
- *   + compare Fault(L0,x) Fault(L0,x,"MMU:Translation") == 0
- *   + compare  Fault(L0,x,"MMU:Permission")  Fault(L0,x,"MMU:Translation") !=0
- * A similar example is possible with "prefixed" MMU faults:
- *   + compare Fault(L0,x,"D-MMU:Permission") Fault(L0,x,"MMU:Permission") == 0
- *   + compare Fault(L0,x,"MMU:Permission") Fault(L0,x,"I-MMU:Permission") == 0
- *   + compare  Fault(L0,x,"D-MMU:Permission")  Fault(L0,x,"I-MMU:Permission") !=0
- * Hence we have "old" faults (no fault type), "new" faults (with fault-types)
- * and "very new" faults. As long as the three sets do not mix, teh compare
- * function has the transivity properties that are expected from compare
- * functions. Such properties are required for sort to operate 
- * As the compare function is used to sort final states, it is important
- * for these sets never to mix. Notice that this invariant holds naturally
- * for initial logs. Moreover, when summing logs, the "newer" states are
- * priviledged over "older" ones.
+ * It is important to notice that faults occurrences
+ * as present in logs have changed over time.
+ * We have "old" faults (no fault type), "new" faults (with fault-types)
+ * and "very new" faults, where MMU faults bear a "D-" or "I-" prefix.
+ * depending on if they originate from data memory or from instruction
+ * memory.
+ * The function "equivalent" abstract on those differences.
  *)
+
+let has_diprefix s =
+  String.(starts_with ~prefix:"D-" s || starts_with ~prefix:"I-" s)
+
+let strip_diprefix s =
+  if has_diprefix s then Some String.(sub s 2 (length s-2))
+  else None
 
 let warn_once = ref true
 
-let compare_ftype_names s1 s2 =
-  match
-    FaultType.strip_diprefix s1,
-    FaultType.strip_diprefix s2
-  with
-  | None,Some s2 -> String.compare s1 s2
-  | Some s1,None -> String.compare s1 s2
-  | _,_ -> String.compare s1 s2
+let equivalent_ftype_names s1 s2 =
+  match strip_diprefix s1,strip_diprefix s2 with
+  | None,Some s2 -> String.equal s1 s2
+  | Some s1,None -> String.equal s1 s2
+  | _,_ -> String.equal s1 s2
 
-let compare_ftypes ft1 ft2 =
-  match HashedStringOpt.as_t ft1, HashedStringOpt.as_t ft2 with
-  | Some ft1, Some ft2 -> compare_ftype_names ft1 ft2
-  | None, None -> 0
-  | None, Some _ | Some _, None ->
+let equivalent_ftypes ft1 ft2 =
+  match ft1,ft2 with
+  | None,None -> true
+  | Some s1,Some s2 ->
+      equivalent_ftype_names s1 s2
+  | (None,Some _)
+  | (Some _,None) ->
       if !warn_once then begin
         Warn.warn_always "Comparing faults with and without fault type, \
                           assuming same type";
         warn_once := false;
-      end;
-      0
+      end ;
+      true
+
+let equivalent f1 f2 =
+  let p1,lab1,x1,ft1 = as_tt f1
+  and p2,lab2,x2,ft2 = as_tt f2 in
+  Int.equal p1 p2
+  && HashedStringOpt.equal_node lab1 lab2
+  && HashedStringOpt.equal_node x1 x2
+  && equivalent_ftypes (HashedStringOpt.as_t ft1) (HashedStringOpt.as_t ft2)
+
+
+(* Standard "compare" function  on faults.
+   Can be used for building sets, sorting, etc. *)
+
+let compare_ftypes ft1 ft2 =
+  Option.compare
+    String.compare
+    (HashedStringOpt.as_t ft1)
+    (HashedStringOpt.as_t ft2)
 
 let compare h1 h2 =
   Misc.tuple4_compare
@@ -108,5 +123,5 @@ let get_fault_type h =
   let _,_,_,ft = as_tt h in
   let ft = HashedStringOpt.as_t ft in
   match ft with
-  | Some ft -> if FaultType.has_diprefix ft then DIPrefix else Other
+  | Some ft -> if has_diprefix ft then DIPrefix else Other
   | None -> No

@@ -71,6 +71,14 @@ module
       | Nil  -> k
       | Cons (x,r) -> fold_left f (f k x) r
 
+    let rec exists p xs = match xs.Hashcons.node with
+      | Nil  -> false
+      | Cons (x,r) -> p x || exists p r
+
+    let rec for_all p xs = match xs.Hashcons.node with
+      | Nil  -> true
+      | Cons (x,r) -> p x && for_all p r
+
     let pp pp_elt nh =
       let pps = map pp_elt nh in
       String.concat " " pps
