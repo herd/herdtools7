@@ -21,8 +21,10 @@ type flags = {
   litmus_dirs : string list ;
 }
 
+let whitespace = Str.regexp "[ \t]+"
+
 let directive line =
-  match Str.split (Str.regexp "[ \t]+") (String.trim line) with
+  match Str.split whitespace (String.trim line) with
   | "(*" :: "diyone7" :: args -> begin
       match List.rev args with
       | ["*)"] -> None
