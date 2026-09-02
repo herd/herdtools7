@@ -29,6 +29,8 @@ module Top :
         (sig val zyva : Name.t -> A.pseudo MiscParser.t -> T.t end)) ->
 sig
   val from_file : string -> T.t
+  val from_string : filename:string -> contents:string -> T.t
+  (** Parse [contents] as if they were read from [filename]. *)
 end
 
 module Tops :
