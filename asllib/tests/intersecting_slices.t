@@ -28,7 +28,7 @@ Two intersecting slices...
   File intersecting_slices2.asl, line 5, characters 3 to 9:
     x[i, j] = '10';
      ^^^^^^
-  ASL Static error: overlapping slices i+:1, j+:1.
+  ASL Static error (TE_BS): overlapping slices i+:1, j+:1.
   [1]
 
 Two maybe intersecting slices...
@@ -45,7 +45,7 @@ Two maybe intersecting slices...
   > EOF
 
   $ aslref intersecting_slices3.asl
-  ASL Dynamic error: overlapping slices i+:1, j+:1.
+  ASL Dynamic error (DE_OSA): overlapping slices i+:1, j+:1.
   [1]
 
   $ cat>intersecting_slices3b.asl <<EOF
@@ -64,7 +64,7 @@ Two maybe intersecting slices...
   > EOF
 
   $ aslref intersecting_slices3b.asl
-  ASL Dynamic error: overlapping slices x+:1, y+:1.
+  ASL Dynamic error (DE_OSA): overlapping slices x+:1, y+:1.
   0x7
   [1]
 
@@ -84,5 +84,5 @@ Two intersecting bitfields
   File intersecting_slices4.asl, line 5, characters 2 to 12:
     x.[f1, f2] = '10';
     ^^^^^^^^^^
-  ASL Static error: overlapping slices 0+:1, 0+:1.
+  ASL Static error (TE_BS): overlapping slices 0+:1, 0+:1.
   [1]

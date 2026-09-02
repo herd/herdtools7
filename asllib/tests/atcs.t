@@ -26,8 +26,8 @@ Bad structure ATCs
   File atcs2.asl, line 2, characters 11 to 23:
     let x = (3 as boolean);
              ^^^^^^^^^^^^
-  ASL Type error: cannot perform Asserted Type Conversion on integer {3} by
-    boolean.
+  ASL Type error (TE_TAF): cannot perform Asserted Type Conversion on
+    integer {3} by boolean.
   [1]
 
 ATCs on other types
@@ -64,7 +64,8 @@ ATCs on other types
   File atcs5.asl, line 5, characters 10 to 20:
     let y = x as myty2;
             ^^^^^^^^^^
-  ASL Type error: cannot perform Asserted Type Conversion on myty by myty2.
+  ASL Type error (TE_TAF): cannot perform Asserted Type Conversion on myty by
+    myty2.
   [1]
 
   $ cat > atcs6.asl <<EOF

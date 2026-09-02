@@ -16,7 +16,7 @@ While loops:
       i = i + 1;
       println i;
     end;
-  ASL Dynamic error: loop limit reached.
+  ASL Dynamic error (DE_LE): loop limit reached.
   [1]
 
   $ aslref while-exact.asl
@@ -26,7 +26,7 @@ While loops:
     while (i < 10) looplimit 9 do
       i = i + 1;
     end;
-  ASL Dynamic error: loop limit reached.
+  ASL Dynamic error (DE_LE): loop limit reached.
   [1]
 
   $ aslref while-no-limit.asl
@@ -51,7 +51,7 @@ Repeat loops:
       i = i + 1;
       println i;
     until (i >= 10) looplimit 5;
-  ASL Dynamic error: loop limit reached.
+  ASL Dynamic error (DE_LE): loop limit reached.
   [1]
 
   $ aslref repeat-exact.asl
@@ -61,7 +61,7 @@ Repeat loops:
     repeat
       i = i + 1;
     until (i >= 10) looplimit 9;
-  ASL Dynamic error: loop limit reached.
+  ASL Dynamic error (DE_LE): loop limit reached.
   [1]
 
   $ aslref repeat-no-limit.asl
@@ -80,7 +80,7 @@ Double loops
       while (j < 10) looplimit 5 do
         j = j + 1;
       end;
-  ASL Dynamic error: loop limit reached.
+  ASL Dynamic error (DE_LE): loop limit reached.
   [1]
 
   $ aslref double-while-incorrect-correct.asl
@@ -93,7 +93,7 @@ Double loops
         j = j + 1;
       end;
     end;
-  ASL Dynamic error: loop limit reached.
+  ASL Dynamic error (DE_LE): loop limit reached.
   [1]
 
   $ aslref double-while-incorrect-incorrect.asl
@@ -102,7 +102,7 @@ Double loops
       while (j < 10) looplimit 5 do
         j = j + 1;
       end;
-  ASL Dynamic error: loop limit reached.
+  ASL Dynamic error (DE_LE): loop limit reached.
   [1]
 
 For loops
@@ -112,7 +112,7 @@ For loops
     for i = 1 to n looplimit 10 do
       counter = counter + 1;
     end;
-  ASL Dynamic error: loop limit reached.
+  ASL Dynamic error (DE_LE): loop limit reached.
   [1]
   $ aslref for-exact.asl
   $ aslref for-exact-minus-one.asl
@@ -153,7 +153,7 @@ Recursion limits:
   File recursion-incorrect.asl, line 6, characters 18 to 31:
     else return 1 + recurse (n+1); end;
                     ^^^^^^^^^^^^^
-  ASL Dynamic error: recursion limit reached.
+  ASL Dynamic error (DE_LE): recursion limit reached.
   [1]
 
   $ aslref recursion-exact.asl
@@ -164,7 +164,7 @@ Recursion limits:
   File recursion-exact-minus-one.asl, line 5, characters 18 to 31:
     else return 1 + recurse (n+1); end;
                     ^^^^^^^^^^^^^
-  ASL Dynamic error: recursion limit reached.
+  ASL Dynamic error (DE_LE): recursion limit reached.
   [1]
 
   $ aslref for-loop-zero.asl
@@ -172,5 +172,5 @@ Recursion limits:
     for index = 0 to 0 looplimit 0 do
         println "BODY";
     end;
-  ASL Dynamic error: loop limit reached.
+  ASL Dynamic error (DE_LE): loop limit reached.
   [1]
