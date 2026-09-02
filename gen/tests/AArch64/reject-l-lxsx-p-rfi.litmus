@@ -2,6 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+rmwlp-rfipl [LxSxLP RfiPL] failed:
-Bad annotation for Lx: L
-
+Bad annotation for LxSx: R=L, W=P
 *)

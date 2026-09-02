@@ -2,5 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+rmwctp-rfipct [LxSxCtP RfiPCt] failed:
-variant annotation on xload
+Bad annotation for LxSx: R=Ct, W=P
 *)

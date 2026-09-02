@@ -2037,6 +2037,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let check_arw_lxsx er ew =
       let ar = tr_none er.C.atom
       and aw = tr_none ew.C.atom in
+      let different_mixed_accesses =
+        match get_access_atom (Some ar),get_access_atom (Some aw) with
+        | Some a1,Some a2 -> not (MachMixed.equal a1 a2)
+        | _,_ -> false in
+      if not different_mixed_accesses
+         && not (A64.RMW.applies_atom_rmw A64.RMW.LrSc (Some ar) (Some aw)) then
+        Warn.fatal "Bad annotation for LxSx: R=%s, W=%s" (pp ar) (pp aw) ;
       let szr = get_access_atom (Some ar)
       and szw = get_access_atom (Some aw) in
       check_cu (not (A64.do_cu || same_sz szr szw)) ;
@@ -2047,10 +2054,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       rA,init,[],st
 
     let do_emit_exch1 emit_addr st p init er ew =
+      let arw = check_arw_lxsx er ew in
       let rA,init,caddr,st = emit_addr st p init er in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
-      let arw = check_arw_lxsx er ew in
       let init,cs,st = XSingle.emit_pair arw p st init rR rW rA ew in
       let cs = add_label_to_exclusive_load_and_store er cs in
       rR,init,csi@caddr@cs,st
@@ -2058,11 +2065,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_exch1 = do_emit_exch1 emit_addr_simple
 
     let do_emit_exch22 emit_addr st p init er ew =
+      let arw = check_arw_lxsx er ew in
       let rA,init,caddr,st = emit_addr st p init er in
       let rR1,rR2,st = next_reg2 st in
       let rW1,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
       let rW2,st = next_reg st in
-      let arw = check_arw_lxsx er ew in
       let init,cs,st =
         XPair.emit_pair arw p st init (rR1,rR2) (rW1,rW2) rA ew in
       let cs = add_label_to_exclusive_load_and_store er cs in
@@ -2071,10 +2078,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_exch22 = do_emit_exch22 emit_addr_simple
 
     let do_emit_exch21 emit_addr st p init er ew =
+      let arw = check_arw_lxsx er ew in
       let rA,init,caddr,st = emit_addr st p init er in
       let rR1,rR2,st = next_reg2 st in
       let rW,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
-      let arw = check_arw_lxsx er ew in
       let module X = ExclusivePair(XLoadPair)(XStore) in
       let init,cs,st =
         X.emit_pair arw p st init (rR1,rR2) rW rA ew in
@@ -2084,11 +2091,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_exch21 = do_emit_exch21 emit_addr_simple
 
     let do_emit_exch12 emit_addr st p init er ew =
+      let arw = check_arw_lxsx er ew in
       let rA,init,caddr,st = emit_addr st p init er in
       let rR,st = next_reg st in
       let rW1,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
       let rW2,st = next_reg st in
-      let arw = check_arw_lxsx er ew in
       let module X = ExclusivePair(XLoad)(XStorePair) in
       let init,cs,st =
         X.emit_pair arw p st init rR (rW1,rW2) rA ew in

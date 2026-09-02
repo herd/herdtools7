@@ -2,5 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+rmwpct-rfictp [LxSxPCt RfiCtP] failed:
-variant annotation on xstore
+Bad annotation for LxSx: R=P, W=Ct
 *)

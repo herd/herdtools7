@@ -2,6 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+rmwpqc-rfiqcp [LxSxPQc RfiQcP] failed:
-Bad annotation for Sx: Qc
-
+Bad annotation for LxSx: R=P, W=Qc
 *)
