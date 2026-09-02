@@ -357,7 +357,8 @@ and type edge = E.edge
               | None ->
                   (* Parse primitive edge *)
                   try [[E.parse_edge str]]
-                  with _ -> Warn.fatal "Bad relax: %s" str
+                  with Misc.UserError _ as err -> raise err
+                     | _ -> Warn.fatal "Bad relax: %s" str
               end in
           (* expand the wildcard edges and annotations *)
           expand_relaxs parsed_edges

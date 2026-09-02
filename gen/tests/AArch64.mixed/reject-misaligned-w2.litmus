@@ -1,5 +1,5 @@
 (* diyone7 -hexa -arch AArch64 -variant fullmixed -metadata false -oneloc w0 PosRW w2 Rfi *)
 (*
 [2]
-diyone7: Fatal error: Bad relax: w2
+diyone7: Fatal error: Bad edge: Misaligned mixed-size annotation w2: offset 2 is not aligned to the 4-byte access size
 *)
