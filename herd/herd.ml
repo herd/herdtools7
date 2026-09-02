@@ -788,7 +788,7 @@ let () =
     let b = !Opts.exit_if_failed in
     fun seen ->
       let e = exit_code_of_exn exn in
-      if b then exit e else seen in
+      if b then exit e else e, seen in
 
   let check_pos0 s =
     String.length s > 5 &&
@@ -799,7 +799,7 @@ let () =
 
   let dbg_exc = !Opts.debug.Debug_herd.exc in
 
-  let _seen =
+  let exit_code, _seen =
 
 (* If interval timer enabled and triggered,
    then stop test with not output at all *)
@@ -808,10 +808,10 @@ let () =
       (fun _ -> raise Misc.Timeout)
       !debug.Debug_herd.timeout;
     Misc.fold_argv_or_stdin
-      (fun name seen ->
-        try from_file name seen
+      (fun name ((exit_code, seen) as r) ->
+        try exit_code, from_file name seen
         with
-        | Misc.Timeout -> seen
+        | Misc.Timeout -> r
         | Misc.Exit as e ->
            if dbg_exc then raise e ;
            check_exit e seen
@@ -834,5 +834,5 @@ let () =
         | e ->
            Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
            raise e)
-      tests StringMap.empty in
-  exit 0
+      tests (0, StringMap.empty) in
+  exit exit_code
