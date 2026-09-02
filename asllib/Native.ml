@@ -26,19 +26,81 @@ open Infix
 
 let _log = false
 
-let list_update i f li =
-  let rec aux acc i li =
-    match (li, i) with
-    | [], _ -> raise (Invalid_argument "list_update")
-    | h :: t, 0 -> List.rev_append acc (f h :: t)
-    | h :: t, i -> aux (h :: acc) (i - 1) t
-  in
-  aux [] i li
+module VectorChunkMap = Map.Make (Int)
+
+let vector_chunk_size = 256
 
 type native_value =
   | NV_Literal of AST.literal
-  | NV_Vector of native_value list
+  | NV_Vector of native_vector
   | NV_Record of native_value ASTUtils.IMap.t
+
+and native_vector =
+  | FlatVector of native_value array
+  | ChunkedVector of {
+      length : int;
+      chunks : native_value array VectorChunkMap.t;
+    }
+
+(* Published arrays are immutable. Updates copy a flat vector or one chunk
+   before rebuilding the persistent map path, so native values retain ASL value
+   semantics while large vectors avoid linear traversal and prefix copying. *)
+
+let vector_init length f =
+  if length < 0 then invalid_arg "Native.vector_init";
+  if length <= vector_chunk_size then FlatVector (Array.init length f)
+  else
+    let rec add_chunks chunk_index first_index chunks =
+      if first_index >= length then chunks
+      else
+        let chunk_length = min vector_chunk_size (length - first_index) in
+        let chunk =
+          Array.init chunk_length (fun offset -> f (first_index + offset))
+        in
+        add_chunks (chunk_index + 1) (first_index + chunk_length)
+          (VectorChunkMap.add chunk_index chunk chunks)
+    in
+    ChunkedVector { length; chunks = add_chunks 0 0 VectorChunkMap.empty }
+
+let vector_of_list values =
+  let remaining = ref values in
+  vector_init (List.length values) (fun _ ->
+      match !remaining with
+      | value :: tail ->
+          remaining := tail;
+          value
+      | [] -> assert false)
+
+let vector_length = function
+  | FlatVector values -> Array.length values
+  | ChunkedVector { length; _ } -> length
+
+let vector_get vector index =
+  match vector with
+  | FlatVector values -> values.(index)
+  | ChunkedVector { chunks; _ } ->
+      let chunk_index = index / vector_chunk_size in
+      let chunk_offset = index mod vector_chunk_size in
+      (VectorChunkMap.find chunk_index chunks).(chunk_offset)
+
+let vector_set vector index value =
+  match vector with
+  | FlatVector values ->
+      let updated = Array.copy values in
+      updated.(index) <- value;
+      FlatVector updated
+  | ChunkedVector ({ chunks; _ } as chunked) ->
+      let chunk_index = index / vector_chunk_size in
+      let chunk_offset = index mod vector_chunk_size in
+      let chunk = VectorChunkMap.find chunk_index chunks |> Array.copy in
+      chunk.(chunk_offset) <- value;
+      ChunkedVector
+        { chunked with chunks = VectorChunkMap.add chunk_index chunk chunks }
+
+let vector_iter f = function
+  | FlatVector values -> Array.iter f values
+  | ChunkedVector { chunks; _ } ->
+      VectorChunkMap.iter (fun _ chunk -> Array.iter f chunk) chunks
 
 let nv_literal l = NV_Literal l
 
@@ -47,8 +109,15 @@ let rec pp_native_value f =
   let pp_comma f () = fprintf f ",@ " in
   function
   | NV_Literal lit -> pp_print_string f (Operations.literal_to_string lit)
-  | NV_Vector li ->
-      fprintf f "@[[%a]@]" (pp_print_list ~pp_sep:pp_comma pp_native_value) li
+  | NV_Vector vector ->
+      let first = ref true in
+      fprintf f "@[[";
+      vector_iter
+        (fun value ->
+          if !first then first := false else pp_comma f ();
+          pp_native_value f value)
+        vector;
+      fprintf f "]@]"
   | NV_Record map -> IMap.pp_print pp_native_value f map
 
 let native_value_to_string = Format.asprintf "%a" pp_native_value
@@ -123,7 +192,7 @@ module NativeBackend (C : Config) = struct
 
   let on_write_identifier _ () _ = ()
   let on_read_identifier _ () _ = ()
-  let v_tuple li = return (NV_Vector li)
+  let v_tuple li = return (NV_Vector (vector_of_list li))
   let v_record li = return (NV_Record (IMap.of_list li))
   let v_exception li = v_record li
   let non_tuple_exception v = mismatch_type v [ T_Tuple [] ]
@@ -137,17 +206,18 @@ module NativeBackend (C : Config) = struct
 
   let get_index i vec =
     match vec with
-    | NV_Vector li ->
-        let n = List.length li in
-        if i < 0 || i >= n then bad_index i n else List.nth li i |> return
+    | NV_Vector vector ->
+        let length = vector_length vector in
+        if i < 0 || i >= length then bad_index i length
+        else vector_get vector i |> return
     | v -> non_tuple_exception v
 
   let set_index i v vec =
     match vec with
-    | NV_Vector li ->
-        let n = List.length li in
-        if i < 0 || i >= n then bad_index i n
-        else list_update i (Fun.const v) li |> v_tuple
+    | NV_Vector vector ->
+        let length = vector_length vector in
+        if i < 0 || i >= length then bad_index i length
+        else vector_set vector i v |> fun vector -> NV_Vector vector |> return
     | v -> non_tuple_exception v
 
   let get_field name record =
@@ -402,7 +472,7 @@ let rec unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef ty =
       | NV_Literal (L_Int n) ->
           let n = Z.to_int n in
           if n >= 0 then
-            NV_Vector (List.init n (fun _ -> unknown_of_type t_elem))
+            NV_Vector (vector_init n (fun _ -> unknown_of_type t_elem))
           else Error.(fatal_from ty (UnsupportedExpr (Dynamic, e_length)))
       | _ -> (* Bad types *) assert false)
   | T_Record fields | T_Exception fields ->
@@ -411,7 +481,8 @@ let rec unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef ty =
       |> IMap.of_list
       |> fun record -> NV_Record record
   | T_Enum li -> NV_Literal (L_Label (List.hd li))
-  | T_Tuple types -> NV_Vector (List.map (fun t -> unknown_of_type t) types)
+  | T_Tuple types ->
+      NV_Vector (vector_of_list (List.map (fun t -> unknown_of_type t) types))
   | T_Collection _ | T_Named _ -> Error.(fatal_from ty TypeInferenceNeeded)
 
 module DeterministicBackend = struct

@@ -24,8 +24,10 @@
 
 type native_value =
   | NV_Literal of AST.literal
-  | NV_Vector of native_value list
+  | NV_Vector of native_vector
   | NV_Record of native_value ASTUtils.IMap.t
+
+and native_vector
 
 module NoScope : Backend.SCOPE with type t = unit
 

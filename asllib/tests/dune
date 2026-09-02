@@ -18,7 +18,7 @@
  (modules helpers))
 
 (tests
- (names static bitvector types)
+ (names static bitvector types native_vector)
  (modes native)
  (package aslref)
  (deps
@@ -32,7 +32,8 @@
    ConstraintBinops
    Lexer
    check_no_missing_file_in_run
-   capture_output))
+   capture_output
+   native_vector_bench))
  (flags
   (:standard -w -40-42))
  (action
@@ -40,6 +41,12 @@
    ASL_LIBDIR
    %{project_root}/asllib/libdir/
    (run %{test} -e))))
+
+(executable
+ (name native_vector_bench)
+ (modes native)
+ (libraries asllib unix)
+ (modules native_vector_bench))
 
 (test
  (name capture_output)
