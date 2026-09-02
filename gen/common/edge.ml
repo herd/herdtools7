@@ -859,6 +859,9 @@ let fold_tedges f r =
       | Some _,None -> Some(e1, set_a1 e2 a1)
       | Some a1,Some a2 ->
         match merge_atoms a1 a2 with
+        | None when is_id e1.edge && is_id e2.edge ->
+            Warn.fatal "Incompatible annotations %s and %s"
+              (pp_atom a1) (pp_atom a2)
         | None -> None
         | Some _ as a ->
           Some(set_a2 e1 a,set_a1 e2 a) in

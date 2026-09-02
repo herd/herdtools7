@@ -1,5 +1,5 @@
 (* diyone7 -arch AArch64 -variant sme -metadata false -oneloc SmH L PosRW Rfi *)
 (*
 [2]
-diyone7: Fatal error: Invalid extra annotation SmH
+diyone7: Fatal error: Incompatible annotations SmH and L
 *)
