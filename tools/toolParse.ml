@@ -34,7 +34,12 @@ module Top
       (sig val zyva : Name.t -> A.pseudo MiscParser.t -> T.t end)) :
 sig
   val from_file : string -> T.t
+  val from_string : filename:string -> contents:string -> T.t
 end = struct
+
+  type source =
+    | Channel of in_channel
+    | String of string
 
   module Make
       (A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S)
@@ -44,13 +49,17 @@ end = struct
       module X = B(A)(Pte)(AddrReg)
 
 
-      let zyva chan splitted =
+      let zyva source splitted =
         let name = splitted.Splitter.name in
-        let parsed = P.parse chan splitted in
+        let parsed =
+          match source with
+          | Channel chan -> P.parse chan splitted
+          | String contents -> P.parse_string contents splitted
+        in
         X.zyva name parsed
     end
 
-  let from_chan chan splitted =
+  let from_source source splitted =
     match splitted.Splitter.arch with
     | `PPC ->
         let module PPC = PPCBase in
@@ -63,7 +72,7 @@ end = struct
 	  let parser = MiscParser.mach2generic PPCParser.main
         end in
         let module X = Make (PPC) (PteVal.No) (AddrReg.No) (PPCLexParse) in
-        X.zyva chan splitted
+        X.zyva source splitted
     | `X86 ->
         let module X86 = X86Base in
         let module X86LexParse = struct
@@ -75,7 +84,7 @@ end = struct
 	  let parser = MiscParser.mach2generic X86Parser.main
         end in
         let module X = Make (X86)  (PteVal.No) (AddrReg.No) (X86LexParse) in
-        X.zyva chan splitted
+        X.zyva source splitted
     | `X86_64 ->
         let module X86_64 = X86_64Base in
         let module X86_64LexParse = struct
@@ -87,7 +96,7 @@ end = struct
 	  let parser = MiscParser.mach2generic X86_64Parser.main
         end in
         let module X = Make (X86_64) (PteVal.No) (AddrReg.No) (X86_64LexParse) in
-        X.zyva chan splitted
+        X.zyva source splitted
     | `ARM ->
         let module ARM = ARMBase in
         let module ARMLexParse = struct
@@ -99,7 +108,7 @@ end = struct
 	  let parser = MiscParser.mach2generic ARMParser.main
         end in
         let module X = Make (ARM) (PteVal.No) (AddrReg.No) (ARMLexParse) in
-        X.zyva chan splitted
+        X.zyva source splitted
     | `AArch64 ->
         let module AArch64 =
           MakeAArch64Base.Make(MakeAArch64Base.NoMorello) in
@@ -112,7 +121,7 @@ end = struct
 	  let parser = (*MiscParser.mach2generic*) AArch64Parser.main
         end in
         let module X = Make (AArch64) (AArch64PteVal) (AArch64AddrReg) (AArch64LexParse) in
-        X.zyva chan splitted
+        X.zyva source splitted
     | `MIPS ->
         let module MIPS = MIPSBase in
         let module MIPSLexParse = struct
@@ -124,7 +133,7 @@ end = struct
 	  let parser = MiscParser.mach2generic MIPSParser.main
         end in
         let module X = Make (MIPS) (PteVal.No) (AddrReg.No) (MIPSLexParse) in
-        X.zyva chan splitted
+        X.zyva source splitted
     | `RISCV ->
         let module RISCV = RISCVBase in
         let module RISCVLexParse = struct
@@ -136,7 +145,7 @@ end = struct
 	  let parser = MiscParser.mach2generic RISCVParser.main
         end in
         let module X = Make (RISCV) (PteVal.No) (AddrReg.No) (RISCVLexParse) in
-        X.zyva chan splitted
+        X.zyva source splitted
     | `LISA ->
         let module Bell = BellBase in
         let module BellLexParse = struct
@@ -148,7 +157,7 @@ end = struct
 	  let parser = LISAParser.main
         end in
         let module X = Make (Bell) (PteVal.No) (AddrReg.No) (BellLexParse) in
-        X.zyva chan splitted
+        X.zyva source splitted
     | `BPF ->
         let module BPF = BPFBase in
         let module BPFLexParse = struct
@@ -160,7 +169,7 @@ end = struct
 	  let parser = MiscParser.mach2generic BPFParser.main
         end in
         let module X = Make (BPF) (PteVal.No) (AddrReg.No) (BPFLexParse) in
-        X.zyva chan splitted
+        X.zyva source splitted
 
     | `JAVA 
     | `ASL
@@ -183,7 +192,9 @@ end = struct
         let module P = CGenParser_lib.Make(CGenParser_lib.DefaultConfig)(C)(L) in
         let module X = B(C)(PteVal.No)(AddrReg.No) in
         let name =  splitted.Splitter.name in
-        let parsed = P.parse chan splitted in
+        let parsed = match source with
+        | Channel chan -> P.parse chan splitted
+        | String contents -> P.parse_string contents splitted in
         X.zyva name parsed
 
   module SP = Splitter.Make(LexConf)
@@ -193,7 +204,11 @@ end = struct
     Misc.input_protect
       (fun chan ->
         let (splitted:Splitter.result) = SP.split name chan in
-        from_chan chan splitted) name
+        from_source (Channel chan) splitted) name
+
+  let from_string ~filename ~contents =
+    let (splitted:Splitter.result) = SP.split_string filename contents in
+    from_source (String contents) splitted
 
 end
 
