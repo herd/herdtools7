@@ -9,21 +9,21 @@ ASL Typing Tests:
   File TypingRule.SubtypeSatisfaction3.asl, line 8, characters 4 to 45:
       var dogLegs : AnimalLegs = myCircleSides; // illegal: unrelated types
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of AnimalLegs was expected,
+  ASL Type error (TE_TSF): a subtype of AnimalLegs was expected,
     provided ShapeSides.
   [1]
   $ aslref TypingRule.SubtypeSatisfaction.bad1.asl
   File TypingRule.SubtypeSatisfaction.bad1.asl, line 8, characters 0 to 31:
   var x : integer{Int12} = Int12;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {2} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {2} was expected,
     provided integer {1..2}.
   [1]
   $ aslref TypingRule.SubtypeSatisfaction.bad2.asl
   File TypingRule.SubtypeSatisfaction.bad2.asl, line 7, characters 4 to 13:
       return N;
       ^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {N} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {N} was expected,
     provided integer {2, 4}.
   [1]
   $ aslref TypingRule.TypeSatisfaction1.asl
@@ -32,7 +32,7 @@ ASL Typing Tests:
   File TypingRule.TypeSatisfaction3.asl, line 14, characters 2 to 6:
     pair = (1, dataT2);
     ^^^^
-  ASL Type error (TE_UT): a subtype of pairT was expected,
+  ASL Type error (TE_TSF): a subtype of pairT was expected,
     provided (integer {1}, T2).
   [1]
   $ aslref TypingRule.TypeSatisfaction.bad1.asl
@@ -120,13 +120,13 @@ ASL Typing Tests / annotating types:
   File TypingRule.TNamed.bad1.asl, line 11, characters 4 to 13:
       foo(x.f); // Illegal: x.f is of type TypeB which does not type-satisfy TypeA.
       ^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of TypeA was expected, provided TypeB.
+  ASL Type error (TE_TSF): a subtype of TypeA was expected, provided TypeB.
   [1]
   $ aslref TypingRule.TNamed.bad2.asl
   File TypingRule.TNamed.bad2.asl, line 12, characters 4 to 13:
       foo(y.f); // illegal: y.f is of type TypeB which does not type-satisfy TypeA.
       ^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of TypeA was expected, provided TypeB.
+  ASL Type error (TE_TSF): a subtype of TypeA was expected, provided TypeB.
   [1]
   $ aslref TypingRule.TIntUnconstrained.asl
   $ aslref TypingRule.TIntWellConstrained.asl
@@ -241,7 +241,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.ConstraintMod.bad.asl, line 9, characters 4 to 5:
       z = 3; // Illegal: the type inferred for z is integer{0..2}
       ^
-  ASL Type error (TE_UT): a subtype of integer {0..2} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..2} was expected,
     provided integer {3}.
   [1]
   $ aslref --no-exec TypingRule.CheckConstrainedInteger.asl
@@ -644,7 +644,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.PMask.bad.asl, line 5, characters 11 to 34:
       assert '101010' IN {'xx10101'};
              ^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of bits(7) was expected, provided bits(6).
+  ASL Type error (TE_TSF): a subtype of bits(7) was expected, provided bits(6).
   [1]
   $ aslref TypingRule.PAny.asl
   $ aslref TypingRule.PAny.bad.asl
@@ -924,7 +924,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.AnnotateCall.bad.asl, line 6, characters 4 to 21:
       f{wid}(bus, bus); // Illegal
       ^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {2, 4} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {2, 4} was expected,
     provided integer {2, 4, 8}.
   [1]
   $ aslref TypingRule.AnnotateCall.bad2.asl
@@ -937,14 +937,14 @@ ASL Typing Tests / annotating types:
   File TypingRule.AnnotateCall.bad3.asl, line 9, characters 11 to 32:
       return constrained_func{N}();
              ^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {1, 2, 3} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {1, 2, 3} was expected,
     provided integer {2, 3, 4}.
   [1]
   $ aslref TypingRule.AnnotateCall.bad4.asl
   File TypingRule.AnnotateCall.bad4.asl, line 9, characters 11 to 32:
       return constrained_func{N}(); // requires an asserting type conversion
              ^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {1, 2, 3} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {1, 2, 3} was expected,
     provided integer {N}.
   [1]
   $ aslref TypingRule.AnnotateCallActualsTyped.bad1.asl
@@ -968,7 +968,7 @@ ASL Typing Tests / annotating types:
     characters 8 to 24:
       - = plus{64}(bv1, w);
           ^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..64} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..64} was expected,
     provided integer {0..128}.
   [1]
   $ aslref TypingRule.AnnotateCallActualsTyped.bad4.asl
@@ -1029,7 +1029,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.RenameSubprograms.asl, line 3, characters 2 to 11:
     return 1;
     ^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of boolean was expected,
+  ASL Type error (TE_TSF): a subtype of boolean was expected,
     provided integer {1}.
   [1]
   $ aslref TypingRule.ApproxConstraint.asl
@@ -1043,7 +1043,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.BitFieldEqual.bad1.asl, line 4, characters 4 to 71:
       var x : bits(64) { [1] data } = Zeros{64} as bits(64) { [2] data };
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of bits (64) { [1+:1] data } was expected,
+  ASL Type error (TE_TSF): a subtype of bits (64) { [1+:1] data } was expected,
     provided bits (64) { [2+:1] data }.
   [1]
   $ aslref TypingRule.BitFieldEqual.bad2.asl
@@ -1051,7 +1051,7 @@ ASL Typing Tests / annotating types:
     character 43:
       var x : bits(64) { [16+:16] data { [0] lsb } } =  Zeros{64} as
               bits(64) { [31:16] data {  } };
-  ASL Type error (TE_UT): a subtype of
+  ASL Type error (TE_TSF): a subtype of
     bits (64) { [16+:16] data { [0+:1] lsb } } was expected,
     provided bits (64) { [16+:16] data {  } }.
   [1]
@@ -1068,7 +1068,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.ReduceConstraint.asl, line 6, characters 4 to 67:
       var x : integer{3 * w, 0..(5 * z - z) - 2 * z,  w + z} = w + z;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..(2 * z), (z + w), (3 * w)}
+  ASL Type error (TE_TSF): a subtype of integer {0..(2 * z), (z + w), (3 * w)}
     was expected, provided integer {0..2000}.
   [1]
   $ aslref TypingRule.ConstraintEqual.asl
@@ -1085,7 +1085,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.ApproxBottomTop.asl, line 5, characters 4 to 30:
       var x : integer{a..b} = a;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {a..b} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {a..b} was expected,
     provided integer {1..10}.
   [1]
   $ aslref TypingRule.SymdomOfWidthExpr.asl
@@ -1095,7 +1095,7 @@ ASL Typing Tests / annotating types:
     characters 4 to 33:
       let t: integer{x..x + 1} = 2;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {x..(x + 1)} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {x..(x + 1)} was expected,
     provided integer {2}.
   [1]
   $ aslref --no-exec TypingRule.AddGlobalImmutableExpr.asl
@@ -1142,7 +1142,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.MemBfs.bad.asl, line 9, characters 4 to 44:
       var x : bits(8) {[0] flag, [1] lsb} = y;
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of bits (8) { [0+:1] flag, [1+:1] lsb }
+  ASL Type error (TE_TSF): a subtype of bits (8) { [0+:1] flag, [1+:1] lsb }
     was expected, provided FlaggedPacket.
   [1]
   $ aslref --no-exec TypingRule.IntervalTooLarge.asl
@@ -1197,7 +1197,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.ESlice.bad1.asl, line 10, characters 4 to 7:
       dst = src[w:1];
       ^^^
-  ASL Type error (TE_UT): a subtype of bits((k - 1)) was expected,
+  ASL Type error (TE_TSF): a subtype of bits((k - 1)) was expected,
     provided bits(w).
   [1]
   $ aslref TypingRule.ESlice.bad2.asl
@@ -1227,7 +1227,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.AddNewFunc.bad2.asl, line 18, characters 4 to 21:
       g(myCircle, 0.1); // illegal
       ^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of square was expected, provided circle.
+  ASL Type error (TE_TSF): a subtype of square was expected, provided circle.
   [1]
   $ aslref --no-exec TypingRule.AddNewFunc.bad3.asl
   File TypingRule.AddNewFunc.bad3.asl, line 8, character 0 to line 11,

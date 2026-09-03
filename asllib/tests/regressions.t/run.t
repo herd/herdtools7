@@ -11,7 +11,7 @@ Type-checking errors:
   File anonymous-types-example.asl, line 21, characters 2 to 6:
     pair = (1, dataT2);
     ^^^^
-  ASL Type error (TE_UT): a subtype of pairT was expected,
+  ASL Type error (TE_TSF): a subtype of pairT was expected,
     provided (integer {1}, T2).
   [1]
 
@@ -57,7 +57,7 @@ Bad types:
   File bad-inclusion-in-symbolic-type.asl, line 2, characters 0 to 26:
   var ah: integer{2..A} = 1;
   ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {2..A} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {2..A} was expected,
     provided integer {1}.
   [1]
 
@@ -104,7 +104,7 @@ Constrained-type satisfaction:
   File type-sat1.asl, line 5, characters 2 to 3:
     x = y; // illegal as domain of x is not a subset of domain of y
     ^
-  ASL Type error (TE_UT): a subtype of integer {8, 16} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {8, 16} was expected,
     provided integer {8, 16, 32}.
   [1]
 
@@ -121,7 +121,7 @@ Constrained-type satisfaction:
   File type-sat2.asl, line 5, characters 2 to 3:
     x = y; // illegal
     ^
-  ASL Type error (TE_UT): a subtype of integer {8, 16} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {8, 16} was expected,
     provided integer.
   [1]
 
@@ -129,7 +129,7 @@ Constrained-type satisfaction:
   File type_satisfaction_illegal_f3.asl, line 9, characters 4 to 17:
       invoke_me(x); // illegal as domains doesn't match
       ^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {8, 16} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {8, 16} was expected,
     provided integer.
   [1]
 
@@ -137,7 +137,7 @@ Constrained-type satisfaction:
   File type_satisfaction_illegal_f4.asl, line 9, characters 4 to 17:
       invoke_me(x);
       ^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {8, 16} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {8, 16} was expected,
     provided integer {8..64}.
   [1]
 
@@ -154,7 +154,7 @@ Constrained-type satisfaction:
   File type-sat3.asl, line 4, characters 2 to 29:
     var x: integer { 2, 4} = N;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {2, 4} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {2, 4} was expected,
     provided integer {N}.
   [1]
 
@@ -171,7 +171,7 @@ Constrained-type satisfaction:
   File type-sat4.asl, line 4, characters 2 to 29:
     var x: integer { 2, 4} = N;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {2, 4} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {2, 4} was expected,
     provided integer {N}.
   [1]
 
@@ -218,21 +218,21 @@ Parameterized integers:
   File bad-underconstrained-call.asl, line 9, characters 9 to 26:
     return GetBitAt{M}(x, M);
            ^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..(M - 1)} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..(M - 1)} was expected,
     provided integer {M}.
   [1]
   $ aslref bad-underconstrained-call-02.asl
   File bad-underconstrained-call-02.asl, line 8, characters 2 to 15:
     foo{M}(x, 3);
     ^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {M} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {M} was expected,
     provided integer {3}.
   [1]
   $ aslref bad-underconstrained-call-03.asl
   File bad-underconstrained-call-03.asl, line 8, characters 2 to 19:
     foo{M}(x, M + 1);
     ^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {M} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {M} was expected,
     provided integer {(M + 1)}.
   [1]
   $ aslref bad-underconstrained-ctc.asl
@@ -246,14 +246,14 @@ Parameterized integers:
   File bad-underconstrained-return.asl, line 3, characters 2 to 15:
     return N + 1;
     ^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..N} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..N} was expected,
     provided integer {(N + 1)}.
   [1]
   $ aslref bad-underconstrained-return-02.asl
   File bad-underconstrained-return-02.asl, line 3, characters 2 to 11:
     return 5;
     ^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {0..N} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {0..N} was expected,
     provided integer {5}.
   [1]
 
@@ -396,20 +396,21 @@ Parameters bugs:
   File arg-as-param-call.asl, line 8, characters 4 to 21:
       test{10}('1111');
       ^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of bits(10) was expected, provided bits(4).
+  ASL Type error (TE_TSF): a subtype of bits(10) was expected,
+    provided bits(4).
   [1]
   $ aslref typed-param-call.asl
   File typed-param-call.asl, line 8, characters 4 to 18:
       test{2}('11');
       ^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {5..10} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {5..10} was expected,
     provided integer {2}.
   [1]
   $ aslref typed-arg-as-param-call.asl
   File typed-arg-as-param-call.asl, line 8, characters 4 to 18:
       test{2}('11');
       ^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {5..10} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {5..10} was expected,
     provided integer {2}.
   [1]
   $ aslref --no-exec defining_param.asl
@@ -483,14 +484,14 @@ Required tests:
     characters 2 to 45:
     var animalLegs: AnimalLegs = centipedeLegs;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of AnimalLegs was expected,
+  ASL Type error (TE_TSF): a subtype of AnimalLegs was expected,
     provided InsectLegs.
   [1]
   $ aslref --no-exec subtype-satisfaction-shape-to-animal.bad.asl
   File subtype-satisfaction-shape-to-animal.bad.asl, line 9, characters 2 to 42:
     var dogLegs: AnimalLegs = myCircleSides;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of AnimalLegs was expected,
+  ASL Type error (TE_TSF): a subtype of AnimalLegs was expected,
     provided ShapeSides.
   [1]
   $ aslref --no-exec subtype-satisfaction-word-count-to-packet-length.bad.asl
@@ -498,7 +499,7 @@ Required tests:
     characters 2 to 16:
     myPacketLength = myWordCount;
     ^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of PacketLength was expected,
+  ASL Type error (TE_TSF): a subtype of PacketLength was expected,
     provided WordCount.
   [1]
   $ aslref --no-exec subtype-satisfaction-packet-length-to-word-count.bad.asl
@@ -506,7 +507,7 @@ Required tests:
     characters 2 to 13:
     myWordCount = myPacketLength;
     ^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of WordCount was expected,
+  ASL Type error (TE_TSF): a subtype of WordCount was expected,
     provided PacketLength.
   [1]
   $ aslref tuples.asl
@@ -677,7 +678,7 @@ Inherit integer constraints on left-hand sides
   File inherit-integer-constraints-bad-basic.asl, line 4, characters 2 to 11:
     return x;
     ^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {43} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {43} was expected,
     provided integer {42}.
   [1]
 
@@ -685,7 +686,7 @@ Inherit integer constraints on left-hand sides
   File inherit-integer-constraints-bad-tuple.asl, line 4, characters 2 to 28:
     return (y.item0, y.item2);
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of (integer {42}, integer {0})
+  ASL Type error (TE_TSF): a subtype of (integer {42}, integer {0})
     was expected, provided (integer {42}, integer {43}).
   [1]
 

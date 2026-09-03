@@ -12,7 +12,7 @@
   File lca1.asl, line 6, characters 2 to 18:
     let c: real = x;
     ^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of real was expected,
+  ASL Type error (TE_TSF): a subtype of real was expected,
     provided integer {2, 3}.
   [1]
 
@@ -29,7 +29,7 @@
   File lca2.asl, line 5, characters 2 to 28:
     let b: integer {2, 3} = x;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {2, 3} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {2, 3} was expected,
     provided integer.
   [1]
 
@@ -46,7 +46,7 @@
   File lca3.asl, line 5, characters 2 to 25:
     let b: integer {N} = x;
     ^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of integer {N} was expected,
+  ASL Type error (TE_TSF): a subtype of integer {N} was expected,
     provided integer {3, N}.
   [1]
 
@@ -62,7 +62,7 @@
   File lca4.asl, line 4, characters 2 to 18:
     let a: real = x;
     ^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of real was expected,
+  ASL Type error (TE_TSF): a subtype of real was expected,
     provided integer {0..N, 3}.
   [1]
 
@@ -96,7 +96,7 @@
   File lca6.asl, line 7, characters 2 to 18:
     let a: real = x;
     ^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of real was expected, provided integer.
+  ASL Type error (TE_TSF): a subtype of real was expected, provided integer.
   [1]
 
   $ cat >lca7.asl <<EOF
@@ -129,7 +129,7 @@
   File lca8.asl, line 5, characters 2 to 18:
     let a: real = x;
     ^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of real was expected, provided bits(3).
+  ASL Type error (TE_TSF): a subtype of real was expected, provided bits(3).
   [1]
 
   $ cat >lca9.asl <<EOF
@@ -146,7 +146,7 @@
   File lca9.asl, line 6, characters 2 to 18:
     let b: real = x;
     ^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of real was expected, provided T1.
+  ASL Type error (TE_TSF): a subtype of real was expected, provided T1.
   [1]
 
   $ cat >lca10.asl <<EOF
@@ -164,7 +164,7 @@
   File lca10.asl, line 7, characters 2 to 18:
     let b: real = x;
     ^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of real was expected, provided integer.
+  ASL Type error (TE_TSF): a subtype of real was expected, provided integer.
   [1]
 
   $ cat >lca11.asl <<EOF
@@ -216,6 +216,6 @@
   File lca14.asl, line 7, characters 2 to 18:
     let c: real = x;
     ^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of real was expected,
+  ASL Type error (TE_TSF): a subtype of real was expected,
     provided array [[4]] of T1.
   [1]

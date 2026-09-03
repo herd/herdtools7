@@ -39,6 +39,9 @@ let add_pos_from ~loc = add_pos_from loc
 let conflict ~loc expected provided =
   fatal_from ~loc (Error.ConflictingTypes (expected, provided))
 
+let type_satisfaction_failure ~loc expected provided =
+  fatal_from ~loc (Error.TypeSatisfactionFailure (expected, provided))
+
 let plus e1 e2 = binop `ADD e1 e2
 let minus e1 e2 = binop `SUB e1 e2
 let t_bits_bitwidth e = T_Bits (e, [])
@@ -577,7 +580,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       if false then
         Format.eprintf "@[<hv 2>Checking %a@ <: %a@]@." PP.pp_ty t1 PP.pp_ty t2
     in
-    if Types.type_satisfies env t1 t2 then () else conflict ~loc [ t2.desc ] t1
+    if Types.type_satisfies env t1 t2 then ()
+    else type_satisfaction_failure ~loc [ t2.desc ] t1
 
   (* CheckStructureBoolean *)
 
@@ -2746,7 +2750,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     | _ -> Types.type_satisfies env t s
 
   let check_can_be_initialized_with ~loc env s t () =
-    if can_be_initialized_with env s t then () else conflict ~loc [ s.desc ] t
+    if can_be_initialized_with env s t then ()
+    else type_satisfaction_failure ~loc [ s.desc ] t
   (* End *)
 
   (* Begin ShouldRememberImmutableExpression *)

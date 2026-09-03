@@ -49,6 +49,7 @@ type error_desc =
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
   | ConflictingTypes of type_desc list * ty
+  | TypeSatisfactionFailure of type_desc list * ty
   | AssertionFailed of error_handling_time * expr
   | CannotParse of string option
   | BadBinopPriority of string
@@ -259,6 +260,7 @@ module ErrorCode = struct
     | BitfieldsDontAlign _ ->
         Some (Typing BS) (* TODO: consider combining BadSlices and BadSlice *)
     | UndefinedIdentifier (Static, _) -> Some (Typing UI)
+    | TypeSatisfactionFailure _ -> Some (Typing TSF)
     | ConflictingTypes _ | AssignToTupleElement _ | ConstrainedIntegerExpected _
     | UnexpectedPendingConstrained | ExpectedSingularType _
     | ExpectedNamedType _ | UnexpectedCollection | MismatchedBitvectorWidths _
@@ -414,7 +416,6 @@ end
     - TypingRule.TInt mismatch on empty case *)
 (* TODO: BE_RI unused in reference *)
 (* TODO: following not recoverable from implementation:
-- TE_TSF
 - TE_LCA
 - TE_SEF
 - TE_BTI
@@ -558,10 +559,12 @@ module PPrint = struct
               "Arity error while calling '%s':@ %d parameters expected and %d \
                provided"
               name expected provided)
-    | ConflictingTypes ([ expected ], provided) ->
+    | ConflictingTypes ([ expected ], provided)
+    | TypeSatisfactionFailure ([ expected ], provided) ->
         pp_err Typing "a subtype of@ %a@ was expected,@ provided %a."
           pp_type_desc expected pp_ty provided
-    | ConflictingTypes (expected, provided) ->
+    | ConflictingTypes (expected, provided)
+    | TypeSatisfactionFailure (expected, provided) ->
         pp_err Typing "%a does@ not@ subtype@ any@ of:@ %a." pp_ty provided
           (pp_comma_list pp_type_desc)
           expected
@@ -839,6 +842,7 @@ module CSV = struct
     | InvalidExpr _ -> "InvalidExpr"
     | MismatchType _ -> "MismatchType"
     | ConflictingTypes _ -> "ConflictingTypes"
+    | TypeSatisfactionFailure _ -> "TypeSatisfactionFailure"
     | AssertionFailed _ -> "AssertionFailed"
     | CannotParse _ -> "CannotParse"
     | BadBinopPriority _ -> "BadBinopPriority"
