@@ -306,8 +306,7 @@ module ErrorCode = struct
         None
     | CannotParse _ (* used in lexing too *) -> None
     | UnreconcilableTypes _ (* LCA failures *) -> None
-    | EmptyConstraints (* does this need to be reflected in reference? *) ->
-        None
+    | EmptyConstraints (* An internal invariant *) -> None
     | MultipleWrites _
     (* For desugaring, but uses `check_no_duplicates` which is always TE_IAD? *)
       ->

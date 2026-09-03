@@ -1296,7 +1296,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         (match constraints with
           | PendingConstrained ->
               fatal_from ~loc Error.UnexpectedPendingConstrained
-          | WellConstrained ([], _) -> fatal_from ~loc Error.EmptyConstraints
+          | WellConstrained ([], _) ->
+              (* This is an internal invariant, as the parser requires at least
+                 one constraint. *)
+              fatal_from ~loc Error.EmptyConstraints
           | WellConstrained (constraints, precision) ->
               let new_constraints, sess =
                 list_map_split (annotate_constraint ~loc env) constraints
