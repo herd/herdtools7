@@ -98,7 +98,7 @@ Examples used in ASL High-level Definition:
   File GuideRule.TupleElementAccess.bad.asl, line 5, characters 18 to 25:
       x = (x.item1, x.item2);
                     ^^^^^^^
-  ASL Type error (TE_BF): There is no field 'item2' on type (integer, integer).
+  ASL Type error (TE_BTI): Tuple index 2 is outside the valid range 0..1.
   [1]
   $ aslref GuideRule.AnonymousEnumerations.bad.asl
   File GuideRule.AnonymousEnumerations.bad.asl, line 4, characters 12 to 23:

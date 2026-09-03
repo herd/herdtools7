@@ -31,6 +31,7 @@ type error_desc =
   | BadField of string * ty
   | MissingField of string list * ty
   | BadSlices of error_handling_time * slice list * int
+  | BadTupleIndex of { index : int; length : int }
   | BadSlice of slice
   | EmptySlice
   | TypeInferenceNeeded
@@ -250,6 +251,7 @@ module ErrorCode = struct
     | UnknownSymbol _ -> Some (Build LE)
     | ObsoleteSyntax _ -> Some (Build PE)
     | BadField _ | MissingField _ -> Some (Typing BF)
+    | BadTupleIndex _ -> Some (Typing BTI)
     | BadPattern _ | BadTypesForBinop _
     | UnsupportedUnop (Static, _, _)
     | UnsupportedBinop (Static, _, _, _) ->
@@ -417,7 +419,6 @@ end
 (* TODO: BE_RI unused in reference *)
 (* TODO: following not recoverable from implementation:
 - TE_SEF
-- TE_BTI
 - DE_TAF
 - DE_BI
 *)
@@ -516,6 +517,9 @@ module PPrint = struct
           (ErrorKind.of_error_handling_time t)
           "Cannot extract from bitvector of length %d slice %a." length
           pp_slice_list slices
+    | BadTupleIndex { index; length } ->
+        pp_err Typing "Tuple index %d is outside the valid range 0..%d." index
+          (length - 1)
     | BadSlice slice -> pp_err Static "invalid slice %a." pp_slice slice
     | TypeInferenceNeeded ->
         pp_err Internal "Interpreter blocked. Type inference needed."
@@ -827,6 +831,7 @@ module CSV = struct
     | BadPattern _ -> "BadPattern"
     | MissingField _ -> "MissingField"
     | BadSlices _ -> "BadSlices"
+    | BadTupleIndex _ -> "BadTupleIndex"
     | BadSlice _ -> "BadSlice"
     | EmptySlice -> "EmptySlice"
     | TypeInferenceNeeded -> "TypeInferenceNeeded"

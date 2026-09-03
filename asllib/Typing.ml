@@ -2188,7 +2188,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                     E_GetItem (e2, index) |> add_pos_from ~loc:e,
                     ses1 )
                 else
-                  fatal_from ~loc (Error.BadField (field_name, t_e2))
+                  fatal_from ~loc
+                    (Error.BadTupleIndex { index; length = List.length tys })
                   |: TypingRule.EGetTupleItem
             (* End *)
             (* Begin EGetBadField *)
