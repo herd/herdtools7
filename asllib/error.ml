@@ -416,7 +416,6 @@ end
     - TypingRule.TInt mismatch on empty case *)
 (* TODO: BE_RI unused in reference *)
 (* TODO: following not recoverable from implementation:
-- TE_LCA
 - TE_SEF
 - TE_BTI
 - DE_TAF
