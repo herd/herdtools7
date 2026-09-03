@@ -3851,35 +3851,44 @@ Arguments:
           mzero an ii Fun.id DISide.Data in
         GCSSem.bind_data_gcspr m ii
 
-      let blop v_ret write_linkreg branch bop ii =
+      let blop v_ret branch ii =
         let open AArch64Base in
         let an = Annot.N
-        and rA = SysReg GCSPR_EL1
-        and off = MachSize.nbytes quad in
-        read_reg_addr rA ii >>= fun addr -> M.add addr (V.intToV (-off)) >>= fun a_virt ->
-          let mop ac a v =
-            GCSSem.write ac an a v ii >>|
-            write_reg rA a_virt ii >>|
-            write_linkreg >>= M.ignore in
-          do_lift_memop rA Dir.W true false
-          (fun ac ma mv ->
-            let m =
-              if is_branching && Access.is_physical ac then
-                M.bind_ctrldata_data ma mv (fun a v -> bop (mop ac a v) branch)
-              else
-                ma >>| mv >>= fun (a,v) -> bop (mop ac a v) branch
-            in
-            (* Value writen to GCSPR depends on previous read *)
-            let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
-            and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
-            M.short read write m)
-          (to_perms "w" quad)
-          (M.unitT a_virt)
-          (M.unitT v_ret)
-          an
-          ii
-          Fun.id
-          DISide.Data
+        and rA = SysReg GCSPR_EL1 in
+        let ma =
+          let off = V.intToV (-MachSize.nbytes quad) in
+          let* a = read_reg_addr rA ii in
+          M.add a off in
+        let* a_virt, ma = M.delay ma in
+        let check_branch ac ma _mv =
+          let write_rA = write_reg rA a_virt ii
+          and write_lr = write_reg linkreg v_ret ii
+          and write_gcs_mem a = GCSSem.write ac an a v_ret ii
+          and bds = [rA, a_virt; AArch64Base.linkreg, v_ret] in
+          if is_branching && Access.is_physical ac then
+            let (let*=) = M.(>>*=) in
+            let*= a = ma in
+            let* b =
+              let* b = branch bds
+              and* () = write_rA
+              and* () = write_lr
+              and* () = write_gcs_mem a in
+              M.unitT b in
+            M.unitT b
+          else
+            let* b = branch bds
+            and* () = write_lr
+            and* () =
+              let* a = ma in
+              let* () = write_rA
+              and* () = write_gcs_mem a in
+              M.unitT () in
+            M.unitT b in
+        let m = do_lift_memop rA Dir.W true false check_branch
+            (to_perms "w" quad) ma mzero an ii Fun.id DISide.Data in
+        (* Value writen to GCSPR depends on previous read *)
+        let m = GCSSem.bind_data_gcspr m ii in
+        M.short E.is_mem_load E.is_mem_store m
 
       let retop test i r ii =
         let open AArch64Base in
@@ -4107,25 +4116,31 @@ Arguments:
            >>= fun () -> M.unitT (B.CondJump (v,tgt2tgt  ii l))
         | I_BL l ->
            let v_ret = get_link_addr test ii in
-           let write_linkreg = write_reg AArch64Base.linkreg v_ret ii in
-           let branch () = M.unitT (B.Jump (tgt2tgt ii l,[AArch64Base.linkreg,v_ret])) in
-           let bop a b = M.bind_order a b in
            if gcs then
-            blop v_ret write_linkreg branch bop ii
+             let branch bds =
+               M.unitT (B.Jump (tgt2tgt ii l,bds)) in
+             blop v_ret branch ii
            else
-            bop write_linkreg branch
+             let branch =
+               let bds = [AArch64Base.linkreg,v_ret] in
+               M.unitT (B.Jump (tgt2tgt ii l, bds)) in
+             let write_lr = write_reg AArch64Base.linkreg v_ret ii in
+             M.para_bind_output_right write_lr (fun () -> branch)
         | I_BR r as i ->
             read_reg_ord r ii >>= do_indirect_jump test [] i ii
         | I_BLR r as i ->
            let v_ret = get_link_addr test ii in
            let read_rn = read_reg_ord r ii in
-           let branch = read_rn >>= do_indirect_jump test [AArch64Base.linkreg,v_ret] i ii in
-           let write_linkreg = write_reg AArch64Base.linkreg v_ret ii in
-           let bop a b = a >>| b >>= fun (_, b) -> M.unitT b in
            if gcs then
-            blop v_ret write_linkreg branch bop ii
+             let branch bds =
+               read_rn >>= do_indirect_jump test bds i ii in
+             blop v_ret branch ii
            else
-            bop write_linkreg branch
+             let branch =
+               let bds = [AArch64Base.linkreg,v_ret] in
+               read_rn >>= do_indirect_jump test bds i ii in
+             let write_lr = write_reg AArch64Base.linkreg v_ret ii in
+             M.para_bind_output_right write_lr (fun () -> branch)
         | I_RET None when C.variant Variant.Telechat ->
            M.unitT B.Exit
         | I_RET ro as i ->
