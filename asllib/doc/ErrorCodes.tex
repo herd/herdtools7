@@ -213,8 +213,9 @@ The following table summarises all error codes.
   \hypertarget{def-buildbaddeclaration}{}
   \item[$\BuildBadDeclaration$]
     \textit{Bad declaration.}
-    A top-level declaration is invalid.
-    For example, the standard library defines a non-subprogram (\ASTRuleRef{SetBuiltin}).
+    A declaration is invalid.
+    For example, a local tuple declaration discards every item (\ASTRuleRef{DeclItem}),
+    or the standard library defines a non-subprogram (\ASTRuleRef{SetBuiltin}).
 \end{description}
 
 \section{Type Errors\label{sec:TypingErrors}}

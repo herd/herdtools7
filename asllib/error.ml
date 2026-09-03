@@ -52,6 +52,7 @@ type error_desc =
   | AssertionFailed of error_handling_time * expr
   | CannotParse of string option
   | BadBinopPriority of string
+  | BadDeclarationSyntax of string
   | UnknownSymbol of string
   | NoCallCandidate of string * ty list
   | BadTypesForBinop of binop * ty * ty
@@ -244,6 +245,7 @@ module ErrorCode = struct
     (********** Errors that correspond to error codes **********)
     | ReservedIdentifier _ -> Some (Build RI)
     | BadBinopPriority _ -> Some (Build BOP)
+    | BadDeclarationSyntax _ -> Some (Build BD)
     | UnknownSymbol _ -> Some (Build LE)
     | ObsoleteSyntax _ -> Some (Build PE)
     | BadField _ | MissingField _ -> Some (Typing BF)
@@ -412,7 +414,6 @@ end
     - TypingRule.TInt mismatch on empty case *)
 (* TODO: BE_RI unused in reference *)
 (* TODO: following not recoverable from implementation:
-- BE_BD
 - TE_TSF
 - TE_LCA
 - TE_SEF
@@ -573,6 +574,7 @@ module PPrint = struct
         | None -> pp_err Parse "Cannot parse."
         | Some s -> pp_err Parse "Cannot parse.@ %a" pp_print_text s)
     | BadBinopPriority message -> pp_err Parse "%a" pp_print_text message
+    | BadDeclarationSyntax message -> pp_err Parse "%a" pp_print_text message
     | UnknownSymbol s ->
         let codes = List.map Char.code (List.of_seq (String.to_seq s)) in
         let not_printable code = code < 33 || code > 126 in
@@ -840,6 +842,7 @@ module CSV = struct
     | AssertionFailed _ -> "AssertionFailed"
     | CannotParse _ -> "CannotParse"
     | BadBinopPriority _ -> "BadBinopPriority"
+    | BadDeclarationSyntax _ -> "BadDeclarationSyntax"
     | UnknownSymbol _ -> "UnknownSymbol"
     | NoCallCandidate _ -> "NoCallCandidate"
     | BadTypesForBinop _ -> "BadTypesForBinop"

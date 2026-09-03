@@ -26,8 +26,8 @@
   File discard-locals.asl, line 3, characters 6 to 12:
     let (-, -) = (1, 2);
         ^^^^^^
-  ASL Grammar error: Cannot parse. A local declaration must declare at least
-    one name.
+  ASL Grammar error (BE_BD): A local declaration must declare at least one
+    name.
   [1]
 
   $ aslref hyphenated-pending-constraint.asl
