@@ -623,6 +623,6 @@ let rec lowest_common_ancestor ~loc env s t =
          of the types of the corresponding elements of S and T. *)
         let li = List.map2 (lowest_common_ancestor ~loc env) li_s li_t in
         here (T_Tuple li)
-    | _ -> Error.fatal_from loc (Error.UnreconcilableTypes (s, t)))
+    | _ -> Error.fatal_from loc (Error.NoCommonAncestor (s, t)))
   |: TypingRule.LowestCommonAncestor
 (* End *)

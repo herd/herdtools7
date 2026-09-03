@@ -54,7 +54,7 @@ ASL Typing Tests:
   File TypingRule.LowestCommonAncestor.bad.asl, line 10, characters 13 to 53:
       var o  = if ARBITRARY : boolean then arr1 else ex;
                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Type error: cannot find a common ancestor to those two types
+  ASL Type error (TE_LCA): cannot find a common ancestor to those two types
     array [[8]] of Word1 and exception { i: integer }.
   [1]
   $ aslref --no-exec TypingRule.LowestCommonAncestor2.asl
@@ -612,8 +612,8 @@ ASL Typing Tests / annotating types:
   File TypingRule.PSingle.bad.asl, line 4, characters 11 to 30:
       assert '101' IN { '1100' };
              ^^^^^^^^^^^^^^^^^^^
-  ASL Type error: cannot find a common ancestor to those two types bits(3) and
-    bits(4).
+  ASL Type error (TE_UT):
+    bitvector types bits(3) and bits(4) must have equal widths.
   [1]
   $ aslref TypingRule.PRange.asl
   $ aslref TypingRule.PRange.bad.asl

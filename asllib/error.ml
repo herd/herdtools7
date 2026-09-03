@@ -57,7 +57,9 @@ type error_desc =
   | ImpureExpression of expr * SideEffect.SES.t
       (** used for fine-grained analysis *)
   | MismatchedPurity of string  (** Used for coarse-grained analysis *)
-  | UnreconcilableTypes of ty * ty
+  | MismatchedBitvectorWidths of ty * ty
+  | NoCommonAncestor of ty * ty
+  | CollectionBaseNotVariable of expr
   | AssignToImmutable of string
   | AssignToTupleElement of lexpr
   | AlreadyDeclaredIdentifier of string
@@ -255,7 +257,8 @@ module ErrorCode = struct
     | UndefinedIdentifier (Static, _) -> Some (Typing UI)
     | ConflictingTypes _ | AssignToTupleElement _ | ConstrainedIntegerExpected _
     | UnexpectedPendingConstrained | ExpectedSingularType _
-    | ExpectedNamedType _ | UnexpectedCollection ->
+    | ExpectedNamedType _ | UnexpectedCollection | MismatchedBitvectorWidths _
+    | CollectionBaseNotVariable _ ->
         Some (Typing UT)
     | MismatchedCallType _
     | BadParameterArity (Static, _, _, _, _)
@@ -293,6 +296,7 @@ module ErrorCode = struct
     | AssertionFailed (Static, _)
     | BadPrimitiveArgument (Static, _, _) ->
         Some (Typing SEF)
+    | NoCommonAncestor _ (* LCA failures *) -> Some (Typing LCA)
     (********** TODO tidy up - does not cleanly correspond to a code **********)
     | BadArity (Static, _, _, _) (* also used for tuple unpacking *) -> None
     | UnsupportedExpr _ | UnsupportedTy _
@@ -302,9 +306,6 @@ module ErrorCode = struct
     (* dynamic ATC but also mismatched integers for loop limits *) ->
         None
     | CannotParse _ (* used in lexing too *) -> None
-    | UnreconcilableTypes _ (* both LCA and check_bit_widths_equal *) -> None
-    | EmptyConstraints (* does this need to be reflected in reference? *) ->
-        None
     | MultipleWrites _
     (* For desugaring, but uses `check_no_duplicates` which is always TE_IAD? *)
       ->
@@ -313,6 +314,7 @@ module ErrorCode = struct
         None
     (********** Should not happen **********)
     (* e.g. skipped type-checking, ASL0, internal option or invariant *)
+    | EmptyConstraints (* An internal invariant *) -> None
     | TypeInferenceNeeded
     | UndefinedIdentifier (Dynamic, _)
     | BadArity (Dynamic, _, _, _)
@@ -406,7 +408,6 @@ end
       distinguish between ASL1 errors and e.g. ASL0 non-typechecked errors,
       assertion failures, cases we don't expect to hit etc.
     - TypingRule.TInt mismatch on empty case *)
-(* TODO: check_implementations_unique should be TE_OE in reference - instead just generic #TE *)
 (* TODO: BE_RI unused in reference *)
 (* TODO: following not recoverable from implementation:
 - BE_BOP
@@ -592,11 +593,19 @@ module PPrint = struct
           pp_expr e SideEffect.SES.pp_print ses
     | MismatchedPurity s ->
         pp_err Typing "expected@ a@ %s@ expression/subprogram." s
-    | UnreconcilableTypes (t1, t2) ->
+    | MismatchedBitvectorWidths (t1, t2) ->
+        pp_err Typing "bitvector types %a and %a must have equal widths." pp_ty
+          t1 pp_ty t2
+    | NoCommonAncestor (t1, t2) ->
         pp_err Typing
           "cannot@ find@ a@ common@ ancestor@ to@ those@ two@ types@ %a@ and@ \
            %a."
           pp_ty t1 pp_ty t2
+    | CollectionBaseNotVariable e ->
+        pp_err Typing
+          "collection fields can only be accessed through a variable;@ \
+           provided base: %a."
+          pp_expr e
     | AssignToImmutable x ->
         pp_err Typing "cannot@ assign@ to@ immutable@ storage@ %S." x
     | AssignToTupleElement tuple_e ->
@@ -833,7 +842,9 @@ module CSV = struct
     | BadTypesForBinop _ -> "BadTypesForBinop"
     | ImpureExpression _ -> "ImpureExpression"
     | MismatchedPurity _ -> "MismatchedPurity"
-    | UnreconcilableTypes _ -> "UnreconcilableTypes"
+    | MismatchedBitvectorWidths _ -> "MismatchedBitvectorWidths"
+    | NoCommonAncestor _ -> "NoCommonAncestor"
+    | CollectionBaseNotVariable _ -> "CollectionBaseNotVariable"
     | AssignToImmutable _ -> "AssignToImmutable"
     | AssignToTupleElement _ -> "AssignToTupleElement"
     | AlreadyDeclaredIdentifier _ -> "AlreadyDeclaredIdentifier"
