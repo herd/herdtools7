@@ -329,16 +329,16 @@ Parameterized integers:
   File same-precedence.asl, line 6, characters 10 to 15:
     let x = a + b - c;
             ^^^^^
-  ASL Grammar error: Cannot parse. Operators `-` and `+` have the same priority
-    - parenthesise to disambiguate.
+  ASL Grammar error (BE_BOP): Operators `-` and `+` have the same priority -
+    parenthesise to disambiguate.
   [1]
 
   $ aslref same-precedence2.asl
   File same-precedence2.asl, line 6, characters 10 to 17:
     let d = a ==> b <=> c;
             ^^^^^^^
-  ASL Grammar error: Cannot parse. Operators `<=>` and `==>` have the same
-    priority - parenthesise to disambiguate.
+  ASL Grammar error (BE_BOP): Operators `<=>` and `==>` have the same priority
+    - parenthesise to disambiguate.
   [1]
 
   $ aslref rdiv_checks.asl

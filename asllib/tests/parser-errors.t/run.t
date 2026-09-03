@@ -2,7 +2,7 @@
   File binop-non-associative.asl, line 1, characters 8 to 13:
   let x = a - b - c;
           ^^^^^
-  ASL Grammar error: Cannot parse. Binary operator `-` is not associative -
+  ASL Grammar error (BE_BOP): Binary operator `-` is not associative -
     parenthesise to disambiguate.
   [1]
 
@@ -56,8 +56,8 @@
   File binop-same-precedence.asl, line 1, characters 8 to 13:
   let x = a + b - c;
           ^^^^^
-  ASL Grammar error: Cannot parse. Operators `-` and `+` have the same priority
-    - parenthesise to disambiguate.
+  ASL Grammar error (BE_BOP): Operators `-` and `+` have the same priority -
+    parenthesise to disambiguate.
   [1]
 
   $ aslref empty-record.asl
