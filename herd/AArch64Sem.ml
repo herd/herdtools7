@@ -3852,32 +3852,32 @@ Arguments:
       let blop v_ret write_linkreg branch bop ii =
         let open AArch64Base in
         let an = Annot.N
-        and rA = SysReg GCSPR_EL1
-        and off = MachSize.nbytes quad in
-        read_reg_addr rA ii >>= fun addr -> M.add addr (V.intToV (-off)) >>= fun a_virt ->
-          let mop ac a v =
-            GCSSem.write ac an a v ii >>|
-            write_reg rA a_virt ii >>|
-            write_linkreg >>= M.ignore in
-          do_lift_memop rA Dir.W true false
-          (fun ac ma mv ->
-            let m =
-              if is_branching && Access.is_physical ac then
-                M.bind_ctrldata_data ma mv (fun a v -> bop (mop ac a v) branch)
-              else
-                ma >>| mv >>= fun (a,v) -> bop (mop ac a v) branch
+        and rA = SysReg GCSPR_EL1 in
+        let ma =
+          let off = V.intToV (-MachSize.nbytes quad) in
+          let* a = read_reg_addr rA ii in
+          M.add a off in
+        let do_blop a_virt ma =
+          let check_branch ac ma _mv =
+            let do_writes ac a =
+              let* a = write_reg rA a_virt ii
+              and* b = write_linkreg
+              and* c = GCSSem.write ac an a v_ret ii in
+              M.ignore (a, b, c) in
+            if is_branching && Access.is_physical ac then
+              ma >>*= (fun a -> bop (do_writes ac a) branch)
+            else
+              ma >>= fun a -> bop (do_writes ac a) branch
             in
-            (* Value writen to GCSPR depends on previous read *)
-            let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
-            and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
-            M.short read write m)
-          (to_perms "w" quad)
-          (M.unitT a_virt)
-          (M.unitT v_ret)
-          an
-          ii
-          Fun.id
-          DISide.Data
+          let m =
+            do_lift_memop rA Dir.W true false check_branch
+              (to_perms "w" quad) ma mzero an ii Fun.id DISide.Data in
+          (* Value writen to GCSPR depends on previous read *)
+          let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
+          and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
+          let m = M.short read write m in
+          M.short E.is_mem_load E.is_mem_store m in
+        M.delay_kont "blop" ma do_blop
 
       let retop test i r ii =
         let open AArch64Base in
