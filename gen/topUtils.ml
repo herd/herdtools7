@@ -109,6 +109,10 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
     | Config.Local when O.optcoherence -> do_last_map cos
     | _ -> StringMap.empty
 
+    let is_rmw_store_only n =
+      match n.C.C.edge.C.E.edge with
+        | C.E.Rmw rmw -> not (C.E.RMW.show_rmw_reg rmw)
+        | _ -> false
 
     (* Decide whether the value written by `n` is a candidate for the final
        condition. `top_gen.ml` later selects the last candidate in the
@@ -128,6 +132,10 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           let next_edge = n.C.C.edge in
           C.E.is_co next_edge || C.E.is_co prev_edge
           || ( C.E.is_fr prev_edge && check_fr_write )
+          (* A store-only RMW makes no explicit observation, so retain its
+             write when it follows a communication edge. *)
+          || ( C.E.is_com n.C.C.prev.C.C.prev.C.C.edge
+             && is_rmw_store_only n.C.C.prev)
 
     let compute_cos =
       List.map
