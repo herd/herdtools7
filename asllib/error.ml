@@ -58,7 +58,7 @@ type error_desc =
       (** used for fine-grained analysis *)
   | MismatchedPurity of string  (** Used for coarse-grained analysis *)
   | MismatchedBitvectorWidths of ty * ty
-  | UnreconcilableTypes of ty * ty
+  | NoCommonAncestor of ty * ty
   | CollectionBaseNotVariable of expr
   | AssignToImmutable of string
   | AssignToTupleElement of lexpr
@@ -296,6 +296,7 @@ module ErrorCode = struct
     | AssertionFailed (Static, _)
     | BadPrimitiveArgument (Static, _, _) ->
         Some (Typing SEF)
+    | NoCommonAncestor _ (* LCA failures *) -> Some (Typing LCA)
     (********** TODO tidy up - does not cleanly correspond to a code **********)
     | BadArity (Static, _, _, _) (* also used for tuple unpacking *) -> None
     | UnsupportedExpr _ | UnsupportedTy _
@@ -305,8 +306,6 @@ module ErrorCode = struct
     (* dynamic ATC but also mismatched integers for loop limits *) ->
         None
     | CannotParse _ (* used in lexing too *) -> None
-    | UnreconcilableTypes _ (* LCA failures *) -> None
-    | EmptyConstraints (* An internal invariant *) -> None
     | MultipleWrites _
     (* For desugaring, but uses `check_no_duplicates` which is always TE_IAD? *)
       ->
@@ -315,6 +314,7 @@ module ErrorCode = struct
         None
     (********** Should not happen **********)
     (* e.g. skipped type-checking, ASL0, internal option or invariant *)
+    | EmptyConstraints (* An internal invariant *) -> None
     | TypeInferenceNeeded
     | UndefinedIdentifier (Dynamic, _)
     | BadArity (Dynamic, _, _, _)
@@ -596,7 +596,7 @@ module PPrint = struct
     | MismatchedBitvectorWidths (t1, t2) ->
         pp_err Typing "bitvector types %a and %a must have equal widths." pp_ty
           t1 pp_ty t2
-    | UnreconcilableTypes (t1, t2) ->
+    | NoCommonAncestor (t1, t2) ->
         pp_err Typing
           "cannot@ find@ a@ common@ ancestor@ to@ those@ two@ types@ %a@ and@ \
            %a."
@@ -843,7 +843,7 @@ module CSV = struct
     | ImpureExpression _ -> "ImpureExpression"
     | MismatchedPurity _ -> "MismatchedPurity"
     | MismatchedBitvectorWidths _ -> "MismatchedBitvectorWidths"
-    | UnreconcilableTypes _ -> "UnreconcilableTypes"
+    | NoCommonAncestor _ -> "NoCommonAncestor"
     | CollectionBaseNotVariable _ -> "CollectionBaseNotVariable"
     | AssignToImmutable _ -> "AssignToImmutable"
     | AssignToTupleElement _ -> "AssignToTupleElement"

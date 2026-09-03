@@ -127,7 +127,7 @@ let lca_examples () =
     try
       let _ = lowest_common_ancestor ~loc:bits_4 empty_env bits_4 bits_2 in
       assert false
-    with Error.ASLException { desc = Error.UnreconcilableTypes _ } -> ()
+    with Error.ASLException { desc = Error.NoCommonAncestor _ } -> ()
   in
 
   let integer_4 = integer_exact !$4 in
