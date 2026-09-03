@@ -34,16 +34,12 @@ static void record_fault(who_t *w, unsigned long pc, unsigned long esr) {
     flt.data_symb = DATA_SYMB_ID_UNKNOWN;
   }
 
-  if (!log_fault(w->proc, flt.instr_symb, flt.data_symb, flt.type)) {
+  if (!log_fault(w->proc, &flt)) {
     return;
   }
 
-  if (exists_fault(th_flts, flt.instr_symb, flt.data_symb, flt.type))
-    return;
+  insert_fault(&flt,th_flts);
 
-  if (th_flts->n < MAX_FAULTS_PER_THREAD) {
-    th_flts->faults[th_flts->n++] = flt;
-  }
 #endif
 }
 
