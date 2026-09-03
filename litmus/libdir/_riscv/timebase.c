@@ -13,22 +13,8 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-
-/* rdtime (CSR time), not rdcycle: the timebase must be shared across threads.
- * cycle is per-hart and is not a correct clock for -barrier timebase. */
-
 inline static tb_t read_timebase(void) {
   tb_t r;
-#if __riscv_xlen == 32
-  uint32_t hi, lo, hi2;
-  do {
-    asm __volatile__("rdtimeh %0" : "=r"(hi));
-    asm __volatile__("rdtime  %0" : "=r"(lo));
-    asm __volatile__("rdtimeh %0" : "=r"(hi2));
-  } while (hi != hi2);
-  r = (((tb_t)hi) << 32) | (tb_t)lo;
-#else
-  asm __volatile__("rdtime %[r1]" : [r1] "=r"(r) : : "memory");
-#endif
+  asm __volatile__ ("rdtime %[r1]" :[r1] "=r" (r) : : "memory");
   return r;
 }
