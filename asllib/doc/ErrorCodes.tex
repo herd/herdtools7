@@ -247,6 +247,8 @@ The following table summarises all error codes.
 \item[$\TypeSatisfactionFailure$]
   \textit{Type satisfaction failure.}
   See \TypingRuleRef{TypeSatisfaction}.
+  For example, a value of \booleantypeterm{} is assigned to a variable of \integertypeterm{}
+  (See \TypingRuleRef{CheckCanBeInitializedWith}).
 
 \hypertarget{def-staticevaluationfailure}{}
 \item[$\StaticEvaluationFailure$]

@@ -477,8 +477,7 @@ let decl_item :=
   | vs=plist2(discard_or_identifier) ; {
       if List.for_all is_local_ignored vs then
         Error.fatal_here $startpos $endpos @@
-          Error.BadDeclarationSyntax
-            "A local declaration must declare at least one name."
+          Error.AllDiscardLocalDeclaration
       else LDI_Tuple vs
     }
 

@@ -50,11 +50,12 @@ type error_desc =
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
   | ConflictingTypes of type_desc list * ty
-  | TypeSatisfactionFailure of type_desc list * ty
+  | TypeSatisfactionFailure of { expected : ty; provided : ty }
   | AssertionFailed of error_handling_time * expr
   | CannotParse of string option
   | BadBinopPriority of string
-  | BadDeclarationSyntax of string
+  | AllDiscardLocalDeclaration
+  | NonFunctionBuiltinDeclaration
   | UnknownSymbol of string
   | NoCallCandidate of string * ty list
   | BadTypesForBinop of binop * ty * ty
@@ -247,7 +248,8 @@ module ErrorCode = struct
     (********** Errors that correspond to error codes **********)
     | ReservedIdentifier _ -> Some (Build RI)
     | BadBinopPriority _ -> Some (Build BOP)
-    | BadDeclarationSyntax _ -> Some (Build BD)
+    | AllDiscardLocalDeclaration | NonFunctionBuiltinDeclaration ->
+        Some (Build BD)
     | UnknownSymbol _ -> Some (Build LE)
     | ObsoleteSyntax _ -> Some (Build PE)
     | BadField _ | MissingField _ -> Some (Typing BF)
@@ -562,15 +564,16 @@ module PPrint = struct
               "Arity error while calling '%s':@ %d parameters expected and %d \
                provided"
               name expected provided)
-    | ConflictingTypes ([ expected ], provided)
-    | TypeSatisfactionFailure ([ expected ], provided) ->
+    | ConflictingTypes ([ expected ], provided) ->
         pp_err Typing "a subtype of@ %a@ was expected,@ provided %a."
           pp_type_desc expected pp_ty provided
-    | ConflictingTypes (expected, provided)
-    | TypeSatisfactionFailure (expected, provided) ->
+    | ConflictingTypes (expected, provided) ->
         pp_err Typing "%a does@ not@ subtype@ any@ of:@ %a." pp_ty provided
           (pp_comma_list pp_type_desc)
           expected
+    | TypeSatisfactionFailure { expected; provided } ->
+        pp_err Typing "a subtype of@ %a@ was expected,@ provided %a." pp_ty
+          expected pp_ty provided
     | AssertionFailed (t, e) ->
         pp_err
           (ErrorKind.of_error_handling_time t)
@@ -580,7 +583,11 @@ module PPrint = struct
         | None -> pp_err Parse "Cannot parse."
         | Some s -> pp_err Parse "Cannot parse.@ %a" pp_print_text s)
     | BadBinopPriority message -> pp_err Parse "%a" pp_print_text message
-    | BadDeclarationSyntax message -> pp_err Parse "%a" pp_print_text message
+    | AllDiscardLocalDeclaration ->
+        pp_err Parse "%a" pp_print_text
+          "A local declaration must declare at least one name."
+    | NonFunctionBuiltinDeclaration ->
+        pp_err Parse "Only subprogram declarations may be marked as builtins."
     | UnknownSymbol s ->
         let codes = List.map Char.code (List.of_seq (String.to_seq s)) in
         let not_printable code = code < 33 || code > 126 in
@@ -850,7 +857,8 @@ module CSV = struct
     | AssertionFailed _ -> "AssertionFailed"
     | CannotParse _ -> "CannotParse"
     | BadBinopPriority _ -> "BadBinopPriority"
-    | BadDeclarationSyntax _ -> "BadDeclarationSyntax"
+    | AllDiscardLocalDeclaration -> "AllDiscardLocalDeclaration"
+    | NonFunctionBuiltinDeclaration -> "NonFunctionBuiltinDeclaration"
     | UnknownSymbol _ -> "UnknownSymbol"
     | NoCallCandidate _ -> "NoCallCandidate"
     | BadTypesForBinop _ -> "BadTypesForBinop"
