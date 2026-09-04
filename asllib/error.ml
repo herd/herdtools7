@@ -51,7 +51,7 @@ type error_desc =
   | UnsupportedTy of error_handling_time * ty
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
-  | ATCFailure of error_handling_time * string * type_desc
+  | ATCExecutionFailure of error_handling_time * string * type_desc
   | ConflictingTypes of type_desc list * ty
   | TypeSatisfactionFailure of { expected : ty; provided : ty }
   | AssertionFailed of error_handling_time * expr
@@ -293,7 +293,7 @@ module ErrorCode = struct
     | OverlappingSlices (_, Dynamic) -> Some (Dynamic OSA)
     | BadLDI _ | BadRecursiveDecls _ -> Some (Typing BD)
     | BadATC _ -> Some (Typing TAF)
-    | ATCFailure (Dynamic, _, _) -> Some (Dynamic TAF)
+    | ATCExecutionFailure (Dynamic, _, _) -> Some (Dynamic TAF)
     | BaseValueEmptyType _ | BaseValueNonSymbolic _ -> Some (Typing NBV)
     | ArbitraryEmptyType _ -> Some (Dynamic AET)
     | UnreachableReached Dynamic -> Some (Dynamic UNR)
@@ -310,7 +310,7 @@ module ErrorCode = struct
     | LoopLimitReached Static
     | NegativeArrayLength (Static, _, _)
     | AssertionFailed (Static, _)
-    | ATCFailure (Static, _, _)
+    | ATCExecutionFailure (Static, _, _)
     | BadPrimitiveArgument (Static, _, _) ->
         Some (Typing SEF)
     | NoCommonAncestor _ (* LCA failures *) -> Some (Typing LCA)
@@ -497,7 +497,7 @@ module PPrint = struct
           "Mismatch type:@ value %s@ does not subtype any of those types:@ %a" v
           (pp_comma_list pp_type_desc)
           li
-    | ATCFailure (t, v, ty) ->
+    | ATCExecutionFailure (t, v, ty) ->
         pp_err
           (ErrorKind.of_error_handling_time t)
           "Value %s does not satisfy the asserted type %a." v pp_type_desc ty
@@ -598,7 +598,7 @@ module PPrint = struct
           "A local declaration must declare at least one name."
     | NonFunctionBuiltinDeclaration ->
         pp_err Parse "Only subprogram declarations may be marked as builtins."
-    | UnknownSymbol { symbol; alternative } -> (
+    | UnknownSymbol { symbol; alternative } ->
         let codes = List.map Char.code (List.of_seq (String.to_seq symbol)) in
         let not_printable code = code < 33 || code > 126 in
         if List.exists not_printable codes then
@@ -606,11 +606,10 @@ module PPrint = struct
             (pp_comma_list pp_print_int)
             codes
         else
-          match alternative with
-          | None -> pp_err Lexical "Unknown symbol."
-          | Some alternative ->
-              pp_err Lexical "Unknown symbol %S.@ Did you mean %S?" symbol
-                alternative)
+          let pp_alternative fmt alt = fprintf fmt "@ Did you mean %S?" alt in
+          pp_err Lexical "Unknown symbol %S.%a" symbol
+            (pp_print_option pp_alternative)
+            alternative
     | NoCallCandidate (name, types) ->
         pp_err Typing
           "No subprogram declaration matches the invocation:@ %s(%a)." name
@@ -869,7 +868,7 @@ module CSV = struct
     | UnsupportedTy _ -> "UnsupportedTy"
     | InvalidExpr _ -> "InvalidExpr"
     | MismatchType _ -> "MismatchType"
-    | ATCFailure _ -> "ATCFailure"
+    | ATCExecutionFailure _ -> "ATCExecutionFailure"
     | ConflictingTypes _ -> "ConflictingTypes"
     | TypeSatisfactionFailure _ -> "TypeSatisfactionFailure"
     | AssertionFailed _ -> "AssertionFailed"

@@ -531,7 +531,8 @@ module Make (B : Backend.S) (C : Config) = struct
         (if b then return_normal (v, new_env)
          else
            fatal_from e1 env
-             (Error.ATCFailure (C.error_handling_time, B.debug_value v, t.desc)))
+             (Error.ATCExecutionFailure
+                (C.error_handling_time, B.debug_value v, t.desc)))
         |: SemanticsRule.ATC
     (* End *)
     (* Begin EvalEVar *)

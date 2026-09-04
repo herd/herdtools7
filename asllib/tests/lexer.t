@@ -37,7 +37,7 @@
   File println5.asl, line 1, characters 32 to 33:
   constant msg = "Something with \p bad characters.";
                                   ^
-  ASL Lexical error (BE_LE): Unknown symbol.
+  ASL Lexical error (BE_LE): Unknown symbol "p".
   [1]
   $ cat >println6.asl <<EOF
   > constant msg = "Some unterminated string;
@@ -47,7 +47,7 @@
   File println6.asl, line 3, character 0:
   
   
-  ASL Lexical error (BE_LE): Unknown symbol.
+  ASL Lexical error (BE_LE): Unknown symbol "".
   [1]
 
 C-Style comments
@@ -133,7 +133,7 @@ Forbidden patterns
   File forbiddenhex01.asl, line 1, characters 8 to 11:
   let x = 0xh12;
           ^^^
-  ASL Lexical error (BE_LE): Unknown symbol.
+  ASL Lexical error (BE_LE): Unknown symbol "0xh".
   [1]
 
   $ cat >forbiddenhex02.asl <<EOF
@@ -143,7 +143,7 @@ Forbidden patterns
   File forbiddenhex02.asl, line 1, characters 8 to 11:
   let x = 0x_12;
           ^^^
-  ASL Lexical error (BE_LE): Unknown symbol.
+  ASL Lexical error (BE_LE): Unknown symbol "0x_".
   [1]
 
   $ cat >forbiddenhex03.asl <<EOF
@@ -153,7 +153,7 @@ Forbidden patterns
   File forbiddenhex03.asl, line 1, characters 8 to 13:
   let x = 0x12h12;
           ^^^^^
-  ASL Lexical error (BE_LE): Unknown symbol.
+  ASL Lexical error (BE_LE): Unknown symbol "0x12h".
   [1]
 
   $ cat >forbiddenhex04.asl <<EOF
@@ -164,7 +164,7 @@ Forbidden patterns
   File forbiddenhex04.asl, line 2, characters 8 to 11:
   let x = 0x_foo;
           ^^^
-  ASL Lexical error (BE_LE): Unknown symbol.
+  ASL Lexical error (BE_LE): Unknown symbol "0x_".
   [1]
 
   $ cat >forbiddenreal01.asl <<EOF
@@ -174,7 +174,7 @@ Forbidden patterns
   File forbiddenreal01.asl, line 1, characters 8 to 11:
   let x = 1.h12;
           ^^^
-  ASL Lexical error (BE_LE): Unknown symbol.
+  ASL Lexical error (BE_LE): Unknown symbol "1.h".
   [1]
 
   $ cat >forbiddenreal02.asl <<EOF
@@ -184,7 +184,7 @@ Forbidden patterns
   File forbiddenreal02.asl, line 1, characters 8 to 11:
   let x = 1._12;
           ^^^
-  ASL Lexical error (BE_LE): Unknown symbol.
+  ASL Lexical error (BE_LE): Unknown symbol "1._".
   [1]
 
   $ cat >forbiddenreal03.asl <<EOF
@@ -194,7 +194,7 @@ Forbidden patterns
   File forbiddenreal03.asl, line 1, characters 8 to 13:
   let x = 1.12h12;
           ^^^^^
-  ASL Lexical error (BE_LE): Unknown symbol.
+  ASL Lexical error (BE_LE): Unknown symbol "1.12h".
   [1]
 
   $ cat >forbiddenreal04.asl <<EOF
@@ -205,5 +205,5 @@ Forbidden patterns
   File forbiddenreal04.asl, line 2, characters 8 to 11:
   let x = 1._foo;
           ^^^
-  ASL Lexical error (BE_LE): Unknown symbol.
+  ASL Lexical error (BE_LE): Unknown symbol "1._".
   [1]
