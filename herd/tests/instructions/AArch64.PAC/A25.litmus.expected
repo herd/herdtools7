@@ -1,10 +1,10 @@
 Test A25 Required
 States 5
-0:X1=42;  ~Fault(P0);
-0:X1=42;  ~Fault(P0); pacda(x,0x0)=x;
-0:X1=42;  ~Fault(P0); pacdb(x,0x0)=x; pacda(x,0x0)=x;
-0:X1=42;  ~Fault(P0); pacda(x,0x0)=pacdb(x,0x0);
-0:X1=42;  ~Fault(P0); pacdb(x,0x0)=x;
+0:X1=42; ~Fault(P0);
+0:X1=42; ~Fault(P0); pacda(x,0x0)=x;
+0:X1=42; ~Fault(P0); pacdb(x,0x0)=x; pacda(x,0x0)=x;
+0:X1=42; ~Fault(P0); pacda(x,0x0)=pacdb(x,0x0);
+0:X1=42; ~Fault(P0); pacdb(x,0x0)=x;
 Ok
 Witnesses
 Positive: 5 Negative: 0

@@ -1,8 +1,8 @@
 Test MP+dmb.sytt+amo.ldaddal-polt Allowed
 States 4
-1:X4=0; 1:X6=x:green; [y]=1;  ~Fault(P1);
+1:X4=0; 1:X6=x:green; [y]=1; ~Fault(P1);
 1:X4=0; 1:X6=x:green; [y]=1; Fault(P1,TagCheck);
-1:X4=0; 1:X6=x:red; [y]=1;  ~Fault(P1);
+1:X4=0; 1:X6=x:red; [y]=1; ~Fault(P1);
 1:X4=0; 1:X6=x:red; [y]=1; Fault(P1,TagCheck);
 Ok
 Witnesses

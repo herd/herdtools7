@@ -1,7 +1,7 @@
 Test A009 Allowed
 States 3
 [tag(x)]=:green; Fault(P0:L0,x,MMU:Translation);
-[tag(x)]=:red;  ~Fault(P0:L0,x,MMU:Translation);
+[tag(x)]=:red; ~Fault(P0:L0,x,MMU:Translation);
 [tag(x)]=:red; Fault(P0:L0,x,MMU:Translation);
 Ok
 Witnesses
