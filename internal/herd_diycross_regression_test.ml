@@ -85,7 +85,7 @@ let show_tests ?j flags =
       let herd_dir = Filename.dirname flags.herd in
       let mapply = Filename.concat herd_dir "mapply7" in
       let args =
-        String.concat " " (TestHerd.apply_redirect_args flags.herd j args) in
+        String.concat " " (TestHerd.mapply_redirect_args ~j ~com:flags.herd args) in
       Channel.write_lines stdout
         [Printf.sprintf "%s %s %s" mapply args index;]
 

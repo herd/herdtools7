@@ -76,8 +76,8 @@ module Task(A:TArg) = struct
         | [] -> ""
         | _::_ -> " " ^ String.concat " " args in
         match A.mode with
-        | File -> sprintf "%s%s %s>%s" cmd opts name oname
-        | Buff -> sprintf "%s%s %s" cmd opts name in
+        | File -> sprintf "%s %s%s>%s" cmd name opts oname
+        | Buff -> sprintf "%s %s%s" cmd name opts in
       if A.verbose > 2 then eprintf "Starting: '%s' on %02i\n" com idx ;
       let chan = Unix.open_process_in com in
       begin match A.mode with
@@ -241,7 +241,7 @@ module Task(A:TArg) = struct
 end
 
 
-let args = ref []
+let tokens = ref []
 let com = ref "echo"
 let verbose = ref 0
 let j = ref 1
@@ -263,16 +263,18 @@ let pp_mode = function
 let set_mode tag = mode := parse_mode tag
 
 let usage = String.concat "\n" [
-  Printf.sprintf "Usage: %s [options] [<token> ...]" (Filename.basename Sys.argv.(0)) ;
+  Printf.sprintf "Usage: %s [options] [<token> ...] [-- <command> [<argument> ...]]"
+    (Filename.basename Sys.argv.(0)) ;
   "" ;
   "Apply a command to every non-option token on the command-line. If none are" ;
   "provided, tokens are read from stdin. Tokens that start with `@` are" ;
   "interpreted as filepaths, and the lines of the file are read as tokens." ;
+  "If no command is given, echo is used" ;
   "" ;
   "Options:" ;
 ]
 
-let () =
+let parse_args () =
   Arg.parse
     ["-v", Arg.Unit (fun () -> incr verbose)," be verbose";
      "-j", Arg.Int (fun i -> j := i),"<n> manage <n> simultaneaous tasks" ;
@@ -280,26 +282,36 @@ let () =
      Arg.Bool (fun b -> do_exit := b),
      Printf.sprintf "replicate (first) non-zero exit status, default %b"
        !do_exit;
-     "-com", Arg.String (fun c -> com := c),"<com> set command (default echo)";
-     "-comargs",
-     Arg.String (fun args -> comargs := !comargs @ Misc.split_comma args),
-     "<args> initial arguments for command (comma separated)";
+     "--", Arg.Rest_all (fun com_args -> comargs := com_args),
+     "Separator between mapply and the command path and its arguments. "
+     ^ "Any parameters on its right side will be passed as is to the command" ;
      "-mode", Arg.String set_mode,
      sprintf
        "(buff|file) use either internal buffers or files for comunication, default %s" (pp_mode !mode);]
-    (fun arg -> args := arg :: !args)
+    (fun token -> tokens := token :: !tokens)
     usage
+  ;
 
-let names = !args
+  tokens := List.rev !tokens ;
 
+  let command, arguments =
+    match !comargs with
+    | x :: xs -> (x, xs)
+    | [] ->
+        Printf.eprintf "%s" usage ;
+        exit 1
+  in
+  com := command ;
+  comargs := arguments
 
 let () =
+  parse_args () ;
   if !j <= 1 then
     let do_test name =
       let comargs = String.concat " " !comargs in
-      let com = sprintf "%s %s %s" !com comargs name in
+      let com = sprintf "%s %s %s" !com name comargs in
       ignore (Sys.command com) in
-    Misc.iter_argv_or_stdin do_test names
+    Misc.iter_argv_or_stdin do_test !tokens
   else
     let module T =
       Task
@@ -309,5 +321,5 @@ let () =
           let verbose = !verbose
           let mode = !mode
         end) in
-    T.run !j names ;
+    T.run !j !tokens ;
     if !do_exit then T.get_exit_status () |> exit
