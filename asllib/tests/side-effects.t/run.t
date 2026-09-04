@@ -541,8 +541,8 @@
   File global-throw-initialisation.asl, line 8, characters 0 to 29:
   let X: integer = throwing ();
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Dynamic error: unexpected exception E thrown during the evaluation of the
-    initialisation of the global storage element "X".
+  ASL Dynamic error (DE_UE): unexpected exception E thrown during the
+    evaluation of the initialisation of the global storage element "X".
   [1]
 
   $ aslref config-type-uses-let.asl

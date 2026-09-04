@@ -285,7 +285,7 @@ module ErrorCode = struct
     | BadReturnStmt _ | BadParameterDecl _ | NonReturningFunction _
     | NoreturnViolation _ ->
         Some (Typing BSPD)
-    | UncaughtException _ -> Some (Dynamic UE)
+    | UncaughtException _ | UnexpectedInitialisationThrow _ -> Some (Dynamic UE)
     | OverlappingSlices (_, Dynamic) -> Some (Dynamic OSA)
     | BadLDI _ | BadRecursiveDecls _ -> Some (Typing BD)
     | BadATC _ -> Some (Typing TAF)
@@ -319,8 +319,6 @@ module ErrorCode = struct
     | MultipleWrites _
     (* For desugaring, but uses `check_no_duplicates` which is always TE_IAD? *)
       ->
-        None
-    | UnexpectedInitialisationThrow _ (* not represented in reference? *) ->
         None
     (********** Should not happen **********)
     (* e.g. skipped type-checking, ASL0, internal option or invariant *)
