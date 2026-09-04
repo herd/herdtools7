@@ -1,6 +1,6 @@
 Test A15 Required
 States 2
-0:X3=0;  ~Fault(P0,MMU:Translation); pacda(x,0x35)=x;
+0:X3=0; ~Fault(P0,MMU:Translation); pacda(x,0x35)=x;
 0:X3=42; Fault(P0,x,MMU:Translation);
 Ok
 Witnesses

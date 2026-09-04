@@ -1,6 +1,6 @@
 Test A16 Required
 States 4
-0:X4=0;  ~Fault(P2,MMU:Translation); ~Fault(P1,MMU:Translation); pacdb(x,0x2a)=x; pacda(x,0x35)=x;
+0:X4=0; ~Fault(P2,MMU:Translation); ~Fault(P1,MMU:Translation); pacdb(x,0x2a)=x; pacda(x,0x35)=x;
 0:X4=1; Fault(P1,x,MMU:Translation); ~Fault(P2,MMU:Translation); pacdb(x,0x2a)=x;
 0:X4=1; Fault(P1,x,MMU:Translation); Fault(P2,x,MMU:Translation);
 0:X4=1; Fault(P2,x,MMU:Translation); ~Fault(P1,MMU:Translation); pacda(x,0x35)=x;

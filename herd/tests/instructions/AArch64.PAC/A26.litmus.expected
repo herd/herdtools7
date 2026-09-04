@@ -1,9 +1,9 @@
 Test A26 Required
 States 4
-0:X1=42;  ~Fault(P0);
-0:X1=42;  ~Fault(P0); pacda(x,0x0)=x;
-0:X1=42;  ~Fault(P0); pacdb(x,0x0)=x; pacda(x,0x0)=x;
-0:X1=42;  ~Fault(P0); pacda(x,0x0)=pacdb(x,0x0);
+0:X1=42; ~Fault(P0);
+0:X1=42; ~Fault(P0); pacda(x,0x0)=x;
+0:X1=42; ~Fault(P0); pacdb(x,0x0)=x; pacda(x,0x0)=x;
+0:X1=42; ~Fault(P0); pacda(x,0x0)=pacdb(x,0x0);
 Ok
 Witnesses
 Positive: 4 Negative: 0

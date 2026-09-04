@@ -1,8 +1,8 @@
 Test A016 Allowed
 States 4
-[PTE(x)]=(oa:PA(x), db:0, dbm:1, attrs:(TaggedNormal));  ~Fault(P0,x);
+[PTE(x)]=(oa:PA(x), db:0, dbm:1, attrs:(TaggedNormal)); ~Fault(P0,x);
 [PTE(x)]=(oa:PA(x), db:0, dbm:1, attrs:(TaggedNormal)); Fault(P0,x:red,TagCheck);
-[PTE(x)]=(oa:PA(x), dbm:1, attrs:(TaggedNormal));  ~Fault(P0,x);
+[PTE(x)]=(oa:PA(x), dbm:1, attrs:(TaggedNormal)); ~Fault(P0,x);
 [PTE(x)]=(oa:PA(x), dbm:1, attrs:(TaggedNormal)); Fault(P0,x:red,TagCheck);
 Ok
 Witnesses

@@ -1,6 +1,6 @@
 Test A001 Required
 States 1
-[x]=1;  ~Fault(P0:L0,x);
+[x]=1; ~Fault(P0:L0,x);
 Ok
 Witnesses
 Positive: 1 Negative: 0

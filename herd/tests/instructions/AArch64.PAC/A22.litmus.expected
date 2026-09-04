@@ -1,6 +1,6 @@
 Test A22 Allowed
 States 2
-  ~Fault(P0,MMU:Translation); pacda(x,0x0)=x;
+ ~Fault(P0,MMU:Translation); pacda(x,0x0)=x;
  Fault(P0,x,MMU:Translation);
 Ok
 Witnesses
