@@ -60,12 +60,9 @@ let python = lazy
   begin
     let exists p =
       let dev_null ch = ignore (Channel.read_lines ch) in
-      try
-        Command.run ~stdout:dev_null ~stderr:dev_null p ["--version"] ;
-        true
-      with
-        | Unix.Unix_error _ -> false
-        | Command.Error _ -> false
+      match Command.run ~stdout:dev_null ~stderr:dev_null p ["--version"] with
+      | Ok () -> true
+      | Error _ | exception Unix.Unix_error _ -> false
     in
     match List.find_opt exists ["python"; "python3"] with
     | Some p -> p
@@ -97,11 +94,9 @@ let do_list_of_file sorted path key =
   in
   let lines = ref [] in
   let read_lines c = lines := Channel.read_lines c in
-  begin try
-    Command.run ~stdin:script ~stdout:read_lines (Lazy.force python) []
-  with
-    Command.Error e -> failwith (Command.string_of_error e)
-  end ;
+  let raise_e e = failwith (Command.string_of_error e) in
+  Command.run ~stdin:script ~stdout:read_lines (Lazy.force python) []
+  |> Result.fold ~ok:Fun.id ~error:raise_e ;
   if sorted then
     List.sort String.compare !lines
   else

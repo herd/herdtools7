@@ -139,15 +139,16 @@ let show_tests_par j flags =
         ~libdir:flags.libdir
         flags.herd l
       (TestHerd.expected_of_litmus l)
-      (TestHerd.expected_failure_of_litmus l)
-      (TestHerd.expected_warn_of_litmus l)
+      (Some (TestHerd.expected_failure_of_litmus l))
+      (Some (TestHerd.expected_warn_of_litmus l))
   in
-  let everything_passed = ref true in
+  let found_errors = ref [] in
   for_each_litmus_in_dir flags.litmus_dir (fun l ->
-      if not (test_passes l) then
-      everything_passed := false
+      match test_passes l with
+      | Ok () -> ()
+      | Error e -> found_errors := e :: !found_errors
     ) ;
-  if not !everything_passed then begin
+  if !found_errors <> [] then begin
     Printf.printf "Some tests had errors\n" ;
     exit 1
   end
@@ -183,10 +184,13 @@ let do_run_test_par wrapper j flags =
       let com = Command.command mapply (args @ litmuses) in
       Printf.eprintf "Will run: %s\n%!" com in
   let st = Command.run_status mapply  (args @ litmuses) in
-  if st <> 0 then begin
+  match st with
+  | Ok 0 -> ()
+  | Ok ec when ec = 128 + 26 -> (* SIGVTALRM *)
+    Printf.printf "Some tests timed out"
+  | _ ->
     Printf.printf "Some tests had errors\n" ;
     exit 1
-  end
 
 let run_test_par = do_run_test_par "herd_test.exe"
 
@@ -208,7 +212,9 @@ let promote_tests_seq flags =
   for_each_litmus_in_dir flags.litmus_dir
     (fun litmus ->
       let ok =
-        TestHerd.promote litmus (output_of_litmus litmus) in
+        (output_of_litmus litmus)
+        |> Result.fold ~ok:(TestHerd.promote litmus) ~error:(fun _ -> false)
+  in
       if not ok then everything_ok := false) ;
   if not !everything_ok then begin
     Printf.printf "Some tests had errors\n" ;

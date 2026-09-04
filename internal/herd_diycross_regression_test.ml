@@ -49,14 +49,15 @@ let common xs ys =
 let diycross_args flags out_dir =
   ["-o"; out_dir; "-set-libdir"; flags.libdir; ] @ flags.diycross_args
 
+let raise_e e = failwith (Command.string_of_error e)
 
 (* Commands *)
 let run_diycross flags =
   let tmp_dir = Filesystem.new_temp_dir () in
   let args = diycross_args flags tmp_dir in
-  Command.run flags.diycross args ;
+  Command.run flags.diycross args
+  |> Result.fold ~ok:Fun.id ~error:raise_e ;
   tmp_dir,List.filter TestHerd.is_litmus (list_dir tmp_dir)
-
 
 let show_tests ?j flags =
   let tmp_dir,litmuses = run_diycross flags in
@@ -113,6 +114,11 @@ let run_tests ?j flags =
     concat_dir flags.expected_dir
     (List.map TestHerd.expected_of_litmus in_both)
   in
+
+  let is_result_expected = function
+    | Ok () -> true
+    | Error (_ : TestHerd.run_error) -> false
+  in
   let results =
     let les = List.combine litmus_paths expected_paths in
     match j with
@@ -122,15 +128,17 @@ let run_tests ?j flags =
            (* check if a `*.expected-warn` exists *)
            let warn_file = Filename.remove_extension e
                            |> TestHerd.expected_warn_of_litmus in
-           let warn_file = if Sys.file_exists warn_file then warn_file else "" in
-            TestHerd.herd_output_matches_expected
-              ~verbose:flags.verbose
-              ~nohash:flags.nohash
-              ~bell:None ~cat:None
+           let warn_file = if Sys.file_exists warn_file then Some warn_file else None in
+           TestHerd.herd_output_matches_expected
+             ~verbose:flags.verbose
+             ~nohash:flags.nohash
+             ~bell:None ~cat:None
              ~conf:flags.herd_conf
              ~variants:flags.variants
              ~libdir:flags.libdir
-             flags.herd l e "" warn_file)
+             flags.herd l e None warn_file
+           |> is_result_expected
+         )
          les
     | Some j ->
        ignore
@@ -179,7 +187,9 @@ let promote_tests ?j flags =
             ~conf:flags.herd_conf
             ~variants:flags.variants
             ~libdir:flags.libdir
-            flags.herd [l] in
+            flags.herd [l]
+          |> Result.fold ~ok:Fun.id ~error:raise_e
+        in
         List.map (fun l -> output_of_litmus l) litmus_paths
   | Some j ->
      ignore

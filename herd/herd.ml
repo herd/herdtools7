@@ -27,6 +27,7 @@ open OptNames
 
 let exit_code_of_exn = function
   | Misc.Exit | Misc.UserError _ | Misc.Fatal _ -> 2
+  | Misc.Timeout -> 128 + 26 (* SIGVTALRM *)
   | _ -> 1
 
 (* Command line arguments *)
@@ -808,10 +809,13 @@ let () =
       (fun _ -> raise Misc.Timeout)
       !debug.Debug_herd.timeout;
     Misc.fold_argv_or_stdin
-      (fun name ((exit_code, seen) as r) ->
+      (fun name (exit_code, seen) ->
         try exit_code, from_file name seen
         with
-        | Misc.Timeout -> r
+        | Misc.Timeout as e ->
+           if dbg_exc then raise e ;
+           Warn.warn_always "%a: timed out" Pos.pp_pos0 name ;
+           check_exit e seen
         | Misc.Exit as e ->
            if dbg_exc then raise e ;
            check_exit e seen

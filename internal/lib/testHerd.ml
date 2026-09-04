@@ -191,7 +191,7 @@ let herd_args ~bell ~cat ~conf ~variants ~libdir ~timeout ~speedcheck
 
 let apply_args herd j herd_args =
   let herd_args = String.concat "," herd_args in
-  ["-com"; herd; "-j" ; Printf.sprintf "%i" j; "-comargs"; herd_args;]
+  ["-com"; herd; "-exit"; "true"; "-j" ; Printf.sprintf "%i" j; "-comargs"; herd_args;]
 
 let apply_redirect_args ?(verbose=false) herd j herd_args =
   let herd_args = herd::herd_args in
@@ -231,6 +231,8 @@ let check_tags s =
 
 let check line = if check_tags line then prerr_endline line
 
+let ( let* ) = Result.bind
+
 let do_run_herd_args verbose herd args ?j litmuses =
   let litmuses = Base.Iter.of_list litmuses in
   (*
@@ -245,7 +247,7 @@ let do_run_herd_args verbose herd args ?j litmuses =
     else
       fun line -> lines := line :: !lines in
   let read_err_line line = err_lines := line :: !err_lines in
-  let r =
+  let* r =
     match j with
     | None ->
        Command.NonBlock.run_status
@@ -256,7 +258,7 @@ let do_run_herd_args verbose herd args ?j litmuses =
        let args = apply_args herd j args in
        Command.NonBlock.run_status
          ~stdin:litmuses ~stdout:read_line ~stderr:read_err_line mapply args in
-  (r,without_unstable_lines (List.rev !lines), (List.rev !err_lines))
+  Ok (r,without_unstable_lines (List.rev !lines), (List.rev !err_lines))
 
 let run_herd_args ?(verbose=false) herd args litmus =
   do_run_herd_args verbose herd args [litmus]
@@ -281,86 +283,78 @@ let run_herd_concurrent ?verbose ~bell ~cat ~conf ~variants ~libdir herd ~j litm
   let r = Command.NonBlock.run_status ~stdin:litmuses  mapply args in
   r
 
-let read_some_file litmus name =
-  if name = "" then None
-  else
-    try Some (Filesystem.read_file name Channel.read_lines)
+type run_error =
+  | Expected_missing
+  | Expected_fail_missing
+  | Stdout_missing
+  | Stdout_mismatch
+  | Stderr_mismatch 
+  | Stderr_not_expected of string list (* stderr *)
+  | Timed_out
+  | Unknown_exit_code of int * bool * bool
+      (* exit code, stdout present, stderr present *)
+  | Command_error of Command.error
+
+let pp_run_error = function
+  | Expected_missing -> "Expected file was missing"
+  | Expected_fail_missing -> "Expected_failure file was missing"
+  | Stdout_missing -> "Stdout was missing"
+  | Stdout_mismatch -> "Stdout did not match Expected file"
+  | Stderr_mismatch -> "Stderr did not match Expected_failure file"
+  | Stderr_not_expected _ -> "Stderr found, but not expected"
+  | Timed_out -> "Timed out"
+  | Unknown_exit_code (_, _, _) -> "balls"
+  | Command_error _ -> "balls"
+
+let read_some_file _litmus ~error name =
+  Option.to_result ~none:error name |> Fun.flip Result.bind (fun name ->
+    try Ok (Filesystem.read_file name Channel.read_lines)
     with _ ->
-      begin
-        Printf.printf "Failed %s : Missing file '%s'\n" litmus name ;
-        None
-      end
+      Error error
+  )
 
 let do_check_output
-    check nohash litmus expected  expected_failure expected_warn t =
-  let () =
-    let _,lines,_ = t in
-    if false && lines <> [] then begin
-      Printf.eprintf "Expected (%s) %s, Out of test:\n"
-        (pp_check check)
-        expected ;
-      List.iter prerr_endline lines ;
-      ()
-    end in
+    check nohash litmus expected expected_failure expected_warn t =
+  let expected = Some expected in
+  let check_f f reason ~expected actual =
+    if f actual expected then Error reason else Ok ()
+  in
+  let check_stdout ~expected actual =
+    check_f (checklog litmus check nohash) Stdout_mismatch ~expected actual
+  in
+  let check_stderr ~expected actual =
+    check_f (checkerrlog check nohash) Stderr_mismatch ~expected actual
+  in
 
+  let ( let* ) = Result.bind in
   match t with
-    | 0,[],[] -> true (* Can occur in case of controlled timeout *)
+    | 0,[],[] -> Ok () (* Can occur in case of controlled timeout *)
+    | ec, _, stderr when ec = 128 + 26 -> (* Timeout with SIGVTALRM *)
+        let* expected_timeout_output =
+          read_some_file ~error:Timed_out litmus expected
+        in
+        check_stderr ~expected:expected_timeout_output stderr
     | _,[],[] ->
-       Printf.printf
-         "Failed %s : Herd finished but returned no output or errors\n" litmus ;
-       false
+        Error Stdout_missing
     | 0,(_::_ as stdout), [] -> (* Herd finished without errors - normal *)
-       begin
-         match read_some_file litmus expected with
-         | None -> false
-         | Some expected_output ->
-             if
-               checklog litmus check nohash stdout expected_output
-             then begin
-               Printf.printf "Failed %s : Logs do not match\n%!" litmus ;
-               false
-            end else true
-       end
-
+        let* expected_output =
+          read_some_file ~error:Expected_missing litmus expected
+        in
+        check_stdout ~expected:expected_output stdout
     | r,[], (_::_ as stderr) when r <> 0 -> (* Herd finished with errors - check expected failure *)
-       begin
-         match read_some_file litmus expected_failure with
-         | None -> false
-         | Some expected_failure_output ->
-            if checkerrlog check nohash stderr expected_failure_output then begin
-              Printf.printf
-                  "Failed %s : Expected Failure Logs do not match\n" litmus ;
-              false
-            end else true
-       end
-    | 0,(_::_ as stdout),(_::_ as stderr) ->
-       (* Herd returned both output and errors *)
-        begin
-         match read_some_file litmus expected with
-         | None -> false
-         | Some expected_output ->
-             if
-               checklog litmus check nohash stdout expected_output
-             then begin
-               Printf.printf "Failed %s : Logs do not match\n" litmus ;
-               false
-             end else
-               match read_some_file litmus expected_warn with
-               | None ->
-                   if _dbg then begin
-                     Printf.eprintf
-                       "** Unexpected warning stderr for %s\n"
-                       (Filename.basename litmus) ;
-                     List.iter prerr_endline stderr
-                   end ;
-                   false
-              | Some expected_warn ->
-                  if log_diff nohash stderr expected_warn then begin
-                    Printf.printf
-                      "Failed %s : Warning logs do not match\n" litmus ;
-                    false
-                  end else true
-        end
+       let* expected_failure_output =
+         read_some_file ~error:Expected_fail_missing litmus expected_failure
+       in
+       check_stderr ~expected:expected_failure_output stderr
+    | 0,(_::_ as stdout),(_::_ as stderr) -> (* Herd returned both output and errors *)
+        let* expected_output =
+          read_some_file ~error:Expected_missing litmus expected
+        in
+        let* () = check_stdout ~expected:expected_output stdout in
+        let* expected_warn = 
+          read_some_file ~error:(Stderr_not_expected stderr) litmus expected_warn
+        in
+        check_stderr ~expected:expected_warn stderr
     | r,stdout,stderr ->
        let some f =
          match f with
@@ -378,7 +372,7 @@ let do_check_output
          display "stdout" stdout ;
          display "stderr" stderr
        end ;
-       false
+       Error (Unknown_exit_code (r, stdout <> [], stderr <> []))
 
 let read_output_files litmus =
   let o = read_file (outname litmus)
@@ -386,24 +380,20 @@ let read_output_files litmus =
   o,e
 
 let output_matches_expected ?(check=All) ?(nohash=false) litmus expected =
-  try
-    let o,e = read_output_files litmus in
-    do_check_output check nohash litmus expected "" "" (0,o,e)
-  with Command.Error e ->
-     Printf.printf "Failed %s : %s \n" litmus
-       (Command.string_of_error e) ; false
+  let o,e = read_output_files litmus in
+  do_check_output check nohash litmus expected None None (0,o,e)
+  |> Result.is_ok
 
 let do_herd_output_matches_expected
     (check:check) nohash
     do_run litmus expected expected_failure expected_warn =
-  try
-    let t = do_run litmus in
-    do_check_output
-      check nohash litmus expected expected_failure expected_warn t
-  with
-  | Command.Error e ->
-     Printf.printf "Failed %s : %s \n" litmus
-       (Command.string_of_error e) ; false
+  let error_of_command_error e = Command_error e in
+  let check_output =
+    do_check_output check nohash litmus expected expected_failure expected_warn
+  in
+  do_run litmus
+  |> Result.map_error error_of_command_error
+  |> Fun.flip Result.bind check_output
 
 let herd_output_matches_expected
     ?(verbose=false) ?(check=All) ?(nohash=false)

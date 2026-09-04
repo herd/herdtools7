@@ -481,7 +481,7 @@ let co0 = loc & (IW*(W\IW)|(W\FW)*FW)
 \end{verbatim}
 Where the pre-defined sets \texttt{IW} and~\texttt{FW} are the sets
 of all initial and final writes respectively.
-%TODO exemple of co0 on 2+2W
+%TODO example of co0 on 2+2W
 
 Then, assuming that $W_x$ is the set of all writes to location~$x$, one
 can compute the set of all possible coherence orders for~$x$ with
@@ -855,7 +855,7 @@ from relations.
 There are two structured values: tuples of values and sets of values.
 One should notice that primitive set of events and structured set of events are not the same
 thing. In fact, the language prevents the construction of structured set of events.
-Similarily, there are no structured sets of elements of relations, there are only relations.
+Similarly, there are no structured sets of elements of relations, there are only relations.
 
 \item There is a distinction between expressions that evaluate
 to some value, and instructions that are executed for their effect.
@@ -1308,7 +1308,7 @@ The construct
 evaluates \nt{expr} and applies the check \nt{check}.
 There are six checks: the three basic acyclicity (keyword~\T{acyclic}),
 irreflexivity (keyword~\T{irreflexive})
-and emptyness (keyword~\T{empty}); and their
+and emptiness (keyword~\T{empty}); and their
 negations.
 If the check succeeds, execution goes on. Otherwise, execution stops.
 
@@ -1902,7 +1902,7 @@ the thread number. Default is~\opt{true}.
 \item[{\tt -texmacros <bool>}] Use latex commands in some text of pictures.
 If activated (\opt{-showthread true}), thread numbers are shown as
 \verb+\myth{+$n$\verb+}+. Assembler instructions are locations in nodes
-are argument to an \verb+\asm+ command. It user responsability to define
+are argument to an \verb+\asm+ command. It user responsibility to define
 those commands in their \LaTeX{} documents that include the pictures.
 Possible definitions are \verb+\newcommand{\myth}[1]{Thread~#1}+
 and \verb+\newcommand{\asm}[1]{\texttt{#1}}+.
@@ -1935,7 +1935,7 @@ on how events are pictured.
 \item[{\tt -squished <bool>}] The setting \opt{-squished true} drastically
 limits the information displayed in graph nodes. This is usually what
 is wanted in modes \opt{free} and~\opt{columns}. Default is~\opt{false}.
-\item[{\tt -fixedsize <bool>}] This setting is meaningfull in
+\item[{\tt -fixedsize <bool>}] This setting is meaningful in
 \opt{columns} graph mode and for squished nodes. When set by
 \opt{-fixedsize true} it forces node width to be $65\%$ of the space
 between columns. This may sometime yield a nice edge routing. Default is~\opt{false}
@@ -2094,6 +2094,16 @@ then in any directory specified
 by setting the shell environment variable \texttt{HERDLIB};
 and then in herd installation directory, which is defined
 while compiling~\herd.
+
+
+\subsection{\label{herd:exitstatus}Exit Status}
+\herd{} exits with different status depending on the errors it encounters while running:
+\begin{description}
+\item[{\tt 0}] All test executions were successful.
+\item[{\tt 1}] A test execution encountered an unexpected internal error (bug).
+\item[{\tt 2}] A test execution encountered a fatal or a user error.
+\item[{\tt 154}] A test execution was interrupted because of a timeout.
+\end{description}
 
 %\section{Extensions to Herd}
 %

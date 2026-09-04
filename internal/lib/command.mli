@@ -16,13 +16,7 @@
 
 (** Utilities for running commands. *)
 
-type error = {
-  binary : string ;
-  args   : string list ;
-  status : Unix.process_status ;
-}
-
-exception Error of error
+type error
 
 (** [string_of_error e] returns a human-readable representation of an error
  *  [e]. *)
@@ -40,14 +34,14 @@ val command : string -> string list -> string
 val run :
   ?stdin:(out_channel -> unit) ->
   ?stdout:(in_channel -> unit) ->
-  ?stderr:(in_channel -> unit) -> string -> string list -> unit
+  ?stderr:(in_channel -> unit) -> string -> string list -> (unit, error) result
 
 (** Same as [run] above, does not raise [Error] on non-zero exit
   * code. Returns exit code *)
 val run_status :
   ?stdin:(out_channel -> unit) ->
   ?stdout:(in_channel -> unit) ->
-  ?stderr:(in_channel -> unit) -> string -> string list -> int
+  ?stderr:(in_channel -> unit) -> string -> string list -> (int, error) result
 
 module NonBlock : sig
 
@@ -64,13 +58,13 @@ module NonBlock : sig
 val run :
   ?stdin:(unit -> string option) ->
   ?stdout:(string -> unit) ->
-  ?stderr:(string -> unit) -> string -> string list -> unit
+  ?stderr:(string -> unit) -> string -> string list -> (unit, error) result
 
 (** Same as [run] above, does not raise [Error] on non-zero exit
   * code. Returns exit code *)
 val run_status :
   ?stdin:(unit -> string option) ->
   ?stdout:(string -> unit) ->
-  ?stderr:(string -> unit) -> string -> string list -> int
+  ?stderr:(string -> unit) -> string -> string list -> (int, error) result
 
 end
