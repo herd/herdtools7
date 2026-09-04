@@ -1,0 +1,13 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc Q DpCtrlsW Rfi *)
+AArch64 CoRW1+ctrlsqp-rfipq
+{
+ 0:X0=x;
+}
+ P0            ;
+ LDAPR W1,[X0] ;
+ CBNZ W1,LC00  ;
+ LC00:         ;
+ MOV W2,#1     ;
+ STR W2,[X0]   ;
+
+exists (0:X1=1)

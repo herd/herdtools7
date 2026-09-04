@@ -1,0 +1,13 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc PosRW Pa Rfi *)
+AArch64 CoRW1+posppa-rfipap
+{
+ int x[2]={0,0};
+ 0:X0=x;
+}
+ P0             ;
+ LDR W1,[X0]    ;
+ MOV W2,#2      ;
+ SUB W3,W2,#1   ;
+ STP W3,W2,[X0] ;
+
+exists (0:X1=1)

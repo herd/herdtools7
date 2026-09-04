@@ -1,0 +1,14 @@
+(* diyone7 -arch AArch64 -variant ifetch -metadata false -oneloc PosRWIP RfiPI *)
+AArch64 CoRW1+posip-rfipi
+Variant=ifetch
+{
+ 0:X1=instr:"NOP"; 0:X2=P0:Lself00;
+}
+ P0              ;
+ Lself00: B .+12 ;
+ MOV W0,#2       ;
+ B .+8           ;
+ MOV W0,#1       ;
+ STR W1,[X2]     ;
+
+exists (0:X0=2)

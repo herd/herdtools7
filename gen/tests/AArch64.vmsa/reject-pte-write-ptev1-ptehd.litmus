@@ -1,0 +1,5 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc PosRW PteV1 PteHD Rfi *)
+(*
+[2]
+diyone7: Fatal error: Annotations mismatch between PteV1 PteHD.
+*)

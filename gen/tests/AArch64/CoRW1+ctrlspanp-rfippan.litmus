@@ -1,0 +1,15 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc PaN DpCtrlsW Rfi *)
+AArch64 CoRW1+ctrlspanp-rfippan
+{
+ int x[2]={0,0};
+ 0:X0=x;
+}
+ P0              ;
+ LDNP W1,W2,[X0] ;
+ ADD W1,W1,W2    ;
+ CBNZ W1,LC00    ;
+ LC00:           ;
+ MOV W3,#1       ;
+ STR W3,[X0]     ;
+
+exists (0:X1=1)

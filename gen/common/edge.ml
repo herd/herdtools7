@@ -628,6 +628,28 @@ let fold_tedges f r =
     | Some (annotation, "") -> Some annotation
     | _ -> None
 
+  let check_invalid_annotation input =
+    let annotation =
+      let len = String.length input in
+      if len > 2 && input.[1] = '.' then String.sub input 2 (len - 2)
+      else input in
+    let len = String.length annotation in
+    if do_mixed && len > 1 then
+      let size = match annotation.[0] with
+        | 'b' -> Some MachSize.Byte
+        | 'h' -> Some MachSize.Short
+        | 'w' -> Some MachSize.Word
+        | 'q' -> Some MachSize.Quad
+        | 's' -> Some MachSize.S128
+        | _ -> None in
+      match size,int_of_string_opt (String.sub annotation 1 (len - 1)) with
+      | Some size,Some offset when offset mod MachSize.nbytes size <> 0 ->
+          sprintf
+            "Misaligned mixed-size annotation %s: offset %d is not aligned to the %d-byte access size"
+            input offset (MachSize.nbytes size)
+      | _,_ -> input
+    else input
+
   (* Parse two edge annotations, for example `AL`. *)
   let parse_edge_annotations string =
     match lookup_atom_prefix string with
@@ -648,7 +670,9 @@ let fold_tedges f r =
     let parse_annotation_only () =
       match parse_annotation input with
       | Some annotation -> annotation_edge annotation
-      | None -> Warn.fatal "Bad edge: %s" input in
+      | None ->
+          let message = check_invalid_annotation input in
+          Warn.user_error "Bad edge: %s" message in
     match lookup_edge_prefix input with
     | None -> parse_annotation_only ()
     | Some (edge, "") -> edge
@@ -835,6 +859,9 @@ let fold_tedges f r =
       | Some _,None -> Some(e1, set_a1 e2 a1)
       | Some a1,Some a2 ->
         match merge_atoms a1 a2 with
+        | None when is_id e1.edge && is_id e2.edge ->
+            Warn.fatal "Incompatible annotations %s and %s"
+              (pp_atom a1) (pp_atom a2)
         | None -> None
         | Some _ as a ->
           Some(set_a2 e1 a,set_a1 e2 a) in
@@ -908,7 +935,9 @@ let fold_tedges f r =
           (pp_edge e) in
     (* Check `Id` edge are all pseudo annotation *)
     let check_pseudo_id e =
-      if is_id e.edge then
+      if is_id e.edge && (is_ifetch e.a1 || is_ifetch e.a2) then
+        Warn.fatal "Standalone instruction access annotation is not supported"
+      else if is_id e.edge then
         Warn.fatal "Invalid extra annotation %s" (pp_edge e) in
     List.iter (fun e -> check_mixed e; check_pseudo_id e) es;
     (* Match annotations between non-insert edges *)

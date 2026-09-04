@@ -1,0 +1,14 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc DpDatasW PaL Rfi *)
+AArch64 CoRW1+datasppal-rfipalp
+{
+ int x[2]={0,0};
+ 0:X0=x;
+}
+ P0              ;
+ LDR W1,[X0]     ;
+ EOR W2,W1,W1    ;
+ ADD W2,W2,#2    ;
+ SUB W3,W2,#1    ;
+ STLP W3,W2,[X0] ;
+
+exists (0:X1=1)

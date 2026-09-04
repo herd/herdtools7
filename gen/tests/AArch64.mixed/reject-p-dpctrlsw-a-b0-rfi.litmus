@@ -1,0 +1,6 @@
+(* diyone7 -hexa -arch AArch64 -variant fullmixed -metadata false -oneloc P DpCtrlsW A.b0 Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+ctrlsw0a.b0-rfia.b0w0 [DpCtrlsWw0A.b0 RfiA.b0w0] failed:
+No store acquire
+*)

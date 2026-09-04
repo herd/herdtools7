@@ -1,0 +1,14 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc PaN DpDatasW Rfi *)
+AArch64 CoRW1+dataspanp-rfippan
+{
+ int x[2]={0,0};
+ 0:X0=x;
+}
+ P0              ;
+ LDNP W1,W2,[X0] ;
+ ADD W1,W1,W2    ;
+ EOR W3,W1,W1    ;
+ ADD W3,W3,#1    ;
+ STR W3,[X0]     ;
+
+exists (0:X1=1)

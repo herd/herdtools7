@@ -1,0 +1,13 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc Pte PosRW Rfi *)
+AArch64 CoRW1+posptep-rfippte
+Variant=vmsa
+{
+ [x]=1;
+ 0:X0=PTE(x); pteval_t 0:X1=0; 0:X3=x;
+}
+ P0          ;
+ LDR X1,[X0] ;
+ MOV W2,#2   ;
+ STR W2,[X3] ;
+
+exists (0:X1=(oa:PA(x)))

@@ -1,0 +1,14 @@
+(* diyone7 -arch AArch64 -variant ifetch -metadata false -oneloc PosWRPI FriIP *)
+AArch64 CoWR0+pospi-friip
+Variant=ifetch
+{
+ 0:X0=instr:"NOP"; 0:X1=P0:Lself00;
+}
+ P0              ;
+ STR W0,[X1]     ;
+ Lself00: B .+12 ;
+ MOV W2,#2       ;
+ B .+8           ;
+ MOV W2,#1       ;
+
+exists (0:X2=1)
