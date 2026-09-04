@@ -52,7 +52,7 @@ let lrrs =
 (* Local memory write successor *)
 let lmws =
  [Exp & M | Imp & Tag & R]; (po & same-loc); [Exp & W]
- | [Imp & TTD & R]; (po & same-loc); [Exp & W | HU]
+ | [Imp & TTD & R]; (po & same-loc); [Exp & W | Imp & TTD & W]
 
 (* Local memory read successor *)
 let lmrs = [W]; ((po & same-loc) & ~(intervening(W,(po & same-loc)))); [R]
@@ -67,7 +67,7 @@ let rec dtrm =
 (** Data, Address and Control dependencies *)
 
 let data = [Exp & R]; dtrm & po; [Rreg]; iico_data & ii_data; [Exp & W]
-let addr = [Exp & R]; dtrm & po; [Rreg]; iico_data & ii_addr; [Exp & M | Imp & Tag & R | Imp & TTD & R | HU | TLBI | DC.CVAU | IC.IVAU]
+let addr = [Exp & R]; dtrm & po; [Rreg]; iico_data & ii_addr; [Exp & M | Imp & Tag & R | Imp & TTD & M | TLBI | DC.CVAU | IC.IVAU]
 let ctrl = [Exp & R]; dtrm & po; [Rreg]; iico_data; [BCC]; po
 
 (** Pick dependencies *)
@@ -80,7 +80,7 @@ let pick-basic-dep =
    [Exp & R]; pick-dtrm
 
 let pick-addr-dep =
-   [Exp & R]; pick-dtrm & po; [Rreg]; iico_data & ii_addr; [Exp & M | Imp & Tag & R | Imp & TTD & R | HU | TLBI | DC.CVAU | IC.IVAU]
+   [Exp & R]; pick-dtrm & po; [Rreg]; iico_data & ii_addr; [Exp & M | Imp & Tag & R | Imp & TTD & M | TLBI | DC.CVAU | IC.IVAU]
 let pick-data-dep =
    [Exp & R]; pick-dtrm & po; [Rreg]; (iico_data | (iico_data; iico_ctrl)) & ii_data; [Exp & W]
 let pick-ctrl-dep =
@@ -94,4 +94,3 @@ let pick-dep =
    ) & ~same-instance
 
 include "aarch64show.cat"
-
