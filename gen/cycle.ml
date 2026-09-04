@@ -1219,8 +1219,13 @@ let do_set_read_v init =
             if do_morello then None, st
             (* because `rmw` is treated as both read and write,
                we should assign label to this read event.
-               Here we assume write is stronger than read. *)
-            else if n.evt.rmw then CoSt.fault_update st W n.evt.tag
+               Here we assume write is stronger than read, except for LxSx,
+               whose load and store are checked separately. *)
+            else if n.evt.rmw then
+              match n.edge.E.edge with
+              | E.Rmw rmw when not (E.RMW.is_one_instruction rmw) ->
+                  CoSt.fault_update st R n.evt.tag
+              | _ -> CoSt.fault_update st W n.evt.tag
             else CoSt.fault_update st R n.evt.tag in
           let check_value = match check_fault with
             | Some (_,true) -> Some false
@@ -1284,7 +1289,18 @@ let do_set_read_v init =
               let check_fault = Value.need_check_fault n.evt.atom in
               CoSt.set_pte_value st check_fault @@ Value.to_pte n.evt.v
             else st in
-        st
+        begin match n.prev.edge.E.edge with
+        (* LxSx has separate load-exclusive and store-exclusive instructions,
+           so check the write event independently. A single-instruction AMO
+           is already covered by the fault check on its read event. *)
+        | E.Rmw rmw
+          when n.evt.rmw && bank = Ord
+            && not (E.RMW.is_one_instruction rmw) ->
+            let check_fault,st = CoSt.fault_update st W n.evt.tag in
+            n.evt <- {n.evt with check_fault};
+            st
+        | _ -> st
+        end
       | None ->
         st
     end ) st ns in

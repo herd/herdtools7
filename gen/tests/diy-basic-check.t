@@ -246,15 +246,15 @@ A memtag `LxSx` oneloc comparison test
   {
    0:X0=x:red; 0:X1=x:green;
   }
-   P0                ;
-   STG X0,[X1]       ;
-   MOV W3,#1         ;
-   Loop00:           ;
-   L00: LDXR W2,[X1] ;
-   STXR W4,W3,[X1]   ;
-   CBNZ W4,Loop00    ;
+   P0                   ;
+   STG X0,[X1]          ;
+   MOV W3,#1            ;
+   Loop00:              ;
+   L00: LDXR W2,[X1]    ;
+   L01: STXR W4,W3,[X1] ;
+   CBNZ W4,Loop00       ;
   
-  exists (0:X2=0 /\ not (fault(P0:L00,x)))
+  exists (0:X2=0 /\ not (fault(P0:L00,x)) /\ not (fault(P0:L01,x)))
 
   $ diyone7 -arch AArch64 -variant memtag,store-only -oneloc T PosWR LxSx Coi
   AArch64 CoWW+postp-rmw-coipt
