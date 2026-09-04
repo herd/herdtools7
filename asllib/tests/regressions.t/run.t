@@ -707,7 +707,7 @@ Left-hand sides
   File lhs-tuple-fields-same-field.asl, line 8, characters 2 to 4:
     bv.(fld, -, fld) = ('11', TRUE, '11');
     ^^
-  ASL Grammar error: multiple writes to "bv.fld".
+  ASL Type error (TE_IAD): multiple writes to "bv.fld".
   [1]
   $ aslref lhs-tuple-same-var.asl
   $ aslref lhs-expressivity.asl

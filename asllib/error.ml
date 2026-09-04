@@ -282,7 +282,7 @@ module ErrorCode = struct
         Some (Dynamic DAF)
     | ImpureExpression _ | MismatchedPurity _ -> Some (Typing SEV)
     | AssignToImmutable _ -> Some (Typing AIM)
-    | AlreadyDeclaredIdentifier _ -> Some (Typing IAD)
+    | AlreadyDeclaredIdentifier _ | MultipleWrites _ -> Some (Typing IAD)
     | BadReturnStmt _ | BadParameterDecl _ | NonReturningFunction _
     | NoreturnViolation _ ->
         Some (Typing BSPD)
@@ -317,10 +317,6 @@ module ErrorCode = struct
     (* For static interpretation, parameters, and collections *) ->
         None
     | MismatchType _ (* mismatched integers for loop limits *) -> None
-    | MultipleWrites _
-    (* For desugaring, but uses `check_no_duplicates` which is always TE_IAD? *)
-      ->
-        None
     (********** Should not happen **********)
     (* e.g. skipped type-checking, ASL0, internal option or invariant *)
     | EmptyConstraints (* An internal invariant *) -> None
@@ -755,7 +751,7 @@ module PPrint = struct
           (ErrorKind.of_error_handling_time t)
           "array@ length@ expression@ %a@ has@ negative@ length:@ %i." pp_expr
           e_length length
-    | MultipleWrites id -> pp_err Parse "multiple@ writes@ to@ %S." id
+    | MultipleWrites id -> pp_err Typing "multiple@ writes@ to@ %S." id
     | MultipleImplementations (impl1, impl2) ->
         pp_err Typing
           "multiple@ overlapping@ `implementation`@ functions@ for@ %s:@ %a"
