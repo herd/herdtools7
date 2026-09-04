@@ -1012,8 +1012,8 @@ module Make(C:Config) (I:I) : S with module I = I
                 (fun f -> FaultAtomSet.exists
                     (fun f0 -> check_one_fatom f f0) fobs)
                 flts in
-          pp_st ^ " " ^
-          FaultSet.pp_str " "  (fun f -> pp_fault f ^ ";")  flts ^
+          pp_st ^
+          FaultSet.pp_str ""  (fun f -> " " ^ pp_fault f ^ ";")  flts ^
           String.concat "" noflts ^
           pp_solver
 

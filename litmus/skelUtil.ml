@@ -936,7 +936,7 @@ end
             | ForallStates _|NotExistsState _ -> "p_true == 0" in
             O.fi "int cond = %s;" to_check ;
             EPF.fi "%s\n" ["cond?\"Ok\":\"No\""] ;
-            EPF.fi "\nWitnesses\n" [] ;
+            EPF.fi "Witnesses\n" [] ;
             let fmt = "Positive: %PCTR, Negative: %PCTR\n" in
             EPF.fi fmt
               [(match c with
@@ -1080,6 +1080,7 @@ end
           | Mode.Std|Mode.PreSi ->
               let fmt = sprintf "Time %s %%f\n"  doc.Name.name in
               EPF.fi fmt ["total / 1000000.0"] ;
+              EPF.fi "\n" [];
               O.oi "fflush(out);"
           | Mode.Kvm ->
               if
@@ -1089,7 +1090,7 @@ end
               let s = sprintf "Time %s "  doc.Name.name in
               O.fi "puts(%S);" s ;
               O.oi "emit_millions(tsc_millions(total));" ;
-              O.oi "puts(\"\\n\");"
+              O.fi "puts(%S);" "\n\n"
           end ;
           begin match Cfg.mode with
           | Mode.PreSi|Mode.Kvm ->

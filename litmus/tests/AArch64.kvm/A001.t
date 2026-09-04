@@ -12,15 +12,16 @@ stable
 
   $ cd "$TEST"
   $ make > /dev/null
-  $ "./$TEST.exe" | sed '$d'
+  $ "./$TEST.exe" | grep -v ^Time
   Test A001 Required
   Histogram (1 states)
   4000000*>0:X0=1; 0:X2=1;
   No
-  
   Witnesses
   Positive: 0, Negative: 4000000
   Condition forall (0:X0=0 /\ 0:X2=0) is NOT validated
   Hash=b4f76ddaf0ec77a089ddb069cb87815f
   Variant=fatal
   Observation A001 Never 0 4000000
+  
+

@@ -17,10 +17,9 @@ stable
   Histogram (1 states)
   200000:>0:rcx=-1;
   Ok
-  
   Witnesses
   Positive: 200000, Negative: 0
   Condition forall (0:rcx=-1) is validated
   Hash=7ca3c35015d75a877ccf509d75062e79
   Observation A009 Always 200000 0
-
+  

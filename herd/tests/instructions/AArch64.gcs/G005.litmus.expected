@@ -1,7 +1,7 @@
 Test G005 Required
 States 2
 0:X1=0; Fault(P0,GCS:SS2);
-0:X1=4;  ~Fault(P0);
+0:X1=4; ~Fault(P0);
 No
 Witnesses
 Positive: 2 Negative: 2
