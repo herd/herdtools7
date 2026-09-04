@@ -22,6 +22,13 @@ open Archs
 open Opts
 open OptNames
 
+
+(* exit codes *)
+
+let exit_code_of_exn = function
+  | Misc.Exit | Misc.UserError _ | Misc.Fatal _ -> 2
+  | _ -> 1
+
 (* Command line arguments *)
 let args = ref []
 let get_cmd_arg s = args := s :: !args
@@ -547,7 +554,9 @@ let () =
         Printf.eprintf "Error: %s\n %s \n" first_line usg_default;
         exit 2
       end
-  | Misc.Fatal msg -> eprintf "%s: %s\n" prog msg ; exit 2
+  | Misc.Fatal msg as e ->
+      eprintf "%s: %s\n" prog msg ;
+      exit (exit_code_of_exn e)
 
 (* Read generic model, if any *)
 
@@ -565,10 +574,12 @@ let model,model_opts = match !model with
       let (fname,((b,_,_) as r)) = P.find_parse ~opt:true fname in
       Some (Model.Generic (fname,r)),b
     with
-    | Misc.Fatal msg -> eprintf "%s: %s\n" prog msg ; exit 2
-    | Misc.Exit ->
+    | (Misc.Fatal msg | Misc.UserError msg) as e ->
+        eprintf "%s: %s\n" prog msg ;
+        exit (exit_code_of_exn e)
+    | Misc.Exit as e ->
         eprintf "Failure of generic model parsing\n" ;
-        exit 2 end
+        exit (exit_code_of_exn e) end
 | Some _ as m -> m,ModelOption.compat
 | None -> None,ModelOption.default
 
@@ -773,9 +784,11 @@ let () =
 
   let tests = !args in
 
-  let check_exit =
+  let check_exit exn =
     let b = !Opts.exit_if_failed in
-    fun seen -> if b then exit 1 else seen in
+    fun seen ->
+      let e = exit_code_of_exn exn in
+      if b then exit e else e, seen in
 
   let check_pos0 s =
     String.length s > 5 &&
@@ -786,7 +799,7 @@ let () =
 
   let dbg_exc = !Opts.debug.Debug_herd.exc in
 
-  let _seen =
+  let exit_code, _seen =
 
 (* If interval timer enabled and triggered,
    then stop test with not output at all *)
@@ -795,17 +808,17 @@ let () =
       (fun _ -> raise Misc.Timeout)
       !debug.Debug_herd.timeout;
     Misc.fold_argv_or_stdin
-      (fun name seen ->
-        try from_file name seen
+      (fun name ((exit_code, seen) as r) ->
+        try exit_code, from_file name seen
         with
-        | Misc.Timeout -> seen
+        | Misc.Timeout -> r
         | Misc.Exit as e ->
            if dbg_exc then raise e ;
-           check_exit seen
+           check_exit e seen
         | Misc.Fatal msg as e  ->
            if dbg_exc then raise e ;
            Warn.warn_always "%a: %s" Pos.pp_pos0 name msg ;
-           check_exit seen
+           check_exit e seen
         | Misc.UserError msg as e ->
            if dbg_exc then raise e ;
            begin if check_pos0 msg then
@@ -813,13 +826,13 @@ let () =
            else
              Warn.warn_always "%a: %s (User error)" Pos.pp_pos0 name msg
            end ;
-           check_exit seen
+           check_exit e seen
         | Asllib.Error.ASLException e as exc ->
            if dbg_exc then raise exc ;
            Warn.warn_always "%s" (Asllib.Error.error_to_string e);
-           check_exit seen
+           check_exit exc seen
         | e ->
            Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
            raise e)
-      tests StringMap.empty in
-  exit 0
+      tests (0, StringMap.empty) in
+  exit exit_code
