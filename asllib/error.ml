@@ -307,6 +307,7 @@ module ErrorCode = struct
     | LoopLimitReached Static
     | NegativeArrayLength (Static, _, _)
     | AssertionFailed (Static, _)
+    | ATCFailure (Static, _, _)
     | BadPrimitiveArgument (Static, _, _) ->
         Some (Typing SEF)
     | NoCommonAncestor _ (* LCA failures *) -> Some (Typing LCA)
@@ -315,9 +316,7 @@ module ErrorCode = struct
     | UnsupportedExpr _ | UnsupportedTy _
     (* For static interpretation, parameters, and collections *) ->
         None
-    | MismatchType _ (* mismatched integers for loop limits *)
-    | ATCFailure (Static, _, _) ->
-        None
+    | MismatchType _ (* mismatched integers for loop limits *) -> None
     | MultipleWrites _
     (* For desugaring, but uses `check_no_duplicates` which is always TE_IAD? *)
       ->
