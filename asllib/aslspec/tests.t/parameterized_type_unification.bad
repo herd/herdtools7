@@ -1,0 +1,14 @@
+typedef Int;
+typedef Bool;
+
+typedef Pair[[T]] =
+  | PairValue(left: T, right: T)
+;
+
+typing relation make_pair(x: Int, y: Bool) -> (Pair[[Int]])
+{
+  prose_transition = ""
+} =
+  --
+  PairValue(x, y);
+;

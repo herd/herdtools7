@@ -64,6 +64,20 @@ aslspec supports the following type constructors:
 - `fun A -> B`: the type of total functions from `A` to `B`.
 - `partial T -> T`: the type of partial functions from `A` to `B`.
 
+Type definitions can declare a type parameter in double brackets. References
+to the parameter are scoped to the definition. For example:
+```
+typedef Tree[[T]] =
+    | Leaf(value: T)
+    | Node(left: Tree[[T]], right: Tree[[T]])
+;
+```
+An application such as `Tree[[Z]]` instantiates `T` with `Z`.
+When a parameterized variant is used in an expression, its parameter is
+inferred from the types of the variant's components. Repeated occurrences of
+the parameter must unify to a single type. For example, `Node(left, right)`
+requires the types inferred for `left` and `right` to be compatible.
+
 Complex type definitions can also use *variants* where by a union of different type constructors
 is used to define the domain of values.
 For example:
