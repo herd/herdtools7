@@ -388,8 +388,9 @@ and sstate = parse
 
 and slines k = parse
 | ((num) blank* (":>"|"*>"))?
-    { let bds,fs,abs = pline [] [] [] lexbuf in
-      let st = LS.as_st_concrete bds fs abs in
+    { let bds,fs,_ = pline [] [] [] lexbuf in
+      (* No absent faults in simple states *)
+      let st = LS.as_st_concrete bds fs [] in
       slines (st::k) lexbuf }
 |  ("Loop" blank+ )?
    ((validation ([^'\r''\n']*))

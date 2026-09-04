@@ -1453,8 +1453,8 @@ let get_fault_kinds sts =
   List.fold_left
     (fun k st ->
        let open HashedState in
-       let { S.f; S.a; _; } = as_t st in
-       collect_kinds (collect_kinds k a) f)
+       let { S.f; _ } = as_t st in
+       collect_kinds k f)
     FaultKinds.empty
     sts
 
