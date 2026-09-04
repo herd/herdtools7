@@ -84,13 +84,9 @@ and width expressions (in the case of \bitvectortypesterm{}) into symbolic repre
 that we refer to as \emph{symbolic domains} and then checking subsumption over the symbolic domains.
 
 \ChapterOutline
-\begin{itemize}
-  \item \secref{Symbolic Domains} defines a symbolic representation for sets of integers; and
-  \item \secref{Symbolic Reasoning} defines the symbolic reasoning used for domain subset
-        testing.
-\end{itemize}
 
-\section{Symbolic Domains\label{sec:Symbolic Domains}}
+\SectionDef[defines a symbolic representation for sets of integers; and]
+  {Symbolic Domains}{Symbolic Domains}
 \hypertarget{def-symbolicdomain}{}
 
 We define the \emph{symbolic domain} datatype, reusing $\intconstraint$ from the untyped AST,
@@ -108,8 +104,9 @@ as follows:
         which represents the set of all integers.
 \end{itemize}
 
-\section{Symbolic Reasoning\label{sec:Symbolic Reasoning}}
-
+\SectionDef[defines the symbolic reasoning used for domain subset
+        testing.]
+  {Symbolic Reasoning}{Symbolic Reasoning}
 We define the following rules for symbolic subsumption testing:
 \begin{TypingRuleList}{SymbolicSubsumptionTesting}
 
