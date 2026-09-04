@@ -56,7 +56,7 @@ type error_desc =
   | BadBinopPriority of string
   | AllDiscardLocalDeclaration
   | NonFunctionBuiltinDeclaration
-  | UnknownSymbol of string
+  | UnknownSymbol of { symbol : string; alternative : string option }
   | NoCallCandidate of string * ty list
   | BadTypesForBinop of binop * ty * ty
   | ImpureExpression of expr * SideEffect.SES.t
@@ -251,6 +251,7 @@ module ErrorCode = struct
     | AllDiscardLocalDeclaration | NonFunctionBuiltinDeclaration ->
         Some (Build BD)
     | UnknownSymbol _ -> Some (Build LE)
+    | CannotParse _ -> Some (Build PE)
     | ObsoleteSyntax _ -> Some (Build PE)
     | BadField _ | MissingField _ -> Some (Typing BF)
     | BadTupleIndex _ -> Some (Typing BTI)
@@ -315,7 +316,6 @@ module ErrorCode = struct
     | MismatchType _
     (* dynamic ATC but also mismatched integers for loop limits *) ->
         None
-    | CannotParse _ (* used in lexing too *) -> None
     | MultipleWrites _
     (* For desugaring, but uses `check_no_duplicates` which is always TE_IAD? *)
       ->
@@ -588,14 +588,19 @@ module PPrint = struct
           "A local declaration must declare at least one name."
     | NonFunctionBuiltinDeclaration ->
         pp_err Parse "Only subprogram declarations may be marked as builtins."
-    | UnknownSymbol s ->
-        let codes = List.map Char.code (List.of_seq (String.to_seq s)) in
+    | UnknownSymbol { symbol; alternative } -> (
+        let codes = List.map Char.code (List.of_seq (String.to_seq symbol)) in
         let not_printable code = code < 33 || code > 126 in
         if List.exists not_printable codes then
           pp_err Lexical "Unknown symbol (ASCII code point(s): %a)."
             (pp_comma_list pp_print_int)
             codes
-        else pp_err Lexical "Unknown symbol."
+        else
+          match alternative with
+          | None -> pp_err Lexical "Unknown symbol."
+          | Some alternative ->
+              pp_err Lexical "Unknown symbol %S.@ Did you mean %S?" symbol
+                alternative)
     | NoCallCandidate (name, types) ->
         pp_err Typing
           "No subprogram declaration matches the invocation:@ %s(%a)." name

@@ -304,7 +304,8 @@ rule token = parse
       {
         let p1 = Lexing.lexeme_start_p lexbuf and p2 = Lexing.lexeme_end_p lexbuf in
         let lexeme = Lexing.lexeme lexbuf in
-        Error.fatal_here p1 p2 (Error.UnknownSymbol lexeme)
+        Error.fatal_here p1 p2
+          (Error.UnknownSymbol { symbol = lexeme; alternative = None })
       }
 
 and comment depth = parse
@@ -319,4 +320,3 @@ and comment depth = parse
     let () = Printf.eprintf "Parsed token %s\n" (string_of_token tok) in
     tok
 }
-

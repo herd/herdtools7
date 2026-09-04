@@ -93,7 +93,8 @@ ASL Typing Tests:
   File TypingRule.LDDiscard.asl, line 4, characters 6 to 7:
     let - = 42;
         ^
-  ASL Grammar error: Cannot parse. A local declaration must declare a name.
+  ASL Grammar error (BE_PE): Cannot parse. A local declaration must declare a
+    name.
   [1]
   $ aslref TypingRule.LDVar.asl
   $ aslref TypingRule.LDTyped.asl
@@ -215,7 +216,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.TNonDecl.asl, line 1, characters 5 to 6:
   func (x: record { a: integer, b: boolean }) => integer
        ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref TypingRule.TBitField.asl
   $ aslref --no-exec TypingRule.AnnotateFuncSig.asl
@@ -484,14 +485,14 @@ ASL Typing Tests / annotating types:
   File TypingRule.SDecl.bad1.asl, line 4, characters 4 to 12:
       constant c3 = 5;
       ^^^^^^^^
-  ASL Grammar error: Cannot parse. Local constant declarations are not valid
-    ASL1. Did you mean `let`?.
+  ASL Grammar error (BE_PE): Cannot parse. Local constant declarations are not
+    valid ASL1. Did you mean `let`?.
   [1]
   $ aslref TypingRule.SDecl.bad2.asl
   File TypingRule.SDecl.bad2.asl, line 4, characters 18 to 19:
       let y: integer;
                     ^
-  ASL Grammar error: Cannot parse. Declarations using `let` must have
+  ASL Grammar error (BE_PE): Cannot parse. Declarations using `let` must have
     initialising expressions.
     
   [1]
@@ -658,7 +659,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.CheckIsNotCollection.asl, line 3, characters 12 to 22:
     var test: collection {
               ^^^^^^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref TypingRule.TypecheckDecl.asl
   0x0000000000000000
@@ -744,8 +745,9 @@ ASL Typing Tests / annotating types:
   File TypingRule.DeclareGlobalStorage.bad3.asl, line 2, characters 37 to 38:
   config uninitialized_config : integer;
                                        ^
-  ASL Grammar error: Cannot parse. A `config` declaration must introduce a
-    single name, and have both a type annotation and initialising expression:
+  ASL Grammar error (BE_PE): Cannot parse. A `config` declaration must
+    introduce a single name, and have both a type annotation and initialising
+    expression:
       config name : type = initial_expression;
     
   [1]
@@ -883,7 +885,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.AnnotateReturnType.bad.asl, line 3, characters 24 to 34:
   func returns_value() => collection { foo: bits(32)};
                           ^^^^^^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref --no-exec TypingRule.AnnotateOneParam.asl
   $ aslref TypingRule.AnnotateOneParam.bad1.asl
@@ -908,7 +910,7 @@ ASL Typing Tests / annotating types:
   File TypingRule.AnnotateOneArg.bad2.asl, line 2, characters 18 to 28:
   func arguments(b: collection {a: bits(7)})
                     ^^^^^^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref TypingRule.AnnotateRetTy.asl
   $ aslref TypingRule.AnnotateRetTy.bad.asl
