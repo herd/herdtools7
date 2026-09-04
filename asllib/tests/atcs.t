@@ -14,6 +14,19 @@ Deferred to execution ATCs
     Value 3 does not satisfy the asserted type integer {42}.
   [1]
 
+Static evaluation ATCs
+  $ cat >atcs-static.asl <<EOF
+  > constant X = 2 as integer {1};
+  > EOF
+
+  $ aslref --no-exec atcs-static.asl
+  File atcs-static.asl, line 1, characters 13 to 14:
+  constant X = 2 as integer {1};
+               ^
+  ASL Static error (TE_SEF):
+    Value 2 does not satisfy the asserted type integer {1}.
+  [1]
+
 Bad structure ATCs
   $ cat >atcs2.asl <<EOF
   > func main () => integer begin
