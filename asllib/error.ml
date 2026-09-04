@@ -90,6 +90,7 @@ type error_desc =
   | ParameterWithoutDecl of identifier
   | BadParameterDecl of identifier * identifier list * identifier list
       (** name, expected, actual *)
+  | BadParameterExpr of expr
   | BaseValueEmptyType of ty
   | ArbitraryEmptyType of ty
   | BaseValueNonSymbolic of ty * expr
@@ -291,8 +292,8 @@ module ErrorCode = struct
     | ImpureExpression _ | MismatchedPurity _ -> Some (Typing SEV)
     | AssignToImmutable _ -> Some (Typing AIM)
     | AlreadyDeclaredIdentifier _ -> Some (Typing IAD)
-    | BadReturnStmt _ | BadParameterDecl _ | NonReturningFunction _
-    | NoreturnViolation _ ->
+    | BadReturnStmt _ | BadParameterDecl _ | BadParameterExpr _
+    | NonReturningFunction _ | NoreturnViolation _ ->
         Some (Typing BSPD)
     | UncaughtException _ | UnexpectedInitialisationThrow _ -> Some (Dynamic UE)
     | OverlappingSlices (_, Dynamic) -> Some (Dynamic OSA)
@@ -681,6 +682,9 @@ module PPrint = struct
           expected
           (pp_comma_list pp_print_string)
           actual
+    | BadParameterExpr e ->
+        pp_err Typing
+          "Expression %a is not permitted in a subprogram signature." pp_expr e
     | ArbitraryEmptyType t ->
         pp_err Dynamic "ARBITRARY of empty type %a." pp_ty t
     | BaseValueEmptyType t ->
@@ -904,6 +908,7 @@ module CSV = struct
     | ConstrainedIntegerExpected _ -> "ConstrainedIntegerExpected"
     | ParameterWithoutDecl _ -> "ParameterWithoutDecl"
     | BadParameterDecl _ -> "BadParameterDecl"
+    | BadParameterExpr _ -> "BadParameterExpr"
     | BaseValueEmptyType _ -> "BaseValueEmptyType"
     | ArbitraryEmptyType _ -> "ArbitraryEmptyType"
     | BaseValueNonSymbolic _ -> "BaseValueNonSymbolic"

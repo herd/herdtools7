@@ -11494,6 +11494,12 @@ typing function params_of_expr(tenv: static_envs, e: expr) ->
     concat(ids1, ids2);
   }
 
+  case e_literal {
+    e =: E_Literal(_);
+    --
+    empty_list;
+  }
+
   case e_tuple {
     e =: E_Tuple(es);
     es =: make_singleton_list(e1);
@@ -11511,8 +11517,15 @@ typing function params_of_expr(tenv: static_envs, e: expr) ->
     concat(ids0, concat(ids1, ids2));
   }
 
+  case e_tuple_error {
+    e =: E_Tuple(es);
+    list_len(es) != one;
+    --
+    TypeError(TE_BSPD);
+  }
+
   case other {
-    ast_label(e) not_in make_set(label_E_Binop, label_E_Tuple, label_E_Unop, label_E_Var);
+    ast_label(e) not_in make_set(label_E_Binop, label_E_Cond, label_E_Literal, label_E_Tuple, label_E_Unop, label_E_Var);
     --
     TypeError(TE_BSPD);
   }

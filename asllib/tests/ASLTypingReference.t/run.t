@@ -231,7 +231,8 @@ ASL Typing Tests / annotating types:
   File TypingRule.ExtractParameters-bad1.asl, line 3, characters 15 to 36:
       arg0: bits(N as integer{8,16,32}),
                  ^^^^^^^^^^^^^^^^^^^^^
-  ASL Static error: Unsupported expression N as integer {8, 16, 32}.
+  ASL Type error (TE_BSPD):
+    Expression N as integer {8, 16, 32} is not permitted in a subprogram signature.
   [1]
   $ aslref TypingRule.BuiltinAggregateTypes.asl
   $ aslref --no-exec TypingRule.BuiltinExceptionType.asl
@@ -842,7 +843,8 @@ ASL Typing Tests / annotating types:
   File TypingRule.ParametersOfExpr.bad.asl, line 4, characters 15 to 27:
       z: integer{(D, E).item0}) => // Illegal expression in argument type
                  ^^^^^^^^^^^^
-  ASL Static error: Unsupported expression (D, E).item0.
+  ASL Type error (TE_BSPD):
+    Expression (D, E).item0 is not permitted in a subprogram signature.
   [1]
   $ aslref --no-exec TypingRule.FuncSigTypes.asl
   $ aslref --no-exec TypingRule.SubprogramTypesClash.asl
