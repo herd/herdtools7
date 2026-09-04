@@ -453,7 +453,10 @@ and token = parse
     | '<'                      { LT                               }
     | ">>"                     { SHR                              }
     | "&&"                     { BAND                             }
-    | "-->"                    { fatal lexbuf (CannotParse (Some "Did you mean `==>`?")) }
+    | "-->"                    {
+        fatal lexbuf
+          (UnknownSymbol { symbol = "-->"; alternative = Some "==>" })
+      }
     | "==>"                    { IMPL                             }
     | "<<"                     { SHL                              }
     | ']'                      { RBRACKET                         }
@@ -464,7 +467,10 @@ and token = parse
     | '{'                      { LBRACE                           }
     | "!="                     { NE                              }
     | '-'                      { MINUS                            }
-    | "<->"                    { fatal lexbuf (CannotParse (Some "Did you mean `<=>`?")) }
+    | "<->"                    {
+        fatal lexbuf
+          (UnknownSymbol { symbol = "<->"; alternative = Some "<=>" })
+      }
     | "<=>"                    { BEQ                              }
     | '['                      { LBRACKET                         }
     | "[["                     { LLBRACKET                        }
