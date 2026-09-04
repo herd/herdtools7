@@ -1,0 +1,11 @@
+(cram
+ (enabled_if
+  (= %{ocaml-config:architecture} "amd64"))
+ (deps
+  %{bin:mlogselect7}
+  %{bin:msum7}
+  %{bin:herd7}
+  (glob_files %{workspace_root}/herd/tests/instructions/X86_64/*.litmus)
+  (glob_files %{workspace_root}/doc/SB-PPC.litmus)
+  (glob_files %{workspace_root}/doc/SB-PPC*.log)
+  (source_tree %{workspace_root}/herd/libdir)))
