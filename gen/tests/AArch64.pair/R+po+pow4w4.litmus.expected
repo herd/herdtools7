@@ -1,0 +1,10 @@
+Test R+po+pow4w4 Allowed
+States 1
+1:X2=0; y={1,2};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (y={1,2} /\ 1:X2=0)
+Observation R+po+pow4w4 Always 1 0
+Hash=d3e71ae0d7d2a81d05becf2b3623edda
+

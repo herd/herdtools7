@@ -415,6 +415,48 @@ diy-test-aarch64:
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64 diycross7 tests: OK"
 
+diy-test:: diy-test-aarch64-pair
+diy-test-aarch64-pair:
+	@ echo
+	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-diycross-path $(DIYCROSS) \
+		-libdir-path ./herd/libdir \
+		-expected-dir ./gen/tests/AArch64.pair \
+		-diycross-arg -arch \
+		-diycross-arg AArch64 \
+		-diycross-arg PodWW \
+		-diycross-arg P,Pa,w4 \
+		-diycross-arg Coe \
+		-diycross-arg P,Pa,w4 \
+		-diycross-arg PodWR \
+		-diycross-arg P,Pa,w4 \
+		-diycross-arg Fre \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 pair diycross7 tests: OK"
+
+diy-test:: diy-test-aarch64-pair-local
+diy-test-aarch64-pair-local:
+	@ echo
+	$(HERD_DIYCROSS_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-diycross-path $(DIYCROSS) \
+		-libdir-path ./herd/libdir \
+		-expected-dir ./gen/tests/AArch64.pair.local \
+		-diycross-arg -obs \
+		-diycross-arg local \
+		-diycross-arg -arch \
+		-diycross-arg AArch64 \
+		-diycross-arg PodWW \
+		-diycross-arg P,Pa,w4 \
+		-diycross-arg Coe \
+		-diycross-arg P,Pa,w4 \
+		-diycross-arg PodWR \
+		-diycross-arg P,Pa,w4 \
+		-diycross-arg Fre \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 pair local-observer diycross7 tests: OK"
+
 diy-test:: diy-test-mixed
 diy-test-mixed::
 	@ echo

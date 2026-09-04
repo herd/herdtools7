@@ -1,0 +1,13 @@
+Test R+po+popaw4 Allowed
+States 4
+0:X4=1; 0:X5=0; 1:X4=0;
+0:X4=1; 0:X5=3; 1:X4=0;
+0:X4=2; 0:X5=0; 1:X4=0;
+0:X4=2; 0:X5=3; 1:X4=0;
+Ok
+Witnesses
+Positive: 1 Negative: 5
+Condition exists (0:X5=3 /\ 0:X4=2 /\ 1:X4=0)
+Observation R+po+popaw4 Sometimes 1 5
+Hash=ef7fb7943f3d880f57b1a6447cf489fd
+
