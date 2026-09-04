@@ -73,8 +73,8 @@
   File binop-write-atc.asl, line 5, characters 10 to 11:
     return (1 as integer {2});
             ^
-  ASL Dynamic error: Mismatch type:
-    value 1 does not belong to type integer {2}.
+  ASL Dynamic error (DE_TAF):
+    Value 1 does not satisfy the asserted type integer {2}.
   [1]
 // We don't need to decide about the following:
 // $ aslref binop-atc-atc.asl
@@ -228,8 +228,8 @@
   File config-uses-atc.asl, line 3, characters 9 to 10:
     return 0 as integer {10};
            ^
-  ASL Dynamic error: Mismatch type:
-    value 0 does not belong to type integer {10}.
+  ASL Dynamic error (DE_TAF):
+    Value 0 does not satisfy the asserted type integer {10}.
   [1]
   $ aslref config-uses-unknown.asl
   File config-uses-unknown.asl, line 3, characters 2 to 36:
@@ -256,8 +256,8 @@
   File assert-atc.asl, line 3, characters 9 to 10:
     assert 0 as integer {3} == 2;
            ^
-  ASL Dynamic error: Mismatch type:
-    value 0 does not belong to type integer {3}.
+  ASL Dynamic error (DE_TAF):
+    Value 0 does not satisfy the asserted type integer {3}.
   [1]
 
   $ aslref type-read-config.asl
@@ -295,8 +295,8 @@
   File type-func-atc.asl, line 3, characters 9 to 10:
     assert 0 as integer {3} == 2;
            ^
-  ASL Dynamic error: Mismatch type:
-    value 0 does not belong to type integer {3}.
+  ASL Dynamic error (DE_TAF):
+    Value 0 does not satisfy the asserted type integer {3}.
   [1]
   $ aslref type-func-local-var.asl
   $ aslref type-local-var.asl
@@ -317,8 +317,8 @@
   File assert-atc.asl, line 3, characters 9 to 10:
     assert 0 as integer {3} == 2;
            ^
-  ASL Dynamic error: Mismatch type:
-    value 0 does not belong to type integer {3}.
+  ASL Dynamic error (DE_TAF):
+    Value 0 does not satisfy the asserted type integer {3}.
   [1]
   $ aslref assert-read.asl
   $ aslref assert-throw.asl
@@ -357,8 +357,8 @@
   File rec-binop-atc-throw.asl, line 15, characters 37 to 38:
     let x = throwing (n - 1, FALSE) * (2 as integer {3});
                                        ^
-  ASL Dynamic error: Mismatch type:
-    value 2 does not belong to type integer {3}.
+  ASL Dynamic error (DE_TAF):
+    Value 2 does not satisfy the asserted type integer {3}.
   [1]
   $ aslref --use-conflicting-side-effects-extension rec-binop-atc-throw.asl
   File rec-binop-atc-throw.asl, line 15, characters 10 to 54:
@@ -429,8 +429,8 @@
   File rec-assert.asl, line 9, characters 34 to 35:
     let x = not_throwing (n - 1) * (2 as integer {3});
                                     ^
-  ASL Dynamic error: Mismatch type:
-    value 2 does not belong to type integer {3}.
+  ASL Dynamic error (DE_TAF):
+    Value 2 does not satisfy the asserted type integer {3}.
   [1]
   $ aslref --use-conflicting-side-effects-extension rec-assert.asl
   File rec-assert.asl, line 9, characters 10 to 51:
@@ -450,8 +450,8 @@
   File rec-binop-atc.asl, line 9, characters 34 to 35:
     let x = not_throwing (n - 1) * (2 as integer {3});
                                     ^
-  ASL Dynamic error: Mismatch type:
-    value 2 does not belong to type integer {3}.
+  ASL Dynamic error (DE_TAF):
+    Value 2 does not satisfy the asserted type integer {3}.
   [1]
   $ aslref --use-conflicting-side-effects-extension rec-binop-atc.asl
   File rec-binop-atc.asl, line 9, characters 10 to 51:
@@ -541,8 +541,8 @@
   File global-throw-initialisation.asl, line 8, characters 0 to 29:
   let X: integer = throwing ();
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  ASL Dynamic error: unexpected exception E thrown during the evaluation of the
-    initialisation of the global storage element "X".
+  ASL Dynamic error (DE_UE): unexpected exception E thrown during the
+    evaluation of the initialisation of the global storage element "X".
   [1]
 
   $ aslref config-type-uses-let.asl

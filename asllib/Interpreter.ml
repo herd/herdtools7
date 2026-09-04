@@ -530,7 +530,9 @@ module Make (B : Backend.S) (C : Config) = struct
         let* b = is_val_of_type e1 env v t in
         (if b then return_normal (v, new_env)
          else
-           fatal_from e1 env (Error.MismatchType (B.debug_value v, [ t.desc ])))
+           fatal_from e1 env
+             (Error.ATCExecutionFailure
+                (C.error_handling_time, B.debug_value v, t.desc)))
         |: SemanticsRule.ATC
     (* End *)
     (* Begin EvalEVar *)

@@ -146,7 +146,7 @@ ASL Semantics Tests:
   File SemanticsRule.CatchNone.asl, line 15, characters 8 to 24:
     catch MyExceptionType1;
           ^^^^^^^^^^^^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref SemanticsRule.FUndefIdent.asl
   File SemanticsRule.FUndefIdent.asl, line 4, characters 5 to 12:
@@ -207,7 +207,8 @@ ASL Semantics Tests:
   File SemanticsRule.LDDiscard.asl, line 4, characters 6 to 7:
     var - : integer;
         ^
-  ASL Grammar error: Cannot parse. A local declaration must declare a name.
+  ASL Grammar error (BE_PE): Cannot parse. A local declaration must declare a
+    name.
   [1]
 
   $ aslref EvalCatchers.asl
@@ -217,8 +218,8 @@ ASL Semantics Tests:
   File SemanticsRule.ATCVariousErrors.asl, line 8, characters 28 to 29:
     var c: integer{4, 5, 6} = 2 as integer{4, 5, 6}; // A dynamic error
                               ^
-  ASL Dynamic error: Mismatch type:
-    value 2 does not belong to type integer {4, 5, 6}.
+  ASL Dynamic error (DE_TAF):
+    Value 2 does not satisfy the asserted type integer {4, 5, 6}.
   [1]
   $ aslref SemanticsRule.CatchNoThrow.asl
   No exception raised
@@ -280,6 +281,6 @@ ASL Semantics Tests:
   File SemanticsRule.EvalGlobals.bad1.asl, line 10, characters 0 to 12:
   var x = f();
   ^^^^^^^^^^^^
-  ASL Dynamic error: unexpected exception MyException thrown during the
+  ASL Dynamic error (DE_UE): unexpected exception MyException thrown during the
     evaluation of the initialisation of the global storage element "x".
   [1]

@@ -72,7 +72,8 @@ Global ignored:
   File global_ignored.asl, line 1, characters 4 to 5:
   var - = 3 / 0;
       ^
-  ASL Grammar error: Cannot parse. A global declaration must declare a name.
+  ASL Grammar error (BE_PE): Cannot parse. A global declaration must declare a
+    name.
   [1]
 
   $ aslref shadow-banning-bug.asl
@@ -188,8 +189,8 @@ Runtime checks:
   File runtime-type-sat1.asl, line 3, characters 23 to 24:
     let x: integer {1} = 2 as integer {1};
                          ^
-  ASL Dynamic error: Mismatch type:
-    value 2 does not belong to type integer {1}.
+  ASL Dynamic error (DE_TAF):
+    Value 2 does not satisfy the asserted type integer {1}.
   [1]
 
   $ cat >runtime-type-sat2.asl <<EOF
@@ -207,8 +208,8 @@ Runtime checks:
   File runtime-type-sat2.asl, line 2, characters 10 to 18:
     let x = Zeros{4} as bits(size);
             ^^^^^^^^
-  ASL Dynamic error: Mismatch type:
-    value 0x0 does not belong to type bits(size).
+  ASL Dynamic error (DE_TAF):
+    Value 0x0 does not satisfy the asserted type bits(size).
   [1]
 
   $ aslref under-constrained-used.asl
@@ -239,8 +240,8 @@ Parameterized integers:
   File bad-underconstrained-ctc.asl, line 3, characters 12 to 13:
     return x[(N as integer {N - 1})];
               ^
-  ASL Dynamic error: Mismatch type:
-    value 4 does not belong to type integer {(N - 1)}.
+  ASL Dynamic error (DE_TAF):
+    Value 4 does not satisfy the asserted type integer {(N - 1)}.
   [1]
   $ aslref bad-underconstrained-return.asl
   File bad-underconstrained-return.asl, line 3, characters 2 to 15:
@@ -300,14 +301,14 @@ Parameterized integers:
   File setter_without_getter.asl, line 6, characters 0 to 3:
   end;
   ^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
 
   $ aslref getter_without_setter.asl
   File getter_without_setter.asl, line 6, characters 0 to 3:
   end;
   ^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
 
   $ aslref tuple_items.asl
@@ -316,7 +317,7 @@ Parameterized integers:
   File duplicated-otherwise.asl, line 7, characters 8 to 12:
           when 0.0 => println "2.0";
           ^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref duplicate_expr_record.asl
   File duplicate_expr_record.asl, line 5, characters 12 to 27:
@@ -424,7 +425,7 @@ Required tests:
   File asl0-patterns.asl, line 7, characters 25 to 29:
       if x[0+:4] IN '10x1' then // invalid
                            ^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref -0 unreachable-v0.asl
   $ aslref assign1.asl
@@ -437,7 +438,7 @@ Required tests:
   File concat-empty.asl, line 3, characters 45 to 46:
     let empty_concatenation_should_not_parse = [];
                                                ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref concat01.asl
   $ aslref concat02.asl
@@ -566,7 +567,7 @@ Required tests:
   File empty-function.asl, line 3, characters 0 to 3:
   end;
   ^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
 
   $ aslref --no-type-check throw-local-env.asl
@@ -663,7 +664,7 @@ Getters/setters
   File pattern-masks-no-braces.asl, line 4, characters 19 to 24:
     assert ('111' IN '1xx') == TRUE;
                      ^^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
 
 ASLRef Field getter extension
@@ -706,7 +707,7 @@ Left-hand sides
   File lhs-tuple-fields-same-field.asl, line 8, characters 2 to 4:
     bv.(fld, -, fld) = ('11', TRUE, '11');
     ^^
-  ASL Grammar error: multiple writes to "bv.fld".
+  ASL Type error (TE_IAD): multiple writes to "bv.fld".
   [1]
   $ aslref lhs-tuple-same-var.asl
   $ aslref lhs-expressivity.asl
@@ -724,7 +725,7 @@ Outdated syntax
   File noreturn_function.asl, line 2, characters 26 to 28:
   noreturn func returning() => integer
                             ^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
 
 Bounds checks
@@ -820,4 +821,11 @@ Static errors:
                ^^^^^^^^^^^^^^^^^^^^
   ASL Static error (TE_SEF):
     FloorLog2 (primitive) expected an argument greater than 0
+  [1]
+  $ aslref tuple-arity-mismatch.asl
+  File tuple-arity-mismatch.asl, line 3, characters 2 to 25:
+    let (x, y) = (1, 2, 3);
+    ^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_UT): Tuple arity mismatch:
+    expected 2 element(s); provided 3.
   [1]
