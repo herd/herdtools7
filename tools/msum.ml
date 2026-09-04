@@ -26,6 +26,7 @@ let hexa = ref false
 let int32 = ref true
 let nargs = ref 64
 let faulttype = ref true
+let datafault = ref true
 
 let options =
   let open CheckName in
@@ -42,6 +43,7 @@ let options =
      (sprintf "<int>  merge width, when parallel sum enabled %i" !nargs)) ;
     parse_hexa hexa; parse_int32 int32;
     parse_faulttype faulttype;
+    parse_datafault datafault;
  ]
 
 let prog =
@@ -71,6 +73,7 @@ let verbose = !verbose
 let hexa = !hexa
 let int32 = !int32
 let faulttype = !faulttype
+let datafault = !datafault
 
 module Verbose = struct let verbose = verbose end
 
@@ -128,6 +131,7 @@ module LL =
       let int32 = int32
       let acceptBig = false
       let faulttype = faulttype
+      let datafault = datafault
     end)
 
 module D =

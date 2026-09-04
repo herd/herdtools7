@@ -25,6 +25,9 @@ val parse_nonames : StringSet.t ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_hexa : bool ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_int32 : bool ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_faulttype : bool ref -> Arg.key * Arg.spec * Arg.doc
+val datafault_key : string
+val parse_datafault : bool ref -> Arg.key * Arg.spec * Arg.doc
+
 module Make :
   functor
    (I:sig

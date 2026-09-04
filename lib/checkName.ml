@@ -55,7 +55,14 @@ let parse_int32 int32 =
 let parse_faulttype ft =
    ("-faulttype", Arg.Bool (fun b -> ft := b),
     Printf.sprintf
-      "<bool> consider fault types, default %b" !ft);
+      "<bool> consider fault types in comparisons, default %b" !ft)
+
+let datafault_key = "-mmu-faults-as-data"
+
+let parse_datafault ft =
+   (datafault_key, Arg.Bool (fun b -> ft := b),
+    Printf.sprintf
+      "<bool> all non-specific MMU faults are from data (i.e. are implicitly prefixed with \"D-\"), default %b" !ft)
 
 module
   Make

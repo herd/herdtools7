@@ -26,6 +26,7 @@ module type Config = sig
   val int32 : bool
   val acceptBig : bool
   val faulttype : bool
+  val datafault : bool
 end
 
 module Make(O:Config) = struct
@@ -109,6 +110,11 @@ let norm_loc s = Constant.old2new s
 let to_proc s = try int_of_string s with _ -> assert false
 
 let nstates_limit = 1024
+
+let norm_fault =
+  if O.datafault then
+    fun s -> if String.starts_with ~prefix:"MMU:" s then "D-" ^ s else s
+  else Misc.identity
 }
 
 let digit = [ '0'-'9' ]
@@ -262,7 +268,11 @@ and pline bds fs abs = parse
      let loc = Misc.map_opt Constant.old2new loc in
      let ftype =
        if O.faulttype then
-         match ftype with Some "kvm" -> None | _ -> ftype
+         Option.bind
+           ftype
+           (function
+             | "kvm" -> None
+             | f -> Some (norm_fault f))
        else None in
      let f = (to_proc proc,lbl),loc,ftype in
      let f = HashedFault.as_hashed f in
@@ -378,8 +388,9 @@ and sstate = parse
 
 and slines k = parse
 | ((num) blank* (":>"|"*>"))?
-    { let bds,fs,abs = pline [] [] [] lexbuf in
-      let st = LS.as_st_concrete bds fs abs in
+    { let bds,fs,_ = pline [] [] [] lexbuf in
+      (* No absent faults in simple states *)
+      let st = LS.as_st_concrete bds fs [] in
       slines (st::k) lexbuf }
 |  ("Loop" blank+ )?
    ((validation ([^'\r''\n']*))

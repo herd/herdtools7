@@ -26,6 +26,7 @@ let inverse = ref false
 let hexa = ref false
 let int32 = ref true
 let faulttype = ref true
+let datafault = ref true
 
 let options =
   let open CheckName in
@@ -41,6 +42,7 @@ let options =
     Arg.String (fun s -> conds := !conds @ [s]),
    "<name> specify condition to apply to outcomes, can be repeated") ;
   parse_faulttype faulttype;
+  parse_datafault datafault;
   ]
 
 let prog =
@@ -70,6 +72,7 @@ let log = match !logs with
     exit 2
 let inverse = !inverse
 let faulttype = !faulttype
+let datafault = !datafault
 
 module Verbose = struct let verbose = verbose end
 
@@ -97,6 +100,7 @@ module LL =
       let int32 = int32
       let acceptBig = true
       let faulttype = faulttype
+      let datafault = datafault
     end)
 
 module D =
