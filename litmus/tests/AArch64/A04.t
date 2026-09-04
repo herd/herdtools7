@@ -17,9 +17,9 @@ stable
   Histogram (1 states)
   4000000*>0:X0=0;
   Ok
-  
   Witnesses
   Positive: 4000000, Negative: 0
   Condition exists (0:X0=0) is validated
   Hash=d64e911ddfaa8df8f0c4d17557b7562d
   Observation A4 Always 4000000 0
+
