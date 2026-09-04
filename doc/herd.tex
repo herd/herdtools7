@@ -2095,6 +2095,16 @@ by setting the shell environment variable \texttt{HERDLIB};
 and then in herd installation directory, which is defined
 while compiling~\herd.
 
+
+\subsection{\label{herd:exitstatus}Exit Status}
+\herd{} exits with different status depending on the errors it encounters while running:
+\begin{description}
+\item[{\tt 0}] All test executions were successful.
+\item[{\tt 1}] A test execution encountered an unexpected internal error (bug).
+\item[{\tt 2}] A test execution encountered a fatal or a user error.
+\item[{\tt 154}] A test execution was interrupted because of a timeout.
+\end{description}
+
 %\section{Extensions to Herd}
 %
 %\begin{quote}\it
