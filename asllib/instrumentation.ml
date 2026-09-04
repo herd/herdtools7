@@ -323,6 +323,7 @@ module TypingRule = struct
     | Domain
     | SubtypeSatisfaction
     | TypeSatisfaction
+    | CheckCanBeInitialisedWith
     | TypeClash
     | LowestCommonAncestor
     | ApplyUnopType
@@ -505,6 +506,7 @@ module TypingRule = struct
     | Structure -> "Structure"
     | SubtypeSatisfaction -> "SubtypeSatisfaction"
     | TypeSatisfaction -> "TypeSatisfaction"
+    | CheckCanBeInitialisedWith -> "CheckCanBeInitialisedWith"
     | TypeClash -> "TypeClash"
     | ApplyUnopType -> "ApplyUnopType"
     | ApplyBinopTypes -> "ApplyBinopTypes"
