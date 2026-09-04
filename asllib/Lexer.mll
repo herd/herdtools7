@@ -453,9 +453,9 @@ and token = parse
     | '<'                      { LT                               }
     | ">>"                     { SHR                              }
     | "&&"                     { BAND                             }
-    | "-->"                    {
+    | "-->" as symbol          {
         fatal lexbuf
-          (UnknownSymbol { symbol = "-->"; alternative = Some "==>" })
+          (UnknownSymbol { symbol; alternative = Some "==>" })
       }
     | "==>"                    { IMPL                             }
     | "<<"                     { SHL                              }
@@ -467,9 +467,9 @@ and token = parse
     | '{'                      { LBRACE                           }
     | "!="                     { NE                              }
     | '-'                      { MINUS                            }
-    | "<->"                    {
+    | "<->" as symbol          {
         fatal lexbuf
-          (UnknownSymbol { symbol = "<->"; alternative = Some "<=>" })
+          (UnknownSymbol { symbol; alternative = Some "<=>" })
       }
     | "<=>"                    { BEQ                              }
     | '['                      { LBRACKET                         }

@@ -580,7 +580,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     if Types.type_satisfies env t1 t2 then ()
     else
       fatal_from ~loc
-        (Error.TypeSatisfactionFailure { expected = t2; provided = t1 })
+        (Error.TypeSatisfactionFailure { expected = t2; actual = t1 })
 
   (* CheckStructureBoolean *)
 
@@ -1613,7 +1613,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
              {
                name;
                expected = List.length func_sig.args;
-               provided = List.length args;
+               actual = List.length args;
              }
     in
     (* Check that call parameters are statically evaluable and type-satisfy the
@@ -1734,7 +1734,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
              {
                name;
                expected = List.length callee.args;
-               provided = List.length args1;
+               actual = List.length args1;
              }
     in
     let eqs2 =
@@ -2759,7 +2759,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       () |: TypingRule.CheckCanBeInitialisedWith
     else
       fatal_from ~loc
-        (Error.TypeSatisfactionFailure { expected = s; provided = t })
+        (Error.TypeSatisfactionFailure { expected = s; actual = t })
   (* End *)
 
   (* Begin ShouldRememberImmutableExpression *)

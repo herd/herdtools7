@@ -42,7 +42,13 @@ type error_desc =
       found_call_type : subprogram_type;
     }
   | BadArity of error_handling_time * identifier * int * int
-  | BadCallArity of { name : identifier; expected : int; provided : int }
+      (** [BadArity (time, name, expected, provided)] is raised when there is an
+          arity mismatch detected during evaluation when it should have been
+          detected at type-checking: a subprogram or primitive receives the
+          wrong number of arguments, a tuple assignment receives the wrong
+          number of values from a subprogram call, or an entry point returns the
+          wrong number of values. *)
+  | BadCallArity of { name : identifier; expected : int; actual : int }
   | BadTupleArity of { expected : int; actual : int }
   | BadParameterArity of error_handling_time * version * identifier * int * int
   | UnsupportedBinop of error_handling_time * binop * literal * literal
@@ -51,9 +57,9 @@ type error_desc =
   | UnsupportedTy of error_handling_time * ty
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
-  | ATCFailure of error_handling_time * string * type_desc
+  | ATCExecutionFailure of error_handling_time * string * ty
   | ConflictingTypes of type_desc list * ty
-  | TypeSatisfactionFailure of { expected : ty; provided : ty }
+  | TypeSatisfactionFailure of { expected : ty; actual : ty }
   | AssertionFailed of error_handling_time * expr
   | CannotParse of string option
   | BadBinopPriority of string
@@ -254,8 +260,7 @@ module ErrorCode = struct
     | AllDiscardLocalDeclaration | NonFunctionBuiltinDeclaration ->
         Some (Build BD)
     | UnknownSymbol _ -> Some (Build LE)
-    | CannotParse _ -> Some (Build PE)
-    | ObsoleteSyntax _ -> Some (Build PE)
+    | CannotParse _ | ObsoleteSyntax _ | MultipleWrites _ -> Some (Build PE)
     | BadField _ | MissingField _ -> Some (Typing BF)
     | BadTupleIndex _ -> Some (Typing BTI)
     | BadPattern _ | BadTypesForBinop _
@@ -285,7 +290,7 @@ module ErrorCode = struct
         Some (Dynamic DAF)
     | ImpureExpression _ | MismatchedPurity _ -> Some (Typing SEV)
     | AssignToImmutable _ -> Some (Typing AIM)
-    | AlreadyDeclaredIdentifier _ | MultipleWrites _ -> Some (Typing IAD)
+    | AlreadyDeclaredIdentifier _ -> Some (Typing IAD)
     | BadReturnStmt _ | BadParameterDecl _ | NonReturningFunction _
     | NoreturnViolation _ ->
         Some (Typing BSPD)
@@ -293,7 +298,7 @@ module ErrorCode = struct
     | OverlappingSlices (_, Dynamic) -> Some (Dynamic OSA)
     | BadLDI _ | BadRecursiveDecls _ -> Some (Typing BD)
     | BadATC _ -> Some (Typing TAF)
-    | ATCFailure (Dynamic, _, _) -> Some (Dynamic TAF)
+    | ATCExecutionFailure (Dynamic, _, _) -> Some (Dynamic TAF)
     | BaseValueEmptyType _ | BaseValueNonSymbolic _ -> Some (Typing NBV)
     | ArbitraryEmptyType _ -> Some (Dynamic AET)
     | UnreachableReached Dynamic -> Some (Dynamic UNR)
@@ -310,7 +315,7 @@ module ErrorCode = struct
     | LoopLimitReached Static
     | NegativeArrayLength (Static, _, _)
     | AssertionFailed (Static, _)
-    | ATCFailure (Static, _, _)
+    | ATCExecutionFailure (Static, _, _)
     | BadPrimitiveArgument (Static, _, _) ->
         Some (Typing SEF)
     | NoCommonAncestor _ (* LCA failures *) -> Some (Typing LCA)
@@ -497,10 +502,11 @@ module PPrint = struct
           "Mismatch type:@ value %s@ does not subtype any of those types:@ %a" v
           (pp_comma_list pp_type_desc)
           li
-    | ATCFailure (t, v, ty) ->
+    | ATCExecutionFailure (t, v, ty) ->
         pp_err
           (ErrorKind.of_error_handling_time t)
-          "Value %s does not satisfy the asserted type %a." v pp_type_desc ty
+          "Value %s@ does@ not@ satisfy@ the@ asserted@ type@ @[%a@]." v pp_ty
+          ty
     | BadField (s, ty) ->
         pp_err Typing "There is no field '%s'@ on type %a." s pp_ty ty
     | MissingField (fields, ty) ->
@@ -545,17 +551,17 @@ module PPrint = struct
           s
           (call_type_description expected_call_type)
           (call_type_description found_call_type)
-    | BadArity (t, name, expected, provided) ->
+    | BadArity (t, name, expected, actual) ->
         pp_err
           (ErrorKind.of_error_handling_time t)
           "Arity error while calling '%s':@ %d arguments expected and %d \
            provided."
-          name expected provided
-    | BadCallArity { name; expected; provided } ->
+          name expected actual
+    | BadCallArity { name; expected; actual } ->
         pp_err Typing
           "Call to %S has incorrect argument arity:@ expected %d argument(s); \
            provided %d."
-          name expected provided
+          name expected actual
     | BadTupleArity { expected; actual } ->
         pp_err Typing
           "Tuple arity mismatch:@ expected %d element(s); provided %d." expected
@@ -581,9 +587,9 @@ module PPrint = struct
         pp_err Typing "%a does@ not@ subtype@ any@ of:@ %a." pp_ty provided
           (pp_comma_list pp_type_desc)
           expected
-    | TypeSatisfactionFailure { expected; provided } ->
+    | TypeSatisfactionFailure { expected; actual } ->
         pp_err Typing "a subtype of@ %a@ was expected,@ provided %a." pp_ty
-          expected pp_ty provided
+          expected pp_ty actual
     | AssertionFailed (t, e) ->
         pp_err
           (ErrorKind.of_error_handling_time t)
@@ -598,7 +604,7 @@ module PPrint = struct
           "A local declaration must declare at least one name."
     | NonFunctionBuiltinDeclaration ->
         pp_err Parse "Only subprogram declarations may be marked as builtins."
-    | UnknownSymbol { symbol; alternative } -> (
+    | UnknownSymbol { symbol; alternative } ->
         let codes = List.map Char.code (List.of_seq (String.to_seq symbol)) in
         let not_printable code = code < 33 || code > 126 in
         if List.exists not_printable codes then
@@ -606,11 +612,10 @@ module PPrint = struct
             (pp_comma_list pp_print_int)
             codes
         else
-          match alternative with
-          | None -> pp_err Lexical "Unknown symbol."
-          | Some alternative ->
-              pp_err Lexical "Unknown symbol %S.@ Did you mean %S?" symbol
-                alternative)
+          let pp_alternative fmt alt = fprintf fmt "@ Did you mean %S?" alt in
+          pp_err Lexical "Unknown symbol %S.%a" symbol
+            (pp_print_option pp_alternative)
+            alternative
     | NoCallCandidate (name, types) ->
         pp_err Typing
           "No subprogram declaration matches the invocation:@ %s(%a)." name
@@ -762,7 +767,7 @@ module PPrint = struct
           (ErrorKind.of_error_handling_time t)
           "array@ length@ expression@ %a@ has@ negative@ length:@ %i." pp_expr
           e_length length
-    | MultipleWrites id -> pp_err Typing "multiple@ writes@ to@ %S." id
+    | MultipleWrites id -> pp_err Parse "multiple@ writes@ to@ %S." id
     | MultipleImplementations (impl1, impl2) ->
         pp_err Typing
           "multiple@ overlapping@ `implementation`@ functions@ for@ %s:@ %a"
@@ -869,7 +874,7 @@ module CSV = struct
     | UnsupportedTy _ -> "UnsupportedTy"
     | InvalidExpr _ -> "InvalidExpr"
     | MismatchType _ -> "MismatchType"
-    | ATCFailure _ -> "ATCFailure"
+    | ATCExecutionFailure _ -> "ATCExecutionFailure"
     | ConflictingTypes _ -> "ConflictingTypes"
     | TypeSatisfactionFailure _ -> "TypeSatisfactionFailure"
     | AssertionFailed _ -> "AssertionFailed"
