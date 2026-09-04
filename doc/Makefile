@@ -247,10 +247,9 @@ clean::
 	/bin/rm -f version.tex
 
 #HTML
-HEVEABIN=/usr/local/bin
-HEVEA=$(HEVEABIN)/hevea
+HEVEA=hevea
 HEVEAOPTS=-fix -exec xxdate.exe -O
-HACHA=$(HEVEABIN)/hacha
+HACHA=hacha
 HACHAOPTS=-tocter
 
 dochtml: html/index.html
