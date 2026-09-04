@@ -189,8 +189,8 @@ Runtime checks:
   File runtime-type-sat1.asl, line 3, characters 23 to 24:
     let x: integer {1} = 2 as integer {1};
                          ^
-  ASL Dynamic error: Mismatch type:
-    value 2 does not belong to type integer {1}.
+  ASL Dynamic error (DE_TAF):
+    Value 2 does not satisfy the asserted type integer {1}.
   [1]
 
   $ cat >runtime-type-sat2.asl <<EOF
@@ -208,8 +208,8 @@ Runtime checks:
   File runtime-type-sat2.asl, line 2, characters 10 to 18:
     let x = Zeros{4} as bits(size);
             ^^^^^^^^
-  ASL Dynamic error: Mismatch type:
-    value 0x0 does not belong to type bits(size).
+  ASL Dynamic error (DE_TAF):
+    Value 0x0 does not satisfy the asserted type bits(size).
   [1]
 
   $ aslref under-constrained-used.asl
@@ -240,8 +240,8 @@ Parameterized integers:
   File bad-underconstrained-ctc.asl, line 3, characters 12 to 13:
     return x[(N as integer {N - 1})];
               ^
-  ASL Dynamic error: Mismatch type:
-    value 4 does not belong to type integer {(N - 1)}.
+  ASL Dynamic error (DE_TAF):
+    Value 4 does not satisfy the asserted type integer {(N - 1)}.
   [1]
   $ aslref bad-underconstrained-return.asl
   File bad-underconstrained-return.asl, line 3, characters 2 to 15:

@@ -49,6 +49,7 @@ type error_desc =
   | UnsupportedTy of error_handling_time * ty
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
+  | ATCFailure of error_handling_time * string * type_desc
   | ConflictingTypes of type_desc list * ty
   | TypeSatisfactionFailure of { expected : ty; provided : ty }
   | AssertionFailed of error_handling_time * expr
@@ -289,6 +290,7 @@ module ErrorCode = struct
     | OverlappingSlices (_, Dynamic) -> Some (Dynamic OSA)
     | BadLDI _ | BadRecursiveDecls _ -> Some (Typing BD)
     | BadATC _ -> Some (Typing TAF)
+    | ATCFailure (Dynamic, _, _) -> Some (Dynamic TAF)
     | BaseValueEmptyType _ | BaseValueNonSymbolic _ -> Some (Typing NBV)
     | ArbitraryEmptyType _ -> Some (Dynamic AET)
     | UnreachableReached Dynamic -> Some (Dynamic UNR)
@@ -313,8 +315,8 @@ module ErrorCode = struct
     | UnsupportedExpr _ | UnsupportedTy _
     (* For static interpretation, parameters, and collections *) ->
         None
-    | MismatchType _
-    (* dynamic ATC but also mismatched integers for loop limits *) ->
+    | MismatchType _ (* mismatched integers for loop limits *)
+    | ATCFailure (Static, _, _) ->
         None
     | MultipleWrites _
     (* For desugaring, but uses `check_no_duplicates` which is always TE_IAD? *)
@@ -498,6 +500,10 @@ module PPrint = struct
           "Mismatch type:@ value %s@ does not subtype any of those types:@ %a" v
           (pp_comma_list pp_type_desc)
           li
+    | ATCFailure (t, v, ty) ->
+        pp_err
+          (ErrorKind.of_error_handling_time t)
+          "Value %s does not satisfy the asserted type %a." v pp_type_desc ty
     | BadField (s, ty) ->
         pp_err Typing "There is no field '%s'@ on type %a." s pp_ty ty
     | MissingField (fields, ty) ->
@@ -855,6 +861,7 @@ module CSV = struct
     | UnsupportedTy _ -> "UnsupportedTy"
     | InvalidExpr _ -> "InvalidExpr"
     | MismatchType _ -> "MismatchType"
+    | ATCFailure _ -> "ATCFailure"
     | ConflictingTypes _ -> "ConflictingTypes"
     | TypeSatisfactionFailure _ -> "TypeSatisfactionFailure"
     | AssertionFailed _ -> "AssertionFailed"
