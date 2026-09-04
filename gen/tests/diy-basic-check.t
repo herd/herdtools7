@@ -15,6 +15,113 @@ A test for no metadata, `-metadata false`
    L00: LDR W4,[X3] ;
   
   exists (fault(P0:L00,x))
+A diy7 test for repeated nested predicates
+  $ diy7 -arch AArch64 -relax '[@before(@before(Po)) PodRW]' -unfold-only 2>&1 | grep -v '^$'
+  ***relax***
+  [@before(PosWR),PodRW] [@before(PosRR),PodRW] [@before(PodWR),PodRW] [@before(PodRR),PodRW]
+  ***safe***
+  ***reject***
+A diy7 test for conflicting nested predicates
+  $ diy7 -arch AArch64 -relax '[@before(@after(Po)) PodRW]' -unfold-only 2>&1
+  diy7: before and after predicates cannot apply to the same edge
+  [2]
+A diy7 predicate merge test for before/after boundary predicates
+  $ diy7 -arch AArch64 -cycleonly true -size 4 -relax '[@before(Po) PodRW Rfe @after(Po)]' -safe Po 2>&1 | grep -v '^# Version' | grep -v '^Relaxations tested:'
+  # diy7 -arch AArch64 -cycleonly true -size 4 -relax [@before(Po) PodRW Rfe @after(Po)] -safe Po
+  Generator produced 2 tests
+  LB000: PosRR PodRW Rfe PosRR PodRW Rfe
+  LB001: PodRR PodRW Rfe PodRR PodRW Rfe
+A diy7 predicate merge test for repeated after predicates
+  $ diy7 -arch AArch64 -cycleonly true -size 4 -relax '[PodRW Rfe @after(PodRW) @after(Rfe)]' 2>&1 | grep -v '^# Version' | grep -v '^Relaxations tested:'
+  # diy7 -arch AArch64 -cycleonly true -size 4 -relax [PodRW Rfe @after(PodRW) @after(Rfe)]
+  Generator produced 3 tests
+  LB000: PodRW Rfe PodRW Rfe
+  3.LB000: PodRW Rfe PodRW Rfe PodRW Rfe
+  4.LB000: PodRW Rfe PodRW Rfe PodRW Rfe PodRW Rfe
+A diy7 predicate merge test for after on composite relaxations
+  $ diy7 -arch AArch64 -cycleonly true -size 4 -relax '[PodRW Rfe @after([PodRW Rfe])]' 2>&1 | grep -v '^# Version' | grep -v '^Relaxations tested:'
+  # diy7 -arch AArch64 -cycleonly true -size 4 -relax [PodRW Rfe @after([PodRW Rfe])]
+  Generator produced 3 tests
+  LB000: PodRW Rfe PodRW Rfe
+  3.LB000: PodRW Rfe PodRW Rfe PodRW Rfe
+  4.LB000: PodRW Rfe PodRW Rfe PodRW Rfe PodRW Rfe
+A diy7 predicate merge test for before on composite relaxations
+  $ diy7 -arch AArch64 -cycleonly true -size 4 -relax '[@before([PodRW Rfe]) PodRW Rfe]' 2>&1 | grep -v '^# Version' | grep -v '^Relaxations tested:'
+  # diy7 -arch AArch64 -cycleonly true -size 4 -relax [@before([PodRW Rfe]) PodRW Rfe]
+  Generator produced 3 tests
+  LB000: PodRW Rfe PodRW Rfe
+  3.LB000: PodRW Rfe PodRW Rfe PodRW Rfe
+  4.LB000: PodRW Rfe PodRW Rfe PodRW Rfe PodRW Rfe
+A diy7 with predicate unfolds composite arguments
+  $ diy7 -arch AArch64 -relax '[PodRW Rfe @with(PodRW Rfe)]' -unfold-only 2>&1 | grep -v '^$'
+  ***relax***
+  [PodRW,Rfe,@with(PodRW),@with(Rfe)]
+  ***safe***
+  ***reject***
+A diy7 with predicate accepts identical anchored boundaries
+  $ diy7 -arch AArch64 -filter-check '[PodRW Rfe @with(PodRW Rfe)]' '[@with(PodRW Rfe) PodRW Rfe]' 2>&1
+  Sequence `[PodRW,Rfe,@with(PodRW),@with(Rfe)]` `[@with(PodRW),@with(Rfe),PodRW,Rfe]` passes the internal filter in mode `default`
+A diy7 with predicate rejects an unmatched boundary
+  $ diy7 -arch AArch64 -filter-check '[PodRW Rfe @with(PodRW Rfe)]' '[PodRW Rfe]' 2>&1
+  Sequence `[PodRW,Rfe,@with(PodRW),@with(Rfe)]` `[PodRW,Rfe]` is prohibited in the internal filter in mode `default`
+A diy7 with predicate then checks remaining after predicates
+  $ diy7 -arch AArch64 -filter-check '[PodRW @after(Rfe) @with(PodRW)]' '[@with(PodRW) Rfe]' 2>&1
+  Sequence `[PodRW,@after(Rfe),@with(PodRW)]` `[@with(PodRW),Rfe]` passes the internal filter in mode `default`
+A diy7 with predicate rejects incompatible remaining after predicates
+  $ diy7 -arch AArch64 -filter-check '[PodRW @after(PodRW) @with(PodRW)]' '[@with(PodRW) Rfe]' 2>&1
+  Sequence `[PodRW,@after(PodRW),@with(PodRW)]` `[@with(PodRW),Rfe]` is prohibited in the internal filter in mode `default`
+A diy7 filter check applies cached concrete boundaries around state and with predicates
+  $ diy7 -arch AArch64 -filter-check '[PodRW @with(PodRW) @state(S) @with(Rfe)]' '[@with(PodRW) @state(S) @with(Rfe) Rfe]' 2>&1
+  Sequence `[PodRW,@with(PodRW),@state(S),@with(Rfe)]` `[@with(PodRW),@state(S),@with(Rfe),Rfe]` is prohibited in the internal filter in mode `default`
+A diy7 with predicate materialises one copy of the matched sequence
+  $ diy7 -arch AArch64 -cycleonly true -size 2 -exact -relax '[PodRW Rfe @with(PodRW Rfe)]' -safe '[@with(PodRW Rfe) PodRW Rfe]' 2>&1 | grep -v '^# Version' | grep -v '^Relaxations tested:'
+  # diy7 -arch AArch64 -cycleonly true -size 2 -exact -relax [PodRW Rfe @with(PodRW Rfe)] -safe [@with(PodRW Rfe) PodRW Rfe]
+  Generator produced 1 tests
+  3.LB000: PodRW Rfe PodRW Rfe PodRW Rfe
+A diy7 state predicate unfold test preserves state tags
+  $ diy7 -arch AArch64 -relax '[@state(ImpTagObs)|@state(ExpObs) PodWW L]' -unfold-only 2>&1 | grep -v '^$'
+  ***relax***
+  [@state(ExpObs),PodWW,L] [@state(ImpTagObs),PodWW,L]
+  ***safe***
+  ***reject***
+A diy7 state predicate filter check accepts matching states
+  $ diy7 -arch AArch64 -filter-check '[PodRW Rfe @state(ImpTagObs)]' '[@state(ImpTagObs) PodRW Rfe]' 2>&1
+  Sequence `[PodRW,Rfe,@state(ImpTagObs)]` `[@state(ImpTagObs),PodRW,Rfe]` passes the internal filter in mode `default`
+A diy7 state predicate filter check rejects plain neighbours
+  $ diy7 -arch AArch64 -filter-check '[PodRW Rfe @state(ImpTagObs)]' '[PodRW Rfe]' 2>&1
+  Sequence `[PodRW,Rfe,@state(ImpTagObs)]` `[PodRW,Rfe]` is prohibited in the internal filter in mode `default`
+A diy7 state predicate filter check rejects different states
+  $ diy7 -arch AArch64 -filter-check '[PodRW Rfe @state(ImpTagObs)]' '[@state(ExpObs) PodRW Rfe]' 2>&1
+  Sequence `[PodRW,Rfe,@state(ImpTagObs)]` `[@state(ExpObs),PodRW,Rfe]` is prohibited in the internal filter in mode `default`
+A diy7 state predicate can be mixed with an after predicate
+  $ diy7 -arch AArch64 -filter-check '[PodRW Rfe @state(A) @after(PodRW)]' '[@state(A) PodRW Rfe]' 2>&1
+  Sequence `[PodRW,Rfe,@state(A),@after(PodRW)]` `[@state(A),PodRW,Rfe]` passes the internal filter in mode `default`
+A diy7 state predicate can be mixed with a before predicate
+  $ diy7 -arch AArch64 -filter-check '[PodRW Rfe @state(A)]' '[@before(Rfe) @state(A) PodRW Rfe]' 2>&1
+  Sequence `[PodRW,Rfe,@state(A)]` `[@before(Rfe),@state(A),PodRW,Rfe]` passes the internal filter in mode `default`
+A diy7 state predicate cycle test accepts matching state boundaries
+  $ diy7 -arch AArch64 -cycleonly true -size 4 -relax '[@state(A) PodRW Rfe @state(A)]' 2>&1 | grep -v '^# Version' | grep -v '^Relaxations tested:'
+  # diy7 -arch AArch64 -cycleonly true -size 4 -relax [@state(A) PodRW Rfe @state(A)]
+  Generator produced 3 tests
+  LB000: PodRW Rfe PodRW Rfe
+  3.LB000: PodRW Rfe PodRW Rfe PodRW Rfe
+  4.LB000: PodRW Rfe PodRW Rfe PodRW Rfe PodRW Rfe
+A diy7 state transition predicate command line is accepted
+  $ diy7 -arch AArch64 -cycleonly true -nprocs 2 -eprocs -safe "[@state(A) A @state(A)] [@state(A) PodRR Fre] [@state(L) L @state(L)] [@state(L) PodWR @state(A)] [ExpObs PodWW @state(L)]" 2>&1 | grep -v '^# Version' | grep -v '^Relaxations tested:'
+  # diy7 -arch AArch64 -cycleonly true -nprocs 2 -eprocs -safe [@state(A) A @state(A)] [@state(A) PodRR Fre] [@state(L) L @state(L)] [@state(L) PodWR @state(A)] [ExpObs PodWW @state(L)]
+  Generator produced 0 tests
+A diy7 bare state predicate reports an error
+  $ diy7 -arch AArch64 -relax '@state(ImpTagObs)' -unfold-only 2>&1
+  diy7: predicate state(ImpTagObs) cannot be used without a relaxation.
+  [2]
+A diy7 non-word state predicate reports an error
+  $ diy7 -arch AArch64 -relax '@state([ImpTagObs ExpObs])' -unfold-only 2>&1
+  diy7: predicate state expects exactly one word argument.
+  [2]
+A diy7 predicate reject cannot silently fall back to default relaxations
+  $ diy7 -arch AArch64 -safe '[@before([PodRW Rfe]) PodRW Rfe]' -reject '[@before([PodRW Rfe]) PodRW Rfe]' -size 2 -exact -stdout 2>&1
+  diy7: Fatal error: relaxations provided in safelist could not be used to generate cycles
+  [2]
 A VMSA test for a negated exists check, `-neg true`
   $ diyone7 -arch AArch64 -variant vmsa Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -neg true -info "User-define=User-define"
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0
@@ -44,7 +151,7 @@ A VMSA test for a negated exists check, `-neg true`
    DSB ISH             |                  ;
    STR X4,[X3]         |                  ;
   
-  ~exists ([x]=3 /\ 0:X1=2 /\ 1:X1=(oa:PA(x), af:0) /\ not (fault(P0:L01,x)) /\ not (fault(P1:L00,x)))
+  ~exists (0:X1=2 /\ 1:X1=(oa:PA(x), af:0) /\ not (fault(P0:L01,x)) /\ not (fault(P1:L00,x)))
 A VMSA test for observing locations, `-cond observe`
   $ diyone7 -arch AArch64 -variant vmsa Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -info "User-define=User-define" -cond observe
   AArch64 LB+popteptehd+amo.cas-tlbi-sync.ishppteoa.v1.af0
@@ -74,7 +181,7 @@ A VMSA test for observing locations, `-cond observe`
    DSB ISH             |                  ;
    STR X4,[X3]         |                  ;
   
-  locations [x; 0:X1; 1:X1; fault(P0:L01,x); fault(P1:L00,x);]
+  locations [0:X1; 1:X1; fault(P0:L01,x); fault(P1:L00,x);]
   forall (true)
 A VMSA test for a forall check, `-cond unicond`
   $ diyone7 -arch AArch64 -variant vmsa Amo.Cas TLBI-sync.ISHdWW PteV1 PteAF0 PteOA Rfe Pte PodRW PteHD Rfe -info "User-define=User-define" -cond unicond
@@ -127,7 +234,7 @@ A memtag generation test with `Variant` duplicated in metadata, because of (1) `
    STG X4,[X5]       |                  ;
    STG X6,[X3]       |                  ;
   
-  exists ([tag(y)]=:blue /\ 0:X0=x:green /\ 1:X0=0 /\ not (fault(P1:L00,y)))
+  exists (0:X0=x:green /\ 1:X0=0 /\ not (fault(P1:L00,y)))
 A memtag `LxSx` oneloc comparison test
   $ diyone7 -arch AArch64 -variant memtag -oneloc T PosWR LxSx Coi
   AArch64 CoWW+postp-rmw-coipt
@@ -139,15 +246,15 @@ A memtag `LxSx` oneloc comparison test
   {
    0:X0=x:red; 0:X1=x:green;
   }
-   P0                ;
-   STG X0,[X1]       ;
-   MOV W3,#1         ;
-   Loop00:           ;
-   L00: LDXR W2,[X1] ;
-   STXR W4,W3,[X1]   ;
-   CBNZ W4,Loop00    ;
+   P0                   ;
+   STG X0,[X1]          ;
+   MOV W3,#1            ;
+   Loop00:              ;
+   L00: LDXR W2,[X1]    ;
+   L01: STXR W4,W3,[X1] ;
+   CBNZ W4,Loop00       ;
   
-  exists (0:X2=0 /\ not (fault(P0:L00,x)))
+  exists (0:X2=0 /\ not (fault(P0:L00,x)) /\ not (fault(P0:L01,x)))
 
   $ diyone7 -arch AArch64 -variant memtag,store-only -oneloc T PosWR LxSx Coi
   AArch64 CoWW+postp-rmw-coipt
@@ -186,7 +293,7 @@ A memtag `PosRW` oneloc comparison test
    MOV W3,#1        ;
    L00: STR W3,[X1] ;
   
-  exists (0:X2=1 /\ not (fault(P0:L00,x)) /\ not (fault(P0:L01,x)))
+  exists (not (fault(P0:L00,x)) /\ not (fault(P0:L01,x)))
 
   $ diyone7 -arch AArch64 -variant memtag,store-only -oneloc T PosWR PosRW Coi
   AArch64 CoWW+posRtp-pos-coipt
@@ -204,7 +311,7 @@ A memtag `PosRW` oneloc comparison test
    MOV W3,#1        ;
    L00: STR W3,[X1] ;
   
-  exists (0:X2=1 /\ not (fault(P0:L00,x)))
+  exists (not (fault(P0:L00,x)))
 
 An ifetch generation test
   $ diyone7 -arch AArch64 -variant ifetch CacheSyncStrongIsbdWRPI FreIP PodWR Fre
@@ -255,7 +362,7 @@ A base test with int64 arrays
    MOV X4,#1       |                ;
    STR X4,[X5]     |                ;
   
-  exists (x={1,0} /\ [y]=2 /\ 0:X2=0 /\ 1:X2=0)
+  exists ([y]=2 /\ 0:X2=0 /\ 1:X2=0)
 A C test for exists
   $ diyone7 -arch C PodWW Coe PodWR Fre
   Warning: optimised conditions are not supported by C arch
@@ -612,7 +719,7 @@ A valid cycle with annotations and a store edge
    STLR W0,[X1] |             ;
    LDR W3,[X2]  |             ;
   
-  exists ([x]=2 /\ 0:X3=0 /\ 1:X3=0)
+  exists (0:X3=0 /\ 1:X3=0)
 An invalid cycle with annotations and a store edge
   $ diyone7 -arch AArch64 A Store PodWR Fre PodWR Fre
   diyone7: Fatal error: Test SB+po+store-poap [Store PodWRAP Fre PodWR FrePA] failed:
@@ -638,7 +745,7 @@ A valid cycle with duplicate wraparound annotations plus insert and store edges
    ISB          |             ;
    LDAR W3,[X2] |             ;
   
-  exists ([x]=2 /\ 0:X3=0 /\ 1:X3=0)
+  exists (0:X3=0 /\ 1:X3=0)
 
 Alignment filter behaviour between local `Pos**` and internal communication in `diy7` in `default` mode
   $ diy7 -arch AArch64 -filter-check Rfi DpAddrdW

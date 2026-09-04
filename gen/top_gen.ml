@@ -426,25 +426,34 @@ let max_set = IntSet.max_elt
       else
         let vs =
           List.map
-            (Misc.filter_map (fun (v,obs) ->
+            (Misc.filter_map (fun (v,obs,_) ->
                if Array.length v > 0 then Some (v.(0),obs) else None ))
             vs in
         build_observers p i x vs in
 
     let cons_one x v fs =
-      let loc = A.Location.Location_global x in
-      if StringMap.mem x env_wide then
-        F.cons_vec loc v fs
-      else if Array.length v > 0 then
-        (* For MTE locations, we may have only a tag write and not an *)
-        (* Ord write. We therefore need a length check here. *)
-        F.cons_int (A.Location.Location_global x) v.(0) fs
-      else fs in
+      match v with
+      | None -> fs
+      | Some v ->
+          let loc = A.Location.Location_global x in
+          if StringMap.mem x env_wide then
+            F.cons_vec loc v fs
+          else if Array.length v > 0 then
+            (* For MTE locations, we may have only a tag write and not an *)
+            (* Ord write. We therefore need a length check here. *)
+            F.cons_int (A.Location.Location_global x) v.(0) fs
+          else fs in
 
     (* add the value `v` of `loc` into the accumulator `k` *)
     let add_look_loc loc v k =
-      if (not (StringSet.mem loc atoms) && O.optcond) then k
-      else cons_one loc v k in
+      match v with
+      | None -> k
+      | Some v ->
+          if (not (StringSet.mem loc atoms) && O.optcond) then k
+          else cons_one loc (Some v) k in
+
+    let last_write_event_adjacent_to_communication vs =
+      List.find_map (fun (v, _, check) -> if check then Some v else None) (List.rev vs) in
 
     (* - `p`, process number
        - `i`, initial value accumulator
@@ -463,20 +472,20 @@ let max_set = IntSet.max_elt
         - `x` is the location represented by a string
         - `vs` the final value of the location `x` *)
       let _p,i,cs,fs = List.fold_left
-        ( fun (p, i, cs, fs) (x, (vs : (C.Value.v array * IntSet.t) list list)) ->
+        ( fun (p, i, cs, fs) (x, (vs : (C.Value.v array * IntSet.t * bool) list list)) ->
         let vs = List.map ( List.map
-            ( fun (v, vset) -> (Array.map C.Value.to_int v, vset) )
+            ( fun (v, vset, check) -> Array.map C.Value.to_int v, vset, check )
           ) vs in
+        let vs_flat = List.flatten vs in
+        let v = last_write_event_adjacent_to_communication vs_flat in
         (* - `i`, new init value after this iteration,
            - `c`, new pseudo code to be added into `cs`,
            - `f`, new final value to be added into `fs` *)
         let i,c,f = match O.cond with
           | Observe ->
-            let vs = List.flatten vs in
-            begin match vs with
+            begin match vs_flat with
             | [] -> i,[],[]
             | _::_ ->
-              let v,_ = Misc.last vs in
               i,[],cons_one x v []
             end
           | Unicond -> assert false
@@ -488,8 +497,8 @@ let max_set = IntSet.max_elt
             | [] -> i,[],[]
             (* the common case with one write event *)
 
-            | [[(v,_)]] -> i,[],add_look_loc x v []
-            | [[(_,_);(v,_)]] ->
+            | [[_]] -> i,[],add_look_loc x v []
+            | [[_;_]] ->
               begin match O.do_observers with
               | Local -> i,[],add_look_loc x v []
               | Avoid|Accept|Three|Four|Infinity
@@ -499,8 +508,6 @@ let max_set = IntSet.max_elt
                 i,c,add_look_loc x v f
               end
             | _ ->
-              let vs_flat = List.flatten vs in
-              let v,_ = Misc.last vs_flat in
               begin match O.do_observers with
                 | Local -> i,[],add_look_loc x v []
                 | Three ->
