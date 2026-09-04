@@ -49,7 +49,7 @@
   end
 
    let run =
-     if Conf.variant Variant.S128 then
+     if Conf.variant Variant.Quad then
        let module CValue = Int128Value.Make(CBase.Instr) in
        let module Run = MakeRun(CValue) in
        Run.X.run

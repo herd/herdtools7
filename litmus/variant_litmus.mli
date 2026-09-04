@@ -17,7 +17,7 @@
 type t =
   | Self (* Self modifying code *)
   | FaultHandling of Fault.Handling.t
-  | S128 (* 128 bit signed ints*)
+  | Quad (* 128 bit signed ints*)
   | Mixed (* Ignored *)
   | Vmsa  (* Checked *)
   | ETS2 (* FEAT_ETS2 *)

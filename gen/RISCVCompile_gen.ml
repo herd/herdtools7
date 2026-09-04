@@ -53,10 +53,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       let open TypBase in
       let open MachSize in
       match Cfg.typ with
-      | Std (_,MachSize.Quad) -> AV.Double
+      | Std (_,MachSize.Double) -> AV.Double
       | Int |Std (_,(Word|Short|Byte)) -> AV.Word
       | Pteval
-      | Std (_,MachSize.S128) -> assert false
+      | Std (_,MachSize.Quad) -> assert false
 
     let bne r1 r2 lab =  AV.Bcc (AV.NE,r1,r2,lab)
     let cbz r lab = AV.Bcc (AV.EQ,r,zero,lab)
@@ -99,8 +99,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
       | MachSize.Byte -> AV.Byte
       | MachSize.Short -> AV.Half
       | MachSize.Word -> AV.Word
-      | MachSize.Quad -> AV.Double
-      | MachSize.S128 -> assert false
+      | MachSize.Double -> AV.Double
+      | MachSize.Quad -> assert false
 
     let ldr_mixed r1 r2 sz o = AV.Load (tr_sz sz,Signed,AV.Rlx,r1,o,r2)
     and str_mixed r1 r2 sz o = AV.Store (tr_sz sz,AV.Rlx,r1,o,r2)

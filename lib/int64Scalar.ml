@@ -29,7 +29,7 @@ let addk x k = match k with
   | 1 -> succ x
   | _ -> add x (of_int k)
 
-let machsize = MachSize.Quad
+let machsize = MachSize.Double
 
 let pp hexa v =
   Printf.sprintf (if hexa then "0x%Lx" else "%Li") v
@@ -46,13 +46,13 @@ let mask sz =
   | Byte -> fun v -> logand v 0xffL
   | Short -> fun v -> logand v 0xffffL
   | Word -> fun v ->  logand v 0xffffffffL
-  | Quad -> fun v -> v
-  | S128 -> fun v -> Warn.fatal "mask 64 bit value %s with s128 mask" (pp_unsigned true v)
+  | Double -> fun v -> v
+  | Quad -> fun v -> Warn.fatal "mask 64 bit value %s with quad mask" (pp_unsigned true v)
 
 let sxt sz v =
   let open MachSize in
   match sz with
-  | Quad -> v
+  | Double -> v
   | _ ->
      let v = mask sz v in
      let nb = nbits sz in
