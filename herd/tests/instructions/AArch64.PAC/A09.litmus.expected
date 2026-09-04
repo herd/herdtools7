@@ -1,7 +1,7 @@
 Test A09 Required
 States 2
-0:X1=42;  ~Fault(P0);
-0:X1=42;  ~Fault(P0); pacda(x,0x35)=x;
+0:X1=42; ~Fault(P0);
+0:X1=42; ~Fault(P0); pacda(x,0x35)=x;
 Ok
 Witnesses
 Positive: 2 Negative: 0

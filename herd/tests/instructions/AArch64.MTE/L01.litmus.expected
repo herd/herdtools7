@@ -1,8 +1,8 @@
 Test S+dmb.sytt+addrpt Allowed
 States 4
-1:X1=0; [tag(x)]=:blue;  ~Fault(P1);
+1:X1=0; [tag(x)]=:blue; ~Fault(P1);
 1:X1=0; [tag(x)]=:blue; Fault(P1,TagCheck);
-1:X1=0; [tag(x)]=:red;  ~Fault(P1);
+1:X1=0; [tag(x)]=:red; ~Fault(P1);
 1:X1=0; [tag(x)]=:red; Fault(P1,TagCheck);
 Ok
 Witnesses

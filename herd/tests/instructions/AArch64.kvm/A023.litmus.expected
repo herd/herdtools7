@@ -1,6 +1,6 @@
 Test A023 Forbidden
 States 3
-1:X2=0;  ~Fault(P1,x,MMU:Translation);
+1:X2=0; ~Fault(P1,x,MMU:Translation);
 1:X2=0; Fault(P1,x,MMU:Translation);
 1:X2=1; Fault(P1,x,MMU:Translation);
 Ok

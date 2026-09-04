@@ -1,6 +1,6 @@
 Test A017 Required
 States 2
-  ~Fault(P1:L0,x,MMU:Translation);
+ ~Fault(P1:L0,x,MMU:Translation);
  Fault(P1:L0,x,MMU:Translation);
 Ok
 Witnesses

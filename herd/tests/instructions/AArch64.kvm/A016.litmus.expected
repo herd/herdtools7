@@ -1,6 +1,6 @@
 Test A016 Allowed
 States 1
-  ~Fault(P0,UndefinedInstruction);
+ ~Fault(P0,UndefinedInstruction);
 No
 Witnesses
 Positive: 0 Negative: 1
