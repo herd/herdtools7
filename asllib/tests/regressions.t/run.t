@@ -822,3 +822,10 @@ Static errors:
   ASL Static error (TE_SEF):
     FloorLog2 (primitive) expected an argument greater than 0
   [1]
+  $ aslref tuple-arity-mismatch.asl
+  File tuple-arity-mismatch.asl, line 3, characters 2 to 25:
+    let (x, y) = (1, 2, 3);
+    ^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_UT): Tuple arity mismatch:
+    expected 2 element(s); provided 3.
+  [1]

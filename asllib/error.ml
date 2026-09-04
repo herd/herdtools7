@@ -42,6 +42,8 @@ type error_desc =
       found_call_type : subprogram_type;
     }
   | BadArity of error_handling_time * identifier * int * int
+  | BadCallArity of { name : identifier; expected : int; provided : int }
+  | BadTupleArity of { expected : int; actual : int }
   | BadParameterArity of error_handling_time * version * identifier * int * int
   | UnsupportedBinop of error_handling_time * binop * literal * literal
   | UnsupportedUnop of error_handling_time * unop * literal
@@ -272,10 +274,11 @@ module ErrorCode = struct
     | ExpectedNamedType _ | UnexpectedCollection | MismatchedBitvectorWidths _
     | CollectionBaseNotVariable _ ->
         Some (Typing UT)
-    | MismatchedCallType _
+    | MismatchedCallType _ | BadCallArity _
     | BadParameterArity (Static, _, _, _, _)
     | NoCallCandidate _ ->
         Some (Typing BC)
+    | BadTupleArity _ -> Some (Typing UT)
     | UnsupportedUnop (Dynamic, _, _) | UnsupportedBinop (Dynamic, _, _, _) ->
         Some (Dynamic BO)
     | AssertionFailed (Dynamic, _) | BadPrimitiveArgument (Dynamic, _, _) ->
@@ -312,7 +315,6 @@ module ErrorCode = struct
         Some (Typing SEF)
     | NoCommonAncestor _ (* LCA failures *) -> Some (Typing LCA)
     (********** TODO tidy up - does not cleanly correspond to a code **********)
-    | BadArity (Static, _, _, _) (* also used for tuple unpacking *) -> None
     | UnsupportedExpr _ | UnsupportedTy _
     (* For static interpretation, parameters, and collections *) ->
         None
@@ -322,7 +324,7 @@ module ErrorCode = struct
     | EmptyConstraints (* An internal invariant *) -> None
     | TypeInferenceNeeded
     | UndefinedIdentifier (Dynamic, _)
-    | BadArity (Dynamic, _, _, _)
+    | BadArity _
     | BadParameterArity (Dynamic, _, _, _, _)
     | InvalidExpr _ | UnexpectedSideEffect _ | UnrespectedParserInvariant
     | ParameterWithoutDecl _ | SetterWithoutCorrespondingGetter _
@@ -549,6 +551,15 @@ module PPrint = struct
           "Arity error while calling '%s':@ %d arguments expected and %d \
            provided."
           name expected provided
+    | BadCallArity { name; expected; provided } ->
+        pp_err Typing
+          "Call to %S has incorrect argument arity:@ expected %d argument(s); \
+           provided %d."
+          name expected provided
+    | BadTupleArity { expected; actual } ->
+        pp_err Typing
+          "Tuple arity mismatch:@ expected %d element(s); provided %d." expected
+          actual
     | BadParameterArity (t, version, name, expected, provided) -> (
         match (t, version) with
         | Static, V0 ->
@@ -849,6 +860,8 @@ module CSV = struct
     | UndefinedIdentifier _ -> "UndefinedIdentifier"
     | MismatchedCallType _ -> "MismatchedCallType"
     | BadArity _ -> "BadArity"
+    | BadCallArity _ -> "BadCallArity"
+    | BadTupleArity _ -> "BadTupleArity"
     | BadParameterArity _ -> "BadParameterArity"
     | UnsupportedBinop _ -> "UnsupportedBinop"
     | UnsupportedUnop _ -> "UnsupportedUnop"
