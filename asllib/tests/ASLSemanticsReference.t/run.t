@@ -281,6 +281,6 @@ ASL Semantics Tests:
   File SemanticsRule.EvalGlobals.bad1.asl, line 10, characters 0 to 12:
   var x = f();
   ^^^^^^^^^^^^
-  ASL Dynamic error: unexpected exception MyException thrown during the
+  ASL Dynamic error (DE_UE): unexpected exception MyException thrown during the
     evaluation of the initialisation of the global storage element "x".
   [1]
