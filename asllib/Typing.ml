@@ -206,6 +206,7 @@ module Property (C : ANNOTATE_CONFIG) = struct
   let assumption_failed () = raise TypingAssumptionFailed [@@inline]
   let ok () = () [@@inline]
   let check_true b fail () = if b then () else fail () [@@inline]
+  let check_all li f () = List.iter (fun x1 -> f x1 ()) li
   let check_all2 li1 li2 f () = List.iter2 (fun x1 x2 -> f x1 x2 ()) li1 li2
 end
 
@@ -1380,9 +1381,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | T_Collection _ ->
             assert (not decl);
             let+ () =
-              check_true
-                (List.for_all (fun (_, t) -> has_structure_bits env t) fields)
-              @@ fun () -> fatal_from ~loc Error.(UnsupportedTy (Static, ty))
+              check_all fields' @@ fun (_, ty) ->
+              check_structure_bits ~loc:ty env ty
             in
             (T_Collection fields' |> here, ses) |: TypingRule.TStructuredDecl
         | _ -> assert false
