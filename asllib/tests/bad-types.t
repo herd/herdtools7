@@ -125,6 +125,27 @@ Arbitrary of empty type
   ASL Dynamic error (DE_AET): ARBITRARY of empty type integer {1..0}.
   [1]
 
+Array with negative length
+
+  $ cat >bad-types9.asl <<EOF
+  > func arbitrary_array{N}() => integer {N}
+  > begin
+  >   let x = ARBITRARY : array[[N]] of integer;
+  >   return N;
+  > end;
+  > func main() => integer
+  > begin
+  >   return arbitrary_array{-1}();
+  > end;
+  > EOF
+
+  $ aslref bad-types9.asl
+  File bad-types9.asl, line 3, characters 22 to 43:
+    let x = ARBITRARY : array[[N]] of integer;
+                        ^^^^^^^^^^^^^^^^^^^^^
+  ASL Dynamic error (DE_AET): ARBITRARY of empty type array [[N]] of integer.
+  [1]
+
 Base value of empty type
 
   $ cat >bad-types8.asl <<EOF
