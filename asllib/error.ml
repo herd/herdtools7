@@ -31,6 +31,7 @@ type error_desc =
   | BadField of string * ty
   | MissingField of string list * ty
   | BadSlices of error_handling_time * slice list * int
+  | BadIndex of error_handling_time * int * int
   | BadTupleIndex of { index : int; length : int }
   | BadSlice of slice
   | EmptySlice
@@ -317,8 +318,10 @@ module ErrorCode = struct
     | NegativeArrayLength (Static, _, _)
     | AssertionFailed (Static, _)
     | ATCExecutionFailure (Static, _, _)
+    | BadIndex (Static, _, _)
     | BadPrimitiveArgument (Static, _, _) ->
         Some (Typing SEF)
+    | BadIndex (Dynamic, _, _) -> Some (Dynamic BI)
     | NoCommonAncestor _ (* LCA failures *) -> Some (Typing LCA)
     (********** TODO tidy up - does not cleanly correspond to a code **********)
     | UnsupportedExpr _ (* For static interpretation *) -> None
@@ -521,6 +524,10 @@ module PPrint = struct
           (ErrorKind.of_error_handling_time t)
           "Cannot extract from bitvector of length %d slice %a." length
           pp_slice_list slices
+    | BadIndex (t, index, length) ->
+        pp_err
+          (ErrorKind.of_error_handling_time t)
+          "Index %d is outside the valid range 0..%d." index (length - 1)
     | BadTupleIndex { index; length } ->
         pp_err Typing "Tuple index %d is outside the valid range 0..%d." index
           (length - 1)
@@ -859,6 +866,7 @@ module CSV = struct
     | BadPattern _ -> "BadPattern"
     | MissingField _ -> "MissingField"
     | BadSlices _ -> "BadSlices"
+    | BadIndex _ -> "BadIndex"
     | BadTupleIndex _ -> "BadTupleIndex"
     | BadSlice _ -> "BadSlice"
     | EmptySlice -> "EmptySlice"

@@ -129,8 +129,7 @@ module NativeBackend (C : Config) = struct
   let non_tuple_exception v = mismatch_type v [ T_Tuple [] ]
 
   let bad_index i n =
-    mismatch_type (v_of_int i)
-      [ integer_range' zero_expr (expr_of_int (n - 1)) ]
+    Error.fatal_unknown_pos (Error.BadIndex (C.error_handling_time, i, n))
 
   let doesnt_have_fields_exception v =
     mismatch_type v [ T_Record []; T_Exception []; T_Collection [] ]
