@@ -826,3 +826,8 @@ Static errors:
   ASL Type error (TE_UT): Tuple arity mismatch:
     expected 2 element(s); provided 3.
   [1]
+
+Implementation errors:
+  $ aslref --gnu-errors implementation-integer-overflow.asl
+  aslref: implementation-integer-overflow.asl:3:9: ASL Internal error: Integer 18446744073709551616 exceeds aslref implementation limits.
+  [1]

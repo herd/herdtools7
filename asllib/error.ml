@@ -54,8 +54,8 @@ type error_desc =
   | BadParameterArity of error_handling_time * version * identifier * int * int
   | UnsupportedBinop of error_handling_time * binop * literal * literal
   | UnsupportedUnop of error_handling_time * unop * literal
-  | UnsupportedExpr of error_handling_time * expr
   | StaticEvaluationFailure of expr
+  | ImplementationIntegerOverflow of Z.t
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
   | ATCExecutionFailure of error_handling_time * string * ty
@@ -325,8 +325,9 @@ module ErrorCode = struct
         Some (Typing SEF)
     | BadIndex (Dynamic, _, _) -> Some (Dynamic BI)
     | NoCommonAncestor _ (* LCA failures *) -> Some (Typing LCA)
-    (********** TODO tidy up - does not cleanly correspond to a code **********)
-    | UnsupportedExpr _ -> None
+    (********** Errors without specification codes **********)
+    (* Implementation limitations are not ASL errors. *)
+    | ImplementationIntegerOverflow _ -> None
     (********** Should not happen **********)
     (* e.g. skipped type-checking, ASL0, internal option or invariant *)
     | MismatchType _ (* Skipped type-checking or violated typing invariant *) ->
@@ -485,12 +486,11 @@ module PPrint = struct
           (ErrorKind.of_error_handling_time t)
           "Illegal application of operator %s for value@ %a."
           (unop_to_string op) pp_literal v
-    | UnsupportedExpr (t, e) ->
-        pp_err
-          (ErrorKind.of_error_handling_time t)
-          "Unsupported expression %a." pp_expr e
     | StaticEvaluationFailure e ->
         pp_err Typing "Static evaluation of expression %a failed." pp_expr e
+    | ImplementationIntegerOverflow z ->
+        pp_err Internal "Integer %a exceeds aslref implementation limits."
+          Z.pp_print z
     | InvalidExpr e -> pp_err Typing "invalid expression %a." pp_expr e
     | MismatchType (v, [ ty ]) ->
         pp_err Dynamic "Mismatch type:@ value %s does not belong to type %a." v
@@ -879,8 +879,8 @@ module CSV = struct
     | BadParameterArity _ -> "BadParameterArity"
     | UnsupportedBinop _ -> "UnsupportedBinop"
     | UnsupportedUnop _ -> "UnsupportedUnop"
-    | UnsupportedExpr _ -> "UnsupportedExpr"
     | StaticEvaluationFailure _ -> "StaticEvaluationFailure"
+    | ImplementationIntegerOverflow _ -> "ImplementationIntegerOverflow"
     | InvalidExpr _ -> "InvalidExpr"
     | MismatchType _ -> "MismatchType"
     | ATCExecutionFailure _ -> "ATCExecutionFailure"
