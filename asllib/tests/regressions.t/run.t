@@ -813,6 +813,12 @@ Static errors:
   ASL Static error (TE_SEF):
     FloorLog2 (primitive) expected an argument greater than 0
   [1]
+  $ aslref --no-exec static-evaluation-non-literal.asl
+  File static-evaluation-non-literal.asl, line 5, characters 13 to 24:
+  constant C = R { x = 1 };
+               ^^^^^^^^^^^
+  ASL Type error (TE_SEF): Static evaluation of expression R { x = 1 } failed.
+  [1]
   $ aslref tuple-arity-mismatch.asl
   File tuple-arity-mismatch.asl, line 3, characters 2 to 25:
     let (x, y) = (1, 2, 3);

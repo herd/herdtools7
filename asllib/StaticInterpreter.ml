@@ -67,7 +67,7 @@ let static_eval (senv : SEnv.env) (e : expr) : literal =
   | SI.Normal (Native.NV_Literal l, _env) ->
       l |: Instrumentation.TypingRule.StaticEval
   | SI.Normal _ | SI.Throwing _ | SI.Cutoff ->
-      Error.fatal_from e (UnsupportedExpr (Static, e))
+      Error.fatal_from e (StaticEvaluationFailure e)
 (* End *)
 
 let static_eval_to_int env e =

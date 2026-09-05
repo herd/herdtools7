@@ -55,6 +55,7 @@ type error_desc =
   | UnsupportedBinop of error_handling_time * binop * literal * literal
   | UnsupportedUnop of error_handling_time * unop * literal
   | UnsupportedExpr of error_handling_time * expr
+  | StaticEvaluationFailure of expr
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
   | ATCExecutionFailure of error_handling_time * string * ty
@@ -319,12 +320,13 @@ module ErrorCode = struct
     | AssertionFailed (Static, _)
     | ATCExecutionFailure (Static, _, _)
     | BadIndex (Static, _, _)
-    | BadPrimitiveArgument (Static, _, _) ->
+    | BadPrimitiveArgument (Static, _, _)
+    | StaticEvaluationFailure _ ->
         Some (Typing SEF)
     | BadIndex (Dynamic, _, _) -> Some (Dynamic BI)
     | NoCommonAncestor _ (* LCA failures *) -> Some (Typing LCA)
     (********** TODO tidy up - does not cleanly correspond to a code **********)
-    | UnsupportedExpr _ (* For static interpretation *) -> None
+    | UnsupportedExpr _ -> None
     (********** Should not happen **********)
     (* e.g. skipped type-checking, ASL0, internal option or invariant *)
     | MismatchType _ (* Skipped type-checking or violated typing invariant *) ->
@@ -424,11 +426,6 @@ end
       assertion failures, cases we don't expect to hit etc.
     - TypingRule.TInt mismatch on empty case *)
 (* TODO: BE_RI unused in reference *)
-(* TODO: following not recoverable from implementation:
-- TE_SEF
-- DE_TAF
-- DE_BI
-*)
 
 module PPrint = struct
   open Format
@@ -492,6 +489,8 @@ module PPrint = struct
         pp_err
           (ErrorKind.of_error_handling_time t)
           "Unsupported expression %a." pp_expr e
+    | StaticEvaluationFailure e ->
+        pp_err Typing "Static evaluation of expression %a failed." pp_expr e
     | InvalidExpr e -> pp_err Typing "invalid expression %a." pp_expr e
     | MismatchType (v, [ ty ]) ->
         pp_err Dynamic "Mismatch type:@ value %s does not belong to type %a." v
@@ -881,6 +880,7 @@ module CSV = struct
     | UnsupportedBinop _ -> "UnsupportedBinop"
     | UnsupportedUnop _ -> "UnsupportedUnop"
     | UnsupportedExpr _ -> "UnsupportedExpr"
+    | StaticEvaluationFailure _ -> "StaticEvaluationFailure"
     | InvalidExpr _ -> "InvalidExpr"
     | MismatchType _ -> "MismatchType"
     | ATCExecutionFailure _ -> "ATCExecutionFailure"
