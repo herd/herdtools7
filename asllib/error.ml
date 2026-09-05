@@ -325,9 +325,10 @@ module ErrorCode = struct
     | NoCommonAncestor _ (* LCA failures *) -> Some (Typing LCA)
     (********** TODO tidy up - does not cleanly correspond to a code **********)
     | UnsupportedExpr _ (* For static interpretation *) -> None
-    | MismatchType _ (* mismatched integers for loop limits *) -> None
     (********** Should not happen **********)
     (* e.g. skipped type-checking, ASL0, internal option or invariant *)
+    | MismatchType _ (* Skipped type-checking or violated typing invariant *) ->
+        None
     | EmptyConstraints (* An internal invariant *) -> None
     | TypeInferenceNeeded
     | UndefinedIdentifier (Dynamic, _)
