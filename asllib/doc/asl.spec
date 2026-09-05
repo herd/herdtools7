@@ -11447,15 +11447,19 @@ typing function paramsofty(tenv: static_envs, ty: ty) ->
   case other {
     or(
       ast_label(ty) in make_set(label_T_Array, label_T_Bool, label_T_Named, label_T_Real, label_T_String),
-      is_unconstrained_integer(ty),
-      is_parameterized_integer(ty)
+      is_unconstrained_integer(ty)
     ) { [_] };
     --
     empty_list;
   }
 
   case error {
-    binary_or(ast_label(ty) = label_T_Enum, is_structured(ty));
+    or(
+      ast_label(ty) = label_T_Enum,
+      is_structured(ty),
+      ty = T_Int(PendingConstrained),
+      is_parameterized_integer(ty)
+    );
     --
     TypeError(TE_BSPD);
   }

@@ -838,6 +838,13 @@ ASL Typing Tests / annotating types:
   $ aslref TypingRule.RenameTyEqs.asl
   $ aslref TypingRule.CheckParamsTypeSat.asl
   $ aslref --no-exec TypingRule.ParametersOfTy.asl
+  $ aslref --no-exec TypingRule.ParametersOfTy.bad.asl
+  File TypingRule.ParametersOfTy.bad.asl, line 1, characters 27 to 36:
+  func bad_parameter_type(x: integer{})
+                             ^^^^^^^^^
+  ASL Type error (TE_BSPD):
+    Type integer{} is not permitted in a subprogram signature.
+  [1]
   $ aslref --no-exec TypingRule.ParametersOfExpr.asl
   $ aslref --no-exec TypingRule.ParametersOfExpr.bad.asl
   File TypingRule.ParametersOfExpr.bad.asl, line 4, characters 15 to 27:

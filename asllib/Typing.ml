@@ -3412,7 +3412,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | T_Int UnConstrained
       | T_Real | T_String | T_Bool | T_Array _ | T_Named _ ->
           []
-      | _ -> Error.fatal_from (to_pos ty) (Error.UnsupportedTy (Static, ty))
+      | T_Enum _ | T_Record _ | T_Exception _ | T_Collection _
+      | T_Int (PendingConstrained | Parameterized _) ->
+          Error.fatal_from (to_pos ty) (Error.BadParameterType ty)
     in
     let types = func_sig_types func_sig in
     let all_parameters = List.concat_map (parameters_of_ty ~env) types in
