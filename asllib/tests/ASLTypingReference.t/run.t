@@ -579,7 +579,7 @@ ASL Typing Tests / annotating types:
       [3*5 +:5] value // Illegal: position 19 exceeds 15
   };
   ASL Static error (TE_BS):
-    Cannot extract from bitvector of length 16 slice (3 * 5)+:5.
+    Slice selection (3 * 5)+:5 includes a position outside the bounds of a bitvector of length 16.
   [1]
 
   $ aslref TypingRule.CheckNoPrecisionLoss.asl

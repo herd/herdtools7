@@ -182,7 +182,9 @@ module NativeBackend (C : Config) = struct
           Slice_Length (expr_of_int start, expr_of_int length))
         positions
     in
-    Error.(fatal_unknown_pos (BadSlices (C.error_handling_time, slices, 0)))
+    Error.(
+      fatal_unknown_pos
+        (BadSlices (NegativeStartOrLength (C.error_handling_time, slices))))
 
   let slices_to_positions positions =
     List.map

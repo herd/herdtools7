@@ -26,18 +26,26 @@ open AST
 
 type error_handling_time = Static | Dynamic
 
+type bad_slices =
+  | NonPositiveLength of { slice : slice; length : int }
+      (** Converting a slice to positions during typing requires a positive
+          length. *)
+  | OutOfBitvectorBounds of slice list * int
+  | NegativeStartOrLength of error_handling_time * slice list
+      (** Native slicing permits a zero length, but requires non-negative starts
+          and lengths. *)
+
 type error_desc =
   | ReservedIdentifier of string
   | BadField of string * ty
   | MissingField of string list * ty
-  | BadSlices of error_handling_time * slice list * int
+  | BadSlices of bad_slices
   | BadIndex of {
       handling_time : error_handling_time;
       start : int;
       length : int;
     }
   | BadTupleIndex of { index : int; length : int }
-  | BadSlice of slice
   | EmptySlice
   | TypeInferenceNeeded
   | UndefinedIdentifier of error_handling_time * identifier
@@ -274,11 +282,13 @@ module ErrorCode = struct
     | UnsupportedUnop (Static, _, _)
     | UnsupportedBinop (Static, _, _, _) ->
         Some (Typing BO)
-    | BadSlices (Static, _, _)
-    | BadSlice _ | EmptySlice
+    | BadSlices
+        ( NonPositiveLength _ | OutOfBitvectorBounds _
+        | NegativeStartOrLength (Static, _) )
+    | EmptySlice
     | OverlappingSlices (_, Static)
     | BitfieldsDontAlign _ ->
-        Some (Typing BS) (* TODO: consider combining BadSlices and BadSlice *)
+        Some (Typing BS)
     | UndefinedIdentifier (Static, _) -> Some (Typing UI)
     | TypeSatisfactionFailure _ -> Some (Typing TSF)
     | ConflictingTypes _ | AssignToTupleElement _ | ConstrainedIntegerExpected _
@@ -328,6 +338,7 @@ module ErrorCode = struct
     | StaticEvaluationFailure _ ->
         Some (Typing SEF)
     | BadIndex { handling_time = Dynamic } -> Some (Dynamic BI)
+    | BadSlices (NegativeStartOrLength (Dynamic, _)) -> Some (Dynamic BI)
     | NoCommonAncestor _ (* LCA failures *) -> Some (Typing LCA)
     (********** Errors without specification codes **********)
     (* Implementation limitations are not ASL errors. *)
@@ -345,8 +356,6 @@ module ErrorCode = struct
     | ParameterWithoutDecl _ | SetterWithoutCorrespondingGetter _
     | ConflictingSideEffects _ | ConstantTimeBroken _ ->
         None
-    (********** Other **********)
-    | BadSlices (Dynamic, _, _) -> None (* only used in Native.ml *)
 end
 
 module PrintContext = struct
@@ -424,8 +433,6 @@ module PrintContext = struct
 end
 
 (** TODO
-    - SlicesToPositions - static or dynamic in implementation, but always TE_BS
-      in reference?
     - Various errors are overused in several places - need to clearly
       distinguish between ASL1 errors and e.g. ASL0 non-typechecked errors,
       assertion failures, cases we don't expect to hit etc. *)
@@ -523,11 +530,20 @@ module PPrint = struct
         pp_err Static
           "cannot slice with empty slicing operator. This might also be due to \
            an incorrect getter/setter invocation."
-    | BadSlices (t, slices, length) ->
+    | BadSlices (OutOfBitvectorBounds (slices, length)) ->
+        pp_err Static
+          "Slice selection %a includes a position outside the bounds of a \
+           bitvector of length %d."
+          pp_slice_list slices length
+    | BadSlices (NegativeStartOrLength (t, slices)) ->
         pp_err
           (ErrorKind.of_error_handling_time t)
-          "Cannot extract from bitvector of length %d slice %a." length
+          "Slice %a is invalid: its start and length must be non-negative."
           pp_slice_list slices
+    | BadSlices (NonPositiveLength { slice; length }) ->
+        pp_err Static
+          "Slice %a has length %d; slice lengths must be at least 1." pp_slice
+          slice length
     | BadIndex { handling_time; start; length } ->
         pp_err
           (ErrorKind.of_error_handling_time handling_time)
@@ -535,7 +551,6 @@ module PPrint = struct
     | BadTupleIndex { index; length } ->
         pp_err Typing "Tuple index %d is outside the valid range 0..%d." index
           (length - 1)
-    | BadSlice slice -> pp_err Static "invalid slice %a." pp_slice slice
     | TypeInferenceNeeded ->
         pp_err Internal "Interpreter blocked. Type inference needed."
     | UndefinedIdentifier (t, s) ->
@@ -872,7 +887,6 @@ module CSV = struct
     | BadSlices _ -> "BadSlices"
     | BadIndex _ -> "BadIndex"
     | BadTupleIndex _ -> "BadTupleIndex"
-    | BadSlice _ -> "BadSlice"
     | EmptySlice -> "EmptySlice"
     | TypeInferenceNeeded -> "TypeInferenceNeeded"
     | UndefinedIdentifier _ -> "UndefinedIdentifier"

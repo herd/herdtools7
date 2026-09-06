@@ -463,8 +463,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | _ -> assert false
       in
       let offset = eval_slice_expr env e1 and length = eval_slice_expr env e2 in
-      if offset > offset + length - 1 then
-        fatal_from ~loc @@ Error.(BadSlice slice)
+      if length <= 0 then
+        fatal_from ~loc
+        @@ Error.(BadSlices (NonPositiveLength { slice; length }))
       else
         DI.Interval.make offset (offset + length - 1)
         |: TypingRule.BitfieldSliceToPositions
@@ -834,7 +835,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let min_pos = Diet.Int.min_elt diet and max_pos = Diet.Int.max_elt diet in
     if 0 <= min_pos && max_pos < width then
       () |: TypingRule.CheckPositionsInWidth
-    else fatal_from ~loc (BadSlices (Error.Static, slices, width))
+    else fatal_from ~loc (BadSlices (OutOfBitvectorBounds (slices, width)))
   (* End *)
 
   (* Begin CheckSlicesInWidth *)

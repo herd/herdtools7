@@ -272,7 +272,8 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.ReadIdentifier.asl
   $ aslref SemanticsRule.SlicesToPositions.asl
   $ aslref SemanticsRule.SlicesToPositions.bad.asl
-  ASL Dynamic error: Cannot extract from bitvector of length 0 slice -1+:6.
+  ASL Dynamic error (DE_BI):
+    Slice -1+:6 is invalid: its start and length must be non-negative.
   [1]
   $ aslref SemanticsRule.GetIndex.asl
   $ aslref SemanticsRule.GetField.asl
