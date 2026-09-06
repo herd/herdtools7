@@ -331,12 +331,21 @@ can be useful for declaring a constant specific to the platform \verb|my_platfor
 Lexical analysis, which is also referred to as \emph{scanning}, is defined via the function
 \hypertarget{def-aslscan}{}
 \[
-\aslscan(\LexSpec, \KleeneStar{\REasciichar}) \aslto (\KleeneStar{\Token} \cup \{\LexicalErrorConfig\})
+\aslscan(\LexSpec, \KleeneStar{\REasciichar}) \aslto
+(\KleeneStar{\Token} \cup \overname{\TLexicalError}{\LexicalErrorConfig})
 \]
 \hypertarget{def-lexicalerrorresult}{}
-which takes a \emph{lexical specification} (explained soon), an ASL specification string
-given by a sequence of ASCII characters (stored as 8-bit bytes)
-and returns a sequence of tokens (tokens are defined below) or a \emph{lexical error} $\LexicalErrorConfig$.
+The type of lexical error configurations is
+\[
+  \TLexicalError \triangleq \LexicalErrorVal{\vc},
+  \qquad \vc \in \{\LexicalError, \ReservedIdentifier\}.
+\]
+\hypertarget{def-lexicalerrorconfig}{}
+We define the shorthand $\LexicalErrorConfig \triangleq \LexicalErrorVal{\vc}$ for lexical error
+configurations with any lexical error code $\vc \in \{\LexicalError, \ReservedIdentifier\}$.
+The function $\aslscan$ takes a \emph{lexical specification} (explained soon), an ASL specification
+string given by a sequence of ASCII characters (stored as 8-bit bytes), and returns a sequence of
+tokens (tokens are defined below) or a lexical error configuration $\LexicalErrorConfig$.
 
 Tokens have one of two forms:
 \begin{description}
@@ -417,7 +426,7 @@ The function $\aslscan$ is constructively defined via the following inference ru
 \inferrule[no\_match]{
   \maxmatches(R, s) = \emptylist
 }{
-  \aslscan(R, s) \scanarrow \LexicalErrorConfig
+  \aslscan(R, s) \scanarrow \LexicalErrorVal{\LexicalError}
 }
 \end{mathpar}
 
@@ -483,8 +492,9 @@ The lexeme action
 \actiontoken(f) \triangleq \lambda (s_1,s_2). \\
 \wrappedline\
 \begin{cases}
-  \LexicalErrorConfig & \text{if }f(s_1) = \Terror \text{ or}\\
-   & \aslscan(\spectoken, s_2) = \Terror\\
+  \LexicalErrorVal{\LexicalError} & \text{if }f(s_1) = \Terror\\
+  f(s_1) & \text{if }f(s_1) \in \TLexicalError\\
+  \aslscan(\spectoken, s_2) & \text{if }\aslscan(\spectoken, s_2) \in \TLexicalError\\
   [f(s_1)] \concat \aslscan(\spectoken, s_2) & \text{otherwise}
 \end{cases}
 \end{array}
@@ -542,7 +552,7 @@ $s$, which is given via a floating point representation.
 \[
 \eoftoken(s_1, s_2) \triangleq \begin{cases}
   \emptylist & s_2 = \emptylist\\
-  \LexicalErrorConfig & \text{otherwise}
+  \LexicalErrorVal{\LexicalError} & \text{otherwise}
 \end{cases}
 \]
 checks whether $\eof$ is not followed by more characters and returns a lexical error otherwise.
@@ -551,17 +561,18 @@ checks whether $\eof$ is not followed by more characters and returns a lexical e
 \LexicalRuleDef{ReservedIdentifiers}
 \hypertarget{def-toidentifier}{}
 The function $\toidentifier(s)$ checks whether $s$ is a legal identifier
-and if so returns $\Tidentifier(s)$. Otherwise, the result is a lexical error.
+and if so returns $\Tidentifier(s)$. Otherwise, the result is a lexical error configuration
+with the reserved identifier error code $\ReservedIdentifier$.
 
 \ProseParagraph
 Given a string $s$, $\toidentifier(s)$ checks whether $s$ starts with a double
-underscore. If so, the result is a lexical error. Otherwise the result is
+underscore. If so, the result is $\LexicalErrorVal{\ReservedIdentifier}$. Otherwise the result is
 $\Tidentifier(s)$.
 
 \FormallyParagraph
 \[
   \toidentifier(s) = \begin{cases}
-    \LexicalErrorConfig & \text{if }s = \underbracket{\texttt{ \_ } }\ \underbracket{\texttt{ \_ } } s'\\
+    \LexicalErrorVal{\ReservedIdentifier} & \text{if }s = \underbracket{\texttt{ \_ } }\ \underbracket{\texttt{ \_ } } s'\\
     \Tidentifier(s) & \text{otherwise}
   \end{cases}
 \]
@@ -669,7 +680,8 @@ $\eof$            & $\eoftoken$ \\
 To scan string literals, we define the following specialised scanning function.
 The function
 \[
-\scanstring(\overname{\KleeneStar{\REasciichar}}{\buff}, \overname{\KleeneStar{\REasciichar}}{s}) \aslto (\KleeneStar{\Token} \cup \{\LexicalErrorConfig\})
+\scanstring(\overname{\KleeneStar{\REasciichar}}{\buff}, \overname{\KleeneStar{\REasciichar}}{s}) \aslto
+(\KleeneStar{\Token} \cup \overname{\TLexicalError}{\LexicalErrorConfig})
 \]
 scans string with the $\specstring$ specification while building the final string literal in $\buff$.
 It is defined via the following rules:
@@ -677,7 +689,7 @@ It is defined via the following rules:
 \inferrule[no\_match]{
   \maxmatches(\specstring, s) = \emptylist
 }{
-  \scanstring(\buff, s) \scanarrow \LexicalErrorConfig
+  \scanstring(\buff, s) \scanarrow \LexicalErrorVal{\LexicalError}
 }
 \end{mathpar}
 

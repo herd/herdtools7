@@ -429,8 +429,6 @@ end
     - Various errors are overused in several places - need to clearly
       distinguish between ASL1 errors and e.g. ASL0 non-typechecked errors,
       assertion failures, cases we don't expect to hit etc. *)
-(* TODO: BE_RI unused in reference *)
-
 module PPrint = struct
   open Format
   open PP
