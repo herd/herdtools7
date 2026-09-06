@@ -432,10 +432,8 @@ module PrintContext = struct
     else None
 end
 
-(** TODO
-    - Various errors are overused in several places - need to clearly
-      distinguish between ASL1 errors and e.g. ASL0 non-typechecked errors,
-      assertion failures, cases we don't expect to hit etc. *)
+(** TODO: separate ASLv0 diagnostics, unchecked-execution failures, and internal
+    invariant violations from ASL errors. *)
 module PPrint = struct
   open Format
   open PP
