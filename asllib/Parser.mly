@@ -88,24 +88,22 @@ let check_is_associative ~loc (op : AST.binop) =
   | _ ->
       Error.(
         fatal_from loc
-          (CannotParse
-             (Some
-                (Format.sprintf
-                   "Binary operator `%s` is not associative - parenthesise to \
-                    disambiguate."
-                   (PP.binop_to_string op)))))
+          (BadBinopPriority
+             (Format.sprintf
+                "Binary operator `%s` is not associative - parenthesise to \
+                 disambiguate."
+                (PP.binop_to_string op))))
 
 
 let check_not_same_prec loc op op' =
   if prec op = prec op' then
     Error.(
       fatal_from loc
-        (CannotParse
-           (Some
-              (Format.sprintf
-                 "Operators `%s` and `%s` have the same priority - parenthesise \
-                  to disambiguate."
-                 (PP.binop_to_string op) (PP.binop_to_string op')))))
+        (BadBinopPriority
+           (Format.sprintf
+              "Operators `%s` and `%s` have the same priority - parenthesise \
+               to disambiguate."
+              (PP.binop_to_string op) (PP.binop_to_string op'))))
 
 let check_not_binop_same_prec op e =
   match e.desc with
@@ -479,7 +477,7 @@ let decl_item :=
   | vs=plist2(discard_or_identifier) ; {
       if List.for_all is_local_ignored vs then
         Error.fatal_here $startpos $endpos @@
-          Error.CannotParse (Some "A local declaration must declare at least one name.")
+          Error.AllDiscardLocalDeclaration
       else LDI_Tuple vs
     }
 

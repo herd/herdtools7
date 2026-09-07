@@ -140,15 +140,8 @@ let make_builtin d =
   let open AST in
   match d.desc with
   | D_Func f -> D_Func { f with builtin = true } |> ASTUtils.add_pos_from d
-  | D_TypeDecl _ ->
-      prerr_string "Type declaration cannot be builtin";
-      exit 1
-  | D_GlobalStorage _ ->
-      prerr_string "Storage declaration cannot be builtin";
-      exit 1
-  | D_Pragma _ ->
-      prerr_string "Pragma declaration cannot be builtin";
-      exit 1
+  | D_TypeDecl _ | D_GlobalStorage _ | D_Pragma _ ->
+      Error.fatal_from d Error.NonFunctionBuiltinDeclaration
 
 let stdlib =
   let filename = "ASL Standard Library" and ast_string = Asl_stdlib.stdlib in

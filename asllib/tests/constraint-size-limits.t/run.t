@@ -3,7 +3,7 @@
   File constraint-mul-00.asl, line 10, characters 4 to 6:
       b1 = (A * B) - 1; // Test if discrete or interval representation
       ^^
-  ASL Type error (TE_UT): a subtype of integer {0..4, 6, 8..9, 12, 16}
+  ASL Type error (TE_TSF): a subtype of integer {0..4, 6, 8..9, 12, 16}
     was expected, provided integer {15}.
   [1]
 
@@ -11,7 +11,7 @@
   File constraint-mul-01.asl, line 10, characters 4 to 6:
       b1 = (A * B) - 1; // Test if discrete or interval representation
       ^^
-  ASL Type error (TE_UT): a subtype of
+  ASL Type error (TE_TSF): a subtype of
     integer {0..16, 18, 20..22, 24..28, 30, 32..33, 35..36, 39..40, 42, 
              44..45, ...} was expected, provided integer {255}.
   [1]
@@ -20,7 +20,7 @@
   File constraint-mul-02.asl, line 10, characters 4 to 6:
       b1 = (A * B) - 1; // Test if discrete or interval representation
       ^^
-  ASL Type error (TE_UT): a subtype of
+  ASL Type error (TE_TSF): a subtype of
     integer {0..36, 38..40, 42, 44..46, 48..52, 54..58, 60, 62..66, 68..70, 72,
              ...} was expected, provided integer {1023}.
   [1]
@@ -29,7 +29,7 @@
   File constraint-mul-03.asl, line 10, characters 4 to 6:
       b1 = (A * B) - 1; // Test if discrete or interval representation
       ^^
-  ASL Type error (TE_UT): a subtype of
+  ASL Type error (TE_TSF): a subtype of
     integer {0..66, 68..70, 72, 74..78, 80..82, 84..88, 90..96, 98..100, 102,
              104..106, ...} was expected, provided integer {4095}.
   [1]
@@ -38,7 +38,7 @@
   File constraint-mul-04.asl, line 10, characters 4 to 6:
       b1 = (A * B) - 1; // Test if discrete or interval representation
       ^^
-  ASL Type error (TE_UT): a subtype of
+  ASL Type error (TE_TSF): a subtype of
     integer {0..130, 132..136, 138, 140..148, 150, 152..156, 158..162,
              164..166, 168..172, 174..178, ...} was expected,
     provided integer {16383}.
@@ -48,7 +48,7 @@
   File constraint-mul-05.asl, line 10, characters 4 to 6:
       b1 = (A * B) - 1; // Test if discrete or interval representation
       ^^
-  ASL Type error (TE_UT): a subtype of
+  ASL Type error (TE_TSF): a subtype of
     integer {0..256, 258..262, 264..268, 270, 272..276, 278..280, 282,
              284..292, 294..306, 308..310, ...} was expected,
     provided integer {65535}.

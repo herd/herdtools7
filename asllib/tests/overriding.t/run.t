@@ -149,6 +149,6 @@ Interactions with other features
   File type-check-impdef.asl, line 3, characters 2 to 20:
     return Zeros{N+1};
     ^^^^^^^^^^^^^^^^^^
-  ASL Type error (TE_UT): a subtype of bits(N) was expected,
+  ASL Type error (TE_TSF): a subtype of bits(N) was expected,
     provided bits((N + 1)).
   [1]

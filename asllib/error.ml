@@ -31,6 +31,7 @@ type error_desc =
   | BadField of string * ty
   | MissingField of string list * ty
   | BadSlices of error_handling_time * slice list * int
+  | BadTupleIndex of { index : int; length : int }
   | BadSlice of slice
   | EmptySlice
   | TypeInferenceNeeded
@@ -49,8 +50,12 @@ type error_desc =
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
   | ConflictingTypes of type_desc list * ty
+  | TypeSatisfactionFailure of { expected : ty; provided : ty }
   | AssertionFailed of error_handling_time * expr
   | CannotParse of string option
+  | BadBinopPriority of string
+  | AllDiscardLocalDeclaration
+  | NonFunctionBuiltinDeclaration
   | UnknownSymbol of string
   | NoCallCandidate of string * ty list
   | BadTypesForBinop of binop * ty * ty
@@ -242,9 +247,13 @@ module ErrorCode = struct
     match e.desc with
     (********** Errors that correspond to error codes **********)
     | ReservedIdentifier _ -> Some (Build RI)
+    | BadBinopPriority _ -> Some (Build BOP)
+    | AllDiscardLocalDeclaration | NonFunctionBuiltinDeclaration ->
+        Some (Build BD)
     | UnknownSymbol _ -> Some (Build LE)
     | ObsoleteSyntax _ -> Some (Build PE)
     | BadField _ | MissingField _ -> Some (Typing BF)
+    | BadTupleIndex _ -> Some (Typing BTI)
     | BadPattern _ | BadTypesForBinop _
     | UnsupportedUnop (Static, _, _)
     | UnsupportedBinop (Static, _, _, _) ->
@@ -255,6 +264,7 @@ module ErrorCode = struct
     | BitfieldsDontAlign _ ->
         Some (Typing BS) (* TODO: consider combining BadSlices and BadSlice *)
     | UndefinedIdentifier (Static, _) -> Some (Typing UI)
+    | TypeSatisfactionFailure _ -> Some (Typing TSF)
     | ConflictingTypes _ | AssignToTupleElement _ | ConstrainedIntegerExpected _
     | UnexpectedPendingConstrained | ExpectedSingularType _
     | ExpectedNamedType _ | UnexpectedCollection | MismatchedBitvectorWidths _
@@ -410,12 +420,7 @@ end
     - TypingRule.TInt mismatch on empty case *)
 (* TODO: BE_RI unused in reference *)
 (* TODO: following not recoverable from implementation:
-- BE_BOP
-- BE_BD
-- TE_TSF
-- TE_LCA
 - TE_SEF
-- TE_BTI
 - DE_TAF
 - DE_BI
 *)
@@ -514,6 +519,9 @@ module PPrint = struct
           (ErrorKind.of_error_handling_time t)
           "Cannot extract from bitvector of length %d slice %a." length
           pp_slice_list slices
+    | BadTupleIndex { index; length } ->
+        pp_err Typing "Tuple index %d is outside the valid range 0..%d." index
+          (length - 1)
     | BadSlice slice -> pp_err Static "invalid slice %a." pp_slice slice
     | TypeInferenceNeeded ->
         pp_err Internal "Interpreter blocked. Type inference needed."
@@ -563,6 +571,9 @@ module PPrint = struct
         pp_err Typing "%a does@ not@ subtype@ any@ of:@ %a." pp_ty provided
           (pp_comma_list pp_type_desc)
           expected
+    | TypeSatisfactionFailure { expected; provided } ->
+        pp_err Typing "a subtype of@ %a@ was expected,@ provided %a." pp_ty
+          expected pp_ty provided
     | AssertionFailed (t, e) ->
         pp_err
           (ErrorKind.of_error_handling_time t)
@@ -571,6 +582,12 @@ module PPrint = struct
         match s with
         | None -> pp_err Parse "Cannot parse."
         | Some s -> pp_err Parse "Cannot parse.@ %a" pp_print_text s)
+    | BadBinopPriority message -> pp_err Parse "%a" pp_print_text message
+    | AllDiscardLocalDeclaration ->
+        pp_err Parse "%a" pp_print_text
+          "A local declaration must declare at least one name."
+    | NonFunctionBuiltinDeclaration ->
+        pp_err Parse "Only subprogram declarations may be marked as builtins."
     | UnknownSymbol s ->
         let codes = List.map Char.code (List.of_seq (String.to_seq s)) in
         let not_printable code = code < 33 || code > 126 in
@@ -821,6 +838,7 @@ module CSV = struct
     | BadPattern _ -> "BadPattern"
     | MissingField _ -> "MissingField"
     | BadSlices _ -> "BadSlices"
+    | BadTupleIndex _ -> "BadTupleIndex"
     | BadSlice _ -> "BadSlice"
     | EmptySlice -> "EmptySlice"
     | TypeInferenceNeeded -> "TypeInferenceNeeded"
@@ -835,8 +853,12 @@ module CSV = struct
     | InvalidExpr _ -> "InvalidExpr"
     | MismatchType _ -> "MismatchType"
     | ConflictingTypes _ -> "ConflictingTypes"
+    | TypeSatisfactionFailure _ -> "TypeSatisfactionFailure"
     | AssertionFailed _ -> "AssertionFailed"
     | CannotParse _ -> "CannotParse"
+    | BadBinopPriority _ -> "BadBinopPriority"
+    | AllDiscardLocalDeclaration -> "AllDiscardLocalDeclaration"
+    | NonFunctionBuiltinDeclaration -> "NonFunctionBuiltinDeclaration"
     | UnknownSymbol _ -> "UnknownSymbol"
     | NoCallCandidate _ -> "NoCallCandidate"
     | BadTypesForBinop _ -> "BadTypesForBinop"

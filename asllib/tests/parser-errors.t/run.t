@@ -2,7 +2,7 @@
   File binop-non-associative.asl, line 1, characters 8 to 13:
   let x = a - b - c;
           ^^^^^
-  ASL Grammar error: Cannot parse. Binary operator `-` is not associative -
+  ASL Grammar error (BE_BOP): Binary operator `-` is not associative -
     parenthesise to disambiguate.
   [1]
 
@@ -26,8 +26,8 @@
   File discard-locals.asl, line 3, characters 6 to 12:
     let (-, -) = (1, 2);
         ^^^^^^
-  ASL Grammar error: Cannot parse. A local declaration must declare at least
-    one name.
+  ASL Grammar error (BE_BD): A local declaration must declare at least one
+    name.
   [1]
 
   $ aslref hyphenated-pending-constraint.asl
@@ -56,8 +56,8 @@
   File binop-same-precedence.asl, line 1, characters 8 to 13:
   let x = a + b - c;
           ^^^^^
-  ASL Grammar error: Cannot parse. Operators `-` and `+` have the same priority
-    - parenthesise to disambiguate.
+  ASL Grammar error (BE_BOP): Operators `-` and `+` have the same priority -
+    parenthesise to disambiguate.
   [1]
 
   $ aslref empty-record.asl
