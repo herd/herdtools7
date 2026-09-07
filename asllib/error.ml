@@ -31,7 +31,11 @@ type error_desc =
   | BadField of string * ty
   | MissingField of string list * ty
   | BadSlices of error_handling_time * slice list * int
-  | BadIndex of error_handling_time * int * int
+  | BadIndex of {
+      handling_time : error_handling_time;
+      start : int;
+      length : int;
+    }
   | BadTupleIndex of { index : int; length : int }
   | BadSlice of slice
   | EmptySlice
@@ -319,11 +323,11 @@ module ErrorCode = struct
     | NegativeArrayLength (Static, _, _)
     | AssertionFailed (Static, _)
     | ATCExecutionFailure (Static, _, _)
-    | BadIndex (Static, _, _)
+    | BadIndex { handling_time = Static }
     | BadPrimitiveArgument (Static, _, _)
     | StaticEvaluationFailure _ ->
         Some (Typing SEF)
-    | BadIndex (Dynamic, _, _) -> Some (Dynamic BI)
+    | BadIndex { handling_time = Dynamic } -> Some (Dynamic BI)
     | NoCommonAncestor _ (* LCA failures *) -> Some (Typing LCA)
     (********** Errors without specification codes **********)
     (* Implementation limitations are not ASL errors. *)
@@ -487,7 +491,10 @@ module PPrint = struct
           "Illegal application of operator %s for value@ %a."
           (unop_to_string op) pp_literal v
     | StaticEvaluationFailure e ->
-        pp_err Typing "Static evaluation of expression %a failed." pp_expr e
+        pp_err Typing
+          "Static evaluation of expression %a did not successfully produce a \
+           literal."
+          pp_expr e
     | ImplementationIntegerOverflow z ->
         pp_err Internal "Integer %a exceeds aslref implementation limits."
           Z.pp_print z
@@ -524,10 +531,10 @@ module PPrint = struct
           (ErrorKind.of_error_handling_time t)
           "Cannot extract from bitvector of length %d slice %a." length
           pp_slice_list slices
-    | BadIndex (t, index, length) ->
+    | BadIndex { handling_time; start; length } ->
         pp_err
-          (ErrorKind.of_error_handling_time t)
-          "Index %d is outside the valid range 0..%d." index (length - 1)
+          (ErrorKind.of_error_handling_time handling_time)
+          "Index %d is outside the valid range 0..%d." start (length - 1)
     | BadTupleIndex { index; length } ->
         pp_err Typing "Tuple index %d is outside the valid range 0..%d." index
           (length - 1)
