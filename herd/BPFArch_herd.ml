@@ -21,6 +21,7 @@ struct
 
   module CS = ConstraintSolver.No(V)
 
+  let is_wfe _ = false
   let pp_barrier_short = pp_barrier
   let reject_mixed = false
   let get_machsize _ = V.Cst.Scalar.machsize
