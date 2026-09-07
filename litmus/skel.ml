@@ -302,6 +302,11 @@ module Make
 
       let have_timebase = Insert.exists "timebase.c"
 
+      let () =
+        if do_timebase && not have_timebase then
+          Warn.warn_always
+            "No timebase counter, resort to simple reverse sense barriers" 
+
       (* Location utilities *)
       let get_global_names t = List.map fst t.T.globals
 
