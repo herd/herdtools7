@@ -2080,7 +2080,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             | T_Int _ | T_Bits _ ->
                 let+ () =
                   check_true (not (list_is_empty slices)) @@ fun () ->
-                  fatal_from ~loc Error.EmptySlice
+                  fatal_from ~loc Error.(BadSlices Empty)
                 in
                 (* TODO: check that:
                    - Rule SNQJ: An expression or subexpression which
@@ -2558,7 +2558,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let+ () = check_disjoint_slices ~loc env slices_annotated in
             let+ () =
               check_true (not (list_is_empty slices_annotated)) @@ fun () ->
-              fatal_from ~loc Error.EmptySlice
+              fatal_from ~loc Error.(BadSlices Empty)
             in
             let ses = ses_non_conflicting_union ~loc ses1 ses_slices in
             (t, LE_Slice (le2, slices_annotated) |> here, ses)

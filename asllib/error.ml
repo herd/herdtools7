@@ -27,6 +27,7 @@ open AST
 type error_handling_time = Static | Dynamic
 
 type bad_slices =
+  | Empty  (** ASLv0 syntax may produce an empty slice list. *)
   | NonPositiveLength of { slice : slice; length : int }
       (** Converting a slice to positions during typing requires a positive
           length. *)
@@ -46,7 +47,6 @@ type error_desc =
       length : int;
     }
   | BadTupleIndex of { index : int; length : int }
-  | EmptySlice
   | TypeInferenceNeeded
   | UndefinedIdentifier of error_handling_time * identifier
   | MismatchedCallType of {
@@ -283,9 +283,8 @@ module ErrorCode = struct
     | UnsupportedBinop (Static, _, _, _) ->
         Some (Typing BO)
     | BadSlices
-        ( NonPositiveLength _ | OutOfBitvectorBounds _
+        ( Empty | NonPositiveLength _ | OutOfBitvectorBounds _
         | NegativeStartOrLength (Static, _) )
-    | EmptySlice
     | OverlappingSlices (_, Static)
     | BitfieldsDontAlign _ ->
         Some (Typing BS)
@@ -523,7 +522,7 @@ module PPrint = struct
           pp_ty ty
           (pp_print_list ~pp_sep:pp_print_space pp_print_string)
           fields
-    | EmptySlice ->
+    | BadSlices Empty ->
         assert (e.version = V0);
         pp_err Static
           "cannot slice with empty slicing operator. This might also be due to \
@@ -540,8 +539,9 @@ module PPrint = struct
           pp_slice_list slices
     | BadSlices (NonPositiveLength { slice; length }) ->
         pp_err Static
-          "Slice %a has length %d; slice lengths must be at least 1." pp_slice
-          slice length
+          "Slice %a has length %d; but the length of this slice must be at \
+           least 1."
+          pp_slice slice length
     | BadIndex { handling_time; start; length } ->
         pp_err
           (ErrorKind.of_error_handling_time handling_time)
@@ -885,7 +885,6 @@ module CSV = struct
     | BadSlices _ -> "BadSlices"
     | BadIndex _ -> "BadIndex"
     | BadTupleIndex _ -> "BadTupleIndex"
-    | EmptySlice -> "EmptySlice"
     | TypeInferenceNeeded -> "TypeInferenceNeeded"
     | UndefinedIdentifier _ -> "UndefinedIdentifier"
     | MismatchedCallType _ -> "MismatchedCallType"
