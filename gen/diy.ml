@@ -127,7 +127,22 @@ let norm_cmd cmd =
     in no_conf s
 
 let exec_conf s =
-  let conf = Misc.input_protect LexConf_gen.conf s in
+  let rec read_conf seen s =
+    if List.mem s seen then
+      Warn.fatal "Configuration include cycle involving %s" s ;
+    let conf = Misc.input_protect LexConf_gen.conf s in
+    let dir = Filename.dirname s in
+    let rec expand = function
+      | [] -> []
+      | "include"::name::conf ->
+          let name =
+            if Filename.is_relative name then Filename.concat dir name
+            else name in
+          read_conf (s::seen) name @ expand conf
+      | "include"::[] -> Warn.fatal "Missing configuration include filename"
+      | arg::conf -> arg::expand conf in
+    expand conf in
+  let conf = read_conf [] s in
   let prog = Sys.argv.(0) in
   let cmd = Array.to_list Sys.argv in
   let cmd = norm_cmd cmd in
