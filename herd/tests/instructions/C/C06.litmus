@@ -1,6 +1,6 @@
 C C06
 
-Variant=S128
+Variant=Quad
 {
 __uint128_t x;
 }

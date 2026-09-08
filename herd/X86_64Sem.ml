@@ -56,7 +56,7 @@ module
         | X86_64.R8bL | X86_64.R8bH -> MachSize.Byte
         | X86_64.R16b -> MachSize.Short
         | X86_64.R32b -> MachSize.Word
-        | X86_64.R64b -> MachSize.Quad
+        | X86_64.R64b -> MachSize.Double
 
       let mk_read sz an loc v =
         let ac = Act.access_of_location_std loc in

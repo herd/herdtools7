@@ -194,9 +194,9 @@ instr:
   | LWZU reg COMMA idx LPAR reg RPAR
     { Plwzu ($2,$4,$6)}
   | LD reg COMMA idx COMMA reg
-    { Pload (Quad,$2,$4,$6)}
+    { Pload (Double,$2,$4,$6)}
   | LD reg COMMA idx LPAR reg RPAR
-    { Pload (Quad,$2,$4,$6)}
+    { Pload (Double,$2,$4,$6)}
   | LBZX reg COMMA reg COMMA reg
     { Ploadx (Byte,$2,$4,$6)}
   | LHZX reg COMMA reg COMMA reg
@@ -204,7 +204,7 @@ instr:
   | LWZX reg COMMA reg COMMA reg
     { Ploadx (Word,$2,$4,$6)}
   | LDX reg COMMA reg COMMA reg
-    { Ploadx (Quad,$2,$4,$6)}
+    { Ploadx (Double,$2,$4,$6)}
   | MR reg COMMA reg
     { Pmr ($2,$4) }
   | STB reg COMMA idx COMMA reg
@@ -224,9 +224,9 @@ instr:
   | STWU reg COMMA idx LPAR reg RPAR
     { Pstwu ($2,$4,$6) }
   | STD reg COMMA idx COMMA reg
-    { Pstore (Quad,$2,$4,$6) }
+    { Pstore (Double,$2,$4,$6) }
   | STD reg COMMA idx LPAR reg RPAR
-    { Pstore (Quad,$2,$4,$6) }
+    { Pstore (Double,$2,$4,$6) }
   | STBX reg COMMA reg COMMA reg
     { Pstorex (Byte,$2,$4,$6) }
   | STHX reg COMMA reg COMMA reg
@@ -234,7 +234,7 @@ instr:
   | STWX reg COMMA reg COMMA reg
     { Pstorex (Word,$2,$4,$6) }
   | STDX reg COMMA reg COMMA reg
-    { Pstorex (Quad,$2,$4,$6) }
+    { Pstorex (Double,$2,$4,$6) }
   | LWARX  reg COMMA reg COMMA reg
     { Plwarx ($2,$4,$6)}
   | STWCX reg COMMA reg COMMA reg

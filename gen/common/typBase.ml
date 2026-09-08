@@ -40,12 +40,12 @@ let parse s = match s with
 | "uint16_t" -> Some (Std (Unsigned,Short))
 | "int32_t" -> Some (Std (Signed,Word))
 | "uint32_t" -> Some (Std (Unsigned,Word))
-| "int64_t" -> Some (Std (Signed,Quad))
-| "uint64_t" -> Some (Std (Unsigned,Quad))
-| "int128_t" -> Some (Std (Signed,S128))
-| "uint128_t" -> Some (Std (Unsigned,S128))
-| "__int128" -> Some (Std (Signed,S128))
-| "__uint128" -> Some (Std (Unsigned,S128))
+| "int64_t" -> Some (Std (Signed,Double))
+| "uint64_t" -> Some (Std (Unsigned,Double))
+| "int128_t" -> Some (Std (Signed,Quad))
+| "uint128_t" -> Some (Std (Unsigned,Quad))
+| "__int128" -> Some (Std (Signed,Quad))
+| "__uint128" -> Some (Std (Unsigned,Quad))
 | _ -> None
 
 let pp = function
@@ -56,10 +56,10 @@ let pp = function
 | Std (Unsigned,Short) ->  "uint16_t"
 | Std (Signed,Word) ->  "int32_t"
 | Std (Unsigned,Word) ->  "uint32_t"
-| Std (Signed,Quad) ->  "int64_t"
-| Std (Unsigned,Quad) ->  "uint64_t"
-| Std (Signed,S128) ->  "__int128"
-| Std (Unsigned,S128) ->  "__uint128"
+| Std (Signed,Double) ->  "int64_t"
+| Std (Unsigned,Double) ->  "uint64_t"
+| Std (Signed,Quad) ->  "__int128"
+| Std (Unsigned,Quad) ->  "__uint128"
 | Pteval -> "pteval_t"
 
 
@@ -96,4 +96,4 @@ let is_pteval_t = function
 let get_size = function
   | Int -> Word
   | Std (_,sz) -> sz
-  | Pteval -> Quad
+  | Pteval -> Double

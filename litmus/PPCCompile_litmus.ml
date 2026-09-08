@@ -80,11 +80,11 @@ module Make(V:Constant.S)(C:Config) =
     | Word.W64 -> fun i -> i
     | Word.W32|Word.WXX ->
         fun i -> match i with
-        | Pload (Quad,a1,a2,a3) -> Pload (Word,a1,a2,a3)
-        | Pstore (Quad,a1,a2,a3) -> Pstore (Word,a1,a2,a3)
-        | Ploadx (Quad,a1,a2,a3) -> Ploadx (Word,a1,a2,a3)
-        | Plwax (Quad,a1,a2,a3) -> Plwax (Word,a1,a2,a3)
-        | Pstorex (Quad,a1,a2,a3) -> Pstorex (Word,a1,a2,a3)
+        | Pload (Double,a1,a2,a3) -> Pload (Word,a1,a2,a3)
+        | Pstore (Double,a1,a2,a3) -> Pstore (Word,a1,a2,a3)
+        | Ploadx (Double,a1,a2,a3) -> Ploadx (Word,a1,a2,a3)
+        | Plwax (Double,a1,a2,a3) -> Plwax (Word,a1,a2,a3)
+        | Pstorex (Double,a1,a2,a3) -> Pstorex (Word,a1,a2,a3)
         | _ -> i
 
     let emit_lbl lbl =

@@ -107,7 +107,7 @@ module Make
 
     let atomic_pair_allowed _ _ = true
 
-    let quad = MachSize.Quad (* This machine natural size *)
+    let quad = MachSize.Double (* This machine natural size *)
     and aexp = AArch64Explicit.Exp    (* Explicit accesses *)
 
     let tnt2annot =
@@ -196,7 +196,7 @@ module Make
         match ty with
         | V32 -> fun v -> uxtw_op v >>= m
         | V64 when not morello -> m
-        | V64 -> fun v -> uxt_op MachSize.Quad v >>= m
+        | V64 -> fun v -> uxt_op MachSize.Double v >>= m
         | V128 -> m
 
 (*  Promotion/Demotion *)
@@ -261,7 +261,7 @@ module Make
         | AArch64.ZR -> M.unitT V.zero
         | _ ->
             M.read_loc port
-              (mk_read MachSize.S128 Annot.N aexp)
+              (mk_read MachSize.Quad Annot.N aexp)
               (A.Location_reg (ii.A.proc,r)) ii
 
       let read_reg_neon port r ii =
@@ -270,7 +270,7 @@ module Make
         | AArch64Base.Vreg(vr',_) -> (AArch64Base.SIMDreg vr')
         | _ -> assert false in
           let location = A.Location_reg (ii.A.proc,vr) in
-          M.read_loc port (mk_read MachSize.S128 Annot.N aexp) location ii
+          M.read_loc port (mk_read MachSize.Quad Annot.N aexp) location ii
 
       let neon_getlane cur_val idx esize =
         let mask = V.op1 (Op.LeftShift (idx*esize)) (AArch64.neon_mask esize) in
@@ -284,9 +284,9 @@ module Make
       | _ -> assert false
 
       let read_reg_sz port sz r ii = match sz with
-      | MachSize.S128 -> read_reg_morello port r ii
-      | MachSize.Quad when not morello -> read_reg port r ii
-      | MachSize.Quad|MachSize.Word|MachSize.Short|MachSize.Byte ->
+      | MachSize.Quad -> read_reg_morello port r ii
+      | MachSize.Double when not morello -> read_reg port r ii
+      | MachSize.Double|MachSize.Word|MachSize.Short|MachSize.Byte ->
           read_reg port r ii >>= uxt_op sz
 
       let read_reg_ord = read_reg_sz Port.No quad
@@ -347,7 +347,7 @@ module Make
         if not morello then
           Warn.user_error "capabilities require -variant morello" ;
         M.write_loc
-          (mk_write MachSize.S128  Annot.N aexp Access.REG v)
+          (mk_write MachSize.Quad  Annot.N aexp Access.REG v)
           (A.Location_reg (ii.A.proc,r)) ii
 
       let neon_setlane old_val idx esize v =
@@ -374,9 +374,9 @@ module Make
           (* Clear unused register bits (zero extend) *)
           promote v >>= uxt_op sz >>= fun v ->
           let location = A.Location_reg (ii.A.proc,vr) in
-          M.write_loc (mk_write MachSize.S128 Annot.N aexp Access.REG v) location ii
+          M.write_loc (mk_write MachSize.Quad Annot.N aexp Access.REG v) location ii
 
-      let write_reg_neon = write_reg_neon_sz MachSize.S128
+      let write_reg_neon = write_reg_neon_sz MachSize.Quad
 
       let write_reg_neon_elem sz r idx v ii = match r with
       | AArch64Base.Vreg (_,(_,esize)) ->
@@ -446,7 +446,7 @@ module Make
         | AArch64Base.Preg(_,_) | AArch64Base.PMreg(_,_) -> r
         | _ -> assert false in
         let location = A.Location_reg (ii.A.proc,vr) in
-        M.read_loc Port.No (mk_read MachSize.S128 Annot.N aexp) location ii
+        M.read_loc Port.No (mk_read MachSize.Quad Annot.N aexp) location ii
 
       let predicate_setlane old_val idx psize v =
         let mask =
@@ -468,7 +468,7 @@ module Make
         | AArch64Base.Preg(_,_) -> r
         | _ -> assert false in
           let location = A.Location_reg (ii.A.proc,pr) in
-          M.write_loc (mk_write MachSize.S128 Annot.N aexp Access.REG v) location ii
+          M.write_loc (mk_write MachSize.Quad Annot.N aexp Access.REG v) location ii
 
       let get_predicate_last pred psize idx =
         predicate_getlane pred idx psize
@@ -499,7 +499,7 @@ module Make
         | AArch64Base.Zreg _ -> r
         | _ -> assert false in
           let location = A.Location_reg (ii.A.proc,vr) in
-          M.read_loc port (mk_read MachSize.S128 Annot.N aexp) location ii
+          M.read_loc port (mk_read MachSize.Quad Annot.N aexp) location ii
 
       let scalable_setlane old_val idx esize v =
         let mask =
@@ -528,9 +528,9 @@ module Make
         (* Clear unused register bits (zero extend) *)
           M.op1 (Op.Mask sz) v >>= fun v ->
           let location = A.Location_reg (ii.A.proc,pr) in
-          M.write_loc (mk_write MachSize.S128 Annot.N aexp Access.REG v) location ii
+          M.write_loc (mk_write MachSize.Quad Annot.N aexp Access.REG v) location ii
 
-      let write_reg_scalable = write_reg_scalable_sz MachSize.S128
+      let write_reg_scalable = write_reg_scalable_sz MachSize.Quad
 
       (* ZA offset, in bits, see ARM ARM B.1.4.10 "ZA tile access" *)
       let za_getoffset tile slice idx esize =
@@ -590,7 +590,7 @@ module Make
         | AArch64Base.ZAreg _ -> r
         | _ -> assert false in
           let location = A.Location_reg (ii.A.proc,vr) in
-          M.read_loc Port.No (mk_read MachSize.S128 Annot.N aexp) location ii
+          M.read_loc Port.No (mk_read MachSize.Quad Annot.N aexp) location ii
 
       let write_reg_za_sz sz r v ii =
         let pr = match r with
@@ -599,9 +599,9 @@ module Make
         (* Clear unused register bits (zero extend) *)
           M.op1 (Op.Mask sz) v >>= fun v ->
           let location = A.Location_reg (ii.A.proc,pr) in
-          M.write_loc (mk_write MachSize.S128 Annot.N aexp Access.REG v) location ii
+          M.write_loc (mk_write MachSize.Quad Annot.N aexp Access.REG v) location ii
 
-      let write_reg_za = write_reg_za_sz MachSize.S128
+      let write_reg_za = write_reg_za_sz MachSize.Quad
 
       let write_reg_scalable_rep r v ii =
         let nelem = scalable_nelem r in
@@ -612,9 +612,9 @@ module Make
       let do_write_reg_sz mop sz r v ii = match r with
       | AArch64.ZR -> M.unitT ()
       | _ -> match sz with
-        | MachSize.S128 -> write_reg_morello r v ii
-        | MachSize.Quad when not morello -> write_reg r v ii
-        | MachSize.Quad|MachSize.Word|MachSize.Short|MachSize.Byte ->
+        | MachSize.Quad -> write_reg_morello r v ii
+        | MachSize.Double when not morello -> write_reg r v ii
+        | MachSize.Double|MachSize.Word|MachSize.Short|MachSize.Byte ->
             mop sz v >>= fun v -> write_reg r v ii
 
       let write_reg_sz = do_write_reg_sz uxt_op
@@ -627,8 +627,8 @@ module Make
         | AArch64.ZR -> M.unitT ()
         | _ ->
            match sz with
-           | MachSize.S128 -> write_reg_morello r v ii
-           | MachSize.Quad|MachSize.Word|MachSize.Short|MachSize.Byte ->
+           | MachSize.Quad -> write_reg_morello r v ii
+           | MachSize.Double|MachSize.Word|MachSize.Short|MachSize.Byte ->
               op v >>= fun v -> write_reg r v ii
 
       let write_reg_sz_non_mixed =
@@ -665,8 +665,8 @@ module Make
         | AArch64Base.Vreg(_,(nelem,esize)) -> nelem * esize
         | _ -> assert false in
         match size with
-          | 64 -> MachSize.Quad
-          | 128 -> MachSize.S128
+          | 64 -> MachSize.Double
+          | 128 -> MachSize.Quad
           | _ -> assert false
 
       let neon_sz_k var = let open AArch64Base in
@@ -774,7 +774,7 @@ module Make
 
       let process_read_capability sz a m ii =
         match sz with
-        | MachSize.S128 ->
+        | MachSize.Quad ->
             (M.op1 Op.CapaStrip a >>= fun a ->
              M.add_atomic_tag_read (m a) a
                (fun loc v -> Act.tag_access quad Dir.R loc v) ii)
@@ -1666,7 +1666,7 @@ module Make
    + ma abstracted for all variants
  *)
 
-      let to_perms str sz = str ^ if sz = MachSize.S128 then "_c" else ""
+      let to_perms str sz = str ^ if sz = MachSize.Quad then "_c" else ""
 
       let apply_mv mop mv = fun ac ma -> mop ac ma mv
 
@@ -1843,11 +1843,11 @@ Arguments:
               | UXTB -> Op.Mask  Byte
               | UXTH -> Op.Mask Short
               | UXTW -> Op.Mask Word
-              | UXTX ->  Op.Mask Quad
+              | UXTX ->  Op.Mask Double
               | SXTB -> Op.Sxt  Byte
               | SXTH -> Op.Sxt Short
               | SXTW -> Op.Sxt Word
-              | SXTX ->  Op.Sxt Quad
+              | SXTX ->  Op.Sxt Double
             end
 
 (* Apply a shift as monadic op *)
@@ -1880,7 +1880,7 @@ Arguments:
             read_reg_addr rs ii
         | K k, s -> (* Immediate with offset, with shift *)
             read_reg_addr rs ii
-            >>= fun v -> shift MachSize.Quad s (V.intToV k)
+            >>= fun v -> shift MachSize.Double s (V.intToV k)
             >>= M.add v
         | RV(v,r), S_NOEXT -> (* register, no shift *)
             (read_reg_addr rs ii >>| read_reg_addr_sz (tr_variant v) r ii)
@@ -1952,7 +1952,7 @@ Arguments:
          * then sign extend based on register size (var)
          *)
         let op = match var with
-          | MachSize.Quad -> sxt_op sz
+          | MachSize.Double -> sxt_op sz
           | MachSize.Word ->
              fun v -> sxt_op sz v >>=  uxt_op MachSize.Word
           | _ -> assert false in
@@ -2560,7 +2560,7 @@ Arguments:
         (* 128-bit Neon LDR/STR and friends are split into two 64-bit
          * single-copy atomic accesses. *)
         let mem_op = begin
-          if sz == MachSize.S128 then do_read_mem_2_ops_ret else do_read_mem_ret
+          if sz == MachSize.Quad then do_read_mem_2_ops_ret else do_read_mem_ret
         end in
         mem_op sz an aexp Access.VIR addr ii >>= fun v ->
         write_reg_neon_sz sz rd v ii
@@ -2571,7 +2571,7 @@ Arguments:
       let do_simd_str an sz ma rd ii =
         ma >>|
         read_reg_neon Port.Data rd ii >>= fun (addr,v) ->
-        if sz == MachSize.S128 then
+        if sz == MachSize.Quad then
           do_write_mem_2_ops sz an aexp Access.VIR addr v ii >>= B.next2T
         else
           demote v >>= fun v ->
@@ -2583,7 +2583,7 @@ Arguments:
       let simd_str_p sz ma rd rs k ii =
         ma >>|
         read_reg_neon Port.Data rd ii >>= fun (addr,v) ->
-        if sz == MachSize.S128 then
+        if sz == MachSize.Quad then
           (* 128-bit Neon LDR/STR and friends are split into two 64-bit
            * single-copy atomic accesses. *)
           write_mem_2_ops sz aexp Access.VIR addr v ii >>|
@@ -2607,7 +2607,7 @@ Arguments:
         let an = tnt2annot tnt in
         let open AArch64Base in
         let sz = tr_simd_variant var in
-        if sz == MachSize.S128 then
+        if sz == MachSize.Quad then
           (* 128-bit Neon LDR/STR are not single-copy atomic, but they
            * are single-copy atomic for each of the two 64-bit quantities
            * they access. This means that a 2x128-bit LDP/STP with Neon
@@ -2900,7 +2900,7 @@ Arguments:
         let open AArch64 in
         let nelem = scalable_nbytes / simd_variant_nbytes v in
         let off = predicate_count pat nelem * k in
-        let sz = MachSize.Quad in
+        let sz = MachSize.Double in
         (match op with
          | CNT -> mzero
          | INC -> read_reg_ord_sz sz r ii)
@@ -3190,7 +3190,7 @@ Arguments:
 
       let load_m addr rlist ii =
         let op i =
-          let ops = neon_memops (load_elem MachSize.S128) addr i rlist ii in
+          let ops = neon_memops (load_elem MachSize.Quad) addr i rlist ii in
           reduce_ord ops in
         let ops = List.map op (Misc.interval 0 (neon_nelem (List.hd rlist))) in
         reduce_ord ops
@@ -3211,7 +3211,7 @@ Arguments:
       let load_m_contigous addr rlist ii =
         let op i r =
           let step = i*(neon_nelem r) in
-          let ops = neon_memops_contigous (load_elem MachSize.S128) addr step r ii in
+          let ops = neon_memops_contigous (load_elem MachSize.Quad) addr step r ii in
           reduce_ord ops in
         let ops = List.mapi op rlist in
         reduce_ord ops
@@ -3503,7 +3503,7 @@ Arguments:
           else
             ma >>| mv >>= _do_ldg in
         lift_memop rn Dir.R false false (fun ac ma mv -> do_ldg ac ma mv)
-        (to_perms "w" MachSize.S128) ma mv Annot.N ii
+        (to_perms "w" MachSize.Quad) ma mv Annot.N ii
 
       type double = Once|Twice
 
@@ -4245,12 +4245,12 @@ Arguments:
         | I_MOV_VE(r1,i1,r2,i2) ->
             check_neon inst;
             !(read_reg_neon_elem Port.No r2 i2 ii >>=
-              fun v -> write_reg_neon_elem MachSize.S128 r1 i1 v ii)
+              fun v -> write_reg_neon_elem MachSize.Quad r1 i1 v ii)
         | I_MOV_FG(r1,i,var,r2) ->
             check_neon inst;
             !(let sz = tr_variant var in
               read_reg_ord_sz sz r2 ii >>= promote >>=
-              fun v -> write_reg_neon_elem MachSize.S128 r1 i v ii)
+              fun v -> write_reg_neon_elem MachSize.Quad r1 i v ii)
         | I_MOV_TG(_,r1,r2,i) ->
             check_neon inst;
             !(read_reg_neon_elem Port.No r2 i ii >>= demote >>=
@@ -4282,7 +4282,7 @@ Arguments:
             !(simd_add r1 r2 r3 ii)
         | I_ADD_SIMD_S(r1,r2,r3) ->
             check_neon inst;
-            let sz = MachSize.Quad in
+            let sz = MachSize.Double in
             !(read_reg_neon Port.No r3 ii >>|
               read_reg_neon Port.No r2 ii >>= sum_elems
               >>= fun v -> write_reg_neon_sz sz r1 v ii)
@@ -4290,7 +4290,7 @@ Arguments:
         | I_LDAP1(rs,i,rA,kr) ->
             check_neon inst;
             !!!(read_reg_addr rA ii >>= fun addr ->
-            (mem_ss (load_elem_ldar MachSize.S128 i) addr rs ii >>|
+            (mem_ss (load_elem_ldar MachSize.Quad i) addr rs ii >>|
             post_kr rA addr kr ii))
         | I_LD1(rs,i,rA,kr)
         | I_LD2(rs,i,rA,kr)
@@ -4298,7 +4298,7 @@ Arguments:
         | I_LD4(rs,i,rA,kr) ->
             check_neon inst;
             !!!(read_reg_addr rA ii >>= fun addr ->
-            (mem_ss (load_elem MachSize.S128 i) addr rs ii >>|
+            (mem_ss (load_elem MachSize.Quad i) addr rs ii >>|
             post_kr rA addr kr ii))
         | I_LD1R(rs,rA,kr)
         | I_LD2R(rs,rA,kr)
@@ -4306,7 +4306,7 @@ Arguments:
         | I_LD4R(rs,rA,kr) ->
             check_neon inst;
             !!!(read_reg_addr rA ii >>= fun addr ->
-            (mem_ss (load_elem_rep MachSize.S128) addr rs ii >>|
+            (mem_ss (load_elem_rep MachSize.Quad) addr rs ii >>|
             post_kr rA addr kr ii))
         | I_LD1M(rs,rA,kr) ->
             check_neon inst;
@@ -4556,11 +4556,11 @@ Arguments:
         | I_RDVL (rd,k) ->
            check_sve inst;
            let v = scalable_nbytes * k |> V.intToV in
-           write_reg_sz_dest MachSize.Quad rd v ii
+           write_reg_sz_dest MachSize.Double rd v ii
            >>= nextSet rd
         |I_ADDVL (rd,rn,k) ->
            check_sve inst;
-           let sz = MachSize.Quad in
+           let sz = MachSize.Double in
            let off = scalable_nbytes * k in
            read_reg_ord_sz sz rn ii
            >>= M.op1 (Op.AddK off)
@@ -4704,72 +4704,72 @@ Arguments:
         (* Morello instructions *)
         | I_ALIGND(rd,rn,k) ->
             check_morello inst ;
-            !((read_reg_ord_sz MachSize.S128 rn ii >>=
+            !((read_reg_ord_sz MachSize.Quad rn ii >>=
             fun v -> M.op Op.Alignd v (V.intToV k))
-            >>= fun v -> write_reg_sz MachSize.S128 rd v ii)
+            >>= fun v -> write_reg_sz MachSize.Quad rd v ii)
         | I_ALIGNU(rd,rn,k) ->
             check_morello inst ;
-            !((read_reg_ord_sz MachSize.S128 rn ii >>=
+            !((read_reg_ord_sz MachSize.Quad rn ii >>=
             fun v -> M.op Op.Alignu v (V.intToV k))
-            >>= fun v -> write_reg_sz MachSize.S128 rd v ii)
+            >>= fun v -> write_reg_sz MachSize.Quad rd v ii)
         | I_BUILD(rd,rn,rm) ->
             check_morello inst ;
             !(begin
-              read_reg_ord_sz MachSize.S128 rn ii >>|
-              read_reg_ord_sz MachSize.S128 rm ii
+              read_reg_ord_sz MachSize.Quad rn ii >>|
+              read_reg_ord_sz MachSize.Quad rm ii
             end >>= fun (a,b) ->
             M.op Op.Build a b >>= fun v ->
-            write_reg_sz MachSize.S128 rd v ii)
+            write_reg_sz MachSize.Quad rd v ii)
         | I_CHKEQ(rn,rm) ->
             check_morello inst ;
             !(begin
-              read_reg_ord_sz MachSize.S128 rn ii >>|
-              read_reg_ord_sz MachSize.S128 rm ii
+              read_reg_ord_sz MachSize.Quad rn ii >>|
+              read_reg_ord_sz MachSize.Quad rm ii
             end >>= fun (v1,v2) ->
             M.op Op.Eq v1 v2 >>= fun v ->
             write_reg (PState PSTATE.N) v ii)
         | I_CHKSLD(rn) ->
             check_morello inst ;
-            !(read_reg_ord_sz MachSize.S128 rn ii >>= fun v ->
+            !(read_reg_ord_sz MachSize.Quad rn ii >>= fun v ->
             M.op1 Op.CheckSealed v >>= fun v -> write_reg (PState PSTATE.V) v ii)
         | I_CHKTGD(rn) ->
             check_morello inst ;
-            !(read_reg_ord_sz MachSize.S128 rn ii >>= fun v ->
+            !(read_reg_ord_sz MachSize.Quad rn ii >>= fun v ->
               M.op1 Op.CapaGetTag v >>= fun v ->
               write_reg (PState PSTATE.C) v ii)
         | I_CLRTAG(rd,rn) ->
             check_morello inst ;
-            !(read_reg_ord_sz MachSize.S128 rn ii >>= fun (v) ->
+            !(read_reg_ord_sz MachSize.Quad rn ii >>= fun (v) ->
             M.op Op.CapaSetTag v V.zero >>= fun v ->
-            write_reg_sz MachSize.S128 rd v ii)
+            write_reg_sz MachSize.Quad rd v ii)
         | I_CPYTYPE(rd,rn,rm) ->
             check_morello inst ;
             !(begin
-              read_reg_ord_sz MachSize.S128 rn ii >>|
-              read_reg_ord_sz MachSize.S128 rm ii
+              read_reg_ord_sz MachSize.Quad rn ii >>|
+              read_reg_ord_sz MachSize.Quad rm ii
             end >>= fun (v1,v2) -> M.op Op.CpyType v1 v2 >>= fun v ->
-            write_reg_sz MachSize.S128 rd v ii)
+            write_reg_sz MachSize.Quad rd v ii)
         | I_CPYVALUE(rd,rn,rm) ->
             check_morello inst ;
             !(begin
-              read_reg_ord_sz MachSize.S128 rn ii >>|
-              read_reg_ord_sz MachSize.S128 rm ii
+              read_reg_ord_sz MachSize.Quad rn ii >>|
+              read_reg_ord_sz MachSize.Quad rm ii
             end >>= fun (v1,v2) -> M.op Op.SetValue v1 v2 >>= fun v ->
-            write_reg_sz MachSize.S128 rd v ii)
+            write_reg_sz MachSize.Quad rd v ii)
         | I_CSEAL(rd,rn,rm) ->
             check_morello inst ;
             !(begin
-              read_reg_ord_sz MachSize.S128 rn ii >>|
-              read_reg_ord_sz MachSize.S128 rm ii
+              read_reg_ord_sz MachSize.Quad rn ii >>|
+              read_reg_ord_sz MachSize.Quad rm ii
             end >>= fun (v1,v2) ->
             M.op Op.CSeal v1 v2 >>= fun v ->
             (
-            write_reg_sz MachSize.S128 rd v ii |||
+            write_reg_sz MachSize.Quad rd v ii |||
             (* TODO: PSTATE overflow flag would need to be conditionally set *)
             write_nzcv_no_next M.A.V.(zero, zero, zero, zero) ii))
         | I_GC(op,rd,rn) ->
             check_morello inst ;
-            !(read_reg_ord_sz MachSize.S128 rn ii >>= begin fun c -> match op with
+            !(read_reg_ord_sz MachSize.Quad rn ii >>= begin fun c -> match op with
             | CFHI -> M.op1 (Op.LogicalRightShift 64) c
             | GCFLGS -> M.op1 (Op.AndK "0xff00000000000000") c
             | GCPERM -> M.op1 (Op.LogicalRightShift 110) c
@@ -4778,12 +4778,12 @@ Arguments:
             | GCTAG -> M.op1 Op.CapaGetTag c
             | GCTYPE -> M.op1 (Op.LeftShift 18) c >>= fun v ->
                 M.op1 (Op.LogicalRightShift 113) v
-            | GCVALUE -> M.op1 (Op.Mask MachSize.Quad) c
-            end >>= fun v -> write_reg_sz MachSize.Quad rd v ii)
+            | GCVALUE -> M.op1 (Op.Mask MachSize.Double) c
+            end >>= fun v -> write_reg_sz MachSize.Double rd v ii)
         | I_SC(op,rd,rn,rm) ->
             check_morello inst ;
             !(begin
-              read_reg_ord_sz MachSize.S128 rn ii >>|
+              read_reg_ord_sz MachSize.Quad rn ii >>|
               read_reg_ord rm ii
             end >>=
             begin fun (cn, xm) -> match op with
@@ -4798,15 +4798,15 @@ Arguments:
                   M.op Op.CapaSetTag cn cond
               | SCVALUE -> M.op Op.SetValue cn xm
             end >>= fun v ->
-            write_reg_sz MachSize.S128 rd v ii)
+            write_reg_sz MachSize.Quad rd v ii)
         | I_SEAL(rd,rn,rm) ->
             check_morello inst ;
             !(begin
-              read_reg_ord_sz MachSize.S128 rn ii >>|
-              read_reg_ord_sz MachSize.S128 rm ii
+              read_reg_ord_sz MachSize.Quad rn ii >>|
+              read_reg_ord_sz MachSize.Quad rm ii
             end >>= fun (a,b) ->
             M.op Op.Seal a b >>= fun v ->
-            write_reg_sz MachSize.S128 rd v ii)
+            write_reg_sz MachSize.Quad rd v ii)
         | I_STCT(rt,rn) ->
             check_morello inst ;
             (* NB: only 1 access implemented out of the 4 *)
@@ -4816,7 +4816,7 @@ Arguments:
                   (ma >>| mv)
                   (fun (a,v) -> !(do_write_morello_tag a v ii))
                   ii)
-              (to_perms "tw" MachSize.S128)
+              (to_perms "tw" MachSize.Quad)
               (read_reg_addr rn ii)
               (read_reg_ord rt ii)
               Dir.W Annot.N ii (fun a -> a >>= M.ignore >>= B.next1T)
@@ -4835,7 +4835,7 @@ Arguments:
                           mzero
                         >>= fun tag -> !(write_reg_sz quad rt tag ii))
                       ii))
-              (to_perms "r" MachSize.S128)
+              (to_perms "r" MachSize.Quad)
               (read_reg_addr rn ii)
               mzero
               Dir.R Annot.N
@@ -4843,11 +4843,11 @@ Arguments:
         | I_UNSEAL(rd,rn,rm) ->
             check_morello inst ;
             !(begin
-              read_reg_ord_sz MachSize.S128 rn ii >>|
-              read_reg_ord_sz MachSize.S128 rm ii
+              read_reg_ord_sz MachSize.Quad rn ii >>|
+              read_reg_ord_sz MachSize.Quad rm ii
             end >>= fun (a,b) ->
             M.op Op.Unseal a b >>= fun v ->
-            write_reg_sz MachSize.S128 rd v ii)
+            write_reg_sz MachSize.Quad rd v ii)
 
         (* Operations *)
         | I_MOV(var,r,K k) ->
@@ -5077,7 +5077,7 @@ Arguments:
  * as an argument to the MRS and MSR instructions.
  *)
         | I_MSR (sreg,xt) -> begin
-            let sz = MachSize.Quad in
+            let sz = MachSize.Double in
             match sreg with
             | SYS_NZCV ->
               read_reg_ord_sz sz xt ii
@@ -5106,7 +5106,7 @@ Arguments:
                >>= fun v -> write_reg_dest xt v ii
                >>= nextSet xt
             | _ -> begin
-              let sz = MachSize.Quad in
+              let sz = MachSize.Double in
               let off = AArch64.sysreg_nv2off sreg in
               match C.variant Variant.NV2, off with
               | true, Some off ->

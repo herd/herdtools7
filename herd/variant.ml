@@ -97,7 +97,7 @@ type t =
 (* UDF control in AArch64 mode *)
   | ASL_AArch64_UDF
 (* Signed Int128 types *)
-  | S128
+  | Quad
 (* Strict interpretation of variant, e.g. -variant asl,strict *)
   | Strict
 (* Semi-strict interpretation of variant, e.g. -variant asl,warn *)
@@ -179,7 +179,7 @@ let (mode_variants, arch_variants) : t list * t list =
   | ASLType `Silence -> ASLType `Silence
   | ASLType `TypeCheck -> ASLType `TypeCheck
   | ASL_AArch64_UDF -> ASL_AArch64_UDF
-  | S128 -> S128
+  | Quad -> Quad
   | Strict -> Strict
   | Warn -> Warn
   | Telechat -> Telechat
@@ -203,7 +203,7 @@ let (mode_variants, arch_variants) : t list * t list =
         OptRfRMW;
         Exp; CosOpt; Test; T 0;
         ASL; ASL_AArch64; ASLVersion `ASLv0; ASLVersion `ASLv1;
-        S128; Strict; Warn;
+        Quad; Strict; Warn;
         ASLType `Warn; ASLType `Silence; ASLType `TypeCheck; ASL_AArch64_UDF;
         Telechat; OldSolver; OOTA ]
   and precision_variants =
@@ -286,7 +286,7 @@ let parse s = match Misc.lowercase s with
 | "asltype+silence"-> Some (ASLType `Silence)
 | "asltype+check"  -> Some (ASLType `TypeCheck)
 | "asl+aarch64+udf" -> Some ASL_AArch64_UDF
-| "s128" -> Some S128
+| "quad"|"s128" -> Some Quad
 | "strict" -> Some Strict
 | "warn" -> Some Warn
 | "telechat" -> Some Telechat
@@ -392,7 +392,7 @@ let pp = function
   | ASL_AArch64 -> "ASL+AArch64"
   | ASLVersion `ASLv0 -> "ASLv0"
   | ASLVersion `ASLv1 -> "ASLv1"
-  | S128 -> "S128"
+  | Quad -> "Quad"
   | Strict -> "strict"
   | Warn -> "warn"
   | ASLType `Warn -> "ASLType+Warn"
@@ -475,7 +475,7 @@ let pp = function
   | ASL_AArch64 -> "Make the shared ASL code available in the environment (ASL only)"
   | ASLVersion `ASLv0 -> "Use the v0 version of the language (ASL only)"
   | ASLVersion `ASLv1 -> "Use the v1 version of the language (ASL only)"
-  | S128 -> ""
+  | Quad -> ""
   | Strict -> "Fail on non-supported instruction (AArch64+ASL only)"
   | Warn -> "Warn on non-supported instruction (AArch64+ASL only)"
   | ASLType `Warn -> "Warn on type-checking error (AArch64+ASL only)"

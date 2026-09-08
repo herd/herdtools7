@@ -69,7 +69,7 @@ let addk (t,x) k = match k with
   | 1 -> false, Uint128.succ x
   | _ -> false, Uint128.add x (Uint128.of_int k)
 
-let machsize = MachSize.S128
+let machsize = MachSize.Quad
 
 let pp hexa (t,v) =
   Printf.sprintf "%s%s"
@@ -90,13 +90,13 @@ let mask sz =
      fun (_,v) -> false, Uint128.logand v (Uint128.of_uint16 Uint16.max_int)
   | Word ->
      fun (_,v) -> false, Uint128.logand v (Uint128.of_uint32 Uint32.max_int)
-  | Quad ->
+  | Double ->
      fun (_,v) -> false, Uint128.logand v (Uint128.of_uint64 Uint64.max_int)
-  | S128 ->
+  | Quad ->
      fun (t,v) -> t, v
 
 let sxt sz v = match sz with
-  | MachSize.S128 -> v
+  | MachSize.Quad -> v
   | _ ->
      let t,v = mask sz v in
      let nb = MachSize.nbits sz in

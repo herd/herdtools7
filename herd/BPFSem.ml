@@ -27,7 +27,7 @@ struct
   let barriers = []
   let isync = None
 
-  (*  TODO: let nat_sz = MachSize.Quad (* 64-bit Registers *) *)
+  (*  TODO: let nat_sz = MachSize.Double (* 64-bit Registers *) *)
   let nat_sz = V.Cst.Scalar.machsize
   let atomic_pair_allowed _ _ = true
 
