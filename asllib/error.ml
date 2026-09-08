@@ -42,6 +42,14 @@ type error_desc =
       found_call_type : subprogram_type;
     }
   | BadArity of error_handling_time * identifier * int * int
+      (** [BadArity (time, name, expected, provided)] is raised when there is an
+          arity mismatch detected during evaluation when it should have been
+          detected at type-checking: a subprogram or primitive receives the
+          wrong number of arguments, a tuple assignment receives the wrong
+          number of values from a subprogram call, or an entry point returns the
+          wrong number of values. *)
+  | BadCallArity of { name : identifier; expected : int; actual : int }
+  | BadTupleArity of { expected : int; actual : int }
   | BadParameterArity of error_handling_time * version * identifier * int * int
   | UnsupportedBinop of error_handling_time * binop * literal * literal
   | UnsupportedUnop of error_handling_time * unop * literal
@@ -49,14 +57,15 @@ type error_desc =
   | UnsupportedTy of error_handling_time * ty
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
+  | ATCExecutionFailure of error_handling_time * string * ty
   | ConflictingTypes of type_desc list * ty
-  | TypeSatisfactionFailure of { expected : ty; provided : ty }
+  | TypeSatisfactionFailure of { expected : ty; actual : ty }
   | AssertionFailed of error_handling_time * expr
   | CannotParse of string option
   | BadBinopPriority of string
   | AllDiscardLocalDeclaration
   | NonFunctionBuiltinDeclaration
-  | UnknownSymbol of string
+  | UnknownSymbol of { symbol : string; alternative : string option }
   | NoCallCandidate of string * ty list
   | BadTypesForBinop of binop * ty * ty
   | ImpureExpression of expr * SideEffect.SES.t
@@ -251,7 +260,7 @@ module ErrorCode = struct
     | AllDiscardLocalDeclaration | NonFunctionBuiltinDeclaration ->
         Some (Build BD)
     | UnknownSymbol _ -> Some (Build LE)
-    | ObsoleteSyntax _ -> Some (Build PE)
+    | CannotParse _ | ObsoleteSyntax _ | MultipleWrites _ -> Some (Build PE)
     | BadField _ | MissingField _ -> Some (Typing BF)
     | BadTupleIndex _ -> Some (Typing BTI)
     | BadPattern _ | BadTypesForBinop _
@@ -270,10 +279,11 @@ module ErrorCode = struct
     | ExpectedNamedType _ | UnexpectedCollection | MismatchedBitvectorWidths _
     | CollectionBaseNotVariable _ ->
         Some (Typing UT)
-    | MismatchedCallType _
+    | MismatchedCallType _ | BadCallArity _
     | BadParameterArity (Static, _, _, _, _)
     | NoCallCandidate _ ->
         Some (Typing BC)
+    | BadTupleArity _ -> Some (Typing UT)
     | UnsupportedUnop (Dynamic, _, _) | UnsupportedBinop (Dynamic, _, _, _) ->
         Some (Dynamic BO)
     | AssertionFailed (Dynamic, _) | BadPrimitiveArgument (Dynamic, _, _) ->
@@ -284,10 +294,11 @@ module ErrorCode = struct
     | BadReturnStmt _ | BadParameterDecl _ | NonReturningFunction _
     | NoreturnViolation _ ->
         Some (Typing BSPD)
-    | UncaughtException _ -> Some (Dynamic UE)
+    | UncaughtException _ | UnexpectedInitialisationThrow _ -> Some (Dynamic UE)
     | OverlappingSlices (_, Dynamic) -> Some (Dynamic OSA)
     | BadLDI _ | BadRecursiveDecls _ -> Some (Typing BD)
     | BadATC _ -> Some (Typing TAF)
+    | ATCExecutionFailure (Dynamic, _, _) -> Some (Dynamic TAF)
     | BaseValueEmptyType _ | BaseValueNonSymbolic _ -> Some (Typing NBV)
     | ArbitraryEmptyType _ -> Some (Dynamic AET)
     | UnreachableReached Dynamic -> Some (Dynamic UNR)
@@ -304,30 +315,21 @@ module ErrorCode = struct
     | LoopLimitReached Static
     | NegativeArrayLength (Static, _, _)
     | AssertionFailed (Static, _)
+    | ATCExecutionFailure (Static, _, _)
     | BadPrimitiveArgument (Static, _, _) ->
         Some (Typing SEF)
     | NoCommonAncestor _ (* LCA failures *) -> Some (Typing LCA)
     (********** TODO tidy up - does not cleanly correspond to a code **********)
-    | BadArity (Static, _, _, _) (* also used for tuple unpacking *) -> None
     | UnsupportedExpr _ | UnsupportedTy _
     (* For static interpretation, parameters, and collections *) ->
         None
-    | MismatchType _
-    (* dynamic ATC but also mismatched integers for loop limits *) ->
-        None
-    | CannotParse _ (* used in lexing too *) -> None
-    | MultipleWrites _
-    (* For desugaring, but uses `check_no_duplicates` which is always TE_IAD? *)
-      ->
-        None
-    | UnexpectedInitialisationThrow _ (* not represented in reference? *) ->
-        None
+    | MismatchType _ (* mismatched integers for loop limits *) -> None
     (********** Should not happen **********)
     (* e.g. skipped type-checking, ASL0, internal option or invariant *)
     | EmptyConstraints (* An internal invariant *) -> None
     | TypeInferenceNeeded
     | UndefinedIdentifier (Dynamic, _)
-    | BadArity (Dynamic, _, _, _)
+    | BadArity _
     | BadParameterArity (Dynamic, _, _, _, _)
     | InvalidExpr _ | UnexpectedSideEffect _ | UnrespectedParserInvariant
     | ParameterWithoutDecl _ | SetterWithoutCorrespondingGetter _
@@ -500,6 +502,11 @@ module PPrint = struct
           "Mismatch type:@ value %s@ does not subtype any of those types:@ %a" v
           (pp_comma_list pp_type_desc)
           li
+    | ATCExecutionFailure (t, v, ty) ->
+        pp_err
+          (ErrorKind.of_error_handling_time t)
+          "Value %s@ does@ not@ satisfy@ the@ asserted@ type@ @[%a@]." v pp_ty
+          ty
     | BadField (s, ty) ->
         pp_err Typing "There is no field '%s'@ on type %a." s pp_ty ty
     | MissingField (fields, ty) ->
@@ -544,12 +551,21 @@ module PPrint = struct
           s
           (call_type_description expected_call_type)
           (call_type_description found_call_type)
-    | BadArity (t, name, expected, provided) ->
+    | BadArity (t, name, expected, actual) ->
         pp_err
           (ErrorKind.of_error_handling_time t)
           "Arity error while calling '%s':@ %d arguments expected and %d \
            provided."
-          name expected provided
+          name expected actual
+    | BadCallArity { name; expected; actual } ->
+        pp_err Typing
+          "Call to %S has incorrect argument arity:@ expected %d argument(s); \
+           provided %d."
+          name expected actual
+    | BadTupleArity { expected; actual } ->
+        pp_err Typing
+          "Tuple arity mismatch:@ expected %d element(s); provided %d." expected
+          actual
     | BadParameterArity (t, version, name, expected, provided) -> (
         match (t, version) with
         | Static, V0 ->
@@ -571,9 +587,9 @@ module PPrint = struct
         pp_err Typing "%a does@ not@ subtype@ any@ of:@ %a." pp_ty provided
           (pp_comma_list pp_type_desc)
           expected
-    | TypeSatisfactionFailure { expected; provided } ->
+    | TypeSatisfactionFailure { expected; actual } ->
         pp_err Typing "a subtype of@ %a@ was expected,@ provided %a." pp_ty
-          expected pp_ty provided
+          expected pp_ty actual
     | AssertionFailed (t, e) ->
         pp_err
           (ErrorKind.of_error_handling_time t)
@@ -588,14 +604,18 @@ module PPrint = struct
           "A local declaration must declare at least one name."
     | NonFunctionBuiltinDeclaration ->
         pp_err Parse "Only subprogram declarations may be marked as builtins."
-    | UnknownSymbol s ->
-        let codes = List.map Char.code (List.of_seq (String.to_seq s)) in
+    | UnknownSymbol { symbol; alternative } ->
+        let codes = List.map Char.code (List.of_seq (String.to_seq symbol)) in
         let not_printable code = code < 33 || code > 126 in
         if List.exists not_printable codes then
           pp_err Lexical "Unknown symbol (ASCII code point(s): %a)."
             (pp_comma_list pp_print_int)
             codes
-        else pp_err Lexical "Unknown symbol."
+        else
+          let pp_alternative fmt alt = fprintf fmt "@ Did you mean %S?" alt in
+          pp_err Lexical "Unknown symbol %S.%a" symbol
+            (pp_print_option pp_alternative)
+            alternative
     | NoCallCandidate (name, types) ->
         pp_err Typing
           "No subprogram declaration matches the invocation:@ %s(%a)." name
@@ -845,6 +865,8 @@ module CSV = struct
     | UndefinedIdentifier _ -> "UndefinedIdentifier"
     | MismatchedCallType _ -> "MismatchedCallType"
     | BadArity _ -> "BadArity"
+    | BadCallArity _ -> "BadCallArity"
+    | BadTupleArity _ -> "BadTupleArity"
     | BadParameterArity _ -> "BadParameterArity"
     | UnsupportedBinop _ -> "UnsupportedBinop"
     | UnsupportedUnop _ -> "UnsupportedUnop"
@@ -852,6 +874,7 @@ module CSV = struct
     | UnsupportedTy _ -> "UnsupportedTy"
     | InvalidExpr _ -> "InvalidExpr"
     | MismatchType _ -> "MismatchType"
+    | ATCExecutionFailure _ -> "ATCExecutionFailure"
     | ConflictingTypes _ -> "ConflictingTypes"
     | TypeSatisfactionFailure _ -> "TypeSatisfactionFailure"
     | AssertionFailed _ -> "AssertionFailed"

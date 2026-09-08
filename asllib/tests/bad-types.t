@@ -7,7 +7,7 @@ Bad enumeration
   File bad-types1.asl, line 1, characters 23 to 24:
   type t of enumeration {};
                          ^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
 
 Invalid bitfields

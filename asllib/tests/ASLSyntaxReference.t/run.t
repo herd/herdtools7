@@ -13,7 +13,7 @@ Examples used to test syntax and AST building rules:
   File GuideRule.IdentifiersKeywords.bad.asl, line 3, characters 8 to 12:
       var case = 5;
           ^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref ConventionRule.IdentifiersDifferingByCase.asl
   $ aslref --no-exec ConventionRule.IdentifierSingleUnderscore.asl
@@ -22,14 +22,16 @@ Examples used to test syntax and AST building rules:
     characters 6 to 7:
     let - = 42;
         ^
-  ASL Grammar error: Cannot parse. A local declaration must declare a name.
+  ASL Grammar error (BE_PE): Cannot parse. A local declaration must declare a
+    name.
   [1]
   $ aslref GuideRule.DiscardingGlobalStorageDeclarations.asl
   File GuideRule.DiscardingGlobalStorageDeclarations.asl, line 1,
     characters 4 to 5:
   let - = 42;
       ^
-  ASL Grammar error: Cannot parse. A global declaration must declare a name.
+  ASL Grammar error (BE_PE): Cannot parse. A global declaration must declare a
+    name.
   [1]
   $ aslref ASTRule.DesugarLHSAccess.asl
   $ aslref ASTRule.DesugarLHSTuple.asl
@@ -73,7 +75,7 @@ Examples used to test syntax and AST building rules:
   File CaseStatement.bad.asl, line 7, characters 8 to 12:
           when '11' => X[30] = 0;
           ^^^^
-  ASL Grammar error: Cannot parse.
+  ASL Grammar error (BE_PE): Cannot parse.
   [1]
   $ aslref ASTRule.ReadModifyWriteSlice.asl
   $ aslref ASTRule.ReadModifyWriteField.asl

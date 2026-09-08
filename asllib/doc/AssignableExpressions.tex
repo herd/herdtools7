@@ -128,6 +128,7 @@ which we then desugar into abstract syntax in \secref{AssignableExpressionsDesug
 The function
 \[
   \buildlexpr(\overname{\parsenode{\Nlexpr}}{\vparsednode}) \;\aslto\; \overname{\lexpr}{\vastnode}
+  \cup \overname{\TBuildError}{\BuildErrorConfig}
 \]
 transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 
@@ -175,7 +176,7 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \begin{mathpar}
 \inferrule[tuple\_fields]{
   \buildclist[\builddiscardoridentifier](\vids) \astarrow \astversion{\vids} \\
-  \desugarlhsfieldstuple(\id, \astversion{\vids}) \astarrow \vastnode
+  \desugarlhsfieldstuple(\id, \astversion{\vids}) \astarrow \vastnode \OrBuildError
 }{
   {
   \begin{array}{r}
@@ -414,8 +415,10 @@ is defined via the following rules:
 The function
 \[
   \desugarlhsfieldstuple(\overname{\Identifier}{\id} \aslsep \overname{\KleeneStar{\Option{\Identifier}}}{\fieldopts}) \;\aslto\; \overname{\lexpr}{\vlexpr}
+  \cup \overname{\TBuildError}{\BuildErrorConfig}
 \]
 transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into an AST node $\vlexpr$.
+\ProseOtherwiseBuildError
 
 \ExampleDef{Desugaring a left-hand side fields tuple}
 \listingref{DesugarLHSFieldsTuple} shows an example of desugaring a left-hand side fields tuple.
@@ -424,7 +427,8 @@ transforms an assignment to a tuple of fields $\fields$ of variable $\id$ into a
 \begin{mathpar}
 \inferrule{
   \fields \eqdef \filteroptionlist{\fieldopts}\\
-  \checknoduplicates(\fields) \typearrow \True \OrTypeError \hva\\
+  \becheck(\listlen{\fields} = \cardinality{\listassetop{\fields}}, \ParseError)
+    \astarrow \True \OrBuildError \hva\\
   i \in 1..|\fieldopts|: \desugarlhsfieldopt(\id, \fieldopts[i]) \astarrow \vlexpr_i \\
   \vlexprs \eqdef [i \in 1..|\fieldopts|: \vlexpr_i]
 }{
