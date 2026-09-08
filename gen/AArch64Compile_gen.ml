@@ -1949,10 +1949,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,PteAccess (ReadHA `AcquirePC) ->
             let r,init,cs,st = LDAPR.emit_load st p init loc in
             Some (Some r,init,cs,st)
-        | R,PteAccess (Set (`Plain,pte))
-          when WPTESet.mem HA pte ->
-            let r,init,cs,st = LDR.emit_load st p init loc in
-            Some (Some r,init,cs,st)
         (* Special cases for TTHM.
            - `HA` is on both read and write
            - `HD` is only on write *)
