@@ -823,7 +823,7 @@ let opt_coherence = function
           match O.cond with
           | Unicond | Cycle -> []
           | Observe -> F.location_list final faults in
-        let init = if do_kvm then A.complete_init O.hexa initial_values init else init in
+        let init = A.complete_init O.hexa initial_values init in
         (init,code,make_condition faults,type_env,observed_locations),
         (U.compile_prefetch_ios (List.length observer_code) ios,
          U.compile_coms processes)
