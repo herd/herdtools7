@@ -1,0 +1,6 @@
+mode: exec
+outcome: FAILURE
+error: DE_DAF
+error_line: 4
+info: |
+  The assertion 42 == 3 fails at run time.
