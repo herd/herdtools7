@@ -1,4 +1,4 @@
-X86 MP
+X86 MP-X86
 { x=0; y=0; }
  P0          | P1          ;
  MOV [x],$1  | MOV EAX,[y] ;
