@@ -372,7 +372,10 @@ let expand_domain_range (nf : rel_nf) : rel_nf =
     let rels =
       List.filter_map (function Set _ -> None | Rel r -> Some r) seq
     in
-    match rels with [] -> true | [ Inter [ Prim "amo" ] ] -> true | _ -> false
+    match rels with
+    | [] -> true
+    | [ Inter [ Prim ("amo" | "rmw") ] ] -> true
+    | _ -> false
   in
   let expand_item : seq_item -> seq_item list = function
     | Set (Inter x) -> (
@@ -394,13 +397,13 @@ let expand_domain_range (nf : rel_nf) : rel_nf =
 
 let expand_acq_rel (nf : rel_nf) : rel_nf =
   let mem = to_id (prim_set (Prim "M")) in
-  let amo = prim_rel (Prim "amo") in
+  let rmw = prim_rel (Prim "rmw") in
   let atom_a = Prim "A" in
   let atom_q = Prim "Q" in
   let atom_l = Prim "L" in
-  let amo_ap = rel_seq_l [ to_id (prim_set atom_a); amo; mem ] in
-  let amo_qp = rel_seq_l [ to_id (prim_set atom_q); amo; mem ] in
-  let amo_pl = rel_seq_l [ mem; amo; to_id (prim_set atom_l) ] in
+  let rmw_ap = rel_seq_l [ to_id (prim_set atom_a); rmw; mem ] in
+  let rmw_qp = rel_seq_l [ to_id (prim_set atom_q); rmw; mem ] in
+  let rmw_pl = rel_seq_l [ mem; rmw; to_id (prim_set atom_l) ] in
   nf
   |> union_flat_map
        (seq_flat_map (function
@@ -409,19 +412,19 @@ let expand_acq_rel (nf : rel_nf) : rel_nf =
              let s =
                match mem_partition atom_a x with
                | Some rest ->
-                   union s (to_id (set_inter (prim_sets rest) (domain amo_ap)))
+                   union s (to_id (set_inter (prim_sets rest) (domain rmw_ap)))
                | None -> s
              in
              let s =
                match mem_partition atom_q x with
                | Some rest ->
-                   union s (to_id (set_inter (prim_sets rest) (domain amo_qp)))
+                   union s (to_id (set_inter (prim_sets rest) (domain rmw_qp)))
                | None -> s
              in
              let s =
                match mem_partition atom_l x with
                | Some rest ->
-                   union s (to_id (set_inter (prim_sets rest) (range amo_pl)))
+                   union s (to_id (set_inter (prim_sets rest) (range rmw_pl)))
                | None -> s
              in
              s
