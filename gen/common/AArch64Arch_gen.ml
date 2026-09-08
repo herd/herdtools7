@@ -229,10 +229,14 @@ type access_write = [ `Plain | `Release ]
 type access_order = [ access_read | access_write ]
 let compare_access_order (o1 : access_order) (o2 : access_order) =
   Stdlib.compare o1 o2
-let compare_mixed (sz1,o1) (sz2,o2) =
-  match MachSize.compare sz1 sz2 with
-  | 0 -> Misc.int_compare o1 o2
-  | c -> c
+let compare_mixed lhs rhs =
+  Misc.pair_compare MachSize.compare Misc.int_compare lhs rhs
+
+let pp_access_order default = function
+  | `Plain -> default
+  | `Acquire -> "A"
+  | `AcquirePC -> "Q"
+  | `Release -> "L"
 
 type atom_pte =
   | Read of access_read
@@ -436,34 +440,24 @@ end = struct
     | `PaL -> "L"
 
   let pp = function
-    | OrdinaryAccess `Plain -> "P"
-    | OrdinaryAccess `Acquire -> "A"
-    | OrdinaryAccess `AcquirePC -> "Q"
-    | OrdinaryAccess `Release -> "L"
+    | OrdinaryAccess access_order -> pp_access_order "P" access_order
     | Atomic (rw,AtomicOrdinary) -> sprintf "X%s" (pp_atom_rw rw)
     | MixedSizeAccess (`Plain,m) -> pp_mixed m
-    | MixedSizeAccess (`Acquire,m) -> sprintf "A.%s" (pp_mixed m)
-    | MixedSizeAccess (`AcquirePC,m) -> sprintf "Q.%s" (pp_mixed m)
-    | MixedSizeAccess (`Release,m) -> sprintf "L.%s" (pp_mixed m)
+    | MixedSizeAccess (access_order,m) ->
+        sprintf "%s.%s" (pp_access_order "" access_order) (pp_mixed m)
     | Atomic (rw,AtomicSize m) ->
         sprintf "X%s.%s" (pp_atom_rw rw) (pp_mixed m)
-    | MorelloAccess `Plain -> "Pc"
-    | MorelloAccess `Acquire -> "Ac"
-    | MorelloAccess `AcquirePC -> "Qc"
-    | MorelloAccess `Release -> "Lc"
+    | MorelloAccess access_order ->
+        sprintf "%sc" (pp_access_order "P" access_order)
     | MorelloTagAccess -> "Ct"
     | MorelloSealAccess -> "Cs"
     | MemoryTagAccess -> "T"
-    | PteAccess (Read `Plain) -> "Pte"
-    | PteAccess (Read `Acquire) -> "PteA"
-    | PteAccess (Read `AcquirePC) -> "PteQ"
-    | PteAccess (ReadHA `Plain) -> "PteHA"
-    | PteAccess (ReadHA `Acquire) -> "PteHAA"
-    | PteAccess (ReadHA `AcquirePC) -> "PteHAQ"
-    | PteAccess (Set (`Plain,p)) ->
-        sprintf "Pte%s" (pp_w_pte p)
-    | PteAccess (Set (`Release,p)) ->
-        sprintf "Pte%sL" (pp_w_pte p)
+    | PteAccess (Read access_order) ->
+        sprintf "Pte%s" (pp_access_order "" access_order)
+    | PteAccess (ReadHA access_order) ->
+        sprintf "PteHA%s" (pp_access_order "" access_order)
+    | PteAccess (Set (access_order,p)) ->
+        sprintf "Pte%s%s" (pp_w_pte p) (pp_access_order "" access_order)
     | NeonAccess n -> SIMD.pp n
     | PairAccess opt -> sprintf "Pa%s" (pp_pair_opt opt)
     | InstrAccess -> "I"
