@@ -20,6 +20,7 @@ let verbose = ref 0
 let libdir = ref (Filename.concat Version.libdir "herd")
 let nprocs = ref 4
 let size = ref 6
+let init_value = ref 0
 let one = ref false
 let arch = ref (`PPC: Archs.t)
 let typ = ref TypBase.default
@@ -193,6 +194,8 @@ let common_specs () =
     | None -> false
     | Some a -> arch := a ; true)
     Archs.tags "specify architecture"::
+  ("-init-value", Arg.Int (fun n -> init_value := n),
+   "<n> set the initial value of ordinary memory (default 0)")::
   ("-bell",
    Arg.String (fun f -> arch := Archs.lisa ; bell := Some f),
    "<name> read bell file <name>, implies -arch LISA")::

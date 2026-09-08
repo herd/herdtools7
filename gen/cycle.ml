@@ -138,6 +138,7 @@ module type Config = sig
   val allow_back : bool
   val naturalsize : MachSize.sz
   val hexa : bool
+  val init_value : int
   val variant : Variant_gen.t -> bool
 end
 
@@ -514,8 +515,8 @@ module CoSt = struct
              machine_feature: StringSet.t }
 
   let create init_value access_tag sz pte_value check_value check_fault machine_feature =
-    let map = List.fold_left ( fun acc bank -> M.add bank init_value acc ) M.empty
-                  [Tag; CapaTag; CapaSeal; Ord; ]
+    let map = List.fold_left ( fun acc bank -> M.add bank 0 acc ) M.empty
+                  [Tag; CapaTag; CapaSeal; ] |> M.add Ord init_value
     and co_cell = Array.make (if sz <= 0 then 1 else sz) (Value.from_int init_value) in
     { map; access_tag; co_cell; pte_value; check_fault; check_value ; machine_feature }
 
@@ -1091,9 +1092,9 @@ let check_cycle c =
                  process the nodes in list `ns` for the location `loc` *)
               let loc = n.evt.loc in
               let sz = get_wide_list ns in
-              let init_val = if do_kvm then k else 0 in
+              let init_val = if do_kvm then k else O.init_value in
               let pte_val = pte_val_init ns loc in
-              let access_tag = access_tag_init init_val ns in
+              let access_tag = access_tag_init 0 ns in
               (* Since it is a cycle, the initial value of `check_value`
                  and `check_fault` depend on if there are write to
                  the variable and pte respectively. *)
@@ -1312,7 +1313,7 @@ let do_set_read_v init =
   | n::_ ->
     let sz = get_wide_list ns in
     let pte_val = pte_val_init ns n.evt.loc in
-    let access_tag = access_tag_init init ns in
+    let access_tag = access_tag_init 0 ns in
     let check_value = exist_plain_value_write ns in
     let check_fault = exist_fault_related_write ns in
     let machine_feature =

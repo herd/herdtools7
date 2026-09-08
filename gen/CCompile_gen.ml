@@ -67,6 +67,7 @@ module Make(O:Config) : Builder.S
       module ConfWithSize = struct
         include O
         let naturalsize = TypBase.get_size O.typ
+        let init_value = !Config.init_value
       end
 
       module C = Cycle.Make(ConfWithSize)(E)
