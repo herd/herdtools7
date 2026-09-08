@@ -952,7 +952,8 @@ let check_cycle c =
       (* TODO: potentially rework the if-elseif-else here as it is confused *)
       begin if Code.is_data n.evt.loc then
         begin if do_memtag then
-          let tag = Value.to_int (CoSt.get_co st Tag) in
+          let tag = if n.evt.bank = Tag then Value.to_int (CoSt.get_co st Tag)
+            else CoSt.get_access_tag st in
           n.evt <- { n.evt with tag; }
         else if do_morello then
           let ord = Value.to_int (CoSt.get_co st Ord) in
@@ -1004,6 +1005,8 @@ let check_cycle c =
               let st = CoSt.next_co st bank |> CoSt.set_check_fault in
               let v = CoSt.get_co st bank in
               n.evt <- { n.evt with v = v; check_value; } ;
+              let st = CoSt.set_access_tag st
+                  (if Value.is_tag_fault n.evt.atom then n.evt.tag else Value.to_int v) in
               let e,st = CoSt.set_tcell st n.evt in
               n.evt <- e ;
               (next_x_ok, st)
