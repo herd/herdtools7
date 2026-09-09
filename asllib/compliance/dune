@@ -4,7 +4,7 @@
 (executable
  (name asltest)
  (optional)
- (libraries yaml yojson jsonschema))
+ (libraries yaml yojson jsonschema asllib))
 
 (subdir
  run

@@ -49,11 +49,12 @@ let generate_rules actual_stems base =
 
 (rule
   (alias runtest)
+  (deps ../tests/%s.yaml %s.yaml.actual)
   (enabled_if (and %%{lib-available:yaml} %%{lib-available:yojson} %%{lib-available:jsonschema}))
   (action
-  (diff ../tests/%s.yaml %s.yaml.actual)))
+  (run ../asltest.exe --compare ../tests/%s.yaml %s.yaml.actual)))
 |}
-    base base actual base base actual;
+    base base actual base base actual base actual;
   actual_stems
 
 let () =
