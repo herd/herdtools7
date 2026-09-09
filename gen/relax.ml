@@ -42,13 +42,16 @@ module type S = sig
   val po : relax list
 
   (* Parse the `input` to `Ast.t` using the input grammar *)
-  val parse_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> string Ast.t) -> string -> string Ast.t
+  val parse_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> (string,string) Ast.t) -> string -> (string,string) Ast.t
+  val parse_sequence_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> (string,string) Ast.t) -> string list -> (string,string) Ast.t
   (* Parse the input relaxation (or relaxations sequences), and expand the wildcard
      syntax into primitive edges and annotations *)
-  val parse_sequence_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> string Ast.t) -> string list -> string Ast.t
+  val parse_expand_relaxs_ast :
+    ?ppo:((relax -> relax list -> relax list) -> relax list -> relax list)
+        -> (string,string) Ast.t -> (string,edge) Ast.t
   val parse_expand_relaxs :
     ?ppo:((relax -> relax list -> relax list) -> relax list -> relax list)
-        -> string Ast.t -> relax list
+        -> (string,string) Ast.t -> relax list
 
   (* Remove invalid relax from the list *)
   val remove_invalid_relaxes : relax list -> relax list
@@ -363,35 +366,47 @@ and type edge = E.edge
           expand_relaxs parsed_edges
           |> relax_list_to_choice
 
-          let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
+          let parse_expand_relaxs_ast ?(ppo=(fun _ k -> k)) ast =
             Ast.bind ast (parse_expand_relax ~ppo)
+
+          let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
+            parse_expand_relaxs_ast ~ppo ast
               |> Ast.expand
+                   (fun pred _ ->
+                     Warn.user_error
+                       "predicate %s is only supported by diy7 search." pred)
 
         (* After wildcard and macro expansion, remove invalid relaxations
            whose adjacent concrete edges cannot appear consecutively.
            Pseudo-edges (annotations and insert edge) are ignored in the check.
            Duplications are removed as well. *)
         let remove_invalid_relaxes relaxes =
-          let rec for_all_adjacent_concrete_edge predicate = function
+          let rec for_all_adjacent_edge participates predicate = function
             | [] | [_] -> true
             | lhs :: rhs :: list ->
-                match E.is_non_pseudo lhs.E.edge, E.is_non_pseudo rhs.E.edge with
+                match participates lhs.E.edge, participates rhs.E.edge with
                 | true, true ->
                     predicate lhs rhs
-                    && for_all_adjacent_concrete_edge predicate (rhs :: list)
+                    && for_all_adjacent_edge participates predicate (rhs :: list)
                 | true, false ->
-                    for_all_adjacent_concrete_edge predicate (lhs :: list)
+                    for_all_adjacent_edge participates predicate (lhs :: list)
                 | false, true ->
-                    for_all_adjacent_concrete_edge predicate (rhs :: list)
+                    for_all_adjacent_edge participates predicate (rhs :: list)
                 | false, false ->
-                    for_all_adjacent_concrete_edge predicate list in
-          List.filter
-            (fun relax ->
-              (* Drop empty alternatives introduced by `?`; they do not
-                 describe an actual relaxation. *)
-              relax <> []
-              && for_all_adjacent_concrete_edge E.can_precede relax)
-            relaxes
+                    for_all_adjacent_edge participates predicate list in
+          relaxes
+          |> List.filter
+               (fun relax ->
+                 (* Drop empty alternatives introduced by `?`; they do not
+                    describe an actual relaxation. *)
+                 relax <> []
+                 && for_all_adjacent_edge E.is_non_pseudo E.can_precede relax
+                 (* Validate annotations separately so that atom propagation
+                    can reject invalid RMW combinations such as
+                    [A,Amo.StAdd,L]. *)
+                 && for_all_adjacent_edge
+                      (fun edge -> not (E.is_insert_store edge))
+                      E.can_precede relax)
           |> List.sort_uniq compare
 
 (********)

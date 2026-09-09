@@ -1,12 +1,11 @@
 Test MP+dmb.sy+amo.ldaddal-polt Allowed
-States 3
-1:X0=0; 1:X4=x:green; [y]=1;
-1:X0=1; 1:X4=x:green; [y]=1;
-1:X0=1; 1:X4=x:green; [y]=3;
+States 2
+1:X0=0; 1:X4=x:green;
+1:X0=1; 1:X4=x:green;
 Ok
 Witnesses
-Positive: 1 Negative: 2
-Condition exists ([y]=3 /\ 1:X0=1 /\ 1:X4=x:green)
-Observation MP+dmb.sy+amo.ldaddal-polt Sometimes 1 2
-Hash=5dfdc205766e1c01ce98e6e5fe54fd06
+Positive: 2 Negative: 1
+Condition exists (1:X0=1 /\ 1:X4=x:green)
+Observation MP+dmb.sy+amo.ldaddal-polt Sometimes 2 1
+Hash=6989d5f038ac0242271661d43fb76a7d
 

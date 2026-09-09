@@ -1,15 +1,13 @@
 Test LB+dmb.sytp+amo.ldaddal-polt Allowed
-States 6
-0:X0=x:green; 1:X0=0; [y]=1;
-0:X0=x:green; 1:X0=1; [y]=1;
-0:X0=x:green; 1:X0=1; [y]=3;
-0:X0=x:red; 1:X0=0; [y]=1;
-0:X0=x:red; 1:X0=1; [y]=1;
-0:X0=x:red; 1:X0=1; [y]=3;
+States 4
+0:X0=x:green; 1:X0=0;
+0:X0=x:green; 1:X0=1;
+0:X0=x:red; 1:X0=0;
+0:X0=x:red; 1:X0=1;
 Ok
 Witnesses
-Positive: 1 Negative: 5
-Condition exists ([y]=3 /\ 0:X0=x:red /\ 1:X0=1)
-Observation LB+dmb.sytp+amo.ldaddal-polt Sometimes 1 5
-Hash=0f1c8b65928a5f7bf6ef26176dd7d61c
+Positive: 2 Negative: 4
+Condition exists (0:X0=x:red /\ 1:X0=1)
+Observation LB+dmb.sytp+amo.ldaddal-polt Sometimes 2 4
+Hash=a0f0651d71a1c40f5e46696dd6db45b4
 

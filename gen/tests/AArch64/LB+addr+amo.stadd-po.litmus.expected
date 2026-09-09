@@ -1,13 +1,11 @@
 Test LB+addr+amo.stadd-po Allowed
-States 4
-0:X1=0; [y]=1;
-0:X1=0; [y]=3;
-0:X1=1; [y]=1;
-0:X1=1; [y]=3;
+States 2
+0:X1=0;
+0:X1=1;
 Ok
 Witnesses
-Positive: 1 Negative: 3
-Condition exists ([y]=3 /\ 0:X1=1)
-Observation LB+addr+amo.stadd-po Sometimes 1 3
-Hash=ebb414247a57ca1739c118928c40cb03
+Positive: 2 Negative: 2
+Condition exists (0:X1=1)
+Observation LB+addr+amo.stadd-po Sometimes 2 2
+Hash=3445153e8d83ff7a5f263fe3730aa74a
 

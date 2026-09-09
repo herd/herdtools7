@@ -1,15 +1,13 @@
 Test S+dmb.sy+amo.ldaddal-polp Allowed
-States 6
-1:X0=0; [x]=1; [y]=1;
-1:X0=0; [x]=2; [y]=1;
-1:X0=1; [x]=1; [y]=1;
-1:X0=1; [x]=1; [y]=3;
-1:X0=1; [x]=2; [y]=1;
-1:X0=1; [x]=2; [y]=3;
+States 4
+1:X0=0; [x]=1;
+1:X0=0; [x]=2;
+1:X0=1; [x]=1;
+1:X0=1; [x]=2;
 Ok
 Witnesses
-Positive: 1 Negative: 5
-Condition exists ([x]=2 /\ [y]=3 /\ 1:X0=1)
-Observation S+dmb.sy+amo.ldaddal-polp Sometimes 1 5
-Hash=ca3eeda32dd5503680b5938a7c3f37b7
+Positive: 2 Negative: 4
+Condition exists ([x]=2 /\ 1:X0=1)
+Observation S+dmb.sy+amo.ldaddal-polp Sometimes 2 4
+Hash=8edb3d6eed54d8a7c2f1ad7bd9c1271c
 

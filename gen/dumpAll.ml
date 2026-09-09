@@ -171,7 +171,7 @@ module Make(Config:Config)(T:Builder.S)
            sigs : sigs ;     (* Signatures of compiled tests *)
            env : int Env.t ;     (* State for getting numeric names *)
            dup : int Env.t ;     (* State for getting fresh names *)
-           relaxed : T.R.SetSet.t ;
+           relaxed : StringSet.t ;
          }
 
       type check = edge list list -> bool
@@ -179,8 +179,8 @@ module Make(Config:Config)(T:Builder.S)
       (* `mk_info` is part of the prepared-test stage and should stay pure:
          it should only contain metadata derived earlier, not touch global
          state, perform I/O, or depend on output ordering. *)
-      type mk_info = info * T.R.Set.t
-      let no_info = [],T.R.Set.empty
+      type mk_info = info * string
+      let no_info = [],""
 
       type mk_name =  edge list -> string option
       let no_name _ = None
@@ -212,7 +212,7 @@ module Make(Config:Config)(T:Builder.S)
         { ntests = 0 ;
           sigs = sigs_init Config.no ;
           env = Env.empty; dup = Env.empty;
-          relaxed = T.R.SetSet.empty; }
+          relaxed = StringSet.empty; }
 
 (************************************** ****)
 (* Check duplicates, compile and dump test *)
@@ -228,7 +228,7 @@ module Make(Config:Config)(T:Builder.S)
       type prepared =
           {
            es : T.E.edge list ;
-           relax_set : T.R.Set.t ;
+           relax : string ;
            t : T.test ;
          }
 
@@ -254,10 +254,10 @@ module Make(Config:Config)(T:Builder.S)
         let es,c = T.C.resolve_edges es in
         let c,init = T.C.finish c in
         let cy = T.E.pp_edges es in
-        let info,relaxed = mk_info in
+        let info,relax = mk_info in
         let info = Config.info@("Cycle",cy)::info in
         let t = T.test_of_cycle "__tmp__" ~info ~check ~init es c in
-        { es; relax_set=relaxed; t; }
+        { es; relax; t; }
 
 (* Dump from prepared test, with specified scope tree *)
       let dump_test_st keep_name all_chan generated_test env n mk_st res =
@@ -271,7 +271,7 @@ module Make(Config:Config)(T:Builder.S)
         let t = T.set_scope t st in
         let res =
           { res with
-            env; dup; relaxed= T.R.SetSet.add generated_test.relax_set res.relaxed; } in
+            env; dup; relaxed=StringSet.add generated_test.relax res.relaxed; } in
         do_dump_test all_chan t res
 
       let dump_test all_chan mk_name mk_scope generated_test res =
@@ -290,7 +290,7 @@ module Make(Config:Config)(T:Builder.S)
             let t = T.set_name generated_test.t n in
             let res =
               { res with
-                env; dup; relaxed= T.R.SetSet.add generated_test.relax_set res.relaxed; } in
+                env; dup; relaxed=StringSet.add generated_test.relax res.relaxed; } in
             do_dump_test all_chan t res
         | Scope.Default ->
             let keep_name,mk_st =
@@ -304,7 +304,7 @@ module Make(Config:Config)(T:Builder.S)
         | Scope.Gen scs ->
             let res =
               { res with
-                env; relaxed= T.R.SetSet.add generated_test.relax_set res.relaxed; } in
+                env; relaxed=StringSet.add generated_test.relax res.relaxed; } in
             T.A.ScopeGen.gen scs (T.get_nprocs generated_test.t)
               (fun st res ->
                 let n = n ^ "+" ^ Namer.of_scope st in
@@ -317,7 +317,7 @@ module Make(Config:Config)(T:Builder.S)
         | Scope.All ->
             let res =
               { res with
-                env; relaxed= T.R.SetSet.add generated_test.relax_set res.relaxed; } in
+                env; relaxed=StringSet.add generated_test.relax res.relaxed; } in
             T.A.ScopeGen.all (T.get_nprocs generated_test.t)
               (fun st res ->
                 let n = n ^ "+" ^ Namer.of_scope st in
@@ -388,11 +388,9 @@ module Make(Config:Config)(T:Builder.S)
             print
               "Generator produced %d tests\n%!"
               res.ntests ;
-            if
-              T.R.SetSet.exists (fun r -> not (T.R.Set.is_empty r)) res.relaxed
-            then
-              print "Relaxations tested: %a\n"
-                T.R.pp_set_set res.relaxed) ;
+            if StringSet.exists (fun relax -> relax <> "") res.relaxed then
+              print "Relaxations tested: %s\n"
+                (StringSet.pp_str " " (sprintf "{%s}") res.relaxed)) ;
         Tar.tar () ;
         Hint.close_out Config.hout
 

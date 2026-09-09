@@ -159,7 +159,8 @@ let diycross_parser_syntax_doc =
 
 let diy7_parser_syntax_doc =
   parser_syntax_doc ^ "\n\
-   In `diy7`, top-level plain separators denote choice, so '[A B] C [D E]' has canonical form `[[A,B]|C|[D,E]]`."
+   In `diy7`, top-level plain separators denote choice, so '[A B] C [D E]' has canonical form `[[A,B]|C|[D,E]]`.\n\
+   `diy7` also accepts predicate decorators such as `@before(...)`, `@after(...)`, and `@with(...)`; these are not accepted by the shared `diyone7` or `diycross7` parsers."
 
 let cumul_parser_syntax_doc =
   " `false` disables non-explicit fence cumulativity, `true` enables all fence cumulativity, and any other value is parsed as a set of fences.\n\
@@ -389,7 +390,7 @@ let diy_spec () =
           Arg.String (fun s -> filter_check := !filter_check @ [s]);
           Arg.String (fun s -> filter_check := !filter_check @ [s]);
         ],
-   "<lhs> <rhs> show whether the internal filter prohibits the two relaxations in the mode specified by `-mode` argument, however, all other constraints between <lhs> and <rhs>, such as edge compatibility, are ignored. Passing the internal filter is a necessary but not sufficient condition when sequence `<lhs> <rhs>` appears in the generated tests. This argument overrides other arguments but is overrided by `-show`.")::
+   "<lhs> <rhs> show whether the precomputed search adjacency cache permits the two relaxations in the mode specified by `-mode`. This argument overrides other arguments but is overridden by `-show`.")::
      ("-unfold-only", Arg.Set unfold_only, "unfold the wildcard.")::
    []
 
