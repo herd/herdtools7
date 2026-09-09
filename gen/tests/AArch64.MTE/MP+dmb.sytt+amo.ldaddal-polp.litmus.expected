@@ -1,6 +1,6 @@
 Test MP+dmb.sytt+amo.ldaddal-polp Allowed
 States 2
-1:X4=0; 1:X6=0; [y]=1;  ~Fault(P1);
+1:X4=0; 1:X6=0; [y]=1; ~Fault(P1);
 1:X4=0; 1:X6=0; [y]=1; Fault(P1,TagCheck);
 Ok
 Witnesses

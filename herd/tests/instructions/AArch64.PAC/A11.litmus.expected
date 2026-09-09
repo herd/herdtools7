@@ -1,6 +1,6 @@
 Test A08 Allowed
 States 2
-0:X1=42;  ~Fault(P0); pacda(x,0x35)=x;
+0:X1=42; ~Fault(P0); pacda(x,0x35)=x;
 0:X1=53; Fault(P0,x,D-MMU:Translation);
 Ok
 Witnesses

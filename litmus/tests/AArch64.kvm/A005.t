@@ -31,10 +31,10 @@ stable
   Test A005 Required
   Histogram (1 states)
   4000000*>0:X0=1; 0:X2=0; 0:X3=1;
-  No
-  
+  No  
   Witnesses
   Positive: 0, Negative: 4000000
   Condition forall (0:X0=0 /\ 0:X2=1 /\ 0:X3=1) is NOT validated
   Hash=63fe95c5d285e45a9e941fb36d381f70
   Observation A005 Never 0 4000000
+

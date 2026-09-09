@@ -1,6 +1,6 @@
 Test A008 Allowed
 States 3
-[x]=0;  ~Fault(P0:L0,x,MMU:Translation);
+[x]=0; ~Fault(P0:L0,x,MMU:Translation);
 [x]=0; Fault(P0:L0,x,MMU:Translation);
 [x]=1; Fault(P0:L0,x,MMU:Translation);
 Ok

@@ -1,6 +1,6 @@
 Test B012 Required
 States 1
-  ~Fault(P0,x);
+ ~Fault(P0,x);
 Ok
 Witnesses
 Positive: 1 Negative: 0

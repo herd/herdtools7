@@ -1,10 +1,10 @@
 Test S+dmb.sy+amo.ldaddal-polt Allowed
 States 6
-1:X0=0; [x]=1; [y]=1;  ~Fault(P0);
+1:X0=0; [x]=1; [y]=1; ~Fault(P0);
 1:X0=0; [x]=1; [y]=1; Fault(P0,TagCheck);
-1:X0=1; [x]=1; [y]=1;  ~Fault(P0);
+1:X0=1; [x]=1; [y]=1; ~Fault(P0);
 1:X0=1; [x]=1; [y]=1; Fault(P0,TagCheck);
-1:X0=1; [x]=1; [y]=3;  ~Fault(P0);
+1:X0=1; [x]=1; [y]=3; ~Fault(P0);
 1:X0=1; [x]=1; [y]=3; Fault(P0,TagCheck);
 Ok
 Witnesses

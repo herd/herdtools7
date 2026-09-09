@@ -1,6 +1,6 @@
 Test A013 Allowed
 States 1
-  ~Fault(P0:L0,x,TagCheck);
+ ~Fault(P0:L0,x,TagCheck);
 No
 Witnesses
 Positive: 0 Negative: 3

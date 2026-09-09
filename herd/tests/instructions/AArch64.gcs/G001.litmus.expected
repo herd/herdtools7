@@ -1,6 +1,6 @@
 Test G001 Required
 States 2
-  ~Fault(P0:L0,GCS:POPM);
+ ~Fault(P0:L0,GCS:POPM);
  Fault(P0:L0,GCS:POPM);
 No
 Witnesses
