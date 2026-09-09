@@ -37,6 +37,7 @@ module type S = sig
   type value = Value.v
 
   val pp_atom : atom -> string
+  val pp_atom_separate : atom -> string list
   val tr_value : atom option -> value -> value
   val overwrite_value : value -> atom option -> value -> value
   val extract_value : value -> atom option -> value
@@ -98,7 +99,7 @@ module type S = sig
   val parse_edge : string -> edge
   val parse_edges : string -> edge list
 
-  val pp_edges : edge list -> string
+  val pp_edges : ?separate:bool -> edge list -> string
 
 (* Get source and target event direction,
    Returning Irr means that a Read OR a Write is acceptable,
@@ -211,6 +212,7 @@ and module RMW = A.RMW = struct
   let is_valid_rmw = RMW.is_valid_rmw
 
   let pp_atom = A.pp_atom
+  let pp_atom_separate = A.pp_atom_separate
   let tr_value = A.tr_value
   let overwrite_value = A.overwrite_value
   let extract_value = A.extract_value
@@ -322,14 +324,12 @@ and module RMW = A.RMW = struct
       "{edge=%s, a1=%s, a2=%s}"
       (pp_tedge e.edge) (pp_atom_option e.a1) (pp_atom_option e.a2)
 
-  let pp_edge_compat compat e =
+  let pp_edge e =
     let edge = match e.edge with
     | Id -> ""
-    | _ -> pp_tedge_compat compat e.edge in
+    | _ -> pp_tedge e.edge in
     let annotation = pp_annotations e.edge e.a1 e.a2 in
     edge ^ annotation
-
-  let pp_edge e = pp_edge_compat false e
 
   let compare_atomo = Option.compare A.compare_atom
 
@@ -628,6 +628,28 @@ let fold_tedges f r =
     | Some (annotation, "") -> Some annotation
     | _ -> None
 
+  let check_invalid_annotation input =
+    let annotation =
+      let len = String.length input in
+      if len > 2 && input.[1] = '.' then String.sub input 2 (len - 2)
+      else input in
+    let len = String.length annotation in
+    if do_mixed && len > 1 then
+      let size = match annotation.[0] with
+        | 'b' -> Some MachSize.Byte
+        | 'h' -> Some MachSize.Short
+        | 'w' -> Some MachSize.Word
+        | 'q' -> Some MachSize.Quad
+        | 's' -> Some MachSize.S128
+        | _ -> None in
+      match size,int_of_string_opt (String.sub annotation 1 (len - 1)) with
+      | Some size,Some offset when offset mod MachSize.nbytes size <> 0 ->
+          sprintf
+            "Misaligned mixed-size annotation %s: offset %d is not aligned to the %d-byte access size"
+            input offset (MachSize.nbytes size)
+      | _,_ -> input
+    else input
+
   (* Parse two edge annotations, for example `AL`. *)
   let parse_edge_annotations string =
     match lookup_atom_prefix string with
@@ -648,7 +670,9 @@ let fold_tedges f r =
     let parse_annotation_only () =
       match parse_annotation input with
       | Some annotation -> annotation_edge annotation
-      | None -> Warn.fatal "Bad edge: %s" input in
+      | None ->
+          let message = check_invalid_annotation input in
+          Warn.user_error "Bad edge: %s" message in
     match lookup_edge_prefix input with
     | None -> parse_annotation_only ()
     | Some (edge, "") -> edge
@@ -664,7 +688,25 @@ let fold_tedges f r =
   let parse_edges s =
     pre_parse_string s |> List.map parse_edge
 
-  let pp_edges es = String.concat " " (List.map pp_edge es)
+  (* Separating annotations produces a cycle description that can be passed
+     back to diyone7, even when several annotations have been merged. *)
+  let pp_edges ?(separate=false) es =
+    if separate then
+      List.concat_map
+        (fun e ->
+          (* An instruction annotation cannot stand alone, so edges touching
+             an instruction access must keep their composite spelling. *)
+          if A.is_ifetch e.a1 || A.is_ifetch e.a2 then [pp_edge e]
+          else
+            let edge = match e.edge with Id -> [] | _ -> [pp_tedge e.edge] in
+            let annotations = match e.a2 with
+            | None -> []
+            | Some atom when A.compare_atom atom A.default_atom = 0 -> []
+            | Some atom -> pp_atom_separate atom in
+            edge@annotations)
+        es
+      |> String.concat " "
+    else String.concat " " (List.map pp_edge es)
 
   let do_set_tgt d e = match e  with
   | Po(sd,src,_) -> Po (sd,src,Dir d)
@@ -835,6 +877,9 @@ let fold_tedges f r =
       | Some _,None -> Some(e1, set_a1 e2 a1)
       | Some a1,Some a2 ->
         match merge_atoms a1 a2 with
+        | None when is_id e1.edge && is_id e2.edge ->
+            Warn.fatal "Incompatible annotations %s and %s"
+              (pp_atom a1) (pp_atom a2)
         | None -> None
         | Some _ as a ->
           Some(set_a2 e1 a,set_a1 e2 a) in
@@ -908,7 +953,9 @@ let fold_tedges f r =
           (pp_edge e) in
     (* Check `Id` edge are all pseudo annotation *)
     let check_pseudo_id e =
-      if is_id e.edge then
+      if is_id e.edge && (is_ifetch e.a1 || is_ifetch e.a2) then
+        Warn.fatal "Standalone instruction access annotation is not supported"
+      else if is_id e.edge then
         Warn.fatal "Invalid extra annotation %s" (pp_edge e) in
     List.iter (fun e -> check_mixed e; check_pseudo_id e) es;
     (* Match annotations between non-insert edges *)

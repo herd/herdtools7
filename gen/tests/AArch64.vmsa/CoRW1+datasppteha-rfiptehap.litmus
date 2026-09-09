@@ -1,0 +1,16 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc DpDatasW PteHA Rfi *)
+AArch64 CoRW1+datasppteha-rfiptehap
+Variant=vmsa
+TTHM=HA
+{
+ [x]=1;
+ [PTE(x)]=(oa:PA(x), af:0);
+ 0:X0=x;
+}
+ P0               ;
+ L01: LDR W1,[X0] ;
+ EOR W2,W1,W1     ;
+ ADD W2,W2,#2     ;
+ L00: STR W2,[X0] ;
+
+exists (0:X1=2 /\ not (fault(P0:L00,x)) /\ not (fault(P0:L01,x)))

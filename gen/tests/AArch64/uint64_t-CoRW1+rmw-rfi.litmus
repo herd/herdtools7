@@ -1,0 +1,14 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc LxSx Rfi -type uint64_t *)
+AArch64 CoRW1+rmw-rfi
+{
+ uint64_t x=0;
+ 0:X0=x; uint64_t 0:X1=0;
+}
+ P0              ;
+ MOV X2,#1       ;
+ Loop00:         ;
+ LDXR X1,[X0]    ;
+ STXR W3,X2,[X0] ;
+ CBNZ X3,Loop00  ;
+
+exists (0:X1=1)

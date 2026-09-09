@@ -1,0 +1,16 @@
+(* diyone7 -hexa -arch AArch64 -variant fullmixed -metadata false -oneloc PosRW X h2 Rfi *)
+AArch64 CoRW1+posw0x.h2-rfix.h2w0
+Variant=mixed
+{
+ uint32_t 0:X0=0; 0:X1=x;
+}
+ P0               ;
+ LDR W0,[X1]      ;
+ MOV W2,#257      ;
+ ADD X4,X1,#2     ;
+ Loop00:          ;
+ LDXRH W3,[X4]    ;
+ STXRH W5,W2,[X4] ;
+ CBNZ W5,Loop00   ;
+
+exists ([x]=0x1010000 /\ 0:X0=0x1010000 /\ 0:X3=0x100)

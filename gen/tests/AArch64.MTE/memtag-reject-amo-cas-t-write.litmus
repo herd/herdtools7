@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -variant memtag -metadata false -oneloc Amo.Cas T Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+amo.caspt-rfitp [Amo.CasPT RfiTP] failed:
+Bad annotation for Amo: R=P, W=T
+*)

@@ -1,0 +1,6 @@
+(* diyone7 -hexa -arch AArch64 -variant fullmixed -metadata false -oneloc LxSx b1 Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+rmww0b1-rfib1w0 [LxSxw0b1 Rfib1w0] failed:
+Refuse to generate constrained unpredictable, use -variant CU to accept
+*)

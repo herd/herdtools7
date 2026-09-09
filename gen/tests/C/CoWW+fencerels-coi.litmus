@@ -1,0 +1,20 @@
+(* diyone7 -arch C -metadata false -oneloc FenceRelsWW Coi *)
+(*
+Warning: optimised conditions are not supported by C arch
+*)
+C CoWW+fencerels-coi
+"FenceRelsWW Coi"
+Generator=diyone7 (version 7.58+1)
+Prefetch=
+Com=Co
+Orig=FenceRelsWW Coi
+
+{}
+
+P0 (volatile int* x) {
+  *x = 2;
+  atomic_thread_fence(memory_order_release);
+  *x = 1;
+}
+
+exists ([x]=2)

@@ -1,0 +1,20 @@
+(* diyone7 -arch C -metadata false -oneloc FenceAcqsRW Rfi *)
+(*
+Warning: optimised conditions are not supported by C arch
+*)
+C CoRW1+fenceacqs-rfi
+"FenceAcqsRW Rfi"
+Generator=diyone7 (version 7.58+1)
+Prefetch=
+Com=Rf
+Orig=FenceAcqsRW Rfi
+
+{}
+
+P0 (volatile int* x) {
+  int r0 = *x;
+  atomic_thread_fence(memory_order_acquire);
+  *x = 1;
+}
+
+exists (0:r0=1)

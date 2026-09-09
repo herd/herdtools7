@@ -1,0 +1,15 @@
+(* diyone7 -arch AArch64 -variant sve -metadata false -oneloc PosRW Sv2i Rfi *)
+AArch64 CoRW1+pospsv2i-rfisv2ip
+Variant=sve
+{
+ int x[8]={0,0,0,0,0,0,0,0};
+ 0:X0=x;
+}
+ P0                       ;
+ LDR W1,[X0]              ;
+ MOV Z0.S,#1              ;
+ MOV Z1.S,#2              ;
+ PTRUE P0.S,VL4           ;
+ ST2W {Z0.S,Z1.S},P0,[X0] ;
+
+exists (0:X1=1)

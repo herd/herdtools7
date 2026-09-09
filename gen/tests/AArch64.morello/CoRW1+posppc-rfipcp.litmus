@@ -1,0 +1,13 @@
+(* diyone7 -arch AArch64 -variant morello -metadata false -oneloc PosRW Pc Rfi *)
+AArch64 CoRW1+posppc-rfipcp
+Variant=morello
+{
+ __uint128 x=0;
+ 0:X0=0xffffc0000:x:1; __uint128 0:X2=0;
+}
+ P0          ;
+ LDR X1,[C0] ;
+ MOV X2,#1   ;
+ STR C2,[C0] ;
+
+exists (0:X1=1)

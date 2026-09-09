@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc PosRW PteHA Q Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+pospptehaq-rfiptehaqp [PosRWPPteHAQ RfiPteHAQP] failed:
+annotation mismatch on edge RfiPteHAQP, annotation 'PteHAQ' on W
+*)

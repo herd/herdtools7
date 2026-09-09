@@ -1,0 +1,13 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc PosRW PteDBM0 L Rfi *)
+AArch64 CoRW1+pospptedbm0l-rfiptedbm0lp
+Variant=vmsa
+{
+ [x]=1;
+ [PTE(x)]=(oa:PA(x), dbm:1);
+ 0:X0=x; 0:X2=PTE(x); 0:X3=(oa:PA(x));
+}
+ P0           ;
+ LDR W1,[X0]  ;
+ STLR X3,[X2] ;
+
+exists (true)

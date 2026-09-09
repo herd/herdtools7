@@ -121,16 +121,17 @@ let apply_prim_set : partial_effect -> prim_set -> partial_effect option =
   let build_atom_eff eff a =
     Option.map
       (fun atom -> { eff with atom; explicit_mem = true })
-      (merge_atomo_opt eff.atom (Some (a, None)))
+      (merge_atomo_opt eff.atom (Some a))
   in
+  let open A.StructuredAtom in
   fun eff x ->
     match x with
     | Prim "R" -> build_dir_eff eff Code.R
     | Prim "W" -> build_dir_eff eff Code.W
     | Prim "M" -> Some { eff with explicit_mem = true }
-    | Prim "A" -> build_atom_eff eff (A.Acq None)
-    | Prim "Q" -> build_atom_eff eff (A.AcqPc None)
-    | Prim "L" -> build_atom_eff eff (A.Rel None)
+    | Prim "A" -> build_atom_eff eff (OrdinaryAccess `Acquire)
+    | Prim "Q" -> build_atom_eff eff (OrdinaryAccess `AcquirePC)
+    | Prim "L" -> build_atom_eff eff (OrdinaryAccess `Release)
     | _ -> None
 
 let build_effect : partial_effect -> prim_set list -> partial_effect option =
@@ -147,12 +148,12 @@ let build_tedges : prim_rel -> E.tedge list =
   | Prim "amo" -> [ E.Rmw A.RMW.AllAmo ]
   | Prim "lxsx" -> [ E.Rmw A.RMW.LrSc ]
   | Prim "rmw" -> [ E.Rmw A.RMW.LrSc; E.Rmw A.RMW.AllAmo ]
-  | Prim "addr" -> dp_tedges Dep.ADDR A.NoCsel
-  | Prim "ctrl" -> dp_tedges Dep.CTRL A.NoCsel
-  | Prim "data" -> dp_tedges Dep.DATA A.NoCsel
-  | Prim "pick-addr-dep" -> dp_tedges Dep.ADDR A.OkCsel
-  | Prim "pick-ctrl-dep" -> dp_tedges Dep.CTRL A.OkCsel
-  | Prim "pick-data-dep" -> dp_tedges Dep.DATA A.OkCsel
+  | Prim "addr" -> dp_tedges Dep.Full.ADDR A.NoCsel
+  | Prim "ctrl" -> dp_tedges Dep.Full.CTRL A.NoCsel
+  | Prim "data" -> dp_tedges Dep.Full.DATA A.NoCsel
+  | Prim "pick-addr-dep" -> dp_tedges Dep.Full.ADDR A.OkCsel
+  | Prim "pick-ctrl-dep" -> dp_tedges Dep.Full.CTRL A.OkCsel
+  | Prim "pick-data-dep" -> dp_tedges Dep.Full.DATA A.OkCsel
   | _ -> []
 
 let apply_prim_rel (ed : partial_edge) (r : prim_rel) : partial_edge option =

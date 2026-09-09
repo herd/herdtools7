@@ -9,6 +9,7 @@
   herd_test
   herd_promote
   herd_assumptions_test
-  check_obs)
+  check_obs
+  diyone_test)
  (libraries internal_lib)
  (modes native))

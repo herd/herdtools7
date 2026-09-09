@@ -1,0 +1,12 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc Q DpDatasW Rfi *)
+AArch64 CoRW1+datasqp-rfipq
+{
+ 0:X0=x;
+}
+ P0            ;
+ LDAPR W1,[X0] ;
+ EOR W2,W1,W1  ;
+ ADD W2,W2,#1  ;
+ STR W2,[X0]   ;
+
+exists (0:X1=1)

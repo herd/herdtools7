@@ -1052,7 +1052,7 @@ let merge_to_left lhs rhs =
 
 let test_of_cycle name
   ?com ?(info=[]) ?(check=(fun _ -> true)) ?scope ?(init=[]) es c =
-  let com = match com with None -> E.pp_edges es | Some com -> com in
+  let com = match com with None -> E.pp_edges ~separate:true es | Some com -> com in
   let (init,prog,final,env,obs),(prf,coms) = compile_cycle check init c in
   let m_labs = num_labels prog in
   let init = tr_labs m_labs init in

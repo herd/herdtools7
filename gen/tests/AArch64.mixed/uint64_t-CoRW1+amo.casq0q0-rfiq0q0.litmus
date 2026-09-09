@@ -1,0 +1,12 @@
+(* diyone7 -hexa -arch AArch64 -variant fullmixed -type uint64_t -metadata false -oneloc q0 Amo.Cas q0 Rfi *)
+AArch64 CoRW1+amo.casq0q0-rfiq0q0
+Variant=mixed
+{
+ uint64_t x=0;
+ 0:X0=x; uint64_t 0:X1=0x101010101010101; uint64_t 0:X2=0;
+}
+ P0             ;
+ MOV X2,X1      ;
+ CAS X2,X1,[X0] ;
+
+exists (0:X2=0x101010101010101)

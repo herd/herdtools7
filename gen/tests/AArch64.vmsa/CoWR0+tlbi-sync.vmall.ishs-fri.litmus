@@ -1,0 +1,16 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc TLBI-sync.VMALL.ISHsWR Fri *)
+AArch64 CoWR0+tlbi-sync.vmall.ishs-fri
+Variant=vmsa
+{
+ [x]=1;
+ 0:X1=x;
+}
+ P0             ;
+ MOV W0,#2      ;
+ STR W0,[X1]    ;
+ DSB ISH        ;
+ TLBI VMALLE1IS ;
+ DSB ISH        ;
+ LDR W2,[X1]    ;
+
+exists (0:X2=1)

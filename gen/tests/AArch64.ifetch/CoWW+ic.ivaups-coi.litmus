@@ -1,0 +1,14 @@
+(* diyone7 -arch AArch64 -variant ifetch -metadata false -oneloc IC.IVAUpsWW Coi *)
+AArch64 CoWW+ic.ivaups-coi
+Variant=ifetch
+{
+ 0:X1=x;
+}
+ P0          ;
+ MOV W0,#2   ;
+ STR W0,[X1] ;
+ IC IVAU,X1  ;
+ MOV W2,#1   ;
+ STR W2,[X1] ;
+
+exists ([x]=2)

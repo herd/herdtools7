@@ -1,0 +1,21 @@
+(* diyone7 -arch AArch64 -variant sme -metadata false -oneloc DpDatasW SmH Rfi *)
+AArch64 CoRW1+dataspsmh-rfismhp
+Variant=sme
+{
+ int x[4]={0,0,0,0};
+ 0:X0=x;
+}
+ P0                            ;
+ LDR W1,[X0]                   ;
+ EOR W2,W1,W1                  ;
+ SMSTART                       ;
+ DUP Z0.S,W2                   ;
+ MOV Z1.S,#1                   ;
+ ADD Z1.S,Z1.S,Z0.S            ;
+ PTRUE P0.S,VL4                ;
+ MOV W12,WZR                   ;
+ MOVA ZA0H.S[W12,#0],P0/M,Z1.S ;
+ ST1W {ZA0H.S[W12,#0]},P0,[X0] ;
+ SMSTOP                        ;
+
+exists (0:X1=1)

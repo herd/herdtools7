@@ -43,14 +43,12 @@ let overlap_atoms _ _ = true
 
 let pp_plain = Code.plain
 
-let pp_as_a = None
-
 let pp_atom = function
   | Atomic -> "A"
 
-let fold_non_mixed f k = f Atomic k
+let pp_atom_separate atom = [pp_atom atom]
 
-let fold_atom f k =  fold_non_mixed f k
+let fold_atom f k = f Atomic k
 
 let worth_final _ = true
 
@@ -94,25 +92,7 @@ let var_fence f r = f default r
 (* Deps *)
 (********)
 
-type dp
-
-let equal_dp _ _ = assert false
-let pp_dp _ = assert false
-
-let fold_dpr _f r =  r
-let fold_dpw _f r =  r
-
-let ddr_default = None
-let ddw_default = None
-let ctrlr_default = None
-let ctrlw_default = None
-
-let is_ctrlr _ = assert false
-let is_addr _ = assert false
-let fst_dp _ = assert false
-let sequence_dp _ _ = assert false
-let expand_dp_dir _ = assert false
-
+include Dep.No
 (*******)
 (* RWM *)
 (*******)

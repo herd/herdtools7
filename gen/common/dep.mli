@@ -14,27 +14,53 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(* Power / ARM dependencies *)
-type dp = ADDR | DATA | CTRL | CTRLISYNC
+module type S = sig
+  type dp
 
-val equal_dp : dp -> dp -> bool
-val fold_dpr : (dp -> 'a -> 'a) -> 'a -> 'a
-val fold_dpw : (dp -> 'a -> 'a) -> 'a -> 'a
+  val equal_dp : dp -> dp -> bool
+  val pp_dp : dp -> string
+  val fold_dp : (dp -> 'a -> 'a) -> 'a -> 'a
+  val fold_dpr : (dp -> 'a -> 'a) -> 'a -> 'a
+  val fold_dpw : (dp -> 'a -> 'a) -> 'a -> 'a
 
-(* Defaults for backward compatibility *)
-val ddr_default : dp option
-val ddw_default : dp option
-val ctrlr_default : dp option
-val ctrlw_default : dp option
+  (* Defaults for backward compatibility *)
+  val ddr_default : dp option
+  val ddw_default : dp option
+  val ctrlr_default : dp option
+  val ctrlw_default : dp option
 
-(* Predicate for control on reads *)
-val is_ctrlr : dp -> bool
-val is_addr : dp -> bool
+  (* Predicates *)
+  val is_ctrlr : dp -> bool
+  val is_addr : dp -> bool
+  val is_data : dp -> bool
 
-(* Dependencies compositin by sequence *)
-val fst_dp : dp -> dp list
-val sequence_dp : dp -> dp -> dp list
+  (* Dependencies composition by sequence *)
+  val fst_dp : dp -> dp list
+  val sequence_dp : dp -> dp -> dp list
+  val expand_dp_dir : dp -> Code.dir list
+end
 
-open Code
-(* Expand wildcard `*` *)
-val expand_dp_dir: dp -> dir list
+module No : sig
+  include S
+end
+
+module Basic : sig
+  type dp = ADDR | DATA | CTRL
+  include S with type dp := dp
+end
+
+module Bell : sig
+  type dp = ADDR | DATA | CTRL
+  include S with type dp := dp
+end
+
+module Full : sig
+  type dp = ADDR | DATA | CTRL | CTRLISYNC
+  include S with type dp := dp
+end
+
+module AArch64 : sig
+  type csel = OkCsel | NoCsel
+  type dp = Full.dp * csel
+  include S with type dp := dp
+end

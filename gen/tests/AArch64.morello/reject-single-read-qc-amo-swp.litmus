@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -variant morello -metadata false -oneloc Qc Amo.Swp Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+amo.swpqcp-rfipqc [Amo.SwpQcP RfiPQc] failed:
+Bad annotation for Amo: R=Qc, W=P
+*)

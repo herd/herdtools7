@@ -1,0 +1,5 @@
+(* diyone7 -hexa -arch AArch64 -variant fullmixed -metadata false -oneloc b0 LxSx h2 Rfi *)
+(*
+[2]
+diyone7: Fatal error: Non overlapping accesses in Rfih2b0, allow with `-variant MixedDisjoint`
+*)

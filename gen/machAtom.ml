@@ -46,12 +46,12 @@ module Make(C:Config) = struct
   let is_ifetch _ = false
 
   let pp_plain = Code.plain
-  let pp_as_a = None
-
   let pp_atom = function
     | Atomic -> "A"
     | Reserve -> "R"
     | Mixed mix -> Mixed.pp_mixed mix
+
+  let pp_atom_separate atom = [pp_atom atom]
 
   let compare_atom = compare
 
@@ -67,12 +67,9 @@ module Make(C:Config) = struct
        | None|Some (Mixed _) -> Mixed sz
        | Some (Atomic|Reserve as a) -> a)
 
-  let fold_mixed f r = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) r
-  let fold_non_mixed f r =  f Reserve (f Atomic r)
-
   let fold_atom f r =
-    let r = fold_mixed f r in
-    fold_non_mixed f r
+    let r = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) r in
+    f Reserve (f Atomic r)
 
   let worth_final = function
     | Atomic -> true
