@@ -18,6 +18,16 @@
 
 open Printf
 
+type input =
+  | File of string
+  | Stdin
+
+let stdin_name = "stdin.litmus"
+
+let input_name = function
+  | File name -> name
+  | Stdin -> stdin_name
+
 
 module Top
     (O:
@@ -245,21 +255,27 @@ module Top
 
     open OutMode
 
+    let from_input from_file from_string = function
+      | File name -> from_file name
+      | Stdin ->
+          from_string
+            ~filename:stdin_name ~contents:(In_channel.input_all stdin)
+
     let zyva =
       if O.transpose then
         let module Z = TPT(Transpose) in
-        Z.from_file
+        from_input Z.from_file Z.from_string
       else match O.mode with
       | Txt ->
           if O.alloc then
             let module Z =  TPT(TextAlloc) in
-            Z.from_file
+            from_input Z.from_file Z.from_string
           else
             let module Z =  TPT(Text) in
-            Z.from_file
+            from_input Z.from_file Z.from_string
       | LaTeX|HeVeA|HeVeANew ->
           let module Z =  TPT(Latex) in
-          Z.from_file
+          from_input Z.from_file Z.from_string
 
   end
 
@@ -274,12 +290,24 @@ let mode = ref OutMode.LaTeX
 let transpose = ref false
 let alloc = ref false
 let set_hash = ref false
+let stdin_seen = ref false
+
+let add_input input = args := input :: !args
+
+let add_stdin () =
+  if !stdin_seen then
+    raise (Arg.Bad "standard input ('-') may be specified at most once")
+  else begin
+    stdin_seen := true;
+    add_input Stdin
+  end
 
 (* Util for creating boolean arguments. *)
 let arg_set_bool arg_ref = Arg.Bool (fun b -> arg_ref := b)
 
 let opts =
   [
+   "-",Arg.Unit add_stdin, " read one litmus test from standard input";
    "-v",Arg.Unit (fun () -> incr verbose), " be verbose";
    "-texmacros", arg_set_bool texmacros,
    (sprintf "<bool> use latex macros in output, default %b" !texmacros);
@@ -304,8 +332,8 @@ let prog =
 
 let () =
   Arg.parse opts
-    (fun s -> args := !args @ [s])
-    (sprintf "Usage: %s [options]* [test]*" prog)
+    (fun s -> add_input (File s))
+    (sprintf "Usage: %s [options]* [test|-]*" prog)
 
 
 module X =
@@ -324,15 +352,41 @@ module X =
       let set_hash = !set_hash
     end)
 
+(* Iterate over input, taking care of expanding filename lists from stdin and
+   @list files. *)
+let iter_inputs args : input Iter.t =
+ fun k ->
+  let do_file fname = k (File fname) in
+  match args with
+  (* With no positional arguments, stdin is interpreted as a list of files. *)
+  | [] -> Misc.iter_stdin do_file
+  | args ->
+      args
+      |> List.iter (function
+        | File name -> Misc.iter_argv do_file [ name ]
+        | Stdin -> k Stdin)
+
+let iter_check_all (f : 'a -> bool) (iter : 'a Iter.t) : bool =
+  Iter.fold (fun acc x -> let ok = f x in ok && acc) true iter
+
+let do_input input =
+  let name = input_name input in
+  try
+    X.zyva input;
+    true
+  with
+  | Misc.Fatal msg ->
+      eprintf "Fatal error: %a %s\n%!" Pos.pp_pos0 name msg ;
+      false
+  | Misc.UserError msg ->
+      (* TODO: Consider changing `msg` to be some structured diagnostics value
+         that can optionally carry source context. *)
+      if String.starts_with ~prefix:"File " msg then
+        eprintf "User error: %s\n%!" msg
+      else
+        eprintf "User error: %a %s\n%!" Pos.pp_pos0 name msg ;
+      false
+
 let () =
-  Misc.iter_argv_or_stdin
-    (fun fname ->
-      try X.zyva fname with
-      | Misc.Exit -> ()
-      | Misc.Fatal msg|Misc.UserError msg ->
-          Warn.warn_always "%a %s" Pos.pp_pos0 fname msg ;
-          ()
-      | e ->
-          Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 fname ;
-          raise e)
-    !args
+  let no_errors = iter_inputs !args |> iter_check_all do_input in
+  if not no_errors then exit 1

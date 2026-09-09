@@ -1,4 +1,5 @@
 (cram
+ (applies_to miaou)
  (deps
   (source_tree libdir)
   %{bin:miaou7})
