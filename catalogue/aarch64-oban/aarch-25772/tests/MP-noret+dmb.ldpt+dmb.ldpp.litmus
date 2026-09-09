@@ -1,0 +1,13 @@
+AArch64 MP-noret+dmb.ldpt+dmb.ldpp
+Variant=memtag,sync
+{
+0:X1=x:green; 1:X1=x:red;
+0:X3=y; 1:X3=y;
+0:X5=x:red;
+}
+P0           | P1                ;
+ MOV W2,#1   | MOV W0,#1         ;
+ STR W2,[X3] | LDADD W0,WZR,[X1] ;
+ DMB ST      | DMB LD            ;
+ STG X5,[X1] | LDR W2,[X3]       ;
+exists ~Fault(P1,TagCheck) /\ not (1:X2=1)
