@@ -889,6 +889,9 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\end{(?:AST|Typing|Semantics)RuleList}",
         r"\\TypingRuleRef{.*?}",
         r"\\TypingRuleDef(?:\[.*?\])?{.*?}",
+        # Ignore the optional outline description and stable label, while
+        # leaving the displayed section title to be spellchecked.
+        r"\\(?:SectionDef|OutlineSubsectionDef)(?:\[.*?\])?\s*{.*?}",
         r"\\SemanticsRuleRef{.*?}",
         r"\\SemanticsRuleDef(?:\[.*?\])?{.*?}",
         r"\\RequirementDef{.*?}",
