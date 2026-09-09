@@ -1,8 +1,10 @@
 (executable
- (name gen))
+ (name gen)
+ (modules gen))
 
 (executable
  (name asltest)
+ (modules asltest)
  (optional)
  (libraries yaml yojson jsonschema asllib))
 
