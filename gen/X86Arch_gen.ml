@@ -46,6 +46,8 @@ let pp_plain = Code.plain
 let pp_atom = function
   | Atomic -> "A"
 
+let pp_atom_separate atom = [pp_atom atom]
+
 let fold_atom f k = f Atomic k
 
 let worth_final _ = true

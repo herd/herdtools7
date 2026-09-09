@@ -305,6 +305,7 @@ module StructuredAtom : sig
   val equal : t -> t -> bool
   val access_order : t -> access_order option
   val pp : t -> string
+  val pp_atom_separate : t -> string list
   val get_access_atom : t option -> MachMixed.t option
   val set_access_atom : t option -> MachMixed.t -> t option
   val overlap : t -> t -> bool
@@ -461,6 +462,15 @@ end = struct
     | NeonAccess n -> SIMD.pp n
     | PairAccess opt -> sprintf "Pa%s" (pp_pair_opt opt)
     | InstrAccess -> "I"
+
+  let pp_atom_separate = function
+    | PteAccess (Set (access_order,fields)) ->
+        WPTESet.elements fields
+        |> List.map
+             (fun field ->
+               sprintf "Pte%s%s" (WPTE.pp field)
+                 (pp_access_order "" access_order))
+    | atom -> [pp atom]
 
   let get_access_atom = function
     | None -> None
@@ -911,6 +921,8 @@ let is_ifetch = StructuredAtom.is_ifetch
    let pp_atom atom =
      if StructuredAtom.equal atom StructuredAtom.plain then ""
      else StructuredAtom.pp atom
+
+   let pp_atom_separate = StructuredAtom.pp_atom_separate
 
    let compare_atom = StructuredAtom.compare
 

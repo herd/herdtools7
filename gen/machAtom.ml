@@ -51,6 +51,8 @@ module Make(C:Config) = struct
     | Reserve -> "R"
     | Mixed mix -> Mixed.pp_mixed mix
 
+  let pp_atom_separate atom = [pp_atom atom]
+
   let compare_atom = compare
 
   let get_access_atom a =

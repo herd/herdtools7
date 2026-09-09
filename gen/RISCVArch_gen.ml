@@ -83,6 +83,8 @@ module Make
      | Atomic (m1,m2) -> "X" ^ pp_mo2 m1 m2
      | Mixed m -> Mixed.pp_mixed m
 
+   let pp_atom_separate atom = [pp_atom atom]
+
    let compare_atom = compare
 
    let get_access_atom = function

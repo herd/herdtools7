@@ -72,6 +72,7 @@ module type S = sig
   val set_access_atom : atom option -> MachMixed.t -> atom option
   val pp_plain : string
   val pp_atom : atom -> string
+  val pp_atom_separate : atom -> string list
   val fold_atom : (atom -> 'a -> 'a) -> 'a -> 'a
   val worth_final : atom -> bool
   val varatom_dir : Code.dir -> (atom option -> 'a -> 'a) -> 'a -> 'a

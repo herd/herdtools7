@@ -123,6 +123,7 @@ let pp_annots a = match a with
     String.concat "" (List.map pp_annot a)
 
 let pp_atom a =  pp_annots a
+let pp_atom_separate atom = [pp_atom atom]
 let compare_atom a1 a2 =
   List.compare String.compare a1 a2
 

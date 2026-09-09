@@ -76,6 +76,8 @@ module Make
         | a,None -> pp_atom_acc a
         | a,Some m -> sprintf "%s%s" (pp_atom_acc a) (Mixed.pp_mixed m)
 
+      let pp_atom_separate atom = [pp_atom atom]
+
       let fold_acc f k = f Atomic (f NonTemporal k)
 
       let apply_mix f acc m r = match acc,m with

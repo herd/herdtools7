@@ -41,6 +41,7 @@ include MachMixed.No
 
 let pp_plain = Code.plain
 let pp_atom = pp_mem_order_short
+let pp_atom_separate atom = [pp_atom atom]
 let fold_atom f k =
   let k = f Acq k in
   let k = f Rel k in
