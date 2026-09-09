@@ -1,23 +1,19 @@
 A test for no metadata, `-metadata false`
-  $ diyone7 -arch AArch64 -variant vmsa -metadata false PodWR Fre PodWR Fre
+  $ diyone7 -arch AArch64 -metadata false PodWR Fre PodWR Fre
   AArch64 SB
-  Variant=vmsa
   {
-   [x]=1;
-   [y]=5;
    0:X1=x; 0:X2=y;
    1:X1=x; 1:X2=y;
   }
    P0          | P1          ;
-   MOV W0,#2   | MOV W0,#6   ;
+   MOV W0,#1   | MOV W0,#1   ;
    STR W0,[X1] | STR W0,[X2] ;
    LDR W3,[X2] | LDR W3,[X1] ;
   
-  exists (0:X3=5 /\ 1:X3=1)
+  exists (0:X3=0 /\ 1:X3=0)
 A VMSA test for a negated exists check, `-neg true`
-  $ diyone7 -arch AArch64 -variant vmsa -neg true -info "User-define=User-define" PodWR Fre PodWR Fre
+  $ diyone7 -arch AArch64 -neg true -info "User-define=User-define" PodWR Fre PodWR Fre
   AArch64 SB
-  Variant=vmsa
   Generator=diyone7 (version 7.58+1)
   Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
   Com=Fr Fr
@@ -25,21 +21,18 @@ A VMSA test for a negated exists check, `-neg true`
   User-define=User-define
   "PodWR Fre PodWR Fre"
   {
-   [x]=1;
-   [y]=5;
    0:X1=x; 0:X2=y;
    1:X1=x; 1:X2=y;
   }
    P0          | P1          ;
-   MOV W0,#2   | MOV W0,#6   ;
+   MOV W0,#1   | MOV W0,#1   ;
    STR W0,[X1] | STR W0,[X2] ;
    LDR W3,[X2] | LDR W3,[X1] ;
   
-  ~exists (0:X3=5 /\ 1:X3=1)
-A VMSA test for observing locations, `-cond observe`
-  $ diyone7 -arch AArch64 -variant vmsa -info "User-define=User-define" -cond observe PodWR Fre PodWR Fre
+  ~exists (0:X3=0 /\ 1:X3=0)
+A test for observing locations, `-cond observe`
+  $ diyone7 -arch AArch64 -info "User-define=User-define" -cond observe PodWR Fre PodWR Fre
   AArch64 SB
-  Variant=vmsa
   Generator=diyone7 (version 7.58+1)
   Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
   Com=Fr Fr
@@ -47,22 +40,19 @@ A VMSA test for observing locations, `-cond observe`
   User-define=User-define
   "PodWR Fre PodWR Fre"
   {
-   [x]=1;
-   [y]=5;
    0:X1=x; 0:X2=y;
    1:X1=x; 1:X2=y;
   }
    P0          | P1          ;
-   MOV W0,#2   | MOV W0,#6   ;
+   MOV W0,#1   | MOV W0,#1   ;
    STR W0,[X1] | STR W0,[X2] ;
    LDR W3,[X2] | LDR W3,[X1] ;
   
   locations [x; y; 0:X3; 1:X3;]
   forall (true)
-A VMSA test for a forall check, `-cond unicond`
-  $ diyone7 -arch AArch64 -variant vmsa -info "User-define=User-define" -cond unicond PodWR Fre PodWR Fre
+A test for a forall check, `-cond unicond`
+  $ diyone7 -arch AArch64 -info "User-define=User-define" -cond unicond PodWR Fre PodWR Fre
   AArch64 SB
-  Variant=vmsa
   Generator=diyone7 (version 7.58+1)
   Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
   Com=Fr Fr
@@ -70,17 +60,15 @@ A VMSA test for a forall check, `-cond unicond`
   User-define=User-define
   "PodWR Fre PodWR Fre"
   {
-   [x]=1;
-   [y]=5;
    0:X1=x; 0:X2=y;
    1:X1=x; 1:X2=y;
   }
    P0          | P1          ;
-   MOV W0,#2   | MOV W0,#6   ;
+   MOV W0,#1   | MOV W0,#1   ;
    STR W0,[X1] | STR W0,[X2] ;
    LDR W3,[X2] | LDR W3,[X1] ;
   
-  forall (true /\ ([x]=2 /\ ([y]=6 /\ (0:X3=6 /\ (1:X3=2 \/ 1:X3=0) \/ 0:X3=0 /\ (1:X3=2 \/ 1:X3=0)))))
+  forall (true /\ ([x]=1 /\ ([y]=1 /\ (0:X3=1 /\ (1:X3=1 \/ 1:X3=0) \/ 0:X3=0 /\ (1:X3=1 \/ 1:X3=0)))))
 A memtag generation test with `Variant` duplicated in metadata, because of (1) `-info "Variant=memtag"` and (2) automatically generated `Variant=memtag`
   $ diyone7 -arch AArch64 -variant memtag -info "Variant=memtag" PodWR Fre PodWR Fre
   AArch64 SB
