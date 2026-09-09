@@ -256,8 +256,8 @@ module Make (Conf : Config) = struct
       | 8 -> MachSize.Byte
       | 16 -> MachSize.Short
       | 32 -> MachSize.Word
-      | 64 -> MachSize.Quad
-      | 128 -> MachSize.S128
+      | 64 -> MachSize.Double
+      | 128 -> MachSize.Quad
       | _ ->
           Warn.fatal
             "Cannot access a register or memory with size %s" (V.pp_v v)
@@ -486,7 +486,7 @@ module Make (Conf : Config) = struct
     let tr_regval = M.op1 (Op.ArchOp1 ASLOp.ToIntU)
 
     let mk_std_access (ii,poi) dir loc v =
-      let action = Act.Access (dir, loc, v, MachSize.Quad, areg_std) in
+      let action = Act.Access (dir, loc, v, MachSize.Double, areg_std) in
       M.mk_singleton_es action (use_ii_with_poi ii poi)
 
     let on_access_identifier dir (ii,_ as ii_poi) x scope v =
@@ -631,13 +631,13 @@ module Make (Conf : Config) = struct
     let read_register (ii, poi) ~reg:r_m =
       let* rval = r_m in
       let loc = virtual_to_loc_reg rval ii in
-      read_loc MachSize.Quad loc aneutral aexp areg (use_ii_with_poi ii poi)
+      read_loc MachSize.Double loc aneutral aexp areg (use_ii_with_poi ii poi)
       >>= from_aarch64_val
 
     let write_register (ii, poi) ~reg:r_m ~data:v_m =
       let* v = v_m >>= to_aarch64_val and* r = r_m in
       let loc = virtual_to_loc_reg r ii in
-      write_loc MachSize.Quad loc v aneutral aexp areg (use_ii_with_poi ii poi)
+      write_loc MachSize.Double loc v aneutral aexp areg (use_ii_with_poi ii poi)
 
     let do_read_memory (ii, poi) addr_m datasize_m an aexp acc =
       let* addr = M.as_addr_port addr_m and* datasize = datasize_m in

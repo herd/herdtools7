@@ -1483,7 +1483,7 @@ module Make
         end else begin
           let nvars = List.length test.T.globals in
           let voff =
-            Misc.max_int (MachSize.nbytes MachSize.Quad) (U.max_align test) in
+            Misc.max_int (MachSize.nbytes MachSize.Double) (U.max_align test) in
           let needed = voff*nvars in (* bytes needed *)
           let line = Cfg.line + Cfg.line * ((needed-1)/Cfg.line) in
           O.f "#define LINE %i" line ;

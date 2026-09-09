@@ -38,7 +38,7 @@ module
     let nat_sz =  V.Cst.Scalar.machsize
     let atomic_pair_allowed _ _ = true
 
-    let () = assert (nat_sz = MachSize.Quad)
+    let () = assert (nat_sz = MachSize.Double)
 
 (****************************)
 (* Build semantics function *)

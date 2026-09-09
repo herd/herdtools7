@@ -644,7 +644,7 @@ module
   let cap_perm_load = 1 lsl 17
 
   let lo64 x =
-    Cst.Scalar.mask MachSize.Quad x
+    Cst.Scalar.mask MachSize.Double x
 
   let hi64 x =
     Cst.Scalar.shift_left (Cst.Scalar.shift_right_logical x 64) 64
@@ -750,7 +750,7 @@ module
     let tag1 = if Cst.Scalar.get_tag v1 then 1 else 0 in
     let tag2 = if Cst.Scalar.get_tag v2 then 1 else 0 in
     if tag1 = tag2
-      then Cst.Scalar.mask MachSize.Quad (Cst.Scalar.sub v1 v2)
+      then Cst.Scalar.mask MachSize.Double (Cst.Scalar.sub v1 v2)
       else Cst.Scalar.of_int ((tag1 - tag2) land 3)
 
   let check_perms perms a v =

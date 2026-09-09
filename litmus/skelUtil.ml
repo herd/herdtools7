@@ -331,7 +331,7 @@ end
         let sz =
           match CType.base_size t with
           | Some sz -> sz
-          | None -> MachSize.Quad (* Largest available *) in
+          | None -> MachSize.Double (* Largest available *) in
         MachSize.nbytes sz
 
         let max_align test =

@@ -528,10 +528,10 @@ v64:
 		-diycross-arg uint64_t \
 		-diycross-arg PodWW \
 		-diycross-arg RfeLA \
-		-diycross-arg w0,w4,q0 \
+		-diycross-arg w0,w4,d0 \
 		-diycross-arg DpDatadW,DpAddrdR,DpAddrdW \
 		-diycross-arg A,P,L \
-		-diycross-arg w0,w4,q0 \
+		-diycross-arg w0,w4,d0 \
 		-diycross-arg Coe,Fre \
 		$(REGRESSION_TEST_MODE)
 	@ echo "herd7 AArch64.mixed.v64 diycross7 tests: OK"

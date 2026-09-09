@@ -254,7 +254,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     | Vreg (_,(_,8)) -> MachSize.Byte
     | Vreg (_,(_,16)) -> MachSize.Short
     | Vreg (_,(_,32)) -> MachSize.Word
-    | Vreg (_,(_,64)) -> MachSize.Quad
+    | Vreg (_,(_,64)) -> MachSize.Double
     | _ -> assert false (* Unsupported arrangement specifier *)
 
     let mem_access_size = function

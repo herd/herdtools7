@@ -34,7 +34,7 @@ let addk x k = match k with
   | 1 -> succ x
   | _ -> add x (of_int k)
 
-let machsize = MachSize.S128
+let machsize = MachSize.Quad
 let pp hexa v =
   Printf.sprintf "%s" (if hexa then (Uint128.to_string_hex v) else (Uint128.to_string v))
 let pp_unsigned = pp (* Hum *)
@@ -49,11 +49,11 @@ let mask sz =
   | Byte -> fun v -> Uint128.logand v (Uint128.of_uint8 Uint8.max_int)
   | Short -> fun v -> Uint128.logand v (Uint128.of_uint16 Uint16.max_int)
   | Word -> fun v ->  Uint128.logand v (Uint128.of_uint32 Uint32.max_int)
-  | Quad -> fun v -> Uint128.logand v (Uint128.of_uint64 Uint64.max_int)
-  | S128 -> fun v -> v
+  | Double -> fun v -> Uint128.logand v (Uint128.of_uint64 Uint64.max_int)
+  | Quad -> fun v -> v
 
 let sxt sz v = match sz with
-  | MachSize.S128 -> v
+  | MachSize.Quad -> v
   | _ ->
      let v = mask sz v in
      let nb = MachSize.nbits sz in

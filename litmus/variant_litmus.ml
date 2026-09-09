@@ -17,7 +17,7 @@
 type t =
   | Self (* Self modifying code *)
   | FaultHandling of Fault.Handling.t
-  | S128 (* 128 bit signed ints*)
+  | Quad (* 128 bit signed ints*)
   | Mixed (* Ignored *)
   | Vmsa  (* Checked *)
   | ETS2
@@ -39,7 +39,7 @@ let (mode_variants, arch_variants) : t list * t list =
   let f = function
   | Self -> Self
   | FaultHandling p -> FaultHandling p 
-  | S128 -> S128
+  | Quad -> Quad
   | Mixed -> Mixed
   | Vmsa -> Vmsa
   | ETS2 -> ETS2
@@ -58,7 +58,7 @@ let (mode_variants, arch_variants) : t list * t list =
   | ConstPacField -> ConstPacField
   in
   let base_modes =
-    List.map f [NoInit; S128; Telechat]
+    List.map f [NoInit; Quad; Telechat]
   and archs =
     List.map f
     [SVE; SME; Self; Mixed; Vmsa; ETS2; ExS; EIS; EOS;
@@ -85,7 +85,7 @@ let compare = compare
 
 let parse s = match Misc.lowercase s with
 | "noinit" -> Some NoInit
-| "s128" -> Some S128
+| "quad"|"s128" -> Some Quad
 | "ifetch"|"self" -> Some Self
 | "mixed" -> Some Mixed
 | "vmsa"|"kvm" -> Some Vmsa
@@ -129,7 +129,7 @@ let pp = function
   | NoInit -> "noinit"
   | Self -> "self"
   | Mixed -> "mixed"
-  | S128 -> "s128"
+  | Quad -> "s128"
   | Vmsa -> "vmsa"
   | ETS2 -> "ets2"
   | ExS -> "exs"

@@ -794,7 +794,7 @@ let max_set = IntSet.max_elt
           let globals = C.get_globals ~init:initvals n in
           let typ =
             if do_morello
-            then TypBase.Std (TypBase.Unsigned,MachSize.S128)
+            then TypBase.Std (TypBase.Unsigned,MachSize.Quad)
             else O.typ in
         let typ = Typ typ in
           List.fold_left
