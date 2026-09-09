@@ -42,13 +42,16 @@ module type S = sig
   val po : relax list
 
   (* Parse the `input` to `Ast.t` using the input grammar *)
-  val parse_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> string Ast.t) -> string -> string Ast.t
+  val parse_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> (string,string) Ast.t) -> string -> (string,string) Ast.t
+  val parse_sequence_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> (string,string) Ast.t) -> string list -> (string,string) Ast.t
   (* Parse the input relaxation (or relaxations sequences), and expand the wildcard
      syntax into primitive edges and annotations *)
-  val parse_sequence_ast : ((Lexing.lexbuf -> Parser.token) -> Lexing.lexbuf -> string Ast.t) -> string list -> string Ast.t
+  val parse_expand_relaxs_ast :
+    ?ppo:((relax -> relax list -> relax list) -> relax list -> relax list)
+        -> (string,string) Ast.t -> (string,edge) Ast.t
   val parse_expand_relaxs :
     ?ppo:((relax -> relax list -> relax list) -> relax list -> relax list)
-        -> string Ast.t -> relax list
+        -> (string,string) Ast.t -> relax list
 
   (* Remove invalid relax from the list *)
   val remove_invalid_relaxes : relax list -> relax list
@@ -363,9 +366,15 @@ and type edge = E.edge
           expand_relaxs parsed_edges
           |> relax_list_to_choice
 
-          let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
+          let parse_expand_relaxs_ast ?(ppo=(fun _ k -> k)) ast =
             Ast.bind ast (parse_expand_relax ~ppo)
+
+          let parse_expand_relaxs ?(ppo=(fun _ k -> k)) ast =
+            parse_expand_relaxs_ast ~ppo ast
               |> Ast.expand
+                   (fun pred _ ->
+                     Warn.user_error
+                       "predicate %s is only supported by diy7 search." pred)
 
         (* After wildcard and macro expansion, remove invalid relaxations
            whose adjacent concrete edges cannot appear consecutively.
