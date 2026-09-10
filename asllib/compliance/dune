@@ -6,7 +6,7 @@
  (name asltest)
  (modules asltest)
  (optional)
- (libraries yaml yojson jsonschema asllib))
+ (libraries yaml asllib))
 
 (subdir
  run

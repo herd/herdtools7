@@ -38,23 +38,25 @@ let generate_rules actual_stems base =
         let name = Printf.sprintf "%s.%d" name count in
         (name, StringMap.add name (count + 1) actual_stems)
   in
+  (* Keep the generated fragment to rules and aliases. Dune's [dynamic_include]
+     supports generated rule-like stanzas, but deliberately excludes stanzas
+     such as libraries. *)
   Printf.printf
     {|
 (rule
-  (deps ../tests/%s.asl ../tests/%s.yaml ../schema.yaml)
-  (enabled_if (and %%{lib-available:yaml} %%{lib-available:yojson} %%{lib-available:jsonschema}))
+  (deps ../tests/%s.asl ../tests/%s.yaml)
+  (enabled_if %%{lib-available:yaml})
   (action
   (with-stdout-to ./%s.yaml.actual
-    (run ../asltest.exe --base ../tests/%s))))
+    (run ../asltest.exe ../tests/%s))))
 
 (rule
   (alias runtest)
-  (deps ../tests/%s.yaml %s.yaml.actual)
-  (enabled_if (and %%{lib-available:yaml} %%{lib-available:yojson} %%{lib-available:jsonschema}))
+  (enabled_if %%{lib-available:yaml})
   (action
-  (run ../asltest.exe --compare ../tests/%s.yaml %s.yaml.actual)))
+  (diff ../tests/%s.yaml %s.yaml.actual)))
 |}
-    base base actual base base actual base actual;
+    base base actual base base actual;
   actual_stems
 
 let () =
