@@ -298,12 +298,15 @@ let parse_args () =
 
 let () =
   parse_args () ;
-  if !j <= 1 then
+  if !j <= 1 then begin
+    let exit_status = ref 0 in
     let do_test name =
       let com = quote_command !com (name :: !comargs) in
-      ignore (Sys.command com) in
-    Misc.iter_argv_or_stdin do_test !tokens
-  else
+      let status = Sys.command com in
+      if status <> 0 && !exit_status = 0 then exit_status := status in
+    Misc.iter_argv_or_stdin do_test !tokens ;
+    if !do_exit then exit !exit_status
+  end else begin
     let module T =
       Task
         (struct
@@ -314,3 +317,4 @@ let () =
         end) in
     T.run !j !tokens ;
     if !do_exit then T.get_exit_status () |> exit
+  end
