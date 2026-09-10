@@ -396,14 +396,7 @@ module Make (B : Backend.S) (C : Config) = struct
   let v_to_int ~loc v =
     match B.v_to_z v with
     | Some z when Z.fits_int z -> Z.to_int z
-    | Some z ->
-        Printf.eprintf
-          "Overflow in asllib: cannot convert back to 63-bit integer the \
-           integer %a.\n\
-           %!"
-          Z.output z;
-        fatal_from_no_env loc
-          Error.(UnsupportedExpr (C.error_handling_time, loc))
+    | Some z -> fatal_from_no_env loc (Error.ImplementationIntegerOverflow z)
     | None ->
         fatal_from_no_env loc (MismatchType (B.debug_value v, [ integer' ]))
 

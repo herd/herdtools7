@@ -206,6 +206,7 @@ module Property (C : ANNOTATE_CONFIG) = struct
   let assumption_failed () = raise TypingAssumptionFailed [@@inline]
   let ok () = () [@@inline]
   let check_true b fail () = if b then () else fail () [@@inline]
+  let check_all li f () = List.iter (fun x1 -> f x1 ()) li
   let check_all2 li1 li2 f () = List.iter2 (fun x1 x2 -> f x1 x2 ()) li1 li2
 end
 
@@ -1380,9 +1381,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | T_Collection _ ->
             assert (not decl);
             let+ () =
-              check_true
-                (List.for_all (fun (_, t) -> has_structure_bits env t) fields)
-              @@ fun () -> fatal_from ~loc Error.(UnsupportedTy (Static, ty))
+              check_all fields' @@ fun (_, ty) ->
+              check_structure_bits ~loc:ty env ty
             in
             (T_Collection fields' |> here, ses) |: TypingRule.TStructuredDecl
         | _ -> assert false
@@ -3394,8 +3394,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | E_Cond (e, e1, e2) ->
           parameters_of_expr ~env e @ parameters_of_expr ~env e1
           @ parameters_of_expr ~env e2
-      | E_Tuple _ | _ ->
-          Error.fatal_from (to_pos e) (Error.UnsupportedExpr (Static, e))
+      | _ -> Error.fatal_from (to_pos e) (Error.BadParameterExpr e)
     in
     let parameters_of_constraint ~env c =
       match c with
@@ -3413,7 +3412,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
       | T_Int UnConstrained
       | T_Real | T_String | T_Bool | T_Array _ | T_Named _ ->
           []
-      | _ -> Error.fatal_from (to_pos ty) (Error.UnsupportedTy (Static, ty))
+      | T_Enum _ | T_Record _ | T_Exception _ | T_Collection _
+      | T_Int (PendingConstrained | Parameterized _) ->
+          Error.fatal_from (to_pos ty) (Error.BadParameterType ty)
     in
     let types = func_sig_types func_sig in
     let all_parameters = List.concat_map (parameters_of_ty ~env) types in

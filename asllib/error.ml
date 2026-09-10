@@ -31,6 +31,11 @@ type error_desc =
   | BadField of string * ty
   | MissingField of string list * ty
   | BadSlices of error_handling_time * slice list * int
+  | BadIndex of {
+      handling_time : error_handling_time;
+      start : int;
+      length : int;
+    }
   | BadTupleIndex of { index : int; length : int }
   | BadSlice of slice
   | EmptySlice
@@ -53,8 +58,8 @@ type error_desc =
   | BadParameterArity of error_handling_time * version * identifier * int * int
   | UnsupportedBinop of error_handling_time * binop * literal * literal
   | UnsupportedUnop of error_handling_time * unop * literal
-  | UnsupportedExpr of error_handling_time * expr
-  | UnsupportedTy of error_handling_time * ty
+  | StaticEvaluationFailure of expr
+  | ImplementationIntegerOverflow of Z.t
   | InvalidExpr of expr
   | MismatchType of string * type_desc list
   | ATCExecutionFailure of error_handling_time * string * ty
@@ -90,6 +95,8 @@ type error_desc =
   | ParameterWithoutDecl of identifier
   | BadParameterDecl of identifier * identifier list * identifier list
       (** name, expected, actual *)
+  | BadParameterExpr of expr
+  | BadParameterType of ty
   | BaseValueEmptyType of ty
   | ArbitraryEmptyType of ty
   | BaseValueNonSymbolic of ty * expr
@@ -291,8 +298,8 @@ module ErrorCode = struct
     | ImpureExpression _ | MismatchedPurity _ -> Some (Typing SEV)
     | AssignToImmutable _ -> Some (Typing AIM)
     | AlreadyDeclaredIdentifier _ -> Some (Typing IAD)
-    | BadReturnStmt _ | BadParameterDecl _ | NonReturningFunction _
-    | NoreturnViolation _ ->
+    | BadReturnStmt _ | BadParameterDecl _ | BadParameterExpr _
+    | BadParameterType _ | NonReturningFunction _ | NoreturnViolation _ ->
         Some (Typing BSPD)
     | UncaughtException _ | UnexpectedInitialisationThrow _ -> Some (Dynamic UE)
     | OverlappingSlices (_, Dynamic) -> Some (Dynamic OSA)
@@ -316,16 +323,19 @@ module ErrorCode = struct
     | NegativeArrayLength (Static, _, _)
     | AssertionFailed (Static, _)
     | ATCExecutionFailure (Static, _, _)
-    | BadPrimitiveArgument (Static, _, _) ->
+    | BadIndex { handling_time = Static }
+    | BadPrimitiveArgument (Static, _, _)
+    | StaticEvaluationFailure _ ->
         Some (Typing SEF)
+    | BadIndex { handling_time = Dynamic } -> Some (Dynamic BI)
     | NoCommonAncestor _ (* LCA failures *) -> Some (Typing LCA)
-    (********** TODO tidy up - does not cleanly correspond to a code **********)
-    | UnsupportedExpr _ | UnsupportedTy _
-    (* For static interpretation, parameters, and collections *) ->
-        None
-    | MismatchType _ (* mismatched integers for loop limits *) -> None
+    (********** Errors without specification codes **********)
+    (* Implementation limitations are not ASL errors. *)
+    | ImplementationIntegerOverflow _ -> None
     (********** Should not happen **********)
     (* e.g. skipped type-checking, ASL0, internal option or invariant *)
+    | MismatchType _ (* Skipped type-checking or violated typing invariant *) ->
+        None
     | EmptyConstraints (* An internal invariant *) -> None
     | TypeInferenceNeeded
     | UndefinedIdentifier (Dynamic, _)
@@ -421,11 +431,6 @@ end
       assertion failures, cases we don't expect to hit etc.
     - TypingRule.TInt mismatch on empty case *)
 (* TODO: BE_RI unused in reference *)
-(* TODO: following not recoverable from implementation:
-- TE_SEF
-- DE_TAF
-- DE_BI
-*)
 
 module PPrint = struct
   open Format
@@ -485,14 +490,14 @@ module PPrint = struct
           (ErrorKind.of_error_handling_time t)
           "Illegal application of operator %s for value@ %a."
           (unop_to_string op) pp_literal v
-    | UnsupportedExpr (t, e) ->
-        pp_err
-          (ErrorKind.of_error_handling_time t)
-          "Unsupported expression %a." pp_expr e
-    | UnsupportedTy (t, ty) ->
-        pp_err
-          (ErrorKind.of_error_handling_time t)
-          "Unsupported type %a." pp_ty ty
+    | StaticEvaluationFailure e ->
+        pp_err Typing
+          "Static evaluation of expression %a did not successfully produce a \
+           literal."
+          pp_expr e
+    | ImplementationIntegerOverflow z ->
+        pp_err Internal "Integer %a exceeds aslref implementation limits."
+          Z.pp_print z
     | InvalidExpr e -> pp_err Typing "invalid expression %a." pp_expr e
     | MismatchType (v, [ ty ]) ->
         pp_err Dynamic "Mismatch type:@ value %s does not belong to type %a." v
@@ -526,6 +531,10 @@ module PPrint = struct
           (ErrorKind.of_error_handling_time t)
           "Cannot extract from bitvector of length %d slice %a." length
           pp_slice_list slices
+    | BadIndex { handling_time; start; length } ->
+        pp_err
+          (ErrorKind.of_error_handling_time handling_time)
+          "Index %d is outside the valid range 0..%d." start (length - 1)
     | BadTupleIndex { index; length } ->
         pp_err Typing "Tuple index %d is outside the valid range 0..%d." index
           (length - 1)
@@ -681,6 +690,12 @@ module PPrint = struct
           expected
           (pp_comma_list pp_print_string)
           actual
+    | BadParameterExpr e ->
+        pp_err Typing
+          "Expression %a is not permitted in a subprogram signature." pp_expr e
+    | BadParameterType ty ->
+        pp_err Typing "Type %a is not permitted in a subprogram signature."
+          pp_ty ty
     | ArbitraryEmptyType t ->
         pp_err Dynamic "ARBITRARY of empty type %a." pp_ty t
     | BaseValueEmptyType t ->
@@ -858,6 +873,7 @@ module CSV = struct
     | BadPattern _ -> "BadPattern"
     | MissingField _ -> "MissingField"
     | BadSlices _ -> "BadSlices"
+    | BadIndex _ -> "BadIndex"
     | BadTupleIndex _ -> "BadTupleIndex"
     | BadSlice _ -> "BadSlice"
     | EmptySlice -> "EmptySlice"
@@ -870,8 +886,8 @@ module CSV = struct
     | BadParameterArity _ -> "BadParameterArity"
     | UnsupportedBinop _ -> "UnsupportedBinop"
     | UnsupportedUnop _ -> "UnsupportedUnop"
-    | UnsupportedExpr _ -> "UnsupportedExpr"
-    | UnsupportedTy _ -> "UnsupportedTy"
+    | StaticEvaluationFailure _ -> "StaticEvaluationFailure"
+    | ImplementationIntegerOverflow _ -> "ImplementationIntegerOverflow"
     | InvalidExpr _ -> "InvalidExpr"
     | MismatchType _ -> "MismatchType"
     | ATCExecutionFailure _ -> "ATCExecutionFailure"
@@ -904,6 +920,8 @@ module CSV = struct
     | ConstrainedIntegerExpected _ -> "ConstrainedIntegerExpected"
     | ParameterWithoutDecl _ -> "ParameterWithoutDecl"
     | BadParameterDecl _ -> "BadParameterDecl"
+    | BadParameterExpr _ -> "BadParameterExpr"
+    | BadParameterType _ -> "BadParameterType"
     | BaseValueEmptyType _ -> "BaseValueEmptyType"
     | ArbitraryEmptyType _ -> "ArbitraryEmptyType"
     | BaseValueNonSymbolic _ -> "BaseValueNonSymbolic"

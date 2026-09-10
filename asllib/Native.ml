@@ -128,9 +128,9 @@ module NativeBackend (C : Config) = struct
   let v_exception li = v_record li
   let non_tuple_exception v = mismatch_type v [ T_Tuple [] ]
 
-  let bad_index i n =
-    mismatch_type (v_of_int i)
-      [ integer_range' zero_expr (expr_of_int (n - 1)) ]
+  let bad_index start length =
+    Error.fatal_unknown_pos
+      (Error.BadIndex { handling_time = C.error_handling_time; start; length })
 
   let doesnt_have_fields_exception v =
     mismatch_type v [ T_Record []; T_Exception []; T_Collection [] ]
@@ -403,7 +403,7 @@ let rec unknown_of_aggregate_type unknown_of_singular_type ~eval_expr_sef ty =
           let n = Z.to_int n in
           if n >= 0 then
             NV_Vector (List.init n (fun _ -> unknown_of_type t_elem))
-          else Error.(fatal_from ty (UnsupportedExpr (Dynamic, e_length)))
+          else Error.(fatal_from ty (ArbitraryEmptyType ty))
       | _ -> (* Bad types *) assert false)
   | T_Record fields | T_Exception fields ->
       fields

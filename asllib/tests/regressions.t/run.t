@@ -363,8 +363,7 @@ Parameterized integers:
 
   $ aslref array-lca.asl
   $ aslref array-index-error.asl
-  ASL Dynamic error: Mismatch type:
-    value 14 does not belong to type integer {0..4}.
+  ASL Dynamic error (DE_BI): Index 14 is outside the valid range 0..4.
   [1]
 
 Parameters bugs:
@@ -586,7 +585,7 @@ Required tests:
 
   $ aslref --gnu-errors gnu-errors.asl
   aslref: gnu-errors.asl:1:0: ASL Warning: the recursive function fact has no recursive limit annotation.
-  aslref: :0:-1: ASL Dynamic error: Mismatch type: value 11 does not belong to type integer {0..9}.
+  aslref: :0:-1: ASL Dynamic error (DE_BI): Index 11 is outside the valid range 0..9.
   [1]
 
   $ aslref
@@ -733,39 +732,31 @@ Bounds checks
   ASL Dynamic error: Cannot extract from bitvector of length 0 slice -1+:1.
   [1]
   $ aslref bounds-checks-read-bitvector-2.asl
-  ASL Dynamic error: Mismatch type:
-    value 4 does not belong to type integer {0..3}.
+  ASL Dynamic error (DE_BI): Index 4 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-write-bitvector-1.asl
   ASL Dynamic error: Cannot extract from bitvector of length 0 slice -1+:1.
   [1]
   $ aslref bounds-checks-write-bitvector-2.asl
-  ASL Dynamic error: Mismatch type:
-    value 5 does not belong to type integer {0..3}.
+  ASL Dynamic error (DE_BI): Index 5 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-read-array-1.asl
-  ASL Dynamic error: Mismatch type:
-    value -1 does not belong to type integer {0..3}.
+  ASL Dynamic error (DE_BI): Index -1 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-read-array-2.asl
-  ASL Dynamic error: Mismatch type:
-    value 4 does not belong to type integer {0..3}.
+  ASL Dynamic error (DE_BI): Index 4 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-write-array-1.asl
-  ASL Dynamic error: Mismatch type:
-    value -1 does not belong to type integer {0..3}.
+  ASL Dynamic error (DE_BI): Index -1 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-write-array-2.asl
-  ASL Dynamic error: Mismatch type:
-    value 4 does not belong to type integer {0..3}.
+  ASL Dynamic error (DE_BI): Index 4 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-read-zero-width-slice.asl
-  ASL Dynamic error: Mismatch type:
-    value 100 does not belong to type integer {0..3}.
+  ASL Dynamic error (DE_BI): Index 100 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-write-zero-width-slice.asl
-  ASL Dynamic error: Mismatch type:
-    value 100 does not belong to type integer {0..3}.
+  ASL Dynamic error (DE_BI): Index 100 is outside the valid range 0..3.
   [1]
 
 If test environment reversion bug
@@ -822,10 +813,26 @@ Static errors:
   ASL Static error (TE_SEF):
     FloorLog2 (primitive) expected an argument greater than 0
   [1]
+  $ aslref --no-exec static-evaluation-non-literal.asl
+  File static-evaluation-non-literal.asl, line 5, characters 13 to 24:
+  constant C = R { x = 1 };
+               ^^^^^^^^^^^
+  ASL Type error (TE_SEF):
+    Static evaluation of expression R { x = 1 } did not successfully produce a literal.
+  [1]
   $ aslref tuple-arity-mismatch.asl
   File tuple-arity-mismatch.asl, line 3, characters 2 to 25:
     let (x, y) = (1, 2, 3);
     ^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error (TE_UT): Tuple arity mismatch:
     expected 2 element(s); provided 3.
+  [1]
+
+Implementation errors:
+  $ aslref implementation-integer-overflow.asl
+  File implementation-integer-overflow.asl, line 3, characters 9 to 35:
+    return xs[[18446744073709551616]];
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Internal error:
+    Integer 18446744073709551616 exceeds aslref implementation limits.
   [1]

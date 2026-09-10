@@ -11447,15 +11447,19 @@ typing function paramsofty(tenv: static_envs, ty: ty) ->
   case other {
     or(
       ast_label(ty) in make_set(label_T_Array, label_T_Bool, label_T_Named, label_T_Real, label_T_String),
-      is_unconstrained_integer(ty),
-      is_parameterized_integer(ty)
+      is_unconstrained_integer(ty)
     ) { [_] };
     --
     empty_list;
   }
 
   case error {
-    binary_or(ast_label(ty) = label_T_Enum, is_structured(ty));
+    or(
+      ast_label(ty) = label_T_Enum,
+      is_structured(ty),
+      ty = T_Int(PendingConstrained),
+      is_parameterized_integer(ty)
+    );
     --
     TypeError(TE_BSPD);
   }
@@ -11494,6 +11498,12 @@ typing function params_of_expr(tenv: static_envs, e: expr) ->
     concat(ids1, ids2);
   }
 
+  case e_literal {
+    e =: E_Literal(_);
+    --
+    empty_list;
+  }
+
   case e_tuple {
     e =: E_Tuple(es);
     es =: make_singleton_list(e1);
@@ -11511,8 +11521,15 @@ typing function params_of_expr(tenv: static_envs, e: expr) ->
     concat(ids0, concat(ids1, ids2));
   }
 
+  case e_tuple_error {
+    e =: E_Tuple(es);
+    list_len(es) != one;
+    --
+    TypeError(TE_BSPD);
+  }
+
   case other {
-    ast_label(e) not_in make_set(label_E_Binop, label_E_Tuple, label_E_Unop, label_E_Var);
+    ast_label(e) not_in make_set(label_E_Binop, label_E_Cond, label_E_Literal, label_E_Tuple, label_E_Unop, label_E_Var);
     --
     TypeError(TE_BSPD);
   }

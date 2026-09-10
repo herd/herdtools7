@@ -28,8 +28,7 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.ECall.asl
   $ aslref SemanticsRule.EGetArray.asl
   $ aslref SemanticsRule.EGetArrayTooSmall.asl
-  ASL Dynamic error: Mismatch type:
-    value 3 does not belong to type integer {0..2}.
+  ASL Dynamic error (DE_BI): Index 3 is outside the valid range 0..2.
   [1]
   $ aslref SemanticsRule.ERecord.asl
   $ aslref SemanticsRule.EGetItem.asl
