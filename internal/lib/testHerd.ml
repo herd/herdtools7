@@ -198,7 +198,7 @@ let herd_wrapper_args ~nohash ~verbose ~check ~herd args =
 
 let full_path_of exe_name = Filename.(concat (dirname Sys.argv.(0))) exe_name
 
-let mapply_args ?(litmuses=[]) ?(exits=false) ~j ~com args =
+let mapply_args ?(litmuses=[]) ?(exits=true) ~j ~com args =
   let exit = if exits then ["-exit"; "true"] else [] in
   exit @ "-j" :: string_of_int j :: litmuses @ "--" :: com :: args
 
