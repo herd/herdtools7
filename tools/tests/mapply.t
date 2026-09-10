@@ -29,3 +29,17 @@ Use test to verify mapply is not using more than one argument
   $ mapply7 'argument with spaces.litmus' -- test = 'argument with spaces.litmus'
 
   $ mapply7 -j 2 'argument with spaces.litmus' -- test = 'argument with spaces.litmus'
+
+Mapply propagates the first non-zero status when requested.
+
+  $ mapply7 -exit true one.litmus -- false
+  [1]
+
+  $ mapply7 -j 2 -exit true one.litmus -- false
+  [1]
+
+Otherwise it doesn't propagate the status code
+
+  $ mapply7 one.l§itmus -- false
+
+  $ mapply7 -j 2 one.litmus -- false
