@@ -1,0 +1,10 @@
+AArch64 LDR-TagCheckFault
+{
+  [tag(x)]=:green;
+  [PTE(x)]=(oa:PA(x),attrs:(TaggedNormal));
+  0:X1=x:red;
+}
+P0          ;
+L0:         ;
+LDR W0,[X1] ;
+
