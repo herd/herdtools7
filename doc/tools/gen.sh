@@ -2,9 +2,6 @@
 #######################
 DIR=`dirname $0`
 MNAMES=mnames7
-MSORT=msort7
-COMPARE=mcompare7
-MAPPLY=mapply7
 #######################
 TMP=/tmp/gen.$$
 mkdir -p $TMP
