@@ -2,5 +2,9 @@ mode: no-exec
 outcome: FAILURE
 error: TE_UI
 error_line: 3
-info: |
-  Identifier "t" is used before it is declared.
+info: |-
+  File ../tests/typing/TypingRule.EVar.undefined.asl, line 3,
+    characters 12 to 13:
+      var x = t;
+              ^
+  ASL Static error (TE_UI): Undefined identifier: 't'
