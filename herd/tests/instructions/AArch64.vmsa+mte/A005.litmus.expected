@@ -1,6 +1,6 @@
 Test A005 Required
 States 1
-[x]=0; Fault(P0:L0,x:red,MMU:Permission);
+[x]=0; Fault(P0:L0,x:red,D-MMU:Permission);
 Ok
 Witnesses
 Positive: 1 Negative: 0
