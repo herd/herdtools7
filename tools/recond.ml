@@ -261,7 +261,6 @@ and outcomes = ref false
 and asobserved = ref false
 and toexists = ref false
 
-let set_conds c = conds := !conds @ [c]
 let set_tar x = tar := Some x
 let args = ref []
 
@@ -269,12 +268,8 @@ let opts =
   [ "-v",
     Arg.Unit (fun () -> incr verbose),
     " be verbose";
-    "-hexa",
-    Arg.Bool (fun b -> hexa := b),
-    "<bool> set hexadecimal output";
-    "-conds",
-    Arg.String set_conds,
-    "<name> specify conditions of tests (can be repeated)";
+    ToolsOpts.parse_hexa hexa;
+    ToolsOpts.parse_conds conds;
     "-o", Arg.String set_tar,
     "<name> output to directory or tar file <name>" ;
     "-asobserved", Arg.Bool (fun b -> asobserved := b),

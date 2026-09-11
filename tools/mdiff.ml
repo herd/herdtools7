@@ -45,18 +45,17 @@ let faulttype = ref true
 let datafault = ref true
 
 let options =
-  let open CheckName in
   [
 
   ("-q", Arg.Unit (fun _ -> verbose := -1),
    "<non-default> be silent");
   ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
-   parse_hexa hexa; parse_int32 int32;
+   ToolsOpts.parse_hexa hexa; ToolsOpts.parse_int32 int32;
    parse_emptyok emptyok;
    parse_act act;
-   parse_faulttype faulttype;
-   parse_datafault datafault;
+   ToolsOpts.parse_faulttype faulttype;
+   ToolsOpts.parse_datafault datafault;
   ]@parse_withselect
 
 let prog =

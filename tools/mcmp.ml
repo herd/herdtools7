@@ -115,8 +115,8 @@ let options =
    ("-neg",
      Arg.String (fun s -> neg := Some s),
     "<file> dump negative differences, default "^ (match !neg with None -> "don't dump" | Some s -> s));
-   CheckName.parse_faulttype faulttype;
-   CheckName.parse_datafault datafault;
+   ToolsOpts.parse_faulttype faulttype;
+   ToolsOpts.parse_datafault datafault;
  ]@parse_withselect
 let logs = ref []
 

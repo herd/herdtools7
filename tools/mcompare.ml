@@ -106,7 +106,7 @@ let options =
       (delay_ro (fun b ro -> { ro with faulttype = b})),
     sprintf
       "<bool> consider fault types, default %b" default_runopts.faulttype);
-   (CheckName.datafault_key,
+   (ToolsOpts.datafault_key,
     Arg.Bool
       (delay_ro (fun b ro -> { ro with datafault = b})),
     (sprintf

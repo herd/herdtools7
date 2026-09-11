@@ -107,8 +107,7 @@ let opts =
   [ "-v",
     Arg.Unit (fun () -> incr verbose),
     " be verbose";
-    "-hexa",Arg.Bool (fun b -> hexa := b),
-    " <bool> print numbers in hexadecimal";
+    ToolsOpts.parse_hexa hexa;
    "-o", Arg.String set_tar,
     sprintf
       "<name> output to directory or tar file <name>, default %s" !tar;
