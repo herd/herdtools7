@@ -1,0 +1,8 @@
+(cram
+  (deps
+    (source_tree ../../../herd/libdir)
+    %{bin:herd7}
+    %{bin:mcmp7}
+    %{bin:herd7}
+    %{bin:mcompare7}
+    %{bin:msum7}))

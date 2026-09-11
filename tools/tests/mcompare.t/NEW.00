@@ -1,0 +1,102 @@
+Thu Aug 27 05:22:55 PM CEST 2026
+/usr/bin/qemu-system-aarch64 -nodefaults -machine virt,gic-version=host -accel kvm -cpu host -device virtio-serial-device -device virtconsole,chardev=ctd -chardev testdev,id=ctd -device pci-testdev -display none -serial stdio -kernel T/./run.flat -smp 4 -append -q -s 5k -r 2k # -initrd /tmp/tmp.so0NEWOml3
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for src/Load+Fault.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 Load+Fault
+{
+ int x=1;
+ [PTE(x)]=(oa:PA(x), valid:0);
+ 0:X1=x;
+ 1:X1=PTE(x); pteval_t 1:X0=(oa:PA(x));
+}
+ P0          | P1          ;
+ L0:         | STR X0,[X1] ;
+ LDR W0,[X1] |             ;
+
+forall (0:X0=1 \/ fault(P0))
+Generated assembler
+#START _litmus_P0
+	nop
+1:
+	ldr w2,[x0]
+	nop
+#START _litmus_P1
+	nop
+	str x1,[x0]
+	nop
+Test Load+Fault Required
+Histogram (2 states)
+19861136:>0:X0=0; fault(P0:L0,x,D-MMU:Translation);
+138864:>0:X0=1; ~fault(P0);
+Ok
+
+Witnesses
+Positive: 20000000, Negative: 0
+Condition forall (0:X0=1 \/ fault(P0)) is validated
+Hash=4cf70958bd2d7e2535dd1fc869f21e67
+Variant=vmsa
+Observation Load+Fault Always 20000000 0
+Faults Load+Fault 19861136 P0:19861136
+Time Load+Fault 24.70
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for src/Stores+Faults.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 Stores+Faults
+{
+ [PTE(x)]=(oa:PA(x), valid:0);
+ 0:X0=1; 0:X1=x;
+ 1:X1=PTE(x); pteval_t 1:X0=(oa:PA(x)); pteval_t 1:X2=(oa:PA(x), db:0);
+}
+ P0           | P1          ;
+ L0:          | STR X0,[X1] ;
+ STR W0,[X1]  | DSB SY      ;
+ DSB SY       | STR X2,[X1] ;
+ ADD W0,W0,#1 |             ;
+ STR W0,[X1]  |             ;
+
+forall (([x]=1 => not (fault(P0:L0))) /\ ([x]=2 => not (fault(P0))))
+Generated assembler
+#START _litmus_P0
+	nop
+1:
+	str w1,[x0]
+	dsb sy
+	add w1,w1,#1
+	str w1,[x0]
+	nop
+#START _litmus_P1
+	nop
+	str x2,[x0]
+	dsb sy
+	str x1,[x0]
+	nop
+Test Stores+Faults Required
+Histogram (4 states)
+7005803:>[x]=2; ~fault(P0); ~fault(P0:L0);
+5864063:>[x]=0; fault(P0:L0,x,D-MMU:Permission); 
+398281:>[x]=1; fault(P0,x,D-MMU:Permission); ~fault(P0:L0);
+6731853:>[x]=0; fault(P0:L0,x,D-MMU:Translation); 
+Ok
+
+Witnesses
+Positive: 20000000, Negative: 0
+Condition forall (([x]=1 => not (fault(P0:L0))) /\ ([x]=2 => not (fault(P0)))) is validated
+Hash=d5abb72c93a2349c5e576da02287bb5e
+Variant=vmsa
+Observation Stores+Faults Always 20000000 0
+Faults Stores+Faults 12994197 P0:12994197
+Time Stores+Faults 24.89
+Revision 25c11036dc493d7c371fe1c2a91ce2bea37db525, version 7.58+1
+Command line: litmus7 -mach kvm-aarch64 -driver C -o /tmp/T.tar src/@all
+Parameters
+#define SIZE_OF_TEST 5000
+#define NUMBER_OF_RUN 200
+#define AVAIL 4
+/* gcc options: -Wall -std=gnu99 -DNOSWP -std=gnu99 -ffreestanding -I $(SRCDIR)/lib -I $(SRCDIR)/libfdt -Wall -Werror  -fomit-frame-pointer -Wno-frame-address   -fno-pic  -no-pie -Wmissing-parameter-type -Wold-style-declaration -Woverride-init -O2 $(call optional-ccopt, -mno-outline-atomics) */
+/* barrier: userfence */
+/* alloc: dynamic */
+/* proc used: 4 */
+Command: run.flat -q -s 5k -r 2k
+LITMUSOPTS=-s 5k -r 2k
+Thu Aug 27 05:23:47 PM CEST 2026

@@ -1,0 +1,5 @@
+Test T Allowed
+States 1
+[x]=1; ~Fault(P0,y);
+Ok
+Hash=x

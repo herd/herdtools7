@@ -22,6 +22,7 @@ module type Config = sig
   val int32 : bool
   val acceptBig : bool
   val faulttype : bool
+  val datafault : bool
 end
 
 module Make(O:Config) : sig

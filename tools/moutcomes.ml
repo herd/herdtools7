@@ -23,6 +23,7 @@ let logs = ref []
 let hexa = ref false
 let int32 = ref true
 let faulttype = ref true
+let datafault = ref true
 
 let options =
   let open CheckName in
@@ -34,6 +35,7 @@ let options =
      parse_hexa hexa;
      parse_int32 int32;
      parse_faulttype faulttype;
+     parse_datafault datafault;
   ]@parse_withselect
 
 let prog =
@@ -63,6 +65,7 @@ let log = match !logs with
     eprintf "%s takes at most one argument\n" prog ;
     exit 2
 let faulttype = !faulttype
+let datafault = !datafault
 
 module Verbose = struct let verbose = verbose end
 
@@ -85,6 +88,7 @@ module LL =
       let int32 = int32
       let acceptBig = true
       let faulttype = faulttype
+      let datafault = datafault
     end)
 
 

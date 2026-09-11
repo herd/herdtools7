@@ -19,10 +19,20 @@
 (**********************************)
 
 (* Hashed list of bindings *)
-module HashedEnv = HashedList.Make (struct type elt = HashedBinding.key end)
+module HashedEnv =
+  HashedList.Make
+    (struct
+      type elt = HashedBinding.key
+      let equal_node = HashedBinding.equal_node
+    end)
 
 (* Hashed list of faults *)
-module HashedFaults = HashedList.Make(struct type elt = HashedFault.key end)
+module HashedFaults =
+  HashedList.Make
+    (struct
+      type elt = HashedFault.key
+      let equal_node = HashedFault.equal_node
+    end)
 
 (* Hashed pair of triples *)
 module HashedState = struct
@@ -34,7 +44,9 @@ module HashedState = struct
     let equal
       {e=e1; f=f1; a=a1;}
       {e=e2; f=f2; a=a2;} =
-      e1 == e2 && f1 == f2 && a1=a2
+      HashedEnv.equal_node e1 e2
+      && HashedFaults.equal_node f1 f2
+      && HashedFaults.equal_node a1 a2
 
     let hash {e; f; a;} =
       let eh = HashedEnv.as_hash e
@@ -75,8 +87,8 @@ type parsed_topologies = topology list
 type sts = parsed_sts (* + sorted *)
 
 let do_equal_states xs ys =
-  (* Ignore counts, outcomes are hash-consed. *)
-  List.equal (fun x y -> x.p_st == y.p_st) xs ys
+  (* Ignore counts, outcomes are sorted list of hash-consed states . *)
+  List.equal (fun x y -> HashedState.M.equal_node x.p_st y.p_st) xs ys
 
 let equal_states sts1 sts2 = do_equal_states sts1.p_sts sts2.p_sts
 
@@ -164,13 +176,22 @@ open Printf
 open OutMode
 
 module W = Warn.Make(O)
+
 (* Bindings are ordered by their locations, identical locations
    in an outcome is an error *)
 
-let compare_binding p1 p2 =
-  match HashedBinding.compare_loc p1 p2 with
+let compare_binding bd1 bd2 =
+  match HashedBinding.compare_loc bd1 bd2 with
 | 0 -> assert false
 | r -> r
+
+(*
+ * States are normalised by sorting lists of final outcomes
+ * (_i.e_ lists of final "outcomes": location X value bindings
+ * + faults + absent faults).
+ *  It is thus simportant for compare functions on bindings and
+ * faults to yield total orders, which they do.
+ *)
 
 let as_st_concrete bds fs abs =
   let bds = List.sort compare_binding bds
@@ -320,12 +341,13 @@ let pp_validation = function
   | Run -> "Run"
   | Undef -> "Undef"
 
+(************************)
+(* Comparison on states *)
+(************************)
 
-let extract_loc h =
-  let loc,_ = HashedBinding.as_t h in
-  loc
-
-let mismatch s = raise (StateMismatch (extract_loc s))
+let mismatch s =
+  let loc,_ = HashedBinding.as_t s in
+  raise (StateMismatch loc)
 
 let rec compare_env st1 st2 =
   let open Hashcons in
@@ -344,32 +366,112 @@ let rec compare_env st1 st2 =
       | r ->
           mismatch (if r > 0 then p2 else p1)
 
-let rec compare_faults st1 st2 =
-  let open Hashcons in
-  let open HashedFaults in
-  match st1.node,st2.node with
-  | Nil,Nil -> 0
-  | (Nil,Cons _) -> -1
-  | (Cons _,Nil) -> 1
-  | Cons (p1,st1),Cons (p2,st2) ->
-      match HashedFault.compare p1 p2 with
-      | 0 -> compare_faults st1 st2
-      | r -> r
+(* Check bindings only *)
 
-
-(* First argument is true when states are from the same log *)
-let compare_state same st1 st2 =
+let compare_state_by_env st1 st2 =
   let open HashedState in
-  let {S.e=e1; f=f1; a=a1;} = as_t st1.p_st
-  and {S.e=e2; f=f2; a=a2;} = as_t st2.p_st in
-  match compare_env e1 e2 with
-  | 0 ->
-      begin match compare_faults f1 f2 with
-      | 0 -> assert (not same || compare_faults a1 a2 = 0) ; 0
-      | r -> r
-      end
-  | r -> r
-(* Betweenn two equal states, select the one with explicit absent faults *)
+  let {S.e=e1; _;} = as_t st1.p_st
+  and {S.e=e2; _;} = as_t st2.p_st in
+  compare_env e1 e2
+
+let all_faults_included fs1 fs2 =
+  HashedFaults.for_all
+    (fun f1 -> HashedFaults.exists (HashedFault.equivalent f1) fs2)
+    fs1
+
+let same_faults st1 st2 =
+  let open HashedState in
+  let {S.f=f1; _;} = as_t st1.p_st
+  and {S.f=f2; _;} = as_t st2.p_st in
+  all_faults_included f1 f2 && all_faults_included f2 f1
+
+(* Group by identical bindings *)
+let group_by_env =
+  Misc.group_sorted
+    (fun st1 st2 ->
+       let r =  compare_state_by_env st1 st2 in
+       assert (r <= 0) ;
+       r = 0)
+
+(*
+ * Diffing states. Leverage the total order on bindings
+ * and apply the linear algorithm.
+ * By contrast, faults originating from different logs
+ * are not guaranteed to be totally ordered. We thus
+ * resort to the naive, quadratic, algorithm.
+ * This does not harm as long as there are few faults to
+ * compare, which is the case in practice.
+ *)
+
+let diff_faults sts1 sts2 =
+  List.filter
+    (fun st1 -> Bool.not @@ List.exists (same_faults st1) sts2)
+    sts1
+
+let cmp_by_env sts1 sts2 =
+    match sts1,sts2 with
+    | st1::_,st2::_ -> compare_state_by_env st1 st2
+    | _,_ -> assert false
+
+let do_diff_states =
+  let rec diff stss1 stss2 =
+    match stss1,stss2 with
+    | (_,[])|([],_) -> List.concat stss1
+    | sts1::stss1,sts2::stss2 ->
+       let r = cmp_by_env sts1 sts2 in
+       if r < 0 then sts1@diff stss1 (sts2::stss2)
+       else if r > 0 then diff stss1 (sts2::stss2)
+       else
+         diff_faults sts1 sts2@diff stss1 stss2 in
+  fun sts1 sts2 ->
+    diff (group_by_env sts1) (group_by_env sts2)
+
+let comp_nouts sts =
+  List.fold_left (fun k st -> Int64.add k st.p_noccs) Int64.zero sts
+
+let diff_states sts1 sts2 =
+  let sts = do_diff_states sts1.p_sts sts2.p_sts in
+  let n_outs = comp_nouts sts in
+  {
+   p_nouts = n_outs ;
+   p_sts = sts  ;
+  }
+
+(* Do not actually diff, check for emptiness only *)
+
+let diff_faults_empty sts1 sts2 =
+  List.for_all
+    (fun st1 ->
+      List.exists
+        (fun st2 -> same_faults st1 st2)
+        sts2)
+    sts1
+
+let diff_states_empty =
+  let rec diff_empty stss1 stss2 =
+  match stss1 ,stss2 with
+  | [],_ -> true
+  | _::_,[] -> false
+  | sts1::rem1,sts2::rem2 ->
+      let r = cmp_by_env sts1 sts2 in
+      if r < 0 then false
+      else if r > 0 then diff_empty stss1 rem2
+      else diff_faults_empty sts1 sts2 && diff_empty rem1 rem2 in
+  fun sts1 sts2 ->
+    diff_empty (group_by_env sts1) (group_by_env sts2)
+
+(*********************)
+(* Union of two logs *)
+(*********************)
+
+(*
+ * Again, the algorithm is linear at the binding level
+ * and then quadratic at the fault level.
+ * Additionaly, when the two faults to union are
+ * "comparable" (_e.g._ no fault type vs. some explicit fault type),
+ * we select the newer format (here with explicit fault type).
+ *)
+
 let select_absent st1 st2 =
   let open HashedState in
   let open HashedFaults in
@@ -381,78 +483,86 @@ let select_absent st1 st2 =
   | (_,Cons _) -> st2
   | (Nil,Nil)-> st1
 
-let state_has_fault_type st =
+let state_get_fault_type st =
   let open HashedState in
   let open HashedFaults in
   let {S.e=_; f=f1; a=_;} = as_t st.p_st in
-  let rec fault_type st = match st.Hashcons.node with
-    | Nil -> false
-    | Cons (p, st) -> HashedFault.has_fault_type p || fault_type st in
+  let rec fault_type st =
+    let open HashedFault in
+    match st.Hashcons.node with
+    | Nil -> No
+    | Cons (p, st) ->
+        match  HashedFault.get_fault_type p with
+        | No -> fault_type st
+        | DIPrefix ->  DIPrefix
+        | Other ->
+            begin
+              match fault_type st with
+              | No|Other -> Other
+              | DIPrefix -> DIPrefix
+            end in
   fault_type f1
 
-(* Select state with the most explicit information.
+(*
+ * Select state with the most explicit information.
  * This works because explicit fault types have been
  * introduced after explicit fault absence. Thus
  * the presence of fault type implies that explicit
  * absent faults are also here (if some fault is
  * absent, of course).
+ * Notice that MMU fault types have been made even
+ * more precise by prefixing then with "D-" or "I-".
+ * This new format is of course preferred.
  *)
 let select_newer st1 st2 =
-  if st1 == st2 || state_has_fault_type st1 then st1
-  else if state_has_fault_type st2 then st2
+  if HashedState.M.equal_node st1.p_st st2.p_st then st1
   else
-    (* No state has fault types, select one with explicit absent faults *)
-    select_absent st1 st2
+    let ft1 = state_get_fault_type st1
+    and ft2 = state_get_fault_type st2 in
+    let open HashedFault in
+    match ft1,ft2 with
+    | (DIPrefix,_)
+    | (Other,No)
+      -> st1
+    | (_,DIPrefix)
+    | ((Other|No),Other)
+      -> st2
+    | No,No ->
+      (* No state has fault types, select one with explicit absent faults *)
+      select_absent st1 st2
 
-let rec do_diff_states sts1 sts2 sts2_retry do_retry = match sts1,sts2 with
-| [],_ -> []
-| _,[] -> if do_retry then do_diff_states sts1 sts2_retry [] false else sts1
-| st1::sts1,st2::sts2 ->
-   (* if st1 and st2 have a fault for the same instruction and the
-    * same location (e.g. fault(P0:L0,x)), where st1 has a fault type
-    * (e.g. fault(P0:L0,x,TagCheck)) and st2 doesn't
-    * (e.g. fault(P0:L0,x)), we consider the two faults
-    * equal. However, it's possible that sts1 might have more states
-    * with the same fault of different type (e.g.,
-    * fault(P0:L0,x,MMU:Translation)). These other states will be
-    * compared against st2 as well. *)
-    let r = compare_state false st1 st2 in
-    if r < 0 then
-      st1::do_diff_states sts1 (st2::sts2) sts2_retry do_retry
-    else if r > 0 then
-      do_diff_states (st1::sts1) sts2 sts2_retry do_retry
-    else
-      let sts2_retry, do_retry =
-        match state_has_fault_type st1, state_has_fault_type st2 with
-        | true, false -> st2::sts2_retry, true
-        | _, _ -> sts2_retry, do_retry in
-      do_diff_states sts1 sts2 sts2_retry do_retry
+let rec find_same_faults x = function
+| [] -> None
+| y::ys ->
+   if same_faults x y then Some (y,ys)
+   else
+     Option.bind
+       (find_same_faults x ys)
+       (fun (z,ys) -> Some (z,y::ys))
 
-let comp_nouts sts =
-  List.fold_left (fun k st -> Int64.add k st.p_noccs) Int64.zero sts
+let rec union_faults sts1 sts2 = match sts1 with
+  | [] -> sts2
+  | st1::sts1 ->
+     match find_same_faults st1 sts2 with
+     | None -> st1::union_faults sts1 sts2
+     | Some (st2,sts2) ->
+        let st = select_newer st1 st2 in
+        let st =
+          { st with p_noccs = Int64.add st1.p_noccs st2.p_noccs; } in
+        st::union_faults sts1 sts2
 
-let diff_states sts1 sts2 =
-  let sts = do_diff_states sts1.p_sts sts2.p_sts [] true in
-  let n_outs = comp_nouts sts in
-  {
-   p_nouts = n_outs ;
-   p_sts = sts  ;
-  }
-
-let rec do_union_states sts1 sts2 =  match sts1,sts2 with
-| ([],sts)|(sts,[]) -> sts
-| st1::sts1,st2::sts2 ->
-    let r = compare_state false st1 st2 in
-    if r < 0 then
-      st1::do_union_states sts1 (st2::sts2)
-    else if r > 0 then
-      st2::do_union_states (st1::sts1) sts2
-    else begin
-      let st = select_newer st1 st2 in
-      let st =
-        { st with p_noccs = Int64.add st1.p_noccs  st2.p_noccs ; } in
-      st::do_union_states sts1 sts2
-    end
+let do_union_states =
+  let rec union stss1 stss2 =  match stss1,stss2 with
+    | ([],stss)|(stss,[]) -> List.concat stss
+    | sts1::rem1,sts2::rem2 ->
+       let r = cmp_by_env sts1 sts2 in
+       if r < 0 then
+         sts1@union rem1 stss2
+       else if r > 0 then
+         sts2@union stss1 rem2
+       else
+         union_faults sts1 sts2@union rem1 rem2 in
+  fun sts1 sts2 -> union (group_by_env sts1) (group_by_env sts2)
 
 let union_states sts1 sts2 =
   {
@@ -499,7 +609,7 @@ module LC =
               let i = Int64.of_string v in
               ToolsConstant.eq vcond (Constant.Concrete i)
               with Failure _ ->
-                (* Some data (e.g. page tambe entries)
+                (* Some data (e.g. page table entries)
                    can be compared  with zero *)
                 if is_pteval v && ToolsConstant.is_zero vcond then false
                 else
@@ -629,8 +739,6 @@ let count_outcomes t =
     end else k in
   loop 0 0
 
-(* Sum of logs *)
-
 (**********************)
 (* Union of log files *)
 (**********************)
@@ -675,12 +783,6 @@ let union_cond tname c1 c2 =
     end
   end else
     c1
-
-(*
-let p_hash = function
-  | None -> "-"
-  | Some h -> "+" ^ h
-*)
 
 let strict = true
 
@@ -900,20 +1002,27 @@ let diff_tests nx ny emptyok xs ys =
 let diff_logs emptyok t1 t2 =
   diff_tests t1.name t2.name emptyok t1.tests t2.tests
 
+(****************************)
 (* Intersection of two logs *)
+(****************************)
 
-let rec do_inter_states sts1 sts2 =  match sts1,sts2 with
-| ([],_)|(_,[]) -> []
-| st1::sts1,st2::sts2 ->
-    let r = compare_state false st1 st2 in
-    if r < 0 then
-      do_inter_states sts1 (st2::sts2)
-    else if r > 0 then
-      do_inter_states (st1::sts1) sts2
-    else begin
-      let st = st1 in (* Consider second log as some filter *)
-      st::do_inter_states sts1 sts2
-    end
+ (* Consider second log as some filter *)
+let inter_faults sts1 sts2 =
+  List.filter
+    (fun st1 -> List.exists (same_faults st1) sts2)
+    sts1
+
+let do_inter_states =
+  let rec inter stss1 stss2 = match stss1,stss2 with
+    | ([],_)|(_,[]) -> []
+    | sts1::rem1,sts2::rem2 ->
+       let r = cmp_by_env sts1 sts2 in
+       if r < 0 then inter rem1 stss2
+       else if r > 0 then inter stss1 rem2
+       else
+         inter_faults sts1 sts2@inter rem1 rem2 in
+  fun sts1 sts2 ->
+    inter (group_by_env sts1) (group_by_env sts2)
 
 let inter_states sts1 sts2 =
   let sts =do_inter_states sts1.p_sts sts2.p_sts in
@@ -1074,13 +1183,49 @@ let exclude e t =
       t.tests in
   { t with tests = tests; }
 
-(*************)
-(* Normalize *)
-(*************)
+(*********************************)
+(* Normalize full log structures *)
+(*********************************)
 
-(* No duplicates in normalized lists of states *)
+(*
+ * Total "compare" function. Used exclusively for normalising
+ * states from the same log.
+ * Namely, there exist old litmus logs that contain
+ * several running logs of the same test following
+ * each other.
+ *)
 
-let rec  normalize_sts_uniq cmp sts = match sts with
+let rec compare_faults st1 st2 =
+  let open Hashcons in
+  let open HashedFaults in
+  match st1.node,st2.node with
+  | Nil,Nil -> 0
+  | (Nil,Cons _) -> -1
+  | (Cons _,Nil) -> 1
+  | Cons (f1,st1),Cons (f2,st2) ->
+      match HashedFault.compare f1 f2 with
+      | 0 -> compare_faults st1 st2
+      | r -> r
+
+let compare_state st1 st2 =
+  let open HashedState in
+  let {S.e=e1; f=f1; a=a1;} = as_t st1.p_st
+  and {S.e=e2; f=f2; a=a2;} = as_t st2.p_st in
+  match compare_env e1 e2 with
+  | 0 ->
+     (* This function is used on states from the same log.
+        There lines that agree on bindings and fault occurrences
+        must also agree on absent or negative faults. *)
+      begin match compare_faults f1 f2 with
+      | 0 -> assert (compare_faults a1 a2 = 0) ; 0
+      | r -> r
+      end
+  | r -> r
+
+(* No duplicates in normalized lists of states,
+   Duplicates are eliminated. *)
+
+let rec normalize_sts_uniq cmp sts = match sts with
   | []|[_] -> sts
   | st1::(st2::_ as sts) ->
      if cmp st1 st2=0 then
@@ -1090,7 +1235,7 @@ let rec  normalize_sts_uniq cmp sts = match sts with
 
 let normalize_sts_gen cmp sts = normalize_sts_uniq cmp (List.sort cmp sts)
 
-let normalize_sts = normalize_sts_gen (compare_state true)
+let normalize_sts = normalize_sts_gen compare_state
 
 let normalize_states sts =
   let p_sts = normalize_sts sts in
@@ -1246,10 +1391,6 @@ let do_union_litmus_simple t1 t2 =
   if t1.s_hash <> t2.s_hash then error DiffHash ;
   { t1 with s_states = sts ; }
 
-(*
-let union_equal_simple _name t1 t2 = assert (t1 = t2) ;  t1
-*)
-
 let union_litmus_simple name t1 t2 =
   try do_union_litmus_simple t1 t2
   with Error e ->
@@ -1277,7 +1418,6 @@ let normalize_simple name _is_litmus ts =
       ts in
   let ts =
     union_same_log_simple
-(*      (if is_litmus then union_litmus_simple name else union_equal_simple name) *)
       (union_litmus_simple name)
       ts in
   { s_name = name ; s_tests = ts ; }
@@ -1297,6 +1437,67 @@ let simple_same out1 out2 t1 t2 k =
       else do_rec r1 r2 k in
   do_rec t1.s_tests t2.s_tests k
 
+(* Check presence of fault with no fault type in state *)
+module FaultKinds =
+  MySet.Make
+    (struct
+      open HashedFault
+      type t = ft_kind
+      let compare = compare_kinds
+    end)
+
+let get_fault_kinds sts =
+  let collect_kinds =
+    HashedFaults.fold_left
+      (fun k f -> FaultKinds.add  (HashedFault.get_fault_type f) k) in
+  List.fold_left
+    (fun k st ->
+       let open HashedState in
+       let { S.f; _ } = as_t st in
+       collect_kinds k f)
+    FaultKinds.empty
+    sts
+
+(* Select appropriate diff function *)
+
+let _dbg = false
+
+(*
+ * Simple diff cannot handle the various syntax of
+ * equivalent faults, because they rely on hashconsed nodes
+ * identity (see diff_not_empty and diff below)
+ * for comparison and that those identities differ
+ * on those "equivalent" faults. Hence, when the syntax of
+ * faults of the diff argument are different, we rely on complete
+ * diff, _i.e._ the one of **mcompare7**.
+ *)
+
+let select_diff safe opt name xs ys =
+  let fk1 = get_fault_kinds xs
+  and fk2 = get_fault_kinds ys in
+  let is_heterogeneous =
+    FaultKinds.cardinal fk1 > 1 || FaultKinds.cardinal fk2 > 1 in
+  if _dbg && is_heterogeneous then
+    Printf.eprintf "Found heterogeneous test %s\n%!" name ;
+  if not is_heterogeneous && FaultKinds.equal fk1 fk2
+  then opt xs ys
+  else safe xs ys
+
+(* Lift simple states to complete ones, it is important
+   to sort outcomes by their environment component for
+   "diff" to operate correctly. See for instance
+   diff_states_empty above.  *)
+let to_parsed_sts xs =
+  List.map (fun x -> { p_noccs=Int64.one; p_st=x; }) xs
+  |> List.sort compare_state_by_env
+
+(* Non optimised diff, to be used when fault comparison is required *)
+let diff_safe_not_empty xs ys =
+  let xs = to_parsed_sts xs
+  and ys = to_parsed_sts ys in
+  not @@ diff_states_empty xs ys
+
+(* Generic, optimised diff *)
 let simple_diff_gen diff out t1 t2 k =
  let rec do_diff ts1 ts2 k = match ts1,ts2 with
   | ([],_)|(_,[]) -> k
@@ -1308,12 +1509,13 @@ let simple_diff_gen diff out t1 t2 k =
         Warn.fatal "Hashes for test %s differ\n" t1.s_tname
       else
         do_diff r1 r2
-          (if diff t1.s_states t2.s_states then begin
+          (if diff t1.s_tname t1.s_states t2.s_states then begin
             out t1.s_tname k
           end else k) in
   do_diff t1.s_tests t2.s_tests k
 
 (* Answers true if X/Y not empty *)
+
 let rec diff_not_empty  xs ys = match xs,ys with
 | [],_ -> false
 | _,[] -> true
@@ -1324,12 +1526,27 @@ let rec diff_not_empty  xs ys = match xs,ys with
     else diff_not_empty rx ry
 
 let simple_diff_not_empty out t1 t2 k =
-  simple_diff_gen diff_not_empty out t1 t2 k
+  simple_diff_gen
+    (select_diff
+       (fun xs ys -> diff_safe_not_empty xs ys)
+       diff_not_empty)
+    out t1 t2 k
 
+(* diff predicate: true when states differ. *)
+
+let diff sts1 sts2 =
+  List.equal HashedState.M.equal_node sts1 sts2 |> Bool.not
 
 let diff_simple_states xs ys =
-  not (List.equal ( == ) xs ys)
+  select_diff
+    (fun xs ys ->
+      let xs = to_parsed_sts xs
+      and ys = to_parsed_sts ys in
+      not (diff_states_empty xs ys && diff_states_empty ys xs))
+    diff
+    xs ys
 
 let simple_diff out t1 t2 k =
   simple_diff_gen diff_simple_states out t1 t2 k
+
 end
