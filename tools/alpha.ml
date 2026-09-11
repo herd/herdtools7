@@ -205,8 +205,8 @@ struct
     | PteVal _ -> nopte_value ()
     | AddrReg _ -> noaddrreg_value ()
     | Instruction _ -> noinstr_value ()
-    | Symbolic (Physical _|TagAddr _|System (TLB,_))
-    | Frozen _
+    | Symbolic (Physical _|TagAddr _|System ((TLB|INTID),_))
+    | Frozen _ | IntidVal _ | IntidUpdateVal _
       -> assert false
 
 
@@ -224,7 +224,8 @@ struct
     | PteVal _ -> nopte_value ()
     | AddrReg _ -> noaddrreg_value ()
     | Instruction _ -> noinstr_value ()
-    | Frozen _|Symbolic (Physical _|TagAddr _|System (TLB,_))
+    | Frozen _ | IntidVal _ | IntidUpdateVal _
+    | Symbolic (Physical _ | TagAddr _|System ((TLB|INTID),_))
       -> assert false
 
 

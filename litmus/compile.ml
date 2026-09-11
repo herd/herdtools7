@@ -73,7 +73,7 @@ module Generic
         | PteVal _ -> pteval_t
         | AddrReg _ -> parel1_t
         | Instruction _ -> ins_t
-        | Frozen _ | ConcreteRecord _ -> assert false
+        | Frozen _ | ConcreteRecord _ | IntidVal _ | IntidUpdateVal _ -> assert false
 
       let misc_to_c loc = function
         | TestType.TyDef when A.is_pte_loc loc -> pteval_t
@@ -391,7 +391,7 @@ module A.FaultType = A.FaultType)
           | Symbolic (Virtual {Constant.name=Symbol.Label (_,lbl); _}) ->
               Label.Set.add lbl k
           |Concrete _|ConcreteVector _|ConcreteRecord _
-          |Symbolic _|Tag _|PteVal _|AddrReg _
+          |Symbolic _|Tag _|PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _
           |Instruction _|Frozen _
            -> k)
         Label.Set.empty init

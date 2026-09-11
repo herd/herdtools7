@@ -285,6 +285,11 @@ end = struct
         Constant.is_pt c
     | _ -> false
 
+  let is_intid a =
+    match location_of a with
+    | Some (A.Location_global (V.Val v)) -> Constant.is_intid v
+    | _ -> false
+
   let is_additional_mem _ = false
 
   let do_is_annot pred a = match a with
@@ -432,6 +437,10 @@ end = struct
   | Access (_,A.Location_reg _,_,_,_,_,_) -> true
   | _ -> false
 
+  let is_sysreg = function
+  | Access (_,A.Location_reg (_,r),_,_,_,_,_) -> A.is_sysreg r
+  | _ -> false
+
   let is_reg_store_any a = match a with
   | Access (W,A.Location_reg _,_,_,_,_,_) -> true
   | _ -> false
@@ -570,6 +579,7 @@ end = struct
     ("GCS",is_gcs)::
     ("TLBI",is_inv)::
     ("no-loc", fun a -> Misc.is_none (location_of a))::
+    ("INTID", is_intid)::
     (if kvm then
       fun k ->
         ("PA",is_PA_access)::
@@ -634,7 +644,7 @@ end = struct
           | Some
               (A.V.Val
                  (ConcreteVector _|Concrete _|Symbolic _|ConcreteRecord _
-                  |Tag _|Instruction _|AddrReg _
+                  |Tag _|Instruction _|AddrReg _|IntidVal _|IntidUpdateVal _
                   |Frozen _))
           | None
             -> None

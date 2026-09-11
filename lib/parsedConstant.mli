@@ -16,7 +16,7 @@
 
 (** Constants as they are parsed, scalars still are strings, as present in file *)
 
-type v = (string,ParsedPteVal.t,ParsedAddrReg.t,InstrLit.t) Constant.t
+type v = (string,ParsedPteVal.t,ParsedAddrReg.t,ParsedIntidVal.t,InstrLit.t) Constant.t
 
 val zero : v
 val one : v
@@ -37,4 +37,6 @@ val pp_v_old : v -> string
 val pp : bool (* hexa *) -> v -> string
 
 (* Pass specific printer for pteval's *)
-val pp_norm : bool -> (ParsedPteVal.t -> string) -> (ParsedAddrReg.t -> string) -> v -> string
+val pp_norm :
+  bool -> (ParsedPteVal.t -> string) -> (ParsedAddrReg.t -> string) ->
+    (ParsedIntidVal.t -> string) -> v -> string

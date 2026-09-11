@@ -282,6 +282,7 @@ cata-test:: test.herd.cata.aarch64-cas
 cata-test-all:: test.herd.cata.aarch64-VMSA
 cata-test:: test.herd.cata.aarch64-ETS2
 cata-test:: test.herd.cata.aarch64-ETS3
+cata-test:: test.herd.cata.aarch64-gic
 cata-test:: test.herd.cata.aarch64-readers-guide
 
 cata-test:: test.herd.cata.bpf
@@ -301,6 +302,18 @@ test.herd.cata-extended.%:
 
 cata-test-all:: test.herd.cata-extended.aarch64-BBM
 cata-test:: test.herd.cata-extended.linux
+
+test.gicv5:
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-herd-path $(HERD) \
+		-libdir-path ./herd/libdir \
+		-litmus-dir ./herd/tests/instructions/AArch64.gicv5 \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64 GICv5 instructions tests: OK"
+
+test:: diy-test
+test-local:: diy-test
 
 test.herd-mixed.cata.%:
 	@ echo

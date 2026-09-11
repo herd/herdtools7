@@ -30,8 +30,9 @@ module type S = sig
   type scalar
   type pteval
   type addrreg
+  type intidval
   type instr
-  type cst = (scalar, pteval, addrreg, instr) Constant.t
+  type cst = (scalar, pteval, addrreg, intidval, instr) Constant.t
 
   (* Specific operations *)
   val do_op : op -> cst -> cst -> cst option
@@ -63,6 +64,9 @@ module type WithTr = sig
   val fromExtraAddrReg : addrreg -> AArch64AddrReg.t
   val toExtraAddrReg : AArch64AddrReg.t -> addrreg
 
+  val fromExtraIntidVal : intidval -> AArch64IntidVal.t
+  val toExtraIntidVal : AArch64IntidVal.t -> intidval
+
 end
 
 
@@ -76,6 +80,7 @@ module No (Cst : Constant.S) :
     with type scalar = Cst.Scalar.t
      and type pteval = Cst.PteVal.t
      and type addrreg = Cst.AddrReg.t
+     and type intidval = Cst.IntidVal.t
      and type instr = Cst.Instr.t
      and type extra_op = no_extra_op
      and type 'a constr_op = 'a no_constr_op
@@ -95,8 +100,9 @@ module No (Cst : Constant.S) :
   type scalar = Cst.Scalar.t
   type pteval = Cst.PteVal.t
   type addrreg = Cst.AddrReg.t
+  type intidval = Cst.IntidVal.t
   type instr = Cst.Instr.t
-  type cst = (scalar, pteval, addrreg, instr) Constant.t
+  type cst = (scalar, pteval, addrreg, intidval, instr) Constant.t
 
   let do_op _ _ _ = None
   let do_op1 _ _ = None
@@ -109,6 +115,8 @@ module No (Cst : Constant.S) :
   and toExtraPteVal _ = raise Exit
   let fromExtraAddrReg _ = raise Exit
   and toExtraAddrReg _ = raise Exit
+  let fromExtraIntidVal _ = raise Exit
+  and toExtraIntidVal _ = raise Exit
 end
 
 module type S1 = sig
@@ -121,8 +129,9 @@ module type S1 = sig
   type scalar
   type pteval
   type addrreg
+  type intidval
   type instr
-  type cst = (scalar, pteval, addrreg, instr) Constant.t
+  type cst = (scalar, pteval, addrreg, intidval, instr) Constant.t
 
   val do_op1 : op1 -> cst -> cst option
   val shift_address_right : string -> scalar -> cst option
@@ -139,6 +148,7 @@ module OnlyArchOp1 (A : S1) :
      and type scalar = A.scalar
      and type pteval = A.pteval
      and type addrreg = A.addrreg
+     and type intidval = A.intidval
      and type instr = A.instr
      and type extra_op = no_extra_op
      and type 'a constr_op = 'a no_constr_op

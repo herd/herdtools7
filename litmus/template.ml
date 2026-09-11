@@ -219,7 +219,7 @@ module Make(O:Config)(A:I) =
                   | ConcreteRecord vs ->
                     StringMap.fold_values f vs k
                   |Concrete _|Tag _
-                  |PteVal _|AddrReg _|Instruction _|Frozen _
+                  |PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _
                    -> k in
                   f v k)
                 [] init)) in

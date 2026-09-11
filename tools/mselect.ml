@@ -39,7 +39,7 @@ module Top
     end
 
 
-    module Make(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S) = struct
+    module Make(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S)(Intid:IntidVal.S) = struct
 
       let is_forall t =
         let open ConstrGen in

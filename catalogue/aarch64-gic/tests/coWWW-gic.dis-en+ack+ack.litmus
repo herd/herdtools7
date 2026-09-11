@@ -1,0 +1,19 @@
+AArch64 coWWW-gic.dis-en+ack+ack
+{
+ [INTID(A)]=(enabled:1, affinity:P1, active:0, pending:1, priority:5);
+ 0:X0=gicval_t:(intid:A);
+ 0:X1=gicval_t:(intid:A, priority:4);
+ 0:X2=gicval_t:(intid:A, affinity:P2);
+
+ 1:X1=gicval_t:(intid:A);
+}
+ P0               | P1                    | P2                      ;
+ GIC CDDIS, X0    | GICR X2, CDIA         | GICR X2, CDIA           ;
+ GSB SYS          | ISB                   | ISB                     ;
+ GIC CDPRI, X1    | MRS  X0, ICC_HAPR_EL1 | MRS  X0, ICC_HAPR_EL1   ;
+ GIC CDAFF, X2    |                       |                         ;
+ GIC CDEN, X0     |                       |                         ;
+
+exists((1:X2=(valid:1, intid:A) /\ 1:X0=intval_t:(priority:4)) \/
+       (2:X2=(valid:1, intid:A) /\ 2:X0=intval_t:(priority:5)))
+

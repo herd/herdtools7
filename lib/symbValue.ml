@@ -31,6 +31,7 @@ module
        type scalar = Cst.Scalar.t
        and type pteval = Cst.PteVal.t
        and type addrreg = Cst.AddrReg.t
+       and type intidval = Cst.IntidVal.t
        and type instr = Cst.Instr.t) = struct
 
   module Cst = Cst
@@ -157,7 +158,7 @@ module
     | Val (Concrete v) -> Val (Concrete (Cst.Scalar.bit_at k v))
     | Val
         (ConcreteVector _|ConcreteRecord _|Symbolic _|
-         Tag _|PteVal _|AddrReg _|Instruction _|Frozen _ as x)
+         Tag _|PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _ as x)
       ->
         Warn.user_error "Illegal operation on %s" (Cst.pp_v x)
     | Var _ -> raise Undetermined
@@ -168,7 +169,7 @@ module
   match v1 with
     | Val (Concrete i1) ->
         Val (Concrete (op i1))
-    | Val (ConcreteVector _|ConcreteRecord _|Symbolic _|Tag _|PteVal _|AddrReg _|Frozen _ as x) ->
+    | Val (ConcreteVector _|ConcreteRecord _|Symbolic _|Tag _|PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Frozen _ as x) ->
         Warn.user_error "Illegal operation %s on %s"
           (pp_unop op_op) (Cst.pp_v x)
     | Val (Instruction _ as x) ->
@@ -305,7 +306,10 @@ module
     | (Val (Symbolic _),Val (Symbolic _))
     | (Val (PteVal _),Val (PteVal _))
     | (Val (AddrReg _),Val (AddrReg _))
-    | (Val (Instruction _),Val (Instruction _)) ->
+    | (Val (Instruction _),Val (Instruction _))
+    | (Val (IntidVal _),Val (IntidVal _))
+    | (Val (IntidUpdateVal _),Val (IntidUpdateVal _))
+      ->
         Val (Concrete (Cst.Scalar.of_int (compare  v1 v2)))
     (* 0 is sometime used as invalid PTE, no orpat because warning 57
        cannot be disabled in some versions ?  *)
@@ -333,7 +337,7 @@ module
   | Val (Symbolic (Physical (s,i))) -> Val (Symbolic (Physical (s,i+k)))
   | Val (ConcreteVector _|ConcreteRecord _
        | Symbolic ((TagAddr _|System _))
-       |Tag _|PteVal _|AddrReg _|Instruction _|Frozen _ as c) ->
+       |Tag _|PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _ as c) ->
       Warn.user_error "Illegal addition on constants %s +%d" (Cst.pp_v c) k
   | Var _ -> raise Undetermined
 
@@ -368,6 +372,7 @@ module
        *)
     | (Val (Symbolic _ as c1),Val (Symbolic _ as c2))
     | (Val (PteVal _ as c1),Val (PteVal _ as c2))
+    | (Val (IntidVal _ as c1),Val (IntidVal _ as c2))
     | (Val (Instruction _ as c1),Val (Instruction _ as c2))
     | (Val (Tag _ as c1),Val (Tag _ as c2))
       when Cst.eq c1 c2
@@ -376,7 +381,7 @@ module
 
   and maskop op sz v = match v,sz with
   | Val (Tag _),_ -> v (* tags are small enough for any mask be idempotent *)
-  | Val (PteVal _|AddrReg _|Instruction _|Symbolic _ as c),_ ->
+  | Val (PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Instruction _|Symbolic _ as c),_ ->
      begin
        match ArchOp.mask c sz with
        | Some c -> Val c
@@ -447,11 +452,11 @@ module
 
   let eq v1 v2 = match v1,v2 with
   | Var i1,Var i2 when Misc.int_eq i1 i2 -> v_true
-  | Val (Symbolic _|Tag _|PteVal _|ConcreteVector _|Instruction _ as s1),Val (Symbolic _|Tag _|PteVal _|ConcreteVector _|Instruction _ as s2) ->
+  | Val (Symbolic _|Tag _|PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|ConcreteVector _|Instruction _ as s1),Val (Symbolic _|Tag _|PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|ConcreteVector _|Instruction _ as s2) ->
       Cst.eq s1 s2 |> bool_to_v
 (* Assume concrete and others always to differ *)
-  | (Val (Symbolic _|Tag _|ConcreteVector _|PteVal _|Instruction _), Val (Concrete _))
-  | (Val (Concrete _), Val (Symbolic _|Tag _|ConcreteVector _|PteVal _|Instruction _)) -> v_false
+  | (Val (Symbolic _|Tag _|ConcreteVector _|PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Instruction _), Val (Concrete _))
+  | (Val (Concrete _), Val (Symbolic _|Tag _|ConcreteVector _|PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Instruction _)) -> v_false
   | _,_ ->
       binop
         Op.Eq
@@ -505,7 +510,7 @@ module
   |  Val (Symbolic (Physical _|TagAddr _|System _)
           |Concrete _
           |Tag _|ConcreteRecord _|ConcreteVector _
-          |PteVal _|AddrReg _|Instruction _
+          |PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Instruction _
           |Frozen _)
      -> Warn.user_error "Illegal tagged operation %s on %s" op_op (pp_v v)
   | Var _ -> raise Undetermined
@@ -526,7 +531,7 @@ module
     | Val
         (Concrete _|ConcreteRecord _|ConcreteVector _
          |Symbolic ((TagAddr _|System _))
-         |Tag _|PteVal _|AddrReg _
+         |Tag _|PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _
          |Instruction _|Frozen _)
       ->
        Warn.user_error "Illegal tagloc on %s" (pp_v v)
@@ -539,7 +544,7 @@ module
     | Val
         (Concrete _|ConcreteRecord _|ConcreteVector _
         |Tag _
-        |PteVal _|AddrReg _|Instruction _
+        |PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Instruction _
         |Frozen _)
       ->
        Warn.fatal "Illegal check_ctag" (* NB: not an user error *)
@@ -560,7 +565,7 @@ module
   |  Val
        (Concrete _|ConcreteRecord _|ConcreteVector _
        |Tag _
-       |Symbolic _|PteVal _|AddrReg _
+       |Symbolic _|PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _
        |Instruction _|Frozen _)
      ->
       Warn.user_error "Illegal %s on %s" op_op (pp_v v)
@@ -572,7 +577,7 @@ module
   | Val
       (Concrete _|ConcreteRecord _|ConcreteVector _
       |Tag _
-      |Symbolic _|PteVal _|AddrReg _
+      |Symbolic _|PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _
       |Instruction _|Frozen _)
     ->
      Warn.user_error "Illegal pteloc on %s" (pp_v v)
@@ -592,7 +597,7 @@ module
   | Val
       (ConcreteRecord _|ConcreteVector _
       |Tag _
-      |PteVal _|AddrReg _|Instruction _
+      |PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Instruction _
       |Frozen _) ->
       illegal_offset v
   | Var _ -> raise Undetermined
@@ -999,7 +1004,7 @@ module
   | Val
       (ConcreteVector _|ConcreteRecord _|Symbolic _
       |Tag _
-      |PteVal _|AddrReg _|Instruction _
+      |PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Instruction _
       | Frozen _ as s) ->
       Warn.user_error "illegal if on symbolic constant %s" (Cst.pp_v s)
   | Var _ -> raise Undetermined

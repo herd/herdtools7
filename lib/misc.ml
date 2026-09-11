@@ -43,12 +43,16 @@ let filebase f = Filename.basename f |> Filename.remove_extension
 (****************)
 
 let polymorphic_compare = compare
+let lex_compare c1 c2 x y  = match c1 x y with
+| 0 -> c2 x y
+| r -> r
 
 let int_compare = Int.compare
 let int_eq = Int.equal
 let max_int (x:int) (y:int) = if x >= y then x else y
 let min_int (x:int) (y:int) = if x <= y then x else y
 let string_eq = String.equal
+let bool_compare = Bool.compare
 let bool_eq = Bool.equal
 let identity = Fun.id
 
@@ -747,6 +751,10 @@ let add_parel1 = sprintf "parel1_t %s"
 let tr_pte = do_tr "pte_"
 let is_pte = is_prefix "pte_"
 let pp_pte = sprintf "PTE(%s)"
+
+let tr_intid = do_tr "intid_"
+let is_intid = is_prefix "intid_"
+let pp_intid = sprintf "INTID(%s)"
 
 let add_tlb = sprintf "tlb_%s"
 

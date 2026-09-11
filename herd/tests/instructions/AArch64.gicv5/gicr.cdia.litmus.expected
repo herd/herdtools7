@@ -1,0 +1,12 @@
+Test gicr.cdia Required
+States 3
+0:X1=(valid:0);
+0:X1=(intid:B, valid:1);
+0:X1=(intid:C, valid:1);
+Ok
+Witnesses
+Positive: 3 Negative: 0
+Condition forall (0:X1=(intid:B, valid:1) \/ 0:X1=(intid:C, valid:1) \/ 0:X1=(valid:0))
+Observation gicr.cdia Always 3 0
+Hash=1e5b6e1c3c35af5cab0e83bb4abcf76b
+

@@ -1,0 +1,17 @@
+AArch64 coWR-gic
+{
+ [INTID(A)]=(enabled:0, affinity:P0);
+ 0:X0=gicval_t:(intid:A, affinity:P1);
+ 0:X1=gicval_t:(intid:A);
+}
+ P0                   ;
+ GIC CDAFF, X0        ;
+ GIC CDEN, X1         ;
+ GIC CDRCFG, X1       ;
+ ISB                  ;
+ MRS X3, ICC_ICSR_EL1 ;
+
+exists(0:X3=intval_t:(affinity:P0,enabled:0) \/
+       0:X3=intval_t:(affinity:P1,enabled:0) \/
+       0:X3=intval_t:(affinity:P0,enabled:1))
+

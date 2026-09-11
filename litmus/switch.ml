@@ -134,7 +134,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
         let vs = try M.find loc m with Not_found -> ScalarSet.empty in
         M.add loc (ScalarSet.add i vs) m
     |ConcreteVector _|Symbolic _|Tag _|ConcreteRecord _
-    |PteVal _|AddrReg _|Instruction _|Frozen _
+    |PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _
      -> raise Cannot
 
 

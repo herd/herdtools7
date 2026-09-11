@@ -1,0 +1,10 @@
+Test gic.cdpend0 Allowed
+States 1
+[INTID(A)]=(affinity:P0);
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition exists ([INTID(A)]=(pending:1, affinity:P0))
+Observation gic.cdpend0 Never 0 1
+Hash=9b199571f26ec9f12e8b08b9e48bc2d1
+

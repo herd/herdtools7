@@ -718,4 +718,6 @@ include Arch.MakeArch(struct
     -> Warn.fatal "SME instructions are not implemented yet"
     | I_GCSPOPM _ | I_GCSPUSHM _ | I_GCSSTR _ | I_GCSSS1 _ | I_GCSSS2 _
     -> Warn.fatal "GCS instructions are not implemented yet"
+    | I_GIC _ | I_GICR _
+      -> Warn.fatal "GIC instructions are not implemented yet"
 end)

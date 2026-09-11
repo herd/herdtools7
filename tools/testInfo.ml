@@ -37,7 +37,7 @@ end
 
 module Top(Cfg:ToolParse.Config) = struct
 
-  module Make(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S) = struct
+  module Make(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S)(Intid:IntidVal.S) = struct
 
     let zyva name parsed =
       let tname = name.Name.name in

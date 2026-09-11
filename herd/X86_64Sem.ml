@@ -127,7 +127,8 @@ module
               (match port with
                | Port.(No|Data) ->
                    inst_size_to_reg_size (get_inst_size ii.X86_64.inst)
-               | Port.Addr -> X86_64.R64b)
+               | Port.Addr -> X86_64.R64b
+               | Port.AddrData -> assert false)
 
       let read_loc_atomic sz is_d loc ii =
         read_loc_gen sz is_d (atomic_when_global loc) loc ii
@@ -195,7 +196,10 @@ module
 
       let check_data =
         let open Port in
-        fun ea -> match lval_port ea with Addr -> Data | No -> No | Data -> assert false
+        fun ea -> match lval_port ea with
+            Addr -> Data
+          | No -> No
+          | Data|AddrData -> assert false
 
       let lval_ea ea ii = match ea with
         | X86_64.Effaddr_rm64 (X86_64.Rm64_reg r)->

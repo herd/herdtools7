@@ -1,0 +1,13 @@
+AArch64 coRW-gic+rcfg-ia
+{
+ [INTID(A)]=(priority:1,pending:1);
+ 0:X0=gicval_t:(intid:A);
+}
+ P0                    ;
+ GIC CDRCFG, X0        ;
+ GICR X1,CDIA          ;
+ ISB                   ;
+ MRS X3, ICC_ICSR_EL1  ;
+
+exists(0:X3=intval_t:(priority:1,pending:0,active:1))
+

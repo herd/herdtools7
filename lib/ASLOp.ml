@@ -66,8 +66,9 @@ type scalar = ASLScalar.t
 
 type pteval = AArch64PteVal.t
 type addrreg = AArch64AddrReg.t
+type intidval = AArch64IntidVal.t
 type instr = AArch64Base.instruction
-type cst = (scalar, pteval, addrreg, instr) Constant.t
+type cst = (scalar, pteval, addrreg, intidval, instr) Constant.t
 
 let compare_predicate _ _ = assert false
 let inverse_predicate _ = assert false
@@ -380,3 +381,6 @@ and toExtraPteVal pteval = pteval
 
 let fromExtraAddrReg addrreg = addrreg
 and toExtraAddrReg addrreg = addrreg
+
+let fromExtraIntidVal intidval = intidval
+and toExtraIntidVal intidval = intidval

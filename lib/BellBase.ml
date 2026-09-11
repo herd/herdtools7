@@ -43,6 +43,7 @@ let symb_reg_name = function
 
 let symb_reg r = Symbolic_reg r
 let type_reg _ = base_type
+let is_sysreg _ = false
 
 let parse_reg s =
   let len = String.length s in
