@@ -62,7 +62,7 @@ Bad slices
     [14:12] b,
   };
   ASL Static error (TE_BS):
-    Cannot extract from bitvector of length 12 slice 12+:3.
+    Slice selection 12+:3 includes a position outside the bounds of a bitvector of length 12.
   [1]
 
   $ cat >bad-types5.asl <<EOF
@@ -79,7 +79,7 @@ Bad slices
     [-2+:1] b,
   };
   ASL Static error (TE_BS):
-    Cannot extract from bitvector of length 12 slice (- 2)+:1.
+    Slice selection (- 2)+:1 includes a position outside the bounds of a bitvector of length 12.
   [1]
 
   $ cat >bad-types6.asl <<EOF
@@ -102,7 +102,7 @@ Bad slices
     },
   };
   ASL Static error (TE_BS):
-    Cannot extract from bitvector of length 3 slice 8+:3.
+    Slice selection 8+:3 includes a position outside the bounds of a bitvector of length 3.
   [1]
 
 Empty types

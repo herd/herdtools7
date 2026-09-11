@@ -559,6 +559,15 @@ ASL Typing Tests / annotating types:
       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Warning: pragma implementation_hidden will be ignored.
   $ aslref --no-exec TypingRule.BitfieldSliceToPositions.asl
+  $ aslref --no-exec TypingRule.BitfieldSliceToPositions.bad.asl
+  File TypingRule.BitfieldSliceToPositions.bad.asl, line 1, character 0 to
+    line 3, character 2:
+  var myData: bits(16) {
+      [5+:0] data
+  };
+  ASL Static error (TE_BS):
+    Slice 5+:0 has length 0; but the length of this slice must be at least 1.
+  [1]
   $ aslref TypingRule.DisjointSlicesToPositions.bad.asl
   File TypingRule.DisjointSlicesToPositions.bad.asl, line 1, character 0 to
     line 6, character 2:
@@ -579,7 +588,7 @@ ASL Typing Tests / annotating types:
       [3*5 +:5] value // Illegal: position 19 exceeds 15
   };
   ASL Static error (TE_BS):
-    Cannot extract from bitvector of length 16 slice (3 * 5)+:5.
+    Slice selection (3 * 5)+:5 includes a position outside the bounds of a bitvector of length 16.
   [1]
 
   $ aslref TypingRule.CheckNoPrecisionLoss.asl

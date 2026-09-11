@@ -1869,13 +1869,15 @@
 %% Build Error Codes
 \newcommand\BuildErrorPrefix[0]{\texttt{BE}}
 \newcommand\BuildErrorCode[1]{\texttt{\BuildErrorPrefix\_#1}}
-\newcommand\LexicalError[0]{\hyperlink{def-lexicalerrorresult}{\texttt{\#}\BuildErrorCode{LE}}}
-\newcommand\LexicalErrorConfig[0]{\LexicalError}
+\newcommand\TLexicalError[0]{\hyperlink{def-lexicalerrorresult}{\textsf{TLexicalError}}}
+\newcommand\LexicalErrorVal[1]{\hyperlink{def-lexicalerrorresult}{\textsf{LexicalError}}(#1)}
+\newcommand\LexicalError[0]{\hyperlink{def-lexicalerrorcode}{\BuildErrorCode{LE}}}
+\newcommand\LexicalErrorConfig[0]{\hyperlink{def-lexicalerrorconfig}{\texttt{\#LE}}}
+\newcommand\ReservedIdentifier[0]{\hyperlink{def-reservedidentifier}{\BuildErrorCode{RI}}}
 \newcommand\OrLexicalError[0]{\;\terminateas\;\LexicalErrorConfig}
 \newcommand\ParseError[0]{\hyperlink{def-parseerror}{\BuildErrorCode{PE}}}
 \newcommand\ParseErrorConfig[0]{\hyperlink{def-parseerror}{\texttt{\#}\BuildErrorCode{PE}}}
 \newcommand\OrParseError[0]{\;\terminateas\;\ParseErrorConfig}
-\newcommand\ReservedIdentifier[0]{\hyperlink{def-reservedidentifier}{\BuildErrorCode{RI}}}
 \newcommand\BinopPriority[0]{\hyperlink{def-binoppriority}{\BuildErrorCode{BOP}}}
 \newcommand\BuildBadDeclaration[0]{\hyperlink{def-buildbaddeclaration}{\BuildErrorCode{BD}}}
 

@@ -263,11 +263,13 @@ Parameterized integers:
 
   $ aslref empty-slice.asl
   0x0
-  ASL Dynamic error: Cannot extract from bitvector of length 0 slice 4+:-1.
+  ASL Dynamic error (DE_BI):
+    Slice 4+:-1 is invalid: its start and length must be non-negative.
   [1]
 
   $ aslref bad-slices.asl
-  ASL Dynamic error: Cannot extract from bitvector of length 0 slice 4+:-23.
+  ASL Dynamic error (DE_BI):
+    Slice 4+:-23 is invalid: its start and length must be non-negative.
   [1]
 
   $ aslref bad-shift.asl
@@ -729,13 +731,15 @@ Outdated syntax
 
 Bounds checks
   $ aslref bounds-checks-read-bitvector-1.asl
-  ASL Dynamic error: Cannot extract from bitvector of length 0 slice -1+:1.
+  ASL Dynamic error (DE_BI):
+    Slice -1+:1 is invalid: its start and length must be non-negative.
   [1]
   $ aslref bounds-checks-read-bitvector-2.asl
   ASL Dynamic error (DE_BI): Index 4 is outside the valid range 0..3.
   [1]
   $ aslref bounds-checks-write-bitvector-1.asl
-  ASL Dynamic error: Cannot extract from bitvector of length 0 slice -1+:1.
+  ASL Dynamic error (DE_BI):
+    Slice -1+:1 is invalid: its start and length must be non-negative.
   [1]
   $ aslref bounds-checks-write-bitvector-2.asl
   ASL Dynamic error (DE_BI): Index 5 is outside the valid range 0..3.
