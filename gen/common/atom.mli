@@ -14,26 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module type RMW = sig
-  (* The `rmw` edge *)
-  type rmw
-  (* Types `atom` and `value` should be passed from outside *)
-  type atom
-
-  val pp_rmw : bool (* backward compatibility *) -> rmw -> string
-  val equal_rmw : rmw -> rmw -> bool
-  val is_one_instruction : rmw -> bool
-  (* The first boolean indicates whether wildcard syntax is included in the fold *)
-  val fold_rmw : bool -> (rmw -> 'a -> 'a) -> 'a -> 'a
-  (* Second round of fold, for rmw with back compatible name *)
-  val fold_rmw_compat : (rmw -> 'a -> 'a) -> 'a -> 'a
-  val applies_atom_rmw : rmw -> atom option -> atom option -> bool
-  val show_rmw_reg : rmw -> bool
-  val compute_rmw : rmw -> old:int -> operand:int -> int
-  val expand_rmw : rmw -> rmw list
-  val is_valid_rmw : rmw list -> bool
-end
-
 module type AtomType = sig
   (* The type for all annotations *)
   type atom
@@ -42,7 +22,7 @@ module type AtomType = sig
   (* SIMD writes and reads *)
   module SIMD : Simd.S
   (* RMW operation *)
-  module RMW : RMW with type atom = atom
+  module RMW : Rmw.S with type atom = atom
 end
 
 module type S = sig
