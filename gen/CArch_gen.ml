@@ -23,7 +23,7 @@ open Code
 open MemOrder
 let bellatom = false
 
-module SIMD = NoSIMD
+module SIMD = Simd.No
 
 type atom = MemOrder.t
 

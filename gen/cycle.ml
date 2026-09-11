@@ -23,7 +23,7 @@ module type S = sig
 
   type atom
   module Value : Value_gen.S with type atom = atom
-  module SIMD : Atom.SIMD
+  module SIMD : Simd.S
   module RMW : Atom.RMW with type atom = atom
 
   (* TODO can be parametric by dir *)

@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2021-present Institut National de Recherche en Informatique et *)
+(* Copyright 2014-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,12 +14,17 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type atom = unit
-let compare () () = 0
-let nregs () = 0
-let pp () = ""
+module type S = sig
+  (* Atom particular for SIMD *)
+  type atom
+  val compare : atom -> atom -> int
+  val nregs : atom -> int
+  val pp : atom -> string
 
-let initial _ = [||]
-let step () _ _ = [||]
-let read () _ = []
-let reduce _ = 0
+  val initial : int -> int array
+  val step : atom -> int -> int array -> int array
+  val read : atom -> int array -> int list list
+  val reduce : int list list -> int
+end
+
+module No : S with type atom = unit

@@ -45,7 +45,7 @@ module Make
 
       let bellatom = false
 
-      module SIMD = NoSIMD
+      module SIMD = Simd.No
 
       let default_atom = Atomic,None
       let instr_atom = None

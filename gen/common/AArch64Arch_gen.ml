@@ -58,7 +58,7 @@ module SIMD : sig
              |SvV|Sv1|Sv2i|Sv3i|Sv4i
              |NeP|NeAcqPc|NeRel|Ne1|Ne2|Ne3|Ne4|Ne2i|Ne3i|Ne4i|NePa|NePaN
 
-  include Atom.SIMD with type atom := atom
+  include Simd.S with type atom := atom
 
   val fold_neon : (atom -> 'a -> 'a) -> 'a -> 'a
   val fold_sve : (atom -> 'a -> 'a) -> 'a -> 'a

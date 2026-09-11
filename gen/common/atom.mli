@@ -14,19 +14,6 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module type SIMD = sig
-    (* Atom particular for SIMD *)
-    type atom
-    val compare : atom -> atom -> int
-    val nregs : atom -> int
-    val pp : atom -> string
-
-    val initial : int -> int array
-    val step : atom -> int -> int array -> int array
-    val read : atom -> int array -> int list list
-    val reduce: int list list -> int
-end
-
 module type RMW = sig
   (* The `rmw` edge *)
   type rmw
@@ -53,7 +40,7 @@ module type AtomType = sig
   (* The module and type `Value.v` for value. *)
   module Value : Value_gen.S with type atom = atom
   (* SIMD writes and reads *)
-  module SIMD : SIMD
+  module SIMD : Simd.S
   (* RMW operation *)
   module RMW : RMW with type atom = atom
 end

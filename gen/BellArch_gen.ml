@@ -100,7 +100,7 @@ let pp_annot a = match a with
 (* No atoms yet *)
 let bellatom = true
 
-module SIMD = NoSIMD
+module SIMD = Simd.No
 
 type atom = string list
 
