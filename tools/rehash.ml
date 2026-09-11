@@ -85,19 +85,15 @@ let hashes = ref []
 
 
 let set_list r c = r := !r @ [c]
-let set_tar x = tar := Some x
-
 
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
   else "mrehash"
 
 let opts =
-  [ "-v",Arg.Unit (fun () -> incr verbose)," be verbose";]
-  @parse_noselect
-  @["-hashes",Arg.String (set_list hashes), "<name> specify hashes";
-    "-o", Arg.String set_tar,
-    "<name> output to directory or tar file <name>" ;]
+  LibOpts.parse_verbose verbose
+  @(LibOpts.parse_dest tar::parse_noselect)
+  @["-hashes",Arg.String (set_list hashes), "<name> specify hashes" ; ]
 
 let () =
   Arg.parse

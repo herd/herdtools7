@@ -162,18 +162,12 @@ let prog =
 let () =
   let open CheckName in
   Arg.parse
-    [
-     "-v",Arg.Unit (fun () -> incr verbose), " be verbose";
-     "-back", Arg.Unit (fun () -> back := true), " backward compatibility";
-     parse_select tests;
-     parse_rename rename;
-     parse_names names;
-     parse_oknames oknames;
-     parse_excl excl;
-     parse_nonames nonames;
-     begin let module P = ParseTag.Make(Action) in
-     P.parse "-action" action "action performed" end ;
-    ]
+    (LibOpts.parse_verbose verbose
+    @ ("-back",
+       Arg.Unit (fun () -> back := true), " backward compatibility")::
+      begin let module P = ParseTag.Make(Action) in
+        P.parse "-action" action "action performed" end::
+     OptNames.parse_noselect)
     (fun s -> arg := !arg @ [s])
     (sprintf "Usage: %s [options]* [log]*" prog)
 

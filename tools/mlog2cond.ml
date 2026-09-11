@@ -30,16 +30,11 @@ let datafault = ref true
 let neg = ref false
 
 let options =
-  [
-
-  ("-q", Arg.Unit (fun _ -> verbose := -1),
-   "<non-default> be silent");
-  ("-v", Arg.Unit (fun _ -> incr verbose),
-   "<non-default> show various diagnostics, repeat to increase verbosity");
-   ("-forall", Arg.Bool (fun b -> forall := b),
+  LibOpts.parse_verbose verbose
+  @ [
+  ("-forall", Arg.Bool (fun b -> forall := b),
     sprintf
       "<bool> use forall quantifier in place of exists, default %b" !forall);
-
   ("-optcond", Arg.Bool (fun b -> optcond := b),
     sprintf
       "<bool> optimise conditions, default %b" !optcond);

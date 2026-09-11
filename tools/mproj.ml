@@ -118,8 +118,8 @@ let args = ref []
 let locs = ref []
 
 let opts =
-  [ "-v", Arg.Unit (fun () -> incr verbose)," be verbose";
-    "-locs", Arg.String (fun s -> locs := !locs @ [s]), " <name> specify location files";]
+  LibOpts.parse_verbose verbose
+  @ [ "-locs", Arg.String (fun s -> locs := !locs @ [s]), " <name> specify location files";]
 
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)

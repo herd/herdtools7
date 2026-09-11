@@ -66,7 +66,7 @@ open OptNames
 
 let () =
   Arg.parse
-    (["-v",Arg.Unit (fun () -> incr verbose), " be verbose";]
+    (LibOpts.parse_verbose verbose
      @ parse_noselect
      @ ["-rehash", Arg.Bool (fun b -> recompute_hash := b),
      sprintf

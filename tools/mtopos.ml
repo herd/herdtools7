@@ -72,10 +72,7 @@ let datafault = ref true
 let log = ref None
 
 let options =
-  [
-    ("-v", Arg.Unit (fun _ -> incr verbose),
-   "<non-default> show various diagnostics, repeat to increase verbosity");
-  ]
+  LibOpts.parse_verbose verbose
   @ OptNames.parse_withselect
   @ [
     ("-shownames", Arg.Bool (fun b -> shownames := b),

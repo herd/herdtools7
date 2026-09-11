@@ -32,9 +32,9 @@ module Refs = struct
 end
 
 let opts =
-  [
+  LibOpts.parse_verbose verbose
+  @ [
 (* General behavior *)
-   "-v", Arg.Unit (fun () -> incr verbose), " be verbose";
    "-version", Arg.Unit (fun () -> print_endline Version.version; exit 0),
    " show version number and exit";
    "-libdir", Arg.Unit (fun () -> print_endline !Option.libdir; exit 0),
@@ -42,8 +42,7 @@ let opts =
    "-set-libdir", Arg.String (fun s -> Option.libdir := s),
    "<path> set installation directory to <path>";
    "-switch", Arg.Set Misc.switch, "switch something" ;
-   "-o", Arg.String set_tar,
-     "<name> cross compilation to directory or tar file <name>" ;
+   LibOpts.parse_dest tar ;
    "-cross",  Arg.String set_cross, "<name> same as -o above, with README and Makefile";
    begin let module P = ParseTag.Make(Crossrun) in
    P.parse "-crossrun" crossrun "run tests on remote machine or simulator" end ;
@@ -211,8 +210,7 @@ let opts =
   @[
    argstring_withfun "-kinds" set_kinds
      "<file> specify kinds of tests (can be repeated)" ;
-   argstring_withfun "-conds" set_conds
-     "<file> specify conditions of tests (can be repeated)" ;
+   LibOpts.parse_conds conds ;
    "-hints", argstringo Option.hint, "<file> read hints in <file>";
    argstring_withfun "-nstates" set_nstates
    "<file> specify number of states mapping";

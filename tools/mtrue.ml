@@ -126,15 +126,12 @@ let names = ref []
 let oknames = ref StringSet.empty
 let excl = ref []
 let nonames = ref StringSet.empty
-let set_tar x = tar := Some x
 let args = ref []
 
 let opts =
-  [ "-v",
-    Arg.Unit (fun () -> incr verbose),
-    " be verbose";
-    "-o", Arg.String set_tar,
-    "<name> output to directory or tar file <name>" ;
+  LibOpts.parse_verbose verbose
+  @[
+    LibOpts.parse_dest tar ;
     "-aarch64",
     Arg.Bool (fun b -> aarch64 := b),
     sprintf "<bool> reduce tests for aarch64 (no deref, no sync) default %b" !aarch64;

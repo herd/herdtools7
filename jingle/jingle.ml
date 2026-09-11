@@ -132,7 +132,8 @@ let get_arch =
 
 let () =
   Arg.parse
-    ["-version",
+    (LibOpts.parse_verbose verbose
+    @ ["-version",
      Arg.Unit
        (fun () ->
          printf "%s, Rev: %s\n" Version.version Version.rev ;
@@ -143,14 +144,10 @@ let () =
      " show installation directory and exit";
      "-set-libdir", Arg.String (fun s -> libdir := s),
      "<path> set installation directory to <path>";
-     "-v",Arg.Unit (fun () -> incr verbose),
-     " be verbose, repeat to increase verbosity";
-     "-I", Arg.String (fun s -> includes := !includes @ [s]),
-     "<dir> add <dir> to search path";
+     LibOpts.parse_dest outdir;
+     LibOpts.parse_includes includes;
      "-theme",Arg.String (fun s -> map := Some s),
-     "<name>  give the theme file <name>";
-     "-o",Arg.String (fun s -> outdir := Some s),
-     "<name>  directory for output files"]
+     "<name>  give the theme file <name>"])
     (fun s -> args := s :: !args)
     (sprintf "Usage: %s [option]* -theme <file> [test]*" prog)
 

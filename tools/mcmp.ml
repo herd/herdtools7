@@ -102,11 +102,8 @@ let faulttype = ref true
 let datafault = ref true
 
 let options =
-  [
-   ("-v", Arg.Unit (fun _ -> incr verbose),
-    "<non-default> show various diagnostics, repeat to increase verbosity") ;
-   ("-q", Arg.Unit (fun _ -> quiet := true; verbose := 0;),
-    "<non-default> be quite, no output at all") ;
+  LibOpts.parse_verbose verbose
+  @ [
    ("-same", Arg.Unit (fun _ -> same := true),
     "<non-default> check that logs contain the same tests") ;
    ("-pos",

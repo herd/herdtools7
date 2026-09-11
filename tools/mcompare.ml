@@ -97,9 +97,7 @@ let delay_ro f x =
 open OptNames
 
 let options =
-  [
-  ("-v", Arg.Unit (fun _ -> incr verb),
-   "<non-default> show various diagnostics, repeat to increase verbosity")]
+  LibOpts.parse_verbose verb
   @parse_withselect
   @[("-faulttype",
     Arg.Bool

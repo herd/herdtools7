@@ -39,6 +39,7 @@ val verbose : int ref
 val libdir : string ref
 
 (* Somehow special *)
+val tar : string option ref
 val cross : bool ref
 val set_tar : string -> unit
 val set_cross : string -> unit

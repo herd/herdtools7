@@ -176,7 +176,7 @@ let with_top_level_choice_doc doc =
 (* Helpers *)
 
 let common_specs () =
-  ("-v", Arg.Unit (fun () -> incr verbose),"  be verbose")::
+  LibOpts.parse_verbose verbose @
   ("-version", Arg.Unit (fun () -> print_endline Version.version ; exit 0),
    " show version number and exit")::
   ("-set-libdir", Arg.String (fun s -> libdir := s),

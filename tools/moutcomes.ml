@@ -25,11 +25,8 @@ let faulttype = ref true
 let datafault = ref true
 
 let options =
-  [
-  ("-q", Arg.Unit (fun _ -> verbose := -1),
-   "<non-default> be silent");
-  ("-v", Arg.Unit (fun _ -> incr verbose),
-   "<non-default> show various diagnostics, repeat to increase verbosity");
+  LibOpts.parse_verbose verbose
+  @ [
   ToolsOpts.parse_hexa hexa;
   ToolsOpts.parse_int32 int32;
   ToolsOpts.parse_faulttype faulttype;

@@ -14,23 +14,20 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-open Printf
+(** Command line options common to many *)
 
-let parse_hexa hexa =
-  "-hexa", Arg.Bool (fun b -> hexa := b),
-  sprintf "<bool> specify hexadecimal output, default %b" !hexa
+(* Define options "-q" (quiet) and "-v",
+   The int reference passed as argument records a verbosity level *)
+val parse_verbose : int ref ->  (Arg.key * Arg.spec * Arg.doc) list
 
-let parse_int32 int32 =
-  "-int32", Arg.Bool (fun b -> int32 := b),
-  sprintf "<bool> integer in logs are 32 bits wide, default %b" !int32
+(* Option -I <dir>, add diretory to search path. *)
+val parse_includes : string list ref -> Arg.key * Arg.spec * Arg.doc
 
-let parse_faulttype ft =
-  "-faulttype", Arg.Bool (fun b -> ft := b),
-  sprintf "<bool> consider fault types, default %b" !ft
+(* Option "-o", sets output to directory or tar file. *)
+val parse_dest : string option ref -> Arg.key * Arg.spec * Arg.doc
 
-let datafault_key = "-mmu-faults-as-data"
+(* Option "-o", sets output to directory. *)
+val parse_destdir : string option ref -> Arg.key * Arg.spec * Arg.doc
 
-let parse_datafault ft =
-   (datafault_key, Arg.Bool (fun b -> ft := b),
-    sprintf
-      "<bool> all non-specific MMU faults are from data (i.e. are implicitly prefixed with \"D-\"), default %b" !ft)
+(* Option "-conds" changes test final conditions. *)
+val parse_conds : string list ref -> Arg.key * Arg.spec * Arg.doc

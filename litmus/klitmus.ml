@@ -33,7 +33,7 @@ module KOption : sig
   val argkm : string -> int ref -> string -> arg_triple
 
 (* Complex settings *)
-  val set_tar : string -> unit
+  val tar : string option ref
   val get_tar : unit -> string
   val is_out : unit -> bool
 
@@ -77,17 +77,16 @@ open OptNames
 module PStride = ParseTag.Make(KStride)
 
 let opts =
-  [
+  LibOpts.parse_verbose verbose
+  @ [
 (* General behavior *)
-   "-v", Arg.Unit (fun () -> incr verbose), " be verbose";
    "-version", Arg.Unit (fun () -> print_endline Version.version; exit 0),
    " show version number and exit";
    "-libdir", Arg.Unit (fun () -> print_endline !Option.libdir; exit 0),
    " show installation directory and exit";
    "-set-libdir", Arg.String (fun s -> Option.libdir := s),
    "<path> set installation directory to <path>";
-   "-o", Arg.String set_tar,
-     "<name> cross compilation to directory or tar file <name>" ;
+   LibOpts.parse_dest KOption.tar;
    "-hexa", Arg.Set KOption.hexa,
    " hexadecimal output";
    argint "-pad" KOption.pad "size of padding for C litmus source names";

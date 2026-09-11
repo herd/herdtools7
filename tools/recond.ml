@@ -261,17 +261,13 @@ and outcomes = ref false
 and asobserved = ref false
 and toexists = ref false
 
-let set_tar x = tar := Some x
 let args = ref []
 
 let opts =
-  [ "-v",
-    Arg.Unit (fun () -> incr verbose),
-    " be verbose";
-    ToolsOpts.parse_hexa hexa;
-    ToolsOpts.parse_conds conds;
-    "-o", Arg.String set_tar,
-    "<name> output to directory or tar file <name>" ;
+  LibOpts.parse_verbose verbose
+  @ [ ToolsOpts.parse_hexa hexa ;
+    LibOpts.parse_conds conds ;
+    LibOpts.parse_dest tar ;
     "-asobserved", Arg.Bool (fun b -> asobserved := b),
     sprintf
       "<bool> disguise final condition as an observation, default %b"

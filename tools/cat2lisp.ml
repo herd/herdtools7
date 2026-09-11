@@ -239,15 +239,12 @@ let verbose = ref 0
 let libdir = ref (Filename.concat Version.libdir "herd")
 let includes = ref []
 
-let options = [
+let options =
+  LibOpts.parse_verbose verbose
+  @ [
     ("-set-libdir", Arg.String (fun s -> libdir := s),
     "<path> set installation directory to <path>");
-    ("-I", Arg.String (fun s -> includes := !includes @ [s]),
-   "<dir> add <dir> to search path");
-    ("-v", Arg.Unit (fun _ -> incr verbose),
-   "<non-default> show various diagnostics, repeat to increase verbosity");
-    ("-q", Arg.Unit (fun _ -> verbose := -1 ),
-   "<default> do not show diagnostics");
+    LibOpts.parse_includes includes ;
   ]
 
 let args = ref []

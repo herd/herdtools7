@@ -79,7 +79,8 @@ let tar = ref None
 let cross = ref false
 
 let set_tar b  = cross := false ; tar := Some b
-let set_cross b  = cross := true ; tar := Some b
+and set_cross b  = cross := true ; tar := Some b
+
 let is_out () = match !tar with
 | Some _ -> true
 | None -> false

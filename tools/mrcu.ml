@@ -303,13 +303,10 @@ let force = ref false
 let args = ref []
 
 let opts =
-  [
-   "-v",Arg.Unit (fun () -> incr verbose), " be verbose";
-    "-o", Arg.String (fun s -> outputdir := Some s),
-   "<name>  all output in directory <name>";
+  LibOpts.parse_verbose verbose
+  @ [ LibOpts.parse_destdir outputdir ;
    "-force", Arg.Bool (fun b -> force := b),
-   sprintf "<bool> force translation, default %b" !force;
-  ]
+   sprintf "<bool> force translation, default %b" !force ; ]
 
 let () =
   Arg.parse opts

@@ -542,10 +542,9 @@ let args = ref []
 
 
 let opts =
-  [
-   "-v",Arg.Unit (fun () -> incr verbose), " be verbose";
-   "-o", Arg.String (fun s -> outputdir := Some s),
-   "<name>  all output in directory <name>";
+  LibOpts.parse_verbose verbose
+  @ [
+   LibOpts.parse_dest outputdir ;
    begin let module P = ParseTag.Make(Action) in
    P.parse "-action" action "action performed" end ;
  ]

@@ -970,7 +970,8 @@ let flatten = ref true
 let std = ref false
 
 let options =
-  [
+  LibOpts.parse_verbose verbose
+  @ [
 (* Basic *)
     ("-version", Arg.Unit
      (fun () -> printf "%s, Rev: %s\n" Version.version Version.rev ; exit 0),
@@ -979,12 +980,7 @@ let options =
     " show installation directory and exit");
     ("-set-libdir", Arg.String (fun s -> libdir := s),
     "<path> set installation directory to <path>");
-    ("-v", Arg.Unit (fun _ -> incr verbose),
-   "<non-default> show various diagnostics, repeat to increase verbosity");
-    ("-q", Arg.Unit (fun _ -> verbose := -1 ),
-   "<default> do not show diagnostics");
-    ("-I", Arg.String (fun s -> includes := !includes @ [s]),
-   "<dir> add <dir> to search path");
+    LibOpts.parse_includes includes ;
     ArgUtils.parse_stringset "-show" names "show those names definitions";
     ArgUtils.parse_bool "-test" testmode "translate as many names as possible";
     ArgUtils.parse_bool "-expand" expand "expand include statements";

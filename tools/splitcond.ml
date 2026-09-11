@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 (********************)
-(*  Change condition *)
+(* Change condition *)
 (********************)
 
 open Printf
@@ -104,9 +104,8 @@ let set_tar x = tar := x
 let arg = ref None
 
 let opts =
-  [ "-v",
-    Arg.Unit (fun () -> incr verbose),
-    " be verbose";
+  LibOpts.parse_verbose verbose
+  @ [
     ToolsOpts.parse_hexa hexa;
    "-o", Arg.String set_tar,
     sprintf

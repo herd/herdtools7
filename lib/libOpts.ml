@@ -14,23 +14,26 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-open Printf
+let parse_verbose verbose =
+  [
+    "-q", Arg.Unit (fun _ -> verbose := -1),"<non-default> be silent";
+    "-v", Arg.Unit (fun _ -> incr verbose),
+    "<non-default> show various diagnostics, repeat to increase verbosity";
+  ]
 
-let parse_hexa hexa =
-  "-hexa", Arg.Bool (fun b -> hexa := b),
-  sprintf "<bool> specify hexadecimal output, default %b" !hexa
+let parse_includes includes =
+  "-I",Arg.String (fun s -> includes := !includes @ [s]),
+  "<dir> add <dir> to search path"
 
-let parse_int32 int32 =
-  "-int32", Arg.Bool (fun b -> int32 := b),
-  sprintf "<bool> integer in logs are 32 bits wide, default %b" !int32
+let do_parse_dest msg dest = "-o", Arg.String (fun s -> dest := Some s),msg
 
-let parse_faulttype ft =
-  "-faulttype", Arg.Bool (fun b -> ft := b),
-  sprintf "<bool> consider fault types, default %b" !ft
+let parse_dest =
+  do_parse_dest "<name> output to directory or tar file <name>"
 
-let datafault_key = "-mmu-faults-as-data"
+let parse_destdir =
+  do_parse_dest "<name> output to directory <name>"
 
-let parse_datafault ft =
-   (datafault_key, Arg.Bool (fun b -> ft := b),
-    sprintf
-      "<bool> all non-specific MMU faults are from data (i.e. are implicitly prefixed with \"D-\"), default %b" !ft)
+let parse_conds conds =
+  "-conds",
+  Arg.String (fun s -> conds := !conds @ [s]),
+  "<name> specify condition files, can be repeated"

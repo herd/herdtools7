@@ -99,6 +99,7 @@ let through_option =
        (Model.pp_through !through)) 
 let v_option =
   ("-v", Arg.Unit (fun _ -> incr verbose), " show various diagnostics. Repeat to increase verbosity")
+
 let view_option =
   begin 
     let module ParseView = ParseTag.Make(View) in
@@ -401,11 +402,8 @@ let setup_options = Arg.align ~limit:40 ([
   ( "-kinds",
     Arg.String (fun s -> kinds := !kinds @ [s]),
     "<name> specify kind of tests (can be repeated)");
-  ( "-conds",
-    Arg.String  (fun s -> conds := !conds @ [s]),
-    "<name> specify conditions of tests (can be repeated)");
-    ]
-   @ parse_noselect @ [
+  LibOpts.parse_conds conds;
+  ] @ parse_noselect @ [
   (* Output *)
   ("\nOutput options:", Arg.Unit Fun.id, "\n");
 

@@ -70,9 +70,7 @@ open OptNames
 
 let args = ref []
 
-let opts =
-  ("-v", Arg.Unit (fun () -> incr verbose)," be verbose")
-  ::parse_noselect
+let opts = LibOpts.parse_verbose verbose @ parse_noselect
 
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
