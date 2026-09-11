@@ -1,0 +1,16 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc DpDatasR LxSx Rfi *)
+AArch64 CoRW1+datas-rmw-rfi
+{
+ 0:X0=x;
+}
+ P0              ;
+ LDR W1,[X0]     ;
+ MOV W3,#1       ;
+ EOR W4,W1,W1    ;
+ ADD W3,W3,W4    ;
+ Loop00:         ;
+ LDXR W2,[X0]    ;
+ STXR W5,W3,[X0] ;
+ CBNZ W5,Loop00  ;
+
+exists (0:X1=1 /\ 0:X2=0)

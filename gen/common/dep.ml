@@ -22,8 +22,6 @@ module type S = sig
   val equal_dp : dp -> dp -> bool
   val pp_dp : dp -> string
   val fold_dp : (dp -> 'a -> 'a) -> 'a -> 'a
-  val fold_dpr : (dp -> 'a -> 'a) -> 'a -> 'a
-  val fold_dpw : (dp -> 'a -> 'a) -> 'a -> 'a
 
   val ddr_default : dp option
   val ddw_default : dp option
@@ -36,7 +34,6 @@ module type S = sig
 
   val fst_dp : dp -> dp list
   val sequence_dp : dp -> dp -> dp list
-  val expand_dp_dir : dp -> Code.dir list
 end
 
 module No = struct
@@ -45,8 +42,6 @@ module No = struct
   let equal_dp _ _ = assert false
   let pp_dp _ = assert false
   let fold_dp _f r = r
-  let fold_dpr _f r = r
-  let fold_dpw _f r = r
 
   let ddr_default = None
   let ddw_default = None
@@ -59,7 +54,6 @@ module No = struct
 
   let fst_dp _ = assert false
   let sequence_dp _ _ = assert false
-  let expand_dp_dir _ = assert false
 end
 
 module Basic = struct
@@ -77,8 +71,6 @@ module Basic = struct
     | CTRL -> "Ctrl"
 
   let fold_dp f r = f ADDR (f DATA (f CTRL r))
-  let fold_dpr f r = f ADDR (f CTRL r)
-  let fold_dpw = fold_dp
 
   let ddr_default = Some ADDR
   let ddw_default = Some DATA
@@ -97,10 +89,6 @@ module Basic = struct
     | ADDR -> [d2]
     | DATA|CTRL -> []
 
-  open Code
-  let expand_dp_dir = function
-    | CTRL | ADDR -> [R;W]
-    | DATA -> [W]
 end
 
 module Bell = struct
@@ -128,8 +116,6 @@ let pp_dp = function
   | CTRLISYNC -> "CtrlIsync"
 
 let fold_dp f r =  f ADDR (f DATA (f CTRL (f CTRLISYNC r)))
-let fold_dpr f r =  f ADDR (f CTRL (f CTRLISYNC r))
-let fold_dpw = fold_dp
 
 let ddr_default = Some ADDR
 let ddw_default = Some DATA
@@ -157,10 +143,6 @@ let sequence_dp d1 d2 = match d1 with
 | ADDR -> [d2]
 | DATA|CTRL|CTRLISYNC -> []
 
-open Code
-let expand_dp_dir = function
-  | CTRL | CTRLISYNC | ADDR -> [R;W]
-  | DATA -> [W]
 end
 
 module AArch64 = struct
@@ -190,16 +172,6 @@ module AArch64 = struct
       (fun d r -> f (d,NoCsel) (f (d,OkCsel) r))
       r
 
-  let fold_dpr f r =
-    Full.fold_dpr
-      (fun d r -> f (d,NoCsel) (f (d,OkCsel) r))
-      r
-
-  let fold_dpw f r =
-    Full.fold_dpw
-      (fun d r -> f (d,NoCsel) (f (d,OkCsel) r))
-      r
-
   let lift_default = Misc.app_opt (fun d -> d,NoCsel)
   let ddr_default = lift_default Full.ddr_default
   let ddw_default = lift_default Full.ddw_default
@@ -219,5 +191,4 @@ module AArch64 = struct
     | NoCsel -> List.map (fun d -> d,c2) (Full.sequence_dp d1 d2)
     | OkCsel -> []
 
-  let expand_dp_dir (d,_) = Full.expand_dp_dir d
 end

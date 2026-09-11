@@ -2049,71 +2049,71 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rA,init,st = U.next_init st p init (get_tagged_loc er) in
       rA,init,[],st
 
-    let do_emit_exch1 emit_addr st p init er ew =
+    let emit_data_simple _rW st = [],st
+
+    let do_emit_exch1 emit_data emit_addr st p init er ew =
       let arw = check_arw_lxsx er ew in
       let rA,init,caddr,st = emit_addr st p init er in
       let rR,st = next_reg st in
       let rW,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
+      let cdata,st = emit_data rW st in
       let init,cs,st = XSingle.emit_pair arw p st init rR rW rA ew in
       let cs = add_label_to_exclusive_load_and_store er cs in
-      rR,init,csi@caddr@cs,st
+      rR,init,csi@cdata@caddr@cs,st
 
-    let emit_exch1 = do_emit_exch1 emit_addr_simple
-
-    let do_emit_exch22 emit_addr st p init er ew =
+    let do_emit_exch22 emit_data emit_addr st p init er ew =
       let arw = check_arw_lxsx er ew in
       let rA,init,caddr,st = emit_addr st p init er in
       let rR1,rR2,st = next_reg2 st in
       let rW1,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
+      let cdata,st = emit_data rW1 st in
       let rW2,st = next_reg st in
       let init,cs,st =
         XPair.emit_pair arw p st init (rR1,rR2) (rW1,rW2) rA ew in
       let cs = add_label_to_exclusive_load_and_store er cs in
-      rR1,init,csi@caddr@cs,st
+      rR1,init,csi@cdata@caddr@cs,st
 
-    let emit_exch22 = do_emit_exch22 emit_addr_simple
-
-    let do_emit_exch21 emit_addr st p init er ew =
+    let do_emit_exch21 emit_data emit_addr st p init er ew =
       let arw = check_arw_lxsx er ew in
       let rA,init,caddr,st = emit_addr st p init er in
       let rR1,rR2,st = next_reg2 st in
       let rW,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
+      let cdata,st = emit_data rW st in
       let module X = ExclusivePair(XLoadPair)(XStore) in
       let init,cs,st =
         X.emit_pair arw p st init (rR1,rR2) rW rA ew in
       let cs = add_label_to_exclusive_load_and_store er cs in
-      rR1,init,csi@caddr@cs,st
+      rR1,init,csi@cdata@caddr@cs,st
 
-    let emit_exch21 = do_emit_exch21 emit_addr_simple
-
-    let do_emit_exch12 emit_addr st p init er ew =
+    let do_emit_exch12 emit_data emit_addr st p init er ew =
       let arw = check_arw_lxsx er ew in
       let rA,init,caddr,st = emit_addr st p init er in
       let rR,st = next_reg st in
       let rW1,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
+      let cdata,st = emit_data rW1 st in
       let rW2,st = next_reg st in
       let module X = ExclusivePair(XLoad)(XStorePair) in
       let init,cs,st =
         X.emit_pair arw p st init rR (rW1,rW2) rA ew in
       let cs = add_label_to_exclusive_load_and_store er cs in
-      rR,init,csi@caddr@cs,st
+      rR,init,csi@cdata@caddr@cs,st
 
-    let emit_exch12 = do_emit_exch12 emit_addr_simple
-
-    let emit_exch st p init er ew =
+    let do_emit_exch emit_data emit_addr st p init er ew =
       let ar = tr_none er.C.atom
       and aw = tr_none ew.C.atom in
       match ar,aw with
       | PairAccess _,PairAccess _ ->
-         emit_exch22 st p init er ew
+         do_emit_exch22 emit_data emit_addr st p init er ew
       | PairAccess _,_ ->
          check_cu (not A64.do_cu) ;
-         emit_exch21 st p init er ew
+         do_emit_exch21 emit_data emit_addr st p init er ew
       | _,PairAccess _ ->
          check_cu (not A64.do_cu) ;
-         emit_exch12 st p init er ew
+         do_emit_exch12 emit_data emit_addr st p init er ew
       | _,_ ->
-         emit_exch1 st p init er ew
+         do_emit_exch1 emit_data emit_addr st p init er ew
+
+    let emit_exch = do_emit_exch emit_data_simple emit_addr_simple
 
     let do_sz sz1 sz2 =
       if same_sz sz1 sz2 then sz1
@@ -2166,11 +2166,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         Some (MachSize.S128,0)
       end else sz
 
-    let do_emit_ldop_rA  ins ins_mixed st p init er ew rA =
+    let emit_data_rmw_simple _sz _rW st = [],st
+
+    let do_emit_ldop_rA emit_data ins ins_mixed st p init er ew rA =
       check_rmw_metadata er ew;
       let sz,a,opt = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
       let rR,st = next_reg st in
       let rW,init,csi,st = mk_emit_mov sz st p init (Value.to_int ew.C.v) in
+      let cdata,st = emit_data sz rW st in
       let sz = get_rmw_size opt sz in
       let init,csi2,st = emit_str_addon st p init rW rA opt ew in
       let cs,st = match sz with
@@ -2180,21 +2183,22 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           cs@[ins_mixed sz a rW rR rA],st in
       let cs = add_label_to_last_instructions er (pseudo cs) in
       let cs2 = emit_ldr_addon opt rR in
-      rR,init,(csi@csi2@cs@pseudo cs2),st
+      rR,init,(csi@cdata@csi2@cs@pseudo cs2),st
 
     let do_emit_ldop ins ins_mixed st p init er ew =
       let rA,init,st =
         U.next_init st p init (get_tagged_loc er) in
-      do_emit_ldop_rA ins ins_mixed st p init er ew rA
+      do_emit_ldop_rA emit_data_rmw_simple ins ins_mixed st p init er ew rA
 
     let emit_swp =  do_emit_ldop swp swp_mixed
     and emit_ldop op = do_emit_ldop (ldop op) (ldop_mixed op)
 
-    let emit_cas_rA st p init er ew rA =
+    let emit_cas_rA emit_data st p init er ew rA =
       check_rmw_metadata er ew;
       let sz,a,opt = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
       let rS,init,csS,st = mk_emit_mov_fresh sz st p init (Value.to_int er.C.v) in
       let rT,init,csT,st = mk_emit_mov sz st p init (Value.to_int ew.C.v) in
+      let cdata,st = emit_data sz rT st in
       let sz = get_rmw_size opt sz in
       let init,csS2,st = emit_str_addon st p init rS rA opt er in
       let init,csT2,st = emit_str_addon st p init rT rA opt ew in
@@ -2205,14 +2209,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           cs@[cas_mixed sz a rS rT rA],st in
       let cs = add_label_to_last_instructions er (pseudo cs) in
       let cs2 = emit_ldr_addon opt rS in
-      rS,init,csS@csS2@csT@csT2@cs@pseudo cs2,st
+      rS,init,csS@csS2@csT@cdata@csT2@cs@pseudo cs2,st
 
     let emit_cas  st p init er ew =
       let rA,init,st =
         U.next_init st p init (get_tagged_loc er) in
-      emit_cas_rA st p init er ew rA
+      emit_cas_rA emit_data_rmw_simple st p init er ew rA
 
-    let emit_stop_rA op st p init er ew rA =
+    let emit_stop_rA emit_data op st p init er ew rA =
       let a = tr_none ew.C.atom
       and b = tr_none er.C.atom in
       let sz1 = get_access_atom (Some a)
@@ -2225,18 +2229,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           Warn.fatal "Unexpected atoms in STOP instruction: %s,%s"
             (pp b) (pp a) in
       let rW,init,csi,st = mk_emit_mov sz st p init (Value.to_int ew.C.v) in
+      let cdata,st = emit_data sz rW st in
       let cs,st = match sz with
       | None -> [stop op a rW rA],st
       | Some (sz,o) ->
           let rA,cs,st = sumi_addr st rA o in
           cs@[stop_mixed op sz a rW rA],st in
       let cs = add_label_to_last_instructions er (pseudo cs) in
-      None,init,csi@cs,st
+      None,init,csi@cdata@cs,st
 
     let emit_stop  op st p init er ew =
       let rA,init,st =
         U.next_init st p init (get_tagged_loc er) in
-      emit_stop_rA op st p init er ew rA
+      emit_stop_rA emit_data_rmw_simple op st p init er ew rA
 
     let map_some f st p init er ew =
       let r,init,cs,st = f  st p init er ew in
@@ -2573,44 +2578,24 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let rA,csum,st = do_sum_addr vdep st rA r2 in
       rA,init,pseudo (cs0@csum),st
 
-    let emit_exch_dep_addr1 csel vdep st p init er ew rd =
-      do_emit_exch1
-        (fun st p init er ->
-          emit_addr_dep csel vdep st p init (get_tagged_loc er) rd)
-        st p init er ew
+    let emit_addr_rmw_dep csel vdep rd st p init er =
+      emit_addr_dep csel vdep st p init (get_tagged_loc er) rd
 
-    let emit_exch_dep_addr22 csel vdep st p init er ew rd =
-      do_emit_exch22
-        (fun st p init er ->
-          emit_addr_dep csel vdep st p init (get_tagged_loc er) rd)
-        st p init er ew
-
-    let emit_exch_dep_addr21 csel vdep st p init er ew rd =
-      do_emit_exch21
-        (fun st p init er ->
-          emit_addr_dep csel vdep st p init (get_tagged_loc er) rd)
-        st p init er ew
-
-    let emit_exch_dep_addr12 csel vdep st p init er ew rd =
-      do_emit_exch12
-        (fun st p init er ->
-          emit_addr_dep csel vdep st p init (get_tagged_loc er) rd)
-        st p init er ew
+    let emit_data_rmw_dep csel vdep rd sz rW st =
+      let v = match sz with
+      | None -> vloc
+      | Some (sz,_) -> sz2v sz in
+      let rD,st = next_reg st in
+      let cs,st = calc0_gen csel st vdep rD rd in
+      pseudo (cs@[add v rW rW rD]),st
 
     let emit_exch_dep_addr csel vdep st p init er ew rd =
-      let ar = tr_none er.C.atom
-      and aw = tr_none ew.C.atom in
-      match ar,aw with
-      | PairAccess _,PairAccess _ ->
-         emit_exch_dep_addr22 csel vdep st p init er ew rd
-      | PairAccess _,_ ->
-         check_cu (not A64.do_cu);
-         emit_exch_dep_addr21 csel vdep st p init er ew rd
-      | _,PairAccess _ ->
-         check_cu (not A64.do_cu);
-         emit_exch_dep_addr12 csel vdep st p init er ew rd
-      | _,_ ->
-         emit_exch_dep_addr1 csel vdep st p init er ew rd
+      let emit_addr = emit_addr_rmw_dep csel vdep rd in
+      do_emit_exch emit_data_simple emit_addr st p init er ew
+
+    let emit_exch_dep_data csel vdep st p init er ew rd =
+      let emit_data rW st = emit_data_rmw_dep csel vdep rd None rW st in
+      do_emit_exch emit_data emit_addr_simple st p init er ew
 
     let emit_access_dep_data csel vdep st p init e  r1 =
       let structured_atom = e.C.atom in
@@ -2860,7 +2845,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_exch_dep st p init er ew (dp,csel) vdep rd = match dp with
     | D.ADDR -> emit_exch_dep_addr csel vdep st p init er ew rd
-    | D.DATA -> Warn.fatal "not data dependency to RMW"
+    | D.DATA -> emit_exch_dep_data csel vdep st p init er ew rd
     | D.CTRL -> emit_exch_ctrl csel vdep false st p init er ew rd
     | D.CTRLISYNC -> emit_exch_ctrl csel vdep true st p init er ew rd
 
@@ -2870,25 +2855,32 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
        let rA,init,caddr,st =
          emit_addr_dep csel vdep st p init
            (get_tagged_loc er) rd in
-        let rR,init,cs,st = do_emit_ldop_rA ins ins_mixed st p init er ew rA in
+        let rR,init,cs,st =
+          do_emit_ldop_rA emit_data_rmw_simple ins ins_mixed st p init er ew rA in
         rR,init,caddr@cs,st
     | D.CTRL|D.CTRLISYNC ->
         let c = emit_ctrl vdep rd in
         let rR,init,cs,st = do_emit_ldop ins ins_mixed st p init er ew in
         rR,init,insert_isb (is_ctrlisync dp) c cs,st
-    | D.DATA -> Warn.fatal "Data dependency to LDOP"
+    | D.DATA ->
+        let emit_data = emit_data_rmw_dep csel vdep rd in
+        let rA,init,st = U.next_init st p init (get_tagged_loc er) in
+        do_emit_ldop_rA emit_data ins ins_mixed st p init er ew rA
 
     let emit_cas_dep  st p init er ew (dp,csel) vdep rd = match dp with
     | D.ADDR ->
        let rA,init,caddr,st =
          emit_addr_dep csel vdep st p init (get_tagged_loc er) rd in
-        let rR,init,cs,st = emit_cas_rA st p init er ew rA in
+        let rR,init,cs,st = emit_cas_rA emit_data_rmw_simple st p init er ew rA in
         rR,init,caddr@cs,st
     | D.CTRL|D.CTRLISYNC ->
         let c,st = emit_ctrl_gen csel st vdep rd in
         let rR,init,cs,st = emit_cas st p init er ew in
         rR,init,insert_isb (is_ctrlisync dp) c cs,st
-    | D.DATA -> Warn.fatal "Data dependency to CAS"
+    | D.DATA ->
+        let emit_data = emit_data_rmw_dep csel vdep rd in
+        let rA,init,st = U.next_init st p init (get_tagged_loc er) in
+        emit_cas_rA emit_data st p init er ew rA
 
     let emit_stop_dep  op st p init er ew (dp,csel) rd n =
       let vdep = node2vdep n in
@@ -2896,13 +2888,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | D.ADDR ->
          let rA,init,caddr,st =
            emit_addr_dep csel vdep st p init (get_tagged_loc er) rd in
-         let rR,init,cs,st = emit_stop_rA op st p init er ew rA in
+         let rR,init,cs,st = emit_stop_rA emit_data_rmw_simple op st p init er ew rA in
          rR,init,caddr@cs,st
       | D.CTRL|D.CTRLISYNC ->
          let c,st = emit_ctrl_gen csel st vdep rd in
          let rR,init,cs,st = emit_stop op st p init er ew in
          rR,init,insert_isb (is_ctrlisync dp) c cs,st
-      | D.DATA -> Warn.fatal "Data dependency to STOP"
+      | D.DATA ->
+         let emit_data = emit_data_rmw_dep csel vdep rd in
+         let rA,init,st = U.next_init st p init (get_tagged_loc er) in
+         emit_stop_rA emit_data op st p init er ew rA
 
 
     let map_some_dp f st p init er ew dp rd n =
