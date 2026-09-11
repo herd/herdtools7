@@ -2,7 +2,7 @@
 AArch64 CoRW1+pospaw4-rfiw4pa
 {
  int x[2]={0,0};
- 0:X0=x; uint32_t 0:X3=0;
+ 0:X0=x;
 }
  P0             ;
  LDP W1,W2,[X0] ;

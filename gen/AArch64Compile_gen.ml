@@ -946,10 +946,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let do_emit_mov_sz emit_mov_sz sz st p init v =
       let rA,init,csi,st = emit_mov_sz sz st p init v in
-      let st =
+      let needs_type = match csi with
+      | [] -> true
+      | _::_ ->
+          Variant_gen.is_mixed Cfg.variant ||
+          Cfg.variant Variant_gen.Morello in
+      let st = if needs_type then
         let loc = A.of_reg p rA in
         let t = type_of_sz sz in
-        A.add_type loc t st in
+        A.add_type loc t st
+      else st in
       rA,init,csi,st
 
       let emit_mov_sz = do_emit_mov_sz U.emit_mov_sz
