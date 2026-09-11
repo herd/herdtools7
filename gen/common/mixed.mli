@@ -22,6 +22,13 @@ end
 type offset = int
 type t = MachSize.sz * offset
 
+module type S = sig
+  val fold_mixed : ('a -> 'b -> 'b) -> 'b -> 'b
+  val tr_value : 'a option -> 'b -> 'b
+  val overwrite_value : 'b -> 'a option -> 'b -> 'b
+  val extract_value : 'b -> 'a option -> 'b
+end
+
 val equal : t -> t -> bool
 
 val overlap : t -> t -> bool
@@ -65,4 +72,5 @@ module No : sig
     'atom option -> t option
   val set_access_atom :
     'atom option -> t -> 'atom option
+  include S
 end

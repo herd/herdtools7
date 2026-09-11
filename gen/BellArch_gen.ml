@@ -126,7 +126,7 @@ let pp_atom_separate atom = [pp_atom atom]
 let compare_atom a1 a2 =
   List.compare String.compare a1 a2
 
-include MachMixed.No
+include Mixed.No
 
 let fold_annots eg f r =
   List.fold_left
@@ -200,8 +200,6 @@ let atom_to_bank _ = Code.Ord
 let varatom_rmw = match varatom with
 | None -> no_varatom
 | Some _va -> fun _ -> assert false
-
-include NoMixed
 
 include NoWide
 

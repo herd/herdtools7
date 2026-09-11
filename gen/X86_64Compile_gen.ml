@@ -370,7 +370,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let get_access_exch er ew =
       let szr = get_access_atom er.C.atom
       and szw = get_access_atom ew.C.atom in
-      if not (Misc.opt_eq MachMixed.equal szr szw) then
+      if not (Misc.opt_eq Mixed.equal szr szw) then
         Warn.fatal "Exchange instruction with different accesses" ;
       szw
 

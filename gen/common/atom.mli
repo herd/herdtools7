@@ -55,8 +55,8 @@ module type S = sig
   val applies_atom : atom -> Code.dir -> bool
   val is_ifetch : atom option -> bool
   val compare_atom : atom -> atom -> int
-  val get_access_atom : atom option -> MachMixed.t option
-  val set_access_atom : atom option -> MachMixed.t -> atom option
+  val get_access_atom : atom option -> Mixed.t option
+  val set_access_atom : atom option -> Mixed.t -> atom option
   val pp_plain : string
   val pp_atom : atom -> string
   val pp_atom_separate : atom -> string list

@@ -24,6 +24,13 @@ open Endian
 type offset = int
 type t = sz * offset
 
+module type S = sig
+  val fold_mixed : ('a -> 'b -> 'b) -> 'b -> 'b
+  val tr_value : 'a option -> 'b -> 'b
+  val overwrite_value : 'b -> 'a option -> 'b -> 'b
+  val extract_value : 'b -> 'a option -> 'b
+end
+
 let equal (sz1,o1) (sz2,o2) =
   MachSize.equal sz1 sz2 && Misc.int_eq o1 o2
 
@@ -141,4 +148,10 @@ module No =
   struct
     let get_access_atom _ = None
     let set_access_atom a _ = a
+
+    (* Do nothing for mixed values, which should not appear *)
+    let fold_mixed _ k = k
+    let tr_value _ v = v
+    let overwrite_value _ _ v = v
+    let extract_value v _ = v
   end

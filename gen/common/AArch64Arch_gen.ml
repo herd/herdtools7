@@ -283,11 +283,11 @@ module StructuredAtom : sig
 
   type atomic_access =
     | AtomicOrdinary
-    | AtomicSize of MachMixed.t
+    | AtomicSize of Mixed.t
 
   type t =
     | OrdinaryAccess of access_order
-    | MixedSizeAccess of access_order * MachMixed.t
+    | MixedSizeAccess of access_order * Mixed.t
     | ArrayCellAccess of access_order * int
     | MorelloAccess of access_order
     | PteAccess of atom_pte
@@ -307,8 +307,8 @@ module StructuredAtom : sig
   val access_order : t -> access_order option
   val pp : t -> string
   val pp_atom_separate : t -> string list
-  val get_access_atom : t option -> MachMixed.t option
-  val set_access_atom : t option -> MachMixed.t -> t option
+  val get_access_atom : t option -> Mixed.t option
+  val set_access_atom : t option -> Mixed.t -> t option
   val overlap : t -> t -> bool
   val is_ifetch : t option -> bool
   val is_pair : t option -> bool
@@ -328,7 +328,7 @@ end = struct
 
   type atomic_access =
     | AtomicOrdinary
-    | AtomicSize of MachMixed.t
+    | AtomicSize of Mixed.t
   let compare_atomic_access a1 a2 = match a1,a2 with
     | AtomicOrdinary,AtomicOrdinary -> 0
     | AtomicOrdinary,AtomicSize _ -> -1
@@ -339,7 +339,7 @@ end = struct
     (* Ordinary integer/general-purpose data access. *)
     | OrdinaryAccess of access_order
     (* Mixed-size slice of an ordinary access, as in `b0`, `h0`, or `w0`. *)
-    | MixedSizeAccess of access_order * MachMixed.t
+    | MixedSizeAccess of access_order * Mixed.t
     (* Natural-sized scalar access to a zero-based cell projection. *)
     | ArrayCellAccess of access_order * int
     (* Morello capability data access, as in `Pc`, `Ac`, `Qc`, or `Lc`. *)
@@ -503,7 +503,7 @@ end = struct
 
   let overlap a1 a2 =
     match get_access_atom (Some a1),get_access_atom (Some a2) with
-    | Some sz1,Some sz2 -> MachMixed.overlap sz1 sz2
+    | Some sz1,Some sz2 -> Mixed.overlap sz1 sz2
     | _,_ -> true
 
   let is_ifetch = function
@@ -601,7 +601,7 @@ end = struct
         |Some (MorelloAccess (`Plain|`Release))) -> true
       | _,_ -> false in
     let same_mixed =
-      Misc.opt_eq MachMixed.equal
+      Misc.opt_eq Mixed.equal
         (get_access_atom ar) (get_access_atom aw) in
     match rmw with
     | LrSc -> ok_rw ar aw && (do_cu || same_mixed)
@@ -929,8 +929,8 @@ module Value = struct
 end
 
 (* Mixed size *)
-module Mixed =
-  MachMixed.Make
+module MixedImpl =
+  Mixed.Make
     (struct
       let naturalsize = Some C.naturalsize
       let fullmixed = C.fullmixed
@@ -991,10 +991,10 @@ let is_ifetch = StructuredAtom.is_ifetch
 
    let tr_value ao v = match get_access_atom ao with
    | None -> v
-   | Some (sz,_) -> Mixed.tr_value sz v
+   | Some (sz,_) -> MixedImpl.tr_value sz v
 
    module ValsMixed =
-     MachMixed.Vals
+     Mixed.Vals
        (struct
          let naturalsize () = C.naturalsize
          let endian = endian

@@ -37,7 +37,7 @@ let applies_atom a d = match a,d with
 let is_ifetch _ = false
 let compare_atom = Misc.polymorphic_compare
 
-include MachMixed.No
+include Mixed.No
 
 let pp_plain = Code.plain
 let pp_atom = pp_mem_order_short
@@ -63,7 +63,6 @@ let overlap_atoms _ _ = true
 
 let atom_to_bank _ = Code.Ord
 
-include NoMixed
 include NoWide
 
 module Value = Value_gen.NoPte(struct type arch_atom = atom end)

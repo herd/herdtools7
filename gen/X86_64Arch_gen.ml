@@ -31,13 +31,13 @@ module Make
       let tr_endian = Misc.identity
 
       type atom_acc = Plain | Atomic | NonTemporal
-      type atom = atom_acc * MachMixed.t option
+      type atom = atom_acc * Mixed.t option
 
       module Value = Value_gen.NoPte(struct type arch_atom = atom end)
 
       module ScopeGen = ScopeGen.NoGen
-      module Mixed =
-        MachMixed.Make
+      module MixedImpl =
+        Mixed.Make
           (struct
             let naturalsize = Some C.naturalsize
             let fullmixed = C.fullmixed
@@ -60,7 +60,7 @@ module Make
       let compare_atom = compare
 
       include
-        MachMixed.Util
+        Mixed.Util
           (struct
             type at = atom_acc
             let plain = Plain
@@ -74,7 +74,7 @@ module Make
 
       let pp_atom = function
         | a,None -> pp_atom_acc a
-        | a,Some m -> sprintf "%s%s" (pp_atom_acc a) (Mixed.pp_mixed m)
+        | a,Some m -> sprintf "%s%s" (pp_atom_acc a) (MixedImpl.pp_mixed m)
 
       let pp_atom_separate atom = [pp_atom atom]
 
@@ -89,10 +89,10 @@ module Make
       | (NonTemporal,Some (MachSize.S128,_)) -> assert false
 
       let fold_atom f r =
-        let r = Mixed.fold_mixed (fun mix r -> f (Plain,Some mix) r) r in
+        let r = MixedImpl.fold_mixed (fun mix r -> f (Plain,Some mix) r) r in
         fold_acc
           (fun acc r ->
-            Mixed.fold_mixed
+            MixedImpl.fold_mixed
               (fun m r -> apply_mix f acc (Some m) r)
               (f (acc,None) r))
           r
@@ -119,7 +119,7 @@ module Make
 
       let overlap_atoms a1 a2 = match a1,a2 with
         | ((_,None),_)|(_,(_,None)) -> true
-        | (_,Some m1),(_,Some m2) -> MachMixed.overlap m1 m2
+        | (_,Some m1),(_,Some m2) -> Mixed.overlap m1 m2
 
       let atom_to_bank _ = Code.Ord
 
@@ -130,10 +130,10 @@ module Make
       let tr_value ao v = match ao with
       | None | Some ((NonTemporal|Plain|Atomic),None) -> v
       | Some ((NonTemporal|Plain|Atomic), Some (sz, _)) ->
-         Mixed.tr_value sz v
+         MixedImpl.tr_value sz v
 
       module ValsMixed =
-        MachMixed.Vals
+        Mixed.Vals
           (struct
             let naturalsize () = C.naturalsize
             let endian = endian

@@ -23,11 +23,11 @@ end
 
 module Make(C:Config) = struct
 
-  type hidden_atom = Atomic | Reserve | Mixed of MachMixed.t
+  type hidden_atom = Atomic | Reserve | Mixed of Mixed.t
   type atom = hidden_atom
   module Value = Value_gen.NoPte(struct type arch_atom = atom end)
 
-  module Mixed = MachMixed.Make(C)(Value)
+  module MixedImpl = Mixed.Make(C)(Value)
 
   let bellatom = false
 
@@ -49,7 +49,7 @@ module Make(C:Config) = struct
   let pp_atom = function
     | Atomic -> "A"
     | Reserve -> "R"
-    | Mixed mix -> Mixed.pp_mixed mix
+    | Mixed mix -> MixedImpl.pp_mixed mix
 
   let pp_atom_separate atom = [pp_atom atom]
 
@@ -68,7 +68,7 @@ module Make(C:Config) = struct
        | Some (Atomic|Reserve as a) -> a)
 
   let fold_atom f r =
-    let r = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) r in
+    let r = MixedImpl.fold_mixed (fun mix r -> f (Mixed mix) r) r in
     f Reserve (f Atomic r)
 
   let worth_final = function
@@ -82,7 +82,7 @@ module Make(C:Config) = struct
 
   let overlap_atoms a1 a2 = match a1,a2 with
     | ((Atomic|Reserve),_)|(_,(Atomic|Reserve)) -> true
-    | Mixed sz1,Mixed sz2 -> MachMixed.overlap  sz1 sz2
+    | Mixed sz1,Mixed sz2 -> Mixed.overlap  sz1 sz2
 
 (* Single memory bank *)
   let atom_to_bank _ = Code.Ord
@@ -94,10 +94,10 @@ module Make(C:Config) = struct
 
   let tr_value ao v = match ao with
   | None| Some (Atomic|Reserve) -> v
-  | Some (Mixed (sz,_)) -> Mixed.tr_value sz v
+  | Some (Mixed (sz,_)) -> MixedImpl.tr_value sz v
 
   module ValsMixed =
-    MachMixed.Vals
+    Mixed.Vals
       (struct
         let naturalsize () = Misc.as_some C.naturalsize
         let endian = C.endian

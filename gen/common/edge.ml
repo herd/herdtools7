@@ -90,7 +90,7 @@ module type S = sig
 
   val parse_atom : string -> atom option
   val parse_atoms : string list -> atom option list
-  val get_access_atom: atom option -> MachMixed.t option
+  val get_access_atom: atom option -> Mixed.t option
 
   val equal_edge_atoms : edge -> edge -> bool
 
@@ -454,7 +454,7 @@ let fold_tedges f r =
     equal_atomo lhs.a1 rhs.a1 && equal_atomo lhs.a2 rhs.a2
 
   let same_access_atoms a1 a2 =
-    Misc.opt_eq MachMixed.equal (get_access_atom a1) (get_access_atom a2)
+    Misc.opt_eq Mixed.equal (get_access_atom a1) (get_access_atom a2)
 
   (* For rmw instruction any accesses is a priori.
      However identical accesses are forced for rmw instructions *)

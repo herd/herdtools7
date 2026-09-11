@@ -30,13 +30,13 @@ module Make
 (* No Scope *)
    module ScopeGen = ScopeGen.NoGen
 
-   type atom = MO of mo | Atomic of mo * mo | Mixed of MachMixed.t
+   type atom = MO of mo | Atomic of mo * mo | Mixed of Mixed.t
 
    module Value = Value_gen.NoPte(struct type arch_atom = atom end)
 
 (* Mixed size *)
-   module Mixed =
-     MachMixed.Make
+   module MixedImpl =
+     Mixed.Make
        (struct
          let naturalsize = Some C.naturalsize
          let fullmixed = C.moreedges
@@ -81,7 +81,7 @@ module Make
    let pp_atom = function
      | MO mo -> pp_mo mo
      | Atomic (m1,m2) -> "X" ^ pp_mo2 m1 m2
-     | Mixed m -> Mixed.pp_mixed m
+     | Mixed m -> MixedImpl.pp_mixed m
 
    let pp_atom_separate atom = [pp_atom atom]
 
@@ -111,7 +111,7 @@ module Make
        k
 
    let fold_atom f k =
-     let k = Mixed.fold_mixed (fun mix r -> f (Mixed mix) r) k in
+     let k = MixedImpl.fold_mixed (fun mix r -> f (Mixed mix) r) k in
      let k = fold_mo (fun mo k -> f (MO mo) k) k in
      fold_rmw false f k
 
@@ -126,16 +126,16 @@ module Make
    let overlap_atoms a1 a2 =
      match a1,a2 with
      | ((MO _|Atomic _),_)|(_,(MO _|Atomic _)) -> true
-     | Mixed m1,Mixed m2 -> MachMixed.overlap m1 m2
+     | Mixed m1,Mixed m2 -> Mixed.overlap m1 m2
 
    let atom_to_bank _ = Code.Ord
 
    let tr_value ao v = match ao with
    | None| Some (MO _|Atomic _) -> v
-   | Some (Mixed (sz,_)) -> Mixed.tr_value sz v
+   | Some (Mixed (sz,_)) -> MixedImpl.tr_value sz v
 
    module ValsMixed =
-     MachMixed.Vals
+     Mixed.Vals
        (struct
          let naturalsize () = C.naturalsize
          let endian = endian
