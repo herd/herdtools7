@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc DpDatasR PosRW Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+datasR-pos-rfi [DpDatasR PosRW Rfi] failed:
+Data dependency to a read must be followed by an RMW
+*)

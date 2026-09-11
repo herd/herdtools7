@@ -1,0 +1,15 @@
+(* diyone7 -metadata false -arch AArch64 PodWW Rfe DpDatadR Amo.Cas Coe *)
+AArch64 S+po+data-amo.cas
+{
+ 0:X1=x; 0:X3=y;
+ 1:X1=x; 1:X3=y;
+}
+ P0          | P1             ;
+ MOV W0,#2   | LDR W0,[X3]    ;
+ STR W0,[X1] | MOV W2,#0      ;
+ MOV W2,#1   | MOV W4,#1      ;
+ STR W2,[X3] | EOR W5,W0,W0   ;
+             | ADD W4,W4,W5   ;
+             | CAS W2,W4,[X1] ;
+
+exists ([x]=2 /\ 1:X0=1 /\ 1:X2=0)
