@@ -293,6 +293,31 @@
   \item \W{E\textsubscript{2}}.
   \end{itemize}
 
+  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show TTD-in-same-scope aarch64.cat
+  \expandafter{\MakeUppercase\TTDinsamescopeemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
+  \begin{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ImpTTDR{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\trib{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item \ExpM{E\textsubscript{3}}.
+    \item \expandafter{\MakeUppercase\sameloworderbits{E\textsubscript{3}}{E\textsubscript{4}}}.
+    \item \ExpM{E\textsubscript{4}}.
+    \item \expandafter{\MakeUppercase\trib{E\textsubscript{2}}{E\textsubscript{4}}}.
+    \item \ImpTTDR{E\textsubscript{2}}.
+    \end{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ImpTTDR{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\trib{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item \ImpTagR{E\textsubscript{3}}.
+    \item \expandafter{\MakeUppercase\sameloworderbits{E\textsubscript{3}}{E\textsubscript{4}}}.
+    \item \ImpTagR{E\textsubscript{4}}.
+    \item \expandafter{\MakeUppercase\trib{E\textsubscript{2}}{E\textsubscript{4}}}.
+    \item \ImpTTDR{E\textsubscript{2}}.
+    \end{itemize}
+  \end{itemize}
+
   $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show TLBI-ob aarch64.cat
   \expandafter{\MakeUppercase\TLBIobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
@@ -305,13 +330,9 @@
     \end{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \ImpTTDR{E\textsubscript{1}}.
-    \item \expandafter{\MakeUppercase\trib{E\textsubscript{1}}{E\textsubscript{4}}}.
-    \item \expandafter{\MakeUppercase\sameloworderbits{E\textsubscript{4}}{E\textsubscript{5}}}.
-    \item \expandafter{\MakeUppercase\po{E\textsubscript{4}}{E\textsubscript{5}}}.
-    \item \expandafter{\MakeUppercase\trib{E\textsubscript{3}}{E\textsubscript{5}}}.
-    \item \ImpTTDR{E\textsubscript{3}}.
+    \item \expandafter{\MakeUppercase\TTDinsamescope{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \expandafter{\MakeUppercase\sametranslationcontext{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \expandafter{\MakeUppercase\TTDreadorderedbefore{E\textsubscript{3}}{E\textsubscript{2}}}.
     \item \expandafter{\MakeUppercase\ext{E\textsubscript{3}}{E\textsubscript{2}}}.
     \end{itemize}
@@ -963,17 +984,31 @@
   \item \expandafter{\MakeUppercase\notthecase{\ExpR{E\textsubscript{2}}}}.
   \end{itemize}
 
+  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show ii_direct_data aarch64.cat
+  \expandafter{\MakeUppercase\iidirectdataemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
+  \begin{itemize}
+  \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{1}}{E\textsubscript{2}}}.
+  \item \expandafter{\MakeUppercase\notthecase{all of the following apply}}:
+    \begin{itemize}
+    \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item \M{E\textsubscript{3}}.
+    \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{3}}{E\textsubscript{2}}}.
+    \end{itemize}
+  \end{itemize}
+
   $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show tr-ib aarch64.cat
   \expandafter{\MakeUppercase\tribemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ImpTTDR{E\textsubscript{1}}.
-  \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{1}}{E\textsubscript{3}}}.
+  \item \expandafter{\MakeUppercase\iidirectdata{E\textsubscript{1}}{E\textsubscript{3}}}.
   \item \B{E\textsubscript{3}}.
   \item \expandafter{\MakeUppercase\iicoctrl{E\textsubscript{3}}{E\textsubscript{2}}}.
   \item One of the following applies:
     \begin{itemize}
     \item \ExpM{E\textsubscript{2}}.
+    \item \ImpTagR{E\textsubscript{2}}.
     \item \MMUFAULT{E\textsubscript{2}}.
+    \item \TagCheckFAULT{E\textsubscript{2}}.
     \end{itemize}
   \end{itemize}
 

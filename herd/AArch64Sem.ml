@@ -223,28 +223,22 @@ module Make
         | Some _ -> true
         | None -> false
 
+      let is_mte_sync dir =
+        let open Precision in
+        match C.mte_precision,dir with
+        | (Synchronous,_)|(Asymmetric,(Dir.R)) -> true
+        | (Asynchronous,_)|(Asymmetric,Dir.W) -> false
+
       let mk_fault a dir annot ii ft msg =
         let open FaultType.AArch64 in
         let fh = has_handler ii in
         let is_sync_exc_entry, ii, loc =
-          match ft with
-          | Some TagCheck ->
-              let is_async =
-                match C.mte_precision, dir with
-                | Precision.Asynchronous, _
-                | Precision.Asymmetric, Dir.W -> true
-                | _ -> false
-              in
-              let ii, loc =
-                if is_async then
-                  { ii with A.labels = Label.Set.empty }, None
-                else
-                  ii, Misc.map_opt (fun a -> A.Location_global a) a
-              in
-              (C.variant Variant.MemTag) && not is_async, ii, loc
-          | _ ->
-              true, ii, Misc.map_opt (fun a -> A.Location_global a) a
-        in
+          match ft, is_mte_sync dir with
+          | Some FaultType.AArch64.TagCheck, false ->
+            assert (C.variant Variant.MemTag) ;
+            false, { ii with A.labels = Label.Set.empty }, None
+          | _, _ ->
+            true, ii, Misc.map_opt (fun a -> A.Location_global a) a in
         M.mk_singleton_es
           (Act.Fault (ii,loc,dir,annot,fh || is_sync_exc_entry,ft,msg)) ii
 
@@ -1487,27 +1481,6 @@ module Make
   extra dependencies w.r.t the simple case.
  *)
 
-(*  memtag faults *)
-      let lift_fault_memtag mfault mm dir ii =
-        let lbl_v = get_instr_label ii.A.proc ii in
-        let open Precision in
-          match C.mte_precision, dir with
-          | (Synchronous, _)
-          | (Asymmetric, Dir.R) ->
-            let mexc _ =
-              mfault >>| set_elr_el1 lbl_v ii >>!
-              B.fault [AArch64Base.elr_el1, lbl_v] in
-            if has_handler ii then
-              fun ma -> M.bind_ctrldata ma mexc
-            else
-              fun ma -> ma >>*= mexc
-          | (Asynchronous,_)
-          | (Asymmetric,Dir.W) ->
-            fun ma ->
-              let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
-              let ma = ma >>*== (fun a -> (set_tfsr >>| mfault) >>! a) in
-              mm ma >>! B.Next []
-
 (* KVM mode *)
 
       let can_be_pt v =
@@ -1576,68 +1549,108 @@ module Make
         let mok ma = mop ma |> branch in
         check_pac_va_range mok ma mfault ii domain
 
-      let lift_memtag_phy dir mop ma an ii mphy =
-        let checked_op mpte_d a_virt =
-          let mok mpte_t =
-            let ma = M.para_bind_output_right mpte_t (fun _ -> mpte_d) in
-            mphy ma a_virt >>= M.ignore >>= B.next1T
-          and mno mpte_t =
-            let ma = M.para_bind_output_right mpte_t (fun _ -> mpte_d) in
-            let ft = Some FaultType.AArch64.TagCheck in
-            let mm ma =
-              let branch = fun m -> m >>= M.ignore >>= B.next1T in
-              ma |> branch in
-            let fault = lift_fault_memtag
-                (mk_fault (Some a_virt) dir an ii ft None) mm dir ii in
-            fault ma >>! B.fault [] in
-          let check_tag moa a_virt =
-            let do_check_tag a_phy moa =
-              delayed_check_tags a_virt (Some a_phy) moa ii mok mno in
-            M.delay_kont "check_tag" moa do_check_tag in
-          let cond_check_tag mpte_t a_virt =
-            (* Only read and check the tag if the PTE of the tag op allows it *)
-            M.delay_kont "cond_check_tag" mpte_t @@
-              fun (_,ipte) mpte_t ->
-                 let moa = get_oa a_virt mpte_t in
-                 M.choiceT (ipte.tagged_v) (check_tag moa a_virt) (mok moa)
-          and mfault ma a ft =
-            let ma =
-              let commit _ = commit_pred_txt None ii in
-              ma >>= commit in
-            let ma = M.para_bind_output_right ma (fun _ -> mpte_d) in
-            let lbl_v = get_instr_label ii.A.proc ii in
-            ma >>*= fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None >>!
-            B.fault [AArch64Base.elr_el1, lbl_v] in
-          M.delay_kont "tag_ptw" ma @@ fun a ma ->
-          (* tag checks only apply to data *)
-          let domain = DISide.Data in
-          let mdirect =
-            mop (Access.PTE domain) ma >>= M.ignore >>= B.next1T in
-          check_ptw ii.AArch64.proc Dir.R false true a ma an ii
-            mdirect
-            cond_check_tag
-            mfault domain in
-        fun mpte a_virt -> M.delay_kont "need_check_tag" mpte @@
-          fun (_,ipte) mpte -> M.choiceT (ipte.tagged_v)
-            (checked_op mpte a_virt) (mphy mpte a_virt)
+      let is_this_reg rA e =
+        match E.location_reg_of e with
+        | None -> false
+        | Some rB -> AArch64.reg_compare rA rB=0
 
-      let lift_memtag_virt mop ma dir an ii branch =
-        M.delay_kont "5" ma
-          (fun a_virt ma  ->
-             let mm = mop Access.VIR in
-             let ft = Some FaultType.AArch64.TagCheck in
-             let noact = M.mk_singleton_es Act.NoAction ii in
-             delayed_check_tags a_virt None ma ii
-               (fun ma ->
-                  let open Precision in
-                  let ma = match C.mte_precision, dir with
-                  | Asynchronous, _
-                  | Asymmetric, Dir.W -> ma >>*== (fun a -> noact >>! a)
-                  | _, _ -> ma in
-                  mm ma |> branch
-                )
-               (lift_fault_memtag
-                  (mk_fault (Some a_virt) dir an ii ft None) mm dir ii))
+      module MTE = struct
+        let lift_fault_async mfault ii ma =
+          let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
+          ma >>*= fun _ -> (set_tfsr >>| mfault) >>!
+            B.Next [AArch64Base.tfsr, V.one]
+
+        let lift_fault_sync mfault ii =
+          let lbl_v = get_instr_label ii.A.proc ii in
+          let mexc _ =
+            mfault >>| set_elr_el1 lbl_v ii >>!
+                B.fault [AArch64Base.elr_el1, lbl_v] in
+          if has_handler ii then
+            fun ma -> M.bind_ctrldata ma mexc
+              else
+                fun ma -> ma >>*= mexc
+
+        let lift_phy rA dir mop ma an ii mphy =
+          let checked_op mpte_d a_virt =
+            (* mpte_d - the event structure contains the data op up to the
+                branching effect with the outcome of the translation *)
+            let mok mtag =
+              let mtag = M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) mtag in
+              (* mtag - the event structure contains the tag op up to the
+                  branching effect with the outcome of the tag comparison *)
+              let mtag =
+                if is_mte_sync dir then
+                  mtag
+                else
+                  let noact = M.mk_singleton_es Act.NoAction ii in
+                  mtag >>*= fun v -> noact >>! v in
+              let ma = M.para_bind_output_right mtag (fun _ -> mpte_d) in
+              mphy ma a_virt >>= M.ignore >>= B.next1T
+            and mno mtag =
+              let mtag = M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) mtag in
+              (* mtag - the event structure contains the tag op up to the
+                  branching effect with the outcome of the tag comparison *)
+              let ft = Some FaultType.AArch64.TagCheck in
+              let mfault = mk_fault (Some a_virt) dir an ii ft None in
+              if is_mte_sync dir then
+                let ma = M.para_bind_output_right mtag (fun _ -> mpte_d) in
+                lift_fault_sync mfault ii ma
+              else
+                let mfault = lift_fault_async mfault ii in
+                M.para_bind_output_right (mphy mpte_d a_virt) (fun _ -> mfault mtag) in
+            let check_tag moa a_virt =
+              let do_check_tag a_phy moa =
+                delayed_check_tags a_virt (Some a_phy) moa ii mok mno in
+              M.delay_kont "check_tag" moa do_check_tag in
+            let cond_check_tag mpte_t a_virt =
+              (* Only read and check the tag if the PTE of the tag op allows it *)
+              M.delay_kont "cond_check_tag" mpte_t @@
+                fun (_,ipte) mpte_t ->
+                    let moa = get_oa a_virt mpte_t in
+                    M.choiceT (ipte.tagged_v) (check_tag moa a_virt) (mok moa)
+            and mfault ma a ft =
+              let ma =
+                let commit _ = commit_pred_txt None ii in
+                ma >>= commit in
+              let ma = M.para_bind_output_right ma (fun _ -> mpte_d) in
+              let lbl_v = get_instr_label ii.A.proc ii in
+              ma >>*= fun _ -> set_elr_el1 lbl_v ii >>| mk_fault (Some a) dir an ii ft None >>!
+              B.fault [AArch64Base.elr_el1, lbl_v] in
+            M.delay_kont "tag_ptw" ma @@ fun a ma ->
+            (* tag checks only apply to data *)
+            let domain = DISide.Data in
+            let mdirect =
+              mop (Access.PTE domain) ma >>= M.ignore >>= B.next1T in
+            check_ptw ii.AArch64.proc Dir.R false true a ma an ii
+              mdirect
+              cond_check_tag
+              mfault domain in
+          fun mpte a_virt -> M.delay_kont "need_check_tag" mpte @@
+            fun (_,ipte) mpte -> M.choiceT (ipte.tagged_v)
+              (checked_op mpte a_virt) (mphy mpte a_virt)
+
+        let lift_virt mop ma dir an ii branch =
+          let do_lift_virt a_virt ma =
+            let mm = mop Access.VIR in
+            let mok ma =
+              let noact = M.mk_singleton_es Act.NoAction ii in
+              let ma =
+                if is_mte_sync dir then
+                  ma
+                else
+                  ma >>*== (fun a -> noact >>! a) in
+              mm ma |> branch
+            and mno ma =
+              let ft = Some FaultType.AArch64.TagCheck in
+              let mfault = mk_fault (Some a_virt) dir an ii ft None in
+              if is_mte_sync dir then
+                lift_fault_sync mfault ii ma
+              else
+                let mfault = lift_fault_async mfault ii in
+                M.para_bind_output_right (mm ma) (fun _ -> mfault ma) in
+            delayed_check_tags a_virt None ma ii mok mno in
+          M.delay_kont "MTE.lift_virt" ma do_lift_virt
+      end
 
       let lift_morello mop perms ma mv dir an ii branch =
         let mfault msg ma mv =
@@ -1669,11 +1682,6 @@ module Make
       let to_perms str sz = str ^ if sz = MachSize.S128 then "_c" else ""
 
       let apply_mv mop mv = fun ac ma -> mop ac ma mv
-
-      let is_this_reg rA e =
-        match E.location_reg_of e with
-        | None -> false
-        | Some rB -> AArch64.reg_compare rA rB=0
 
 (*
 Arguments:
@@ -1710,14 +1718,12 @@ Arguments:
               else
                 mop Access.PHY ma |> branch in
             let mphy =
-              if checked then lift_memtag_phy dir mop ma an ii mphy
+              if checked then MTE.lift_phy rA dir mop ma an ii mphy
               else mphy
             in
-            let m = lift_kvm tag dir updatedb mop ma an ii mphy branch domain in
-            (* M.short will add an iico_data only if memtag is enabled *)
-            M.short (is_this_reg rA) (E.is_pred_txt (Some "color")) m
+            lift_kvm tag dir updatedb mop ma an ii mphy branch domain
           else if checked then
-            let mop ma = lift_memtag_virt mop ma dir an ii branch in
+            let mop ma = MTE.lift_virt mop ma dir an ii branch in
             if pac then lift_pac_virt mop ma dir an ii Fun.id domain else mop ma
           else if pac then
             lift_pac_virt (mop Access.VIR) ma dir an ii branch domain
@@ -1771,10 +1777,7 @@ Arguments:
           else ma in
         lift_memop ~tag:"LD" rA Dir.R false checked
           (fun ac ma _mv -> (* value fake here *)
-            let open Precision in
-            let memtag_sync =
-              checked && (C.mte_precision = Synchronous ||
-                         C.mte_precision = Asymmetric) in
+            let memtag_sync = checked && (is_mte_sync Dir.R) in
             if memtag_sync || Access.is_physical ac || pac then
               M.bind_ctrldata ma (mop ac)
             else
@@ -1786,8 +1789,7 @@ Arguments:
       let do_str rA mop sz an ma mv ii =
         lift_memop ~tag:"ST" rA Dir.W true memtag
           (fun ac ma mv ->
-            let open Precision in
-            let memtag_sync = memtag && C.mte_precision = Synchronous in
+            let memtag_sync = memtag && (is_mte_sync Dir.W) in
             if pac || memtag_sync || (is_branching && Access.is_physical ac) then begin
               (* additional ctrl dep on address *)
               M.bind_ctrldata_data ma mv
