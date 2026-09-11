@@ -283,8 +283,7 @@ let opts =
    "-v",Arg.Unit (fun () -> incr verbose), " be verbose";
    "-texmacros", arg_set_bool texmacros,
    (sprintf "<bool> use latex macros in output, default %b" !texmacros);
-   "-hexa", arg_set_bool hexa,
-   (sprintf "<bool> hexadecimal output, default %b" !hexa);
+   ToolsOpts.parse_hexa hexa;
    "-compat", arg_set_bool compat,
    (sprintf "<bool> backward compatible output (used for hashes), default %b" !hexa);
    begin let module P = ParseTag.Make(OutMode) in
