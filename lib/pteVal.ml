@@ -18,6 +18,8 @@
 module type S = sig
   type t
 
+  val oa : t -> OutputAddress.t
+
   (* Default pte for virtual addresses and pte themselves  *)
   val default : string -> t
   val of_pte : string -> t
@@ -56,6 +58,8 @@ end
 
 module No = struct
     type t = unit
+
+    let oa _ = assert false
 
     let default _ = ()
     let of_pte _ = ()

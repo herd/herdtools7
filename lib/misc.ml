@@ -773,8 +773,11 @@ let is_labelstr s =
 let str_as_label s =
   try
     Scanf.sscanf s "%d:%s" (fun proc lblname -> Some (proc, lblname))
-  with Scanf.Scan_failure _ ->
-    None
+  with
+  (* Notice the case of the End_of_file exception corresponds to processing the
+   * empty string argument *)
+  | Scanf.Scan_failure _ -> None
+  | End_of_file -> None
 
 let add_valid = sprintf "valid_%s"
 let add_oa = sprintf "oa_%s"

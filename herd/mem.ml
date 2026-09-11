@@ -419,19 +419,44 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       let is_on_exported_page a_v =
         let exp_pages = S.get_exposed_codepages test in
         match a_v with
-        | Some (A.V.Val c) -> begin
-          let this_lbl = c in
-          List.exists
-            (fun ttd_lbl ->
-              let this_triple = Constant.unmk_sym_virtual_label_with_offset this_lbl in
-              let ttd_triple = Constant.unmk_sym_virtual_label_with_offset ttd_lbl in
-              match (this_triple,ttd_triple) with
-              | (p1,s1,_),(p2,s2,_) ->
-                (Int.equal p1 p2) && (String.equal s1 s2)
-            ) exp_pages
+        | Some (V.Val c) -> List.exists (Constant.virt_lbl_eq_mod_offset c) exp_pages
+        | _ -> false in
+
+      let is_on_relevant_page a_v =
+        let rel_pages = S.get_relevant_codepages test in
+        let rel_pages = List.map (fun (p,lbl) -> Constant.mk_sym_virtual_label p lbl) rel_pages in
+        match a_v with
+        | Some (A.V.Val c) -> List.exists (Constant.virt_lbl_eq_mod_offset c) rel_pages
+        | _ -> false in
+
+      (* *)
+      (* A section checking that code pages are well-formed *)
+      let page_addrs =
+        (* take addresses with labels, check they are at the beginning of a page *)
+        Label.Map.fold (fun _ addr acc -> addr::acc) prog []
+        |> List.filter (fun addr ->
+          (addr mod Pseudo.page_size = 0)
+          && (is_on_exported_page (addr2va addr) || is_on_relevant_page (addr2va addr))
+          )
+      in
+      let page_size pa =
+        let (_,code) = IntMap.find pa code_segment in
+        List.fold_left (fun acc (a,_) -> 
+          acc + (if pa <= a && a < pa + Pseudo.page_size then 1 else 0)
+          ) 0 code
+      in
+      let check =
+        match page_addrs with
+        | [] -> () (* no checks to perform *)
+        | pa::page_addrs -> begin
+          let eta = page_size pa in
+          List.iter (fun a ->
+            if (page_size a) != eta then
+              Warn.user_error "It is required that code pages subject to remapping hold an equal amount of instructions."
+            ) page_addrs
           end
-        | _ ->
-          false in
+      in check;
+      (* *)
 
       (* lbls2i -- overwritable instructions, with labels          *)
       (* overwritable_labels -- the set of labels of instructions  *)
@@ -517,12 +542,12 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                   | None -> code in
                 List.fold_left
                   (fun env (addr,i) ->
-                    match addr2va addr with
-                    | Some va when (is_on_exported_page (addr2va addr)) -> begin
+                    let addr_va = addr2va addr in
+                    match addr_va with
+                    | Some va when (is_on_exported_page addr_va || is_on_relevant_page addr_va) ->
                         let loc = A.Location_global va in
                         let v = A.V.instructionToV i.I.instr in
                         A.state_add env loc v
-                      end
                     | Some _ | None -> env
                   )
                   env_ code)

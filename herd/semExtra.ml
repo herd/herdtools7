@@ -90,7 +90,10 @@ module type S = sig
 
 (* "Exposed" TTDs of code pages, i.e. TTDs whose addresses are in registers *)
   (* In initial state *)
-  val get_exposed_codepages : test -> (A.V.Cst.Scalar.t, A.V.Cst.PteVal.t, A.V.Cst.AddrReg.t, A.instruction) Constant.t list
+  val get_exposed_codepages : test -> (A.V.Cst.Scalar.t, A.V.Cst.PteVal.t, A.V.Cst.AddrReg.t, A.V.Cst.Instr.t) Constant.t list
+
+  val get_relevant_codepages : test -> (proc * string) list
+
 
   type event = E.event
   type event_structure = E.event_structure
@@ -335,10 +338,10 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
         (get_exported_labels_code test)
 
 
-(* Exported TTDs from the init environments *)
+    (* Extract the list of labels corresponding to pages whose TTDs may be
+     * remapped, i.e, returns the list [<labels>] from the list of locations
+     * [TTD(<label>)] mentioned in the initial state *)
     let get_exposed_codepages test =
-      (* extract the list [<labels>] from the list of locations [TTD(<label>)]
-       *)
       let { Test_herd.init_state=st; _ } = test in
       let cst_to_pagelbl cst =
         let (>>=) = Option.bind in
@@ -348,18 +351,40 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
               Some (Constant.mk_sym_virtual_label_with_offset proc lblname 0)
       in
       A.state_fold
-        (fun loc _ k ->
-          match loc with
-          | A.Location_global (V.Val cst) -> begin
+        (fun loc v k ->
+          match (loc,v) with
+          | (A.Location_global (V.Val cst), _)
+          | (A.Location_reg _, V.Val cst) -> begin
             match cst_to_pagelbl cst with
             | Some v -> v::k
             | None -> k
             end
-          | A.Location_global _
-          | A.Location_reg _ -> k
+          | (A.Location_global _, _) -> k
+          | (A.Location_reg _, _) -> k
           )
         st []
 
+
+    (* Extract the list of labels corresponding to pages that other pages may be
+     * remapped to, i.e, returns the list [<labels>] from the list of output
+       addresses in TTD values *)
+    let get_relevant_codepages test =
+        let open Constant in
+        let result = A.state_fold
+          (fun _ v k ->
+            match v with
+            | A.V.Val (PteVal pte_v) -> begin
+              let lbl_opt =
+                A.V.Cst.PteVal.oa pte_v
+                |> OutputAddress.as_physical
+                |> fun o -> Option.bind o Misc.str_as_label in
+              match lbl_opt with
+              | Some lbl -> lbl::k
+              | None -> k
+              end
+            | _ -> k)
+          test.Test_herd.init_state []
+        in result
 
 (**********)
 (* Events *)
