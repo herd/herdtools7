@@ -111,12 +111,14 @@ let run flags =
       (fun remaining_flags (dir, conf) ->
         Printf.printf "Checking assumptions against %s ...\n%!" dir;
         let litmuses = get_each_litmus_in_dir dir in
+        let raise_e e = failwith (Command.string_of_error e) in
         let remaining_flags =
           List.fold_left
             (fun remaining_flags litmus ->
               let _, stdout, stderr =
                 TestHerd.run_herd ~bell:None ~cat:(Some flags.assumptions_file)
                   ~conf ~variants:[] ~libdir:flags.libdir flags.herd [ litmus ]
+                |> Result.fold ~ok:Fun.id ~error:raise_e
               in
               let stdout = String.concat "\n" stdout in
               let stderr = String.concat "\n" stderr in
