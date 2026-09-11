@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: DE_DAF
+error_line: 4
+info: |-
+  File ../tests/semantics/SemanticsRule.SAssertNo.asl, line 4,
+    characters 10 to 17:
+    assert (42 == 3);
+            ^^^^^^^
+  ASL Dynamic error (DE_DAF): Assertion failed: (42 == 3).
