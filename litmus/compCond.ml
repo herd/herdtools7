@@ -69,8 +69,9 @@ module Make (O:Indent.S) (I:CompCondUtils.I) =
            and ft = match ft with
            | None -> "Unknown"
            | Some ft -> I.C.FaultType.pp ft in
-           O.fprintf "exists_fault(&p->th_faults[%d], %s, %s, %s)"
-             proc (SkelUtil.instr_symb_id lbl) (SkelUtil.data_symb_id loc) (SkelUtil.fault_id ft) ;
+           O.fprintf "match_some_fault_info(%s, %s, %s, &p->th_faults[%d])"
+             (SkelUtil.instr_symb_id lbl) (SkelUtil.data_symb_id loc) (SkelUtil.fault_id ft)
+             proc ;
         | Not p ->
             O.output "!(" ;
             dump_prop p ;
