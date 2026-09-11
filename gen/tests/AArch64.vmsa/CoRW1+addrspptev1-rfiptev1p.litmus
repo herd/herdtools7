@@ -2,7 +2,6 @@
 AArch64 CoRW1+addrspptev1-rfiptev1p
 Variant=vmsa
 {
- [x]=1;
  [PTE(x)]=(oa:PA(x), valid:0);
  0:X0=x; 0:X3=PTE(x); 0:X5=(oa:PA(x));
 }

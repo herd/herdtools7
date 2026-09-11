@@ -2,7 +2,6 @@
 AArch64 CoRW1+pospptedb1.dbm0-rfiptedb1.dbm0p
 Variant=vmsa
 {
- [x]=1;
  [PTE(x)]=(oa:PA(x), db:0, dbm:1);
  0:X0=x; 0:X2=PTE(x); 0:X3=(oa:PA(x));
 }
