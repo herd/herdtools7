@@ -42,7 +42,7 @@ module Make
          let fullmixed = C.moreedges
        end)(Value)
 
-   include NoWide
+   include Atom.NoWide
 
 (*********)
 (* Atoms *)

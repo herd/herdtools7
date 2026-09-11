@@ -201,7 +201,7 @@ let varatom_rmw = match varatom with
 | None -> no_varatom
 | Some _va -> fun _ -> assert false
 
-include NoWide
+include Atom.NoWide
 
 (* End of atoms *)
 

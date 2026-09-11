@@ -63,7 +63,7 @@ let overlap_atoms _ _ = true
 
 let atom_to_bank _ = Code.Ord
 
-include NoWide
+include Atom.NoWide
 
 module Value = Value_gen.NoPte(struct type arch_atom = atom end)
 

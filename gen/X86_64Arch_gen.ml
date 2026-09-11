@@ -149,7 +149,7 @@ module Make
       | Some ((Plain|Atomic|NonTemporal),Some (sz, o)) ->
          ValsMixed.extract_value v sz o
 
-      include NoWide
+      include Atom.NoWide
 
       let get_machine_feature _ = StringSet.empty
 

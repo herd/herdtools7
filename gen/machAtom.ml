@@ -116,5 +116,5 @@ module Make(C:Config) = struct
 
   let get_machine_feature _ = StringSet.empty
 
-  include NoWide
+  include Atom.NoWide
 end
