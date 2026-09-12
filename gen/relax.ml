@@ -373,26 +373,32 @@ and type edge = E.edge
            Pseudo-edges (annotations and insert edge) are ignored in the check.
            Duplications are removed as well. *)
         let remove_invalid_relaxes relaxes =
-          let rec for_all_adjacent_concrete_edge predicate = function
+          let rec for_all_adjacent_edge participates predicate = function
             | [] | [_] -> true
             | lhs :: rhs :: list ->
-                match E.is_non_pseudo lhs.E.edge, E.is_non_pseudo rhs.E.edge with
+                match participates lhs.E.edge, participates rhs.E.edge with
                 | true, true ->
                     predicate lhs rhs
-                    && for_all_adjacent_concrete_edge predicate (rhs :: list)
+                    && for_all_adjacent_edge participates predicate (rhs :: list)
                 | true, false ->
-                    for_all_adjacent_concrete_edge predicate (lhs :: list)
+                    for_all_adjacent_edge participates predicate (lhs :: list)
                 | false, true ->
-                    for_all_adjacent_concrete_edge predicate (rhs :: list)
+                    for_all_adjacent_edge participates predicate (rhs :: list)
                 | false, false ->
-                    for_all_adjacent_concrete_edge predicate list in
-          List.filter
-            (fun relax ->
-              (* Drop empty alternatives introduced by `?`; they do not
-                 describe an actual relaxation. *)
-              relax <> []
-              && for_all_adjacent_concrete_edge E.can_precede relax)
-            relaxes
+                    for_all_adjacent_edge participates predicate list in
+          relaxes
+          |> List.filter
+               (fun relax ->
+                 (* Drop empty alternatives introduced by `?`; they do not
+                    describe an actual relaxation. *)
+                 relax <> []
+                 && for_all_adjacent_edge E.is_non_pseudo E.can_precede relax
+                 (* Validate annotations separately so that atom propagation
+                    can reject invalid RMW combinations such as
+                    [A,Amo.StAdd,L]. *)
+                 && for_all_adjacent_edge
+                      (fun edge -> not (E.is_insert_store edge))
+                      E.can_precede relax)
           |> List.sort_uniq compare
 
 (********)
