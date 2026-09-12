@@ -73,3 +73,25 @@ let is_file =
 
 let is_dir =
   validate Sys.is_directory "Must be a path to a directory"
+
+type wrapper_args = {
+  args: string list ;
+  com: string ;
+  wrapped: string list ;
+}
+
+let split_wrapper_args args =
+  let wrapper, wrapped =
+    args
+    |> Array.to_list
+    |> Base.List.split_when (String.equal "--")
+  in
+  match wrapped with
+  | "--" :: com :: args ->
+    {args=wrapper; com; wrapped=args}
+  | _ ->
+      let msg =
+        Printf.sprintf "%s: Malformed list of arguments: [%s]"
+          __FUNCTION__ (String.concat "; " (Array.to_list args))
+      in
+      raise (Invalid_argument msg)

@@ -189,20 +189,36 @@ let herd_args ~bell ~cat ~conf ~variants ~libdir ~timeout ~speedcheck
       checkfilters
     ]
 
-let apply_args herd j herd_args =
-  let herd_args = String.concat "," herd_args in
-  ["-com"; herd; "-j" ; Printf.sprintf "%i" j; "-comargs"; herd_args;]
+let herd_wrapper_args ~nohash ~verbose ~check ~herd args =
+  let verbose = if verbose then ["-verbose"] else [] in
+  let nohash = if nohash then ["-nohash"] else [] in
+  let check = match check with All -> [] | Obs -> ["-checkobs"] | Sta -> ["-checkstates"] in
+  let wrapper_only_args = verbose @ nohash @ check in
+  wrapper_only_args @ "--" :: herd :: args
 
-let apply_redirect_args ?(verbose=false) herd j herd_args =
-  let herd_args = herd::herd_args in
-  let herd_args =
-    if verbose then "-verbose"::herd_args
-    else herd_args in
-  let redirect_args = String.concat "," herd_args in
-  let redirect =
-    Filename.concat (Filename.dirname Sys.argv.(0))
-      "herd_redirect.exe" in
-  ["-com"; redirect; "-j"; Printf.sprintf "%i" j; "-comargs"; redirect_args;]
+let full_path_of exe_name = Filename.(concat (dirname Sys.argv.(0))) exe_name
+
+let mapply_args ?(litmuses=[]) ?(exits=true) ~j ~com args =
+  let exit = if exits then ["-exit"; "true"] else [] in
+  exit @ "-j" :: string_of_int j :: litmuses @ "--" :: com :: args
+
+let mapply_herd_wrapper_args ?(verbose=false) ?(nohash=false) ~litmuses ~j
+    ~check ~exits ~wrapper ~herd args
+=
+  let args = herd_wrapper_args ~nohash ~verbose ~check ~herd args in
+  mapply_args ~exits ~litmuses ~j ~com:wrapper args
+
+let mapply_herd_redirect_args =
+  let wrapper = full_path_of "herd_redirect.exe" in
+  mapply_herd_wrapper_args ~wrapper ~nohash:false ~check:All ~exits:false
+
+let mapply_herd_test_args =
+  let wrapper = full_path_of "herd_test.exe" in
+  mapply_herd_wrapper_args ~wrapper ~exits:true
+
+let mapply_herd_promote_args =
+  let wrapper = full_path_of "herd_promote.exe" in
+  mapply_herd_wrapper_args ~wrapper ~verbose:false ~nohash:false ~exits:true
 
 let herd_command ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout
     ?speedcheck ?checkfilter litmuses =
@@ -215,8 +231,8 @@ let herd_command ~bell ~cat ~conf ~variants ~libdir herd ?j ?timeout
      Command.command herd (args @ litmuses)
   | Some j ->
      let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
-     let args = apply_args  herd j args in
-     Command.command mapply  (args @ litmuses)
+     let args = mapply_args ~litmuses ~j ~com:herd args in
+     Command.command mapply args
 
 let check_tags s =
   try
@@ -253,7 +269,7 @@ let do_run_herd_args verbose herd args ?j litmuses =
     | Some j ->
        let j = max 2 j in
        let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
-       let args = apply_args herd j args in
+       let args = mapply_args ~j ~com:herd args in
        Command.NonBlock.run_status
          ~stdin:litmuses ~stdout:read_line ~stderr:read_err_line mapply args in
   (r,without_unstable_lines (List.rev !lines), (List.rev !err_lines))
@@ -277,9 +293,8 @@ let run_herd_concurrent ?verbose ~bell ~cat ~conf ~variants ~libdir herd ~j litm
   let litmuses = Base.Iter.of_list litmuses in
   let j = max 2 j in
   let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
-  let args = apply_redirect_args ?verbose herd j args in
-  let r = Command.NonBlock.run_status ~stdin:litmuses  mapply args in
-  r
+  let args = mapply_herd_redirect_args ?verbose ~j ~herd ~litmuses:[] args in
+  Command.NonBlock.run_status ~stdin:litmuses mapply args
 
 let read_some_file litmus name =
   if name = "" then None

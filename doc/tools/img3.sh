@@ -3,9 +3,9 @@
 set -eu
 
 DIR=$(dirname $0)
-HERD=$1
-TAG=$2
-FILE=$3
+FILE=$1
+HERD=$2
+TAG=$3
 GEN=/tmp/herd.$$
 max=${MAX:-1000}
 maxone=$(expr $max - 1)
