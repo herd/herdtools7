@@ -1,0 +1,12 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc -type int64_t q8 PosRW Rfi *)
+AArch64 CoRW1+posq8p-rfipq8
+{
+ int64_t x[2]={0,0};
+ uint64_t 0:X0=0; 0:X1=x;
+}
+ P0             ;
+ LDR X0,[X1,#8] ;
+ MOV X2,#1      ;
+ STR X2,[X1]    ;
+
+exists (0:X0=0)

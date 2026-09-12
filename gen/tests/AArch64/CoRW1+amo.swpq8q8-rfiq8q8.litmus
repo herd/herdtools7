@@ -1,0 +1,12 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc -type int64_t q8 Amo.Swp q8 Rfi *)
+AArch64 CoRW1+amo.swpq8q8-rfiq8q8
+{
+ int64_t x[2]={0,0};
+ 0:X0=x; int64_t 0:X1=0;
+}
+ P0             ;
+ MOV X2,#1      ;
+ ADD X3,X0,#8   ;
+ SWP X2,X1,[X3] ;
+
+exists (0:X1=1)

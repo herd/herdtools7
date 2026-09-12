@@ -536,7 +536,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       if is_morello then [gcvalue r r] else []
 
     let get_access_size atom =
-      match get_access_atom (Some atom) with
+      match atom with
+      | ArrayCellAccess (_,i) -> szloc,i * MachSize.nbytes szloc
+      | _ -> match get_access_atom (Some atom) with
       | Some sz -> sz
       | None -> MachSize.S128,0
 
@@ -944,10 +946,16 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let do_emit_mov_sz emit_mov_sz sz st p init v =
       let rA,init,csi,st = emit_mov_sz sz st p init v in
-      let st =
+      let needs_type = match csi with
+      | [] -> true
+      | _::_ ->
+          Variant_gen.is_mixed Cfg.variant ||
+          Cfg.variant Variant_gen.Morello in
+      let st = if needs_type then
         let loc = A.of_reg p rA in
         let t = type_of_sz sz in
-        A.add_type loc t st in
+        A.add_type loc t st
+      else st in
       rA,init,csi,st
 
       let emit_mov_sz = do_emit_mov_sz U.emit_mov_sz
@@ -1319,20 +1327,24 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let get_xload_addon atom r1 = match atom with
       | (OrdinaryAccess (`Plain|`Acquire)
         |MixedSizeAccess ((`Plain|`Acquire),_)
+        |ArrayCellAccess ((`Plain|`Acquire),_)
         |MorelloAccess (`Plain|`Acquire)) as atom ->
           emit_ldr_addon (is_morello_access atom) r1
       | _ -> []
 
     let get_xload = function
       | OrdinaryAccess `Plain -> ldxr
-      | (MorelloAccess `Plain|MixedSizeAccess (`Plain,_)) as atom ->
+      | (MorelloAccess `Plain|MixedSizeAccess (`Plain,_)
+        |ArrayCellAccess (`Plain,_)) as atom ->
           let sz,_ = get_access_size atom in
           ldxr_sz XX sz
       | OrdinaryAccess `Acquire -> ldaxr
-      | (MorelloAccess `Acquire|MixedSizeAccess (`Acquire,_)) as atom ->
+      | (MorelloAccess `Acquire|MixedSizeAccess (`Acquire,_)
+        |ArrayCellAccess (`Acquire,_)) as atom ->
           let sz,_ = get_access_size atom in
           ldxr_sz AX sz
       | (OrdinaryAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
+        |ArrayCellAccess (`AcquirePC,_)
         |MorelloAccess `AcquirePC) -> Warn.fatal "AcqPC annotation on xload"
       | (MemoryTagAccess|MorelloTagAccess|MorelloSealAccess) -> Warn.fatal "variant annotation on xload"
       | atom -> Warn.fatal "Bad annotation for Lx: %s\n" (pp atom)
@@ -1340,11 +1352,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     and get_xstore = function
       | OrdinaryAccess `Plain -> stxr
-      | (MorelloAccess `Plain|MixedSizeAccess (`Plain,_)) as atom ->
+      | (MorelloAccess `Plain|MixedSizeAccess (`Plain,_)
+        |ArrayCellAccess (`Plain,_)) as atom ->
           let sz,_ = get_access_size atom in
           stxr_sz YY sz
       | OrdinaryAccess `Release -> stlxr
-      | (MorelloAccess `Release|MixedSizeAccess (`Release,_)) as atom ->
+      | (MorelloAccess `Release|MixedSizeAccess (`Release,_)
+        |ArrayCellAccess (`Release,_)) as atom ->
           let sz,_ = get_access_size atom in
           stxr_sz LY sz
       | (MemoryTagAccess|MorelloTagAccess|MorelloSealAccess) -> Warn.fatal "variant annotation on xstore"
@@ -1353,6 +1367,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let get_xstore_addon atom r2 r3 e init st p = match atom with
       | (OrdinaryAccess (`Plain|`Release)
         |MixedSizeAccess ((`Plain|`Release),_)
+        |ArrayCellAccess ((`Plain|`Release),_)
         |MorelloAccess (`Plain|`Release)) as atom ->
           emit_str_addon st p init r2 r3 (is_morello_access atom) e
       | _ -> init,[],st
@@ -1648,7 +1663,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_ldp_reg opt st init rA =
       let r1,r2,st = next_reg2 st in
-      r1,init,pseudo [do_ldp opt r1 r2 rA;add vloc r1 r1 r2;],st
+      let st = A.set_friends r1 [r2] st in
+      r1,init,pseudo [do_ldp opt r1 r2 rA;],st
 
     let emit_ldp opt st p init loc =
       let rA,init,st =  U.next_init st p init loc in
@@ -1692,7 +1708,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
 
     let emit_obs t = match t with
-    | Code.Ord | Code.Instr-> emit_load_mixed naturalsize 0
+    | Code.Ord | Code.Instr->
+        fun st p init loc ->
+        let r,init,cs,st = emit_load_mixed naturalsize 0 st p init loc in
+        let st = A.add_type (A.of_reg p r) Cfg.typ st in
+        r,init,cs,st
     | Code.Pte->
         fun st p init loc ->
         let r,init,cs,st = LDR.emit_load_var A64.V64 st p init (Misc.add_pte loc) in
@@ -1811,8 +1831,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,OrdinaryAccess `Acquire ->
             let r,init,cs,st = LDAR.emit_load st p init loc in
             Some (Some r,init,cs,st)
-        | R,(MorelloAccess `Acquire as atom)
-        | R,(MixedSizeAccess (`Acquire,_) as atom) ->
+        | R,((MorelloAccess `Acquire|MixedSizeAccess (`Acquire,_)
+             |ArrayCellAccess (`Acquire,_)) as atom) ->
             let sz,o = get_access_size atom in
             let module L =
               LOAD
@@ -1829,8 +1849,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,OrdinaryAccess `AcquirePC ->
             let r,init,cs,st = LDAPR.emit_load st p init loc in
             Some (Some r,init,cs,st)
-        | R,(MorelloAccess `AcquirePC as atom)
-        | R,(MixedSizeAccess (`AcquirePC,_) as atom) ->
+        | R,((MorelloAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
+             |ArrayCellAccess (`AcquirePC,_)) as atom) ->
             let sz,o = get_access_size atom in
             let module L =
               LOAD
@@ -1850,8 +1870,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | R,Atomic (rw,AtomicSize (sz,o)) ->
             let r,init,cs,st = emit_lda_mixed sz o rw st p init loc in
             Some (Some r,init,cs,st)
-        | R,(MorelloAccess `Plain as atom)
-        | R,(MixedSizeAccess (`Plain,_) as atom) ->
+        | R,((MorelloAccess `Plain|MixedSizeAccess (`Plain,_)
+             |ArrayCellAccess (`Plain,_)) as atom) ->
             let sz,o = get_access_size atom in
             let r,init,cs,st = emit_load_mixed sz o st p init loc in
             let cs2 = emit_ldr_addon (is_morello_access atom) r in
@@ -1896,15 +1916,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | W,Atomic (rw,AtomicSize (sz,o)) ->
             let r,init,cs,st = emit_sta_mixed sz o rw st p init loc (Value.to_int e.C.v) in
             Some (Some r,init,cs,st)
-        | W,(MorelloAccess `Plain as atom)
-        | W,(MixedSizeAccess (`Plain,_) as atom) ->
+        | W,((MorelloAccess `Plain|MixedSizeAccess (`Plain,_)
+             |ArrayCellAccess (`Plain,_)) as atom) ->
             let sz,o = get_access_size atom in
             let is_morello = is_morello_access atom in
             let init,cs,st =
               emit_store_mixed sz o st p init loc (Value.to_int e.C.v) is_morello e in
             Some (None,init,cs,st)
-        | W,(MorelloAccess `Release as atom)
-        | W,(MixedSizeAccess (`Release,_) as atom) ->
+        | W,((MorelloAccess `Release|MixedSizeAccess (`Release,_)
+             |ArrayCellAccess (`Release,_)) as atom) ->
             let sz,o = get_access_size atom in
             let is_morello = is_morello_access atom in
             let module S =
@@ -2122,7 +2142,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let do_rmw_type a1 a2 =
       let capa_opt = function
-      | OrdinaryAccess o|MixedSizeAccess (o,_) -> Some (false,o)
+      | OrdinaryAccess o|MixedSizeAccess (o,_)|ArrayCellAccess (o,_) ->
+          Some (false,o)
       | MorelloAccess o -> Some (true,o)
       | _ -> None in
       match capa_opt a1,capa_opt a2 with
@@ -2345,8 +2366,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let r,init,cs,st =
                 LDAR.emit_load_idx_var vloc vdep st p init loc r2 in
               Some (Some r,init,pseudo cs0@cs,st)
-          | R,(MorelloAccess `Acquire as atom)
-          | R,(MixedSizeAccess (`Acquire,_) as atom) ->
+          | R,((MorelloAccess `Acquire|MixedSizeAccess (`Acquire,_)
+               |ArrayCellAccess (`Acquire,_)) as atom) ->
               let sz,o = get_access_size atom in
              let load =
                do_emit_load_idx_var
@@ -2360,8 +2381,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let r,init,cs,st =
                 LDAPR.emit_load_idx_var vloc vdep st p init loc r2 in
               Some (Some r,init,pseudo cs0@cs,st)
-          | R,(MorelloAccess `AcquirePC as atom)
-          | R,(MixedSizeAccess (`AcquirePC,_) as atom) ->
+          | R,((MorelloAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
+               |ArrayCellAccess (`AcquirePC,_)) as atom) ->
               let sz,o = get_access_size atom in
              let load =
                do_emit_load_idx_var
@@ -2432,8 +2453,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = STLR.emit_store_idx st p init loc r2 (Value.to_int e.C.v) false C.evt_null in
               Some (None,init,pseudo cs0@cs,st)
-          | W,(MorelloAccess `Release as atom)
-          | W,(MixedSizeAccess (`Release,_) as atom) ->
+          | W,((MorelloAccess `Release|MixedSizeAccess (`Release,_)
+               |ArrayCellAccess (`Release,_)) as atom) ->
               let sz,o = get_access_size atom in
               let is_morello = is_morello_access atom in
               let module S =
@@ -2460,8 +2481,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let r,init,cs,st =
                 emit_sta_mixed_idx sz o rw st p init loc r2 (Value.to_int e.C.v) in
               Some (Some r,init,pseudo cs0@cs,st)
-          | R,(MorelloAccess `Plain as atom)
-          | R,(MixedSizeAccess (`Plain,_) as atom) ->
+          | R,((MorelloAccess `Plain|MixedSizeAccess (`Plain,_)
+               |ArrayCellAccess (`Plain,_)) as atom) ->
              let sz,o = get_access_size atom in
              let load_idx sz _ st r1 r2 idx =
                let cs = [ldr_mixed_idx vdep r1 r2 idx sz] in
@@ -2474,8 +2495,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
              let r,init,cs,st = load st p init loc r2 in
              let cs2 = emit_ldr_addon (is_morello_access atom) r in
              Some (Some r,init,pseudo cs0@cs@pseudo cs2,st)
-          | W,(MorelloAccess `Plain as atom)
-          | W,(MixedSizeAccess (`Plain,_) as atom) ->
+          | W,((MorelloAccess `Plain|MixedSizeAccess (`Plain,_)
+               |ArrayCellAccess (`Plain,_)) as atom) ->
               let sz,o = get_access_size atom in
               let is_morello = is_morello_access atom in
               let module S =
@@ -2551,12 +2572,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some result -> result
           | None -> begin match d,structured_atom with
           | R,(OrdinaryAccess `Release|MixedSizeAccess (`Release,_)
+            |ArrayCellAccess (`Release,_)
             |MorelloAccess `Release) ->
               Warn.fatal "No load release"
           | W,(OrdinaryAccess `Acquire|MixedSizeAccess (`Acquire,_)
+            |ArrayCellAccess (`Acquire,_)
             |MorelloAccess `Acquire) ->
               Warn.fatal "No store acquire"
           | W,(OrdinaryAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
+            |ArrayCellAccess (`AcquirePC,_)
             |MorelloAccess `AcquirePC) ->
               Warn.fatal "No store acquirePc"
           | (W|R) as d,atom -> fatal_annotation d atom
@@ -2660,6 +2684,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 rB,pseudo (cs0@cB),init,st,[]
             | (MixedSizeAccess (`Plain,_)
               |MixedSizeAccess (`Release,_)
+              |ArrayCellAccess ((`Plain|`Release),_)
               |Atomic (_,AtomicSize _)
               |MorelloAccess `Plain|MorelloAccess `Release) as atom ->
                 let sz,_ = get_access_size atom in
@@ -2698,8 +2723,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let init,cs,st =
                 STLR.emit_store_reg st p init loc r2 false C.evt_null in
               Some (None,init,cs2@cs,st)
-          | (MorelloAccess `Release as atom)
-          | (MixedSizeAccess (`Release,_) as atom) ->
+          | ((MorelloAccess `Release|MixedSizeAccess (`Release,_)
+             |ArrayCellAccess (`Release,_)) as atom) ->
               let sz,o = get_access_size atom in
               let is_morello = is_morello_access atom in
               let module S =
@@ -2720,8 +2745,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               Some (Some r,init,cs2@cs,st)
           | InstrAccess ->
               Warn.fatal "No Plain Write to label (code location)"
-          | (MorelloAccess `Plain as atom)
-          | (MixedSizeAccess (`Plain,_) as atom) ->
+          | ((MorelloAccess `Plain|MixedSizeAccess (`Plain,_)
+             |ArrayCellAccess (`Plain,_)) as atom) ->
               let sz,o = get_access_size atom in
               let is_morello = is_morello_access atom in
               let module S =
@@ -2794,9 +2819,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | Some result -> result
           | None -> begin match structured_atom with
           | (OrdinaryAccess `Acquire|MixedSizeAccess (`Acquire,_)
+            |ArrayCellAccess (`Acquire,_)
             |MorelloAccess `Acquire) ->
               Warn.fatal "No store acquire"
           | (OrdinaryAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
+            |ArrayCellAccess (`AcquirePC,_)
             |MorelloAccess `AcquirePC) ->
               Warn.fatal "No store acquirePc"
           | atom -> fatal_annotation W atom

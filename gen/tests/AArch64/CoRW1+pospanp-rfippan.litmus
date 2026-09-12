@@ -6,8 +6,7 @@ AArch64 CoRW1+pospanp-rfippan
 }
  P0              ;
  LDNP W1,W2,[X0] ;
- ADD W1,W1,W2    ;
  MOV W3,#1       ;
  STR W3,[X0]     ;
 
-exists (0:X1=1)
+exists (0:X1=1 /\ 0:X2=0)
