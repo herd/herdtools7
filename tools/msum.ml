@@ -17,7 +17,6 @@
 
 open Printf
 open LogState
-open OptNames
 
 let verbose = ref 0
 let logs = ref []
@@ -28,20 +27,19 @@ let nargs = ref 64
 let faulttype = ref true
 
 let options =
-  let open CheckName in
   [
     ("-q", Arg.Unit (fun _ -> verbose := -1),
      "<non-default> be silent");
     ("-v", Arg.Unit (fun _ -> incr verbose),
      "<non-default> show various diagnostics, repeat to increase verbosity");
-  ]@parse_withselect
-  @[
+  ] @ OptNames.parse_withselect
+  @ [
     ("-j", Arg.Int (fun i -> npar := i),
      (sprintf "<int> parallel sum using <n> processeses, default %i" !npar)) ;
     ("-width", Arg.Int (fun i -> nargs := i),
      (sprintf "<int>  merge width, when parallel sum enabled %i" !nargs)) ;
-    parse_hexa hexa; parse_int32 int32;
-    parse_faulttype faulttype;
+    ToolsOpts.parse_hexa hexa; ToolsOpts.parse_int32 int32;
+    ToolsOpts.parse_faulttype faulttype;
  ]
 
 let prog =
@@ -60,6 +58,9 @@ let npar =
   let nlogs = List.length !logs in
   if 2* !npar > nlogs then max 1 (nlogs/2)
   else max !npar 1
+
+open OptNames
+
 let nargs = !nargs
 let select = !select
 let rename = !rename

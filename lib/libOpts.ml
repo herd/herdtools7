@@ -1,10 +1,10 @@
 (****************************************************************************)
-(*                           the diy toolsuite                              *)
+(*                           The Diy Toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris, France.                                       *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2025-present Institut National de Recherche en Informatique et *)
+(* Copyright 2026-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,16 +14,14 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Command line parsing for selection of tests by name *)
+let parse_verbose verbose =
+  [
+    "-q", Arg.Unit (fun _ -> verbose := -1),"<non-default> be silent";
+    "-v", Arg.Unit (fun _ -> incr verbose),
+    "<non-default> show various diagnostics, repeat to increase verbosity";
+  ]
 
-(* Destination of option arguments *)
-val rename : string list ref
-val select : string list ref
-val names : string list ref
-val oknames : StringSet.t ref
-val excl : string list ref
-val nonames : StringSet.t ref
+let parse_dest dest =
+  "-o", Arg.String (fun s -> dest := Some s),
+  "<name> output to directory or tar file <name>"
 
-(* Command line options specifications *)
-val parse_noselect : (Arg.key * Arg.spec * Arg.doc) list
-val parse_withselect : (Arg.key * Arg.spec * Arg.doc) list

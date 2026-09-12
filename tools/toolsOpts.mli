@@ -2,9 +2,9 @@
 (*                           the diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
-(* Luc Maranget, INRIA Paris, France.                                       *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2025-present Institut National de Recherche en Informatique et *)
+(* Copyright 2026-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,16 +14,9 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Command line parsing for selection of tests by name *)
+(** Command line option definitions that are common to several tools *)
 
-(* Destination of option arguments *)
-val rename : string list ref
-val select : string list ref
-val names : string list ref
-val oknames : StringSet.t ref
-val excl : string list ref
-val nonames : StringSet.t ref
-
-(* Command line options specifications *)
-val parse_noselect : (Arg.key * Arg.spec * Arg.doc) list
-val parse_withselect : (Arg.key * Arg.spec * Arg.doc) list
+val parse_hexa : bool ref ->  Arg.key * Arg.spec * Arg.doc
+val parse_int32 : bool ref ->  Arg.key * Arg.spec * Arg.doc
+val parse_faulttype : bool ref -> Arg.key * Arg.spec * Arg.doc
+val parse_conds : string list ref -> Arg.key * Arg.spec * Arg.doc

@@ -63,23 +63,21 @@ module Make(O:Config) = struct
 
 end
 
-open OptNames
-
 let verbose = ref 0
 let shownames = ref true
 let faulttype = ref true
 let log = ref None
 
 let options =
-  let open CheckName in
   [
     ("-v", Arg.Unit (fun _ -> incr verbose),
    "<non-default> show various diagnostics, repeat to increase verbosity");
-  ]@parse_withselect
-  @[
+  ]
+  @ OptNames.parse_withselect
+  @ [
     ("-shownames", Arg.Bool (fun b -> shownames := b),
      (sprintf "<bool> show test names in output, default %b" !shownames));
-    parse_faulttype faulttype;
+    ToolsOpts.parse_faulttype faulttype;
   ]
 
 let prog =
@@ -100,6 +98,7 @@ let () =
 module Check =
   CheckName.Make
     (struct
+      open OptNames
       let verbose = !verbose
       let rename = !rename
       let select = !select

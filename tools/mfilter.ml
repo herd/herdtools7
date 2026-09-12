@@ -36,11 +36,10 @@ let options =
    "<non-default> show various diagnostics, repeat to increase verbosity");
   ("-inverse", Arg.Bool (fun b -> inverse := b),
    Printf.sprintf "<bool> inverse selection, default %b" !inverse) ;
-  parse_hexa hexa; parse_int32 int32;
-  ("-conds",
-    Arg.String (fun s -> conds := !conds @ [s]),
-   "<name> specify condition to apply to outcomes, can be repeated") ;
-  parse_faulttype faulttype;
+   ToolsOpts.parse_hexa hexa;
+   ToolsOpts.parse_int32 int32;
+   ToolsOpts.parse_faulttype faulttype;
+   ToolsOpts.parse_conds conds;
   ]
 
 let prog =

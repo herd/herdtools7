@@ -38,7 +38,8 @@ let options =
    ("-forall", Arg.Bool (fun b -> forall := b),
     sprintf
       "<bool> use forall quantifier in place of exists, default %b" !forall);
-   ("-optcond", Arg.Bool (fun b -> optcond := b),
+
+  ("-optcond", Arg.Bool (fun b -> optcond := b),
     sprintf
       "<bool> optimise conditions, default %b" !optcond);
    ("-acceptempty", Arg.Bool (fun b -> acceptempty := b),
@@ -46,9 +47,9 @@ let options =
       "<bool> output empty conditions, default %b" !acceptempty);
   ("-neg", Arg.Bool (fun b -> neg := b),
     "<bool> negate final condition (default false)");
-    CheckName.parse_hexa hexa;
-    CheckName.parse_int32 int32;
-    CheckName.parse_faulttype faulttype;
+    ToolsOpts.parse_hexa hexa;
+    ToolsOpts.parse_int32 int32;
+    ToolsOpts.parse_faulttype faulttype;
   ]
 
 let prog =
