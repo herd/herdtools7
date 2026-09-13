@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: BE_BOP
+error_line: 6
+info: |-
+  File ../tests/build/ASTRule.EBinop.bad1.asl, line 6, characters 20 to 25:
+          let p_a_s = a + b - c;
+                      ^^^^^
+  ASL Grammar error (BE_BOP): Operators `-` and `+` have the same priority -
+    parenthesise to disambiguate.
