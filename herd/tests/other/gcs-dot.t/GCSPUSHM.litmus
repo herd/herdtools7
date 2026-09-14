@@ -1,0 +1,10 @@
+AArch64 GCSPUSHM
+variant=shadowstack
+{
+  SS(x,1);
+  0:GCSPR_EL1=&x[1];
+  0:X0=4;
+}
+
+P0          ;
+GCSPUSHM X0 ;
