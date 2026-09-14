@@ -140,7 +140,19 @@ module U = TopUtils.Make(O)(Comp)
           | Some d ->  A.applies_atom a d
           end
     then
-      Comp.emit_access st p init e
+      let o,init,cs,st = Comp.emit_access st p init e in
+      let st = match o,e.C.bank,n.C.next.C.evt.C.bank,O.typ with
+        | Some r,Code.Ord,Code.Pair,TypBase.Int ->
+            (* A word-sized ordinary read before a pair access already has the
+               default `int` type; avoid emitting a redundant `uint32_t`. *)
+            let loc = A.of_reg p r in
+            begin match A.LocMap.find_opt loc (A.get_env st) with
+            | Some (TypBase.Std (TypBase.Unsigned,MachSize.Word)) ->
+                A.add_type loc TypBase.Int st
+            | _ -> st
+            end
+        | _ -> st in
+      o,init,cs,st
     else
       Warn.fatal "annotation mismatch on edge %s, annotation '%s' on %s"
         (E.pp_edge n.C.edge)
