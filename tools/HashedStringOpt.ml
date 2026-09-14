@@ -33,10 +33,12 @@ type t = string option Hashcons.hash_consed
 
 let table = H.create 101
 
+let equal_node = H.equal_node
+
 let as_hashed s = H.hashcons table s
 
 let as_t h = h.Hashcons.node
 
 let as_hash h = h.Hashcons.hkey
 
-let compare s1 s2 = Misc.opt_compare String.compare (as_t s1) (as_t s2)
+let compare s1 s2 = Option.compare String.compare (as_t s1) (as_t s2)

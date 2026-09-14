@@ -1,0 +1,5 @@
+Test T Allowed
+States 1
+~Fault(P0:L0,x,D-MMU:Translation);
+Ok
+Hash=x
