@@ -44,3 +44,18 @@ Negative faults do not intervene in state comparisons
    |Ok   |                              
   
   $ mcmp7 xxx.log yyy.log
+State diff on complete logs was wrong.
+  $ mcompare7 OLD.01 NEW.01
+  *Diffs*
+         |Kind | OLD.01                    NEW.01                    
+  -------------------------------------------------------------------
+  -------------------------------------------------------------------
+  R3+W+32|Allow| [0:X1=1; 0:X2=1; 0:X3=1;] +[0:X1=2; 0:X2=2; 0:X3=1;]
+         |Ok   | [0:X1=1; 0:X2=1; 0:X3=2;] -[0:X1=1; 0:X2=2; 0:X3=1;]
+         |     | [0:X1=1; 0:X2=2; 0:X3=1;] -[0:X1=2; 0:X2=1; 0:X3=1;]
+         |     | [0:X1=1; 0:X2=2; 0:X3=2;]                           
+         |     | [0:X1=2; 0:X2=1; 0:X3=1;]                           
+         |     | [0:X1=2; 0:X2=2; 0:X3=2;]                           
+  
+  !!! Warning positive differences in: +R3+W+32
+  !!! Warning negative differences in: -R3+W+32

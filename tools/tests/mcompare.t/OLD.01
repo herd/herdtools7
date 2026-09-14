@@ -1,0 +1,15 @@
+Test R3+W+32 Allow
+Histogram (6 states)
+8396307392:> 0:X1=1; 0:X2=1; 0:X3=1;
+124     :> 0:X1=1; 0:X2=1; 0:X3=2;
+3       :> 0:X1=1; 0:X2=2; 0:X3=1;
+2323034 :> 0:X1=1; 0:X2=2; 0:X3=2;
+5       :> 0:X1=2; 0:X2=1; 0:X3=1;
+163769442:> 0:X1=2; 0:X2=2; 0:X3=2;
+Ok
+Witnesses
+Positive: 3 Negative: 8562399997
+Condition exists (0:X1=1 /\ 0:X2=2 /\ 0:X3=1) is validated
+Hash=89712cfbdd33d2386352a5422ece65f8
+Time R3+W+32 16030.74
+

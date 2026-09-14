@@ -224,15 +224,18 @@ let empty_sts = { p_nouts = Int64.zero ; p_sts = []; }
 
 let pretty_bd loc v = pretty_binding loc v ^ ";"
 
+let pp_st st =
+  let e,f,a = st_as_string st in
+  let pp_e = List.map (fun (loc,v) -> pretty_bd loc v) e
+  and pp_f = f
+  and pp_a = List.map (sprintf "~%s") a in
+  String.concat " " (pp_e @ pp_f @ pp_a )
+
 let pretty_state pref mode with_noccs st =
   let buff = Buffer.create 10 in
   Buffer.add_string buff pref ;
   Buffer.add_char buff '[' ;
-  let e,f,a = st_as_string st.p_st in
-  let pp_e = List.map (fun (loc,v) -> pretty_bd loc v) e
-  and pp_f = f
-  and pp_a = List.map (sprintf "~%s") a in
-  let pp = String.concat " " (pp_e @ pp_f @ pp_a ) in
+  let pp = pp_st st.p_st in
   Buffer.add_string buff pp ;
   Buffer.add_char buff ']' ;
   if with_noccs then begin
@@ -349,6 +352,11 @@ let mismatch s =
   let loc,_ = HashedBinding.as_t s in
   raise (StateMismatch loc)
 
+let compare_bindings p1 p2 =
+  match HashedBinding.compare_loc p1 p2 with
+  | 0 -> HashedBinding.compare_v p1 p2
+  | r -> mismatch (if r > 0 then p2 else p1)
+
 let rec compare_env st1 st2 =
   let open Hashcons in
   let open HashedEnv in
@@ -357,14 +365,9 @@ let rec compare_env st1 st2 =
   | (Nil,Cons (p,_))
   | (Cons (p,_),Nil) -> mismatch p
   | Cons (p1,st1),Cons (p2,st2) ->
-      match HashedBinding.compare_loc p1 p2 with
-      | 0 ->
-          begin match HashedBinding.compare_v p1 p2 with
-          | 0 -> compare_env st1 st2
-          | r -> r
-          end
-      | r ->
-          mismatch (if r > 0 then p2 else p1)
+      match compare_bindings p1 p2 with
+      | 0 -> compare_env st1 st2
+      | r -> r
 
 (* Check bindings only *)
 
@@ -409,20 +412,20 @@ let diff_faults sts1 sts2 =
     sts1
 
 let cmp_by_env sts1 sts2 =
-    match sts1,sts2 with
-    | st1::_,st2::_ -> compare_state_by_env st1 st2
-    | _,_ -> assert false
+  match sts1,sts2 with
+  | st1::_,st2::_ -> compare_state_by_env st1 st2
+  | _,_ -> assert false
 
 let do_diff_states =
   let rec diff stss1 stss2 =
     match stss1,stss2 with
     | (_,[])|([],_) -> List.concat stss1
-    | sts1::stss1,sts2::stss2 ->
+    | sts1::r1,sts2::r2 ->
        let r = cmp_by_env sts1 sts2 in
-       if r < 0 then sts1@diff stss1 (sts2::stss2)
-       else if r > 0 then diff stss1 (sts2::stss2)
+       if r < 0 then sts1@diff r1 stss2
+       else if r > 0 then diff stss1 r2
        else
-         diff_faults sts1 sts2@diff stss1 stss2 in
+         diff_faults sts1 sts2@diff r1 r2 in
   fun sts1 sts2 ->
     diff (group_by_env sts1) (group_by_env sts2)
 
