@@ -1,0 +1,5 @@
+mode: no-exec
+outcome: FAILURE
+error: BE_RI
+info: |-
+  ASL Lexical error (BE_RI): "__internal_var" is a reserved keyword.
