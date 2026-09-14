@@ -288,6 +288,7 @@ module StructuredAtom : sig
   type t =
     | OrdinaryAccess of access_order
     | MixedSizeAccess of access_order * MachMixed.t
+    | ArrayCellAccess of access_order * int
     | MorelloAccess of access_order
     | PteAccess of atom_pte
     | NeonAccess of neon_opt
@@ -339,6 +340,8 @@ end = struct
     | OrdinaryAccess of access_order
     (* Mixed-size slice of an ordinary access, as in `b0`, `h0`, or `w0`. *)
     | MixedSizeAccess of access_order * MachMixed.t
+    (* Natural-sized scalar access to a zero-based cell projection. *)
+    | ArrayCellAccess of access_order * int
     (* Morello capability data access, as in `Pc`, `Ac`, `Qc`, or `Lc`. *)
     | MorelloAccess of access_order
     (* VMSA PTE access, as in `Pte`, `PteA`, `PteV1`, or `PteHA`. *)
@@ -393,9 +396,11 @@ end = struct
     | MemoryTagAccess -> 8
     | PairAccess _ -> 9
     | InstrAccess -> 10
+    | ArrayCellAccess _ -> 11
 
   let access_order = function
     | OrdinaryAccess o|MixedSizeAccess (o,_)|MorelloAccess o -> Some o
+    | ArrayCellAccess (o,_) -> Some o
     | PteAccess (Read o|ReadHA o) -> Some (o :> access_order)
     | PteAccess (Set (o,_)) -> Some (o :> access_order)
     | Atomic _|MorelloTagAccess|MorelloSealAccess|MemoryTagAccess
@@ -408,6 +413,8 @@ end = struct
         | MorelloAccess o1,MorelloAccess o2 -> compare_access_order o1 o2
         | MixedSizeAccess (o1,m1),MixedSizeAccess (o2,m2) ->
             Misc.pair_compare compare_access_order compare_mixed (o1,m1) (o2,m2)
+        | ArrayCellAccess (o1,i1),ArrayCellAccess (o2,i2) ->
+            Misc.pair_compare compare_access_order Misc.int_compare (o1,i1) (o2,i2)
         | PteAccess p1,PteAccess p2 -> compare_atom_pte p1 p2
         | NeonAccess n1,NeonAccess n2 -> SIMD.compare n1 n2
         | Atomic (rw1,a1),Atomic (rw2,a2) ->
@@ -446,6 +453,11 @@ end = struct
     | MixedSizeAccess (`Plain,m) -> pp_mixed m
     | MixedSizeAccess (access_order,m) ->
         sprintf "%s.%s" (pp_access_order "" access_order) (pp_mixed m)
+    | ArrayCellAccess (`Plain,i) ->
+        pp_mixed (C.naturalsize,i * MachSize.nbytes C.naturalsize)
+    | ArrayCellAccess (access_order,i) ->
+        sprintf "%s.%s" (pp_access_order "" access_order)
+          (pp_mixed (C.naturalsize,i * MachSize.nbytes C.naturalsize))
     | Atomic (rw,AtomicSize m) ->
         sprintf "X%s.%s" (pp_atom_rw rw) (pp_mixed m)
     | MorelloAccess access_order ->
@@ -476,6 +488,8 @@ end = struct
     | None -> None
     | Some (MixedSizeAccess (_,m)
       |Atomic (_,AtomicSize m)) -> Some m
+    | Some (ArrayCellAccess (_,i)) ->
+        Some (C.naturalsize,i * MachSize.nbytes C.naturalsize)
     | Some _ -> None
 
   let set_access_atom atom m =
@@ -518,6 +532,11 @@ end = struct
         | n -> Some n
         end
     | Some (PairAccess _) -> Some 2
+    | Some (ArrayCellAccess (_,i)) -> Some (i+1)
+    | Some (MixedSizeAccess (_,(_,o))
+           |Atomic (_,AtomicSize (_,o))) ->
+        let n = o / MachSize.nbytes C.naturalsize + 1 in
+        if n > 1 then Some n else None
     | Some _|None -> None
 
   let worth_final = function
@@ -542,14 +561,17 @@ end = struct
     | NeonAccess SIMD.NeRel,R -> false
     | (OrdinaryAccess (`Acquire|`AcquirePC)
       |MixedSizeAccess ((`Acquire|`AcquirePC),_)
+      |ArrayCellAccess ((`Acquire|`AcquirePC),_)
       |MorelloAccess (`Acquire|`AcquirePC)),R -> true
     | (OrdinaryAccess `Release|MixedSizeAccess (`Release,_)
+      |ArrayCellAccess (`Release,_)
       |MorelloAccess `Release),W -> true
     | PteAccess (Read _|ReadHA _),R -> true
     | PteAccess (Set (`Plain,pte)),R when WPTESet.mem WPTE.HA pte -> true
     | PteAccess (Set _),W -> true
     | InstrAccess,R -> true
     | (OrdinaryAccess `Plain|MixedSizeAccess (`Plain,_)
+      |ArrayCellAccess (`Plain,_)
       |MorelloAccess `Plain),(R|W)
     | Atomic _,(R|W)
     | (MemoryTagAccess|MorelloTagAccess|MorelloSealAccess),(R|W)
@@ -562,16 +584,20 @@ end = struct
     let ok_rw ar aw = match ar,aw with
       | (None|Some (OrdinaryAccess (`Plain|`Acquire))
         |Some (MixedSizeAccess ((`Plain|`Acquire),_))
+        |Some (ArrayCellAccess ((`Plain|`Acquire),_))
         |Some (MorelloAccess (`Plain|`Acquire))),
         (None|Some (OrdinaryAccess (`Plain|`Release))
         |Some (MixedSizeAccess ((`Plain|`Release),_))
+        |Some (ArrayCellAccess ((`Plain|`Release),_))
         |Some (MorelloAccess (`Plain|`Release))) -> true
       | _,_ -> false in
     let ok_w ar aw = match ar,aw with
       | (None|Some (OrdinaryAccess `Plain)
-        |Some (MixedSizeAccess (`Plain,_))|Some (MorelloAccess `Plain)),
+        |Some (MixedSizeAccess (`Plain,_))|Some (ArrayCellAccess (`Plain,_))
+        |Some (MorelloAccess `Plain)),
         (None|Some (OrdinaryAccess (`Plain|`Release))
         |Some (MixedSizeAccess ((`Plain|`Release),_))
+        |Some (ArrayCellAccess ((`Plain|`Release),_))
         |Some (MorelloAccess (`Plain|`Release))) -> true
       | _,_ -> false in
     let same_mixed =
@@ -597,7 +623,8 @@ end = struct
     | NeonAccess n -> Code.VecReg n
     | PairAccess _ -> Code.Pair
     | InstrAccess -> Code.Instr
-    | (OrdinaryAccess _|MixedSizeAccess _|MorelloAccess _|Atomic _) -> Code.Ord
+    | (OrdinaryAccess _|MixedSizeAccess _|ArrayCellAccess _
+      |MorelloAccess _|Atomic _) -> Code.Ord
 
   let merge a1 a2 =
     let open WPTE in
@@ -619,6 +646,11 @@ end = struct
           | Some order -> Some (MixedSizeAccess (order,m))
           | None -> None
         end
+    | ArrayCellAccess (o1,i),OrdinaryAccess o2
+    | OrdinaryAccess o2,ArrayCellAccess (o1,i) ->
+        Option.map (fun order -> ArrayCellAccess (order,i)) (merge_order o1 o2)
+    | ArrayCellAccess (o1,i1),ArrayCellAccess (o2,i2) when i1 = i2 ->
+        Option.map (fun order -> ArrayCellAccess (order,i1)) (merge_order o1 o2)
     | MixedSizeAccess (o1,m1),MixedSizeAccess (o2,m2) -> begin
           match o1,o2 with
           | `Plain,order -> Some (MixedSizeAccess (order,m1))
@@ -672,7 +704,9 @@ end = struct
 
   let fold_pair_access f r =
     let add opt = f (PairAccess opt) in
-    r |> add `Pa |> add `PaN |> add `PaIQ |> add `PaIL |> add `PaA |> add `PaL
+    r
+    |> f (ArrayCellAccess (`Plain,1))
+    |> add `Pa |> add `PaN |> add `PaIQ |> add `PaIL |> add `PaA |> add `PaL
 
   let fold_mixed f r =
     let open MachSize in

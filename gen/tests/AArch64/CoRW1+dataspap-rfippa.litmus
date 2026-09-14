@@ -6,9 +6,8 @@ AArch64 CoRW1+dataspap-rfippa
 }
  P0             ;
  LDP W1,W2,[X0] ;
- ADD W1,W1,W2   ;
  EOR W3,W1,W1   ;
  ADD W3,W3,#1   ;
  STR W3,[X0]    ;
 
-exists (0:X1=1)
+exists (0:X1=1 /\ 0:X2=0)

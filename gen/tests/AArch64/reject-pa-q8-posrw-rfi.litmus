@@ -1,0 +1,5 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc -type int64_t Pa q8 PosRW Rfi *)
+(*
+[2]
+diyone7: Fatal error: Incompatible annotations Pa and q8
+*)

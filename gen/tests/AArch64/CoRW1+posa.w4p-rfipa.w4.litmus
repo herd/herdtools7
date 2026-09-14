@@ -1,0 +1,13 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc w4 A PosRW Rfi *)
+AArch64 CoRW1+posa.w4p-rfipa.w4
+{
+ int x[2]={0,0};
+ 0:X0=x;
+}
+ P0           ;
+ ADD X2,X0,#4 ;
+ LDAR W1,[X2] ;
+ MOV W3,#1    ;
+ STR W3,[X0]  ;
+
+exists (0:X1=0)
