@@ -12,4 +12,4 @@ AArch64 CoRW1+dataspx-rfixp
  STXR W4,W2,[X0] ;
  CBNZ W4,Loop00  ;
 
-exists ([x]=1 /\ 0:X1=1 /\ 0:X3=0)
+exists (0:X1=1 /\ 0:X3=0)

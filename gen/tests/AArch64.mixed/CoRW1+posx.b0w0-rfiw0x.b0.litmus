@@ -11,4 +11,4 @@ Variant=mixed
  CBNZ W2,Loop00   ;
  STR W3,[X0]      ;
 
-exists ([x]=0x1010101 /\ 0:X1=0x1)
+exists (0:X1=0x1)
