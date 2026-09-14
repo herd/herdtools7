@@ -59,17 +59,13 @@ let as_hash h = h.Hashcons.hkey
  * The function "equivalent" abstract on those differences.
  *)
 
-let has_diprefix s =
-  String.(starts_with ~prefix:"D-" s || starts_with ~prefix:"I-" s)
-
-let strip_diprefix s =
-  if has_diprefix s then Some String.(sub s 2 (length s-2))
-  else None
 
 let warn_once = ref true
 
 let equivalent_ftype_names s1 s2 =
-  match strip_diprefix s1,strip_diprefix s2 with
+  match
+    Fault_tools.(strip_diprefix s1,strip_diprefix s2)
+  with
   | None,Some s2 -> String.equal s1 s2
   | Some s1,None -> String.equal s1 s2
   | _,_ -> String.equal s1 s2
@@ -115,5 +111,5 @@ let get_fault_type h =
   let _,_,_,ft = as_tt h in
   let ft = HashedStringOpt.as_t ft in
   match ft with
-  | Some ft -> if has_diprefix ft then DIPrefix else Other
+  | Some ft -> if Fault_tools.has_diprefix ft then DIPrefix else Other
   | None -> No
