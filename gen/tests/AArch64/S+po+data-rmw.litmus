@@ -1,0 +1,17 @@
+(* diyone7 -metadata false -arch AArch64 PodWW Rfe DpDatadR LxSx Coe *)
+AArch64 S+po+data-rmw
+{
+ 0:X1=x; 0:X3=y;
+ 1:X1=x; 1:X3=y;
+}
+ P0          | P1              ;
+ MOV W0,#2   | LDR W0,[X3]     ;
+ STR W0,[X1] | MOV W4,#1       ;
+ MOV W2,#1   | EOR W5,W0,W0    ;
+ STR W2,[X3] | ADD W4,W4,W5    ;
+             | Loop00:         ;
+             | LDXR W2,[X1]    ;
+             | STXR W6,W4,[X1] ;
+             | CBNZ W6,Loop00  ;
+
+exists ([x]=2 /\ 1:X0=1 /\ 1:X2=0)

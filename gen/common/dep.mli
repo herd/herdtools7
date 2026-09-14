@@ -20,8 +20,6 @@ module type S = sig
   val equal_dp : dp -> dp -> bool
   val pp_dp : dp -> string
   val fold_dp : (dp -> 'a -> 'a) -> 'a -> 'a
-  val fold_dpr : (dp -> 'a -> 'a) -> 'a -> 'a
-  val fold_dpw : (dp -> 'a -> 'a) -> 'a -> 'a
 
   (* Defaults for backward compatibility *)
   val ddr_default : dp option
@@ -37,7 +35,6 @@ module type S = sig
   (* Dependencies composition by sequence *)
   val fst_dp : dp -> dp list
   val sequence_dp : dp -> dp -> dp list
-  val expand_dp_dir : dp -> Code.dir list
 end
 
 module No : sig
