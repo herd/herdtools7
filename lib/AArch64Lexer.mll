@@ -457,6 +457,20 @@ let keyword_list = [
   "stz2g", STZ2G;
   "ldg", LDG;
   "irg", IRG;
+  (* GICv5 *)
+  "gic", GIC;
+  "gicr", GICR;
+  "cdpri", A.GIC.(GIC_OP { domain=CD; cmd=PRI; });
+  "cdaff", A.GIC.(GIC_OP { domain=CD; cmd=AFF; });
+  "cddi", A.GIC.(GIC_OP { domain=CD; cmd=DI; });
+  "cddis", A.GIC.(GIC_OP { domain=CD; cmd=DIS; });
+  "cden", A.GIC.(GIC_OP { domain=CD; cmd=EN; });
+  "cdhm", A.GIC.(GIC_OP { domain=CD; cmd=HM; });
+  "cdpend", A.GIC.(GIC_OP { domain=CD; cmd=PEND; });
+  "cdrcfg", A.GIC.(GIC_OP { domain=CD; cmd=RCFG; });
+  "cdeoi", A.GIC.(GIC_OP { domain=CD; cmd=EOI; });
+  "cdia", A.GICR.(GICR_OP { domain=CD; cmd=IA; });
+  "cdnmia", A.GICR.(GICR_OP { domain=CD; cmd=NMIA; });
   (* Operations *)
   "ubfm", UBFM;
   "sbfm", SBFM;
@@ -566,6 +580,7 @@ let keyword_list = [
   "dsb", TOK_DSB;
   "isb", TOK_ISB;
   "gcsb", TOK_GCSB;
+  "gsb", TOK_GSB;
   (* Fence Operands *)
   "sy", TOK_SY;
   "st", TOK_ST;
@@ -580,6 +595,8 @@ let keyword_list = [
   "nshst", TOK_NSHST;
   "nshld", TOK_NSHLD;
   "dsync", TOK_DSYNC;
+  "sys", TOK_SYS;
+  "ack", TOK_ACK;
   (* inline barrel shift operands *)
   "msl", TOK_MSL;
   (* Cache maintenance *)

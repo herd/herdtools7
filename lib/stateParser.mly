@@ -61,6 +61,14 @@ let mk_tag_mask t =
 %token <string> DOLLARNAME
 %token <string> NUM
 %token <string> VALUE
+%token <string> PENDING
+%token <string> ACTIVE
+%token <string> ENABLED
+%token <string> PRIORITY
+%token <string> TARGET_MODE
+%token <string> HANDLING_MODE
+%token <string> VALID
+%token <string> AFFINITY
 
 %token TRUE FALSE
 %token EQUAL NOTEQUAL EQUALEQUAL
@@ -70,12 +78,13 @@ let mk_tag_mask t =
 %token ATOMIC
 %token ATOMICINIT
 %token ATTRS TOK_OA
-%token TOK_PTE TOK_PA
+%token TOK_PTE TOK_INTID TOK_INTID_UPDATE TOK_PA
 %token TOK_TAG
 %token TOK_NOP
 %token TOK_SS TOK_SSCAP TOK_SSVAL
 %token <string> INSTR
 %token <int * string> LABEL
+%token TOK_GICVAL TOK_INTVAL
 %token PTX_REG_DEC
 %token <string> PTX_REG_TYPE
 %token TOK_PAR
@@ -89,6 +98,8 @@ let mk_tag_mask t =
 %start pteval
 %type <ParsedAddrReg.t> addrregval
 %start addrregval
+%type <ParsedIntidVal.t> intidval
+%start intidval
 %type <MiscParser.state> init
 %start init
 %type <MiscParser.location> main_location
@@ -120,7 +131,7 @@ location_global:
     { Constant.mk_sym_pte (Constant.Symbol.pp (Constant.Symbol.Label (proc, name))) }
 | TOK_PTE LPAR TOK_PTE LPAR NAME RPAR RPAR { Constant.mk_sym_pte2 $5 }
 | TOK_PA LPAR NAME RPAR { Constant.mk_sym_pa $3 }
-| NAME COLON NAME { Constant.mk_sym_tag $1 $3 }
+| NAME COLON NAME { mk_sym_tag $1 $3 }
 | TOK_TAG LPAR id=NAME RPAR { mk_sym_tagloc_zero id }
 | TOK_TAG LPAR id=NAME PLUS o=NUM RPAR { mk_sym_tagloc id o }
 (* TODO: have MTE and Morello tags be usable at the same time? *)
@@ -188,6 +199,8 @@ prop_head:
     { ParsedPteVal.add_oa oa tail }
 | key=NAME COLON v=name_or_num tail=prop_tail
     { ParsedPteVal.add_kv key v tail }
+| VALID COLON v=name_or_num tail=prop_tail
+    { ParsedPteVal.add_kv "valid" v tail }
 | a=NAME tail=prop_tail
     { ParsedPteVal.add_attr a tail }
 | ATTRS COLON LPAR attrs=separated_nonempty_list(COMMA, NAME) RPAR
@@ -196,6 +209,45 @@ prop_head:
 
 pteval:
 | LPAR pteval=prop_head RPAR { pteval }
+
+intid_prop_tail:
+| { ParsedIntidVal.empty }
+| COMMA intidval=intid_prop_head { intidval }
+
+intid_field:
+| PENDING { $1 }
+| ACTIVE { $1 }
+| ENABLED { $1 }
+| PRIORITY { $1 }
+| TARGET_MODE { $1 }
+| HANDLING_MODE { $1 }
+
+intid_prop_head:
+ | key=intid_field COLON v=name_or_num tail=intid_prop_tail
+  { ParsedIntidVal.add_param key v tail }
+ | AFFINITY COLON v=PROC tail=intid_prop_tail
+  { ParsedIntidVal.add_target v tail }
+
+intidval:
+| LPAR intidval=intid_prop_head RPAR { intidval }
+
+intid_update_prop_tail:
+| { IntidUpdateVal.empty }
+| COMMA key=intid_field COLON v=name_or_num tail=intid_update_prop_tail
+  { IntidUpdateVal.add_field key v tail }
+| COMMA key=AFFINITY COLON v=PROC tail=intid_update_prop_tail
+  { IntidUpdateVal.add_field key (string_of_int v) tail }
+| COMMA head=intid_update_prop_head
+  { head }
+
+intid_update_prop_head:
+| TOK_INTID_UPDATE COLON i=NAME tail=intid_update_prop_tail
+  { IntidUpdateVal.add_intid i tail }
+| key=VALID COLON v=NUM tail=intid_update_prop_tail
+  { IntidUpdateVal.add_field key v tail }
+
+intid_update_val:
+| TOK_GICVAL COLON LPAR updateval=intid_update_prop_head RPAR { updateval }
 
 addrregval_update_tail:
 | { ParsedAddrReg.empty }
@@ -295,6 +347,13 @@ main_location:
 | loc=location { loc }
 | LBRK loc=location_global RBRK { Location_global loc }
 
+intid_loc:
+| TOK_INTID LPAR NAME RPAR
+  { Location_global (Constant.mk_sym_intid $3) }
+
+intid_loc_brk:
+| LBRK loc=intid_loc RBRK { loc }
+
 atom:
 | location {($1,ParsedConstant.zero)}
 | left_loc EQUAL maybev_label {($1,$3)}
@@ -351,6 +410,12 @@ atom_init:
   { (loc,(Ty typ, MiscParser.add_oa_if_none loc v)) }
 | loc=left_loc EQUAL v=pteval
   { (loc,(Ty "pteval_t", MiscParser.add_oa_if_none loc v)) }
+| loc=intid_loc_brk EQUAL v=intidval
+  { (loc,(Ty "intidval_t", IntidVal v)) }
+| loc=left_loc EQUAL TOK_INTVAL COLON v=intidval
+  { (loc,(Ty "intidval_t", IntidVal v)) }
+| loc=left_loc EQUAL v=intid_update_val
+  { (loc,(Ty "intid_updateval_t", IntidUpdateVal v)) }
 
 init_semi_list:
 | {[]}
@@ -516,6 +581,18 @@ atom_prop:
   { Atom (LV (Loc loc, MiscParser.add_oa_if_none loc v)) }
 | loc=location equal v=addrregval
   { Atom (LV (Loc loc, AddrReg v)) }
+| loc=location equal v=intid_update_val
+  { Atom (LV (Loc loc, IntidUpdateVal v)) }
+| loc=loc_brk equal v=intid_update_val
+  { Atom (LV (Loc loc, IntidUpdateVal v)) }
+| loc=location equal TOK_INTVAL COLON v=intidval
+  { Atom (LV (Loc loc, IntidVal v)) }
+| loc=loc_brk equal TOK_INTVAL COLON v=intidval
+  { Atom (LV (Loc loc, IntidVal v)) }
+| loc=intid_loc equal v=intidval
+  { Atom (LV (Loc loc, IntidVal v)) }
+| loc=intid_loc_brk equal v=intidval
+  { Atom (LV (Loc loc, IntidVal v)) }
 /* Array, array cell, equality of content no [x] = .. notation */
 | location equal LCURLY maybev_list RCURLY
     { let sz = List.length $4 in

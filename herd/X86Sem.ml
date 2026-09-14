@@ -130,8 +130,11 @@ module
 
       let check_data =
         let open Port in
-        fun ea -> match lval_port ea with Addr -> Data | No -> No | Data -> assert false
-      
+        fun ea -> match lval_port ea with
+            Addr -> Data
+          | No -> No
+          | Data | AddrData -> assert false
+
       let lval_ea ea ii = match ea with
       | X86.Effaddr_rm32 (X86.Rm32_reg r)->
           M.unitT (X86.Location_reg (ii.X86.proc,r))

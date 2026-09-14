@@ -1,0 +1,12 @@
+AArch64 comsrR.ack+isb
+{
+ 0:[ppi(0)]=(enabled:1,pending:1,active:0);
+ 0:X1=(ppi0:1);
+}
+P0
+MSR   ICC_PPI_CENABLER0_EL1, X1 ;
+ISB                             ;
+GICR  X0, CDIA                  ;
+
+exists(0:X0=gicval_t:(valid:1, intid:ppi0))
+

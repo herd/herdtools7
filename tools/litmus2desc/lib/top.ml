@@ -215,7 +215,8 @@ module Make (S : SemExtra.S) = struct
           | DMB (_, ty) -> Printf.sprintf "DMB.%s" (pp_ty ty)
           | DSB (_, ty) -> Printf.sprintf "DSB.%s" (pp_ty ty)
           | ISB -> "ISB"
-          | GCSB -> "GCSB")
+          | GCSB -> "GCSB"
+          | GSB b -> Printf.sprintf "GSB.%s" (pp_gic_barrier b))
       | _ ->
           invalid_arg
             (Printf.sprintf "Unsupported barrier event for instruction `%s`"

@@ -25,6 +25,7 @@ module Make : functor
    with type scalar = Cst.Scalar.t
     and type pteval = Cst.PteVal.t
     and type addrreg = Cst.AddrReg.t
+    and type intidval = Cst.IntidVal.t
     and type instr = Cst.Instr.t)
   ->
   Value.S

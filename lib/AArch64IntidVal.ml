@@ -1,0 +1,166 @@
+(****************************************************************************)
+(*                           the diy toolsuite                              *)
+(*                                                                          *)
+(* Jade Alglave, University College London, UK.                             *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(*                                                                          *)
+(* Copyright 2024-present Institut National de Recherche en Informatique et *)
+(* en Automatique, ARM Ltd and the authors. All rights reserved.            *)
+(*                                                                          *)
+(* This software is governed by the CeCILL-B license under French law and   *)
+(* abiding by the rules of distribution of free software. You can use,      *)
+(* modify and/ or redistribute the software under the terms of the CeCILL-B *)
+(* license as circulated by CEA, CNRS and INRIA at the following URL        *)
+(* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
+(****************************************************************************)
+
+open Printf
+
+let pp_field v name l = sprintf "%s:%s" name v |> (fun v -> v :: l)
+
+module Target_Mode = struct
+  type t = TARGETED | ONEOFN
+
+  let target_mode_of_string s =
+    match s with
+    | "targeted" -> TARGETED
+    | "1ofN" -> ONEOFN
+    | _ -> Warn.user_error "Field target_mode should be targeted or 1ofN" s
+
+  let string_of_target_mode v =
+    match v with
+    | TARGETED -> "targeted"
+    | ONEOFN -> "1ofN"
+end
+
+module HM = struct
+  type t = int
+
+  let label = "handling_mode"
+
+  let of_string = function
+    | "edge" -> 0
+    | "level" -> 1
+    | _ as s -> Warn.user_error "Field handling_mode should be edge or level %s" s
+
+  let pp = function
+    | 0 -> "edge"
+    | 1 -> "level"
+    | _ -> Warn.fatal "Unexpected value of INTID handling mode"
+
+  let is_edge = function
+    | 0 -> true
+    | 1 -> false
+    | _ -> Warn.fatal "Unexpected value of INTID handling mode"
+end
+
+type t = {
+  pending : bool;
+  active : bool;
+  enabled : bool;
+  priority : int;
+  target : Proc.t;
+  target_mode : Target_Mode.t;
+  hm : HM.t;
+  }
+
+let default = {
+  pending = false;
+  active = false;
+  enabled = true;
+  priority = 1;
+  target = 0; (* corresponds to process P0 *)
+  target_mode = Target_Mode.TARGETED;
+  hm = HM.of_string "edge";
+  }
+
+let my_bool_of_string k s =
+  match s with
+  | "1" -> true
+  | "0" -> false
+  | _ -> Warn.user_error "Field %s should be 1 or 0" k
+
+let my_string_of_bool v =
+  match v with
+  | true -> "1"
+  | false -> "0"
+
+let my_int_of_string k s =
+  let v = try int_of_string s with
+  | _ -> Warn.user_error "INTID field %s should be an integer" k
+  in v
+
+let my_string_of_int v = sprintf "%d" v
+
+let pp_or_skip v get_field format name =
+  let v_field = get_field v in
+  let default_field = get_field default in
+  if v_field != default_field then
+    pp_field (format v_field) name
+  else
+    Fun.id
+
+let pp_pending v = pp_or_skip v (fun v -> v.pending) my_string_of_bool "pending"
+let pp_active v = pp_or_skip v (fun v -> v.active) my_string_of_bool "active"
+let pp_enabled v = pp_or_skip v (fun v -> v.enabled) my_string_of_bool "enabled"
+let pp_priority v = pp_or_skip v (fun v -> v.priority) my_string_of_int "priority"
+let pp_target v = pp_field (Proc.pp v.target) "affinity"
+let pp_target_mode v = pp_or_skip v (fun v -> v.target_mode) Target_Mode.string_of_target_mode "target_mode"
+let pp_hm v = pp_or_skip v (fun v -> v.hm) HM.pp "handling_mode"
+
+let pp v =
+  let l = []
+    |> pp_hm v
+    |> pp_target_mode v
+    |> pp_target v
+    |> pp_priority v
+    |> pp_enabled v
+    |> pp_active v
+    |> pp_pending v in
+  let fs = String.concat ", " l in
+  sprintf "(%s)" fs
+
+let compare =
+  (fun v1 v2 -> Bool.compare v1.pending v2.pending)
+    |> Misc.lex_compare (fun v1 v2 -> Bool.compare v1.active v2.active)
+    |> Misc.lex_compare (fun v1 v2 -> Bool.compare v1.enabled v2.enabled)
+    |> Misc.lex_compare (fun v1 v2 -> Int.compare v1.priority v2.priority)
+    |> Misc.lex_compare (fun v1 v2 -> Proc.compare v1.target v2.target)
+    |> Misc.lex_compare (fun v1 v2 -> compare v1.target_mode v2.target_mode)
+    |> Misc.lex_compare (fun v1 v2 -> compare v1.hm v2.hm)
+
+let eq v1 v2 =
+  Bool.equal v1.pending v2.pending &&
+  Bool.equal v1.active v2.active &&
+  Bool.equal v1.enabled v2.enabled &&
+  Int.equal v1.priority v2.priority &&
+  Proc.equal v1.target v2.target &&
+  v1.target_mode == v2.target_mode &&
+  v1.hm == v2.hm
+
+let add_field k v p =
+  match k with
+  | "pending" -> { p with pending = my_bool_of_string k v }
+  | "active" -> { p with active = my_bool_of_string k v }
+  | "enabled" -> { p with enabled = my_bool_of_string k v }
+  | "priority" -> { p with priority = my_int_of_string k v }
+  | "target_mode" -> { p with target_mode = Target_Mode.target_mode_of_string v }
+  | "handling_mode" -> { p with hm = HM.of_string v }
+  | _ -> Warn.user_error "Illegal AArch64 INTID property"
+
+let add_target_field v p = { p with target = v }
+
+let tr p =
+  let open ParsedIntidVal in
+  let r = add_target_field p.target default in
+  StringMap.fold add_field p.params r
+
+let pp_norm v = pp (tr v)
+
+let get_prio = function
+  | { enabled=true; pending=true; active=false; priority; _ } -> Some priority
+  | _ -> None
+
+let get_target = function
+  | { enabled=true; pending=true; active=false; target; _ } -> Some target
+  | _ -> None

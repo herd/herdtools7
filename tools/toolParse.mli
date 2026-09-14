@@ -26,6 +26,7 @@ module Top :
   functor (Cfg:Config) ->
     functor (T:sig type t end) -> (* Return type, must be abstracted *)
       functor (B: functor(A:ArchBase.S) -> functor (Pte:PteVal.S) -> functor (AddrReg:AddrReg.S) ->
+        functor (Intid:IntidVal.S) ->
         (sig val zyva : Name.t -> A.pseudo MiscParser.t -> T.t end)) ->
 sig
   val from_file : string -> T.t
@@ -34,6 +35,7 @@ end
 module Tops :
     functor (T:sig type t end) -> (* Return type, must be abstracted *)
       functor (B: functor(A:ArchBase.S) -> functor (Pte:PteVal.S) -> functor (AddrReg:AddrReg.S) ->
+        functor (Intid:IntidVal.S) ->
         (sig val zyva : ( Name.t * A.pseudo MiscParser.t) list -> T.t end)) ->
 sig
   val from_files : string list -> T.t

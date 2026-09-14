@@ -79,8 +79,19 @@ rule token = parse
 (* Distinguished  PteVal fields *)
 | "attrs"|"Attrs" { ATTRS }
 | "oa" { TOK_OA }
+(* Distinguished  IntidVal fields *)
+| "pending" { PENDING "pending" }
+| "active" { ACTIVE "active" }
+| "enabled" { ENABLED "enabled" }
+| "priority" { PRIORITY "priority" }
+| "affinity" { AFFINITY "affinity" }
+| "routing_mode" { TARGET_MODE "target_mode" }
+| "handling_mode" { HANDLING_MODE "handling_mode" }
+| "valid" { VALID "valid" }
 (* PTW keywords *)
 | "PTE"|"TTD" { TOK_PTE }
+| "INTID" { TOK_INTID }
+| "intid" { TOK_INTID_UPDATE }
 | "PA"  { TOK_PA }
 (* PAR_EL1 *)
 | "parel1_t"|"PAREL1_T" { TOK_PAR }
@@ -92,6 +103,8 @@ rule token = parse
 | "ATOMIC_INIT" { ATOMICINIT }
 | "instr:" '"' ([^'"']+ as i) '"' { INSTR i }
 | "label:" '"' 'P'? (decimal as p) ':' ([^'"']+ as l)  '"' { LABEL ((int_of_string p), l) }
+| "gicval_t" | "GICVAL_T"  { TOK_GICVAL }
+| "intval_t" | "INTVAL_T"  { TOK_INTVAL }
 | '`' ([^'`']+ as i) '`' { VALUE i }
 | "ssval_t:"  { TOK_SSVAL }
 (*for GPU*)

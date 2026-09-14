@@ -90,7 +90,12 @@ module type S = sig
 
 (* "Exposed" TTDs of code pages, i.e. TTDs whose addresses are in registers *)
   (* In initial state *)
-  val get_exposed_codepages : test -> (A.V.Cst.Scalar.t, A.V.Cst.PteVal.t, A.V.Cst.AddrReg.t, A.instruction) Constant.t list
+  val get_exposed_codepages :
+    test ->
+      (A.V.Cst.Scalar.t, A.V.Cst.PteVal.t, A.V.Cst.AddrReg.t,
+       A.V.Cst.IntidVal.t, A.instruction) Constant.t list
+
+  val get_exported_intids : test -> A.V.ValueSet.t
 
   type event = E.event
   type event_structure = E.event_structure
@@ -302,7 +307,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
        * (2) to ensure is_non_mixed_offset works with that *)
       | Physical (s,o) -> is_non_mixed_offset test s o
       | TagAddr _
-      | System ((PTE|PTE2|TLB),_)  -> true
+      | System ((PTE|PTE2|TLB|INTID),_)  -> true
 
 (* Exported labels:
  *  1. Labels from init environments
@@ -333,6 +338,28 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
       Label.Full.Set.union
         (get_exported_labels_init test)
         (get_exported_labels_code test)
+
+    let get_exported_intids test =
+      let { Test_herd.init_state=st; _ } = test in
+      let add_intid v k =
+        match v with
+        | V.Val cst ->
+          begin
+            match Constant.as_intid cst with
+            | Some sym ->
+              let v = A.V.Val sym in
+              A.V.ValueSet.add v k
+            | None -> k
+          end
+        | V.Var _ -> k in
+      let add_loc_intid l k =
+        match l with
+        | A.Location_global v -> add_intid v k
+        | A.Location_reg _ -> k
+      in
+      A.state_fold
+        (fun l v k -> add_loc_intid l k |> add_intid v)
+        st A.V.ValueSet.empty
 
 
 (* Exported TTDs from the init environments *)

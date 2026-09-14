@@ -1,0 +1,12 @@
+AArch64 coWW-gic+di-pend1
+{
+ [INTID(A)]=(pending:0,active:1);
+ 0:X0=gicval_t:(intid:A);
+ 0:X1=gicval_t:(intid:A,pending:1);
+ 1:X0=gicval_t:(intid:A);
+}
+ P0             | P1                  ;
+ GIC CDDI, X0   | GIC CDRCFG,X0       ;
+ GIC CDPEND, X1 | ISB                 ;
+                | MRS X1,ICC_ICSR_EL1 ;
+exists(1:X1=intval_t:(pending:1,active:1))

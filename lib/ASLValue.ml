@@ -49,5 +49,5 @@ end
 
 module ASLConstant =
   SymbConstant.Make
-    (ASLScalar)(AArch64PteVal)(AArch64AddrReg)(Instr)
+    (ASLScalar)(AArch64PteVal)(AArch64AddrReg)(AArch64IntidVal)(Instr)
 module V = SymbValue.Make(ASLConstant)(ASLOp)
