@@ -251,6 +251,7 @@ module Make(O:Config)(Tar:Tar.S) =
       end
 
     let dump flags =
+      dump_shared_library "self" ;
       let fnames = [] in
       let fnames = match O.driver with
       | Driver.Shell -> fnames

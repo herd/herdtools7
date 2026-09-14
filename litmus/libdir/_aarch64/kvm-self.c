@@ -19,9 +19,10 @@
 
 static void litmus_icache_sync(uintptr_t vaddr, uintptr_t vaddr_end)
 {
+  const uintptr_t line_size = cache_line_size();
   while (vaddr < vaddr_end) {
     selfbar((void *)vaddr);
-    vaddr += cache_line_size;
+    vaddr += line_size;
   }
 }
 
