@@ -1,5 +1,6 @@
 (cram
  (deps
   (source_tree libdir)
-  %{bin:miaou7})
+  %{bin:miaou7}
+  %{bin:mapply7})
  (enabled_if %{bin-available:miaou7}))

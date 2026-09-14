@@ -16,20 +16,27 @@
 
 (** A tool that runs herd, redirecting stderr and stdout *)
 
-let litmus = Sys.argv.(Array.length Sys.argv -1)
+let Args.{args; com; wrapped} = Args.split_wrapper_args Sys.argv
 
-let rec to_list k =
-  if k+1 >= Array.length Sys.argv then []
-  else Sys.argv.(k)::to_list (k+1)
+type flags = {verbose:bool}
+let noflags = {verbose=false}
 
-let verbose =
-  match Sys.argv.(1) with
-  | "-verbose" -> true
-  | _ -> false
-
-let comidx = if verbose then 2 else 1
-let com = Sys.argv.(comidx)
-let args = to_list (comidx+1)
+let {verbose}, litmus =
+  let get_litmus = function
+    | Some litmus -> litmus
+    | None ->
+         Printf.eprintf "%s: Could not find litmus among arguments: [%s]\n%!"
+           Sys.argv.(0) (String.concat "; " args) ;
+         exit 1 in
+  let rec gather_args (flags, litmus) args =
+    match args with
+    | [] -> flags, get_litmus litmus
+    | "-verbose" :: args ->
+        gather_args ({verbose=true}, litmus) args
+    | _ :: args ->
+        gather_args (flags, litmus) args
+  in
+  gather_args (noflags, None) args
 
 let out_name = TestHerd.outname litmus
 and err_name = TestHerd.errname litmus
@@ -44,7 +51,7 @@ let run out err =
   and stderr = cat (fun _ -> true) err
   and stdin = Base.Iter.of_list [litmus] in
   ignore
-    (Command.NonBlock.run_status ~stdin ~stdout ~stderr com args)
+    (Command.NonBlock.run_status ~stdin ~stdout ~stderr com wrapped)
 
 let rm_if_empty name =
   let st = Unix.stat name in
