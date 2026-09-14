@@ -388,5 +388,5 @@ let do_input input =
       false
 
 let () =
-  let no_errors = iter_inputs !args |> iter_check_all do_input in
+  let no_errors = List.rev !args |> iter_inputs |> iter_check_all do_input in
   if not no_errors then exit 1
