@@ -59,12 +59,8 @@ let as_hash h = h.Hashcons.hkey
  * The function "equivalent" abstract on those differences.
  *)
 
-let has_diprefix s =
-  String.(starts_with ~prefix:"D-" s || starts_with ~prefix:"I-" s)
 
-let strip_diprefix s =
-  if has_diprefix s then Some String.(sub s 2 (length s-2))
-  else None
+let strip_diprefix = Fault_tools.strip_diprefix
 
 let warn_once = ref true
 
@@ -115,5 +111,5 @@ let get_fault_type h =
   let _,_,_,ft = as_tt h in
   let ft = HashedStringOpt.as_t ft in
   match ft with
-  | Some ft -> if has_diprefix ft then DIPrefix else Other
+  | Some ft -> if Fault_tools.has_diprefix ft then DIPrefix else Other
   | None -> No

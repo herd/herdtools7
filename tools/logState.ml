@@ -652,26 +652,24 @@ module LC =
         let open HashedFaults in
         let {HashedState.S.f=fs; _;} = HashedState.as_t st in
         let (p0,lbl0),v0,ftype0 = f in
-        let eq_label = match lbl0 with
+        let match_label = match lbl0 with
         | None -> fun _ -> true
         | Some lbl0 ->
             Misc.app_opt_def true (Misc.string_eq lbl0) in
-        let eq_loc = match v0 with
+        let match_loc = match v0 with
           | None -> fun _ -> true
           | Some v0 ->
              (function
               | Some sym ->
                  Misc.string_eq  (ToolsConstant.pp_v v0) sym
               | None -> true) in
-        let rec find fs = match fs.Hashcons.node with
-          | Nil -> false
-          | Cons (f,fs) ->
-              let ((p,lbl),sym,ftype) = HashedFault.as_t f in
-              let eq_ft = Fault_tools.equal_ft ftype0 ftype in
-              Misc.int_eq p0 p && eq_label lbl && eq_ft && eq_loc sym ||
-              find fs in
-        find fs
-
+        HashedFaults.exists
+          (fun f ->
+             let ((p,lbl),sym,ftype) = HashedFault.as_t f in
+             Misc.int_eq p0 p && match_label lbl
+             && match_loc sym
+             && Fault_tools.match_fault_type ftype0 ftype)
+          fs
     end)
 
 let revalidate c sts = match c with
