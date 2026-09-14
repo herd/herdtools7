@@ -71,6 +71,41 @@ let dir_of_sysarch = function
   | `RISCV -> "_riscv"
   | `Unknown -> "_none"
 
+(** [Sources] detects where the .c and the .h files that are meant to be copied
+    as shared libraries are present in the libdir *)
+module Sources (Conf:InsertConfig) : sig
+  val source_subdirectory : string -> string option
+  (** [source_subdirectory name] returns Some subdir if the source exists in
+      the arch subdirectory; or None if it's not present. *)
+
+  val header_subdirectory : string -> string option option
+  (** [header_subdirectory name] returns Some subdir if the header exists in
+      libdir's toplevel or the arch subdirectory; or None if it's not present.
+    *)
+end = struct
+  let arch_dir = dir_of_sysarch Conf.sysarch
+
+  let contains ~file dir = 
+    let name = match dir with Some n -> Filename.concat n file | _ -> file in
+    try
+      let _, chan = MyName.open_lib name in
+      (try close_in chan with _ -> ()) ;
+      Some dir
+    with Misc.Fatal _ -> None
+
+  let source_subdirectory name =
+    let file = "_" ^ name ^ ".c" in
+    let dir = Some arch_dir in
+    if Stdlib.Option.is_some (contains ~file dir) then dir else None
+
+  let header_subdirectory name = 
+    let fname = "_" ^ name ^ ".h" in
+    (* Prefer the arch-specific header, falling back to a shared one. *)
+    let subdirs = [Some arch_dir; None] in 
+    List.find_map (contains ~file:fname) subdirs
+end
+
+(** This module controls the .c files that can be inlined to the main .c. *)
 module Insert (O:InsertConfig) :
     sig
       val insert : (string -> unit) -> string -> unit
@@ -147,24 +182,37 @@ module Make(O:Config)(Tar:Tar.S) =
 
     let actual_name name ext = Tar.outname (name ^ ext)
 
-    let do_cpy ?sub ?prf fnames src tgt ext =
+    let ( // ) = Filename.concat
+
+    let do_cpy ?sub ?prf ?dir fnames src tgt ext =
       let _,in_chan = MyName.open_lib ?sub (src ^ ext) in
       let fnames =
         begin try
-          let fname = actual_name tgt ext in
+          let fname = match dir with
+            | Some dst -> actual_name (dst // tgt) ext
+            | None -> actual_name tgt ext in
           MySys.cp ?prf in_chan fname ;
           fname::fnames
         with e -> close_in in_chan  ; raise e end in
       close_in in_chan ;
       fnames
 
-(* Copy lib file *)
+    (** [cpy ?sub ?prf ?fnames name ext] Copy a lib file, the source file must
+        have the name [_name.ext]. The file is copied to [name.ext]. *)
     let cpy ?sub ?prf fnames name ext =
       do_cpy ?sub ?prf fnames ("_" ^ name) name ext
 
-(* Copy lib file, changing its name *)
+    (** [cpy' ?sub ?prf ?fnames src dst ext] Copy a lib file, the source file
+        must have the name [_src.ext]. The file is copied to [dst.ext]. *)
     let cpy' ?sub ?prf fnames src dst ext =
       do_cpy ?sub ?prf fnames ("_" ^ src) dst ext
+
+    let copy_shared ?sub name ext =
+      let shared_dir = "litmus" in
+      MySys.mkdirp (Tar.outname shared_dir) ;
+      ignore
+        (do_cpy ?sub ~dir:shared_dir []
+           ("_" ^ name) name ext)
 
 (* Copy from platform subdirectory *)
     let cpy_platform fnames name ext =
@@ -184,6 +232,23 @@ module Make(O:Config)(Tar:Tar.S) =
 
     let cpy_std ?sub ?prf fnames name =
       cpy ?sub ?prf (cpy ?sub ?prf fnames name ".c") name ".h"
+
+    let dump_shared_library name =
+      let module S = Sources(O) in
+      let source_sub, source_exists =
+        let sub = S.source_subdirectory name in 
+        let exists () = Stdlib.Option.is_some sub in
+        sub, exists
+      in
+      let header_sub, header_exists =
+        let sub = S.header_subdirectory name in
+        let exists () = Stdlib.Option.is_some sub in
+        Stdlib.Option.join sub, exists
+      in
+      if List.for_all (fun f -> f ()) [source_exists; header_exists] then begin
+        copy_shared ?sub:source_sub name ".c" ;
+        copy_shared ?sub:header_sub name ".h" ;
+      end
 
     let dump flags =
       let fnames = [] in
