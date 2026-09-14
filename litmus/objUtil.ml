@@ -195,7 +195,16 @@ module Make(O:Config)(Tar:Tar.S) =
     | Mac as os ->
         Warn.fatal "Affinity not implemented for %s" (TargetOS.pp os)
 
+    let dump_shared_library name =
+      let module I = Insert(O) in
+      let files = ["_" ^ name  ^ ".c"; "_" ^ name ^ ".h"] in 
+      if List.for_all I.exists files then begin
+        copy_shared name ".c" ;
+        copy_shared name ".h" ;
+      end
+
     let dump flags =
+      dump_shared_library "self" ;
       let fnames = [] in
       let fnames = match O.driver with
       | Driver.Shell -> fnames
