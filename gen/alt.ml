@@ -20,6 +20,7 @@ open Code
 
 module type AltConfig = sig
   include DumpAll.Config
+  val nprocs : int
   val upto : bool
   val max_ins : int
   val mix : bool
@@ -39,10 +40,9 @@ module Filter
     (O : sig
       val cumul : C.A.fence list Config.cumul
       val choice : check
+      val debug : Debug_gen.t
     end) =
 struct
-  let dbg = false
-
   open C.E
 
     let is_cumul =
@@ -95,8 +95,8 @@ struct
         | Int,Int -> false
         | Ext,_|_,Ext -> true
         | UnspecCom,_ | _,UnspecCom -> assert false in
-      if dbg then
-        eprintf "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
+      if O.debug.Debug_gen.searchsteps then
+        eprintf "NEXT RELAX: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
 
     let choice_default e1 e2 =
@@ -122,8 +122,8 @@ struct
           | Int,Int -> false
           | Ext,_|_,Ext -> true
           | UnspecCom,_ | _,UnspecCom -> assert false in
-      if dbg then
-        eprintf "Choice: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
+      if O.debug.Debug_gen.searchsteps then
+        eprintf "NEXT RELAX: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
 
 (* Check altenance of com/po *)
@@ -278,13 +278,11 @@ module Make(C:Builder.S)
 
     =
   struct
-    module D = DumpAll.Make(O) (C)
+    module D = DumpAll.Make(O)(C)
     module FilterImpl = Filter(C)(O)
     module RelaxSet = C.R.Set
     open C.E
     open C.R
-
-    let dbg = false
 
     let is_int e = match get_ie e with
     | Int -> true
@@ -348,8 +346,8 @@ module Make(C:Builder.S)
         let count =
           List.fold_left
             (fun count chunk -> count + chunk.process_count) 0 chunks in
-        if O.verbose > 3 then
-          eprintf "PROCS [%s] => %i\n" (pp_list chunks) count ;
+        if O.debug.Debug_gen.searchsteps then
+          eprintf "PROCESS COUNT: [%s] -> %i\n" (pp_list chunks) count ;
         count
 
       let count_processes es =
@@ -473,7 +471,7 @@ module Make(C:Builder.S)
 
 (* Prefix *)
     let () =
-      if O.verbose > 0 && O.prefix <> [] then begin
+      if O.debug.Debug_gen.parser && O.prefix <> [] then begin
         eprintf "Prefixes:\n" ;
         List.iter
           (fun rs ->
@@ -514,7 +512,8 @@ module Make(C:Builder.S)
         check_cycle r_suff reject
       then
         let n = n-1 in
-        if O.verbose > 2 then eprintf "CALL: %i %s\n%!" n (Chunk.pp_list r_suff) ;
+        if O.debug.Debug_gen.searchsteps then
+          eprintf "EXPLORE: remaining=%i [%s]\n%!" n (Chunk.pp_list r_suff) ;
         let k =
           if
             over &&
@@ -522,8 +521,8 @@ module Make(C:Builder.S)
             can_prefix prefix can_precede_relax r_suff
           then begin
             let tr = prefix@r_suff in
-            if O.verbose > 2 then
-            eprintf "TRY: '%s'\n"
+            if O.debug.Debug_gen.search then
+            eprintf "CHECK CANDIDATE: '%s'\n"
               (C.E.pp_edges (List.flatten (List.map Chunk.to_relax tr))) ;
             try f0 po_safe tr k
             with  Misc.Exit -> k
@@ -555,7 +554,7 @@ module Make(C:Builder.S)
               | [{edge=Po (sd,e1,e2); _}] -> SdDir2Set.add (sd,e1,e2) k
               | _ -> k)
               rs SdDir2Set.empty in
-          if dbg then
+          if O.debug.Debug_gen.search then
             eprintf
               "PoSafe: {%s}\n"
               (SdDir2Set.pp_str ","
@@ -749,6 +748,10 @@ module Make(C:Builder.S)
                       "Safe", pp_relax_list ss;
                     ] in
                   info,C.R.Set.of_list rs in
+                if O.debug.Debug_gen.search then begin
+                  eprintf "------------------------------------------------------\n" ;
+                  eprintf "Cycle: %s\n" (C.E.pp_edges le)
+                end ;
                 try f le mk_info D.no_name D.no_scope k
                 with Normaliser.CannotNormalise _ -> k
               else k
@@ -819,7 +822,7 @@ module Make(C:Builder.S)
       List.iter (fun r -> fprintf chan "%s\n" (pp_relax r)) rs
 
     let parse_input ~relax ~safe ~reject =
-      if O.verbose > 0 then begin
+      if O.debug.Debug_gen.parser then begin
         eprintf "** Relax0 **\n" ;
         debug_rs stderr relax ;
         eprintf "** Safe0 **\n" ;
@@ -831,7 +834,7 @@ module Make(C:Builder.S)
       let relax = C.R.Set.elements relax_set
       and safe = C.R.Set.elements (C.R.Set.diff safe_set relax_set)
       and reject = C.R.Set.elements reject_set in
-      if O.verbose > 0 then begin
+      if O.debug.Debug_gen.parser then begin
         eprintf "** Relax **\n" ;
         debug_rs stderr relax ;
         eprintf "** Safe **\n" ;

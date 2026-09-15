@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 module type Config = sig
-  val verbose : int
+  val debug : Debug_gen.t
   val cond : Config.cond
   val optcond : bool
   val hexa : bool

@@ -60,6 +60,7 @@ module type Config = sig
   val variant : Variant_gen.t -> bool
   val naturalsize : MachSize.sz
   val wildcard : bool
+  val debug : Debug_gen.t
 end
 
 module Make(Co:Config)(F:Fence.S)(A:Atom.S) = struct
@@ -104,6 +105,7 @@ let () =
     let variant = !variant
     let naturalsize = TypBase.get_size !typ
     let wildcard = false
+    let debug = Debug_gen.none
   end in
   let (module FenceImpl:Fence.S), (module AtomImpl:Atom.S) =
     match !arch with

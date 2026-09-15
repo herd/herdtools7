@@ -445,14 +445,12 @@ let parse_annots lines = match lines with
 module ToLisa = functor
   (O:sig
     val debug : Debug_gen.t ref
-    val verbose : int ref
     val prog : string
     val bell : string option ref
     val varatom : string list ref
     val variant : (Variant_gen.t -> bool) ref
   end) -> struct
     let debug = !O.debug
-    let verbose = !O.verbose
     let libdir = !libdir
     let prog = O.prog
     let bell = !O.bell

@@ -21,9 +21,8 @@ module Config =
     let variant _ = false
     let naturalsize = TypBase.get_size TypBase.default
     let wildcard = false
+    let debug = Debug_gen.none
   end
-
-let dbg = 0
 
 module type S = sig
   open Code
@@ -167,6 +166,7 @@ module
          val variant : Variant_gen.t -> bool
          val naturalsize : MachSize.sz
          val wildcard : bool
+         val debug : Debug_gen.t
        end)
     (F:Fence.S)
     (A:Atom.S): S
@@ -494,7 +494,7 @@ let fold_tedges f r =
   let annotation_lookup_table = Hashtbl.create 37
 
   let add_lxm_atom lxm a =
-    if dbg > 1 then eprintf "ATOM: %s\n" lxm ;
+    if Cfg.debug.Debug_gen.lexer then eprintf "ADD ANNOTATION: %s\n" lxm ;
     try
       let old = Hashtbl.find annotation_lookup_table lxm in
       assert (compare_atomo old a = 0) ;
@@ -525,7 +525,7 @@ let fold_tedges f r =
   let edge_lookup_table = Hashtbl.create 40000
 
   let add_lxm_edge lxm e =
-    if dbg > 1 then eprintf "LXM: %s\n" lxm ;
+    if Cfg.debug.Debug_gen.lexer then eprintf "ADD EDGE: %s\n" lxm ;
     try
       let old = Hashtbl.find edge_lookup_table lxm in
       if compare old e <> 0 then begin
@@ -803,10 +803,10 @@ let fold_tedges f r =
           (* Propagate result `f e` if changed *)
           | Some e -> Some(Option.value (update_annotation e) ~default:e)
           | None -> update_annotation input ) in
-    if dbg > 0 then begin
+    if Cfg.debug.Debug_gen.parser then begin
       let i1,i2 = input in
       let r1,r2 = Option.value ~default:input r in
-      eprintf "Merge pair <%s,%s> -> <%s,%s>\n"
+      eprintf "MERGE PAIR <%s,%s> -> <%s,%s>\n"
         (debug_edge i1) (debug_edge i2) (debug_edge r1) (debug_edge r2)
     end ;
     r
