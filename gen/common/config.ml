@@ -49,7 +49,7 @@ let lowercase = ref false
 let optcoherence = ref false
 let bell = ref None
 let scope = ref Scope.No
-let variant = ref (fun (_:Variant_gen.t) -> false)
+let variant = ref Variant_gen.empty
 let rejects = ref ([] : string list)
 let stdout = ref false
 let cycleonly = ref false
@@ -214,15 +214,13 @@ let common_specs () =
     | None -> false
     | Some v0 ->
         let open  Variant_gen in
-        let ov =
-          let ov = !variant in
+        let variants =
+          let variants = !variant in
           match v0 with
           | Mixed -> (* Special case: Mixed cancels FullMixed  *)
-              (function
-               | FullMixed -> false
-               |  v-> ov v)
-          | _ -> ov in
-        variant := (fun v -> v = v0 || ov v) ;
+              remove FullMixed variants
+          | _ -> variants in
+        variant := add v0 variants ;
         true)
     Variant_gen.tags
     (sprintf "specify variant")::
@@ -426,7 +424,7 @@ let read_bell libfind fname =
         let libfind = libfind
         let compat = false
         let prog = prog
-        let variant = Misc.delay_parse !variant Variant_gen.parse
+        let variant = Misc.delay_parse (fun v -> Variant_gen.has v !variant) Variant_gen.parse
       end) in
   R.read fname
 
@@ -448,7 +446,7 @@ module ToLisa = functor
     val prog : string
     val bell : string option ref
     val varatom : string list ref
-    val variant : (Variant_gen.t -> bool) ref
+    val variant : Variant_gen.set ref
   end) -> struct
     let debug = !O.debug
     let libdir = !libdir

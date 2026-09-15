@@ -21,7 +21,7 @@ module type DiyConfig = sig
   include DumpAll.Config
   val nprocs : int
   val choice : Code.check
-  val variant : Variant_gen.t -> bool
+  val variant : Variant_gen.set
   val prefix : string list
   val cumul : string Config.cumul
   val max_ins : int

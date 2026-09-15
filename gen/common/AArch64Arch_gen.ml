@@ -18,7 +18,7 @@ module Config = struct
   let naturalsize = MachSize.Word
   let moreedges = false
   let fullmixed = false
-  let variant _ = false
+  let variant = Variant_gen.empty
 end
 
 module Make
@@ -26,19 +26,19 @@ module Make
       val naturalsize : MachSize.sz
       val moreedges : bool
       val fullmixed : bool
-      val variant : Variant_gen.t -> bool
+      val variant : Variant_gen.set
     end) = struct
 
-let do_self = C.variant Variant_gen.Self
-let do_memtag = C.variant Variant_gen.MemTag
-let do_store_only = C.variant Variant_gen.StoreOnly
-let do_morello = C.variant Variant_gen.Morello
-let do_kvm = C.variant Variant_gen.KVM
-let do_neon = C.variant Variant_gen.Neon
-let do_sve = C.variant Variant_gen.SVE
-let do_sme = C.variant Variant_gen.SME
+let do_self = Variant_gen.has Variant_gen.Self C.variant
+let do_memtag = Variant_gen.has Variant_gen.MemTag C.variant
+let do_store_only = Variant_gen.has Variant_gen.StoreOnly C.variant
+let do_morello = Variant_gen.has Variant_gen.Morello C.variant
+let do_kvm = Variant_gen.has Variant_gen.KVM C.variant
+let do_neon = Variant_gen.has Variant_gen.Neon C.variant
+let do_sve = Variant_gen.has Variant_gen.SVE C.variant
+let do_sme = Variant_gen.has Variant_gen.SME C.variant
 let do_mixed = Variant_gen.is_mixed  C.variant
-let do_cu = C.variant Variant_gen.ConstrainedUnpredictable
+let do_cu = Variant_gen.has Variant_gen.ConstrainedUnpredictable C.variant
 
 open Code
 open Printf

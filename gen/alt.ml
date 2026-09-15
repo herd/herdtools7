@@ -29,7 +29,7 @@ module type AltConfig = sig
   val choice : check
   type relax
   val prefix : relax list list
-  val variant : Variant_gen.t -> bool
+  val variant : Variant_gen.set
   type fence
   val cumul : fence list Config.cumul
   val wildcard : bool

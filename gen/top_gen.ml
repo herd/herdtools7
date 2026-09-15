@@ -34,7 +34,7 @@ module type Config = sig
   val docheck : bool
   val typ : TypBase.t
   val hexa : bool
-  val variant : Variant_gen.t -> bool
+  val variant : Variant_gen.set
   val cycleonly: bool
   val metadata : bool
   val same_loc : bool
@@ -685,9 +685,9 @@ let max_set = IntSet.max_elt
       [A.Location.Location_global (as_data (Code.myok_proc p)),IntSet.singleton npairs]
     else []
 
-  let do_memtag = O.variant Variant_gen.MemTag
-  let do_async = O.variant Variant_gen.Async
-  let do_morello = O.variant Variant_gen.Morello
+  let do_memtag = Variant_gen.has Variant_gen.MemTag O.variant
+  let do_async = Variant_gen.has Variant_gen.Async O.variant
+  let do_morello = Variant_gen.has Variant_gen.Morello O.variant
   let do_kvm = Variant_gen.is_kvm O.variant
 
   let compile_cycle ok initvals n =
@@ -825,7 +825,7 @@ let max_set = IntSet.max_elt
              The behaviour based on different fault-related flags. *)
           let get_faults ns =
           (* TODO: the `if-else` pattern on flags is not a good idea as it may short circuit *)
-           if O.variant Variant_gen.NoFault then
+           if Variant_gen.has Variant_gen.NoFault O.variant then
              F.FaultAtomSet.empty,F.FaultAtomSet.empty
            else if do_memtag || do_kvm || do_morello then
              List.fold_left
@@ -1027,7 +1027,7 @@ let tr_labs m init =
 
 let variant_info =
     List.filter_map
-    ( fun t -> if O.variant t then Variant_gen.pp_herd_variant t else None)
+    ( fun t -> if Variant_gen.has t O.variant then Variant_gen.pp_herd_variant t else None)
     Variant_gen.all_t
     |> ( function
       | [] -> None
@@ -1041,7 +1041,7 @@ let basic_info scope prefetch com_edges cycle_description =
     ( ( convert_to_option_pair "Generator" O.generator )
     :: ( Option.map ( fun value -> ("Scopes", BellInfo.pp_scopes value) ) scope )
     (* Prefetch surpress in instruction fetch, `ifetch`, test cases *)
-    :: ( if O.variant Variant_gen.Self then None else convert_to_option_pair "Prefetch" prefetch )
+    :: ( if Variant_gen.has Variant_gen.Self O.variant then None else convert_to_option_pair "Prefetch" prefetch )
     :: ( convert_to_option_pair "Com" com_edges )
     :: ( convert_to_option_pair "Orig" cycle_description )
     :: [] )
