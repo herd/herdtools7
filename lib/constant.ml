@@ -465,6 +465,13 @@ let unmk_sym_virtual_label_with_offset = function
       -> (p,s,o)
   | _ -> assert false
 
+let virt_lbl_eq_mod_offset lbl1 lbl2 =
+  let triple1 = unmk_sym_virtual_label_with_offset lbl1 in
+  let triple2 = unmk_sym_virtual_label_with_offset lbl2 in
+  match (triple1,triple2) with
+  | (p1,s1,_),(p2,s2,_) ->
+    (Int.equal p1 p2) && (String.equal s1 s2)
+
 let mk_sym_virtual s = Symbolic (do_mk_virtual s)
 let mk_sym s = Symbolic (do_mk_sym s)
 
