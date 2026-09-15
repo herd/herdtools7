@@ -287,6 +287,10 @@ let fatal lexbuf desc =
     }
   |> Error.fatal
 
+let fatal_unterminated_string opening_pos lexbuf =
+  Error.fatal_here opening_pos (Lexing.lexeme_start_p lexbuf)
+    Error.UnterminatedString
+
 let tr_name s = match s with
 | "accessor"      -> ACCESSOR
 | "AND"           -> AND
@@ -407,18 +411,20 @@ let forbidden_real_remaining = int_lit '.' int_lit alpha
        cannot match negatively on the two string character that escape the end
        of a string literal.
 *)
-rule escaped_string_chars acc = parse
-  | 'n'  { Buffer.add_char acc '\n'; string_lit acc lexbuf }
-  | 't'  { Buffer.add_char acc '\t'; string_lit acc lexbuf }
-  | '"'  { Buffer.add_char acc '"'; string_lit acc lexbuf }
-  | '\\' { Buffer.add_char acc '\\'; string_lit acc lexbuf }
+
+rule escaped_string_chars opening_pos acc = parse
+  | line_term | eof { fatal_unterminated_string opening_pos lexbuf }
+  | 'n'  { Buffer.add_char acc '\n'; string_lit opening_pos acc lexbuf }
+  | 't'  { Buffer.add_char acc '\t'; string_lit opening_pos acc lexbuf }
+  | '"'  { Buffer.add_char acc '"'; string_lit opening_pos acc lexbuf }
+  | '\\' { Buffer.add_char acc '\\'; string_lit opening_pos acc lexbuf }
   | [^ 'n' 't' '"' '\\'] { raise LexerError }
 
-and string_lit acc = parse
+and string_lit opening_pos acc = parse
   | '"'   { STRING_LIT (Buffer.contents acc) }
-  | '\\'  { escaped_string_chars acc lexbuf }
-  | (line_char # ['"' '\\'])+ as lxm { Buffer.add_string acc lxm; string_lit acc lexbuf }
-  | eof   { raise LexerError }
+  | '\\'  { escaped_string_chars opening_pos acc lexbuf }
+  | (line_char # ['"' '\\'])+ as lxm { Buffer.add_string acc lxm; string_lit opening_pos acc lexbuf }
+  | line_term | eof { fatal_unterminated_string opening_pos lexbuf }
   | _     { raise LexerError }
 
 (*
@@ -446,7 +452,10 @@ and token = parse
     | int_lit as lxm           { INT_LIT(Z.of_string lxm)         }
     | hex_lit as lxm           { INT_LIT(Z.of_string lxm)         }
     | real_lit as lxm          { REAL_LIT(Q.of_string lxm)        }
-    | '"'                      { string_lit (Buffer.create 16) lexbuf }
+    | '"'                      {
+        let opening_pos = Lexing.lexeme_start_p lexbuf in
+        string_lit opening_pos (Buffer.create 16) lexbuf
+      }
     | '\'' (bits as lxm) '\''  { bitvector_lit lxm                }
     | '\'' (mask as lxm) '\''  { mask_lit lxm                     }  (* Warning: masks with no unknown 'x' characters will be lexed as bitvectors. *)
     | '!'                      { BNOT                             }
