@@ -106,8 +106,7 @@ let same-translation-context = (Imp & TTD) * (Imp & TTD)
 
 
 (* HW TTD Updates permitted only for the AF or DB *)
-let HU = Imp & TTD & W
-assert empty HU \ (AF | DB)
+assert empty (Imp & TTD & W) \ (AF | DB)
 
 (*
  * Include aarch64fences.cat to define barriers.
