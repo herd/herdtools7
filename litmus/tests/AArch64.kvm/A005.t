@@ -11,22 +11,7 @@ Compile and run the litmus test natively, avoid printing the timing, it's not
 stable
 
   $ cd $TEST
-  $ make > /dev/null
-  A005.c:305:83: warning: value size does not match register size specified by the constraint and modifier [-Wasm-operand-widths]
-    305 | :[x3] "=&r" (*out_0_x3),[x2] "=&r" (*out_0_x2),[x0] "=&r" (*out_0_x0),[x4] "=&r" (trashed_x4)
-        |                                                                                   ^
-  A005.c:297:6: note: use constraint modifier "w"
-    297 | "adr %[x4],0b\n"
-        |      ^~~~~
-        |      %w[x4]
-  A005.c:305:83: warning: value size does not match register size specified by the constraint and modifier [-Wasm-operand-widths]
-    305 | :[x3] "=&r" (*out_0_x3),[x2] "=&r" (*out_0_x2),[x0] "=&r" (*out_0_x0),[x4] "=&r" (trashed_x4)
-        |                                                                                   ^
-  A005.c:299:14: note: use constraint modifier "w"
-    299 | "msr elr_el1,%[x4]\n"
-        |              ^~~~~
-        |              %w[x4]
-  2 warnings generated.
+  $ make > /dev/null 2>&1
   $ "./$TEST.exe" | sed '$d'
   Test A005 Required
   Histogram (1 states)
