@@ -49,6 +49,21 @@ type t =
 (* Constrained Unpredictable *)
   | ConstrainedUnpredictable
 
+module Set =
+  Set.Make
+    (struct
+      type elt = t
+      type t = elt
+      let compare = compare
+    end)
+
+type set = Set.t
+
+let empty = Set.empty
+let add = Set.add
+let remove = Set.remove
+let has = Set.mem
+
 let tags =
   ["AsAmo";"ConstsInInit";
    "Mixed";"FullMixed";"MixedDisjoint"; "MixedStrictOverlap";
@@ -119,10 +134,11 @@ let pp_herd_variant = function
   | KVM  -> Some "vmsa"
   | ConstrainedUnpredictable -> Some "ConstrainedUnpredictable"
 
-let is_mixed v = v Mixed || v FullMixed
-let is_kvm v = v KVM
+let is_mixed variants = has Mixed variants || has FullMixed variants
+let is_kvm variants = has KVM variants
 
-let validate v =
-  if (v Sync || v Async || v StoreOnly) && not (v MemTag) then
+let validate variants =
+  if (has Sync variants || has Async variants || has StoreOnly variants) &&
+     not (has MemTag variants) then
     Warn.user_error
       "variants `Sync`, `Async` and `StoreOnly` require `MemTag`"

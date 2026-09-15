@@ -138,7 +138,7 @@ module type Config = sig
   val allow_back : bool
   val naturalsize : MachSize.sz
   val hexa : bool
-  val variant : Variant_gen.t -> bool
+  val variant : Variant_gen.set
 end
 
 module Make (O:Config) (E:Edge.S) :
@@ -149,14 +149,14 @@ module Make (O:Config) (E:Edge.S) :
        and module Value = E.Value
        and module RMW = E.RMW
   = struct
-  let do_memtag = O.variant Variant_gen.MemTag
-  let do_morello = O.variant Variant_gen.Morello
+  let do_memtag = Variant_gen.has Variant_gen.MemTag O.variant
+  let do_morello = Variant_gen.has Variant_gen.Morello O.variant
   let do_kvm = Variant_gen.is_kvm O.variant
-  let do_neon = O.variant Variant_gen.Neon
-  let do_sve = O.variant Variant_gen.SVE
-  let do_sme = O.variant Variant_gen.SME
-  let do_no_fault = O.variant Variant_gen.NoFault
-  let do_store_only = O.variant Variant_gen.StoreOnly
+  let do_neon = Variant_gen.has Variant_gen.Neon O.variant
+  let do_sve = Variant_gen.has Variant_gen.SVE O.variant
+  let do_sme = Variant_gen.has Variant_gen.SME O.variant
+  let do_no_fault = Variant_gen.has Variant_gen.NoFault O.variant
+  let do_store_only = Variant_gen.has Variant_gen.StoreOnly O.variant
 
   type fence = E.fence
   type edge = E.edge
@@ -1361,7 +1361,7 @@ let finish n =
           (Code.pp_loc loc) (Value.pp_v v) )
         |> String.concat "," )
   end ;
-  if O.variant Variant_gen.Self then check_fetch start_node;
+  if Variant_gen.has Variant_gen.Self O.variant then check_fetch start_node;
   start_node,initvals
 (* END of finish *)
 
