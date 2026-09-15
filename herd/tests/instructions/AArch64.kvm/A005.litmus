@@ -3,6 +3,7 @@ AArch64 A005
 [x]=1;
 [PTE(x)]=(oa:PA(x),valid:0);
 0:X1=x;
+int64_t 0:X4;
 }
  P0          | P0.F           ;
  LDR W0,[X1] | MOV W2,#1      ;
