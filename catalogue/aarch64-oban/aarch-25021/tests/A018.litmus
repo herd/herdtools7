@@ -1,0 +1,12 @@
+AArch64 A018
+variant=self
+{
+0:X0=instr:"MOV X0, #42";
+0:X10=P1:start;
+}
+
+P0              |  P1            ;
+                | start:         ;
+STR W0, [X10]   |  MOV X0, #42   ;
+
+forall(1:X0 = 42)
