@@ -23,7 +23,7 @@ module type Config = sig
   val prog : string
   val bell : string option
   val varatom : string list
-  val variant : Variant_gen.t -> bool
+  val variant : Variant_gen.set
 end
 
 module Make(O:Config) = struct
@@ -54,7 +54,7 @@ let bi = match O.bell with
           ML.find
         let compat = false
         let prog = O.prog
-        let variant = Misc.delay_parse O.variant Variant_gen.parse
+        let variant = Misc.delay_parse (fun v -> Variant_gen.has v O.variant) Variant_gen.parse
       end) in
   Some (R.read fname)
 | None -> None

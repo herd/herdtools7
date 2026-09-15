@@ -32,7 +32,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         (struct
           let naturalsize = naturalsize
           let moreedges = Cfg.moreedges
-          let fullmixed = Cfg.variant Variant_gen.FullMixed
+          let fullmixed = Variant_gen.has Variant_gen.FullMixed Cfg.variant
           let variant = Cfg.variant
         end)
     include CompileCommon.Make(Cfg)(A64)
@@ -950,7 +950,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | [] -> true
       | _::_ ->
           Variant_gen.is_mixed Cfg.variant ||
-          Cfg.variant Variant_gen.Morello in
+          Variant_gen.has Variant_gen.Morello Cfg.variant in
       let st = if needs_type then
         let loc = A.of_reg p rA in
         let t = type_of_sz sz in

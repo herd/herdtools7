@@ -23,7 +23,7 @@ module type Config = sig
   val typ : TypBase.t
   val hexa : bool
   val moreedges : bool
-  val variant : Variant_gen.t -> bool
+  val variant : Variant_gen.set
   val wildcard : bool
 end
 

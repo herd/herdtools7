@@ -20,7 +20,7 @@ open Printf
 let arch = ref `PPC
 let lowercase = ref false
 let bell = ref None
-let variant = ref (fun (_:Variant_gen.t) -> false)
+let variant = ref Variant_gen.empty
 let typ = ref TypBase.default
 let args = ref []
 
@@ -39,9 +39,7 @@ let opts =
     "-variant"
     (fun tag -> match Variant_gen.parse tag with
     | None -> false
-    | Some v0 ->
-        let ov = !variant in variant := (fun v -> v = v0 || ov v) ;
-        true)
+    | Some v -> variant := Variant_gen.add v !variant ; true)
     Variant_gen.tags
     (sprintf "specify variant")::
         Util.parse_tag
@@ -57,7 +55,7 @@ let opts =
 
 module type Config = sig
   val lowercase : bool
-  val variant : Variant_gen.t -> bool
+  val variant : Variant_gen.set
   val naturalsize : MachSize.sz
   val wildcard : bool
   val debug : Debug_gen.t

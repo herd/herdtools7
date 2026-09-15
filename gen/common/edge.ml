@@ -18,7 +18,7 @@
 
 module Config =
   struct
-    let variant _ = false
+    let variant = Variant_gen.empty
     let naturalsize = TypBase.get_size TypBase.default
     let wildcard = false
     let debug = Debug_gen.none
@@ -163,7 +163,7 @@ module
   Make
     (Cfg:
        sig
-         val variant : Variant_gen.t -> bool
+         val variant : Variant_gen.set
          val naturalsize : MachSize.sz
          val wildcard : bool
          val debug : Debug_gen.t
@@ -179,11 +179,11 @@ and module Value = A.Value
 and type value = A.Value.v
 and module RMW = A.RMW = struct
   let ()  = ignore (Cfg.naturalsize)
-  let do_self = Cfg.variant Variant_gen.Self
+  let do_self = Variant_gen.has Variant_gen.Self Cfg.variant
   let do_mixed = Variant_gen.is_mixed Cfg.variant
   let do_kvm =  Variant_gen.is_kvm Cfg.variant
-  let do_disjoint = Cfg.variant Variant_gen.MixedDisjoint
-  let do_strict_overlap = Cfg.variant Variant_gen.MixedStrictOverlap
+  let do_disjoint = Variant_gen.has Variant_gen.MixedDisjoint Cfg.variant
+  let do_strict_overlap = Variant_gen.has Variant_gen.MixedStrictOverlap Cfg.variant
   let wildcard = Cfg.wildcard
 
   open Code

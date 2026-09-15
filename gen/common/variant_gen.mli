@@ -60,6 +60,12 @@ val parse : string -> t option
 val pp : t -> string
 val pp_herd_variant : t -> string option
 
-val is_mixed : (t -> bool) -> bool
-val is_kvm : (t -> bool) -> bool
-val validate : (t -> bool) -> unit
+type set
+
+val empty : set
+val add : t -> set -> set
+val remove : t -> set -> set
+val has : t -> set -> bool
+val is_mixed : set -> bool
+val is_kvm : set -> bool
+val validate : set -> unit
