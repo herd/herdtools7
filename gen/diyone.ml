@@ -21,7 +21,6 @@ module type Config = sig
   include DumpAll.Config
   val norm : bool
   val cpp : bool
-  val docheck : bool
 end
 
 module Make(O:Config) (M:Builder.S) =
@@ -36,12 +35,12 @@ module Make(O:Config) (M:Builder.S) =
     module Tar =
       Tar.Make
         (struct
-          let verbose = O.verbose
+          let verbose = if O.debug.Debug_gen.io then 1 else 0
           let outname = O.tarfile
         end)
 
     let tar_output_protect t filename =
-      if O.verbose > 0 then eprintf "File name: %s\n" filename ;
+      if O.debug.Debug_gen.io then eprintf "File name: %s\n" filename ;
       Misc.output_protect
         (fun chan -> M.dump_test_channel chan t) (Tar.outname filename)
 
@@ -131,7 +130,7 @@ module Make(O:Config) (M:Builder.S) =
             | [x] -> x
             | _ ->
               Warn.user_error "`diyone7` only accepts exactly one input cycle." in
-        if O.verbose > 0 then
+        if O.debug.Debug_gen.parser then
           Printf.eprintf
             "Parsed edges: %s\n" (M.E.pp_edges es) ;
         match es with
@@ -197,7 +196,6 @@ let cpp = match !Config.arch with
 let () =
   let module Co = struct
 (* Dump all *)
-    let verbose = !Config.verbose
     let generator = Config.baseprog
     let debug = !Config.debug
     let hout = match !Config.hout with
@@ -240,7 +238,6 @@ let () =
   end in
   let module Build = Make(Co) in
   let module C = struct
-    let verbose = !Config.verbose
     let debug = !Config.debug
     let show = !Config.show
     let same_loc =

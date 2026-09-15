@@ -19,7 +19,7 @@
 open Printf
 
 module type Config = sig
-  val verbose : int
+  val debug : Debug_gen.t
 end
 
 module Make (O:Config) (C:ArchRun.S) :
@@ -166,7 +166,7 @@ module Make (O:Config) (C:ArchRun.S) :
                   else (wi,w)::k)
                 ws [] in
             let orders_loc = Rel.all_topos
-                (O.verbose > 1) ws (Rel.of_list vb_loc) in
+                O.debug.Debug_gen.cycle ws (Rel.of_list vb_loc) in
             orders_loc::k)
           ws_by_loc [] in
 

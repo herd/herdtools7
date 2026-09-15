@@ -133,7 +133,7 @@ end
 
 module type Config = sig
   val same_loc : bool
-  val verbose : int
+  val debug : Debug_gen.t
 (* allow threads s.t. start -> end is against com+ *)
   val allow_back : bool
   val naturalsize : MachSize.sz
@@ -149,7 +149,6 @@ module Make (O:Config) (E:Edge.S) :
        and module Value = E.Value
        and module RMW = E.RMW
   = struct
-  let dbg = false
   let do_memtag = O.variant Variant_gen.MemTag
   let do_morello = O.variant Variant_gen.Morello
   let do_kvm = Variant_gen.is_kvm O.variant
@@ -366,10 +365,10 @@ let find_node_prev p n =
 
 (*  n and m are on the same thread, n being strictly before m *)
   let po_pred n m =
-    if dbg then
+    if O.debug.Debug_gen.cycle then
       eprintf "po_pred: n=[%a], m=[%a]\n%!" debug_node n debug_node m ;
   let rec do_rec p =
-    if dbg then eprintf "  pred_rec, node %a\n%!" debug_node p ;
+    if O.debug.Debug_gen.cycle then eprintf "  pred_rec, node %a\n%!" debug_node p ;
     if p == m then true
     else if E.is_ext p.edge || p.next == n then false
     else do_rec p.next in
@@ -377,7 +376,7 @@ let find_node_prev p n =
 
 let find_prev_code_write n =
   let rec do_rec m =
-    if dbg then
+    if O.debug.Debug_gen.cycle then
       eprintf "find_prev_code_write, n=%a m=%a\n%!"
         debug_node n debug_node m ;
     let e = m.evt in
@@ -755,7 +754,7 @@ let remove_store n0 =
     if m.next != n0 then do_rec m.next in
   do_rec n0 ;
   patch_edges n0 ;
-  if O.verbose > 1 then begin
+  if O.debug.Debug_gen.cycle then begin
     eprintf "DIRECTIONS\n" ;
     debug_cycle stderr n0
   end
@@ -1325,13 +1324,13 @@ let finish n =
      terminate the program *)
   check_cycle n;
 
-  if O.verbose > 1 then begin
+  if O.debug.Debug_gen.cycle then begin
     eprintf "LOCATIONS\n" ;
     debug_cycle stderr n
   end ;
 (* Set read and write values *)
   let start_node,by_loc,initvals,vs = set_write_v n in
-  if O.verbose > 1 then begin
+  if O.debug.Debug_gen.cycle then begin
     eprintf "INITIAL VALUES: %s\n"
       (String.concat "; "
          (List.map
@@ -1343,7 +1342,7 @@ let finish n =
   propagate_fault by_loc;
 (* Set dependency values *)
   (if do_morello then set_dep_v by_loc) ;
-  if O.verbose > 1 then begin
+  if O.debug.Debug_gen.cycle then begin
     eprintf "READ VALUES\n" ;
     debug_cycle stderr start_node ;
     eprintf "FINAL VALUES [%s]\n"
@@ -1508,7 +1507,7 @@ let merge_changes n nss =
       not O.allow_back &&
       List.exists proc_back nss
     then Warn.fatal "Forbidden po vs. com";
-    if O.verbose > 1 then begin
+    if O.debug.Debug_gen.cycle then begin
       eprintf "SPLITTED:\n" ; debug_procs nss
     end ;
     nss
@@ -1585,7 +1584,7 @@ let merge_changes n nss =
         let tag_ws = if do_memtag then
           List.map get_tag_locs (get_ord_writes n) else [] in
         let ws = ord_ws@tag_ws in
-        if O.verbose > 1 then
+        if O.debug.Debug_gen.cycle then
           List.iter
             (fun (loc,n) ->
               eprintf "LOC=%s, node=%a\n" (Code.pp_loc loc) debug_node n)
@@ -1595,7 +1594,7 @@ let merge_changes n nss =
           (fun (loc,ws) k -> match ws with
           | [] -> k
           | [ns] ->
-             if O.verbose > 1 then
+             if O.debug.Debug_gen.cycle then
                Printf.eprintf "Standard write sequence on %s: %s\n"
                  (Code.pp_loc loc)
                  (String.concat " "
