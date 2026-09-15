@@ -17,7 +17,8 @@
 open Printf
 
 module type Config = sig
-  include Top_gen.Config
+  val debug : Debug_gen.t
+  val hout : Hint.out
   val family : string option
   val canonical_only : bool
   val fmt : int
@@ -42,7 +43,7 @@ module Make(Config:Config)(T:Builder.S)
       module Tar =
         Tar.Make
           (struct
-            let verbose = Config.verbose
+            let verbose = if Config.debug.Debug_gen.io then 1 else 0
            let outname = Config.tarfile
           end)
 
@@ -63,7 +64,7 @@ module Make(Config:Config)(T:Builder.S)
           let module Normer = Normaliser.Make(Config)(T.E) in
           fun cy ->
             let ncy = Normer.normalise cy in
-            if Config.verbose > 0 then
+            if Config.debug.Debug_gen.io then
               eprintf "Changed %s -> %s\n"
                 (T.E.pp_edges cy)
                 (T.E.pp_edges ncy) ;
@@ -117,8 +118,6 @@ module Make(Config:Config)(T:Builder.S)
 (**********************************)
 
 (* Signatures as strings, for the sake of compacity *)
-      module W = Warn.Make(Config)
-
       type sigs =
           { sig_next : int ; sig_map : int T.E.Map.t ; sig_set : StringSet.t}
 
@@ -126,7 +125,8 @@ module Make(Config:Config)(T:Builder.S)
         try T.E.Map.find e sigs.sig_map,sigs
         with Not_found ->
           let i = sigs.sig_next in
-          W.warn "New sig: %s -> %i" (T.E.pp_edge e) i ;
+          if Config.debug.Debug_gen.io then
+            eprintf "New sig: %s -> %i\n" (T.E.pp_edge e) i ;
           if i >  0xffff then
             Warn.warn_always
               "Signatures for are more than 2 bytes, expect duplicates" ;
@@ -246,7 +246,7 @@ module Make(Config:Config)(T:Builder.S)
 (* And litmus file name in @all file *)
         if not Config.stdout then
           fprintf all_chan "%s\n" src ;
-        if Config.verbose > 0 then eprintf "Test: %s\n" n ;
+        if Config.debug.Debug_gen.io then eprintf "Test: %s\n" n ;
 (*    printf "%s: %s\n" n (pp_edges cycle.orig) ; *)
         { res with ntests = res.ntests+1; }
 
@@ -346,10 +346,6 @@ module Make(Config:Config)(T:Builder.S)
                   if seen then Warn.fatal "Duplicate" ;
                   { res with sigs }
                 end else res in
-              if Config.debug.Debug_gen.generator then begin
-                eprintf "------------------------------------------------------\n" ;
-                eprintf "Cycle: %s\n" (T.E.pp_edges es) ;
-              end;
               let test = build_test check es mk_info in
               dump_test all_chan mk_name mk_scope test res)
             res
@@ -357,15 +353,15 @@ module Make(Config:Config)(T:Builder.S)
         (* `DupName` happens when the final emitted test name collides,
            usually after scope/name decoration in the dump path. *)
         | DupName name ->
-          if Config.verbose > 0 then
+          if Config.debug.Debug_gen.io then
             eprintf "Duplicate name: %s\n" name ;
           res
         | Normaliser.CannotNormalise msg ->
-          if Config.verbose > 0 then
+          if Config.debug.Debug_gen.io then
             eprintf "Cannot normalise error: %s\n" msg ;
           res
         | Misc.Fatal msg|Misc.UserError msg ->
-          if Config.verbose > 0 then
+          if Config.debug.Debug_gen.io then
             eprintf "Fatal ignored: %s\n" msg ;
           res
         |Misc.Exit ->

@@ -19,6 +19,7 @@ open Code
 
 module type DiyConfig = sig
   include DumpAll.Config
+  val nprocs : int
   val choice : Code.check
   val variant : Variant_gen.t -> bool
   val prefix : string list
@@ -124,7 +125,7 @@ open C.R
   module M =  Alt.Make(C)(AltConfig)
 
   let gen lr ls rl n =
-    if O.verbose > 0 then begin
+    if O.debug.Debug_gen.parser then begin
       Printf.eprintf
         "expanded relax=%s\n" (C.R.pp_relax_list lr)
     end ;
@@ -180,7 +181,7 @@ let exec_conf s =
   let prog = Sys.argv.(0) in
   let cmd = Array.to_list Sys.argv in
   let cmd = norm_cmd cmd in
-  if !Config.verbose > 1 then
+  if !Config.debug.Debug_gen.parser then
     eprintf "EXEC: %s %s\n%!" prog (String.concat " " (conf @ cmd)) ;
   ignore (Unix.execvp prog (Array.of_list (prog::conf@cmd))) ;
   ()
@@ -202,7 +203,6 @@ let () =
 
   let module Co = struct
 (* Dump all *)
-    let verbose = !Config.verbose
     let generator = Config.baseprog
     let debug = !Config.debug
     let hout = match !Config.hout with
@@ -250,7 +250,7 @@ let () =
     let same_loc = !Config.same_loc
  end in
   let module C = struct
-    let verbose = !Config.verbose
+    let debug = !Config.debug
     let show = !Config.show
     let same_loc =
       !Config.same_loc ||
