@@ -22,6 +22,7 @@ module Make
   struct
     include MIPSBase
 
+    let is_wfe _ = false
     let pp_barrier_short = pp_barrier
     let reject_mixed = false
 

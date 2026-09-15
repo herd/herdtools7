@@ -98,7 +98,7 @@ end = struct
     let open Constant in
     function
     | A.Location_reg _ -> REG
-    | A.Location_global (V.Val (Symbolic (Virtual _))|V.Var _)
+    | A.Location_global (V.Val (Symbolic (Virtual _|EventReg _))|V.Var _)
       -> Access.VIR
     | A.Location_global (V.Val (Symbolic ((System ((PTE|PTE2),_))))) as loc
         ->
@@ -278,6 +278,9 @@ end = struct
        | _ -> false
      end
   | _ -> false
+  let is_evreg a = match a with
+    | Access (_, A.Location_global (A.V.Val (Constant.Symbolic (Constant.EventReg _))), _, _, _, _, _) -> true
+    | _ -> false
   let is_pt_data = function
     | Access (_,A.Location_global (A.V.Val c),_,_,_,_,Access.PTE DISide.Data) ->
         Constant.is_pt c
@@ -569,6 +572,7 @@ end = struct
     ("T",is_tag)::
     ("GCS",is_gcs)::
     ("TLBI",is_inv)::
+    ("EVREG",is_evreg)::
     ("no-loc", fun a -> Misc.is_none (location_of a))::
     (if kvm then
       fun k ->
