@@ -25,6 +25,9 @@ module type DiyConfig = sig
   val prefix : string list
   val cumul : string Config.cumul
   val max_ins : int
+  val mix : bool
+  val max_relax : int
+  val min_relax : int
   val upto : bool
   val varatom : string list
 end
@@ -89,9 +92,9 @@ open C.R
     include O
 
     type relax = C.R.relax
-    let mix = !Config.mix
-    let max_relax = !Config.max_relax
-    let min_relax = !Config.min_relax
+    let mix = O.mix
+    let max_relax = O.max_relax
+    let min_relax = O.min_relax
 
     let prefix =
       (* Parse each `-prefix` argument separately, then combine them as one
@@ -232,6 +235,9 @@ let () =
     let upto = !Config.upto
     let varatom = !varatom
     let max_ins = !Config.max_ins
+    let mix = !Config.mix
+    let max_relax = !Config.max_relax
+    let min_relax = !Config.min_relax
     let overload = !Config.overload
     let poll = !Config.poll
     let optcoherence = !Config.optcoherence
