@@ -322,6 +322,7 @@ module Make(C:Builder.S)
         {
           id : int ;
           relax : C.R.relax ;
+          concrete_edges_with_atom : C.E.edge list ;
           non_pseudo_edges : C.E.edge list ;
           process_count : int ;
           left_instruction_count : int ;
@@ -417,7 +418,13 @@ module Make(C:Builder.S)
         | _ -> true
 
       let can_precede can_precede next exist =
+        (* Checking adjacency after removing all pseudo-edges rules out, for
+           example, the AArch64 adjacency `PosRR Store -> PosRR ISB`. *)
         edge_lists_can_precede next.non_pseudo_edges exist.non_pseudo_edges
+        (* Checking atom-bearing concrete edges rules out, for example,
+           the AArch64 adjacency `PosRWPA -> PosWRLP`. *)
+        && edge_lists_can_precede
+             next.concrete_edges_with_atom exist.concrete_edges_with_atom
         && can_precede next.relax exist.relax
 
       let make safes po_safe prefix relax safe =
@@ -427,11 +434,15 @@ module Make(C:Builder.S)
           incr next_id ;
           let left_instruction_count,max_instruction_count_opt,
               right_instruction_count = count_instructions relax in
+          let concrete_edges_with_atom =
+            List.filter
+              (fun edge -> not (C.E.is_insert_store edge.C.E.edge)) relax in
           let non_pseudo_edges =
             List.filter (fun edge -> C.E.is_non_pseudo edge.C.E.edge) relax in
           {
             id;
             relax;
+            concrete_edges_with_atom;
             non_pseudo_edges;
             process_count=count_processes relax;
             left_instruction_count;
