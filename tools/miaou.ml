@@ -755,6 +755,14 @@ and cons_seqs (fs:exp list) (es:exp list) =
          pp_txt indent s1 txt ;
          pp_txts indent s1 s2 s3 txts
 
+    let pp_check_def loc id postcond precond =
+      match postcond with
+      | Item txt1 ->
+        let pref = "It is architecturally forbidden that " ^ txt1 ^ " if" in
+        pp_def pref "." precond
+      | _ ->
+        eprintf "%a: %S: Unsupported test shape\n" TxtLoc.pp loc id
+
     (* Translate and print a check/test.
      * For now, only support tests with expression following the pattern:
      *
@@ -785,6 +793,8 @@ and cons_seqs (fs:exp list) (es:exp list) =
           match exp with
           | Op (loc, Seq, l) -> (
             match find_first_non_id (List.rev l) with
+            | Some (0, e1, [e2]) ->
+                Some (e2, e1)
             | Some (0, e, es) ->
                 (* No trailing identities. *)
                 Some (Op (loc, Seq, List.rev es), e)
@@ -809,9 +819,8 @@ and cons_seqs (fs:exp list) (es:exp list) =
           in
           let precond_tr = tr_rel e1 e2 precond_exp in
           let postcond_tr = tr_rel e2 e1 postcond_exp in
-          let pref = sprintf "For two effects %s and %s, if" (pp_evt e1) (pp_evt e2) in
-          pp_def pref "" precond_tr;
-          pp_def "then it is not the case that" "." postcond_tr
+
+          pp_check_def loc id postcond_tr precond_tr
 
     (* Translate and print a definition *)
     let get_id_e_type id e =
