@@ -1199,3 +1199,55 @@ AArch64 model descriptions.
   \item \ImpTTDW{E\textsubscript{2}}.
   \end{itemize}
 
+Named coherence checks with atomic postconditions.
+
+  $ show_relation coRW -inline poRW
+  \expandafter{\MakeUppercase\forbidden{\expandafter{\MakeUppercase\rf{E\textsubscript{2}}{E\textsubscript{1}}}} if} one of the following applies:
+  \begin{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ExpR{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \expandafter{\MakeUppercase\sameloc{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \ExpW{E\textsubscript{2}}.
+    \end{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ExpR{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\rmw{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \ExpW{E\textsubscript{2}}.
+    \end{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ImpTagR{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \expandafter{\MakeUppercase\sameloc{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \ExpTagW{E\textsubscript{2}}.
+    \end{itemize}
+  \end{itemize}
+
+  $ show_relation coWM -inline poWM
+  \expandafter{\MakeUppercase\forbidden{\expandafter{\MakeUppercase\ca{E\textsubscript{2}}{E\textsubscript{1}}}} if} one of the following applies:
+  \begin{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ExpW{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \expandafter{\MakeUppercase\sameloc{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \ExpR{E\textsubscript{2}}.
+    \end{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ExpTagW{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \expandafter{\MakeUppercase\sameloc{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \ImpTagR{E\textsubscript{2}}.
+    \end{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ExpW{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \expandafter{\MakeUppercase\sameloc{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \ExpW{E\textsubscript{2}}.
+    \end{itemize}
+  \end{itemize}
