@@ -32,6 +32,7 @@ module Make
      * these are always little endian *)
     let endian = AArch64.endian
     let memtag = C.variant Variant.MemTag
+    let mte_check_loads = memtag && not C.mte_store_only
     let morello = C.variant Variant.Morello
     let sme = C.variant Variant.SME
     let sve = C.variant Variant.SVE || sme
@@ -1793,12 +1794,11 @@ Arguments:
             domain in
         M.delay_kont "at::check_ptw" ma maccess
 
-      let do_ldr rA sz an mop ma ii =
+      let do_ldr ?(checked=mte_check_loads) rA sz an mop ma ii =
 (* Generic load *)
-        let checked = memtag && not C.mte_store_only in
         let ma =
           (* Extract location without a tag from an address *)
-          if memtag && C.mte_store_only then
+          if memtag && (not checked) then
             ma >>= fun a -> loc_extract a
           else ma in
         lift_memop ~tag:"LD" rA Dir.R false checked
@@ -1815,8 +1815,12 @@ Arguments:
           ma mzero an ii
 
 (* Generic store *)
-      let do_str rA mop sz an ma mv ii =
-        lift_memop ~tag:"ST" rA Dir.W true memtag
+      let do_str ?(checked=memtag) rA mop sz an ma mv ii =
+        let ma =
+          if memtag && not checked then
+            ma >>= fun a -> loc_extract a
+          else ma in
+        lift_memop ~tag:"ST" rA Dir.W true checked
           (fun ac ma mv ->
             let open Precision in
             let memtag_sync = memtag && C.mte_precision = Synchronous in
@@ -1951,7 +1955,8 @@ Arguments:
           do_read_mem_op op sz Annot.N aexp ac rd a ii in
         match e with
         | Imm (k,Idx) ->
-           do_ldr rs sz Annot.N mop (get_ea_idx rs k ii) ii
+           let checked = mte_check_loads && rs <> AArch64Base.SP in
+           do_ldr ~checked rs sz Annot.N mop (get_ea_idx rs k ii) ii
         | Imm (k,PreIdx) ->
            let ma =
              let* a = read_reg_addr rs ii in
@@ -1964,7 +1969,8 @@ Arguments:
              do_ldr rs sz Annot.N mop ma ii in
            M.delay_kont "ldr_preindex" ma ldr0_preidx
         | Reg (v,ri,sext,s) ->
-           do_ldr rs sz Annot.N mop (get_ea_reg rs v ri sext s ii) ii
+           let checked = mte_check_loads && rs <> AArch64Base.SP in
+           do_ldr ~checked rs sz Annot.N mop (get_ea_reg rs v ri sext s ii) ii
         | Imm (k,PostIdx) ->
            (* This case differs signicantly from others,
             * as update of base address register is part
@@ -2109,7 +2115,8 @@ Arguments:
           (read_reg_addr rs ii)  ii
 
       let str_simple sz rs rd m_ea ii =
-        do_str rd
+        let checked = memtag && rd <> AArch64Base.SP in
+        do_str ~checked rd
           (fun ac a v ii ->
             M.data_input_next
               (M.unitT v)
