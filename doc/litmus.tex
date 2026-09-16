@@ -2300,12 +2300,9 @@ in some homonymous directory.  We execute \litmus{} on another machine
 and run the tests on MACH following the usual
 ``litmus-cross-compilation''~\ahrefloc{crosscompile}{scheme}.
 \begin{verbatim}
-% litmus7 -mach kvm-aarch64 -variant fatal -o M.tar MP-TTD+DMB.ST+DMB.LD.litmus  MP-TTD+DMB.ST+DSB-ISB.litmus
+% litmus7 -mach kvm-aarch64 -o M.tar MP-TTD+DMB.ST+DMB.LD.litmus  MP-TTD+DMB.ST+DSB-ISB.litmus
 % scp M.tar MACH:
 \end{verbatim}
-Notice the \opt{-variant fatal} option that
-controls \ahrefloc{faultcontrol}{fault management}. Here,
-if some instruction faults, control is transferred at the end of thread~code. See 
 
 On the target machine, we unpack the transferred archive into some
 sub-directory of the \texttt{kvm-unit-tests} installation, and compile
@@ -2326,29 +2323,27 @@ there:
 ...
 Test MP-TTD+DMB.ST+DMB.LD Allowed
 Histogram (4 states)
-70    *>1:X7=1; fault(P1:L0,x,D-MMU:Translation);
-1975326:>1:X7=0; ~fault(P1:L0,x,D-MMU:Translation);
-21197 :>1:X7=0; fault(P1:L0,x,D-MMU:Translation);
-3407  :>1:X7=1; ~fault(P1:L0,x,D-MMU:Translation);
+1717461:>1:X7=0; ~fault(P1:L0,x,MMU:Translation);
+127644:>1:X7=1; ~fault(P1:L0,x,MMU:Translation);
+167   *>1:X7=1; fault(P1:L0,x,D-MMU:Translation);
+154728:>1:X7=0; fault(P1:L0,x,D-MMU:Translation);
 Ok
 
 Witnesses
-Positive: 70, Negative: 1999930
-Condition exists (1:X7=1 /\ fault(P1:L0,x,D-MMU:Translation)) is validated
+Positive: 167, Negative: 1999833
+Condition exists (1:X7=1 /\ fault(P1:L0,x,MMU:Translation)) is validated
 Hash=e6d0396aa32c40b307db5f6921404c07
 EL0=P1
-Observation MP-TTD+DMB.ST+DMB.LD Sometimes 70 1999930
-Topology 70    :> part=0 [[0],[1]]
-Faults MP-TTD+DMB.ST+DMB.LD 21267 P1:21267
-Time MP-TTD+DMB.ST+DMB.LD 15.14
-
+Observation MP-TTD+DMB.ST+DMB.LD Sometimes 167 1999833
+Topology 167   :> part=0 [[0],[1]]
+Faults MP-TTD+DMB.ST+DMB.LD 154895 P1:154895
+Time MP-TTD+DMB.ST+DMB.LD 2.67
 ...
-
 Test MP-TTD+DMB.ST+DSB-ISB Allowed
 Histogram (3 states)
-1991985:>1:X7=0; ~fault(P1:L0,x,D-MMU:Translation);
-5938  :>1:X7=0; fault(P1:L0,x,D-MMU:Translation);
-2077  :>1:X7=1; ~fault(P1:L0,x,D-MMU:Translation);
+1816612:>1:X7=0; ~fault(P1:L0,x,MMU:Translation);
+132549:>1:X7=1; ~fault(P1:L0,x,MMU:Translation);
+50839 :>1:X7=0; fault(P1:L0,x,D-MMU:Translation);
 No
 
 Witnesses
@@ -2357,8 +2352,8 @@ Condition exists (1:X7=1 /\ fault(P1:L0,x,D-MMU:Translation)) is NOT validated
 Hash=18e9682c0e7ed43f7f059cbfc47d781d
 EL0=P1
 Observation MP-TTD+DMB.ST+DSB-ISB Never 0 2000000
-Faults MP-TTD+DMB.ST+DSB-ISB 5938 P1:5938
-Time MP-TTD+DMB.ST+DSB-ISB 17.29
+Faults MP-TTD+DMB.ST+DSB-ISB 50839 P1:50839
+Time MP-TTD+DMB.ST+DSB-ISB 2.67
 ...
 \end{verbatim}
 %HEVEA The above log has been elided for brevity, \ahref{kvm-log.txt}{complete log}.
@@ -2444,14 +2439,15 @@ an instruction faults, control is transferred to a \emph{fault
 handler} that records the fault occurrence and returns to the faulting
 code. The above three variants control where:
 \begin{description}
+\item[{\tt fatal}] Jump to the end of the thread code. Notice that
+threads other than the faulting thread are not
+affected. This is the default.
+Synonymous: \texttt{precise}, \texttt{sync} and~\texttt{synchronous}.
 \item[{\tt handled}] Attempt to re-execute the faulting
 instruction. For the test not to loop forever, one of the test threads
 should supppress the cause of the fault, usually by changing some page
-table entry. This is the
-default. Synonymous: \texttt{imprecise}, \texttt{async}  and~\texttt{asynchronous}.
-\item[{\tt fatal}] Jump to the end of the thread code. Notice that
-threads other than the faulting thread are not
-affected. Synonymous: \texttt{precise}, \texttt{sync} and~\texttt{synchronous}.
+table entry.
+Synonymous: \texttt{imprecise}, \texttt{async}  and~\texttt{asynchronous}.
 \item[{\tt skip}] Execute the instruction that follows the faulting
 instruction. Synonymous: \texttt{faultToNext}.
 \end{description}
