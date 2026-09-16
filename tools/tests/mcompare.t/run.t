@@ -59,3 +59,16 @@ State diff on complete logs was wrong.
   
   !!! Warning positive differences in: +R3+W+32
   !!! Warning negative differences in: -R3+W+32
+Check revalidate (-show r) against validate (-show v), for herd
+litmus, and msum
+  $ mcompare7 -terse -show v Herd OLD.00 NEW.00 ALL.00 2>/dev/null | tail --lines=+2 > Validate
+  $ mcompare7 -terse -show r Herd OLD.00 NEW.00 ALL.00 2>/dev/null | tail --lines=+2  > Revalidate
+  $ diff Validate Revalidate
+  $ cat Validate
+               | Herd OLD.00 NEW.00 ALL.00
+  -----------------------------------------
+  -----------------------------------------
+  Load+Fault   | Ok   Ok     Ok     Ok    
+  -----------------------------------------
+  Stores+Faults| Ok   Ok     Ok     Ok    
+
