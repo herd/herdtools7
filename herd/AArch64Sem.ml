@@ -132,6 +132,7 @@ module Make
       let (>>*==) = M.(>>*==)
       let (>>**==) = M.(>>**==)
       let (>>|) = M.(>>|)
+      let (and*) = M.(>>|)
       let (>>||) = M.para_atomic
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
@@ -1929,7 +1930,16 @@ Arguments:
         | Imm (k,Idx) ->
            do_ldr rs sz Annot.N mop (get_ea_idx rs k ii) ii
         | Imm (k,PreIdx) ->
-            do_ldr rs sz Annot.N mop (get_ea_preindexed rs k ii) ii
+           let ma =
+             let* a = read_reg_addr rs ii in
+             M.add a (V.intToV k)
+           and ldr0_preidx a_virt ma =
+             let mop ac a =
+               let* m1 = mop ac a
+               and* m2 = write_reg rs a_virt ii in
+               M.unitT (m1, m2) in
+             do_ldr rs sz Annot.N mop ma ii in
+           M.delay_kont "ldr_preindex" ma ldr0_preidx
         | Reg (v,ri,sext,s) ->
            do_ldr rs sz Annot.N mop (get_ea_reg rs v ri sext s ii) ii
         | Imm (k,PostIdx) ->
@@ -2108,7 +2118,19 @@ Arguments:
              is_this_reg rd e && E.is_reg_store e ii.A.proc in
            M.short (is_this_read) (is_this_write) m
         | Imm (k,PreIdx) ->
-           str_simple sz rs rd (get_ea_preindexed rd k ii) ii
+           let ma =
+             let* a = read_reg_addr rd ii in
+             M.add a (V.intToV k)
+           and str_preidx a_virt ma =
+             let mv = read_reg_data_sz sz rs ii in
+             let mop ac a v ii =
+               let* m1 = do_write_mem sz Annot.N aexp ac a v ii
+               and* m2 = write_reg rd a_virt ii in
+               M.unitT (m1, m2) in
+             do_str rd mop sz Annot.N ma mv ii in
+           let m = M.delay_kont "str_preindex" ma str_preidx in
+           if kvm then M.upOneRW (is_this_reg rd) m
+           else m
         | Reg (v,ri,sext,s) ->
             str_simple sz rs rd (get_ea_reg rd v ri sext s ii) ii
         | _ -> assert false
