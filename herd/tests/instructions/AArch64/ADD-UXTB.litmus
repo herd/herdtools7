@@ -1,0 +1,16 @@
+AArch64 ADD-UXTB
+
+(*
+ * Extended-register arithmetic applies ExtendReg before the optional left
+ * shift.  UXTB(0x80) << 1 is therefore 0x100, not zero.
+ *)
+
+{
+  0:X1=0;
+  0:X2=0x80;
+}
+
+P0                       ;
+  ADD X0,X1,W2,UXTB #1   ;
+
+exists (0:X0=0x100)

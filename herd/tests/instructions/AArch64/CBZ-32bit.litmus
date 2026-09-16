@@ -1,0 +1,18 @@
+AArch64 CBZ-32bit
+(*
+ * CBZ Wt tests only the low 32 bits.  The upper half of X0 is nonzero here,
+ * but W0 is zero, so the branch must be taken.
+ *)
+{
+  0:X0=0x100000000;
+}
+
+P0              ;
+  CBZ W0,Ltaken  ;
+  MOV X1,#1      ;
+  B Lend         ;
+Ltaken:          ;
+  MOV X1,#2      ;
+Lend:            ;
+
+exists (0:X1=2)

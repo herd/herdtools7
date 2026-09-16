@@ -620,8 +620,16 @@ module Make
 
       let write_reg_sz = do_write_reg_sz uxt_op
 
-      let write_reg_sz_dest sz r v ii =
-        write_reg_sz sz r v ii >>= fun () -> M.unitT v
+      let write_reg_sz_dest sz r v ii = match r with
+      | AArch64.ZR -> M.unitT V.zero
+      | _ -> match sz with
+        | MachSize.S128 ->
+            write_reg_morello r v ii >>! v
+        | MachSize.Quad when not morello ->
+            write_reg r v ii >>! v
+        | MachSize.Quad|MachSize.Word|MachSize.Short|MachSize.Byte ->
+            let* v = uxt_op sz v in
+            write_reg r v ii >>! v
 
       let write_reg_op op sz r v ii =
         match r with
@@ -1421,6 +1429,32 @@ module Make
                 and v = ((x + y) & (res + x)) |> read_sign_bit in
                 make ~n ~z ~c ~v)
 
+      let shiftop op v v1 v2 =
+        let open AArch64Base in
+        let sz = tr_variant v in
+        let mask =
+          match v with
+          | V32 -> "0x1f"
+          | V64 -> "0x3f"
+          | V128 -> assert false in
+        let* v2 = M.op1 (Op.AndK mask) v2 in
+        match op with
+        | ASR ->
+            let* v1 = sxt_op sz v1 in
+            M.op Op.ASR v1 v2
+        | LSR ->
+            M.op Op.Lsr v1 v2
+        | LSL ->
+            M.op Op.ShiftLeft v1 v2
+        | ROR ->
+            let nbits = MachSize.nbits sz in
+            let* v1 = M.op Op.Lsr v1 v2
+            and* v2 =
+              let* s = subtraction (V.intToV nbits) v2 in
+              M.op Op.ShiftLeft v1 s in
+            M.op Op.Or v1 v2
+        | _ -> assert false
+
       let mop3 inst v op rd margs ii =
         let open AArch64Base in
         margs >>=
@@ -1453,17 +1487,7 @@ module Make
                 | ORN -> M.op1 Op.Inv v2 >>= M.op Op.Or v1
                 | SUB | SUBS -> subtraction v1 v2
                 | AND | ANDS -> M.op Op.And v1 v2
-                | ASR -> M.op1 (Op.Mask (tr_variant v)) v2 >>= M.op Op.ASR v1
-                | LSR -> M.op1 (Op.Mask (tr_variant v)) v2 >>= M.op Op.Lsr v1
-                | LSL -> M.op1 (Op.Mask (tr_variant v)) v2 >>= M.op Op.ShiftLeft v1
-                | ROR ->
-                   let sz = tr_variant v in
-                   let nbits = MachSize.nbits sz in
-                   M.op1 (Op.Mask sz) v2 >>= fun v2 ->
-                   (M.op Op.Lsr v1 v2
-                   >>| (subtraction (V.intToV nbits) v2
-                        >>= M.op Op.ShiftLeft v1))
-                   >>= fun (v1,v2) -> M.op Op.Or v1 v2
+                | ASR | LSR | LSL | ROR -> shiftop op v v1 v2
                 | BIC | BICS -> M.op Op.AndNot2 v1 v2 in
              match op_set_flags op v with
               | None -> write_reg_no_flags get_res
@@ -1841,22 +1865,21 @@ Arguments:
 
       let ext_sext e ko v =
         let k = match ko with None -> 0 | Some k -> k in
-        lsl_op k v
-        >>=
-          M.op1
-            begin
-              let open AArch64.Ext in
-              let open MachSize in
-              match e with
-              | UXTB -> Op.Mask  Byte
-              | UXTH -> Op.Mask Short
-              | UXTW -> Op.Mask Word
-              | UXTX ->  Op.Mask Quad
-              | SXTB -> Op.Sxt  Byte
-              | SXTH -> Op.Sxt Short
-              | SXTW -> Op.Sxt Word
-              | SXTX ->  Op.Sxt Quad
-            end
+        M.op1
+          begin
+            let open AArch64.Ext in
+            let open MachSize in
+            match e with
+            | UXTB -> Op.Mask  Byte
+            | UXTH -> Op.Mask Short
+            | UXTW -> Op.Mask Word
+            | UXTX ->  Op.Mask Quad
+            | SXTB -> Op.Sxt  Byte
+            | SXTH -> Op.Sxt Short
+            | SXTW -> Op.Sxt Word
+            | SXTX ->  Op.Sxt Quad
+          end v
+        >>= lsl_op k
 
 (* Apply a shift as monadic op *)
       let shift sz s =
@@ -3086,7 +3109,7 @@ Arguments:
           if inv then M.op1 Op.Inv
           else M.unitT
         end >>=
-        fun v -> write_reg_dest rd v ii
+        fun v -> write_reg_sz_dest (tr_variant sz) rd v ii
 
       let movz = movzn false
       and movn = movzn true
@@ -3120,7 +3143,7 @@ Arguments:
             (pp_barrel_shift "," s pp_imm)
             (pp_variant var)
         end
-        >>= fun v -> write_reg_dest rd v ii
+        >>= fun v -> write_reg_sz_dest sz rd v ii
 
 (*
  * "Sign"-extend high-order bit of pattern.\
@@ -3168,7 +3191,7 @@ Arguments:
                 (if ks >= kr then ks-kr else regsize-kr+ks)
             else fun v -> M.unitT v
           end
-        >>= fun v -> write_reg rd v ii
+        >>= fun v -> write_reg_sz sz rd v ii
         >>= B.next1T
 
       let csel_op op v =
@@ -4179,14 +4202,14 @@ Arguments:
           m_fault >>| (set_elr_el1 lbl_ret ii >>| set_esr_el1 esr_val ii)
           >>! B.syscall [(elr_el1, lbl_ret); (esr_el1, esr_val);]
 
-        | I_CBZ(_,r,l) ->
-            (read_reg_ord r ii)
+        | I_CBZ(v,r,l) ->
+            (read_reg_ord_sz (tr_variant v) r ii)
               >>= is_zero
               >>= fun v -> commit_bcc ii
               >>= fun () -> M.unitT (B.CondJump (v,tgt2tgt ii l))
 
-        | I_CBNZ(_,r,l) ->
-            (read_reg_ord r ii)
+        | I_CBNZ(v,r,l) ->
+            (read_reg_ord_sz (tr_variant v) r ii)
               >>= is_not_zero
               >>= fun v -> commit_bcc ii
               >>= fun () -> M.unitT (B.CondJump (v,tgt2tgt ii l))
@@ -4931,7 +4954,7 @@ Arguments:
             let sz = tr_variant v in
             read_reg_ord_sz sz rn ii
             >>= M.op1 (Op.Rbit sz)
-            >>= fun v -> write_reg_dest rd v ii
+            >>= fun v -> write_reg_sz_dest sz rd v ii
             >>= nextSet rd
         | I_SXTW(rd,rs) ->
             read_reg_ord_sz MachSize.Word rs ii
@@ -4943,13 +4966,13 @@ Arguments:
            read_reg_ord_sz sz rs ii
            >>= sxt_op sz
            >>= M.op1 Op.Abs
-           >>=fun v -> write_reg_dest rd v ii
+           >>=fun v -> write_reg_sz_dest sz rd v ii
            >>= nextSet rd
         | I_REV (rv,rd,rs) ->
            let sz = variant_of_rev rv |> tr_variant in
            read_reg_ord_sz sz rs ii
            >>= M.op1 (Op.RevBytes (container_size rv,sz))
-           >>= fun v -> write_reg_dest rd v ii
+           >>= fun v -> write_reg_sz_dest sz rd v ii
            >>= nextSet rd
            | I_OP3(v,op,rd,rn,e) ->
            let margs =
@@ -4970,16 +4993,19 @@ Arguments:
         | I_EXTR (v,rd,rn,rm,lsb) ->
            let sz = tr_variant v in
            let nbits = MachSize.nbits sz in
-           begin
-             (read_reg_ord_sz sz rm ii
-              >>= M.op1 (Op.LogicalRightShift lsb))
-             >>|
-               (read_reg_ord_sz sz rn ii
-                >>= M.op1  (Op.LeftShift (nbits-lsb)))
-           end
-           >>= fun (v1,v2) -> M.op Op.Or v1 v2
-           >>= fun v -> write_reg_dest rd v ii
-           >>= nextSet rd
+           let* v =
+             match lsb with
+             | 0 -> read_reg_ord_sz sz rm ii
+             | _ ->
+                 let* v1 =
+                   let* v1 = read_reg_ord_sz sz rm ii in
+                   M.op1 (Op.LogicalRightShift lsb) v1
+                 and* v2 =
+                   let* v2 = read_reg_ord_sz sz rn ii in
+                   M.op1 (Op.LeftShift (nbits-lsb)) v2 in
+                 M.op Op.Or v1 v2 in
+           let* m = write_reg_sz_dest sz rd v ii in
+           nextSet rd m
         | I_ADDSUBEXT (v,op,r1,r2,(v3,r3),(e,ko)) ->
            let op =
              match op with
@@ -5024,7 +5050,7 @@ Arguments:
            end >>= fun ((vn,vm),va) ->
            M.op Op.Mul vn vm
            >>= M.op op va
-           >>= fun v -> write_reg_dest rd v ii
+           >>= fun v -> write_reg_sz_dest sz rd v ii
            >>= nextSet rd
         (* Barrier *)
         | I_FENCE b ->
