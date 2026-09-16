@@ -1,0 +1,10 @@
+AArch64 CoWR0+postp-fript
+Variant=memtag
+{
+ 0:X0=x:red; 0:X1=x:green;
+}
+ P0               ;
+ STG X0,[X1]      ;
+ L00: LDR W2,[X1] ;
+
+exists (not (fault(P0:L00,x)))
