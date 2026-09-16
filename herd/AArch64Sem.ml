@@ -907,15 +907,22 @@ module Make
 (* Branches *)
 (************)
 
-      let v2tgt =
+      let v2tgt ii =
         let open Constant in
         function
-        | M.A.V.Val (Symbolic (Virtual {name=Symbol.Label (_, lbl); _})) -> Some (B.Lbl lbl)
+        | M.A.V.Val (Symbolic (Virtual {name=Symbol.Label (_, lbl); offset; _})) ->
+            if offset = 0 then Some (B.Lbl lbl)
+            else
+              let base =
+                try Label.Map.find lbl ii.A.lbl2addr
+                with Not_found ->
+                  Warn.fatal "Could not resolve indirect branch target label %s" lbl in
+              Some (B.Addr (base + offset))
         | M.A.V.Val (Concrete i) -> Some (B.Addr (M.A.V.Cst.Scalar.to_int i))
         | _ -> None
 
       let do_indirect_jump test bds i ii v =
-        match  v2tgt v with
+        match  v2tgt ii v with
         | Some tgt ->
           commit_bcc ii
           >>= fun () -> M.unitT (B.Jump (tgt,bds))
@@ -4125,7 +4132,7 @@ Arguments:
                 read_reg_ord r ii >>= do_indirect_jump test [] i ii
         | I_ERET ->
            let eret_to_addr v =
-              match v2tgt v with
+              match v2tgt ii v with
               | Some tgt -> B.faultRetT tgt
               | _ ->
                  Warn.fatal "Cannot determine ERET target" in

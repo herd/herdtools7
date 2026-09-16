@@ -1,0 +1,10 @@
+Test BR-offset Required
+States 1
+0:X1=0; 0:X2=0; 0:X3=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X1=0 /\ 0:X2=0 /\ 0:X3=1)
+Observation BR-offset Always 1 0
+Hash=b3bc539701336b91607813f045c3b03e
+
