@@ -4,3 +4,12 @@
   (source_tree libdir)
   %{bin:miaou7})
  (enabled_if %{bin-available:miaou7}))
+
+(cram
+ (applies_to mcompare)
+ (deps
+  (source_tree libdir)
+  %{bin:herd7}
+  %{bin:mcmp7}
+  %{bin:mcompare7}
+  %{bin:msum7}))
