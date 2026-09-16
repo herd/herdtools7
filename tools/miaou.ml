@@ -673,6 +673,8 @@ and cons_seqs (fs:exp list) (es:exp list) =
     let rec pp_def pref s = function
       | Item txt ->
          printf "%s %s%s\n" pref txt s
+      | List { items = [i]; _ } ->
+          pp_def pref s i
       | List { intro_txt = txt; sep_txt = (s1,s2); items = ts; _ } ->
          printf "%s %s:\n" pref txt ;
          printf "\\begin{itemize}\n" ;
@@ -756,6 +758,14 @@ and cons_seqs (fs:exp list) (es:exp list) =
          pp_txt indent s1 txt ;
          pp_txts indent s1 s2 s3 txts
 
+    let pp_check_def loc id postcond precond =
+      match postcond,precond with
+      | Item txt1, _ ->
+        let pref = "It is architecturally forbidden that " ^ txt1 ^ " if" in
+        pp_def pref "." precond
+      | _,_ ->
+        eprintf "%a: %S: Unsupported test shape\n" TxtLoc.pp loc id
+
     (* Translate and print a check/test.
      * For now, only support tests with expression following the pattern:
      *
@@ -810,9 +820,8 @@ and cons_seqs (fs:exp list) (es:exp list) =
           in
           let precond_tr = tr_rel e1 e2 precond_exp in
           let postcond_tr = tr_rel e2 e1 postcond_exp in
-          let pref = sprintf "For two effects %s and %s, if" (pp_evt e1) (pp_evt e2) in
-          pp_def pref "" precond_tr;
-          pp_def "then it is not the case that" "." postcond_tr
+
+          pp_check_def loc id postcond_tr precond_tr
 
     (* Translate and print a definition *)
     let get_id_e_type id e =
