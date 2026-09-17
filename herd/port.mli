@@ -18,8 +18,9 @@
 
 (*
  *  + Data -> data port of a memory write effect.
- *   + Addr -> address port of a memory effect.
- *   + No -> none of those.
+ *  + Addr -> address port of a memory effect.
+ *  + AddrData -> both data and address port of an effect.
+ *  + No -> none of those.
  *)
 
-type t = Data|Addr|No
+type t = Data|Addr|AddrData|No

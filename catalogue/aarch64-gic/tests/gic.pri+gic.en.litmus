@@ -1,0 +1,10 @@
+AArch64 gic.pri+gic.en
+{
+ [INTID(A)]=(priority:0,enabled:0);
+ 0:X1=gicval_t:(intid:A, priority:1);
+ 1:X1=gicval_t:(intid:A);
+}
+ P0            | P1           ;
+ GIC CDPRI, X1 | GIC CDEN, X1 ;
+
+exists(INTID(A)=(priority:0,enabled:1) \/ INTID(A)=(priority:1,enabled:0))

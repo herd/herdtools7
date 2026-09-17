@@ -1,0 +1,10 @@
+Test gic.cdaff Allowed
+States 1
+[INTID(A)]=(affinity:P1);
+No
+Witnesses
+Positive: 0 Negative: 1
+Condition exists ([INTID(A)]=(affinity:P0))
+Observation gic.cdaff Never 0 1
+Hash=b9845629d53e5cfd5b35824e45754bbb
+

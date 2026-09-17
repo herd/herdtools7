@@ -1,0 +1,18 @@
+AArch64 vmW-gic+R
+{
+ [VM0:INTID(A)]=(enabled:0);
+ [VM1:INTID(A)]=(enabled:0);
+ 0:ICH_CONTEXTR_EL2=(VM1, VPE0, VALID);
+ 0:X0=gicval_t:(intid:A); 0:X1=(VM0, VPE0, VALID);
+ 1:ICH_CONTEXTR_EL2=(VM1, VPE1, VALID);
+ 1:X0=gicval_t:(intid:A);
+}
+ P0                        | P1                      ;
+ MSR ICH_CONTEXTR_EL2, XZR | GIC VDRCFG, X0          ;
+ ISB                       | ISB                     ;
+ MSR ICH_CONTEXTR_EL2, X1  | MRS X2, ICC_ICSR_EL1    ;
+ ISB                       |                         ;
+ GIC VDEN, X0              |                         ;
+
+exists(1:X2=intval_t:(enabled:1))
+

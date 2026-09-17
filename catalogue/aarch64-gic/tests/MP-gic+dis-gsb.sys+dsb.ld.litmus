@@ -1,0 +1,12 @@
+AArch64 MP-gic+dis-gsb.sys+dsb.ld
+{
+ [INTID(A)]=(pending:1,enabled:1,affinity:P1);
+ 0:X1=gicval_t:(intid:A);
+ 0:X4=x; 1:X4=x;
+}
+ P0             | P1           ;
+ GIC CDDIS, X1  | LDR W3,[X4]  ;
+ GSB SYS        | DSB LD       ;
+ MOV W3,#1      | GICR X2,CDIA ;
+ STR W3,[X4]    |              ;
+exists(1:X3=1 /\ 1:X2=gicval_t:(valid:1,intid:A))

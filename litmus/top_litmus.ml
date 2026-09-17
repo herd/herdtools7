@@ -544,7 +544,7 @@ end = struct
                 let module V =
                   SymbConstant.Make
                     (Int64Scalar)(AArch64PteVal)(AArch64AddrReg)
-                    (AArch64Instr.Std) in
+                    (AArch64IntidVal)(AArch64Instr.Std) in
                 let module Arch' = AArch64Arch_litmus.Make(OC)(V) in
                 let module LexParse = struct
                   type instruction = Arch'.parsedPseudo

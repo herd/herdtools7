@@ -1,0 +1,8 @@
+AArch64 gic.cdpend1
+{
+ [INTID(A)]=(pending:0);
+ 0:X0=gicval_t:(intid:A, pending:1);
+}
+ P0             ;
+ GIC CDPEND, X0 ;
+exists(INTID(A)=(pending:0))

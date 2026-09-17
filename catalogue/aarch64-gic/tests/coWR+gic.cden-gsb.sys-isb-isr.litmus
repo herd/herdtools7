@@ -1,0 +1,13 @@
+AArch64 coWR+gic.cden-gsb.sys-isb-isr
+{
+ [INTID(A)]=(enabled:0, pending:1);
+ 0:X1=gicval_t:(intid:A);
+}
+ P0                    ;
+ GIC  CDEN, X1         ;
+ GSB  SYS              ;
+ ISB                   ;
+ MRS  X0, ISR_EL1      ;
+
+exists(0:X0=(I=0))
+

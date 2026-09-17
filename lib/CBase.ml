@@ -36,6 +36,7 @@ let symb_reg_name r =
 
 let symb_reg r = sprintf "%%%s" r
 let type_reg _ = base_type
+let is_sysreg _ = false
 
 type mem_order = MemOrder.t
 
@@ -262,7 +263,7 @@ include Pseudo.Make
           | Const(Concrete _|ConcreteVector _) as k -> k
           | Const
               (Symbolic _|Tag _|ConcreteRecord _
-              |PteVal _|AddrReg _ |Instruction _|Frozen _ as v) ->
+              |PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Instruction _|Frozen _ as v) ->
              Warn.fatal "No constant '%s' allowed" (ParsedConstant.pp_v v)
           | LoadReg _ as l -> l
           | LoadMem (l,mo) ->

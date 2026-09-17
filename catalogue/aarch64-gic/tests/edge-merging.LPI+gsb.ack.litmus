@@ -1,0 +1,16 @@
+AArch64 edge-merging.LPI+gsb.ack
+{
+ [INTID(A)]=(enabled:1,pending:1,affinity:P0);
+ [PTE(x)]=(oa:PA(x),attrs:(device-nGnRnE)); // PERIP
+ 0:X0=x;
+}
+ P0
+      GICR  X1, CDIA                ;
+      GSB   ACK                     ;
+      MOV   X3, #1                  ;
+      STR   X3, [X0]                ; trigger intid A via device
+      GIC   CDDI, X1                ;
+ WAIT(GICR  X2, CDIA; X2=(valid:1)) ;
+
+exists(0:X1=gicval_t:(valid:1) /\ X2=gicval_t:(valid:0))
+

@@ -387,7 +387,7 @@ module Make
           else
             sprintf "_a->%s" (OutUtils.fmt_lbl_var p lab)
         | Instruction i -> A.GetInstr.instr_name i
-        | Symbolic _|Tag _|PteVal _|AddrReg _|Frozen _|ConcreteRecord _ -> assert false
+        | Symbolic _|Tag _|PteVal _|AddrReg _|IntidVal _|IntidUpdateVal _|Frozen _|ConcreteRecord _ -> assert false
 
 (* Dump left & right values when context is available *)
 

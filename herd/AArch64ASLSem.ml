@@ -1049,7 +1049,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           None
 
     let tr_cst tr =
-      Constant.map tr Misc.identity Misc.identity Misc.identity
+      Constant.map tr Misc.identity Misc.identity Misc.identity Misc.identity
 
     let aarch64_to_asl_bv_cst sz = function
       | V.Var _ as v ->
@@ -1429,6 +1429,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                match get_port event with
                | Addr -> "(addr)"
                | Data -> "(data)"
+               | AddrData -> "(addr&data)"
                | No -> "")
         in
         match (iiid, tr_action is_bcc event ii action) with

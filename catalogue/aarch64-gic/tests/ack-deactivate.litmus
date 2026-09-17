@@ -1,0 +1,14 @@
+AArch64 ack-deactivate
+{
+ [INTID(A)]=(enabled:1,affinity:P0,pending:1,active:0);
+ 0:X0=gicval_t:(intid:A);
+}
+ P0                       ;
+ GICR  X1, CDIA           ;
+ GIC   CDDI, X0           ;
+ GIC   CDRCFG, X0         ;
+ ISB                      ;
+ MRS   X2, ICC_ICSR_EL1   ;
+
+exists(0:X1=gicval_t:(valid:1,intid:A) /\ 0:X2=intval_t:(pending:0, active:1))
+

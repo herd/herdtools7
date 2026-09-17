@@ -26,7 +26,7 @@ end
 module Top(Cfg:ToolParse.Config) : sig
 
   (* Extract information out of parsed test *)
-  module Make(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S) : sig
+  module Make(A:ArchBase.S)(Pte:PteVal.S)(AddrReg:AddrReg.S)(Intid:IntidVal.S) : sig
     val zyva : Name.t -> A.pseudo MiscParser.t -> T.t
   end
 

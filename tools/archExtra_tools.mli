@@ -20,6 +20,7 @@ module Make :
       functor (A:ArchBase.S) ->
         functor (Pte:PteVal.S) ->
           functor (AddrReg:AddrReg.S) ->
+            functor (Intid:IntidVal.S) ->
             Arch_tools.S
 with type instruction = A.instruction
 and type reg = A.reg
