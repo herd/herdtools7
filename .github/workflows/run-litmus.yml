@@ -29,19 +29,14 @@ jobs:
       - name: Checkout tree
         uses: actions/checkout@v7
 
-      - name: work-around apparmor profile for opam in ubuntu 24.04
-        run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
-
-      - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
-        uses: ocaml/setup-ocaml@v3
+      - name: Set up OCaml and dependencies
+        uses: ./.github/workflows/setup-opam
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          with-test-dependencies: "false"
 
       - name: Install qemu
         run: sudo apt update && sudo apt install qemu-system -qq
-
-      - name: Install opam dependencies
-        run: opam install . --deps-only
 
       - name: Build local dependencies
         run: |

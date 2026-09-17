@@ -36,13 +36,11 @@ jobs:
         if: ${{ github.event.inputs.pr_number == '' }}
         uses: actions/checkout@v7
 
-      - name: work-around apparmor profile for opam in ubuntu 24.04
-        run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
-
-      - name: Set-up OCaml 5
-        uses: ocaml/setup-ocaml@v3
+      - name: Set up OCaml
+        uses: ./.github/workflows/setup-opam
         with:
           ocaml-compiler: dune,menhir,zarith,js_of_ocaml,js_of_ocaml-ppx,zarith_stubs_js,logs
+          install-dependencies: "false"
       - name: Install herd-www dependencies
         working-directory: herd-www
         run: opam install . --deps-only --yes
@@ -65,13 +63,11 @@ jobs:
       - name: Checkout head
         uses: actions/checkout@v7
 
-      - name: work-around apparmor profile for opam in ubuntu 24.04
-        run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
-
-      - name: Set-up OCaml 5
-        uses: ocaml/setup-ocaml@v3
+      - name: Set up OCaml
+        uses: ./.github/workflows/setup-opam
         with:
           ocaml-compiler: dune,menhir,zarith,js_of_ocaml,js_of_ocaml-ppx,zarith_stubs_js,logs
+          install-dependencies: "false"
 
       - run: |
           opam exec -- make Version.ml

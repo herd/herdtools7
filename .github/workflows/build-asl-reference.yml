@@ -66,18 +66,11 @@ jobs:
       - name: Checkout tree
         uses: actions/checkout@v7
 
-      - name: work-around apparmor profile for opam in ubuntu 24.04
-        run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
-
-      - name: Set-up OCaml
-        uses: ocaml/setup-ocaml@v3
+      - name: Set up OCaml and dependencies
+        uses: ./.github/workflows/setup-opam
         with:
           ocaml-compiler: dune,zarith,menhir,logs,conf-which,hevea
-          dune-cache: true
-
-      - name: Install opam dependencies
-        run: |
-          opam install . --deps-only --yes
+          with-test-dependencies: "false"
 
       - name: Build ASL Reference in HTML
         run: |
