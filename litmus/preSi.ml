@@ -399,6 +399,24 @@ module Make
         O.o "}" ;
         O.o ""
 
+      let pp_fault_args ((p,lbl),loc,ftype) =
+        let pp_instr =
+          SkelUtil.instr_symb_id
+            (match lbl with
+             | None -> "UNKNOWN"
+             | Some s -> OutUtils.fmt_lbl_var p s)
+        and pp_data =
+          SkelUtil.data_symb_id
+            (match loc with
+             | None -> "UNKNOWN"
+             | Some s -> A.V.pp_v_old s)
+        and pp_ftype =
+          SkelUtil.fault_id
+            (match ftype with
+             | None -> "Unknown"
+             | Some s -> A.FaultType.pp s) in
+        pp_instr,pp_data,pp_ftype
+
       let dump_fault_handler find_ins_inserted doc test =
         if have_fault_handler then begin
           let ok,no = T.partition_asmhandlers test in
@@ -460,7 +478,8 @@ module Make
                         O.o "" ;
                         O.o "static void free_see_faults(void) {" ;
                         O.oi "free(vars_ptr);" ;
-                        O.o "}"
+                        O.o "}" ;
+                        O.o ""
                       end
                     else
                       O.o "static vars_t *vars_ptr[NEXE];"
@@ -489,28 +508,42 @@ module Make
                     O.o "static th_faults_info_t *th_faults[NEXE];" ;
                     O.o "static vars_t *vars_ptr[NEXE];"
                   end ;
-                O.o "" ;
+                O.o ""
              end ;
-             O.o "static inline int log_fault(int proc, int instr_symb, int data_symb, int ftype)" ;
-             O.o "{" ;
-             List.iter (fun f ->
-                 let ((p, lbl), loc, ftype) = f in
-                 let lbl_cond = match lbl with
-                   | None -> ""
-                   | Some s -> sprintf " && instr_symb == %s" (SkelUtil.instr_symb_id (OutUtils.fmt_lbl_var p s))
-                 and loc_cond = match loc with
-                   | None -> ""
-                   | Some s -> sprintf " && data_symb == %s" (SkelUtil.data_symb_id (A.V.pp_v_old s))
-                 and ftype_cond = match ftype with
-                   | None -> ""
-                   | Some s -> sprintf " && ftype == %s" (SkelUtil.fault_id (A.FaultType.pp s))
-                 in
-                 O.fi "if (proc==%d%s%s%s)" p lbl_cond loc_cond ftype_cond;
-                 O.fii "return 1;" ;
-               ) faults;
-             O.fi "return 0;" ;
-             O.o "}" ;
-             O.o "" ;
+             begin
+               match faults with
+               | []-> ()
+               | _::_ ->
+                  let proc2faults =
+                    List.fold_left
+                      (fun m  ((p,_), _, _ as f)  -> IntMap.accumulate p f m)
+                      IntMap.empty faults in
+                  O.o "static inline int log_fault(int proc, fault_info_t *p)";
+                  O.o "{" ;
+                  O.oi "switch (proc) {" ;
+                  IntMap.iter
+                    (fun p fs ->
+                      match fs with
+                      | [] -> ()
+                      | _::_ ->
+                         let tst =
+                           List.map
+                             (fun f ->
+                               let pp_instr,pp_data,pp_ftype = pp_fault_args f in
+                               sprintf
+                                 "match_fault_info(%s,%s,%s,p)"
+                                 pp_instr pp_data pp_ftype)
+                             fs
+                           |> String.concat " || " in
+                         O.fii "case %d:" p ;
+                         O.fiii "return %s;" tst)
+                    proc2faults ;
+                  O.oii "default:" ;
+                  O.oiii "return 0;" ;
+                  O.oi "}" ;
+                  O.o"}" ;
+                  O.o ""
+             end ;
              Insert.insert O.o "kvm_fault_handler.c" ;
              O.o "" ;
              if not (T.has_asmhandler test) then begin
@@ -1075,22 +1108,11 @@ module Make
                 let p2 = String.concat "" p2 in
                 EPF.fi ~out:"chan" (sprintf "%s%s=%s;" prf p1 p2) arg)
           fmt args ;
-        if List.length faults > 0 then
-          O.fi "pp_log_faults_init();";
-        List.iter (fun f ->
-            let ((p, lbl), loc, ft) = f in
-            let lbl = match lbl with
-              | None -> "UNKNOWN"
-              | Some s -> OutUtils.fmt_lbl_var p s
-            and loc = match loc with
-              | None -> "UNKNOWN"
-              | Some s -> A.V.pp_v_old s
-            and ft = match ft with
-              | None -> "Unknown"
-              | Some ft -> A.FaultType.pp ft
-            in
-            O.fi "pp_log_faults(chan, &p->th_faults[%d], %d, %s, %s, %s);" p p
-              (SkelUtil.instr_symb_id lbl) (SkelUtil.data_symb_id loc) (SkelUtil.fault_id ft)
+        if Misc.consp faults then O.fi "pp_positive_faults(&p->th_faults[0]);";
+        List.iter (fun ((p,_),_,_ as f) ->
+            let pp_instr,pp_data,pp_ftype = pp_fault_args f in
+            O.fi "pp_negative_fault(&p->th_faults[%d], %d, %s, %s, %s);" p p
+              pp_instr pp_data pp_ftype
           ) faults;
         O.o "}" ;
         O.o "" ;
