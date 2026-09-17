@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-latest
+          - ubuntu-24.04
         cfg:
           # Minimal versions: we want to test both ends of the supported space
           - ocaml-compiler: "ocaml-base-compiler.4.14.0,dune.3.15.3,zarith.1.13,menhir.20231231,logs.0.7.0"
@@ -45,6 +45,9 @@ jobs:
     steps:
       - name: Checkout tree
         uses: actions/checkout@v7
+
+      - name: work-around apparmor profile for opam in ubuntu 24.04
+        run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
 
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3

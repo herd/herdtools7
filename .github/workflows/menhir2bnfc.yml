@@ -26,7 +26,7 @@ jobs:
   build:
     name: Build and run menhir2bnfc
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     env:
       DUNE_CACHE: 'enabled-except-user-rules'
@@ -34,6 +34,9 @@ jobs:
     steps:
       - name: Checkout tree
         uses: actions/checkout@v7
+
+      - name: work-around apparmor profile for opam in ubuntu 24.04
+        run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
 
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
