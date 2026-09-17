@@ -2084,21 +2084,22 @@ Arguments:
         | Imm (k,Idx) ->
            str_simple sz rs rd  (get_ea_idx rd k ii)  ii
         | Imm (k,PostIdx) ->
-           let m =
-             M.delay_kont "str_post"
-               (read_reg_addr rd ii)
-               (fun a_virt ma ->
-                 do_str rd
-                   (fun ac a v ii ->
-                     M.add a_virt (V.intToV k) >>= fun b -> write_reg rd b ii
-                     >>|
-                     M.data_input_next
-                       (M.unitT v)
-                       (fun v -> do_write_mem sz Annot.N aexp ac a v ii))
-                   sz Annot.N
-                   ma (read_reg_data_sz sz rs ii) ii) in
-           if kvm then M.upOneRW (is_this_reg rd) m
-           else m
+           let ma = read_reg_addr rd ii
+           and mv = read_reg_data_sz sz rs ii in
+           let str_postidx a_virt ma =
+             let write_dreg =
+               M.add a_virt (V.intToV k) >>=
+               fun v -> write_reg rd v ii in
+             let write_mem _ =
+               let mop = do_write_mem sz Annot.N aexp in
+               do_str rd mop sz Annot.N ma mv ii in
+             M.para_bind_output_right write_dreg write_mem in
+           let m = M.delay_kont "str_post" ma str_postidx in
+           let is_this_read e =
+             is_this_reg rd e && E.is_reg_load e ii.A.proc in
+           let is_this_write e =
+             is_this_reg rd e && E.is_reg_store e ii.A.proc in
+           M.short (is_this_read) (is_this_write) m
         | Imm (k,PreIdx) ->
            str_simple sz rs rd (get_ea_preindexed rd k ii) ii
         | Reg (v,ri,sext,s) ->
