@@ -597,10 +597,8 @@ module Make(C:Builder.S)
         chunk list * chunk list * chunk list * t
       val can_precede : t -> chunk -> chunk list -> bool
     end = struct
-      type chunk =
+      type cache_edges =
         {
-          id : int ;
-          predicate_relax : predicate_relax ;
           to_cycle : C.E.edge list ;
           concrete_edges_with_atom : C.E.edge list ;
           non_pseudo_edges : C.E.edge list ;
@@ -611,6 +609,13 @@ module Make(C:Builder.S)
           trailing_with : C.E.edge list ;
           leading_state : StringSet.t ;
           trailing_state : StringSet.t ;
+        }
+
+      type chunk =
+        {
+          id : int ;
+          predicate_relax : predicate_relax ;
+          cache : cache_edges ;
           process_count : int ;
           left_instruction_count : int ;
           (** Internal edges before the first external edge. *)
@@ -623,27 +628,158 @@ module Make(C:Builder.S)
 
       type t = bool array array
 
-      let leading_with =
-        let rec do_rec = function
-          | With edge::rest -> edge::do_rec rest
-          | State _::rest -> do_rec rest
-          | _ -> [] in
-        do_rec
+      (** For example, while scanning
+          [[@with(Rfe) @state(A) @before(PodRW) PodRW Fre
+            @after(PodRR) @state(B) @with(Coe)]], the accumulator contains:
+          - [concrete_rev = [Fre; PodRW]]
+          - [concrete_with_atom_rev = [Fre; PodRW]]
+          - [non_pseudo_rev = [Fre; PodRW]]
+          - [leading_before_rev = [PodRW]]
+          - [trailing_after_rev = [PodRR]]
+          - [leading_with_rev = [Rfe]]
+          - [trailing_with_rev = [Coe]]
+          - [trailing_with_atom_rev = [Coe]]
+          - [trailing_with_non_pseudo_rev = [Coe]].
 
-      let trailing_with edges = leading_with (List.rev edges) |> List.rev
+          The lists are accumulated in reverse order. Finalisation reverses
+          them and produces [concrete_edges = [PodRW; Fre]] and
+          [to_cycle = [PodRW; Fre; Coe]]. The state accumulators, which are
+          carried separately, produce [leading_state = {A}] and
+          [trailing_state = {B}]. *)
+      type cache_edges_acc =
+        {
+          concrete_rev : C.E.edge list ;
+          concrete_with_atom_rev : C.E.edge list ;
+          non_pseudo_rev : C.E.edge list ;
+          leading_before_rev : C.E.edge list ;
+          trailing_after_rev : C.E.edge list ;
+          leading_with_rev : C.E.edge list ;
+          trailing_with_rev : C.E.edge list ;
+          trailing_with_atom_rev : C.E.edge list ;
+          trailing_with_non_pseudo_rev : C.E.edge list ;
+        }
 
-      (** [to_cycle_edges edges] materialises plain edges and any trailing
-          [with] sequence in the current chunk. A leading [with] sequence is
-          only an anchor: its matching trailing sequence is materialised by the
-          preceding chunk. This runs before predicate resolution; unmatched
-          anchors are rejected later. *)
-      let to_cycle_edges edges =
-        let concrete =
-          List.filter_map (function Plain edge -> Some edge | _ -> None) edges in
-        concrete @ trailing_with edges
+      let empty_cache_edges_acc =
+        {
+          concrete_rev=[];
+          concrete_with_atom_rev=[];
+          non_pseudo_rev=[];
+          leading_before_rev=[];
+          trailing_after_rev=[];
+          leading_with_rev=[];
+          trailing_with_rev=[];
+          trailing_with_atom_rev=[];
+          trailing_with_non_pseudo_rev=[];
+        }
+
+      let add_concrete edge cache =
+        {
+          cache with
+          concrete_rev=edge::cache.concrete_rev;
+          concrete_with_atom_rev=
+            if C.E.is_insert_store edge.C.E.edge
+            then cache.concrete_with_atom_rev
+            else edge::cache.concrete_with_atom_rev;
+          non_pseudo_rev=
+            if C.E.is_non_pseudo edge.C.E.edge
+            then edge::cache.non_pseudo_rev
+            else cache.non_pseudo_rev;
+        }
+
+      let add_trailing_with edge cache =
+        {
+          cache with
+          trailing_with_rev=edge::cache.trailing_with_rev;
+          trailing_with_atom_rev=
+            if C.E.is_insert_store edge.C.E.edge
+            then cache.trailing_with_atom_rev
+            else edge::cache.trailing_with_atom_rev;
+          trailing_with_non_pseudo_rev=
+            if C.E.is_non_pseudo edge.C.E.edge
+            then edge::cache.trailing_with_non_pseudo_rev
+            else cache.trailing_with_non_pseudo_rev;
+        }
+
+      let reset_trailing_with cache =
+        {
+          cache with
+          trailing_with_rev=[];
+          trailing_with_atom_rev=[];
+          trailing_with_non_pseudo_rev=[];
+        }
+
+      let cache_predicate_relax predicate_relax =
+        let step
+            (cache_acc,
+             collect_leading_before,collect_leading_with,collect_leading_state,
+             leading_state,trailing_state) predicate =
+          let cache = match predicate with
+            | Plain edge -> add_concrete edge cache_acc
+            | _ -> cache_acc in
+          let cache,collect_leading_before =
+            if collect_leading_before then match predicate with
+              | Before edge ->
+                  {cache with
+                   leading_before_rev=edge::cache.leading_before_rev},true
+              | State _|With _ -> cache,true
+              | Plain _|After _ -> cache,false
+            else cache,false in
+          let cache,collect_leading_with =
+            if collect_leading_with then match predicate with
+              | With edge ->
+                  {cache with
+                   leading_with_rev=edge::cache.leading_with_rev},true
+              | State _ -> cache,true
+              | Plain _|Before _|After _ -> cache,false
+            else cache,false in
+          let leading_state,collect_leading_state =
+            if collect_leading_state then match predicate with
+              | State states -> StringSet.union leading_state states,true
+              | Before _|With _ -> leading_state,true
+              | Plain _|After _ -> leading_state,false
+            else leading_state,false in
+          let cache = match predicate with
+            | After edge ->
+                { (reset_trailing_with cache) with
+                  trailing_after_rev=edge::cache.trailing_after_rev; }
+            | With edge -> add_trailing_with edge cache
+            | State _ -> cache
+            | Plain _|Before _ ->
+                { (reset_trailing_with cache) with trailing_after_rev=[]; } in
+          let trailing_state = match predicate with
+            | State states -> StringSet.union trailing_state states
+            | After _|With _ -> trailing_state
+            | Plain _|Before _ -> StringSet.empty in
+          cache,collect_leading_before,collect_leading_with,collect_leading_state,
+          leading_state,trailing_state in
+        let cache,_,_,_,leading_state,trailing_state =
+          List.fold_left step
+            (empty_cache_edges_acc,true,true,true,
+             StringSet.empty,StringSet.empty)
+            predicate_relax in
+        let rev = List.rev in
+        let concrete_edges = rev cache.concrete_rev
+        and trailing_with = rev cache.trailing_with_rev in
+        let to_cycle = concrete_edges @ trailing_with
+        and concrete_edges_with_atom =
+          rev cache.concrete_with_atom_rev @ rev cache.trailing_with_atom_rev
+        and non_pseudo_edges =
+          rev cache.non_pseudo_rev @ rev cache.trailing_with_non_pseudo_rev in
+        {
+          to_cycle;
+          concrete_edges_with_atom;
+          non_pseudo_edges;
+          concrete_edges;
+          leading_before=rev cache.leading_before_rev;
+          trailing_after=rev cache.trailing_after_rev;
+          leading_with=rev cache.leading_with_rev;
+          trailing_with;
+          leading_state;
+          trailing_state;
+        }
 
       let to_relax c = c.predicate_relax
-      let to_cycle c = c.to_cycle
+      let to_cycle c = c.cache.to_cycle
       let pp_list chunks =
         String.concat " "
           (List.map (fun chunk -> PredicateRelax.pp chunk.predicate_relax) chunks)
@@ -730,7 +866,7 @@ module Make(C:Builder.S)
         starts_with_edges (List.rev list) (List.rev expected)
 
       let merge_with next exist =
-        match next.trailing_with,exist.leading_with with
+        match next.cache.trailing_with,exist.cache.leading_with with
         | trailing,leading when trailing <> [] && leading <> [] ->
             C.R.compare trailing leading = 0
         | _ -> false
@@ -743,11 +879,11 @@ module Make(C:Builder.S)
            - `before` pairing with `after` fails. *)
       let merge_predicate next exist =
         (* Match `after` or `before` predicates when present. *)
-        match next.trailing_after,exist.leading_before with
+        match next.cache.trailing_after,exist.cache.leading_before with
         | (_::_ as after),[] ->
-            starts_with_edges exist.concrete_edges after
+            starts_with_edges exist.cache.concrete_edges after
         | [],(_::_ as before) ->
-            ends_with_edges next.concrete_edges before
+            ends_with_edges next.cache.concrete_edges before
         (* Reject an `after` predicate directly meeting a `before` predicate. *)
         | [],[] | _::_,_::_ -> false
 
@@ -759,91 +895,48 @@ module Make(C:Builder.S)
       let can_precede_edges can_precede next exist =
         (* Checking adjacency after removing all pseudo-edges rules out, for
            example, the AArch64 adjacency `PosRR Store -> PosRR ISB`. *)
-        edge_lists_can_precede next.non_pseudo_edges exist.non_pseudo_edges
+        edge_lists_can_precede next.cache.non_pseudo_edges exist.cache.non_pseudo_edges
         (* Checking atom-bearing concrete edges rules out, for example,
            the AArch64 adjacency `PosRWPA -> PosWRLP`. *)
         && edge_lists_can_precede
-             next.concrete_edges_with_atom exist.concrete_edges_with_atom
-        && can_precede next.to_cycle exist.to_cycle
+             next.cache.concrete_edges_with_atom exist.cache.concrete_edges_with_atom
+        && can_precede next.cache.to_cycle exist.cache.to_cycle
       (* Resolve boundary metadata from the outside in:
          - Require equal state sets.
          - Match and remove any `with` predicates.
          - Match `before`/`after` predicates against neighbouring plain edges.
          - Otherwise, check plain-edge adjacency with the internal filter. *)
       let can_precede can_precede next exist =
-        if not (StringSet.equal next.trailing_state exist.leading_state) then false
-        else if next.trailing_with <> [] || exist.leading_with <> [] then
+        if not
+             (StringSet.equal
+                next.cache.trailing_state exist.cache.leading_state) then false
+        else if
+          next.cache.trailing_with <> [] || exist.cache.leading_with <> [] then
           if merge_with next exist then begin
               (* Both relaxations are already valid. The matching `with`
                  sequence concretises their shared boundary, leaving only any
                  newly exposed boundary predicates to check. *)
-              if next.trailing_after <> [] || exist.leading_before <> []
+              if next.cache.trailing_after <> [] || exist.cache.leading_before <> []
               then merge_predicate next exist
               else true
           end else false
-        else if next.trailing_after <> [] || exist.leading_before <> [] then
+        else if next.cache.trailing_after <> [] || exist.cache.leading_before <> [] then
           merge_predicate next exist
         else can_precede_edges can_precede next exist
-
-      let rec leading_before = function
-        | Before edge::rest -> edge::leading_before rest
-        | State _::rest | With _::rest -> leading_before rest
-        | _ -> []
-
-      let trailing_after relax =
-        let rec do_rec = function
-          | After edge::rest -> edge::do_rec rest
-          | State _::rest | With _::rest -> do_rec rest
-          | _ -> [] in
-        do_rec (List.rev relax) |> List.rev
-
-      let rec collect_state continue_pred states = function
-        | State state::rest ->
-            collect_state continue_pred (StringSet.union states state) rest
-        | edge::rest when continue_pred edge ->
-            collect_state continue_pred states rest
-        | _ -> states
 
       let make safes po_safe prefix relax safe =
         let next_id = ref 0 in
         let mk_chunk predicate_relax =
           let id = !next_id in
           incr next_id ;
-          let to_cycle = to_cycle_edges predicate_relax in
+          let cache = cache_predicate_relax predicate_relax in
           let left_instruction_count,max_instruction_count_opt,
-              right_instruction_count = count_instructions to_cycle in
-          let concrete_edges_with_atom =
-            List.filter
-              (fun edge -> not (C.E.is_insert_store edge.C.E.edge))
-              to_cycle in
-          let non_pseudo_edges =
-            List.filter (fun edge -> C.E.is_non_pseudo edge.C.E.edge) to_cycle in
-          let concrete_edges =
-            List.filter_map
-              (function Plain edge -> Some edge | _ -> None)
-              predicate_relax in
-          let leading_state =
-            collect_state
-              (function Before _|With _ -> true | _ -> false)
-              StringSet.empty predicate_relax in
-          let trailing_state =
-            collect_state
-              (function After _|With _ -> true | _ -> false)
-              StringSet.empty (List.rev predicate_relax) in
+              right_instruction_count = count_instructions cache.to_cycle in
           {
             id;
             predicate_relax;
-            to_cycle;
-            concrete_edges_with_atom;
-            non_pseudo_edges;
-            concrete_edges;
-            leading_before=leading_before predicate_relax;
-            trailing_after=trailing_after predicate_relax;
-            leading_with=leading_with predicate_relax;
-            trailing_with=trailing_with predicate_relax;
-            leading_state;
-            trailing_state;
-            process_count=count_processes to_cycle;
+            cache;
+            process_count=count_processes cache.to_cycle;
             left_instruction_count;
             max_instruction_count_opt;
             right_instruction_count;
