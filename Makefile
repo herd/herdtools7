@@ -22,6 +22,7 @@ DIYONE                        = _build/install/default/bin/diyone7
 DIYCROSS                      = _build/install/default/bin/diycross7
 DIYMICROENUM                  = _build/install/default/bin/diymicroenum7
 HERD                          = _build/install/default/bin/herd7
+HERD_LIB_DIR                  = ./herd/libdir
 LITMUS                        = _build/install/default/bin/litmus7
 LITMUS_LIB_DIR                = $(PWD)/litmus/libdir
 DIY_REGRESSION_TEST           = _build/default/internal/diy_regression_test.exe
@@ -106,7 +107,7 @@ test.aarch64assumptions:
 	@ echo
 	$(HERD_ASSUMPTIONS_TEST) \
 		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
+		-libdir-path $(HERD_LIB_DIR) \
 		-dirs-and-confs-path ./dirs-and-confs.txt \
 		-assumptions-path ./tools/libdir/aarch64assumptions.cat
 	@ echo "cat2table AArch64 assumptions: OK"
@@ -120,7 +121,7 @@ test.herd.inst.%:
 		-j $(J) \
 		$(NOHASH) \
 		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
+		-libdir-path $(HERD_LIB_DIR) \
 		-litmus-dir ./herd/tests/instructions/$* \
 		-conf ./herd/tests/instructions/$*/ci.cfg \
 		$(REGRESSION_TEST_MODE)
@@ -159,7 +160,7 @@ test.herd-asl.inst.%: asl-pseudocode
 	$(HERD_REGRESSION_TEST) \
 		-j $(J) \
 		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
+		-libdir-path $(HERD_LIB_DIR) \
 		-litmus-dir ./herd/tests/instructions/$* \
 		-conf ./herd/tests/instructions/$*/asl.cfg \
 		-checkstates \
@@ -186,7 +187,7 @@ test.aarch64.asl.with.vmsa: asl-pseudocode
 	$(HERD_REGRESSION_TEST) \
 		-j $(J) \
 		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
+		-libdir-path $(HERD_LIB_DIR) \
 		-litmus-dir ./herd/tests/instructions/AArch64 \
 		-conf ./herd/tests/instructions/AArch64/asl-with-vmsa.cfg \
 		-checkstates \
@@ -200,7 +201,7 @@ test-aarch64-asl: asl-pseudocode
 	$(HERD_REGRESSION_TEST) \
 		-j $(J) \
 		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
+		-libdir-path $(HERD_LIB_DIR) \
 		-litmus-dir ./herd/tests/instructions/AArch64.ASL \
 		-conf ./herd/tests/instructions/AArch64.ASL/asl.cfg \
 		$(REGRESSION_TEST_MODE)
@@ -212,7 +213,7 @@ test-aarch64-asl-with-vmsa: asl-pseudocode
 	$(HERD_REGRESSION_TEST) \
 		-j $(J) -checkstates  \
 		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
+		-libdir-path $(HERD_LIB_DIR) \
 		-litmus-dir ./herd/tests/instructions/AArch64.ASL \
 		-conf ./herd/tests/instructions/AArch64.ASL/asl-with-vmsa.cfg \
 		$(REGRESSION_TEST_MODE)
@@ -225,7 +226,7 @@ test-aarch64-noasl:
 	$(HERD_REGRESSION_TEST) \
 		-j $(J) \
 		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
+		-libdir-path $(HERD_LIB_DIR) \
 		-litmus-dir ./herd/tests/instructions/AArch64.ASL \
 		-conf ./herd/tests/instructions/AArch64.ASL/noasl.cfg \
 		$(REGRESSION_TEST_MODE)
@@ -238,7 +239,7 @@ test-aarch64-noasl-mixed:
 	$(HERD_REGRESSION_TEST) \
 		-j $(J) \
 		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
+		-libdir-path $(HERD_LIB_DIR) \
 		-litmus-dir ./herd/tests/instructions/AArch64.ASL \
 		-conf ./herd/tests/instructions/AArch64.ASL/noasl-mixed.cfg \
 		$(REGRESSION_TEST_MODE)
@@ -265,7 +266,7 @@ test.herd.cata.%:
 		-j $(J) \
 		-herd-path $(HERD) \
 		-herd-timeout $(TIMEOUT) \
-		-libdir-path ./herd/libdir \
+		-libdir-path $(HERD_LIB_DIR) \
 		-kinds-path catalogue/$*/tests/kinds.txt \
 		-shelf-path catalogue/$*/ci-shelf.py \
 		$(REGRESSION_TEST_MODE)
@@ -293,7 +294,7 @@ test.herd.cata-extended.%:
 		-j $(J) \
 		$(NOHASH) \
 		-herd-path $(HERD) \
-		-libdir-path ./herd/libdir \
+		-libdir-path $(HERD_LIB_DIR) \
 		-litmus-dir  catalogue/$*/tests \
 		-conf catalogue/$*/cfgs/ci.cfg \
 		$(REGRESSION_TEST_MODE)
@@ -308,7 +309,7 @@ test.herd-mixed.cata.%:
 		-j $(J) \
 		-herd-path $(HERD) \
 		-herd-timeout $(TIMEOUT) \
-		-libdir-path ./herd/libdir \
+		-libdir-path $(HERD_LIB_DIR) \
 		-kinds-path catalogue/$*/tests/kinds.txt \
 		-shelf-path catalogue/$*/ci-shelf.py \
 		-variant mixed \
@@ -327,7 +328,7 @@ test.herd-asl.cata.%: asl-pseudocode
 		-variant strict \
 		-herd-path $(HERD) \
 		-herd-timeout $(TIMEOUT) \
-		-libdir-path ./herd/libdir \
+		-libdir-path $(HERD_LIB_DIR) \
 		-kinds-path catalogue/$*/tests/kinds.txt \
 		-shelf-path catalogue/$*/ci-shelf.py \
 		-conf-path catalogue/$*/cfgs/asl.cfg \
@@ -431,7 +432,7 @@ diymicro-test-aarch64:
 	$(HERD_DIYCROSS_REGRESSION_TEST) \
 		-herd-path $(HERD) \
 		-diycross-path $(DIYMICROENUM) \
-		-libdir-path ./herd/libdir \
+		-libdir-path $(HERD_LIB_DIR) \
 		-expected-dir ./gen/tests/diymicro/AArch64 \
 		$(DIYMICRO_EDGES_ARG) \
 		$(REGRESSION_TEST_MODE)
@@ -445,7 +446,7 @@ diymicro-test-aarch64-asl: asl-pseudocode
 	$(HERD_DIYCROSS_REGRESSION_TEST) \
 		-herd-path $(HERD) \
 		-diycross-path $(DIYMICROENUM) \
-		-libdir-path ./herd/libdir \
+		-libdir-path $(HERD_LIB_DIR) \
 		-expected-dir ./gen/tests/diymicro/AArch64 \
 		-conf ./gen/tests/diymicro/AArch64/asl.cfg \
 		-j $(J) \
