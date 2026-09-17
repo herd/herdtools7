@@ -3,20 +3,18 @@ let find_compliance_files dir =
     let rec loop result = function
       | f :: fs when Sys.is_directory (Filename.concat dir f) ->
           Sys.readdir (Filename.concat dir f)
-          |> Array.to_list
-          |> List.map (Filename.concat f)
-          |> List.append fs |> loop result
+          |> Array.fold_left (fun fs f' -> Filename.concat f f' :: fs) fs
+          |> loop result
       | f :: fs -> loop (f :: result) fs
       | [] -> result
     in
-    let start = Sys.readdir dir |> Array.to_list in
-    loop [] start
+    loop [] [ "" ]
   in
   let asl_suffix = ".asl" and yaml_suffix = ".yaml" in
   let chop_suffix fname =
-    if Filename.check_suffix fname asl_suffix then
-      Filename.chop_suffix_opt ~suffix:asl_suffix fname
-    else Filename.chop_suffix_opt ~suffix:yaml_suffix fname
+    match Filename.chop_suffix_opt ~suffix:asl_suffix fname with
+    | Some _ as o -> o
+    | None -> Filename.chop_suffix_opt ~suffix:yaml_suffix fname
   in
   let all = List.filter_map chop_suffix dir_contents in
   List.sort_uniq String.compare all

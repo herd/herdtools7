@@ -35,11 +35,6 @@ module TestCase = struct
     | Success -> outcome_success
     | Failure -> outcome_failure
 
-  let outcome_of_string ~base s =
-    if String.equal s outcome_success then Success
-    else if String.equal s outcome_failure then Failure
-    else fatal ~base (Printf.sprintf "bad outcome: %s" s)
-
   type testcase = {
     mode : mode;
     outcome : outcome;
@@ -52,53 +47,38 @@ end
 
 open TestCase
 
-(** Read a YAML file to a testcase. *)
-let yaml_value_to_testcase ~base (yaml : Yaml.value) =
+(** Read the mode field from a YAML file. *)
+let yaml_value_to_mode ~base (yaml : Yaml.value) =
   let bad_key s = fatal ~base (Printf.sprintf "bad YAML key: %s" s) in
   let extract_string key map =
     match List.assoc_opt key map with Some (`String s) -> s | _ -> bad_key key
   in
-  let extract_string_opt key map =
-    match List.assoc_opt key map with
-    | Some (`String s) -> Some s
-    | None -> None
-    | _ -> bad_key key
-  in
-  let extract_int_opt key map =
-    match List.assoc_opt key map with
-    | Some (`Float f) -> Some (Float.to_int f)
-    | None -> None
-    | _ -> bad_key key
-  in
   match yaml with
-  | `O map ->
-      let mode = mode_of_string ~base (extract_string "mode" map) in
-      let outcome = outcome_of_string ~base (extract_string "outcome" map) in
-      let output = extract_string_opt "output" map in
-      let error_code = extract_string_opt "error" map in
-      let error_line = extract_int_opt "error_line" map in
-      let info = extract_string_opt "info" map in
-      { mode; outcome; output; error_code; error_line; info }
+  | `O map -> mode_of_string ~base (extract_string "mode" map)
   | _ -> fatal ~base "expected top-level YAML object"
 
-let read_testcase_from_yaml_file path =
+let read_mode_from_file ~test_stem =
+  let path = test_stem ^ ".yaml" in
   let yaml_value =
     match read_file path |> Yaml.of_string with
     | Ok y -> y
     | Error (`Msg s) -> fatal ~base:path s
   in
-  yaml_value_to_testcase ~base:path yaml_value
-
-let read_testcase_from_file ~test_stem =
-  read_testcase_from_yaml_file (test_stem ^ ".yaml")
+  yaml_value_to_mode ~base:path yaml_value
 
 let output_of_buffer buffer =
   match Buffer.contents buffer with "" -> None | output -> Some output
 
-let run_aslref ~test_stem testcase =
+let error_line_of_annotated error =
+  if Asllib.ASTUtils.is_dummy_pos error then None
+  else
+    let position = error.Asllib.AST.pos_start in
+    Some position.Lexing.pos_lnum
+
+let run_aslref ~test_stem mode =
   let stdout_buffer = Buffer.create 256 in
   let stderr_buffer = Buffer.create 256 in
-  let exec = match testcase.mode with Exec -> true | NoExec -> false in
+  let exec = match mode with Exec -> true | NoExec -> false in
   let args =
     Asllib.Runner.
       {
@@ -112,7 +92,7 @@ let run_aslref ~test_stem testcase =
   try
     let _exit_code = Asllib.Runner.run args in
     {
-      testcase with
+      mode;
       outcome = Success;
       output = output_of_buffer stdout_buffer;
       error_code = None;
@@ -128,15 +108,11 @@ let run_aslref ~test_stem testcase =
     | Some code ->
         let info = Asllib.Error.error_to_string error in
         {
-          testcase with
+          mode;
           outcome = Failure;
           output = output_of_buffer stdout_buffer;
           error_code = Some (Asllib.Error.ErrorCode.to_string code);
-          error_line =
-            (if Asllib.ASTUtils.is_dummy_pos error then None
-             else
-               let position = error.Asllib.AST.pos_start in
-               Some position.Lexing.pos_lnum);
+          error_line = error_line_of_annotated error;
           info = Some info;
         })
 
@@ -162,27 +138,25 @@ let test_case_to_yaml testcase : Yaml.yaml =
         m_implicit = true;
         m_members =
           List.filter_map
-            (fun (k, v, style) ->
-              Option.map (fun v -> (key k, simple_scalar v style)) v)
+            (function
+              | k, Some v, style -> Some (key k, simple_scalar v style)
+              | _, None, _ -> None)
             map;
       }
   in
-  let to_output =
-    mapping
-      [
-        ("mode", Some (string_of_mode testcase.mode), `Plain);
-        ("outcome", Some (string_of_outcome testcase.outcome), `Plain);
-        ("output", testcase.output, `Literal);
-        ("error", testcase.error_code, `Plain);
-        ("error_line", Option.map Int.to_string testcase.error_line, `Plain);
-        ("info", testcase.info, `Literal);
-      ]
-  in
-  to_output
+  mapping
+    [
+      ("mode", Some (string_of_mode testcase.mode), `Plain);
+      ("outcome", Some (string_of_outcome testcase.outcome), `Plain);
+      ("output", testcase.output, `Literal);
+      ("error", testcase.error_code, `Plain);
+      ("error_line", Option.map Int.to_string testcase.error_line, `Plain);
+      ("info", testcase.info, `Literal);
+    ]
 
 let generate_actual ~test_stem =
-  let testcase = read_testcase_from_file ~test_stem in
-  let actual = run_aslref ~test_stem testcase in
+  let mode = read_mode_from_file ~test_stem in
+  let actual = run_aslref ~test_stem mode in
   let yaml_of_testcase = test_case_to_yaml actual in
   match Yaml.yaml_to_string yaml_of_testcase with
   | Ok s -> Printf.printf "%s" s
