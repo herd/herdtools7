@@ -44,17 +44,10 @@ jobs:
       - name: Checkout tree
         uses: actions/checkout@v7
 
-      - name: work-around apparmor profile for opam in ubuntu 24.04
-        run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
-
-      - name: Set-up OCaml
-        uses: ocaml/setup-ocaml@v3
+      - name: Set up OCaml and dependencies
+        uses: ./.github/actions/setup-opam
         with:
           ocaml-compiler: ${{ matrix.cfg.ocaml-version }}
-          dune-cache: true
-
-      - name: Install herd dependencies
-        run: opam install . --deps-only --with-test
 
       - run: opam exec -- make build DUNE_PROFILE=dev
 
