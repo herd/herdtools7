@@ -2625,12 +2625,12 @@ Arguments:
         else
           begin
             read_reg_neon Port.Data rd1 ii >>= fun v1 ->
-            write_mem sz aexp Access.VIR addr1 v1 ii
+            do_write_mem sz an aexp Access.VIR addr1 v1 ii
           end >>|
           begin
             M.add addr1 (neon_sz_k var) >>|
             read_reg_neon Port.Data rd2 ii >>= fun (addr2, v2) ->
-            write_mem sz aexp Access.VIR addr2 v2 ii
+            do_write_mem sz an aexp Access.VIR addr2 v2 ii
           end >>= B.next2T
 
       let m128 k = promote (V.intToV k)
