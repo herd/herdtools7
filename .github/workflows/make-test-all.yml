@@ -28,7 +28,7 @@ jobs:
 
     name: Make test on OCaml v${{ matrix.ocaml-version }}
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     env:
       DUNE_CACHE: 'enabled-except-user-rules'
@@ -36,6 +36,9 @@ jobs:
     steps:
       - name: Checkout tree
         uses: actions/checkout@v7
+
+      - name: work-around apparmor profile for opam in ubuntu 24.04
+        run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
 
       - name: Set-up OCaml ${{ matrix.ocaml-version }}
         uses: ocaml/setup-ocaml@v3
@@ -63,7 +66,7 @@ jobs:
   aslref:
     name: Install ASLRef on OCaml v5
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     env:
       DUNE_CACHE: 'enabled-except-user-rules'
@@ -71,6 +74,9 @@ jobs:
     steps:
       - name: Checkout tree
         uses: actions/checkout@v7
+
+      - name: work-around apparmor profile for opam in ubuntu 24.04
+        run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
 
       - name: Set-up OCaml 5
         uses: ocaml/setup-ocaml@v3
