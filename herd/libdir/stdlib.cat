@@ -36,6 +36,13 @@ let ctrlcfence(ctrl,CFENCE) = (ctrl & (_ * CFENCE)) ; po
 (* Backward compatibility *)
 let inv-field = try inv-domain with 0
 
+let singleton-domain(r) =
+  domain(r) \ domain(r; ((r^-1; r) \ id))
+
+let oa-changes(s, r) =
+  let sr = [s & W & PTE]; r in
+  singleton-domain(sr) & domain(sr \ same-oa(sr))
+
 (* Some utilities (cpp11) *)
 
 let imply (A, B) = ~A | B
