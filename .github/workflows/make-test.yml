@@ -55,6 +55,11 @@ jobs:
       - name: Install opam dependencies
         run: opam install . --deps-only --yes --with-test
 
+      - name: Install ASLRef test dependencies
+        run: |
+          opam exec -- dune build asllib/aslref.opam
+          opam install ./_build/default/asllib/aslref.opam --deps-only --yes --with-test
+
       - run: opam exec -- make all DUNE_PROFILE=dev
 
       - run: opam exec -- make test DUNE_PROFILE=dev
