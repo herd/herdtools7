@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   make-asldoc:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: texlive/texlive:latest-full
 
     env:
@@ -55,7 +55,7 @@ jobs:
          path: asllib/doc/ASLReference.pdf
 
   make-asldoc-html:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Install dependencies
@@ -65,6 +65,9 @@ jobs:
 
       - name: Checkout tree
         uses: actions/checkout@v7
+
+      - name: work-around apparmor profile for opam in ubuntu 24.04
+        run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
 
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v3
