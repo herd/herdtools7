@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2013-present Institut National de Recherche en Informatique et *)
+(* Copyright 2026-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,29 +14,10 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(***************************************)
-(* Apply a function (zyva) to one test *)
-(***************************************)
+(** Push-based iterators. *)
 
-module type Config = GenParser.Config
+type 'a t = ('a -> unit) -> unit
 
-module DefaultConfig : Config
-
-module Top :
-  functor (Cfg:Config) ->
-    functor (T:sig type t end) -> (* Return type, must be abstracted *)
-      functor (B: functor(A:ArchBase.S) -> functor (Pte:PteVal.S) -> functor (AddrReg:AddrReg.S) ->
-        (sig val zyva : Name.t -> A.pseudo MiscParser.t -> T.t end)) ->
-sig
-  val from_file : string -> T.t
-  val from_string : filename:string -> contents:string -> T.t
-  (** Parse [contents] as if they were read from [filename]. *)
-end
-
-module Tops :
-    functor (T:sig type t end) -> (* Return type, must be abstracted *)
-      functor (B: functor(A:ArchBase.S) -> functor (Pte:PteVal.S) -> functor (AddrReg:AddrReg.S) ->
-        (sig val zyva : ( Name.t * A.pseudo MiscParser.t) list -> T.t end)) ->
-sig
-  val from_files : string list -> T.t
-end
+val fold : ('acc -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
+(** [fold f init iter] folds [f] over every element produced by [iter], in
+    iteration order. *)

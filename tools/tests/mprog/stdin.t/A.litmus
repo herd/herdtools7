@@ -1,0 +1,5 @@
+AArch64 A
+{}
+P0;
+MOV X0,#1;
+exists (0:X0=1)
