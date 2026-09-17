@@ -1098,7 +1098,9 @@ let check_cycle c =
       | Some R ->
         let cell = CoSt.get_cell st in
         let bank = n.evt.bank in
-        let check_value = Some (CoSt.get_check_value st) in
+        let check_value =
+          Some ((E.is_com n.prev.edge || E.is_com n.edge || n.evt.rmw)
+                && CoSt.get_check_value st) in
         let st =
           begin match bank with
           | Ord | Instr ->
