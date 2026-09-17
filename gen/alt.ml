@@ -1191,5 +1191,8 @@ module Make(C:Builder.S)
     let filter_check ~safe lhs rhs =
       let safe_set = C.R.Set.of_list (List.map to_relax safe) in
       let po_safe = extract_po safe in
-      FilterImpl.can_precede safe_set po_safe (to_relax lhs) (to_relax rhs)
+      let lhs,rhs,_,adjacency = Chunk.make safe_set po_safe [lhs] [rhs] [] in
+      match lhs,rhs with
+      | [lhs],[rhs] -> Chunk.can_precede adjacency lhs [rhs]
+      | _,_ -> assert false
   end
