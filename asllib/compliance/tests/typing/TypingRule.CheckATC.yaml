@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_TAF
+error_line: 6
+info: |-
+  File ../tests/typing/TypingRule.CheckATC.asl, line 6, characters 12 to 32:
+      var a = 3.0 as integer{1, 2};
+              ^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_TAF): cannot perform Asserted Type Conversion on real by
+    integer {1, 2}.

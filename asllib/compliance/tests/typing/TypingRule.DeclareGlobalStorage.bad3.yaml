@@ -1,0 +1,9 @@
+mode: no-exec
+outcome: FAILURE
+error: BE_PE
+error_line: 2
+info: "File ../tests/typing/TypingRule.DeclareGlobalStorage.bad3.asl, line 2,\n  characters
+  37 to 38:\nconfig uninitialized_config : integer;\n                                     ^\nASL
+  Grammar error (BE_PE): Cannot parse. A `config` declaration must\n  introduce a
+  single name, and have both a type annotation and initialising\n  expression:\n    config
+  name : type = initial_expression;\n  "

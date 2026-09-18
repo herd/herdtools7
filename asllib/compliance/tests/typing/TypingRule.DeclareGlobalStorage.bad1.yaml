@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_SEV
+error_line: 3
+info: |-
+  File ../tests/typing/TypingRule.DeclareGlobalStorage.bad1.asl, line 3,
+    characters 0 to 29:
+  config c : integer{1..5} = x;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_SEV): expected a pure expression/subprogram.

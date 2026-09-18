@@ -1,0 +1,5 @@
+mode: exec
+outcome: FAILURE
+error: DE_BI
+info: |-
+  ASL Dynamic error (DE_BI): Index 3 is outside the valid range 0..2.

@@ -1,0 +1,9 @@
+mode: exec
+outcome: FAILURE
+error: DE_DAF
+error_line: 3
+info: |-
+  File ../tests/semantics/SemanticsRule.SCond3.asl, line 3, characters 9 to 14:
+    assert FALSE;
+           ^^^^^
+  ASL Dynamic error (DE_DAF): Assertion failed: FALSE.

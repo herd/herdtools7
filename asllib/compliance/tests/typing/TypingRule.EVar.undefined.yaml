@@ -1,4 +1,4 @@
-mode: no-exec
+mode: exec
 outcome: FAILURE
 error: TE_UI
 error_line: 3

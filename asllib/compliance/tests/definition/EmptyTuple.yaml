@@ -1,0 +1,9 @@
+mode: exec
+outcome: FAILURE
+error: BE_PE
+error_line: 1
+info: |-
+  File ../tests/definition/EmptyTuple.asl, line 1, characters 11 to 12:
+  type T of ();
+             ^
+  ASL Grammar error (BE_PE): Cannot parse.

@@ -6,11 +6,12 @@
   (and %{bin-available:menhir2bnfc} %{bin-available:bnfc}))
  (libraries bnfc_parser aslref)
  (deps
-  (source_tree %{workspace_root}/asllib/tests))
+  (source_tree %{workspace_root}/asllib/tests)
+  (source_tree %{workspace_root}/asllib/compliance/tests))
  (action
   (chdir
    %{workspace_root}
-   (run %{test} -q asllib/tests))))
+   (run %{test} -q asllib/tests asllib/compliance/tests))))
 
 (test
  (name cmp_binops)

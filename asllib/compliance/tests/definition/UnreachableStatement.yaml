@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+output: |
+  diagnostic assertion failed: example message
+error: DE_UNR
+error_line: 5
+info: |-
+  File ../tests/definition/UnreachableStatement.asl, line 5, characters 8 to 20:
+          unreachable;
+          ^^^^^^^^^^^^
+  ASL Dynamic error (DE_UNR): unreachable reached.

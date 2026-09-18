@@ -1,0 +1,9 @@
+mode: exec
+outcome: FAILURE
+error: TE_BS
+error_line: 4
+info: |-
+  File ../tests/typing/TypingRule.LESlice.bad.asl, line 4, characters 3 to 11:
+    x[3:0, 3] = '0 0000';
+     ^^^^^^^^
+  ASL Static error (TE_BS): overlapping slices 0+:4, 3+:1.

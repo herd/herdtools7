@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_UT
+error_line: 5
+info: |-
+  File ../tests/typing/TypingRule.InheritIntegerConstraints.unconstrained.bad.asl,
+    line 5, characters 4 to 26:
+      var g : integer{} = a;
+      ^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_UT): constrained integer expected, provided integer.

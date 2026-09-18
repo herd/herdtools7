@@ -1,0 +1,20 @@
+mode: exec
+outcome: SUCCESS
+output: |
+  and_bool: TRUE && TRUE = TRUE
+  and_bool: TRUE && FALSE = FALSE
+  or_bool: TRUE || FALSE = TRUE
+  or_bool: FALSE || FALSE = FALSE
+  eq_bool: FALSE == FALSE = TRUE
+  eq_bool: TRUE == TRUE = TRUE
+  eq_bool: FALSE == TRUE = FALSE
+  ne_bool: FALSE != FALSE = FALSE
+  ne_bool: TRUE != TRUE = FALSE
+  ne_bool: FALSE != TRUE = TRUE
+  implies_bool: FALSE ==> FALSE = TRUE
+  implies_bool: FALSE ==> TRUE = TRUE
+  implies_bool: TRUE ==> TRUE = TRUE
+  implies_bool: TRUE ==> FALSE = FALSE
+  equiv_bool: FALSE <=> FALSE = TRUE
+  equiv_bool: TRUE <=> TRUE = TRUE
+  equiv_bool: FALSE <=> TRUE = FALSE

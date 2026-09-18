@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_BO
+error_line: 3
+info: |-
+  File ../tests/typing/TypingRule.EBinop.bad.asl, line 3, characters 10 to 19:
+    let x = 3 DIV 0.0;
+            ^^^^^^^^^
+  ASL Type error (TE_BO): Illegal application of operator DIV on types
+    integer {3} and real.

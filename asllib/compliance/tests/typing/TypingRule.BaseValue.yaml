@@ -1,0 +1,11 @@
+mode: exec
+outcome: SUCCESS
+output: |
+  global_base = 0, unconstrained_integer_base = 0, constrained_integer_base = -3
+  bool_base = FALSE, real_base = 0, string_base = , enumeration_base = RED
+  bits_base = 0x00
+  tuple_base = (0, -3, RED)
+  record_base      = {data=0x00, time=0, flag=FALSE}
+  record_base_init = {data=0x00, time=0, flag=FALSE}
+  exception_base = {msg=}
+  integer_array_base = [[0, 0, 0, 0]]

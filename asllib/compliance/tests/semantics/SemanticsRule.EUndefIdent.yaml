@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_UI
+error_line: 5
+info: |-
+  File ../tests/semantics/SemanticsRule.EUndefIdent.asl, line 5,
+    characters 9 to 10:
+    assert y;
+           ^
+  ASL Static error (TE_UI): Undefined identifier: 'y'

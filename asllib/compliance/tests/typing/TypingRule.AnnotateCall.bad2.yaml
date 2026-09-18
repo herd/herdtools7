@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_UT
+error_line: 13
+info: |-
+  File ../tests/typing/TypingRule.AnnotateCall.bad2.asl, line 13,
+    characters 8 to 33:
+      - = parameterized_func{arg}();
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_UT): constrained integer expected, provided integer.

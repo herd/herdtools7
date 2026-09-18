@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_SEV
+error_line: 10
+info: |-
+  File ../tests/typing/TypingRule.CheckSymbolicallyEvaluable.bad.asl, line 10,
+    characters 5 to 28:
+      [symbolic_throwing{4}(4)] data
+       ^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_SEV): expected a readonly expression/subprogram.

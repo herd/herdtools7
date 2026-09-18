@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_BO
+error_line: 3
+info: |-
+  File ../tests/definition/TypingErrorReporting.asl, line 3,
+    characters 11 to 22:
+      return 5 + "hello";
+             ^^^^^^^^^^^
+  ASL Type error (TE_BO): Illegal application of operator + on types
+    integer {5} and string.

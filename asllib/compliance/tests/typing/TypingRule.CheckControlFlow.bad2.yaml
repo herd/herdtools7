@@ -1,0 +1,21 @@
+mode: exec
+outcome: FAILURE
+error: TE_BSPD
+error_line: 6
+info: |-
+  File ../tests/typing/TypingRule.CheckControlFlow.bad2.asl, line 6,
+    character 4 to line 16, character 8:
+      if v != Zeros{N} then
+          if flag then
+              return Ones{N} XOR v;
+          end;
+      else
+          if flag then
+              return v;
+          else
+              throw invalid_state{-};
+          end;
+      end;
+  ASL Type error (TE_BSPD):
+    not all control flow paths of the function "incorrect_terminating_path" are
+    guaranteed to either return, raise an exception, or invoke unreachable.

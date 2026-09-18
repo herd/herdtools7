@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 8
+info: |-
+  File ../tests/typing/TypingRule.SubtypeSatisfaction3.asl, line 8,
+    characters 4 to 45:
+      var dogLegs : AnimalLegs = myCircleSides; // illegal: unrelated types
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of AnimalLegs was expected,
+    provided ShapeSides.

@@ -1,0 +1,9 @@
+mode: exec
+outcome: FAILURE
+error: TE_BF
+error_line: 6
+info: |-
+  File ../tests/typing/TypingRule.EGetBadField.asl, line 6, characters 12 to 15:
+      var x = a.f;
+              ^^^
+  ASL Type error (TE_BF): There is no field 'f' on type array [[5]] of integer.

@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_IAD
+error_line: 4
+info: |-
+  File ../tests/typing/TypingRule.SubprogramTypesClash.bad1.asl, line 4,
+    characters 8 to 22:
+          return '1000';
+          ^^^^^^^^^^^^^^
+  ASL Type error (TE_IAD): cannot declare already declared element "X".

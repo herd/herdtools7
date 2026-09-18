@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_SEV
+error_line: 4
+info: |-
+  File ../tests/typing/TypingRule.SESIsPure.bad.asl, line 4,
+    characters 18 to 23:
+  type Data of bits(g * 2) {
+                    ^^^^^
+  ASL Type error (TE_SEV): expected a pure expression/subprogram.

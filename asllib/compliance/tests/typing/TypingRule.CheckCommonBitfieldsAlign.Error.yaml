@@ -1,0 +1,15 @@
+mode: exec
+outcome: FAILURE
+error: TE_BS
+error_line: 1
+info: |-
+  File ../tests/typing/TypingRule.CheckCommonBitfieldsAlign.Error.asl, line 1,
+    character 20 to line 6, character 1:
+  type Nested_Type of bits(2) {
+      [1:0] sub {
+          [0,1] common
+      },
+      [1:0] common
+  };
+  ASL Type error (TE_BS):
+    bitfields `sub.common` and `common` are in the same scope but define different slices of the containing bitvector type: [0, 1] and [1:0], respectively.
