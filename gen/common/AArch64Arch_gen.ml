@@ -945,10 +945,14 @@ let is_ifetch = StructuredAtom.is_ifetch
 
    let pp_plain = StructuredAtom.pp StructuredAtom.plain
    let pair_opt_to_ld : [ld_pair_opt | st_pair_opt] -> ld_pair_opt = function
+     | `PaA when not (MachSize.equal C.naturalsize MachSize.Quad) ->
+        Warn.user_error "PaA (LDAP) requires a 64-bit type, such as -type int64_t"
      | `Pa -> `Pa | `PaN -> `PaN | `PaIQ -> `PaIQ | `PaA -> `PaA
      | `PaIL | `PaL -> assert false
 
    let pair_opt_to_st : [ld_pair_opt | st_pair_opt] -> st_pair_opt = function
+     | `PaL when not (MachSize.equal C.naturalsize MachSize.Quad) ->
+        Warn.user_error "PaL (STLP) requires a 64-bit type, such as -type int64_t"
      | `Pa -> `Pa | `PaN -> `PaN | `PaIL -> `PaIL | `PaL -> `PaL
      | `PaIQ | `PaA -> assert false
 
