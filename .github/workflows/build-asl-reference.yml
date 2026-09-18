@@ -20,23 +20,18 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Install dependencies for doclint.py
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y python3
-
       - name: Checkout tree
         uses: actions/checkout@v7
 
-      - name: Set-up OCaml
-        uses: ocaml/setup-ocaml@v3
+      - name: Set up OCaml and dependencies
+        uses: ./.github/actions/setup-opam
         with:
           ocaml-compiler: dune,zarith,menhir,logs,conf-which
-          opam-disable-sandboxing: true
-          dune-cache: true
+          with-test-dependencies: "false"
 
-      - name: Install opam dependencies
-        run: opam install . --deps-only --yes
+      - name: Install python for doclint.py
+        run: |
+          sudo apt-get install -y python3 # the repos are already updated by setup-opam
 
       - name: Set up tectonic cache
         uses: actions/cache@v4
