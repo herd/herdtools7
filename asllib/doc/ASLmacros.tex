@@ -1,4 +1,27 @@
 \usepackage[T1]{fontenc} % makes names with underscore searchable in the PDF.
+
+% XeTeX passes Unicode input directly to the selected T1 font. Map the Unicode
+% punctuation used in the source to T1-safe TeX forms.
+% pdfLaTeX already performs equivalent UTF-8 input mappings.
+\ifx\XeTeXrevision\undefined
+\else
+  \catcode`\“=\active
+  \catcode`\”=\active
+  \catcode`\’=\active
+  \catcode`\®=\active
+  \catcode`\™=\active
+  \catcode`\©=\active
+  \catcode`\–=\active
+  \catcode`\—=\active
+  \protected\def“{``}
+  \protected\def”{''}
+  \protected\def’{'}
+  \protected\def®{\textregistered{}}
+  \protected\def™{\texttrademark{}}
+  \protected\def©{\textcopyright{}}
+  \protected\def–{--}
+  \protected\def—{---}
+\fi
 \usepackage{ifthen} % High-level statements for LaTeX
 \usepackage{amsmath}  % Classic math package
 \usepackage{mathtools}  % Additional math package
