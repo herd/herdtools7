@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 3
+info: |-
+  File ../tests/typing/TypingRule.RenameSubprograms.asl, line 3,
+    characters 2 to 11:
+    return 1;
+    ^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of boolean was expected,
+    provided integer {1}.

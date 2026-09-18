@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_IAD
+error_line: 1
+info: |-
+  File ../tests/typing/TypingRule.TEnumDecl.bad4.asl, line 1,
+    characters 14 to 48:
+  type Color of enumeration { GREEN, ORANGE, RED };
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_IAD): cannot declare already declared element "RED".

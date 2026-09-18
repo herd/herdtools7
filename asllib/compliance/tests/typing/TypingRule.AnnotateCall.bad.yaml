@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 6
+info: |-
+  File ../tests/typing/TypingRule.AnnotateCall.bad.asl, line 6,
+    characters 4 to 21:
+      f{wid}(bus, bus); // Illegal
+      ^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of integer {2, 4} was expected,
+    provided integer {2, 4, 8}.

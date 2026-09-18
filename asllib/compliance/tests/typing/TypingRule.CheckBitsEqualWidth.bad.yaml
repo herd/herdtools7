@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_BO
+error_line: 9
+info: |-
+  File ../tests/typing/TypingRule.CheckBitsEqualWidth.bad.asl, line 9,
+    characters 15 to 21:
+          return x == y; // Illegal: M and N are not necessarily equal.
+                 ^^^^^^
+  ASL Type error (TE_BO): Illegal application of operator == on types bits(M)
+    and bits(N).

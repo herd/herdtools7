@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_NBV
+error_line: 1
+info: |-
+  File ../tests/typing/TypingRule.BaseValue.bad_negative_width.asl, line 1,
+    characters 0 to 24:
+  var bits_base: bits(-3);
+  ^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_NBV): base value of empty type bits((- 3)).

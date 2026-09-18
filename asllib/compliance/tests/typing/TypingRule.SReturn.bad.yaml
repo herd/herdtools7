@@ -1,0 +1,9 @@
+mode: exec
+outcome: FAILURE
+error: TE_BSPD
+error_line: 3
+info: |-
+  File ../tests/typing/TypingRule.SReturn.bad.asl, line 3, characters 4 to 13:
+      return 0;
+      ^^^^^^^^^
+  ASL Type error (TE_BSPD): cannot return something from a procedure.

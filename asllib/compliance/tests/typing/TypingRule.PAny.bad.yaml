@@ -1,0 +1,9 @@
+mode: exec
+outcome: FAILURE
+error: TE_BO
+error_line: 5
+info: |-
+  File ../tests/typing/TypingRule.PAny.bad.asl, line 5, characters 11 to 29:
+      assert TRUE IN {FALSE, 5};
+             ^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_BO): Erroneous pattern 5 for expression of type boolean.

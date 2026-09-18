@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_BO
+error_line: 10
+info: |-
+  File ../tests/typing/TypingRule.CheckBitsEqualWidth.bad2.asl, line 10,
+    characters 11 to 23:
+      cond = bit1 == bit2; // Illegal
+             ^^^^^^^^^^^^
+  ASL Type error (TE_BO): Illegal application of operator == on types
+    bits(int1) and bits(int2).

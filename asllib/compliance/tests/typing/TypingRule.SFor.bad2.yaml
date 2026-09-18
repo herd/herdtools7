@@ -1,0 +1,9 @@
+mode: exec
+outcome: FAILURE
+error: TE_AIM
+error_line: 5
+info: |-
+  File ../tests/typing/TypingRule.SFor.bad2.asl, line 5, characters 8 to 9:
+          i = i + 1;
+          ^
+  ASL Type error (TE_AIM): cannot assign to immutable storage "i".

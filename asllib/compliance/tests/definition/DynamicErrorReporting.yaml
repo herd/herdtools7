@@ -1,0 +1,6 @@
+mode: exec
+outcome: FAILURE
+error: DE_BO
+info: |-
+  ASL Dynamic error (DE_BO): Illegal application of operator DIV for values 128
+    and 7.

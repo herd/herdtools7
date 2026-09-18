@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_BO
+error_line: 4
+info: |-
+  File ../tests/typing/TypingRule.PLeq.bad.asl, line 4, characters 12 to 28:
+       assert 3 IN { <= 42.0 };
+              ^^^^^^^^^^^^^^^^
+  ASL Type error (TE_BO): Erroneous pattern <= (42.0 / 1.0) for expression of
+    type integer {3}.

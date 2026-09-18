@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 8
+info: |-
+  File ../tests/typing/TypingRule.SubtypeSatisfaction.bad1.asl, line 8,
+    characters 0 to 31:
+  var x : integer{Int12} = Int12;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of integer {2} was expected,
+    provided integer {1..2}.

@@ -1,0 +1,4 @@
+mode: exec
+outcome: SUCCESS
+output: |
+  ExceptionType2 : x=2, g= 1

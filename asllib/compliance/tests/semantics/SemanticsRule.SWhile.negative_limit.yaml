@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: DE_LE
+error_line: 4
+info: |-
+  File ../tests/semantics/SemanticsRule.SWhile.negative_limit.asl, line 4,
+    character 2 to line 6, character 6:
+    while TRUE looplimit -1 do
+      println "This should not be printed";
+    end;
+  ASL Dynamic error (DE_LE): loop limit reached.

@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_UT
+error_line: 23
+info: |-
+  File ../tests/typing/TypingRule.AnnotateCallActualsTyped.bad4.asl, line 23,
+    characters 14 to 27:
+      var arg = ones{myWid}();
+                ^^^^^^^^^^^^^
+  ASL Type error (TE_UT): constrained integer expected, provided integer.

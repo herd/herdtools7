@@ -1,0 +1,11 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_BSPD
+error_line: 3
+info: |-
+  File ../tests/typing/TypingRule.ExtractParameters-bad1.asl, line 3,
+    characters 15 to 36:
+      arg0: bits(N as integer{8,16,32}),
+                 ^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_BSPD):
+    Expression N as integer {8, 16, 32} is not permitted in a subprogram signature.

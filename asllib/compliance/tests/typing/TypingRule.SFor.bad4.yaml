@@ -1,0 +1,9 @@
+mode: exec
+outcome: FAILURE
+error: TE_SEV
+error_line: 11
+info: |-
+  File ../tests/typing/TypingRule.SFor.bad4.asl, line 11, characters 17 to 30:
+      for j = 0 to upper_bound() do
+                   ^^^^^^^^^^^^^
+  ASL Type error (TE_SEV): expected a readonly expression/subprogram.

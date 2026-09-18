@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_NBV
+error_line: 3
+info: |-
+  File ../tests/typing/TypingRule.TypeSatisfaction.bad1.asl, line 3,
+    characters 4 to 25:
+      var a: integer{0..N};
+      ^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_NBV): base value of type integer {0..N} cannot be
+    symbolically reduced since it consists of N.

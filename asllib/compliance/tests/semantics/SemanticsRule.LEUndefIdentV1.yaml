@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_UI
+error_line: 5
+info: |-
+  File ../tests/semantics/SemanticsRule.LEUndefIdentV1.asl, line 5,
+    characters 2 to 3:
+    y = 3;
+    ^
+  ASL Static error (TE_UI): Undefined identifier: 'y'

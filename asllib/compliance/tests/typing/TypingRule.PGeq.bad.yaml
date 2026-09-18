@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_BO
+error_line: 4
+info: |-
+  File ../tests/typing/TypingRule.PGeq.bad.asl, line 4, characters 11 to 27:
+      assert 42 IN { >= 3.0 };
+             ^^^^^^^^^^^^^^^^
+  ASL Type error (TE_BO): Erroneous pattern >= (3.0 / 1.0) for expression of
+    type integer {42}.

@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 4
+info: |-
+  File ../tests/typing/TypingRule.BitFieldEqual.bad1.asl, line 4,
+    characters 4 to 71:
+      var x : bits(64) { [1] data } = Zeros{64} as bits(64) { [2] data };
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of bits (64) { [1+:1] data } was expected,
+    provided bits (64) { [2+:1] data }.

@@ -1,0 +1,5 @@
+mode: exec
+outcome: FAILURE
+error: DE_UE
+info: |-
+  ASL Dynamic error (DE_UE): Uncaught exception: MyException {}.

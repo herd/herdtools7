@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_IAD
+error_line: 1
+info: |-
+  File ../tests/typing/TypingRule.SubprogramTypesClash.bad2.asl, line 1,
+    characters 0 to 40:
+  func X() => integer begin return 0; end;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_IAD): cannot declare already declared element "X".

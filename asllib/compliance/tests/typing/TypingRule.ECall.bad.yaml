@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_BC
+error_line: 9
+info: |-
+  File ../tests/typing/TypingRule.ECall.bad.asl, line 9, characters 8 to 13:
+      - = nop(); // Illegal: nop is a procedure, therefore no value to consume.
+          ^^^^^
+  ASL Static error (TE_BC):
+    Mismatched call type for subprogram 'nop': expected a function and found a procedure.

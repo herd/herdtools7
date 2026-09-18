@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 18
+info: |-
+  File ../tests/typing/TypingRule.AddNewFunc.bad2.asl, line 18,
+    characters 4 to 21:
+      g(myCircle, 0.1); // illegal
+      ^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of square was expected, provided circle.

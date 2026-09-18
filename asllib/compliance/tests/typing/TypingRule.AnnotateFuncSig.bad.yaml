@@ -1,0 +1,11 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_SEV
+error_line: 4
+info: |-
+  File ../tests/typing/TypingRule.AnnotateFuncSig.bad.asl, line 4,
+    characters 60 to 63:
+  func signature_example(bv: bits(8)) => bits(16) recurselimit(W)
+                                                              ^^^
+  ASL Type error (TE_SEV): expected a symbolically evaluable
+    expression/subprogram.

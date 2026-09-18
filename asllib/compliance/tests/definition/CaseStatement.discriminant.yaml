@@ -1,0 +1,5 @@
+mode: exec
+outcome: SUCCESS
+output: |
+  num_tests: 0
+  selected case x=51

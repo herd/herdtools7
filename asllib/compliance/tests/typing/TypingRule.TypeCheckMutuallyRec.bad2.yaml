@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_BD
+error_line: 2
+info: |-
+  File ../tests/typing/TypingRule.TypeCheckMutuallyRec.bad2.asl, line 2,
+    characters 0 to 19:
+  type other of base;
+  ^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_BD): multiple recursive declarations: "other", "base".

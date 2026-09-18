@@ -1,0 +1,6 @@
+mode: exec
+outcome: FAILURE
+error: TE_BSPD
+info: |-
+  ASL Type error (TE_BSPD): the function "returning" is qualified with noreturn
+    but may return on some control flow path.

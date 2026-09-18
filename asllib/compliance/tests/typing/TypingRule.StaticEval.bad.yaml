@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_BO
+error_line: 3
+info: |-
+  File ../tests/typing/TypingRule.StaticEval.bad.asl, line 3,
+    characters 5 to 20:
+      [WORD_SIZE DIV 3 - 1:WORD_SIZE DIV 2] upper,
+       ^^^^^^^^^^^^^^^
+  ASL Type error (TE_BO): Illegal application of operator DIV on types
+    integer {64} and integer {3}.

@@ -1,0 +1,11 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_BO
+error_line: 2
+info: |-
+  File ../tests/typing/TypingRule.CheckGlobalPragma.bad.asl, line 2,
+    characters 22 to 28:
+  pragma bad_pragma 1, (2==3.0), x;
+                        ^^^^^^
+  ASL Type error (TE_BO): Illegal application of operator == on types
+    integer {2} and real.

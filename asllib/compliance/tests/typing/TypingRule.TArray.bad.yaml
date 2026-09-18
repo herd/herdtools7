@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_SEV
+error_line: 9
+info: |-
+  File ../tests/typing/TypingRule.TArray.bad.asl, line 9, characters 32 to 58:
+      var illegal_array1: array [[non_symbolically_evaluable]] of integer;
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_SEV): expected a symbolically evaluable
+    expression/subprogram.

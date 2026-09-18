@@ -1,0 +1,13 @@
+mode: exec
+outcome: FAILURE
+error: TE_BSPD
+error_line: 8
+info: |-
+  File ../tests/typing/TypingRule.ApproxStmt.bad1.asl, line 8, character 4 to
+    line 10, character 8:
+      while (TRUE) do
+          pass;
+      end;
+  ASL Type error (TE_BSPD):
+    not all control flow paths of the function "loop_forever" are guaranteed to
+    either return, raise an exception, or invoke unreachable.

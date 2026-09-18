@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: BE_PE
+error_line: 4
+info: |-
+  File ../tests/definition/GuideRule.AnonymousEnumerations.bad.asl, line 4,
+    characters 12 to 23:
+      var x : enumeration {RED, GREEN, BLUE};
+              ^^^^^^^^^^^
+  ASL Grammar error (BE_PE): Cannot parse.

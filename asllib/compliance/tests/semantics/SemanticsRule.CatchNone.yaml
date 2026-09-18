@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: BE_PE
+error_line: 15
+info: |-
+  File ../tests/semantics/SemanticsRule.CatchNone.asl, line 15,
+    characters 8 to 24:
+    catch MyExceptionType1;
+          ^^^^^^^^^^^^^^^^
+  ASL Grammar error (BE_PE): Cannot parse.

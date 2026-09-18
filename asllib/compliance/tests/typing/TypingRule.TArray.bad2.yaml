@@ -1,0 +1,9 @@
+mode: exec
+outcome: FAILURE
+error: TE_UT
+error_line: 5
+info: |-
+  File ../tests/typing/TypingRule.TArray.bad2.asl, line 5, characters 4 to 61:
+      var illegal_array2: array [[non_constrained]] of integer;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_UT): constrained integer expected, provided integer.

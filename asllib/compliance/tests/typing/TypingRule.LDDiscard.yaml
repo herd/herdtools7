@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: BE_PE
+error_line: 4
+info: |-
+  File ../tests/typing/TypingRule.LDDiscard.asl, line 4, characters 6 to 7:
+    let - = 42;
+        ^
+  ASL Grammar error (BE_PE): Cannot parse. A local declaration must declare a
+    name.

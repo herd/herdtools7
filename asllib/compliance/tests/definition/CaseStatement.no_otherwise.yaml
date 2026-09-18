@@ -1,0 +1,12 @@
+mode: exec
+outcome: FAILURE
+output: |
+  num_tests: 0
+error: DE_UNR
+error_line: 17
+info: |-
+  File ../tests/definition/CaseStatement.no_otherwise.asl, line 17,
+    characters 9 to 30:
+      case test_and_increment(x) of
+           ^^^^^^^^^^^^^^^^^^^^^
+  ASL Dynamic error (DE_UNR): unreachable reached.

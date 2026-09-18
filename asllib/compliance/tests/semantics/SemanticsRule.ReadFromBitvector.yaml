@@ -1,0 +1,5 @@
+mode: exec
+outcome: SUCCESS
+output: |
+  empty_bv_slice = 0x, empty_i_slice = 0x
+  slice_bv = 0x9c5, slice_i = 0x9c5

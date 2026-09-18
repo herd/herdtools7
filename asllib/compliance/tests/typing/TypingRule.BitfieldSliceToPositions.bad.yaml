@@ -1,0 +1,12 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_BS
+error_line: 1
+info: |-
+  File ../tests/typing/TypingRule.BitfieldSliceToPositions.bad.asl, line 1,
+    character 0 to line 3, character 2:
+  var myData: bits(16) {
+      [5+:0] data
+  };
+  ASL Static error (TE_BS):
+    Slice 5+:0 has length 0; but the length of this slice must be at least 1.

@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_UT
+error_line: 1
+info: |-
+  File ../tests/typing/TypingRule.TInt.config_pending_constrained.bad.asl,
+    line 1, characters 0 to 26:
+  config x : integer{} =  1;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_UT): a pending constrained integer is illegal here.

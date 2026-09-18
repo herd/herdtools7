@@ -1,0 +1,11 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 5
+info: |-
+  File ../tests/typing/TypingRule.ApproxBottomTop.asl, line 5,
+    characters 4 to 30:
+      var x : integer{a..b} = a;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of integer {a..b} was expected,
+    provided integer {1..10}.

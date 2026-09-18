@@ -1,0 +1,11 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_BSPD
+error_line: 1
+info: |-
+  File ../tests/typing/TypingRule.ParametersOfTy.bad.asl, line 1,
+    characters 27 to 36:
+  func bad_parameter_type(x: integer{})
+                             ^^^^^^^^^
+  ASL Type error (TE_BSPD):
+    Type integer{} is not permitted in a subprogram signature.

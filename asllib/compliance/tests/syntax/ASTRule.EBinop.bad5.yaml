@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: BE_BOP
+error_line: 6
+info: |-
+  File ../tests/syntax/ASTRule.EBinop.bad5.asl, line 6, characters 24 to 29:
+          let p_sub_sub = a - b - c;
+                          ^^^^^
+  ASL Grammar error (BE_BOP): Binary operator `-` is not associative -
+    parenthesise to disambiguate.

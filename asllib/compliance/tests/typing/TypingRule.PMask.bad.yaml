@@ -1,0 +1,9 @@
+mode: exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 5
+info: |-
+  File ../tests/typing/TypingRule.PMask.bad.asl, line 5, characters 11 to 34:
+      assert '101010' IN {'xx10101'};
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of bits(7) was expected, provided bits(6).
