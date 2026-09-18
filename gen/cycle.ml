@@ -260,7 +260,7 @@ module Make (O:Config) (E:Edge.S) :
       ( if e.rmw then "rmw" else "" )
       ( match debug_vec e.cell with | "" -> "" | s -> "cell=[" ^ s ^"] ")
       (debug_val e.v) (debug_tag e) (debug_morello e) (debug_vector e)
-      ( match e.check_fault with | Some (_,b) -> sprintf "%b" b | None -> "none" )
+      ( match e.check_fault with | Some (n,b) -> sprintf "%s:%b" n b | None -> "none" )
       ( match e.check_value with | Some b -> sprintf "%b" b | None -> "none" )
 
   let debug_edge = E.pp_edge
@@ -599,14 +599,19 @@ module CoSt = struct
     | _,_ when do_no_fault -> None,unset_check_fault st
     | NoDir,_ -> None,st
     | Irr,(R|W) | Dir W,W | Dir R,R when do_kvm ->
-        label_pte_fault dir pte_val,unset_check_fault st
+        begin match label_pte_fault dir pte_val with
+        | (Some (_, true) as fault) -> fault,unset_check_fault st
+        (* Carry the check over so the consecutive access must not fault too. *)
+        | (Some (_, false) as fault) -> fault,st
+        | None -> None,unset_check_fault st
+        end
     | Dir R,W | Dir W,R when do_kvm ->
         None,st
     | _,R when do_store_only ->
         None,st
     | _,_ when do_memtag || do_morello ->
-      Some ((Label.next_label "L"), false),unset_check_fault st
-    | _,_ -> None,st
+        Some ((Label.next_label "L"), false),st
+    | _,_ -> None,unset_check_fault st
 
   let implicit_pte_update st dir =
     match Value.implicitly_set_pteval dir st.machine_feature st.pte_value with
@@ -1215,8 +1220,13 @@ let do_set_read_v init =
             if do_morello then None, st
             (* because `rmw` is treated as both read and write,
                we should assign label to this read event.
-               Here we assume write is stronger than read. *)
-            else if n.evt.rmw then CoSt.fault_update st W
+               Here we assume write is stronger than read, except for LxSx,
+               whose load and store are checked separately. *)
+            else if n.evt.rmw then
+              match n.edge.E.edge with
+              | E.Rmw rmw when not (E.RMW.is_one_instruction rmw) ->
+                  CoSt.fault_update st R
+              | _ -> CoSt.fault_update st W
             else CoSt.fault_update st R in
           n.evt <- { n.evt with check_fault };
           st
@@ -1275,7 +1285,18 @@ let do_set_read_v init =
               let check_fault = Value.need_check_fault n.evt.atom in
               CoSt.set_pte_value st check_fault @@ Value.to_pte n.evt.v
             else st in
-        st
+        begin match n.prev.edge.E.edge with
+        (* LxSx has separate load-exclusive and store-exclusive instructions,
+           so check the write event independently. A single-instruction AMO
+           is already covered by the fault check on its read event. *)
+        | E.Rmw rmw
+          when n.evt.rmw && bank = Ord
+            && not (E.RMW.is_one_instruction rmw) ->
+            let check_fault,st = CoSt.fault_update st W in
+            n.evt <- {n.evt with check_fault};
+            st
+        | _ -> st
+        end
       | None ->
         st
     end ) st ns in
@@ -1355,6 +1376,7 @@ let do_set_read_v init =
 (* zyva... *)
 
 let finish n =
+  Label.reset ();
   let st = (0,0),Env.empty in
 (* Set locations *)
   let sd,n =
