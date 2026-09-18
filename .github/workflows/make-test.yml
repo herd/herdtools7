@@ -30,7 +30,7 @@ jobs:
             dune-cache: "enabled"
 
             # Maximal version: this will automatically select the most recent version compatible.
-          - ocaml-compiler: "dune,zarith,menhir,logs"
+          - ocaml-compiler: "dune,zarith,menhir,logs,yaml"
             with-type-check-asl: true
             dune-cache: "enabled-except-user-rules"
             job-name: "OCaml latest lts"
@@ -54,6 +54,11 @@ jobs:
 
       - name: Install opam dependencies
         run: opam install . --deps-only --yes --with-test
+
+      - name: Install ASLRef test dependencies
+        run: |
+          opam exec -- dune build asllib/aslref.opam
+          opam install ./asllib/aslref.opam --deps-only --yes --with-test
 
       - run: opam exec -- make all DUNE_PROFILE=dev
 

@@ -1,0 +1,24 @@
+(executable
+ (name gen)
+ (modules gen))
+
+(executable
+ (name asltest)
+ (modules asltest)
+ (optional)
+ (libraries yaml asllib))
+
+(subdir
+ run
+ (dynamic_include ../generate/dune.inc))
+
+(subdir
+ generate
+ (rule
+  (deps
+   (glob_files_rec ../tests/*.asl)
+   (glob_files_rec ../tests/*.yaml))
+  (action
+   (with-stdout-to
+    dune.inc
+    (run ../gen.exe)))))

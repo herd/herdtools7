@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: BE_PE
+error_line: 3
+info: |-
+  File ../tests/guide/GuideRule.IdentifiersKeywords.bad.asl, line 3,
+    characters 8 to 12:
+      var case = 5;
+          ^^^^
+  ASL Grammar error (BE_PE): Cannot parse.
