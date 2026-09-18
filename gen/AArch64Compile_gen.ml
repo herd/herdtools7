@@ -1541,6 +1541,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | None -> plain
       | Some atom -> atom
 
+    let pte_fields = function
+      | Read _|AttributeAccess _ -> WPTESet.empty
+      | ReadHA _ -> WPTESet.singleton WPTE.HA
+      | Write (_,fields,_) -> fields
+
+    let pte_attrs_as_ordinary = function
+      | PteAccess (AttributeAccess (order,_)) -> OrdinaryAccess order
+      | atom -> atom
+
 
 (********************)
 (* Mixed size pairs *)
@@ -1824,7 +1833,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | Some d,Data loc ->
         let structured_atom = tr_none structured_atom in
         let loc = add_tag (Some structured_atom) loc e.C.tag in
-        let ordinary_access = match d,structured_atom with
+        let access = pte_attrs_as_ordinary structured_atom in
+        let ordinary_access = match d,access with
         | R,OrdinaryAccess `Plain ->
             let r,init,cs,st = LDR.emit_load st p init loc in
             Some (Some r,init,cs,st)
@@ -1949,44 +1959,42 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             Some (None,init,cs,st)
         | (R|W),InstrAccess ->
             Warn.fatal "Instr annotation did not create code location %s" (C.debug_evt e)
-        | R,PteAccess (Read order) ->
+        | R,PteAccess (Read (order,_)) ->
             let emit = match order with
             | `Plain -> LDR.emit_load_var
             | `Acquire -> LDAR.emit_load_var
             | `AcquirePC -> LDAPR.emit_load_var in
             let r,init,cs,st = emit A64.V64 st p init (Misc.add_pte loc) in
             Some (Some r,init,cs,st)
-        | R,PteAccess (ReadHA `Plain) ->
+        | R,PteAccess (ReadHA (order,_)) ->
+            let emit = match order with
+            | `Plain -> LDR.emit_load
+            | `Acquire -> LDAR.emit_load
+            | `AcquirePC -> LDAPR.emit_load in
+            let r,init,cs,st = emit st p init loc in
+            Some (Some r,init,cs,st)
+        | R,PteAccess (Write (`Plain,fields,_))
+          when WPTESet.mem WPTE.HA fields ->
             let r,init,cs,st = LDR.emit_load st p init loc in
-            Some (Some r,init,cs,st)
-        | R,PteAccess (Set (`Plain,pte))
-          when WPTESet.mem HA pte ->
-            let r,init,cs,st = LDR.emit_load st p init loc in
-            Some (Some r,init,cs,st)
-        | R,PteAccess (ReadHA `Acquire) ->
-            let r,init,cs,st = LDAR.emit_load st p init loc in
-            Some (Some r,init,cs,st)
-        | R,PteAccess (ReadHA `AcquirePC) ->
-            let r,init,cs,st = LDAPR.emit_load st p init loc in
             Some (Some r,init,cs,st)
         (* Special cases for TTHM.
            - `HA` is on both read and write
            - `HD` is only on write *)
-        | W,PteAccess (Set (`Plain,pte))
-          when StructuredAtom.is_tthm pte ->
+        | W,PteAccess (Write (`Plain,fields,_))
+          when StructuredAtom.is_tthm fields ->
             let init,cs,st =
               STR.emit_store st p init loc (Value.to_int e.C.v) false C.evt_null in
             Some (None,init,cs,st)
-        | W,PteAccess (Set (`Release,pte))
-          when StructuredAtom.is_tthm pte ->
+        | W,PteAccess (Write (`Release,fields,_))
+          when StructuredAtom.is_tthm fields ->
             let init,cs,st =
               STLR.emit_store st p init loc (Value.to_int e.C.v) false C.evt_null in
             Some (None,init,cs,st)
-        | W,PteAccess (Set (`Plain,_)) ->
+        | W,PteAccess (Write (`Plain,_,_)) ->
             let init,cs,st =
               emit_set_pteval false st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
             Some (None,init,cs,st)
-        | W,PteAccess (Set (`Release,_)) ->
+        | W,PteAccess (Write (`Release,_,_)) ->
             let init,cs,st =
               emit_set_pteval true st p init (Value.to_pte e.C.v) (Misc.add_pte loc) in
             Some (None,init,cs,st)
@@ -2362,7 +2370,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Some d,Data loc ->
           let structured_atom = tr_none e.C.atom in
           let loc = add_tag (Some structured_atom) loc e.C.tag in
-          let ordinary_access = match d,structured_atom with
+          let access = pte_attrs_as_ordinary structured_atom in
+          let ordinary_access = match d,access with
           | R,OrdinaryAccess `Plain ->
               let r,init,cs,st =
                 LDR.emit_load_idx_var vloc vdep st p init loc r2 in
@@ -2525,17 +2534,17 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let init,cs,st =
                 emit_stp_idx_var (pair_opt_to_st opt) vdep st p init loc e r2 in
               Some (None,init,pseudo cs0@cs,st)
-          | W,PteAccess (Set (`Plain,_)) ->
+          | W,PteAccess (Write (`Plain,_,_)) ->
               let init,cs,st =
                 emit_set_pteval_idx false vdep r2 st p init
                   (Value.to_pte e.C.v) (Misc.add_pte loc) in
               Some (None,init,pseudo cs0@cs,st)
-          | W,PteAccess (Set (`Release,_)) ->
+          | W,PteAccess (Write (`Release,_,_)) ->
               let init,cs,st =
                 emit_set_pteval_idx true vdep r2 st p init
                   (Value.to_pte e.C.v) (Misc.add_pte loc) in
               Some (None,init,pseudo cs0@cs,st)
-          | R,PteAccess (Read order) ->
+          | R,PteAccess (Read (order,_)) ->
               let emit = match order with
               | `Plain -> LDR.emit_load_var_reg
               | `Acquire -> LDAR.emit_load_var_reg
@@ -2631,8 +2640,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let r2,cs2,init,st,addi =
             let r2,st = next_reg st in
             match structured_atom with
-            | PteAccess (Set (_,pte))
-              when not (StructuredAtom.is_tthm pte) ->
+            | PteAccess (Write (_,fields,_))
+              when not (WPTESet.is_empty fields)
+                && not (StructuredAtom.is_tthm fields) ->
                 let rA,init,st = U.emit_pteval st p init (Value.to_pte e.C.v) in
                 let cs,st =
                   match vdep with
@@ -2699,7 +2709,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 r2,cs2,init,st,addi in
           let r2,cs2,init,st = r2,cs2@pseudo addi,init,st in
           let loc = add_tag (Some structured_atom) loc e.C.tag in
-          let ordinary_store = match structured_atom with
+          let access = pte_attrs_as_ordinary structured_atom in
+          let ordinary_store = match access with
           | OrdinaryAccess `Plain ->
               let init,cs,st =
                 STR.emit_store_reg st p init loc r2 false C.evt_null in
@@ -2751,21 +2762,21 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           | MemoryTagAccess ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               Some (None,init,cs2@cs,st)
-          | PteAccess (Set (`Plain,pte))
-            when StructuredAtom.is_tthm pte ->
+          | PteAccess (Write (`Plain,fields,_))
+            when StructuredAtom.is_tthm fields ->
               let init,cs,st =
                 STR.emit_store_reg st p init loc r2 false C.evt_null in
               Some (None,init,cs2@cs,st)
-          | PteAccess (Set (`Release,pte))
-            when StructuredAtom.is_tthm pte ->
+          | PteAccess (Write (`Release,fields,_))
+            when StructuredAtom.is_tthm fields ->
               let init,cs,st =
                 STLR.emit_store_reg st p init loc r2 false C.evt_null in
               Some (None,init,cs2@cs,st)
-          | PteAccess (Set (`Plain,_)) ->
+          | PteAccess (Write (`Plain,_,_)) ->
               let init,cs,st =
                 emit_set_pteval_reg false st p init r2 (Misc.add_pte loc) in
               Some (None,init,cs2@cs,st)
-          | PteAccess (Set (`Release,_)) ->
+          | PteAccess (Write (`Release,_,_)) ->
               let init,cs,st =
                 emit_set_pteval_reg true st p init r2 (Misc.add_pte loc) in
               Some (None,init,cs2@cs,st)
@@ -3020,11 +3031,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let tthm_value = C.fold ( fun node acc ->
         let atom = node.C.edge.E.a1 in
         match atom with
-        | Some (PteAccess (Set (_,pte)))
-          when StructuredAtom.is_tthm pte ->
-            WPTESet.union pte acc
-        | Some (PteAccess (ReadHA _)) ->
-            WPTESet.add HA acc
+        | Some (PteAccess pte) when StructuredAtom.is_tthm (pte_fields pte) ->
+            WPTESet.union (pte_fields pte) acc
         | _ -> acc
         ) n WPTESet.empty
       |> WPTESet.pp_str " " WPTE.pp in
