@@ -117,9 +117,6 @@ ASL Semantics Tests:
   #ones in x = 5
   $ aslref SemanticsRule.SFor.nop.asl
   $ aslref SemanticsRule.SThrowSomeTyped.asl
-  $ aslref SemanticsRule.SThrowSTry.asl
-  aslref cannot find file "SemanticsRule.SThrowSTry.asl"
-  [1]
   $ aslref SemanticsRule.SPrint.asl
   string_number_1
   0
