@@ -2490,7 +2490,7 @@ Arguments:
             M.amo_strict (Access.is_physical ac) op
               ma
               (fun a -> read_mem sz a ii >>= tr_input) mv
-              (fun a v -> write_mem sz a v ii)
+              (fun a v -> uxt_op sz v >>= fun v -> write_mem sz a v ii)
               (fun w ->
                 if noret then M.unitT ()
                 else  write_reg_sz sz rt w ii))
