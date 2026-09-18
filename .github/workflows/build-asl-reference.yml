@@ -18,16 +18,12 @@ concurrency:
 jobs:
   make-asldoc:
     runs-on: ubuntu-24.04
-    container: texlive/texlive:latest-full
-
-    env:
-      OPAMROOTISOK: 1 # Suppress warnings about running opam as root
 
     steps:
-      - name: Install dependencies
+      - name: Install dependencies for doclint.py
         run: |
-          apt-get update
-          apt-get install -y build-essential m4 gcc libgmp-dev pkg-config python3 bzip2
+          sudo apt-get update
+          sudo apt-get install -y python3
 
       - name: Checkout tree
         uses: actions/checkout@v7
@@ -39,11 +35,17 @@ jobs:
           opam-disable-sandboxing: true
           dune-cache: true
 
-      - name: Mark working directory as "safe"
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
-
       - name: Install opam dependencies
         run: opam install . --deps-only --yes
+
+      - name: Set up tectonic cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Tectonic
+          key: ${{ runner.os }}-tectonic
+
+      - name: Set up tectonic
+        uses: wtfjoke/setup-tectonic@v4
 
       - name: Build ASL Reference
         run: opam exec -- make asldoc
