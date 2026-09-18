@@ -1,4 +1,4 @@
-ARM MP+dsb+addr
+ARM MP-arm+dsb+addr
 {
 %x0=x; %y0=y;
 %y1=y; %x1=x;
