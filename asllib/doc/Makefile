@@ -36,7 +36,7 @@ ASLReference.pdf: generated_spec *.tex *.bib
 		$(LATEXMK) -pdf ASLReference.tex; \
 	elif command -v $(TECTONIC) >/dev/null 2>&1; \
 	then \
-		$(TECTONIC) -outfmt=pdf --keep-logs ASLReference.tex; \
+		$(TECTONIC) --outfmt=pdf --keep-logs ASLReference.tex; \
 	else \
 		$(LATEX) ASLReference.tex; \
 		$(BIBTEX) ASLReference; \
