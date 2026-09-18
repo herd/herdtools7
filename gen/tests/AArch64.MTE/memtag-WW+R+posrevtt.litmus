@@ -1,0 +1,12 @@
+(* diyone7 -arch AArch64 -variant memtag -metadata false -oneloc RevT PosWW T Rfe Fre *)
+AArch64 WW+R+posrevtt
+Variant=memtag
+{
+ 0:X0=x:blue; 0:X1=x:red; 0:X2=x:green;
+ 1:X1=x:red;
+}
+ P0          | P1               ;
+ STG X0,[X1] | L00: LDR W3,[X1] ;
+ STG X1,[X2] |                  ;
+
+exists (1:X3=0 /\ not (fault(P1:L00,x)))

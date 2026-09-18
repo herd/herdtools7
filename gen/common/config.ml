@@ -20,6 +20,7 @@ let verbose = ref 0
 let libdir = ref (Filename.concat Version.libdir "herd")
 let nprocs = ref 4
 let size = ref 6
+let init_value = ref 0
 let one = ref false
 let arch = ref (`PPC: Archs.t)
 let typ = ref TypBase.default
@@ -49,7 +50,7 @@ let lowercase = ref false
 let optcoherence = ref false
 let bell = ref None
 let scope = ref Scope.No
-let variant = ref (fun (_:Variant_gen.t) -> false)
+let variant = ref Variant_gen.empty
 let rejects = ref ([] : string list)
 let stdout = ref false
 let cycleonly = ref false
@@ -159,7 +160,8 @@ let diycross_parser_syntax_doc =
 
 let diy7_parser_syntax_doc =
   parser_syntax_doc ^ "\n\
-   In `diy7`, top-level plain separators denote choice, so '[A B] C [D E]' has canonical form `[[A,B]|C|[D,E]]`."
+   In `diy7`, top-level plain separators denote choice, so '[A B] C [D E]' has canonical form `[[A,B]|C|[D,E]]`.\n\
+   `diy7` also accepts predicate decorators such as `@before(...)`, `@after(...)`, and `@with(...)`; these are not accepted by the shared `diyone7` or `diycross7` parsers."
 
 let cumul_parser_syntax_doc =
   " `false` disables non-explicit fence cumulativity, `true` enables all fence cumulativity, and any other value is parsed as a set of fences.\n\
@@ -192,6 +194,8 @@ let common_specs () =
     | None -> false
     | Some a -> arch := a ; true)
     Archs.tags "specify architecture"::
+  ("-init-value", Arg.Int (fun n -> init_value := n),
+   "<n> set the initial value of ordinary memory (default 0)")::
   ("-bell",
    Arg.String (fun f -> arch := Archs.lisa ; bell := Some f),
    "<name> read bell file <name>, implies -arch LISA")::
@@ -214,15 +218,13 @@ let common_specs () =
     | None -> false
     | Some v0 ->
         let open  Variant_gen in
-        let ov =
-          let ov = !variant in
+        let variants =
+          let variants = !variant in
           match v0 with
           | Mixed -> (* Special case: Mixed cancels FullMixed  *)
-              (function
-               | FullMixed -> false
-               |  v-> ov v)
-          | _ -> ov in
-        variant := (fun v -> v = v0 || ov v) ;
+              remove FullMixed variants
+          | _ -> variants in
+        variant := add v0 variants ;
         true)
     Variant_gen.tags
     (sprintf "specify variant")::
@@ -426,7 +428,7 @@ let read_bell libfind fname =
         let libfind = libfind
         let compat = false
         let prog = prog
-        let variant = Misc.delay_parse !variant Variant_gen.parse
+        let variant = Misc.delay_parse (fun v -> Variant_gen.has v !variant) Variant_gen.parse
       end) in
   R.read fname
 
@@ -445,14 +447,12 @@ let parse_annots lines = match lines with
 module ToLisa = functor
   (O:sig
     val debug : Debug_gen.t ref
-    val verbose : int ref
     val prog : string
     val bell : string option ref
     val varatom : string list ref
-    val variant : (Variant_gen.t -> bool) ref
+    val variant : Variant_gen.set ref
   end) -> struct
     let debug = !O.debug
-    let verbose = !O.verbose
     let libdir = !libdir
     let prog = O.prog
     let bell = !O.bell

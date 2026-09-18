@@ -13,4 +13,4 @@ Variant=mixed
  STXRB W5,W2,[X4] ;
  CBNZ W5,Loop00   ;
 
-exists ([x]=0x100 /\ 0:X0=0x100 /\ 0:X3=0x0)
+exists (0:X0=0x100 /\ 0:X3=0x0)
