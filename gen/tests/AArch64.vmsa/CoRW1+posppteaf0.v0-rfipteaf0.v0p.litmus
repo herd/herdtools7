@@ -2,7 +2,6 @@
 AArch64 CoRW1+posppteaf0.v0-rfipteaf0.v0p
 Variant=vmsa
 {
- [x]=1;
  0:X0=x; 0:X2=PTE(x); 0:X3=(oa:PA(x), af:0, valid:0);
 }
  P0               ;

@@ -10,4 +10,4 @@ Variant=async memtag
  MOV W2,#1           |             ;
  L00: CAS W1,W2,[X0] |             ;
 
-exists (0:X1=1 /\ not (fault(P0)))
+exists ([tag(x)]=:red /\ 0:X1=1 /\ not (fault(P0)))

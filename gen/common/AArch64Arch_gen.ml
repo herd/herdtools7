@@ -540,6 +540,7 @@ end = struct
     | Some _|None -> None
 
   let worth_final = function
+    | PteAccess (Set (_,fields)) -> WPTESet.mem WPTE.OA fields
     | Atomic _ -> true
     | _ -> false
 
@@ -883,6 +884,11 @@ module Value = struct
       | StructuredAtom.PteAccess f -> do_setpteval f p
       | _ -> Warn.user_error "Atom is not a pteval write"
 
+    let get_physical_address p =
+      match AArch64PteVal.as_physical p with
+      | Some loc -> loc
+      | None -> Warn.user_error "No physical address."
+
     let can_fault dir pte_val =
       let open AArch64PteVal in
       pte_val.valid = 0 || pte_val.af = 0 || (dir = Code.W && pte_val.db = 0)
@@ -903,11 +909,19 @@ module Value = struct
     let need_check_fault atom =
       let open WPTE in
       match atom with
+      | Some StructuredAtom.MemoryTagAccess -> Irr
       | Some (StructuredAtom.PteAccess pte)
         when (affect_pte_field AF pte || affect_pte_field VALID pte) -> Irr
       | Some (StructuredAtom.PteAccess pte)
         when affect_pte_field DB pte -> Dir W
       | _ -> NoDir
+
+    let need_check_value_on_pte atom =
+      let open WPTE in
+      match atom with
+      | Some (StructuredAtom.PteAccess (Set (_,pte_atom_set))) ->
+          WPTESet.mem OA pte_atom_set
+      | _ -> false
 
     let implicitly_set_pteval dir machine_feature p =
       let open WPTE in

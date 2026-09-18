@@ -2,14 +2,13 @@
 AArch64 CoWR0+pos-[tlbi]-fri
 Variant=vmsa
 {
- [x]=1;
  0:X1=x;
 }
  P0              ;
- MOV W0,#2       ;
+ MOV W0,#1       ;
  STR W0,[X1]     ;
  LSR X2,X1,#12   ;
  TLBI VAAE1IS,X2 ;
  LDR W3,[X1]     ;
 
-exists (0:X3=1)
+exists (0:X3=0)

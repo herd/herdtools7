@@ -12,4 +12,4 @@ Variant=memtag store-only
  L00: STXR W3,W2,[X0] |             ;
  CBNZ W3,Loop00       |             ;
 
-exists (0:X1=1 /\ not (fault(P0:L00,x)))
+exists ([tag(x)]=:red /\ 0:X1=1 /\ not (fault(P0:L00,x)))
