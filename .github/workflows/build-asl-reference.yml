@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   make-asldoc:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     container: texlive/texlive:latest-full
 
     env:
@@ -55,7 +55,7 @@ jobs:
          path: asllib/doc/ASLReference.pdf
 
   make-asldoc-html:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Install dependencies
@@ -66,15 +66,11 @@ jobs:
       - name: Checkout tree
         uses: actions/checkout@v7
 
-      - name: Set-up OCaml
-        uses: ocaml/setup-ocaml@v3
+      - name: Set up OCaml and dependencies
+        uses: ./.github/workflows/setup-opam
         with:
           ocaml-compiler: dune,zarith,menhir,logs,conf-which,hevea
-          dune-cache: true
-
-      - name: Install opam dependencies
-        run: |
-          opam install . --deps-only --yes
+          with-test-dependencies: "false"
 
       - name: Build ASL Reference in HTML
         run: |
