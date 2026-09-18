@@ -30,6 +30,7 @@ module type PteType = sig
   val implicitly_set_pteval : Code.dir -> StringSet.t -> pte -> (Code.extr *  pte) option
   val can_fault : Code.dir -> pte -> bool
   val refers_virtual : pte -> string option
+  val is_tag_fault : atom option -> bool
   (* check if the `pte_atom` trigger fault check for further access,
      Dir W and Dir R for write and read, respectively.
      and Irr for both, NoDir for none *)
@@ -98,6 +99,7 @@ module NoPte(A:sig type arch_atom end) = struct
     let implicitly_set_pteval _ _ _ = None
     let can_fault _dir _t = false
     let refers_virtual _ = None
+    let is_tag_fault _ = false
     let need_check_fault _ = Code.NoDir
   end)
 
