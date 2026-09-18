@@ -1,14 +1,14 @@
 let find_compliance_files dir =
   let dir_contents =
     let rec loop result = function
-      | f :: fs when Sys.is_directory (Filename.concat dir f) ->
-          Sys.readdir (Filename.concat dir f)
+      | f :: fs when Sys.is_directory f ->
+          Sys.readdir f
           |> Array.fold_left (fun fs f' -> Filename.concat f f' :: fs) fs
           |> loop result
       | f :: fs -> loop (f :: result) fs
       | [] -> result
     in
-    loop [] [ "" ]
+    loop [] [ dir ]
   in
   let asl_suffix = ".asl" and yaml_suffix = ".yaml" in
   let chop_suffix fname =
@@ -42,11 +42,11 @@ let generate_rules actual_stems base =
   Printf.printf
     {|
 (rule
-  (deps ../tests/%s.asl ../tests/%s.yaml)
+  (deps %s.asl %s.yaml)
   (enabled_if %%{lib-available:yaml})
   (action
   (with-stdout-to ./%s.yaml.actual
-    (run ../asltest.exe ../tests/%s))))
+    (run ../asltest.exe %s))))
 
 (rule
   (alias runtest)
