@@ -28,11 +28,15 @@ ASL_HTML_FAIL_ON_STDERR_WARNING = messages="$$($1 2>&1)"; \
 all: ASLReference.pdf
 
 LATEXMK=latexmk
+TECTONIC=tectonic
 
 ASLReference.pdf: generated_spec *.tex *.bib
 	if command -v $(LATEXMK) >/dev/null 2>&1; \
 	then \
 		$(LATEXMK) -pdf ASLReference.tex; \
+	elif command -v $(TECTONIC) >/dev/null 2>&1; \
+	then \
+		$(TECTONIC) --outfmt=pdf --keep-logs ASLReference.tex; \
 	else \
 		$(LATEX) ASLReference.tex; \
 		$(BIBTEX) ASLReference; \

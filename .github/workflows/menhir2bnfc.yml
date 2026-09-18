@@ -26,7 +26,7 @@ jobs:
   build:
     name: Build and run menhir2bnfc
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     env:
       DUNE_CACHE: 'enabled-except-user-rules'
@@ -35,14 +35,11 @@ jobs:
       - name: Checkout tree
         uses: actions/checkout@v7
 
-      - name: Set-up OCaml
-        uses: ocaml/setup-ocaml@v3
+      - name: Set up OCaml
+        uses: ./.github/workflows/setup-opam
         with:
           ocaml-compiler: dune,zarith,menhir,conf-which,feat,qcheck,re,logs,cmdliner
-          dune-cache: true
-
-      - name: Update apt database
-        run: sudo apt-get update --quiet --yes
+          install-dependencies: "false"
 
       - name: Install BNFC
         run: sudo apt-get install --quiet --yes bnfc
