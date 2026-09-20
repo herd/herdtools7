@@ -47,6 +47,7 @@
 catdep (* This option says that the cat file computes dependencies *)
 
 include "aarch64hwreqs.cat"
+include "aarch64show.cat"
 
 (*** TLBI-after, DC-after, IC-after ***)
 include "enumerations.cat"

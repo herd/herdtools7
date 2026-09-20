@@ -225,9 +225,9 @@ do not match the memory contents at the OA of #2}
 \newcommand{\iicoctrl}[2]{there is an \iicoctrlname{} from #1 to #2}
 \newcommand{\iicoctrlemph}[2]{there is an \emph{\iicoctrlname{}} from #1 to #2}
 
-\newcommand{\dtrmname}{Dependency through registers and memory}
-\newcommand{\dtrm}[2]{there is a \dtrmname{} from #1 to #2}
-\newcommand{\dtrmemph}[2]{there is a \emph{\dtrmname{}} from #1 to #2}
+\newcommand{\dtrname}{Dependency through registers}
+\newcommand{\dtr}[2]{there is a \dtrname{} from #1 to #2}
+\newcommand{\dtremph}[2]{there is a \emph{\dtrname{}} from #1 to #2}
 \newcommand{\basicdepname}{Basic dependency}
 \newcommand{\basicdep}[2]{there is a \basicdepname{} from #1 to #2}
 \newcommand{\basicdepemph}[2]{there is a \emph{\basicdepname{}} from #1 to #2}
@@ -242,12 +242,17 @@ do not match the memory contents at the OA of #2}
 \newcommand{\ctrlemph}[2]{there is a \emph{\ctrlname{}} from #1 to #2}
 
 
-\newcommand{\pickdtrmname}{Pick dependency through registers and memory}
-\newcommand{\pickdtrm}[2]{there is a \pickdtrmname{} from #1 to #2}
-\newcommand{\pickdtrmemph}[2]{there is a \emph{\pickdtrmname{}} from #1 to #2}
-\newcommand{\pickbasicdepname}{Pick Basic dependency}
-\newcommand{\pickbasicdep}[2]{there is a \pickbasicdepname{} from #1 to #2}
-\newcommand{\pickbasicdepemph}[2]{there is a \emph{\pickbasicdepname{}} from #1 to #2}
+\newcommand{\iipickdepname}{Intrinsic pick dependency}
+\newcommand{\iipickdep}[2]{there is an \iipickdepname{} from #1 to #2}
+\newcommand{\iipickdepemph}[2]{there is an \emph{\iipickdepname{}} from #1 to #2}
+\newcommand{\pickdtrname}{Pick dependency through registers}
+\newcommand{\pickdtr}[2]{there is a \pickdtrname{} from #1 to #2}
+\newcommand{\pickdtremph}[2]{there is a \emph{\pickdtrname{}} from #1 to #2}
+
+\newcommand{\predctrldepname}{Predicate control dependency}
+\newcommand{\predctrldep}[2]{there is a \predctrldepname{} from #1 to #2}
+\newcommand{\predctrldepemph}[2]{there is a \emph{\predctrldepname{}} from #1 to #2}
+
 \newcommand{\pickdatadepname}{Pick Data dependency}
 \newcommand{\pickdatadep}[2]{there is a \pickdatadepname{} from #1 to #2}
 \newcommand{\pickdatadepemph}[2]{there is a \emph{\pickdatadepname{}} from #1 to #2}
@@ -367,6 +372,9 @@ do not match the memory contents at the OA of #2}
 \newcommand{\lobname}{Locally-ordered-before}
 \newcommand{\lob}[2]{#1 is Locally-ordered-before #2}
 \newcommand{\lobemph}[2]{#1 is \emph{Locally-ordered-before} #2}
+\newcommand{\pickchainname}{Chain of Pick-dependencies}
+\newcommand{\pickchain}[2]{There is a \pickchainname{} between #1 and #2}
+\newcommand{\pickchainemph}[2]{There is a \emph{\pickchainname{}} between #1 and #2}
 \newcommand{\picklobname}{Pick-locally-ordered-before}
 \newcommand{\picklob}[2]{#1 is Pick-locally-ordered-before #2}
 \newcommand{\picklobemph}[2]{#1 is \emph{Pick-locally-ordered-before} #2}
