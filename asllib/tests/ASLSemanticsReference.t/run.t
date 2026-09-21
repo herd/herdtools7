@@ -117,9 +117,6 @@ ASL Semantics Tests:
   #ones in x = 5
   $ aslref SemanticsRule.SFor.nop.asl
   $ aslref SemanticsRule.SThrowSomeTyped.asl
-  $ aslref SemanticsRule.SThrowSTry.asl
-  aslref cannot find file "SemanticsRule.SThrowSTry.asl"
-  [1]
   $ aslref SemanticsRule.SPrint.asl
   string_number_1
   0
@@ -161,7 +158,6 @@ ASL Semantics Tests:
   $ aslref SemanticsRule.PSingle.asl
   $ aslref SemanticsRule.PMask.asl
   $ aslref SemanticsRule.ATCValue.asl
-  $ aslref -0 SemanticsRule.LEUndefIdentV0.asl
   $ aslref SemanticsRule.LEUndefIdentV1.asl
   File SemanticsRule.LEUndefIdentV1.asl, line 5, characters 2 to 3:
     y = 3;

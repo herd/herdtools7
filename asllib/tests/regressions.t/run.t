@@ -422,6 +422,7 @@ Required tests:
   $ aslref anonymous-types-example-success.asl
   $ aslref array.asl
   $ aslref -0 assign-v0.asl
+  $ aslref -0 UndefIdentV0.asl
   $ aslref -0 asl0-patterns.asl
   File asl0-patterns.asl, line 7, characters 25 to 29:
       if x[0+:4] IN '10x1' then // invalid

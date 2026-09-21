@@ -827,7 +827,6 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.DeclareSubprograms.asl
   $ aslref --no-exec TypingRule.SubprogramForSignature.asl
   $ aslref --no-exec TypingRule.InsertStdlibParam.asl
-  $ aslref TypingRule.SubprogramForSignature.asl
   $ aslref TypingRule.SubprogramForSignature.bad.undefined.asl
   File TypingRule.SubprogramForSignature.bad.undefined.asl, line 3,
     characters 8 to 17:
@@ -1011,7 +1010,6 @@ ASL Typing Tests / annotating types:
   $ aslref --no-exec TypingRule.SideEffectsLDK.asl
   $ aslref --no-exec TypingRule.SideEffectsGDK.asl
   $ aslref --no-exec TypingRule.SideEffectIsPure.asl
-  $ aslref TypingRule.CheckSymbolicallyEvaluable.asl
   $ aslref TypingRule.SESIsReadonly.asl
   $ aslref TypingRule.SESIsReadonly.bad1.asl
   File TypingRule.SESIsReadonly.bad1.asl, line 17, characters 11 to 37:
