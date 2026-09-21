@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_BC
+error_line: 11
+info: |-
+  File ../tests/typing/TypingRule.AnnotateCallActualsTyped.bad1.asl, line 11,
+    characters 8 to 32:
+      - = xor_extend{64}(bv1, bv2); // Illegal: missing parameter for `M`.
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Static error (TE_BC): Arity error while calling 'xor_extend':
+    2 parameters expected and 1 provided

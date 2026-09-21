@@ -1,0 +1,12 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_IAD
+error_line: 8
+info: |-
+  File ../tests/typing/TypingRule.AddNewFunc.bad3.asl, line 8, character 0 to
+    line 11, character 4:
+  func h(x: circle, y: square)
+  begin
+      pass;
+  end;
+  ASL Type error (TE_IAD): cannot declare already declared element "h".

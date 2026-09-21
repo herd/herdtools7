@@ -1,0 +1,11 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_PLD
+error_line: 10
+info: |-
+  File ../tests/typing/TypingRule.ExplodeIntervals.bad.asl, line 10,
+    characters 4 to 29:
+      var z: integer{} = b * 2;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_PLD): type used to define storage item is the result of
+    precision loss.

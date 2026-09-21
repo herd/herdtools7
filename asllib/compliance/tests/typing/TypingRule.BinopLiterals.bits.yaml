@@ -1,0 +1,18 @@
+mode: exec
+outcome: SUCCESS
+output: |
+  add_bits: '010' + '011' = 0x5
+  add_bits: '10' + '11' = 0x1
+  add_bits: '010' + 3 = 0x5
+  add_bits: '10' + 3 = 0x1
+  sub_bits: '100' - '010' = 0x2
+  sub_bits: '100' - '111' = 0x5
+  sub_bits: '100' - 7 = 0x5
+  sub_bits: '100' - 8 = 0x4
+  and_bits: '100' AND '111' = 0x4
+  or_bits: '100' OR '110' = 0x6
+  xor_bits: '100' XOR '110' = 0x2
+  eq_bits: '100' == '110' = FALSE
+  ne_bits: '100' != '110' = TRUE
+  concat_bits: '100' :: '110' = 0x26
+  concat_bits: '100' :: '' = 0x4

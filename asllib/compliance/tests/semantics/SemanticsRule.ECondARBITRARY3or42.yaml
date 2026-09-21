@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: DE_DAF
+error_line: 10
+info: |-
+  File ../tests/semantics/SemanticsRule.ECondARBITRARY3or42.asl, line 10,
+    characters 9 to 13:
+    assert x==3;
+           ^^^^
+  ASL Dynamic error (DE_DAF): Assertion failed: (x == 3).

@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_UI
+error_line: 4
+info: |-
+  File ../tests/semantics/SemanticsRule.FUndefIdent.asl, line 4,
+    characters 5 to 12:
+       foo ();
+       ^^^^^^^
+  ASL Static error (TE_UI): Undefined identifier: 'foo'

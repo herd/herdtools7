@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_BC
+error_line: 13
+info: |-
+  File ../tests/typing/TypingRule.AnnotateCallActualsTyped.bad2.asl, line 13,
+    characters 8 to 31:
+      - = xor_extend{64, 32}(bv1);
+          ^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_BC): No subprogram declaration matches the invocation:
+    xor_extend(bits(64)).

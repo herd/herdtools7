@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: DE_DAF
+error_line: 5
+info: |-
+  File ../tests/semantics/SemanticsRule.EArbitraryInteger3.asl, line 5,
+    characters 9 to 13:
+    assert x==3;
+           ^^^^
+  ASL Dynamic error (DE_DAF): Assertion failed: (x == 3).

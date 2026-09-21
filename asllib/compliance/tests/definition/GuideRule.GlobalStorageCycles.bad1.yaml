@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_BD
+error_line: 4
+info: |-
+  File ../tests/definition/GuideRule.GlobalStorageCycles.bad1.asl, line 4,
+    characters 0 to 10:
+  var b = a;
+  ^^^^^^^^^^
+  ASL Type error (TE_BD): multiple recursive declarations: "b", "a".

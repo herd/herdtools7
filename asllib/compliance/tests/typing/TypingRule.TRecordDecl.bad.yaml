@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_IAD
+error_line: 1
+info: |-
+  File ../tests/typing/TypingRule.TRecordDecl.bad.asl, line 1,
+    characters 17 to 57:
+  type MyRecord of record {v: integer, b: boolean, v: real};
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_IAD): cannot declare already declared element "v".

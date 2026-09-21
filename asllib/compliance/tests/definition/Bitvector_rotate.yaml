@@ -1,0 +1,4 @@
+mode: exec
+outcome: SUCCESS
+output: |
+  bv=0x14, rotated twice=0x05

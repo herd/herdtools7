@@ -1,0 +1,10 @@
+mode: exec
+outcome: SUCCESS
+output: |
+  negate_int: -10 = -10
+  negate_int: -0x0 = 0
+  negate_int: -0xf = -15
+  negate_rel: -2.3 = -23/10
+  not_bool: !TRUE = FALSE
+  not_bits: NOT '' = 0x
+  not_bits: NOT '11 01' = 0x2

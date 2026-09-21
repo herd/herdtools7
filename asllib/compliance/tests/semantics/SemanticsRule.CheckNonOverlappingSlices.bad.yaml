@@ -1,0 +1,5 @@
+mode: exec
+outcome: FAILURE
+error: DE_OSA
+info: |-
+  ASL Dynamic error (DE_OSA): overlapping slices (N - 2)+:2, 0+:1.

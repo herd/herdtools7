@@ -1,0 +1,11 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 8
+info: |-
+  File ../tests/definition/ConstrainedIntegers.bad2.asl, line 8,
+    characters 4 to 10:
+      myIntA = myIntB; // Illegal even though at this point
+      ^^^^^^
+  ASL Type error (TE_TSF): a subtype of integer {1..10} was expected,
+    provided integer {0..20}.

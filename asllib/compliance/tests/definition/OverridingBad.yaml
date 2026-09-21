@@ -1,0 +1,17 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_OE
+error_line: 1
+info: |-
+  File ../tests/definition/OverridingBad.asl, line 1, character 0 to line 4,
+    character 4:
+  implementation func Foo{N: integer{32,64}}(n : boolean) => bits(N)
+  begin
+    return Zeros{N};
+  end;
+  ASL Type error (TE_OE): multiple overlapping `implementation` functions for
+    Foo:
+    File ../tests/definition/OverridingBad.asl, line 1, character 0 to line 4,
+      character 4
+    File ../tests/definition/OverridingBad.asl, line 11, character 0 to
+      line 14, character 4

@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_UI
+error_line: 3
+info: |-
+  File ../tests/typing/TypingRule.DeclaredType.bad.asl, line 3,
+    characters 12 to 23:
+      var x = 20 as MyInt;
+              ^^^^^^^^^^^
+  ASL Static error (TE_UI): Undefined identifier: 'MyInt'

@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_UT
+error_line: 5
+info: |-
+  File ../tests/typing/TypingRule.TInt.rhs_pending_constrained.bad.asl, line 5,
+    characters 28 to 42:
+      var x : integer{1..2} = 3 as integer{};
+                              ^^^^^^^^^^^^^^
+  ASL Type error (TE_UT): a pending constrained integer is illegal here.

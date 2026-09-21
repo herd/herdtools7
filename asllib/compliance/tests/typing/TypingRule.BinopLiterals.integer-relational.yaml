@@ -1,0 +1,12 @@
+mode: exec
+outcome: SUCCESS
+output: |
+  eq_int: 5 == 10 = FALSE
+  ne_int: 5 != 10 = TRUE
+  le_int: 10 <= 10 = TRUE
+  lt_int: 10 < 10 = FALSE
+  lt_int: 5 < 10 = TRUE
+  gt_int: 10 > 10 = FALSE
+  gt_int: 11 > 10 = TRUE
+  ge_int: 11 >= 10 = TRUE
+  ge_int: 6 >= 10 = FALSE

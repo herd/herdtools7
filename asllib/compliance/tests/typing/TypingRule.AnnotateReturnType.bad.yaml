@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: BE_PE
+error_line: 3
+info: |-
+  File ../tests/typing/TypingRule.AnnotateReturnType.bad.asl, line 3,
+    characters 24 to 34:
+  func returns_value() => collection { foo: bits(32)};
+                          ^^^^^^^^^^
+  ASL Grammar error (BE_PE): Cannot parse.

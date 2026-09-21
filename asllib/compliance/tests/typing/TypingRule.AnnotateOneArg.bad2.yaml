@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: BE_PE
+error_line: 2
+info: |-
+  File ../tests/typing/TypingRule.AnnotateOneArg.bad2.asl, line 2,
+    characters 18 to 28:
+  func arguments(b: collection {a: bits(7)})
+                    ^^^^^^^^^^
+  ASL Grammar error (BE_PE): Cannot parse.

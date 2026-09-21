@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 9
+info: |-
+  File ../tests/typing/TypingRule.AnnotateCall.bad4.asl, line 9,
+    characters 11 to 32:
+      return constrained_func{N}(); // requires an asserting type conversion
+             ^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of integer {1, 2, 3} was expected,
+    provided integer {N}.

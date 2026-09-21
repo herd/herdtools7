@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: DE_LE
+error_line: 3
+info: |-
+  File ../tests/semantics/SemanticsRule.CheckRecurseLimit.limit_reached.asl,
+    line 3, characters 37 to 53:
+      return if n == 0 then 1 else n * factorial(n - 1);
+                                       ^^^^^^^^^^^^^^^^
+  ASL Dynamic error (DE_LE): recursion limit reached.

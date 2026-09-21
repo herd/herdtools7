@@ -1,0 +1,7 @@
+mode: exec
+outcome: FAILURE
+error: BE_PE
+error_line: 4
+info: "File ../tests/typing/TypingRule.SDecl.bad2.asl, line 4, characters 18 to 19:\n
+  \   let y: integer;\n                  ^\nASL Grammar error (BE_PE): Cannot parse.
+  Declarations using `let` must have\n  initialising expressions.\n  "

@@ -1,0 +1,14 @@
+mode: exec
+outcome: FAILURE
+error: TE_IAD
+error_line: 4
+info: |-
+  File ../tests/typing/TypingRule.AnnotateOneArg.bad1.asl, line 4, character 0
+    to line 9, character 4:
+  func arguments(b: boolean, i: integer, r: real)
+  begin
+      - = b;
+      - = i;
+      - = r;
+  end;
+  ASL Type error (TE_IAD): cannot declare already declared element "b".

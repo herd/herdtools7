@@ -1,0 +1,9 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_IAD
+error_line: 1
+info: |-
+  File ../tests/typing/TypingRule.TEnumDecl.bad.asl, line 1, characters 0 to 19:
+  constant GREEN = 1;
+  ^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_IAD): cannot declare already declared element "GREEN".

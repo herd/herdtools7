@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_BD
+error_line: 1
+info: |-
+  File ../tests/typing/TypingRule.TypeCheckMutuallyRec.bad.asl, line 1,
+    characters 0 to 15:
+  var g = foo(5);
+  ^^^^^^^^^^^^^^^
+  ASL Type error (TE_BD): multiple recursive declarations: "foo", "g".

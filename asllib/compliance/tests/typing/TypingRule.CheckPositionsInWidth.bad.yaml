@@ -1,0 +1,14 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_BS
+error_line: 1
+info: |-
+  File ../tests/typing/TypingRule.CheckPositionsInWidth.bad.asl, line 1,
+    character 0 to line 5, character 2:
+  var myData: bits(16) {
+      [4] flag,
+      [3:0, 5+:3] data,
+      [3*5 +:5] value // Illegal: position 19 exceeds 15
+  };
+  ASL Static error (TE_BS):
+    Slice selection (3 * 5)+:5 includes a position outside the bounds of a bitvector of length 16.

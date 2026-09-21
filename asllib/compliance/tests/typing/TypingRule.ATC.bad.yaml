@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_TAF
+error_line: 4
+info: |-
+  File ../tests/typing/TypingRule.ATC.bad.asl, line 4, characters 21 to 33:
+      let B: integer = A as integer; // Illegal: bit cannot be an integer.
+                       ^^^^^^^^^^^^
+  ASL Type error (TE_TAF): cannot perform Asserted Type Conversion on bits(1)
+    by integer.

@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 14
+info: |-
+  File ../tests/typing/TypingRule.AnnotateCallActualsTyped.bad3.asl, line 14,
+    characters 8 to 24:
+      - = plus{64}(bv1, w);
+          ^^^^^^^^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of integer {0..64} was expected,
+    provided integer {0..128}.

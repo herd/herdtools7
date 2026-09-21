@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_SEV
+error_line: 12
+info: |-
+  File ../tests/typing/TypingRule.AnnotateSlices.bad-impure.asl, line 12,
+    characters 12 to 28:
+    let y = x[side_effecting()];
+              ^^^^^^^^^^^^^^^^
+  ASL Type error (TE_SEV): expected a readonly expression/subprogram.

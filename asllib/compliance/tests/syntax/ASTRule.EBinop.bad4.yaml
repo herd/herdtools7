@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: BE_BOP
+error_line: 6
+info: |-
+  File ../tests/syntax/ASTRule.EBinop.bad4.asl, line 6, characters 22 to 28:
+          let p_eq_eq = a == b != g;
+                        ^^^^^^
+  ASL Grammar error (BE_BOP): Operators `!=` and `==` have the same priority -
+    parenthesise to disambiguate.

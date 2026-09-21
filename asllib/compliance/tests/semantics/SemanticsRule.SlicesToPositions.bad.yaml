@@ -1,0 +1,6 @@
+mode: exec
+outcome: FAILURE
+error: DE_BI
+info: |-
+  ASL Dynamic error (DE_BI):
+    Slice -1+:6 is invalid: its start and length must be non-negative.

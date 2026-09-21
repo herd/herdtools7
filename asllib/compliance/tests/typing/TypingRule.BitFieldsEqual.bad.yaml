@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_OE
+error_line: 6
+info: |-
+  File ../tests/typing/TypingRule.BitFieldsEqual.bad.asl, line 6,
+    characters 0 to 76:
+  implementation func Foo(bv : bits(64) { [1] msb, [0] lsb }) begin pass; end;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_OE): no `impdef` for `implementation` function.

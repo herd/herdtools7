@@ -1,0 +1,9 @@
+mode: exec
+outcome: FAILURE
+error: TE_UT
+error_line: 4
+info: |-
+  File ../tests/typing/TypingRule.ESlice.bad2.asl, line 4, characters 12 to 20:
+      let x = 5.0[2:0];
+              ^^^^^^^^
+  ASL Type error (TE_UT): real does not subtype any of: integer, bits(-).

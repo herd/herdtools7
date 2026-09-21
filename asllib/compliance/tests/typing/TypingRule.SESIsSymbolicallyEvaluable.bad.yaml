@@ -1,0 +1,11 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_SEV
+error_line: 12
+info: |-
+  File ../tests/typing/TypingRule.SESIsSymbolicallyEvaluable.bad.asl, line 12,
+    characters 38 to 39:
+      var bv: bits(x) = ARBITRARY: bits(x);
+                                        ^
+  ASL Type error (TE_SEV): expected a symbolically evaluable
+    expression/subprogram.

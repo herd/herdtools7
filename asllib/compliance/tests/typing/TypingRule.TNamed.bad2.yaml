@@ -1,0 +1,9 @@
+mode: exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 12
+info: |-
+  File ../tests/typing/TypingRule.TNamed.bad2.asl, line 12, characters 4 to 13:
+      foo(y.f); // illegal: y.f is of type TypeB which does not type-satisfy TypeA.
+      ^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of TypeA was expected, provided TypeB.

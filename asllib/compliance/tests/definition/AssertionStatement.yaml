@@ -1,0 +1,9 @@
+mode: exec
+outcome: FAILURE
+error: DE_DAF
+error_line: 5
+info: |-
+  File ../tests/definition/AssertionStatement.asl, line 5, characters 11 to 22:
+      assert a + b < 256;
+             ^^^^^^^^^^^
+  ASL Dynamic error (DE_DAF): Assertion failed: ((a + b) < 256).

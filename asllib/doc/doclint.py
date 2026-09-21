@@ -1573,10 +1573,10 @@ def check_asllisting_paths_exist_in_file(filename: str) -> int:
     in `filename` resolves to an existing file under the directory mapped by <prefix>.
 
     Recognized prefixes and their directories (relative to asllib/doc):
-      - \definitiontests => ../tests/ASLDefinition.t
-      - \syntaxtests     => ../tests/ASLSyntaxReference.t
-      - \typingtests     => ../tests/ASLTypingReference.t
-      - \semanticstests  => ../tests/ASLSemanticsReference.t
+      - \definitiontests => ../compliance/tests/definition
+      - \syntaxtests     => ../compliance/tests/syntax
+      - \typingtests     => ../compliance/tests/typing
+      - \semanticstests  => ../compliance/tests/semantics
 
     Returns the number of errors found in `filename`.
     """
@@ -1591,10 +1591,10 @@ def check_asllisting_paths_exist_in_file(filename: str) -> int:
     path_macro_pattern = re.compile(r"^\\([a-zA-Z]+)/(.*)$")
 
     prefix_to_dir: dict[str, str] = {
-        "definitiontests": "../tests/ASLDefinition.t",
-        "syntaxtests": "../tests/ASLSyntaxReference.t",
-        "typingtests": "../tests/ASLTypingReference.t",
-        "semanticstests": "../tests/ASLSemanticsReference.t",
+        "definitiontests": "../compliance/tests/definition",
+        "syntaxtests": "../compliance/tests/syntax",
+        "typingtests": "../compliance/tests/typing",
+        "semanticstests": "../compliance/tests/semantics",
     }
 
     # Read entire file and remove comments, keeping line breaks to report positions

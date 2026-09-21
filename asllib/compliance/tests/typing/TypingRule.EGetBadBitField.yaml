@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_BF
+error_line: 7
+info: |-
+  File ../tests/typing/TypingRule.EGetBadBitField.asl, line 7,
+    characters 12 to 33:
+      var x = p.undeclared_bitfield;
+              ^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_BF): There is no field 'undeclared_bitfield'
+    on type Packet.

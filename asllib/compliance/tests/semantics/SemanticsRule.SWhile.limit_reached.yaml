@@ -1,0 +1,12 @@
+mode: exec
+outcome: FAILURE
+error: DE_LE
+error_line: 4
+info: |-
+  File ../tests/semantics/SemanticsRule.SWhile.limit_reached.asl, line 4,
+    character 2 to line 7, character 7:
+    while i <= 3 looplimit 2 do
+      assert i <= 3;
+      i = i + 1;
+     end;
+  ASL Dynamic error (DE_LE): loop limit reached.

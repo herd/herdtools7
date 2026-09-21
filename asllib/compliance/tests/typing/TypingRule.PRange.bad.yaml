@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_BO
+error_line: 4
+info: |-
+  File ../tests/typing/TypingRule.PRange.bad.asl, line 4, characters 11 to 32:
+      assert 42.4 IN { -1.8..143 };
+             ^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_BO): Erroneous pattern (- (9.0 / 5.0)) .. 143 for
+    expression of type real.

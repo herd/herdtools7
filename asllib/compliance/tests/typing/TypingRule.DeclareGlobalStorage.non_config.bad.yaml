@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_UT
+error_line: 2
+info: |-
+  File ../tests/typing/TypingRule.DeclareGlobalStorage.non_config.bad.asl,
+    line 2, characters 0 to 36:
+  var c_inherited_illegal : integer{};
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_UT): a pending constrained integer is illegal here.

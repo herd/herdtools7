@@ -1,0 +1,6 @@
+mode: exec
+outcome: SUCCESS
+output: |
+  i=0
+  i=11/2
+  exn=TRUE

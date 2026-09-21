@@ -1,0 +1,4 @@
+mode: exec
+outcome: SUCCESS
+output: "string_number_1\n0\n1000000\n53170898287292728730499578000\nTRUE\nFALSE\n12345678900123456789/10000000000\n0\nhello\\world\n\t
+  \"here I am \"\n0xd\n0x\nLABEL_B\n"

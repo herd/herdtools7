@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_SEV
+error_line: 8
+info: |-
+  File ../tests/typing/TypingRule.SWhile.bad_limit.asl, line 8,
+    characters 26 to 33:
+      while i < N looplimit i_limit do
+                            ^^^^^^^
+  ASL Type error (TE_SEV): expected a symbolically evaluable
+    expression/subprogram.
