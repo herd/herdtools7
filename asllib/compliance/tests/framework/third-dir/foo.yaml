@@ -1,0 +1,4 @@
+mode: exec
+outcome: SUCCESS
+output: |
+  third-dir/foo.asl
