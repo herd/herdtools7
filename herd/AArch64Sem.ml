@@ -4029,72 +4029,64 @@ Arguments:
             do_lift_memop ~tag rA dir updatedb checked mop perms ma mv an ii Fun.id DISide.Data in
           do_cas_with lift_memop quad Annot.N r ma mv mop_success mop_fail_with_wb mop_fail_no_wb false ii)
 
-    let gcsss2 r ii =
-      let open AArch64Base in
-      let an = Annot.N
-      and rA = SysReg GCSPR_EL1
-      and off = MachSize.nbytes quad in
-      let m =
-      M.delay_kont "gcsss2"
-      (read_reg_addr rA ii)
-      (fun a_virt ma ->
-      let mop ac incoming =
-        let m = GCSSem.read ac Annot.A incoming ii >>= fun outgoing ->
-          let mask = V.intToV 0x7 in
-          GCSSem.get_cap mask outgoing >>= fun cap ->
-            let(>>*=) = M.bind_control_set_data_input_first in
-            let commit =
-              let cond = Printf.sprintf "InProgress([%s])" (V.pp_v incoming) in
-              commit_pred_txt (Some cond) ii in
-            let mok =
-              commit >>*= fun () ->
-                let mop ac a outgoing =
-                  (GCSSem.reset_cap mask outgoing >>= M.add (V.intToV (-off)) >>= fun v -> write_reg r v ii) >>|
-                   (M.add a_virt (V.intToV (off)) >>= fun new_addr ->
-                      write_reg rA new_addr ii) >>|
-                      (GCSSem.make_valid outgoing >>= fun outgoing_value -> GCSSem.write ac Annot.L a outgoing_value ii)
-                in
-                lift_memop r Dir.W true false
-                (fun ac ma mv ->
-                  if is_branching && Access.is_physical ac then
-                    M.bind_ctrldata_data ma mv (fun a v -> mop ac a v)
-                  else
-                    ma >>| mv >>= fun (a,v) -> mop ac a v)
-                (to_perms "w" quad)
-                (GCSSem.reset_cap mask outgoing >>= M.add (V.intToV (-off)))
-                (M.unitT outgoing)
-                an
-                ii in
-            let inprogress = V.intToV 0x5 in
-            M.delay_kont "gcsss2(fault)"
-            (M.op Op.Ne cap inprogress)
-            (fun notvalid action ->
-              let open FaultType.AArch64 in
-              let mno = GCSSem.mk_fault action (GCSCheck SS2) ii in
-              let mok = action >>= fun _ -> mok in
-              M.choiceT notvalid mno mok)
-          in
-        (* Register write and write to other stack depend on load from Shadow Stack *)
-        let store e = (E.is_mem_store e) || (is_this_reg r e) in
-        M.short (E.is_mem_load) store m in
-      do_lift_memop rA Dir.R false false
-      (fun ac ma _mv ->
-        if Access.is_physical ac then
-          M.bind_ctrldata ma (mop ac)
-        else
-          ma >>= mop ac)
-      (to_perms "r" quad)
-      ma
-      mzero
-      an
-      ii
-      Fun.id
-      DISide.Data) in
-      (* Value writen to GCSPR depends on previous read *)
-      let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
-      and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
-      M.short read write m
+      let ( let@ ) = ( @@ )
 
+      let lift_gcs_access ii dir ma mop =
+        let perm, updatedb = match dir with Dir.R -> "r", false | Dir.W -> "w", true in
+        do_lift_memop AArch64Base.ZR dir updatedb false
+          (fun ac ma _ ->
+            let* v, ma = M.delay ma in
+            mop (v, ac, ma))
+          (to_perms perm quad) ma mzero Annot.N ii Fun.id DISide.Data
+
+      let gcsss2 r ii =
+        let with_data_from ma mb = M.data_input_next ma (fun _ -> mb) in
+        let write_reg ii r addr = write_reg r addr ii in
+        let open AArch64Base in
+        let rA = SysReg GCSPR_EL1 and off = MachSize.nbytes quad in
+        let* _, mread_gcspr = M.delay (read_reg_addr rA ii) in
+        let@ incoming, ac, mread_incoming = lift_gcs_access ii Dir.R mread_gcspr in
+        let read_outgoing =
+          let@ addr = M.bind_ctrldata_second_outputs mread_incoming in
+          GCSSem.read ac Annot.A addr ii
+        in
+        let* outgoing, mread_outgoing = M.delay read_outgoing in
+        let mask = V.intToV 0x7 in
+        let* cap = GCSSem.get_cap mask outgoing in
+        let commit =
+          let cond = Printf.sprintf "InProgress([%s])" (V.pp_v incoming) in
+          with_data_from mread_outgoing (commit_pred_txt (Some cond) ii)
+        in
+        let mok =
+          let@ () = M.bind_ctrl commit in
+          let* out_addr =
+            GCSSem.reset_cap mask outgoing >>= M.add (V.intToV (-off))
+          in
+          let@ _, ac, mwrite_addr = lift_gcs_access ii Dir.W (M.unitT out_addr) in
+          let@ _ = M.bind_control_set_input_first mwrite_addr in
+          let write_target_reg =
+            with_data_from mread_outgoing (write_reg ii r out_addr)
+          in
+          let update_gcspr =
+            let@ a_virt = M.data_input_next mread_gcspr in
+            M.add a_virt (V.intToV off) >>= write_reg ii rA
+          in
+          let write_outgoing_cap =
+            let* outgoing_value = GCSSem.make_valid outgoing in
+            let@ addr = M.data_input_next mwrite_addr in
+            with_data_from mread_outgoing
+              (GCSSem.write ac Annot.L addr outgoing_value ii)
+          in
+          let* _ = write_target_reg >>| update_gcspr >>| write_outgoing_cap in
+          B.nextT
+        in
+        let inprogress = V.intToV 0x5 in
+        let* notvalid = M.op Op.Ne cap inprogress in
+        let mno =
+          with_data_from mread_outgoing
+            (GCSSem.mk_fault (M.unitT notvalid) FaultType.AArch64.(GCSCheck SS2) ii)
+        in
+        M.choiceT notvalid mno mok
 
 (********************)
 (* Main entry point *)
