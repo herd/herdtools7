@@ -1,0 +1,41 @@
+name: Setup opam environment
+description: Setup an opam environment for herdtools
+
+inputs:
+  ocaml-compiler:
+    description: "OCaml compiler version, and other packages needed, comma-separated"
+    required: true
+  install-dependencies:
+    description: "Install project dependencies with opam, if false, with-test-dependencies is ignored"
+    required: false
+    default: "true"
+  with-test-dependencies:
+    description: "Install test dependencies"
+    required: false
+    default: "true"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Update Ubuntu repositories
+      shell: bash
+      run: sudo apt-get update
+
+    - name: Work around faulty apparmor profile for opam in ubuntu 24.04
+      shell: bash
+      run: |
+          . /etc/os-release
+          if [[ "$ID" == ubuntu && "$VERSION_ID" == 24.04 ]]; then
+            echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+          fi
+
+    - name: Set up OCaml with ${{ inputs.ocaml-compiler }}
+      uses: ocaml/setup-ocaml@v3
+      with:
+        ocaml-compiler: ${{ inputs.ocaml-compiler }}
+        dune-cache: true
+
+    - name: Install dependencies with opam
+      if: ${{ inputs.install-dependencies == 'true' }}
+      shell: bash
+      run: opam install . --deps-only ${{ inputs.with-test-dependencies == 'true' && '--with-test' || '' }}

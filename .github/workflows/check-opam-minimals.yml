@@ -25,16 +25,17 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout tree
         uses: actions/checkout@v7
 
-      - name: Set-up OCaml 4.14
-        uses: ocaml/setup-ocaml@v3
+      - name: Set up OCaml
+        uses: ./.github/actions/setup-opam
         with:
           ocaml-compiler: 4.14.0
+          install-dependencies: "false"
       - run: |
           opam install . --deps-only --with-test --solver=builtin-mccs+glpk --criteria="-new"
           opam exec -- make build test install DUNE_PROFILE=dev

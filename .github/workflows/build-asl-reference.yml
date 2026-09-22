@@ -17,33 +17,30 @@ concurrency:
 
 jobs:
   make-asldoc:
-    runs-on: ubuntu-latest
-    container: texlive/texlive:latest-full
-
-    env:
-      OPAMROOTISOK: 1 # Suppress warnings about running opam as root
+    runs-on: ubuntu-24.04
 
     steps:
-      - name: Install dependencies
-        run: |
-          apt-get update
-          apt-get install -y build-essential m4 gcc libgmp-dev pkg-config python3 bzip2
-
       - name: Checkout tree
         uses: actions/checkout@v7
 
-      - name: Set-up OCaml
-        uses: ocaml/setup-ocaml@v3
+      - name: Set up OCaml and dependencies
+        uses: ./.github/actions/setup-opam
         with:
           ocaml-compiler: dune,zarith,menhir,logs,conf-which
-          opam-disable-sandboxing: true
-          dune-cache: true
+          with-test-dependencies: "false"
 
-      - name: Mark working directory as "safe"
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+      - name: Install python for doclint.py
+        run: |
+          sudo apt-get install -y python3 # the repos are already updated by setup-opam
 
-      - name: Install opam dependencies
-        run: opam install . --deps-only --yes
+      - name: Set up tectonic cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Tectonic
+          key: ${{ runner.os }}-tectonic
+
+      - name: Set up tectonic
+        uses: wtfjoke/setup-tectonic@v4
 
       - name: Build ASL Reference
         run: opam exec -- make asldoc
@@ -55,7 +52,7 @@ jobs:
          path: asllib/doc/ASLReference.pdf
 
   make-asldoc-html:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Install dependencies
@@ -66,15 +63,11 @@ jobs:
       - name: Checkout tree
         uses: actions/checkout@v7
 
-      - name: Set-up OCaml
-        uses: ocaml/setup-ocaml@v3
+      - name: Set up OCaml and dependencies
+        uses: ./.github/actions/setup-opam
         with:
           ocaml-compiler: dune,zarith,menhir,logs,conf-which,hevea
-          dune-cache: true
-
-      - name: Install opam dependencies
-        run: |
-          opam install . --deps-only --yes
+          with-test-dependencies: "false"
 
       - name: Build ASL Reference in HTML
         run: |

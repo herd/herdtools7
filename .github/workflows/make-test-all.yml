@@ -28,7 +28,7 @@ jobs:
 
     name: Make test on OCaml v${{ matrix.ocaml-version }}
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     env:
       DUNE_CACHE: 'enabled-except-user-rules'
@@ -37,14 +37,10 @@ jobs:
       - name: Checkout tree
         uses: actions/checkout@v7
 
-      - name: Set-up OCaml ${{ matrix.ocaml-version }}
-        uses: ocaml/setup-ocaml@v3
+      - name: Set up OCaml and dependencies
+        uses: ./.github/actions/setup-opam
         with:
           ocaml-compiler: ${{ matrix.ocaml-version }}
-          dune-cache: true
-
-      - name: Install herdtools7's dependencies
-        run: opam install . --deps-only --yes --with-test
 
       - name: Install carpenter dependencies
         run: opam install feat qcheck re logs cmdliner
@@ -63,7 +59,7 @@ jobs:
   aslref:
     name: Install ASLRef on OCaml v5
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     env:
       DUNE_CACHE: 'enabled-except-user-rules'
@@ -72,11 +68,11 @@ jobs:
       - name: Checkout tree
         uses: actions/checkout@v7
 
-      - name: Set-up OCaml 5
-        uses: ocaml/setup-ocaml@v3
+      - name: Set up OCaml
+        uses: ./.github/actions/setup-opam
         with:
           ocaml-compiler: 5
-          dune-cache: true
+          install-dependencies: "false"
 
       - name: Install dependencies
         run: |

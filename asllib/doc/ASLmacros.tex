@@ -1,4 +1,27 @@
 \usepackage[T1]{fontenc} % makes names with underscore searchable in the PDF.
+
+% XeTeX passes Unicode input directly to the selected T1 font. Map the Unicode
+% punctuation used in the source to T1-safe TeX forms.
+% pdfLaTeX already performs equivalent UTF-8 input mappings.
+\ifx\XeTeXrevision\undefined
+\else
+  % XeTeX does not provide inputenc's \DeclareUnicodeCharacter.  Define the
+  % equivalent here, so the mappings name their code points explicitly.
+  \def\DeclareUnicodeCharacter#1#2{%
+    \global\catcode"#1=\active
+    \begingroup
+      \lccode`~="#1\relax
+      \lowercase{\endgroup\protected\def~}{#2}%
+  }
+  \DeclareUnicodeCharacter{201C}{``}                 % U+201C “ LEFT DOUBLE QUOTATION MARK
+  \DeclareUnicodeCharacter{201D}{''}                 % U+201D ” RIGHT DOUBLE QUOTATION MARK
+  \DeclareUnicodeCharacter{2019}{'}                  % U+2019 ’ RIGHT SINGLE QUOTATION MARK
+  \DeclareUnicodeCharacter{00AE}{\textregistered{}}  % U+00AE ® REGISTERED SIGN
+  \DeclareUnicodeCharacter{2122}{\texttrademark{}}   % U+2122 ™ TRADE MARK SIGN
+  \DeclareUnicodeCharacter{00A9}{\textcopyright{}}   % U+00A9 © COPYRIGHT SIGN
+  \DeclareUnicodeCharacter{2013}{--}                 % U+2013 – EN DASH
+  \DeclareUnicodeCharacter{2014}{---}                % U+2014 — EM DASH
+\fi
 \usepackage{ifthen} % High-level statements for LaTeX
 \usepackage{amsmath}  % Classic math package
 \usepackage{mathtools}  % Additional math package
