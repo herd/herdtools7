@@ -223,6 +223,7 @@ before
 begin
 beginning
 behave
+behaves
 behaviour
 behaviours
 being
@@ -1717,6 +1718,7 @@ quality
 quantifiers
 query
 quite
+quotation
 quotations
 quote
 quotes

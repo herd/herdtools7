@@ -105,10 +105,10 @@ typedef Strings
   (Identifier)
 ;
 
-constant new_line : Strings
+constant line_feed : Strings
 {
-  "the string for a new line",
-  math_macro = \vnewline,
+  "the string consisting of the line feed character",
+  math_macro = \linefeed,
 };
 
 constant main : Identifier
@@ -1338,8 +1338,8 @@ ast stmt { "statement" } =
   { "the \trystatementterm{} with statement given by {statement},
     list of \catchersterm{} given by {catchers},
     and optional \otherwisecaseterm{} statement given by {otherwise}" }
-  | S_Print(arguments: list0(expr), newline: Bool)
-  { "the \printstatementterm{} with list of arguments given by {arguments} and newline choice given by {newline}" }
+  | S_Print(arguments: list0(expr), add_line_feed: Bool)
+  { "the \printstatementterm{} with list of arguments given by {arguments} and add-line-feed flag given by {add_line_feed}" }
   | S_Pragma(pragma_name: Identifier, arguments: list0(expr))
   { "the \pragmastatementterm{} for the pragma name given by {pragma_name} and list of arguments given by {arguments}" }
   | S_Unreachable
@@ -9396,7 +9396,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
   }
 
   case SPrint {
-    s =: S_Print(args, newline);
+    s =: S_Print(args, add_line_feed);
     INDEX(i, args : annotate_expr(tenv, args[i]) -> (tys[i], args'[i], sess[i]));
     INDEX(i, args : is_singular(tenv, tys[i]) -> are_singular_arg_types[i]);
     te_check(list_and(are_singular_arg_types), TE_UT) -> True;
@@ -9404,7 +9404,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     inherent_effects := make_set(GlobalEffect(SE_Impure), LocalEffect(SE_Impure));
     ses := union(args_effects, inherent_effects);
     --
-    (S_Print(args', newline), tenv, ses);
+    (S_Print(args', add_line_feed), tenv, ses);
   }
 
   case SUnreachable {
@@ -9933,7 +9933,7 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
    case println {
      s =: S_Print(e_list, True);
      eval_stmt(env, S_Print(e_list, False)) -> Continuing(g, env1);
-     output_to_console(env1, nvstring(new_line)) -> new_env;
+     output_to_console(env1, nvstring(line_feed)) -> new_env;
      --
      Continuing(g, new_env);
    }
@@ -9971,9 +9971,9 @@ semantics function output_to_console(env: envs, v: native_value) -> (new_env: en
 
 semantics function literal_to_string(l: literal) -> (s: Strings)
 {
-  "converts a literal {l} to a printable string {s}",
-  prose_application = "{l} as a printable string",
-  prose_transition = "converting {l} to a printable string yields",
+  "converts a literal {l} to its string representation {s}.",
+  prose_application = "the string representation of {l}",
+  prose_transition = "converting {l} to its string representation yields",
 }; // This function is defined by a table in LaTeX; no rule needed.
 
 semantics function lexpr_is_var(le: lexpr) -> (res: Bool)

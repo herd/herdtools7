@@ -632,9 +632,9 @@ yielding the statement $\news$.
 
   \item \AllApplyCase{s\_print}
   \begin{itemize}
-    \item $\vs$ is a \printstatement{$\args$}{$\vnewline$};
+    \item $\vs$ is a \printstatement{$\args$}{$\vaddlinefeed$};
     \item \Proseeqdef{$\newargs$}{the list obtained by applying $\renamelocalsexpr$ to each expression in $\args$};
-    \item \Proseeqdef{$\news$}{\printstatement{$\newargs$}{$\vnewline$}}.
+    \item \Proseeqdef{$\news$}{\printstatement{$\newargs$}{$\vaddlinefeed$}}.
   \end{itemize}
 
   \item \AllApplyCase{s\_unreachable}
@@ -837,8 +837,8 @@ yielding the statement $\news$.
 }{
   {
   \begin{array}{r}
-  \renamelocalsstmt(\overname{\SPrint(\args, \vnewline)}{\vs}) \astarrow\\
-  \overname{\SPrint(\newargs, \vnewline)}{\news}
+  \renamelocalsstmt(\overname{\SPrint(\args, \vaddlinefeed)}{\vs}) \astarrow\\
+  \overname{\SPrint(\newargs, \vaddlinefeed)}{\news}
   \end{array}
   }
 }

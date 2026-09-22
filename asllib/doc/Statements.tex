@@ -1923,11 +1923,11 @@ empty \executiongraphterm{}.
 \begin{mathpar}
 \inferrule{%
   \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
-  \vnewline \eqdef \False \\
+  \vaddlinefeed \eqdef \False \\
 }{%
   \buildstmt(\overname{\Nstmt(\Tprint, \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)}{\vparsednode})
   \astarrow
-  \overname{\SPrint(\astversion{\vargs}, \vnewline)}{\vastnode}
+  \overname{\SPrint(\astversion{\vargs}, \vaddlinefeed)}{\vastnode}
 }
 \end{mathpar}
 
@@ -1935,11 +1935,11 @@ empty \executiongraphterm{}.
 \inferrule{%
   \vparsednode = \Nstmt(\Tprintln, \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)\\
   \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \hva\\
-  \vnewline \eqdef \True \\
+  \vaddlinefeed \eqdef \True \\
   \vdebug \eqdef \False \\
 }{%
   \buildstmt(\vparsednode) \astarrow
-  \overname{\SPrint(\astversion{\vargs}, \vnewline)}{\vastnode}
+  \overname{\SPrint(\astversion{\vargs}, \vaddlinefeed)}{\vastnode}
 }
 \end{mathpar}
 
@@ -1978,8 +1978,8 @@ LABEL_B
 
 Notice that empty bitvectors are displayed as \verb|0x|.
 
-We define the constant \RenderConstant{new_line}, which stands
-for the newline character: $\vnewline \triangleq \ascii{10}$.
+A \texttt{println} statement behaves as the corresponding \texttt{print} statement
+followed by outputting a single line feed character (ASCII code \texttt{10}).
 
 \RenderProseAndFormally{eval_stmt_SPrint}
 \CodeSubsection{\EvalSPrintBegin}{\EvalSPrintEnd}{../Interpreter.ml}
@@ -2008,8 +2008,8 @@ only here to explain the modelling of a console.
 \RenderRelation{literal_to_string}
 The function is defined by \taref{literaltostringtable}.
 %
-Please note that surrounding quotations marks that appear in ASL text (for example, \verb|"hello"|)
-are not included in string literals, and thus will not appear in the printed string.
+The quotation marks surrounding a string literal in ASL source text delimit the literal
+and are not part of its value. Consequently, they do not appear in its string representation.
 
 \begin{table}
 \caption{How literals should be represented as strings\label{ta:literaltostringtable}}

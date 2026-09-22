@@ -1222,7 +1222,8 @@
 \newcommand\Lang[1]{\hyperlink{def-lang}{\textsf{Lang}}\left(#1\right)}
 \newcommand\RegExp[0]{\hyperlink{def-regex}{\textsf{RegExp}}}
 \newcommand\ascii[1]{\hyperlink{def-ascii}{\textsf{ASCII}}\texttt{\{#1\}}}
-\newcommand\vnewline[0]{\hyperlink{constant-newline}{\texttt{newline}}}
+\newcommand\vaddlinefeed[0]{\texttt{add\_line\_feed}}
+\newcommand\linefeed[0]{\makelist{\ascii{10}}}
 
 \newcommand\spectoken[0]{\hyperlink{def-spectoken}{\textsc{spec\_token}}}
 \newcommand\specstring[0]{\hyperlink{def-specstring}{\textsc{spec\_string}}}
@@ -1842,7 +1843,7 @@
 \newcommand\returnstatement[1]{\hyperlink{def-returnstatementterm}{return statement} for the optional expression #1}
 \newcommand\printstatementterm[0]{\hyperlink{def-printstatementterm}{print statement}}
 \newcommand\printstatementsterm[0]{\hyperlink{def-printstatementterm}{print statements}}
-\newcommand\printstatement[2]{\hyperlink{def-printstatementterm}{print statement} with list of expressions #1 and newline flag #2}
+\newcommand\printstatement[2]{\hyperlink{def-printstatementterm}{print statement} with list of expressions #1 and add-line-feed flag #2}
 \newcommand\unreachablestatementterm[0]{\hyperlink{def-unreachablestatementterm}{unreachable statement}}
 \newcommand\pragmastatementterm[0]{\hyperlink{def-pragmastatementterm}{pragma statement}}
 \newcommand\pragmastatement[2]{\hyperlink{def-pragmastatementterm}{pragma statement} for the pragma #1 and list of expressions #2}
