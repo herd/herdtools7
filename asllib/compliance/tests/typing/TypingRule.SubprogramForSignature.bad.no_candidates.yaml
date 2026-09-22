@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_BC
+error_line: 8
+info: |-
+  File ../tests/typing/TypingRule.SubprogramForSignature.bad.no_candidates.asl,
+    line 8, characters 8 to 19:
+      - = add_10(5.0);
+          ^^^^^^^^^^^
+  ASL Type error (TE_BC): No subprogram declaration matches the invocation:
+    add_10(real).

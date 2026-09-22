@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_UT
+error_line: 10
+info: |-
+  File ../tests/typing/TypingRule.LESetBadField.asl, line 10, characters 4 to 5:
+      x.RED = 42;
+      ^
+  ASL Type error (TE_UT): integer does not subtype any of: bits(-),
+    record {  }, exception {  }, collection {  }.

@@ -1,0 +1,11 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 7
+info: |-
+  File ../tests/definition/ConstrainedIntegers.bad.asl, line 7,
+    characters 4 to 5:
+      B = A; // illegal: {2,4,8} is not a subset of {2,4}.
+      ^
+  ASL Type error (TE_TSF): a subtype of integer {2, 4} was expected,
+    provided integer {2, 4, 8}.

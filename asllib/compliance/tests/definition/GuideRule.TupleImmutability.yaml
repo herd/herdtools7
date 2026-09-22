@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_UT
+error_line: 7
+info: |-
+  File ../tests/definition/GuideRule.TupleImmutability.asl, line 7,
+    characters 6 to 11:
+      x.item1 = '1'; // Illegal: tuples are immutable.
+        ^^^^^
+  ASL Type error (TE_UT): cannot assign to the (immutable) tuple value x.

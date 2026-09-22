@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 9
+info: |-
+  File ../tests/typing/TypingRule.MemBfs.bad.asl, line 9, characters 4 to 44:
+      var x : bits(8) {[0] flag, [1] lsb} = y;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of bits (8) { [0+:1] flag, [1+:1] lsb }
+    was expected, provided FlaggedPacket.

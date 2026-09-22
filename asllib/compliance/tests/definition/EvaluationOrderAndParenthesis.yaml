@@ -1,0 +1,6 @@
+mode: exec
+outcome: SUCCESS
+output: |
+  123
+  123
+  123

@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_BC
+error_line: 15
+info: |-
+  File ../tests/typing/TypingRule.AnnotateRetTy.bad.asl, line 15,
+    characters 4 to 17:
+      flip{64}(bv); // Illegal: the returned value must be consumed.
+      ^^^^^^^^^^^^^
+  ASL Static error (TE_BC):
+    Mismatched call type for subprogram 'flip': expected a procedure and found a function.

@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_BF
+error_line: 7
+info: |-
+  File ../tests/typing/TypingRule.EGetBadRecordField.asl, line 7,
+    characters 10 to 36:
+    var x = my_record.undeclared_field;
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_BF): There is no field 'undeclared_field'
+    on type MyRecordType.

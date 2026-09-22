@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_UT
+error_line: 3
+info: |-
+  File ../tests/typing/TypingRule.UpdateGlobalStorage.config.bad.asl, line 3,
+    characters 0 to 39:
+  config d: MyException = MyException{-};
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_UT): expected singular type, found MyException.

@@ -1,0 +1,9 @@
+mode: exec
+outcome: FAILURE
+error: TE_UI
+error_line: 7
+info: |-
+  File ../tests/typing/TypingRule.SFor.bad3.asl, line 7, characters 4 to 5:
+      j = 0; // Illegal: 'j' is in scope only in the loop body.
+      ^
+  ASL Static error (TE_UI): Undefined identifier: 'j'

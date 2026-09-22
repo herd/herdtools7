@@ -1,0 +1,9 @@
+mode: exec
+outcome: FAILURE
+error: TE_SEV
+error_line: 11
+info: |-
+  File ../tests/typing/TypingRule.SAssert.bad.asl, line 11, characters 10 to 23:
+      assert(increment()); // illegal: increment is not readonly.
+            ^^^^^^^^^^^^^
+  ASL Type error (TE_SEV): expected a readonly expression/subprogram.

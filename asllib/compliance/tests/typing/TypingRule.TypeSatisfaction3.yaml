@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 14
+info: |-
+  File ../tests/typing/TypingRule.TypeSatisfaction3.asl, line 14,
+    characters 2 to 6:
+    pair = (1, dataT2);
+    ^^^^
+  ASL Type error (TE_TSF): a subtype of pairT was expected,
+    provided (integer {1}, T2).

@@ -1,0 +1,16 @@
+mode: exec
+outcome: FAILURE
+error: TE_BSPD
+error_line: 3
+info: |-
+  File ../tests/typing/TypingRule.CheckParamDecls.bad.asl, line 3, character 0
+    to line 9, character 4:
+  func parameter_lists{A, B, C, D}(
+      x: integer{A..B},
+      y: bits(C)) =>
+      bits(D)
+  begin
+      return Ones{D};
+  end;
+  ASL Type error (TE_BSPD): incorrect parameter declaration for
+    "parameter_lists", expected {D, A, B, C} but {A, B, C, D} provided

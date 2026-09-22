@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: BE_PE
+error_line: 4
+info: |-
+  File ../tests/semantics/SemanticsRule.LDDiscard.asl, line 4,
+    characters 6 to 7:
+    var - : integer;
+        ^
+  ASL Grammar error (BE_PE): Cannot parse. A local declaration must declare a
+    name.

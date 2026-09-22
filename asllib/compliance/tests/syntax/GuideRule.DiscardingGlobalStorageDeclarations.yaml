@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: BE_PE
+error_line: 1
+info: |-
+  File ../tests/syntax/GuideRule.DiscardingGlobalStorageDeclarations.asl,
+    line 1, characters 4 to 5:
+  let - = 42;
+      ^
+  ASL Grammar error (BE_PE): Cannot parse. A global declaration must declare a
+    name.

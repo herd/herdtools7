@@ -1,0 +1,24 @@
+mode: exec
+outcome: SUCCESS
+output: |
+  add_int: 10 + 20 = 30
+  sub_int: 10 - 20 = -10
+  mul_int: 10 * 20 = 200
+  div_int: 20 DIV 10 = 2
+  fdiv_int: 20 DIVRM 3 = 6
+  fdiv_int: -20 DIVRM 3 = -7
+  frem_int: 20 MOD 3 = 2
+  frem_int: -20 MOD 3 = 1
+  exp_int: 2 ^ 10 = 1024
+  exp_int: -2 ^ 10 = 1024
+  exp_int: -2 ^ 11 = -2048
+  exp_int: 0 ^ 0 = 1
+  exp_int: -2 ^ 0 = 1
+  shiftleft_int: 1 << 10 = 1024
+  shiftleft_int: 1 << 0 = 1
+  shiftleft_int: -1 << 10 = -1024
+  shiftright_int: 1 >> 10 = 0
+  shiftright_int: 16 >> 2 = 4
+  shiftright_int: -16 >> 2 = -4
+  shiftright_int: 1 >> 0 = 1
+  shiftright_int: -1 >> 10 = -1

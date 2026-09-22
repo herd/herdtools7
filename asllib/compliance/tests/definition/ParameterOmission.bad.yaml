@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: BE_PE
+error_line: 6
+info: |-
+  File ../tests/definition/ParameterOmission.bad.asl, line 6,
+    characters 17 to 18:
+      result = LSL{}(result, 3);
+                   ^
+  ASL Grammar error (BE_PE): Cannot parse.

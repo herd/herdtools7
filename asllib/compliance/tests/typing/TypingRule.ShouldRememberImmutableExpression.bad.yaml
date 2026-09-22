@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 9
+info: |-
+  File ../tests/typing/TypingRule.ShouldRememberImmutableExpression.bad.asl,
+    line 9, characters 4 to 33:
+      let t: integer{x..x + 1} = 2;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of integer {x..(x + 1)} was expected,
+    provided integer {2}.

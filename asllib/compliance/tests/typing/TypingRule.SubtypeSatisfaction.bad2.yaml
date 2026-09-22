@@ -1,0 +1,11 @@
+mode: exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 7
+info: |-
+  File ../tests/typing/TypingRule.SubtypeSatisfaction.bad2.asl, line 7,
+    characters 4 to 13:
+      return N;
+      ^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of integer {N} was expected,
+    provided integer {2, 4}.

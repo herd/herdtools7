@@ -1,0 +1,9 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 8
+info: |-
+  File ../tests/definition/NamedTypes.bad.asl, line 8, characters 4 to 5:
+      b = K; // Illegal: a Char cannot be directly assigned to a Byte
+      ^
+  ASL Type error (TE_TSF): a subtype of Byte was expected, provided Char.

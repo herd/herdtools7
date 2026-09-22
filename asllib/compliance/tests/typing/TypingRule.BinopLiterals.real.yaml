@@ -1,0 +1,16 @@
+mode: exec
+outcome: SUCCESS
+output: |
+  mul_int_real: 10 * 0.5 = 5
+  mul_real_int: 0.5 * 10 = 5
+  add_real: 10.0 + 0.5 = 21/2
+  sub_real: 10.0 - 0.5 = 19/2
+  mul_real: 10.0 * 0.5 = 5
+  exp_real: 10.0 ^ 2 = 100
+  div_real: 10.0 / 0.5 = 20
+  eq_real: 10.0 == 0.5 = FALSE
+  ne_real: 10.0 != 0.5 = TRUE
+  le_real: 10.0 <= 0.5 = FALSE
+  lt_real: 10.0 < 0.5 = FALSE
+  gt_real: 10.0 > 0.5 = TRUE
+  ge_real: 10.0 >= 0.5 = TRUE

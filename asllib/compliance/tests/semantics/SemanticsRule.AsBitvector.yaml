@@ -1,0 +1,4 @@
+mode: exec
+outcome: SUCCESS
+output: |
+  bv = 0xfdf0, bv_i = 0xfdf0

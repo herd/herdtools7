@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 10
+info: |-
+  File ../tests/typing/TypingRule.ESlice.bad1.asl, line 10, characters 4 to 7:
+      dst = src[w:1];
+      ^^^
+  ASL Type error (TE_TSF): a subtype of bits((k - 1)) was expected,
+    provided bits(w).

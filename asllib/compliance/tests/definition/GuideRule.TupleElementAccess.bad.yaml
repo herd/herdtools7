@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_BTI
+error_line: 5
+info: |-
+  File ../tests/definition/GuideRule.TupleElementAccess.bad.asl, line 5,
+    characters 18 to 25:
+      x = (x.item1, x.item2);
+                    ^^^^^^^
+  ASL Type error (TE_BTI): Tuple index 2 is outside the valid range 0..1.

@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_PLD
+error_line: 3
+info: |-
+  File ../tests/typing/TypingRule.PrecisionJoin.asl, line 3, characters 0 to 20:
+  var b = (a * a) + 2;
+  ^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_PLD): type used to define storage item is the result of
+    precision loss.

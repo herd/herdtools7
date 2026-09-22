@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: TE_SEV
+error_line: 16
+info: |-
+  File ../tests/typing/TypingRule.SESIsReadonly.bad2.asl, line 16,
+    characters 17 to 39:
+      for i = x to write_side_effecting() do
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_SEV): expected a readonly expression/subprogram.

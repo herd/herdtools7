@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: BE_PE
+error_line: 4
+info: |-
+  File ../tests/typing/TypingRule.SDecl.bad1.asl, line 4, characters 4 to 12:
+      constant c3 = 5;
+      ^^^^^^^^
+  ASL Grammar error (BE_PE): Cannot parse. Local constant declarations are not
+    valid ASL1. Did you mean `let`?.

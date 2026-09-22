@@ -1,0 +1,11 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_BSPD
+error_line: 4
+info: |-
+  File ../tests/typing/TypingRule.ParametersOfExpr.bad.asl, line 4,
+    characters 15 to 27:
+      z: integer{(D, E).item0}) => // Illegal expression in argument type
+                 ^^^^^^^^^^^^
+  ASL Type error (TE_BSPD):
+    Expression (D, E).item0 is not permitted in a subprogram signature.

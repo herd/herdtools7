@@ -1,0 +1,10 @@
+mode: exec
+outcome: FAILURE
+error: BE_PE
+error_line: 3
+info: |-
+  File ../tests/typing/TypingRule.CheckIsNotCollection.asl, line 3,
+    characters 12 to 22:
+    var test: collection {
+              ^^^^^^^^^^
+  ASL Grammar error (BE_PE): Cannot parse.

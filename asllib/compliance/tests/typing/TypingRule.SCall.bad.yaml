@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_BC
+error_line: 11
+info: |-
+  File ../tests/typing/TypingRule.SCall.bad.asl, line 11, characters 4 to 11:
+      zero();
+      ^^^^^^^
+  ASL Static error (TE_BC):
+    Mismatched call type for subprogram 'zero': expected a procedure and found a function.
