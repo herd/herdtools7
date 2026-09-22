@@ -1000,7 +1000,7 @@ module Make
        * check perfomed early in standard
        * (ie non-pte2) mode.
        *)
-       
+
 
       let set_elr_el1 v ii =
         write_reg AArch64Base.elr_el1 v ii
@@ -2836,7 +2836,7 @@ Arguments:
           write_reg_predicate p new_val ii >>|
           ( let last idx = get_predicate_last new_val psize idx in
             (* Fisrt active *)
-            let>= n = last 0 
+            let>= n = last 0
             and* z =
               let rec reduce idx op = match idx with
               | 0 ->  op >>| last idx >>= fun (v1,v2) -> M.op Op.Or v1 v2
@@ -3598,7 +3598,7 @@ Arguments:
         (read_reg_ord rn ii >>= loc_extract) >>|
         (read_reg_ord rm ii >>= fun v ->
           (* We support only 8 colors *)
-          M.op Op.Or v (V.intToV 0xff00)) >>= 
+          M.op Op.Or v (V.intToV 0xff00)) >>=
         fun (addr,exclude) ->
           let set color =
             let tag = V.Val (Constant.Tag (Misc.tag_of_int color)) in
@@ -5205,7 +5205,7 @@ Arguments:
       let mk_mop_fetch exposed_page exposed_label test ii =
         let module InstrSet = AArch64.V.Cst.Instr.Set in
         let relevant_pagelbls = get_instr_ptevals test in
-       
+
         let default_cands =
           InstrSet.empty
           |> InstrSet.add ii.A.inst
@@ -5294,7 +5294,7 @@ Arguments:
         let is_on_exported_page =
           match ii.A.rel_addr with
           | Some (A.V.Val c) -> begin
-            let this_lbl = c in 
+            let this_lbl = c in
             List.exists
               (fun ttd_lbl ->
                 let this_triple = Constant.unmk_sym_virtual_label_with_offset this_lbl in
