@@ -13,3 +13,7 @@
   %{bin:mcmp7}
   %{bin:mcompare7}
   %{bin:msum7}))
+
+(cram
+ (applies_to mapply)
+ (deps %{bin:mapply7}))
