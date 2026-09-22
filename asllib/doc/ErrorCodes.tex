@@ -247,9 +247,12 @@ The following table summarises all error codes.
 \hypertarget{def-typesatisfactionfailure}{}
 \item[$\TypeSatisfactionFailure$]
   \textit{Type satisfaction failure.}
-  See \TypingRuleRef{TypeSatisfaction}.
-  For example, a value of \booleantypeterm{} is assigned to a variable of \integertypeterm{}
-  (See \TypingRuleRef{CheckCanBeInitializedWith}).
+  A type satisfaction check failed.
+  For example:
+  \begin{itemize}
+    \item \TypingRuleRef{CheckTypeSatisfaction}.
+    \item A value is assigned to a variable of incompatible type \\ (see \TypingRuleRef{CheckCanBeInitializedWith}).
+  \end{itemize}
 
 \hypertarget{def-staticevaluationfailure}{}
 \item[$\StaticEvaluationFailure$]
