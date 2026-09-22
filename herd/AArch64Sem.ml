@@ -2653,7 +2653,9 @@ Arguments:
         | 16, S_LSL(0|8 as amount)
         | 32, S_LSL(0|8|16|24 as amount)
         | 32, S_MSL(8|16 as amount) ->
+           let ones = (1 lsl amount) - 1 in
            m128 k >>= M.op1 (Op.LeftShift amount)
+           >>= M.op Op.Or (V.intToV ones)
         | _, S_LSL(n) ->
           Warn.fatal
             "illegal shift immediate %d in %d-bit instruction movi"
@@ -4246,10 +4248,13 @@ Arguments:
             !(let sz = tr_variant var  in
               read_reg_ord_sz sz r2 ii >>= promote >>=
               fun v -> write_reg_neon_rep (neon_sz r1) r1 v ii)
-        | I_FMOV_TG(_,r1,_,r2) ->
+        | I_FMOV_TG(v1,r1,v2,r2) ->
             check_neon inst;
-            read_reg_neon Port.No r2 ii >>= demote
-            >>= fun v -> write_reg_dest r1 v ii >>= nextSet r1
+            read_reg_neon Port.No r2 ii
+            >>= uxt_op (tr_simd_variant v2)
+            >>= demote
+            >>= fun v -> write_reg_sz_dest (tr_variant v1) r1 v ii
+            >>= nextSet r1
         | I_MOV_VE(r1,i1,r2,i2) ->
             check_neon inst;
             !(read_reg_neon_elem Port.No r2 i2 ii >>=
@@ -4266,7 +4271,7 @@ Arguments:
         | I_MOV_V(r1,r2) ->
             check_neon inst;
             !(read_reg_neon Port.No r2 ii >>=
-              fun v -> write_reg_neon r1 v ii)
+              fun v -> write_reg_neon_sz (neon_sz r1) r1 v ii)
         | I_MOV_S(var,r1,r2,i) ->
             check_neon inst;
             !(let sz = tr_simd_variant var in
@@ -4313,8 +4318,9 @@ Arguments:
         | I_LD3R(rs,rA,kr)
         | I_LD4R(rs,rA,kr) ->
             check_neon inst;
+            let sz = neon_sz (List.hd rs) in
             !!!(read_reg_addr rA ii >>= fun addr ->
-            (mem_ss (load_elem_rep MachSize.S128) addr rs ii >>|
+            (mem_ss (load_elem_rep sz) addr rs ii >>|
             post_kr rA addr kr ii))
         | I_LD1M(rs,rA,kr) ->
             check_neon inst;
