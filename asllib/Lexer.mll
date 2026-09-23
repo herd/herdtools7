@@ -365,6 +365,8 @@ let tr_name s = match s with
 }
 
 let asl_chars = ['\r' '\n' ' '-'~'] (* ASCII 10, 13, 32-126 *)
+let line_char = asl_chars # ['\r' '\n']
+let line_term = "\r\n" | '\n'
 let digit = ['0'-'9']
 let digit_ = digit | '_'
 let int_lit = digit digit_*
@@ -426,11 +428,11 @@ and string_lit acc = parse
 *)
 
 and c_comments = parse
-  | "*/"          { token      lexbuf }
-  | '*'           { c_comments lexbuf }
-  | '\n'          { new_line lexbuf |> c_comments }
-  | (asl_chars # ['*' '\n'])+ { c_comments lexbuf }
-  | _             { raise LexerError  }
+  | "*/"                    { token      lexbuf }
+  | '*'                     { c_comments lexbuf }
+  | line_term               { new_line lexbuf |> c_comments }
+  | (line_char # ['*'])+    { c_comments lexbuf }
+  | _                       { raise LexerError  }
 
 (*
    Lexing of ASL tokens
@@ -438,9 +440,9 @@ and c_comments = parse
 *)
 
 and token = parse
-    | '\n'                     { new_line lexbuf |> token         }
-    | [' ''\r']+               { token lexbuf                     }
-    | "//" (asl_chars # '\n')* { token lexbuf                     }
+    | line_term                { new_line lexbuf |> token         }
+    | ' '+                     { token lexbuf                     }
+    | "//" line_char*          { token lexbuf                     }
     | "/*"                     { c_comments lexbuf                }
     | int_lit as lxm           { INT_LIT(Z.of_string lxm)         }
     | hex_lit as lxm           { INT_LIT(Z.of_string lxm)         }

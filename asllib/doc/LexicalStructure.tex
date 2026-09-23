@@ -78,9 +78,21 @@ Let $\REchar$ stand for an ASCII character that may appear in the content text:
 \hypertarget{def-rechar}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REchar$       &$\triangleq$& \ascii{10} \texttt{|} \ascii{13} \texttt{|} \ascii{32-126}\\
+$\REchar$ &$\triangleq$& \ascii{10} \texttt{|} \ascii{13} \texttt{|} \ascii{32-126}\\
 \end{tabular}
 \end{center}
+
+We distinguish characters within a source line from sequences that terminate a source line:
+\hypertarget{def-relinechar}{}
+\hypertarget{def-relineterm}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\RElinechar$ &$\triangleq$& $\REchar$ \regexminus{} (\ascii{10} \texttt{|} \ascii{13})\\
+$\RElineterm$ &$\triangleq$& \ascii{13} \ascii{10} \texttt{|} \ascii{10}\\
+\end{tabular}
+\end{center}
+
+The sequence \ascii{13} \ascii{10} is a single line terminator.
 
 \hypertarget{def-lang}{}
 The notation $\Lang{e}$ stands for the \emph{formal language} of a regular expression $e$.
@@ -88,9 +100,8 @@ That is, the set of strings that match that regular expression.
 
 \section{Whitespace\label{sec:Whitespace}}
 \RequirementDef{Whitespace}
-Comments and whitespace characters are collectively referred to as whitespace lexemes
-and are discarded. Technically, line comments and multi-line comments are treated
-separately from whitespace characters.
+A whitespace lexeme is a non-empty sequence of space characters and line terminators.
+Whitespace lexemes are discarded during lexical analysis.
 
 For example,
 the specification in \listingref{syntax-whitespace1}
@@ -100,34 +111,36 @@ Of course, \listingref{syntax-whitespace2} is preferred in terms of style.
 \ASLListing{A badly-formatted specification}{syntax-whitespace1}{\syntaxtests/GuideRule.Whitespace1.asl}
 \ASLListing{A well-formatted specification}{syntax-whitespace2}{\syntaxtests/GuideRule.Whitespace2.asl}
 
-Formally, whitespace lexemes other than comments are defined via the following regular expression:
+Formally, whitespace lexemes are defined via the following regular expression:
 \hypertarget{def-rewhitespace}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REwhitespace$ & $\triangleq$ & (\ascii{10} $|$ \ascii{13} $|$ \ascii{32})+\\
+$\REwhitespace$ & $\triangleq$ & (\ascii{32} $|$ \RElineterm)+\\
 \end{tabular}
 \end{center}
 
 \section{Comments\label{sec:Comments}}
-ASL supports comments in the style of C++:
-\begin{itemize}
-\item Single-line comments: the text from \text{//} until the end of the line
-is a comment (\ascii{10} is the line feed character \verb|\n|).
-\item Multi-line comments: the text between \texttt{/*} and \texttt{*/} is a comment.
-\end{itemize}
+ASL supports line comments and multi-line comments in the style of C++.
+Comments are discarded during lexical analysis.
 Comments do not nest and the two styles of comments do not interact with each other,
 as exemplified in \listingref{LexicalComments}.
 
 \ASLListing{Examples of comments}{LexicalComments}{\syntaxtests/Lexical.Comments.asl}
 
+\subsection{Line Comments}
+A line comment starts with \texttt{//} and continues up to, but does not include,
+the next line terminator or $\eof$.
+
 Line comments are formally defined via the following regular expression:
 \hypertarget{def-relinecomment}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\RElinecomment$  &$\triangleq$& \texttt{"//"} (\REchar\ \regexminus{} \ascii{10})*\\
+$\RElinecomment$ &$\triangleq$& \texttt{"//"} \RElinechar{}*\\
 \end{tabular}
 \end{center}
 
+\subsection{Multi-line Comments}
+A multi-line comment starts with \texttt{/*} and ends with the first subsequent \texttt{*/}.
 Multi-line comments are defined by \hyperlink{start-multiline-comment}{intercepting \texttt{"/*"}} (see \secref{scanningmultilinecomments}).
 
 \section{Integer Literals\label{sec:Integer Literals}}
@@ -770,11 +783,11 @@ $\REstrchar\ \regexminus{}$ \anycharacter{\texttt{"}\ \backslash\ } &  $\stringc
 
 \subsection{Scanning Multi-line Comments\label{sec:scanningmultilinecomments}}
 The lexeme action
-\hypertarget{def-discardcommentchar}{}
+\hypertarget{def-discardcommentelement}{}
 \[
-\discardcommentchar(s_1, s_2) \triangleq \aslscan(\speccomment, s_2)
+\discardcommentelement(s_1, s_2) \triangleq \aslscan(\speccomment, s_2)
 \]
-discards the string $s_1$ (which is always a single character) and continues scanning $s_2$ with $\speccomment$.
+discards the string $s_1$ and continues scanning $s_2$ with $\speccomment$.
 This is the same as $\discard$, except that $s_2$ is scanned with $\speccomment$ instead of $\spectoken$.
 
 \hypertarget{def-speccomment}{}
@@ -788,7 +801,8 @@ to scanning with $\spectoken$.
 \textbf{Lexical Regular Expression} & \textbf{Lexeme Action}\\
 \hline
 \texttt{"*/"} & $\actiondiscard$ \\
-$\REchar$     & $\discardcommentchar$ \\
+$\RElinechar$ & $\discardcommentelement$ \\
+$\RElineterm$ & $\discardcommentelement$ \\
 \hline
 \end{tabular}
 \end{center}
