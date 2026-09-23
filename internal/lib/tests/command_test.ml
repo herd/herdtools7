@@ -16,11 +16,11 @@
 
 (** Tests for the Command module. *)
 
-module Option = Base.Option
+module Option = Internal.Base.Option
 
 module StringList = struct
-  let compare = Base.List.compare String.compare
-  let to_ocaml_string = Base.List.to_ocaml_string Base.String.to_ocaml_string
+  let compare = Internal.Base.List.compare String.compare
+  let to_ocaml_string = Internal.Base.List.to_ocaml_string Internal.Base.String.to_ocaml_string
 end
 
 let tests = [

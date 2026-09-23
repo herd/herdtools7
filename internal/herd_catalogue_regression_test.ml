@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-module Option = Base.Option
+module Option = Internal.Base.Option
 
 exception Error of string
 
