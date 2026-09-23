@@ -4010,6 +4010,7 @@ Arguments:
               let mask = V.intToV 0x7 in
               let* cap = GCSSem.get_cap mask outgoing in
               let commit =
+                (* FIXME: `incoming` is still symbolic at this point *)
                 let cond = Printf.sprintf "InProgress([%s])" (V.pp_v incoming) in
                 commit_pred_txt (Some cond) ii
               in
