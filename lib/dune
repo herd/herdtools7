@@ -92,7 +92,11 @@
 (library
  (name herdtools)
  (wrapped false)
- (libraries str aslref zarith)
+ (libraries
+  (re_export base)
+  str
+  aslref
+  zarith)
  (modules_without_implementation
   myRel
   sign
