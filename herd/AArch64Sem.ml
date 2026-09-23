@@ -4018,7 +4018,7 @@ Arguments:
                 in
                 lift_memop r Dir.W true false
                   (fun ac ma mv ->
-                    if is_branching && Access.is_physical ac then
+                    if kvm && Access.is_physical ac then
                       M.bind_ctrldata_data ma mv (fun a v -> mop ac a v)
                     else ma >>| mv >>= fun (a, v) -> mop ac a v)
                   (to_perms "w" quad)
