@@ -69,12 +69,12 @@ module Pseudo(A:Arch_litmus.S) = struct
 
   let dump_prog_lines prog =
     let pp = List.map (dump_prog true) prog in
-    let pp = Misc.lines_of_prog pp in
+    let pp = Base.Misc.lines_of_prog pp in
     List.map (Printf.sprintf "%s;") pp
 
   let print_prog chan prog =
     let pp = List.map (dump_prog true) prog in
-    Misc.pp_prog chan pp
+    Base.Misc.pp_prog chan pp
 
   let code_exists p (_,c) = A.code_exists p c
 

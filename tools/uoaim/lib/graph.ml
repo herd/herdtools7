@@ -63,7 +63,7 @@ module Make (V : Vertex) (L : Label) = struct
   module PairMap = Map.Make (struct
     type t = V.t * V.t
 
-    let compare = Misc.pair_compare V.compare V.compare
+    let compare = Base.Misc.pair_compare V.compare V.compare
   end)
 
   module VSet = Set.Make (V)

@@ -25,10 +25,10 @@ let one = false, Uint128.one
 (* "NUM COLON NUM" as "Value:Tag" *)
 let of_string x =
   let idx_opt = String.index_opt x ':' in
-  let idx = if Misc.is_some idx_opt then Misc.as_some idx_opt else 0 in
-  let y = if Misc.is_some idx_opt then String.sub x 0 idx else x in
+  let idx = if Base.Misc.is_some idx_opt then Base.Misc.as_some idx_opt else 0 in
+  let y = if Base.Misc.is_some idx_opt then String.sub x 0 idx else x in
   let tag =
-    if Misc.is_some idx_opt then
+    if Base.Misc.is_some idx_opt then
       if int_of_string (String.sub x (idx + 1)
                           (String.length x - idx - 1)) <> 0 then true
       else false

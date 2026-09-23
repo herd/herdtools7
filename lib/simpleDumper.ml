@@ -76,11 +76,11 @@ CoreDumper.S with
 
         let print_prog chan prog =
           let pp = List.map fmt_col prog in
-          fprintf chan "%s" (Misc.string_of_prog pp)
+          fprintf chan "%s" (Base.Misc.string_of_prog pp)
 
         let dump_prog_lines prog =
           let pp = List.map fmt_col prog in
-          let pp = Misc.lines_of_prog pp in
+          let pp = Base.Misc.lines_of_prog pp in
           let pp = List.map (sprintf "%s;") pp in
           pp
 

@@ -18,7 +18,7 @@ type t = Little | Big
 
 let tags = ["little";"big";]
 
-let parse tag = match Misc.lowercase tag with
+let parse tag = match Base.Misc.lowercase tag with
 | "little" -> Some Little
 | "big"    -> Some Big
 | _ -> None

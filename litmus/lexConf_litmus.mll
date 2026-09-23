@@ -22,13 +22,13 @@ open Printf
 exception Error of string
 
 let set_intkm r arg =
-  match Misc.string_of_intkm arg with
+  match Base.Misc.string_of_intkm arg with
   | Some  x -> r := x
   | None ->
       raise (Error "int[kM] parameter expected")
 
 let set_intkm_withfun set arg =
-  match Misc.string_of_intkm arg with
+  match Base.Misc.string_of_intkm arg with
   | Some  x -> set x
   | None ->
       raise (Error "int[kM] parameter expected")

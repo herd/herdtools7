@@ -53,7 +53,7 @@ module Extract() =
     let read_fname fname =
       try Hashtbl.find t fname
       with Not_found ->
-        try Misc.input_protect read_chan  fname
+        try Base.Misc.input_protect read_chan  fname
         with Sys_error msg ->
           Warn.fatal "Error %s, while attempting to read %s\n" msg fname
 

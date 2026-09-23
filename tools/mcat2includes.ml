@@ -63,8 +63,8 @@ module Make
     let zyva name =
       try get_ast "" name
       with
-      | Misc.Fatal msg -> printf "ERROR %s\n%!" msg
-      | Misc.Exit -> ()
+      | Base.Misc.Fatal msg -> printf "ERROR %s\n%!" msg
+      | Base.Misc.Exit -> ()
   end
 
 let verbose = ref 0
