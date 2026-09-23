@@ -20,10 +20,10 @@ let tests = [
   "OcamlString.record", (fun () ->
     let tests = [
       [], "{}" ;
-      ["a", Base.String.to_ocaml_string "b"], "{ a = \"b\" }" ;
+      ["a", Internal.Base.String.to_ocaml_string "b"], "{ a = \"b\" }" ;
       [
-        "a", Base.String.to_ocaml_string "b" ;
-        "c", Base.String.to_ocaml_string "d" ;
+        "a", Internal.Base.String.to_ocaml_string "b" ;
+        "c", Internal.Base.String.to_ocaml_string "d" ;
       ], "{ a = \"b\" ; c = \"d\" }" ;
     ] in
 

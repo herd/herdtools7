@@ -17,12 +17,12 @@
 (** An OCaml representation of a shelf.py file. *)
 
 module StringList = struct
-  let compare = Base.List.compare String.compare
-  let to_ocaml_string = Base.List.to_ocaml_string Base.String.to_ocaml_string
+  let compare = Internal.Base.List.compare String.compare
+  let to_ocaml_string = Internal.Base.List.to_ocaml_string Internal.Base.String.to_ocaml_string
 end
 module StringListOption = struct
-  let compare = Base.Option.compare StringList.compare
-  let to_ocaml_string = Base.Option.to_ocaml_string StringList.to_ocaml_string
+  let compare = Internal.Base.Option.compare StringList.compare
+  let to_ocaml_string = Internal.Base.Option.to_ocaml_string StringList.to_ocaml_string
 end
 
 exception ParseError of string
@@ -48,7 +48,7 @@ let compare a b = Compare.chain [
 ]
 
 let to_ocaml_string shelf = OcamlString.record [
-  "record",              Base.String.to_ocaml_string       shelf.record ;
+  "record",              Internal.Base.String.to_ocaml_string       shelf.record ;
   "cats",                StringList.to_ocaml_string        shelf.cats ;
   "configs",             StringList.to_ocaml_string        shelf.configs ;
   "tests",               StringList.to_ocaml_string        shelf.tests ;

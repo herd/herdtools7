@@ -248,7 +248,7 @@ let check_tags s =
 let check line = if check_tags line then prerr_endline line
 
 let do_run_herd_args verbose herd args ?j litmuses =
-  let litmuses = Base.Iter.of_list litmuses in
+  let litmuses = Internal.Base.Iter.of_list litmuses in
   (*
    * Record stdout and stderr to two sources if we need
    * to reason about them separately.
@@ -290,7 +290,7 @@ let run_herd_concurrent ?verbose ~bell ~cat ~conf ~variants ~libdir herd ~j litm
     herd_args ~bell:bell ~cat:cat ~conf:conf ~variants:variants ~libdir:libdir
       ~timeout:None ~checkfilter:None ~speedcheck:None
   in
-  let litmuses = Base.Iter.of_list litmuses in
+  let litmuses = Internal.Base.Iter.of_list litmuses in
   let j = max 2 j in
   let mapply = Filename.concat (Filename.dirname herd) "mapply7" in
   let args = mapply_herd_redirect_args ?verbose ~j ~herd ~litmuses:[] args in
