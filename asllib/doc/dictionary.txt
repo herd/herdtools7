@@ -746,6 +746,7 @@ encounters
 end
 endian
 ending
+ends
 enforce
 enforced
 england
@@ -2178,6 +2179,7 @@ terminals
 terminate
 terminates
 terminating
+terminator
 terms
 test
 tested
