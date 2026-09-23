@@ -1084,6 +1084,7 @@ included
 includes
 including
 inclusive
+incompatible
 incomplete
 incorrect
 incorrectly
