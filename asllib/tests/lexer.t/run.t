@@ -39,15 +39,38 @@
                                   ^
   ASL Lexical error (BE_LE): Unknown symbol "p".
   [1]
-  $ cat >println6.asl <<EOF
-  > constant msg = "Some unterminated string;
-  > func main () => integer begin println(msg); return 0; end;
-  > EOF
-  $ aslref println6.asl
-  File println6.asl, line 3, character 0:
-  
-  
-  ASL Lexical error (BE_LE): Unknown symbol "".
+
+Unterminated string literals are rejected at physical end-of-file.
+
+  $ printf %s 'constant msg = "Some unterminated string;' > unterminated-string.asl
+  $ aslref --gnu-errors unterminated-string.asl
+  aslref: unterminated-string.asl:1:41: ASL Lexical error (BE_LE): Unknown symbol "".
+  [1]
+
+Raw source line terminators are not permitted in string literals.
+
+  $ aslref raw-lf-string.asl
+  File raw-lf-string.asl, line 1, characters 21 to 22:
+  constant msg = "first
+                       ^
+  ASL Lexical error (BE_LE): Unknown symbol (ASCII code point(s): 10).
+  [1]
+  $ printf 'constant msg = "first\r\nsecond";\r\n' > raw-crlf-string.asl
+  $ aslref raw-crlf-string.asl
+  File raw-crlf-string.asl, line 1, characters 21 to 22:
+  constant msg = "first
+                       ^
+  ASL Lexical error (BE_LE): Unknown symbol (ASCII code point(s): 13).
+  [1]
+
+Nor is a bare carriage return permitted as an unescaped string character.
+
+  $ printf 'constant msg = "first\r' > raw-cr-string.asl
+  $ aslref raw-cr-string.asl
+  File raw-cr-string.asl, line 1, characters 21 to 22:
+  constant msg = "first
+                       ^
+  ASL Lexical error (BE_LE): Unknown symbol (ASCII code point(s): 13).
   [1]
 
 C-Style comments
@@ -72,15 +95,13 @@ C-Style comments
   > 
   > */
   > 
-  > let foo = "sigjrshgrsas
-  > kgjrgsoirjggsr
-  > fsoirjgrsig";
+  > let foo = "sigjrshgrsas\nkgjrgsoirjggsr\nfsoirjgrsig";
   > 
   > let a = b;
   > EOF
 
   $ aslref comments2.asl
-  File comments2.asl, line 11, characters 8 to 9:
+  File comments2.asl, line 9, characters 8 to 9:
   let a = b;
           ^
   ASL Static error (TE_UI): Undefined identifier: 'b'

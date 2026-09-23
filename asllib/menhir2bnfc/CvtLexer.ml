@@ -74,7 +74,7 @@ end = struct
                      ZeroOrMore
                        (Choice
                           [
-                            Except (MatchAll, OneOf "\"\\");
+                            Except (MatchAll, OneOf "\"\\\r\n");
                             Seq [ Char '\\'; OneOf "nt\"\\" ];
                           ]);
                      Char '"';

@@ -417,8 +417,7 @@ rule escaped_string_chars acc = parse
 and string_lit acc = parse
   | '"'   { STRING_LIT (Buffer.contents acc) }
   | '\\'  { escaped_string_chars acc lexbuf }
-  | '\n'  { Buffer.add_char acc '\n'; new_line lexbuf |> string_lit acc }
-  | (asl_chars # ['"' '\\' '\n' '\r'])+ as lxm { Buffer.add_string acc lxm; string_lit acc lexbuf }
+  | (line_char # ['"' '\\'])+ as lxm { Buffer.add_string acc lxm; string_lit acc lexbuf }
   | eof   { raise LexerError }
   | _     { raise LexerError }
 
