@@ -27,7 +27,7 @@ package manager. This means an opam switch needs to be prepared before
 installing the dependencies of the project. For example:
 
     % opam switch create herdtools7 --empty
-    % eval $(opam config env --switch=herdtool7 --set-switch)
+    % eval $(opam config env --switch=herdtools7 --set-switch)
     % opam install . --deps-only
 
 Notice: Compilation with ocamlbuild is not longer possible
