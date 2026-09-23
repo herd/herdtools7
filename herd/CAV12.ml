@@ -79,7 +79,7 @@ module Make
         PP.show_legend test  legend conc (Lazy.force vb_pp)
 
 (* Utilities *)
-    let proc_eq = Misc.int_eq
+    let proc_eq = Base.Misc.int_eq
     let one_store (e1,e2) = E.is_mem_store e1 || E.is_mem_store e2
     and same_proc (e1,e2) = E.same_proc e1 e2
     and diff_proc (e1,e2) = not  (E.same_proc e1 e2)
@@ -316,7 +316,7 @@ module Make
                       ({ SE.nature = SE.Prop (get_proc y) ; event = x ; },
                        { SE.nature = SE.Exe ; event = y ; })::k
                   | Dir.W,Dir.W ->
-                      if !Misc.switch then k
+                      if !Base.Misc.switch then k
                       else
                       ({ SE.nature = SE.Com ; event = x ; },
                        { SE.nature = SE.Prop (get_proc x) ; event = y ; })::k

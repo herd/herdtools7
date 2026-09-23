@@ -99,7 +99,7 @@ module Make(C:Config) = struct
   module ValsMixed =
     MachMixed.Vals
       (struct
-        let naturalsize () = Misc.as_some C.naturalsize
+        let naturalsize () = Base.Misc.as_some C.naturalsize
         let endian = C.endian
       end)(Value)
 

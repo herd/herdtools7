@@ -45,7 +45,7 @@ and outside inria cecill = parse
 
 let zyva chan = main (Lexing.from_channel chan)
 
-let zyva fname =  Misc.input_protect zyva fname
+let zyva fname =  Base.Misc.input_protect zyva fname
 
 let () =
   for i = 1 to Array.length Sys.argv-1 do

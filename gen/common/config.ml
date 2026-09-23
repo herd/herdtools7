@@ -236,7 +236,7 @@ let common_specs () =
    "list accepted edge syntax and exit")::
   ("-show", Arg.String (fun s -> show := Some (ShowGen.parse s)),
     "<edges|annotations|fences> list accepted edges, annotations or fences, and exit")::
-  ("-switch", Arg.Set Misc.switch, "switch something")::
+  ("-switch", Arg.Set Base.Misc.switch, "switch something")::
   ("-obs",
    Arg.String (fun s -> do_observers := parse_do_observers s),
    "<accept|avoid|force|local> enable observers (default avoid)")::
@@ -410,7 +410,7 @@ let usage_msg = "Usage: " ^ prog ^   " [options]*"
 
 let read_no fname =
   try
-    Misc.input_protect
+    Base.Misc.input_protect
       (fun chan -> MySys.read_list chan (fun s -> Some s))
       fname
   with _ -> []
@@ -426,7 +426,7 @@ let read_bell libfind fname =
         let libfind = libfind
         let compat = false
         let prog = prog
-        let variant = Misc.delay_parse !variant Variant_gen.parse
+        let variant = Base.Misc.delay_parse !variant Variant_gen.parse
       end) in
   R.read fname
 

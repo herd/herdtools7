@@ -221,7 +221,7 @@ module Make(Config:Config)(T:Builder.S)
 
 (* Adapt actual filename *)
       let tar_output_protect f name =
-        Misc.output_protect f (Tar.outname name)
+        Base.Misc.output_protect f (Tar.outname name)
 
 (* Compile & dump proper *)
 
@@ -364,11 +364,11 @@ module Make(Config:Config)(T:Builder.S)
           if Config.verbose > 0 then
             eprintf "Cannot normalise error: %s\n" msg ;
           res
-        | Misc.Fatal msg|Misc.UserError msg ->
+        | Base.Misc.Fatal msg|Base.Misc.UserError msg ->
           if Config.verbose > 0 then
             eprintf "Fatal ignored: %s\n" msg ;
           res
-        |Misc.Exit ->
+        |Base.Misc.Exit ->
             res
 (* Exported *)
       let all ?(check=(fun _ -> true)) gen =

@@ -273,14 +273,14 @@ end = struct
     function
     | Other s -> [ interpret_cat_definition s ]
     | Negated c -> (
-        match Misc.List.concat_map interpret_pre_constr c with
+        match Base.Misc.List.concat_map interpret_pre_constr c with
         | [ c ] -> [ negate c ]
         | _ -> [])
     | Chain ch -> [ interpret_chain ch ]
 
   let interpret_string str =
     let pre_c = PreConstraint.parse str in
-    Misc.List.concat_map interpret_pre_constr pre_c
+    Base.Misc.List.concat_map interpret_pre_constr pre_c
 
   let interpret_structure : string Structure.t -> t Structure.t =
     Structure.map_constr (fun s ->

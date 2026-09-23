@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 open Printf
+module Misc = Base.Misc
 
 module type I = sig
   type arch_reg

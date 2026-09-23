@@ -409,8 +409,8 @@ let parse_list rs = List.map (fun (r,s) -> s,r) rs
 
 let parse_some plist s =
   try
-    let plist = List.map (fun (n,r) -> Misc.uppercase n,r) plist in
-    let s = Misc.uppercase s in
+    let plist = List.map (fun (n,r) -> Base.Misc.uppercase n,r) plist in
+    let s = Base.Misc.uppercase s in
     Some (List.assoc s plist)
   with Not_found -> None
 
@@ -433,7 +433,7 @@ let parse_vreg =
   and arplist = parse_list arrange_specifier in
   fun s ->
     try let (g1, g2) =
-      ignore (Str.search_forward (Str.regexp "\\(V[0-9]+\\)\\(\\.[0-9]*[B,D,Q,H,S]\\)") (Misc.uppercase s) 0);
+      ignore (Str.search_forward (Str.regexp "\\(V[0-9]+\\)\\(\\.[0-9]*[B,D,Q,H,S]\\)") (Base.Misc.uppercase s) 0);
       (Str.matched_group 1 s, Str.matched_group 2 s);
       in Some (Vreg (List.assoc g1 vplist, List.assoc g2 arplist))
     with Not_found -> None
@@ -445,7 +445,7 @@ let parse_zreg =
   and arplist = parse_list sve_arrange_specifier in
   fun s ->
     try let (g1, g2) =
-        ignore (Str.search_forward (Str.regexp "\\(Z[0-9]+\\)\\(\\.[B,D,Q,H,S]\\)") (Misc.uppercase s) 0);
+        ignore (Str.search_forward (Str.regexp "\\(Z[0-9]+\\)\\(\\.[B,D,Q,H,S]\\)") (Base.Misc.uppercase s) 0);
         (Str.matched_group 1 s, Str.matched_group 2 s);
       in Some (Zreg (List.assoc g1 zplist, List.assoc g2 arplist))
     with Not_found -> None
@@ -455,7 +455,7 @@ let parse_preg =
   and splist = parse_list sve_arrange_specifier in
   fun s ->
     try let (g1, g2) =
-          ignore (Str.search_forward (Str.regexp "\\(P[0-9]+\\)\\(\\.[B,D,Q,H,S]\\)?") (Misc.uppercase s) 0);
+          ignore (Str.search_forward (Str.regexp "\\(P[0-9]+\\)\\(\\.[B,D,Q,H,S]\\)?") (Base.Misc.uppercase s) 0);
           let suffix = try Str.matched_group 2 s with Not_found -> "" in
           (Str.matched_group 1 s, suffix);
         in Some (Preg (List.assoc g1 pplist, List.assoc g2 splist))
@@ -466,7 +466,7 @@ let parse_pmreg =
   and mplist = parse_list sve_pred_modifier in
   fun s ->
   try let (g1, g2) =
-          ignore (Str.search_forward (Str.regexp "\\(P[0-9]+\\)\\(\\/[Z,M]\\)") (Misc.uppercase s) 0);
+          ignore (Str.search_forward (Str.regexp "\\(P[0-9]+\\)\\(\\/[Z,M]\\)") (Base.Misc.uppercase s) 0);
           (Str.matched_group 1 s, Str.matched_group 2 s);
         in Some (PMreg (List.assoc g1 pplist, List.assoc g2 mplist))
       with Not_found -> None
@@ -476,7 +476,7 @@ let parse_zareg =
   and dirplist = parse_list za_direction_specifier in
   fun s ->
     try let (g1,g2,g3) =
-        ignore (Str.search_forward (Str.regexp "ZA\\([0-9]+\\)\\([V,H]\\)?\\(\\.[B,D,Q,H,S]\\)") (Misc.uppercase s) 0);
+        ignore (Str.search_forward (Str.regexp "ZA\\([0-9]+\\)\\([V,H]\\)?\\(\\.[B,D,Q,H,S]\\)") (Base.Misc.uppercase s) 0);
         let dir = try Some (Str.matched_group 2 s) with Not_found -> None in
         (Str.matched_group 1 s, dir, Str.matched_group 3 s);
       in let dir = match g2 with
@@ -3426,7 +3426,7 @@ let is_valid i =
   | I_OP3 (_,(ASR|LSL|LSR|ROR),_,_,OpExt.(Reg (_,s)))
     -> OpExt.is_no_shift s
   | I_MOV (v,_,K k) ->
-       Misc.is_some (tr_mov_imm v k)
+       Base.Misc.is_some (tr_mov_imm v k)
   | I_MOVZ (_,_,k,S_NOEXT)|I_MOVN (_,_,k,S_NOEXT) ->
      is_16bits_unsigned k
   | I_MOVZ (v,_,k,(S_LSL (0|16|32|48 as s)))
@@ -3713,7 +3713,7 @@ module PseudoI = struct
         | I_MOVN (v,r,k,s) -> I_MOVN (v,r,k_tr k,ap_shift k_tr s)
         | I_MOVK (v,r,k,s) -> I_MOVK (v,r,k_tr k,ap_shift k_tr s)
         | I_ADDSUBEXT (v1,op,r1,r2,(v3,r3),(e,ko)) ->
-           let ko = Misc.app_opt k_tr ko in
+           let ko = Base.Misc.app_opt k_tr ko in
            I_ADDSUBEXT (v1,op,r1,r2,(v3,r3),(e,ko))
         | I_OP3 (v,op,r1,r2,e) -> I_OP3 (v,op,r1,r2,op_ext_tr e)
         | I_EXTR (v,r1,r2,r3,k) -> I_EXTR (v,r1,r2,r3,k_tr k)
@@ -4002,7 +4002,7 @@ module
   let from_exec = Tr.from_exec
   and to_exec = Tr.to_exec
 
-  let compare = Misc.polymorphic_compare
+  let compare = Base.Misc.polymorphic_compare
   let eq = (=)
 
   module PP = MakePP(C)

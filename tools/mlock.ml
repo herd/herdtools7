@@ -25,7 +25,7 @@ module Action = struct
 
   let tags = ["lock"; "expand"; "once";]
 
-  let parse s = match Misc.lowercase s with
+  let parse s = match Base.Misc.lowercase s with
   | "lock" -> Some Lock
   | "expand" -> Some Expand
   | "once" -> Some Once
@@ -48,6 +48,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
   open MiscParser
   open MemOrderOrAnnot
   open CBase
+  module Misc = Base.Misc
 
   module D = CDumper.Make(Out)
 

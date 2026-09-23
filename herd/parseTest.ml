@@ -138,7 +138,7 @@ end) = struct
                   (fun _ -> false), (fun _ -> false)
                | Some cache_type ->
                   cache_type.dic, cache_type.idc in
-         Misc.(|||) Conf.variant (function
+         Base.Misc.(|||) Conf.variant (function
             | Variant.DIC -> dic_pred 0
             | Variant.IDC -> idc_pred 0
             | _ -> false) in
@@ -149,7 +149,7 @@ end) = struct
         let model = model
         let showsome =
           Conf.collect_graph_data
-              || Misc.is_some Conf.PC.view || Conf.variant Variant.MemTag
+              || Base.Misc.is_some Conf.PC.view || Conf.variant Variant.MemTag
               || Conf.variant Variant.Morello
         let through = Conf.through
         let debug = Conf.debug.Debug_herd.barrier
@@ -218,7 +218,7 @@ end) = struct
     do_from_string env ~filename ~contents
 
   let from_file name env =
-    Misc.input_protect (fun ch ->
+    Base.Misc.input_protect (fun ch ->
       let contents = In_channel.input_all ch in
       do_from_string env ~filename:(Some name) ~contents) name
 end

@@ -38,7 +38,7 @@ module Make(Conf:RunTest.Config)(ModelConfig:BellMem.Config) = struct
       end)
       (Bell)
       (struct
-        let info = Misc.snd_opt Conf.bell_model_info
+        let info = Base.Misc.snd_opt Conf.bell_model_info
         let get_id_and_list = Bell.get_id_and_list
         let set_list = Bell.set_list
         let tr_compat = Bell.tr_compat

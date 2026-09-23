@@ -94,7 +94,9 @@ let output_paragraphs ~outdir paragraphs =
       paragraphs
       |> List.iteri (fun ix paragraph ->
           let fname = Filename.concat dir (Printf.sprintf "def%02d.txt" ix) in
-          Misc.output_protect (fun chan -> output_string chan paragraph) fname)
+          Base.Misc.output_protect
+            (fun chan -> output_string chan paragraph)
+            fname)
 
 let run ~outdir (ch : in_channel) =
   let contents = Uoaim.Util.read_all ch in
@@ -105,4 +107,4 @@ let () =
   let outdir, arg = parse_options () in
   match arg with
   | None -> run ~outdir stdin
-  | Some name -> Misc.input_protect (run ~outdir) name
+  | Some name -> Base.Misc.input_protect (run ~outdir) name

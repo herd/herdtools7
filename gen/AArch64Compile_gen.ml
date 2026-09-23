@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 open Code
+module Misc = Base.Misc
 
 module type Config = sig
   include CompileCommon.Config

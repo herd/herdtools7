@@ -234,7 +234,7 @@ module Make(C:AutoConf.S) : S with module A = C.A
             (fun _ o ->I.safe_by_cardinal o.O.interpret)
             os [] in
         let xs =
-          List.sort (fun (_,c1) (_,c2) -> Misc.int_compare c1 c2)
+          List.sort (fun (_,c1) (_,c2) -> Base.Misc.int_compare c1 c2)
             xs in
         match group xs with
         | [] -> []
@@ -244,7 +244,7 @@ module Make(C:AutoConf.S) : S with module A = C.A
         match extract os with
         | [] -> R.Set.empty
         | xs ->
-            if !Misc.switch then
+            if !Base.Misc.switch then
               take_high (extract ok) xs
             else
               R.Set.unions xs

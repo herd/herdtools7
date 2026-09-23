@@ -28,7 +28,7 @@ let tags = [ "none"; "adapt"; "<int>"; ]
 let parse tag =
   try Some (St (int_of_string tag))
   with Failure _ ->
-    match Misc.lowercase tag with
+    match Base.Misc.lowercase tag with
     | "no"|"none" -> Some No
     | "adapt" -> Some Adapt
     | _ -> None
