@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 open Code
+open Base
 
 module type Config = sig
   include CompileCommon.Config

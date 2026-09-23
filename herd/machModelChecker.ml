@@ -42,8 +42,8 @@ module Make
       match O.optace with
       | True -> true
       | False|Iico -> false
-    let bell_fname =  Misc.app_opt (fun (x,_) -> x) O.bell_model_info
-    let bell_info = Misc.app_opt (fun (_,x) -> x) O.bell_model_info
+    let bell_fname =  Base.Misc.app_opt (fun (x,_) -> x) O.bell_model_info
+    let bell_info = Base.Misc.app_opt (fun (_,x) -> x) O.bell_model_info
 
     let tr_proc =
       let open DirtyBit in
@@ -73,10 +73,10 @@ module Make
       let variant =
         let variant =
           if optacetrue then
-            Misc.(|||) (Variant.equal Variant.CosOpt) O.variant
+            Base.Misc.(|||) (Variant.equal Variant.CosOpt) O.variant
           else O.variant in
-        Misc.delay_parse variant (fun s ->
-          match Misc.lowercase s with
+        Base.Misc.delay_parse variant (fun s ->
+          match Base.Misc.lowercase s with
           | "dic" -> Some Variant.DIC
           | "idc" -> Some Variant.IDC
           | _ -> Variant.parse s)
@@ -330,7 +330,7 @@ module Make
         else fun e -> not (E.is_reg_any e) in
       let all_evts =  conc.S.str.E.events in
       let evts =
-        choose_spec Misc.identity (E.EventSet.filter relevant) all_evts in
+        choose_spec Base.Misc.identity (E.EventSet.filter relevant) all_evts in
       let () =
         if O.debug then
           Printf.eprintf
@@ -340,7 +340,7 @@ module Make
       let mem_evts = lazy (E.EventSet.filter E.is_mem evts) in
       let po =
         choose_spec
-          Misc.identity
+          Base.Misc.identity
           (if O.wide_po then
              E.EventRel.filter_nodes relevant
            else
@@ -402,8 +402,8 @@ module Make
               ("instr",lazy begin
                 E.EventRel.of_pred all_evts all_evts E.po_eq
               end)::k
-          else Misc.identity)
-             (((if do_deps then Misc.identity
+          else Base.Misc.identity)
+             (((if do_deps then Base.Misc.identity
              else fun k ->
                ("tst", lazy (Lazy.force pr).S.tst)::
                ("addr", lazy (Lazy.force pr).S.addr)::
@@ -456,7 +456,7 @@ module Make
               and p e = match S.E.virtual_loc_of e with
                 | Some s ->
                    let mtx =
-                     try Misc.Simple.assoc s mts
+                     try Base.Misc.Simple.assoc s mts
                      with Not_found -> MT.default in
                    MT.equal mt mtx
                 | None -> false in
@@ -511,7 +511,7 @@ module Make
                 E.EventSet.filter
                   (fun e ->
                      E.Act.is_pte_access e.E.action
-                     && Misc.is_some (get_pte_val_attrs e))
+                     && Base.Misc.is_some (get_pte_val_attrs e))
                   (Lazy.force mem_evts) in
             let attr_evts =
               E.EventSet.filter

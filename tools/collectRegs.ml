@@ -52,7 +52,7 @@ module Make(A:Arch_tools.S) = struct
   let collect_prop = ConstrGen.fold_prop collect_atom
 
   let collect_filter = function
-    | None -> Misc.identity
+    | None -> Base.Misc.identity
     | Some p -> collect_prop p
 
   let collect_constr : (A.location, A.v, A.fault_type) ConstrGen.prop ConstrGen.constr -> A.RegSet.t A.ProcMap.t -> A.RegSet.t A.ProcMap.t = ConstrGen.fold_constr collect_atom

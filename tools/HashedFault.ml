@@ -23,7 +23,7 @@ module S = struct
     let ah =  HashedStringOpt.as_hash a
     and bh = HashedStringOpt.as_hash b
     and ch = HashedStringOpt.as_hash c in
-    abs (Misc.mix (Misc.mix (0x4F1BBCDC+ah) (0x4F1BBCDC+bh) (0x4F1BBCDC+p)) (0x4F1BBCDC+ch) 0)
+    abs Base.Misc.(mix (mix (0x4F1BBCDC+ah) (0x4F1BBCDC+bh) (0x4F1BBCDC+p)) (0x4F1BBCDC+ch) 0)
 end
 
 include (Hashcons.Make(S))
@@ -95,8 +95,8 @@ let equivalent f1 f2 =
 (* Standard "compare" function  on faults.
    Can be used for building sets, sorting, etc. *)
 let compare h1 h2 =
-  Misc.tuple4_compare
-    Misc.int_compare  HashedStringOpt.compare
+  Base.Misc.tuple4_compare
+    Int.compare  HashedStringOpt.compare
     HashedStringOpt.compare HashedStringOpt.compare
     (as_tt h1) (as_tt h2)
 
@@ -105,7 +105,7 @@ type ft_kind =
   | DIPrefix (* Prefixed with "D-" or "I-" *)
   | Other    (* All other names *)
 
-let compare_kinds = Misc.polymorphic_compare
+let compare_kinds = Base.Misc.polymorphic_compare
 
 let get_fault_type h =
   let _,_,_,ft = as_tt h in

@@ -33,7 +33,7 @@ module
     MyMap.Make
       (struct
         type t = int
-        let compare = Misc.int_compare
+        let compare = Base.Misc.int_compare
       end)
 
   type v = ParsedConstant.v

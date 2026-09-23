@@ -16,6 +16,7 @@
 
 (* Normalised names for cycles *)
 open Printf
+open Base
 open BellInfo
 
 let rec of_scope = function

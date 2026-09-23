@@ -40,15 +40,15 @@ module Top
         let t = TI.Z.from_file name in
         printf "%s %s\n" t.TestInfo.T.tname t.TestInfo.T.hash
       with
-      | Misc.Exit -> ()
-      | Misc.Fatal msg|Misc.UserError msg ->
+      | Base.Misc.Exit -> ()
+      | Base.Misc.Fatal msg|Base.Misc.UserError msg ->
           Warn.warn_always "%a %s" Pos.pp_pos0 name msg ;
           ()
       | e ->
           Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
           raise e
 
-    let zyva tests = Misc.iter_argv_or_stdin do_test tests
+    let zyva tests = Base.Misc.iter_argv_or_stdin do_test tests
   end
 
 

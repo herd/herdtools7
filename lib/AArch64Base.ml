@@ -16,6 +16,7 @@
 
 (** Simplified Arch64, for generators *)
 open Printf
+open Base
 
 let arch = Archs.aarch64
 let endian = Endian.Little

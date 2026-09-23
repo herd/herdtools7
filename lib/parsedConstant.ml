@@ -30,11 +30,11 @@ and eq c1 c2 = Constant.eq no_comp no_comp no_comp no_comp c1 c2
 let nameToV = Constant.mk_sym
 
 let pp_v v =
-  Constant.pp Misc.identity ParsedPteVal.pp ParsedAddrReg.pp InstrLit.pp v
+  Constant.pp Base.Misc.identity ParsedPteVal.pp ParsedAddrReg.pp InstrLit.pp v
 let pp_v_old v =
-  Constant.pp_old Misc.identity ParsedPteVal.pp ParsedAddrReg.pp InstrLit.pp v
+  Constant.pp_old Base.Misc.identity ParsedPteVal.pp ParsedAddrReg.pp InstrLit.pp v
 
 (* Hexa parameter ignored... *)
 let pp _hexa = pp_v
 let pp_norm _hexa pp_pteval pp_addrreg =
-  Constant.pp Misc.identity pp_pteval pp_addrreg InstrLit.pp
+  Constant.pp Base.Misc.identity pp_pteval pp_addrreg InstrLit.pp

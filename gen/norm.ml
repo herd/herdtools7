@@ -80,10 +80,10 @@ module Make(Co:Config)(F:Fence.S)(A:Atom.S) = struct
       let name =  N.mk_name base ?scope:None es in
       Printf.printf "%s: %s\n" name (E.pp_edges es)
     with
-    | Misc.Fatal msg ->
+    | Base.Misc.Fatal msg ->
       eprintf "Fatal error: %s\n" msg ;
       exit 2
-    | Misc.UserError msg ->
+    | Base.Misc.UserError msg ->
       eprintf "%s\n" msg ;
       exit 2
 

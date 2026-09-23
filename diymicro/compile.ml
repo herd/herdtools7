@@ -275,7 +275,7 @@ let fmt_cols =
 
 let dump_code code channel =
   let pp = fmt_cols code in
-  Misc.pp_prog channel pp
+  Base.Misc.pp_prog channel pp
 
 let dump_final (stl : State.t list) channel =
   let pp_clause proc reg value =

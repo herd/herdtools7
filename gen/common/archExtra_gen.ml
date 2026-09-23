@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 open Printf
+open Base
 
 module type I = sig
   type arch_reg

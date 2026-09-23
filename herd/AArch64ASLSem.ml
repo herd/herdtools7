@@ -17,6 +17,8 @@
 (* Hadrien Renaud, University College London, UK.                           *)
 (****************************************************************************)
 
+open Base
+
 let aarch64_iico_ctrl = "aarch64_iico_ctrl"
 let aarch64_iico_data = "aarch64_iico_data"
 let aarch64_iico_order = "aarch64_iico_order"

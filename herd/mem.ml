@@ -215,7 +215,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       Map.Make
         (struct
           type t = E.eiid
-          let compare = Misc.int_compare
+          let compare = Base.Misc.int_compare
         end)
 
     let count_mem evts =
@@ -249,7 +249,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
     let (|*|) = EM.(|*|)
     let (>>>) = EM.(>>>)
 
-    let is_back_jump addr_jmp addr_tgt = Misc.int_compare addr_jmp addr_tgt >= 0
+    let is_back_jump addr_jmp addr_tgt = Base.Misc.int_compare addr_jmp addr_tgt >= 0
 
     type result =
         {
@@ -572,7 +572,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         try
           let (proc_tgt,_) as tgt = IntMap.find addr code_segment in
           if (* Limit jump threshold to non determined jumps ? *)
-            Misc.int_eq proc_jmp proc_tgt
+            Base.Misc.int_eq proc_jmp proc_tgt
             && check_back
             && is_back_jump addr_jmp addr
           then
@@ -695,7 +695,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
           let msg = Printf.sprintf
             "Segmentation fault (kidding, address 0x%x does not point to code)"
             addr in
-          EM.failcodeT (Misc.UserError msg) true
+          EM.failcodeT (Base.Misc.UserError msg) true
 
       and add_fault re_exec inst fetch_proc proc env seen addr syscall nexts =
         match env.A.fh_code,re_exec with
@@ -806,7 +806,7 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                    match SM.can_unset_af_loc e with
                    | None -> k
                    | Some loc ->
-                       let v = Misc.as_some @@ E.written_of e in
+                       let v = Base.Misc.as_some @@ E.written_of e in
                        if dbg then
                          Printf.eprintf
                            "loc=%s,v=%s\n%!" (V.pp_v loc) (V.pp_v v) ;
@@ -836,9 +836,9 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
                            end in
                        if write_loaded then k else (loc,v)::k)
                 evts []
-              |> Misc.group (fun (loc1,_) (loc2,_) -> V.compare loc1 loc2) in
+              |> Base.Misc.group (fun (loc1,_) (loc2,_) -> V.compare loc1 loc2) in
             let om =
-              Misc.fold_subsets_cross_gen
+              Base.Misc.fold_subsets_cross_gen
                 (fun xs m ->
                    List.fold_left
                      (fun m (x,v) ->
@@ -1079,7 +1079,7 @@ let add_eq v1 v2 eqs =
           try add_eq v_loaded v_stored csn
           with Contradiction ->
             (* This shouldn't happen, unless mistake in the semantics. *)
-            let loc = Misc.as_some (E.location_of load) in
+            let loc = Base.Misc.as_some (E.location_of load) in
             let () =
               Printf.eprintf
                 "Contradiction on reg %s: loaded %s vs. stored %s\n"
@@ -1395,7 +1395,7 @@ let add_eq v1 v2 eqs =
           possible in
       let loads,possible_stores =  List.split possible in
       (* Cross product fold. Probably an overkill here *)
-      Misc.fold_cross possible_stores
+      Base.Misc.fold_cross possible_stores
         (fun stores res ->
           (* stores is a list of stores that may match the loads list.
              Both lists in same order [by List.split above]. *)
@@ -1461,7 +1461,7 @@ let add_eq v1 v2 eqs =
       let is_to_codeloc e =
         let open Constant in
         match
-          Misc.seq_opt A.global (E.location_of e)
+          Base.Misc.seq_opt A.global (E.location_of e)
         with
         | Some (V.Var _) -> true
         | Some (V.Val (Symbolic (Virtual {name=n;_}))) when Symbol.is_label n -> true
@@ -1471,9 +1471,9 @@ let add_eq v1 v2 eqs =
       let is_to_instr_ttd e =
         let open Constant in
         match
-          Misc.seq_opt A.global (E.location_of e)
+          Base.Misc.seq_opt A.global (E.location_of e)
         with
-        | Some (V.Val (Symbolic (System (PTE,s)))) -> Misc.is_labelstr s
+        | Some (V.Val (Symbolic (System (PTE,s)))) -> Base.Misc.is_labelstr s
         | Some _| None -> false
       in
       let get_imp_instr_rs es =
@@ -1556,7 +1556,7 @@ let add_eq v1 v2 eqs =
       match A.symbolic_data a with
       | Some ({name=n;_} as sym) ->
           let s = Symbol.pp n in
-          let s = if Misc.check_ctag s then Misc.tr_ctag s else s in
+          let s = if Base.Misc.check_ctag s then Base.Misc.tr_ctag s else s in
           A.of_symbolic_data {sym with name=Symbol.of_string s; offset=0;}
       | _ -> raise CannotSca
 
@@ -1564,24 +1564,24 @@ let add_eq v1 v2 eqs =
     let compare_index e1 e2 =
       let open Constant in
       let loc1 = E.location_of e1 and loc2 = E.location_of e2 in
-      match Misc.seq_opt A.symbolic_data loc1,
-            Misc.seq_opt A.symbolic_data loc2
+      match Base.Misc.seq_opt A.symbolic_data loc1,
+            Base.Misc.seq_opt A.symbolic_data loc2
       with
       | Some {name=s1;offset=i1;_},Some {name=s2;offset=i2;_}
             when Symbol.equal s1 s2 ->
-          Misc.int_compare i1 i2
+          Base.Misc.int_compare i1 i2
       | Some {name=s1;_},Some {name=s2;_} when morello ->
           let s1 = Symbol.pp s1
           and s2 = Symbol.pp s2 in
-          if Misc.check_ctag s1 && Misc.string_eq (Misc.tr_ctag s1) s2 then 1
-          else if Misc.check_ctag s2 && Misc.string_eq s1 (Misc.tr_ctag s2) then -1
-          else if Misc.check_ctag s1 && Misc.check_ctag s2 && Misc.string_eq s1 s2 then 0
+          if Base.Misc.check_ctag s1 && Base.Misc.string_eq (Base.Misc.tr_ctag s1) s2 then 1
+          else if Base.Misc.check_ctag s2 && Base.Misc.string_eq s1 (Base.Misc.tr_ctag s2) then -1
+          else if Base.Misc.check_ctag s1 && Base.Misc.check_ctag s2 && Base.Misc.string_eq s1 s2 then 0
           else raise CannotSca
       | _,_ -> raise CannotSca
 
     let sort_same_base es = List.sort compare_index es
 
-    let debug_events out es = Misc.pp_list out " " E.debug_event es
+    let debug_events out es = Base.Misc.pp_list out " " E.debug_event es
 
     module Match
         (R:sig
@@ -1590,7 +1590,7 @@ let add_eq v1 v2 eqs =
           val debug_read : out_channel -> read -> unit
         end) = struct
 
-          let debug_reads out es = Misc.pp_list out " " R.debug_read es
+          let debug_reads out es = Base.Misc.pp_list out " " R.debug_read es
 
           let rec inter rs0 ws0 = match rs0 with
           | [] -> [],[]
@@ -1662,7 +1662,7 @@ let add_eq v1 v2 eqs =
       |  Some (V.Val (Symbolic (Virtual {name=s; offset=i;_})))
          ->
            let s = Constant.Symbol.pp s in
-           (if morello && Misc.check_ctag s then Misc.tr_ctag s else s),i
+           (if morello && Base.Misc.check_ctag s then Base.Misc.tr_ctag s else s),i
       | _ -> raise CannotSca in
       let sz = List.length sca*byte_sz in
       is_spec es fst,E.get_mem_dir fst,s,idx,sz,sca
@@ -1683,7 +1683,7 @@ let add_eq v1 v2 eqs =
           ([],StringMap.empty) ms in
       let ws =
         StringMap.map
-          (List.sort (fun (_,_,sz1,_) (_,_,sz2,_) -> Misc.int_compare sz1 sz2))
+          (List.sort (fun (_,_,sz1,_) (_,_,sz2,_) -> Base.Misc.int_compare sz1 sz2))
           ws in
       let ms =
         List.map
@@ -1731,7 +1731,7 @@ let add_eq v1 v2 eqs =
       let ms = expose_scas es in
       let rss,wsss = List.split ms in
       (* Cross product fold. Probably an overkill here *)
-      Misc.fold_cross wsss
+      Base.Misc.fold_cross wsss
         (fun wss res ->
           (* Add memory constraints now *)
           try
@@ -1744,7 +1744,7 @@ let add_eq v1 v2 eqs =
                       add_eq (get_read r) (get_written w) eqs)
                     rs ws eqs)
                 rss wss cns in
-            Misc.fold_cross tag_possible_stores
+            Base.Misc.fold_cross tag_possible_stores
               (fun tag_stores res ->
                 (* Add tag memory constraints *)
                 try
@@ -1854,7 +1854,7 @@ let add_eq v1 v2 eqs =
              A.Location_global (V.Val (Symbolic (TagAddr (VIR,s,o))))
          | loc -> loc)
       else
-        Misc.identity
+        Base.Misc.identity
 
     let compute_final_state test rfm es =
       let st =
@@ -1980,7 +1980,7 @@ let add_eq v1 v2 eqs =
         List.fold_left
           (fun k (_,evts) ->
             let po = (* Reconstruct po by iterating on all unordered pairs. *)
-              Misc.doubleton_fold
+              Base.Misc.doubleton_fold
                 (fun k e1 e2 ->
                   if E.po_strict e1 e2 then (e1,e2)::k
                   else if E.po_strict e2 e1 then (e2,e1)::k
@@ -2086,7 +2086,7 @@ let add_eq v1 v2 eqs =
                           (Virtual ({name=s; offset=0; _} as sym))))
                         ->
                         A.LocSet.add
-                          (A.of_symbolic_data {sym with name=Symbol.map Misc.add_ctag s})
+                          (A.of_symbolic_data {sym with name=Symbol.map Base.Misc.add_ctag s})
                           (A.LocSet.singleton loc)
                     | _ -> A.LocSet.singleton loc)
                 locs
@@ -2135,7 +2135,7 @@ let add_eq v1 v2 eqs =
              loc_stores []
         | OptAce.False|OptAce.Iico ->
            U.LocEnv.fold (fun _loc ws k -> ws::k) loc_stores [] in
-      if debug_solver && Misc.consp possible_finals then begin
+      if debug_solver && Base.Misc.consp possible_finals then begin
         eprintf "+++++++++ possible finals ++++++++++++++\n" ;
         List.iter
           (fun ws ->  eprintf "[%a]\n" debug_events ws)
@@ -2159,10 +2159,10 @@ let add_eq v1 v2 eqs =
 
           let compare_index idx e =
             let open Constant in
-            match Misc.seq_opt A.symbolic_data (E.location_of e) with
+            match Base.Misc.seq_opt A.symbolic_data (E.location_of e) with
             | Some {name=s; offset=i; _} ->
-                if Misc.check_ctag (Constant.Symbol.pp s) then  Misc.int_compare idx max_int (* always -1 ??? *)
-                else  Misc.int_compare idx i
+                if Base.Misc.check_ctag (Constant.Symbol.pp s) then  Base.Misc.int_compare idx max_int (* always -1 ??? *)
+                else  Base.Misc.int_compare idx i
             | _ -> assert false
 
           let debug_read out = fprintf out "%i"
@@ -2198,13 +2198,13 @@ let add_eq v1 v2 eqs =
             let wss = List.sort compare_len (List.map sort_same_base wss)
             and rs =
               let senv = S.size_env test
-              and o = Misc.as_some (A.offset loc) in
+              and o = Base.Misc.as_some (A.offset loc) in
               AM.byte_indices o (A.look_size_location senv loc) in
             let rs = if morello then rs@[max_int] else rs in
             MatchFinal.find_rfs_sca (A.pp_location loc) rs wss::k)
           loc_wss [] in
 
-      if debug_solver && Misc.consp wsss then begin
+      if debug_solver && Base.Misc.consp wsss then begin
         eprintf "+++++++++ possible finals ++++++++++++++\n" ;
         List.iter
           (fun wss ->
@@ -2238,7 +2238,7 @@ let add_eq v1 v2 eqs =
                 try S.RFMap.find (S.Load er) rfm::k
                 with Not_found -> assert false)
             ers [] in
-          Misc.exists_pair S.read_from_equal rfs)
+          Base.Misc.exists_pair S.read_from_equal rfs)
         loads
 
     let fold_mem_finals
@@ -2293,7 +2293,7 @@ let add_eq v1 v2 eqs =
                | None -> raise Exit
                | Some pco -> E.EventRel.union pco0 pco in
 (* Cross product *)
-        Misc.fold_cross
+        Base.Misc.fold_cross
           possible_finals
           (fun ws res ->
             if C.debug.Debug_herd.mem then begin
@@ -2436,7 +2436,7 @@ let add_eq v1 v2 eqs =
         end
 
      let check_event_aligned test e =
-       let a = Misc.as_some (E.global_loc_of e) in
+       let a = Base.Misc.as_some (E.global_loc_of e) in
        if not (U.is_aligned (S.type_env test) (S.size_env test) e) then begin
          if dbg then eprintf "UNALIGNED: %s\n" (E.pp_action e);
          Warn.user_error "Unaligned or out-of-bound access: %s, %d bytes"
@@ -2532,7 +2532,7 @@ let add_eq v1 v2 eqs =
                        Namely, having  non-sensical candidates rejected later
                        by model entails a tremendous runtime penalty. Not used
                        in 2025 for AArch64. *)
-                    || Misc.is_some ofail
+                    || Base.Misc.is_some ofail
                     (* if there has been a failure, it needs to be propagated further. *)
                     || (asl && V.ValueSet.is_empty (E.undetermined_vars_in_event_structure es))
                        (* In ASL, some equations can be generated by ARBITRARY

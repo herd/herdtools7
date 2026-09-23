@@ -54,7 +54,7 @@ module
 
   let pp_csym i = sprintf "S%i" i
   let equal_csym v1 v2 = v1 == v2
-  let compare_csym v1 v2 = Misc.int_compare v1 v2
+  let compare_csym v1 v2 = Base.Misc.int_compare v1 v2
 
 
   type cst = Cst.v
@@ -446,7 +446,7 @@ module
     | None -> assert false
 
   let eq v1 v2 = match v1,v2 with
-  | Var i1,Var i2 when Misc.int_eq i1 i2 -> v_true
+  | Var i1,Var i2 when Base.Misc.int_eq i1 i2 -> v_true
   | Val (Symbolic _|Tag _|PteVal _|ConcreteVector _|Instruction _ as s1),Val (Symbolic _|Tag _|PteVal _|ConcreteVector _|Instruction _ as s2) ->
       Cst.eq s1 s2 |> bool_to_v
 (* Assume concrete and others always to differ *)
@@ -513,7 +513,7 @@ module
   (*  Returns the location of the tag associated to a location *)
   let op_tagloc f {name=a;_} _ =
     Symbolic (Virtual {default_symbolic_data with name=Symbol.map f a;})
-  let capatagloc = op_tagged "capatagloc" (op_tagloc Misc.add_ctag)
+  let capatagloc = op_tagged "capatagloc" (op_tagloc Base.Misc.add_ctag)
 
   let tagloc v =  match v with
     | Val (Symbolic (Virtual {name=a;offset=o;_}))
@@ -533,7 +533,7 @@ module
   | Var _ -> raise Undetermined
 
   let check_ctag = function
-    | Val (Symbolic (Virtual {name=s;_})) -> Misc.check_ctag (Symbol.pp s)
+    | Val (Symbolic (Virtual {name=s;_})) -> Base.Misc.check_ctag (Symbol.pp s)
     | Val (Symbolic (Physical _|System _|TagAddr _)) -> false
     | Var _
     | Val

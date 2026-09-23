@@ -126,13 +126,13 @@ let () =
     (sprintf "Usage: %s [options]* [test]" prog)
 
 let tr_name name =
-  Misc.input_protect
+  Base.Misc.input_protect
     (fun inp ->
       let oname = match !outname with
       | None -> sprintf "%s.html" name
       | Some name ->  name in
       try
-        Misc.output_protect
+        Base.Misc.output_protect
           (fun out ->
             let module Lex = ModelLexer.Make(struct let debug = false end) in
             let module M =

@@ -16,7 +16,7 @@
 
 open Code
 include X86Base
-let tr_endian = Misc.identity
+let tr_endian = Base.Misc.identity
 
 module ScopeGen = ScopeGen.NoGen
 

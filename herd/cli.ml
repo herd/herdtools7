@@ -108,7 +108,7 @@ end) = struct
             (fun es -> PP.dump_es chan test es)
             event_structures ;
           close_dot ochan ;
-          if Misc.is_some S.O.PC.view then begin
+          if Base.Misc.is_some S.O.PC.view then begin
             let module SH = Show.Make(S.O.PC) in
             SH.show_file fname
           end ;

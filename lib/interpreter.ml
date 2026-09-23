@@ -17,6 +17,7 @@
 (** Interpreter for a user-specified model *)
 
 open Printf
+open Base
 
 module Extract = TxtLoc.Extract ()
 

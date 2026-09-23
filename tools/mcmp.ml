@@ -54,7 +54,7 @@ module Make(O:Opt) = struct
 
   let cmp_logs fname t1 t2 = match fname with
   | Some fname ->
-      Misc.output_protect
+      Base.Misc.output_protect
         (fun chan ->
           LS.simple_diff_not_empty
             (fun n _ -> fprintf chan "%s\n" n ; true)

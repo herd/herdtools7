@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 open Printf
+open Base
 
 module type Config = sig
   val memory : Memory.t

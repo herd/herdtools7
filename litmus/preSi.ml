@@ -142,7 +142,7 @@ module Make
              val need_prelude : bool
            end) = struct
 
-    let do_label_init = Misc.consp CfgLoc.all_labels
+    let do_label_init = Base.Misc.consp CfgLoc.all_labels
 
     let do_ascall =
       Cfg.ascall || Cfg.is_kvm || do_label_init || CfgLoc.need_prelude
@@ -222,10 +222,10 @@ module Make
       module PU = SkelUtil.PteValUtil(A.V.PteVal)
 
       let find_addr_type a env = U.find_type (A.location_of_addr a) env
-      let see_faults test = Misc.consp (U.get_faults test)
+      let see_faults test = Base.Misc.consp (U.get_faults test)
       let see_faults_with_loc test =
         List.exists
-          (fun (_,o,_) -> Misc.is_some o)
+          (fun (_,o,_) -> Base.Misc.is_some o)
           (U.get_faults test)
 
       let some_labels test =
@@ -694,7 +694,7 @@ module Make
               (fun bd k -> match bd with
               | A.Location_global (G.Tag (s,_)), v ->
                 begin match v with
-                | Tag (t) -> (s, Misc.int_of_tag t)::k
+                | Tag (t) -> (s, Base.Misc.int_of_tag t)::k
                 | _ ->
                   Warn.user_error "litmus cannot handle tag initialisation with '%s'"
                     (A.V.pp_v v)
@@ -772,7 +772,7 @@ module Make
             O.f "#define %-25s  %i" (SkelUtil.data_symb_id a) (idx+1);
             if Cfg.is_kvm then begin
                 O.f "#define %-25s  %i"
-                  (SkelUtil.data_symb_id (Misc.add_pte a)) (idx+2)
+                  (SkelUtil.data_symb_id (Base.Misc.add_pte a)) (idx+2)
               end)
           test.T.globals ;
         O.o "" ;
@@ -784,7 +784,7 @@ module Make
           (fun (a,_) ->
             O.fi "\"%s\"," a ;
             if Cfg.is_kvm then begin
-                O.fi "\"%s\"," (Misc.pp_pte a)
+                O.fi "\"%s\"," (Base.Misc.pp_pte a)
               end)
           test.T.globals ;
         O.o "};"
@@ -827,7 +827,7 @@ module Make
               if Cfg.hexa then "0x%" ^ fmt else "%" ^ fmt)
           locs env
 
-      let some_test_vars test = Misc.consp test.T.globals
+      let some_test_vars test = Base.Misc.consp test.T.globals
       let some_vars test = some_test_vars test || some_labels test
 
       let dump_outcomes env test =
@@ -862,7 +862,7 @@ module Make
               O.fi "ins_t *%s;" (fmt_code p) ;
               O.fi "size_t %s;" (fmt_prelude p) ;
               O.fi "size_t %s;" (fmt_code_size p))
-            (Misc.interval 0 nprocs) in
+            (Base.Misc.interval 0 nprocs) in
         if some_vars test then begin
           O.o "#define SOME_VARS 1" ;
           O.o "typedef struct {" ;
@@ -957,7 +957,7 @@ module Make
               if Cfg.is_kvm then begin
                 O.fi "if ((pteval_t *)v_addr == p->%s) return %s;"
                   (OutUtils.fmt_pte_tag s)
-                  (SkelUtil.data_symb_id (Misc.add_pte s))
+                  (SkelUtil.data_symb_id (Base.Misc.add_pte s))
               end in
             begin
               O.o "static int idx_addr(intmax_t *v_addr,vars_t *p) {" ;
@@ -989,7 +989,7 @@ module Make
             then begin
           List.iteri
             (fun k (a,_) ->
-              O.f "static const int %s = %i;" (SkelUtil.data_symb_id (Misc.add_physical a)) k)
+              O.f "static const int %s = %i;" (SkelUtil.data_symb_id (Base.Misc.add_physical a)) k)
             test.T.globals ;
           O.o "" ;
           if U.pte_in_outs env test then begin
@@ -998,7 +998,7 @@ module Make
               (fun k (s,_) ->
                 let pref = if k=0 then "if" else "else if" in
                 O.fi "%s (litmus_same_oa(v,p->saved_pte_%s)) return %s;"
-                  pref s (SkelUtil.data_symb_id (Misc.add_physical s)))
+                  pref s (SkelUtil.data_symb_id (Base.Misc.add_physical s)))
               test.T.globals ;
             O.oi "else return NVARS;" ;
             O.o "}" end;
@@ -1009,7 +1009,7 @@ module Make
               (fun k (s,_) ->
                 let pref = if k=0 then "if" else "else if" in
                 O.fi "%s (litmus_same_oa_pte_par(v,p->saved_pte_%s)) return %s;"
-                  pref s (SkelUtil.data_symb_id (Misc.add_physical s)))
+                  pref s (SkelUtil.data_symb_id (Base.Misc.add_physical s)))
               test.T.globals ;
             O.oi "else return NVARS;" ;
             O.o "}" end;
@@ -1017,7 +1017,7 @@ module Make
           O.f "static const char *pretty_addr_physical[NVARS+1] = {%s,\"???\"};"
             (String.concat ","
                (List.map
-                  (fun (s,_) -> sprintf "\"%s\"" (Misc.pp_physical s))
+                  (fun (s,_) -> sprintf "\"%s\"" (Base.Misc.pp_physical s))
                   test.T.globals)) ;
           O.o ""
         end ;
@@ -1109,7 +1109,7 @@ module Make
                 let p2 = String.concat "" p2 in
                 EPF.fi ~out:"chan" (sprintf "%s%s=%s;" prf p1 p2) arg)
           fmt args ;
-        if Misc.consp faults then O.fi "pp_positive_faults(&p->th_faults[0]);";
+        if Base.Misc.consp faults then O.fi "pp_positive_faults(&p->th_faults[0]);";
         List.iter (fun ((p,_),_,_ as f) ->
             let pp_instr,pp_data,pp_ftype = pp_fault_args f in
             O.fi "pp_negative_fault(&p->th_faults[%d], %d, %s, %s, %s);" p p
@@ -1167,13 +1167,13 @@ module Make
               | Constant.(Symbolic (Virtual { name = Symbol.Label(p, lbl); _ }))
                    -> SkelUtil.instr_symb_id (OutUtils.fmt_lbl_var p lbl)
               | Constant.(Symbolic (Virtual { name = Symbol.Data s; tag=Some(t); _})) ->
-                  sprintf "tagged((tag_t)%s,%d)" (SkelUtil.data_symb_id s) (Misc.int_of_tag t)
+                  sprintf "tagged((tag_t)%s,%d)" (SkelUtil.data_symb_id s) (Base.Misc.int_of_tag t)
               | Constant.Symbolic _ -> SkelUtil.data_symb_id (T.C.V.pp O.hexa v)
               | Constant.PteVal p ->
                  A.V.PteVal.dump_pack SkelUtil.data_symb_id p
               | Constant.AddrReg a ->
                 A.V.AddrReg.dump_pack SkelUtil.data_symb_id a
-              | Constant.Tag t -> Misc.int_of_tag t |> string_of_int
+              | Constant.Tag t -> Base.Misc.int_of_tag t |> string_of_int
               | _ ->
                   begin match loc with
                   | Some loc ->
@@ -1238,7 +1238,7 @@ module Make
         List.map (fun (s,_) -> pvtag s) (get_param_vars test)
 
       let get_param_delays =
-        if have_timebase then fun test -> Misc.interval 1 (T.get_nprocs test)
+        if have_timebase then fun test -> Base.Misc.interval 1 (T.get_nprocs test)
         else fun _ -> []
 
       let get_tag_delays test = List.map pdtag  (get_param_delays test)
@@ -1312,9 +1312,9 @@ module Make
         if Cfg.is_kvm || not do_stats then [] else do_get_stats test
 
       let has_params test =
-        Misc.consp (get_param_vars test)
-        || Misc.consp (get_param_delays test)
-        || Misc.consp (get_param_caches test)
+        Base.Misc.consp (get_param_vars test)
+        || Base.Misc.consp (get_param_delays test)
+        || Base.Misc.consp (get_param_caches test)
 
       let dump_parameters _env test =
         let v_tags = get_tag_vars test
@@ -1367,7 +1367,7 @@ module Make
 (* Print *)
         if do_stats then begin
           let is_delay tag =
-            List.exists (fun x -> Misc.string_eq x tag) d_tags in
+            List.exists (fun x -> Base.Misc.string_eq x tag) d_tags in
           O.f "static void pp_param(FILE *out,param_t *p) {" ;
           let fmt =
             "{" ^
@@ -1469,8 +1469,8 @@ module Make
                O.o "static void set_feature(int _role) { }"
             | Some db ->
                let open DirtyBit in
-               let ha_diff = Misc.is_none (forall_procs test db.ha)
-               and hd_diff = Misc.is_none (forall_procs test db.hd) in
+               let ha_diff = Base.Misc.is_none (forall_procs test db.ha)
+               and hd_diff = Base.Misc.is_none (forall_procs test db.hd) in
                if  ha_diff || hd_diff  then begin
                    O.o "static void set_feature(int role) {" ;
                    O.oi "switch (role) {" ;
@@ -1506,7 +1506,7 @@ module Make
         end else begin
           let nvars = List.length test.T.globals in
           let voff =
-            Misc.max_int (MachSize.nbytes MachSize.Quad) (U.max_align test) in
+            Base.Misc.max_int (MachSize.nbytes MachSize.Quad) (U.max_align test) in
           let needed = voff*nvars in (* bytes needed *)
           let line = Cfg.line + Cfg.line * ((needed-1)/Cfg.line) in
           O.f "#define LINE %i" line ;
@@ -1516,8 +1516,8 @@ module Make
         if some_vars test || do_self then begin
           O.o "static void vars_init(vars_t *_vars,intmax_t *_mem) {" ;
           if Cfg.is_kvm then begin
-          let has_user = Misc.consp procs_user in
-          if Misc.consp test.T.globals then begin
+          let has_user = Base.Misc.consp procs_user in
+          if Base.Misc.consp test.T.globals then begin
               O.oi "const size_t _sz = LINE/sizeof(intmax_t);";
               O.oi "pteval_t *_p;" ;
               O.o ""
@@ -1536,7 +1536,7 @@ module Make
                 O.oi "unset_el0(_p);"
               end ;
               if Cfg.variant Variant_litmus.MemTag then
-                O.fi "set_tag_range(_vars->%s, sizeof(%s), %d);" a  (SkelUtil.dump_global_type a t) (Misc.int_of_tag "green") ;
+                O.fi "set_tag_range(_vars->%s, sizeof(%s), %d);" a  (SkelUtil.dump_global_type a t) (Base.Misc.int_of_tag "green") ;
               O.oi "_mem += _sz ;")
             test.T.globals ;
           if has_user then O.oi "flush_tlb_all();"
@@ -1582,7 +1582,7 @@ module Make
           O.o "static void labels_init(vars_t *_vars) {" ;
           if do_label_init || do_precise then
             O.fi "labels_t *lbls = &_vars->labels;" ;
-          if Cfg.is_kvm && do_self && Misc.consp CfgLoc.all_labels then
+          if Cfg.is_kvm && do_self && Base.Misc.consp CfgLoc.all_labels then
             O.oi "pteval_t *_p;" ;
           O.o "";
           List.iter (fun (p,lbl) ->
@@ -1723,12 +1723,12 @@ module Make
         if dbg then begin
           eprintf "rem={%s}\n" (String.concat "," rem)
         end ;
-        let rems = Misc.nsplit (T.get_nprocs test) rem in
+        let rems = Base.Misc.nsplit (T.get_nprocs test) rem in
         let vss = List.map2 (@) rems vs in
         List.combine rems (responsible vss)
 
       let memattrs_change a pte_init =
-        match Misc.Simple.assoc_opt a pte_init with
+        match Base.Misc.Simple.assoc_opt a pte_init with
         | Some (V (_,pteval)) ->
             not (A.V.PteVal.is_default_attrs pteval)
         | _ -> false
@@ -1761,7 +1761,7 @@ module Make
           | Symbolic (Virtual {name=s; tag=None; offset=0; _}) ->
             sprintf "(%s)_vars->%s" (CType.dump at) (Symbol.pp s)
           | Symbolic (Virtual {name=s; tag=Some t; offset=0; _}) ->
-            sprintf "tagged((%s)_vars->%s,%d)" (CType.dump at) (Symbol.pp s) (Misc.int_of_tag t)
+            sprintf "tagged((%s)_vars->%s,%d)" (CType.dump at) (Symbol.pp s) (Base.Misc.int_of_tag t)
           | Tag _|Symbolic _ ->
             Warn.user_error "Litmus cannot handle this initial value %s"
               (A.V.pp_v v)
@@ -1802,7 +1802,7 @@ module Make
           (_vars,inits) (proc,(out,(_outregs,envVolatile)))  =
         let user_mode = List.exists (Proc.equal proc) procs_user in
         if dbg then eprintf "P%i: inits={%s}\n" proc (String.concat "," inits) ;
-        if Misc.consp faults && T.has_asmhandler test then
+        if Base.Misc.consp faults && T.has_asmhandler test then
           Warn.user_error "Post condition cannot check for faults when using custom fault handlers" ;
         let addrs = A.Out.get_addrs_only out in (* accessed in code *)
         O.fi "case %i: {" proc ;
@@ -1844,7 +1844,7 @@ module Make
             List.iter
               (fun x ->
                 try
-                  begin match Misc.Simple.assoc x bds with
+                  begin match Base.Misc.Simple.assoc x bds with
                   | P phy ->
                       O.fii
                         "(void)litmus_set_pte_safe(%s,_vars->pte_%s,_vars->saved_pte_%s);"
@@ -1882,7 +1882,7 @@ module Make
                     let lbl_loc = sprintf "_vars->labels.%s" lbl_var in
                     let lbl_pte = sprintf "_vars->labels.pte_%s" lbl_var in
                     try
-                      begin match Misc.Simple.assoc x bds with
+                      begin match Base.Misc.Simple.assoc x bds with
                       | P phy ->
                           O.fii
                             "(void)litmus_set_pte_safe(%s,%s,_vars->labels.saved_pte_%s);" lbl_loc lbl_pte phy ;
@@ -2000,7 +2000,7 @@ module Make
           if Cfg.variant Variant_litmus.MemTag then
             List.iter
               (fun (a,t) ->
-                O.fii "set_tag_range(%s, sizeof(%s), %d);" a  (SkelUtil.dump_global_type a t) (Misc.int_of_tag "green");)
+                O.fii "set_tag_range(%s, sizeof(%s), %d);" a  (SkelUtil.dump_global_type a t) (Base.Misc.int_of_tag "green");)
               test.T.globals ;
         end;
 (* Collect shared locations final values, if appropriate *)
@@ -2160,10 +2160,10 @@ module Make
             (fun p -> O.fi "%s _%s = (%s)_vars->%s;" (LangUtils.code_fun_type p)
                         (OutUtils.fmt_code p) (LangUtils.code_fun_type p)
                         (OutUtils.fmt_code p))
-            (Misc.interval 0 (T.get_nprocs test));
+            (Base.Misc.interval 0 (T.get_nprocs test));
         let have_faults =
           not (T.has_asmhandler test) &&
-            have_fault_handler && Misc.consp faults in
+            have_fault_handler && Base.Misc.consp faults in
         if have_faults then begin
             O.oi "th_faults_info_init(&_ctx->out.th_faults[_role]);" ;
             ()
@@ -2234,11 +2234,11 @@ module Make
         end;
         let n = T.get_nprocs test in
         let ps = get_tag_max_delays test in
-        let pss = Misc.nsplit n ps in
+        let pss = Base.Misc.nsplit n ps in
         let vs = test.T.globals in
-        let vss = Misc.nsplit n vs in
+        let vss = Base.Misc.nsplit n vs in
         let cs = get_param_caches test in
-        let css = Misc.nsplit n cs in
+        let css = Base.Misc.nsplit n cs in
         O.oii "barrier_wait(&ctx->b);";
         O.oii "switch (_role) {" ;
         let get_param_pos = mk_get_param_pos env test in
@@ -2399,11 +2399,11 @@ module Make
                 O.fi "set_hahd_bits(0b%c%c);" hd ha
               | _,_ -> ()
           end ;
-          if Misc.consp procs_user then begin
+          if Base.Misc.consp procs_user then begin
             O.oi "set_user_stack(id);"
           end ;
           if have_fault_handler && T.has_defaulthandler test then begin
-            if Misc.consp procs_user then begin
+            if Base.Misc.consp procs_user then begin
               O.o "/* Fault handlers installation depends on user stacks */"
             end ;
             O.oi "install_fault_handler(id);" ;
@@ -2478,7 +2478,7 @@ module Make
         and n = T.get_nprocs test in
         if n > avail then begin
             let pp_avail =
-              Misc.app_opt_def "unspecified" (sprintf "%d") Cfg.avail in
+              Base.Misc.app_opt_def "unspecified" (sprintf "%d") Cfg.avail in
             Warn.user_error
               "Cannot run test %s with %d threads on %s available cores"
               doc.Name.name n pp_avail
@@ -2500,9 +2500,9 @@ module Make
               let need_prelude =
                 has_instruction_ptr &&
                   begin
-                    Misc.consp all_labels
+                    Base.Misc.consp all_labels
                     || not (Label.Full.Set.is_empty label_init)
-                    || Misc.consp (T.from_labels test)
+                    || Base.Misc.consp (T.from_labels test)
                     || Cfg.variant Variant_litmus.Self
                   end
             end) in

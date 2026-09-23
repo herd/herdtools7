@@ -104,7 +104,7 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
     | Location_global a -> sprintf "*%s" (A.pp_global a)
 
     let env_for_pp env =
-      Misc.group_by_int
+      Base.Misc.group_by_int
         (fun loc ->
           match loc with
           | Location_reg (proc,_) -> Some proc
@@ -118,7 +118,7 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
 
     let location_compare l1 l2 = match l1,l2 with
     | Location_reg (p1,r1), Location_reg (p2,r2) ->
-        begin match Misc.int_compare p1 p2 with
+        begin match Base.Misc.int_compare p1 p2 with
         | 0 -> A.reg_compare r1 r2
         | r -> r
         end

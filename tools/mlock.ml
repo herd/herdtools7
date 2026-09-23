@@ -19,6 +19,7 @@
 (***********************************************)
 
 open Printf
+open Base
 
 module Action = struct
   type t = Lock | Expand | Once

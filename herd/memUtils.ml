@@ -202,8 +202,8 @@ let lift_proc_info i evts =
 
   let unions_p rows =
     let cols =
-      try Misc.transpose rows
-      with Misc.TransposeFailure -> assert false in
+      try Base.Misc.transpose rows
+      with Base.Misc.TransposeFailure -> assert false in
     List.map E.EventRel.unions cols
 
   let transitive_closure_p = List.map E.EventRel.transitive_closure
@@ -374,7 +374,7 @@ let lift_proc_info i evts =
   and collect_mem_stores es = collect_by_loc es E.is_mem_store
   and collect_mem es = collect_by_loc es E.is_mem
   and collect_mem_non_init es =
-    collect_by_loc es (fun e -> E.is_mem e && Misc.is_some (E.proc_of e))
+    collect_by_loc es (fun e -> E.is_mem e && Base.Misc.is_some (E.proc_of e))
   and collect_loads es = collect_by_loc es E.is_load
   and collect_stores es = collect_by_loc es E.is_store
   and collect_loads_non_spec es = collect_by_loc es (fun e -> E.is_load e && not_speculated es e)
@@ -461,7 +461,7 @@ let group_by_po es =
               (E.EventSet.of_list stores) vb in
           List.map E.EventRel.order_to_succ orders::k)
         stores_by_loc [] in
-    Misc.fold_cross_gen E.EventRel.union E.EventRel.empty
+    Base.Misc.fold_cross_gen E.EventRel.union E.EventRel.empty
       orders kont res
 
 (* With check *)
@@ -576,8 +576,8 @@ let group_by_po es =
 
 (* Alignment check *)
   let is_aligned tenv senv e =
-    let loc = Misc.as_some (E.location_of e) in
-    let si = Misc.as_some (S.A.symbolic_data loc) in
+    let loc = Base.Misc.as_some (E.location_of e) in
+    let si = Base.Misc.as_some (S.A.symbolic_data loc) in
     let loc0 = S.A.of_symbolic_data {si with Constant.offset=0;} in
     let t = S.A.look_type tenv loc0 in
     let open TestType in
@@ -594,7 +594,7 @@ let group_by_po es =
         if MachSize.less_than_or_equal sz_e sz_s then begin
           let ncell = idx / nbytes_s and idx0 = idx mod nbytes_s in
           0 <= ncell && ncell < array_sz
-          &&  List.exists (Misc.int_eq idx0) (MachSize.get_off sz_s sz_e)
+          &&  List.exists (Base.Misc.int_eq idx0) (MachSize.get_off sz_s sz_e)
         end else begin
             idx >= 0 &&
             (let nbytes_e = MachSize.nbytes sz_e in

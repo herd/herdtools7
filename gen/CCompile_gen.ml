@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Base
+
 (* 'C' compiler *)
 
 (* Compared with hardware archs, XXXCompile and top are merged... *)

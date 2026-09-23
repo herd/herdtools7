@@ -14,6 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+
 (* Basic model run (uniproc only) *)
 
 open Printf
@@ -133,7 +134,7 @@ module Make (O:Config) (C:ArchRun.S) :
     let gen_rfm kont str =
       let rs,ws =
         List.split (get_possible (by_loc (fun _ -> true) str.evts)) in
-      Misc.fold_cross ws
+      Base.Misc.fold_cross ws
         (fun ws k ->
           let rfm = List.fold_right2 C.EventMap.add rs ws C.EventMap.empty in
           kont str rfm k)
@@ -170,7 +171,7 @@ module Make (O:Config) (C:ArchRun.S) :
             orders_loc::k)
           ws_by_loc [] in
 
-      Misc.fold_cross_gen (fun x xs -> x::xs) []
+      Base.Misc.fold_cross_gen (fun x xs -> x::xs) []
         orders
         (kont str rfm rf)
 
@@ -213,7 +214,7 @@ module Make (O:Config) (C:ArchRun.S) :
           (fun fs ws -> match ws with
           | []|[_] -> fs
           | _ ->
-              let w = Misc.last ws in
+              let w = Base.Misc.last ws in
               State.add (A.of_loc w.C.loc) w.C.v fs)
           State.empty co in
       let fs =
@@ -249,7 +250,7 @@ module Make (O:Config) (C:ArchRun.S) :
     module VMap = Map.Make(OV)
 
     let best_col m =
-      let mt = Misc.transpose m in
+      let mt = Base.Misc.transpose m in
       let cs =
         List.map
           (fun col ->
@@ -275,9 +276,9 @@ module Make (O:Config) (C:ArchRun.S) :
 
 
     let swap_col k m =
-      let mt = Misc.transpose m in
+      let mt = Base.Misc.transpose m in
       let mt = swap_list k mt in
-      Misc.transpose mt
+      Base.Misc.transpose mt
 
     let extract_column xss = match xss with
     | []|[]::_ -> assert false

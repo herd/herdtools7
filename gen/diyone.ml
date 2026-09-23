@@ -42,7 +42,7 @@ module Make(O:Config) (M:Builder.S) =
 
     let tar_output_protect t filename =
       if O.verbose > 0 then eprintf "File name: %s\n" filename ;
-      Misc.output_protect
+      Base.Misc.output_protect
         (fun chan -> M.dump_test_channel chan t) (Tar.outname filename)
 
     let gen_one_scope gen n =
@@ -158,7 +158,7 @@ module Make(O:Config) (M:Builder.S) =
                       let mk_scope _ = st in
                       Some (kont es D.no_info mk_name mk_scope k0)
                     with
-                    | Misc.Fatal msg | Misc.UserError msg ->
+                    | Base.Misc.Fatal msg | Base.Misc.UserError msg ->
                         Warn.warn_always "%s on line '%s'" msg line ;
                         Some k0
                   with
@@ -169,7 +169,7 @@ module Make(O:Config) (M:Builder.S) =
               do_rec in
             D.all gen
         | _ -> dump name_opt es
-      end with Misc.Fatal msg | Misc.UserError msg ->
+      end with Base.Misc.Fatal msg | Base.Misc.UserError msg ->
         eprintf "%s: Fatal error: %s\n" Config.prog msg ;
         exit 2
 

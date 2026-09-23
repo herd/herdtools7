@@ -27,7 +27,7 @@ let dump_rloc pp_loc = function
 let compare_rloc loc_compare r1 r2 = match r1,r2 with
   | Loc l1,Loc l2 -> loc_compare l1 l2
   | Deref (l1,i1),Deref (l2,i2) ->
-      Misc.pair_compare loc_compare Misc.int_compare
+      Base.Misc.pair_compare loc_compare Base.Misc.int_compare
         (l1,i1) (l2,i2)
   | Loc _,Deref _ -> -1
   | Deref _,Loc _ -> +1

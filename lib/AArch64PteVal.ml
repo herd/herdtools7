@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 open Printf
+open Base
 
 module Attrs = struct
   module NormalAttrs = struct

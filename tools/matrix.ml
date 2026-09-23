@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 open Printf
+open Base
 open OutMode
 
 module type Config = sig
@@ -86,7 +87,7 @@ module Build (I:I) = struct
               try
                 out (I.fmt_cell col k.Key.info t)
               with
-              | Misc.Fatal msg -> Warn.fatal "test %s, %s" k.Key.name msg 
+              | Misc.Fatal msg -> Warn.fatal "test %s, %s" k.Key.name msg
             end ;
             loop (i_ks+1) (i_ts+1)
           end

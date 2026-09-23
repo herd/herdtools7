@@ -14,6 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+
 module type Config = sig
   val numeric_labels : bool
   val timeloop : int
@@ -101,7 +102,7 @@ module Generic
 
 
       let type_in_final p reg final flocs =
-        Misc.proj_opt
+        Base.Misc.proj_opt
           base
           (ConstrGen.fold_constr
              (fun a t ->
@@ -113,7 +114,7 @@ module Generic
                    | (Base _, Some (Base _)) ->
                    t (* location takes precedence *)
                    | (Pointer (Base s1), Some (Pointer (Base s2)))
-                     when Misc.string_eq s1 s2 ->
+                     when Base.Misc.string_eq s1 s2 ->
                        t
                    | (ty, None) -> Some ty
                    | (loc_ty, Some cond_ty) ->
@@ -149,7 +150,7 @@ module Generic
           | (Pointer (Base s1), Pointer (Base s2))
           | (Atomic (Base s1), Atomic (Base s2))
           | (Base s1, Base s2)
-            when Misc.string_eq s1 s2 -> env
+            when Base.Misc.string_eq s1 s2 -> env
           | _,_ (* (Pointer _|Base _),(Pointer _|Base _) *) ->
               Warn.fatal
                 "Type mismatch detected on location %s, required %s vs. found %s"
@@ -549,7 +550,7 @@ module A.FaultType = A.FaultType)
         match fhandler with
         | [] -> None
         | _::_ -> Some fhandler in
-      let has_handler = Misc.is_some fhandler in
+      let has_handler = Base.Misc.is_some fhandler in
       let code,fhandler_c = compile_pseudo_code code fhandler in
       let code =
         if O.timeloop > 0 then C.emit_loop code
@@ -740,7 +741,7 @@ module A.FaultType = A.FaultType)
           let ty_env =
             A.LocMap.fold
               (fun loc t k -> match loc with
-              | A.Location_reg (p,r) when Misc.int_eq p proc ->
+              | A.Location_reg (p,r) when Base.Misc.int_eq p proc ->
                   RegMap.add r t k
               | _ -> k)
               ty_env RegMap.empty in
@@ -843,7 +844,7 @@ module A.FaultType = A.FaultType)
             extra_data ;_
           } = t in
       let procs_user = ProcsUser.get info in
-      if Misc.consp procs_user && do_self && is_pte then
+      if Base.Misc.consp procs_user && do_self && is_pte then
         Warn.user_error "litmus7 cannot handle -variant self -mode kvm when there are processes in userspace" ;
       let initenv = List.map (fun (loc,(_,v)) -> loc,v) init in
       let observed = Generic.all_observed final filter locs in
@@ -907,7 +908,7 @@ module A.FaultType = A.FaultType)
       let stable_info = match MiscParser.get_info  t MiscParser.stable_key with
       | None -> A.RegSet.empty
       | Some s ->
-          let rs = Misc.split_comma s in
+          let rs = Base.Misc.split_comma s in
           let rs =
             List.fold_left
               (fun k r -> match A.parse_reg r with

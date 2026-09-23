@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Base
+
 module type Config = sig
   val verbose : int
   val word : Word.t

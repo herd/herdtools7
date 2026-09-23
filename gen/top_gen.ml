@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 open Code
+open Base
 open Printf
 
 module type Config = sig

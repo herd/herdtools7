@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 open Printf
+open Base
 open Code
 
 module type DiyConfig = sig

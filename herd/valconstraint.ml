@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Base
+
 (** A simple constraint solver. The default solver
  * [solve_topo] proceeds by one pass by following dependencies, while
  * the previous solver [solve_std] proceeds by iterating substitution

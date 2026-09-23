@@ -63,7 +63,7 @@ module Make(R:I) : S with type relax = R.relax
     | _ ->
         Warn.user_error "input is not a singleton list: %s" input in
     try List.map R.parse parsed_list
-    with Misc.Fatal msg  ->
+    with Base.Misc.Fatal msg  ->
       Warn.warn_always "%s" msg ;
       assert false
 
@@ -77,12 +77,12 @@ module Make(R:I) : S with type relax = R.relax
 
   let add_file env name =
     try
-      Misc.input_protect
+      Base.Misc.input_protect
         (fun chan ->
           LexLog_gen.tokens add_outcome env
             (Lexing.from_channel chan))
         name
-    with Misc.Fatal msg ->
+    with Base.Misc.Fatal msg ->
       Warn.warn_always "%s" msg ;
       env
 

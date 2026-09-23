@@ -84,7 +84,7 @@ module Make(O:Config)(A:Arch_tools.S) =
 	  let row,cols = extract cols in
 	  fprintf chan "%s%s%s%s"
 	    row_start (if n=0 then row0 else "")
-	    (String.concat delim (List.map (Misc.proj_opt "") row))
+	    (String.concat delim (List.map (Base.Misc.proj_opt "") row))
 	    row_end ;
 	  do_iter (n+1) cols
         end in
@@ -414,9 +414,9 @@ module Make(O:Config)(A:Arch_tools.S) =
         end
 
     let dump_prog_filename test as_tex_commands  =
-      Misc.output_protect (dump_prog_internal test as_tex_commands)
+      Base.Misc.output_protect (dump_prog_internal test as_tex_commands)
 
-    let filebase test = Misc.filebase test.name.Name.file
+    let filebase test = Base.Misc.filebase test.name.Name.file
 
     let dump_prog name parsed =
       let test =

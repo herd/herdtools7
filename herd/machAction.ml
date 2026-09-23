@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Base
+
 (** Implementation of the action interface for machine models *)
 
 module type A = sig
