@@ -3998,6 +3998,8 @@ Arguments:
             do_lift_memop ~tag rA dir updatedb checked mop perms ma mv an ii Fun.id DISide.Data in
           do_cas_with lift_memop quad Annot.N r ma mv mop_success mop_fail_with_wb mop_fail_no_wb false ii)
 
+      let ( let@ ) = ( @@ )
+
       let gcsss2 r ii =
         let open AArch64Base in
         let an = Annot.N and rA = SysReg GCSPR_EL1 and off = MachSize.nbytes quad in
@@ -4007,29 +4009,38 @@ Arguments:
               let* outgoing = GCSSem.read ac Annot.A incoming ii in
               let mask = V.intToV 0x7 in
               let* cap = GCSSem.get_cap mask outgoing in
-              let ( >>*= ) = M.bind_control_set_data_input_first in
               let commit =
                 let cond = Printf.sprintf "InProgress([%s])" (V.pp_v incoming) in
                 commit_pred_txt (Some cond) ii
               in
               let mok =
-                commit >>*= fun () ->
-                let mop ac a outgoing =
-                  let* v = GCSSem.reset_cap mask outgoing >>= M.add (V.intToV (-off)) in
-                  write_reg r v ii
-                    >>| ( M.add a_virt (V.intToV off) >>= fun new_addr ->
-                          write_reg rA new_addr ii )
-                    >>| ( GCSSem.make_valid outgoing >>= fun outgoing_value ->
-                          GCSSem.write ac Annot.L a outgoing_value ii )
+                let@ () = M.bind_control_set_data_input_first commit in
+                let* outgoing_record_addr =
+                  GCSSem.reset_cap mask outgoing >>= M.add (V.intToV (-off))
+                in
+                let write_target_reg = write_reg r outgoing_record_addr ii in
+                let update_gcspr =
+                  let* new_addr = M.add a_virt (V.intToV off) in
+                  write_reg rA new_addr ii
+                in
+                let write_outgoing_cap ac a =
+                  let* outgoing_value = GCSSem.make_valid outgoing in
+                  GCSSem.write ac Annot.L a outgoing_value ii
+                in
+                let finalize_gcs_switch ac ma =
+                  write_target_reg
+                    >>| update_gcspr
+                    >>| M.data_input_next ma (write_outgoing_cap ac)
                 in
                 lift_memop r Dir.W true false
-                  (fun ac ma mv ->
+                  (fun ac ma _ ->
                     if kvm && Access.is_physical ac then
-                      M.bind_ctrldata_data ma mv (fun a v -> mop ac a v)
-                    else ma >>| mv >>= fun (a, v) -> mop ac a v)
+                      let* _, ma = M.delay ma in
+                      ma >>*= fun _ -> finalize_gcs_switch ac ma
+                    else finalize_gcs_switch ac ma)
                   (to_perms "w" quad)
-                  (GCSSem.reset_cap mask outgoing >>= M.add (V.intToV (-off)))
-                  (M.unitT outgoing) an ii
+                  (M.unitT outgoing_record_addr)
+                  mzero an ii
               in
               let inprogress = V.intToV 0x5 in
               M.delay_kont "gcsss2(fault)" (M.op Op.Ne cap inprogress)
@@ -4040,8 +4051,12 @@ Arguments:
                   M.choiceT notvalid mno mok)
             in
             (* Register write and write to other stack depend on load from Shadow Stack *)
-            let store e = E.is_mem_store e || is_this_reg r e in
-            M.short E.is_mem_load store m
+            let load e = E.is_mem_load e && GCSSem.is_gcs_access e in
+            let store e =
+              (E.is_mem_store e && GCSSem.is_gcs_access e)
+              || is_this_reg r e
+            in
+            M.short load store m
           in
           do_lift_memop rA Dir.R false false
             (fun ac ma _mv ->
