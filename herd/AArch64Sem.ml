@@ -3742,6 +3742,12 @@ Arguments:
 
         let read ac an a ii = do_read_mem_ret quad an AArch64Explicit.(NExp GCS) ac a ii
         and write ac an a v ii = do_write_mem quad an AArch64Explicit.(NExp GCS) ac a v ii
+
+        let is_gcs_access e =
+          match e.E.action with
+          | Act.Access (_, A.Location_global _, _, _, explicit, _, _) ->
+              AArch64.is_gcs explicit
+          | _ -> false
       end
 
 
