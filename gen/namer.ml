@@ -18,6 +18,7 @@ open Gen_common
 
 (* Normalised names for cycles *)
 open Printf
+module Misc = Base.Misc
 open BellInfo
 
 let rec of_scope = function

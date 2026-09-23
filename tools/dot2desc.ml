@@ -968,7 +968,7 @@ struct
     | e -> raise e
 
   let parse_file in_filename wb_filename =
-    let pairs = Misc.input_protect do_parse_file in_filename in
+    let pairs = Base.Misc.input_protect do_parse_file in_filename in
     let tr_graphs, parsed_graphs = List.split pairs in
 
     let do_writeback channel =
@@ -976,7 +976,7 @@ struct
       let file_contents = String.concat "\n\n" printed_parsed_graphs in
       Printf.fprintf channel "%s\n" file_contents in
 
-    Option.iter (fun fname -> Misc.output_protect do_writeback fname) wb_filename;
+    Option.iter (fun fname -> Base.Misc.output_protect do_writeback fname) wb_filename;
     tr_graphs
 end
 
@@ -1057,4 +1057,4 @@ let () =
     let filename = List.hd !args in
     Run.exec filename !wb_fname
   with
-  | Misc.Fatal msg -> Printf.eprintf "%s: %s\n" prog msg ; exit 2
+  | Base.Misc.Fatal msg -> Printf.eprintf "%s: %s\n" prog msg ; exit 2

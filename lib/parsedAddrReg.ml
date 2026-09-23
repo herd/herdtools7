@@ -26,7 +26,7 @@ type t =
 let empty = { p_oa=None; p_kv=StringMap.empty;}
 
 let add_oa oa p =
-  if Misc.is_some p.p_oa then
+  if Base.Misc.is_some p.p_oa then
     Warn.user_error "multiple defintion or property oa" ;
   { p with p_oa = Some oa; }
 
@@ -54,10 +54,10 @@ let pp_norm norm p =
   pp p
 
 let compare p1 p2 =
-  match Misc.opt_compare OutputAddress.compare p1.p_oa p2.p_oa with
+  match Base.Misc.opt_compare OutputAddress.compare p1.p_oa p2.p_oa with
   | 0 -> StringMap.compare String.compare p1.p_kv p2.p_kv
   | r -> r
 
 let eq p1 p2 =
-  Misc.opt_eq OutputAddress.eq p1.p_oa p2.p_oa
+  Base.Misc.opt_eq OutputAddress.eq p1.p_oa p2.p_oa
   && StringMap.equal String.equal p1.p_kv p2.p_kv

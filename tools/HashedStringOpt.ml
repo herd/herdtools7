@@ -17,7 +17,7 @@
 module S = struct
   type t = string option
   let equal s1 s2 = match s1,s2 with
-  | Some s1,Some s2 -> Misc.string_eq s1 s2
+  | Some s1,Some s2 -> Base.Misc.string_eq s1 s2
   | None,None -> true
   | (Some _,None)|(None,Some _)
       -> false

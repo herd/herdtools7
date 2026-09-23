@@ -53,7 +53,9 @@ module MakeInterpreter (NP : NameParser.S) = struct
         in
         let binding =
           let has_self_ref () =
-            exps |> Misc.List.concat_map Cat.RelExp.identifiers |> List.mem name
+            exps
+            |> Base.Misc.List.concat_map Cat.RelExp.identifiers
+            |> List.mem name
           in
           if infer_rec && has_self_ref () then "let rec" else "let"
         in

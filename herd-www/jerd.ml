@@ -16,6 +16,7 @@
 
 (** Entry point to Herd  *)
 open Js_of_ocaml
+module Misc = Base.Misc
 open Printf
 open Herd_core
 open Opts

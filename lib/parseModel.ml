@@ -78,7 +78,7 @@ module Make(O:Config) = struct
     let fname = O.libfind fname in
     try fname, Hashtbl.find t fname
     with Not_found ->
-      let r = Misc.input_protect (do_parse opt fname) fname in
+      let r = Base.Misc.input_protect (do_parse opt fname) fname in
       Hashtbl.add t fname r ;
       fname,r
 

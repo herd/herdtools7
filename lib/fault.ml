@@ -16,6 +16,7 @@
 
 (** External view of faults, which are part of final state *)
 open Printf
+module Misc = Base.Misc
 
 module type I = sig
   type arch_global

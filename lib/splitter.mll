@@ -97,12 +97,12 @@ and main start = parse
           (Filename.basename init1.pos_fname)
       else
  (* GRR follow litmus here *)
-        Misc.clean_name tname in
+        Base.Misc.clean_name tname in
     let names =
       { Name.name = tname ;
         file = init1.pos_fname ;
-        texname = Misc.proj_opt tname texname ;
-        doc = Misc.proj_opt "" doc ; } in
+        texname = Base.Misc.proj_opt tname texname ;
+        doc = Base.Misc.proj_opt "" doc ; } in
     { arch = arch ;
       name = names ;
       info = info ;
