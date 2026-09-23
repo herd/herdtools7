@@ -128,6 +128,6 @@ and skip_string = parse
 {
 
 let skip_comment_fun f = skip_comment f 1
-let skip_comment = skip_comment Misc.ing 1
+let skip_comment = skip_comment Base.Misc.ing 1
 end
 }

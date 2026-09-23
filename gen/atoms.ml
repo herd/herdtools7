@@ -68,7 +68,7 @@ module Make (F:Fence.S)(A:Atom.S) =
             let _,es = parse_line line in
             if is_atom es then  printf "%s\n" line
 (*           else eprintf "No: '%s'\n" line *)
-          with Misc.Fatal msg -> Warn.warn_always "%s" msg
+          with Base.Misc.Fatal msg -> Warn.warn_always "%s" msg
         done with End_of_file -> ()
     end
 

@@ -20,7 +20,7 @@ type t = Std | Detached | Cached
 
 let tags = ["std";"detached";"cached";]
 
-let parse tag  = match Misc.lowercase tag with
+let parse tag  = match Base.Misc.lowercase tag with
 | "std" -> Some Std
 | "detached" -> Some Detached
 | "cached" -> Some Cached

@@ -162,7 +162,7 @@ module Make
    let default = Fence (IORW,IORW)
    let strong = default
 
-   let pp_fence f = Misc.capitalize (pp_barrier_dot f)
+   let pp_fence f = Base.Misc.capitalize (pp_barrier_dot f)
 
    let add_iorw fold f k = fold f k |> f (Fence (IORW,IORW))
 

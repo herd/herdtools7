@@ -348,7 +348,7 @@ end = struct
   let arch_rels = []
   and arch_dirty = []
 
-  let is_isync _ = raise Misc.NoIsync
+  let is_isync _ = raise Base.Misc.NoIsync
   let pp_isync = "???"
 
 (* Equations *)
@@ -398,7 +398,7 @@ end = struct
         ReadLock (l',b)
     | SRCU(l,a,vo) ->
         let l' =  A.simplify_vars_in_loc soln l in
-        SRCU(l',a,Misc.app_opt (V.simplify_var soln) vo)
+        SRCU(l',a,Base.Misc.app_opt (V.simplify_var soln) vo)
     | Fence _|CutOff _ -> a
 
 (*************************************************************)
@@ -409,7 +409,7 @@ end = struct
   | Access (_,_,_,AN a,_,_)
   | Fence (AN a)
   | SRCU(_,a,_)
-    -> List.exists (fun a -> Misc.string_eq str a) a
+    -> List.exists (fun a -> Base.Misc.string_eq str a) a
   | Access (_, _, _, MO _,_,_)|Fence (MO _)|RMW (_, _, _, _,_)
   | Lock _|Unlock _|TryLock _|ReadLock _|CutOff _ -> false
 end

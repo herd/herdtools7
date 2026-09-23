@@ -172,7 +172,7 @@ module AArch64 = struct
       (fun d r -> f (d,NoCsel) (f (d,OkCsel) r))
       r
 
-  let lift_default = Misc.app_opt (fun d -> d,NoCsel)
+  let lift_default = Base.Misc.app_opt (fun d -> d,NoCsel)
   let ddr_default = lift_default Full.ddr_default
   let ddw_default = lift_default Full.ddw_default
   let ctrlr_default = lift_default Full.ctrlr_default

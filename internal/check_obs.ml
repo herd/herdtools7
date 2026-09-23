@@ -53,7 +53,7 @@ let names =
   try
     List.map
       (fun fname ->
-         Misc.input_protect
+         Base.Misc.input_protect
            (Channel.fold_lines
               (fun k line -> StringSet.add line k)
               StringSet.empty)

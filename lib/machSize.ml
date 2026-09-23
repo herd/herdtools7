@@ -195,7 +195,7 @@ module Tag = struct
 
   let tags = ["auto";"byte";"short";"word";"quad";"s128"]
 
-  let parse tag = match Misc.lowercase tag with
+  let parse tag = match Base.Misc.lowercase tag with
   | "byte" -> Some (Size Byte)
   | "short" -> Some (Size Short)
   | "word" -> Some (Size Word)

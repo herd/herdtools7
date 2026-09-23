@@ -23,9 +23,9 @@ module type S = sig
   val fold : (t -> 'a -> 'a) -> 'a -> 'a
   val equal : t -> t -> bool
 
-  val parse : MiscParser.info -> t Misc.Simple.bds
+  val parse : MiscParser.info -> t Base.Misc.Simple.bds
   (* Cache flush neeed after initialisation *)
-  val need_flush : t Misc.Simple.bds -> bool
+  val need_flush : t Base.Misc.Simple.bds -> bool
 
 end
 

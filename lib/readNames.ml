@@ -37,7 +37,7 @@ let from_chan chan add k =
   do_rec k
 
 let from_file fname add k =
-  Misc.input_protect
+  Base.Misc.input_protect
     (fun chan -> from_chan chan add k)
     fname
 

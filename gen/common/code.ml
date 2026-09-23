@@ -31,7 +31,7 @@ let pp_loc = function Data s | Code s -> s
 let loc_eq loc1 loc2 = match loc1,loc2 with
 | (Data s1,Data s2)
 | (Code s1,Code s2)
-  -> Misc.string_eq s1 s2
+  -> Base.Misc.string_eq s1 s2
 | (Data _,Code _)
 | (Code _,Data _)
   -> false
@@ -205,7 +205,7 @@ let pp_bank = function
   | Pair -> "Pair"
   | Instr -> "Instr"
 
-let add_tag s t = Misc.pp_tagged s t
+let add_tag s t = Base.Misc.pp_tagged s t
 
 let add_capability s t = Printf.sprintf "0xffffc0000:%s:%i" s (if t = 0 then 1 else 0)
 

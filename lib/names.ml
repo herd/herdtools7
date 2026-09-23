@@ -22,7 +22,7 @@ let from_file name chan =
   let splitted = S.split name chan in
   splitted.Splitter.name.Name.name
 
-let from_fname name = Misc.input_protect (from_file name) name
+let from_fname name = Base.Misc.input_protect (from_file name) name
 
 let from_fnames names =
   List.fold_right
@@ -30,8 +30,8 @@ let from_fnames names =
       try
         from_fname name::k
       with
-      | Misc.Exit -> k
-      | Misc.Fatal msg ->
+      | Base.Misc.Exit -> k
+      | Base.Misc.Fatal msg ->
           Warn.warn_always "%a %s" Pos.pp_pos0 name msg ;
           k
       | e ->

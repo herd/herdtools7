@@ -14,6 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+
 (* Basic model run (uniproc only) *)
 
 open Printf
@@ -32,6 +33,8 @@ module Make (O:Config) (C:ArchRun.S) :
     end
     =
   struct
+    module Misc = Base.Misc
+
     module A = C.A
     module C = C.C
 

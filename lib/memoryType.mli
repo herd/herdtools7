@@ -24,9 +24,9 @@ module type S = sig
   val equal : t -> t -> bool
 
   (* Parse info, notice that default memory type is discarded. *)
-  val parse : MiscParser.info -> t Misc.Simple.bds
+  val parse : MiscParser.info -> t Base.Misc.Simple.bds
   (* Cache flush needed after initialisation. *)
-  val need_flush : t Misc.Simple.bds -> bool
+  val need_flush : t Base.Misc.Simple.bds -> bool
 end
 
 module X86_64 : S

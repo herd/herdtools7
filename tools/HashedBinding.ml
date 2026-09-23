@@ -21,7 +21,7 @@ module S = struct
   let hash (a,b) =
     let ah =  HashedString.as_hash a
     and bh = HashedString.as_hash b in
-    abs (Misc.mix (0x4F1BBCDC+ah) (0x4F1BBCDC+bh) 0)
+    abs (Base.Misc.mix (0x4F1BBCDC+ah) (0x4F1BBCDC+bh) 0)
 end
 
 include(Hashcons.Make(S))

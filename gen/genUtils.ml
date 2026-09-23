@@ -39,7 +39,7 @@ module Make(Cfg:Config)(A:Arch_gen.S)
        let next_init st p init loc =
          let exact_match = List.find_opt ( function
            | (A.Location.Location_reg (p0,_),Some (A.S loc0)) ->
-             Misc.string_eq loc0 loc && Misc.int_eq p p0
+             Base.Misc.string_eq loc0 loc && Base.Misc.int_eq p p0
            | _ -> false ) init in
          (* Despite `st` is local for procedure, `p`, we assume `st.regs`,
             i.e. the allocation pool, contains no `r0`.
@@ -48,7 +48,7 @@ module Make(Cfg:Config)(A:Arch_gen.S)
             it is safe to bind `r0` to `loc` (`loc` = `loc0`) here. *)
          let same_loc_match = List.find_opt ( function
            | (A.Location.Location_reg (_,_),Some (A.S loc0)) ->
-             Misc.string_eq loc0 loc
+             Base.Misc.string_eq loc0 loc
            | _ -> false ) init in
          match exact_match,same_loc_match with
          | Some (A.Location.Location_reg (_,r),Some _), _ -> r,init,st
@@ -63,7 +63,7 @@ module Make(Cfg:Config)(A:Arch_gen.S)
        let find_init p init loc =
          let rec find_rec = function
            | (A.Location.Location_reg (p0,r0),Some (A.S loc0))::_
-             when Misc.string_eq loc0 loc && Misc.int_eq p p0
+             when Base.Misc.string_eq loc0 loc && Base.Misc.int_eq p p0
              -> r0
            | _::rem -> find_rec rem
            | [] -> raise Not_found in

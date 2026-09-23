@@ -19,6 +19,7 @@
 (***************************************************)
 
 open Printf
+module Misc = Base.Misc
 
 module type Config = sig
   val verbose : int

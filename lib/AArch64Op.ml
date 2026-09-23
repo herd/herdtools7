@@ -13,6 +13,8 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+module Misc = Base.Misc
+
 
 type 'op1 unop =
   | AF (* get AF from PTE entry *)

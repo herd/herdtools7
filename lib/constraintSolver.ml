@@ -80,7 +80,7 @@ module Pac (V : Value.S) : S with module V = V = struct
     match p1, p2 with
     | AssumeCollision (v1,v2), AssumeCollision (w1,w2)
     | AssumeNoCollision (v1,v2), AssumeNoCollision (w1,w2) ->
-        Misc.pair_compare V.compare V.compare (v1,v2) (w1,w2)
+        Base.Misc.pair_compare V.compare V.compare (v1,v2) (w1,w2)
     | AssumeCollision _, AssumeNoCollision _ -> -1
     | AssumeNoCollision _, AssumeCollision _ -> 1
 
