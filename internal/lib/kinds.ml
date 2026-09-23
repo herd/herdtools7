@@ -16,7 +16,7 @@
 
 (** Parse kinds.txt files. *)
 
-module Option = Base.Option
+module Option = Internal.Base.Option
 
 exception ParseError of string
 
@@ -54,7 +54,7 @@ let compare xs ys =
     | 0 -> ConstrGen.compare_kind x_kind y_kind
     | n -> n
   in
-  Base.List.compare compare_pair xs ys
+  Internal.Base.List.compare compare_pair xs ys
 
 let to_string ks =
   let max a b = if a > b then a else b in
