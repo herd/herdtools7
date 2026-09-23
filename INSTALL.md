@@ -35,7 +35,7 @@ Notice: Compilation with ocamlbuild is not longer possible
 Build
 -----
 
-    % make all
+    % make PREFIX="$HOME/.local/" all
 
 Testing
 -------
@@ -47,7 +47,7 @@ The optional dependency `qcheck` can be installed with `opam` as follows:
 Whether or not optional dependencies are installed, the following command
 runs the tests, skipping the ones that necessitate non-available dependencies.
 
-    % make test
+    % make PREFIX="$HOME/.local/" test
 
 More information on running more kinds of tests can be found at
 [README-tests.md](README-tests.md)
