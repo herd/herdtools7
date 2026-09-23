@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 open Printf
+module Misc = Base.Misc
 
 
 let indent = Indent.indent

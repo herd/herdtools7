@@ -211,7 +211,7 @@ let parser_config =
 
 let do_build_ast_from_file ?ast_type version fname =
   match Asllib.Builder.from_file_multi_version ?ast_type ~parser_config version fname with
-  | Error e -> raise (Misc.Fatal (Asllib.Error.error_to_string e))
+  | Error e -> raise (Base.Misc.Fatal (Asllib.Error.error_to_string e))
   | Ok ast -> ast
 
 let build_ast_from_file = memoize do_build_ast_from_file
@@ -220,7 +220,7 @@ let asl_generic_parser version lexer lexbuf =
   match
     Asllib.Builder.from_lexer_lexbuf ~ast_type:`Ast version lexer lexbuf
   with
-  | Error e -> raise (Misc.Fatal (Asllib.Error.error_to_string e))
+  | Error e -> raise (Base.Misc.Fatal (Asllib.Error.error_to_string e))
   | Ok ast -> ([ (0, None, MiscParser.Main) ], [ [ Instruction ast ] ], [])
 
 let stmts_from_string s =

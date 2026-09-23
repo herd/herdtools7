@@ -65,7 +65,7 @@ let get_raised_flags s =
     [] lines
 
 let get_dirs_and_confs filename =
-  Misc.input_protect
+  Base.Misc.input_protect
     (fun ic ->
       let rec loop acc =
         try

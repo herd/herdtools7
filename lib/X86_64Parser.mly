@@ -275,19 +275,19 @@ rm64:
   |  reg {X86_64.Rm64_reg $1}
   |  LPAR reg RPAR {X86_64.Rm64_deref ($2, 0)}
   |  LBRK reg RBRK {X86_64.Rm64_deref ($2, 0)}
-  |  k LPAR reg RPAR {X86_64.Rm64_deref ($3, Misc.string_as_int $1)}
-  |  k LBRK reg RBRK {X86_64.Rm64_deref ($3, Misc.string_as_int $1)}
+  |  k LPAR reg RPAR {X86_64.Rm64_deref ($3, Base.Misc.string_as_int $1)}
+  |  k LBRK reg RBRK {X86_64.Rm64_deref ($3, Base.Misc.string_as_int $1)}
   |  k LPAR reg COMMA reg COMMA k RPAR {X86_64.Rm64_scaled
-      (Misc.string_as_int $1, $3, $5, Misc.string_as_int $7)}
+      (Base.Misc.string_as_int $1, $3, $5, Base.Misc.string_as_int $7)}
   |  LPAR reg COMMA reg COMMA k RPAR {X86_64.Rm64_scaled
-      (0, $2, $4, Misc.string_as_int $6)}
+      (0, $2, $4, Base.Misc.string_as_int $6)}
   |  reg COLON k LPAR reg COMMA reg COMMA k RPAR {X86_64.Rm64_scaled
-      (Misc.string_as_int $3, $5, $7, Misc.string_as_int $9)}
+      (Base.Misc.string_as_int $3, $5, $7, Base.Misc.string_as_int $9)}
   |  LBRK NAME RBRK {X86_64.Rm64_abs (Constant.mk_sym $2)}
   |  LPAR NAME RPAR {X86_64.Rm64_abs (Constant.mk_sym $2)}
   |  LBRK NUM RBRK {X86_64.Rm64_abs (Constant.Concrete $2)}
 
 operand:
   | effaddr {X86_64.Operand_effaddr $1}
-  | k {X86_64.Operand_immediate (Misc.string_as_int $1) }
-  | INTEL_NUM {X86_64.Operand_immediate (Misc.string_as_int $1)} /* enough ? */
+  | k {X86_64.Operand_immediate (Base.Misc.string_as_int $1) }
+  | INTEL_NUM {X86_64.Operand_immediate (Base.Misc.string_as_int $1)} /* enough ? */

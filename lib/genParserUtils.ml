@@ -30,11 +30,11 @@ let call_parser name lexbuf lex parse =
       and start_loc = lexeme_start_p lexbuf
       and end_loc = lexeme_end_p lexbuf in
       Warn.user_error "%s: unexpected '%s' (in %s)" (Pos.str_pos2 (start_loc, end_loc)) lxm name
-  | Misc.UserError msg ->
+  | Base.Misc.UserError msg ->
       let start_loc = lexeme_start_p lexbuf
       and end_loc = lexeme_end_p lexbuf in
       Warn.user_error "%s: %s (in %s)" (Pos.str_pos2 (start_loc, end_loc)) msg name
-  | Misc.Timeout as e -> raise e
+  | Base.Misc.Timeout as e -> raise e
   | e ->
       Printf.eprintf
         "%a: Exception raised in parser %s (in %s)\n"
@@ -81,7 +81,7 @@ let call_parser name lexbuf lex parse =
       | LL (loc1,loc2) ->
           (fun k -> RLocSet.add (Loc loc1) (RLocSet.add (Loc loc2) k))
       | FF (_,Some x,_) -> RLocSet.add (Loc (MiscParser.Location_global x))
-      | FF (_,None,_) -> Misc.identity
+      | FF (_,None,_) -> Base.Misc.identity
 
     let get_visible_locs locs c =
       MiscParser.RLocSet.union

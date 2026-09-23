@@ -54,7 +54,7 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
   | Symbolic_reg _ -> assert false
   | Internal i -> sprintf "i%i" i
   | _ ->
-      try Misc.lowercase (Hashtbl.find tab r) with Not_found -> assert false
+      try Base.Misc.lowercase (Hashtbl.find tab r) with Not_found -> assert false
 
   include
       ArchExtra_litmus.Make(O)
@@ -90,10 +90,10 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
       let self_instrs = [I_NOP; ]
 
-      let lower_instr i = Misc.lowercase (dump_instruction i)
+      let lower_instr i = Base.Misc.lowercase (dump_instruction i)
 
       let instr_name i =
-        MyName.name_as_symbol (Misc.skip_spaces (lower_instr i))
+        MyName.name_as_symbol (Base.Misc.skip_spaces (lower_instr i))
 
       let fun_name i = sprintf "get%s" (instr_name i)
 

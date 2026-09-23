@@ -42,7 +42,7 @@ let mk_tag_mask t =
   let mask =
   List.fold_left
   (fun m v -> match v with
-  | Tag t -> (1 lsl Misc.int_of_tag(t)) lor m
+  | Tag t -> (1 lsl Base.Misc.int_of_tag(t)) lor m
   | _ -> raise Parsing.Parse_error
   ) 0 t in
   Concrete (string_of_int mask)
@@ -226,12 +226,12 @@ maybev_notag:
 */
 (* TODO: restrict to something like "NUM COLON BOOL"? *)
 | NUM COLON NUM { Concrete ($1 ^ ":" ^ $3) }
-| NAME LBRK NUM RBRK { Constant.mk_sym_with_index $1 (Misc.string_as_int $3) }
-| TOK_SSCAP LPAR NAME COMMA NUM RPAR { Constant.mk_sym_with_index $3 (Misc.string_as_int $5) }
+| NAME LBRK NUM RBRK { Constant.mk_sym_with_index $1 (Base.Misc.string_as_int $3) }
+| TOK_SSCAP LPAR NAME COMMA NUM RPAR { Constant.mk_sym_with_index $3 (Base.Misc.string_as_int $5) }
 
 maybev_amper:
 | AMPER NAME { Constant.mk_sym $2 }
-| AMPER NAME LBRK NUM RBRK { Constant.mk_sym_with_index $2 (Misc.string_as_int $4)}
+| AMPER NAME LBRK NUM RBRK { Constant.mk_sym_with_index $2 (Base.Misc.string_as_int $4)}
 
 maybev:
 | maybev_notag { $1 }
@@ -249,7 +249,7 @@ maybev_list:
 
 %inline just_label:
 | PROC COLON NAME { mk_lab ($1, $3) }
-| NUM COLON NAME { mk_lab (Misc.string_as_int $1, $3) }
+| NUM COLON NAME { mk_lab (Base.Misc.string_as_int $1, $3) }
 | l=LABEL { mk_lab l }
 
 maybev_label:
@@ -262,21 +262,21 @@ maybev_label_list:
 
 %inline std_reg:
 | PROC COLON reg  {Location_reg ($1,$3)}
-| NUM COLON reg   {Location_reg (Misc.string_as_int $1,$3)}
+| NUM COLON reg   {Location_reg (Base.Misc.string_as_int $1,$3)}
 
 %inline location_reg:
 | std_reg { $1 }
 | PROC COLON SYMB_REG  {Location_reg ($1,$3)}
-| NUM COLON SYMB_REG   {Location_reg (Misc.string_as_int $1,$3)}
+| NUM COLON SYMB_REG   {Location_reg (Base.Misc.string_as_int $1,$3)}
 | SYMB_REG        {Location_sreg $1 }
 /* PTX registers */
 | NUM COLON PTX_REG_DEC PTX_REG_TYPE reg
-                  {Location_reg(Misc.string_as_int $1,$5)}
+                  {Location_reg(Base.Misc.string_as_int $1,$5)}
 | PROC COLON PTX_REG_DEC PTX_REG_TYPE reg
                   {Location_reg($1,$5)}
 /* memory tags
 | PROC COLON reg PATAG {Location_reg ($1,$3)}
-| NUM COLON reg PATAG {Location_reg (Misc.string_as_int $1,$3)}
+| NUM COLON reg PATAG {Location_reg (Base.Misc.string_as_int $1,$3)}
 */
 location_deref:
 | location_reg { $1 }
@@ -486,11 +486,11 @@ locindex:
 
 arrayspec:
 | NAME LBRK NUM RBRK
-    { (Location_global (Constant.mk_sym $1),Misc.string_as_int $3) }
+    { (Location_global (Constant.mk_sym $1),Base.Misc.string_as_int $3) }
 
 ssspec:
 | TOK_SS LPAR NAME COMMA NUM RPAR
-    { (Location_global (Constant.mk_sym $3),Misc.string_as_int $5) }
+    { (Location_global (Constant.mk_sym $3),Base.Misc.string_as_int $5) }
 
 %inline equal:
 | EQUAL { () }

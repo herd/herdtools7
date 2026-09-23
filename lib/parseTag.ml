@@ -80,7 +80,7 @@ module MakeS (O:OptS)
 
       let do_parse_tag_set opt f =
         let spec tag =
-          let es = Misc.split_comma tag in
+          let es = Base.Misc.split_comma tag in
           let es =
             List.map
               (fun tag -> match O.parse tag with

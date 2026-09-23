@@ -67,7 +67,7 @@ with type v = A.V.v and type location = A.location and type fault_type = A.Fault
 
   let finish_fault =
     fun (p,v,ft) ->
-    (p,Misc.map_opt maybevToV v, Misc.map_opt A.FaultType.parse ft)
+    (p,Base.Misc.map_opt maybevToV v, Base.Misc.map_opt A.FaultType.parse ft)
 
   let finish_locations f_reg =
     let open LocationsItem in
@@ -128,7 +128,7 @@ with type v = A.V.v and type location = A.location and type fault_type = A.Fault
     | LV (rloc,_) -> collect_rloc rloc
     | LL (loc1,loc2) ->
         fun c -> collect_location loc1 (collect_location loc2 c)
-    | FF (_,None,_) -> Misc.identity
+    | FF (_,None,_) -> Base.Misc.identity
     | FF (_,Some x,_) -> collect_location (MiscParser.Location_global x)
 
    let collect_constr = ConstrGen.fold_constr collect_atom

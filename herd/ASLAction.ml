@@ -88,7 +88,7 @@ module Make (C: Config) (A : S) = struct
     | Barrier b -> A.pp_barrier_short b
     | Branching txt ->
        Printf.sprintf "Branching(%s)"
-         (Misc.app_opt_def "" Misc.identity txt)
+         (Base.Misc.app_opt_def "" Base.Misc.identity txt)
     | CutOff msg -> Printf.sprintf "CutOff:%s" msg
     | NoAction -> ""
 

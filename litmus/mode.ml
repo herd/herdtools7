@@ -18,7 +18,7 @@ type t = Std | PreSi | Kvm
 
 let tags = ["std"; "presi"; "kvm";]
 
-let parse tag = match Misc.lowercase tag with
+let parse tag = match Base.Misc.lowercase tag with
 | "std" -> Some Std
 | "presi" -> Some PreSi
 | "kvm" -> Some Kvm

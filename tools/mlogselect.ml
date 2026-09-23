@@ -53,13 +53,13 @@ let zyva () =
   | None ->
       LexLogSelect.from_chan Check.ok stdin
   | Some f ->
-      Misc.input_protect
+      Base.Misc.input_protect
         (LexLogSelect.from_chan Check.ok)
         f
 
 let () =
   try zyva ()
   with
-  | Misc.(Fatal msg|UserError msg) ->
+  | Base.Misc.(Fatal msg|UserError msg) ->
     Warn.warn_always "Fatal error: %s" msg
   | _ -> assert false

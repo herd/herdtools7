@@ -87,11 +87,11 @@ module Insert (O:InsertConfig) :
       try
         let _,chan = MyName.open_lib n1 in
         chan
-      with Misc.Fatal _ ->
+      with Base.Misc.Fatal _ ->
         Warn.fatal "Cannot find lib file %s" src
 
     let insert out src =
-      Misc.input_protect_gen find_lib
+      Base.Misc.input_protect_gen find_lib
         (fun in_chan ->
          let out = add_no_header src out  in
          MySys.cat_chan in_chan out)
@@ -102,7 +102,7 @@ module Insert (O:InsertConfig) :
         let in_chan = find_lib src in
         begin try close_in in_chan with _ -> () end ;
         true
-      with Misc.Fatal _ -> false
+      with Base.Misc.Fatal _ -> false
 
     let insert_when_exists out src =
       if exists src then insert out src

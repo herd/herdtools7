@@ -16,6 +16,8 @@
 
 (** Extra functionalities for all architectures *)
 
+module Misc = Base.Misc
+
 (** Input signature, a reduced [Arch.ARCH] *)
 module type I = sig
 

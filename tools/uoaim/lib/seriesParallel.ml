@@ -32,7 +32,7 @@ struct
   (** Given a list [nodes], compute all combinations of pairs modulo symmetry.
   *)
   let unique_pairs nodes =
-    let open Misc.List.Syntax in
+    let open Base.Misc.List.Syntax in
     let* n = nodes in
     let* m = List.filter (fun m -> m >= n) nodes in
     [ (n, m) ]

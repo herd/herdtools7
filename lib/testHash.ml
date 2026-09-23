@@ -80,7 +80,7 @@ module HashUtils(P:PteVal) = struct
         init in
 
     let init =
-      Misc.rem_dups
+      Base.Misc.rem_dups
         (fun (loc1,_) (loc2,_) -> location_compare loc1 loc2 = 0)
         init in
 
@@ -130,7 +130,7 @@ let do_digest_info verbose i =
     List.fold_left
       (fun ds (k,i) ->
         if MiscParser.digest_mem k then
-          sprintf "%s=%s" (Misc.lowercase k) i::ds
+          sprintf "%s=%s" (Base.Misc.lowercase k) i::ds
         else ds)
       [] i in
   match ds with
@@ -232,7 +232,7 @@ module Make(A:ArchBase.S)
         let code = norm_labels code in
         (* Just pretty_print code in a normalized way *)
         let code = List.map dump_pseudo code in
-        let pp =  Misc.string_of_prog code in
+        let pp =  Base.Misc.string_of_prog code in
         debug "CODE" pp ;
         Digest.string pp
 

@@ -41,20 +41,20 @@ module Make
 
     let from_file idx_out fname st =
       try
-        Misc.input_protect
+        Base.Misc.input_protect
           (do_split st idx_out fname)
           fname
-      with Misc.Exit -> st
-         | Misc.Fatal msg|Misc.UserError msg ->
+      with Base.Misc.Exit -> st
+         | Base.Misc.Fatal msg|Base.Misc.UserError msg ->
              Printf.eprintf "Fatal error is not fatal, %s\n" msg ;
              st
 
     let from_tokens tokens st =
       let idx_out = Out.open_all () in
       let _ =
-        Misc.output_protect_close Out.close
+        Base.Misc.output_protect_close Out.close
           (fun idx_out ->
-             Misc.fold_argv_or_stdin (from_file idx_out) tokens st)
+             Base.Misc.fold_argv_or_stdin (from_file idx_out) tokens st)
         idx_out in
       Out.tar ()
   end

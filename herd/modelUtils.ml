@@ -173,7 +173,7 @@ module Make(O:Model.Config) (S:SemExtra.S) = struct
         let r1 = S.restrict is_mem_load_total is_isync ctrl_dep
         and r2 = S.restrict is_isync E.is_mem po in
         S.seq r1 r2
-      with Misc.NoIsync -> S.E.EventRel.empty in
+      with Base.Misc.NoIsync -> S.E.EventRel.empty in
     { pr0 with S.addr=addr_dep; data=data_dep; ctrl=ctrl_dep; depend=dd_pre;
       ctrlisync; data_commit;}
 

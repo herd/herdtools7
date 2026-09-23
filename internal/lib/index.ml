@@ -16,5 +16,5 @@
 
 (** Manage "@..." index files *)
 
-let of_file idx = Misc.expand_argv [idx]
+let of_file idx = Base.Misc.expand_argv [idx]
 

@@ -35,5 +35,5 @@ module Make :
           {!C.includes}, {!C.env}, and finally {!C.libdir}. The first existing
           candidate is returned. Non-implicit paths are returned unchanged.
 
-          @raise Misc.Fatal on implicit paths that cannot be resolved. *)
+          @raise Base.Misc.Fatal on implicit paths that cannot be resolved. *)
     end

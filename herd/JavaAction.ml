@@ -63,7 +63,7 @@ end = struct
                 (V.pp_v v2))
     | CutOff m -> (sprintf "CutOff: %s" m)
 
-  let is_isync _ = raise Misc.NoIsync
+  let is_isync _ = raise Base.Misc.NoIsync
   let pp_isync = "???"
 
   let is_barrier a = match a with

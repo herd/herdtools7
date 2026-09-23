@@ -136,7 +136,7 @@ include Arch.MakeArch(struct
     let find_code s st =
       let rec aux = function
         | [] -> raise (Error("No conversion found for code "^s))
-        | Code(n,c)::_ when Misc.string_eq n s ->
+        | Code(n,c)::_ when Base.Misc.string_eq n s ->
            Seq (unwrap_pseudo c,true)
         | _::subs -> aux subs
       in aux subs,st
@@ -145,7 +145,7 @@ include Arch.MakeArch(struct
     let find_cst s st =
       let rec aux = function
       | [] -> raise (Error("No conversion found for constant "^s))
-      | Cst(n,i)::_ when Misc.string_eq n s ->
+      | Cst(n,i)::_ when Base.Misc.string_eq n s ->
           ParsedConstant.intToV i
       | _::subs -> aux subs
       in aux subs,st

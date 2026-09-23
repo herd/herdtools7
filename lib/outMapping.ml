@@ -21,7 +21,7 @@ let info_to_tr info =
     let map =  List.assoc key info in
     let map = try LexOutMapping.parse map with _ -> assert false in
     fun s -> StringMap.safe_find s s map
-  with Not_found -> Misc.identity
+  with Not_found -> Base.Misc.identity
 
 let inverse m =
   StringMap.fold

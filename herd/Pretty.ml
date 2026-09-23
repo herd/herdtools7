@@ -17,6 +17,7 @@
 (** Producing .dot output *)
 
 open Test_herd
+module Misc = Base.Misc
 open Printf
 
 module type S = sig

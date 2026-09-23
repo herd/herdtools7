@@ -16,6 +16,8 @@
 
 (** Check an event structure against a machine model *)
 
+module Misc = Base.Misc
+
 module type Config = sig
   val fname : string
   val m : AST.t

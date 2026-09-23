@@ -99,7 +99,7 @@ module Make
         List.fold_right
           (function
             | CAst.Test {CAst.params; _} -> add_params params
-            | _ -> Misc.identity
+            | _ -> Base.Misc.identity
           )
           code
           env
@@ -110,7 +110,7 @@ module Make
 
     let tr_param_ty =
       if O.kernel then fun x -> (CType.strip_volatile (CType.strip_const x))
-      else Misc.identity
+      else Base.Misc.identity
 
      let string_of_params =
        let f {CAst.param_name; param_ty; } = param_name,tr_param_ty param_ty in

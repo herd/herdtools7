@@ -59,7 +59,7 @@ let rec nil =
 
 let mk_cycle coms =
   let ms =
-    Misc.mapi
+    Base.Misc.mapi
       (fun p c ->
         { p=p; edge=c; next=nil; prev=nil;}) coms in
   let patch = function
@@ -154,6 +154,6 @@ let compute cs =
     end in
   let xs =
     List.sort
-      (fun xs ys -> Misc.int_compare (List.length ys) (List.length xs))
+      (fun xs ys -> Base.Misc.int_compare (List.length ys) (List.length xs))
       xs in
   xs,ne

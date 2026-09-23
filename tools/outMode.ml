@@ -20,7 +20,7 @@ type t = LaTeX | Txt | HeVeA | HeVeANew
 let tags = ["text";"latex";"hevea";"heveanew"]
 
 let parse s =
-  match Misc.lowercase s with
+  match Base.Misc.lowercase s with
   | "text" -> Some Txt
   | "latex" -> Some LaTeX
   | "hevea" -> Some HeVeA

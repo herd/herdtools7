@@ -189,7 +189,7 @@ module Printer (O : PrinterConfig) (S : SemExtra.S) = struct
     let has_bad_execs = TestResult.has_bad_execs ~badflag:O.badflag in
     let ok = check_cond cstr c in
     fprintf fmt "%s%s\n"
-      (if Misc.is_some c.cutoff then "Loop " else "")
+      (if Base.Misc.is_some c.cutoff then "Loop " else "")
       (if has_bad_execs c then "Undef" else if ok then "Ok" else "No") ;
     fprintf fmt "Witnesses\n" ;
     let pos,neg = check_wit cstr c in
@@ -219,7 +219,7 @@ module Printer (O : PrinterConfig) (S : SemExtra.S) = struct
 (* Auto info or Hash only*)
     List.iter
       (fun (k,v) ->
-        if Misc.string_eq k "Hash" then
+        if Base.Misc.string_eq k "Hash" then
           fprintf fmt "%s=%s\n" k v)
       test.Test_herd.info
 
@@ -451,7 +451,7 @@ module Make(O:Config)(M:XXXMem.S) =
          Warn.warn_always "%s, legal outcomes may be missing" msg ;
          c
       | Some (Assign _)|Some (Predicate _)| None ->
-          if not showcutoff && Misc.is_some cutoff then c
+          if not showcutoff && Base.Misc.is_some cutoff then c
           else
             model_kont solver
               emit_exec test do_restrict
@@ -499,7 +499,7 @@ module Make(O:Config)(M:XXXMem.S) =
           (* Checked pruned executions before even calling model *)
           let cutoff =  S.find_cutoff conc.S.str.S.E.events in
           let c =
-            if Misc.is_some cutoff then Count.{ c with cutoff = cutoff }
+            if Base.Misc.is_some cutoff then Count.{ c with cutoff = cutoff }
             else c in
           (* Discard pruned executions if not explicitely required *)
           let c = check_test
