@@ -16,7 +16,7 @@
 
 (** Parse herd output logs. *)
 
-module Option = Base.Option
+module Option = Internal.Base.Option
 
 type t = {
   name : string ;
@@ -25,7 +25,7 @@ type t = {
 
 let to_ocaml_string l =
   OcamlString.record [
-    "name", Base.String.to_ocaml_string l.name ;
+    "name", Internal.Base.String.to_ocaml_string l.name ;
     "kind", Option.to_ocaml_string ConstrGen.pp_kind l.kind ;
   ]
 

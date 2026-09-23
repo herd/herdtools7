@@ -84,7 +84,7 @@ let split_wrapper_args args =
   let wrapper, wrapped =
     args
     |> Array.to_list
-    |> Base.List.split_when (String.equal "--")
+    |> Internal.Base.List.split_when (String.equal "--")
   in
   match wrapped with
   | "--" :: com :: args ->
