@@ -17,6 +17,7 @@
 (** Miaou, this cat talks! *)
 
 open Printf
+module Misc = Base.Misc
 
 let prog =
   if Array.length Sys.argv > 0 then

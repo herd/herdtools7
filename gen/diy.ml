@@ -17,6 +17,7 @@
 open Gen_common
 
 open Printf
+module Misc = Base.Misc
 open Code
 
 module type DiyConfig = sig

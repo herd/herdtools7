@@ -19,6 +19,8 @@ open Gen_common
 open Printf
 open Code
 
+module Misc = Base.Misc
+
 module type S = sig
   type fence
   type edge

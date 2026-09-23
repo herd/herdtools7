@@ -34,7 +34,7 @@ let blank = [' ''\t''\r']
 rule all k = parse
  (['a'-'z''A'-'Z']+ as key)
  {
-  let ct = match Misc.lowercase key with
+  let ct = match Base.Misc.lowercase key with
   | "dic" -> DIC
   | "idc" -> IDC
   | _ -> Warn.user_error "'%s' is not a cache-type key, keys are DIC, IDC" key in

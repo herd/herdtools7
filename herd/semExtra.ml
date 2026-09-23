@@ -343,7 +343,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
       let cst_to_pagelbl cst =
         let (>>=) = Option.bind in
         Constant.as_pte_arg cst
-        >>= Misc.str_as_label
+        >>= Base.Misc.str_as_label
         >>= fun (proc, lblname) ->
               Some (Constant.mk_sym_virtual_label_with_offset proc lblname 0)
       in

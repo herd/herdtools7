@@ -291,7 +291,7 @@ let get_tag _t = assert false
 let set_tag _b _t = assert false
 
 let as_int = function
-  | S_Int z -> Z.to_int z |> Misc.some
+  | S_Int z -> Z.to_int z |> Base.Misc.some
   | S_Bool false -> Some 0
   | S_Bool true -> Some 1
   | S_BitVector _|S_Label _ | S_String _ -> None

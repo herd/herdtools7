@@ -15,7 +15,6 @@
 (****************************************************************************)
 open Base
 
-
 type 'c t = Constr of 'c | And of 'c t list | Or of 'c t list
 
 let rec map_constr (f : 'a -> 'b t) : 'a t -> 'b t = function

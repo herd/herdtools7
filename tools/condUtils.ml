@@ -89,7 +89,7 @@ let fold_outcomes c kont k =
         m [] in
     let xss = List.rev xss in (* follow map order for locations *)
     let locs,vss = List.split xss in
-    Misc.fold_cross vss
+    Base.Misc.fold_cross vss
       (fun vs k ->
         let bds = List.combine locs vs in
 (*

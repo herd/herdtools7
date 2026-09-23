@@ -35,7 +35,7 @@ module NonDet : sig
 
   include Util.Applicative with type 'a t := 'a t
 end = struct
-  include Misc.List
+  include Base.Misc.List
 
   let pure = singleton
   let enumerate l = l
@@ -45,7 +45,7 @@ end
 module TraverseNonDet = Util.ListTraversal (NonDet)
 
 module TraverseOption = Util.ListTraversal (struct
-  include Misc.Option
+  include Base.Misc.Option
 
   let pure = Option.some
 end)
@@ -55,7 +55,7 @@ module EffMap = Map.Make (Eff)
 module C = Constraint
 
 let rec endpoint_combos : 'a list -> ('a * 'a) list =
-  let open Misc.List.Syntax in
+  let open Base.Misc.List.Syntax in
   function
   | [] -> []
   | x :: xs ->
@@ -100,7 +100,7 @@ module Conj : sig
   val map : ('a -> 'b) -> 'a t -> 'b t
   val to_list : 'a t -> 'a list
 end = struct
-  include Misc.List
+  include Base.Misc.List
 
   let pure = singleton
   let empty = []
@@ -167,8 +167,8 @@ let exp_of_conj ~src_eff ~tgt_eff (conj : C.t Conj.t) : Cat.rel_exp option =
     match G.edges g with
     | [ (x, lbl, y) ] ->
         let x, lbl, y =
-          if Misc.pair_eq Eff.equal Eff.equal (x, y) (src_eff, tgt_eff) then
-            (x, lbl, y)
+          if Base.Misc.pair_eq Eff.equal Eff.equal (x, y) (src_eff, tgt_eff)
+          then (x, lbl, y)
           else (y, Cat.RelExp.invert lbl, x)
         in
         let from_set i = Option.to_list (from_set i) in

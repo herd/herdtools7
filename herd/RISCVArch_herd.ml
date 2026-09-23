@@ -72,7 +72,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
     let barrier_sets =
       fold_barrier
         (fun f k ->
-          let tag = Misc.capitalize (pp_barrier_dot f)
+          let tag = Base.Misc.capitalize (pp_barrier_dot f)
           and pred = same_barrier f in
           (tag,pred)::k)
         []
@@ -85,7 +85,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
 
     let isync =  FenceI
     let is_isync = same_barrier isync
-    let pp_isync = Misc.capitalize (pp_barrier_dot isync)
+    let pp_isync = Base.Misc.capitalize (pp_barrier_dot isync)
 
     let pp_annot =
       let pp_mo = function

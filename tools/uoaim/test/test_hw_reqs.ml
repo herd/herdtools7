@@ -20,7 +20,7 @@ let () =
         let path = Filename.concat dir filename in
         if Sys.is_directory path then None
         else
-          let str = Misc.input_protect Util.read_all path in
+          let str = Base.Misc.input_protect Util.read_all path in
           if String.equal str "" then None else Some (filename, str))
   in
   reqs

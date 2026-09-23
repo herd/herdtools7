@@ -197,7 +197,7 @@ module Make(O:Config)(A:I) =
     let get_nrets t = t.nrets
     and get_nnops t = t.nnops
     and get_npagealign t = t.npagealign
-    and has_asmhandler t = Misc.consp t.fhandler
+    and has_asmhandler t = Base.Misc.consp t.fhandler
 
     (* Generic function to extract some symbols *)
     let get_gen tr init addrs =
@@ -291,7 +291,7 @@ module Make(O:Config)(A:I) =
 
 
     let escape_percent s =
-      Misc.map_string
+      Base.Misc.map_string
         (fun c -> match c with
         | '%' -> "%%"
         | '$' -> "r"
@@ -309,7 +309,7 @@ module Make(O:Config)(A:I) =
         label = Some lbl ; branch=[Next] ; }
 
     let clean_reg s =
-      Misc.map_string
+      Base.Misc.map_string
         (fun c -> match c with
         | '%' -> ""
         | '$' -> "r"

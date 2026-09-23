@@ -38,8 +38,8 @@ rule all k = parse
 |('P'? (num as x) ':')?
  (['a'-'z''A'-'Z']+ as key)
  {
-  let proc = Misc.app_opt int_of_string x
-  and f = match Misc.lowercase key with
+  let proc = Base.Misc.app_opt int_of_string x
+  and f = match Base.Misc.lowercase key with
   | "sw" -> SW
   | "ha" -> HA
   | "hd" -> HD
@@ -72,7 +72,7 @@ let get info =
         List.filter_map
           (function (Some _ as p,SW) -> p | _ -> None)
           xs in
-      let tthm p = not (List.exists (Misc.int_eq p) soft) in
+      let tthm p = not (List.exists (Base.Misc.int_eq p) soft) in
       let all_ha,ha =
         if List.exists (function (None,(HA|HD)) -> true | _ -> false) has then
           true,fun _ -> true
@@ -81,7 +81,7 @@ let get info =
             List.filter_map
               (function (Some _ as p,(HA|HD)) -> p | _ -> None)
               has in
-          false,fun proc -> List.exists (Misc.int_eq proc) xs
+          false,fun proc -> List.exists (Base.Misc.int_eq proc) xs
       and all_hd,hd =
         if List.exists (function (None,HD) -> true | _ -> false) hds then
           true,(fun _ -> true)
@@ -90,10 +90,10 @@ let get info =
             List.filter_map
               (function (Some _ as p,HD) -> p | _ -> None)
               hds in
-          false,fun proc -> List.exists (Misc.int_eq proc) xs in
+          false,fun proc -> List.exists (Base.Misc.int_eq proc) xs in
       Some
         {tthm; ha; hd;
-         some_ha=Misc.consp has; some_hd=Misc.consp hds;
+         some_ha=Base.Misc.consp has; some_hd=Base.Misc.consp hds;
          all_ha; all_hd; }
     with Error ->
       Warn.user_error "Incorrect dirty bit managment specification '%s'" s

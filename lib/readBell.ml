@@ -52,8 +52,8 @@ module Make(O:Config) =
       try
         P.parse fname
       with
-      | Misc.Fatal msg -> eprintf "%s: %s\n" O.prog msg ; exit 2
-      | Misc.Exit ->
+      | Base.Misc.Fatal msg -> eprintf "%s: %s\n" O.prog msg ; exit 2
+      | Base.Misc.Exit ->
           eprintf "Failure of generic model parsing for bell\n" ;
           exit 2
 
