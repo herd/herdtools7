@@ -10,6 +10,6 @@
   sexp_test
   shelf_test
   test_test)
- (libraries internal_lib unix)
+ (libraries internal_lib internal unix)
  (package herdtools7)
  (modes native))
