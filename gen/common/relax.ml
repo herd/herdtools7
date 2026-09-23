@@ -47,6 +47,13 @@ module type S = sig
         -> (string,string) Ast.t -> relax list
   val show : Config.show -> unit
 
+  module MacroTable : sig
+    val fold_wildcard :
+      (string -> relax list -> 'a -> 'a) -> 'a -> 'a
+    val fold_backward_compatibility :
+      (string -> relax list -> 'a -> 'a) -> 'a -> 'a
+  end
+
   (* Remove invalid relax from the list *)
   val remove_invalid_relaxes : relax list -> relax list
 
