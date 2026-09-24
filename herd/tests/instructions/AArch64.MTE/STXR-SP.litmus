@@ -1,0 +1,14 @@
+AArch64 STXR-SP
+Variant=memtag,sync
+
+{
+  uint32_t x=0;
+  [tag(x)]=:green;
+  0:X1=x;
+  0:SP=x:red;
+  0:X2=1;
+}
+P0;
+  LDXR W0,[X1];
+  STXR W3,W2,[SP];
+forall(x=1 /\ 0:X3=0 /\ ~fault(P0,x,TagCheck))

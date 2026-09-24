@@ -1,0 +1,13 @@
+AArch64 LDR-SP-regoffset
+Variant=memtag,sync
+
+(* Register-offset LDR is tag-checked even when Rn is SP. *)
+{
+  [x]=1;
+  [tag(x)]=:green;
+  0:SP=x:red;
+  0:X2=0;
+}
+P0;
+  LDR W0,[SP,X2];
+forall(fault(P0,x,TagCheck))
