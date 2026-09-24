@@ -694,8 +694,20 @@ let max_set = IntSet.max_elt
 
   let do_memtag = Variant_gen.has Variant_gen.MemTag O.variant
   let do_async = Variant_gen.has Variant_gen.Async O.variant
+  let do_asym = Variant_gen.has Variant_gen.Asym O.variant
   let do_morello = Variant_gen.has Variant_gen.Morello O.variant
   let do_kvm = Variant_gen.is_kvm O.variant
+
+  let is_async_fault n =
+    let e = n.C.evt in
+    let is_one_instruction_rmw =
+      match n.C.edge.E.edge with
+      | E.Rmw rmw -> E.RMW.is_one_instruction rmw
+      | _ -> false in
+    do_async
+    (* A single-instruction RMW carries its fault on the read event, although
+       herd treats its tag check as a write. *)
+    || (do_asym && (e.C.dir = Some W || is_one_instruction_rmw))
 
   let compile_cycle ok initvals n =
     if O.debug.Debug_gen.cycle then begin
@@ -841,8 +853,9 @@ let max_set = IntSet.max_elt
                   match e.C.check_fault,e.C.loc,e.C.bank with
                   | Some (lbl, do_fault),Data x,(Ord|CapaTag|CapaSeal) ->
                     let proc = n.C.evt.C.proc in
-                    (* No location and label information if we are in `async` *)
-                    let flt = if do_async then ((proc, None), None, None)
+                    (* Asynchronous faults have no location or label. *)
+                    let async = is_async_fault n in
+                    let flt = if async then ((proc, None), None, None)
                       else ((proc, Some lbl), Some (F.S x), None) in
                     (* Collect fault information based on `do_fault`,
                        add into either `pos_flts` for checking `Fault(...)`
