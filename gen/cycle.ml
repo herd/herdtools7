@@ -999,164 +999,153 @@ let check_cycle c =
          as the label will be assigned in read *)
       let fault_update_without_rmw st =
         if n.evt.rmw then None,st else CoSt.fault_update st W in
-      match n.evt.dir with
-      | Some W ->
-          begin
-          match n.evt.loc with
-          | Data _ ->
-            begin match bank with
-            | Instr -> Warn.fatal "instruction annotation on a data location is not possible"
-            | Ord ->
-              let st = set_write_val_ord st n in
-              let check_fault, st =
-                if do_morello then None, st
-                else fault_update_without_rmw st in
-              n.evt <- { n.evt with check_fault; check_value; };
-              (next_x_ok, st)
-            | Pair ->
-              (* Same code as for Ord, however notice that
-                 CoSet.set_cell has a case for pairs.
-                 However increment of current value is by 2 *)
-              let cell = CoSt.get_cell st in
-              assert (Array.length cell>=2) ;
-              let st = CoSt.next_co st Ord in (* Pre-increment *)
-              let st = set_write_val_ord st n in
-              let check_fault, st = fault_update_without_rmw st in
-              n.evt <- { n.evt with check_fault; check_value; };
-              (next_x_ok, st)
-            | Tag ->
-              let st = CoSt.next_co st bank |> CoSt.set_check_fault in
-              let v = CoSt.get_co st bank in
-              n.evt <- { n.evt with v = v; check_value; } ;
-              let e,st = CoSt.set_tcell st n.evt in
-              n.evt <- e ;
-              (next_x_ok, st)
-            | CapaTag|CapaSeal ->
-              (* in Morello, check fault on CapaTag or CapaSeal access
-                 if it is followed by a depend address edge *)
-              let check_fault =
-                if E.is_dp_addr n.prev.edge.E.edge then
-                  Some (Label.next_label "L", false)
-                else None in
-              let st = CoSt.next_co st bank in
-              let v = CoSt.get_co st bank in
-              n.evt <- { n.evt with v = v; check_value; check_fault} ;
-              let e,st = CoSt.set_tcell st n.evt in
-              n.evt <- e ;
-              (next_x_ok, st)
-            | VecReg a ->
-              let st = CoSt.implicit_pte_update st W in
-              let st = CoSt.step_simd st a in
-              let cell = CoSt.get_cell st
-                           |> Array.map Value.to_int in
-              let vecreg  = E.SIMD.read a cell
-                       |> List.map (List.map Value.from_int) in
-              let cell = Array.map Value.from_int cell in
-              let v =
-                match vecreg with
-                  | (v::_)::_ -> v
-                  | _ -> assert false in
-              n.evt <- { n.evt with vecreg; cell; v; check_value; } ;
-              (next_x_ok, st)
-            | Pte ->
-            (* TODO Rework here, esp the function `next_loc` and ref value `next_x_pred`.
-              They are all difficult to understand. *)
-              let next_x_pred = ref false in
-              (* get the previous `pte_value` *)
-              let pte_val = CoSt.get_pte_value st in
-              (* update the pte value in kvm variant *)
-              let pte_val =
-                if do_kvm then begin
-                    let next_loc () =
-                      match n.evt.loc with
-                      | Code.Data x ->
-                         begin try
-                             let m =
-                               find_node
-                                 (fun m ->
-                                   match m.evt.loc with
-                                   | Code.Data y ->
-                                      not (Misc.string_eq x y)
-                                   | _-> false) n in
-                             Code.as_data m.evt.loc
-                           with Not_found ->
-                             next_x_pred := true ; next_x end
-                      | Code.Code _ -> Warn.fatal "Code location has no pte value." in
-                    E.set_pteval n.evt.atom pte_val next_loc
-                  end else pte_val in
-              let check_fault = Value.need_check_fault n.evt.atom in
-              let st = CoSt.set_pte_value st check_fault pte_val in
-              let v = Value.from_pte pte_val in
-              n.evt <- { n.evt with v; check_value } ;
-              ((!next_x_pred || next_x_ok), st)
-            end (* END of match bank *)
-          | Code _ ->
-            n.evt <- { n.evt with check_value; } ;
-            match bank with
-            | Instr -> Warn.fatal "not letting instr write happen"
-            | _ -> (next_x_ok, st)
-          end (* END of `Some W` *)
-      | Some R ->
-        let st =
-          begin match bank with
-          | Ord | Instr ->
-            let st = CoSt.implicit_pte_update st R in
-            set_read_individual_v n cell check_value;
-            let check_fault, st =
-              if do_morello then None, st
-              (* because `rmw` is treated as both read and write,
-                 we should assign label to this read event.
-                 Here we assume write is stronger than read, except for LxSx,
-                 whose load and store are checked separately. Allocate both
-                 labels here so their order follows the instruction order. *)
-              else if n.evt.rmw then
-                match n.edge.E.edge with
-                | E.Rmw rmw when not (E.RMW.is_one_instruction rmw) ->
-                    let check_fault,st = CoSt.fault_update st R in
-                    let write_check_fault,st = CoSt.fault_update st W in
-                    n.next.evt <- {n.next.evt with check_fault=write_check_fault};
-                    check_fault,st
-                | _ -> CoSt.fault_update st W
-              else CoSt.fault_update st R in
-            n.evt <- { n.evt with check_fault };
-            st
-          | Pair ->
-            let st = CoSt.implicit_pte_update st R in
-            set_read_pair_v n cell check_value;
-            let check_fault, st = CoSt.fault_update st R in
-            n.evt <- { n.evt with check_fault };
-            st
-          | VecReg a ->
-            let st = CoSt.implicit_pte_update st R in
-            let cell = Array.map Value.to_int cell in
-            let v = E.SIMD.read a cell
-                     |> E.SIMD.reduce
-                     |> Value.from_int in
-            let check_fault, st = CoSt.fault_update st R in
-            n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
-            st
-          | Tag ->
-            n.evt <- { n.evt with v = CoSt.get_co st bank; check_value; };
-            st
-          | CapaTag|CapaSeal ->
-            (* in Morello, check fault on CapaTag or CapaSeal access
-               if it is followed by a depend address edge *)
-            let check_fault =
-              if E.is_dp_addr n.prev.edge.E.edge then
-                Some (Label.next_label "L", false)
-              else None in
-            n.evt <- { n.evt with v = CoSt.get_co st bank; check_value; check_fault };
-            st
-          | Pte ->
-            let pte_val = CoSt.get_pte_value st in
-            let v = Value.from_pte pte_val in
-            n.evt <- { n.evt with v; };
-            st
-          end in
+      match n.evt.loc,n.evt.dir,bank with
+      | Data _,Some W,Instr ->
+        Warn.fatal "instruction annotation on a data location is not possible"
+      | Data _,Some W,Ord ->
+        let st = set_write_val_ord st n in
+        let check_fault, st =
+          if do_morello then None, st
+          else fault_update_without_rmw st in
+        n.evt <- { n.evt with check_fault; check_value; };
         (next_x_ok, st)
-      | None -> (next_x_ok, st)
-    ) (* END of the function applying to `fold_left` *) (next_x_ok, st) nss
-    (* END of set_values_for_location *)
+      | Data _,Some W,Pair ->
+        (* Same code as for Ord, however notice that
+           CoSet.set_cell has a case for pairs.
+           However increment of current value is by 2 *)
+        let cell = CoSt.get_cell st in
+        assert (Array.length cell>=2) ;
+        let st = CoSt.next_co st Ord in (* Pre-increment *)
+        let st = set_write_val_ord st n in
+        let check_fault, st = fault_update_without_rmw st in
+        n.evt <- { n.evt with check_fault; check_value; };
+        (next_x_ok, st)
+      | Data _,Some W,Tag ->
+        let st = CoSt.next_co st bank |> CoSt.set_check_fault in
+        let v = CoSt.get_co st bank in
+        n.evt <- { n.evt with v = v; check_value; } ;
+        let e,st = CoSt.set_tcell st n.evt in
+        n.evt <- e ;
+        (next_x_ok, st)
+      | Data _,Some W,(CapaTag|CapaSeal) ->
+        (* in Morello, check fault on CapaTag or CapaSeal access
+           if it is followed by a depend address edge *)
+        let check_fault =
+          if E.is_dp_addr n.prev.edge.E.edge then
+            Some (Label.next_label "L", false)
+          else None in
+        let st = CoSt.next_co st bank in
+        let v = CoSt.get_co st bank in
+        n.evt <- { n.evt with v = v; check_value; check_fault} ;
+        let e,st = CoSt.set_tcell st n.evt in
+        n.evt <- e ;
+        (next_x_ok, st)
+      | Data _,Some W,VecReg a ->
+        let st = CoSt.implicit_pte_update st W in
+        let st = CoSt.step_simd st a in
+        let cell = CoSt.get_cell st
+          |> Array.map Value.to_int in
+        let vecreg  = E.SIMD.read a cell
+          |> List.map (List.map Value.from_int) in
+        let cell = Array.map Value.from_int cell in
+        let v =
+          match vecreg with
+          | (v::_)::_ -> v
+          | _ -> assert false in
+        n.evt <- { n.evt with vecreg; cell; v; check_value; } ;
+        (next_x_ok, st)
+      | Data _,Some W,Pte ->
+        (* TODO Rework here, esp the function `next_loc` and ref value `next_x_pred`.
+           They are all difficult to understand. *)
+        let next_x_pred = ref false in
+        (* get the previous `pte_value` *)
+        let pte_val = CoSt.get_pte_value st in
+        (* update the pte value in kvm variant *)
+        let pte_val =
+          if do_kvm then begin
+            let next_loc () =
+              match n.evt.loc with
+              | Code.Data x ->
+                begin try
+                    let m =
+                      find_node
+                        (fun m ->
+                           match m.evt.loc with
+                           | Code.Data y ->
+                             not (Misc.string_eq x y)
+                           | _-> false) n in
+                    Code.as_data m.evt.loc
+                  with Not_found ->
+                    next_x_pred := true ; next_x end
+              | Code.Code _ -> Warn.fatal "Code location has no pte value." in
+            E.set_pteval n.evt.atom pte_val next_loc
+          end else pte_val in
+        let check_fault = Value.need_check_fault n.evt.atom in
+        let st = CoSt.set_pte_value st check_fault pte_val in
+        let v = Value.from_pte pte_val in
+        n.evt <- { n.evt with v; check_value } ;
+        ((!next_x_pred || next_x_ok), st)
+      | Code _,Some W,Instr ->
+        Warn.fatal "not letting instr write happen"
+      | Code _,Some W,_ ->
+        n.evt <- { n.evt with check_value; } ;
+        (next_x_ok, st)
+      | _,Some R,(Ord|Instr) ->
+        let st = CoSt.implicit_pte_update st R in
+        set_read_individual_v n cell check_value;
+        let check_fault, st =
+          if do_morello then None, st
+          (* because `rmw` is treated as both read and write,
+             we should assign label to this read event.
+             Here we assume write is stronger than read, except for LxSx,
+             whose load and store are checked separately. Allocate both
+             labels here so their order follows the instruction order. *)
+          else if n.evt.rmw then
+            match n.edge.E.edge with
+            | E.Rmw rmw when not (E.RMW.is_one_instruction rmw) ->
+              let check_fault,st = CoSt.fault_update st R in
+              let write_check_fault,st = CoSt.fault_update st W in
+              n.next.evt <- {n.next.evt with check_fault=write_check_fault};
+              check_fault,st
+            | _ -> CoSt.fault_update st W
+          else CoSt.fault_update st R in
+        n.evt <- { n.evt with check_fault };
+        (next_x_ok, st)
+      | _,Some R,Pair ->
+        let st = CoSt.implicit_pte_update st R in
+        set_read_pair_v n cell check_value;
+        let check_fault, st = CoSt.fault_update st R in
+        n.evt <- { n.evt with check_fault };
+        (next_x_ok, st)
+      | _,Some R,VecReg a ->
+        let st = CoSt.implicit_pte_update st R in
+        let cell = Array.map Value.to_int cell in
+        let v = E.SIMD.read a cell
+          |> E.SIMD.reduce
+          |> Value.from_int in
+        let check_fault, st = CoSt.fault_update st R in
+        n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
+        (next_x_ok, st)
+      | _,Some R,Tag ->
+        n.evt <- { n.evt with v = CoSt.get_co st bank; check_value; };
+        (next_x_ok, st)
+      | _,Some R,(CapaTag|CapaSeal) ->
+        (* in Morello, check fault on CapaTag or CapaSeal access
+           if it is followed by a depend address edge *)
+        let check_fault =
+          if E.is_dp_addr n.prev.edge.E.edge then
+            Some (Label.next_label "L", false)
+          else None in
+        n.evt <- { n.evt with v = CoSt.get_co st bank; check_value; check_fault };
+        (next_x_ok, st)
+      | _,Some R,Pte ->
+        let pte_val = CoSt.get_pte_value st in
+        let v = Value.from_pte pte_val in
+        n.evt <- { n.evt with v; };
+        (next_x_ok, st)
+      | _,None,_ -> (next_x_ok, st)
+      ) (* END of the function applying to `fold_left` *) (next_x_ok, st) nss
+  (* END of set_values_for_location *)
 
   let set_values_for_locations nss =
     (* `initptes` contains the initial pte values, if they are non-default *)
