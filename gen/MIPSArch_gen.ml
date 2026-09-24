@@ -70,6 +70,6 @@ include
       let free_registers = allowed_for_symb
       type arch_atom = atom
       module Value = Value
-      include NoSpecial
     end)
+    (ArchExtra_gen.NoSpecial)
 end

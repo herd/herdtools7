@@ -1248,14 +1248,16 @@ include
       let pp_reg = pp_reg
       let free_registers = free_registers
 
+      type arch_atom = atom
+      module Value = Value
+    end)
+    (struct
       type special = reg
       type special2 = reg
       type special3 = int * reg
       let specials = vregs
       let specials2 = pregs
       let specials3 = zaslices
-      type arch_atom = atom
-      module Value = Value
     end)
 
 end
