@@ -30,11 +30,12 @@ let generate_rules actual_stems base =
      accidentally clash names of "actual" files. *)
   let actual, actual_stems =
     let name = Filename.basename base in
+    let actual_name = name ^ ".yaml.actual" in
     match StringMap.find_opt name actual_stems with
-    | None -> (name, StringMap.add name 1 actual_stems)
+    | None -> (actual_name, StringMap.add name 1 actual_stems)
     | Some count ->
-        let name = Printf.sprintf "%s.%d" name count in
-        (name, StringMap.add name (count + 1) actual_stems)
+        let actual_name = Printf.sprintf "%s.%d" actual_name count in
+        (actual_name, StringMap.add name (count + 1) actual_stems)
   in
   (* Keep the generated fragment to rules and aliases. Dune's [dynamic_include]
      supports generated rule-like stanzas, but deliberately excludes stanzas
@@ -45,14 +46,14 @@ let generate_rules actual_stems base =
   (deps %s.asl %s.yaml)
   (enabled_if %%{lib-available:yaml})
   (action
-  (with-stdout-to ./%s.yaml.actual
+  (with-stdout-to ./%s
     (run ../asltest.exe %s))))
 
 (rule
   (alias runtest)
   (enabled_if %%{lib-available:yaml})
   (action
-  (diff %s.yaml %s.yaml.actual)))
+  (diff %s.yaml %s)))
 |}
     base base actual base base actual;
   actual_stems
