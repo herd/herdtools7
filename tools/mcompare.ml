@@ -726,7 +726,7 @@ let dump_file s name = Misc.output_protect (dump_chan s) name
             include Matrix.NoAdd
           end) in
       let m = B.build keys ts in
-      if show_kinds then
+      if not quiet && show_kinds then
         dump ts "Revalidation" true
           (List.map (fun t -> 1,pp_name t.name) ts) []
           keys
@@ -744,8 +744,7 @@ let dump_file s name = Misc.output_protect (dump_chan s) name
       else
         dump ts "Revalidation" true
           (List.map (fun t -> 1,pp_name t.name) ts) []
-          keys m ;
-      output_char chan '\n'
+          keys m
 
 
 (************)
