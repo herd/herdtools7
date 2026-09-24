@@ -1,0 +1,10 @@
+Test LDR-SP-regoffset Required
+States 1
+ Fault(P0,x:red,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0,x,TagCheck))
+Observation LDR-SP-regoffset Always 1 0
+Hash=8b07c8f5a2f772ef8914c2dc216f6d42
+
