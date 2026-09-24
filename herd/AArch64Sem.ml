@@ -2311,7 +2311,7 @@ Arguments:
           (rmw_to_read rmw)
           ii
 
-      let do_cas_fail_with lift do_wb sz an rn ma mv mop tagcheck ii =
+      let do_cas_fail_with lift do_wb sz an rn ma mv mop tagchecked ii =
         let action checked ma =
           let do_action updatedb checked ma =
               (* Dir.W would force check for dbm bit:                  *)
@@ -2335,7 +2335,7 @@ Arguments:
           end
         in
 
-        if tagcheck && C.mte_store_only then
+        if tagchecked && C.mte_store_only then
           (* If FEAT_MTE_STORE_ONLY is implemented it is              *)
           (* CONSTRAINED UNPREDICTABLE whether the Tag Check          *)
           (* operation is performed.                                  *)
@@ -2349,26 +2349,30 @@ Arguments:
             action true ma
           )
         else
-          action memtag ma
+          action tagchecked ma
 
-      let do_cas_with lift sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb tagcheck ii =
+      let do_cas_with (tagchecked : MTE.Tagcheck.t) lift sz an rn ma mv
+          mop_success mop_fail_with_wb mop_fail_no_wb  ii =
+        let tagchecked = (tagchecked :> B.reg -> bool) rn in
+        let tagchecked = memtag && tagchecked in
+        let ma = mte_untag_address tagchecked ma in
         let do_cas_fail_with_wb = do_cas_fail_with lift true in
         let do_cas_fail_no_wb = do_cas_fail_with lift false in
         M.altT (
           (* CAS succeeds and generates an Explicit Write Effect *)
           (* there must be an update to the dirty bit of the TTD *)
-          lift ~tag:"CAS" rn Dir.W true tagcheck mop_success (to_perms "rw" sz) ma mv an ii
+          lift ~tag:"CAS" rn Dir.W true tagchecked mop_success (to_perms "rw" sz) ma mv an ii
         )( (* CAS fails *)
           M.altT (
-            (* CAS generates an Explicit Write Effect              *)
-            do_cas_fail_with_wb sz an rn ma mv mop_fail_with_wb tagcheck ii
+            (* CAS generates an Explicit Write Effect *)
+            do_cas_fail_with_wb sz an rn ma mv mop_fail_with_wb tagchecked ii
           )(
-            (* CAS does not generate an Explicit Write Effect      *)
-            do_cas_fail_no_wb sz an rn ma mv mop_fail_no_wb tagcheck ii
+            (* CAS does not generate an Explicit Write Effect *)
+            do_cas_fail_no_wb sz an rn ma mv mop_fail_no_wb tagchecked ii
           )
         )
 
-      let do_cas = do_cas_with (fun ~tag -> lift_memop ~tag)
+      let do_cas = do_cas_with MTE.Tagcheck.unless_sp (fun ~tag -> lift_memop ~tag)
 
       let cas sz rmw rs rt rn ii =
         let an = rmw_to_read rmw in
@@ -2411,7 +2415,7 @@ Arguments:
         in
         let ma = read_reg_addr rn ii
         and mv = read_reg_data_sz sz rt ii in
-        do_cas sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb memtag ii
+        do_cas sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb ii
 
       let casp sz rmw rs1 rs2 rt1 rt2 rn ii =
         let an = rmw_to_read rmw in
@@ -2472,7 +2476,7 @@ Arguments:
         in
         let ma = read_reg_addr rn ii
         and mv = read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii in
-        do_cas sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb memtag ii
+        do_cas sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb ii
 
       (* Temporary morello variation of CAS *)
       let cas_morello sz rmw rs rt rn ii =
@@ -4066,7 +4070,8 @@ Arguments:
           let mv = read_reg_data rA ii in
           let lift_memop ~tag rA dir updatedb checked mop perms ma mv an ii =
             do_lift_memop ~tag rA dir updatedb checked mop perms ma mv an ii Fun.id DISide.Data in
-          do_cas_with lift_memop quad Annot.N r ma mv mop_success mop_fail_with_wb mop_fail_no_wb false ii)
+          do_cas_with MTE.Tagcheck.never lift_memop quad Annot.N r ma mv
+            mop_success mop_fail_with_wb mop_fail_no_wb ii)
 
       let ( let@ ) = ( @@ )
 
