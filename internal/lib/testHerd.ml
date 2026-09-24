@@ -185,7 +185,7 @@ let herd_args ~bell ~cat ~conf ~variants ~libdir ~timeout ~speedcheck
   in
   List.concat
     [
-      exits; libdirs; timeout; bells; cats; confs; variants; speedchecks;
+      libdirs; bells; cats; confs; exits; timeout; variants; speedchecks;
       checkfilters
     ]
 
