@@ -823,18 +823,6 @@ module Make
         | DB -> AArch64Op.SetDB
         | IFetch|Other|AFDB|GCS -> assert false
 
-      let do_test_and_set_bit v combine cond set a_pte iiid domain =
-        let nexp = AArch64Explicit.NExp set in
-        mextract_whole_pte_val Annot.X nexp a_pte iiid domain >>= fun pte_v ->
-        (M.eqT pte_v v >>| cond pte_v) >>*= fun ((),c) ->
-        combine c
-            (arch_op1 (op_of_set set) pte_v >>= fun v ->
-             write_whole_pte_val Annot.X nexp a_pte v iiid domain)
-            (M.unitT ())
-
-      let test_and_set_bit_succeeds v cond =
-        do_test_and_set_bit v (fun c m _ -> M.assertT c m) cond
-
       let bit_is_zero op v = arch_op1 op v >>= is_zero
       let bit_is_not_zero op v = arch_op1 op v >>= is_not_zero
       let m_op op m1 m2 = (m1 >>| m2) >>= fun (v1,v2) -> M.op op v1 v2
@@ -851,13 +839,6 @@ module Make
         let nexp = AArch64Explicit.NExp AArch64Explicit.AFDB in
         arch_op1 (AArch64Op.SetAF) pte_v >>= arch_op1 (AArch64Op.SetDB) >>= fun v ->
         write_whole_pte_val Annot.X nexp a_pte v (E.IdSome ii) domain
-
-      let cond_af v =
-        m_op Op.And
-          (bit_is_zero AArch64Op.AF v) (bit_is_not_zero AArch64Op.Valid v)
-
-      let test_and_set_af_succeeds value =
-        test_and_set_bit_succeeds value cond_af AArch64Explicit.AF
 
       let mextract_pte_vals pte_v =
         (extract_oa pte_v >>|
@@ -5393,8 +5374,25 @@ Arguments:
             end
         | _ -> None
 
+      let cond_af v =
+        m_op Op.And
+          (bit_is_zero AArch64Op.AF v) (bit_is_not_zero AArch64Op.Valid v)
+
+      let do_test_and_set_bit v0 cond set a iiid domain =
+        let nexp = AArch64Explicit.NExp set in
+        let ma = M.unitT a in
+        let mv =
+          let* v = mextract_whole_pte_val Annot.X nexp a iiid domain in
+          let* () = M.eqT v v0
+          and* c = cond v in
+          M.assertT c (M.unitT v) in
+        let write_op a v =
+          let* v = arch_op1 (op_of_set set) v in
+          write_whole_pte_val Annot.X nexp a v iiid domain in
+        M.bind_ctrldata_data ma mv write_op
+
       let spurious_setaf ~value ~location =
-        test_and_set_af_succeeds value location E.IdSpurious DISide.Data
+        do_test_and_set_bit value cond_af AArch64Explicit.AF location E.IdSpurious DISide.Data
 
     end
 
