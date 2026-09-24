@@ -1,0 +1,10 @@
+Test STLR-SP Required
+States 1
+[x]=1;  ~Fault(P0,x,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([x]=1 /\ not (fault(P0,x,TagCheck)))
+Observation STLR-SP Always 1 0
+Hash=93af7284f7720ffe56a03f408b9a2e14
+

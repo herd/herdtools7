@@ -1,0 +1,10 @@
+Test LDADD-SP Required
+States 1
+0:X1=1; [x]=3;  ~Fault(P0,x,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([x]=3 /\ 0:X1=1 /\ not (fault(P0,x,TagCheck)))
+Observation LDADD-SP Always 1 0
+Hash=7ab91478b7a1fdd39e5af7aa5fdb0632
+

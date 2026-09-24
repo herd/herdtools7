@@ -1,0 +1,14 @@
+AArch64 SVE-LD1B-SP-regoffset
+Variant=memtag,sync,sve:128
+
+(* SVE register-offset loads are tag-checked with SP as the base. *)
+{
+  uint8_t x=1;
+  [tag(x)]=:green;
+  0:SP=x:red;
+  0:X1=0;
+}
+P0;
+  PTRUE P0.B,VL1;
+  LD1B {Z0.B},P0/Z,[SP,X1];
+forall(fault(P0,x,TagCheck))
