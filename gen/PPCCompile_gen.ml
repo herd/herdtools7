@@ -17,7 +17,7 @@
 open Printf
 open Code
 module type Config = sig
-  include CompileCommon.Config
+  include XXXCompile_gen.Config
   val realdep : bool
 end
 
@@ -34,7 +34,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
           let moreedges = O.moreedges
         end)
 
-    include CompileCommon.Make(O)(PPC)
+    include XXXCompile_gen.Make(O)(PPC)
 
     let r0 = PPC.Ireg PPC.GPR0
 
@@ -535,5 +535,4 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 
     let get_xstore_results _ = []
 
-    include NoInfo
   end

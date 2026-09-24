@@ -16,7 +16,7 @@
 
 open Code
 
-module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
+module Make(Cfg:XXXCompile_gen.Config) : XXXCompile_gen.S =
   struct
 
     open MachSize
@@ -60,7 +60,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
           let naturalsize = naturalsize
           let fullmixed = Variant_gen.has Variant_gen.FullMixed Cfg.variant
         end)
-    include CompileCommon.Make(Cfg)(X86_64)
+    include XXXCompile_gen.Make(Cfg)(X86_64)
     include X86_64
 
     let inst_to_reg_size = function

@@ -16,11 +16,11 @@
 
 open Code
 
-module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
+module Make(Cfg:XXXCompile_gen.Config) : XXXCompile_gen.S =
   struct
 
     module MIPS = MIPSArch_gen.Make(Cfg)
-    include CompileCommon.Make(Cfg)(MIPS)
+    include XXXCompile_gen.Make(Cfg)(MIPS)
 
 
 (******)
@@ -403,5 +403,4 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
 
     let get_xstore_results _ = []
 
-    include NoInfo
   end

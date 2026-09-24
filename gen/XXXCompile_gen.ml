@@ -27,9 +27,8 @@ module type Config = sig
   val wildcard : bool
 end
 
-module type S = sig
+module type Common = sig
   module A : Arch_gen.S
-
   module E : Edge.S
   with type fence = A.fence
   and type dp = A.dp
@@ -37,24 +36,21 @@ module type S = sig
   and type atom = A.atom
   and module Value = A.Value
   and module RMW = A.RMW
-
   type check = E.edge list list -> bool
-
   module R : Relax.S
   with type fence = A.fence
   and type dp = A.dp
   and type edge = E.edge
-
   module C : Cycle.S
-   with type fence = A.fence
-   and type edge=E.edge
-   and module SIMD = A.SIMD
-   and type atom = A.atom
-   and module Value = A.Value
-   and module RMW = A.RMW
+  with type fence = A.fence
+  and type edge=E.edge
+  and module SIMD = A.SIMD
+  and type atom = A.atom
+  and module Value = A.Value
+  and module RMW = A.RMW
 end
 
-module Make(C:Config) (A:Arch_gen.S) = struct
+module Make(C:Config)(A:Arch_gen.S) = struct
   module A = A
 
   module E =
@@ -83,21 +79,82 @@ module Make(C:Config) (A:Arch_gen.S) = struct
     let naturalsize = TypBase.get_size C.typ
   end
   module C = Cycle.Make(Conf)(E)
-(* Big constant *)
+
   let kbig = 128
-(* Postlude *)
 
   let mk_postlude emit_store_reg st p init cs =
     if A.get_noks st > 0  then
       let ok,st = A.ok_reg st in
-(* Add explict `int` type for `ok<n>` variables *)
       let ok_loc = Code.as_data (Code.myok_proc p) in
       let st = A.add_type (A.Location.Location_global ok_loc) TypBase.Int st in
       let init,cs_store,st = emit_store_reg st p init ok_loc ok in
       let csok = A.Label (Label.last p,A.Nop)::cs_store in
-(* Add explict initialvalue of zero for `ok<n>` variables *)
       (A.Location.Location_global ok_loc,Some (A.S "0"))::init,cs@csok,st
     else
       init,cs,st
 
+  (* Architecture-specific backends may shadow this default. *)
+  let get_archinfo _ = []
+end
+
+module type S = sig
+  include Common
+
+  val ppo : (R.relax -> 'a -> 'a) -> 'a -> 'a
+
+  val emit_load :
+      A.st -> Code.proc -> A.init -> string ->
+        A.reg * A.init * A.pseudo list * A.st
+
+  val emit_obs :
+       A.SIMD.atom Code.bank -> A.st -> Code.proc -> A.init -> string ->
+        A.reg * A.init * A.pseudo list * A.st
+
+  val emit_obs_not_zero :
+      A.st -> Code.proc -> A.init -> string ->
+        A.reg * A.init * A.pseudo list * A.st
+
+  val emit_load_one :
+      A.st -> Code.proc -> A.init -> string ->
+        A.reg * A.init * A.pseudo list * A.st
+
+  val emit_obs_not_eq :
+      A.st -> Code.proc -> A.init -> string -> A.reg ->
+        A.reg * A.init * A.pseudo list * A.st
+
+  val emit_obs_not_value :
+      A.st -> Code.proc -> A.init -> string -> int ->
+        A.reg * A.init * A.pseudo list * A.st
+
+  val emit_access : A.st -> Code.proc -> A.init -> C.event ->
+    A.reg option * A.init * A.pseudo list * A.st
+
+  val emit_rmw : A.RMW.rmw -> A.st -> Code.proc -> A.init -> C.event ->  C.event ->
+    A.reg option * A.init * A.pseudo list * A.st
+
+  val emit_access_dep :
+      A.st -> Code.proc -> A.init -> C.event -> A.dp ->
+        A.reg -> C.node -> A.reg option * A.init * A.pseudo list * A.st
+
+  val emit_rmw_dep :
+      A.RMW.rmw -> A.st -> Code.proc -> A.init -> C.event ->  C.event ->
+        A.dp -> A.reg -> C.node ->
+          A.reg option * A.init * A.pseudo list * A.st
+
+  val emit_fence : A.st -> Code.proc -> A.init -> C.node -> A.fence ->
+    A.init * A.pseudo list * A.st
+
+  val emit_fence_dp : A.st -> Code.proc -> A.init -> C.node -> A.fence -> A.dp ->
+    A.reg -> C.node -> A.reg option * A.init * A.pseudo list * A.st
+  val stronger_fence : A.fence
+
+  val check_load :
+      Code.proc -> A.reg -> C.event -> A.init -> A.st ->
+        A.init * (A.pseudo list -> A.pseudo list) * A.st
+
+  val postlude : A.st -> Code.proc -> A.init -> A.pseudo list ->
+    A.init * A.pseudo list * A.st
+
+  val get_xstore_results : A.pseudo list -> (A.reg * int) list
+  val get_archinfo : C.node -> (string * string) list
 end
