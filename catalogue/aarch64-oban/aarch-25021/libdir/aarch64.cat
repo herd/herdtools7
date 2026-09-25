@@ -48,6 +48,9 @@ catdep (* This option says that the cat file computes dependencies *)
 
 include "aarch64hwreqs.cat"
 
+(*** Coherence-after ***)
+let ca = fr | co
+
 (*** TLBI-after, DC-after, IC-after ***)
 include "enumerations.cat"
 with TLBI-after from (all-TLBI-Imp_TTD_R-enums local-hw-reqs)
@@ -67,15 +70,11 @@ let TTD-read-ordered-before =
   TLBI-after; [TLBI]; DSB-ob
   | TLBI-after; [TLBI]; IFB-ob
 
-let TTD-in-same-scope =
-  [Imp & TTD & R]; tr-ib; [Exp & M]; same-low-order-bits; [Exp & M]; tr-ib^-1; [Imp & TTD & R]
-  | [Imp & TTD & R]; tr-ib; [Imp & Tag & R]; same-low-order-bits; [Imp & Tag & R]; tr-ib^-1; [Imp & TTD & R]
-
 (* TLBI-ordered-before *)
 let TLBI-ob =
      TTD-read-ordered-before
    | tr-ib^-1; TTD-read-ordered-before & ext
-   | TTD-in-same-scope & same-translation-context & po; TTD-read-ordered-before & ext
+   | ([Imp & TTD & R]; tr-ib; same-low-order-bits & po; tr-ib^-1; [Imp & TTD & R]) & same-translation-context; TTD-read-ordered-before & ext
 
 (** IC-ordered-before **)
 
@@ -171,8 +170,8 @@ irreflexive [Exp & Tag & W]; (po & same-loc); [Imp & Tag & R]; (ca & int) as coW
 empty (rmw & (fr; co)) \ (([Exp]; rmw; [Exp]) & (fri ; [Exp & W]; coi)) as atomic
 
 (*** Break Before Make ***)
-let BBM = [TLBCacheableTTD]; ca; [TLBUncacheableTTD]; ob; [TLBI]; ob & inv-scope; [TLBCacheableTTD]
-flag ~empty (TTD-update-needsBBM \ BBM) as Warning-BBM-expected
+let BBM = ([TTDV]; ca; [TTDINV]; co; [TTDV])
+flag ~empty (TTD-update-needsBBM & ~BBM) as requires-BBM
 
 (*** Additional synchronisation requirements for CMODX ***)
 
