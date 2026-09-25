@@ -1,0 +1,13 @@
+AArch64 LDR-TaggedNormal
+Variant=vmsa,mte
+{
+ [x]=1;
+ [PTE(x)]=(oa:PA(x),attrs:(TaggedNormal));
+ 0:X0=x:green;
+}
+ P0          ;
+L0:          ;
+ LDR W1,[X0] ;
+exists(0:X1=0)
+
+(* forall(0:X1=1 /\ ~fault(P0:L0,x,TagCheck)) *)

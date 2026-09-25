@@ -189,6 +189,7 @@ attempt
 attempted
 attempting
 attempts
+attributes
 authoritative
 automatically
 auxiliary
@@ -2134,6 +2135,7 @@ sugar
 sum
 summarised
 summarises
+summary
 summation
 summing
 sums

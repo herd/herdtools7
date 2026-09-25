@@ -1,0 +1,28 @@
+name: ASL compliance schema validation
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/asl-compliance-schema.yml
+      - asllib/compliance/schema.yaml
+      - asllib/compliance/tests/**.yaml
+      - asllib/compliance/validate-schemas.py
+
+permissions: read-all
+
+jobs:
+  validate:
+    name: Validate ASL compliance YAML metadata
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v7
+
+      - name: Install schema validation dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes python3-yaml python3-jsonschema
+
+      - name: Validate metadata schemas
+        run: python3 asllib/compliance/validate-schemas.py

@@ -1,0 +1,6 @@
+cLDRnToD+BBM Allowed
+coRR+cLDRnToD-cLDRnToD+BBM Allowed
+coRR+cLDRoTnD-cLDRoTnD+BBM Allowed
+coRR+cLDRnT-cLDRoT+BBM Forbidden 
+coRR+cLDRnD-cLDRoD+BBM Forbidden
+RRRR+BBM Forbidden
