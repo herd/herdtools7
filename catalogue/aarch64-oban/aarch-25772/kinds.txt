@@ -1,0 +1,12 @@
+ETS2.MP-I2V+dmb.stpt+dsb.ld                     Forbid
+LB-noret-tagfault+dmb.ldpp+dmb.ldpt             Allow
+LB-synctagfault+dmb.ldpp+dmb.ldpt               Forbid
+LB-tagfault+dmb.ldpp+dmb.ldpt                   Forbid
+LB-tagfault-casfail+dmb.ld+dmb.ldpt             Forbid
+LB-tagfault-casok+dmb.ld+dmb.ldpt               Forbid
+MP-noret+dmb.ldpt+dmb.ldpp                      Allow
+MP-synctagfault+dmb.ldpt+dmb.ldpp               Allow
+R+dmb.ldpt+dmb.ldpp                             Allow
+R-noret-synctagfault+dmb.ldpt+dmb.ldpp          Forbid
+WWRW-asynctagfault+dmb.ldpp+dmb.ldpt            Allow
+WWRW-noret-asynctagfault+dmb.ldpp+dmb.ldpt      Allow 
