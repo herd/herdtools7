@@ -126,6 +126,13 @@ end = struct
         (List.rev sources) ;
       fprintf chan "\n"
     end ;
+    fprintf chan "SHARED_SRC_DIR=$(CURDIR)/litmus\n" ;
+    fprintf chan "GCCOPTS += -I $(SHARED_SRC_DIR)\n" ;
+    fprintf chan "SHARED_SRC=$(wildcard $(SHARED_SRC_DIR)/*.c)\n" ;
+    fprintf chan "SHARED_OBJ=$(SHARED_SRC:.c=.o)\n\n" ;
+    fprintf chan "ifneq ($(SHARED_SRC),)\n" ;
+    fprintf chan "SHARED_LIB=$(SHARED_SRC_DIR)/liblitmus.a\n" ;
+    fprintf chan "endif\n\n" ;
     begin
       match Cfg.mode with
       | Mode.Std|Mode.PreSi -> ()
@@ -159,11 +166,11 @@ end = struct
 
   let makefile_clean chan extra =
     fprintf chan "clean:\n" ;
-    fprintf chan "\t/bin/rm -f *.o *.s *.t *%s *~%s\n"
+    fprintf chan "\t/bin/rm -f litmus/* *.o *.s *.t *%s *~%s\n"
       (Mode.exe Cfg.mode) extra ;
     fprintf chan "\n" ;
     fprintf chan "cleansource:\n" ;
-    fprintf chan "\t/bin/rm -f *.o *.c *.h *.s *~\n" ;
+    fprintf chan "\t/bin/rm -f litmus/* *.o *.c *.h *.s *~\n" ;
     fprintf chan "\n" ;
     ()
 
@@ -188,6 +195,13 @@ end = struct
           src ;
         fprintf chan "\n")
       utils ;
+    (* shared objs, in the directory litmus/ *)
+    fprintf chan "$(SHARED_SRC_DIR)/%%.o: $(SHARED_SRC_DIR)/%%.c\n" ;
+    fprintf chan "\t$(GCC) $(GCCOPTS) -O2 -c -o $@ $<\n\n" ;
+    fprintf chan "ifneq ($(SHARED_SRC),)\n" ;
+    fprintf chan "$(SHARED_LIB): $(SHARED_OBJ)\n" ;
+    fprintf chan "\t$(AR) rcs $@ $^\n" ;
+    fprintf chan "endif\n\n" ;
 (* UTIL objs *)
     let utils_objs =
       String.concat " " (List.map (fun s -> s ^ ".o") utils) in
@@ -492,9 +506,9 @@ let dump_shell_cont arch flags sources utils =
           | TargetOS.Linux|TargetOS.AIX
           | TargetOS.FreeBsd|TargetOS.Android8
             -> 's' in
-          fprintf chan "%%.exe:%%.%c $(UTILS)\n" src_ext ;
+          fprintf chan "%%.exe:%%.%c $(UTILS) $(SHARED_LIB)\n" src_ext ;
           fprintf chan
-            "\t$(GCC) $(GCCOPTS) $(LINKOPTS) -o $@ $(UTILS) $<\n" ;
+            "\t$(GCC) $(GCCOPTS) $(LINKOPTS) -o $@ $(UTILS) $< $(SHARED_LIB)\n" ;
           fprintf chan "\n" ;
 (* .s pattern rule *)
           fprintf chan "%%.s:%%.c\n" ;
@@ -683,10 +697,10 @@ let dump_c_cont xcode arch flags sources utils nts =
             fprintf chan "\tsed -e 's|.c$$|.o|g' < src > obj\n\n"
           end ;
           let o1 =
-            if infile then "$(UTILS) obj run.o"
-            else "$(UTILS) $(OBJ) run.o" in
+            if infile then "$(UTILS) obj run.o $(SHARED_LIB)"
+            else "$(UTILS) $(OBJ) run.o $(SHARED_LIB)" in
           let o2 =
-            if infile then "$(UTILS) @obj run.o"
+            if infile then "$(UTILS) @obj run.o $(SHARED_LIB)"
             else o1 in
           fprintf chan "$(EXE): %s\n" o1 ;
           fprintf chan "\t$(GCC)  $(GCCOPTS) $(LINKOPTS) -o $@ %s\n" o2 ;

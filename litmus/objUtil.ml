@@ -147,24 +147,37 @@ module Make(O:Config)(Tar:Tar.S) =
 
     let actual_name name ext = Tar.outname (name ^ ext)
 
-    let do_cpy ?sub ?prf fnames src tgt ext =
+    let ( // ) = Filename.concat
+
+    let do_cpy ?sub ?prf ?dir fnames src tgt ext =
       let _,in_chan = MyName.open_lib ?sub (src ^ ext) in
       let fnames =
         begin try
-          let fname = actual_name tgt ext in
+          let fname = match dir with
+            | Some dst -> actual_name (dst // tgt) ext
+            | None -> actual_name tgt ext in
           MySys.cp ?prf in_chan fname ;
           fname::fnames
         with e -> close_in in_chan  ; raise e end in
       close_in in_chan ;
       fnames
 
-(* Copy lib file *)
+    (** [cpy ?sub ?prf ?fnames name ext] Copy a lib file, the source file must
+        have the name [_name.ext]. The file is copied to [name.ext]. *)
     let cpy ?sub ?prf fnames name ext =
       do_cpy ?sub ?prf fnames ("_" ^ name) name ext
 
-(* Copy lib file, changing its name *)
+    (** [cpy' ?sub ?prf ?fnames src dst ext] Copy a lib file, the source file
+        must have the name [_src.ext]. The file is copied to [dst.ext]. *)
     let cpy' ?sub ?prf fnames src dst ext =
       do_cpy ?sub ?prf fnames ("_" ^ src) dst ext
+
+    let copy_shared name ext =
+      let shared_dir = "litmus" in
+      MySys.mkdirp (Tar.outname shared_dir) ;
+      ignore
+        (do_cpy ~sub:(dir_of_sysarch O.sysarch) ~dir:shared_dir []
+           ("_" ^ name) name ext)
 
 (* Copy from platform subdirectory *)
     let cpy_platform fnames name ext =
@@ -182,7 +195,16 @@ module Make(O:Config)(Tar:Tar.S) =
     | Mac as os ->
         Warn.fatal "Affinity not implemented for %s" (TargetOS.pp os)
 
+    let dump_shared_library name =
+      let module I = Insert(O) in
+      let files = ["_" ^ name  ^ ".c"; "_" ^ name ^ ".h"] in 
+      if List.for_all I.exists files then begin
+        copy_shared name ".c" ;
+        copy_shared name ".h" ;
+      end
+
     let dump flags =
+      dump_shared_library "self" ;
       let fnames = [] in
       let fnames = match O.driver with
       | Driver.Shell -> fnames
