@@ -93,7 +93,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
         else k)
 
     let () =
-      if O.verbose > 0 then begin
+      if O.debug.Debug_gen.parser then begin
         eprintf "PPO is:\n" ;
         ppo (fun r () -> eprintf "%s\n" (R.pp_relax r)) ()
       end

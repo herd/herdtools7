@@ -37,7 +37,7 @@ type t =
 (* Explicit virtual memory *)
   | KVM | NoFault
 (* Synchronisation mode *)
-  | Sync | Async
+  | Sync | Async | Asym
 (* Store-only mode *)
   | StoreOnly
 (* Neon AArch64 extension *)
@@ -49,17 +49,32 @@ type t =
 (* Constrained Unpredictable *)
   | ConstrainedUnpredictable
 
+module Set =
+  Set.Make
+    (struct
+      type elt = t
+      type t = elt
+      let compare = compare
+    end)
+
+type set = Set.t
+
+let empty = Set.empty
+let add = Set.add
+let remove = Set.remove
+let has = Set.mem
+
 let tags =
   ["AsAmo";"ConstsInInit";
    "Mixed";"FullMixed";"MixedDisjoint"; "MixedStrictOverlap";
    "Ifetch(Self)"; "MemTag";
    "NoVolatile"; "Morello"; "VMSA(KVM)"; "NoFault";
-   "Sync"; "Async"; "StoreOnly"; "Neon"; "ConstrainedUnpredictable"; ]
+   "Sync"; "Async"; "Asym"; "StoreOnly"; "Neon"; "ConstrainedUnpredictable"; ]
 
 let all_t =
   [ AsAmo ; ConstsInInit ; Mixed ; FullMixed ; MixedDisjoint ; MixedStrictOverlap ;
     Self ; MemTag ; NoVolatile ; Morello ; KVM ; NoFault ;
-    Sync ; Async ; StoreOnly ; Neon ; SVE ; SME ; ConstrainedUnpredictable ]
+    Sync ; Async ; Asym ; StoreOnly ; Neon ; SVE ; SME ; ConstrainedUnpredictable ]
 
 let parse tag = match Misc.lowercase tag with
 | "asamo" -> Some AsAmo
@@ -76,6 +91,7 @@ let parse tag = match Misc.lowercase tag with
 | "nofault" -> Some NoFault
 | "sync" -> Some Sync
 | "async" -> Some Async
+| "asym" | "asymmetric" -> Some Asym
 | "storeonly" | "store-only" -> Some StoreOnly
 | "neon" -> Some Neon
 | "sve" -> Some SVE
@@ -98,6 +114,7 @@ let pp = function
   | NoFault -> "NoFault"
   | Sync -> "Sync"
   | Async -> "Async"
+  | Asym -> "Asym"
   | StoreOnly -> "StoreOnly"
   | Neon -> "Neon"
   | SVE -> "sve"
@@ -114,15 +131,22 @@ let pp_herd_variant = function
   | MemTag -> Some "memtag"
   | Sync -> Some "sync"
   | Async -> Some "async"
+  | Asym -> Some "asym"
   | StoreOnly -> Some "store-only"
   | Morello -> Some "morello"
   | KVM  -> Some "vmsa"
   | ConstrainedUnpredictable -> Some "ConstrainedUnpredictable"
 
-let is_mixed v = v Mixed || v FullMixed
-let is_kvm v = v KVM
+let is_mixed variants = has Mixed variants || has FullMixed variants
+let is_kvm variants = has KVM variants
 
-let validate v =
-  if (v Sync || v Async || v StoreOnly) && not (v MemTag) then
+let validate variants =
+  if List.length
+       (List.filter (fun variant -> has variant variants) [Sync; Async; Asym]) > 1
+  then
     Warn.user_error
-      "variants `Sync`, `Async` and `StoreOnly` require `MemTag`"
+      "variants `Sync`, `Async` and `Asym` are mutually exclusive" ;
+  if (has Sync variants || has Async variants || has Asym variants ||
+      has StoreOnly variants) && not (has MemTag variants) then
+    Warn.user_error
+      "variants `Sync`, `Async`, `Asym` and `StoreOnly` require `MemTag`"

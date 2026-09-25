@@ -18,7 +18,7 @@ let to_full emit st p init n x = init,emit st p init n x,st
 
 module type Config = sig
   val hexa : bool
-  val variant : Variant_gen.t -> bool
+  val variant : Variant_gen.set
 end
 
 
@@ -88,7 +88,7 @@ module Make(Cfg:Config)(A:Arch_gen.S)
          | _,_ -> Warn.user_error "Unexpected error in `next_const."
 
        let allow_consts_in_code =
-         not (Cfg.variant Variant_gen.ConstsInInit)
+         not (Variant_gen.has Variant_gen.ConstsInInit Cfg.variant)
 
 (* RISCV limit, fits all ? *)
        let max_k = 1 lsl 12 and min_k = - (1 lsl 12)

@@ -18,7 +18,6 @@ open Code
 open Printf
 
 module type Config = sig
-  val verbose : int
   val generator : string
   val debug : Debug_gen.t
   val hout : Hint.out
@@ -35,7 +34,7 @@ module type Config = sig
   val docheck : bool
   val typ : TypBase.t
   val hexa : bool
-  val variant : Variant_gen.t -> bool
+  val variant : Variant_gen.set
   val cycleonly: bool
   val metadata : bool
   val same_loc : bool
@@ -221,7 +220,7 @@ let get_fence n =
   let rec compile_proc pref chk loc_writes st p ro_prev init ns = match ns with
   | [] -> init,pref [],(C.EventMap.empty,[]),st
   | n::ns ->
-      if O.verbose > 1 then eprintf "COMPILE PROC: <%s>\n" (C.str_node n);
+      if O.debug.Debug_gen.cycle then eprintf "COMPILE PROC: <%s>\n" (C.str_node n);
       begin match  n.C.edge.E.edge with
       (* There are following fences *)
       | E.Node _ ->
@@ -373,7 +372,7 @@ let max_set = IntSet.max_elt
     let vs,f =
       if O.optcoherence && O.obs_type <> Config.Loop then
         let vs = opt_coherence vs in
-        if O.verbose > 1 then begin
+        if O.debug.Debug_gen.cycle then begin
           eprintf "OPT:" ;
           List.iter
             (fun vs ->
@@ -438,25 +437,34 @@ let max_set = IntSet.max_elt
       else
         let vs =
           List.map
-            (Misc.filter_map (fun (v,obs) ->
+            (Misc.filter_map (fun (v,obs,_) ->
                if Array.length v > 0 then Some (v.(0),obs) else None ))
             vs in
         build_observers p i x vs in
 
     let cons_one x v fs =
-      let loc = A.Location.Location_global x in
-      if StringMap.mem x env_wide then
-        F.cons_vec loc v fs
-      else if Array.length v > 0 then
-        (* For MTE locations, we may have only a tag write and not an *)
-        (* Ord write. We therefore need a length check here. *)
-        F.cons_int (A.Location.Location_global x) v.(0) fs
-      else fs in
+      match v with
+      | None -> fs
+      | Some v ->
+          let loc = A.Location.Location_global x in
+          if StringMap.mem x env_wide then
+            F.cons_vec loc v fs
+          else if Array.length v > 0 then
+            (* For MTE locations, we may have only a tag write and not an *)
+            (* Ord write. We therefore need a length check here. *)
+            F.cons_int (A.Location.Location_global x) v.(0) fs
+          else fs in
 
     (* add the value `v` of `loc` into the accumulator `k` *)
     let add_look_loc loc v k =
-      if (not (StringSet.mem loc atoms) && O.optcond) then k
-      else cons_one loc v k in
+      match v with
+      | None -> k
+      | Some v ->
+          if (not (StringSet.mem loc atoms) && O.optcond) then k
+          else cons_one loc (Some v) k in
+
+    let last_write_event_adjacent_to_communication vs =
+      List.find_map (fun (v, _, check) -> if check then Some v else None) (List.rev vs) in
 
     (* - `p`, process number
        - `i`, initial value accumulator
@@ -475,20 +483,20 @@ let max_set = IntSet.max_elt
         - `x` is the location represented by a string
         - `vs` the final value of the location `x` *)
       let _p,i,cs,fs = List.fold_left
-        ( fun (p, i, cs, fs) (x, (vs : (C.Value.v array * IntSet.t) list list)) ->
+        ( fun (p, i, cs, fs) (x, (vs : (C.Value.v array * IntSet.t * bool) list list)) ->
         let vs = List.map ( List.map
-            ( fun (v, vset) -> (Array.map C.Value.to_int v, vset) )
+            ( fun (v, vset, check) -> Array.map C.Value.to_int v, vset, check )
           ) vs in
+        let vs_flat = List.flatten vs in
+        let v = last_write_event_adjacent_to_communication vs_flat in
         (* - `i`, new init value after this iteration,
            - `c`, new pseudo code to be added into `cs`,
            - `f`, new final value to be added into `fs` *)
         let i,c,f = match O.cond with
           | Observe ->
-            let vs = List.flatten vs in
-            begin match vs with
+            begin match vs_flat with
             | [] -> i,[],[]
             | _::_ ->
-              let v,_ = Misc.last vs in
               i,[],cons_one x v []
             end
           | Unicond -> assert false
@@ -500,8 +508,8 @@ let max_set = IntSet.max_elt
             | [] -> i,[],[]
             (* the common case with one write event *)
 
-            | [[(v,_)]] -> i,[],add_look_loc x v []
-            | [[(_,_);(v,_)]] ->
+            | [[_]] -> i,[],add_look_loc x v []
+            | [[_;_]] ->
               begin match O.do_observers with
               | Local -> i,[],add_look_loc x v []
               | Avoid|Accept|Three|Four|Infinity
@@ -511,8 +519,6 @@ let max_set = IntSet.max_elt
                 i,c,add_look_loc x v f
               end
             | _ ->
-              let vs_flat = List.flatten vs in
-              let v,_ = Misc.last vs_flat in
               begin match O.do_observers with
                 | Local -> i,[],add_look_loc x v []
                 | Three ->
@@ -686,13 +692,25 @@ let max_set = IntSet.max_elt
       [A.Location.Location_global (as_data (Code.myok_proc p)),IntSet.singleton npairs]
     else []
 
-  let do_memtag = O.variant Variant_gen.MemTag
-  let do_async = O.variant Variant_gen.Async
-  let do_morello = O.variant Variant_gen.Morello
+  let do_memtag = Variant_gen.has Variant_gen.MemTag O.variant
+  let do_async = Variant_gen.has Variant_gen.Async O.variant
+  let do_asym = Variant_gen.has Variant_gen.Asym O.variant
+  let do_morello = Variant_gen.has Variant_gen.Morello O.variant
   let do_kvm = Variant_gen.is_kvm O.variant
 
+  let is_async_fault n =
+    let e = n.C.evt in
+    let is_one_instruction_rmw =
+      match n.C.edge.E.edge with
+      | E.Rmw rmw -> E.RMW.is_one_instruction rmw
+      | _ -> false in
+    do_async
+    (* A single-instruction RMW carries its fault on the read event, although
+       herd treats its tag check as a write. *)
+    || (do_asym && (e.C.dir = Some W || is_one_instruction_rmw))
+
   let compile_cycle ok initvals n =
-    if O.verbose > 0 then begin
+    if O.debug.Debug_gen.cycle then begin
       Printf.eprintf "COMPILE CYCLE:\n%a" C.debug_cycle n
     end ;
     let open Config in
@@ -708,14 +726,14 @@ let max_set = IntSet.max_elt
     let cos = U.compute_cos cos0 in
     (* the post condition for checking PTE value *)
     let last_ptes = if do_kvm then C.last_ptes n else [] in
-    if O.verbose > 1 then
+    if O.debug.Debug_gen.cycle then
       Printf.eprintf "Last_Ptes: %s\n"
         (String.concat ","
            (List.map
               (fun (loc,v) ->
                 Printf.sprintf "%s->%s" loc (C.Value.pp_pte v)) last_ptes)) ;
     let no_local_ptes = StringSet.of_list (List.map fst last_ptes) in
-    if O.verbose > 1 then U.pp_coherence cos0 ;
+    if O.debug.Debug_gen.cycle then U.pp_coherence cos0 ;
     let loc_writes = U.comp_loc_writes n in
     (* `do_rec` compile individual instructions *)
     let rec do_rec p i = function
@@ -826,7 +844,7 @@ let max_set = IntSet.max_elt
              The behaviour based on different fault-related flags. *)
           let get_faults ns =
           (* TODO: the `if-else` pattern on flags is not a good idea as it may short circuit *)
-           if O.variant Variant_gen.NoFault then
+           if Variant_gen.has Variant_gen.NoFault O.variant then
              F.FaultAtomSet.empty,F.FaultAtomSet.empty
            else if do_memtag || do_kvm || do_morello then
              List.fold_left
@@ -835,8 +853,9 @@ let max_set = IntSet.max_elt
                   match e.C.check_fault,e.C.loc,e.C.bank with
                   | Some (lbl, do_fault),Data x,(Ord|CapaTag|CapaSeal) ->
                     let proc = n.C.evt.C.proc in
-                    (* No location and label information if we are in `async` *)
-                    let flt = if do_async then ((proc, None), None, None)
+                    (* Asynchronous faults have no location or label. *)
+                    let async = is_async_fault n in
+                    let flt = if async then ((proc, None), None, None)
                       else ((proc, Some lbl), Some (F.S x), None) in
                     (* Collect fault information based on `do_fault`,
                        add into either `pos_flts` for checking `Fault(...)`
@@ -868,7 +887,7 @@ let max_set = IntSet.max_elt
           match O.cond with
           | Unicond | Cycle -> []
           | Observe -> F.location_list f flts in
-        let i = if do_kvm then A.complete_init O.hexa initvals i else i in
+        let i = A.complete_init O.hexa initvals i in
         (i,c,fc flts,env,obs),
         (U.compile_prefetch_ios (List.length obsc) ios,
          U.compile_coms splitted)
@@ -1028,7 +1047,7 @@ let tr_labs m init =
 
 let variant_info =
     List.filter_map
-    ( fun t -> if O.variant t then Variant_gen.pp_herd_variant t else None)
+    ( fun t -> if Variant_gen.has t O.variant then Variant_gen.pp_herd_variant t else None)
     Variant_gen.all_t
     |> ( function
       | [] -> None
@@ -1042,7 +1061,7 @@ let basic_info scope prefetch com_edges cycle_description =
     ( ( convert_to_option_pair "Generator" O.generator )
     :: ( Option.map ( fun value -> ("Scopes", BellInfo.pp_scopes value) ) scope )
     (* Prefetch surpress in instruction fetch, `ifetch`, test cases *)
-    :: ( if O.variant Variant_gen.Self then None else convert_to_option_pair "Prefetch" prefetch )
+    :: ( if Variant_gen.has Variant_gen.Self O.variant then None else convert_to_option_pair "Prefetch" prefetch )
     :: ( convert_to_option_pair "Com" com_edges )
     :: ( convert_to_option_pair "Orig" cycle_description )
     :: [] )
@@ -1087,8 +1106,11 @@ let test_of_cycle name
 
 let make_test name ?com ?info ?check ?scope es =
   try
-    if O.verbose > 1 then eprintf "**Test %s**\n" name ;
-    if O.verbose > 2 then eprintf "**Cycle %s**\n" (E.pp_edges es) ;
+    if O.debug.Debug_gen.cycle then begin
+      eprintf "**Test %s**\n" name ;
+      eprintf "**Cycle %s**\n" (E.pp_edges ~separate:true es) ;
+      eprintf "**Internal %s**\n" (E.pp_edges es)
+    end ;
     let es,c,init = C.make es in
     test_of_cycle name ?com ?info ?check ?scope ~init es c
   with

@@ -18,7 +18,7 @@ module Config = struct
   let naturalsize = MachSize.Word
   let moreedges = false
   let fullmixed = false
-  let variant _ = false
+  let variant = Variant_gen.empty
 end
 
 module Make
@@ -26,19 +26,19 @@ module Make
       val naturalsize : MachSize.sz
       val moreedges : bool
       val fullmixed : bool
-      val variant : Variant_gen.t -> bool
+      val variant : Variant_gen.set
     end) = struct
 
-let do_self = C.variant Variant_gen.Self
-let do_memtag = C.variant Variant_gen.MemTag
-let do_store_only = C.variant Variant_gen.StoreOnly
-let do_morello = C.variant Variant_gen.Morello
-let do_kvm = C.variant Variant_gen.KVM
-let do_neon = C.variant Variant_gen.Neon
-let do_sve = C.variant Variant_gen.SVE
-let do_sme = C.variant Variant_gen.SME
+let do_self = Variant_gen.has Variant_gen.Self C.variant
+let do_memtag = Variant_gen.has Variant_gen.MemTag C.variant
+let do_store_only = Variant_gen.has Variant_gen.StoreOnly C.variant
+let do_morello = Variant_gen.has Variant_gen.Morello C.variant
+let do_kvm = Variant_gen.has Variant_gen.KVM C.variant
+let do_neon = Variant_gen.has Variant_gen.Neon C.variant
+let do_sve = Variant_gen.has Variant_gen.SVE C.variant
+let do_sme = Variant_gen.has Variant_gen.SME C.variant
 let do_mixed = Variant_gen.is_mixed  C.variant
-let do_cu = C.variant Variant_gen.ConstrainedUnpredictable
+let do_cu = Variant_gen.has Variant_gen.ConstrainedUnpredictable C.variant
 
 open Code
 open Printf
@@ -296,6 +296,7 @@ module StructuredAtom : sig
     | MorelloTagAccess
     | MorelloSealAccess
     | MemoryTagAccess
+    | MemoryTagFaultAccess
     | PairAccess of [ld_pair_opt | st_pair_opt]
     | InstrAccess
 
@@ -352,6 +353,7 @@ end = struct
     | MorelloTagAccess
     | MorelloSealAccess
     | MemoryTagAccess
+    | MemoryTagFaultAccess
     | PairAccess of [ld_pair_opt | st_pair_opt]
     | InstrAccess
 
@@ -394,9 +396,10 @@ end = struct
     | MorelloTagAccess -> 6
     | MorelloSealAccess -> 7
     | MemoryTagAccess -> 8
-    | PairAccess _ -> 9
-    | InstrAccess -> 10
-    | ArrayCellAccess _ -> 11
+    | MemoryTagFaultAccess -> 9
+    | PairAccess _ -> 10
+    | InstrAccess -> 11
+    | ArrayCellAccess _ -> 12
 
   let access_order = function
     | OrdinaryAccess o|MixedSizeAccess (o,_)|MorelloAccess o -> Some o
@@ -404,6 +407,7 @@ end = struct
     | PteAccess (Read o|ReadHA o) -> Some (o :> access_order)
     | PteAccess (Set (o,_)) -> Some (o :> access_order)
     | Atomic _|MorelloTagAccess|MorelloSealAccess|MemoryTagAccess
+    | MemoryTagFaultAccess
     | NeonAccess _|PairAccess _|InstrAccess -> None
 
   let compare a1 a2 =
@@ -424,6 +428,7 @@ end = struct
         | MorelloTagAccess,MorelloTagAccess
         | MorelloSealAccess,MorelloSealAccess
         | MemoryTagAccess,MemoryTagAccess
+        | MemoryTagFaultAccess,MemoryTagFaultAccess
         | InstrAccess,InstrAccess -> 0
         | _,_ -> assert false
       end
@@ -465,6 +470,7 @@ end = struct
     | MorelloTagAccess -> "Ct"
     | MorelloSealAccess -> "Cs"
     | MemoryTagAccess -> "T"
+    | MemoryTagFaultAccess -> "RevT"
     | PteAccess (Read access_order) ->
         sprintf "Pte%s" (pp_access_order "" access_order)
     | PteAccess (ReadHA access_order) ->
@@ -575,6 +581,7 @@ end = struct
       |MorelloAccess `Plain),(R|W)
     | Atomic _,(R|W)
     | (MemoryTagAccess|MorelloTagAccess|MorelloSealAccess),(R|W)
+    | MemoryTagFaultAccess,W
     | NeonAccess _,(R|W) -> true
     | PairAccess (`Pa|`PaN|`PaIQ|`PaA),R -> true
     | PairAccess (`Pa|`PaN|`PaIL|`PaL),W -> true
@@ -613,7 +620,7 @@ end = struct
     WPTESet.mem HD fields || WPTESet.mem HA fields
 
   let to_bank = function
-    | MemoryTagAccess -> Code.Tag
+    | MemoryTagAccess|MemoryTagFaultAccess -> Code.Tag
     | PteAccess (Set (_,p))
       when is_tthm p -> Code.Ord
     | PteAccess (ReadHA _) -> Code.Ord
@@ -740,7 +747,8 @@ end = struct
   let fold f r =
     let r = fold_accesses f r in
     let r = if do_mixed then r else fold_pair_access f r in
-    let r = if do_memtag then f MemoryTagAccess r else r in
+    let r =
+      if do_memtag then f MemoryTagAccess (f MemoryTagFaultAccess r) else r in
     let r = if do_self then f InstrAccess r else r in
     if do_morello then f MorelloTagAccess (f MorelloSealAccess r) else r
 
@@ -886,6 +894,10 @@ module Value = struct
     let can_fault dir pte_val =
       let open AArch64PteVal in
       pte_val.valid = 0 || pte_val.af = 0 || (dir = Code.W && pte_val.db = 0)
+
+    let is_tag_fault = function
+      | Some StructuredAtom.MemoryTagFaultAccess -> true
+      | _ -> false
 
     (* check if an pte annotation `pte` will affect a pte `field` *)
     let affect_pte_field field pte =

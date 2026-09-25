@@ -24,7 +24,6 @@ open Code
 module type Config = sig
   include Top_gen.Config
   val same_loc : bool
-  val verbose : int
   val allow_back : bool
   val show : ShowGen.t option
   val typ : TypBase.t
@@ -56,6 +55,7 @@ module Make(O:Config) : Builder.S
             let variant = O.variant
             let naturalsize = TypBase.get_size O.typ
             let wildcard = O.wildcard
+            let debug = O.debug
           end)
           (A)(A)
 
@@ -67,6 +67,7 @@ module Make(O:Config) : Builder.S
       module ConfWithSize = struct
         include O
         let naturalsize = TypBase.get_size O.typ
+        let init_value = !Config.init_value
       end
 
       module C = Cycle.Make(ConfWithSize)(E)
@@ -477,7 +478,7 @@ module Make(O:Config) : Builder.S
         let vs,f =
           if O.optcoherence && O.obs_type <> Config.Loop then
             let vs = opt_coherence vs in
-            if O.verbose > 1 then begin
+            if O.debug.Debug_gen.cycle then begin
               eprintf "OPT:" ;
               List.iter
                 (fun vs ->
@@ -607,7 +608,7 @@ module Make(O:Config) : Builder.S
               let vss =
                 List.map
                   (List.map
-                     (fun (v,obs) ->
+                     (fun (v,obs,_check) ->
                        if Array.length v > 1 then
                          Warn.fatal "No wide access in C" ;
                        (C.Value.to_int v.(0)),obs))
@@ -785,7 +786,7 @@ module Make(O:Config) : Builder.S
         (* Split before, as  proc numbers added by side effet.. *)
         let cos0 = C.coherence n in
         let cos = U.compute_cos cos0 in
-        if O.verbose > 1 then U.pp_coherence cos0 ;
+        if O.debug.Debug_gen.cycle then U.pp_coherence cos0 ;
         let loc_writes = U.comp_loc_writes n in
 
         let rec do_rec p = function
@@ -846,7 +847,7 @@ module Make(O:Config) : Builder.S
           List.map
             (fun (t,loc) -> match t with
             | A.Plain _ ->
-                let novolatile = O.variant Variant_gen.NoVolatile in
+                let novolatile = Variant_gen.has Variant_gen.NoVolatile O.variant in
                 let volatile = if novolatile then
                     "" else "volatile " in
                 sprintf "%s%s* %s" volatile (A.dump_typ t) loc
@@ -1156,8 +1157,11 @@ module Make(O:Config) : Builder.S
       let make_test name ?com ?info ?check ?scope es =
         ignore (scope) ;
         try
-          if O.verbose > 1 then eprintf "**Test %s**\n" name ;
-          if O.verbose > 2 then eprintf "**Cycle %s**\n" (E.pp_edges es) ;
+          if O.debug.Debug_gen.cycle then begin
+            eprintf "**Test %s**\n" name ;
+            eprintf "**Cycle %s**\n" (E.pp_edges ~separate:true es) ;
+            eprintf "**Internal %s**\n" (E.pp_edges es)
+          end ;
           let es,c,init = C.make es in
           test_of_cycle name ?com ?info ?check ~init es c
         with

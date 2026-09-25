@@ -32,7 +32,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         (struct
           let naturalsize = naturalsize
           let moreedges = Cfg.moreedges
-          let fullmixed = Cfg.variant Variant_gen.FullMixed
+          let fullmixed = Variant_gen.has Variant_gen.FullMixed Cfg.variant
           let variant = Cfg.variant
         end)
     include CompileCommon.Make(Cfg)(A64)
@@ -950,7 +950,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | [] -> true
       | _::_ ->
           Variant_gen.is_mixed Cfg.variant ||
-          Cfg.variant Variant_gen.Morello in
+          Variant_gen.has Variant_gen.Morello Cfg.variant in
       let st = if needs_type then
         let loc = A.of_reg p rA in
         let t = type_of_sz sz in
@@ -1346,7 +1346,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | (OrdinaryAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
         |ArrayCellAccess (`AcquirePC,_)
         |MorelloAccess `AcquirePC) -> Warn.fatal "AcqPC annotation on xload"
-      | (MemoryTagAccess|MorelloTagAccess|MorelloSealAccess) -> Warn.fatal "variant annotation on xload"
+      | (MemoryTagAccess|MemoryTagFaultAccess|MorelloTagAccess|MorelloSealAccess) -> Warn.fatal "variant annotation on xload"
       | atom -> Warn.fatal "Bad annotation for Lx: %s\n" (pp atom)
 
 
@@ -1361,7 +1361,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         |ArrayCellAccess (`Release,_)) as atom ->
           let sz,_ = get_access_size atom in
           stxr_sz LY sz
-      | (MemoryTagAccess|MorelloTagAccess|MorelloSealAccess) -> Warn.fatal "variant annotation on xstore"
+      | (MemoryTagAccess|MemoryTagFaultAccess|MorelloTagAccess|MorelloSealAccess) -> Warn.fatal "variant annotation on xstore"
       | atom -> Warn.fatal "Bad annotation for Sx: %s\n" (pp atom)
 
     let get_xstore_addon atom r2 r3 e init st p = match atom with
@@ -1942,7 +1942,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 end) in
             let init,cs,st = S.emit_store st p init loc (Value.to_int e.C.v) is_morello e in
             Some (None,init,cs,st)
-        | W,MemoryTagAccess ->
+        | W,(MemoryTagAccess|MemoryTagFaultAccess) ->
             let init,cs,st = STG.emit_store st p init e in
             Some (None,init,cs,st)
         | W,PairAccess opt ->
@@ -2519,7 +2519,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) is_morello e in
               Some (None,init,pseudo cs0@cs,st)
-          | W,MemoryTagAccess ->
+          | W,(MemoryTagAccess|MemoryTagFaultAccess) ->
               let init,cs,st = STG.emit_store_idx vdep st p init e r2 in
               Some (None,init,pseudo cs0@cs,st)
           | W,PairAccess opt ->
@@ -2661,7 +2661,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       sxtw r2 r3::cs,st in
                 let cs2 = pseudo cs2 in
                 r2,cs2,init,st,[]
-            | MemoryTagAccess ->
+            | (MemoryTagAccess|MemoryTagFaultAccess) ->
                 let cs0,st = calc0_gen csel st vdep r2 r1 in
                 let rA,init,st =
                   U.next_init st p init
@@ -2749,7 +2749,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_reg st p init loc r2 is_morello e in
               Some (None,init,cs2@cs,st)
-          | MemoryTagAccess ->
+          | (MemoryTagAccess|MemoryTagFaultAccess) ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               Some (None,init,cs2@cs,st)
           | PteAccess (Set (`Plain,pte))
@@ -2852,6 +2852,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let tr_atom = function
       | Some MemoryTagAccess
+      | Some MemoryTagFaultAccess
       | Some (PteAccess _) -> V64
       | atom ->
          begin match get_access_atom atom with
