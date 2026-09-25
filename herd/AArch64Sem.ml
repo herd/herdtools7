@@ -2202,7 +2202,7 @@ Arguments:
 
       let stxr sz t rr rs rd ii =
         do_stxr
-          (read_reg_ord_sz sz rs ii)
+          (read_reg_data_sz sz rs ii)
           (fun an ac ea resa v  -> write_mem_atomic sz an aexp ac ea v resa ii)
           sz t rr rd ii
 
@@ -2212,11 +2212,11 @@ Arguments:
           (M.unitT (V.zero))
           (fun an ac ea resa _ ->
             begin
-              (read_reg_ord_sz sz rs1 ii >>> fun v ->
+              (read_reg_data_sz sz rs1 ii >>> fun v ->
                write_mem_atomic sz an aexp ac ea v resa ii)
               >>||
                 (add_size ea sz >>= fun a ->
-                 read_reg_ord_sz sz rs2 ii >>> fun v ->
+                 read_reg_data_sz sz rs2 ii >>> fun v ->
                  check_morello_for_write
                    (fun a ->
                      check_mixed_write_mem sz an aexp ac a v ii) a v ii)
