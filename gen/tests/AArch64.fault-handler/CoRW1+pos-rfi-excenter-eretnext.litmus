@@ -1,0 +1,14 @@
+(* diyone7 -arch AArch64 -variant memtag -metadata false -oneloc ExcEnter EretNext PosRW Rfi *)
+AArch64 CoRW1+pos-rfi-excenter-eretnext
+Variant=memtag
+{
+ 0:X0=x:green; uint64_t 0:X3=0;
+}
+ P0               | P0.F           ;
+ L00: LDR W1,[X0] | ADD W2,W2,#1   ;
+ MOV W4,#1        | MRS X3,ELR_EL1 ;
+ STR W4,[X0]      | ADD X3,X3,#4   ;
+                  | MSR ELR_EL1,X3 ;
+                  | ERET           ;
+
+exists (0:X2=1)

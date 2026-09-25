@@ -48,12 +48,14 @@ let get_ie edge =
   | Communication (_, ie) -> ie
   | Leave _ | Back _ | Hat -> Ext
   | Insert _ | Store | Node _ -> Int
+  | Exception _ -> Int
 
 let get_sd (edge : E.tedge) =
   match edge with
   | Po (sd, _, _) | Dp (_, sd, _) | Fenced (_, sd, _, _) -> sd
   | Leave _ | Back _ | Hat | Id | Communication _ | Rmw _ -> Same
-  | Insert _ | Store | Node _ -> raise (Invalid_argument "Unexpected edge kind")
+  | Insert _ | Store | Node _
+  | Exception _ -> raise (Invalid_argument "Unexpected edge kind")
 
 let set_src (extr : Code.extr) (e : E.edge) : E.edge =
   match extr with Code.Dir dir -> E.set_src dir e | _ -> e

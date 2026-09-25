@@ -157,6 +157,12 @@ module type S = sig
   val postlude : A.st -> Code.proc -> A.init -> A.pseudo list ->
     A.init * A.pseudo list * A.st
 
+  val emit_exc_enter :
+    A.st -> Code.proc -> A.reg * A.pseudo list * A.st
+
+  val emit_eret :
+    bool -> A.st -> Code.proc -> A.pseudo list * A.st
+
   val get_xstore_results : A.pseudo list -> (A.reg * int) list
   val get_archinfo : C.node -> (string * string) list
 end
