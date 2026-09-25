@@ -263,8 +263,7 @@ module Make(Config:Config)(T:Builder.S)
 
       let build_test check base es mk_info =
         let name_es = es in
-        let es,c = T.C.resolve_edges es in
-        let c,init = T.C.finish c in
+        let es,c,init = T.C.make es in
         let cy = T.E.pp_edges es in
         let info,relax = mk_info in
         let info = Config.info@("Cycle",cy)::info in

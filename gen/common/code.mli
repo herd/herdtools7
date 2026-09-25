@@ -48,6 +48,8 @@ type sd = Same|Diff
 (* Direction of related events *)
 type extr = Dir of dir | Irr | NoDir
 
+type exception_handler = ExcEnter | Eret | EretNext
+
 val equal_ie : ie -> ie -> bool
 val equal_sd : sd -> sd -> bool
 val equal_extr : extr -> extr -> bool
@@ -71,6 +73,10 @@ val fold_sd_extr_macros :
   (sd option -> dir option -> (sd * dir) list -> 'a -> 'a) -> 'a -> 'a
 val fold_sd_extr_extr_macros :
   (sd option -> dir option -> dir option -> (sd * dir * dir) list -> 'a -> 'a) -> 'a -> 'a
+
+val compare_exception_handler : exception_handler -> exception_handler -> int
+val pp_exception_handler : exception_handler -> string
+val fold_exception_handler : (exception_handler -> 'a -> 'a) -> 'a -> 'a
 
 type check =
   | Default | Sc | Uni | Thin | Critical | Free

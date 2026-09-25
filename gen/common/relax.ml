@@ -363,6 +363,11 @@ and type edge = E.edge
               (fun name choices () -> add_wildcard name choices)
               ()
 
+          let add_edge_macros () =
+            E.fold_edge_macros
+              (fun name choices () -> add_wildcard name choices)
+              ()
+
           let add_edge_legacy_aliases () =
             E.fold_edge_legacy_aliases
               (fun name choices () -> add_legacy_syntax name choices)
@@ -378,6 +383,8 @@ and type edge = E.edge
             add_cumulativity_macros () ;
             (* Backward-compatible aliases for instruction-fetch edges. *)
             add_ifetch_macros () ;
+            (* Edge-level macros with one concrete expansion. *)
+            add_edge_macros () ;
             (* Legacy edge-level aliases for relax parsing. *)
             add_edge_legacy_aliases () ;
             (* Edge-level wildcards for relax parsing. *)
