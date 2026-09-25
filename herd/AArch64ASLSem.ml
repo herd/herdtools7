@@ -964,7 +964,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "offset" ^= litbv 64 k;
                   "wback" ^= litb wback;
                   "postindex" ^= litb postindex;
-                  "nontemporal" ^= litb true;
+                  "nontemporal" ^= litb false;
                   "tagchecked" ^= litb (wback || rn <> SP);
                   "wb_unknown" ^= litb false;
                 ])
@@ -978,7 +978,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "regsize" ^= variant v;
                   "datasize" ^= variant v;
                   "offset" ^= litbv 64 k;
-                  "nontemporal" ^= litb true;
+                  "nontemporal" ^= litb false;
                   "tagchecked" ^= litb (rn <> SP);
                 ])
       | I_LDPSW (rt, rt2, rn, (k, idx))

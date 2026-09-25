@@ -277,6 +277,7 @@ module Make (Conf : Config) = struct
       let is_release = access_bool_field accdesc "relsc" map
       and is_acquiresc = access_bool_field accdesc "acqsc" map
       and is_acquirepc = access_bool_field accdesc "acqpc" map
+      and is_nontemporal = access_bool_field accdesc "nontemporal" map
       and is_atomic = access_bool_field accdesc "atomicop" map
       and is_exclusive = access_bool_field accdesc "exclusive" map in
       let is_read =
@@ -318,7 +319,8 @@ module Make (Conf : Config) = struct
           | _ -> false
       in
       let an =
-        if (not is_read) && is_release then is_eax EXL XL L
+        if is_nontemporal then NTA
+        else if (not is_read) && is_release then is_eax EXL XL L
         else if is_noret then NoRet
         else if is_read && is_acquiresc then is_eax EXA XA A
         else if is_read && is_acquirepc then is_ax XQ Q

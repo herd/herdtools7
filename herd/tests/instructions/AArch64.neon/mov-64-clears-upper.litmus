@@ -1,0 +1,13 @@
+AArch64 ADVSIMD-MOV-64-clears-upper
+Variant=neon
+(* A 64-bit vector MOV ignores source bits[127:64] and clears them on write. *)
+{
+  0:X2=1;
+}
+
+P0                  ;
+  MOV V1.D[1],X2    ;
+  MOV V0.8B,V1.8B   ;
+  MOV X1,V0.D[1]    ;
+
+forall (0:X1=0)

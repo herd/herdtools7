@@ -27,7 +27,7 @@ package manager. This means an opam switch needs to be prepared before
 installing the dependencies of the project. For example:
 
     % opam switch create herdtools7 --empty
-    % eval $(opam config env --switch=herdtool7 --set-switch)
+    % eval $(opam config env --switch=herdtools7 --set-switch)
     % opam install . --deps-only
 
 Notice: Compilation with ocamlbuild is not longer possible
@@ -35,7 +35,7 @@ Notice: Compilation with ocamlbuild is not longer possible
 Build
 -----
 
-    % make all
+    % make PREFIX="$HOME/.local/" all
 
 Testing
 -------
@@ -47,7 +47,7 @@ The optional dependency `qcheck` can be installed with `opam` as follows:
 Whether or not optional dependencies are installed, the following command
 runs the tests, skipping the ones that necessitate non-available dependencies.
 
-    % make test
+    % make PREFIX="$HOME/.local/" test
 
 More information on running more kinds of tests can be found at
 [README-tests.md](README-tests.md)

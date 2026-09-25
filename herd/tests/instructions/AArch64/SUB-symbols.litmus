@@ -1,0 +1,14 @@
+AArch64 SUB-symbols
+
+(* The two addresses are in one typed array, so their byte difference is 8. *)
+
+{
+  int64_t x[2]={0,0};
+  0:X0=&x[1];
+  0:X1=&x[0];
+}
+
+P0;
+  SUB X0,X0,X1;
+
+forall (0:X0=8)

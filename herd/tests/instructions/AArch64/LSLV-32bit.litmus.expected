@@ -1,0 +1,10 @@
+Test LSLV-32bit Allowed
+States 1
+0:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=1)
+Observation LSLV-32bit Always 1 0
+Hash=6c37b82bcd6587a88d8404e7b36e8f00
+
