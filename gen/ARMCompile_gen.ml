@@ -413,6 +413,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (* Postlude *)
 
     let postlude = mk_postlude emit_store_reg
+    let emit_exc_enter _ _ = Warn.user_error "Exception handlers are not supported for ARM"
+    let emit_eret _ _ _ = Warn.user_error "Exception handlers are not supported for ARM"
 
     let get_xstore_results _ = []
 

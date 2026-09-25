@@ -410,6 +410,7 @@ diy-test-aarch64:
 		./gen/tests/AArch64.morello \
 		./gen/tests/AArch64.vector \
 		./gen/tests/AArch64.store \
+		./gen/tests/AArch64.fault-handler \
 		$(REGRESSION_TEST_MODE)
 	@ echo "diyone7 AArch64 tests: OK"
 

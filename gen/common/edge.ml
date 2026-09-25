@@ -52,6 +52,7 @@ module type S = sig
     | Communication of com * ie
     | Po of sd*extr*extr | Fenced of fence*sd*extr*extr
     | Dp of dp*sd*extr
+    | Exception of exception_handler
     | Leave of com (* Leave thread *)
     | Back  of com (* Return to thread *)
 (* Fake edges *)
@@ -78,6 +79,7 @@ module type S = sig
 
   val fold_atomo : (atom option -> 'a -> 'a) -> 'a -> 'a
   val fold_atomo_list : atom option list -> (atom option -> 'a -> 'a) -> 'a -> 'a
+  val fold_edge_macros : (string -> edge list list -> 'a -> 'a) -> 'a -> 'a
   val fold_edge_wildcards : (string -> edge list list -> 'a -> 'a) -> 'a -> 'a
   val fold_edge_legacy_aliases :
     (string -> edge list list -> 'a -> 'a) -> 'a -> 'a
@@ -178,11 +180,16 @@ and module Value = A.Value
 and type value = A.Value.v
 and module RMW = A.RMW = struct
   let do_self = Variant_gen.has Variant_gen.Self Cfg.variant
+  let do_memtag = Variant_gen.has Variant_gen.MemTag Cfg.variant
   let do_mixed = Variant_gen.is_mixed Cfg.variant
   let do_kvm =  Variant_gen.is_kvm Cfg.variant
+  let do_exception_handler = do_memtag || do_kvm
   let do_disjoint = Variant_gen.has Variant_gen.MixedDisjoint Cfg.variant
   let do_strict_overlap = Variant_gen.has Variant_gen.MixedStrictOverlap Cfg.variant
   let wildcard = Cfg.wildcard
+
+  let fold_exception_handlers f r =
+    if do_exception_handler then Code.fold_exception_handler f r else r
 
   open Code
 
@@ -232,6 +239,7 @@ and module RMW = A.RMW = struct
     | Communication of com * ie
     | Po of sd*extr*extr | Fenced of fence*sd*extr*extr
     | Dp of dp*sd*extr
+    | Exception of exception_handler
     | Leave of com
     | Back of com
     | Id
@@ -245,10 +253,10 @@ and module RMW = A.RMW = struct
   let is_id = function
     | Id -> true
     | Store|Insert _|Hat|Rmw _|Communication _|Po (_, _, _)
-    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
+    | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _|Exception _ -> false
 
   let is_insert_store = function
-    | Store|Insert _ -> true
+    | Store|Insert _|Exception _ -> true
     | Id|Hat|Rmw _|Communication _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
 
@@ -256,10 +264,10 @@ and module RMW = A.RMW = struct
     | Node _ -> true
     | Id|Hat|Rmw _|Communication _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Insert _
-    | Store -> false
+    | Store|Exception _ -> false
 
   let is_non_pseudo = function
-    | Store|Insert _ |Id|Node _-> false
+    | Store|Insert _|Id|Node _|Exception _ -> false
     | Hat|Rmw _|Communication _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> true
 
@@ -298,6 +306,7 @@ and module RMW = A.RMW = struct
       sprintf "%s%s%s%s" (F.pp_fence f) (pp_sd sd) (pp_extr e1) (pp_extr e2)
     | Dp (dp,sd,e) ->
       sprintf "Dp%s%s%s"(F.pp_dp dp) (pp_sd sd) (pp_extr e)
+    | Exception exception_handler -> pp_exception_handler exception_handler
     | Hat -> "Hat"
     | Rmw rmw-> RMW.pp_rmw false rmw
     | Leave c -> sprintf "%sLeave" (pp_com c)
@@ -344,8 +353,7 @@ and module RMW = A.RMW = struct
   | Rmw _  -> Dir W
   | Communication (c, _)
   | Leave c|Back c -> do_dir_tgt_com c
-  | Id -> NoDir
-  | Insert _ -> NoDir
+  | Id|Insert _|Exception _ -> NoDir
   | Store -> Dir W
   | Node d -> Dir d
 
@@ -355,14 +363,14 @@ and module RMW = A.RMW = struct
   | Dp _|Hat|Rmw _ -> Dir R
   | Communication(c, _)
   | Leave c|Back c -> do_dir_src_com c
-  | Id -> NoDir
-  | Insert _ -> NoDir
+  | Id|Insert _|Exception _ -> NoDir
   | Store -> Dir W
   | Node d -> Dir d
 
   let do_loc_sd e = match e with
   | Po (sd,_,_) | Fenced (_,sd,_,_) | Dp (_,sd,_) -> sd
-  | Insert _|Store|Node _|Communication _|Hat|Rmw _|Id|Leave _|Back _ -> Same
+  | Insert _|Store|Node _|Communication _|Hat|Rmw _|Id
+  | Leave _|Back _|Exception _ -> Same
 
   let do_is_diff e = Code.is_diff_loc @@ do_loc_sd e
 
@@ -378,6 +386,9 @@ let fold_tedges f r =
   |> RMW.fold_rmw (fun rmw -> f (Rmw rmw))
   (* Program-order edges. *)
   |> fold_sd_extr_extr (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r)
+  (* Exception-handler pseudo-edges. *)
+  |> fold_exception_handlers
+    (fun exception_handler r -> f (Exception exception_handler) r)
   (* Fence insertion pseudo-edges. *)
   |> F.fold_all_fences (fun fe -> f (Insert fe))
   (* Store insertion pseudo-edge. *)
@@ -427,6 +438,7 @@ let fold_tedges f r =
       Code.equal_extr e11 e21 && Code.equal_extr e12 e22
   | Dp (dp1,sd1,e1),Dp (dp2,sd2,e2) ->
       F.equal_dp dp1 dp2 && Code.equal_sd sd1 sd2 && Code.equal_extr e1 e2
+  | Exception x1,Exception x2 -> compare_exception_handler x1 x2 = 0
   | Leave c1,Leave c2
   | Back c1,Back c2 -> Code.equal_com c1 c2
   | Id,Id
@@ -436,7 +448,7 @@ let fold_tedges f r =
   | Node d1,Node d2 -> Code.equal_extr (Dir d1) (Dir d2)
   | Rmw rmw1,Rmw rmw2 -> RMW.equal_rmw rmw1 rmw2
   | (Communication _|Po _|Fenced _|Dp _|Leave _|Back _|Id
-    |Insert _|Store|Node _|Hat|Rmw _),_ -> false
+    |Insert _|Store|Node _|Hat|Rmw _|Exception _),_ -> false
 
   let equal_edge_atoms lhs rhs =
     equal_tedge lhs.edge rhs.edge &&
@@ -658,13 +670,13 @@ let fold_tedges f r =
   | Fenced(f,sd,src,_) -> Fenced(f,sd,src,Dir d)
   | Dp (dp,sd,_) -> Dp (dp,sd,Dir d)
   | Communication _ | Hat
-  | Insert _|Store|Id|Node _|Rmw _|Leave _|Back _-> e
+  | Insert _|Store|Id|Node _|Rmw _|Leave _|Back _|Exception _ -> e
 
   and do_set_src d e = match e with
   | Po(sd,_,tgt) -> Po(sd,Dir d,tgt)
   | Fenced(f,sd,_,tgt) -> Fenced(f,sd,Dir d,tgt)
   | Communication _|Hat|Dp _
-  | Insert _|Store|Id|Node _|Rmw _|Leave _|Back _ -> e
+  | Insert _|Store|Id|Node _|Rmw _|Leave _|Back _|Exception _ -> e
 
   let set_tgt d e = { e with edge = do_set_tgt d e.edge ; }
   and set_src d e = { e with edge = do_set_src d e.edge ; }
@@ -672,7 +684,7 @@ let fold_tedges f r =
   let loc_sd e = do_loc_sd e.edge
 
   let get_ie e = match e.edge with
-  | Id |Po _|Dp _|Fenced _|Rmw _ -> Int
+  | Id |Po _|Dp _|Fenced _|Rmw _|Exception _ -> Int
   | Communication (_,ie) -> ie
   | Leave _|Back _|Hat -> Ext
   | Insert _|Store|Node _ -> Int
@@ -805,6 +817,48 @@ let fold_tedges f r =
             (fun (sd,d1,d2) -> [plain_edge (Po (sd,Dir d1,Dir d2))])
             choices in
         f (pp_po_macro sd d1 d2) choices k)
+      k
+
+  let make_exception_handler_choice exception_handler sd d1 d2 =
+    [plain_edge (Exception exception_handler);
+     plain_edge (Po (sd,d1,d2))]
+
+  let fold_exception_handler_macros f r =
+    if do_exception_handler then f ExcEnter (f EretNext r) else r
+
+  let add_exception_handler_macros f k =
+    fold_exception_handler_macros
+      (fun exception_handler k ->
+        fold_sd_extr_extr
+          (fun sd d1 d2 k ->
+            let name =
+              sprintf "%s%s%s%s"
+                (pp_exception_handler exception_handler)
+                (pp_sd sd) (pp_extr d1) (pp_extr d2) in
+            f name
+              [make_exception_handler_choice exception_handler sd d1 d2] k)
+          k)
+      k
+
+  let fold_edge_macros = add_exception_handler_macros
+
+  let add_exception_handler_wildcards f k =
+    fold_exception_handler_macros
+      (fun exception_handler k ->
+        fold_sd_extr_extr_macros
+          (fun sd d1 d2 choices k ->
+            let name =
+              sprintf "%s%s%s%s"
+                (pp_exception_handler exception_handler)
+                (pp_sd_macro sd) (pp_dir_macro d1) (pp_dir_macro d2) in
+            let choices =
+              List.map
+                (fun (sd,d1,d2) ->
+                  make_exception_handler_choice
+                    exception_handler sd (Dir d1) (Dir d2))
+                choices in
+            f name choices k)
+          k)
       k
 
   let add_fence_macros f k =
@@ -951,6 +1005,8 @@ let fold_tedges f r =
         add_dp_macros pp_dp_macro dp f)
     (* Add `Po` related macro *)
     |> add_po_macros f
+    (* Add exception-handler macros carrying program-order components. *)
+    |> add_exception_handler_wildcards f
     (* Add fence-related macro *)
     |> add_fence_macros f
 

@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -variant memtag -metadata false -oneloc PosRW Eret Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+pos-eret-rfi [PosRW Eret Rfi] failed:
+Exception-handler return without a preceding ExcEnter.
+*)
