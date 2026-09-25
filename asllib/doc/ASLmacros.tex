@@ -1306,6 +1306,8 @@
 
 \newcommand\REasciichar[0]{\hyperlink{def-reasciichar}{\texttt{<}\textsf{ascii\_char}\texttt{>}}}
 \newcommand\REchar[0]{\hyperlink{def-rechar}{\texttt{<}\textsf{char}\texttt{>}}}
+\newcommand\RElinechar[0]{\hyperlink{def-relinechar}{\texttt{<}\textsf{line\_char}\texttt{>}}}
+\newcommand\RElineterm[0]{\hyperlink{def-relineterm}{\texttt{<}\textsf{line\_term}\texttt{>}}}
 \newcommand\REdigit[0]{\hyperlink{def-redigit}{\texttt{<}\textsf{digit}\texttt{>}}}
 \newcommand\REintlit[0]{\hyperlink{def-reintlit}{\texttt{<}\textsf{int\_lit}\texttt{>}}}
 \newcommand\REhexletter[0]{\hyperlink{def-rehexletter}{\texttt{<}\textsf{hex\_letter}\texttt{>}}}
@@ -1315,7 +1317,9 @@
 \newcommand\REforbiddenhexfirst[0]{\hyperlink{def-forbiddenhexfirst}{\texttt{<}\textsf{forbidden\_hex\_first}\texttt{>}}}
 \newcommand\REforbiddenrealremaining[0]{\hyperlink{def-forbiddenrealremaining}{\texttt{<}\textsf{forbidden\_real\_remaining}\texttt{>}}}
 \newcommand\REforbiddenrealfirst[0]{\hyperlink{def-forbiddenrealfirst}{\texttt{<}\textsf{forbidden\_real\_first}\texttt{>}}}
-\newcommand\REstrchar[0]{\hyperlink{def-restrchar}{\texttt{<}\textsf{str\_char}\texttt{>}}}
+\newcommand\REunescapedstringchar[0]{\hyperlink{def-reunescapedstringchar}{\texttt{<}\textsf{unescaped\_string\_char}\texttt{>}}}
+\newcommand\REstringescape[0]{\hyperlink{def-restringescape}{\texttt{<}\textsf{string\_escape}\texttt{>}}}
+\newcommand\REstringelement[0]{\hyperlink{def-restringelement}{\texttt{<}\textsf{string\_element}\texttt{>}}}
 \newcommand\REstringlit[0]{\hyperlink{def-restringlit}{\texttt{<}\textsf{string\_lit}\texttt{>}}}
 \newcommand\REbit[0]{\hyperlink{def-rebit}{\texttt{<}\textsf{bit}\texttt{>}}}
 \newcommand\REbitvectorlit[0]{\hyperlink{def-rebitvectorlit}{\texttt{<}\textsf{bitvector\_lit}\texttt{>}}}
@@ -1339,7 +1343,6 @@
 \newcommand\discard[0]{\hyperlink{def-discard}{\textfunc{discard}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\hextolit[0]{\hyperlink{def-hextolit}{\textfunc{hex\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\realtolit[0]{\hyperlink{def-realtolit}{\textfunc{real\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
-\newcommand\strtolit[0]{\hyperlink{def-strtolit}{\textfunc{str\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\bitstolit[0]{\hyperlink{def-bitstolit}{\textfunc{bits\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\masktolit[0]{\hyperlink{def-masktolit}{\textfunc{mask\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\truetolit[0]{\hyperlink{def-truetolit}{\textfunc{true\_lit}}} % NO_SPECIFICATION_REQUIRED
@@ -1355,14 +1358,15 @@
 \newcommand\Lang[1]{\hyperlink{def-lang}{\textsf{Lang}}\left(#1\right)}
 \newcommand\RegExp[0]{\hyperlink{def-regex}{\textsf{RegExp}}}
 \newcommand\ascii[1]{\hyperlink{def-ascii}{\textsf{ASCII}}\texttt{\{#1\}}}
-\newcommand\vnewline[0]{\hyperlink{constant-newline}{\texttt{newline}}}
+\newcommand\vaddlinefeed[0]{\texttt{add\_line\_feed}}
+\newcommand\linefeed[0]{\makelist{\ascii{10}}}
 
 \newcommand\spectoken[0]{\hyperlink{def-spectoken}{\textsc{spec\_token}}}
 \newcommand\specstring[0]{\hyperlink{def-specstring}{\textsc{spec\_string}}}
 \newcommand\speccomment[0]{\hyperlink{def-speccomment}{\textsc{spec\_comment}}}
 
 \newcommand\actiondiscard[0]{\hyperlink{def-actiondiscard}{\textfunc{discard}}} % NO_SPECIFICATION_REQUIRED
-\newcommand\discardcommentchar[0]{\hyperlink{def-discardcommentchar}{\textfunc{discard\_comment\_char}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\discardcommentelement[0]{\hyperlink{def-discardcommentelement}{\textfunc{discard\_comment\_element}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\actiontoken[0]{\hyperlink{def-actiontoken}{\textfunc{return\_token}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\actionstartstring[0]{\hyperlink{def-actionstartstring}{\textfunc{start\_string}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\actionstartcomment[0]{\hyperlink{def-actionstartcomment}{\textfunc{start\_comment}}} % NO_SPECIFICATION_REQUIRED
@@ -1975,7 +1979,7 @@
 \newcommand\returnstatement[1]{\hyperlink{def-returnstatementterm}{return statement} for the optional expression #1}
 \newcommand\printstatementterm[0]{\hyperlink{def-printstatementterm}{print statement}}
 \newcommand\printstatementsterm[0]{\hyperlink{def-printstatementterm}{print statements}}
-\newcommand\printstatement[2]{\hyperlink{def-printstatementterm}{print statement} with list of expressions #1 and newline flag #2}
+\newcommand\printstatement[2]{\hyperlink{def-printstatementterm}{print statement} with list of expressions #1 and add-line-feed flag #2}
 \newcommand\unreachablestatementterm[0]{\hyperlink{def-unreachablestatementterm}{unreachable statement}}
 \newcommand\pragmastatementterm[0]{\hyperlink{def-pragmastatementterm}{pragma statement}}
 \newcommand\pragmastatement[2]{\hyperlink{def-pragmastatementterm}{pragma statement} for the pragma #1 and list of expressions #2}

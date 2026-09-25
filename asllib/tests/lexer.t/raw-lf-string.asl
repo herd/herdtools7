@@ -1,0 +1,2 @@
+constant msg = "first
+second";

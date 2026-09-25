@@ -65,9 +65,21 @@ Let $\REchar$ stand for an ASCII character that may appear in the content text:
 \hypertarget{def-rechar}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REchar$       &$\triangleq$& \ascii{10} \texttt{|} \ascii{13} \texttt{|} \ascii{32-126}\\
+$\REchar$ &$\triangleq$& \ascii{10} \texttt{|} \ascii{13} \texttt{|} \ascii{32-126}\\
 \end{tabular}
 \end{center}
+
+We distinguish characters within a source line from sequences that terminate a source line:
+\hypertarget{def-relinechar}{}
+\hypertarget{def-relineterm}{}
+\begin{center}
+\begin{tabular}{rcl}
+$\RElinechar$ &$\triangleq$& $\REchar$ \regexminus{} (\ascii{10} \texttt{|} \ascii{13})\\
+$\RElineterm$ &$\triangleq$& \ascii{13} \ascii{10} \texttt{|} \ascii{10}\\
+\end{tabular}
+\end{center}
+
+The sequence \ascii{13} \ascii{10} is a single line terminator.
 
 \hypertarget{def-lang}{}
 The notation $\Lang{e}$ stands for the \emph{formal language} of a regular expression $e$.
@@ -76,9 +88,8 @@ That is, the set of strings that match that regular expression.
 \SectionDef[defines whitespace]
   {Whitespace}{Whitespace}
 \RequirementDef{Whitespace}
-Comments and whitespace characters are collectively referred to as whitespace lexemes
-and are discarded. Technically, line comments and multi-line comments are treated
-separately from whitespace characters.
+A whitespace lexeme is a non-empty sequence of space characters and line terminators.
+Whitespace lexemes are discarded during lexical analysis.
 
 For example,
 the specification in \listingref{syntax-whitespace1}
@@ -88,35 +99,36 @@ Of course, \listingref{syntax-whitespace2} is preferred in terms of style.
 \ASLListing{A badly-formatted specification}{syntax-whitespace1}{\syntaxtests/GuideRule.Whitespace1.asl}
 \ASLListing{A well-formatted specification}{syntax-whitespace2}{\syntaxtests/GuideRule.Whitespace2.asl}
 
-Formally, whitespace lexemes other than comments are defined via the following regular expression:
+Formally, whitespace lexemes are defined via the following regular expression:
 \hypertarget{def-rewhitespace}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REwhitespace$ & $\triangleq$ & (\ascii{10} $|$ \ascii{13} $|$ \ascii{32})+\\
+$\REwhitespace$ & $\triangleq$ & (\ascii{32} $|$ \RElineterm)+\\
 \end{tabular}
 \end{center}
 
-\SectionDef[defines comments]
-  {Comments}{Comments}
-ASL supports comments in the style of C++:
-\begin{itemize}
-\item Single-line comments: the text from \text{//} until the end of the line
-is a comment (\ascii{10} is the line feed character \verb|\n|).
-\item Multi-line comments: the text between \texttt{/*} and \texttt{*/} is a comment.
-\end{itemize}
+\section{Comments\label{sec:Comments}}
+ASL supports line comments and multi-line comments in the style of C++.
+Comments are discarded during lexical analysis.
 Comments do not nest and the two styles of comments do not interact with each other,
 as exemplified in \listingref{LexicalComments}.
 
 \ASLListing{Examples of comments}{LexicalComments}{\syntaxtests/Lexical.Comments.asl}
 
+\subsection{Line Comments}
+A line comment starts with \texttt{//} and continues up to, but does not include,
+the next line terminator or $\eof$.
+
 Line comments are formally defined via the following regular expression:
 \hypertarget{def-relinecomment}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\RElinecomment$  &$\triangleq$& \texttt{"//"} (\REchar\ \regexminus{} \ascii{10})*\\
+$\RElinecomment$ &$\triangleq$& \texttt{"//"} \RElinechar{}*\\
 \end{tabular}
 \end{center}
 
+\subsection{Multi-line Comments}
+A multi-line comment starts with \texttt{/*} and ends with the first subsequent \texttt{*/}.
 Multi-line comments are defined by \hyperlink{start-multiline-comment}{intercepting \texttt{"/*"}} (see \secref{scanningmultilinecomments}).
 
 \SectionDef[defines integer literals]
@@ -226,20 +238,18 @@ Similarly, \verb|'0xx(1)'| is equivalent to \verb|'0xxx'|.
 
 Bitmasks follow \RequirementRef{BitvectorOrdering}.
 
-\SectionDef[defines string literals]
-  {String Literals}{String Literals}
-String literals consist of printable characters surrounded by double quotes.
-They are used to create string values, which are strings of zero or more characters,
-where a character is a printable ASCII character,
-tab (ASCII code \texttt{9}),
-newline (ASCII code \texttt{10}),
-the backslash character (ASCII code \texttt{92}),
-and double-quote character (ASCII code \texttt{34}).
-Unprintable characters (tabs and newlines) are not permitted in string literals,
-so they are represented by treating the backslash character \textbackslash, as an escape character.
-Note therefore that string literals cannot span multiple source lines.
+\section{String Literals\label{sec:String Literals}}
+String literals consist of string elements enclosed in double quotes and denote string values.
+Each string element is either an unescaped string character or an escape sequence
+and contributes exactly one character to the string value.
 
-The escape sequences allowed in string literals appear in \taref{EscapeSequences}.
+A line terminator cannot occur within a string literal.
+Consequently, a string literal cannot span multiple source lines.
+
+The double-quote and backslash characters are syntactically significant within a string literal.
+Escape sequences allow them, as well as tab and line feed characters, to be included in the string value.
+
+The escape sequences permitted in string literals appear in \taref{EscapeSequences}.
 \begin{table}
 \caption{Escape Sequences in String Literals\label{ta:EscapeSequences}}
 \begin{center}
@@ -247,20 +257,24 @@ The escape sequences allowed in string literals appear in \taref{EscapeSequences
 \hline
 \textbf{Escape sequence} & \textbf{Meaning}\\
 \hline
-\verb|\n| & The newline, ASCII code \texttt{10}\\
-\verb|\t| & The tab, ASCII code \texttt{9}\\
+\verb|\n| & The line feed character, ASCII code \texttt{10}\\
+\verb|\t| & The tab character, ASCII code \texttt{9}\\
 \verb|\\| & The backslash character, \verb|\|, ASCII code \texttt{92}\\
 \verb|\"| & The double-quote character, \texttt{"}, ASCII code \texttt{34}\\
 \end{tabular}
 \end{center}
 \end{table}
 
+\hypertarget{def-reunescapedstringchar}{}
+\hypertarget{def-restringescape}{}
+\hypertarget{def-restringelement}{}
 \hypertarget{def-restringlit}{}
-\hypertarget{def-restrchar}{}
 \begin{center}
 \begin{tabular}{rcl}
-$\REstrchar$ &$\triangleq$& \ascii{32-126}\\
-$\REstringlit$ &$\triangleq$& \anycharacter{\texttt{"}} ( ($\REstrchar$ \regexminus{} \anycharacter{\texttt{"}\ \backslash\ }) $|$ (\anycharacter{\backslash\ } \anycharacter{\texttt{" n t }\backslash\ })  )* \anycharacter{\texttt{"}}
+$\REunescapedstringchar$ &$\triangleq$& $\RElinechar\ \regexminus{}$ \anycharacter{\texttt{"}\ \backslash\ }\\
+$\REstringescape$ &$\triangleq$& \anycharacter{\backslash\ } \anycharacter{\texttt{" n t }\backslash\ }\\
+$\REstringelement$ &$\triangleq$& \REunescapedstringchar{} \texttt{|} \REstringescape\\
+$\REstringlit$ &$\triangleq$& \anycharacter{\texttt{"}} \REstringelement{}* \anycharacter{\texttt{"}}
 \end{tabular}
 \end{center}
 
@@ -358,8 +372,8 @@ The set of tokens used for the lexical analysis of ASL strings is defined below.
 \begin{array}{rcll}
 \Token &\triangleq& \{\ \Tintlit(n) \;|\; n\in\Z\ \} & \cup\\
         & & \{\ \Treallit(q) \;|\; q\in\Q\ \} & \cup\\
-        & & \{\ \Tstringlit(s) \;|\; s\in \Lang{\REstringlit} \} & \cup\\
-        & & \{\ \Tstringchar(c) \;|\; c \in \Lang{\REchar} \} & \cup\\
+        & & \{\ \Tstringlit(s) \;|\; s\in \Strings \} & \cup\\
+        & & \{\ \Tstringchar(c) \;|\; c \in \Lang{\REasciichar} \} & \cup\\
         & & \{\ \Tstringend \} & \cup\\
         & & \{\ \Tbitvectorlit(b) \;|\; b\in\KleeneStar{\Bit}\ \} & \cup\\
         & & \{\ \Tmasklit(m) \;|\; m\in\KleeneStar{\{0,1,x\}}\ \} & \cup\\
@@ -374,11 +388,11 @@ The set of tokens used for the lexical analysis of ASL strings is defined below.
 \begin{itemize}
   \item Tokens of the form $\Tintlit(n)$ represent integer literals; \hypertarget{def-treallit}{}
   \item Tokens of the form $\Treallit(q)$ represent rational number literals; \hypertarget{def-tstringlit}{}
-  \item Tokens of the form $\Tstringlit(s)$ represent string literals;
+  \item Tokens of the form $\Tstringlit(s)$ carry the string value denoted by a string literal;
   \hypertarget{def-tstringchar}{}
-  \item Tokens of the form $\Tstringchar(c)$ represent a single character in a string literal;
+  \item Tokens of the form $\Tstringchar(c)$ represent a single character in a string value;
   \hypertarget{def-tstringend}{}
-  \item The token $\Tstringend$ represents the closing quotes of a string literal;
+  \item The token $\Tstringend$ represents the closing double quote of a string literal;
   \hypertarget{def-tbitvectorlit}{}
   \item Tokens of the form $\Tbitvectorlit(b)$ represent bitvector literals; \hypertarget{def-tmasklit}{}
   \item Tokens of the form $\Tmasklit(m)$ represent constant bitmasks; \hypertarget{def-tboollit}{}
@@ -448,8 +462,8 @@ identifying the respective tokens via shortest match.
 For this purpose, most lexical analysers split the analysis into separate ``states'' ---
 one for keywords, symbols, single-line comments, and identifiers, one for string literals,
 and one for multi-line comments. The lexical analysers switch between the states as
-needed, and analysing string literals involves concatenating the individual characters
-of the string literal into a single token.
+needed, and analysing a string literal involves converting its string elements to characters and
+concatenating the resulting characters into a string value token.
 
 Lexical analysis of ASL follows this approach by defining three specifications:
 \begin{itemize}
@@ -459,7 +473,7 @@ Lexical analysis of ASL follows this approach by defining three specifications:
 \end{itemize}
 
 Additionally, lexical analysis of string literals carries the extra state ---
-the string characters encountered along the way.
+the string value accumulated so far.
 
 The rest of this section defines each of the lexical specifications and related lexeme actions.
 
@@ -508,7 +522,7 @@ The lexeme action
 \[
 \actionstartstring(s_1, s_2) \triangleq \scanstring(\emptylist, s_2)
 \]
-switches to scanning literal strings via $\scanstring$.
+switches to scanning string literals via $\scanstring$.
 
 \item The lexeme action
 \hypertarget{def-actionstartcomment}{}
@@ -527,8 +541,6 @@ in hexadecimal representation.
 \hypertarget{def-realtolit}{}
 \item The function $\realtolit(s)$ returns $\Treallit(q)$ where $q$ is the rational number for
 $s$, which is given via a floating point representation.
-\hypertarget{def-strtolit}{}
-\item The function $\strtolit(s)$ returns $\Tstringlit(s')$ where $s'$ is the string value represented by $s$.
 \hypertarget{def-bitstolit}{}
 \item The function $\bitstolit(s)$ returns $\Tbitvectorlit(b)$ where $b$ is the sequence of bits
       given by $s$.
@@ -596,7 +608,6 @@ $\texttt{"/*"}$                       & $\actionstartcomment$\\
 $\REintlit$                           & $\actiontoken(\decimaltolitname)$ \\
 $\REhexlit$                           & $\actiontoken(\hextolit)$ \\
 $\REreallit$                          & $\actiontoken(\realtolit)$ \\
-$\REstringlit$                        & $\actiontoken(\strtolit)$ \\
 $\REbitvectorlit$                     & $\actiontoken(\bitstolit)$ \\
 $\REbitmasklit$                       & $\actiontoken(\masktolit)$ \\
 \texttt{"!"}, \texttt{","}, \texttt{"<"}, \shiftrightlexeme, \texttt{"\&\&"}, \texttt{"==>"}, \shiftleftlexeme{}                         & $\actiontoken(\tokenid)$  \\
@@ -680,7 +691,7 @@ The function
 \scanstring(\overname{\KleeneStar{\REasciichar}}{\buff}, \overname{\KleeneStar{\REasciichar}}{s}) \aslto
 (\KleeneStar{\Token} \cup \overname{\TLexicalError}{\LexicalErrorConfig})
 \]
-scans string with the $\specstring$ specification while building the final string literal in $\buff$.
+scans a string literal with the $\specstring$ specification while building the resulting string value in $\buff$.
 It is defined via the following rules:
 \begin{mathpar}
 \inferrule[no\_match]{
@@ -721,23 +732,21 @@ The lexeme action
 \stringchar(s_1, s_2) \triangleq \Tstringchar(s_1)
 \]
 returns $s_1$, which is always a single character, as a $\Tstringchar$
-token, which is added to the characters that make up the final string
-literal.
+token, which is added to the characters that make up the resulting string value.
 
 \item
 \hypertarget{def-stringescape}{}
 The lexeme action
 \[
 \stringescape(s_1, s_2) \triangleq \begin{cases}
-  \Tstringchar(10) & s_1 = \texttt{\textbackslash\;\;n}\\
-  \Tstringchar(9) & s_1 = \texttt{\textbackslash\;\;t}\\
-  \Tstringchar(34) & s_1 = \texttt{\textbackslash\;\;"}\\
-  \Tstringchar(92) & s_1 = \texttt{\textbackslash\;\;\textbackslash}\\
+  \Tstringchar(\ascii{10}) & s_1 = \texttt{\textbackslash\;\;n}\\
+  \Tstringchar(\ascii{9}) & s_1 = \texttt{\textbackslash\;\;t}\\
+  \Tstringchar(\ascii{34}) & s_1 = \texttt{\textbackslash\;\;"}\\
+  \Tstringchar(\ascii{92}) & s_1 = \texttt{\textbackslash\;\;\textbackslash}\\
 \end{cases}
 \]
-returns the ASCII character for the corresponding escape string, in decimal encoding,
-as a $\Tstringchar$ token, which is added to the characters that make up the final string
-literal.
+returns a $\Tstringchar$ token containing the ASCII character for the corresponding escape sequence.
+The character is added to those that make up the final string value.
 
 \item
 \hypertarget{def-stringfinish}{}
@@ -756,22 +765,19 @@ The lexical specification for string literals --- $\specstring$ --- is given by 
 \begin{tabular}{ll}
 \textbf{Lexical Regular Expression} & \textbf{Lexeme Action}\\
 \hline
-\anycharacter{\backslash\ } \anycharacter{{\color{white}\backslash}\texttt{n }}  &  $\stringescape$\\
-\anycharacter{\backslash\ } \anycharacter{{\color{white}\backslash}\texttt{t }}  &  $\stringescape$\\
-\anycharacter{\backslash\ } \anycharacter{{\color{white}\backslash}\texttt{" }}  &  $\stringescape$\\
-\anycharacter{\backslash\ } \anycharacter{\ \backslash\ }  & $\stringescape$ \\
-\anycharacter{{\color{white}\backslash}\texttt{" }}   &  $\stringfinish$\\
-$\REstrchar\ \regexminus{}$ \anycharacter{\texttt{"}\ \backslash\ } &  $\stringchar$\\
+$\REstringescape$          & $\stringescape$\\
+\anycharacter{{\color{white}\backslash}\texttt{" }} & $\stringfinish$\\
+$\REunescapedstringchar$   & $\stringchar$\\
 \end{tabular}
 \end{center}
 
 \subsection{Scanning Multi-line Comments\label{sec:scanningmultilinecomments}}
 The lexeme action
-\hypertarget{def-discardcommentchar}{}
+\hypertarget{def-discardcommentelement}{}
 \[
-\discardcommentchar(s_1, s_2) \triangleq \aslscan(\speccomment, s_2)
+\discardcommentelement(s_1, s_2) \triangleq \aslscan(\speccomment, s_2)
 \]
-discards the string $s_1$ (which is always a single character) and continues scanning $s_2$ with $\speccomment$.
+discards the string $s_1$ and continues scanning $s_2$ with $\speccomment$.
 This is the same as $\discard$, except that $s_2$ is scanned with $\speccomment$ instead of $\spectoken$.
 
 \hypertarget{def-speccomment}{}
@@ -785,7 +791,8 @@ to scanning with $\spectoken$.
 \textbf{Lexical Regular Expression} & \textbf{Lexeme Action}\\
 \hline
 \texttt{"*/"} & $\actiondiscard$ \\
-$\REchar$     & $\discardcommentchar$ \\
+$\RElinechar$ & $\discardcommentelement$ \\
+$\RElineterm$ & $\discardcommentelement$ \\
 \hline
 \end{tabular}
 \end{center}

@@ -28,6 +28,7 @@ accessors
 accompanied
 according
 account
+accumulated
 accumulator
 achieve
 achieved
@@ -223,6 +224,7 @@ before
 begin
 beginning
 behave
+behaves
 behaviour
 behaviours
 being
@@ -746,6 +748,7 @@ encounters
 end
 endian
 ending
+ends
 enforce
 enforced
 england
@@ -1716,6 +1719,7 @@ quality
 quantifiers
 query
 quite
+quotation
 quotations
 quote
 quotes
@@ -2178,6 +2182,7 @@ terminals
 terminate
 terminates
 terminating
+terminator
 terms
 test
 tested
@@ -2314,6 +2319,7 @@ underscores
 understand
 understanding
 undertaken
+unescaped
 unevaluated
 unexpected
 uniformly
