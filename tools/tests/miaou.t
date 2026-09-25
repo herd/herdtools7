@@ -1167,3 +1167,54 @@
   \item \expandafter{\MakeUppercase\ca{E\textsubscript{1}}{E\textsubscript{2}}}.
   \item \HU{E\textsubscript{2}}.
   \end{itemize}
+
+  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -inline W-after-R -show coRW aarch64.cat
+  It is architecturally forbidden that \expandafter{\MakeUppercase\rf{E\textsubscript{2}}{E\textsubscript{1}}} if one of the following applies:
+  \begin{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ExpR{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \expandafter{\MakeUppercase\sameloc{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \ExpW{E\textsubscript{2}}.
+    \end{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ExpR{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\rmw{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \ExpW{E\textsubscript{2}}.
+    \end{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ImpTagR{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \expandafter{\MakeUppercase\sameloc{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \ExpTagW{E\textsubscript{2}}.
+    \end{itemize}
+  \end{itemize}
+
+  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -inline M-after-W -show coWM aarch64.cat
+  It is architecturally forbidden that \expandafter{\MakeUppercase\ca{E\textsubscript{2}}{E\textsubscript{1}}} if one of the following applies:
+  \begin{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ExpW{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \expandafter{\MakeUppercase\sameloc{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \ExpR{E\textsubscript{2}}.
+    \end{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ExpTagW{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \expandafter{\MakeUppercase\sameloc{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \ImpTagR{E\textsubscript{2}}.
+    \end{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ExpW{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \expandafter{\MakeUppercase\sameloc{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \ExpW{E\textsubscript{2}}.
+    \end{itemize}
+  \end{itemize}
