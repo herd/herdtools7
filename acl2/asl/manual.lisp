@@ -26,6 +26,8 @@
 
 (include-book "toplevel")
 (include-book "trace-subset")
+(include-book "arbvals-proof-top")
+(include-book "trace-arbvals-interp")
 (include-book "stack-preserved")
 (include-book "stack-normalize")
 (include-book "proofs/stdlib/top")

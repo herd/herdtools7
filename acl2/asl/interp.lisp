@@ -1649,9 +1649,9 @@ be updated since expressions can include function calls."
              (evo_normal (expr_result (v_array (make-list lenv :initial-element v.val)) len.env)))
            :e_arbitrary ;; sol
            (b* (((evoo ty) (resolve-ty env desc.type))
-                ((mv val orac) (ty-oracle-val ty orac))
-                ((unless val)
-                 (evo_error "DE_AET: " desc (list pos))))
+                ((unless (ty-satisfiable ty))
+                 (evo_error "DE_AET: " desc (list pos)))
+                ((mv val orac) (ty-oracle-val ty orac)))
              (evo_normal (expr_result val env)))
            :e_atc ;;anna
            (b* (((evoo (expr_result v)) (eval_expr env desc.expr))
@@ -2214,7 +2214,6 @@ global) environment."
                        ((evoo (expr_result endr))   (eval_expr env s.end_e))
                        ((evoo limit)                (eval_limit env s.limit))
                        (env (push_scope env))
-;;; BOZO FIXME TODO: Add loop limit
                        (env (declare_local_identifier env s.index_name startr.val))
                        ;; Type constraints ensure that start and end are integers,
                        ;; will do this here so we don't have to wrap them in values
@@ -2466,7 +2465,7 @@ within this statement will then disappear after the statement is completed."
                                  (val-case c.val
                                    :v_int (if (equal c.val.val i)
                                               (evo_normal t)
-                                            (check_int_constraints env i (cdr constrs)))
+                                            (evtailcall (check_int_constraints env i (cdr constrs))))
                                    :otherwise (evo_error "Constraint_exact evaluated to unexpected type"
                                                          constr (list (expr->pos_start constr.val)))))
              :constraint_range (b* (((evoo (expr_result from)) (eval_expr env constr.from))

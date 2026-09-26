@@ -1053,12 +1053,12 @@ versions @(see eval_subprogram-*t1) and @(see eval_stmt-*t1).</p>")))
           (form (add-define-xdoc
                  "Tracing version of @(see <NAME>); see @(see asl-interpreter-mutual-recursion-*t) for overview."
                  form))
-          ;; Replace '(define eval_subprogram ...' with '(define eval_subprogram-*ft1'
-          ;; since it's going to be wrapped in a call that deals with collecting the trace data.
-          (form (find-def-and-rename 'eval_subprogram '*t form))
-          (form (find-def-and-rename 'eval_stmt '*t form))
           ;; Substitute function names with their -*t suffixed forms.
           (form (sublis *eval-trace-substitution* form))
+          ;; Replace '(define eval_subprogram ...' with '(define eval_subprogram-*ft1'
+          ;; since it's going to be wrapped in a call that deals with collecting the trace data.
+          (form (find-def-and-rename 'eval_subprogram-*t "1" form))
+          (form (find-def-and-rename 'eval_stmt-*t "1" form))
           ;; Replace all invocations of (global-env->static (env->global env)) with the variable static-env.
           (form (replace-static-envs form))
           ;; Add guard saying static-env equals the one in env.

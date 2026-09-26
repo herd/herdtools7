@@ -176,6 +176,8 @@
                   (b* ((pos (expr->pos_start e))
                        ((e_arbitrary e) (expr->desc e))
                        ((mv (evo ty) orac) (resolve-ty env e.type))
+                       ((unless (ty-satisfiable ty))
+                        (evo_error "DE_AET: " e (list pos)))
                        ((mv val orac) (ty-oracle-val ty orac))
                        ((unless (val-p val))
                         (evo_error "DE_AET: " e (list pos))))
@@ -191,6 +193,9 @@
                        (env (env-replace-static static-env env))
                        ((evoo-*t ty)
                         (resolve-ty-*t env desc.type))
+                       ((unless (ty-satisfiable ty))
+                        (evo_error-*t "DE_AET: "
+                                       desc (list pos)))
                        ((mv val orac) (ty-oracle-val ty orac))
                        ((unless (val-p val))
                         (evo_error-*t "DE_AET: "
@@ -209,6 +214,8 @@
                        (env (env-replace-static static-env env))
                        ((evoo-*tef _condvar-0 ty)
                         (resolve-ty-*t env desc.type))
+                       ((unless (ty-satisfiable ty))
+                        (evo_error-*t "DE_AET: " desc (list pos)))
                        ((mv val orac) (ty-oracle-val ty orac))
                        ((unless (val-p val))
                         (evo_error-*t "DE_AET: "
@@ -306,11 +313,15 @@
                                                 ""))))
                       res))))))
 
+(defconst *eval_subprogram-print-priority* -10)
+
+(fgl::add-fgl-rewrite eval_subprogram-*t-print :order `(:prio ,*eval_subprogram-print-priority*))
+
+
+
 (defmacro fgl-reorder-eval_subprogram-*t-rules ()
-  '(progn (fgl::remove-fgl-rewrites save-oracle-on-outermost-eval_subprogram-*t
-                                    eval_subprogram-*t-print)
-          (fgl::add-fgl-rewrites eval_subprogram-*t-print
-                                 save-oracle-on-outermost-eval_subprogram-*t)))
+  (prog2$ (cw "Deprecated -- fgl-reorder-eval_subprogram-*t-rules~%")
+          '(progn)))
 
 ;; NOTE: To enable crude profiling of symbolic evaluation of ASL functions,
 ;; enable this theorem in FGL instead of eval_subprogram-*t-print.

@@ -187,6 +187,19 @@
              (mv err val)))
 
 
+#!fgl
+(define interp-st-resize-ctrex-env (interp-st)
+  (stobj-let ((logicman (interp-st->logicman interp-st))
+              (env$ (interp-st->ctrex-env interp-st)))
+             (env$)
+             (stobj-let ((bitarr (env$->bitarr env$)))
+                        (bitarr)
+                        (resize-bits (+ 1 (bfrstate->bound (logicman->bfrstate)))
+                                     bitarr)
+                        env$)
+             interp-st))
+
+
 
 (defmacro define-interp-st-run-ctrex-non-guarded ()
   '(skip-proofs

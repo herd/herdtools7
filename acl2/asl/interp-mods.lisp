@@ -74,7 +74,7 @@
     (case-match x
       (('define !name . rest)
        `(define ,(intern-in-package-of-symbol
-                  (concatenate 'string (symbol-name name) "-" (symbol-name suffix) "1")
+                  (concatenate 'string (symbol-name name) suffix)
                   'asl-pkg) . ,rest))
       (& (cons (find-def-and-rename name suffix (car x))
                (find-def-and-rename name suffix (cdr x)))))))
@@ -119,6 +119,15 @@
       (& (cons (add-define-formals new-formals (car x))
                (add-define-formals new-formals (cdr x)))))))
 
+(defun remove-define-formals (removed-formals x)
+  (if (atom x)
+      x
+    (case-match x
+      (('define name formals . rest)
+       `(define ,name ,(set-difference-equal formals removed-formals) . ,rest))
+      (& (cons (remove-define-formals removed-formals (car x))
+               (remove-define-formals removed-formals (cdr x)))))))
+
 
 (defun add-define-to-defines (def x)
   (if (atom x)
@@ -152,6 +161,17 @@
                  (car syms)))
           (pair-suffixed (cdr syms) suffix))))
 
+
+(defun pair-both-suffixed (fns key-suffix val-suffix)
+  (if (atom fns)
+      nil
+    (cons (Cons (intern-in-package-of-symbol
+                 (concatenate 'string (symbol-name (car fns)) (symbol-name key-suffix))
+                 (car fns))
+                (intern-in-package-of-symbol
+                 (concatenate 'string (symbol-name (car fns)) (symbol-name val-suffix))
+                 (car fns)))
+          (pair-both-suffixed (cdr fns) key-suffix val-suffix))))
 
 (defun add-keyval-to-defines (keyval x)
   (if (atom x)
@@ -197,3 +217,28 @@
       (('define !name . &) x)
       (& (or (find-define name (car x))
              (find-define name (cdr x)))))))
+
+(defun replace-function-bodies (x alist)
+  (if (atom x)
+      x
+    (case-match x
+      (('define name . rest)
+       (let ((look (assoc name alist)))
+         (if look
+             `(define ,name ,@(butlast rest 1) ,(cdr look))
+           x)))
+      (& (cons (replace-function-bodies (car x) alist)
+               (replace-function-bodies (cdr x) alist))))))
+
+(defun replace-case-bodies (x alist)
+  (if (atom x)
+      x
+    (case-match x
+      ((key & . rest)
+       (let ((look (assoc key alist)))
+         (if look
+             `(,key ,(cdr look) . ,(replace-case-bodies rest alist))
+           (cons (replace-case-bodies (car x) alist)
+                 (replace-case-bodies (cdr x) alist)))))
+      (& (cons (replace-case-bodies (car x) alist)
+               (replace-case-bodies (cdr x) alist))))))
