@@ -1,0 +1,4 @@
+"Generate sc total orders"
+
+let scbase = po|mo|rf|fr
+with S from generate_orders(IW|sc,scbase)
