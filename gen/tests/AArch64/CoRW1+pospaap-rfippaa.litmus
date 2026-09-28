@@ -1,12 +1,12 @@
-(* diyone7 -arch AArch64 -metadata false -oneloc PaA PosRW Rfi *)
+(* diyone7 -arch AArch64 -metadata false -oneloc -type int64_t PaA PosRW Rfi *)
 AArch64 CoRW1+pospaap-rfippaa
 {
- int x[2]={0,0};
- 0:X0=x;
+ int64_t x[2]={0,0};
+ 0:X0=x; int64_t 0:X1=0; int64_t 0:X2=0;
 }
  P0              ;
- LDAP W1,W2,[X0] ;
- MOV W3,#1       ;
- STR W3,[X0]     ;
+ LDAP X1,X2,[X0] ;
+ MOV X3,#1       ;
+ STR X3,[X0]     ;
 
 exists (0:X1=1 /\ 0:X2=0)
