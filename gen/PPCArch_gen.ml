@@ -32,8 +32,6 @@ module Config =
 module Make(C:Config)  =
   struct
     include PPCBase
-    let tr_endian x = MachSize.tr_endian C.naturalsize x
-
     module ScopeGen = ScopeGen.NoGen
 
     include MachAtom.Make
