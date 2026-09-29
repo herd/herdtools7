@@ -28,20 +28,28 @@ let func_start_addr proc = function
 
 module type S = sig
   type nice_prog
+  type annotated_prog
   type program
   type start_points
   type code_segment
 
-  val load : nice_prog -> program * start_points * code_segment
+  val load : nice_prog -> program * start_points * code_segment * annotated_prog
 end
 
 module Make(A:Arch_herd.S) =
 struct
 
   type nice_prog = A.nice_prog
+  type annotated_prog = A.annotated_prog
   type program = A.program
   type start_points = A.start_points
   type code_segment = A.code_segment
+
+  type 'ins loader_info = {
+    addr : int;
+    normalised_padding : A.instruction A.kpseudo list option;
+    ins : 'ins A.kpseudo;
+  }
 
   let next_addr_after_pagealign addr =
     let addr_part = addr mod proc_size in
@@ -138,33 +146,60 @@ struct
   | pseudoins::code -> normalise_ins addr code pseudoins
 
   and normalise_ins addr code pseudo_ins =
+    let no_padding ins = { addr; normalised_padding = None; ins; } in
     match pseudo_ins with
     | A.Nop ->
-      A.Nop :: (normalise_code addr code)
+      no_padding A.Nop :: normalise_code addr code
     | A.Instruction ins ->
       let next_addr = addr + (A.size_of_ins ins) in
-      A.Instruction ins :: (normalise_code next_addr code)
+      no_padding pseudo_ins :: normalise_code next_addr code
     | A.Label (lbl,pseudo_ins) ->
         let next_code = match pseudo_ins with
         | A.Nop -> code
         | _ -> pseudo_ins::code
         in
-        A.Label (lbl, A.Nop) :: (normalise_code addr next_code)
+        no_padding (A.Label (lbl,A.Nop)) :: normalise_code addr next_code
     | A.Pagealign ->
         let new_addr = next_addr_after_pagealign addr in
         let padding = make_padding addr new_addr in
-        normalise_code addr (padding @ code)
+        (* Keep the directive in the source view; expand its padding only
+           when producing executable code, even when the padding is empty. *)
+        { addr; normalised_padding = Some padding; ins = A.Pagealign; }
+        :: normalise_code new_addr code
     | A.Skip n ->
       let next_addr = addr + n in
-      (A.Skip n) :: (normalise_code next_addr code)
+      no_padding pseudo_ins :: normalise_code next_addr code
     | A.Symbolic _
     | A.Macro (_,_) -> assert false
 
-  and normalise_prog = function
-  | [] -> []
-  | ((proc,foo,func),code)::pseudo_prog ->
-    let addr = func_start_addr proc func in
-    ((proc, foo, func),normalise_code addr code)::(normalise_prog pseudo_prog)
+  let normalise_prog =
+    List.map
+      (fun (((proc,_,func) as p),code) ->
+        let addr = func_start_addr proc func in
+        p,normalise_code addr code)
+
+  let expand_padding =
+    List.map
+      (fun (proc,code) ->
+        let code = List.concat_map
+          (fun { normalised_padding; ins; _ } ->
+            match normalised_padding with
+            | Some padding -> padding
+            | None -> [ins]) code in
+        proc,code)
+
+  let annotate_prog code_segments =
+    List.map
+      (fun (proc,code) ->
+        let code = List.map
+          (fun { addr; ins; _ } ->
+            A.pseudo_map
+             (fun instr ->
+               let _,code = IntMap.find addr code_segments in
+               match code with
+               | (_,code_ins)::_ -> A.CodeInstr.{code_ins with instr;}
+               | [] -> assert false) ins) code in
+        proc,code)
 
   let rec mk_rets_from_starts proc addr rets start =
     match start with
@@ -177,7 +212,8 @@ struct
 
 
   let load pseudo_prog =
-    let pseudo_prog = normalise_prog pseudo_prog in
+    let normalised_prog = normalise_prog pseudo_prog in
+    let pseudo_prog = expand_padding normalised_prog in
     let mem = preload pseudo_prog in
     let rec load_iter = function
       | [] -> [],IntMap.empty
@@ -199,6 +235,7 @@ struct
       | None -> (proc,start,None) in
     let starts = List.map add_fhandler mains in
     let prog = Label.Map.map snd mem in
-    prog,starts,code_segments
+    let annotated_prog = annotate_prog code_segments normalised_prog in
+    prog,starts,code_segments,annotated_prog
 
 end
