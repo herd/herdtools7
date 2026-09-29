@@ -5,9 +5,9 @@
 Catchers can be used to process thrown exceptions.
 ASL allows specifying a list of \emph{\catchersterm{}}.
 Each \catcherterm{} starts with the \Twhen{} keyword,
-and specifies when an exception
-should be caught (based on its type), and a statement to be executed
+and specifies the name of an exception type to catch, and a statement to be executed
 when an exception has been caught.
+The type name must denote a declared exception type.
 A final optional \Totherwise{} \catcherterm{}
 catches all exceptions that have not been caught
 by a preceding \catcherterm{}.
@@ -34,9 +34,14 @@ subprogram \verb|top| where the catcher proceeds to call \verb|handle_exception|
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \SyntaxDef[defines the syntax of exception catchers]{Exception Catchers}
 \begin{flalign*}
-\Ncatcher \derives      \ & \Twhen \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
-          |\              & \Twhen \parsesep \Nty \parsesep \Tarrow \parsesep \Nstmtlist &\\
+\Ncatcher \derives      \ & \Twhen \parsesep \Tidentifier \parsesep \Tcolon \parsesep \Tidentifier \parsesep \Tarrow \parsesep \Nstmtlist &\\
+          |\              & \Twhen \parsesep \Tidentifier \parsesep \Tarrow \parsesep \Nstmtlist &\\
 \end{flalign*}
+
+\ExampleDef{Catcher Type Names}
+\listingref{catcher-anonymous-type} is rejected because a \catcherterm{} requires
+a type name, so an inline \exceptiontypeterm{} is not valid syntax.
+\ASLListing{An invalid catcher with an inline exception type}{catcher-anonymous-type}{\syntaxtests/ASTRule.Catcher.AnonymousType.asl}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \AbstractSyntaxDef[defines the abstract syntax of exception catchers]{Exception Catchers}
@@ -56,9 +61,9 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule[named]{}{
   {
   \begin{array}{r}
-  \buildcatcher(\overname{\Ncatcher(\Twhen, \Tidentifier(\id), \Tcolon, \Nty, \Tarrow, \Nstmtlist)}{\vparsednode})
+  \buildcatcher(\overname{\Ncatcher(\Twhen, \Tidentifier(\id), \Tcolon, \Tidentifier(\vt), \Tarrow, \Nstmtlist)}{\vparsednode})
   \astarrow \\
-  \overname{(\some{\id}, \astof{\tty}, \astof{\vstmtlist})}{\vastnode}
+  \overname{(\some{\id}, \vt, \astof{\vstmtlist})}{\vastnode}
   \end{array}
   }
 }
@@ -68,9 +73,9 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 \inferrule[unnamed]{}{
   {
   \begin{array}{r}
-  \buildcatcher(\overname{\Ncatcher(\Twhen, \Nty, \Tarrow, \Nstmtlist)}{\vparsednode})
+  \buildcatcher(\overname{\Ncatcher(\Twhen, \Tidentifier(\vt), \Tarrow, \Nstmtlist)}{\vparsednode})
   \astarrow \\
-  \overname{(\none, \astof{\tty}, \astof{\vstmtlist})}{\vastnode}
+  \overname{(\none, \vt, \astof{\vstmtlist})}{\vastnode}
   \end{array}
   }
 }
@@ -86,6 +91,10 @@ transforms a parse node $\vparsednode$ into an AST node $\vastnode$.
 with \catchersterm{} for unnamed exception values for the exception types \verb|ExceptionType1| and \verb|ExceptionType3|,
 and a \catcherterm{} for the named exception value for the exception type \verb|ExceptionType2|.
 \ASLListing{Annotating catcher}{annotate-catcher}{\typingtests/TypingRule.Catcher.asl}
+
+In \listingref{catcher-non-exception-type}, the \catcherterm{} names \texttt{IntegerType},
+whose \structureterm{} is an integer type, so a \typingerrorterm{} is detected.
+\ASLListing{A catcher naming a non-exception type}{catcher-non-exception-type}{\typingtests/TypingRule.Catcher.NonExceptionType.asl}
 
 \RenderProseAndFormally{annotate_catcher}
 \CodeSubsection{\CatcherNoneBegin}{\CatcherNoneEnd}{../Typing.ml}
@@ -181,15 +190,21 @@ The specification in \listingref{semantics-nothrow} prints the following:
 In \listingref{annotate-catcher}, the second \catcherterm{} --- for the exception type ExceptionType2
 is matched for the type of the exception value thrown by \verb|update_and_throw|.
 
-In \listingref{catcher-not-found}, no \catcherterm{} is matched for the type of the exception value thrown by \verb|update_and_throw|,
-resulting in a \dynamicerrorterm{}.
-\ASLListing{Looking for a catcher and failing to find one}{catcher-not-found}{\typingtests/TypingRule.FindCatcher.None.asl}
+In \listingref{catcher-not-found}, the first \catcherterm{} does not match the type name
+of the exception value thrown by \verb|update_and_throw|. The second \catcherterm{}
+matches \texttt{ExceptionType2} and is executed.
+\ASLListing{A catcher with a different type name}{catcher-not-found}{\typingtests/TypingRule.FindCatcher.None.asl}
+
+\listingref{catcher-first-match} shows that distinct exception type names do not match,
+even when the exception types have the same fields. Of the two \catchersterm{}
+for \texttt{ExceptionType2}, only the first is executed.
+\ASLListing{Selecting the first catcher with the same type name}{catcher-first-match}{\semanticstests/SemanticsRule.FindCatcher.FirstMatch.asl}
 
 \RenderProseAndFormally{find_catcher}
-\CodeSubsection{\EvalFindCatcherBegin}{\EvalFindCatcherEnd}{../Interpreter.ml}
 
 \subsubsection{Comments}
 
 When the \texttt{catch} of a \texttt{try} statement is executed, then the
-thrown exception is caught by the first catcher in that \texttt{catch} which it
-type-satisfies or the \texttt{otherwise\_opt} in that catch if it exists.
+thrown exception is caught by the first catcher in that \texttt{catch} with the
+same exception type name, or by the \texttt{otherwise} block if no catcher matches
+and that block exists.
