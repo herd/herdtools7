@@ -315,6 +315,8 @@ module Make(C:Builder.S)
         C.R.relax list -> C.R.relax list -> C.R.relax list ->
         chunk list * chunk list * chunk list * t
       val can_precede : t -> chunk -> chunk list -> bool
+      val relax_predecessors : t -> chunk list -> chunk list -> chunk list
+      val safe_predecessors : t -> chunk list -> chunk list -> chunk list
     end = struct
       type chunk =
         {
@@ -332,7 +334,11 @@ module Make(C:Builder.S)
           (** Internal edges after the last external edge. *)
         }
 
-      type t = bool array array
+      type t = {
+        table : bool array array;
+        relax_predecessors : chunk list array;
+        safe_predecessors : chunk list array;
+      }
 
       let to_relax c = c.relax
 
@@ -460,11 +466,27 @@ module Make(C:Builder.S)
                   can_precede (FilterImpl.can_precede safes po_safe) next exist)
               chunks)
           chunks ;
-        prefix,relax,safe,table
+        let make_predecessors candidates =
+          Array.init !next_id
+            (fun exist_id ->
+              List.filter
+                (fun next -> table.(next.id).(exist_id)) candidates) in
+        let relax_predecessors = make_predecessors relax
+        and safe_predecessors = make_predecessors safe in
+        prefix,relax,safe,
+        {table; relax_predecessors; safe_predecessors}
 
       let can_precede table next exist = match exist with
         | [] -> true
-        | head::_ -> table.(next.id).(head.id)
+        | head::_ -> table.table.(next.id).(head.id)
+
+      let relax_predecessors table relax = function
+        | [] -> relax
+        | head::_ -> table.relax_predecessors.(head.id)
+
+      let safe_predecessors table safe = function
+        | [] -> safe
+        | head::_ -> table.safe_predecessors.(head.id)
     end
 
 (* Functional for recursive call of generators *)
@@ -499,7 +521,6 @@ module Make(C:Builder.S)
       | rejects ->
           let rsuff = List.map Chunk.to_relax rsuff |> List.concat in
           not (List.exists (fun rl -> is_prefix rsuff rl) rejects)
-
 
     (* This function is used `zyva` *)
     let call_rec_base prefix f0 po_safe can_precede_relax
@@ -579,25 +600,26 @@ module Make(C:Builder.S)
       (* iterates over all relax edges `rs` *)
       (* ********************************** *)
       let choose_relax rs k =
-      List.fold_left (fun k relex_edge ->
-        (* Build simple cycles for relaxation `relex_edge` *)
+      List.fold_left (fun k relax_edge ->
+        (* Build simple cycles for relaxation `relax_edge` *)
         (* Partially apply function `call_rec_base` *)
         let call_rec_add_safe =
-          call_rec_base prefix (f [Chunk.to_relax relex_edge]) po_safe can_precede_relax
+          call_rec_base prefix (f [Chunk.to_relax relax_edge]) po_safe can_precede_relax
             ~reject:reject in
         (* Add safe edge to suffix *)
-        let rec add_safe over ss n suf k =
-          List.fold_left ( fun k s -> call_rec_add_safe over n s suf (add_relaxs over) k ) k ss
-        (* Add some relax edges `relex_edge` to suffix, or nothing *)
+        let rec add_safe over n suf k =
+          let candidates = Chunk.safe_predecessors adjacency safe suf in
+          List.fold_left (fun k s -> call_rec_add_safe over n s suf (add_relaxs over) k) k candidates
+        (* Add some relax edges `relax_edge` to suffix, or nothing *)
         and add_relaxs over n suf k =
-          let k = call_rec_add_safe true n relex_edge suf (add_relaxs true) k in
-          add_safe over safe n suf k in
+          let k = call_rec_add_safe true n relax_edge suf (add_relaxs true) k in
+          add_safe over n suf k in
 
         (* Decide what is the accumulator `k` for the next iteration
            based on if `prefix` is empty *)
         if Misc.nilp prefix then
-          (* Optimise: start with a relax edge `relex_edge` *)
-            call_rec_add_safe true n relex_edge [] (add_relaxs true) k
+          (* Optimise: start with a relax edge `relax_edge` *)
+            call_rec_add_safe true n relax_edge [] (add_relaxs true) k
         else
             add_relaxs false n [] k
       ) k rs in
@@ -622,45 +644,46 @@ module Make(C:Builder.S)
             po_safe can_precede_relax ~reject:reject in
 
         (* Add a one edge to suffix *)
-        let rec add_one over rs ss n suf k =
-          (* Consume `rs` first *)
-          let new_k = List.fold_left ( fun k r ->
-            call_rec_all_relax true n r suf (add_one true relax safe) k
-          ) k rs in
-          (* Then consume `ss` when `rs` is empty *)
+        let rec add_one over n suf k =
+          let relax_candidates = Chunk.relax_predecessors adjacency relax suf in
+          (* Consume relaxation candidates first. *)
+          let new_k = List.fold_left ( fun k r -> call_rec_all_relax true n r suf (add_one true) k) k relax_candidates in
+          (* Then consume safe candidates. *)
+          let safe_candidates = Chunk.safe_predecessors adjacency safe suf in
           List.fold_left ( fun k s ->
-            call_rec_all_relax over n s suf (add_one over relax safe) k
-          ) new_k ss in
+            call_rec_all_relax over n s suf (add_one over) k
+          ) new_k safe_candidates in
 
         (* Force first edge to be a relaxed one *)
         let add_first rs k =
           List.fold_left ( fun k r ->
-            call_rec_all_relax true n r [] (add_one true relax safe) k
+            call_rec_all_relax true n r [] (add_one true) k
           ) k rs in
 
         (* Function `all_relax` entry point depends on
            if `prefix` is empty. *)
         if Misc.nilp prefix then add_first relax k
-        else add_one false relax safe n [] k in
+        else add_one false n [] k in
 
      (* New relax that does not enforce the first edge to be a relax *)
 
       (* ***************************************************** *)
       (* As a safety check, generate cycles with no relaxation *)
       (* ***************************************************** *)
-      let rec no_relax ss n suf k =
+      let rec no_relax n suf k =
         (* Partially apply function `call_rec_base` *)
         let call_rec_no_relax =
           call_rec_base prefix (f []) po_safe can_precede_relax ~reject:reject in
+        let candidates = Chunk.safe_predecessors adjacency safe suf in
         List.fold_left (fun k s ->
-          call_rec_no_relax true n s suf (no_relax safe) k
-        ) k ss in
+          call_rec_no_relax true n s suf no_relax k
+        ) k candidates in
 
       (* *************************************************** *)
       (* Function `zyva` starts after all the `let`-bindings *)
       (* *************************************************** *)
       fun k ->
-        if Misc.nilp relax then no_relax safe n [] k
+        if Misc.nilp relax then no_relax n [] k
         else if O.mix && O.max_relax < 1 then k (* Let us stay logical *)
         else if O.mix && O.max_relax > 1 then all_relax k
         else choose_relax relax k
