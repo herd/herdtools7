@@ -1,4 +1,4 @@
-mode: exec
+mode: no-exec
 outcome: FAILURE
 error: TE_PLD
 error_line: 3

@@ -1,4 +1,4 @@
-mode: exec
+mode: no-exec
 outcome: FAILURE
 error: BE_RI
 info: |-
