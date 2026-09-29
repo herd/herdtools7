@@ -28,8 +28,6 @@ module Make
       open Printf
 
       include X86_64Base
-      let tr_endian = Misc.identity
-
       type atom_acc = Plain | Atomic | NonTemporal
       type atom = atom_acc * Mixed.t option
 

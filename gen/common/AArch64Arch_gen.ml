@@ -45,9 +45,6 @@ open Printf
 
 include MakeAArch64Base.Make(struct let is_morello = do_morello end)
 
-(* Little endian *)
-let tr_endian = Misc.identity
-
 module ScopeGen = ScopeGen.NoGen
 
 (* AArch64 has more atoms that others *)

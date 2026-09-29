@@ -16,8 +16,6 @@
 
 open Code
 include X86Base
-let tr_endian = Misc.identity
-
 module ScopeGen = ScopeGen.NoGen
 
 let bellatom = false
