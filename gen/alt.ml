@@ -315,8 +315,10 @@ module Make(C:Builder.S)
         C.R.relax list -> C.R.relax list -> C.R.relax list ->
         chunk list * chunk list * chunk list * t
       val can_precede : t -> chunk -> chunk list -> bool
-      val relax_predecessors : t -> chunk list -> chunk list -> chunk list
-      val safe_predecessors : t -> chunk list -> chunk list -> chunk list
+      val fold_relax_predecessors :
+        t -> chunk list -> ('a -> chunk -> 'a) -> 'a -> 'a
+      val fold_safe_predecessors :
+        t -> chunk list -> ('a -> chunk -> 'a) -> 'a -> 'a
     end = struct
       type chunk =
         {
@@ -336,8 +338,10 @@ module Make(C:Builder.S)
 
       type t = {
         table : bool array array;
-        relax_predecessors : chunk list array;
-        safe_predecessors : chunk list array;
+        root_relax : chunk array;
+        root_safe : chunk array;
+        relax_predecessors : chunk array array;
+        safe_predecessors : chunk array array;
       }
 
       let to_relax c = c.relax
@@ -470,23 +474,28 @@ module Make(C:Builder.S)
           Array.init !next_id
             (fun exist_id ->
               List.filter
-                (fun next -> table.(next.id).(exist_id)) candidates) in
+                (fun next -> table.(next.id).(exist_id)) candidates
+              |> Array.of_list) in
         let relax_predecessors = make_predecessors relax
         and safe_predecessors = make_predecessors safe in
         prefix,relax,safe,
-        {table; relax_predecessors; safe_predecessors}
+        {table; root_relax=Array.of_list relax; root_safe=Array.of_list safe;
+         relax_predecessors; safe_predecessors}
 
       let can_precede table next exist = match exist with
         | [] -> true
         | head::_ -> table.table.(next.id).(head.id)
 
-      let relax_predecessors table relax = function
-        | [] -> relax
-        | head::_ -> table.relax_predecessors.(head.id)
+      let fold_predecessors predecessors roots suffix f init =
+        match suffix with
+        | [] -> Array.fold_left f init roots
+        | head::_ -> Array.fold_left f init predecessors.(head.id)
 
-      let safe_predecessors table safe = function
-        | [] -> safe
-        | head::_ -> table.safe_predecessors.(head.id)
+      let fold_relax_predecessors table =
+        fold_predecessors table.relax_predecessors table.root_relax
+
+      let fold_safe_predecessors table =
+        fold_predecessors table.safe_predecessors table.root_safe
     end
 
 (* Functional for recursive call of generators *)
@@ -591,7 +600,7 @@ module Make(C:Builder.S)
     let zyva prefix aset relax safe reject n f =
 (*      let safes = C.R.Set.of_list safe in *)
       let po_safe = extract_po safe in
-      let prefix,relax,safe,adjacency =
+      let prefix,relax,_safe,adjacency =
         Chunk.make aset po_safe prefix relax safe in
       let can_precede_relax next exist =
         Chunk.can_precede adjacency next exist in
@@ -608,8 +617,8 @@ module Make(C:Builder.S)
             ~reject:reject in
         (* Add safe edge to suffix *)
         let rec add_safe over n suf k =
-          let candidates = Chunk.safe_predecessors adjacency safe suf in
-          List.fold_left (fun k s -> call_rec_add_safe over n s suf (add_relaxs over) k) k candidates
+          Chunk.fold_safe_predecessors adjacency suf
+            (fun k s -> call_rec_add_safe over n s suf (add_relaxs over) k) k
         (* Add some relax edges `relax_edge` to suffix, or nothing *)
         and add_relaxs over n suf k =
           let k = call_rec_add_safe true n relax_edge suf (add_relaxs true) k in
@@ -645,14 +654,12 @@ module Make(C:Builder.S)
 
         (* Add a one edge to suffix *)
         let rec add_one over n suf k =
-          let relax_candidates = Chunk.relax_predecessors adjacency relax suf in
           (* Consume relaxation candidates first. *)
-          let new_k = List.fold_left ( fun k r -> call_rec_all_relax true n r suf (add_one true) k) k relax_candidates in
+          Chunk.fold_relax_predecessors adjacency suf
+            (fun k r -> call_rec_all_relax true n r suf (add_one true) k) k
           (* Then consume safe candidates. *)
-          let safe_candidates = Chunk.safe_predecessors adjacency safe suf in
-          List.fold_left ( fun k s ->
-            call_rec_all_relax over n s suf (add_one over) k
-          ) new_k safe_candidates in
+          |> Chunk.fold_safe_predecessors adjacency suf
+            (fun k s -> call_rec_all_relax over n s suf (add_one over) k) in
 
         (* Force first edge to be a relaxed one *)
         let add_first rs k =
@@ -674,10 +681,8 @@ module Make(C:Builder.S)
         (* Partially apply function `call_rec_base` *)
         let call_rec_no_relax =
           call_rec_base prefix (f []) po_safe can_precede_relax ~reject:reject in
-        let candidates = Chunk.safe_predecessors adjacency safe suf in
-        List.fold_left (fun k s ->
-          call_rec_no_relax true n s suf no_relax k
-        ) k candidates in
+        Chunk.fold_safe_predecessors adjacency suf
+          (fun k s -> call_rec_no_relax true n s suf no_relax k) k in
 
       (* *************************************************** *)
       (* Function `zyva` starts after all the `let`-bindings *)
