@@ -1,0 +1,11 @@
+AArch64 V37
+{
+uint32_t t[4] = {0,0,0,0};
+0:X0=t;
+}
+
+P0;
+PTRUE P0.S,VL2;
+ST1W {Z0.S},P0,[X0];
+
+exists (true)

@@ -1,0 +1,9 @@
+Test V35 Allowed
+States 1
+
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition exists (true)
+Observation V35 Always 2 0
+Hash=c5ee0abd4337ce34549ff59ac29d1896
