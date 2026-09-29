@@ -18,7 +18,7 @@
 type proc_info = (string * int list) list
 
 type
-  ('prog,'nice_prog,'start,'ret,'entry,'state,
+  ('prog,'nice_prog,'annotated_prog,'start,'ret,'entry,'state,
    'size_env, 'type_env,
    'prop,'loc,'locset,'fset) t =
     {
@@ -27,6 +27,7 @@ type
      info : MiscParser.info ;
      program : 'prog ;
      nice_prog : 'nice_prog ;
+     annotated_prog : 'annotated_prog ;
      start_points : 'start ;
      code_segment : 'ret ;
      entry_points : 'entry;
@@ -43,22 +44,22 @@ type
    }
 
 val simple_name :
-  ('prog,'nice_prog,'start,'ret,'entry,'state,
+  ('prog,'nice_prog,'annotated_prog,'start,'ret,'entry,'state,
    'size_env,'type_env,
    'prop,'loc,'locset,'fset) t -> string
 
 val readable_name :
-  ('prog,'nice_prog,'start,'ret,'entry,'state,
+  ('prog,'nice_prog,'annotated_prog,'start,'ret,'entry,'state,
    'size_env,'type_env,
    'prop,'loc,'locset,'fset) t -> string
 
 val very_readable_name :
-  ('prog,'nice_prog,'start,'ret,'entry,'state,
+  ('prog,'nice_prog,'annotated_prog,'start,'ret,'entry,'state,
    'size_env,'type_env,
    'prop,'loc,'locset,'fset) t -> string
 
 val basename :
-  ('prog,'nice_prog,'start,'ret,'entry,'state,
+  ('prog,'nice_prog,'annotated_prog,'start,'ret,'entry,'state,
    'size_env,'type_env,
    'prop,'loc,'locset,'fset) t -> string
 
@@ -67,6 +68,7 @@ module Make(A:Arch_herd.S) : sig
   type result =
       (A.program,
        A.nice_prog,
+       (int (* addr *) * A.CodeInstr.t) A.prog,
        A.start_points,
        A.code_segment,
        A.entry_points,

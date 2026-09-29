@@ -28,17 +28,19 @@ let func_start_addr proc = function
 
 module type S = sig
   type nice_prog
+  type annotated_prog
   type program
   type start_points
   type code_segment
 
-  val load : nice_prog -> program * start_points * code_segment
+  val load : nice_prog -> program * start_points * code_segment * annotated_prog
 end
 
 module Make(A:Arch_herd.S) =
 struct
 
   type nice_prog = A.nice_prog
+  type annotated_prog = (int (* addr *) * A.CodeInstr.t) A.prog
   type program = A.program
   type start_points = A.start_points
   type code_segment = A.code_segment
@@ -134,37 +136,58 @@ struct
       assert false
 
   let rec normalise_code addr = function
-  | [] -> []
+  | [] -> [],[]
   | pseudoins::code -> normalise_ins addr code pseudoins
 
   and normalise_ins addr code pseudo_ins =
     match pseudo_ins with
     | A.Nop ->
-      A.Nop :: (normalise_code addr code)
+      let code,source_code = normalise_code addr code in
+      A.Nop::code,A.Nop::source_code
     | A.Instruction ins ->
       let next_addr = addr + (A.size_of_ins ins) in
-      A.Instruction ins :: (normalise_code next_addr code)
+      let code,source_code = normalise_code next_addr code in
+      A.Instruction ins::code,A.Instruction (addr,ins)::source_code
     | A.Label (lbl,pseudo_ins) ->
         let next_code = match pseudo_ins with
         | A.Nop -> code
         | _ -> pseudo_ins::code
         in
-        A.Label (lbl, A.Nop) :: (normalise_code addr next_code)
+        let code,source_code = normalise_code addr next_code in
+        A.Label (lbl,A.Nop)::code,A.Label (lbl,A.Nop)::source_code
     | A.Pagealign ->
         let new_addr = next_addr_after_pagealign addr in
         let padding = make_padding addr new_addr in
-        normalise_code addr (padding @ code)
+        let code,source_code = normalise_code new_addr code in
+        (* in normalized code, Pagealign is removed, only the padding is
+           preserved; in source_code, Pagealign itself is preserved *)
+        padding @ code,A.Pagealign::source_code
     | A.Skip n ->
       let next_addr = addr + n in
-      (A.Skip n) :: (normalise_code next_addr code)
+      let code,source_code = normalise_code next_addr code in
+      A.Skip n::code,A.Skip n::source_code
     | A.Symbolic _
     | A.Macro (_,_) -> assert false
 
   and normalise_prog = function
-  | [] -> []
+  | [] -> [],[]
   | ((proc,foo,func),code)::pseudo_prog ->
     let addr = func_start_addr proc func in
-    ((proc, foo, func),normalise_code addr code)::(normalise_prog pseudo_prog)
+    let code,source_code = normalise_code addr code in
+    let prog,source_prog = normalise_prog pseudo_prog in
+    ((proc,foo,func),code)::prog,((proc,foo,func),source_code)::source_prog
+
+  let annotate_prog code_segments =
+    List.map
+      (fun (proc,code) ->
+        let code = List.map
+          (A.pseudo_map
+             (fun (addr,instr) ->
+               let _,code = IntMap.find addr code_segments in
+               match code with
+               | (_,code_ins)::_ -> addr,A.CodeInstr.{code_ins with instr;}
+               | [] -> assert false)) code in
+        proc,code)
 
   let rec mk_rets_from_starts proc addr rets start =
     match start with
@@ -177,7 +200,7 @@ struct
 
 
   let load pseudo_prog =
-    let pseudo_prog = normalise_prog pseudo_prog in
+    let pseudo_prog,source_prog = normalise_prog pseudo_prog in
     let mem = preload pseudo_prog in
     let rec load_iter = function
       | [] -> [],IntMap.empty
@@ -199,6 +222,7 @@ struct
       | None -> (proc,start,None) in
     let starts = List.map add_fhandler mains in
     let prog = Label.Map.map snd mem in
-    prog,starts,code_segments
+    let annotated_prog = annotate_prog code_segments source_prog in
+    prog,starts,code_segments,annotated_prog
 
 end
