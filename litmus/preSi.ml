@@ -258,6 +258,7 @@ module Make
         O.o "/* Includes */" ;
         if do_dynalloc then O.o "#define DYNALLOC 1" ;
         if do_stats then O.o "#define STATS 1" ;
+        O.o {|#include "outhash.h"|} ;
         if Cfg.is_kvm then begin
           O.o "#define KVM 1" ;
           O.o "#include <libcflat.h>" ;
