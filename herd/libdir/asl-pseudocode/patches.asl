@@ -168,6 +168,66 @@ end;
 
 // =============================================================================
 
+// SVE Predicates
+// ==============
+
+// We override the original declaration in shared_pseudocode to substitute the
+// accesses to the _P backing array to calls to our read_predicate and
+// write_predicate primitives. This makes each predicate register visible to
+// herd as an individual architectural register.
+
+accessor P{width}(n : integer) <=> value : bits(width)
+begin
+    getter
+        assert n >= 0 && n <= 15;
+        assert width == CurrentVL() DIV 8;
+        return read_predicate{width}(n);
+    end;
+
+    setter
+        assert n >= 0 && n <= 15;
+        assert width == CurrentVL() DIV 8;
+        if ConstrainUnpredictableBool(Unpredictable_SVEZEROUPPER) then
+            // TODO: not exact for larger VLs: herd does not preserve upper predicate bits.
+            write_predicate{width}(n, value);
+        else
+            write_predicate{width}(n, value);
+        end;
+    end;
+end;
+
+// =============================================================================
+
+// SVE Vectors
+// ===========
+
+// We override the original declaration in shared_pseudocode to substitute the
+// accesses to the _Z backing array to calls to our read_vector and
+// write_vector primitives. This makes each SVE vector register visible to herd
+// as an individual architectural register.
+
+accessor Z{width}(n : integer) <=> value : bits(width)
+begin
+    getter
+        assert n >= 0 && n <= 31;
+        assert width == CurrentVL();
+        return read_vector{width}(n);
+    end;
+
+    setter
+        assert n >= 0 && n <= 31;
+        assert width == CurrentVL();
+        if ConstrainUnpredictableBool(Unpredictable_SVEZEROUPPER) then
+            // TODO: not exact for larger VLs: herd does not preserve upper vector bits.
+            write_vector{width}(n, value);
+        else
+            write_vector{width}(n, value);
+        end;
+    end;
+end;
+
+// =============================================================================
+
 // IsExclusiveLocal()
 // ==================
 // Return TRUE if the local Exclusives monitor for processorid includes all of
@@ -254,4 +314,3 @@ func UsingAArch32() => boolean
 begin
   return FALSE;
 end;
-

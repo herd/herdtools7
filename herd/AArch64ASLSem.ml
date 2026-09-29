@@ -36,15 +36,22 @@ let catch_silent_exit body =
   let catcher = (None,exit_type,return_0) in
   add_dummy_pos (S_Try (body,[catcher],None))
 
-let setup_registers is_vmsa =
+let setup_registers ~is_vmsa ~sve_enabled ~sve_vector_length =
   let open Asllib.AST in
   let open Asllib.ASTUtils in
+  let bitvector width value =
+    E_Literal (L_BitVector (Asllib.Bitvector.of_int_sized width value))
+    |> add_dummy_pos in
+  let sve_zcr_len = (sve_vector_length / 128) - 1 in
   add_dummy_pos
     (S_Call
        {
          name = "_SetUpRegisters";
          args = [
            expr_of_bool is_vmsa;
+           expr_of_bool sve_enabled;
+           expr_of_int sve_vector_length;
+           bitvector 4 sve_zcr_len;
          ];
          params = [];
          call_type = ST_Procedure;
@@ -157,6 +164,41 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | LE -> 0b1101
       | AL -> 0b1111 (* Also possible [0b1110] *)
 
+    let tr_ptrue_pattern =
+      let open AArch64Base in
+      (* The 5-bit pattern field decoded by the SVE PTRUE pseudocode. *)
+      function
+      | POW2 -> 0b00000
+      | VL1 -> 0b00001
+      | VL2 -> 0b00010
+      | VL3 -> 0b00011
+      | VL4 -> 0b00100
+      | VL5 -> 0b00101
+      | VL6 -> 0b00110
+      | VL7 -> 0b00111
+      | VL8 -> 0b01000
+      | VL16 -> 0b01001
+      | VL32 -> 0b01010
+      | VL64 -> 0b01011
+      | VL128 -> 0b01100
+      | VL256 -> 0b01101
+      | MUL4 -> 0b11101
+      | MUL3 -> 0b11110
+      | ALL -> 0b11111
+
+    let sve_memory_suffix =
+      let open AArch64Base in
+      function
+      | VSIMD8 -> (8, "b")
+      | VSIMD16 -> (16, "h")
+      | VSIMD32 -> (32, "w")
+      | VSIMD64 -> (64, "d")
+      | VSIMD128 ->
+          Warn.fatal "SVE memory operations with 128-bit elements are not supported by ASL."
+
+    let tr_pred_reg = ASLBase.pred_reg_to_int
+    let tr_vec_reg = ASLBase.reg_to_int AArch64Base.vec_regs
+
     let barrier_domain =
       let open AArch64Base in
       function
@@ -224,9 +266,14 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let var x = E_Var x |> with_pos in
       let variant v = AArch64Base.variant_raw v |> liti in
       let cond c = tr_cond c |> litbv 4 in
+      let ptrue_pattern p = tr_ptrue_pattern p |> litbv 5 in
+      let ptrue_reg_and_esize = function
+        | AArch64Base.Preg (p, esize) -> (tr_pred_reg p |> liti, liti esize)
+        | r -> Warn.fatal "Expected a predicate register, got: %s." (AArch64Base.pp_reg r)
+      in
+      let open AArch64Base in
       let stmt = Asllib.ASTUtils.stmt_from_list in
       let pass = with_pos S_Pass in
-      let open AArch64Base in
       let reg = function
         (* To use with caution, sometimes it doesn't work. *)
         | Ireg r -> ASLBase.arch_reg_to_int r |> liti
@@ -234,6 +281,82 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         | SP -> liti 31
         | PState _ -> Warn.fatal "PState is not an addressable register"
         | r -> Warn.fatal "Unsupported register: %s." (pp_reg r)
+      in
+      let pred_reg = function
+        | Preg (p, _) | PMreg (p, _) -> tr_pred_reg p |> liti
+        | r -> Warn.fatal "Expected a predicate register, got: %s." (pp_reg r)
+      in
+      let contiguous_zregs ~nreg rs =
+        match rs with
+        | [] -> Warn.fatal "Expected %d SVE vector registers, got none." nreg
+        | Zreg (first, _) :: _ ->
+            if List.length rs <> nreg then
+              Warn.fatal "Expected %d SVE vector registers, got %d."
+                nreg (List.length rs);
+            let first = tr_vec_reg first in
+            List.iteri
+              (fun i -> function
+                | Zreg (z, _) when tr_vec_reg z = (first + i) mod 32 -> ()
+                | r ->
+                    Warn.fatal "Expected consecutive SVE vector registers, got: %s."
+                      (pp_reg r))
+              rs;
+            liti first
+        | r :: _ ->
+            Warn.fatal "Expected an SVE vector register, got: %s." (pp_reg r)
+      in
+      let tr_sve_contiguous_memory inst ~opn ~nreg ~destinations ~predicate
+          ~base ~offset ~esize extra_args =
+        check_sve inst;
+        let t = contiguous_zregs ~nreg destinations in
+        let g = pred_reg predicate in
+        Some
+          ( opn,
+            stmt
+              ( [
+                  "t" ^= t;
+                  "g" ^= g;
+                  "n" ^= reg base;
+                  "esize" ^= liti esize;
+                  "offset" ^= liti offset;
+                ]
+              @ extra_args ) )
+      in
+      let sve_memory_nreg = function
+        | I_LD1SP _ | I_ST1SP _ -> 1
+        | I_LD2SP _ | I_ST2SP _ -> 2
+        | I_LD3SP _ | I_ST3SP _ -> 3
+        | I_LD4SP _ | I_ST4SP _ -> 4
+        | _ -> assert false
+      in
+      let sve_contiguous_memory_info inst ~suffix ~esize =
+        let nreg = sve_memory_nreg inst in
+        match inst with
+        | I_LD1SP _ ->
+            ( nreg,
+              Printf.sprintf
+                "sve/sve_memcld/sve_mem_cld_si/ld1%s_z_p_bi_u%d.opn"
+                suffix esize,
+              [ "msize" ^= liti esize; "unsigned" ^= litb true ] )
+        | I_ST1SP _ ->
+            ( nreg,
+              Printf.sprintf
+                "sve/sve_memst_si/sve_mem_cst_si/st1%s_z_p_bi_.opn"
+                suffix,
+              [ "msize" ^= liti esize ] )
+        | I_LD2SP _ | I_LD3SP _ | I_LD4SP _ ->
+            ( nreg,
+              Printf.sprintf
+                "sve/sve_memcld/sve_mem_eld_si/ld%d%s_z_p_bi_contiguous.opn"
+                nreg suffix,
+              [ "nreg" ^= liti nreg ] )
+        | I_ST2SP _ | I_ST3SP _ | I_ST4SP _ ->
+            ( nreg,
+              Printf.sprintf
+                "sve/sve_memst_si/sve_mem_est_si/st%d%s_z_p_bi_contiguous.opn"
+                nreg suffix,
+              [ "nreg" ^= liti nreg ] )
+        | _ -> assert false
       in
       match ii.A.inst with
       | I_NOP ->
@@ -1023,6 +1146,32 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | I_UDF k when C.variant Variant.ASL_AArch64_UDF ->
           Some ("reserved/perm_undef/UDF_only_perm_undef.opn", stmt [ "imm16" ^= litbv 16 k ])
       (* SVE, for specific computation of N and V flags *)
+      | I_PTRUE (pd, pattern) as inst ->
+          check_sve inst;
+          let d, esize = ptrue_reg_and_esize pd in
+          Some
+            ( "sve/sve_pred_gen_d/sve_int_ptrue/ptrue_p_s_.opn",
+              stmt
+                [
+                  "d" ^= d;
+                  "esize" ^= esize;
+                  "pat" ^= ptrue_pattern pattern;
+                  "setflags" ^= litb false;
+                ] )
+      (* SVE contiguous loads and stores, scalar base plus immediate offset. *)
+      | ( I_LD1SP (v, rs, pg, rn, MemExt.Imm (offset, Idx))
+        | I_LD2SP (v, rs, pg, rn, MemExt.Imm (offset, Idx))
+        | I_LD3SP (v, rs, pg, rn, MemExt.Imm (offset, Idx))
+        | I_LD4SP (v, rs, pg, rn, MemExt.Imm (offset, Idx))
+        | I_ST1SP (v, rs, pg, rn, MemExt.Imm (offset, Idx))
+        | I_ST2SP (v, rs, pg, rn, MemExt.Imm (offset, Idx))
+        | I_ST3SP (v, rs, pg, rn, MemExt.Imm (offset, Idx))
+        | I_ST4SP (v, rs, pg, rn, MemExt.Imm (offset, Idx)) ) as inst ->
+          let esize, suffix = sve_memory_suffix v in
+          let nreg, opn, extra_args =
+            sve_contiguous_memory_info inst ~suffix ~esize in
+          tr_sve_contiguous_memory inst ~opn ~nreg ~destinations:rs
+            ~predicate:pg ~base:rn ~offset ~esize extra_args
       | I_CTERM (cc,v,rn,rm) as inst ->
           check_sve inst ;
           let cc =
@@ -1187,7 +1336,17 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
           let open Asllib.ASTUtils in
           match execute with
           | [ ({ desc = D_Func ({ body = SB_ASL s; _ } as f); _ } as d) ] ->
-              let s = stmt_from_list [ setup_registers is_vmsa; decode; s; return_0 ] in
+              let s =
+                stmt_from_list
+                  [ setup_registers
+                      ~is_vmsa
+                      ~sve_enabled:sve
+                      ~sve_vector_length:TopConf.sve_vector_length;
+                    decode;
+                    s;
+                    return_0;
+                  ]
+              in
               let s = if is_vmsa then catch_silent_exit s else s in
               D_Func { f with body = SB_ASL s } |> add_pos_from_st d
           | _ -> assert false

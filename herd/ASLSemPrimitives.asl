@@ -69,6 +69,38 @@ begin return ARBITRARY: bits(64); end;
 func write_register(reg: integer, data: bits(64))
 begin pass; end;
 
+// =============================================================================
+// SVE Predicates
+// =============================================================================
+
+// read_predicate() returns the value in the predicate register numbered by the
+// argument.
+
+func read_predicate{width}(reg: integer) => bits(width)
+begin return ARBITRARY: bits(width); end;
+
+// write_predicate() writes the value passed as argument in the correct
+// predicate register.
+
+func write_predicate{width}(reg: integer, data: bits(width))
+begin pass; end;
+
+// =============================================================================
+// SVE Vectors
+// =============================================================================
+
+// read_vector() returns the value in the SVE vector register numbered by the
+// argument.
+
+func read_vector{width}(reg: integer) => bits(width)
+begin return ARBITRARY: bits(width); end;
+
+// write_vector() writes the value passed as argument in the correct SVE vector
+// register.
+
+func write_vector{width}(reg: integer, data: bits(width))
+begin pass; end;
+
 // -----------------------------------------------------------------------------
 
 // Memory accesses

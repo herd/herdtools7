@@ -639,6 +639,55 @@ module Make (Conf : Config) = struct
       let loc = virtual_to_loc_reg r ii in
       write_loc MachSize.Quad loc v aneutral aexp areg (use_ii_with_poi ii poi)
 
+    (******************)
+    (* SVE Predicates *)
+    (******************)
+
+    let virtual_to_loc_predicate =
+      let tpreds = Array.of_list AArch64Base.pred_regs in
+      fun rv ii ->
+        let i = v_as_int rv in
+        if i >= Array.length tpreds || i < 0 then
+          Warn.fatal "Invalid predicate register number: %d" i
+        else
+          let arch_reg = AArch64Base.Preg (tpreds.(i), 32) in
+          A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
+
+    let read_predicate (ii, poi) ~width:_ ~reg:r_m =
+      let* rval = r_m in
+      let loc = virtual_to_loc_predicate rval ii in
+      read_loc MachSize.S128 loc aneutral aexp areg (use_ii_with_poi ii poi)
+      >>= from_aarch64_val
+
+    let write_predicate (ii, poi) ~width:_ ~reg:r_m ~data:v_m =
+      let* v = v_m >>= to_aarch64_val and* r = r_m in
+      let loc = virtual_to_loc_predicate r ii in
+      write_loc MachSize.S128 loc v aneutral aexp areg (use_ii_with_poi ii poi)
+
+    (***************)
+    (* SVE Vectors *)
+    (***************)
+
+    let virtual_to_loc_vector =
+      let tzregs = Array.of_list AArch64Base.vec_regs in
+      fun rv ii ->
+        let i = v_as_int rv in
+        if i >= Array.length tzregs || i < 0 then
+          Warn.fatal "Invalid SVE vector register number: %d" i
+        else
+          let arch_reg = AArch64Base.Zreg (tzregs.(i), 32) in
+          A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
+
+    let read_vector (ii, poi) ~width:_ ~reg:r_m =
+      let* rval = r_m in
+      let loc = virtual_to_loc_vector rval ii in
+      read_loc MachSize.S128 loc aneutral aexp areg (use_ii_with_poi ii poi)
+
+    let write_vector (ii, poi) ~width:_ ~reg:r_m ~data:v_m =
+      let* v = v_m >>= to_bv MachSize.S128 and* r = r_m in
+      let loc = virtual_to_loc_vector r ii in
+      write_loc MachSize.S128 loc v aneutral aexp areg (use_ii_with_poi ii poi)
+
     let do_read_memory (ii, poi) addr_m datasize_m an aexp acc =
       let* addr = M.as_addr_port addr_m and* datasize = datasize_m in
       let sz = datasize_to_machsize datasize in
@@ -783,6 +832,10 @@ module Make (Conf : Config) = struct
       let primitive_dsb = primitive_dsb
       let read_register = read_register
       let write_register = write_register
+      let read_predicate = read_predicate
+      let write_predicate = write_predicate
+      let read_vector = read_vector
+      let write_vector = write_vector
       let read_memory = read_memory
       let read_memory_gen = read_memory_gen
       let write_memory = write_memory
