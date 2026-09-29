@@ -50,6 +50,9 @@ module type S = sig
 (* Predicates on events *)
 (************************)
 
+(* access to memory or register *)
+  val is_access : action -> bool
+
 (* relative to memory *)
   val is_mem_store : action -> bool
   val is_mem_load : action ->  bool
