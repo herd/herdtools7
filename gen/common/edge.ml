@@ -915,7 +915,15 @@ let fold_tedges f r =
   let fold_edge_wildcards f k =
     let add_com name make_edge k =
       f name (fold_ie (fun com k -> [plain_edge (make_edge com)]::k) []) k in
+    let add_observation name ie k =
+      f name
+        (fold_com
+           (fun com k -> [plain_edge (Communication (com,ie))]::k)
+           [])
+        k in
     k
+    (* External communication observed from another thread. *)
+    |> add_observation "ExpObs" Ext
     (* Communication aliases without an internal/external suffix. *)
     |> add_com "Rf" (fun ie -> Communication (Rf,ie))
     |> add_com "Fr" (fun ie -> Communication (Fr,ie))
