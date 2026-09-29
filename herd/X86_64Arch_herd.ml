@@ -120,6 +120,8 @@ module Make (C:Arch_herd.Config)(V:Value.S) =
                 module FaultType=FaultType.No
               end)
 
+    type annotated_prog = CodeInstr.t prog
+
     module MemType=MemoryType.X86_64
 
     module ArchAction = struct

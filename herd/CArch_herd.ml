@@ -52,6 +52,8 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
         module FaultType=FaultType.No
       end)
 
+  type annotated_prog = CodeInstr.t prog
+
     module MemType=MemoryType.No
 
     module Barrier = AllBarrier.No(struct type a = barrier end)
