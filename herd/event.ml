@@ -79,6 +79,8 @@ val same_instance : event -> event -> bool
 (* Predicates on events *)
 (************************)
 
+(* access to memory or register *)
+  val is_access : event -> bool
 (* relative to memory *)
   val is_mem_store : event -> bool
   val is_mem_store_init : event -> bool
@@ -667,6 +669,9 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
     let po_eq e1 e2 =
       proc_of e1 = proc_of e2 && progorder_of e1 = progorder_of e2
+
+(* access to memory or register *)
+    let is_access e = Act.is_access e.action
 
 (* relative to memory *)
     let is_mem_store e = Act.is_mem_store e.action
