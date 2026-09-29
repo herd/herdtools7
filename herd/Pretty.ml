@@ -83,7 +83,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   | MemEvents|NonRegEvents|MemFenceEvents|NonBranchEvents -> false
 
 
-(* Printing the program with the nice_prog field *)
+(* Printing instructions *)
 
 (* Please avoid insterting references to Global in,
    for instance X86Base.ml, since this
