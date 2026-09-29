@@ -155,6 +155,7 @@ module TestAltConfig = struct
 end
 
 let remove_invalid_relaxes_inputs_main = [
+  "ExpObs";
   "[Po,Rfe]";
   "[Rfe,Rfe]";
   "[Rfe,Fre]";
