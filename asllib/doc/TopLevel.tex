@@ -1532,10 +1532,10 @@ renames the identifiers corresponding to local storage elements that appear in t
 \ProseParagraph
 \AllApply
 \begin{itemize}
-  \item $\vc$ is a \catcherterm{} with optional exception name $\optexnname$, exception type $\exnty$,
+  \item $\vc$ is a \catcherterm{} with optional exception name $\optexnname$, exception type name $\exnty$,
         and \Twhen{} statement $\whenstmt$;
   \item \Prosemapopt{$\renamelocalsname$}{$\optexnname$}{$\optexnnamep$};
-  \item \Proserenamelocalsty{$\exnty$}{$\exntyp$};
+  \item the exception type name $\exnty$ is unchanged;
   \item \Proserenamelocalsstmt{$\whenstmt$}{$\whenstmtp$}.
 \end{itemize}
 
@@ -1543,13 +1543,12 @@ renames the identifiers corresponding to local storage elements that appear in t
 \begin{mathpar}
 \inferrule{
   \mapopt{\renamelocalsname}(\optexnname) \astarrow \optexnnamep\\
-  \renamelocalsty(\exnty) \astarrow \exntyp\\
   \renamelocalsstmt(\whenstmt) \astarrow \whenstmtp
 }{
   {
   \begin{array}{r}
   \renamelocalscatcher(\overname{(\optexnname, \exnty, \whenstmt)}{\vc}) \astarrow\\
-  (\optexnnamep, \exntyp, \whenstmtp)
+  (\optexnnamep, \exnty, \whenstmtp)
   \end{array}
   }
 }
