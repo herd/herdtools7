@@ -1,0 +1,15 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_UT
+error_line: 5
+info: |-
+  File ../tests/typing/TypingRule.Catcher.NonExceptionType.asl, line 5,
+    character 4 to line 10, character 8:
+      try
+          pass;
+      catch
+          when caught: IntegerType =>
+              pass;
+      end;
+  ASL Type error (TE_UT): a subtype of exception {  } was expected,
+    provided integer.

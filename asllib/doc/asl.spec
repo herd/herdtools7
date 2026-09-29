@@ -1348,9 +1348,9 @@ ast stmt { "statement" } =
 ////////////////////////////////////////////////
 // Typed AST
 ////////////////////////////////////////////////
-  | typed_S_Throw(exception: expr, exception_type: ty)
+  | typed_S_Throw(exception: expr, exception_type_name: Identifier)
     {
-        "the \throwstatementterm{} with exception expression {exception} and inferred type {exception_type}",
+        "the \throwstatementterm{} with exception expression {exception} and inferred type name {exception_type_name}",
         math_macro = \typedSThrow,
     }
 ;
@@ -1409,9 +1409,9 @@ ast case_alt { "case alternative" } =
     }
 ;
 
-ast catcher { "catcher" } = (variable: option(Identifier), guard_type: ty, execute: stmt)
+ast catcher { "catcher" } = (variable: option(Identifier), guard_type_name: Identifier, execute: stmt)
  {
-  "the \catcherterm{} for an exception of type {guard_type}
+  "the \catcherterm{} for an exception with type name {guard_type_name}
    with the optional variable name {variable}
    executing {execute}"
  }
@@ -2217,10 +2217,10 @@ typedef TThrowing
     "throwing execution result",
     short_circuit_macro = \ThrowingConfig,
 } =
-    Throwing(exception_value: value_read_from, exception_type: ty, graph: XGraphs, environment: envs)
+    Throwing(exception_value: value_read_from, exception_type_name: Identifier, graph: XGraphs, environment: envs)
     { "the \hyperlink{type-Throwing}{throwing result configuration} with
         exception value given by {exception_value},
-       exception type given by {exception_type},
+       exception type name given by {exception_type_name},
        \executiongraphterm{} given by {graph},
        and \environmentterm{} given by {environment}" }
 ;
@@ -4605,23 +4605,26 @@ typing relation annotate_catcher(tenv: static_envs, ses_in: powerset(TSideEffect
   math_layout = [_,_],
 } =
   case none {
-    c =: (none, ty, stmt);
-    annotate_type(False, tenv, ty) -> (ty', ses_ty);
-    check_structure_label(tenv, ty', label_T_Exception) -> True;
+    c =: (none, ty_name, stmt);
+    ty := T_Named(ty_name);
+    annotate_type(False, tenv, ty) -> (_, ses_ty);
+    check_structure_label(tenv, ty, label_T_Exception) -> True;
     annotate_block(tenv, stmt) -> (new_stmt, ses_block);
-    new_catcher := (none, ty', new_stmt);
+    new_catcher := (none, ty_name, new_stmt);
     ses := union(ses_block, ses_ty);
     --
     (ses_in, (new_catcher, ses));
   }
+
   case some {
-    c =: (some(name), ty, stmt);
-    annotate_type(False, tenv, ty) -> (ty', ses_ty);
-    check_structure_label(tenv, ty', label_T_Exception) -> True;
+    c =: (some(name), ty_name, stmt);
+    ty := T_Named(ty_name);
+    annotate_type(False, tenv, ty) -> (_, ses_ty);
+    check_structure_label(tenv, ty, label_T_Exception) -> True;
     check_var_not_in_env(tenv, name) -> True;
-    add_local(tenv, name, ty', LDK_Let) -> tenv';
+    add_local(tenv, name, T_Named(ty_name), LDK_Let) -> tenv';
     annotate_block(tenv', stmt) -> (new_stmt, ses_block);
-    new_catcher := (some(name), ty', new_stmt);
+    new_catcher := (some(name), ty_name, new_stmt);
     ses := union(ses_block, ses_ty);
     --
     (ses_in, (new_catcher, ses));
@@ -4643,10 +4646,8 @@ semantics relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_
   math_layout = [_,_],
  } =
   case catch {
-    s_m =: Throwing(v, v_ty, sg, env_throw);
-    env =: (tenv, denv);
-    env_throw =: (tenv1, denv_throw);
-    find_catcher(tenv, v_ty, catchers) -> some((none, _, s));
+    s_m =: Throwing(v, v_ty_name, sg, env_throw);
+    find_catcher(v_ty_name, catchers) -> some((none, _, s));
     eval_block(env_throw, s) -> C | DynErrorConfig(), DivergingConfig();
     new_g := ordered_po(sg, graph_of(C));
     --
@@ -4654,10 +4655,8 @@ semantics relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_
   }
 
   case catch_named {
-    s_m =: Throwing(v, v_ty, sg, env_throw);
-    env =: (tenv, denv);
-    env_throw =: (tenv1, denv_throw);
-    find_catcher(tenv, v_ty, catchers) -> some((some(name), _, s));
+    s_m =: Throwing(v, v_ty_name, sg, env_throw);
+    find_catcher(v_ty_name, catchers) -> some((some(name), _, s));
     read_value_from(v) -> (v1, g1);
     declare_local_identifier_m(env_throw, name, (v1, g1)) -> (env2, g2);
     eval_block(env2, s) -> C | DynErrorConfig(), DivergingConfig();
@@ -4670,11 +4669,9 @@ semantics relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_
   }
 
   case catch_otherwise {
-    s_m =: Throwing(v, v_ty, s_g, env_throw);
+    s_m =: Throwing(v, v_ty_name, s_g, env_throw);
     otherwise_opt =: some(s);
-    env =: (tenv, denv);
-    env_throw =: (_, denv_throw);
-    find_catcher(tenv, v_ty, catchers) -> none;
+    find_catcher(v_ty_name, catchers) -> none;
     eval_block(env_throw, s) -> C | DynErrorConfig(), DivergingConfig();
     new_g := ordered_po(s_g, graph_of(C));
     --
@@ -4682,12 +4679,11 @@ semantics relation eval_catchers(env: envs, catchers: list0(catcher), otherwise_
   }
 
   case catch_none {
-    s_m =: Throwing(v, v_ty, sg, env_throw);
+    s_m =: Throwing(v, v_ty_name, sg, env_throw);
     otherwise_opt = none;
-    env =: (tenv, denv);
-    find_catcher(tenv, v_ty, catchers) -> none;
+    find_catcher(v_ty_name, catchers) -> none;
     --
-    Throwing(v, v_ty, sg, env_throw)
+    Throwing(v, v_ty_name, sg, env_throw)
     { [_] };
   }
 
@@ -4712,13 +4708,13 @@ render rule eval_catchers_catch_otherwise = eval_catchers(catch_otherwise);
 render rule eval_catchers_catch_none = eval_catchers(catch_none);
 render rule eval_catchers_no_throw = eval_catchers(catch_no_throw);
 
-semantics function find_catcher(tenv: static_envs, v_ty: ty, catchers: list0(catcher)) ->
+semantics function find_catcher(v_ty_name: Identifier, catchers: list0(catcher)) ->
   (catcher_opt: option(catcher))
 {
-  "returns the first \catcherterm{} in {catchers} that matches the type {v_ty} in {catcher_opt}, if one exists.
+  "returns in {catcher_opt} the first \catcherterm{} in {catchers} whose type name equals {v_ty_name}, if one exists.
   Otherwise, it returns $\none$",
-  prose_application = "the first \catcherterm{} in {catchers} that matches {v_ty} in {tenv}",
-  prose_transition = "finding the first \catcherterm{} in {catchers} that matches {v_ty} in {tenv} yields",
+  prose_application = "the first \catcherterm{} in {catchers} whose type name equals {v_ty_name}",
+  prose_transition = "finding the first \catcherterm{} in {catchers} whose type name equals {v_ty_name} yields",
 } =
   case empty {
     catchers = empty_list;
@@ -4728,19 +4724,17 @@ semantics function find_catcher(tenv: static_envs, v_ty: ty, catchers: list0(cat
 
   case match {
     catchers =: match_cons(c, catchers1);
-    c =: (name_opt, e_ty, s);
-    v_ty =: T_Named(v_name);
-    e_ty =: T_Named(e_name);
-    v_name = e_name;
+    c =: (name_opt, e_ty_name, s);
+    v_ty_name = e_ty_name;
     --
     some(c);
   }
 
   case no_match {
     catchers =: match_cons(c, catchers1);
-    c =: (name_opt, e_ty, s);
-    not(v_ty = T_Named(_) && e_ty = T_Named(_) && v_ty = e_ty);
-    find_catcher(tenv, v_ty, catchers1) -> d;
+    c =: (name_opt, e_ty_name, s);
+    v_ty_name != e_ty_name;
+    find_catcher(v_ty_name, catchers1) -> d;
     --
     d;
   }
@@ -9120,8 +9114,8 @@ typing function use_catcher(c: catcher) ->
   prose_application = "the set of identifiers used by {c}",
   prose_transition = "computing the set of identifiers used by {c} yields",
 } =
-  c =: (_, ty, s);
-  ids := union(use_ty(ty), use_stmt(s));
+  c =: (_, ty_name, s);
+  ids := union(make_set(Other(ty_name)), use_stmt(s));
   --
   ids;
 ;
@@ -9338,7 +9332,7 @@ typing relation annotate_stmt(tenv: static_envs, s: stmt) ->
     t_e =: T_Named(exn_name);
     ses := union(ses1, make_set(GlobalEffect(SE_Impure), LocalEffect(SE_Impure)));
     --
-    (typed_S_Throw(e', t_e), tenv, ses);
+    (typed_S_Throw(e', exn_name), tenv, ses);
   }
 
   // The implementation includes code for fine-grained side-effect analysis,
@@ -9868,14 +9862,14 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
   }
 
   case SThrow {
-    s =: typed_S_Throw(e, t);
+    s =: typed_S_Throw(e, exn_name);
     eval_expr(env, e) -> ResultExpr((v, g1), new_env);
     name := fresh_identifier();
     g2 := write_identifier(name, v);
     new_g := ordered_data(g1, g2);
     ex := (v, name);
     --
-    Throwing(ex, t, new_g, new_env);
+    Throwing(ex, exn_name, new_g, new_env);
   }
 
   case STry {
