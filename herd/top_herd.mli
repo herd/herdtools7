@@ -140,6 +140,7 @@ module Printer (O : PrinterConfig) (S : SemExtra.S) : sig
   type execution := TestResult.Make(S).execution
 
   val dump_final_state : S.test -> S.A.final_state -> string
+  val verdict : S.test -> stats -> string
   val pp_stats : ?time:float -> S.test -> stats -> Format.formatter -> unit
   val dump_exec_graph : Model.t -> S.test -> execution -> out_channel -> unit
 end
