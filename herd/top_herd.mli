@@ -78,6 +78,10 @@ module TestResult : sig
   val passes_check : ('conc, 'state, 'sets, 'rels) execution -> bool
   (** Whether the execution satisfies the test proposition. *)
 
+  val is_valid : ('conc, 'state, 'sets, 'rels) execution -> bool
+  (** Whether the CAT model accepts this execution. *)
+
+
   val flags : ('conc, 'state, 'sets, 'rels) execution -> Flag.Set.t
 
   val sets : ('conc, 'state, 'sets, 'rels) execution -> 'sets
