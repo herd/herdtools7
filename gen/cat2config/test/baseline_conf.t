@@ -88,3 +88,25 @@
   ### lwfs
   ## [(Exp & M) | (Imp & (Tag & R))]; (po & same-loc); [Exp & W]
   -safe Pos*W
+
+Pos*W pruning is opt-in.
+
+  $ mcat2config7 -prune all --set-libdir ./libdir --conf --let dob libdir/aarch64.cat
+  ### dob
+  -safe [DpAddrdW|DpAddr*R]
+  -safe DpDatadW
+  -safe DpCtrldW
+  -safe [DpAddr,Po**W]
+  -safe [DpAddr*W,PosWR]
+  -safe [DpData*W,PosWR]
+
+Without an explicit pruning option, all translated alternatives are retained.
+
+  $ mcat2config7 --set-libdir ./libdir --conf --let dob libdir/aarch64.cat
+  ### dob
+  -safe DpAddr
+  -safe DpData*W
+  -safe DpCtrl*W
+  -safe [DpAddr,Po**W]
+  -safe [DpAddr*W,PosWR]
+  -safe [DpData*W,PosWR]

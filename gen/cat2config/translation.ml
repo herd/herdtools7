@@ -515,8 +515,52 @@ let fold_relaxes relaxs =
   in
   fold_macros macro_relaxs |> List.map macro_relax_to_ast |> factor_relaxes
 
-(* Pruning is intentionally a separate pipeline stage. *)
-let prune_relaxes relaxs = relaxs
+let covered_by_pos_star_w = function
+  | Plain edge -> begin
+      match edge.E.edge with
+      | E.Po _ | E.Dp _ | E.Fenced _ ->
+          E.loc_sd edge = Code.Same && E.dir_tgt edge = Code.Dir Code.W
+      | E.Id | E.Communication _ | E.Rmw _ | E.Leave _ | E.Back _ | E.Hat
+      | E.Insert _ | E.Store | E.Node _ ->
+          false
+    end
+  | Predicate _ -> false
+
+let is_pos_star_w_relaxs relaxs =
+  let choices =
+    unfold_macro "Pos*W" |> List.map (List.map (fun edge -> Plain edge))
+  in
+  List.length choices = List.length relaxs
+  && List.for_all (fun choice -> List.mem choice relaxs) choices
+
+let prune_relaxes relaxs =
+  let has_two_same_location_po relax =
+    let locations =
+      List.filter_map
+        (function
+          | Plain { E.edge = E.Po (sd, _, _); _ } -> Some sd
+          | Plain _ | Predicate _ -> None)
+        relax
+    in
+    match locations with [ Code.Same; Code.Same ] -> true | _ -> false
+  in
+  (* Preserve the reference relaxation itself, including versions decorated
+     with boundary predicates. Its concrete [PosRW] and [PosWW] alternatives
+     satisfy [covered_by_pos_star_w], but only strictly stronger relaxations
+     should be removed. Do not prune a multi-edge relaxation merely because
+     an intermediate edge is covered by [Pos*W]. *)
+  if not (is_pos_star_w_relaxs relaxs) then
+    List.filter
+      (fun relax ->
+        (not (has_two_same_location_po relax))
+        &&
+        match
+          List.filter (function Plain _ -> true | Predicate _ -> false) relax
+        with
+        | [ edge ] -> not (covered_by_pos_star_w edge)
+        | _ -> true)
+      relaxs
+  else relaxs
 
 (* For example, wrapping an edge with `L` and `A` produces the relaxation
    `[L,edge,A]`. *)
