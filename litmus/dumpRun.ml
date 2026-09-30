@@ -227,7 +227,7 @@ let run_tests names flags out_chan =
            | Some a ->
                if a = arch then archo
                else
-                 Warn.fatal "diferent architectures in the same batch: %s (file %s) vs. %s"
+                 Warn.fatal "different architectures in the same batch: %s (file %s) vs. %s"
                    (Archs.pp arch) name (Archs.pp a) in
          let ans =
           try CT.from_file hashes name out_chan

@@ -249,6 +249,8 @@ module Make(O:Config)(Tar:Tar.S) =
         | Mode.Std ->
             cpy_std fnames "outs"
         | Mode.PreSi|Mode.Kvm ->
+            let fnames = cpy fnames "outhash" ".c" in
+            let fnames = cpy fnames "outhash" ".h" in
             fnames in
       let fnames =
         match O.affinity with
