@@ -37,7 +37,7 @@
   ## [Exp & R]; pick-addr-dep; [Exp & M]; po; [IFB]; po
   -safe [DpAddrCsel,ISB***]
   ## DSB-ob; [IFB]; po
-  -safe [[DSB.SY***|DSB.LD*R*|DSB.ST*W*],ISB]
+  -safe [[DSB.LD*R*|DSB.ST*W*|DSB.SY***],ISB]
   
   ### dob
   ## addr

@@ -247,7 +247,59 @@ let implied_constraints (l : prim_rel list) :
        ([], [], [])
 
 type relax_item = Concrete of E.edge | Macro of string
+
+(* [relax] is the final factored form consumed by the pretty-printer. *)
 type relax = (string, relax_item) Ast.t
+
+(* Predicate ASTs remain opaque while plain edges pass through the concrete,
+   prune, and refold stages. *)
+type 'edge predicate_edge = Plain of 'edge | Predicate of relax
+
+(* [concrete_relax] contains only concrete plain edges and is the input to
+   pruning and macro refolding. *)
+type concrete_relax = E.edge predicate_edge list
+
+(* [macro_relax] is macro-capable: its plain edges have been wrapped as
+   [Concrete] and may subsequently be replaced with [Macro] leaves. *)
+type macro_relax = relax_item predicate_edge list
+
+let compare_relax_item lhs rhs =
+  match (lhs, rhs) with
+  | Concrete lhs, Concrete rhs -> E.compare lhs rhs
+  | Concrete _, Macro _ -> -1
+  | Macro _, Concrete _ -> 1
+  | Macro lhs, Macro rhs -> String.compare lhs rhs
+
+let rec compare_relax lhs rhs =
+  let rank = function
+    | Ast.One _ -> 0
+    | Ast.Opt _ -> 1
+    | Ast.Seq _ -> 2
+    | Ast.Choice _ -> 3
+    | Ast.Predicate _ -> 4
+  in
+  match Misc.int_compare (rank lhs) (rank rhs) with
+  | 0 -> begin
+      match (lhs, rhs) with
+      | Ast.One lhs, Ast.One rhs -> compare_relax_item lhs rhs
+      | Ast.Opt lhs, Ast.Opt rhs -> compare_relax lhs rhs
+      | Ast.Seq lhs, Ast.Seq rhs | Ast.Choice lhs, Ast.Choice rhs ->
+          List.compare compare_relax lhs rhs
+      | Ast.Predicate (lpred, lrelax), Ast.Predicate (rpred, rrelax) ->
+          Misc.pair_compare String.compare compare_relax (lpred, lrelax)
+            (rpred, rrelax)
+      | _, _ -> assert false
+    end
+  | order -> order
+
+let compare_folded_edge lhs rhs =
+  match (lhs, rhs) with
+  | Plain lhs, Plain rhs -> compare_relax_item lhs rhs
+  | Plain _, Predicate _ -> -1
+  | Predicate _, Plain _ -> 1
+  | Predicate lhs, Predicate rhs -> compare_relax lhs rhs
+
+let compare_folded_relax = List.compare compare_folded_edge
 
 let concat_relax (relaxs : relax list) : relax =
   let items =
@@ -266,6 +318,108 @@ let concat_relax (relaxs : relax list) : relax =
       items []
   in
   match items with [ item ] -> item | items -> Ast.Seq items
+
+let insert_choice prefix choice suffix =
+  prefix @ List.map (fun edge -> Plain (Concrete edge)) choice @ suffix
+
+let find_sized_window_with_prefix_suffix size predicate list =
+  let rec take count window = function
+    | suffix when count = 0 -> Some (List.rev window, suffix)
+    | [] -> None
+    | item :: suffix -> take (count - 1) (item :: window) suffix
+  in
+  let rec do_rec rev_prefix = function
+    | [] -> None
+    | item :: suffix as list -> (
+        match take size [] list with
+        | None -> None
+        | Some (window, suffix_after_window) ->
+            let prefix = List.rev rev_prefix in
+            if predicate prefix window suffix_after_window then
+              Some (prefix, suffix_after_window)
+            else do_rec (item :: rev_prefix) suffix)
+  in
+  if size <= 0 then invalid_arg "find_sized_window_with_prefix_suffix"
+  else do_rec [] list
+
+(* All choices have the same size. For each relaxation, consider every
+   position where a choice could occur and retain its surrounding prefix and
+   suffix. The window itself need not be inspected: rebuilding the relaxation
+   with every choice and finding all of them in [relaxs] proves that the full
+   macro family occurs in this context. Return the first such context. *)
+let find_common_prefix_suffix choices relaxs =
+  let size = List.length (R.Set.choose choices) in
+  List.find_map
+    (fun relax ->
+      find_sized_window_with_prefix_suffix size
+        (fun prefix _window suffix ->
+          R.Set.for_all
+            (fun choice -> List.mem (insert_choice prefix choice suffix) relaxs)
+            choices)
+        relax)
+    relaxs
+
+let replace_macro_once name choices relaxs =
+  let candidate = find_common_prefix_suffix choices relaxs in
+  match candidate with
+  | None -> None
+  | Some (prefix, suffix) ->
+      let matched =
+        R.Set.fold
+          (fun choice matched -> insert_choice prefix choice suffix :: matched)
+          choices []
+      in
+      let replacement = prefix @ (Plain (Macro name) :: suffix) in
+      let relaxs =
+        List.filter (fun relax -> not (List.mem relax matched)) relaxs
+      in
+      Some (List.sort compare_folded_relax (replacement :: relaxs))
+
+let fold_macro (name, choices) relaxs =
+  let rec do_rec relaxs =
+    match replace_macro_once name choices relaxs with
+    | None -> relaxs
+    | Some relaxs -> do_rec relaxs
+  in
+  do_rec relaxs
+
+let fold_macros =
+  (* Fold broader macros first so smaller overlapping expansions do not consume
+     their alternatives. Prefer more choices; lexical order makes equal
+     candidates deterministic. *)
+  let priority (name, choices) = (-R.Set.cardinal choices, name) in
+  let macro_entries =
+    R.MacroTable.fold_wildcard
+      (fun name relaxs entries ->
+        match relaxs with
+        | [] -> assert false
+        | choice :: choices ->
+            let size = List.length choice in
+            assert (size > 0);
+            assert (
+              List.for_all (fun choice -> List.length choice = size) choices);
+            (name, R.Set.of_list relaxs) :: entries)
+      []
+    |> List.sort (fun lhs rhs ->
+        Misc.pair_compare Misc.int_compare String.compare (priority lhs)
+          (priority rhs))
+  in
+  fun relaxs ->
+    List.fold_left
+      (fun relaxs entry -> fold_macro entry relaxs)
+      relaxs macro_entries
+
+let unfold_macro =
+  let macros =
+    R.MacroTable.fold_wildcard
+      (fun name relaxs macros ->
+        StringMap.add name (R.Set.of_list relaxs) macros)
+      StringMap.empty
+  in
+  fun name ->
+    match StringMap.find_opt name macros with
+    | Some relaxs -> R.Set.elements relaxs
+    | None -> Warn.fatal "Unknown macro %s" name
 
 (* Reconstruct choices and optional items from flat alternatives so that
    [pp_relax] prints, for example, `[A|Q]` instead of separate `A` and `Q`
@@ -341,17 +495,52 @@ let factor_relaxes relaxs =
   in
   do_rec relaxs
 
-(* For example, wrapping `Macro "Po"` with `L` and `A` produces the
-   relaxation `[L,Po,A]`. *)
-let split_annotations item left right =
-  let annotation atom =
-    Concrete E.{ edge = Id; a1 = Some atom; a2 = Some atom }
+let macro_relax_to_ast relax =
+  List.map
+    (function Plain item -> Ast.One item | Predicate relax -> relax)
+    relax
+  |> concat_relax
+
+let fold_relaxes relaxs =
+  let macro_relaxs : macro_relax list =
+    List.map
+      (List.map (function
+        | Plain edge -> Plain (Concrete edge)
+        | Predicate relax -> Predicate relax))
+      relaxs
   in
+  fold_macros macro_relaxs |> List.map macro_relax_to_ast |> factor_relaxes
+
+(* Pruning is intentionally a separate pipeline stage. *)
+let prune_relaxes relaxs = relaxs
+
+(* For example, wrapping an edge with `L` and `A` produces the relaxation
+   `[L,edge,A]`. *)
+let split_annotations item left right =
+  let annotation atom = E.{ edge = Id; a1 = Some atom; a2 = Some atom } in
   let annotations = function None -> [] | Some atom -> [ annotation atom ] in
   annotations left @ [ item ] @ annotations right
 
+let make_concrete_relax left_atom right_atom insert edges =
+  let edges =
+    match edges with
+    | [] -> []
+    | first :: rest -> split_annotations first left_atom None @ rest
+  in
+  let edges =
+    match List.rev edges with
+    | [] -> []
+    | last :: rest -> List.rev rest @ split_annotations last None right_atom
+  in
+  let edges =
+    match insert with
+    | None -> edges
+    | Some insert -> edges @ [ E.plain_edge (Insert insert) ]
+  in
+  List.map (fun edge -> Plain edge) edges
+
 let try_match_edge (left : prim_set list) (core : seq_item list)
-    (right : prim_set list) : relax list option =
+    (right : prim_set list) : concrete_relax list option =
   let open Util.Option.Infix in
   let* implied_left, pedge, implied_right =
     match core with
@@ -408,34 +597,27 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
   let* _ = Util.Option.guard left.explicit_mem in
   let* right = build_effect initial_effect (right @ implied_right) in
   let* _ = Util.Option.guard right.explicit_mem in
-  let tedges =
-    tedges
-    |> List.concat_map (filter_tedge pedge.sd pedge.ie left.extr right.extr)
-  in
   let relaxs =
     tedges
-    |> List.map (fun (tedge : tedge) ->
-        let item =
+    |> List.concat_map (filter_tedge pedge.sd pedge.ie left.extr right.extr)
+    |> List.concat_map (fun (tedge : tedge) ->
+        let head_relaxs =
           match tedge.head with
-          | Macro name -> Macro name
+          | Macro name -> unfold_macro name
           | Concrete edge ->
               let edge = E.{ edge; a1 = None; a2 = None } in
               let edge = set_src left.extr edge in
               let edge = set_tgt right.extr edge in
-              Concrete edge
+              [ [ edge ] ]
         in
-        let edges = split_annotations item left.atom right.atom in
-        let edges =
-          match tedge.insert with
-          | None -> edges
-          | Some insert -> edges @ [ Concrete (E.plain_edge (Insert insert)) ]
-        in
-        concat_relax (List.map (fun edge -> Ast.One edge) edges))
+        List.map
+          (make_concrete_relax left.atom right.atom tedge.insert)
+          head_relaxs)
   in
   Some relaxs
 
 type state = {
-  relaxs : relax list;
+  relaxs : concrete_relax list;
   left : prim_set Ir.inter;
   core : seq_item list;
   right : prim_set Ir.inter;
@@ -514,8 +696,8 @@ let filter_unsupported_relations =
     | Prim ("sca-class" | "intervening") -> false
     | _ -> true)
 
-let translate_seq (Seq l : seq_item Ir.seq) : relax list =
-  let l = [ Ir.Set (Inter [ Prim "M" ]) ] @ l @ [ Set (Inter [ Prim "M" ]) ] in
+let translate_seq (Seq l : seq_item Ir.seq) : concrete_relax list =
+  let explicit_memory = Ir.Inter [ Ir.Prim "M" ] in
   let st =
     fold_with_rest
       (fun st item rest ->
@@ -539,7 +721,7 @@ let translate_seq (Seq l : seq_item Ir.seq) : relax list =
                     let open Util.List.Infix in
                     let* edge = edge_alts in
                     let* prev_edges = st.relaxs in
-                    [ concat_relax [ prev_edges; edge ] ]
+                    [ prev_edges @ edge ]
                   in
                   let left = st.right in
                   { relaxs; left; core = []; right = Inter [] }
@@ -551,8 +733,8 @@ let translate_seq (Seq l : seq_item Ir.seq) : relax list =
               else core @ [ Set st.right; Rel r ]
             in
             { st with core; right = Inter [] })
-      { relaxs = [ Ast.Seq [] ]; left = Inter []; core = []; right = Inter [] }
-      l
+      { relaxs = [ [] ]; left = explicit_memory; core = []; right = Inter [] }
+      (l @ [ Ir.Set explicit_memory ])
   in
   if st.core = [] then st.relaxs else []
 
@@ -570,7 +752,7 @@ let translate ~binding (nf : Ir.rel_nf) : relax list =
     List.fold_left (fun acc seq -> acc @ translate_seq seq) [] (Ir.get_union nf)
   in
   let relaxs = Util.List.uniq ~eq:( = ) relaxs in
-  factor_relaxes relaxs
+  relaxs |> prune_relaxes |> fold_relaxes
 
 let pp_relax_item = function
   | Concrete edge -> E.pp_edge edge

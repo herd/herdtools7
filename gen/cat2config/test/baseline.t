@@ -21,7 +21,7 @@ aarch64hwreqs.cat
   [DpCtrlCsel,ISB]
   [DpAddr,ISB***]
   [DpAddrCsel,ISB***]
-  [[DSB.SY***|DSB.LD*R*|DSB.ST*W*],ISB]
+  [[DSB.LD*R*|DSB.ST*W*|DSB.SY***],ISB]
   $ mcat2config7 --set-libdir ./libdir --let dob libdir/aarch64.cat
   DpAddr
   DpData*W
