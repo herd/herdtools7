@@ -865,7 +865,7 @@ module Make (M:Cfg)
                      atomic_load_store = E.EventRel.empty
                    } in
                  model_kont conc conc.S.fs
-                   (lazy StringMap.empty,pp_relns) e.flags res0
+                   (lazy StringMap.empty,pp_relns) e.flags true res0
                else begin
                    res0
                  end
