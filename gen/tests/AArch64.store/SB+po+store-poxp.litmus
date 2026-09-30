@@ -14,4 +14,4 @@ AArch64 SB+po+store-poxp
  CBNZ W3,Loop00  |             ;
  LDR W5,[X4]     |             ;
 
-exists ([x]=2 /\ 0:X2=1 /\ 0:X5=0 /\ 1:X2=0)
+exists (0:X2=1 /\ 0:X5=0 /\ 1:X2=0)
