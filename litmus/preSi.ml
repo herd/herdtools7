@@ -643,7 +643,7 @@ module Make
 
       let is_active = match Cfg.alloc with
         | Alloc.Dynamic -> false
-        | Alloc.Static|Alloc.Before -> not Cfg.is_kvm
+        | Alloc.Static|Alloc.Before -> not Cfg.is_kvm && do_inlined
 
       let dbg = false
 
