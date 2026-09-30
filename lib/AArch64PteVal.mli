@@ -39,6 +39,8 @@ type t = {
   attrs : Attrs.t;
   }
 
+val oa : t -> OutputAddress.t
+
 (* Identity translations *)
 val fromExtra : t -> t
 val toExtra : t -> t

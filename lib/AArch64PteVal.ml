@@ -191,6 +191,8 @@ type t = {
   attrs: Attrs.t;
   }
 
+let oa v = v.oa
+
 let fromExtra t = t
 and toExtra t = t
 
