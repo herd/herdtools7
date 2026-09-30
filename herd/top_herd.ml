@@ -62,8 +62,9 @@ module TestResult = struct
     | None -> false
     | Some f -> Flag.Map.mem (Flag.Flag f) c.flagged)
 
-  type ('conc, 'sets, 'rels) execution =
+  type ('conc, 'state, 'sets, 'rels) execution =
     { concrete : 'conc;
+      final_state : 'state;
       passes_check : bool;
       flags : Flag.Set.t;
       sets : 'sets Lazy.t;
@@ -71,6 +72,7 @@ module TestResult = struct
     }
 
   let concrete x = x.concrete
+  let final_state x = x.final_state
   let passes_check x = x.passes_check
   let flags x = x.flags
   let sets x = Lazy.force x.sets
@@ -85,7 +87,7 @@ module TestResult = struct
     module T = Test_herd.Make (S.A)
 
     type nonrec stats = S.A.StateSet.t stats
-    type nonrec execution = (S.concrete, S.set_pp, S.rel_pp) execution
+    type nonrec execution = (S.concrete, S.A.final_state, S.set_pp, S.rel_pp) execution
     type nonrec t = (S.event_structure, execution, stats) t
 
     let count_prop ~byte test c =
@@ -117,6 +119,10 @@ module Printer (O : PrinterConfig) (S : SemExtra.S) = struct
 
 (* Location out printing *)
   let tr_out test = OutMapping.info_to_tr  test.Test_herd.info
+
+  let dump_final_state test =
+    A.do_dump_final_state
+      test.Test_herd.type_env test.Test_herd.ffaults (tr_out test)
 
 (* Check condition *)
 
@@ -178,10 +184,7 @@ module Printer (O : PrinterConfig) (S : SemExtra.S) = struct
     let tr_out = tr_out test in
     fprintf fmt "States %i\n" nfinals ;
     let state_set_str =
-      A.StateSet.pp_str "\n" (fun st ->
-        A.do_dump_final_state
-          test.Test_herd.type_env test.Test_herd.ffaults
-          tr_out st) finals
+      A.StateSet.pp_str "\n" (dump_final_state test) finals
     in
     if nfinals > 0 then
       fprintf fmt "%s\n" state_set_str;
@@ -381,10 +384,12 @@ module Make(O:Config)(M:XXXMem.S) =
               | ShowAll -> true
               | ShowNone -> false
               | ShowFlag f -> Flag.Set.mem (Flag.Flag f) flags in
+            let fsc = do_restrict test (st,flts,solver) in
             begin if show_exec then
               let exec =
                 {
                   TestResult.concrete = conc;
+                  final_state = fsc;
                   passes_check = ok;
                   flags;
                   sets = set_pp;
@@ -393,7 +398,6 @@ module Make(O:Config)(M:XXXMem.S) =
               in
               emit_exec exec
             end;
-            let fsc = do_restrict test (st,flts,solver) in
             let r =
               Count.{
                 cands = c.cands+1;
