@@ -1714,7 +1714,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               let () = if _dbg then prerr_endline "ASL cat, failure" in
               acc
             in
-            let ksuccess conc _fs (out_sets, out_show) _flags acc =
+            let ksuccess conc _fs (out_sets, out_show) _flags _is_valid acc =
               let () = if _dbg then prerr_endline "ASL cat, success" in
               let c = (conc, cs, Lazy.force out_sets, Lazy.force out_show) in
               let () = end_profile t0 "ASL cat, success" in

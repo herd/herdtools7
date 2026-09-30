@@ -25,7 +25,8 @@ module type S = sig
         ('a -> 'a) ->
 	(S.concrete ->  S.A.state * S.A.FaultSet.t ->
          (S.set_pp Lazy.t * S.rel_pp Lazy.t) ->
-          Flag.Set.t (* Flags set during that execution *) -> 'a -> 'a) ->
+         Flag.Set.t (* Flags set during that execution *) ->
+         bool (* CAT-model acceptance *) -> 'a -> 'a) ->
               'a -> 'a
 
 end

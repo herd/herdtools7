@@ -506,7 +506,7 @@ module Make
                     res
                 end else begin
                   kont conc conc.S.fs
-                    (lazy StringMap.empty,vb_pp) Flag.Set.empty res
+                    (lazy StringMap.empty,vb_pp) Flag.Set.empty true res
                 end
           end in
         U.apply_process_co test conc process_co res

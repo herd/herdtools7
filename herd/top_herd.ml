@@ -65,6 +65,7 @@ module TestResult = struct
   type ('conc, 'state, 'sets, 'rels) execution =
     { concrete : 'conc;
       final_state : 'state;
+      is_valid : bool;
       passes_check : bool;
       flags : Flag.Set.t;
       sets : 'sets Lazy.t;
@@ -73,6 +74,7 @@ module TestResult = struct
 
   let concrete x = x.concrete
   let final_state x = x.final_state
+  let is_valid x = x.is_valid
   let passes_check x = x.passes_check
   let flags x = x.flags
   let sets x = Lazy.force x.sets
@@ -343,7 +345,7 @@ module Make(O:Config)(M:XXXMem.S) =
       let cstr = T.find_our_constraint test in
       let check = check_prop solver test in
 
-      fun conc (st,flts) (set_pp,vbpp) flags c ->
+      fun conc (st,flts) (set_pp,vbpp) flags is_valid c ->
         if do_observed && not (all_observed test conc) then c
         else if
           match O.throughflag with
@@ -390,6 +392,7 @@ module Make(O:Config)(M:XXXMem.S) =
                 {
                   TestResult.concrete = conc;
                   final_state = fsc;
+                  is_valid;
                   passes_check = ok;
                   flags;
                   sets = set_pp;
@@ -439,7 +442,7 @@ module Make(O:Config)(M:XXXMem.S) =
     let check_failed_model_kont
           cutoff cs solver
           emit_exec test do_restrict
-          conc (st,flts) (set_pp,vbpp) flags c  =
+          conc (st,flts) (set_pp,vbpp) flags is_valid c  =
 
       let open S.M.VC in
       match cs with
@@ -448,7 +451,7 @@ module Make(O:Config)(M:XXXMem.S) =
           if O.debug.Debug_herd.top then
             model_kont solver
               emit_exec test do_restrict
-              conc (st,flts) (set_pp,vbpp) flags c
+              conc (st,flts) (set_pp,vbpp) flags is_valid c
           else raise e
       | Some (Warn msg) ->
          (* Warn and ignore *)
@@ -459,7 +462,7 @@ module Make(O:Config)(M:XXXMem.S) =
           else
             model_kont solver
               emit_exec test do_restrict
-              conc (st,flts) (set_pp,vbpp) flags c
+              conc (st,flts) (set_pp,vbpp) flags is_valid c
 
     type test_results = TestResult.Make(M.S).t
 
