@@ -121,6 +121,7 @@ module Make
           out_sets : S.set_pp Lazy.t ;
           out_skipped : StringSet.t ;
           out_flags : Flag.Set.t ;
+          out_valid : bool ;
           out_bell_info :  BellModel.info ;
         }
 
@@ -576,6 +577,7 @@ module Make
         show : Shown.t StringMap.t Lazy.t ;
         skipped : StringSet.t ;
         flags : Flag.Set.t ;
+        valid : bool ;
         ks : ks ;
         bell_info : BellModel.info ;
         st : inter_st ;
@@ -587,6 +589,7 @@ module Make
         out_sets : S.event_set StringMap.t Lazy.t ;
         out_skipped : StringSet.t ;
         out_flags : Flag.Set.t ;
+        out_valid : bool ;
         out_bell_info :  BellModel.info ;
       }
 
@@ -618,6 +621,7 @@ module Make
        out_sets = lazy (show_to_sets st) ;
        out_skipped = st.skipped ;
        out_flags = st.flags ;
+       out_valid = st.valid ;
        out_bell_info = st.bell_info ; }
 
 
@@ -2643,7 +2647,12 @@ module Make
                         if
                           O.strictskip || not skip || cycle
                         then
-                          let ok = eval_test (check_through test_type) (from_st st) t e in
+                          let raw_ok = eval_test Misc.identity (from_st st) t e in
+                          let ok = check_through test_type raw_ok in
+                          let st =
+                            if test_type = Check && not skip && not raw_ok then
+                              { st with valid = false }
+                            else st in
                           if
                             cycle &&
                             begin match ok,t with
@@ -2758,6 +2767,7 @@ module Make
         let st =
           {env=m; show=show; skipped=StringSet.empty;
            flags=Flag.Set.empty;
+           valid=true;
            ks; bell_info=BellModel.empty_info;
            st=inter_st_empty; } in
 
