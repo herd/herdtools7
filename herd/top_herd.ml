@@ -135,6 +135,13 @@ module Printer (O : PrinterConfig) (S : SemExtra.S) = struct
     | NotExistsState _-> c.TestResult.pos = 0
     | ForallStates _  -> c.TestResult.neg = 0
 
+  let verdict cstr c =
+    let verdict =
+      let has_bad_execs = TestResult.has_bad_execs ~badflag:O.badflag in
+      let ok = check_cond cstr c in
+      if has_bad_execs c then "Undef" else if ok then "Ok" else "No" in
+    (if Base.Misc.is_some c.TestResult.cutoff then "Loop " else "") ^ verdict
+
   let check_wit cstr c =
     let open ConstrGen in
     match cstr with
@@ -191,11 +198,7 @@ module Printer (O : PrinterConfig) (S : SemExtra.S) = struct
     if nfinals > 0 then
       fprintf fmt "%s\n" state_set_str;
 (* Condition result *)
-    let has_bad_execs = TestResult.has_bad_execs ~badflag:O.badflag in
-    let ok = check_cond cstr c in
-    fprintf fmt "%s%s\n"
-      (if Base.Misc.is_some c.cutoff then "Loop " else "")
-      (if has_bad_execs c then "Undef" else if ok then "Ok" else "No") ;
+    fprintf fmt "%s\n" (verdict cstr c) ;
     fprintf fmt "Witnesses\n" ;
     let pos,neg = check_wit cstr c in
     fprintf fmt "Positive: %i Negative: %i\n" pos neg ;
