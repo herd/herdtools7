@@ -231,6 +231,11 @@ end = struct
   | Inv (_,None) | CMO (_,None) | NoAction
     -> None
 
+(* access to memory or register *)
+  let is_access = function
+    | Access _ -> true
+    | _ -> false
+
 (* relative to memory *)
   let is_mem_arch_action a =
     match A.ArchAction.location_of a with
