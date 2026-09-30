@@ -1,0 +1,5 @@
+(* diyone7 -arch AArch64 -variant asym -metadata false -oneloc PosRW RevT Rfi *)
+(*
+[2]
+Fatal error: exception Misc.UserError("variants `Sync`, `Async`, `Asym` and `StoreOnly` require `MemTag`")
+*)

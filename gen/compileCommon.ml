@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 module type Config = sig
-  val verbose : int
+  val debug : Debug_gen.t
   val show : ShowGen.t option
   val same_loc : bool
   val unrollatomic : int option
@@ -23,7 +23,7 @@ module type Config = sig
   val typ : TypBase.t
   val hexa : bool
   val moreedges : bool
-  val variant : Variant_gen.t -> bool
+  val variant : Variant_gen.set
   val wildcard : bool
 end
 
@@ -63,6 +63,7 @@ module Make(C:Config) (A:Arch_gen.S) = struct
         let variant = C.variant
         let naturalsize = TypBase.get_size C.typ
         let wildcard = C.wildcard
+        let debug = C.debug
       end)
       (A)(A)
 
@@ -80,6 +81,7 @@ module Make(C:Config) (A:Arch_gen.S) = struct
   module Conf = struct
     include C
     let naturalsize = TypBase.get_size C.typ
+    let init_value = !Config.init_value
   end
   module C = Cycle.Make(Conf)(E)
 (* Big constant *)

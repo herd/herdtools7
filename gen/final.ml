@@ -15,11 +15,11 @@
 (****************************************************************************)
 
 module type Config = sig
-  val verbose : int
+  val debug : Debug_gen.t
   val cond : Config.cond
   val optcond : bool
   val hexa : bool
-  val variant : Variant_gen.t -> bool
+  val variant : Variant_gen.set
 end
 
 module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
@@ -118,7 +118,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           let e = m.C.C.edge in
           let open C.E in
           match e.edge with
-          | Communication _ | Hat
+          | Communication _ | Coms _ | Hat
           | Back _|Leave _ -> true
           | Rmw rmw -> RMW.show_rmw_reg rmw
           | Po _ | Fenced _ | Dp _ ->

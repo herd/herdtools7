@@ -18,10 +18,12 @@
 
 type t = {
   lexer : bool ;
-  top : bool ;
-  generator : bool ;
+  parser : bool ;
+  search : bool ;
+  searchsteps : bool ;
+  cycle : bool ;
   model : bool ;
-  files : bool ;
+  io : bool ;
   }
 
 val none : t
