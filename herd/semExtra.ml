@@ -56,13 +56,14 @@ module type S = sig
   type constr = A.constr
 
   type nice_prog = A.nice_prog
+  type annotated_prog = (int (* addr *) * A.CodeInstr.t) A.prog
   type start_points = A.start_points
   type code_segment = A.code_segment
   type entry_points = A.entry_points
 
   type proc_info = Test_herd.proc_info
   type test =
-      (program, nice_prog, start_points, code_segment, entry_points,
+      (program, nice_prog, annotated_prog, start_points, code_segment, entry_points,
        state, A.size_env, A.type_env,
        prop, location, A.RLocSet.t, A.FaultAtomSet.t) Test_herd.t
 
@@ -242,13 +243,14 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
 
     type program = A.program
     type nice_prog = A.nice_prog
+    type annotated_prog = (int * A.CodeInstr.t) A.prog
     type start_points = A.start_points
     type code_segment = A.code_segment
     type entry_points = A.entry_points
 
     type proc_info = Test_herd.proc_info
     type test =
-      (program, nice_prog, start_points, code_segment, entry_points, state,
+      (program, nice_prog, annotated_prog, start_points, code_segment, entry_points, state,
        A.size_env, A.type_env,
        prop, location, A.RLocSet.t, A.FaultAtomSet.t) Test_herd.t
 
