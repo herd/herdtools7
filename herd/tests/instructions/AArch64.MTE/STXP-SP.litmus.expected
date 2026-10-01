@@ -1,0 +1,11 @@
+Test STXP-SP Required
+States 2
+0:X5=0; x={1,2};  ~Fault(P0,x,TagCheck);
+0:X5=1; x={0,0};  ~Fault(P0,x,TagCheck);
+No
+Witnesses
+Positive: 1 Negative: 1
+Condition forall (x={1,2} /\ 0:X5=0 /\ not (fault(P0,x,TagCheck)))
+Observation STXP-SP Sometimes 1 1
+Hash=ff98a7c0d2aa0abc8d6bdfd3f5a76bc9
+

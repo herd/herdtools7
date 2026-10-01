@@ -1,0 +1,10 @@
+Test LDRB-SP Required
+States 1
+0:X0=1;  ~Fault(P0,x,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1 /\ not (fault(P0,x,TagCheck)))
+Observation LDRB-SP Always 1 0
+Hash=3c1c7ef0a5ec893d6192743747ae5c41
+
