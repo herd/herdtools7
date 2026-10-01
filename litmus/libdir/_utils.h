@@ -17,7 +17,6 @@
 #define _UTILS_H 1
 
 #include <stdio.h>
-#include <inttypes.h>
 #include <pthread.h>
 #include "litmus_rand.h"
 

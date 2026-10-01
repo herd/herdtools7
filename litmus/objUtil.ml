@@ -223,6 +223,8 @@ module Make(O:Config)(Tar:Tar.S) =
       | Mode.Std ->
           cpy_std fnames "utils"
       | Mode.PreSi ->
+         let fnames = cpy fnames "presi_io" ".h" in
+         let fnames = cpy fnames "presi_count" ".h" in
          if do_dynalloc then
            let fnames =
              cpy' ~prf:"#define DYNALLOC 1" fnames "presi" "utils" ".c" in
@@ -231,6 +233,8 @@ module Make(O:Config)(Tar:Tar.S) =
            let fnames = cpy' fnames "presi" "utils" ".c" in
            cpy' fnames "presi" "utils" ".h"
       |  Mode.Kvm ->
+          let fnames = cpy' fnames "kvm_io" "presi_io" ".h" in
+          let fnames = cpy' fnames "kvm_count" "presi_count" ".h" in
           let prf =
             if do_dynalloc then
               "#define KVM 1\n#define DYNALLOC 1"
