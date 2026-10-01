@@ -231,6 +231,11 @@ end = struct
   | Inv (_,None) | CMO (_,None) | NoAction
     -> None
 
+(* access to memory or register *)
+  let is_access = function
+    | Access _ -> true
+    | _ -> false
+
 (* relative to memory *)
   let is_mem_arch_action a =
     match A.ArchAction.location_of a with
@@ -404,6 +409,10 @@ end = struct
   let is_reg a (p:int) = match a with
   | Access (_,A.Location_reg (q,_),_,_,_,_,_) -> p = q
   | _ -> false
+
+  let get_reg_size a = match a with
+  | Access (_,A.Location_reg _,_,_,_,sz,_) -> sz
+  | _ -> assert false
 
 (* Store/Load anywhere *)
   let is_store a = match a with

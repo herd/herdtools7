@@ -70,16 +70,24 @@ end = struct
   | Fence _ -> true
   | _ -> false
 
-  let barrier_of _ = assert false
+  let barrier_of _ = None
   let same_barrier_id _ _ = assert false
 
   let is_rmw a = match a with
   | RMW _ -> true
   | _ -> false
 
+  let is_access = function
+    | Access _ -> true
+    | _ -> false
+
   let is_reg a (p:int) = match a with
   | Access (_,A.Location_reg (q,_),_,_,_) -> p = q
   | _ -> false
+
+  let get_reg_size a = match a with
+  | Access (_,A.Location_reg _,_,_,sz) -> sz
+  | _ -> assert false
 
   let is_mem a = match a with
   | Access (_,A.Location_global _,_,_,_) -> true

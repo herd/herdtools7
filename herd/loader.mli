@@ -18,15 +18,19 @@
 
 module type S = sig
   type nice_prog
+
+  (* nice_prog with labels, directives, addr, static_poi from CodeInstr *)
+  type annotated_prog
   type program
   type start_points
   type code_segment
 
-  val load : nice_prog -> program * start_points * code_segment
+  val load : nice_prog -> program * start_points * code_segment * annotated_prog
 end
 
 module Make : functor (A:Arch_herd.S) -> S
 with type nice_prog = A.nice_prog
+and type annotated_prog = (int (* addr *) * A.CodeInstr.t) A.prog
 and type program = A.program
 and type start_points = A.start_points
 and type code_segment = A.code_segment

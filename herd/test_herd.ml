@@ -17,7 +17,7 @@
 type proc_info = (string * int list) list
 
 type
-  ('prog,'nice_prog,'start,'ret,'entry,'state,
+  ('prog,'nice_prog,'annotated_prog,'start,'ret,'entry,'state,
    'size_env, 'type_env,
    'prop,'loc,'locset,'fset) t =
     {
@@ -26,6 +26,7 @@ type
      info : MiscParser.info ;
      program : 'prog ;
      nice_prog : 'nice_prog ;
+     annotated_prog : 'annotated_prog ;
      start_points : 'start ;
      code_segment : 'ret ;
      entry_points : 'entry;
@@ -61,7 +62,8 @@ module Make(A:Arch_herd.S) =
   struct
 
     type result =
-      (A.program, A.nice_prog, A.start_points, A.code_segment, A.entry_points, A.state,
+      (A.program, A.nice_prog, (int * A.CodeInstr.t) A.prog,
+       A.start_points, A.code_segment, A.entry_points, A.state,
        A.size_env, A.type_env,
        A.prop, A.location, A.RLocSet.t,A.FaultAtomSet.t) t
 
@@ -249,7 +251,7 @@ module Make(A:Arch_herd.S) =
            extra_data = extra_data ;
          } = t in
 
-      let prog,starts,rets = Load.load nice_prog in
+      let prog,starts,rets,annotated_prog = Load.load nice_prog in
       (* ensure labels in the init list are present in the body of the test*)
       List.iter (fun (_,(_,v)) ->
         let open Constant in
@@ -298,6 +300,7 @@ module Make(A:Arch_herd.S) =
        info = info ;
        program = prog ;
        nice_prog = nice_prog ;
+       annotated_prog = annotated_prog ;
        start_points = starts ;
        code_segment = rets ;
        entry_points = entry_points;
@@ -332,6 +335,7 @@ module Make(A:Arch_herd.S) =
        info = [] ;
        program = Label.Map.empty ;
        nice_prog = [] ;
+       annotated_prog = [] ;
        start_points = [] ;
        code_segment = IntMap.empty ;
        entry_points = (fun _ -> Label.Set.empty) ;
