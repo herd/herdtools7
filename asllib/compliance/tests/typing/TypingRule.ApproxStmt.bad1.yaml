@@ -1,4 +1,4 @@
-mode: exec
+mode: no-exec
 outcome: FAILURE
 error: TE_BSPD
 error_line: 8

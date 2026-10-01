@@ -106,12 +106,18 @@ let run_aslref ~test_stem mode =
           (Printf.sprintf "ASLRef error is missing an error code:\n%s"
              (Asllib.Error.error_to_string error))
     | Some code ->
-        let info = Asllib.Error.error_to_string error in
+        let open Asllib.Error in
+        let info = error_to_string error in
+        let mode =
+          match code with
+          | ErrorCode.(Typing _ | Build _) -> TC.NoExec
+          | ErrorCode.Dynamic _ -> mode
+        in
         {
           TC.mode;
           outcome = TC.Failure;
           output = output_of_buffer stdout_buffer;
-          error_code = Some (Asllib.Error.ErrorCode.to_string code);
+          error_code = Some (ErrorCode.to_string code);
           error_line = error_line_of_annotated error;
           info = Some info;
         })
