@@ -407,7 +407,12 @@ let fold_tedges f r =
           (fun sd e1 e2 -> f (Fenced (fe,sd,e1,e2)))) r in
   let r =
     F.fold_dp
-      (fun dp -> fold_sd_extr wildcard (fun sd e -> f (Dp (dp,sd,e)))) r in
+      (fun dp ->
+        if F.is_data dp then
+          fold_sd wildcard (fun sd r ->
+            let r = f (Dp (dp,sd,Dir W)) r in
+            if wildcard then f (Dp (dp,sd,Irr)) r else r)
+        else fold_sd_extr wildcard (fun sd e -> f (Dp (dp,sd,e)))) r in
   let r = f Id r in
   let r = f (Node R) (f (Node W) r) in
   let r = f Hat r in
@@ -816,9 +821,8 @@ let fold_tedges f r =
   | _,None -> true
   | Some a1,Some a2 -> Option.is_some (merge_atoms a1 a2)
 
-  let can_precede_dp_data_read x y = match x.edge with
-  | Dp (dp,_,Dir R) when F.is_data dp ->
-      begin match y.edge with Rmw _ -> true | _ -> false end
+  let can_precede_dp_data_read x _ = match x.edge with
+  | Dp (dp,_,Dir R) when F.is_data dp -> false
   | _ -> true
 
   let valid_atoms edge =
@@ -868,7 +872,11 @@ let fold_tedges f r =
         let expand_rmw_list = A.RMW.expand_rmw rmw in
         List.fold_left ( fun acc new_rmw -> f {e with edge=Rmw(new_rmw);} acc) acc expand_rmw_list
     | Dp (dp,sd,expr) ->
-      expand_dir expr (fun new_expr ->
+      (if F.is_data dp then
+         fun f acc -> match expr with
+         | Irr -> f (Dir W) acc
+         | Dir _|NoDir -> f expr acc
+       else expand_dir expr) (fun new_expr ->
         expand_loc sd ( fun new_sd -> f {e with edge=Dp(dp,new_sd,new_expr);})) acc
     | Po(sd,e1,e2) ->
         expand_dir2 e1 e2 (fun d1 d2 ->
