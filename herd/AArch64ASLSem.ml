@@ -186,6 +186,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | MUL3 -> 0b11110
       | ALL -> 0b11111
 
+    (* Memory access width, independently of the Z element width. *)
     let sve_memory_suffix =
       let open AArch64Base in
       function
@@ -265,9 +266,18 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let litbv v i = lit (L_BitVector (Asllib.Bitvector.of_int_sized v i)) in
       let var x = E_Var x |> with_pos in
       let variant v = AArch64Base.variant_raw v |> liti in
+      (* Turn a SIMD element suffix into the ASL size argument. *)
+      let simd_datasize = function
+        | AArch64Base.VSIMD8 -> liti 8
+        | AArch64Base.VSIMD16 -> liti 16
+        | AArch64Base.VSIMD32 -> liti 32
+        | AArch64Base.VSIMD64 -> liti 64
+        | AArch64Base.VSIMD128 -> liti 128
+      in
       let cond c = tr_cond c |> litbv 4 in
       let ptrue_pattern p = tr_ptrue_pattern p |> litbv 5 in
-      let ptrue_reg_and_esize = function
+      (* PTRUE/WHILELT carry their element size on the predicate register. *)
+      let pred_reg_and_esize = function
         | AArch64Base.Preg (p, esize) -> (tr_pred_reg p |> liti, liti esize)
         | r -> Warn.fatal "Expected a predicate register, got: %s." (AArch64Base.pp_reg r)
       in
@@ -286,6 +296,39 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         | Preg (p, _) | PMreg (p, _) -> tr_pred_reg p |> liti
         | r -> Warn.fatal "Expected a predicate register, got: %s." (pp_reg r)
       in
+      (* /M preserves inactive lanes; /Z clears them. *)
+      let pred_reg_and_mode = function
+        | PMreg (p, mode) -> (tr_pred_reg p |> liti, mode = Merge)
+        | r -> Warn.fatal "Expected a predicated register, got: %s." (pp_reg r)
+      in
+      let simd_reg = function
+        | SIMDreg v | Vreg (v, _) -> tr_vec_reg v |> liti
+        | r -> Warn.fatal "Expected a SIMD register, got: %s." (pp_reg r)
+      in
+      (* Extract the Z register number and its lane width. *)
+      let zreg_and_esize = function
+        | Zreg (z, esize) -> (tr_vec_reg z |> liti, esize)
+        | r -> Warn.fatal "Expected an SVE vector register, got: %s." (pp_reg r)
+      in
+      (* Add the destination fields shared by the four INDEX forms. *)
+      let tr_sve_index inst zd opn args =
+        check_sve inst;
+        let d, esize = zreg_and_esize zd in
+        Some (opn, stmt ([ "d" ^= d; "esize" ^= liti esize ] @ args))
+      in
+      (* Pass register fields and /M or /Z mode to MOVPRFX/NEG ASL. *)
+      let tr_sve_predicated_unary inst zd pg zn opn =
+        check_sve inst;
+        let d, esize = zreg_and_esize zd in
+        let n, _ = zreg_and_esize zn in
+        let g, merging = pred_reg_and_mode pg in
+        Some
+          ( opn,
+            stmt
+              [ "d" ^= d; "g" ^= g; "n" ^= n; "esize" ^= liti esize;
+                "merging" ^= litb merging ] )
+      in
+      (* ASL names only the first register of a consecutive Z group. *)
       let contiguous_zregs ~nreg rs =
         match rs with
         | [] -> Warn.fatal "Expected %d SVE vector registers, got none." nreg
@@ -305,8 +348,20 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         | r :: _ ->
             Warn.fatal "Expected an SVE vector register, got: %s." (pp_reg r)
       in
+      (* All Z registers in one memory instruction use the same lane width. *)
+      let contiguous_zreg_esize = function
+        | Zreg (_, esize) :: rs ->
+            List.iter
+              (function
+                | Zreg (_, e) when e = esize -> ()
+                | r -> Warn.fatal "Inconsistent SVE vector element size: %s." (pp_reg r))
+              rs;
+            esize
+        | _ -> Warn.fatal "Expected SVE vector registers"
+      in
+      (* Bind the fields shared by contiguous and gather/scatter LD/ST opn files. *)
       let tr_sve_contiguous_memory inst ~opn ~nreg ~destinations ~predicate
-          ~base ~offset ~esize extra_args =
+          ~base ~address ~esize extra_args =
         check_sve inst;
         let t = contiguous_zregs ~nreg destinations in
         let g = pred_reg predicate in
@@ -318,10 +373,10 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "g" ^= g;
                   "n" ^= reg base;
                   "esize" ^= liti esize;
-                  "offset" ^= liti offset;
                 ]
-              @ extra_args ) )
+              @ address @ extra_args ) )
       in
+      (* Structure LD/ST instructions encode their register count in the opcode. *)
       let sve_memory_nreg = function
         | I_LD1SP _ | I_ST1SP _ -> 1
         | I_LD2SP _ | I_ST2SP _ -> 2
@@ -329,21 +384,22 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         | I_LD4SP _ | I_ST4SP _ -> 4
         | _ -> assert false
       in
-      let sve_contiguous_memory_info inst ~suffix ~esize =
+      (* Select scalar-base/immediate ASL and its memory-width arguments. *)
+      let sve_contiguous_memory_info inst ~suffix ~msize =
         let nreg = sve_memory_nreg inst in
         match inst with
         | I_LD1SP _ ->
             ( nreg,
               Printf.sprintf
                 "sve/sve_memcld/sve_mem_cld_si/ld1%s_z_p_bi_u%d.opn"
-                suffix esize,
-              [ "msize" ^= liti esize; "unsigned" ^= litb true ] )
+                suffix msize,
+              [ "msize" ^= liti msize; "unsigned" ^= litb true ] )
         | I_ST1SP _ ->
             ( nreg,
               Printf.sprintf
                 "sve/sve_memst_si/sve_mem_cst_si/st1%s_z_p_bi_.opn"
                 suffix,
-              [ "msize" ^= liti esize ] )
+              [ "msize" ^= liti msize ] )
         | I_LD2SP _ | I_LD3SP _ | I_LD4SP _ ->
             ( nreg,
               Printf.sprintf
@@ -357,6 +413,74 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 nreg suffix,
               [ "nreg" ^= liti nreg ] )
         | _ -> assert false
+      in
+      (* Select scalar-base/scalar-offset ASL; its shift is implicit in msize. *)
+      let sve_contiguous_memory_reg_info inst ~suffix ~msize =
+        let nreg = sve_memory_nreg inst in
+        match inst with
+        | I_LD1SP _ ->
+            ( nreg,
+              Printf.sprintf
+                "sve/sve_memcld/sve_mem_cld_ss/ld1%s_z_p_br_u%d.opn"
+                suffix msize,
+              [ "msize" ^= liti msize; "unsigned" ^= litb true ] )
+        | I_ST1SP _ ->
+            ( nreg,
+              Printf.sprintf
+                "sve/sve_memst_cs/sve_mem_cst_ss/st1%s_z_p_br_.opn"
+                suffix,
+              [ "msize" ^= liti msize ] )
+        | I_LD2SP _ | I_LD3SP _ | I_LD4SP _ ->
+            ( nreg,
+              Printf.sprintf
+                "sve/sve_memcld/sve_mem_eld_ss/ld%d%s_z_p_br_contiguous.opn"
+                nreg suffix,
+              [ "nreg" ^= liti nreg ] )
+        | I_ST2SP _ | I_ST3SP _ | I_ST4SP _ ->
+            ( nreg,
+              Printf.sprintf
+                "sve/sve_memcst_nt/sve_mem_est_ss/st%d%s_z_p_br_contiguous.opn"
+                nreg suffix,
+              [ "nreg" ^= liti nreg ] )
+        | _ -> assert false
+      in
+      (* Select gather/scatter ASL by operation and memory access width. *)
+      let sve_vector_memory_info inst ~msize =
+        match inst, msize with
+        | I_LD1SP _, 8 ->
+            ("sve/sve_mem64/sve_mem_64b_gld_vs/ld1b_z_p_bz_d_x32_unscaled.opn",
+             [ "unsigned" ^= litb true ])
+        | I_LD1SP _, 16 ->
+            ("sve/sve_mem32/sve_mem_32b_gld_sv_a/ld1h_z_p_bz_s_x32_scaled.opn",
+             [ "unsigned" ^= litb true ])
+        | I_LD1SP _, 32 ->
+            ("sve/sve_mem32/sve_mem_32b_gld_sv_b/ld1w_z_p_bz_s_x32_scaled.opn",
+             [ "unsigned" ^= litb true ])
+        | I_LD1SP _, 64 ->
+            ("sve/sve_mem64/sve_mem_64b_gld_sv/ld1d_z_p_bz_d_x32_scaled.opn",
+             [ "unsigned" ^= litb true ])
+        | I_ST1SP _, 8 ->
+            ("sve/sve_memst_ss/sve_mem_sst_vs_a/st1b_z_p_bz_d_x32_unscaled.opn", [])
+        | I_ST1SP _, (16 | 32) ->
+            (Printf.sprintf
+               "sve/sve_memst_ss/sve_mem_sst_sv_b/st1%s_z_p_bz_s_x32_scaled.opn"
+               (if msize = 16 then "h" else "w"), [])
+        | I_ST1SP _, 64 ->
+            ("sve/sve_memst_ss/sve_mem_sst_sv_a/st1d_z_p_bz_d_x32_scaled.opn", [])
+        | _ -> assert false
+      in
+      (* Decode offset lane width, signedness, and shift for gather/scatter ASL. *)
+      let sve_vector_offset_args extension esize shift =
+        let offs_size, offs_unsigned =
+          match extension with
+          | MemExt.UXTW -> (32, true)
+          | MemExt.SXTW -> (32, false)
+          | MemExt.LSL -> (esize, true)
+          | MemExt.SXTX -> (64, false)
+        in
+        [ "offs_size" ^= liti offs_size;
+          "offs_unsigned" ^= litb offs_unsigned;
+          "scale" ^= liti shift ]
       in
       match ii.A.inst with
       | I_NOP ->
@@ -1148,7 +1272,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       (* SVE, for specific computation of N and V flags *)
       | I_PTRUE (pd, pattern) as inst ->
           check_sve inst;
-          let d, esize = ptrue_reg_and_esize pd in
+          let d, esize = pred_reg_and_esize pd in
           Some
             ( "sve/sve_pred_gen_d/sve_int_ptrue/ptrue_p_s_.opn",
               stmt
@@ -1158,6 +1282,110 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "pat" ^= ptrue_pattern pattern;
                   "setflags" ^= litb false;
                 ] )
+      | I_WHILELT (pd, source_size, rn, rm) as inst ->
+          check_sve inst;
+          let d, esize = pred_reg_and_esize pd in
+          Some
+            ( "sve/sve_cmpgpr/sve_int_while_rr/whilelt_p_p_rr_.opn",
+              stmt
+                [
+                  "d" ^= d;
+                  "esize" ^= esize;
+                  "n" ^= reg rn;
+                  "m" ^= reg rm;
+                  "rsize" ^= variant source_size;
+                  "unsigned" ^= litb false;
+                  "op" ^= var "Cmp_LT";
+                ] )
+      | I_CNT_INC_SVE ((op, v), rd, pattern, multiplier) as inst
+        when v <> VSIMD128 ->
+          check_sve inst;
+          let opn, destination =
+            match op with
+            | CNT -> ("sve/sve_countelt/sve_int_count/cntb_r_s_.opn", "d")
+            | INC -> ("sve/sve_countelt/sve_int_pred_pattern_a/incb_r_rs_.opn", "dn")
+          in
+          Some
+            ( opn,
+              stmt
+                [
+                  destination ^= reg rd;
+                  "esize" ^= simd_datasize v;
+                  "pat" ^= ptrue_pattern pattern;
+                  "imm" ^= liti multiplier;
+                ] )
+      | I_RDVL (rd, imm) as inst ->
+          check_sve inst;
+          Some
+            ( "sve/sve_alloca/sve_int_read_vl_a/rdvl_r_i_.opn",
+              stmt [ "d" ^= reg rd; "imm" ^= liti imm ] )
+      | I_UADDV (VSIMD64, vd, pg, zn) as inst ->
+          check_sve inst;
+          let n, esize = zreg_and_esize zn in
+          Some
+            ( "sve/sve_int_pred_red/sve_int_reduce_0/uaddv_r_p_z_.opn",
+              stmt
+                [ "d" ^= simd_reg vd; "g" ^= pred_reg pg; "n" ^= n;
+                  "esize" ^= liti esize ] )
+      | I_MOVPRFX (zd, pg, zn) as inst ->
+          tr_sve_predicated_unary inst zd pg zn
+            "sve/sve_int_pred_red/sve_int_movprfx_pred/movprfx_z_p_z_.opn"
+      | I_NEG_SV (zd, pg, zn) as inst ->
+          tr_sve_predicated_unary inst zd pg zn
+            "sve/sve_int_pred_un/sve_int_un_pred_arit_0/neg_z_p_z_m.opn"
+      | I_MOV_SV (zd, k, shift) as inst ->
+          check_sve inst;
+          let d, esize = zreg_and_esize zd in
+          let imm =
+            match shift with
+            | S_NOEXT | S_LSL 0 -> k
+            | S_LSL 8 -> k lsl 8
+            | _ -> Warn.fatal "Invalid SVE MOV immediate shift"
+          in
+          Some
+            ( "sve/sve_wideimm_unpred/sve_int_dup_imm/dup_z_i_.opn",
+              stmt
+                [
+                  "d" ^= d;
+                  "esize" ^= liti esize;
+                  "imm" ^= litbv esize imm;
+                ] )
+      | I_ADD_SV (zd, zn, zm) as inst ->
+          check_sve inst;
+          let d, esize = zreg_and_esize zd in
+          let n, _ = zreg_and_esize zn in
+          let m, _ = zreg_and_esize zm in
+          Some
+            ( "sve/sve_int_unpred_arit/sve_int_bin_cons_arit_0/add_z_zz_.opn",
+              stmt
+                [
+                  "d" ^= d;
+                  "n" ^= n;
+                  "m" ^= m;
+                  "esize" ^= liti esize;
+                ] )
+      | I_DUP_SV (zd, _, rn) as inst ->
+          check_sve inst;
+          let d, esize = zreg_and_esize zd in
+          Some
+            ( "sve/sve_perm_unpred_d/sve_int_perm_dup_r/dup_z_r_.opn",
+              stmt [ "d" ^= d; "n" ^= reg rn; "esize" ^= liti esize ] )
+      | I_INDEX_SI (zd, _, rn, imm) as inst ->
+          tr_sve_index inst zd
+            "sve/sve_index/sve_int_index_ri/index_z_ri_.opn"
+            [ "n" ^= reg rn; "imm" ^= liti imm ]
+      | I_INDEX_IS (zd, _, imm, rm) as inst ->
+          tr_sve_index inst zd
+            "sve/sve_index/sve_int_index_ir/index_z_ir_.opn"
+            [ "imm" ^= liti imm; "m" ^= reg rm ]
+      | I_INDEX_SS (zd, _, rn, rm) as inst ->
+          tr_sve_index inst zd
+            "sve/sve_index/sve_int_index_rr/index_z_rr_.opn"
+            [ "n" ^= reg rn; "m" ^= reg rm ]
+      | I_INDEX_II (zd, imm1, imm2) as inst ->
+          tr_sve_index inst zd
+            "sve/sve_index/sve_int_index_ii/index_z_ii_.opn"
+            [ "imm1" ^= liti imm1; "imm2" ^= liti imm2 ]
       (* SVE contiguous loads and stores, scalar base plus immediate offset. *)
       | ( I_LD1SP (v, rs, pg, rn, MemExt.Imm (offset, Idx))
         | I_LD2SP (v, rs, pg, rn, MemExt.Imm (offset, Idx))
@@ -1167,11 +1395,49 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         | I_ST2SP (v, rs, pg, rn, MemExt.Imm (offset, Idx))
         | I_ST3SP (v, rs, pg, rn, MemExt.Imm (offset, Idx))
         | I_ST4SP (v, rs, pg, rn, MemExt.Imm (offset, Idx)) ) as inst ->
-          let esize, suffix = sve_memory_suffix v in
+          let msize, suffix = sve_memory_suffix v in
+          let esize = contiguous_zreg_esize rs in
           let nreg, opn, extra_args =
-            sve_contiguous_memory_info inst ~suffix ~esize in
+            sve_contiguous_memory_info inst ~suffix ~msize in
           tr_sve_contiguous_memory inst ~opn ~nreg ~destinations:rs
-            ~predicate:pg ~base:rn ~offset ~esize extra_args
+            ~predicate:pg ~base:rn ~address:[ "offset" ^= liti offset ]
+            ~esize extra_args
+      (* SVE contiguous loads and stores, scalar base plus scalar offset. *)
+      | ( I_LD1SP (v, rs, pg, rn, MemExt.Reg (V64, rm, MemExt.LSL, shift))
+        | I_LD2SP (v, rs, pg, rn, MemExt.Reg (V64, rm, MemExt.LSL, shift))
+        | I_LD3SP (v, rs, pg, rn, MemExt.Reg (V64, rm, MemExt.LSL, shift))
+        | I_LD4SP (v, rs, pg, rn, MemExt.Reg (V64, rm, MemExt.LSL, shift))
+        | I_ST1SP (v, rs, pg, rn, MemExt.Reg (V64, rm, MemExt.LSL, shift))
+        | I_ST2SP (v, rs, pg, rn, MemExt.Reg (V64, rm, MemExt.LSL, shift))
+        | I_ST3SP (v, rs, pg, rn, MemExt.Reg (V64, rm, MemExt.LSL, shift))
+        | I_ST4SP (v, rs, pg, rn, MemExt.Reg (V64, rm, MemExt.LSL, shift)) ) as inst ->
+          let msize, suffix = sve_memory_suffix v in
+          let encoded_shift =
+            match msize with
+            | 8 -> 0 | 16 -> 1 | 32 -> 2 | 64 -> 3
+            | _ -> assert false
+          in
+          if shift <> encoded_shift then
+            Warn.fatal "No SVE scalar-offset ASL encoding for this shift";
+          let esize = contiguous_zreg_esize rs in
+          let nreg, opn, extra_args =
+            sve_contiguous_memory_reg_info inst ~suffix ~msize in
+          tr_sve_contiguous_memory inst ~opn ~nreg ~destinations:rs
+            ~predicate:pg ~base:rn ~address:[ "m" ^= reg rm ]
+            ~esize extra_args
+      (* SVE gather loads and scatter stores, scalar base plus vector offset. *)
+      | ( I_LD1SP (v, rs, pg, rn, MemExt.ZReg (rm, extension, shift))
+        | I_ST1SP (v, rs, pg, rn, MemExt.ZReg (rm, extension, shift)) ) as inst ->
+          let msize, _ = sve_memory_suffix v in
+          let esize = contiguous_zreg_esize rs in
+          let m, _ = zreg_and_esize rm in
+          let opn, extra_args = sve_vector_memory_info inst ~msize in
+          tr_sve_contiguous_memory inst ~opn ~nreg:1 ~destinations:rs
+            ~predicate:pg ~base:rn
+            ~address:
+              ([ "m" ^= m; "msize" ^= liti msize ]
+               @ sve_vector_offset_args extension esize shift)
+            ~esize extra_args
       | I_CTERM (cc,v,rn,rm) as inst ->
           check_sve inst ;
           let cc =
