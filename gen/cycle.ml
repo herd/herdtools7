@@ -662,7 +662,10 @@ let patch_edges n =
     let e = match  m.evt.dir with
     | None -> m.edge
     | Some d ->
-        E.set_src d (E.set_tgt (next_dir m) m.edge) in
+        let e = E.set_src d m.edge in
+        (* An RMW event is rooted at its read side, but a data dependency
+           supplies its write value and must therefore keep its W target. *)
+        if E.is_dp_data e.E.edge then e else E.set_tgt (next_dir m) e in
     m.edge <- e ;
     if m.next != n then do_rec m.next in
   do_rec n
@@ -724,7 +727,10 @@ let remove_store n0 =
           Warn.fatal "Ambiguous direction %s %s"
             (E.pp_edge p.edge) (E.pp_edge m.edge)
       | (Dir d,Irr)|(Irr,Dir d) -> d
-(*      | Dir W,Dir R when is_rmw W m -> R  *)
+      (* A data dependency supplies the write value of an RMW. The RMW read
+         and write belong to the same instruction, whose event is rooted at
+         its read side; keep the dependency target in its canonical W form. *)
+      | Dir W,Dir R when E.is_dp_data p.edge.E.edge && is_rmw_edge m.edge -> R
       | Dir d1,Dir d2 ->
           if d1=d2 then d1
           else
@@ -856,12 +862,6 @@ let by_loc xvs =
   |> group
 
 let check_cycle c =
-  fold
-    (fun n () ->
-      if E.is_dp_data n.edge.E.edge && n.next.evt.dir = Some R &&
-         not n.next.evt.rmw then
-        Warn.fatal "Data dependency to a read must be followed by an RMW")
-    c () ;
   (* Collect all the rmw edges, organise by location
      and then check if all the rmw edges per locations are valid *)
   fold ( fun n lst ->

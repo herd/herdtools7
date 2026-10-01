@@ -242,7 +242,9 @@ and type edge = E.edge
         let allR sd d =
           er (E.Po (sd,Dir R,Dir d))::
           F.fold_dp
-            (fun dp k -> er (E.Dp (dp,sd,Dir d))::k)
+            (fun dp k ->
+              if d = R && F.is_data dp then k
+              else er (E.Dp (dp,sd,Dir d))::k)
             (all_fences sd R d [])
 
         let allW sd d =

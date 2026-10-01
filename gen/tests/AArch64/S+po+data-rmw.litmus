@@ -1,4 +1,4 @@
-(* diyone7 -metadata false -arch AArch64 PodWW Rfe DpDatadR LxSx Coe *)
+(* diyone7 -metadata false -arch AArch64 PodWW Rfe DpDatadW LxSx Coe *)
 AArch64 S+po+data-rmw
 {
  0:X1=x; 0:X3=y;
