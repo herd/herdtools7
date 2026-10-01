@@ -429,6 +429,17 @@ let test_of_int_sized () =
   in
   assert (BV.equal (BV.of_int_sized 64 ~-1) (BV.ones 64))
 
+let test_printable () =
+  let one width value expected =
+    assert (Z.equal expected (BV.printable (BV.of_z width value)))
+  in
+  one 32 (Z.of_string "0xffffffff") Z.minus_one;
+  one 64 (Z.of_string "0xffffffffffffffff") Z.minus_one;
+  one 128 (Z.of_string "0x00000003000000030000000300000003")
+    (Z.of_string "0x00000003000000030000000300000003");
+  one 128 (Z.of_string "0x80000000000000000000000000000000")
+    (Z.of_string "0x80000000000000000000000000000000")
+
 let () =
   exec_tests
     [
@@ -445,4 +456,5 @@ let () =
       ("bitvector/signed_int64", test_with_int64_signed);
       ("bitvector/masks", test_mask);
       ("bitvector/of_int_sized", test_of_int_sized);
+      ("bitvector/printable", test_printable);
     ]
