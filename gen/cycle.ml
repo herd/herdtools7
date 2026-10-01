@@ -666,7 +666,10 @@ let patch_edges n =
     let e = match  m.evt.dir with
     | None -> m.edge
     | Some d ->
-        E.set_src d (E.set_tgt (next_dir m) m.edge) in
+        let e = E.set_src d m.edge in
+        (* An RMW event is rooted at its read side, but a data dependency
+           supplies its write value and must therefore keep its W target. *)
+        if E.is_dp_data e.E.edge then e else E.set_tgt (next_dir m) e in
     m.edge <- e ;
     if m.next != n then do_rec m.next in
   do_rec n
@@ -719,7 +722,10 @@ let remove_store n0 =
             Warn.fatal "Ambiguous direction %s %s"
               (E.pp_edge p.edge) (E.pp_edge m.edge)
         | (Dir d,Irr)|(Irr,Dir d) -> d
-(*      | Dir W,Dir R when is_rmw W m -> R  *)
+        (* A data dependency targets the write side of an RMW, while the shared
+           RMW event is represented by its read side. Keep R as the event
+           direction without changing the dependency's W target. *)
+        | Dir W,Dir R when E.is_dp_data p.edge.E.edge && is_rmw_edge m.edge -> R
         | Dir d1,Dir d2 ->
             if d1=d2 then d1
             else
