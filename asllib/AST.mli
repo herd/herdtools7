@@ -350,7 +350,7 @@ type stmt_desc =
     }
   | S_While of expr * expr option * stmt
   | S_Repeat of stmt * expr * expr option
-  | S_Throw of (expr * ty option)
+  | S_Throw of (expr * identifier option)
       (** The ty option is a type annotation added by the type-checker to be
           matched later with the catch guards. It is always None for the untyped
           AST and never None for the typed AST. *)
@@ -381,7 +381,7 @@ and case_alt_desc = {
 
 and case_alt = case_alt_desc annotated
 
-and catcher = identifier option * ty * stmt
+and catcher = identifier option * identifier * stmt
 (** The optional name of the matched exception, the guard type and the statement
     to be executed if the guard matches. *)
 
