@@ -355,7 +355,7 @@
   \item \expandafter{\MakeUppercase\HUca{E\textsubscript{1}}{E\textsubscript{2}}}.
   \item All of the following apply:
     \begin{itemize}
-    \item \HU{E\textsubscript{1}}.
+    \item \ImpTTDW{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\ca{E\textsubscript{1}}{E\textsubscript{2}}}.
     \item \W{E\textsubscript{2}}.
     \end{itemize}
@@ -363,7 +363,7 @@
     \begin{itemize}
     \item \W{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\ca{E\textsubscript{1}}{E\textsubscript{2}}}.
-    \item \HU{E\textsubscript{2}}.
+    \item \ImpTTDW{E\textsubscript{2}}.
     \end{itemize}
   \item \expandafter{\MakeUppercase\TLBIca{E\textsubscript{1}}{E\textsubscript{2}}}.
   \end{itemize}
@@ -417,8 +417,7 @@
     \begin{itemize}
     \item \ExpM{E\textsubscript{2}}.
     \item \ImpTagR{E\textsubscript{2}}.
-    \item \ImpTTDR{E\textsubscript{2}}.
-    \item \HU{E\textsubscript{2}}.
+    \item \ImpTTDM{E\textsubscript{2}}.
     \item \TLBI{E\textsubscript{2}}.
     \item \DCCVAU{E\textsubscript{2}}.
     \item \ICIVAU{E\textsubscript{2}}.
@@ -449,7 +448,7 @@
     \begin{itemize}
     \item \ImpTTDR{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\rmw{E\textsubscript{1}}{E\textsubscript{2}}}.
-    \item \HU{E\textsubscript{2}}.
+    \item \ImpTTDW{E\textsubscript{2}}.
     \end{itemize}
   \end{itemize}
 
@@ -612,7 +611,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \ExpW{E\textsubscript{2}}.
-      \item \HU{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
       \item \TLBI{E\textsubscript{2}}.
       \item \DCCVAU{E\textsubscript{2}}.
       \item \IC{E\textsubscript{2}}.
@@ -626,7 +625,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \ExpW{E\textsubscript{2}}.
-      \item \HU{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
       \end{itemize}
     \end{itemize}
   \item All of the following apply:
@@ -660,7 +659,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \ExpW{E\textsubscript{2}}.
-      \item \HU{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
       \end{itemize}
     \end{itemize}
   \item All of the following apply:
@@ -672,7 +671,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \ExpW{E\textsubscript{2}}.
-      \item \HU{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
       \end{itemize}
     \end{itemize}
   \end{itemize}
@@ -712,7 +711,7 @@
   \item One of the following applies:
     \begin{itemize}
     \item \ExpW{E\textsubscript{5}}.
-    \item \HU{E\textsubscript{5}}.
+    \item \ImpTTDW{E\textsubscript{5}}.
     \end{itemize}
   \item One of the following applies:
     \begin{itemize}
@@ -722,7 +721,7 @@
   \item One of the following applies:
     \begin{itemize}
     \item \ExpW{E\textsubscript{2}}.
-    \item \HU{E\textsubscript{2}}.
+    \item \ImpTTDW{E\textsubscript{2}}.
     \end{itemize}
   \end{itemize}
 
@@ -830,8 +829,7 @@
     \begin{itemize}
     \item \ExpM{E\textsubscript{2}}.
     \item \ImpTagR{E\textsubscript{2}}.
-    \item \ImpTTDR{E\textsubscript{2}}.
-    \item \HU{E\textsubscript{2}}.
+    \item \ImpTTDM{E\textsubscript{2}}.
     \item \TLBI{E\textsubscript{2}}.
     \item \DCCVAU{E\textsubscript{2}}.
     \item \ICIVAU{E\textsubscript{2}}.
@@ -945,7 +943,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \ExpW{E\textsubscript{2}}.
-      \item \HU{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
       \item \TLBI{E\textsubscript{2}}.
       \item \DCCVAU{E\textsubscript{2}}.
       \item \IC{E\textsubscript{2}}.
@@ -958,7 +956,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \ExpW{E\textsubscript{2}}.
-      \item \HU{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
       \item \TLBI{E\textsubscript{2}}.
       \item \DCCVAU{E\textsubscript{2}}.
       \item \IC{E\textsubscript{2}}.
@@ -972,7 +970,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \ExpW{E\textsubscript{2}}.
-      \item \HU{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
       \end{itemize}
     \end{itemize}
   \end{itemize}
@@ -1122,7 +1120,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \ExpW{E\textsubscript{2}}.
-      \item \HU{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
       \end{itemize}
     \end{itemize}
   \end{itemize}
@@ -1156,7 +1154,7 @@
   \item One of the following applies:
     \begin{itemize}
     \item \ExpW{E\textsubscript{2}}.
-    \item \HU{E\textsubscript{2}}.
+    \item \ImpTTDW{E\textsubscript{2}}.
     \end{itemize}
   \end{itemize}
 
@@ -1165,5 +1163,5 @@
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
   \item \expandafter{\MakeUppercase\ca{E\textsubscript{1}}{E\textsubscript{2}}}.
-  \item \HU{E\textsubscript{2}}.
+  \item \ImpTTDW{E\textsubscript{2}}.
   \end{itemize}
