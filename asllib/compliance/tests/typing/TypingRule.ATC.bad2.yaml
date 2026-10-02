@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_TSF
+error_line: 25
+info: |-
+  File ../tests/typing/TypingRule.ATC.bad2.asl, line 25, characters 15 to 33:
+      myResult = invokedN{M}(myVal);
+                 ^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of bits(M) was expected,
+    provided bits(M as integer {16, 32}).

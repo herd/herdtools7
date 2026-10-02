@@ -1672,7 +1672,23 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Substitute parameters into the return type *)
     let return_type =
       match (call_type, func_sig.return_type) with
-      | (ST_Function | ST_Getter), Some ty -> Some (rename_ty_eqs env eqs ty)
+      | (ST_Function | ST_Getter), Some ty ->
+          let renamed_ty = rename_ty_eqs env eqs ty in
+          let ret_ty =
+            match C.asl1_revision with
+            | EAC1 | EAC2 -> renamed_ty
+            | DEV ->
+                (* Annotate the return type with parameters substituted in.
+                   The return type has previously been annotated by
+                   [annotate_func_sig]. This should not cause an issue because:
+                   - expressions in function signatures are restricted by
+                     [extract_parameters]
+                   - global constants cannot evaluate to tuples for use in
+                     signatures
+                *)
+                annotate_type ~loc env renamed_ty |> fst
+          in
+          Some ret_ty
       | (ST_Procedure | ST_Setter), None -> None
       | _ ->
           fatal_from ~loc

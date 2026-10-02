@@ -26,18 +26,18 @@ end;
 
 // SInt()
 // ======
-// The signed integer corresponding to the argument bit vector, viewed under
-// two's complement. The leftmost bit is most significant, and the rightmost
-// bit is least significant.
+// The signed integer corresponding to the argument bit vector of non-zero
+// length, viewed under two's complement. The leftmost bit is most significant,
+// and the rightmost bit is least significant.
 
-pure func SInt{N} (x: bits(N))
-  => integer{(if N == 0 then 0 else -(2^(N-1))) .. (if N == 0 then 0 else (2^(N-1))-1)}
+pure func SInt{N} (x: bits(N)) => integer{-(2^(N-1)) .. (2^(N-1))-1}
 begin
+    assert N > 0;
     var result: integer = UInt(x);
-    if N > 0 && x[N-1] == '1' then
+    if x[N-1] == '1' then
         result = result - 2^N;
     end;
-    return result as {(if N == 0 then 0 else -(2^(N-1))) .. (if N == 0 then 0 else 2^(N-1)-1)};
+    return result as {-(2^(N-1)) .. (2^(N-1))-1};
 end;
 
 
