@@ -639,6 +639,30 @@ module Make (Conf : Config) = struct
       let loc = virtual_to_loc_reg r ii in
       write_loc MachSize.Quad loc v aneutral aexp areg (use_ii_with_poi ii poi)
 
+    (******************************)
+    (* SVE scalar V destinations  *)
+    (******************************)
+
+    let virtual_to_loc_simd =
+      let tvecs = Array.of_list AArch64Base.vec_regs in
+      fun rv ii ->
+        let i = v_as_int rv in
+        if i >= Array.length tvecs || i < 0 then
+          Warn.fatal "Invalid SIMD register number: %d" i
+        else
+          let arch_reg = AArch64Base.SIMDreg tvecs.(i) in
+          A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
+
+    let read_simd (ii, poi) ~reg:r_m =
+      let* rval = r_m in
+      let loc = virtual_to_loc_simd rval ii in
+      read_loc MachSize.S128 loc aneutral aexp areg (use_ii_with_poi ii poi)
+
+    let write_simd (ii, poi) ~reg:r_m ~data:v_m =
+      let* v = v_m >>= to_bv MachSize.S128 and* r = r_m in
+      let loc = virtual_to_loc_simd r ii in
+      write_loc MachSize.S128 loc v aneutral aexp areg (use_ii_with_poi ii poi)
+
     (******************)
     (* SVE Predicates *)
     (******************)
@@ -832,6 +856,8 @@ module Make (Conf : Config) = struct
       let primitive_dsb = primitive_dsb
       let read_register = read_register
       let write_register = write_register
+      let read_simd = read_simd
+      let write_simd = write_simd
       let read_predicate = read_predicate
       let write_predicate = write_predicate
       let read_vector = read_vector

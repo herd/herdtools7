@@ -168,6 +168,24 @@ end;
 
 // =============================================================================
 
+// SVE scalar reductions write a fixed-width V register. Route the nominal V
+// accessor through herd so that a following instruction can observe the result.
+accessor V{width : ESize}(n : integer) <=> value : bits(width)
+begin
+    getter
+        assert n >= 0 && n <= 31;
+        let vw : integer{} = width as integer{8,16,32,64,128};
+        return read_simd(n)[vw-1:0];
+    end;
+
+    setter
+        assert n >= 0 && n <= 31;
+        write_simd(n, ZeroExtend{128}(value));
+    end;
+end;
+
+// =============================================================================
+
 // SVE Predicates
 // ==============
 

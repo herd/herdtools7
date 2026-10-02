@@ -70,6 +70,16 @@ func write_register(reg: integer, data: bits(64))
 begin pass; end;
 
 // =============================================================================
+// Fixed-width V registers used by SVE scalar reductions
+// =============================================================================
+
+func read_simd(reg: integer) => bits(128)
+begin return ARBITRARY: bits(128); end;
+
+func write_simd(reg: integer, data: bits(128))
+begin pass; end;
+
+// =============================================================================
 // SVE Predicates
 // =============================================================================
 
