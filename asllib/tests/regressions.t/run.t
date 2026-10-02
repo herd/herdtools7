@@ -673,6 +673,12 @@ ASLRef Field getter extension
   $ aslref --v0-use-field-getter-extension setter_bitfields.asl
   $ aslref --v0-use-field-getter-extension pstate-exp.asl
   $ aslref --no-exec atc-in-types.asl
+  File atc-in-types.asl, line 1, characters 0 to 41:
+  let bv : bits(1 as integer{2}) = Ones{1};
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of bits(1 as integer {2}) was expected,
+    provided bits(1).
+  [1]
   $ aslref single-slice.asl
 
 Inherit integer constraints on left-hand sides

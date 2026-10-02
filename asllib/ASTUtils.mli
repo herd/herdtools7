@@ -53,6 +53,10 @@ end
 val default_version : version
 (** The default version, [V1]. *)
 
+val asl1_revision_is_up_to : up_to:AST.asl1_revision -> asl1_revision -> bool
+(** [asl1_revision_is_up_to ~up_to rev] checks whether [rev] is before or equal
+    to [up_to] *)
+
 val annotated : 'a -> position -> position -> version -> ('a, _) t_annotated
 (** [annotated v start end version] is [v] with location specified as from
     [start] to [end] and version specified by [version]. *)
