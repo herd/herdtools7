@@ -205,12 +205,8 @@ begin
     setter
         assert n >= 0 && n <= 15;
         assert width == CurrentVL() DIV 8;
-        if ConstrainUnpredictableBool(Unpredictable_SVEZEROUPPER) then
-            // TODO: not exact for larger VLs: herd does not preserve upper predicate bits.
-            write_predicate{width}(n, value);
-        else
-            write_predicate{width}(n, value);
-        end;
+        // TODO: not exact for larger VLs: herd does not preserve upper predicate bits.
+        write_predicate{width}(n, value);
     end;
 end;
 
@@ -235,12 +231,8 @@ begin
     setter
         assert n >= 0 && n <= 31;
         assert width == CurrentVL();
-        if ConstrainUnpredictableBool(Unpredictable_SVEZEROUPPER) then
-            // TODO: not exact for larger VLs: herd does not preserve upper vector bits.
-            write_vector{width}(n, value);
-        else
-            write_vector{width}(n, value);
-        end;
+        // TODO: not exact for larger VLs: herd does not preserve upper vector bits.
+        write_vector{width}(n, value);
     end;
 end;
 
