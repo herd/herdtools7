@@ -738,14 +738,6 @@ module Make
 (* Outcomes *)
 (************)
 
-      let does_pad t =
-        let open CType in
-        match t with
-        | Pointer _
-        | Array (("int"|"int32_t"|"uint32_t"|"int64_t"|"uint64_t"),_)
-        | Base ("int"|"int32_t"|"uint32_t"|"int64_t"|"uint64_t") -> true
-        | _ -> false
-
       let dump_loc_tag_coded loc =  sprintf "%s_idx" (A.dump_loc_tag loc)
 
       let dump_rloc_tag_coded loc =  sprintf "%s_idx" (A.dump_rloc_tag loc)
@@ -884,17 +876,8 @@ module Make
 
         let fields_displayed = mk_fields rlocs_displayed in
 
-        let rec move_rec lst fs = match lst,fs with
-          | None,[] -> true,[]
-          | Some f,[] -> false, [f]
-          | None,(t,_ as f)::fs
-            when does_pad t -> move_rec (Some f) fs
-          | _,f::fs ->
-              let pad,fs = move_rec lst fs in
-              pad,f::fs in
         (* Hash table entries size must be a multiple of sizeof(int32) *)
-        let pad,fields_displayed = move_rec None fields_displayed in
-        let dump_log_def pad name fields =
+        let dump_log_def ~align name fields =
           O.o "typedef struct {" ;
           List.iter
             (fun (t,rloc) ->
@@ -916,16 +899,21 @@ module Make
             | _ ->
                 O.fi "th_faults_info_t th_faults[NTHREADS];"
           end ;
-          if pad  then O.oi "uint32_t _pad;" ;
-          O.f "} %s;" name ;
+          begin
+            if align then
+              O.f "} __attribute__ ((aligned(sizeof(uint32_t)))) %s;"
+            else
+              O.f "} %s;"
+          end name ;
           O.o "" in
-        dump_log_def pad "hashlog_t"  fields_displayed ;
+        dump_log_def ~align:true "hashlog_t"  fields_displayed ;
         if all_displayed then begin
-          O.o "typedef hashlog_t log_t;"
+          O.o "typedef hashlog_t log_t;" ;
+          O.o ""
         end else begin
           O.o "#define HASHLOG 1" ; O.o "" ;
           mk_fields rlocs_observed
-          |> dump_log_def pad "log_t"
+          |> dump_log_def ~align:false "log_t"
         end ;
 (* There are some pointers in log *)
         let some_ptr_pte =  U.ptr_pte_in_outs env test in
