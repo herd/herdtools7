@@ -127,3 +127,9 @@ ATCs in types:
   > EOF
 
   $ aslref --no-exec atcs9.asl
+  File atcs9.asl, line 1, characters 0 to 41:
+  let bv : bits(1 as integer{2}) = Ones{1};
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Type error (TE_TSF): a subtype of bits(1 as integer {2}) was expected,
+    provided bits(1).
+  [1]

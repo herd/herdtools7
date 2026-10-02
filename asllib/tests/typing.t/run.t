@@ -162,7 +162,7 @@ Loops
           let testK : integer {8..31} = i;
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   ASL Type error (TE_TSF): a subtype of integer {8..31} was expected,
-    provided integer {100..110}.
+    provided integer {100 as integer {8, 16}..110 as integer {0, 31}}.
   [1]
   $ aslref --no-exec TNegative8-0.asl
   File TNegative8-0.asl, line 5, characters 8 to 40:
