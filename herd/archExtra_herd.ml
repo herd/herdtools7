@@ -61,7 +61,7 @@ module type S = sig
   val zero_po_index : program_order_index
   val next_po_index : program_order_index -> program_order_index
 
-  include Location.S with type loc_reg := I.arch_reg and type loc_global := v
+  include Base.Location.S with type loc_reg := I.arch_reg and type loc_global := v
 
   type reg_state
   val reg_state_empty : reg_state
@@ -321,7 +321,7 @@ module Make(C:Config) (I:I) : S with module I = I
           let global_compare = I.V.compare
         end
 
-      include Location.Make (LocArg)
+      include Base.Location.Make (LocArg)
 
       module RegOrd = struct
         type t = I.arch_reg
@@ -386,9 +386,9 @@ module Make(C:Config) (I:I) : S with module I = I
         }
 
 
-      let inst_instance_compare i1 i2 = match Misc.int_compare i1.proc i2.proc with
+      let inst_instance_compare i1 i2 = match Base.Misc.int_compare i1.proc i2.proc with
       | 0 -> begin
-            Misc.int_compare i1.program_order_index i2.program_order_index
+            Base.Misc.int_compare i1.program_order_index i2.program_order_index
         end
       | r -> r
 
@@ -437,7 +437,7 @@ module Make(C:Config) (I:I) : S with module I = I
             tr (string_of_int proc ^ ":" ^ I.pp_reg r)
         | Location_global a -> do_brackets (pp_global a)
 
-      let dump_location = do_dump_location Misc.identity
+      let dump_location = do_dump_location Base.Misc.identity
 
       let do_dump_location_no_brackets tr = function
         | Location_reg (proc,r) ->
@@ -452,9 +452,9 @@ module Make(C:Config) (I:I) : S with module I = I
           then "\\asm{Proc " ^ bodytext ^ "}" else bodytext
       | Location_global a -> do_brackets (pp_global a)
 
-(* This redefines pp_location from Location.Make ... *)
+(* This redefines pp_location from Base.Location.Make ... *)
       let pp_location = do_pp_location do_brackets
-      and pp_location_old = do_pp_location Misc.identity
+      and pp_location_old = do_pp_location Base.Misc.identity
 
       let some_undetermined_vars_in_loc l =  match l with
       | Location_reg _ ->  false
@@ -495,7 +495,7 @@ module Make(C:Config) (I:I) : S with module I = I
             -> Symbol.compare s1 s2 = 0
           | (System (PTE,s1),System (PTE,s2))
           (* | (System (TAG,s1),System (TAG,s2)) *)
-           -> Misc.string_eq s1 s2
+           -> Base.Misc.string_eq s1 s2
 (* One id allowed, the other on forbidden, does not match *)
           | (Virtual _,(System ((PTE|TLB|PTE2),_)|Physical _|TagAddr _))
           | ((TagAddr _|Physical _|System ((PTE|TLB|PTE2),_)),Virtual _)
@@ -590,7 +590,7 @@ module Make(C:Config) (I:I) : S with module I = I
         pp_nice_state st " "
           (fun l v -> do_dump_location tr l ^ "=" ^ I.V.pp C.hexa (get_val l v) ^";")
 
-      let dump_state st = do_dump_state Misc.identity st
+      let dump_state st = do_dump_state Base.Misc.identity st
 
       let map_state f st = State.map f st
 (******************)
@@ -761,7 +761,7 @@ module Make(C:Config) (I:I) : S with module I = I
         List.fold_left
           (fun st (loc,(t,v)) ->
             match (t,v) with
-            | TestType.TyArray (array_prim,total_size), I.V.Val (Constant.ConcreteVector vs) when Misc.int_eq (List.length vs) total_size ->
+            | TestType.TyArray (array_prim,total_size), I.V.Val (Constant.ConcreteVector vs) when Base.Misc.int_eq (List.length vs) total_size ->
               begin
               (* we expand v[3] = {a,b,c} into v+0 = a; v+1 = b; v+2 = c*)
               (* where 1 is the sizeof the underlying primitive type *)
@@ -955,7 +955,7 @@ module Make(C:Config) (I:I) : S with module I = I
         match t with
         | Atomic b|Ty b|TyArray (b,_) -> cast_for_pp_with_base b
         | TyDef -> cast_for_pp_with_base TestType.default
-        | Pointer _|TyDefPointer -> Misc.identity
+        | Pointer _|TyDefPointer -> Base.Misc.identity
 
       let pp_typed t v =
         let max_unsigned =

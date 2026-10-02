@@ -61,7 +61,7 @@ let all_t =
     Self ; MemTag ; NoVolatile ; Morello ; KVM ; NoFault ;
     Sync ; Async ; StoreOnly ; Neon ; SVE ; SME ; ConstrainedUnpredictable ]
 
-let parse tag = match Misc.lowercase tag with
+let parse tag = match Base.Misc.lowercase tag with
 | "asamo" -> Some AsAmo
 | "constsininit" -> Some ConstsInInit
 | "mixed" -> Some Mixed

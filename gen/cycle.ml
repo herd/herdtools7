@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Gen_common
+
 open Printf
 open Code
 
@@ -204,7 +206,7 @@ module Make (O:Config) (E:Edge.S) :
 
   module OrderedEvent = struct
     type t = event
-    let compare e1 e2 = Misc.int_compare e1.idx e2.idx
+    let compare e1 e2 = Base.Misc.int_compare e1.idx e2.idx
   end
 
   module EventMap = MyMap.Make(OrderedEvent)
@@ -1055,7 +1057,7 @@ let check_cycle c =
                                  (fun m ->
                                    match m.evt.loc with
                                    | Code.Data y ->
-                                      not (Misc.string_eq x y)
+                                      not (Base.Misc.string_eq x y)
                                    | _-> false) n in
                              Code.as_data m.evt.loc
                            with Not_found ->
@@ -1110,7 +1112,7 @@ let check_cycle c =
                         else (Code.as_data loc,Value.from_int init_val)::env in
               (* Add pte initial values when kvm and the value is not default *)
               let env = if (not do_kvm) || is_pte_default loc pte_val then env
-                        else ((Misc.add_pte @@ Code.as_data loc),Value.from_pte pte_val)::env in
+                        else ((Base.Misc.add_pte @@ Code.as_data loc),Value.from_pte pte_val)::env in
               if next_x_ok then
                 k+8,(next_x,Value.from_int (k+4))::env
               else
@@ -1537,7 +1539,7 @@ let merge_changes n nss =
   and do_next m = if m.next != n then do_rec m.next in
 
   do_rec n ;
-  List.filter Misc.consp (Array.to_list t)
+  List.filter Base.Misc.consp (Array.to_list t)
 
   let value_before v1 v2 = v1 < v2
 
@@ -1545,7 +1547,7 @@ let merge_changes n nss =
   let proc_back ns = match ns with
   | []|[_] -> false
   | fst::rem ->
-      let lst = Misc.last rem in
+      let lst = Base.Misc.last rem in
       let e1 = fst.evt and e2 = lst.evt in
       e1.loc = e2.loc && value_before e2 e1
 
@@ -1633,8 +1635,8 @@ let merge_changes n nss =
     do_get_writes (function Code.Pte -> true | _ -> false)
 
   let to_tagloc = function
-    | Data s -> Data (Misc.add_atag s)
-    | Code s -> Code (Misc.add_atag s)
+    | Data s -> Data (Base.Misc.add_atag s)
+    | Code s -> Code (Base.Misc.add_atag s)
 
   let get_tag_locs (loc,n) =
     (to_tagloc loc,n)
@@ -1712,7 +1714,7 @@ let merge_changes n nss =
           | []|[_]|_::_::_::_ -> k
           | [_;n;] ->
               let p = Value.to_pte n.evt.v in
-              (Misc.add_pte (Code.as_data loc),p)::k)
+              (Base.Misc.add_pte (Code.as_data loc),p)::k)
           r []
     | None ->  []
 

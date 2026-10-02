@@ -150,7 +150,7 @@ and type concrete = S.concrete
         | Exe -> true
         | Com|Prop _ -> false
 
-    let proc_eq = Misc.int_eq
+    let proc_eq = Base.Misc.int_eq
 
     let relevant_to_proc xe i =
       let x = xe.event in

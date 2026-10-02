@@ -26,4 +26,4 @@ let () =
     |> List.iter (fun tc ->
         let ss = NP.parse_names tc in
         Format.printf "%s -> %s@." tc (String.concat " " ss))
-  with Misc.Fatal err -> Format.printf "%s@." err
+  with Base.Misc.Fatal err -> Format.printf "%s@." err

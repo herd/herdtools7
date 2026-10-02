@@ -14,6 +14,9 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Base
+open Gen_common
+
 open Printf
 
 module type Config = sig

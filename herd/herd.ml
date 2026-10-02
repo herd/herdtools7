@@ -17,6 +17,7 @@
 (** Entry point to Herd  *)
 
 open Herd_core
+open Base
 open Printf
 open Archs
 open Opts

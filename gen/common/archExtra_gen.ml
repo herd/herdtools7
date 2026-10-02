@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 open Printf
+open Base
 
 module type I = sig
   type arch_reg
@@ -40,7 +41,7 @@ module type S = sig
   type arch_reg
 
   module Value : Value_gen.S with type atom = arch_atom
-  module Location : Location.S with type loc_reg = arch_reg and type loc_global = string
+  module Location : Base.Location.S with type loc_reg = arch_reg and type loc_global = string
 
 (* Locations *)
   type location = Location.location
@@ -126,7 +127,7 @@ and module Value := I.Value
     | Some s -> Misc.pp_pte s
     | None -> loc
 
-  module Location = Location.Make(
+  module Location = Base.Location.Make(
     struct
       type arch_reg = I.arch_reg
       let pp_reg = I.pp_reg

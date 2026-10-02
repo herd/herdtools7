@@ -114,7 +114,7 @@ let nstates_limit = 1024
 let norm_fault =
   if O.datafault then
     fun s -> if String.starts_with ~prefix:"MMU:" s then "D-" ^ s else s
-  else Misc.identity
+  else Base.Misc.identity
 }
 
 let digit = [ '0'-'9' ]
@@ -144,7 +144,7 @@ rule main  mk islitmus rem = parse
  | "Test" blank+ (testname as t)
     ((blank+ (name as  kind))| ("" as kind)) nl
     { incr_lineno lexbuf ;
-      let t = Misc.clean_name t in
+      let t = Base.Misc.clean_name t in
       if O.verbose > 0 then begin
         decr count ;
         if !count <= 0 then begin
@@ -265,7 +265,7 @@ and pline bds fs abs = parse
        | (Some _,Some _)|(None,None)
          ->
            loc,ftype in
-     let loc = Misc.map_opt Constant.old2new loc in
+     let loc = Base.Misc.map_opt Constant.old2new loc in
      let ftype =
        if O.faulttype then
          Option.bind
@@ -354,7 +354,7 @@ and main_simple  mk islitmus rem = parse
           count := c_init
         end
       end ;
-      let t = Misc.clean_name t in
+      let t = Base.Misc.clean_name t in
       begin match sstate lexbuf with
       | None -> main_simple  mk islitmus rem lexbuf
       | Some (islitmusst,st) ->
@@ -419,7 +419,7 @@ let zyva main mk name lexbuf =
   | LexMisc.Error (msg,loc) ->
         Printf.eprintf "%a: Lex error %s\n"
           Pos.pp_pos loc msg ;
-        raise Misc.Exit
+        raise Base.Misc.Exit
 
 let do_read_chan main mk name chan =
   zyva main mk name (Lexing.from_channel chan)
@@ -429,7 +429,7 @@ let read_name main normalize mk name k =
     eprintf "Reading file: %s\n%!" name ;
   try
     let (is_litmus,r) =
-      Misc.input_protect
+      Base.Misc.input_protect
         (do_read_chan main mk name)
         name in
     if O.verbose > 0 then
@@ -441,10 +441,10 @@ let read_name main normalize mk name k =
     | [] -> k
     | _::_ -> normalize name is_litmus r::k
   with
-  | Misc.Fatal msg ->
+  | Base.Misc.Fatal msg ->
       eprintf "Fatal error will not be fatal after all: %s\n" msg ;
       k
-  | Misc.Exit -> k
+  | Base.Misc.Exit -> k
 
 let do_read_names main norm mk names =
   List.fold_right (read_name main norm mk) names []
@@ -473,7 +473,7 @@ let read_chan_simple name chan =
       (if is_litmus then "litmus log" else "memevents log");
   normalize name is_litmus r
 
-let read_name name = Misc.input_protect (read_chan name) name
+let read_name name = Base.Misc.input_protect (read_chan name) name
 
 let read_names names =  do_read_names main LS.normalize full_log names
 

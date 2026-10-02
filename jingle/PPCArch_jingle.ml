@@ -22,7 +22,7 @@ include Arch.MakeArch(struct
     let open MetaConst in
     match k with
     | Int i ->
-        if Misc.int_eq i k' then Some subs else None
+        if Base.Misc.int_eq i k' then Some subs else None
     | Meta k -> add_subs [Cst(k,k');] subs
 
   let match_instr subs pattern instr = match pattern,instr with

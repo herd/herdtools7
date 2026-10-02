@@ -189,7 +189,7 @@ type infos =
 
 let collect_flags names =
     let devnull = if Sys.win32 then open_out "nul" else open_out "/dev/null" in
-    Misc.fold_argv_or_stdin
+    Base.Misc.fold_argv_or_stdin
       (fun name some_flags ->
          let ans =
           try CT.from_file ~compileonly:true StringMap.empty name devnull
@@ -215,11 +215,11 @@ let collect_flags names =
 
 let run_tests names flags out_chan =
 
-  let exp = Misc.app_opt open_out Cfg.index
-  and onames = Misc.app_opt open_out Cfg.outnames in
+  let exp = Base.Misc.app_opt open_out Cfg.index
+  and onames = Base.Misc.app_opt open_out Cfg.outnames in
 
   let  {one_arch; docs; srcs; nthreads;  hashes=_; } =
-    Misc.fold_argv_or_stdin
+    Base.Misc.fold_argv_or_stdin
       (fun name ({one_arch; docs; srcs; hashes;
                   nthreads } as st) ->
          let check_arch archo arch = match archo with
@@ -238,8 +238,8 @@ let run_tests names flags out_chan =
         match ans with
         | Completed
             {arch; doc; src; fullhash; nprocs; _} ->
-            Misc.check_opt (fun out -> fprintf out "%s\n" name) exp ;
-            Misc.check_opt
+            Base.Misc.check_opt (fun out -> fprintf out "%s\n" name) exp ;
+            Base.Misc.check_opt
               (fun out -> fprintf out "%s\n" doc.Name.name)
               onames ;
             let open Flags in
@@ -253,9 +253,9 @@ let run_tests names flags out_chan =
         | Interrupted e ->
             if Cfg.nocatch then raise e ;
             let msg =  match e with
-            | Misc.Exit -> "None"
-            | Misc.Fatal msg
-            | Misc.UserError msg ->
+            | Base.Misc.Exit -> "None"
+            | Base.Misc.Fatal msg
+            | Base.Misc.UserError msg ->
                 eprintf "%a %s\n%!" Pos.pp_pos0 name msg ;
                 msg
             | e ->
@@ -268,8 +268,8 @@ let run_tests names flags out_chan =
       { one_arch = None;
         docs = []; srcs = []; hashes = StringMap.empty;
         nthreads = IntSet.empty; } in
-  Misc.check_opt close_out exp ;
-  Misc.check_opt close_out onames ;
+  Base.Misc.check_opt close_out exp ;
+  Base.Misc.check_opt close_out onames ;
   let arch =
     match one_arch with
     | None -> `X86 (* No tests compiled, arch is irrelevant *)
@@ -328,7 +328,7 @@ let dump_shell_kvm_dorun flags out_chan e =
   fprintf out_chan "}\n"
 
 let dump_c_shell_kvm flags e =
-  Misc.output_protect
+  Base.Misc.output_protect
     (fun out_chan ->
       dump_shell_prefix out_chan ;
       dump_shell_kvm_dorun flags out_chan e ;
@@ -338,7 +338,7 @@ let dump_c_shell_kvm flags e =
 
 let dump_shell names =
   let flags = collect_flags names in
-  Misc.output_protect
+  Base.Misc.output_protect
     (fun out_chan ->
       dump_shell_prefix out_chan ;
       begin match Cfg.crossrun with
@@ -402,7 +402,7 @@ let dump_shell_cont arch flags sources utils =
   begin match Cfg.mode with
   | Mode.Std|Mode.PreSi ->
       let module RU = RunUtils.Make(O) in
-      Misc.output_protect
+      Base.Misc.output_protect
         (fun chan ->
           fprintf chan "#!/bin/sh\n" ;
           let gcc_opts = RU.get_gcc_opts in
@@ -441,12 +441,12 @@ let dump_shell_cont arch flags sources utils =
   | Mode.Kvm -> ()
   end ;
 (* Add a small README file *)
-  Misc.output_protect
+  Base.Misc.output_protect
     (fun chan ->
       GD.gen_readme_src chan arch sources)
     (Tar.outname (MyName.outname "README" ".txt")) ;
 (* Makefile for parallel compilation *)
-  Misc.output_protect
+  Base.Misc.output_protect
     (fun chan ->
 (* Variables *)
       makefile_vars chan false arch flags utils sources ;
@@ -499,7 +499,7 @@ let dump_shell_cont arch flags sources utils =
   ()
 
 let dump_c xcode names =
-  Misc.output_protect
+  Base.Misc.output_protect
     (fun out_chan ->
       let module O = Indent.Make(struct let hexa = Cfg.hexa let out = out_chan end) in
       O.o "#include <stdlib.h>" ;
@@ -631,7 +631,7 @@ let dump_c_cont xcode arch flags sources utils nts =
   let sources = List.map Filename.basename  sources in
 (* Makefile *)
   let infile = not xcode in
-  Misc.output_protect
+  Base.Misc.output_protect
     (fun chan ->
       makefile_vars chan infile arch flags utils sources ;
 (* Various intermediate targets *)
@@ -704,13 +704,13 @@ let dump_c_cont xcode arch flags sources utils nts =
     (Tar.outname (MyName.outname "Makefile" "")) ;
 (* Source list in file  *)
   if infile then begin
-    Misc.output_protect
+    Base.Misc.output_protect
       (fun chan -> List.iter (fprintf chan "%s\n") sources)
       (Tar.outname (MyName.outname "src" ""))
   end ;
 (* XCode interface file *)
   if xcode then begin
-    Misc.output_protect
+    Base.Misc.output_protect
       (fun chan ->
         let module O = Indent.Make(struct let hexa = Cfg.hexa let out = chan end) in
         O.o "#import <Foundation/Foundation.h>" ;
@@ -726,7 +726,7 @@ let dump_c_cont xcode arch flags sources utils nts =
   (* Topology arrays, when shared *)
   if shared_topology then begin
     let m =
-      Misc.output_protect
+      Base.Misc.output_protect
         (fun chan ->
           let module O =
             Indent.Make(struct let hexa = Cfg.hexa let out = chan end) in
@@ -757,7 +757,7 @@ let dump_c_cont xcode arch flags sources utils nts =
               IntMap.add k sz m)
             nts IntMap.empty)
         (Tar.outname (MyName.outname "topology" ".c")) in
-      Misc.output_protect
+      Base.Misc.output_protect
         (fun chan ->
           let module O =
             Indent.Make(struct let hexa = Cfg.hexa let out = chan end) in
@@ -793,10 +793,10 @@ let dump_cross _arch =
   let dir = Filename.concat top dname in
   MySys.mkdir dir ;
   (* Put this in dir *)
-  Misc.output_protect
+  Base.Misc.output_protect
     (fun chan -> output_line chan (GD.gen_makefile ()))
     (Filename.concat dir "Makefile") ;
-  Misc.output_protect
+  Base.Misc.output_protect
     (fun chan -> GD.gen_readme chan)
     (Filename.concat dir "README.txt") ;
 (* Untar sources in src sub-directory *)

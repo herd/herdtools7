@@ -14,9 +14,11 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Gen_common
+
 open Code
 include X86Base
-let tr_endian = Misc.identity
+let tr_endian = Base.Misc.identity
 
 module ScopeGen = ScopeGen.NoGen
 

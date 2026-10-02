@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Gen_common
+
 (* Atomicity of events *)
 module type Config = sig
   val naturalsize : MachSize.sz option
@@ -99,7 +101,7 @@ module Make(C:Config) = struct
   module ValsMixed =
     MachMixed.Vals
       (struct
-        let naturalsize () = Misc.as_some C.naturalsize
+        let naturalsize () = Base.Misc.as_some C.naturalsize
         let endian = C.endian
       end)(Value)
 

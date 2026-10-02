@@ -123,7 +123,7 @@ module Make (C: Config) = struct
 
     (* call the interpreter  and collect bell info *)
     match I.interpret
-        empty_test Misc.identity ks I.init_env_empty vb_pp
+        empty_test Base.Misc.identity ks I.init_env_empty vb_pp
         function_arg None with
     | None -> assert false (* Continuation must be called at least once *)
     | Some i ->

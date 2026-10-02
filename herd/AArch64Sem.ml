@@ -101,7 +101,7 @@ module Make
       in List.map
         (fun b ->
           { barrier = b;
-            pp = Misc.lowercase (AArch64Base.pp_barrier b)})
+            pp = Base.Misc.lowercase (AArch64Base.pp_barrier b)})
         bs
     let isync = Some { barrier = AArch64Base.ISB;pp = "isb";}
 
@@ -238,7 +238,7 @@ module Make
             assert (C.variant Variant.MemTag) ;
             false, { ii with A.labels = Label.Set.empty }, None
           | _, _ ->
-            true, ii, Misc.map_opt (fun a -> A.Location_global a) a in
+            true, ii, Base.Misc.map_opt (fun a -> A.Location_global a) a in
         M.mk_singleton_es
           (Act.Fault (ii,loc,dir,annot,fh || is_sync_exc_entry,ft,msg)) ii
 
@@ -472,7 +472,7 @@ module Make
       let get_predicate_any pred psize nelem =
         let mask idx =
           V.op1 (Op.LeftShift (idx*psize)) (AArch64.predicate_mask psize) in
-        let ops = List.map mask (Misc.interval 0 nelem) in
+        let ops = List.map mask (Base.Misc.interval 0 nelem) in
         let allmask =
           List.fold_right (V.op Op.Or) ops AArch64.zero_promoted in
         M.op Op.And pred allmask >>= fun all ->
@@ -3103,7 +3103,7 @@ Arguments:
         let hsb = 63 in
         let msk =
           String.concat ""
-            ("0b1"::Misc.replicate imms "0") in
+            ("0b1"::Base.Misc.replicate imms "0") in
         M.op1 (Op.AndK msk) v >>=
         M.op1 (Op.LeftShift (hsb-imms)) >>=
         M.op1 (Op.ArithRightShift (hsb-imms)) >>=
@@ -3194,21 +3194,21 @@ Arguments:
         let op i =
           let ops = neon_memops (load_elem MachSize.S128) addr i rlist ii in
           reduce_ord ops in
-        let ops = List.map op (Misc.interval 0 (neon_nelem (List.hd rlist))) in
+        let ops = List.map op (Base.Misc.interval 0 (neon_nelem (List.hd rlist))) in
         reduce_ord ops
 
       let store_m addr rlist ii =
         let op i =
           let ops = neon_memops store_elem addr i rlist ii in
           List.fold_right (>>::) ops (M.unitT [()]) in
-        let ops = List.map op (Misc.interval 0 (neon_nelem (List.hd rlist))) in
+        let ops = List.map op (Base.Misc.interval 0 (neon_nelem (List.hd rlist))) in
         List.fold_right (>>::) ops (M.unitT [[()]])
 
       let neon_memops_contigous memop addr step r ii =
         let op idx =
           let o = (idx + step) * neon_esize r / 8 in
           M.add (V.intToV o) addr >>= fun addr -> memop idx r addr ii in
-        List.map op (Misc.interval 0 (neon_nelem r))
+        List.map op (Base.Misc.interval 0 (neon_nelem r))
 
       let load_m_contigous addr rlist ii =
         let op i r =
@@ -3283,10 +3283,10 @@ Arguments:
               in
               is_active_element p pred psize idx ii load (no_action ii >>! M.A.V.zero)
             in
-            let ops = List.map op (Misc.interval 0 nelem) in
+            let ops = List.map op (Base.Misc.interval 0 nelem) in
             para_fold_right (M.op Op.Or) ops mzero
           in
-          let ops = List.map ops (Misc.interval 0 nregs) in
+          let ops = List.map ops (Base.Misc.interval 0 nregs) in
           List.fold_right ( >>:: ) ops (M.unitT [])
         in
         let f (r, result) macc =
@@ -3317,7 +3317,7 @@ Arguments:
               in
               is_active_element p pred psize idx ii store (M.unitT ())
             in
-            let ops = List.map op (Misc.interval 0 nelem) in
+            let ops = List.map op (Base.Misc.interval 0 nelem) in
             List.fold_right M.seq_mem_list ops (M.unitT [])
             (* List.fold_right M.seq_mem_list ops (M.unitT [()]) *)
           in
@@ -3348,7 +3348,7 @@ Arguments:
             in
             is_active_element p pred psize idx ii load (no_action ii >>! M.A.V.zero)
           in
-          let ops = List.map op (Misc.interval 0 nelem) in
+          let ops = List.map op (Base.Misc.interval 0 nelem) in
           para_fold_right (M.op Op.Or) ops mzero
         in
         write_reg_scalable r result ii
@@ -3375,7 +3375,7 @@ Arguments:
             write_mem sz aexp Access.VIR addr v ii in
           is_active_element r pred psize idx ii store (M.unitT ())
         in
-        let ops = List.map op (Misc.interval 0 nelem) in
+        let ops = List.map op (Base.Misc.interval 0 nelem) in
         List.fold_right M.seq_mem_list ops (M.unitT [()])
 
       let load_predicated_slice sz r ri k p ma ii =
@@ -3601,7 +3601,7 @@ Arguments:
           M.op Op.Or v (V.intToV 0xff00)) >>= 
         fun (addr,exclude) ->
           let set color =
-            let tag = V.Val (Constant.Tag (Misc.tag_of_int color)) in
+            let tag = V.Val (Constant.Tag (Base.Misc.tag_of_int color)) in
             M.op Op.SetTag addr tag >>= fun v ->
             write_reg_dest rd v ii
           in
@@ -4890,7 +4890,7 @@ Arguments:
                    A complete possible fix would be
                    having code addresses as values *)
                 M.failT
-                  (Misc.Fatal "Overwriting  with ADR, cannot handle")
+                  (Base.Misc.Fatal "Overwriting  with ADR, cannot handle")
                   B.Exit
            end
         | I_RBIT (v,rd,rn) ->
@@ -5186,7 +5186,7 @@ Arguments:
               let lbl_opt =
                 pte_v.oa
                 |> OutputAddress.as_physical
-                |> fun o -> Option.bind o Misc.str_as_label in
+                |> fun o -> Option.bind o Base.Misc.str_as_label in
               match lbl_opt with
               | Some lbl -> lbl::k
               | None -> k
@@ -5301,7 +5301,7 @@ Arguments:
                 let ttd_triple = Constant.unmk_sym_virtual_label_with_offset ttd_lbl in
                 match (this_triple,ttd_triple) with
                 | (p1,s1,_),(p2,s2,_) ->
-                  (Misc.int_eq p1 p2) && (Misc.string_eq s1 s2)
+                  (Base.Misc.int_eq p1 p2) && (Base.Misc.string_eq s1 s2)
               ) exp_pages
             end
           | _ -> false
@@ -5312,7 +5312,7 @@ Arguments:
           Label.Set.exists
             (fun lbl ->
               Label.Full.Set.exists
-                (fun (_,lbl0) -> Misc.string_eq lbl lbl0)
+                (fun (_,lbl0) -> Base.Misc.string_eq lbl lbl0)
                 (get_exported_labels test))
             labels in
 

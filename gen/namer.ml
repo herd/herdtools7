@@ -14,8 +14,11 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Gen_common
+
 (* Normalised names for cycles *)
 open Printf
+open Base
 open BellInfo
 
 let rec of_scope = function

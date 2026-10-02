@@ -107,7 +107,7 @@ module D =
   LogConstr.Dump
     (struct
       let hexa = hexa
-      let tr = Misc.identity
+      let tr = Base.Misc.identity
     end)
 
 let zyva log =
@@ -175,5 +175,5 @@ let zyva log =
 
 let () =
   try zyva log
-  with Misc.Fatal msg|Misc.UserError msg ->
+  with Base.Misc.Fatal msg|Base.Misc.UserError msg ->
     eprintf "Fatal error: %s\n%!" msg

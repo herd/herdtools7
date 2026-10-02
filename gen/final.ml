@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Gen_common
+
 module type Config = sig
   val verbose : int
   val cond : Config.cond
@@ -272,7 +274,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         let pp_loc =
           if looks_like_array value then C.A.pp_location
           else C.A.pp_location_brk in
-        begin match Misc.tr_atag (C.A.pp_location loc) with
+        begin match Base.Misc.tr_atag (C.A.pp_location loc) with
         | Some s -> sprintf "[tag(%s)]=%s" s (Code.add_tag "" (dump_tag value))
         | None ->
           sprintf "%s=%s" (pp_loc loc) (dump_val value)

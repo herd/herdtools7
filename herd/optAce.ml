@@ -18,7 +18,7 @@ type t = False | True | Iico
 
 let tags = ["false";"true";"iico";]
 
-let parse tag = match Misc.lowercase tag with
+let parse tag = match Base.Misc.lowercase tag with
 | "false" -> Some False
 | "true" -> Some True
 | "iico" -> Some Iico

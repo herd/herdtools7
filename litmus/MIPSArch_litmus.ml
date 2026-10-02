@@ -58,10 +58,10 @@ module Make(O:Arch_litmus.Config)(V:Constant.S) = struct
 
       let self_instrs = [NOP; ]
 
-      let lower_instr i = Misc.lowercase (dump_instruction i)
+      let lower_instr i = Base.Misc.lowercase (dump_instruction i)
 
       let instr_name i =
-        MyName.name_as_symbol (Misc.skip_spaces (lower_instr i))
+        MyName.name_as_symbol (Base.Misc.skip_spaces (lower_instr i))
 
       let fun_name i = Printf.sprintf "get%s" (instr_name i)
 

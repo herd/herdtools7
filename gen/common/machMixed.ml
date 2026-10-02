@@ -25,7 +25,7 @@ type offset = int
 type t = sz * offset
 
 let equal (sz1,o1) (sz2,o2) =
-  MachSize.equal sz1 sz2 && Misc.int_eq o1 o2
+  MachSize.equal sz1 sz2 && Base.Misc.int_eq o1 o2
 
 let disjoint (l1,h1) (l2,h2) =
    l1 < l2 && h1 <= l2 || l2 < l1 && h2 <= l1

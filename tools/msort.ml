@@ -19,6 +19,7 @@
    Also erase duplicates identified from hashes *)
 
 open Printf
+open Base
 
 type duplicates = Keep | Comment | Delete
 

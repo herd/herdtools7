@@ -92,5 +92,5 @@ let () =
   try
     let names = zyva !logs in
     StringSet.iter print_endline names
-  with Misc.Fatal msg|Misc.UserError msg ->
+  with Base.Misc.Fatal msg|Base.Misc.UserError msg ->
     eprintf "Fatal error: %s\n%!" msg

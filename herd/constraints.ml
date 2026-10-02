@@ -17,6 +17,7 @@
 (** Constraints in litmus files *)
 
 open Printf
+open Base
 
 module type Config = sig
   val texmacros : bool

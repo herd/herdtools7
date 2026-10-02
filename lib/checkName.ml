@@ -98,7 +98,7 @@ module
         if StringSet.is_empty I.oknames then None
         else Some I.oknames
     | args ->
-        let names = Names.from_fnames (Misc.expand_argv args) in
+        let names = Names.from_fnames (Base.Misc.expand_argv args) in
         let names = List.rev_map rename names in
         let set = StringSet.of_list names in
         Some (StringSet.union set I.oknames)
@@ -108,7 +108,7 @@ module
     | args ->
         let names =
           List.fold_left
-            (fun r name -> ReadNames.from_file (rename name) Misc.cons r)
+            (fun r name -> ReadNames.from_file (rename name) Base.Misc.cons r)
             [] args in
         let set = StringSet.of_list names in
         Some set
@@ -119,7 +119,7 @@ module
     | args ->
         let names =
           List.fold_left
-            (fun r name -> ReadNames.from_file (rename name) Misc.cons r)
+            (fun r name -> ReadNames.from_file (rename name) Base.Misc.cons r)
             [] args in
         let set = StringSet.of_list names in
         if I.verbose > 1 then

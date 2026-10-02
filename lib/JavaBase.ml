@@ -165,7 +165,7 @@ and dump_instruction_hash = dump_instruction
 let pp_instruction _mode = dump_instruction
 
 let allowed_for_symb = List.map (fun x -> "r"^(string_of_int x))
-                                (Misc.interval 0 64)
+                                (Base.Misc.interval 0 64)
 
 let fold_regs (_fc,_fs) acc _ins  = acc
 let map_regs _fc _fs ins          = ins

@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Gen_common
+
 open Code
 module type Config = sig
   include CompileCommon.Config
@@ -222,7 +224,7 @@ let emit_rmw _ = assert false
       let cA = calc_zero idx r1 in
       (* collapse the value `v` in event `e` to integer *)
       let value = Value.to_int e.v in
-      begin match Misc.as_some e.dir,e.atom,e.loc with
+      begin match Base.Misc.as_some e.dir,e.atom,e.loc with
       | R,None,Data loc ->
           let rC,init,cs,st = emit_load_idx st p init loc idx in
           Some rC,init,cA::cs,st

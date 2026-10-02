@@ -153,7 +153,7 @@ let rec of_ins x =
            | UnShow (loc, strs)        -> [ key "I_UNSHOW"; of_loc loc; of_list_map of_str strs ]
            | Show (loc, strs)          -> [ key "I_SHOW"; of_loc loc; of_list_map of_str strs ]
            | ShowAs (loc, exp, str)    -> [ key "I_SHOWAS"; of_loc loc; of_exp exp; of_str str ]
-           | Include (_, _)            -> raise (Misc.Fatal "Unexpected include after expansion")
+           | Include (_, _)            -> raise (Base.Misc.Fatal "Unexpected include after expansion")
            | Procedure (loc, var, pat, insts, isrec)
              -> [ key "I_PROCEDURE"; of_loc loc; of_var var; of_pat pat; of_list_map of_ins insts; of_is_rec isrec ]
            | Call (loc, var, exp, str) -> [ key "I_CALL"; of_loc loc; of_var var; of_exp exp; of_option of_str str ]
@@ -261,7 +261,7 @@ let () =
       get_cmd_arg
       (sprintf "Usage: %s ..." prog)
   with
-  | Misc.Fatal msg -> eprintf "%s: %s\n" prog msg
+  | Base.Misc.Fatal msg -> eprintf "%s: %s\n" prog msg
 
 let cats = List.rev !args
 

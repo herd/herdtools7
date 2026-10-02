@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Gen_common
+
 (* Sets and relations in normal form, and operations on them. *)
 
 type 'a inter = Inter of 'a list

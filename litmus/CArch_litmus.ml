@@ -54,7 +54,7 @@ module Make(O:sig val memory : Memory.t val hexa : bool val mode : Mode.t end) =
     let arch = `C
   end
 
-  include Location.Make(Internal)
+  include Base.Location.Make(Internal)
 
   let is_pte_loc _ = false
   let parse_reg x = Some x

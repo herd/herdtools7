@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Gen_common
+
 open Code
 
 module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
@@ -370,7 +372,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let get_access_exch er ew =
       let szr = get_access_atom er.C.atom
       and szw = get_access_atom ew.C.atom in
-      if not (Misc.opt_eq MachMixed.equal szr szw) then
+      if not (Base.Misc.opt_eq MachMixed.equal szr szw) then
         Warn.fatal "Exchange instruction with different accesses" ;
       szw
 
