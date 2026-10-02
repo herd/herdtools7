@@ -3,3 +3,14 @@ outcome: SUCCESS
 output: |
   20
   20
+info: |
+  File ../tests/typing/TypingRule.SWhile.asl, line 23, character 4 to line 29,
+    character 8:
+      while i < 20 do
+          assert i < 20;
+          if x[i] == '1' then
+              ones = ones + 1;
+          end;
+          i = i + 1;
+      end;
+  ASL Warning: Loop does not have a limit.
