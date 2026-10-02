@@ -32,7 +32,7 @@ module type S = sig
   type global = ParsedConstant.v
   val maybevToGlobal  : global -> v
 
-  include Location.S with type loc_reg = reg and type loc_global = global
+  include Base.Location.S with type loc_reg = reg and type loc_global = global
 
   module FaultType : FaultType.S
   type fault_type = FaultType.t

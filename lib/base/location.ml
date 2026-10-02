@@ -26,7 +26,7 @@ module Rel = struct
   let compare loc_compare r1 r2 = match r1,r2 with
     | Loc l1,Loc l2 -> loc_compare l1 l2
     | Deref (l1,i1),Deref (l2,i2) ->
-        Base.Misc.pair_compare loc_compare Base.Misc.int_compare
+        Misc.pair_compare loc_compare Misc.int_compare
           (l1,i1) (l2,i2)
     | Loc _,Deref _ -> -1
     | Deref _,Loc _ -> +1
@@ -83,15 +83,15 @@ module type S = sig
  *)
   val env_for_pp : (location * 'a) list -> (location * 'a) list list
 
-  module LocSet : MySet.S with type elt = location
-  module LocMap : MyMap.S with type key = location
+  module LocSet : Set.S with type elt = location
+  module LocMap : Map.S with type key = location
 
   type rlocation = location Rel.t
   val pp_rlocation : rlocation -> string
   val rlocation_compare : rlocation -> rlocation -> int
 
-  module RLocSet : MySet.S with type elt = rlocation
-  module RLocMap : MyMap.S with type key = rlocation
+  module RLocSet : Set.S with type elt = rlocation
+  module RLocMap : Map.S with type key = rlocation
 end
 
 module Make(A:I) : S
@@ -137,7 +137,7 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
     | Location_global a -> sprintf "*%s" (A.pp_global a)
 
     let env_for_pp env =
-      Base.Misc.group_by_int
+      Misc.group_by_int
         (fun loc ->
           match loc with
           | Location_reg (proc,_) -> Some proc
@@ -151,7 +151,7 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
 
     let location_compare l1 l2 = match l1,l2 with
     | Location_reg (p1,r1), Location_reg (p2,r2) ->
-        begin match Base.Misc.int_compare p1 p2 with
+        begin match Misc.int_compare p1 p2 with
         | 0 -> A.reg_compare r1 r2
         | r -> r
         end
@@ -164,8 +164,8 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
       let compare = location_compare
     end
 
-    module LocSet = MySet.Make(OL)
-    module LocMap = MyMap.Make(OL)
+    module LocSet = Set.Make(OL)
+    module LocMap = Map.Make(OL)
 
     type rlocation = location Rel.t
     let pp_rlocation = Rel.dump pp_location
@@ -174,6 +174,6 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
       type t = rlocation
       let compare = rlocation_compare
     end
-    module RLocSet = MySet.Make(RL)
-    module RLocMap = MyMap.Make(RL)
+    module RLocSet = Set.Make(RL)
+    module RLocMap = Map.Make(RL)
   end

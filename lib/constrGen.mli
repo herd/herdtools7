@@ -19,7 +19,7 @@
 
 (* Type of locations on the right of LV atoms *)
 
-type 'loc rloc = 'loc Location.Rel.t =
+type 'loc rloc = 'loc Base.Location.Rel.t =
   | Loc of 'loc
   | Deref of 'loc * int
 
