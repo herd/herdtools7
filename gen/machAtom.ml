@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Gen_common
+
 (* Atomicity of events *)
 module type Config = sig
   val naturalsize : MachSize.sz option
