@@ -1,0 +1,17 @@
+AArch64 BASE-EXTR-W-zeroextend
+
+(*
+ * EXTR W writes a 32-bit result and therefore clears X0[63:32].  A later
+ * 64-bit read exposes any leaked high bits from the handwritten concat.
+ *)
+
+{
+  0:X1=0xffffffff;
+  0:X2=0;
+}
+
+P0                  ;
+  EXTR W0,W1,W2,#1  ;
+  LSR X3,X0,#32     ;
+
+exists (0:X3=0)

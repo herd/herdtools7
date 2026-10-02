@@ -1,0 +1,10 @@
+Test ADD-UXTB Allowed
+States 1
+0:X0=256;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X0=256)
+Observation ADD-UXTB Always 1 0
+Hash=74566350d6e35120e61878c1d40f2d1d
+

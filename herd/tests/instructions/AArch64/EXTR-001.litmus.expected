@@ -1,0 +1,10 @@
+Test BASE-EXTR-W-zeroextend Allowed
+States 1
+0:X3=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X3=0)
+Observation BASE-EXTR-W-zeroextend Always 1 0
+Hash=f1f3adf6f3827134348c31a2fdbe337a
+

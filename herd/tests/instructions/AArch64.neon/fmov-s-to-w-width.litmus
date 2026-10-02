@@ -1,0 +1,14 @@
+AArch64 fmov-s-to-w-width
+Variant=neon
+
+(* FMOV Wd,Sn transfers only Sn[31:0] and clears Xd[63:32]. *)
+
+{
+  0:X1=0x100000000;
+}
+
+P0             ;
+  MOV V0.D[0],X1 ;
+  FMOV W0,S0     ;
+
+forall (0:X0=0)
