@@ -263,7 +263,7 @@ let split_lexbuf name lexbuf =
     with
     | LexMisc.Error (msg,loc) ->
        failwith (Printf.sprintf "%s: splitter error in sublexer %s" (Pos.str_pos loc) msg)
-    | Assert_failure _ as e ->  raise e
+    | (Assert_failure _ | Misc.Timeout) as e -> raise e
     | e ->
        failwith (Printf.sprintf "%s: Uncaught exception in splitter %s" (Pos.str_pos lexbuf.lex_curr_p) (Printexc.to_string e))
   in
