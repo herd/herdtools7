@@ -36,6 +36,7 @@ let catch_silent_exit body =
   let catcher = (None,exit_type,return_0) in
   add_dummy_pos (S_Try (body,[catcher],None))
 
+(* Initialise the ASL register state and configured SVE vector length. *)
 let setup_registers ~is_vmsa ~sve_enabled ~sve_vector_length =
   let open Asllib.AST in
   let open Asllib.ASTUtils in
@@ -87,6 +88,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
 
   let sve = TopConf.C.(variant Variant.SVE || variant Variant.SME)
 
+  (* Reject an SVE instruction unless the SVE or SME variant is enabled. *)
   let check_sve inst =
     if not sve then
       Warn.user_error
@@ -164,9 +166,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | LE -> 0b1101
       | AL -> 0b1111 (* Also possible [0b1110] *)
 
+    (* Encode a PTRUE pattern as the five-bit field expected by ASL. *)
     let tr_ptrue_pattern =
       let open AArch64Base in
-      (* The 5-bit pattern field decoded by the SVE PTRUE pseudocode. *)
       function
       | POW2 -> 0b00000
       | VL1 -> 0b00001
@@ -186,7 +188,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | MUL3 -> 0b11110
       | ALL -> 0b11111
 
-    (* Memory access width, independently of the Z element width. *)
+    (* Return the memory access width and ASL filename suffix for a SIMD size. *)
     let sve_memory_suffix =
       let open AArch64Base in
       function
@@ -197,7 +199,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | VSIMD128 ->
           Warn.fatal "SVE memory operations with 128-bit elements are not supported by ASL."
 
+    (* Convert a predicate register name to its ASL register index. *)
     let tr_pred_reg = ASLBase.pred_reg_to_int
+    (* Convert a vector register name to its ASL register index. *)
     let tr_vec_reg = ASLBase.reg_to_int AArch64Base.vec_regs
 
     let barrier_domain =
@@ -266,7 +270,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let litbv v i = lit (L_BitVector (Asllib.Bitvector.of_int_sized v i)) in
       let var x = E_Var x |> with_pos in
       let variant v = AArch64Base.variant_raw v |> liti in
-      (* Turn a SIMD element suffix into the ASL size argument. *)
+      (* Convert a SIMD element size to an ASL integer expression. *)
       let simd_datasize = function
         | AArch64Base.VSIMD8 -> liti 8
         | AArch64Base.VSIMD16 -> liti 16
@@ -275,8 +279,9 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         | AArch64Base.VSIMD128 -> liti 128
       in
       let cond c = tr_cond c |> litbv 4 in
+      (* Wrap a PTRUE pattern encoding as a five-bit ASL literal. *)
       let ptrue_pattern p = tr_ptrue_pattern p |> litbv 5 in
-      (* PTRUE/WHILELT carry their element size on the predicate register. *)
+      (* Extract the predicate index and element size used by PTRUE/WHILELT. *)
       let pred_reg_and_esize = function
         | AArch64Base.Preg (p, esize) -> (tr_pred_reg p |> liti, liti esize)
         | r -> Warn.fatal "Expected a predicate register, got: %s." (AArch64Base.pp_reg r)
@@ -292,31 +297,33 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         | PState _ -> Warn.fatal "PState is not an addressable register"
         | r -> Warn.fatal "Unsupported register: %s." (pp_reg r)
       in
+      (* Extract a predicate register index as an ASL integer expression. *)
       let pred_reg = function
         | Preg (p, _) | PMreg (p, _) -> tr_pred_reg p |> liti
         | r -> Warn.fatal "Expected a predicate register, got: %s." (pp_reg r)
       in
-      (* /M preserves inactive lanes; /Z clears them. *)
+      (* Return the predicate index and whether /M preserves inactive lanes. *)
       let pred_reg_and_mode = function
         | PMreg (p, mode) -> (tr_pred_reg p |> liti, mode = Merge)
         | r -> Warn.fatal "Expected a predicated register, got: %s." (pp_reg r)
       in
+      (* Extract a SIMD/V destination index as an ASL integer expression. *)
       let simd_reg = function
         | SIMDreg v | Vreg (v, _) -> tr_vec_reg v |> liti
         | r -> Warn.fatal "Expected a SIMD register, got: %s." (pp_reg r)
       in
-      (* Extract the Z register number and its lane width. *)
+      (* Extract a Z register index and its element width. *)
       let zreg_and_esize = function
         | Zreg (z, esize) -> (tr_vec_reg z |> liti, esize)
         | r -> Warn.fatal "Expected an SVE vector register, got: %s." (pp_reg r)
       in
-      (* Add the destination fields shared by the four INDEX forms. *)
+      (* Build the ASL entry point and arguments shared by all INDEX forms. *)
       let tr_sve_index inst zd opn args =
         check_sve inst;
         let d, esize = zreg_and_esize zd in
         Some (opn, stmt ([ "d" ^= d; "esize" ^= liti esize ] @ args))
       in
-      (* Pass register fields and /M or /Z mode to MOVPRFX/NEG ASL. *)
+      (* Build MOVPRFX/NEG ASL arguments from Z registers and /M or /Z mode. *)
       let tr_sve_predicated_unary inst zd pg zn opn =
         check_sve inst;
         let d, esize = zreg_and_esize zd in
@@ -328,7 +335,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               [ "d" ^= d; "g" ^= g; "n" ^= n; "esize" ^= liti esize;
                 "merging" ^= litb merging ] )
       in
-      (* ASL names only the first register of a consecutive Z group. *)
+      (* Validate a consecutive Z group and return its first register index. *)
       let contiguous_zregs ~nreg rs =
         match rs with
         | [] -> Warn.fatal "Expected %d SVE vector registers, got none." nreg
@@ -348,7 +355,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         | r :: _ ->
             Warn.fatal "Expected an SVE vector register, got: %s." (pp_reg r)
       in
-      (* All Z registers in one memory instruction use the same lane width. *)
+      (* Validate a Z group's element widths and return their common width. *)
       let contiguous_zreg_esize = function
         | Zreg (_, esize) :: rs ->
             List.iter
@@ -359,7 +366,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             esize
         | _ -> Warn.fatal "Expected SVE vector registers"
       in
-      (* Bind the fields shared by contiguous and gather/scatter LD/ST opn files. *)
+      (* Build the common ASL register and address arguments for SVE LD/ST. *)
       let tr_sve_contiguous_memory inst ~opn ~nreg ~destinations ~predicate
           ~base ~address ~esize extra_args =
         check_sve inst;
@@ -376,7 +383,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                 ]
               @ address @ extra_args ) )
       in
-      (* Structure LD/ST instructions encode their register count in the opcode. *)
+      (* Extract the number of Z registers encoded by an SVE LD/ST opcode. *)
       let sve_memory_nreg = function
         | I_LD1SP _ | I_ST1SP _ -> 1
         | I_LD2SP _ | I_ST2SP _ -> 2
@@ -384,7 +391,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         | I_LD4SP _ | I_ST4SP _ -> 4
         | _ -> assert false
       in
-      (* Select scalar-base/immediate ASL and its memory-width arguments. *)
+      (* Select scalar-base/immediate ASL and return its register count and arguments. *)
       let sve_contiguous_memory_info inst ~suffix ~msize =
         let nreg = sve_memory_nreg inst in
         match inst with
@@ -414,7 +421,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               [ "nreg" ^= liti nreg ] )
         | _ -> assert false
       in
-      (* Select scalar-base/scalar-offset ASL; its shift is implicit in msize. *)
+      (* Select scalar-base/register-offset ASL and its count and arguments. *)
       let sve_contiguous_memory_reg_info inst ~suffix ~msize =
         let nreg = sve_memory_nreg inst in
         match inst with
@@ -444,7 +451,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               [ "nreg" ^= liti nreg ] )
         | _ -> assert false
       in
-      (* Select gather/scatter ASL by operation and memory access width. *)
+      (* Select gather/scatter ASL and extra arguments from operation and access width. *)
       let sve_vector_memory_info inst ~msize =
         match inst, msize with
         | I_LD1SP _, 8 ->
@@ -469,7 +476,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
             ("sve/sve_memst_ss/sve_mem_sst_sv_a/st1d_z_p_bz_d_x32_scaled.opn", [])
         | _ -> assert false
       in
-      (* Decode offset lane width, signedness, and shift for gather/scatter ASL. *)
+      (* Encode offset lane width, signedness, and shift for gather/scatter ASL. *)
       let sve_vector_offset_args extension esize shift =
         let offs_size, offs_unsigned =
           match extension with
