@@ -38,7 +38,7 @@ module type Base = sig
   module RegSet : MySet.S with type elt = reg
   module RegMap : MyMap.S with type key = reg
 
-  include Location.S
+  include Base.Location.S
 
   with type loc_reg = reg and
   type loc_global = Global_litmus.t
@@ -92,7 +92,7 @@ module type K = sig
 
   module RegSet : MySet.S with type elt = reg
 
-  include Location.S
+  include Base.Location.S
   with type loc_reg = reg and
   type loc_global = string
 
