@@ -22,6 +22,7 @@ module Top
     (Opt:
        sig
          val verbose : int
+         val ok : string -> bool
          val recompute_hash : bool
        end) =
   struct
@@ -38,7 +39,9 @@ module Top
     let do_test name =
       try
         let t = TI.Z.from_file name in
-        printf "%s %s\n" t.TestInfo.T.tname t.TestInfo.T.hash
+        let tname =  t.TestInfo.T.tname in
+        if Opt.ok tname then
+          printf "%s %s\n" tname t.TestInfo.T.hash
       with
       | Misc.Exit -> ()
       | Misc.Fatal msg|Misc.UserError msg ->
@@ -49,6 +52,7 @@ module Top
           raise e
 
     let zyva tests = Misc.iter_argv_or_stdin do_test tests
+
   end
 
 
@@ -59,14 +63,31 @@ let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
   else "mshowhash"
 
+open OptNames
+
 let () =
   Arg.parse
-    ["-v",Arg.Unit (fun () -> incr verbose), " be verbose";
-     "-rehash", Arg.Bool (fun b -> recompute_hash := b),
+    (["-v",Arg.Unit (fun () -> incr verbose), " be verbose";]
+     @ parse_noselect
+     @ ["-rehash", Arg.Bool (fun b -> recompute_hash := b),
      sprintf
-       " recompute test hashes, regardless of explicit hashes presence, default %b" !recompute_hash;]
+       " recompute test hashes, regardless of explicit hashes presence, default %b" !recompute_hash;])
     (fun s -> arg := s :: !arg)
     (sprintf "Usage: %s [options]* [test]*" prog)
+
+
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = !verbose
+      let rename = []
+      let select = []
+      let names = !names
+      let oknames = !oknames
+      let excl = !excl
+      let nonames = !nonames
+    end)
+
 
 let tests = List.rev !arg
 
@@ -74,6 +95,7 @@ module X =
   Top
     (struct
       let verbose = !verbose
+      let ok = Check.ok
       let recompute_hash = !recompute_hash
     end)
 

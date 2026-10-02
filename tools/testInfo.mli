@@ -30,7 +30,7 @@ module Top(Cfg:ToolParse.Config) : sig
     val zyva : Name.t -> A.pseudo MiscParser.t -> T.t
   end
 
-  (* Parser an extract *)
+  (* Extract information out of litmus test file *)
   module Z : sig
     val from_file : string -> T.t
   end

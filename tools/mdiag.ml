@@ -19,6 +19,7 @@ module Top
     (Opt:
        sig
          val verbose : int
+         val ok : string -> bool
        end) =
   struct
 
@@ -30,7 +31,10 @@ module Top
         end)
 
     let do_test name (k,n as c) =
-      try TI.Z.from_file name::k,n+1
+      try
+        let info = TI.Z.from_file name in
+        if Opt.ok info.TestInfo.T.tname |> not then raise Misc.Exit ;
+        info::k,n+1
       with
       | Misc.Exit -> c
       | Misc.Fatal msg|Misc.UserError msg ->
@@ -52,9 +56,8 @@ module Top
       StringMap.add k (TSet.add v old) m
 
     let zyva tests =
-      let tests,ntests = match tests with
-      | [] -> Misc.fold_stdin do_test ([],0)
-      | _::_ -> Misc.fold_argv do_test tests ([],0) in
+      let tests,ntests =
+        Misc.fold_argv_or_stdin do_test tests ([],0) in
       let tests = TSet.of_list tests in
       let byName,byHash =
         TSet.fold
@@ -111,6 +114,7 @@ module Top
       ()
   end
 
+open OptNames
 
 let verbose = ref 0
 let arg = ref []
@@ -129,16 +133,31 @@ let () =
         "Options:" ;
       ] in
   Arg.parse
-    ["-v",Arg.Unit (fun () -> incr verbose), " be verbose";]
+    (["-v",Arg.Unit (fun () -> incr verbose), " be verbose"]
+    @parse_noselect)
     (fun s -> arg := !arg @ [s])
     usage
 
 let tests = List.rev !arg
 
+
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = !verbose
+      let rename = []
+      let select = []
+      let names = !names
+      let oknames = !oknames
+      let excl = !excl
+      let nonames = !nonames
+    end)
+
 module X =
   Top
     (struct
       let verbose = !verbose
+      let ok = Check.ok
     end)
 
 let () = X.zyva tests
