@@ -314,3 +314,10 @@
 \AtBeginDocument
     {\renewcommand{\mpr@vert@premise}{middle}%
      \renewcommand{\mpr@vert@conclusion}{middle}}
+
+%%% Nicer console output for HeVeA
+\newcommand{\myRenderConsoleFor}[3][]
+{\begin{center}\begin{tabular}{l}%
+\VerbatimInput[frame=lines]{generated_console_output/#2.txt}%
+\end{tabular}\end{center}}
+\AtBeginDocument{\let\RenderConsoleFor\myRenderConsoleFor}
