@@ -51,7 +51,7 @@ Checking that --no-primitives option actually removes OCaml primitives
     FloorLog2 (primitive) expected an argument greater than 0
   [1]
   $ aslref --no-primitives no-primitives-test.asl
-  File ASL Standard Library, line 79, characters 11 to 16:
+  File ASL Standard Library, line 80, characters 11 to 16:
   ASL Dynamic error (DE_DAF): Assertion failed: (__stdlib_local_a > 0).
   [1]
 
