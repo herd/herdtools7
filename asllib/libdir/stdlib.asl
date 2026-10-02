@@ -30,14 +30,13 @@ end;
 // two's complement. The leftmost bit is most significant, and the rightmost
 // bit is least significant.
 
-pure func SInt{N} (x: bits(N))
-  => integer{(if N == 0 then 0 else -(2^(N-1))) .. (if N == 0 then 0 else (2^(N-1))-1)}
+pure func SInt{N} (x: bits(N)) => integer{-(2^(N-1)) .. (2^(N-1))-1}
 begin
     var result: integer = UInt(x);
     if N > 0 && x[N-1] == '1' then
         result = result - 2^N;
     end;
-    return result as {(if N == 0 then 0 else -(2^(N-1))) .. (if N == 0 then 0 else 2^(N-1)-1)};
+    return result as {-(2^(N-1)) .. (2^(N-1))-1};
 end;
 
 
