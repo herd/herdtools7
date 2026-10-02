@@ -312,7 +312,8 @@ module Make
               not O.strictskip || StringSet.equal st.I.out_skipped O.skipchecks
             then
               let conc = ks.I.conc in
-              kont conc conc.S.fs (st.I.out_sets,st.I.out_show) st.I.out_flags res
+              kont conc conc.S.fs (st.I.out_sets,st.I.out_show)
+                st.I.out_flags st.I.out_valid res
             else res)
           res
 
