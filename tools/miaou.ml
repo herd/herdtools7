@@ -34,6 +34,7 @@ module Make
          val std : bool
 (* Definitons *)
          val names : StringSet.t
+         val inline : StringSet.t
          val testmode : bool
          val texfile : string option
     end) =
@@ -157,6 +158,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
 (***********************)
 
     let nodefs = ref StringSet.empty
+    let inline_defs = ref StringMap.empty
 
     let get_nodefs () =
       let d = !nodefs in
@@ -179,6 +181,11 @@ and cons_seqs (fs:exp list) (es:exp list) =
     let pp_id loc s =
       let name = tr_id s in
       check_nodefs loc name
+
+    let find_inline_def id =
+      if StringSet.mem id O.inline then
+        StringMap.find_opt id !inline_defs
+      else None
 
     let id_name id = tr_id id |> sprintf "\\%sname"
 
@@ -383,7 +390,10 @@ and cons_seqs (fs:exp list) (es:exp list) =
          let a = tr_evts_from_rel e1 a and b = tr_evts_from_rel e2 b in
          mk_list Cartesian [a;b;]
       | Var (loc,id) ->
-         tr_rel_id e1 e2 loc id
+         begin match find_inline_def id with
+         | None -> tr_rel_id e1 e2 loc id
+         | Some d -> tr_rel e1 e2 d
+         end
       | If (_,VariantCond vc,Konst (_,Empty _),e) ->
          let op = Inter in
          mk_list op
@@ -734,7 +744,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
               items = ts;
             })
 
-        and pp_txts indent s1 s2 s3 = function
+    and pp_txts indent s1 s2 s3 = function
       | [] -> ()
       | [txt] ->
          pp_txt indent s3 txt
@@ -744,6 +754,14 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | txt::txts ->
          pp_txt indent s1 txt ;
          pp_txts indent s1 s2 s3 txts
+
+    let pp_check_def loc id postcond precond =
+      match postcond with
+      | Item txt1 ->
+        let pref = "It is architecturally forbidden that " ^ txt1 ^ " if" in
+        pp_def pref "." precond
+      | _ ->
+        eprintf "%a: %S: Unsupported test shape\n" TxtLoc.pp loc id
 
     (* Translate and print a check/test.
      * For now, only support tests with expression following the pattern:
@@ -775,6 +793,8 @@ and cons_seqs (fs:exp list) (es:exp list) =
           match exp with
           | Op (loc, Seq, l) -> (
             match find_first_non_id (List.rev l) with
+            | Some (0, e1, [e2]) ->
+                Some (e2, e1)
             | Some (0, e, es) ->
                 (* No trailing identities. *)
                 Some (Op (loc, Seq, List.rev es), e)
@@ -799,9 +819,8 @@ and cons_seqs (fs:exp list) (es:exp list) =
           in
           let precond_tr = tr_rel e1 e2 precond_exp in
           let postcond_tr = tr_rel e2 e1 postcond_exp in
-          let pref = sprintf "For two effects %s and %s, if" (pp_evt e1) (pp_evt e2) in
-          pp_def pref "" precond_tr;
-          pp_def "then it is not the case that" "." postcond_tr
+
+          pp_check_def loc id postcond_tr precond_tr
 
     (* Translate and print a definition *)
     let get_id_e_type id e =
@@ -873,6 +892,33 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | Pvar id -> id
       | Ptuple _ ->  None
 
+    let rec collect_ast fname defs =
+      let (_,_,ast) = P.parse fname in
+      List.fold_left collect_ins defs ast
+
+    and collect_ins defs = function
+      | Let (_,bds) -> List.fold_left collect_bds defs bds
+      | Rec _ -> defs
+      | Include (_,fname) when O.expand -> collect_ast fname defs
+      | _ -> defs
+
+    and collect_bds defs (_,p,d) =
+      match p with
+      | Pvar (Some id) when StringSet.mem id O.inline ->
+         begin match get_id_e_type id d with
+         | Some SET -> defs
+         | Some RLN|None ->
+            let d = if O.flatten then ASTUtils.flatten d else d in
+            if StringMap.exists (fun k _ -> String.equal k id) defs then
+              begin
+                eprintf "Multiple definitions of %s, cannot inline\n" id ;
+                StringMap.remove id defs
+              end
+            else
+              StringMap.add id (norm_rel d) defs
+         end
+      | Pvar _|Ptuple _ -> defs
+
     let rec tr_ast fname =
       let (_,_,ast) = P.parse fname in
       List.iter tr_ins ast
@@ -941,6 +987,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
         bds
 
     let tr_ast name =
+      inline_defs := collect_ast name StringMap.empty;
       (if O.testmode then tst_ast else tr_ast) name ;
       let defs = get_nodefs () in
       if not (StringSet.is_empty defs) then begin
@@ -960,6 +1007,7 @@ let verbose = ref 0
 let libdir = ref (Filename.concat Version.libdir "herd")
 let includes = ref []
 let names = ref StringSet.empty
+let inline = ref StringSet.empty
 let testmode = ref false
 let texfile = ref None
 let expand = ref true
@@ -983,6 +1031,8 @@ let options =
     ("-I", Arg.String (fun s -> includes := !includes @ [s]),
    "<dir> add <dir> to search path");
     ArgUtils.parse_stringset "-show" names "show those names definitions";
+    ArgUtils.parse_stringset "-inline" inline
+      "inline those relation definitions at reference sites";
     ArgUtils.parse_bool "-test" testmode "translate as many names as possible";
     ArgUtils.parse_bool "-expand" expand "expand include statements";
     ArgUtils.parse_bool "-flatten" flatten "flatten associative operators";
@@ -1012,6 +1062,7 @@ let () =
         let includes = !includes
         let libdir = !libdir
         let names = !names
+        let inline = !inline
         let expand = !expand
         let flatten = !flatten
         let std = !std
