@@ -10771,9 +10771,10 @@ typing relation annotate_ret_ty(tenv: static_envs, call_type: subprogram_type, f
   case function_or_getter {
     call_type in make_set(ST_Function, ST_Getter);
     func_sig_ret_ty_opt =: some(ty);
-    rename_ty_eqs(tenv, eqs, ty) -> ty1;
+    rename_ty_eqs(tenv, eqs, ty) -> renamed_ty;
+    annotate_type(False, tenv, renamed_ty) -> (ret_ty, _);
     --
-    some(ty1);
+    some(ret_ty);
   }
 
   case procedure_or_setter {
@@ -12291,15 +12292,8 @@ typing function to_ir(tenv: static_envs, e: expr) ->
     none;
   }
 
-  case atc {
-    e =: E_ATC(e', _);
-    to_ir(tenv, e') -> p_opt;
-    --
-    p_opt;
-  }
-
   case other {
-    ast_label(e) not_in make_set(label_E_ATC, label_E_Binop, label_E_Literal, label_E_Unop, label_E_Var);
+    ast_label(e) not_in make_set(label_E_Binop, label_E_Literal, label_E_Unop, label_E_Var);
     --
     none;
   }
