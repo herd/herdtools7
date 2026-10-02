@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 module Misc = Base.Misc
+open Gen_common
 
 module type Config = sig
   val optcoherence : bool
