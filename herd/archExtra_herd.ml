@@ -63,7 +63,7 @@ module type S = sig
   val zero_po_index : program_order_index
   val next_po_index : program_order_index -> program_order_index
 
-  include Location.S with type loc_reg := I.arch_reg and type loc_global := v
+  include Base.Location.S with type loc_reg := I.arch_reg and type loc_global := v
 
   type reg_state
   val reg_state_empty : reg_state
@@ -323,7 +323,7 @@ module Make(C:Config) (I:I) : S with module I = I
           let global_compare = I.V.compare
         end
 
-      include Location.Make (LocArg)
+      include Base.Location.Make (LocArg)
 
       module RegOrd = struct
         type t = I.arch_reg
@@ -454,7 +454,7 @@ module Make(C:Config) (I:I) : S with module I = I
           then "\\asm{Proc " ^ bodytext ^ "}" else bodytext
       | Location_global a -> do_brackets (pp_global a)
 
-(* This redefines pp_location from Location.Make ... *)
+(* This redefines pp_location from Base.Location.Make ... *)
       let pp_location = do_pp_location do_brackets
       and pp_location_old = do_pp_location Misc.identity
 

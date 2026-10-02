@@ -16,16 +16,16 @@
 
 open Printf
 
-type 'loc rloc = 'loc Location.Rel.t =
+type 'loc rloc = 'loc Base.Location.Rel.t =
   | Loc of 'loc
   | Deref of 'loc * int
 
-let dump_rloc = Location.Rel.dump
-let compare_rloc = Location.Rel.compare
-let loc_of_rloc = Location.Rel.to_loc
-let map_rloc = Location.Rel.map
-let fold_rloc = Location.Rel.fold
-let match_rloc = Location.Rel.apply
+let dump_rloc = Base.Location.Rel.dump
+let compare_rloc = Base.Location.Rel.compare
+let loc_of_rloc = Base.Location.Rel.to_loc
+let map_rloc = Base.Location.Rel.map
+let fold_rloc = Base.Location.Rel.fold
+let match_rloc = Base.Location.Rel.apply
 
 type ('loc,'v,'ftype) atom =
   | LV of 'loc rloc * 'v
