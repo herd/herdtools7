@@ -14,6 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Gen_common
 module Log = (val Logs.src_log (Logs.Src.create "translation") : Logs.LOG)
 module UList = Util.List
 module A = AArch64Arch_gen.Make (AArch64Arch_gen.Config)
