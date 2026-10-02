@@ -9,7 +9,7 @@ config LIMIT2: integer{1, 2, 3, 4, 5, 6, 7, 8, 9, 10} = 7;
 func bar() => integer{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 begin
     var ret: integer = 1;
-    while ret < LIMIT1 do
+    while ret < LIMIT1 looplimit 1 do
         ret = ret + ret * 2;
     end;
     return ret as integer{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};

@@ -28,7 +28,7 @@ begin
             ones = ones + 1;
         end;
         i = i + 1;
-    until i == 5;
+    until i == 5 looplimit 5;
     println "#ones in x = ", ones;
     return 0;
 end;
