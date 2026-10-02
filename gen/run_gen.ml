@@ -15,6 +15,8 @@
 (****************************************************************************)
 
 
+open Gen_common
+
 (* Basic model run (uniproc only) *)
 
 open Printf

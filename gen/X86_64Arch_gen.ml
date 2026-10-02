@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Gen_common
+
 module Config = struct
   let naturalsize = MachSize.Word
   let fullmixed = true
