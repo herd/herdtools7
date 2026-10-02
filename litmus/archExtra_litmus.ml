@@ -39,7 +39,7 @@ module type S = sig
   module RegSet : MySet.S with type elt = I.arch_reg
   module RegMap : MyMap.S with type key = I.arch_reg
 
-  include Location.S
+  include Base.Location.S
   with type loc_reg = I.arch_reg and type loc_global = Global_litmus.t
   val location_of_addr : string -> location
   val is_pte_loc : location -> bool
@@ -98,7 +98,7 @@ module Make(O:Config)(I:I) : S with module I = I
         let compare = I.reg_compare
       end)
 
-  include Location.Make
+  include Base.Location.Make
       (struct
         include I
         module G = Global_litmus
