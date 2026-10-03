@@ -13,25 +13,15 @@
 /* license as circulated by CEA, CNRS and INRIA at the following URL        */
 /* "http://www.cecill.info". We also give a copy in LICENSE.txt.            */
 /****************************************************************************/
-/* Authors:                                                                 */
-/* Nikos Nikoleris, Arm Limited.                                            */
-/****************************************************************************/
 
-static void litmus_icache_sync(uintptr_t vaddr, uintptr_t vaddr_end)
-{
-  const uintptr_t line_size = cache_line_size();
-  while (vaddr < vaddr_end) {
-    selfbar((void *)vaddr);
-    vaddr += line_size;
-  }
-}
+#ifndef _LITMUS_SELF_H
+#define _LITMUS_SELF_H 1
 
-static size_t code_size(ins_t *p,int skip) {
-  return (find_ins(getret(), p, skip) + 1) * sizeof(ins_t);
-}
+#include <stdint.h>
 
-static void code_init(void *code, void *src, size_t sz)
-{
-  memcpy(code, src, sz);
-  litmus_icache_sync((uintptr_t)code, (uintptr_t)code + sz);
-}
+uint32_t cache_line_size(void);
+void selfbar(void *address);
+void isync(void);
+int check_dic_idc(int need_dic, int need_idc);
+
+#endif

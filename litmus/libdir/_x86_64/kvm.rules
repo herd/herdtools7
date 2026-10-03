@@ -2,7 +2,7 @@ clean:
 	/bin/rm -f *.o *.s *.t *.elf *.flat *~
 
 cleansource:
-	/bin/rm -f *.o *.c *.h *.s *~
+	/bin/rm -f *.o *.c *.h *.s *~ litmus/*.[aoch]
 
 %.s: %.c
 	$(CC) $(GCCOPTS) -S $<
