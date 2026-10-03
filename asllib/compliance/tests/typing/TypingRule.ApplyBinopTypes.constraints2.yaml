@@ -1,2 +1,9 @@
 mode: no-exec
 outcome: SUCCESS
+info: |
+  File ../tests/typing/TypingRule.ApplyBinopTypes.constraints2.asl, line 6,
+    characters 12 to 19:
+      let z = x DIV y;
+              ^^^^^^^
+  ASL Warning: Removing some values that would fail with op DIV from constraint
+  set {-1..1} gave {1..1}. Continuing with this constraint set.

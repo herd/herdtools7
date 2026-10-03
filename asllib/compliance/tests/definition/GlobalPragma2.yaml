@@ -1,2 +1,11 @@
 mode: no-exec
 outcome: SUCCESS
+info: |
+  File ../tests/definition/GlobalPragma2.asl, line 2, characters 0 to 33:
+  pragma other_tool_op '0010', 123;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Warning: pragma other_tool_op will be ignored.
+  File ../tests/definition/GlobalPragma2.asl, line 1, characters 0 to 23:
+  pragma my_tool_pragma1;
+  ^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Warning: pragma my_tool_pragma1 will be ignored.

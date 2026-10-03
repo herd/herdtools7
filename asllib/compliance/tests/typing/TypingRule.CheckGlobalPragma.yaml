@@ -1,2 +1,8 @@
 mode: no-exec
 outcome: SUCCESS
+info: |
+  File ../tests/typing/TypingRule.CheckGlobalPragma.asl, line 2,
+    characters 0 to 32:
+  pragma good_pragma 1, (2==3), x;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Warning: pragma good_pragma will be ignored.

@@ -1025,7 +1025,7 @@ module ErrorPrinter (C : ERROR_PRINTER_CONFIG) = struct
 
   let warn w =
     match C.output_format with
-    | HumanReadable -> Format.eprintf "@[<2>%a@]@." pp_warning w
+    | HumanReadable -> Format.fprintf err_formatter "@[<2>%a@]@." pp_warning w
     | CSV -> Printf.eprintf "%a\n" CSV.pp_warning w
     | GNU -> Printf.eprintf "%a\n" (GNU.pp pp_warning_desc) w
 

@@ -97,7 +97,7 @@ let run_aslref ~test_stem mode =
       output = output_of_buffer stdout_buffer;
       error_code = None;
       error_line = None;
-      info = None;
+      info = output_of_buffer stderr_buffer;
     }
   with Asllib.Error.ASLException error -> (
     match Asllib.Error.ErrorCode.of_error error with

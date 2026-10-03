@@ -1,2 +1,7 @@
 mode: no-exec
 outcome: SUCCESS
+info: |
+  File ../tests/typing/TypingRule.SPragma.asl, line 3, characters 4 to 39:
+      pragma implementation_hidden x + 1;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Warning: pragma implementation_hidden will be ignored.
