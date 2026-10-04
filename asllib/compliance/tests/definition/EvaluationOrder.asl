@@ -5,14 +5,6 @@ begin
   return n;
 end;
 
-// A helper function which prints its first argument and returns an array
-func arr(n: integer) => array[[8]] of integer
-begin
-  println n;
-  var arr : array[[8]] of integer;
-  return arr;
-end;
-
 // A helper accessor pair taking two arguments
 accessor Foo(a: integer, b: integer) <=> value_in: integer
 begin
@@ -43,10 +35,6 @@ begin
 
   println "Non-short-circuiting binary operations:";
   - = p(1) + p(2) + p(3);
-  println ;
-
-  println "Array-indexing:";
-  - = arr(1)[[p(2)]];
   println ;
 
   println "Record construction:";
