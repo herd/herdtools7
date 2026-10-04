@@ -5,12 +5,25 @@ begin
   return n;
 end;
 
-// A helper function which prints its first argument and returns an array
+var g : integer = 0;
+
+// A helper function which prints its first argument, increments g,
+// and returns an array of increasing values.
 func arr(n: integer) => array[[8]] of integer
 begin
   println n;
   var arr : array[[8]] of integer;
+  arr[[1]] = 1;
+  arr[[2]] = 2;
+  arr[[3]] = 3;
+  g = g + 1;
   return arr;
+end;
+
+// A function that reads the global variable g.
+readonly func q(n: integer) => integer
+begin
+  return n + g;
 end;
 
 // A helper accessor pair taking two arguments
@@ -46,8 +59,8 @@ begin
   println ;
 
   println "Array-indexing:";
-  - = arr(1)[[p(2)]];
-  println ;
+  var m = arr(1)[[q(2)]];
+  println m;
 
   println "Record construction:";
   - = Record{ a = p(1), b = p(2) };

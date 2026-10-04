@@ -12,7 +12,8 @@ begin
     end;
     setter
         println "nullary setter";
-        arr[[UInt(H('11'))]] = H('01');
+        let h_11 = H('11');
+        arr[[UInt(h_11)]] = H('01');
         H('10').a = '1';
     end;
 end;

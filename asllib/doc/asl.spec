@@ -2894,6 +2894,7 @@ typing relation annotate_get_array(
   math_layout = [(_,_,[_,_,_]),_],
 } =
   annotate_expr(tenv, e_index) -> (t_index', e_index', ses_index);
+  te_check(ses_is_readonly(ses_index), TE_SEV) -> True;
   check_type_satisfies(tenv, t_index', unconstrained_integer) -> True;
   ses := union(ses_index, ses_base);
   new_e := E_GetArray(e_base, e_index');
@@ -3451,12 +3452,13 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
 
   case LESetArray {
     le =: LE_SetArray(e_base, e_index);
-    annotate_expr(tenv, rexpr(e_base)) -> (t_base, _, _);
+    annotate_expr(tenv, rexpr(e_base)) -> (t_base, _, ses_base);
+    te_check(ses_is_readonly(ses_base), TE_SEV) -> True;
     make_anonymous(tenv, t_base) -> t_anon_base;
     te_check(ast_label(t_anon_base) = label_T_Array, TE_UT) -> True;
     t_anon_base =: T_Array(_, t_elem);
-    annotate_lexpr(tenv, e_base, t_base) -> (e_base', ses_base);
-    annotate_set_array(tenv, t_elem, t_e, (e_base', ses_base, e_index)) -> (new_le, ses)
+    annotate_lexpr(tenv, e_base, t_base) -> (e_base', ses_base');
+    annotate_set_array(tenv, t_elem, t_e, (e_base', ses_base', e_index)) -> (new_le, ses)
     { math_layout = [_] };
     --
     (new_le, ses);
@@ -3464,7 +3466,8 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
 
   case LESlice {
     le =: LE_Slice(le1, slices);
-    annotate_expr(tenv, rexpr(le1)) -> (t_le1, _, _);
+    annotate_expr(tenv, rexpr(le1)) -> (t_le1, _, ses_le1);
+    te_check(ses_is_readonly(ses_le1), TE_SEV) -> True;
     make_anonymous(tenv, t_le1) -> t_le1_anon;
     te_check(ast_label(t_le1_anon) = label_T_Bits, TE_UT) -> True;
     annotate_lexpr(tenv, le1, t_le1) -> (le2, ses1);
@@ -3482,7 +3485,8 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
 
   case LESetField {
     le =: LE_SetField(le1, field_name);
-    annotate_expr(tenv, rexpr(le1)) -> (t_le1, _, _);
+    annotate_expr(tenv, rexpr(le1)) -> (t_le1, _, ses_le1);
+    te_check(ses_is_readonly(ses_le1), TE_SEV) -> True;
     annotate_lexpr(tenv, le1, t_le1) -> (le2, ses);
     make_anonymous(tenv, t_le1) -> t_le1_anon;
 
@@ -3557,7 +3561,8 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
 
  case LESetFields {
    le =: LE_SetFields(le_base, le_fields);
-   annotate_expr(tenv, rexpr(le_base)) -> (t_base, _, _);
+   annotate_expr(tenv, rexpr(le_base)) -> (t_base, _, ses_le_base);
+   te_check(ses_is_readonly(ses_le_base), TE_SEV) -> True;
    annotate_lexpr(tenv, le_base, t_base) -> (le_base_annot, ses_base);
    make_anonymous(tenv, t_base) -> t_base_anon;
 
@@ -3836,6 +3841,7 @@ typing relation annotate_set_array(
 } =
   check_type_satisfies(tenv, rhs_ty, t_elem) -> True;
   annotate_expr(tenv, e_index) -> (t_index', e_index', ses_index);
+  te_check(ses_is_readonly(ses_index), TE_SEV) -> True;
   check_type_satisfies(tenv, t_index', unconstrained_integer) -> True;
   ses := union(ses_base, ses_index);
   new_le := LE_SetArray(e_base, e_index');

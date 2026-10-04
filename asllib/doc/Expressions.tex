@@ -853,7 +853,10 @@ and the types inferred for them via the added \verb|as <inferred-type>|.
 
 \TypingRuleDef{AnnotateGetArray}
 \RenderRelation{annotate_get_array}
-See \ExampleRef{Array Access Expressions}.
+See \ExampleRef{Array Access Expressions} for examples of well-typed array access expressions.
+In \listingref{typing-annotategetarray-bad}, the array access is ill-typed,
+since its index expression is not \readonlyterm{}.
+\ASLListing{An array access with an illegal index}{typing-annotategetarray-bad}{\typingtests/TypingRule.AnnotateGetArray.bad.asl}
 
 \RenderProseAndFormally{annotate_get_array}
 \CodeSubsection{\AnnotateGetArrayBegin}{\AnnotateGetArrayEnd}{../Typing.ml}
