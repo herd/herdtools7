@@ -647,7 +647,12 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalEGetArray *)
     | E_GetArray (e_array, e_index) ->
         let*^ m_array, env1 = eval_expr env e_array in
-        let*^ m_index, new_env = eval_expr env1 e_index in
+        let*^ m_index, new_env =
+          if C.version_eac2_or_before then eval_expr env1 e_index
+          else
+            let* v_index = eval_expr_sef env1 e_index in
+            return_normal (v_index, env1)
+        in
         let* v_array = m_array and* v_index = m_index in
         let i_index = v_to_int ~loc:e v_index in
         let* v = B.get_index i_index v_array in
