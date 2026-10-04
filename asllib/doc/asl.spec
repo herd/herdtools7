@@ -3114,12 +3114,12 @@ semantics relation eval_expr(env: envs, e: expr) ->
   case EGetArray {
     e =: E_GetArray(e_array, e_index);
     eval_expr(env, e_array) -> ResultExpr((v_array, g1), env1);
-    eval_expr(env1, e_index) -> ResultExpr((v_index, g2), new_env);
+    eval_expr_sef(env1, e_index) -> ResultExprSEF(v_index, g2);
     v_index =: nvint(i_index);
     get_index(i_index, v_array) -> v;
     g := parallel(g1, g2);
     --
-    ResultExpr((v, g), new_env);
+    ResultExpr((v, g), env1);
   }
 
   case EGetTupleItem {

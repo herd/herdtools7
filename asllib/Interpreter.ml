@@ -646,11 +646,17 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalEGetArray *)
     | E_GetArray (e_array, e_index) ->
         let*^ m_array, env1 = eval_expr env e_array in
-        let*^ m_index, new_env = eval_expr env1 e_index in
-        let* v_array = m_array and* v_index = m_index in
-        let i_index = v_to_int ~loc:e v_index in
-        let* v = B.get_index i_index v_array in
-        return_normal (v, new_env) |: SemanticsRule.EGetArray
+        if C.readonly_array_indices then
+          let* v_array = m_array and* v_index = eval_expr_sef env1 e_index in
+          let i_index = v_to_int ~loc:e v_index in
+          let* v = B.get_index i_index v_array in
+          return_normal (v, env1) |: SemanticsRule.EGetArray
+        else
+          let*^ m_index, new_env = eval_expr env1 e_index in
+          let* v_array = m_array and* v_index = m_index in
+          let i_index = v_to_int ~loc:e v_index in
+          let* v = B.get_index i_index v_array in
+          return_normal (v, new_env) |: SemanticsRule.EGetArray
     (* End *)
     (* Begin EvalEGetTupleItem *)
     | E_GetItem (e_tuple, index) ->
