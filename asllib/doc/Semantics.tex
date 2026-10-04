@@ -380,7 +380,7 @@ $\graphof{C}$, and the environment of the \semanticsconfigurationterm{}, $\envir
   \ResultExprSEF(\Ignore, \vg) & \vg & \text{undefined}\\
   \ResultLexpr(\vg, \env) & \vg & \env \\
   \ResultLDI(\vg, \env) & \vg & \env \\
-  \ResultSlices((\Ignore, \vg), \env) & \vg & \env \\
+  \ResultSlices(\Ignore, \vg) & \vg & \text{undefined} \\
   \ResultExprList((\Ignore, \vg), \env) & \vg & \env \\
   \ResultExprListM(\Ignore, \env) & \text{undefined} & \env\\
   \ResultPattern(\Ignore, \vg) & \vg & \text{undefined}\\
@@ -405,7 +405,7 @@ like $C$ where the graph component is substituted with $\vgp$:
   \ResultExprSEF(\vv, \vg) & \ResultExprSEF(\vv, \vgp)\\
   \ResultLexpr(\vg, \env) & \ResultLexpr(\vgp, \env)\\
   \ResultLDI(\vg, \env) & \ResultLDI(\vgp, \env)\\
-  \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \env) & \ResultSlices(([i=1..k: (\va_i,\vb)], \vgp), \env)\\
+  \ResultSlices([i=1..k: (\va_i,\vb)], \vg) & \ResultSlices([i=1..k: (\va_i,\vb)], \vgp)\\
   \ResultExprList(([i=1..k: \vv_i], \vg), \env) & \ResultExprList(([i=1..k: \vv_i], \vgp), \env)\\
   \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \env) & \text{undefined}\\
   \ResultPattern(\vb, \vg) & \ResultPattern(\vb, \vgp)\\
@@ -431,7 +431,7 @@ like $C$ where the environment component, if one exists, is substituted with $\e
   \ResultExprSEF(\Ignore, \Ignore) & \text{undefined}\\
   \ResultLexpr(\vg, \env) & \ResultLexpr(\vg, \envp)\\
   \ResultLDI(\vg, \env) & \ResultLDI(\vg, \envp)\\
-  \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \env) & \ResultSlices(([i=1..k: (\va_i,\vb)], \vg), \envp)\\
+  \ResultSlices(\Ignore, \Ignore) & \text{undefined}\\
   \ResultExprList(([i=1..k: \vv_i], \vg), \env) & \ResultExprList(([i=1..k: \vv_i], \vg), \envp)\\
   \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \env) & \ResultExprListM([i=1..k: (\vv_i,\vg_i)], \envp)\\
   \ResultPattern(\Ignore, \Ignore) & \text{undefined}\\

@@ -2191,8 +2191,8 @@ typedef TNormal
     { "the \hyperlink{type-ResultLexpr}{assignable expression result configuration} with {graph} and {environment}" }
     | ResultLDI(graph: XGraphs, environment: envs)
     { "the \hyperlink{type-ResultLDI}{local declaration item result configuration} with {graph} and {environment}" }
-    | ResultSlices(slices_and_graph: (list0((native_value, native_value)), XGraphs), environment: envs)
-    { "the \hyperlink{type-ResultSlices}{slices result configuration} with slices-and-\executiongraphterm{} given by {slices_and_graph} and \environmentterm{} given by {environment}" }
+    | ResultSlices(ranges: list0((native_value, native_value)), graph: XGraphs)
+    { "the \hyperlink{type-ResultSlices}{slices result configuration} with {ranges} and {graph}" }
     | ResultExprList(values_and_graph: (list0(native_value), XGraphs), environment: envs)
     { "the \hyperlink{type-ResultExprList}{expression list result configuration} with values-and-\executiongraphterm{} given by {values_and_graph} and \environmentterm{} given by {environment}" }
     | ResultExprListM(value_graph_pairs: list0((native_value, XGraphs)), environment: envs)
@@ -3103,11 +3103,11 @@ semantics relation eval_expr(env: envs, e: expr) ->
   case ESlice {
     e =: E_Slice(e_bv, slices);
     eval_expr(env, e_bv) -> ResultExpr((v_bv, g1), env1);
-    eval_slices(env1, slices) -> ResultSlices((slice_ranges, g2), new_env);
+    eval_slices(env1, slices) -> ResultSlices(slice_ranges, g2);
     read_from_bitvector(v_bv, slice_ranges) -> v;
     g := parallel(g1, g2);
     --
-    ResultExpr((v, g), new_env);
+    ResultExpr((v, g), env1);
   }
 
   case EGetArray {
@@ -3692,12 +3692,12 @@ semantics relation eval_lexpr(env: envs, le: lexpr, m: (native_value, XGraphs)) 
     le =: LE_Slice(e_bv, slices);
     m =: (v, g);
     eval_expr(env, rexpr(e_bv)) -> ResultExpr(m_bv, env1);
-    eval_slices(env1, slices) -> ResultSlices((slice_ranges, g1), env2);
+    eval_slices(env1, slices) -> ResultSlices(slice_ranges, g1);
     m_bv =: (v_bv, g2);
     check_non_overlapping_slices(slice_ranges) -> True;
     write_to_bitvector(slice_ranges, v, v_bv) -> v1;
     g3 := ordered_data(g, parallel(g1, g2));
-    eval_lexpr(env2, e_bv, (v1, g3)) -> ResultLexpr(new_g, new_env);
+    eval_lexpr(env1, e_bv, (v1, g3)) -> ResultLexpr(new_g, new_env);
     --
     ResultLexpr(new_g, new_env);
   }
@@ -7986,28 +7986,26 @@ typing relation annotate_slices(tenv: static_envs, slices: list0(slice)) ->
 ;
 
 semantics relation eval_slice(env: envs, s: slice) ->
-  | (((v_start: native_value, v_length: native_value), new_g: XGraphs), new_env: envs)
-  | TThrowing | TDynError | TDiverging
+  | ((v_start: native_value, v_length: native_value), new_g: XGraphs)
+  | TDynError | TDiverging
 {
    prose_description = "evaluates an individual slice {s} in an environment
                         {env}, resulting in the range starting from {v_start} of length {v_length},
-                        the \executiongraphterm{} {new_g}, and the \environmentterm{} {new_env}.
-                        \ProseOtherwiseAbnormal",
+                        and the \executiongraphterm{} {new_g}.
+                        \ProseOtherwiseDynamicErrorOrDiverging",
  prose_transition = "evaluating {s} in {env} yields",
   math_layout = [_,_],
 } =
   case single {
     s =: Slice_Single(e);
-    eval_expr(env, e) -> ResultExpr((v_start, new_g), new_env);
+    eval_expr_sef(env, e) -> ResultExprSEF(v_start, new_g);
     v_length := nvint(one);
   }
 
   case range {
     s =: Slice_Range(e_top, e_start);
-    eval_expr(env, e_top) -> ResultExpr(m_top, env1);
-    (v_top, g1) := m_top;
-    eval_expr(env1, e_start) -> ResultExpr(m_start, new_env);
-    (v_start, g2) := m_start;
+    eval_expr_sef(env, e_top) -> ResultExprSEF(v_top, g1);
+    eval_expr_sef(env, e_start) -> ResultExprSEF(v_start, g2);
     eval_binop(SUB, v_top, v_start) -> v_diff;
     eval_binop(ADD, nvint(one), v_diff) -> v_length;
     new_g := parallel(g1, g2);
@@ -8015,44 +8013,42 @@ semantics relation eval_slice(env: envs, s: slice) ->
 
   case length {
     s =: Slice_Length(e_start, e_length);
-    eval_expr(env, e_start) -> ResultExpr(m_start, env1);
-    (v_start, g1) := m_start;
-    eval_expr(env1, e_length) -> ResultExpr(m_length, new_env);
-    (v_length, g2) := m_length;
+    eval_expr_sef(env, e_start) -> ResultExprSEF(v_start, g1);
+    eval_expr_sef(env, e_length) -> ResultExprSEF(v_length, g2);
     new_g := parallel(g1, g2);
   }
 
   range := (v_start, v_length);
   range_and_graph := (range, new_g);
   --
-  (range_and_graph, new_env);
+  range_and_graph;
 ;
 
 relation eval_slices(env: envs, slices: list0(slice)) ->
-  | ResultSlices((ranges: list0((native_value, native_value)), new_g: XGraphs), new_env: envs)
-  | TThrowing | TDynError | TDiverging
+  | ResultSlices(ranges: list0((native_value, native_value)), new_g: XGraphs)
+  | TDynError | TDiverging
 {
    prose_description = "evaluates a list of slices {slices} in an environment
                         {env}, resulting in \\
-                        $\ResultSlices((\ranges, \newg), \newenv)$.
-                        \ProseOtherwiseAbnormal",
+                        $\ResultSlices(\ranges, \newg)$.
+                        \ProseOtherwiseDynamicErrorOrDiverging",
  prose_transition = "evaluating {slices} in {env} yields",
   math_layout = [_,_],
 } =
   case empty {
     slices = empty_list;
     --
-    ResultSlices((empty_list, empty_graph), env);
+    ResultSlices(empty_list, empty_graph);
   }
 
   case non_empty {
     slices =: match_cons(slice, slices1);
-    eval_slice(env, slice) -> ((range, g1), env1);
-    eval_slices(env1, slices1) -> ResultSlices((ranges1, g2), new_env);
+    eval_slice(env, slice) -> (range, g1);
+    eval_slices(env, slices1) -> ResultSlices(ranges1, g2);
     ranges := match_cons(range, ranges1);
     new_g := parallel(g1, g2);
     --
-    ResultSlices((ranges, new_g), new_env);
+    ResultSlices(ranges, new_g);
   }
 ;
 
