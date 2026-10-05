@@ -44,7 +44,7 @@
   c ^= b; c -= rot(b,24); \
 }
 
-uint32_t outhash_hashword(
+static uint32_t hashword(
 const uint32_t *k,                   /* the key, an array of uint32_t values */
 size_t          length)              /* the length of the key, in uint32_ts */
 {
@@ -76,4 +76,73 @@ size_t          length)              /* the length of the key, in uint32_ts */
   }
   /*------------------------------------------------------ report the result */
   return c;
+}
+
+void outhash_init_key(uint32_t *p,size_t sz) {
+  for (int k=0 ; k < sz ; k++) *p++ = -1;
+}
+
+void outhash_init(outhash_t *t) {
+  t->nhash = 0 ;
+  for (int k=0 ; k < t->hash_sz ; k++) t->mem.t[k].c = 0 ;
+  int sz = t->hash_sz * t->key_sz ;
+  outhash_init_key(t->mem.keys,sz) ;
+}
+
+inline static uint32_t *get_key(outhash_t *t,int k) {
+  return t->mem.keys + k*t->key_sz ;
+}
+
+inline static int eq_key(uint32_t *p, uint32_t *q, size_t sz) {
+  for (int k = 0 ; k < sz ; k++)
+    if (*p++ != *q++) return 0 ;
+  return 1 ;
+}
+
+inline static void copy_key(uint32_t *d, uint32_t *p, size_t sz) {
+  for (int k = 0 ; k < sz ; k++) *d++ = *p++ ;
+}
+
+int outhash_add(outhash_t *t, uint32_t *key, count_t c, int ok) {
+  uint32_t h = hashword(key,t->key_sz) ;
+  h = h % t->hash_sz ;
+  for (int k = 0 ; k < t->hash_sz ;  k++) {
+    outhash_entry_t *p = t->mem.t + h ;
+    if (p->c == 0) { /* New entry */
+      copy_key(get_key(t,h),key,t->key_sz);
+      p->c = c ;
+      p->ok = ok ;
+      t->nhash++ ;
+      return 1 ;
+    } else if (eq_key(key,get_key(t,h),t->key_sz)) {
+      p->c += c ;
+      return 1 ;
+    }
+    h++ ;
+    h %= t->hash_sz ;
+  }
+  return 0 ;
+}
+
+int outhash_adds(outhash_t *t, outhash_t *f) {
+  int r = 1;
+  for (int k = 0 ; k < t->hash_sz ; k++) {
+    outhash_entry_t *p = f->mem.t+k ;
+    if (p->c > 0) {
+      uint32_t *key = get_key(f,k) ;
+      int rloc = outhash_add(t,key,p->c,p->ok) ;
+      r = r && rloc ;
+    }
+  }
+  return r ;
+}
+
+void outhash_dump(FILE *chan, outhash_dump_entry *dump_entry, outhash_t *t) {
+  for (int k = 0 ; k < t->hash_sz ; k++) {
+    outhash_entry_t *e = t->mem.t + k ;
+    if (e->c > 0) {
+      uint32_t *key = get_key(t,k) ;
+      dump_entry(chan,e,key) ;
+    }
+  }
 }

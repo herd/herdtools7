@@ -22,6 +22,10 @@
 #endif
 
 #ifndef DYNALLOC
+static intmax_t mem[MEMSZ] ;
+static outhash_entry_t entries[HASHSZ*(NEXE+1)] ;
+__attribute__ ((aligned(__alignof__(hashlog_t))))
+  static uint32_t keys[KEYS_SZ*(NEXE+1)] ;
 static global_t global;
 static zyva_t arg[AVAIL];
 #ifndef KVM
@@ -44,12 +48,18 @@ int RUN(int argc,char **argv,FILE *out) {
   global_t *glo_ptr = malloc_check(sizeof(global_t));
   glo_ptr->mem = malloc_check(MEMSZ*sizeof(*glo_ptr->mem));
   zyva_t *arg = malloc_check(AVAIL*sizeof(*arg));
+  glo_ptr->hash_mem.t =
+    malloc_check(HASHSZ*(NEXE+1)*sizeof(outhash_entry_t));
+  glo_ptr->hash_mem.keys =
+    malloc_check(KEYS_SZ*(NEXE+1)*sizeof(uint32_t));
 #ifndef KVM
   pthread_t *th = malloc_check(AVAIL*sizeof(*th));
 #endif
 #else
   global_t *glo_ptr = &global;
   glo_ptr->mem = mem;
+  glo_ptr->hash_mem.t = entries;
+  glo_ptr->hash_mem.keys = keys;
 #endif
   init_getinstrs();
   init_global(glo_ptr);
@@ -113,15 +123,14 @@ int RUN(int argc,char **argv,FILE *out) {
   for (int id=0; id < AVAIL ; id++) join(&th[id]);
 #endif
   int nexe = glo_ptr->nexe ;
-  hash_init(&glo_ptr->hash) ;
   for (int k=0 ; k < nexe ; k++) {
-    glo_ptr->hash_ok = hash_adds(&glo_ptr->hash,&glo_ptr->ctx[k].t) && glo_ptr->hash_ok ;
+    glo_ptr->hash_ok = outhash_adds(&glo_ptr->hash,&glo_ptr->ctx[k].t) && glo_ptr->hash_ok ;
   }
 #ifdef OUT
   tsc_t total = timeofday()-start;
   count_t p_true = 0, p_false = 0;
   for (int k = 0 ; k < HASHSZ ; k++) {
-    entry_t *e = &glo_ptr->hash.t[k];
+    outhash_entry_t *e = &glo_ptr->hash.mem.t[k];
     if (e->ok) {
       p_true += e->c;
     } else {

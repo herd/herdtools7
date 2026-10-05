@@ -16,22 +16,19 @@
 #ifndef _UTILS_H
 #define _UTILS_H 1
 
-#include <stdint.h>
 #ifdef KVM
 #include <libcflat.h>
-typedef void FILE;
-#define stdout NULL
-#define stderr NULL
-#define fprintf(stderr,...) printf(__VA_ARGS__)
-
 #ifndef noinline
 #define noinline __attribute__((noinline))
 #endif
-
 #else
+#include <inttypes.h>
 #include <pthread.h>
 #include <string.h>
 #endif
+
+#include "presi_count.h"
+#include "presi_io.h"
 
 /********/
 /* Misc */
