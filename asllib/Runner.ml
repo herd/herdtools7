@@ -49,6 +49,7 @@ type args = {
   no_stdlib0 : bool;
   v0_use_split_chunks : bool;
   version_eac1 : bool;
+  version_eac2 : bool;
   capture_output : (Buffer.t * Buffer.t) option;
       (** Capture stdout/stderr (respectively) into the supplied buffers. *)
 }
@@ -75,6 +76,7 @@ let default_args =
     no_stdlib0 = false;
     v0_use_split_chunks = false;
     version_eac1 = false;
+    version_eac2 = false;
     capture_output = None;
   }
 
@@ -157,6 +159,7 @@ let run (args : args) : int =
     let use_conflicting_side_effects_extension =
       args.use_conflicting_side_effects_extension
 
+    let version_eac2 = args.version_eac2
     let err_buffer = Option.map snd args.capture_output
   end in
   let module T = Annotate (C) in
