@@ -34,6 +34,7 @@ type t =
   | NoPacKey of PAC.key (* Disable a key *)
   | FPac (* Fault on pointer authentication *)
   | ConstPacField (* Bit 55 is used to compute the VA-range in ComputePAC *)
+  | Statistics (* Produce statistics (presi and kvm mode only) *)
 
 let (mode_variants, arch_variants) : t list * t list =
   let f = function
@@ -56,9 +57,10 @@ let (mode_variants, arch_variants) : t list * t list =
   | NoPacKey t -> NoPacKey t
   | FPac -> FPac
   | ConstPacField -> ConstPacField
+  | Statistics -> Statistics
   in
   let base_modes =
-    List.map f [NoInit; S128; Telechat]
+    List.map f [NoInit; S128; Telechat; Statistics]
   and archs =
     List.map f
     [SVE; SME; Self; Mixed; Vmsa; ETS2; ExS; EIS; EOS;
@@ -105,6 +107,7 @@ let parse s = match Misc.lowercase s with
 | "fpac" -> Some FPac
 | "const-pac-field" -> Some ConstPacField
 | "memtag" | "mte" -> Some MemTag
+| "statistics"|"stats" -> Some Statistics
 | tag when Misc.is_some (Fault.Handling.parse tag) ->
   let fh = Misc.as_some (Fault.Handling.parse tag) in
   Some (FaultHandling fh)
@@ -149,6 +152,7 @@ let pp = function
   | ConstPacField -> "const-pac-field"
   | MemTag -> "memtag"
   | MTEPrecision p -> Precision.pp p
+  | Statistics -> "statistics"
 
 let ok v a = match v,a with
 | Self,`AArch64 -> true
