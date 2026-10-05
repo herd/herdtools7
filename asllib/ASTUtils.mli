@@ -177,8 +177,10 @@ val s_then : stmt -> stmt -> stmt
 val stmt_from_list : stmt list -> stmt
 (** [stmt_from_list [s1; ... sn]] is [s1; ... sn] in ASL. *)
 
-val expr_of_int : int -> expr
-(** [expr_of_int i] is the literal expression containing [i]. *)
+val expr_of_int : ?loc:_ t_annotated -> int -> expr
+(** [expr_of_int ?loc i] is the integer literal expression containing [i]. If
+    [loc] is supplied, the result has its source location; otherwise, the result
+    has a dummy location. *)
 
 val literal : literal -> expr
 (** [literal v] is the expression evaluated to [v]. *)

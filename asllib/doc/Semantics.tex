@@ -575,7 +575,9 @@ These are:
   \item arguments and parameters to a function call (\SemanticsRuleRef{ECall} and \SemanticsRuleRef{SCall});
   \item tuple expressions (\SemanticsRuleRef{ETuple} and \SemanticsRuleRef{LEDestructuring});
   \item non-short-circuiting binary operations (\SemanticsRuleRef{Binop});
-  \item array-indexing (\SemanticsRuleRef{EGetArray}) --- in particular, for \verb|arr[[idx]]| whether \verb|arr| or \verb|idx| is evaluated first;
+  \item array-indexing (\SemanticsRuleRef{EGetArray} and
+        \SemanticsRuleRef{EvalAndRewriteIndices}) --- in particular, for
+        \verb|arr[[idx]]| whether \verb|arr| or \verb|idx| is evaluated first;
   \item slicing expressions (\SemanticsRuleRef{ESlice} and \SemanticsRuleRef{LESlice});
   \item record construction expressions (\SemanticsRuleRef{ERecord});
   \item arguments to \verb|print| and \verb|println| (\SemanticsRuleRef{SPrint});
@@ -586,7 +588,16 @@ For these constructs, ASL defines an evaluation order.
 When there are multiple feasible choices for the next evaluation transition, ASL is defined to take the transition
 for the construct appearing syntactically first. That is, ASL uses left-to-right evaluation.
 This applies \underline{only} when there are multiple feasible choices.
-For example, assignment statements (\secref{AssignmentStatements}) must still evaluate their right-hand side before considering their left-hand side, as the evaluation transition for left-hand sides requires the right-hand side value (\chapref{AssignableExpressions}).
+For example, assignment statements (\secref{AssignmentStatements}) first
+evaluate their right-hand side.  Next, each array index and slice expression in
+the left-hand side is evaluated exactly once and replaced by the resulting
+integer literal via \SemanticsRuleRef{EvalAndRewriteIndices}.  These expressions
+are evaluated from left to right.  Thus, in \verb|a[[i]][[j]]|, \verb|i| is
+evaluated before \verb|j|, and in \verb|a[[i]][j +: n]|, \verb|i| is evaluated
+before \verb|j|, which is evaluated before \verb|n|.  Array index and slice
+expressions in a multi-assignment are likewise evaluated from left to right.
+Finally, the rewritten left-hand side is updated using the right-hand-side
+value (\chapref{AssignableExpressions}).
 
 \ConventionDef{EvaluationOrderIndependence}
 To assist reliable translation of ASL to other representations that may not specify an evaluation order, implementations may choose to enforce independence from evaluation order using a conservative static analysis that warns users of possibly conflicting side-effects which may affect behaviour if reordered.
