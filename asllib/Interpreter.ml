@@ -103,6 +103,10 @@ module Make (B : Backend.S) (C : Config) = struct
   type expr_eval_type = (B.value * env) maybe_exception m
   type stmt_eval_type = control_flow_state maybe_exception m
   type func_eval_type = (value_read_from list * IEnv.global) maybe_exception m
+  type ('source, 'value) prepared = { source : 'source; value : 'value }
+  type prepared_slices = (slice list, B.value_range list) prepared
+  type prepared_index = (expr, B.value) prepared
+  type prepared_lexpr = (prepared_slices, prepared_index) gen_lexpr
 
   (* Error formatting. *)
 
@@ -827,11 +831,81 @@ module Make (B : Backend.S) (C : Config) = struct
     return res
   (* End *)
 
+  (** [eval_and_rewrite_lexpr le env] evaluates every index and slice expression
+      in [le] exactly once and retains both its source and resulting backend
+      value. *)
+  and eval_and_rewrite_lexpr le env : prepared_lexpr m =
+    let prepared desc =
+      return
+        {
+          desc;
+          pos_start = le.pos_start;
+          pos_end = le.pos_end;
+          version = le.version;
+          ty_opt = le.ty_opt;
+        }
+    in
+    match le.desc with
+    | LE_Discard -> prepared LE_Discard
+    | LE_Var x -> prepared (LE_Var x)
+    | LE_Slice (le_base, slices) ->
+        let* le_base' = eval_and_rewrite_lexpr le_base env
+        and* slice_ranges = eval_slices env slices in
+        LE_Slice (le_base', { source = slices; value = slice_ranges })
+        |> prepared
+    | LE_SetArray (le_base, e_index) ->
+        let* le_base' = eval_and_rewrite_lexpr le_base env
+        and* index_value = eval_expr_sef env e_index in
+        LE_SetArray (le_base', { source = e_index; value = index_value })
+        |> prepared
+    | LE_SetField (le_record, field_name) ->
+        let* le_record' = eval_and_rewrite_lexpr le_record env in
+        LE_SetField (le_record', field_name) |> prepared
+    | LE_SetFields (le_record, field_names, slices) ->
+        let* le_record' = eval_and_rewrite_lexpr le_record env in
+        LE_SetFields (le_record', field_names, slices) |> prepared
+    | LE_SetCollectionFields (base, field_names, slices) ->
+        LE_SetCollectionFields (base, field_names, slices) |> prepared
+    | LE_Destructuring les ->
+        let* les' =
+          List.map (fun le -> eval_and_rewrite_lexpr le env) les |> sync_list
+        in
+        LE_Destructuring les' |> prepared
+
   (* Evaluation of Left-Hand-Side Expressions *)
   (* ---------------------------------------- *)
 
-  (** [eval_lexpr version env le m] is [env[le --> m]]. *)
-  and eval_lexpr ver le env m : env maybe_exception B.m =
+  (** Reads the value denoted by [le] using its prepared indices and slices. *)
+  and eval_prepared_lexpr_as_expr env le : B.value m =
+    match le.desc with
+    | LE_Var x -> E_Var x |> add_pos_from le |> eval_expr_sef env
+    | LE_Slice (le_bv, { value = slice_ranges; _ }) ->
+        let* v_bv = eval_prepared_lexpr_as_expr env le_bv in
+        B.read_from_bitvector ~loc:le slice_ranges v_bv |: SemanticsRule.ESlice
+    | LE_SetArray (le_array, { source = source_index; value = index_value }) ->
+        let* v_array = eval_prepared_lexpr_as_expr env le_array in
+        B.get_index (v_to_int ~loc:source_index index_value) v_array
+        |: SemanticsRule.EGetArray
+    | LE_SetField (le_record, field_name) ->
+        let* v_record = eval_prepared_lexpr_as_expr env le_record in
+        B.get_field field_name v_record |: SemanticsRule.EGetBitField
+    | LE_SetFields (le_record, field_names, _) ->
+        let* v_record = eval_prepared_lexpr_as_expr env le_record in
+        let* v_fields =
+          List.map
+            (fun field_name -> B.get_field field_name v_record)
+            field_names
+          |> sync_list
+        in
+        B.concat_bitvectors v_fields
+    | LE_SetCollectionFields (base, fields, _) ->
+        E_GetCollectionFields (base, fields)
+        |> add_pos_from le |> eval_expr_sef env
+    | LE_Discard | LE_Destructuring _ -> assert false
+
+  (** [eval_prepared_lexpr version le env m] assigns the value produced by [m]
+      to the prepared assignable expression [le]. *)
+  and eval_prepared_lexpr ver le env m : env maybe_exception B.m =
     match le.desc with
     (* Begin EvalLEDiscard *)
     | LE_Discard -> return_normal env |: SemanticsRule.LEDiscard
@@ -862,37 +936,33 @@ module Make (B : Backend.S) (C : Config) = struct
                 >>= return_normal |: SemanticsRule.LEUndefIdentV0))
     (* End *)
     (* Begin EvalLESlice *)
-    | LE_Slice (e_bv, slices) ->
-        let*^ m_bv_lhs, env1 = expr_of_lexpr e_bv |> eval_expr env in
+    | LE_Slice (le_bv, { source = source_slices; value = slice_ranges }) ->
         let new_m_bv =
           let* v_rhs = m
-          and* slice_ranges = eval_slices env1 slices
-          and* v_bv_lhs = m_bv_lhs in
-          let* () =
-            check_non_overlapping_slices ~pos:le env slices slice_ranges
+          and* v_bv_lhs = eval_prepared_lexpr_as_expr env le_bv
+          and* () =
+            check_non_overlapping_slices ~pos:le env source_slices slice_ranges
           in
           B.write_to_bitvector slice_ranges v_rhs v_bv_lhs
         in
-        eval_lexpr ver e_bv env1 new_m_bv |: SemanticsRule.LESlice
+        eval_prepared_lexpr ver le_bv env new_m_bv |: SemanticsRule.LESlice
     (* End *)
     (* Begin EvalLESetArray *)
-    | LE_SetArray (re_array, e_index) ->
-        let*^ rm_array, env1 = expr_of_lexpr re_array |> eval_expr env in
-        let*^ m_index, env2 = eval_expr env1 e_index in
+    | LE_SetArray (le_array, { source = source_index; value = index_value }) ->
         let m1 =
-          let* v = m and* v_index = m_index and* rv_array = rm_array in
-          B.set_index (v_to_int ~loc:e_index v_index) v rv_array
+          let* v = m and* v_array = eval_prepared_lexpr_as_expr env le_array in
+          B.set_index (v_to_int ~loc:source_index index_value) v v_array
         in
-        eval_lexpr ver re_array env2 m1 |: SemanticsRule.LESetArray
+        eval_prepared_lexpr ver le_array env m1 |: SemanticsRule.LESetArray
     (* End *)
     (* Begin EvalLESetField *)
-    | LE_SetField (re_record, field_name) ->
-        let*^ rm_record, env1 = expr_of_lexpr re_record |> eval_expr env in
+    | LE_SetField (le_record, field_name) ->
         let m1 =
-          let* v = m and* rv_record = rm_record in
-          B.set_field field_name v rv_record
+          let* v = m
+          and* v_record = eval_prepared_lexpr_as_expr env le_record in
+          B.set_field field_name v v_record
         in
-        eval_lexpr ver re_record env1 m1 |: SemanticsRule.LESetField
+        eval_prepared_lexpr ver le_record env m1 |: SemanticsRule.LESetField
     (* End *)
     (* Begin EvalLEDestructuring *)
     | LE_Destructuring le_list ->
@@ -900,7 +970,8 @@ module Make (B : Backend.S) (C : Config) = struct
            either in [B.get_index]. *)
         let n = List.length le_list in
         let nmonads = List.init n (fun i -> m >>= B.get_index i) in
-        multi_assign ver env le_list nmonads |: SemanticsRule.LEDestructuring
+        multi_assign_prepared ver env le_list nmonads
+        |: SemanticsRule.LEDestructuring
     (* End *)
     (* Begin EvalLESetFields *)
     | LE_SetFields (le_record, fields, slices) ->
@@ -908,13 +979,13 @@ module Make (B : Backend.S) (C : Config) = struct
           if List.compare_lengths fields slices != 0 then
             fatal_from le env Error.TypeInferenceNeeded
         in
-        let*^ rm_record, env1 = expr_of_lexpr le_record |> eval_expr env in
         let onwrite _ m = m in
         let m2 =
-          let* v = m and* record = rm_record in
-          assign_bitvector_fields ~loc:le onwrite v record slices fields
+          let* v = m and* record = eval_prepared_lexpr_as_expr env le_record in
+          assign_bitvector_fields ~loc:(to_pos le) onwrite v record slices
+            fields
         in
-        eval_lexpr ver le_record env1 m2 |: SemanticsRule.LESetFields
+        eval_prepared_lexpr ver le_record env m2 |: SemanticsRule.LESetFields
     (* End *)
     (* Begin EvalLESetCollectionFields *)
     | LE_SetCollectionFields (base, fieldnames, slices) ->
@@ -934,11 +1005,105 @@ module Make (B : Backend.S) (C : Config) = struct
         in
         let* v = m in
         let* record1 =
-          assign_bitvector_fields ~loc:le onwrite v record slices fieldnames
+          assign_bitvector_fields ~loc:(to_pos le) onwrite v record slices
+            fieldnames
         in
         let new_env = IEnv.assign_global base record1 env in
         return_normal new_env
   (* End *)
+
+  (** Evaluation of [le] used by EAC2 and earlier language revisions. *)
+  and eval_lexpr_eac2_or_before ver le env m : env maybe_exception B.m =
+    match le.desc with
+    | LE_Discard -> return_normal env |: SemanticsRule.LEDiscard
+    | LE_Var x -> (
+        let* v = m in
+        match IEnv.assign x v env with
+        | Local env ->
+            let* () = B.on_write_identifier x (IEnv.get_scope env) v in
+            return_normal env |: SemanticsRule.LEVar
+        | Global env ->
+            let* () = B.on_write_identifier x (B.Scope.global ~init:false) v in
+            return_normal env |: SemanticsRule.LEVar
+        | NotFound -> (
+            match ver with
+            | V1 ->
+                fatal_from le env
+                @@ Error.UndefinedIdentifier (C.error_handling_time, x)
+                |: SemanticsRule.LEUndefIdentV1
+            | V0 ->
+                declare_local_identifier env x v
+                >>= return_normal |: SemanticsRule.LEUndefIdentV0))
+    | LE_Slice (e_bv, slices) ->
+        let*^ m_bv_lhs, env1 = eval_expr env (expr_of_lexpr e_bv) in
+        let new_m_bv =
+          let* v_rhs = m
+          and* slice_ranges = eval_slices env1 slices
+          and* v_bv_lhs = m_bv_lhs in
+          let* () =
+            check_non_overlapping_slices ~pos:le env slices slice_ranges
+          in
+          B.write_to_bitvector slice_ranges v_rhs v_bv_lhs
+        in
+        eval_lexpr_eac2_or_before ver e_bv env1 new_m_bv
+        |: SemanticsRule.LESlice
+    | LE_SetArray (re_array, e_index) ->
+        let*^ rm_array, env1 = expr_of_lexpr re_array |> eval_expr env in
+        let*^ m_index, env2 = eval_expr env1 e_index in
+        let m1 =
+          let* v = m and* v_index = m_index and* rv_array = rm_array in
+          B.set_index (v_to_int ~loc:e_index v_index) v rv_array
+        in
+        eval_lexpr_eac2_or_before ver re_array env2 m1
+        |: SemanticsRule.LESetArray
+    | LE_SetField (re_record, field_name) ->
+        let*^ rm_record, env1 = expr_of_lexpr re_record |> eval_expr env in
+        let m1 =
+          let* v = m and* rv_record = rm_record in
+          B.set_field field_name v rv_record
+        in
+        eval_lexpr_eac2_or_before ver re_record env1 m1
+        |: SemanticsRule.LESetField
+    | LE_Destructuring le_list ->
+        let n = List.length le_list in
+        let nmonads = List.init n (fun i -> m >>= B.get_index i) in
+        multi_assign ver env le_list nmonads |: SemanticsRule.LEDestructuring
+    | LE_SetFields (le_record, fields, slices) ->
+        let () =
+          if List.compare_lengths fields slices != 0 then
+            fatal_from le env Error.TypeInferenceNeeded
+        in
+        let*^ rm_record, env1 = expr_of_lexpr le_record |> eval_expr env in
+        let onwrite _ m = m in
+        let m2 =
+          let* v = m and* record = rm_record in
+          assign_bitvector_fields ~loc:(to_pos le) onwrite v record slices
+            fields
+        in
+        eval_lexpr_eac2_or_before ver le_record env1 m2
+        |: SemanticsRule.LESetFields
+    | LE_SetCollectionFields (base, fieldnames, slices) ->
+        let onwrite field_name m =
+          let* v = m in
+          let* () =
+            let scope = B.Scope.global ~init:false in
+            let id = collection_field_effect_var base field_name in
+            B.on_write_identifier id scope v
+          in
+          return v
+        in
+        let record =
+          match IEnv.find base env with
+          | Global record -> record
+          | Local _ | NotFound -> assert false
+        in
+        let* v = m in
+        let* record1 =
+          assign_bitvector_fields ~loc:(to_pos le) onwrite v record slices
+            fieldnames
+        in
+        let new_env = IEnv.assign_global base record1 env in
+        return_normal new_env
 
   (* Begin AssignBitvectorFields *)
   and assign_bitvector_fields ~loc onwrite bitvector record slices fieldnames =
@@ -1114,10 +1279,16 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EvalSAssign *)
     | S_Assign (le, re) ->
-        let*^ m, env1 = eval_expr env re in
-        let**| new_env = eval_lexpr s.version le env1 m in
-        return_continue new_env |: SemanticsRule.SAssign
-    (* End *)
+        let**| new_env =
+          if not C.version_eac2_or_before then
+            let*^ m, env1 = eval_expr env re in
+            let* le' = eval_and_rewrite_lexpr le env1 in
+            eval_prepared_lexpr s.version le' env1 m
+          else
+            let*^ m, env1 = eval_expr env re in
+            eval_lexpr_eac2_or_before s.version le env1 m
+        in
+        return_continue new_env |: SemanticsRule.SAssign (* End *)
     (* Begin EvalSReturn *)
     | S_Return (Some { desc = E_Tuple es; _ }) ->
         let**| ms, new_env = eval_expr_list_m env es in
@@ -1551,11 +1722,19 @@ module Make (B : Backend.S) (C : Config) = struct
   and multi_assign ver env les monads : env maybe_exception m =
     let folder envm le vm =
       let**| env = envm in
-      eval_lexpr ver le env vm
+      eval_lexpr_eac2_or_before ver le env vm
     in
     List.fold_left2 folder (return_normal env) les monads
     |: SemanticsRule.LEMultiAssign
   (* End *)
+
+  and multi_assign_prepared ver env les monads : env maybe_exception m =
+    let folder envm le vm =
+      let**| env = envm in
+      eval_prepared_lexpr ver le env vm
+    in
+    List.fold_left2 folder (return_normal env) les monads
+    |: SemanticsRule.LEMultiAssign
 
   (** [protected_multi_assign les ms] is [multi_assign les ms] if [les] and
       [mes] have the same length. Otherwise if [ms] is a singleton, it performs

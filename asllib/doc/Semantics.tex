@@ -574,7 +574,9 @@ These are:
   \item arguments and parameters to a function call (\SemanticsRuleRef{ECall} and \SemanticsRuleRef{SCall});
   \item tuple expressions (\SemanticsRuleRef{ETuple} and \SemanticsRuleRef{LEDestructuring});
   \item non-short-circuiting binary operations (\SemanticsRuleRef{Binop});
-  \item array-indexing (\SemanticsRuleRef{EGetArray}) --- in particular, for \verb|arr[[idx]]| whether \verb|arr| or \verb|idx| is evaluated first;
+  \item array-indexing (\SemanticsRuleRef{EGetArray}, and the combination of
+        \SemanticsRuleRef{EvalAndRewriteLexpr} and \SemanticsRuleRef{LESetArray}) --- in particular, for
+        \verb|arr[[idx]]| whether \verb|arr| or \verb|idx| is evaluated first;
   \item slicing expressions (\SemanticsRuleRef{ESlice} and \SemanticsRuleRef{LESlice});
   \item record construction expressions (\SemanticsRuleRef{ERecord});
   \item arguments to \verb|print| and \verb|println| (\SemanticsRuleRef{SPrint});
@@ -585,7 +587,14 @@ For these constructs, ASL defines an evaluation order.
 When there are multiple feasible choices for the next evaluation transition, ASL is defined to take the transition
 for the construct appearing syntactically first. That is, ASL uses left-to-right evaluation.
 This applies \underline{only} when there are multiple feasible choices.
-For example, assignment statements (\secref{AssignmentStatements}) must still evaluate their right-hand side before considering their left-hand side, as the evaluation transition for left-hand sides requires the right-hand side value (\chapref{AssignableExpressions}).
+
+Assignment statements (\secref{AssignmentStatements}) first evaluate their
+right-hand side.  Next, the array index and slice expressions in the left-hand
+side are evaluated exactly once, from left to right.  Only then is the
+left-hand expression evaluated and the assignment is performed.  The same ordering applies from left
+to right across the elements of a multi-assignment.
+\listingref{eval-and-rewrite-lexpr-hoisted-lhs} illustrates this order for a
+left-hand side containing \ARBITRARY{} index and slice expressions.
 
 \ConventionDef{EvaluationOrderIndependence}
 To assist reliable translation of ASL to other representations that may not specify an evaluation order, implementations may choose to enforce independence from evaluation order using a conservative static analysis that warns users of possibly conflicting side-effects which may affect behaviour if reordered.
