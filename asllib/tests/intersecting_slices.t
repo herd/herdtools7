@@ -45,7 +45,10 @@ Two maybe intersecting slices...
   > EOF
 
   $ aslref intersecting_slices3.asl
-  ASL Dynamic error (DE_OSA): overlapping slices i+:1, j+:1.
+  File intersecting_slices3.asl, line 6, characters 3 to 9:
+    x[i, j] = '10';
+     ^^^^^^
+  ASL Dynamic error (DE_OSA): overlapping slices.
   [1]
 
   $ cat>intersecting_slices3b.asl <<EOF
@@ -64,7 +67,10 @@ Two maybe intersecting slices...
   > EOF
 
   $ aslref intersecting_slices3b.asl
-  ASL Dynamic error (DE_OSA): overlapping slices x+:1, y+:1.
+  File intersecting_slices3b.asl, line 4, characters 5 to 10:
+    bv2[x,y] = '10'; // Should fail dynamically for x == y
+       ^^^^^
+  ASL Dynamic error (DE_OSA): overlapping slices.
   0x7
   [1]
 
