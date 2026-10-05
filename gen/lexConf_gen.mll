@@ -23,6 +23,10 @@ let opt = '-' (('_'|alpha)+)
 
 rule main = parse
 | eof { [] }
+| "include" blank+
+  ((not_blank [^'\n']* not_blank | not_blank) as arg)
+   blank* '\n'
+ {"include" :: arg :: main lexbuf}
 | (opt as opt) blank* '\n' {opt :: main lexbuf}
 | (opt as opt) blank+
   ((not_blank [^'\n']* not_blank | not_blank) as arg)

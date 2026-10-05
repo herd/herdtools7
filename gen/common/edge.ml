@@ -18,12 +18,11 @@
 
 module Config =
   struct
-    let variant _ = false
+    let variant = Variant_gen.empty
     let naturalsize = TypBase.get_size TypBase.default
     let wildcard = false
+    let debug = Debug_gen.none
   end
-
-let dbg = 0
 
 module type S = sig
   open Code
@@ -51,7 +50,7 @@ module type S = sig
 
 (* edge proper *)
   type tedge =
-    | Communication of com * ie
+    | Communication of com * ie | Coms of ie
     | Po of sd*extr*extr | Fenced of fence*sd*extr*extr
     | Dp of dp*sd*extr
     | Leave of com (* Leave thread *)
@@ -149,6 +148,8 @@ module type S = sig
 (* Utilities *)
   val is_ext : edge -> bool
   val is_com : edge -> bool
+  val is_co : edge -> bool
+  val is_fr : edge -> bool
   val is_fetch : edge -> bool
 
 (* Set/Map *)
@@ -164,9 +165,10 @@ module
   Make
     (Cfg:
        sig
-         val variant : Variant_gen.t -> bool
+         val variant : Variant_gen.set
          val naturalsize : MachSize.sz
          val wildcard : bool
+         val debug : Debug_gen.t
        end)
     (F:Fence.S)
     (A:Atom.S): S
@@ -179,11 +181,11 @@ and module Value = A.Value
 and type value = A.Value.v
 and module RMW = A.RMW = struct
   let ()  = ignore (Cfg.naturalsize)
-  let do_self = Cfg.variant Variant_gen.Self
+  let do_self = Variant_gen.has Variant_gen.Self Cfg.variant
   let do_mixed = Variant_gen.is_mixed Cfg.variant
   let do_kvm =  Variant_gen.is_kvm Cfg.variant
-  let do_disjoint = Cfg.variant Variant_gen.MixedDisjoint
-  let do_strict_overlap = Cfg.variant Variant_gen.MixedStrictOverlap
+  let do_disjoint = Variant_gen.has Variant_gen.MixedDisjoint Cfg.variant
+  let do_strict_overlap = Variant_gen.has Variant_gen.MixedStrictOverlap Cfg.variant
   let wildcard = Cfg.wildcard
 
   open Code
@@ -201,7 +203,7 @@ and module RMW = A.RMW = struct
   let pre_parse_string s =
     let parsed_result = Lexing.from_string (String.trim s)
     |> LexUtil.parse Parser.main
-    |> Ast.expand in
+    |> Ast.expand (fun _ -> Warn.fatal "predicate should not exist.") in
     match parsed_result with
       | [x] -> x
       | _ ->
@@ -233,7 +235,7 @@ and module RMW = A.RMW = struct
 
 (* edge proper *)
   type tedge =
-    | Communication of com * ie
+    | Communication of com * ie | Coms of ie
     | Po of sd*extr*extr | Fenced of fence*sd*extr*extr
     | Dp of dp*sd*extr
     | Leave of com
@@ -248,23 +250,23 @@ and module RMW = A.RMW = struct
 
   let is_id = function
     | Id -> true
-    | Store|Insert _|Hat|Rmw _|Communication _|Po (_, _, _)
+    | Store|Insert _|Hat|Rmw _|Communication _|Coms _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
 
   let is_insert_store = function
     | Store|Insert _ -> true
-    | Id|Hat|Rmw _|Communication _|Po (_, _, _)
+    | Id|Hat|Rmw _|Communication _|Coms _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Node _ -> false
 
   let is_node = function
     | Node _ -> true
-    | Id|Hat|Rmw _|Communication _|Po (_, _, _)
+    | Id|Hat|Rmw _|Communication _|Coms _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _|Insert _
     | Store -> false
 
   let is_non_pseudo = function
     | Store|Insert _ |Id|Node _-> false
-    | Hat|Rmw _|Communication _|Po (_, _, _)
+    | Hat|Rmw _|Communication _|Coms _|Po (_, _, _)
     | Fenced (_, _, _, _)|Dp (_, _, _)|Leave _|Back _ -> true
 
   let is_dp_addr = function
@@ -303,6 +305,7 @@ and module RMW = A.RMW = struct
     | _ -> sprintf "%s%s" com (pp_ie ie)
 
   let pp_tedge_compat compat = function
+    | Coms ie -> sprintf "%sObs" (pp_ie_full ie)
     | Communication (com,ie) -> pp_communication_compat compat com ie
     | Po (UnspecLoc,Irr,Irr) -> "Po"
     | Po (sd,e1,e2) ->
@@ -368,6 +371,7 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Communication (c, _)
   | Leave c|Back c -> do_dir_tgt_com c
   | Id -> NoDir
+  | Coms _ -> Irr
   | Insert _ -> NoDir
   | Store -> Dir W
   | Node d -> Dir d
@@ -379,13 +383,14 @@ let pp_dp_default tag sd e = sprintf "%s%s%s" tag (pp_sd sd) (pp_extr e)
   | Communication(c, _)
   | Leave c|Back c -> do_dir_src_com c
   | Id -> NoDir
+  | Coms _ -> Irr
   | Insert _ -> NoDir
   | Store -> Dir W
   | Node d -> Dir d
 
   let do_loc_sd e = match e with
   | Po (sd,_,_) | Fenced (_,sd,_,_) | Dp (_,sd,_) -> sd
-  | Insert _|Store|Node _|Communication _|Hat|Rmw _|Id|Leave _|Back _ -> Same
+  | Insert _|Store|Node _|Communication _|Coms _|Hat|Rmw _|Id|Leave _|Back _ -> Same
 
   let do_is_diff e = Code.is_diff_loc @@ do_loc_sd e
 
@@ -396,6 +401,7 @@ let fold_tedges_compat f r =
 
 let fold_tedges f r =
   let r = fold_com (fun com r -> fold_ie wildcard (fun ie -> f (Communication (com,ie))) r) r in
+  let r = if wildcard then fold_ie wildcard (fun ie -> f (Coms ie)) r else r in
   let r = RMW.fold_rmw wildcard (fun rmw -> f (Rmw rmw)) r in
   let r = fold_sd_extr_extr wildcard (fun sd e1 e2 r -> f (Po (sd,e1,e2)) r) r in
   let r = F.fold_all_fences (fun fe -> f (Insert fe)) r in
@@ -430,6 +436,7 @@ let fold_tedges f r =
   let equal_tedge lhs rhs = match lhs,rhs with
   | Communication (c1,ie1),Communication (c2,ie2) ->
       Code.equal_com c1 c2 && Code.equal_ie ie1 ie2
+  | Coms ie1,Coms ie2 -> Code.equal_ie ie1 ie2
   | Po (sd1,e11,e12),Po (sd2,e21,e22) ->
       Code.equal_sd sd1 sd2 && Code.equal_extr e11 e21 &&
       Code.equal_extr e12 e22
@@ -446,7 +453,7 @@ let fold_tedges f r =
   | Insert f1,Insert f2 -> F.compare_fence f1 f2 = 0
   | Node d1,Node d2 -> Code.equal_extr (Dir d1) (Dir d2)
   | Rmw rmw1,Rmw rmw2 -> RMW.equal_rmw rmw1 rmw2
-  | (Communication _|Po _|Fenced _|Dp _|Leave _|Back _|Id
+  | (Communication _|Coms _|Po _|Fenced _|Dp _|Leave _|Back _|Id
     |Insert _|Store|Node _|Hat|Rmw _),_ -> false
 
   let equal_edge_atoms lhs rhs =
@@ -494,7 +501,7 @@ let fold_tedges f r =
   let annotation_lookup_table = Hashtbl.create 37
 
   let add_lxm_atom lxm a =
-    if dbg > 1 then eprintf "ATOM: %s\n" lxm ;
+    if Cfg.debug.Debug_gen.lexer then eprintf "ADD ANNOTATION: %s\n" lxm ;
     try
       let old = Hashtbl.find annotation_lookup_table lxm in
       assert (compare_atomo old a = 0) ;
@@ -525,7 +532,7 @@ let fold_tedges f r =
   let edge_lookup_table = Hashtbl.create 40000
 
   let add_lxm_edge lxm e =
-    if dbg > 1 then eprintf "LXM: %s\n" lxm ;
+    if Cfg.debug.Debug_gen.lexer then eprintf "ADD EDGE: %s\n" lxm ;
     try
       let old = Hashtbl.find edge_lookup_table lxm in
       if compare old e <> 0 then begin
@@ -710,13 +717,13 @@ let fold_tedges f r =
   | Po(sd,src,_) -> Po (sd,src,Dir d)
   | Fenced(f,sd,src,_) -> Fenced(f,sd,src,Dir d)
   | Dp (dp,sd,_) -> Dp (dp,sd,Dir d)
-  | Communication _ | Hat
+  | Communication _ | Coms _ | Hat
   | Insert _|Store|Id|Node _|Rmw _|Leave _|Back _-> e
 
   and do_set_src d e = match e with
   | Po(sd,_,tgt) -> Po(sd,Dir d,tgt)
   | Fenced(f,sd,_,tgt) -> Fenced(f,sd,Dir d,tgt)
-  | Communication _|Hat|Dp _
+  | Communication _|Coms _|Hat|Dp _
   | Insert _|Store|Id|Node _|Rmw _|Leave _|Back _ -> e
 
   let set_tgt d e = { e with edge = do_set_tgt d e.edge ; }
@@ -727,7 +734,7 @@ let fold_tedges f r =
 
   let get_ie e = match e.edge with
   | Id |Po _|Dp _|Fenced _|Rmw _ -> Int
-  | Communication (_,ie) -> ie
+  | Communication (_,ie) | Coms ie -> ie
   | Leave _|Back _|Hat -> Ext
   | Insert _|Store|Node _ -> Int
 
@@ -761,29 +768,89 @@ let fold_tedges f r =
   | Communication _|Leave _|Back _| Hat -> true
   | _ -> false
 
+  let is_co e = match e.edge with
+  | Communication (Co,_) -> true
+  | _ -> false
+
+  let is_fr e = match e.edge with
+  | Communication (Fr,_) -> true
+  | _ -> false
+
   let is_fetch e = match e.edge with
   | Communication (Rf,_) -> is_ifetch e.a2
   | Communication (Fr,_) -> is_ifetch e.a1
   | _ -> is_ifetch e.a1 || ( loc_sd e = Same && is_ifetch e.a2)
 
-  let compat_atoms a1 a2 = match merge_atoms a1 a2 with
-  | None -> false
-  | Some _ -> true
+  let set_a1 e a = match e.edge with
+  | Node _|Id -> { e with a1=a; a2=a;}
+  | _ -> { e with a1=a;}
+
+  let set_a2 e a = match e.edge with
+  | Node _|Id  -> { e with a1=a; a2=a;}
+  | _ -> { e with a2=a;}
+
+  (* Merges the end annotation and direction of `e1`
+     with the start of `e2`. *)
+  let merge_pair e1 e2 =
+    let update_dir (e1,e2) =
+      let d1 = dir_tgt e1 and d2 = dir_src e2 in
+      match d1,d2 with
+      | Irr,Dir d -> Some(set_tgt d e1,e2)
+      | Dir d,Irr -> Some(e1,set_src d e2)
+      | _,_ -> None in
+    let update_annotation (e1,e2) =
+      let a1 = e1.a2 and a2 = e2.a1 in
+      match a1,a2 with
+      | None,None -> None
+      | None,Some a
+      | Some a,None when is_ifetch (Some a) -> None
+      | None,Some _ -> Some(set_a2 e1 a2,e2)
+      | Some _,None -> Some(e1,set_a1 e2 a1)
+      | Some a1,Some a2 -> match merge_atoms a1 a2 with
+        | None when is_id e1.edge && is_id e2.edge ->
+            Warn.fatal "Incompatible annotations %s and %s"
+              (pp_atom a1) (pp_atom a2)
+        | None -> None
+        | Some _ as atom -> Some(set_a2 e1 atom,set_a1 e2 atom) in
+    let input = (e1,e2) in
+    let r = update_dir input
+        |> ( function
+          (* Propagate result `f e` if changed *)
+          | Some e -> Some(Option.value (update_annotation e) ~default:e)
+          | None -> update_annotation input ) in
+    if Cfg.debug.Debug_gen.parser then begin
+      let i1,i2 = input in
+      let r1,r2 = Option.value ~default:input r in
+      eprintf "MERGE PAIR <%s,%s> -> <%s,%s>\n"
+        (debug_edge i1) (debug_edge i2) (debug_edge r1) (debug_edge r2)
+    end ;
+    r
 
   let can_precede_atoms x y = match x.a2,y.a1 with
   | None,_
   | _,None -> true
-  | Some a1,Some a2 -> compat_atoms a1 a2
+  | Some a1,Some a2 -> Option.is_some (merge_atoms a1 a2)
 
   let can_precede_dp_data_read x y = match x.edge with
   | Dp (dp,_,Dir R) when F.is_data dp ->
       begin match y.edge with Rmw _ -> true | _ -> false end
   | _ -> true
 
+  let valid_atoms edge =
+    let applies atom dir = match atom,dir with
+      | None,_ | _,(NoDir|Irr) -> true
+      | Some atom,Dir dir -> A.applies_atom atom dir in
+    applies edge.a1 (dir_src edge) && applies edge.a2 (dir_tgt edge) &&
+    (* Further filter on annotation on rmw *)
+    match edge.edge with
+    | Rmw rmw -> A.RMW.applies_atom_rmw rmw edge.a1 edge.a2
+    | _ -> true
+
   let can_precede x y =
-    can_precede_dirs x y &&
-    can_precede_atoms x y &&
-    can_precede_dp_data_read x y
+    can_precede_dirs x y && can_precede_atoms x y &&
+    can_precede_dp_data_read x y &&
+    let merged_x,merged_y = Option.value ~default:(x,y) (merge_pair x y) in
+    valid_atoms merged_x && valid_atoms merged_y
 
 (*************************************************************)
 (* Expansion of irrelevant direction specifications in edges *)
@@ -810,8 +877,13 @@ let fold_tedges f r =
     | Insert _|Store|Id|Node _
     | Hat |Leave _|Back _
       -> f e acc
-    | Communication (com,ie) ->
-        expand_com ie (fun new_ie -> f {e with edge=Communication (com,new_ie)}) acc
+  | Communication (com,ie) ->
+      expand_com ie (fun new_ie -> f {e with edge=Communication (com,new_ie)}) acc
+  | Coms ie -> expand_com ie
+      (fun new_ie acc ->
+        acc |> f {e with edge=Communication (Rf,new_ie)}
+            |> f {e with edge=Communication (Fr,new_ie)}
+            |> f {e with edge=Communication (Co,new_ie)}) acc
     | Rmw rmw ->
         let expand_rmw_list = A.RMW.expand_rmw rmw in
         List.fold_left ( fun acc new_rmw -> f {e with edge=Rmw(new_rmw);} acc) acc expand_rmw_list
@@ -849,53 +921,6 @@ let fold_tedges f r =
       else
         let bef,ni,aft = find_next_merge es in
         e::bef,ni,aft
-
-  let set_a1 e a = match e.edge with
-  | Node _|Id -> { e with a1=a; a2=a;}
-  | _ -> { e with a1=a;}
-
-  let set_a2 e a = match e.edge with
-  | Node _|Id  -> { e with a1=a; a2=a;}
-  | _ -> { e with a2=a;}
-
-  (* Merges the end annotation and direction of `e1`
-     with the start of `e2`. *)
-  let merge_pair e1 e2 =
-    let update_dir (e1,e2) =
-      let d1 = dir_tgt e1 and d2 = dir_src e2 in
-      match d1,d2 with
-      | Irr,Dir d -> Some(set_tgt d e1,e2)
-      | Dir d,Irr -> Some(e1,set_src d e2)
-      | _,_ -> None in
-    let update_annotation (e1,e2) =
-      let a1 = e1.a2 and a2 = e2.a1 in
-      match a1,a2 with
-      | None,None -> None
-      | None,Some a
-      | Some a,None when is_ifetch (Some a)-> None
-      | None,Some _ -> Some(set_a2 e1 a2,e2)
-      | Some _,None -> Some(e1, set_a1 e2 a1)
-      | Some a1,Some a2 ->
-        match merge_atoms a1 a2 with
-        | None when is_id e1.edge && is_id e2.edge ->
-            Warn.fatal "Incompatible annotations %s and %s"
-              (pp_atom a1) (pp_atom a2)
-        | None -> None
-        | Some _ as a ->
-          Some(set_a2 e1 a,set_a1 e2 a) in
-    let input = (e1,e2) in
-    let r = update_dir input
-        |> ( function
-          (* Propagate result `f e` if changed *)
-          | Some e -> Some(Option.value (update_annotation e) ~default:e)
-          | None -> update_annotation input ) in
-    if dbg > 0 then begin
-      let i1,i2 = input in
-      let r1,r2 = Option.value ~default:input r in
-      eprintf "Merge pair <%s,%s> -> <%s,%s>\n"
-        (debug_edge i1) (debug_edge i2) (debug_edge r1) (debug_edge r2)
-    end ;
-    r
 
   (* Assume `e` is neither `Store` nor `Insert`.
      Repeatedly merge the next mergeable edge from `es` into `e` until no

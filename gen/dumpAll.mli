@@ -15,7 +15,8 @@
 (****************************************************************************)
 
 module type Config = sig
-  include Top_gen.Config
+  val debug : Debug_gen.t
+  val hout : Hint.out
   val family : string option
   val canonical_only : bool
   val fmt : int
@@ -39,7 +40,7 @@ module Make(Config:Config) (T:Builder.S) : sig
   type info = (string * string) list
 
 (* Compute information *)
-  type mk_info = info * T.R.Set.t
+  type mk_info = info * string
   val no_info : mk_info
 
 (* Compute name *)
