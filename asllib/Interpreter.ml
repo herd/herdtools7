@@ -402,6 +402,12 @@ module Make (B : Backend.S) (C : Config) = struct
     | None ->
         fatal_from_no_env loc (MismatchType (B.debug_value v, [ integer' ]))
 
+  let checked_v_to_z ~loc v =
+    match B.v_to_z v with
+    | Some z -> z
+    | None ->
+        fatal_from_no_env loc (MismatchType (B.debug_value v, [ integer' ]))
+
   let sync_list ms =
     let folder m vsm =
       let* v = m and* vs = vsm in
@@ -767,6 +773,15 @@ module Make (B : Backend.S) (C : Config) = struct
     | Cutoff -> assert false
   (* End *)
 
+  (** [eval_expr_after_eac2 env e] evaluates [e] as a side-effect-free
+      expressions without updating [env] after EAC2, and otherwise evaluates it
+      as a possibly side-effecting expression. *)
+  and eval_expr_after_eac2 env e : expr_eval_type =
+    if C.version_eac2_or_before then eval_expr env e
+    else
+      let* v = eval_expr_sef env e in
+      return_normal (v, env)
+
   (* Runtime checks *)
   (* -------------- *)
 
@@ -827,6 +842,68 @@ module Make (B : Backend.S) (C : Config) = struct
     return res
   (* End *)
 
+  (** [eval_and_rewrite_lexpr le env] evaluates each array index and slice
+      expression in [le] exactly once as a side-effect-free expression and
+      returns a copy of [le] in which each such expression is replaced by the
+      resulting integer literal. Nested subexpressions are evaluated from left
+      to right. *)
+  and eval_and_rewrite_lexpr le env : lexpr m =
+    let with_desc desc = { le with desc } in
+    match le.desc with
+    | LE_Discard | LE_Var _ | LE_SetCollectionFields _ -> return le
+    | LE_Slice (le_base, slices) ->
+        let* le_base' = eval_and_rewrite_lexpr le_base env in
+        let* slices' = eval_and_rewrite_slices slices env in
+        LE_Slice (le_base', slices') |> with_desc |> return
+    | LE_SetArray (le_base, e_index) ->
+        let* le_base' = eval_and_rewrite_lexpr le_base env in
+        let* v_index = eval_expr_sef env e_index in
+        let index = checked_v_to_z ~loc:e_index v_index in
+        let e_index' = expr_of_z ~loc:e_index index in
+        LE_SetArray (le_base', e_index') |> with_desc |> return
+    | LE_SetField (le_record, field_name) ->
+        let* le_record' = eval_and_rewrite_lexpr le_record env in
+        LE_SetField (le_record', field_name) |> with_desc |> return
+    | LE_SetFields (le_record, field_names, slices) ->
+        let* le_record' = eval_and_rewrite_lexpr le_record env in
+        LE_SetFields (le_record', field_names, slices) |> with_desc |> return
+    | LE_Destructuring les ->
+        let rec rewrite_left_to_right = function
+          | [] -> return []
+          | le :: les ->
+              let* le' = eval_and_rewrite_lexpr le env in
+              let* les' = rewrite_left_to_right les in
+              return (le' :: les')
+        in
+        let* les' = rewrite_left_to_right les in
+        LE_Destructuring les' |> with_desc |> return
+
+  (** [eval_and_rewrite_slice slice env] evaluates the start and length
+      expressions of the typed slice [slice], from left to right, and replaces
+      them with integer literals containing the resulting values. *)
+  and eval_and_rewrite_slice slice env : slice m =
+    match slice with
+    | Slice_Length (e_start, e_length) ->
+        let* v_start = eval_expr_sef env e_start in
+        let* v_length = eval_expr_sef env e_length in
+        let e_start' = checked_v_to_z ~loc:e_start v_start |> expr_of_z in
+        let e_length' = checked_v_to_z ~loc:e_length v_length |> expr_of_z in
+        return (Slice_Length (e_start', e_length'))
+    | _ -> assert false
+
+  (** [eval_and_rewrite_slices slices env] evaluates and rewrites each slice in
+      [slices], from left to right. *)
+  and eval_and_rewrite_slices slices env : slice list m =
+    let rewrite_left_to_right slices =
+      match slices with
+      | [] -> return []
+      | slice :: slices_rest ->
+          let* slice' = eval_and_rewrite_slice slice env in
+          let* slices_rest' = eval_and_rewrite_slices slices_rest env in
+          return (slice' :: slices_rest')
+    in
+    rewrite_left_to_right slices
+
   (* Evaluation of Left-Hand-Side Expressions *)
   (* ---------------------------------------- *)
 
@@ -863,7 +940,7 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EvalLESlice *)
     | LE_Slice (e_bv, slices) ->
-        let*^ m_bv_lhs, env1 = expr_of_lexpr e_bv |> eval_expr env in
+        let*^ m_bv_lhs, env1 = expr_of_lexpr e_bv |> eval_expr_after_eac2 env in
         let new_m_bv =
           let* v_rhs = m
           and* slice_ranges = eval_slices env1 slices
@@ -877,8 +954,10 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EvalLESetArray *)
     | LE_SetArray (re_array, e_index) ->
-        let*^ rm_array, env1 = expr_of_lexpr re_array |> eval_expr env in
-        let*^ m_index, env2 = eval_expr env1 e_index in
+        let*^ rm_array, env1 =
+          expr_of_lexpr re_array |> eval_expr_after_eac2 env
+        in
+        let*^ m_index, env2 = eval_expr_after_eac2 env1 e_index in
         let m1 =
           let* v = m and* v_index = m_index and* rv_array = rm_array in
           B.set_index (v_to_int ~loc:e_index v_index) v rv_array
@@ -887,7 +966,9 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EvalLESetField *)
     | LE_SetField (re_record, field_name) ->
-        let*^ rm_record, env1 = expr_of_lexpr re_record |> eval_expr env in
+        let*^ rm_record, env1 =
+          expr_of_lexpr re_record |> eval_expr_after_eac2 env
+        in
         let m1 =
           let* v = m and* rv_record = rm_record in
           B.set_field field_name v rv_record
@@ -908,7 +989,9 @@ module Make (B : Backend.S) (C : Config) = struct
           if List.compare_lengths fields slices != 0 then
             fatal_from le env Error.TypeInferenceNeeded
         in
-        let*^ rm_record, env1 = expr_of_lexpr le_record |> eval_expr env in
+        let*^ rm_record, env1 =
+          expr_of_lexpr le_record |> eval_expr_after_eac2 env
+        in
         let onwrite _ m = m in
         let m2 =
           let* v = m and* record = rm_record in
@@ -1114,10 +1197,17 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EvalSAssign *)
     | S_Assign (le, re) ->
-        let*^ m, env1 = eval_expr env re in
-        let**| new_env = eval_lexpr s.version le env1 m in
-        return_continue new_env |: SemanticsRule.SAssign
-    (* End *)
+        let assign =
+          if not C.version_eac2_or_before then
+            let** v, env1 = eval_expr env re in
+            let* le' = eval_and_rewrite_lexpr le env1 in
+            eval_lexpr s.version le' env1 (return v)
+          else
+            let*^ m, env1 = eval_expr env re in
+            eval_lexpr s.version le env1 m
+        in
+        let**| new_env = assign in
+        return_continue new_env |: SemanticsRule.SAssign (* End *)
     (* Begin EvalSReturn *)
     | S_Return (Some { desc = E_Tuple es; _ }) ->
         let**| ms, new_env = eval_expr_list_m env es in

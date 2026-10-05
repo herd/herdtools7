@@ -192,8 +192,9 @@ val binop : binop -> expr -> expr -> expr
 val neg : expr -> expr
 (** Builds a negation operation from its subexpression. *)
 
-val expr_of_z : Z.t -> expr
-(** [expr_of_z z] is the integer literal for [z]. *)
+val expr_of_z : ?loc:_ t_annotated -> Z.t -> expr
+(** [expr_of_z z] is the integer literal for [z] with [loc] as its source
+    location if supplied (otherwise a dummy location).. *)
 
 val zero_expr : expr
 (** The integer literal for [0]. *)
