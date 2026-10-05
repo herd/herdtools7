@@ -1,0 +1,10 @@
+X86_64 A013
+{
+ int8_t x=0;
+ int8_t y=0;
+}
+ P0          | P1          ;
+ movb $2,(x) | movb $2,(y) ;
+ movb $1,(y) | movb $1,(x) ;
+
+exists ([x]=2 /\ [y]=2)
