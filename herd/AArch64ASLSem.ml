@@ -193,8 +193,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
     (* Convert a vector register name to its ASL register index. *)
     let tr_vec_reg = ASLBase.reg_to_int AArch64Base.vec_regs
 
-    (* Return the memory access width and ASL filename suffix for a SIMD size. *)
-    let sve_memory_suffix =
+    (* Return the access width and ASL filename suffix for an SVE LD/ST size. *)
+    let sve_load_store_size =
       let open AArch64Base in
       function
       | VSIMD8 -> (8, "b")
@@ -317,22 +317,23 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         | Zreg (z, esize) -> (tr_vec_reg z |> liti, esize)
         | r -> Warn.fatal "Expected an SVE vector register, got: %s." (pp_reg r)
       in
-      (* Distinguish SVE loads from stores and extract their register count. *)
-      let sve_memory_kind = function
+      (* Distinguish SVE LD/ST instructions and extract their register count. *)
+      let sve_load_store_kind = function
         | I_LD1SP _ -> true, 1 | I_ST1SP _ -> false, 1
         | I_LD2SP _ -> true, 2 | I_ST2SP _ -> false, 2
         | I_LD3SP _ -> true, 3 | I_ST3SP _ -> false, 3
         | I_LD4SP _ -> true, 4 | I_ST4SP _ -> false, 4
         | _ -> assert false
       in
-      (* Pass the first Z register to ASL, which derives the remaining registers. *)
-      let first_zreg_and_esize rs =
+      (* Pass the first Z register of an SVE LD/ST structure to ASL. *)
+      let sve_load_store_first_zreg rs =
         match rs with
         | first :: _ -> zreg_and_esize first
         | [] -> assert false
       in
-      (* Select contiguous ASL by address form, direction, and register count. *)
-      let sve_contiguous_info ~scalar_offset ~is_load ~nreg ~suffix ~msize =
+      (* Select a contiguous SVE LD/ST ASL file and its extra arguments. *)
+      let sve_contiguous_load_store_opn_and_args
+          ~scalar_offset ~is_load ~nreg ~suffix ~msize =
         let opn =
           match scalar_offset, is_load, nreg with
           | false, true, 1 ->
@@ -375,8 +376,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         in
         opn, extra
       in
-      (* Select gather/scatter ASL by direction and memory access width. *)
-      let sve_vector_info ~is_load ~msize ~suffix =
+      (* Select a gather/scatter SVE LD/ST ASL file and its extra arguments. *)
+      let sve_gather_scatter_opn_and_args ~is_load ~msize ~suffix =
         let opn = match is_load, msize with
           | true, 8 ->
               "sve/sve_mem64/sve_mem_64b_gld_vs/ld1b_z_p_bz_d_x32_unscaled.opn"
@@ -398,8 +399,8 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         in
         opn, (if is_load then [ "unsigned" ^= litb true ] else [])
       in
-      (* Encode gather/scatter offset width, signedness, and shift for ASL. *)
-      let sve_vector_offset_fields extension esize shift =
+      (* Encode SVE gather/scatter offset width, signedness, and shift for ASL. *)
+      let sve_gather_scatter_offset_args extension esize shift =
         let offs_size, offs_unsigned =
           match extension with
           | MemExt.UXTW -> 32, true
@@ -1349,11 +1350,12 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         | I_ST3SP (v, rs, pg, rn, MemExt.Imm (offset, Idx))
         | I_ST4SP (v, rs, pg, rn, MemExt.Imm (offset, Idx)) ) as inst ->
           check_sve inst;
-          let is_load, nreg = sve_memory_kind inst in
-          let msize, suffix = sve_memory_suffix v in
-          let t, esize = first_zreg_and_esize rs in
+          let is_load, nreg = sve_load_store_kind inst in
+          let msize, suffix = sve_load_store_size v in
+          let t, esize = sve_load_store_first_zreg rs in
           let opn, extra =
-            sve_contiguous_info ~scalar_offset:false ~is_load ~nreg ~suffix ~msize in
+            sve_contiguous_load_store_opn_and_args
+              ~scalar_offset:false ~is_load ~nreg ~suffix ~msize in
           Some
             (opn, stmt
               ([ "t" ^= t; "g" ^= pred_reg pg; "n" ^= reg rn;
@@ -1368,11 +1370,12 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
         | I_ST3SP (v, rs, pg, rn, MemExt.Reg (V64, rm, MemExt.LSL, _))
         | I_ST4SP (v, rs, pg, rn, MemExt.Reg (V64, rm, MemExt.LSL, _)) ) as inst ->
           check_sve inst;
-          let is_load, nreg = sve_memory_kind inst in
-          let msize, suffix = sve_memory_suffix v in
-          let t, esize = first_zreg_and_esize rs in
+          let is_load, nreg = sve_load_store_kind inst in
+          let msize, suffix = sve_load_store_size v in
+          let t, esize = sve_load_store_first_zreg rs in
           let opn, extra =
-            sve_contiguous_info ~scalar_offset:true ~is_load ~nreg ~suffix ~msize in
+            sve_contiguous_load_store_opn_and_args
+              ~scalar_offset:true ~is_load ~nreg ~suffix ~msize in
           Some
             (opn, stmt
               ([ "t" ^= t; "g" ^= pred_reg pg; "n" ^= reg rn;
@@ -1381,16 +1384,17 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       | ( I_LD1SP (v, rs, pg, rn, MemExt.ZReg (rm, extension, shift))
         | I_ST1SP (v, rs, pg, rn, MemExt.ZReg (rm, extension, shift)) ) as inst ->
           check_sve inst;
-          let is_load, _ = sve_memory_kind inst in
-          let msize, suffix = sve_memory_suffix v in
-          let t, esize = first_zreg_and_esize rs in
+          let is_load, _ = sve_load_store_kind inst in
+          let msize, suffix = sve_load_store_size v in
+          let t, esize = sve_load_store_first_zreg rs in
           let m, _ = zreg_and_esize rm in
-          let opn, extra = sve_vector_info ~is_load ~msize ~suffix in
+          let opn, extra =
+            sve_gather_scatter_opn_and_args ~is_load ~msize ~suffix in
           Some
             (opn, stmt
               ([ "t" ^= t; "g" ^= pred_reg pg; "n" ^= reg rn;
                  "esize" ^= liti esize; "m" ^= m; "msize" ^= liti msize ]
-               @ sve_vector_offset_fields extension esize shift @ extra))
+               @ sve_gather_scatter_offset_args extension esize shift @ extra))
       | I_CTERM (cc,v,rn,rm) as inst ->
           check_sve inst ;
           let cc =
