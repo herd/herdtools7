@@ -3,7 +3,7 @@ States 1
 
 Ok
 Witnesses
-Positive: 2 Negative: 0
+Positive: 1 Negative: 0
 Condition exists (true)
-Observation V37 Always 2 0
+Observation V37 Always 1 0
 Hash=1cfa4424c4e336c73b4540504a785419
