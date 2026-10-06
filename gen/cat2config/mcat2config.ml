@@ -26,6 +26,7 @@ module Opts = struct
     dump : StringSet.t;
     log : (string * Logs.level option) list;
     conf : bool;
+    prune : Translation.prune list;
   }
 
   let valid_dump_opts = [ "tree"; "origin" ]
@@ -71,6 +72,7 @@ module Opts = struct
     let dump = ref StringSet.empty in
     let log = ref [] in
     let conf = ref false in
+    let prune = ref [] in
     let valid_srcs = Logs.Src.list () |> List.map Logs.Src.name in
     let log_opt_msg =
       Format.sprintf "<%s>  Fine-grained logging control for specific modules."
@@ -103,6 +105,14 @@ module Opts = struct
           Arg.Unit (fun () -> conf := true),
           " Causes the tool to print its output in diy7 configuration file \
            format." );
+        ( "-prune",
+          Arg.Symbol
+            ( [ "all"; "pos_w" ],
+              function
+              | "all" -> prune := Translation.prune_all
+              | "pos_w" -> prune := Translation.Pos_w :: !prune
+              | _ -> assert false ),
+          "  Enable the selected relaxation pruning pass." );
       ]
     in
     let prog =
@@ -128,6 +138,7 @@ module Opts = struct
         dump = !dump;
         log = !log;
         conf = !conf;
+        prune = !prune;
       }
     in
     (opts, file_path)
@@ -212,7 +223,9 @@ let run ~(opts : Opts.t) (tree : AST.ins list) =
             let translated =
               nfs
               |> List.map (fun (nf, ast_e) ->
-                  let relaxs = Translation.translate ~binding:var nf in
+                  let relaxs =
+                    Translation.translate ~prune:opts.prune ~binding:var nf
+                  in
                   (relaxs, ast_e))
             in
             Some (var, translated))
