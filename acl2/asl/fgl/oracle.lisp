@@ -297,7 +297,13 @@
                      (declare (ignore ignore))
                      (fgl::fgl-prog2 (cw "saved oracle~%")
                                      res))))))
-  
+
+(defconst *save-oracle-on-outermost-eval_subprogram-*t-prio* -12)
+
+(fgl::add-fgl-rewrite save-oracle-on-outermost-eval_subprogram-*t
+                      :order `(:prio ,*save-oracle-on-outermost-eval_subprogram-*t-prio*))
+
+
 ;; #|
 ;; (assign :fgl-trace-rewrites nil)
 ;; (assign :fgl-trace-rule-alist '(((:formula save-oracle-on-outermost-eval_subprogram))

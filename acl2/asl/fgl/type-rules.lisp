@@ -38,6 +38,26 @@
   :check-might-be-true check-might-be-true
   )
 
+(fgl::def-fgl-rewrite equal-of-eval_result-split
+  (equal (equal (eval_result-split is-ev_normal res is-ev_throwing throwdata
+                                   env backtrace desc data backtrace0)
+                x)
+         (and (eval_result-p x)
+              (eval_result-case x
+                :ev_normal (and is-ev_normal
+                                (equal x.res res))
+                :ev_throwing (and (not is-ev_normal)
+                                  is-ev_throwing
+                                  (equal x.throwdata (maybe-throwdata-fix throwdata))
+                                  (equal x.env (env-fix env))
+                                  (equal x.backtrace backtrace))
+                :ev_error (and (not is-ev_normal)
+                               (not is-ev_throwing)
+                               (equal x.desc (acl2::str-fix desc))
+                               (equal x.data data)
+                               (equal x.backtrace backtrace0)))))
+  :hints(("Goal" :in-theory (enable eval_result-split))))
+
 (fgl::def-fgl-rewrite IF-FOR-EVAL_RESULT-SPLIT-OF-EVAL_RESULT-SPLIT-redef
   (EQUAL
    (IF-FOR-EVAL_RESULT-SPLIT

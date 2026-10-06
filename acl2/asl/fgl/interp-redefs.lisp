@@ -176,6 +176,8 @@
                   (b* ((pos (expr->pos_start e))
                        ((e_arbitrary e) (expr->desc e))
                        ((mv (evo ty) orac) (resolve-ty env e.type))
+                       ((unless (ty-satisfiable ty))
+                        (evo_error "DE_AET: " e (list pos)))
                        ((mv val orac) (ty-oracle-val ty orac))
                        ((unless (val-p val))
                         (evo_error "DE_AET: " e (list pos))))
@@ -191,6 +193,9 @@
                        (env (env-replace-static static-env env))
                        ((evoo-*t ty)
                         (resolve-ty-*t env desc.type))
+                       ((unless (ty-satisfiable ty))
+                        (evo_error-*t "DE_AET: "
+                                       desc (list pos)))
                        ((mv val orac) (ty-oracle-val ty orac))
                        ((unless (val-p val))
                         (evo_error-*t "DE_AET: "
@@ -209,6 +214,8 @@
                        (env (env-replace-static static-env env))
                        ((evoo-*tef _condvar-0 ty)
                         (resolve-ty-*t env desc.type))
+                       ((unless (ty-satisfiable ty))
+                        (evo_error-*t "DE_AET: " desc (list pos)))
                        ((mv val orac) (ty-oracle-val ty orac))
                        ((unless (val-p val))
                         (evo_error-*t "DE_AET: "
@@ -306,11 +313,15 @@
                                                 ""))))
                       res))))))
 
+(defconst *eval_subprogram-print-priority* -10)
+
+(fgl::add-fgl-rewrite eval_subprogram-*t-print :order `(:prio ,*eval_subprogram-print-priority*))
+
+
+
 (defmacro fgl-reorder-eval_subprogram-*t-rules ()
-  '(progn (fgl::remove-fgl-rewrites save-oracle-on-outermost-eval_subprogram-*t
-                                    eval_subprogram-*t-print)
-          (fgl::add-fgl-rewrites eval_subprogram-*t-print
-                                 save-oracle-on-outermost-eval_subprogram-*t)))
+  (prog2$ (cw "Deprecated -- fgl-reorder-eval_subprogram-*t-rules~%")
+          '(progn)))
 
 ;; NOTE: To enable crude profiling of symbolic evaluation of ASL functions,
 ;; enable this theorem in FGL instead of eval_subprogram-*t-print.
@@ -1121,7 +1132,7 @@ implementations do.</p>"
              (INTPAIR 0 0)
              (B* (((intpair FIRST_VSLICE)
                    (enumerate-possible-values
-                    (fgl::make-fgl-ipasir-config) 10 (CAR VSLICES)))
+                    (fgl::make-fgl-ipasir-config) 65 (CAR VSLICES)))
                   (REST (CDR VSLICES))
                   ((INTPAIR DSTVAL_REST)
                    (SLICES_SUB SRCVAL REST))
@@ -1159,19 +1170,45 @@ implementations do.</p>"
              (b* (((v_int v1))
                   ((v_int v2))
                   (sat-config (fgl::make-fgl-ipasir-config))
-                  (v2.val (enumerate-possible-values sat-config 20 v2.val)))
+                  (v2.val (enumerate-possible-values sat-config 70 v2.val)))
                (ev_normal (v_int (ash v1.val v2.val))))
              (ev_error "Unsupported binop"
                        (list :shl (val-fix v1) (val-fix v2))
                        nil)))
   :hints (("Goal" :expand ((eval_binop :shl v1 v2)))))
 
+(fgl::def-fgl-rewrite shr-enumerate-shft
+  (equal (eval_binop :shr v1 v2)
+         (if (and (val-case v1 :v_int)
+                  (val-case v2 :v_int)
+                  (<= 0 (v_int->val v2)))
+             (b* (((v_int v1))
+                  ((v_int v2))
+                  (sat-config (fgl::make-fgl-ipasir-config))
+                  (v2.val (enumerate-possible-values sat-config 70 v2.val)))
+               (ev_normal (v_int (ash v1.val (- v2.val)))))
+             (ev_error "Unsupported binop"
+                       (list :shr (val-fix v1) (val-fix v2))
+                       nil)))
+  :hints (("Goal" :expand ((eval_binop :shr v1 v2)))))
+
+
 (fgl::def-fgl-rewrite part-install-enumerate
   (equal (bitops::part-install val x :width width :low low)
          (b* ((sat-config (fgl::make-fgl-ipasir-config))
               (width (enumerate-possible-values sat-config 20 width))
-              (low (enumerate-possible-values sat-config 20 low))
-              (sum (enumerate-possible-values sat-config 20 (+ (nfix low) (nfix width)))))
+              (low (enumerate-possible-values sat-config 65 low))
+              (sum (+ (nfix low) (nfix width))))
            (logapp low x (logapp width val (logtail sum x)))))
   :hints (("Goal" :in-theory (e/d (bitops::part-install-in-terms-of-logapp)
                                   (logapp bitops::part-install)))))
+
+
+
+
+
+(defconsts *trace-interp-fns*
+  (std::collect-names-from-guts
+   (std::defines-guts->gutslist
+     (cdr (assoc 'asl-interpreter-mutual-recursion-*t
+                 (std::get-defines-alist (w state)))))))

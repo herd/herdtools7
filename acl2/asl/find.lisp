@@ -408,7 +408,7 @@ supposed to have some subexpression that matches the given expr-matcher.</p>"
                                                                 (consp (find-matching-exprs-in-ty matcher.type x.desc.type))))
           ((:em_pattern             :e_pattern)             (and (expr-maybe-match matcher.expr x.desc.expr)
                                                                  (or (not matcher.pattern)
-                                                                     (consp (find-matching-exprs-in-pattern matcher.pattern x.desc.pattern)))))
+                                                                     (consp (find-matching-exprs-in-pattern_matcher matcher.pattern x.desc.pattern)))))
           ((- -) nil))))
 
     (define expr-maybe-match ((matcher maybe-expr-matcher-p)

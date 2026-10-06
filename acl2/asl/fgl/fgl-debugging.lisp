@@ -12,7 +12,8 @@
 (in-package "ASL")
 (include-book "centaur/fgl/ctrex-utils" :Dir :system)
 (include-book "centaur/fgl/helper-utils" :Dir :system)
-
+(include-book "centaur/aignet/prune" :dir :system) ;; for aignet-mark-dfs-rec
+(local (include-book "std/lists/resize-list" :dir :system))
 
 ;; ----------------------------------------------------------------------------------
 ;; Some FGL functions for querying counterexample stuff from the interp-st
@@ -186,15 +187,18 @@
              (mv err val)))
 
 
-
 #!fgl
-(define interp-st-pathcond-to-cube (interp-st)
-  :returns (cube satlink::lit-listp)
-  (stobj-let ((pathcond (interp-st->pathcond interp-st))
-              (constraint-pathcond (interp-st->constraint interp-st)))
-             (cube)
-             (pathcond-to-cube pathcond (pathcond-to-cube constraint-pathcond nil))
-             cube))
+(define interp-st-resize-ctrex-env (interp-st)
+  (stobj-let ((logicman (interp-st->logicman interp-st))
+              (env$ (interp-st->ctrex-env interp-st)))
+             (env$)
+             (stobj-let ((bitarr (env$->bitarr env$)))
+                        (bitarr)
+                        (resize-bits (+ 1 (bfrstate->bound (logicman->bfrstate)))
+                                     bitarr)
+                        env$)
+             interp-st))
+
 
 
 (defmacro define-interp-st-run-ctrex-non-guarded ()
@@ -216,6 +220,68 @@
                         (bvar-db-debug bvar-db)
                         alist)
              alist))
+
+
+#!aignet
+(define aignet-list-marked-ins ((idx natp) aignet mark (acc nat-listp))
+  :guard (and (<= idx (num-ins aignet))
+              (<= (num-fanins aignet) (bits-length mark)))
+  :returns (marked-ins nat-listp)
+  :hooks (:fix)
+  (b* (((when (zp idx))
+        (acl2::nat-list-fix acc))
+       (innum (1- idx))
+       (id (innum->id innum aignet))
+       (acc (if (eql 1 (get-bit id mark))
+                (cons innum acc)
+              acc)))
+    (aignet-list-marked-ins innum aignet mark acc)))
+    
+#!fgl
+(define bvar-db-collect-terms ((ins nat-listp) bvar-db)
+  :prepwork ((local (in-theory (disable acl2-number-listp
+                                        rational-listp
+                                        integer-listp
+                                        cons-equal
+                                        (tau-system)))))
+  (b* (((when (atom ins)) nil)
+       (in (lnfix (car ins))))
+    (cons (if (and (<= (base-bvar bvar-db) in)
+                   (< in (next-bvar bvar-db)))
+              (summarize-fgl-object
+               (get-bvar->term in bvar-db))
+            (cw "Input number out of bounds: ~x0~%" in))
+          (bvar-db-collect-terms (cdr ins) bvar-db)))
+  ///
+  (local (in-theory (disable (:d bvar-db-collect-terms)))))
+    
+#!fgl
+(define interp-st-collect-ctrex-values ((ins nat-listp) interp-st)
+  (if (atom ins)
+      nil
+    (cons (interp-st-bvar-ctrex-value (lnfix (car ins)) interp-st)
+          (interp-st-collect-ctrex-values (cdr ins) interp-st))))
+
+#!fgl
+(define interp-st-collect-aig-lit-term-deps ((lit satlink::litp) interp-st)
+  (stobj-let
+   ((bvar-db (interp-st->bvar-db interp-st))
+    (logicman (interp-st->logicman interp-st)))
+   (ins deps)
+   (stobj-let
+    ((aignet (logicman->aignet logicman)))
+    (ins deps)
+    (b* (((unless (aignet::fanin-litp lit aignet))
+          (cw "Literal out of range for aignet: ~x0~%" lit)
+          (mv nil nil))
+         ((acl2::local-stobjs bitarr) (mv bitarr ins deps))
+         (bitarr (resize-bits (aignet::num-fanins aignet) bitarr))
+         (bitarr (aignet::aignet-mark-dfs-rec (satlink::lit->var lit) bitarr aignet))
+         (marked-ins (aignet::aignet-list-marked-ins (aignet::num-ins aignet) aignet bitarr nil))
+         (deps (bvar-db-collect-terms marked-ins bvar-db)))
+      (mv bitarr marked-ins deps))
+    (mv ins deps))
+   (pairlis$ ins (pairlis$ (interp-st-collect-ctrex-values ins interp-st) deps))))
 
 
 
