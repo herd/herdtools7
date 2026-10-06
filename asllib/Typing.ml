@@ -157,7 +157,7 @@ end
 module Property (C : ANNOTATE_CONFIG) = struct
   module EP = Error.ErrorPrinter (C)
 
-  exception TypingAssumptionFailed
+  exception TypingAssumptionFailed of string option
 
   type ('a, 'b) property = 'a -> 'b
   type prop = (unit, unit) property
@@ -201,9 +201,11 @@ module Property (C : ANNOTATE_CONFIG) = struct
   let[@inline] ( let+ ) m f = check m () |> f
 
   let either (p1 : ('a, 'b) property) (p2 : ('a, 'b) property) x =
-    try p1 x with TypingAssumptionFailed | Error.ASLException _ -> p2 x
+    try p1 x with TypingAssumptionFailed _ | Error.ASLException _ -> p2 x
 
-  let assumption_failed () = raise TypingAssumptionFailed [@@inline]
+  let assumption_failed ?reason () = raise (TypingAssumptionFailed reason)
+  [@@inline]
+
   let ok () = () [@@inline]
   let check_true b fail () = if b then () else fail () [@@inline]
   let check_all li f () = List.iter (fun x1 -> f x1 ()) li
@@ -399,11 +401,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   module Fn = FunctionRenaming (C)
 
   module SOp = StaticOperations.Make (struct
-    let fail msg =
-      prerr_string msg;
-      flush stderr;
-      assumption_failed ()
-
+    let fail reason = assumption_failed ~reason ()
     let warn_from = warn_from
   end)
 
@@ -562,7 +560,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   let get_bitvector_width ~loc env t =
     try get_bitvector_width' env t |: TypingRule.GetBitvectorWidth
-    with TypingAssumptionFailed -> conflict ~loc [ default_t_bits ] t
+    with TypingAssumptionFailed _ -> conflict ~loc [ default_t_bits ] t
   (* End *)
 
   (* Begin GetBitvectorConstWidth *)
@@ -683,7 +681,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* Begin CheckBitsEqualWidth *)
   let check_bits_equal_width ~loc env t1 t2 () =
     try check_bits_equal_width' env t1 t2 ()
-    with TypingAssumptionFailed ->
+    with TypingAssumptionFailed _ ->
       fatal_from ~loc (Error.MismatchedBitvectorWidths (t1, t2))
   (* End *)
 
@@ -754,14 +752,18 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                 in
                 let precision = precision_join p1 (precision_join p2 p3) in
                 well_constrained ~loc ~precision cs
-              with TypingAssumptionFailed ->
-                fatal_from ~loc (Error.BadTypesForBinop (op, t1, t2))))
+              with TypingAssumptionFailed reason ->
+                fatal_from ~loc
+                  (Error.BadTypesForBinop { op; left = t1; right = t2; reason })
+              ))
       | `MUL, (T_Real, T_Int _ | T_Int _, T_Real)
       | (`ADD | `SUB | `MUL), (T_Real, T_Real)
       | `POW, (T_Real, T_Int _)
       | `RDIV, (T_Real, T_Real) ->
           T_Real |> here
-      | _ -> fatal_from ~loc (Error.BadTypesForBinop (op, t1, t2)))
+      | _ ->
+          fatal_from ~loc
+            (Error.BadTypesForBinop { op; left = t1; right = t2; reason = None }))
     |: TypingRule.ApplyBinopTypes
   (* End *)
 
