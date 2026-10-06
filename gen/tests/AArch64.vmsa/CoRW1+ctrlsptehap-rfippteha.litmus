@@ -1,7 +1,7 @@
 (* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc PteHA DpCtrlsW Rfi *)
 AArch64 CoRW1+ctrlsptehap-rfippteha
 Variant=vmsa
-TTHM=HA
+TTHM=P0:HA
 {
  [x]=1;
  [PTE(x)]=(oa:PA(x), af:0);
