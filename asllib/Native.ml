@@ -466,6 +466,7 @@ module NativeConfig
     (I : Instrumentation.SEMINSTR)
     (S : sig
       val out_buffer : Buffer.t option
+      val readonly_array_indices : bool
     end) =
 struct
   let unroll = 0
@@ -477,12 +478,14 @@ struct
   let track_symbolic_path = false
   let bit_clear_optimisation = false
   let out_buffer = S.out_buffer
+  let readonly_array_indices = S.readonly_array_indices
 
   module Instr = I
 end
 
 module UseStdout = struct
   let out_buffer = None
+  let readonly_array_indices = true
 end
 
 module DeterministicInterpreter (I : Instrumentation.SEMINSTR) =
@@ -496,26 +499,28 @@ let exit_value = function
   | NV_Literal (L_Int i) -> i |> Z.to_int
   | v -> mismatch_type v [ integer' ]
 
-let interpret ?(instrumentation = false) ?out_buffer static_env main_name ast =
-  match (instrumentation, out_buffer) with
-  | false, None ->
+let interpret ?(instrumentation = false) ?out_buffer
+    ?(readonly_array_indices = true) static_env main_name ast =
+  match (instrumentation, out_buffer, readonly_array_indices) with
+  | false, None, true ->
       let res =
         DeterministicInterpreterNoInstr.run_typed static_env main_name ast
       in
       (exit_value res, [])
-  | false, Some buf ->
+  | false, out_buffer, _ ->
       let module Interpret =
         Interpreter.Make
           (DeterministicBackend)
           (NativeConfig
              (Instrumentation.SemanticsNoInstr)
              (struct
-               let out_buffer = Some buf
+               let out_buffer = out_buffer
+               let readonly_array_indices = readonly_array_indices
              end))
       in
       let res = Interpret.run_typed static_env main_name ast in
       (exit_value res, [])
-  | true, _ ->
+  | true, _, _ ->
       let module B = Instrumentation.SemanticsSingleSetBuffer in
       B.reset ();
       let module Interpret =
@@ -525,6 +530,7 @@ let interpret ?(instrumentation = false) ?out_buffer static_env main_name ast =
              (Instrumentation.SemanticsSingleSetInstr)
              (struct
                let out_buffer = out_buffer
+               let readonly_array_indices = readonly_array_indices
              end))
       in
       let res = Interpret.run_typed static_env main_name ast in

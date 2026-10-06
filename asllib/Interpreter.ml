@@ -67,6 +67,7 @@ module type Config = sig
   val track_symbolic_path : bool
   val bit_clear_optimisation : bool
   val out_buffer : Buffer.t option
+  val readonly_array_indices : bool
 end
 
 module Make (B : Backend.S) (C : Config) = struct
