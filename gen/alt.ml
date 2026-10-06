@@ -549,7 +549,7 @@ module Make(C:Builder.S)
 
     let rec is_prefix l rl =
       match rl,l with
-      | hrl::trl, hl::tl -> if hl = hrl then  is_prefix tl trl else false
+      | hrl::trl, hl::tl -> if C.E.compare hl hrl = 0 then is_prefix tl trl else false
       | [], _ -> true (* end of rl before or at the end of l *)
       | _, [] -> false (* end of l before end of rl*)
 
@@ -746,31 +746,15 @@ module Make(C:Builder.S)
       let rs = RelaxSet.diff rs (RelaxSet.of_list r0) in
       RelaxSet.elements rs
 
-    exception Result of bool
+    let cyclic_substringp xs ys =
+      let rec do_rec n ys = match n,ys with
+        | 0,_ | _,[] -> false
+        | _,_::rem -> is_prefix ys xs || do_rec (n-1) rem in
+      let n = List.length ys in
+      List.length xs <= n && do_rec n (ys@ys)
 
-(* Is xs a prefix of s@p ? *)
-
-    let prefix_spanp xs (p,s) =
-      let rec is_prefix xs ys = match xs,ys with
-        | [],_ -> raise (Result true)
-        | _::_,[] -> xs (* xs -> what is still to be matched *)
-        | x::xs,y::ys ->
-           if C.E.compare x y = 0 then is_prefix xs ys
-           else raise (Result false) in
-      try
-        let xs = is_prefix xs s in
-        match is_prefix xs p with
-        | [] -> true (* xs and s@p are equal! *)
-        |  _::_ -> false (* xs larger.. *)
-      with Result b -> b
-
-    let substring_spanp rej pss =
-      List.exists
-        (fun xs ->
-          List.exists
-            (fun ps -> prefix_spanp xs ps)
-            pss)
-      rej
+    let check_rejects rej es =
+      not (List.exists (fun xs -> cyclic_substringp xs es) rej)
 
     let last_check_call rej f rs _po_safe res k =
       if Misc.nilp res then k else
@@ -789,13 +773,7 @@ module Make(C:Builder.S)
                      | []|[_] -> false
                      | _::_::_ -> true)
                     rej  in
-                match rej with
-                | [] -> true
-                | _::_ ->
-                   let max_sz =
-                     List.fold_left (fun  k xs -> max k (List.length xs)) 0 rej in
-                   let pss = Misc.cuts max_sz le in
-                   not (substring_spanp rej pss) in
+                check_rejects rej le in
               if ok then
                 let mk_info =
                   let ss = build_safe rs res in
@@ -815,38 +793,9 @@ module Make(C:Builder.S)
             end
           else k
 
-    let rec prefixp xs ys =
-      match xs,ys with
-      | [],_ -> true
-      | _::_,[] -> raise Exit
-      | x::xs,y::ys ->
-         C.E.compare x y = 0 && prefixp xs ys
-
-    let rec sublistp xs ys = match ys with
-      | [] -> false
-      | _::rem ->
-         prefixp xs ys || sublistp xs rem
-
-    let substringp xs ys =
-      try sublistp xs ys
-      with Exit ->
-            match xs with
-            | []|[_] -> false
-            | _::_::_ ->
-               let pss = Misc.cuts (List.length xs) ys in
-               List.exists
-                 (fun ps -> prefix_spanp xs ps)
-                 pss
-
     let last_minute rej ess =
       not (List.exists (fun es -> List.length es > O.max_ins) ess)
-      && begin
-          match rej with
-          | _::_ ->
-             let es = List.flatten ess  in
-             not (List.exists (fun xs -> substringp xs es) rej)
-          | [] -> true
-        end
+      && let es = List.flatten ess in check_rejects rej es
 
     (* Note that we use `edge` here to refer a single edge or a compositional edges.
        e.g. PosRR or [PosRR Fre].
