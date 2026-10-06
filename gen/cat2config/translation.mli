@@ -18,6 +18,9 @@ type relax (* Type of diy relaxations with predicates *)
 
 val pp_relax : relax -> string
 
+(* Resolve set predicates against the other clauses of the same binding. *)
+val resolve_predicates : Ir.rel_nf list -> Ir.rel_nf list
+
 (* Translate a cat relation into a (possibly-empty) list of diy relaxations.
 
    Each relaxation from this list is to be interpreted as a stand-alone,

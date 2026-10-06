@@ -57,6 +57,7 @@ aarch64hwreqs.cat
   DMB.LD*R*
   DMB.ST*WW
   [A,Amo.Safe,L,Po]
+  [Po,A,Amo.Safe,L,Po]
   [L,Po,A]
   [L,Po,A,LxSx]
   [L,Po,A,Amo.Safe]
