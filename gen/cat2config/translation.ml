@@ -374,6 +374,51 @@ let rec fold_with_rest (f : 'acc -> 'a -> 'a list -> 'acc) (acc : 'acc) :
       let acc = f acc x xs in
       fold_with_rest f acc xs
 
+let resolve_predicates nfs =
+  let final_set items =
+    match List.rev items with Ir.Set set :: _ -> Some set | _ -> None
+  in
+  let leading_range_target = function
+    | Ir.Set (Inter predicates) :: _ ->
+        List.find_map
+          (function
+            | Ir.Range (Ir.Seq witness) -> final_set witness | _ -> None)
+          predicates
+    | _ -> None
+  in
+  let compose lhs rhs =
+    match (List.rev lhs, rhs) with
+    | Ir.Set lhs_set :: lhs, Ir.Set rhs_set :: rhs ->
+        Ir.Seq (List.rev lhs @ [ Ir.Set (Ir.inter lhs_set rhs_set) ] @ rhs)
+    | _ -> assert false
+  in
+  let rec resolve before = function
+    | [] -> []
+    | (Ir.Union seqs as nf) :: after ->
+        let other_candidates =
+          List.concat_map (fun (Ir.Union seqs) -> seqs) (before @ after)
+        in
+        let resolved_new_seqs =
+          List.concat_map
+            (fun (Ir.Seq range) ->
+              match leading_range_target range with
+              | None -> []
+              | Some target ->
+                  List.filter_map
+                    (fun (Ir.Seq candidate) ->
+                      match final_set candidate with
+                      | Some candidate_target ->
+                          if candidate_target = target then
+                            Some (compose candidate range)
+                          else None
+                      | None -> None)
+                    other_candidates)
+            seqs
+        in
+        Ir.Union (seqs @ resolved_new_seqs) :: resolve (nf :: before) after
+  in
+  resolve [] nfs
+
 let filter_relations f (Ir.Union seqs) =
   Ir.Union
     (List.map
@@ -445,6 +490,7 @@ let translate ~binding (nf : Ir.rel_nf) : relax list =
   let nf = Ir.expand_domain_range nf in
   Log.debug (fun m ->
       m "`%s` after expanding domain/range:@.%a" binding Ir.pp_rel_nf nf);
+  let nf = Ir.compress nf in
   let nf = filter_unsupported_relations nf in
   let relaxs =
     List.fold_left (fun acc seq -> acc @ translate_seq seq) [] (Ir.get_union nf)

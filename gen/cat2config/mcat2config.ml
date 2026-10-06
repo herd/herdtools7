@@ -200,6 +200,10 @@ let run ~(opts : Opts.t) (tree : AST.ins list) =
             Logs.err (fun m -> m "Failed to evaluate let binding `%s`.@." var);
             None
         | Some nfs ->
+            let resolved = Translation.resolve_predicates (List.map fst nfs) in
+            let nfs =
+              List.map2 (fun nf (_, ast_e) -> (nf, ast_e)) resolved nfs
+            in
             (if Opts.should_dump_tree opts then
                let compressed =
                  Ir.rel_union_l (List.map fst nfs) |> Ir.compress
