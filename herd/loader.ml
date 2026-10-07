@@ -178,6 +178,41 @@ struct
         let addr = func_start_addr proc func in
         p,normalise_code addr code)
 
+  (* check whether any Main instruction enters into the fault handler addr space,
+     since it's only adding a fixed offset *)
+  let check_handler_overlap prog =
+    let handlers =
+      List.fold_left
+        (fun handlers ((proc,_,func),_) ->
+          match func with
+          | MiscParser.Main -> handlers
+          | MiscParser.FaultHandler -> IntSet.add proc handlers)
+        IntSet.empty prog in
+    List.iter
+      (fun ((proc,_,func),code) ->
+        if func = MiscParser.Main && IntSet.mem proc handlers then begin
+          let handler_addr = func_start_addr proc MiscParser.FaultHandler in
+          let check_ins addr = function
+            | A.Instruction ins ->
+                let next_addr = addr + A.size_of_ins ins in
+                if addr >= handler_addr || next_addr > handler_addr then
+                  Warn.user_error
+                    "Main code for %s overlaps its fault handler at address %d (instruction at address %d)"
+                    (Proc.pp proc) handler_addr addr;
+                next_addr
+            | A.Skip n -> addr + n
+            | A.Nop | A.Label (_,A.Nop) -> addr
+            | A.Label (_,_) | A.Pagealign | A.Symbolic _ | A.Macro _ ->
+                assert false in
+          List.iter
+            (fun { addr; normalised_padding; ins; } ->
+              match normalised_padding with
+              | Some padding -> ignore (List.fold_left check_ins addr padding)
+              | None -> ignore (check_ins addr ins))
+            code
+        end)
+      prog
+
   let expand_padding =
     List.map
       (fun (proc,code) ->
@@ -188,18 +223,23 @@ struct
             | None -> [ins]) code in
         proc,code)
 
-  let annotate_prog code_segments =
-    List.map
-      (fun (proc,code) ->
+  let annotate_prog starts =
+    List.map2
+      (fun (_,_,start) (proc,code) ->
+        (* Annotate from this function's code: its first instruction can share
+           an address with the end of another function in code_segments. *)
+        let instructions =
+          List.fold_left
+            (fun m (addr,ins) -> IntMap.add addr ins m)
+            IntMap.empty start in
         let code = List.map
           (fun { addr; ins; _ } ->
             A.pseudo_map
              (fun instr ->
-               let _,code = IntMap.find addr code_segments in
-               match code with
-               | (_,code_ins)::_ -> A.CodeInstr.{code_ins with instr;}
-               | [] -> assert false) ins) code in
+               let code_ins = IntMap.find addr instructions in
+               A.CodeInstr.{code_ins with instr;}) ins) code in
         proc,code)
+      starts
 
   let rec mk_rets_from_starts proc addr rets start =
     match start with
@@ -213,6 +253,7 @@ struct
 
   let load pseudo_prog =
     let normalised_prog = normalise_prog pseudo_prog in
+    check_handler_overlap normalised_prog;
     let pseudo_prog = expand_padding normalised_prog in
     let mem = preload pseudo_prog in
     let rec load_iter = function
@@ -224,6 +265,7 @@ struct
          let fin_rets = mk_rets_from_starts proc addr rets start in
          (proc,func,start)::starts,fin_rets in
     let starts,code_segments = load_iter pseudo_prog in
+    let annotated_prog = annotate_prog starts normalised_prog in
     let mains,fhandlers =
       List.partition (fun (_,func,_) -> func=MiscParser.Main) starts in
     let add_fhandler (proc,_,start) =
@@ -235,7 +277,6 @@ struct
       | None -> (proc,start,None) in
     let starts = List.map add_fhandler mains in
     let prog = Label.Map.map snd mem in
-    let annotated_prog = annotate_prog code_segments normalised_prog in
     prog,starts,code_segments,annotated_prog
 
 end
