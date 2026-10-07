@@ -244,7 +244,9 @@ struct
   let rec mk_rets_from_starts proc addr rets start =
     match start with
     | [] ->
-      IntMap.add addr (proc,[]) rets
+      (* The end of main code can coincide with the handler's first instruction. *)
+      if IntMap.mem addr rets then rets
+      else IntMap.add addr (proc,[]) rets
     | (addr, ins)::start_tl ->
       let ins_sz = A.size_of_ins ins.A.CodeInstr.instr in
       let new_rets = IntMap.add addr (proc,start) rets in
