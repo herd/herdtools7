@@ -1,0 +1,10 @@
+Test M009 Required
+States 1
+0:X2=0xffff; [x]=0x11220000;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X2=0xffff /\ [x]=0x11220000)
+Observation M009 Always 1 0
+Hash=616d505cabe3f5c61fcbf775bfdb69a7
+

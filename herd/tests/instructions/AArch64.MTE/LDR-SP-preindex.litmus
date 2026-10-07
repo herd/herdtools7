@@ -1,0 +1,14 @@
+AArch64 LDR-SP-preindex
+Variant=memtag,sync
+
+(* C6.2.222: no-writeback LDRH through SP sets tagchecked to FALSE.  The
+ * logical tag deliberately differs from the allocation tag. *)
+
+{
+  [x]=1;
+  [tag(x)]=:green;
+  0:SP=x:red;
+}
+P0;
+  LDR W0,[SP],#4;
+forall(fault(P0,x,TagCheck))

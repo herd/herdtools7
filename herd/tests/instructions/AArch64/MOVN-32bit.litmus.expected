@@ -1,0 +1,10 @@
+Test MOVN-32bit Allowed
+States 1
+0:X1=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X1=0)
+Observation MOVN-32bit Always 1 0
+Hash=9e5c3f8c7dca54f4c17eaf1b42711103
+

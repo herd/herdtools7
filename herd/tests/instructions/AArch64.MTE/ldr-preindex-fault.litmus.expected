@@ -1,0 +1,10 @@
+Test ldr-preidx-fault Required
+States 1
+0:X1=x:red; Fault(P0:L0,x:red+4,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0:L0,x,TagCheck) /\ 0:X1=x:red)
+Observation ldr-preidx-fault Always 1 0
+Hash=05b5a110e3cba11daf87670861142df7
+

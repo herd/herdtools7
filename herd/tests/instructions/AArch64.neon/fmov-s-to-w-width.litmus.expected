@@ -1,0 +1,10 @@
+Test fmov-s-to-w-width Required
+States 1
+0:X0=0;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=0)
+Observation fmov-s-to-w-width Always 1 0
+Hash=24d3eb84f0f9b8b659c08463e7091fdd
+
