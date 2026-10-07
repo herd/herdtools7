@@ -13,7 +13,6 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
-
 (******************************************)
 (* Translate specific LISA to C11/Linux   *)
 (******************************************)
@@ -29,7 +28,7 @@ module Action = struct
 
   let tags = ["c11"; "linux";]
 
-  let parse s = match Misc.lowercase s with
+  let parse s = match Base.Misc.lowercase s with
   | "linux" -> Some Linux
   | "c11" -> Some C11
   | _ -> None
@@ -55,6 +54,7 @@ module Top(O:Config)(Out:OutTests.S) = struct
 
   open BellBase
   open CBase
+  module Misc = Base.Misc
 
 (* Collect locations *)
   let collect_ra xs =

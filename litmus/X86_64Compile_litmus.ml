@@ -54,7 +54,7 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
     module G = Global_litmus
 
     let internal_addr name = match name with
-    | G.Addr n -> Misc.string_eq n sig_cell
+    | G.Addr n -> Base.Misc.string_eq n sig_cell
     | G.Pte _|G.Phy _ | G.AddrT _ | G.Tag _ -> false
 
     let extract_rm64 r = match r with
@@ -279,7 +279,7 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
       {empty_ins with
        memo =
        sprintf "j%s %s"
-         (Misc.lowercase (pp_condition cond))
+         (Base.Misc.lowercase (pp_condition cond))
          (A.Out.dump_label (tr_lab lbl)) ;
        label=None ; branch=[Next ; Branch lbl]; }
 
@@ -301,7 +301,7 @@ module Make(Cfg:Config)(V:Constant.S)(O:Arch_litmus.Config) =
         | I_CMPXCHG (size, _, _) -> "cmpxchg" ^ pp_inst_size size
         | _ -> assert false
       in
-           Misc.lowercase inst_str
+           Base.Misc.lowercase inst_str
 
     include Handler.No(struct type ins = A.Out.ins end)
 

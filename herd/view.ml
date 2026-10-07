@@ -18,7 +18,7 @@ type t = GV | Evince | Preview
 
 let tags = ["gv"; "evince"; "preview"; ]
 
-let parse tag = match Misc.lowercase tag with
+let parse tag = match Base.Misc.lowercase tag with
 | "gv" -> Some GV
 | "evince" -> Some Evince
 | "preview" -> Some Preview

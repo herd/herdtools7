@@ -211,14 +211,14 @@ let (mode_variants, arch_variants) : t list * t list =
   and fault_variants =
     List.filter_map
       (fun tag ->
-        match Fault.Handling.parse (Misc.lowercase tag) with
+        match Fault.Handling.parse (Base.Misc.lowercase tag) with
         | Some handling -> Some (f (FaultHandling handling))
         | None -> None)
       Fault.Handling.tags
   and no_pac_keys =
     List.map
       (fun tag ->
-        f (NoPacKey (PAC.parse_key (Misc.lowercase tag))))
+        f (NoPacKey (PAC.parse_key (Base.Misc.lowercase tag))))
       PAC.tags
   and arch_feat =
     List.map f
@@ -233,7 +233,7 @@ let (mode_variants, arch_variants) : t list * t list =
   in
   (base_modes, arch_feat @ no_pac_keys @ precision_variants @ fault_variants)
 
-let parse s = match Misc.lowercase s with
+let parse s = match Base.Misc.lowercase s with
 | "success" -> Some Success
 | "instr" -> Some Instr
 | "specialx0"|"amox0"|"x0" -> Some SpecialX0

@@ -143,7 +143,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) =
             (fun loc -> sprintf
                 "void *%s" (dump_v None (Constant.mk_sym loc)))
             vals in
-        let is_ptr = is_ptr || Misc.consp pvals in
+        let is_ptr = is_ptr || Base.Misc.consp pvals in
         let formals =
           let p = plocs@pvals in
           match p with

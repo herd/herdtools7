@@ -14,6 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 open Printf
+module Misc = Base.Misc
 
 module type Parser = sig
   include GenParser.S

@@ -1,6 +1,6 @@
 (library
  (name internal_lib)
- (libraries herdtools str unix)
+ (libraries herdtools internal str unix)
  (modes native)
  (wrapped false))
 

@@ -14,6 +14,9 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module Misc = Base.Misc
+open Gen_common
+
 (* 'C' compiler *)
 
 (* Compared with hardware archs, XXXCompile and top are merged... *)

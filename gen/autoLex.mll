@@ -126,7 +126,7 @@ and lex_conf cfg = parse
 
  let conf opt name =
    try
-     Misc.input_protect
+     Base.Misc.input_protect
        (fun chan -> lex_conf opt (Lexing.from_channel chan))
        name
    with

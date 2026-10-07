@@ -13,6 +13,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 open Printf
+module Misc = Base.Misc
 
 let verbose = ref false
 let libdir = ref (Filename.concat Version.libdir "jingle")

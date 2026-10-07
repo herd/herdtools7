@@ -19,6 +19,7 @@
    Also erase duplicates identified from hashes *)
 
 open Printf
+module Misc = Base.Misc
 
 type duplicates = Keep | Comment | Delete
 

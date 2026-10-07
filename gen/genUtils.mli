@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Gen_common
+
 val to_full :
     ('st -> 'p -> 'init -> 'n -> 'x -> 'r) ->
       'st -> 'p -> 'init -> 'n -> 'x  -> 'init * 'r * 'st

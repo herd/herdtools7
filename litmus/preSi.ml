@@ -17,6 +17,8 @@
 (* Alternative test generation, for PreSi *)
 open Printf
 
+module Misc = Base.Misc
+
 module type Config = sig
   val verbose : int
   val hexa : bool

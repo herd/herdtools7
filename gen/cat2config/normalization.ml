@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Gen_common
+
 let src = Logs.Src.create "normalization"
 
 module Log = (val Logs.src_log src : Logs.LOG)

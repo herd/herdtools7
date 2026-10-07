@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Gen_common
+
 open Code
 
 module type Config = sig
@@ -81,7 +83,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
            I_STREX (tempo2,r2,addr,AL);],
         st
       else if u = 1 then
-        emit_one_pair p st r1 r2 addr Misc.identity
+        emit_one_pair p st r1 r2 addr Base.Misc.identity
       else
         let out = Label.next_label "Go" in
         let rec do_rec = function
@@ -293,7 +295,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let value = Value.to_int e.v in
       let r2,st = next_reg st in
       let c =  calc0 r2 r1 in
-      match Misc.as_some e.dir,e.atom,e.loc with
+      match Base.Misc.as_some e.dir,e.atom,e.loc with
       | R,None,Data loc ->
           let r,init,cs,st = emit_load_idx st p init loc r2 in
           Some r,init, Instruction c::cs,st
@@ -365,7 +367,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
          Instruction (I_BNE lab);
          Label (lab,Nop);] in
       let ropt,init,cs,st = emit_exch st p init er ew in
-      Misc.as_some ropt,init,insert_isb isb c cs,st
+      Base.Misc.as_some ropt,init,insert_isb isb c cs,st
 
 
     let emit_access_dep st p init e dp r1 _v1 = match dp with

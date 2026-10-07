@@ -17,6 +17,7 @@
 (** Operations on events *)
 
 open Printf
+module Misc = Base.Misc
 
 module type S = sig
 

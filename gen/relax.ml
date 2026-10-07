@@ -14,6 +14,9 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+
+open Gen_common
+
 open Printf
 open Code
 
@@ -168,7 +171,7 @@ and type edge = E.edge
                   k) k in
           k
 
-        let iter_relax wildcard = Misc.fold_to_iter (fold_relax wildcard)
+        let iter_relax wildcard = Base.Misc.fold_to_iter (fold_relax wildcard)
 
 
 (***********)
@@ -298,7 +301,7 @@ and type edge = E.edge
             ]
 
         let expand_relaxs rs =
-          let expand_relax r = E.expand_edges r Misc.cons in
+          let expand_relax r = E.expand_edges r Base.Misc.cons in
           List.fold_right expand_relax rs []
 
         let relax_to_sequence relax = match relax with
@@ -343,7 +346,7 @@ and type edge = E.edge
 
         let parse_expand_relax ?(ppo=(fun _ k -> k)) str =
           let unfold_ppo () =
-            let relaxs = ppo Misc.cons [] in
+            let relaxs = ppo Base.Misc.cons [] in
             match relaxs with
             | [] -> Warn.fatal "Bad relax: PPO"
             | r -> r in
@@ -357,7 +360,7 @@ and type edge = E.edge
               | None ->
                   (* Parse primitive edge *)
                   try [[E.parse_edge str]]
-                  with Misc.UserError _ as err -> raise err
+                  with Base.Misc.UserError _ as err -> raise err
                      | _ -> Warn.fatal "Bad relax: %s" str
               end in
           (* expand the wildcard edges and annotations *)
@@ -555,7 +558,7 @@ and type edge = E.edge
 
 
         let compact_sequence es1 es2 =
-          let e1 = Misc.last es1 and e2 = List.hd es2 in
+          let e1 = Base.Misc.last es1 and e2 = List.hd es2 in
           begin match E.get_ie e1, E.get_ie e2 with
           | Int,Int when E.can_precede e1 e2 ->
               E.compact_sequence es1 es2 e1 e2

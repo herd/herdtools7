@@ -134,7 +134,7 @@ end = struct
 
   (* Avoid cycles *)
   let read_no fname =
-    Misc.input_protect
+    Base.Misc.input_protect
       (fun chan -> MySys.read_list chan (fun s -> Some s))
       fname
 
@@ -191,7 +191,7 @@ end = struct
       let dump source doc compiled =
         let outname = Tar.outname source in
         try
-          Misc.output_protect
+          Base.Misc.output_protect
             (fun chan ->
               let module Out =
                 Indent.Make(struct let hexa = O.hexa let out = chan end) in
@@ -614,7 +614,7 @@ end = struct
       end
 
   let from_file ?(compileonly=false) hash_env name out_chan =
-    Misc.input_protect
+    Base.Misc.input_protect
       (fun in_chan -> from_chan compileonly hash_env name in_chan out_chan)
       name
 

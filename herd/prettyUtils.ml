@@ -15,6 +15,7 @@
 (****************************************************************************)
 
 
+
 module Make(S : SemExtra.S) = struct
   module A = S.A
   module E = S.E
@@ -50,7 +51,7 @@ module Make(S : SemExtra.S) = struct
   let observed test es =
     let locs = S.observed_locations test in
     let xss = make_by_proc_and_poi es in
-    let xss = Misc.mapi (fun i x -> i,x) xss in
+    let xss = Base.Misc.mapi (fun i x -> i,x) xss in
     let _,obs =
       List.fold_right
         (fun (i,ess) (locs,obs) ->
@@ -62,7 +63,7 @@ module Make(S : SemExtra.S) = struct
                   E.EventSet.fold
                     (fun e k ->
                       if E.is_reg_store e i then
-                        let rloc =  Misc.as_some (E.location_of e) in
+                        let rloc =  Base.Misc.as_some (E.location_of e) in
                         if A.LocSet.mem rloc locs then
                           A.LocSet.add rloc k
                         else k
@@ -83,7 +84,7 @@ module Make(S : SemExtra.S) = struct
 
   let all_regs_that_read es =
     let xss = make_by_proc_and_poi es in
-    let xss = Misc.mapi (fun i x -> i,x) xss in
+    let xss = Base.Misc.mapi (fun i x -> i,x) xss in
     let locs =
       List.fold_right
         (fun (i,ess) locs ->
@@ -96,7 +97,7 @@ module Make(S : SemExtra.S) = struct
                     E.EventSet.fold
                       (fun e k ->
                         if E.is_reg_store e i then
-                          let rloc =  Misc.as_some (E.location_of e) in
+                          let rloc =  Base.Misc.as_some (E.location_of e) in
                           A.LocSet.add rloc k
                         else k)
                       es A.LocSet.empty

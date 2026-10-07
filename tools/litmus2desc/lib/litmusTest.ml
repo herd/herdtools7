@@ -50,10 +50,11 @@ type instr = {
 }
 
 let equal_proc_poi x y =
-  Misc.pair_eq Int.equal Int.equal (x.proc, x.static_poi) (y.proc, y.static_poi)
+  Base.Misc.pair_eq Int.equal Int.equal (x.proc, x.static_poi)
+    (y.proc, y.static_poi)
 
 let compare_proc_poi x y =
-  Misc.pair_compare Int.compare Int.compare (x.proc, x.static_poi)
+  Base.Misc.pair_compare Int.compare Int.compare (x.proc, x.static_poi)
     (y.proc, y.static_poi)
 
 let make_instr ?label ~proc ~static_poi i =
@@ -81,7 +82,7 @@ let collect_instructions_ ~proc (pseudos : AArch64Base.pseudo list) : instr list
 let collect_instructions parsed =
   let blocks = parsed.MiscParser.prog in
   blocks
-  |> Misc.List.concat_map (fun ((proc, _, _), instrs) ->
+  |> Base.Misc.List.concat_map (fun ((proc, _, _), instrs) ->
       collect_instructions_ ~proc instrs)
 
 let from_string contents =

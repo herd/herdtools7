@@ -14,6 +14,9 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module Misc = Base.Misc
+open Gen_common
+
 module type Config = sig
   val optcoherence : bool
   val do_observers : Config.do_observers

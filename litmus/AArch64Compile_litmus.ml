@@ -32,6 +32,7 @@ module Make(V:Constant.S)(C:Config) =
     open A.Out
     open CType
     open Printf
+    module Misc = Base.Misc
 
 (* Return instruction *)
     let is_ret = function
