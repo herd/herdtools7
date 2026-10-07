@@ -47,7 +47,6 @@ Options are:" prog)
 
 open OptNames
 
-let rename = !rename
 let select = !select
 let names = !names
 let oknames = !oknames
@@ -76,7 +75,7 @@ module LL =
       include CheckName.Make
           (struct
             let verbose = verbose
-            let rename = rename
+            let rename = []
             let select = select
             let names = names
             let oknames = oknames

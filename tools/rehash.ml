@@ -107,7 +107,7 @@ module Check =
   CheckName.Make
     (struct
       let verbose = !verbose
-      let rename = !rename
+      let rename = []
       let select = []
       let names = !names
       let oknames = !oknames

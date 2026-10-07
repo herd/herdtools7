@@ -590,7 +590,7 @@ module Check =
   CheckName.Make
     (struct
       include Verbose
-      let rename = !rename
+      let rename = []
       let select = []
       let names = !names
       let oknames = !oknames

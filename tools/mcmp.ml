@@ -27,6 +27,7 @@ module type Opt = sig
   val quiet : bool
   val same : bool
   val ok : string -> bool
+  val rename : string -> string
   val pos : string option
   val neg : string option
   val faulttype : bool
@@ -39,7 +40,7 @@ module Make(O:Opt) = struct
     LexLog_tools.Make
       (struct
         let verbose = O.verbose
-        let rename n = n
+        let rename = O.rename
         let ok = O.ok
         let hexa = false
         let int32 = true
@@ -114,7 +115,7 @@ let options =
     "<file> dump negative differences, default "^ (match !neg with None -> "don't dump" | Some s -> s));
    ToolsOpts.parse_faulttype faulttype;
    ToolsOpts.parse_datafault datafault;
- ]@parse_withselect
+ ]@parse_withselect_rename
 let logs = ref []
 
 
@@ -145,6 +146,7 @@ module M =
       let quiet = !quiet
       let same = !same
       let ok = Check.ok
+      let rename = Check.rename
       let pos = !pos
       let neg = !neg
       let faulttype = !faulttype

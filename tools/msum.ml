@@ -29,7 +29,7 @@ let datafault = ref true
 
 let options =
   LibOpts.parse_verbose verbose
-  @ OptNames.parse_withselect
+  @ OptNames.parse_withselect_rename
   @ [
     ("-j", Arg.Int (fun i -> npar := i),
      (sprintf "<int> parallel sum using <n> processeses, default %i" !npar)) ;

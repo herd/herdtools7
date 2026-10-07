@@ -16,6 +16,7 @@
 
 
 open Printf
+open OptNames
 open LogState
 
 let verbose = ref 0
@@ -31,6 +32,7 @@ let neg = ref false
 
 let options =
   LibOpts.parse_verbose verbose
+  @ parse_withselect
   @ [
   ("-forall", Arg.Bool (fun b -> forall := b),
     sprintf
@@ -78,16 +80,25 @@ let log = match !logs with
 
 module Verbose = struct let verbose = verbose end
 
-let do_rename name = name
-let select_name = fun _ -> true
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = verbose
+      let rename = []
+      let select = !select
+      let names = !names
+      let oknames = !oknames
+      let excl = !excl
+      let nonames = !nonames
+    end)
 
 module LS = LogState.Make(Verbose)
 module LL =
   LexLog_tools.Make
     (struct
       let verbose = verbose
-      let rename = do_rename
-      let ok = select_name
+      let rename = Check.rename
+      let ok = Check.ok
       let hexa = hexa
       let int32 = int32
       let acceptBig = false

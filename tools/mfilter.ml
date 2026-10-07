@@ -55,7 +55,6 @@ Options are:" prog)
 let select = !select
 let names = !names
 let excl = !excl
-let rename = !rename
 let verbose = !verbose
 let conds = !conds
 let hexa = !hexa
@@ -85,7 +84,7 @@ module LL =
         CheckName.Make
          (struct
            let verbose = verbose
-           let rename = rename
+           let rename = []
            let select = select
            let names = names
            let oknames = !oknames

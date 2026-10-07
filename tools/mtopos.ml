@@ -101,7 +101,7 @@ module Check =
     (struct
       open OptNames
       let verbose = !verbose
-      let rename = !rename
+      let rename = []
       let select = !select
       let names = !names
       let oknames = !oknames

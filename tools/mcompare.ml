@@ -98,7 +98,7 @@ open OptNames
 
 let options =
   LibOpts.parse_verbose verb
-  @parse_withselect
+  @parse_withselect_rename
   @[("-faulttype",
     Arg.Bool
       (delay_ro (fun b ro -> { ro with faulttype = b})),

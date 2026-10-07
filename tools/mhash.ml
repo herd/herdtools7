@@ -148,7 +148,6 @@ let back = ref false
 let action = ref Action.Check
 let names = ref []
 let oknames = ref StringSet.empty
-let rename = ref []
 let excl = ref []
 let nonames = ref StringSet.empty
 let tests = ref []
@@ -160,7 +159,6 @@ let prog =
   else "mhash"
 
 let () =
-  let open CheckName in
   Arg.parse
     (LibOpts.parse_verbose verbose
     @ ("-back",
@@ -178,7 +176,7 @@ module Check =
   CheckName.Make
     (struct
       let verbose = !verbose
-      let rename = !rename
+      let rename = []
       let select = []
       let names = !names
       let oknames = !oknames

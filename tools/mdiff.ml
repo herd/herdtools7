@@ -75,7 +75,6 @@ let () =
 let excl = !excl
 let select = !select
 let names = !names
-let rename = !rename
 let verbose = !verbose
 let hexa = !hexa
 let int32 = !int32
@@ -99,7 +98,7 @@ module LL =
       include CheckName.Make
           (struct
             let verbose = verbose
-            let rename = rename
+            let rename = []
             let select = select
             let names = names
             let oknames = !oknames

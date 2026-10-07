@@ -169,7 +169,7 @@ let run_herd bell cat litmus cfg cat_label =
     CheckName.Make
       (struct
         include Verbose
-        let rename = !rename
+        let rename = []
         let select = []
         let names = !names
         let excl = !excl

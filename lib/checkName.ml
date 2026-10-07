@@ -34,7 +34,7 @@ let parse_oknames  oknames =
 
 let parse_rename rename =
   "-rename", Arg.String (fun s -> rename := !rename @ [s]),
-  "<name> specify a rename mapping, hashes are checked"
+  "<name> specify a rename mapping"
 
 let parse_excl excl =
   "-excl", Arg.String (fun s -> excl := !excl @ [s]),
