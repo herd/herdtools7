@@ -36,7 +36,6 @@ module Make :
    end) ->
      sig
        val rename : string -> string
-       val rename_opt : string -> string option
        val names : StringSet.t option
        val ok : string -> bool
      end

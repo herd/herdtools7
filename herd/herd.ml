@@ -632,7 +632,6 @@ let () =
 
     let hash = HashInfo.Std
     let check_name = Check.ok
-    let check_rename = Check.rename_opt
     let check_kind = TblRename.find_value_opt kinds
     let check_cond =  TblRename.find_value_opt conds
     let libfind = libfind

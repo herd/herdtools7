@@ -50,7 +50,6 @@ type result =
 
 module type Config = sig
   include LexUtils.Config
-  val check_rename : string -> string option
 end
 
 module Default : Config

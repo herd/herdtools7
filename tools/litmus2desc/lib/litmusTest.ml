@@ -16,7 +16,6 @@
 
 module SP = Splitter.Make (struct
   let debug = false
-  let check_rename = fun s -> Some s
 end)
 
 module C = struct

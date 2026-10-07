@@ -266,7 +266,6 @@ let () =
     let module Config = struct
 (* Parser *)
       let check_name = Check.ok
-      let check_rename = Check.rename_opt
       let check_kind = TblRename.find_value_opt kinds
       let check_cond = TblRename.find_value_opt conds
       let check_nstates = TblRename.find_value_opt nstates

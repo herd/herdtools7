@@ -170,7 +170,6 @@ let () =
     let module Config = struct
 (* Parser *)
       let check_name = Check.ok
-      let check_rename = Check.rename_opt
       let check_kind _ = None
       let check_cond _ = None
 (* Static options *)

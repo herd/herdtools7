@@ -33,12 +33,10 @@ type result =
 
 module type Config = sig
   include LexUtils.Config
-  val check_rename : string -> string option
 end
 
 module Default = struct
   include LexUtils.Default
-  let check_rename _ = None
 end
 
 let add_info buff k v =
@@ -98,9 +96,6 @@ and main start = parse
       else
  (* GRR follow litmus here *)
         Misc.clean_name tname in
-    let tname = match O.check_rename tname with
-    | None -> tname
-    | Some n -> n in
     let names =
       { Name.name = tname ;
         file = init1.pos_fname ;

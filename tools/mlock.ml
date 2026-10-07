@@ -480,7 +480,6 @@ module Top(O:Config)(Out:OutTests.S) = struct
 
   module LexConf  = struct
     let debug = O.verbose > 2
-    let check_rename _ = None
   end
 
   let from_chan idx_out chan splitted =

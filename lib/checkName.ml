@@ -67,8 +67,6 @@ module
       try TblRename.find_value rename_table name
       with Not_found -> name
 
-    let rename_opt name = TblRename.find_value_opt rename_table name
-
 (******************)
 (* Name selection *)
 (******************)
