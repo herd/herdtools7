@@ -141,7 +141,9 @@ module U = TopUtils.Make(O)(Comp)
     then
       let o,init,cs,st = Comp.emit_access st p init e in
       let st = match o,e.C.bank,n.C.next.C.evt.C.bank,O.typ with
-        | Some r,Code.Ord,Code.Pair,TypBase.Int ->
+        | Some r,Code.Ord,next_bank,TypBase.Int
+          when next_bank = Code.Pair ||
+               E.get_access_atom e.C.atom = Some (MachSize.Word,4) ->
             (* A word-sized ordinary read before a pair access already has the
                default `int` type; avoid emitting a redundant `uint32_t`. *)
             let loc = A.of_reg p r in
