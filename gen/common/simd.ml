@@ -14,5 +14,26 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-let as_integers _ = None
-let is_pair _ = false
+module type S = sig
+  type atom
+  val compare : atom -> atom -> int
+  val nregs : atom -> int
+  val pp : atom -> string
+
+  val initial : int -> int array
+  val step : atom -> int -> int array -> int array
+  val read : atom -> int array -> int list list
+  val reduce : int list list -> int
+end
+
+module No = struct
+  type atom = unit
+  let compare () () = 0
+  let nregs () = 0
+  let pp () = ""
+
+  let initial _ = [||]
+  let step () _ _ = [||]
+  let read () _ = []
+  let reduce _ = 0
+end

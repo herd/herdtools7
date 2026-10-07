@@ -97,6 +97,7 @@ let () =
   let module Co = struct
 (* Dump all *)
     let verbose = !Config.verbose
+    let debug = Debug_gen.none
     let hout = match !Config.hout with
     | None -> Hint.none
     | Some n -> Hint.open_out n

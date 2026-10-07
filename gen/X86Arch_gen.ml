@@ -22,7 +22,7 @@ module ScopeGen = ScopeGen.NoGen
 
 let bellatom = false
 
-module SIMD = NoSIMD
+module SIMD = Simd.No
 
 type atom = Atomic
 
@@ -35,7 +35,7 @@ let applies_atom a d = match a,d with
 let is_ifetch _ = false
 let compare_atom = compare
 
-include MachMixed.No
+include Mixed.No
 
 let merge_atoms Atomic Atomic = Some Atomic
 
@@ -58,8 +58,7 @@ let atom_to_bank _ = Code.Ord
 
 let get_machine_feature _ = StringSet.empty
 
-include NoMixed
-include NoWide
+include Atom.NoWide
 
 module Value = Value_gen.NoPte(struct type arch_atom = atom end)
 

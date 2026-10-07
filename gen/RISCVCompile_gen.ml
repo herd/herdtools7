@@ -77,7 +77,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
     let amoor_as_load mo r1 r2 = AV.Amo (AV.AMOOR,wloc,mo,r1,zero,r2)
     and swap_as_store mo r1 r2 = AV.Amo (AV.AMOSWAP,wloc,mo,zero,r1,r2)
 
-    let as_amo = Cfg.variant Variant_gen.AsAmo
+    let as_amo = Variant_gen.has Variant_gen.AsAmo Cfg.variant
 
     let ldr mo r1 r2 =  match mo with
     |AV.Rlx -> AV.Load (wloc,Signed,mo,r1,0,r2)

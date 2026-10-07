@@ -4,7 +4,7 @@
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2015-present Institut National de Recherche en Informatique et *)
+(* Copyright 2014-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,8 +14,17 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(* Do nothing for mixed values, which should not appear *)
-let fold_mixed _ k = k
-let tr_value _ v = v
-let overwrite_value _ _ v = v
-let extract_value v _ = v
+module type S = sig
+  (* Atom particular for SIMD *)
+  type atom
+  val compare : atom -> atom -> int
+  val nregs : atom -> int
+  val pp : atom -> string
+
+  val initial : int -> int array
+  val step : atom -> int -> int array -> int array
+  val read : atom -> int array -> int list list
+  val reduce : int list list -> int
+end
+
+module No : S with type atom = unit

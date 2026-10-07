@@ -18,7 +18,6 @@ open Code
 open Printf
 
 module type Config = sig
-  val verbose : int
   val generator : string
   val debug : Debug_gen.t
   val hout : Hint.out
@@ -35,7 +34,7 @@ module type Config = sig
   val docheck : bool
   val typ : TypBase.t
   val hexa : bool
-  val variant : Variant_gen.t -> bool
+  val variant : Variant_gen.set
   val cycleonly: bool
   val metadata : bool
   val same_loc : bool
@@ -221,7 +220,7 @@ let get_fence n =
   let rec compile_proc pref chk loc_writes st p ro_prev init ns = match ns with
   | [] -> init,pref [],(C.EventMap.empty,[]),st
   | n::ns ->
-      if O.verbose > 1 then eprintf "COMPILE PROC: <%s>\n" (C.str_node n);
+      if O.debug.Debug_gen.cycle then eprintf "COMPILE PROC: <%s>\n" (C.str_node n);
       begin match  n.C.edge.E.edge with
       (* There are following fences *)
       | E.Node _ ->
@@ -373,7 +372,7 @@ let max_set = IntSet.max_elt
     let vs,f =
       if O.optcoherence && O.obs_type <> Config.Loop then
         let vs = opt_coherence vs in
-        if O.verbose > 1 then begin
+        if O.debug.Debug_gen.cycle then begin
           eprintf "OPT:" ;
           List.iter
             (fun vs ->
@@ -686,13 +685,13 @@ let max_set = IntSet.max_elt
       [A.Location.Location_global (as_data (Code.myok_proc p)),IntSet.singleton npairs]
     else []
 
-  let do_memtag = O.variant Variant_gen.MemTag
-  let do_async = O.variant Variant_gen.Async
-  let do_morello = O.variant Variant_gen.Morello
+  let do_memtag = Variant_gen.has Variant_gen.MemTag O.variant
+  let do_async = Variant_gen.has Variant_gen.Async O.variant
+  let do_morello = Variant_gen.has Variant_gen.Morello O.variant
   let do_kvm = Variant_gen.is_kvm O.variant
 
   let compile_cycle ok initvals n =
-    if O.verbose > 0 then begin
+    if O.debug.Debug_gen.cycle then begin
       Printf.eprintf "COMPILE CYCLE:\n%a" C.debug_cycle n
     end ;
     let open Config in
@@ -708,14 +707,14 @@ let max_set = IntSet.max_elt
     let cos = U.compute_cos cos0 in
     (* the post condition for checking PTE value *)
     let last_ptes = if do_kvm then C.last_ptes n else [] in
-    if O.verbose > 1 then
+    if O.debug.Debug_gen.cycle then
       Printf.eprintf "Last_Ptes: %s\n"
         (String.concat ","
            (List.map
               (fun (loc,v) ->
                 Printf.sprintf "%s->%s" loc (C.Value.pp_pte v)) last_ptes)) ;
     let no_local_ptes = StringSet.of_list (List.map fst last_ptes) in
-    if O.verbose > 1 then U.pp_coherence cos0 ;
+    if O.debug.Debug_gen.cycle then U.pp_coherence cos0 ;
     let loc_writes = U.comp_loc_writes n in
     (* `do_rec` compile individual instructions *)
     let rec do_rec p i = function
@@ -826,7 +825,7 @@ let max_set = IntSet.max_elt
              The behaviour based on different fault-related flags. *)
           let get_faults ns =
           (* TODO: the `if-else` pattern on flags is not a good idea as it may short circuit *)
-           if O.variant Variant_gen.NoFault then
+           if Variant_gen.has Variant_gen.NoFault O.variant then
              F.FaultAtomSet.empty,F.FaultAtomSet.empty
            else if do_memtag || do_kvm || do_morello then
              List.fold_left
@@ -1028,7 +1027,7 @@ let tr_labs m init =
 
 let variant_info =
     List.filter_map
-    ( fun t -> if O.variant t then Variant_gen.pp_herd_variant t else None)
+    ( fun t -> if Variant_gen.has t O.variant then Variant_gen.pp_herd_variant t else None)
     Variant_gen.all_t
     |> ( function
       | [] -> None
@@ -1042,7 +1041,7 @@ let basic_info scope prefetch com_edges cycle_description =
     ( ( convert_to_option_pair "Generator" O.generator )
     :: ( Option.map ( fun value -> ("Scopes", BellInfo.pp_scopes value) ) scope )
     (* Prefetch surpress in instruction fetch, `ifetch`, test cases *)
-    :: ( if O.variant Variant_gen.Self then None else convert_to_option_pair "Prefetch" prefetch )
+    :: ( if Variant_gen.has Variant_gen.Self O.variant then None else convert_to_option_pair "Prefetch" prefetch )
     :: ( convert_to_option_pair "Com" com_edges )
     :: ( convert_to_option_pair "Orig" cycle_description )
     :: [] )
@@ -1087,8 +1086,11 @@ let test_of_cycle name
 
 let make_test name ?com ?info ?check ?scope es =
   try
-    if O.verbose > 1 then eprintf "**Test %s**\n" name ;
-    if O.verbose > 2 then eprintf "**Cycle %s**\n" (E.pp_edges es) ;
+    if O.debug.Debug_gen.cycle then begin
+      eprintf "**Test %s**\n" name ;
+      eprintf "**Cycle %s**\n" (E.pp_edges ~separate:true es) ;
+      eprintf "**Internal %s**\n" (E.pp_edges es)
+    end ;
     let es,c,init = C.make es in
     test_of_cycle name ?com ?info ?check ?scope ~init es c
   with

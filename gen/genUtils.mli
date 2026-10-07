@@ -20,7 +20,7 @@ val to_full :
 
 module type Config = sig
   val hexa : bool
-  val variant : Variant_gen.t -> bool
+  val variant : Variant_gen.set
 end
 
 module type Extra = sig

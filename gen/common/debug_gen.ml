@@ -18,33 +18,42 @@
 
 type t = {
   lexer : bool ;
-  top : bool ;
-  generator : bool ;
+  parser : bool ;
+  search : bool ;
+  searchsteps : bool ;
+  cycle : bool ;
   model : bool ;
-  files : bool ;
+  io : bool ;
   }
 
 let tags =
 [
   "lexer";
-  "top";
-  "generator";"gen";
-  "model"; "files";
+  "parser";
+  "cycle";
+  "search";
+  "searchsteps";
+  "model";
+  "io";
 ]
 
 let none =
   {
    lexer = false ;
-   top = false ;
-   generator = false ;
+   parser = false ;
+   search = false ;
+   searchsteps = false ;
+   cycle = false ;
    model = false ;
-   files = false ;
+   io = false ;
  }
 
 let parse t tag = match tag with
   | "lexer" -> Some { t with lexer = true; }
-  | "top" -> Some { t with top = true; }
-  | "generator"|"gen" -> Some { t with generator = true; }
+  | "parser" -> Some { t with parser = true; }
+  | "search" -> Some { t with search = true; }
+  | "searchsteps" -> Some { t with searchsteps = true; }
+  | "cycle" -> Some { t with cycle = true; }
   | "model" -> Some { t with model = true; }
-  | "files"|"file" -> Some { t with files = true; }
+  | "io"|"IO" -> Some { t with io = true; }
   | _ -> None

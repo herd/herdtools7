@@ -15,18 +15,14 @@
 (****************************************************************************)
 
 module type AtomType = sig
-  (* The type for all annotations *)
   type atom
-  (* The module and type `Value.v` for value. *)
   module Value : Value_gen.S with type atom = atom
-  (* SIMD writes and reads *)
   module SIMD : Simd.S
-  (* RMW operation *)
   module RMW : Rmw.S with type atom = atom
 end
 
 module type S = sig
-  val bellatom : bool (* true if bell style atoms *)
+  val bellatom : bool
 
   include AtomType
 
@@ -45,20 +41,16 @@ module type S = sig
   val varatom_dir : Code.dir -> (atom option -> 'a -> 'a) -> 'a -> 'a
   val merge_atoms : atom -> atom -> atom option
   val overlap_atoms : atom -> atom -> bool
-(* Memory bank *)
   val atom_to_bank : atom -> SIMD.atom Code.bank
-(* Value computation, for mixed size *)
   val tr_value : atom option -> Value.v -> Value.v
   val overwrite_value : Value.v -> atom option -> Value.v -> Value.v
   val extract_value : Value.v -> atom option -> Value.v
-(* Typing of wide accesses as arrays of integers *)
   val as_integers : atom option -> int option
-(* Typing of pair accesses is different, so check them *)
   val is_pair : atom option -> bool
   val get_machine_feature : atom option -> StringSet.t
 end
 
-module NoWide : sig
-  val as_integers : 'a -> int option
-  val is_pair : 'a -> bool
+module NoWide = struct
+  let as_integers _ = None
+  let is_pair _ = false
 end
