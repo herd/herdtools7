@@ -22,6 +22,6 @@
 
 (** The CONFIG module signature for the ASL1 Parser *)
 module type CONFIG = sig
-  val version_eac1 : bool
-  (** Enables the EAC1 deprecated features. *)
+  val asl1_revision : ASL1Revision.t
+  (** Selects the ASL1 language revision. *)
 end

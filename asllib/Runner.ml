@@ -48,7 +48,7 @@ type args = {
   no_stdlib : bool;
   no_stdlib0 : bool;
   v0_use_split_chunks : bool;
-  version_eac1 : bool;
+  asl1_revision : ASL1Revision.t;
   capture_output : (Buffer.t * Buffer.t) option;
       (** Capture stdout/stderr (respectively) into the supplied buffers. *)
 }
@@ -74,7 +74,7 @@ let default_args =
     no_stdlib = false;
     no_stdlib0 = false;
     v0_use_split_chunks = false;
-    version_eac1 = false;
+    asl1_revision = ASL1Revision.DEV;
     capture_output = None;
   }
 
@@ -85,9 +85,9 @@ let default_args =
 let run (args : args) : int =
   let parser_config =
     let v0_use_split_chunks = args.v0_use_split_chunks in
-    let version_eac1 = args.version_eac1 in
+    let asl1_revision = args.asl1_revision in
     let open Builder in
-    { v0_use_split_chunks; version_eac1 }
+    { v0_use_split_chunks; asl1_revision }
   in
 
   let extra_main =
@@ -157,6 +157,7 @@ let run (args : args) : int =
     let use_conflicting_side_effects_extension =
       args.use_conflicting_side_effects_extension
 
+    let asl1_revision = args.asl1_revision
     let err_buffer = Option.map snd args.capture_output
   end in
   let module T = Annotate (C) in
