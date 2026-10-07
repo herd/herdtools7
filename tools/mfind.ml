@@ -31,7 +31,7 @@ let neg = ref false
 
 let () =
   Arg.parse
-    (OptNames.parse_noselect @
+    (parse_noselect @
     ["-u", Arg.Set uniq, " one source per matching sources";
      "-neg", Arg.Set neg, " find sources whose names are not given";])
     (fun s -> args := s :: !args)
@@ -75,12 +75,8 @@ let do_test_pos = do_test Check.ok
 and do_test_neg = do_test (fun name -> not (Check.ok name))
 
 let names =
-  let fold =
-    let do_test = if neg then do_test_neg else do_test_pos in
-    match tests with
-    | [] -> Misc.fold_stdin do_test
-    | _  -> Misc.fold_argv do_test tests in
-  fold StringMap.empty
+  let do_test = if neg then do_test_neg else do_test_pos in
+  Misc.fold_argv_or_stdin do_test tests StringMap.empty
 
 
 let () =
