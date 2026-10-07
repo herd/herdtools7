@@ -1,1 +1,4 @@
 "I can't dance"
+
+enum ftype = 'ww || 'rr
+instructions F[ftype]
