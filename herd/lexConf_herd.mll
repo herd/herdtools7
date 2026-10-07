@@ -119,7 +119,13 @@ let handle_key dir main key arg = match key with
 | "verbose" ->  lex_int verbose arg
 | "suffix" ->  suffix := arg
 | "include" ->
-   includes := !includes @ [arg]
+     let arg =
+       let pat = "$dirname" in
+       if String.starts_with ~prefix:pat arg then
+         let lpat = String.length pat in
+         dir ^ String.sub arg lpat (String.length arg - lpat)
+       else arg in
+     includes := !includes @ [arg]
 | "timeout" ->
    lex_float_opt timeout arg
 | "debug" ->
