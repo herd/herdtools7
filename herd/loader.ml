@@ -178,6 +178,41 @@ struct
         let addr = func_start_addr proc func in
         p,normalise_code addr code)
 
+  (* check whether any Main instruction enters into the fault handler addr space,
+     since it's only adding a fixed offset *)
+  let check_handler_overlap prog =
+    let handlers =
+      List.fold_left
+        (fun handlers ((proc,_,func),_) ->
+          match func with
+          | MiscParser.Main -> handlers
+          | MiscParser.FaultHandler -> IntSet.add proc handlers)
+        IntSet.empty prog in
+    List.iter
+      (fun ((proc,_,func),code) ->
+        if func = MiscParser.Main && IntSet.mem proc handlers then begin
+          let handler_addr = func_start_addr proc MiscParser.FaultHandler in
+          let check_ins addr = function
+            | A.Instruction ins ->
+                let next_addr = addr + A.size_of_ins ins in
+                if addr >= handler_addr || next_addr > handler_addr then
+                  Warn.user_error
+                    "Main code for %s overlaps its fault handler at address %d (instruction at address %d)"
+                    (Proc.pp proc) handler_addr addr;
+                next_addr
+            | A.Skip n -> addr + n
+            | A.Nop | A.Label (_,A.Nop) -> addr
+            | A.Label (_,_) | A.Pagealign | A.Symbolic _ | A.Macro _ ->
+                assert false in
+          List.iter
+            (fun { addr; normalised_padding; ins; } ->
+              match normalised_padding with
+              | Some padding -> ignore (List.fold_left check_ins addr padding)
+              | None -> ignore (check_ins addr ins))
+            code
+        end)
+      prog
+
   let expand_padding =
     List.map
       (fun (proc,code) ->
@@ -204,7 +239,9 @@ struct
   let rec mk_rets_from_starts proc addr rets start =
     match start with
     | [] ->
-      IntMap.add addr (proc,[]) rets
+      (* The end of main code can coincide with the handler's first instruction. *)
+      if IntMap.mem addr rets then rets
+      else IntMap.add addr (proc,[]) rets
     | (addr, ins)::start_tl ->
       let ins_sz = A.size_of_ins ins.A.CodeInstr.instr in
       let new_rets = IntMap.add addr (proc,start) rets in
@@ -213,6 +250,7 @@ struct
 
   let load pseudo_prog =
     let normalised_prog = normalise_prog pseudo_prog in
+    check_handler_overlap normalised_prog;
     let pseudo_prog = expand_padding normalised_prog in
     let mem = preload pseudo_prog in
     let rec load_iter = function
