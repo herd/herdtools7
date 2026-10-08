@@ -79,6 +79,7 @@ type error_desc =
   | AllDiscardLocalDeclaration
   | NonFunctionBuiltinDeclaration
   | UnknownSymbol of { symbol : string; alternative : string option }
+  | UnterminatedString
   | NoCallCandidate of string * ty list
   | BadTypesForBinop of binop * ty * ty
   | ImpureExpression of expr * SideEffect.SES.t
@@ -274,7 +275,7 @@ module ErrorCode = struct
     | BadBinopPriority _ -> Some (Build BOP)
     | AllDiscardLocalDeclaration | NonFunctionBuiltinDeclaration ->
         Some (Build BD)
-    | UnknownSymbol _ -> Some (Build LE)
+    | UnterminatedString | UnknownSymbol _ -> Some (Build LE)
     | CannotParse _ | ObsoleteSyntax _ | MultipleWrites _ -> Some (Build PE)
     | BadField _ | MissingField _ -> Some (Typing BF)
     | BadTupleIndex _ -> Some (Typing BTI)
@@ -623,6 +624,7 @@ module PPrint = struct
           "A local declaration must declare at least one name."
     | NonFunctionBuiltinDeclaration ->
         pp_err Parse "Only subprogram declarations may be marked as builtins."
+    | UnterminatedString -> pp_err Lexical "Unterminated string literal."
     | UnknownSymbol { symbol; alternative } ->
         let codes = List.map Char.code (List.of_seq (String.to_seq symbol)) in
         let not_printable code = code < 33 || code > 126 in
@@ -906,6 +908,7 @@ module CSV = struct
     | BadBinopPriority _ -> "BadBinopPriority"
     | AllDiscardLocalDeclaration -> "AllDiscardLocalDeclaration"
     | NonFunctionBuiltinDeclaration -> "NonFunctionBuiltinDeclaration"
+    | UnterminatedString -> "UnterminatedString"
     | UnknownSymbol _ -> "UnknownSymbol"
     | NoCallCandidate _ -> "NoCallCandidate"
     | BadTypesForBinop _ -> "BadTypesForBinop"

@@ -43,24 +43,49 @@
 Unterminated string literals are rejected at physical end-of-file.
 
   $ printf %s 'constant msg = "Some unterminated string;' > unterminated-string.asl
-  $ aslref --gnu-errors unterminated-string.asl
-  aslref: unterminated-string.asl:1:41: ASL Lexical error (BE_LE): Unknown symbol "".
+  $ aslref unterminated-string.asl
+  File unterminated-string.asl, line 1, characters 15 to 41:
+  constant msg = "Some unterminated string;
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Lexical error (BE_LE): Unterminated string literal.
+  [1]
+
+Physical end-of-file immediately after a backslash is also an unterminated
+string literal, rather than an invalid escape sequence.
+
+  $ printf %s 'constant msg = "Some unterminated string;\' > unterminated-string-after-backslash.asl
+  $ aslref unterminated-string-after-backslash.asl
+  File unterminated-string-after-backslash.asl, line 1, characters 15 to 42:
+  constant msg = "Some unterminated string;\
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Lexical error (BE_LE): Unterminated string literal.
   [1]
 
 Raw source line terminators are not permitted in string literals.
 
   $ aslref raw-lf-string.asl
-  File raw-lf-string.asl, line 1, characters 21 to 22:
+  File raw-lf-string.asl, line 1, characters 15 to 21:
   constant msg = "first
-                       ^
-  ASL Lexical error (BE_LE): Unknown symbol (ASCII code point(s): 10).
+                 ^^^^^^
+  ASL Lexical error (BE_LE): Unterminated string literal.
   [1]
   $ printf 'constant msg = "first\r\nsecond";\r\n' > raw-crlf-string.asl
   $ aslref raw-crlf-string.asl
-  File raw-crlf-string.asl, line 1, characters 21 to 22:
+  File raw-crlf-string.asl, line 1, characters 15 to 21:
   constant msg = "first
-                       ^
-  ASL Lexical error (BE_LE): Unknown symbol (ASCII code point(s): 13).
+                 ^^^^^^
+  ASL Lexical error (BE_LE): Unterminated string literal.
+  [1]
+
+A raw line terminator immediately after a backslash is also reported as an
+unterminated string literal.
+
+  $ printf 'constant msg = "first\\\nsecond";\n' > raw-lf-string-after-backslash.asl
+  $ aslref raw-lf-string-after-backslash.asl
+  File raw-lf-string-after-backslash.asl, line 1, characters 15 to 22:
+  constant msg = "first\
+                 ^^^^^^^
+  ASL Lexical error (BE_LE): Unterminated string literal.
   [1]
 
 Nor is a bare carriage return permitted as an unescaped string character.
