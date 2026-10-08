@@ -192,6 +192,97 @@ module DescDict = struct
     StringMap.add "iico_order" iico_order
 end
 
+let check_regex regex value = Str.string_match regex value 0
+
+module InstrTemplate = struct
+  (* A single operand slot in -instr. Alternatives separated by | all render in
+     descriptions, while writeback uses the first one only. Brackets are only
+     part of the instruction syntax and are stripped from rendered operands. *)
+  type operand = {
+    alts: string list;
+  }
+
+  type t = {
+    mnemonic: string;
+    operands: operand list;
+  }
+
+  let reg_param =
+    Str.regexp {|\(ZA\|[CXWVBHSDQZP]\)\([a-z0-9_()+-]+\)$|}
+
+  let valid_param = Str.regexp {|[a-zA-Z0-9\._()+-]+$|}
+
+  let invalid_instr () =
+    Warn.fatal "Invalid format for command. Command must have arguments \
+      separated by commas. The mnemonic and the first argument are separated \
+      by exactly one space (eg. LDR Xn,[Xm])"
+
+  let strip_alt_brackets s =
+    let s = String.trim s in
+    let len = String.length s in
+    let starts_with_bracket = len > 0 && s.[0] = '[' in
+    let ends_with_bracket = len > 0 && s.[len - 1] = ']' in
+    if starts_with_bracket <> ends_with_bracket then
+      invalid_instr ();
+    let s =
+      if starts_with_bracket then
+        String.sub s 1 (len - 2)
+      else
+        s in
+    if String.contains s '[' || String.contains s ']' then
+      (* Nested brackets - eg. [[Xn]] not allowed *)
+      invalid_instr ();
+    String.trim s
+
+  let strip_operand_brackets s =
+    let s = String.trim s in
+    let len = String.length s in
+    if len > 1 && s.[0] = '[' && s.[len - 1] = ']' then begin
+      let inner = String.sub s 1 (len - 2) in
+      if String.contains inner '[' || String.contains inner ']' then
+        (* [Xn]|[Xm] shape *)
+        None
+      else
+        Some inner
+    end else
+      None
+
+  let parse_operand s =
+    let alts = match strip_operand_brackets s with
+    | Some s -> List.map String.trim (String.split_on_char '|' s)
+    | None -> List.map strip_alt_brackets (String.split_on_char '|' s) in
+    if List.exists (fun s -> s = "") alts then
+      Warn.fatal "Invalid empty operand in instr parameter";
+    if List.exists (fun s -> not (check_regex valid_param s)) alts then
+      invalid_instr ();
+    { alts; }
+
+  let parse instr =
+    let regex = Str.regexp {|\([A-Z]+\)\( \(.*\)\)?$|} in
+    if not (check_regex regex instr) then
+      invalid_instr ();
+    let mnemonic = Str.matched_group 1 instr in
+    let operands = try
+      let params = Str.matched_group 3 instr in
+      let params = String.split_on_char ',' (String.trim params) in
+      List.map parse_operand params
+    with Not_found -> [] in
+    { mnemonic; operands; }
+
+  let markdown_param param =
+    if check_regex reg_param param then
+      Str.matched_group 1 param ^ "~" ^ Str.matched_group 2 param ^ "~"
+    else param
+
+  let markdown_operand op =
+    String.concat " or " (List.map markdown_param op.alts)
+
+  let writeback_operand op =
+    match op.alts with
+    | alt :: _ -> alt
+    | [] -> Warn.fatal "Invalid empty operand in instr parameter"
+end
+
 module DotGraph = struct
   module Edge = struct
     type kind = Data | Control | Order
@@ -233,6 +324,50 @@ module DotGraph = struct
       ignore (Str.search_forward reg str 0);
       true
     with Not_found -> false
+
+  let access_annots = [
+    "";
+    "Acq*"; "Acq"; "AcqPc*"; "AcqPc";
+    "Rel*"; "Rel";
+    "*"; "NoRet"; "^s"; "NT"; "EX"; "AcqEx"; "RelEx";
+  ]
+
+  let explicit_annots = [
+    "";
+    "Exp"; "NExp"; "IFetch"; "NExpAF"; "NExpDB"; "NExpAFDB"; "GCS";
+  ]
+
+  (* Not every combination is possible, but this is good enough for our purposes *)
+  let access_suffixes =
+    List.concat (List.map (fun annot ->
+      List.map (fun explicit -> annot ^ explicit) explicit_annots
+    ) access_annots)
+
+  let is_access_size = function
+    | 'b' | 'h' | 'w' | 'q' | 's' -> true
+    | _ -> false
+
+  let is_access_suffix suffix =
+    List.exists ((=) suffix) access_suffixes
+
+  let strip_bracket_access_size value =
+    let len = String.length value in
+    match String.index_from_opt value 0 ']' with
+    | None -> value
+    | Some bracket_pos ->
+        match String.index_from_opt value bracket_pos '=' with
+        | None -> value
+        | Some eq_pos when eq_pos > bracket_pos + 1 ->
+            let size_pos = eq_pos - 1 in
+            let suffix_start = bracket_pos + 1 in
+            let suffix_len = size_pos - suffix_start in
+            let suffix = String.sub value suffix_start suffix_len in
+            if is_access_size value.[size_pos] && is_access_suffix suffix then
+              String.sub value 0 size_pos ^
+              String.sub value eq_pos (len - eq_pos)
+            else
+              value
+        | Some _ -> value
 
   module ParsedNode = ParsedDotGraph.Node
   module ParsedAttr = ParsedDotGraph.Attr
@@ -282,8 +417,6 @@ module DotGraph = struct
 
   let make_monospace str =
     Printf.sprintf "`%s`" str
-
-  let check_regex regex value = Str.string_match regex value 0
 
   (** Makes use of Str.string_match. If caller uses matching functions on
       previously used regexes, make sure this function is called after
@@ -670,28 +803,16 @@ module DotGraph = struct
     replace concrete registers like [X1], and [X2] with architectural registers
     like [Xn] and [Xm]. For example, the dot graph nodes contain
     [CAS X0, X1, [X2]] in their label, and [instr] is [CAS Xs, Xt, [Xn]]. The map
-    will contain the entries [X0] -> [Xs], [X1] -> [Xt] and [X2] -> [Xn]. *)
+    will contain the entries [X0] -> [Xs], [X1] -> [Xt] and [X2] -> [Xn].
+    If an [instr] operand has alternatives, all alternatives are used for the
+    markdown description and the first alternative is used for writeback. *)
   let get_param_maps stmts instr =
-    let regex = Str.regexp {|\([A-Z]+\)\( \([][, a-zA-Z0-9\._]+\)\)?$|} in
-    if not (check_regex regex instr) then
-      Warn.fatal "Instr validation did not work. %s is malformed" instr;
-    let instr_mnemonic = Str.matched_group 1 instr in
-    let instr_params = try
-      let params = Str.matched_group 3 instr in
-      String.split_on_char ',' params
-    with Not_found -> [] in
-    let instr_params = List.map String.trim instr_params in
-    let gpreg_regex = Str.regexp {|\[?\([BHWXQ]\)\([a-z0-9]+\)\]?|} in
-    let md_instr_params = List.map (fun param ->
-      if check_regex gpreg_regex param then
-        Str.matched_group 1 param ^ "~" ^ Str.matched_group 2 param ^ "~"
-      else param
-    ) instr_params in
-    let graph_instr_params = List.map (fun param ->
-      if check_regex gpreg_regex param then
-        Str.matched_group 1 param ^ Str.matched_group 2 param
-      else param
-    ) instr_params in
+    let instr_template = InstrTemplate.parse instr in
+    let instr_mnemonic = instr_template.InstrTemplate.mnemonic in
+    let md_instr_params =
+      List.map InstrTemplate.markdown_operand instr_template.InstrTemplate.operands in
+    let graph_instr_params =
+      List.map InstrTemplate.writeback_operand instr_template.InstrTemplate.operands in
 
     let str = instr_mnemonic ^ {|\( \([][, a-zA-Z0-9\._]+\)\)?$|} in
     let regex = Str.regexp str in
@@ -836,25 +957,15 @@ module DotGraph = struct
       cmp_nodes n1.ParsedNode.name n2.ParsedNode.name
     ) parsed_nodes in
 
-    (* Compute the regex to search for in the label, which is the read param,
-      preceded by an optional thread number and followed by an optional
-      access size. These two can be present when the param is a gp register *)
+    (* Compute the regex to search for in the label, which is the read param.
+      The R/W thread prefix in effect labels and access sizes are removed
+      separately before these replacements are applied. *)
     let param_replacements = List.map (fun (key, v) ->
-      let str1 = "\\(R\\|W\\)[0-9]:" ^ key ^ "[bhwqs]?" in
-      let str2 = "\\([0-9]:\\)?" ^ key ^ "[bhwqs]?" in
-      let regex1 = Str.regexp str1 in
-      let regex2 = Str.regexp str2 in
-      let v1 = "\\1 " ^ v in
-      regex1, v1, regex2, v
+      let regex = Str.regexp key in
+      regex, v
     ) graph_param_pairs in
-    (* In case -instr was not passed, we need to just get rid of access sizes *)
-    let param_replacements = if param_replacements = [] then
-      let regex1 = Str.regexp {|\(R\|W\)[0-9]:\([A-Z\._]+x?[0-9]*\)[bhwqs]?|} in
-      let v1 = "\\1 \\2" in
-      let regex2 = Str.regexp {|\([0-9]:\)?\([A-Z\._]+x?[0-9]*\)[bhwqs]?|} in
-      let v2 = "\\2" in
-      [regex1, v1, regex2, v2]
-    else param_replacements in
+    let effect_reg_prefix = Str.regexp {|\(R\|W\)[0-9]:|} in
+    let access_size = Str.regexp {|\([A-Z\._]+x?[0-9]*\)[bhwqs]|} in
 
     (* Convert read to instr params, remove access sizes and tag every effect with Ei,
       where i is its index in the topological order, and get rid of everything
@@ -868,9 +979,11 @@ module DotGraph = struct
         let templ = tag ^ ":" in
         Str.replace_first tag_regex templ value
       else value in
-      let value = List.fold_left (fun value (regex1, v1, regex2, v2) ->
-        let value = Str.global_replace regex1 v1 value in
-        Str.global_replace regex2 v2 value
+      let value = Str.global_replace effect_reg_prefix "\\1 " value in
+      let value = Str.global_replace access_size "\\1" value in
+      let value = strip_bracket_access_size value in
+      let value = List.fold_left (fun value (regex, replacement) ->
+        Str.global_replace regex replacement value
       ) value param_replacements in
       let value = try
         let pos = Str.search_forward newline_regex value 0 in
@@ -1043,11 +1156,7 @@ let () =
     begin match !instr with
     | None -> ()
     | Some s ->
-      let instr_regex = Str.regexp {|\([A-Z]+\)\( \([][a-zA-Z0-9\._]+\)\(, *\([][a-zA-Z0-9\._]+\)\)*\)?$|} in
-      if not (Str.string_match instr_regex s 0) then
-        invalid_arg "Invalid format for command. Command must have arguments separated by \
-        commas. The mnemonic and the first argument are separated by exactly one \
-        space (eg. LDR Xn,[Xm])"
+      ignore (InstrTemplate.parse s)
     end;
 
     let module Run = Make(struct
