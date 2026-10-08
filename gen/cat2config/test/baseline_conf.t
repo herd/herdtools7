@@ -93,7 +93,7 @@ Pos*W pruning is opt-in.
 
   $ mcat2config7 -prune all --set-libdir ./libdir --conf --let dob libdir/aarch64.cat
   ### dob
-  -safe [DpAddrdW|DpAddr*R]
+  -safe [[DpAddrdW|DpAddr*R],@after([ExpObs|Hat])]
   -safe DpDatadW
   -safe DpCtrldW
   -safe [DpAddr,Po**W]
