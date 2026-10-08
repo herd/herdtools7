@@ -3397,6 +3397,44 @@ let unalias i =
   | I_STOPBH (op,v,w,rs,rn) -> I_LDOPBH (op,v,w_to_rmw w,rs,ZR,rn)
   | _ -> i
 
+(* Check that Z registers are consecutive, wrapping after Z31. *)
+let sve_consecutives_reg rs =
+  let numbered_regs = List.mapi (fun n reg -> reg,n) vec_regs in
+  let _,consecutive =
+    List.fold_right (fun reg (right,valid) ->
+        match reg with
+        | Zreg (z,_) ->
+           let n = List.assoc z numbered_regs in
+           let pair_ok =
+             match right with
+             | None -> true
+             | Some next -> (n+1) mod 32 = next in
+           Some n, valid && pair_ok
+        | _ -> None,false) rs (None,true) in
+  consecutive
+
+(* Check that every Z-register element size matches the instruction suffix. *)
+let sve_esize_matches_variant v rs =
+  let esize = 8 * simd_variant_nbytes v in
+  List.for_all (function Zreg (_,size) -> size = esize | _ -> false) rs
+
+(* LD2-4/ST2-4 encode the first Z register and its element size. *)
+let is_valid_sve_struct nregs v rs ext =
+  let open MemExt in
+  let ext_ok =
+    match (v,ext) with
+    | (_,Imm (_,Idx))
+    | (VSIMD8,Reg (V64,_,LSL, 0))
+    | (VSIMD16,Reg (V64,_,LSL, 1))
+    | (VSIMD32,Reg (V64,_,LSL, 2))
+    | (VSIMD64,Reg (V64,_,LSL, 3))
+      -> true
+    | _ -> false in
+  List.length rs = nregs &&
+  sve_consecutives_reg rs &&
+  sve_esize_matches_variant v rs &&
+  ext_ok
+
 let is_valid i =
   match i with
   | I_MOV (v,_,RV (w,_)) -> v=w
@@ -3534,22 +3572,15 @@ let is_valid i =
       -> true
      | _ -> false
     end
-  | I_ST2SP (v,_,_,_,ext)
-  | I_LD2SP (v,_,_,_,ext)
-  | I_ST3SP (v,_,_,_,ext)
-  | I_LD3SP (v,_,_,_,ext)
-  | I_ST4SP (v,_,_,_,ext)
-  | I_LD4SP (v,_,_,_,ext) ->
-    let open MemExt in
-    begin match (v,ext) with
-    | (_,Imm (_,Idx))
-    | (VSIMD8,Reg (V64,_,LSL, 0))
-    | (VSIMD16,Reg (V64,_,LSL, 1))
-    | (VSIMD32,Reg (V64,_,LSL, 2))
-    | (VSIMD64,Reg (V64,_,LSL, 3))
-     -> true
-    | _ -> false
-    end
+  | I_ST2SP (v,rs,_,_,ext)
+  | I_LD2SP (v,rs,_,_,ext) ->
+     is_valid_sve_struct 2 v rs ext
+  | I_ST3SP (v,rs,_,_,ext)
+  | I_LD3SP (v,rs,_,_,ext) ->
+     is_valid_sve_struct 3 v rs ext
+  | I_ST4SP (v,rs,_,_,ext)
+  | I_LD4SP (v,rs,_,_,ext) ->
+     is_valid_sve_struct 4 v rs ext
   | I_ST1SPT (v,reg,index,offset,_,_,ext)
   | I_LD1SPT (v,reg,index,offset,_,_,ext) ->
     let open MemExt in
