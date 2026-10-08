@@ -81,7 +81,12 @@ type error_desc =
   | UnknownSymbol of { symbol : string; alternative : string option }
   | UnterminatedString
   | NoCallCandidate of string * ty list
-  | BadTypesForBinop of binop * ty * ty
+  | BadTypesForBinop of {
+      op : binop;
+      left : ty;
+      right : ty;
+      reason : string option;
+    }
   | ImpureExpression of expr * SideEffect.SES.t
       (** used for fine-grained analysis *)
   | MismatchedPurity of string  (** Used for coarse-grained analysis *)
@@ -641,9 +646,14 @@ module PPrint = struct
         pp_err Typing
           "No subprogram declaration matches the invocation:@ %s(%a)." name
           (pp_comma_list pp_ty) types
-    | BadTypesForBinop (op, t1, t2) ->
-        pp_err Typing "Illegal application of operator %s on types@ %a@ and %a."
-          (binop_to_string op) pp_ty t1 pp_ty t2
+    | BadTypesForBinop { op; left; right; reason } ->
+        let pp_reason f = function
+          | None -> ()
+          | Some reason -> fprintf f "@ %a" pp_print_text reason
+        in
+        pp_err Typing
+          "Illegal application of operator %s on types@ %a@ and %a.%a"
+          (binop_to_string op) pp_ty left pp_ty right pp_reason reason
     | ImpureExpression (e, ses) ->
         pp_err Typing
           "a pure expression was expected,@ found %a,@ which@ produces@ the@ \
@@ -1028,7 +1038,7 @@ module ErrorPrinter (C : ERROR_PRINTER_CONFIG) = struct
 
   let warn w =
     match C.output_format with
-    | HumanReadable -> Format.eprintf "@[<2>%a@]@." pp_warning w
+    | HumanReadable -> Format.fprintf err_formatter "@[<2>%a@]@." pp_warning w
     | CSV -> Printf.eprintf "%a\n" CSV.pp_warning w
     | GNU -> Printf.eprintf "%a\n" (GNU.pp pp_warning_desc) w
 

@@ -97,7 +97,7 @@ let run_aslref ~test_stem mode =
       output = output_of_buffer stdout_buffer;
       error_code = None;
       error_line = None;
-      info = None;
+      info = output_of_buffer stderr_buffer;
     }
   with Asllib.Error.ASLException error -> (
     match Asllib.Error.ErrorCode.of_error error with
@@ -107,7 +107,8 @@ let run_aslref ~test_stem mode =
              (Asllib.Error.error_to_string error))
     | Some code ->
         let open Asllib.Error in
-        let info = error_to_string error in
+        let () = Buffer.add_string stderr_buffer (error_to_string error) in
+        let info = Buffer.contents stderr_buffer in
         let mode =
           match code with
           | ErrorCode.(Typing _ | Build _) -> TC.NoExec

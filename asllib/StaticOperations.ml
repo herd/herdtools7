@@ -240,9 +240,9 @@ module Make (C : CONFIG) = struct
     | [] ->
         let msg =
           Format.asprintf
-            "@[%a:@ All@ values@ in@ constraints@ %a@ would@ fail@ with@ op \
-             %s,@ operation@ will@ always@ fail.@]@."
-            PP.pp_pos loc pp_constraints constraints
+            "No value allowed by the right operand's constraints %a is valid \
+             for %s."
+            pp_constraints constraints
             PP.(binop_to_string op)
         in
         C.fail msg
@@ -279,17 +279,15 @@ module Make (C : CONFIG) = struct
   (* End *)
 
   (* Begin RefineConstraintForDIV *)
-  let refine_constraint_for_div ~loc op cs =
+  let refine_constraint_for_div op cs =
     match op with
     | `DIV -> (
         let res = List.filter_map filter_reduce_constraint_div cs in
         match res with
         | [] ->
             let msg =
-              Format.asprintf
-                "@[%a:@ Division@ will@ result@ in@ empty@ constraint@ set,@ \
-                 so@ will@ always@ fail.@]@."
-                PP.pp_pos loc
+              "The operands cannot be divided exactly for any values allowed \
+               by their constraints."
             in
             C.fail msg
         | _ -> res)
@@ -425,7 +423,7 @@ module Make (C : CONFIG) = struct
     in
     let annotated_cs =
       constraint_binop op cs1_arg cs2_arg
-      |> refine_constraint_for_div ~loc op
+      |> refine_constraint_for_div op
       |> reduce_constraints env
     in
     let () =

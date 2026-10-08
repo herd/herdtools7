@@ -8,6 +8,12 @@ info: |-
       while (TRUE) do
           pass;
       end;
+  ASL Warning: Loop does not have a limit.
+  File ../tests/typing/TypingRule.ApproxStmt.bad1.asl, line 8, character 4 to
+    line 10, character 8:
+      while (TRUE) do
+          pass;
+      end;
   ASL Type error (TE_BSPD):
     not all control flow paths of the function "loop_forever" are guaranteed to
     either return, raise an exception, or invoke unreachable.
