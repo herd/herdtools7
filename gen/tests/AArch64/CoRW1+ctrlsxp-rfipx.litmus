@@ -13,4 +13,4 @@ AArch64 CoRW1+ctrlsxp-rfipx
  MOV W3,#1       ;
  STR W3,[X0]     ;
 
-exists ([x]=1 /\ 0:X1=1)
+exists (0:X1=1)
