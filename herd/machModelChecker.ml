@@ -431,6 +431,7 @@ module Make
               "sm",si; "si",si;
               "aligned",aligned;
               "iico_data", lazy conc.S.str.E.intra_causality_data;
+              "to_data_port", lazy conc.S.str.E.to_data_port;
               "iico_ctrl", lazy conc.S.str.E.intra_causality_control;
               "iico_order", lazy conc.S.str.E.intra_causality_order;
               "rf-reg", rf_reg ;

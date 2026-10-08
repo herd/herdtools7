@@ -411,63 +411,64 @@ module
               checkZ ldr3 c ii
           |  ARM.I_STR (rt,rn,c) ->
               let str ii =
-                ((read_reg_addr rn ii) >>| (read_reg_data  rt ii))
-                  >>=
-                (fun (vn,vt) ->
-                  let a = vn in
-                  (write_mem nat_sz a vt ii)) in
+                let ma = read_reg_addr rn ii
+                and mv = read_reg_data rt ii
+                and mop a vt = write_mem nat_sz a vt ii in
+                M.bind_mem_write ma mv mop in
               checkZ str c ii
           |  ARM.I_STL (rt,rn,c) ->
               let str ii =
-                ((read_reg_addr rn ii) >>| (read_reg_data  rt ii))
-                  >>=
-                (fun (vn,vt) ->
-                  let a = vn in
-                  (write_mem_release nat_sz a vt ii)) in
+                let ma = read_reg_addr rn ii
+                and mv = read_reg_data rt ii
+                and mop a vt = write_mem_release nat_sz a vt ii in
+                M.bind_mem_write ma mv mop in
               checkZ str c ii
           |  ARM.I_STR3 (rt,rn,rm,c) ->
               let str3 ii =
-                (((read_reg_addr rm ii) >>|
-                ((read_reg_addr rn ii) >>|
-                (read_reg_data  rt ii)))
-                   >>=
-                 (fun (vm,(vn,vt)) ->
-                   (M.add vn vm) >>=
-                   (fun a ->
-                     (write_mem nat_sz a vt ii)))) in
+                let ma =
+                  read_reg_addr rm ii >>| read_reg_addr rn ii
+                and mv = read_reg_data rt ii
+                and mop (vm, vn) vt =
+                   M.add vn vm >>= fun a -> write_mem nat_sz a vt ii in
+                M.bind_mem_write ma mv mop in
               checkZ str3 c ii
           |  ARM.I_STR3_S (rt,rn,rm,ARM.S_LSL k, c) ->
               let str3 ii =
-                (((read_reg_addr rm ii) >>|
-                ((read_reg_addr rn ii) >>|
-                (read_reg_data  rt ii)))
-                   >>=
-                 (fun (vm,(vn,vt)) -> (M.op1 (Op.LeftShift k) vm)
-                   >>= fun vm -> (M.add vn vm) >>=
-                   (fun a ->
-                     (write_mem nat_sz a vt ii)))) in
+                let ma =
+                  read_reg_addr rm ii >>| read_reg_addr rn ii
+                and mv = read_reg_data rt ii
+                and mop (vm, vn) vt =
+                  M.op1 (Op.LeftShift k) vm >>=
+                    fun vm -> M.add vn vm >>=
+                     (fun a ->
+                       (write_mem nat_sz a vt ii)) in
+                M.bind_mem_write ma mv mop in
               checkZ str3 c ii
           | ARM.I_STREX (r1,r2,r3,c) ->
               let strex ii =
-                (read_reg_ord ARM.RESADDR ii >>| read_reg_data r2 ii
-                 >>| read_reg_addr r3 ii) >>=
-                fun ((resa,v),a) ->
-                  (write_reg ARM.RESADDR V.zero ii >>|
+                let ma =
+                  read_reg_ord ARM.RESADDR ii >>| read_reg_addr r3 ii
+                and mv = read_reg_data r2 ii
+                and mop (resa, a) v =
+                  write_reg ARM.RESADDR V.zero ii >>|
                   M.altT
                     (write_reg r1 V.one ii)
                     ((write_reg r1 V.zero ii >>|
-                    write_mem_atomic nat_sz a v resa ii) >>! ())) >>! () in
+                      write_mem_atomic nat_sz a v resa ii) >>! ()) >>! () in
+                M.bind_mem_write ma mv mop in
               checkZ strex c ii
           | ARM.I_STLEX (r1,r2,r3) ->
               let stlex ii =
-                (read_reg_ord ARM.RESADDR ii >>| read_reg_data r2 ii
-                 >>| read_reg_addr r3 ii) >>=
-                fun ((resa,v),a) ->
-                  (write_reg ARM.RESADDR V.zero ii >>|
+                let ma =
+                  read_reg_ord ARM.RESADDR ii >>| read_reg_addr r3 ii
+                and mv = read_reg_data r2 ii
+                and mop (resa, a) v =
+                  write_reg ARM.RESADDR V.zero ii >>|
                   M.altT
                     (write_reg r1 V.one ii)
                     ((write_reg r1 V.zero ii >>|
-                    write_mem_atomic_release nat_sz a v resa ii) >>! ())) >>! () in
+                      write_mem_atomic_release nat_sz a v resa ii) >>! ()) >>! () in
+                M.bind_mem_write ma mv mop in
               checkZ stlex ARM.AL ii
           | ARM.I_MOV (rd, rs, c) ->
               let mov ii =
