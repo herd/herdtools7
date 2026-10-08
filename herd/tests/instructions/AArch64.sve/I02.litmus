@@ -1,0 +1,11 @@
+AArch64 I02
+(* LD2B requires byte-sized destination elements. *)
+{
+ uint8_t x[2] = {1,2};
+ 0:X0=x;
+}
+P0 ;
+ PTRUE P0.S,VL1 ;
+ LD2B {Z0.S,Z1.S},P0/Z,[X0] ;
+
+exists 0:V0.4S={1,0,0,0} /\ 0:V1.4S={2,0,0,0}
