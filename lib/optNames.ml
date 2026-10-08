@@ -29,7 +29,10 @@ let parse_noselect =
     parse_oknames oknames;
     parse_excl excl;
     parse_nonames nonames;
-    parse_rename rename;
   ]
 
+let parse_noselect_rename = parse_noselect @ [CheckName.parse_rename rename]
+
 let parse_withselect = CheckName.parse_select select::parse_noselect
+
+let parse_withselect_rename = parse_withselect @ [CheckName.parse_rename rename]

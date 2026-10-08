@@ -99,8 +99,8 @@ let usage = sprintf "Usage: %s [options]* file1 [file2]" prog
 
 let () =
   Arg.parse
-    [
-     ("-v", Arg.Unit (fun () -> incr verbose), "be verbose");
+    (LibOpts.parse_verbose verbose
+    @ [
      ("-name",Arg.String (fun s -> name := Some s), "name of output test");
      begin let module P = ParseTag.Make(MixOption.Action) in
      P.parse "-a" what "action performed" end ;
@@ -108,7 +108,7 @@ let () =
      P.parse "-p" permut "specify permutation" end ;
      begin let module P = ParseTag.Make(MixOption.Cond) in
      P.parse "-c" cond "specify condition merge" end ;
-   ]
+   ])
     (fun s -> arg := !arg @ [s])
     usage
 

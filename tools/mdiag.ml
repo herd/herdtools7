@@ -133,8 +133,7 @@ let () =
         "Options:" ;
       ] in
   Arg.parse
-    (["-v",Arg.Unit (fun () -> incr verbose), " be verbose"]
-    @parse_noselect)
+    (LibOpts.parse_verbose verbose @ parse_noselect)
     (fun s -> arg := !arg @ [s])
     usage
 

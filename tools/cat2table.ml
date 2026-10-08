@@ -1117,7 +1117,7 @@ struct
     | _ -> Warn.fatal "Omission of e1 or e2 not implemented yet"
 end
 
-let verbose = ref false
+let verbose = ref 0
 let herd_libdir = ref (Filename.concat Version.libdir "herd")
 let libdir = ref (Filename.concat Version.libdir "tools")
 let includes = ref []
@@ -1128,7 +1128,8 @@ let e2 = ref None
 let start_rel = ref "ob"
 
 let options =
-  [
+  LibOpts.parse_verbose verbose
+  @ [
     ( "-version",
       Arg.Unit
         (fun () ->
@@ -1163,7 +1164,6 @@ let options =
     ArgUtils.parse_string_opt "-e1" e1 "first effect";
     ArgUtils.parse_string_opt "-e2" e2 "second effect";
     ArgUtils.parse_string "-start-rel" start_rel "top level relation";
-    ArgUtils.parse_bool "-v" verbose "show various diagnostics";
   ]
 
 let arg_handler s = raise (Arg.Bad (Printf.sprintf "Unexpected argument: %s" s))
@@ -1182,7 +1182,7 @@ let () = includes := !herd_libdir :: !includes
 
 let () =
   let module Run = Make (struct
-    let verbose = !verbose
+    let verbose = !verbose > 0
     let includes = !includes
     let libdir = !libdir
     let assumptions_file = !assumptions_file

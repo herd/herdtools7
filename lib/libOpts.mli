@@ -1,10 +1,10 @@
 (****************************************************************************)
-(*                           the diy toolsuite                              *)
+(*                           The Diy Toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2012-present Institut National de Recherche en Informatique et *)
+(* Copyright 2026-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,28 +14,20 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Name selection utilities *)
+(** Command line options common to many *)
 
-val parse_select : string list ref ->  Arg.key * Arg.spec * Arg.doc
-val parse_names : string list ref ->  Arg.key * Arg.spec * Arg.doc
-val parse_oknames : StringSet.t ref ->  Arg.key * Arg.spec * Arg.doc
-val parse_rename : string list ref ->  Arg.key * Arg.spec * Arg.doc
-val parse_excl : string list ref ->  Arg.key * Arg.spec * Arg.doc
-val parse_nonames : StringSet.t ref ->  Arg.key * Arg.spec * Arg.doc
+(* Define options "-q" (quiet) and "-v",
+   The int reference passed as argument records a verbosity level *)
+val parse_verbose : int ref ->  (Arg.key * Arg.spec * Arg.doc) list
 
-module Make :
-  functor
-   (I:sig
-     val verbose : int
-     val rename : string list
-     val select : string list
-     val names : string list
-     val oknames : StringSet.t
-     val excl : string list
-     val nonames : StringSet.t
-   end) ->
-     sig
-       val rename : string -> string
-       val names : StringSet.t option
-       val ok : string -> bool
-     end
+(* Option -I <dir>, add diretory to search path. *)
+val parse_includes : string list ref -> Arg.key * Arg.spec * Arg.doc
+
+(* Option "-o", sets output to directory or tar file. *)
+val parse_dest : string option ref -> Arg.key * Arg.spec * Arg.doc
+
+(* Option "-o", sets output to directory. *)
+val parse_destdir : string option ref -> Arg.key * Arg.spec * Arg.doc
+
+(* Option "-conds" changes test final conditions. *)
+val parse_conds : string list ref -> Arg.key * Arg.spec * Arg.doc

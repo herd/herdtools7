@@ -19,6 +19,8 @@
 (******************************)
 
 open Printf
+open OptNames
+
 module type Config = sig
   val ok : string -> bool
   val rename : string -> string
@@ -35,11 +37,6 @@ module Make(O:Config) =
   end
 
 let with_source = ref true
-let names = ref []
-and oknames = ref StringSet.empty
-and excl = ref []
-and nonames = ref StringSet.empty
-and rename = ref []
 let arg = ref []
 
 let prog =
@@ -48,14 +45,10 @@ let prog =
 
 let () =
   Arg.parse
-    [
-     CheckName.parse_names names;
-     CheckName.parse_oknames oknames;
-     CheckName.parse_excl excl;
-     CheckName.parse_nonames nonames;
-     CheckName.parse_rename rename;
+    (parse_noselect
+    @ [
      "-src",Arg.Bool (fun b -> with_source := b),
-     (sprintf "<bool> include source file names into output, default %b" !with_source)]
+     (sprintf "<bool> include source file names into output, default %b" !with_source)])
     (fun s -> arg := s :: !arg)
     (sprintf "Usage: %s [test]*" prog)
 
@@ -65,7 +58,7 @@ module Check =
   CheckName.Make
     (struct
       let verbose = 0
-      let rename = !rename
+      let rename = []
       let select = []
       let names = !names
       let oknames = !oknames

@@ -14,7 +14,7 @@
 (****************************************************************************)
 open Printf
 
-let verbose = ref false
+let verbose = ref 0
 let libdir = ref (Filename.concat Version.libdir "jingle")
 let includes = ref []
 let map = ref None
@@ -30,7 +30,8 @@ exception Error of string
 
 let () =
   Arg.parse
-    ["-version",
+    (LibOpts.parse_verbose verbose
+    @ ["-version",
      Arg.Unit
        (fun () ->
          printf "%s, Rev: %s\n" Version.version Version.rev ;
@@ -41,18 +42,15 @@ let () =
      " - show installation directory and exit";
      "-set-libdir", Arg.String (fun s -> libdir := s),
      "<path> set installation directory to <path>";
-     "-v",Arg.Unit (fun () -> verbose := true),
-     "- be verbose";
-     "-I", Arg.String (fun s -> includes := !includes @ [s]),
-     "<dir> - add <dir> to search path";
+     LibOpts.parse_includes includes;
      "-map",Arg.String (fun s -> map := Some s),
      "<name> - give the map file <name>";
      "-call",Arg.String (fun s -> call := Some s),
      "<name> - give the call file <name>";
-     "-o",Arg.String (fun s -> outdir := Some s),
-     "<name> - directory for output files";
+     LibOpts.parse_dest outdir;
      "-n",Arg.Int (fun i -> loops := i),
-     "<loops> - times re-apply the functions in call file with the update env"]
+     "<loops> - times re-apply the functions \
+      in call file with the update env"])
     (fun _ -> ())
     (sprintf "Usage: %s [option]* -map <file> -call <file> -n <loops>" prog)
 
@@ -60,7 +58,7 @@ let () =
 let includes = !includes
 let map = !map
 let call = !call
-let verbose = !verbose
+let verbose = !verbose > 0
 let loops = !loops
 
 let libfind =

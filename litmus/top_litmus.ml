@@ -93,7 +93,6 @@ module type TopConfig = sig
   include CommonConfig
   val platform : string
   val check_name : string -> bool
-  val check_rename : string -> string option
   (* Arch dependent options *)
   val mkopt : Option.opt -> Option.opt
   (* Mode *)
@@ -393,7 +392,6 @@ end = struct
   module LexConfig =
     struct
       let debug = debuglexer
-      let check_rename = OT.check_rename
     end
 
 

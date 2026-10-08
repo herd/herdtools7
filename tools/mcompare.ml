@@ -97,16 +97,14 @@ let delay_ro f x =
 open OptNames
 
 let options =
-  [
-  ("-v", Arg.Unit (fun _ -> incr verb),
-   "<non-default> show various diagnostics, repeat to increase verbosity")]
-  @parse_withselect
+  LibOpts.parse_verbose verb
+  @parse_withselect_rename
   @[("-faulttype",
     Arg.Bool
       (delay_ro (fun b ro -> { ro with faulttype = b})),
     sprintf
       "<bool> consider fault types, default %b" default_runopts.faulttype);
-   (CheckName.datafault_key,
+   (ToolsOpts.datafault_key,
     Arg.Bool
       (delay_ro (fun b ro -> { ro with datafault = b})),
     (sprintf

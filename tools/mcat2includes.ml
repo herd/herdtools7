@@ -74,11 +74,8 @@ let arg = ref []
 let setarg name = arg := !arg @ [name]
 
 let opts =
-  [
-   "-v",Arg.Unit (fun () -> incr verbose), " be verbose";
-   "-I",Arg.String (fun s -> includes := !includes @ [s]),
-   "<dir> add <dir> to search path";
-  ]
+  LibOpts.parse_verbose verbose
+  @ [ LibOpts.parse_includes includes; ]
 
 let () =
   Arg.parse opts setarg

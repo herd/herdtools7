@@ -306,13 +306,13 @@ let add_stdin () =
 let arg_set_bool arg_ref = Arg.Bool (fun b -> arg_ref := b)
 
 let opts =
-  [
-   "-",Arg.Unit add_stdin, " read one litmus test from standard input";
-   "-v",Arg.Unit (fun () -> incr verbose), " be verbose";
-   "-texmacros", arg_set_bool texmacros,
+  ("-",Arg.Unit add_stdin, " read one litmus test from standard input")
+  :: LibOpts.parse_verbose verbose
+  @ [
+    LibOpts.parse_destdir outputdir ;
+    "-texmacros", arg_set_bool texmacros,
    (sprintf "<bool> use latex macros in output, default %b" !texmacros);
-   "-hexa", arg_set_bool hexa,
-   (sprintf "<bool> hexadecimal output, default %b" !hexa);
+   ToolsOpts.parse_hexa hexa;
    "-compat", arg_set_bool compat,
    (sprintf "<bool> backward compatible output (used for hashes), default %b" !hexa);
    begin let module P = ParseTag.Make(OutMode) in
@@ -320,9 +320,7 @@ let opts =
    "-transpose", arg_set_bool transpose,
    (sprintf "<bool> show code proc by proc, default %b" !transpose);
    "-alloc", arg_set_bool alloc,
-   (sprintf "<bool> alloc symbolic registers (text mode only), default %b" !alloc);
-   ("-o", Arg.String (fun s -> outputdir := Some s),
-   "<name>  all output in directory <name>");
+   (sprintf "<bool> alloc symbolic registers (text mode only), default %b" !alloc);   
    ("-set-hash", arg_set_bool set_hash, (sprintf "<bool> add hashes to litmus tests, default %b" !set_hash));
  ]
 

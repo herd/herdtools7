@@ -151,10 +151,10 @@ let () =
         "Options:" ;
       ] in
   Arg.parse
-    ["-v",Arg.Unit (fun () -> incr verbose), "be verbose";
-     "-t",Arg.Unit (fun () -> tnames := true),"output test names";
+    (LibOpts.parse_verbose verbose
+     @ ["-t",Arg.Unit (fun () -> tnames := true),"output test names";
      "-s",Arg.Unit (fun () -> ncheck := true),"do not add already existing tests with different names";
-     "-found",Arg.String (fun s -> found := Some s),"<name> list already existing tests in file <name>"]
+     "-found",Arg.String (fun s -> found := Some s),"<name> list already existing tests in file <name>"])
     (fun s -> arg := s :: !arg)
     usage
 

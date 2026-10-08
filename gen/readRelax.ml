@@ -21,14 +21,14 @@ let names = ref []
 let verbose = ref 0
 
 let opts =
-  ("-v",Arg.Unit (fun () -> incr verbose),"be verbose")::
-  Util.parse_tag
+  LibOpts.parse_verbose verbose
+  @ [ Util.parse_tag
     "-arch"
     (fun tag -> match Archs.parse tag with
     | None -> false
     | Some a -> arch := a ; true)
     Archs.tags
-    "specify architecture"::[]
+    "specify architecture"; ]
 
 let () =
   Util.parse_cmdline

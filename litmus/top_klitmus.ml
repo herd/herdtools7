@@ -19,7 +19,6 @@ open Printf
 module type Config = sig
 (* Names *)
   val check_name : string -> bool
-  val check_rename : string -> string option
   val check_kind : string -> ConstrGen.kind option
   val check_cond : string -> string option
 (* Parameters *)

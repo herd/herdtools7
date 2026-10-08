@@ -12,16 +12,16 @@ let () =
   in
 
   let options_list =
-    [
-      ( "-v",
-        Arg.Unit (fun () -> incr Config.verbose),
-        "Increase verbosity (use multiple times)" );
-      "-list-iico", Arg.Set list_iico, "list iico[] edges";
-      "-set-libdir", Arg.String (fun _ -> ()), "<path> path to libdir (ignored)";
-      ( "-debug",
-        Arg.Unit (fun () -> Printexc.record_backtrace true),
-        "Print backtrace on crash" );
-    ]
+    LibOpts.parse_verbose Config.verbose
+    @ [
+        "-list-iico", Arg.Set list_iico, "list iico[] edges";
+        ( "-set-libdir",
+          Arg.String (fun _ -> ()),
+          "<path> path to libdir (ignored)" );
+        ( "-debug",
+          Arg.Unit (fun () -> Printexc.record_backtrace true),
+          "Print backtrace on crash" );
+      ]
   in
   (* message d'accueil, option -help *)
   let usage = "diymicro [options] <edge 1> <edge 2> <...>" in

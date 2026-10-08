@@ -1,10 +1,10 @@
 (****************************************************************************)
-(*                           the diy toolsuite                              *)
+(*                           The Diy Toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
 (*                                                                          *)
-(* Copyright 2012-present Institut National de Recherche en Informatique et *)
+(* Copyright 2026-present Institut National de Recherche en Informatique et *)
 (* en Automatique and the authors. All rights reserved.                     *)
 (*                                                                          *)
 (* This software is governed by the CeCILL-B license under French law and   *)
@@ -14,28 +14,23 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Name selection utilities *)
+open Printf
 
-val parse_select : string list ref ->  Arg.key * Arg.spec * Arg.doc
-val parse_names : string list ref ->  Arg.key * Arg.spec * Arg.doc
-val parse_oknames : StringSet.t ref ->  Arg.key * Arg.spec * Arg.doc
-val parse_rename : string list ref ->  Arg.key * Arg.spec * Arg.doc
-val parse_excl : string list ref ->  Arg.key * Arg.spec * Arg.doc
-val parse_nonames : StringSet.t ref ->  Arg.key * Arg.spec * Arg.doc
+let parse_hexa hexa =
+  "-hexa", Arg.Bool (fun b -> hexa := b),
+  sprintf "<bool> specify hexadecimal output, default %b" !hexa
 
-module Make :
-  functor
-   (I:sig
-     val verbose : int
-     val rename : string list
-     val select : string list
-     val names : string list
-     val oknames : StringSet.t
-     val excl : string list
-     val nonames : StringSet.t
-   end) ->
-     sig
-       val rename : string -> string
-       val names : StringSet.t option
-       val ok : string -> bool
-     end
+let parse_int32 int32 =
+  "-int32", Arg.Bool (fun b -> int32 := b),
+  sprintf "<bool> integer in logs are 32 bits wide, default %b" !int32
+
+let parse_faulttype ft =
+  "-faulttype", Arg.Bool (fun b -> ft := b),
+  sprintf "<bool> consider fault types, default %b" !ft
+
+let datafault_key = "-mmu-faults-as-data"
+
+let parse_datafault ft =
+   (datafault_key, Arg.Bool (fun b -> ft := b),
+    sprintf
+      "<bool> all non-specific MMU faults are from data (i.e. are implicitly prefixed with \"D-\"), default %b" !ft)

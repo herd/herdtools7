@@ -30,19 +30,15 @@ let datafault = ref true
 
 let options =
   let open CheckName in
-  [("-q", Arg.Unit (fun _ -> verbose := -1),
-   "<non-default> be silent");]
-  @parse_withselect@
-  [("-v", Arg.Unit (fun _ -> incr verbose),
-   "<non-default> show various diagnostics, repeat to increase verbosity");
-  ("-inverse", Arg.Bool (fun b -> inverse := b),
+  LibOpts.parse_verbose verbose
+  @ parse_withselect
+  @ [("-inverse", Arg.Bool (fun b -> inverse := b),
    Printf.sprintf "<bool> inverse selection, default %b" !inverse) ;
-  parse_hexa hexa; parse_int32 int32;
-  ("-conds",
-    Arg.String (fun s -> conds := !conds @ [s]),
-   "<name> specify condition to apply to outcomes, can be repeated") ;
-  parse_faulttype faulttype;
-  parse_datafault datafault;
+   ToolsOpts.parse_hexa hexa;
+   ToolsOpts.parse_int32 int32;
+   ToolsOpts.parse_faulttype faulttype;
+   ToolsOpts.parse_datafault datafault;
+   LibOpts.parse_conds conds;
   ]
 
 let prog =
@@ -59,7 +55,6 @@ Options are:" prog)
 let select = !select
 let names = !names
 let excl = !excl
-let rename = !rename
 let verbose = !verbose
 let conds = !conds
 let hexa = !hexa
@@ -89,7 +84,7 @@ module LL =
         CheckName.Make
          (struct
            let verbose = verbose
-           let rename = rename
+           let rename = []
            let select = select
            let names = names
            let oknames = !oknames

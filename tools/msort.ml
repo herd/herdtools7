@@ -275,7 +275,7 @@ let () =
         "Options:" ;
       ] in
   Arg.parse
-    (["-v",Arg.Unit (fun () -> incr verbose), " be verbose";]
+    (LibOpts.parse_verbose verbose
      @ parse_noselect
      @ ["-d",Arg.Unit (fun () -> duplicates := Keep)," keep duplicates";
      "-dups",Arg.String (fun tag -> duplicates := parse_duplicates tag),

@@ -16,6 +16,7 @@
 
 
 open Printf
+open OptNames
 open LogState
 
 let verbose = ref 0
@@ -30,16 +31,13 @@ let datafault = ref true
 let neg = ref false
 
 let options =
-  [
-
-  ("-q", Arg.Unit (fun _ -> verbose := -1),
-   "<non-default> be silent");
-  ("-v", Arg.Unit (fun _ -> incr verbose),
-   "<non-default> show various diagnostics, repeat to increase verbosity");
-   ("-forall", Arg.Bool (fun b -> forall := b),
+  LibOpts.parse_verbose verbose
+  @ parse_withselect
+  @ [
+  ("-forall", Arg.Bool (fun b -> forall := b),
     sprintf
       "<bool> use forall quantifier in place of exists, default %b" !forall);
-   ("-optcond", Arg.Bool (fun b -> optcond := b),
+  ("-optcond", Arg.Bool (fun b -> optcond := b),
     sprintf
       "<bool> optimise conditions, default %b" !optcond);
    ("-acceptempty", Arg.Bool (fun b -> acceptempty := b),
@@ -47,9 +45,9 @@ let options =
       "<bool> output empty conditions, default %b" !acceptempty);
   ("-neg", Arg.Bool (fun b -> neg := b),
     "<bool> negate final condition (default false)");
-    CheckName.parse_hexa hexa;
-    CheckName.parse_int32 int32;
-    CheckName.parse_faulttype faulttype;
+    ToolsOpts.parse_hexa hexa;
+    ToolsOpts.parse_int32 int32;
+    ToolsOpts.parse_faulttype faulttype;
   ]
 
 let prog =
@@ -82,16 +80,25 @@ let log = match !logs with
 
 module Verbose = struct let verbose = verbose end
 
-let do_rename name = name
-let select_name = fun _ -> true
+module Check =
+  CheckName.Make
+    (struct
+      let verbose = verbose
+      let rename = []
+      let select = !select
+      let names = !names
+      let oknames = !oknames
+      let excl = !excl
+      let nonames = !nonames
+    end)
 
 module LS = LogState.Make(Verbose)
 module LL =
   LexLog_tools.Make
     (struct
       let verbose = verbose
-      let rename = do_rename
-      let ok = select_name
+      let rename = Check.rename
+      let ok = Check.ok
       let hexa = hexa
       let int32 = int32
       let acceptBig = false
