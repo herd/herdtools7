@@ -22,6 +22,7 @@ type proc = Proc.t * string list option * func
 
 val proc_num : proc -> Proc.t
 val proc_func : proc -> func
+val pp_func : func -> string
 val pp_proc : proc -> string
 val count_procs : (proc * 'c) list -> int
 
