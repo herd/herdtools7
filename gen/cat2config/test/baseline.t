@@ -48,6 +48,28 @@ aarch64hwreqs.cat
 aarch64deps.cat
   $ mcat2config7 --set-libdir ./libdir --let lwfs libdir/aarch64.cat
   Pos*W
+Communication pruning
+  $ mcat2config7 -prune communication --set-libdir ./libdir --let lwfs libdir/aarch64.cat
+  [ExpObs,Pos*W]
+  $ mcat2config7 -prune communication --set-libdir ./libdir --let aob libdir/aarch64.cat
+  [ExpObs,[LxSx|Amo.Safe],@after([ExpObs|Hat])]
+  [Hat?,[LxSx|Amo.Safe]]
+  [[ExpObs|Hat?],[LxSx|Amo.Safe],PosWR,[A|Q]]
+  [ExpObs,[LxSx|Amo.Safe],PosWR,[A|Q],[LxSx|Amo.Safe],@after([ExpObs|Hat])]
+  [Hat?,[LxSx|Amo.Safe],PosWR,[A|Q],[LxSx|Amo.Safe]]
+  $ mcat2config7 -prune communication --set-libdir ./libdir --let bob libdir/aarch64.cat
+  [ExpObs,DMB.SY***,@after([ExpObs|Hat])]
+  [DMB.LD*R*,@after([ExpObs|Hat])]
+  DMB.ST*WW
+  [A,Amo.Safe,L,Po,@after([ExpObs|Hat])]
+  [ExpObs,Po,A,Amo.Safe,L,Po,@after([ExpObs|Hat])]
+  [L,Po,A,[LxSx|Amo.Safe]?]
+  [[ExpObs|Hat?],[LxSx|Amo.Safe],L,Po,A]
+  [ExpObs,[LxSx|Amo.Safe],L,Po,A,[LxSx|Amo.Safe],@after([ExpObs|Hat])]
+  [Hat?,[LxSx|Amo.Safe],L,Po,A,[LxSx|Amo.Safe]]
+  [[A|Q],[LxSx|Amo.Safe]?,Po,@after([ExpObs|Hat])]
+  [Hat?,[A|Q],[LxSx|Amo.Safe],Po]
+  [ExpObs,Po,[LxSx|Amo.Safe]?,L]
 Pos*W pruning
   $ mcat2config7 -prune pos_w --set-libdir ./libdir --let DSB-ob libdir/aarch64.cat
   [DSB.SY**R|DSB.SYd*W]

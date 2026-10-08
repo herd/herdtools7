@@ -27,9 +27,9 @@ end
 module E = Edge.Make (EdgeConfig) (A : Fence.S) (A : Atom.S)
 module R = Relax.Make (A) (E)
 
-type prune = Pos_w
+type prune = Communication | Pos_w
 
-let prune_all = [ Pos_w ]
+let prune_all = [ Communication; Pos_w ]
 
 let merge_dir_opt d1 d2 =
   let open Code in
@@ -678,6 +678,30 @@ let rec fold_with_rest (f : 'acc -> 'a -> 'a list -> 'acc) (acc : 'acc) :
       let acc = f acc x xs in
       fold_with_rest f acc xs
 
+let is_po = function
+  | Ir.Rel (Inter relations) ->
+      List.exists
+        (fun (relation : prim_rel) ->
+          match relation with Ir.Prim "po" -> true | _ -> false)
+        relations
+  | _ -> false
+
+let is_explicit_memory edge po =
+  match edge with Ir.Set (Inter [ Prim "M" ]) -> is_po po | _ -> false
+
+let is_explicit_memory_set = function
+  | Ir.Set (Inter [ Prim "M" ]) -> true
+  | _ -> false
+
+(* The definitions of `addr`, `data`, and `ctrl` are kept as primitive
+   relations during normalisation. Of these, only a standalone `addr` leaves
+   its target memory event open: `data` ends at a write, while uses of `ctrl`
+   either constrain the target or retain a trailing `po`. *)
+let dependency_has_open_target = function
+  | Ir.Rel (Inter [ Prim "addr" ]) -> true
+  | Ir.Rel (Inter [ Prim ("data" | "ctrl") ]) -> false
+  | _ -> false
+
 let resolve_predicates nfs =
   let final_set items =
     match List.rev items with Ir.Set set :: _ -> Some set | _ -> None
@@ -744,6 +768,82 @@ let filter_unsupported_relations =
     | Prim ("sca-class" | "intervening") -> false
     | _ -> true)
 
+let exp_obs =
+  List.map (List.map (fun edge -> Plain edge)) (unfold_macro "ExpObs")
+
+let after_observation =
+  Ast.Predicate
+    ( "after",
+      Ast.Choice
+        [ Ast.One (Macro "ExpObs"); Ast.One (Concrete E.(plain_edge Hat)) ] )
+
+let prefix_external_communication_edge = function
+  (* For example, `[M]; po; [dmb.full]; ...`. *)
+  | left :: rest -> begin
+      match
+        List.find_opt (function Ir.Rel _ -> true | Ir.Set _ -> false) rest
+      with
+      | Some po -> is_explicit_memory left po
+      | None -> false
+    end
+  | _ -> false
+
+let suffix_external_communication_edge l =
+  match List.rev l with
+  (* For example, `addr; [M]; po`: a relation precedes the final `po`. *)
+  | po :: rest when is_po po ->
+      List.exists (function Ir.Rel _ -> true | Ir.Set _ -> false) rest
+  (* For example, `...; po; [M]`. *)
+  | right :: po :: _ -> is_explicit_memory right po
+  (* For example, a standalone `addr` leaves its target open. *)
+  | edge :: _ -> dependency_has_open_target edge
+  | _ -> false
+
+let rec first_relation_is_rmw = function
+  | Ir.Set _ :: items -> first_relation_is_rmw items
+  | Ir.Rel (Inter relations) :: _ ->
+      List.exists
+        (fun (relation : prim_rel) ->
+          match relation with Ir.Prim "rmw" -> true | _ -> false)
+        relations
+  | [] -> false
+
+let external_communication_boundaries l =
+  let is_rmw = first_relation_is_rmw l in
+  let prefix =
+    prefix_external_communication_edge l
+    || is_rmw
+       && match l with item :: _ -> is_explicit_memory_set item | [] -> false
+  in
+  let suffix =
+    suffix_external_communication_edge l
+    || is_rmw
+       &&
+       match List.rev l with
+       | item :: _ -> is_explicit_memory_set item
+       | [] -> false
+  in
+  (prefix, suffix, is_rmw)
+
+let optional_hat = Predicate (Ast.Opt (Ast.One (Concrete E.(plain_edge Hat))))
+
+let add_external_communication_edges l relaxs =
+  let prefix, suffix, is_rmw = external_communication_boundaries l in
+  let ordinary =
+    if prefix then
+      List.concat_map
+        (fun relax -> List.map (fun prefix -> prefix @ relax) exp_obs)
+        relaxs
+    else relaxs
+  in
+  let ordinary =
+    if suffix then
+      List.map (fun relax -> relax @ [ Predicate after_observation ]) ordinary
+    else ordinary
+  in
+  if is_rmw then ordinary @ List.map (fun relax -> optional_hat :: relax) relaxs
+  else ordinary
+
 let translate_seq (Seq l : seq_item Ir.seq) : concrete_relax list =
   let explicit_memory = Ir.Inter [ Ir.Prim "M" ] in
   let st =
@@ -797,7 +897,16 @@ let translate ~prune ~binding (nf : Ir.rel_nf) : relax list =
   let nf = Ir.compress nf in
   let nf = filter_unsupported_relations nf in
   let relaxs =
-    List.fold_left (fun acc seq -> acc @ translate_seq seq) [] (Ir.get_union nf)
+    List.fold_left
+      (fun acc (Ir.Seq l as seq) ->
+        let relaxs = translate_seq seq in
+        let relaxs =
+          if List.mem Communication prune then
+            add_external_communication_edges l relaxs
+          else relaxs
+        in
+        acc @ relaxs)
+      [] (Ir.get_union nf)
   in
   let relaxs = Util.List.uniq ~eq:( = ) relaxs in
   let relaxs = if List.mem Pos_w prune then prune_relaxes relaxs else relaxs in
