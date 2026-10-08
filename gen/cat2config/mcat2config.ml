@@ -107,10 +107,12 @@ module Opts = struct
            format." );
         ( "-prune",
           Arg.Symbol
-            ( [ "all"; "communication"; "pos_w" ],
+            ( [ "all"; "communication"; "communication_state"; "pos_w" ],
               function
               | "all" -> prune := Translation.prune_all
               | "communication" -> prune := Translation.Communication :: !prune
+              | "communication_state" ->
+                  prune := Translation.Communication_state :: !prune
               | "pos_w" -> prune := Translation.Pos_w :: !prune
               | _ -> assert false ),
           "  Enable the selected relaxation pruning pass." );
