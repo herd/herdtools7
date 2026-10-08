@@ -4084,7 +4084,8 @@ Arguments:
         let* notvalid = M.op Op.Ne cap inprogress in
         let mno =
           with_data_from mread_outgoing
-            (GCSSem.mk_fault (M.unitT notvalid) FaultType.AArch64.(GCSCheck SS2) ii)
+            (GCSSem.lift_fault Dir.R (Some "GCS Data Check")
+              (Some FaultType.AArch64.(GCSCheck SS2)) ii)
         in
         M.choiceT notvalid mno mok
 
