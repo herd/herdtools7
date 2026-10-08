@@ -70,6 +70,35 @@ Communication pruning
   [[A|Q],[LxSx|Amo.Safe]?,Po,@after([ExpObs|Hat])]
   [Hat?,[A|Q],[LxSx|Amo.Safe],Po]
   [ExpObs,Po,[LxSx|Amo.Safe]?,L]
+Communication-state pruning
+  $ mcat2config7 -prune communication_state --set-libdir ./libdir --let lwfs libdir/aarch64.cat
+  [@state(StartExpM),Pos*W]
+  $ mcat2config7 -prune communication_state -prune pos_w --set-libdir ./libdir --let lwfs libdir/aarch64.cat
+  [@state(StartExpM),Pos*W]
+  $ mcat2config7 -prune communication_state --set-libdir ./libdir --let Exp-obs libdir/aarch64.cat
+  [@state(EndExpM)?,Rfe,@state(StartExpM)?]
+  [@state(EndExpM)?,[Fre|Coe],@state(StartExpM)?]
+  $ mcat2config7 -prune communication_state --set-libdir ./libdir --let Exp-haz-ob libdir/aarch64.cat
+  [@state(StartExpM),PosRR,Fre]
+  $ mcat2config7 -prune communication_state --set-libdir ./libdir --let aob libdir/aarch64.cat
+  [@state(EndExpM)?,Hat?,[LxSx|Amo.Safe]]
+  [@state(StartExpM),[LxSx|Amo.Safe],@state(EndExpM)]
+  [@state(EndExpM)?,Hat?,[LxSx|Amo.Safe],PosWR,[A|Q],[LxSx|Amo.Safe]?]
+  [@state(StartExpM),[LxSx|Amo.Safe],PosWR,[A|Q]]
+  [@state(StartExpM),[LxSx|Amo.Safe],PosWR,[A|Q],[LxSx|Amo.Safe],@state(EndExpM)]
+  $ mcat2config7 -prune communication_state --set-libdir ./libdir --let bob libdir/aarch64.cat
+  [@state(StartExpM),DMB.SY***,@state(EndExpM)]
+  [DMB.LD*R*,@state(EndExpM)]
+  DMB.ST*WW
+  [A,Amo.Safe,L,Po,@state(EndExpM)]
+  [@state(StartExpM),Po,A,Amo.Safe,L,Po,@state(EndExpM)]
+  [L,Po,A,[LxSx|Amo.Safe]?]
+  [@state(EndExpM)?,Hat?,[LxSx|Amo.Safe],L,Po,A,[LxSx|Amo.Safe]?]
+  [@state(StartExpM),[LxSx|Amo.Safe],L,Po,A]
+  [@state(StartExpM),[LxSx|Amo.Safe],L,Po,A,[LxSx|Amo.Safe],@state(EndExpM)]
+  [[A|Q],[LxSx|Amo.Safe]?,Po,@state(EndExpM)]
+  [@state(EndExpM)?,Hat?,[A|Q],[LxSx|Amo.Safe],Po]
+  [@state(StartExpM),Po,[LxSx|Amo.Safe]?,L]
 Pos*W pruning
   $ mcat2config7 -prune pos_w --set-libdir ./libdir --let DSB-ob libdir/aarch64.cat
   [DSB.SY**R|DSB.SYd*W]

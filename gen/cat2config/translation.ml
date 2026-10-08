@@ -27,8 +27,10 @@ end
 module E = Edge.Make (EdgeConfig) (A : Fence.S) (A : Atom.S)
 module R = Relax.Make (A) (E)
 
-type prune = Communication | Pos_w
+type prune = Communication | Communication_state | Pos_w
 
+(* [Communication_state] is an alternative representation of [Communication],
+   so [-prune all] retains the existing communication representation. *)
 let prune_all = [ Communication; Pos_w ]
 
 let merge_dir_opt d1 d2 =
@@ -527,6 +529,11 @@ let covered_by_pos_star_w = function
   | Predicate _ -> false
 
 let is_pos_star_w_relaxs relaxs =
+  let relaxs =
+    List.map
+      (List.filter (function Plain _ -> true | Predicate _ -> false))
+      relaxs
+  in
   let choices =
     unfold_macro "Pos*W" |> List.map (List.map (fun edge -> Plain edge))
   in
@@ -844,6 +851,52 @@ let add_external_communication_edges l relaxs =
   if is_rmw then ordinary @ List.map (fun relax -> optional_hat :: relax) relaxs
   else ordinary
 
+let state name = Predicate (Ast.Predicate ("state", Ast.One (Macro name)))
+
+let optional_state name =
+  Predicate (Ast.Opt (Ast.Predicate ("state", Ast.One (Macro name))))
+
+let is_communication_edge (edge : E.edge) =
+  match edge.edge with E.Communication _ -> true | _ -> false
+
+let add_external_communication_states l relaxs =
+  let prefix, suffix, is_rmw = external_communication_boundaries l in
+  let ordinary =
+    List.map
+      (fun relax ->
+        (* A leading communication finishes at the relaxation's far end, while
+         a trailing communication starts at its near end. *)
+        let starts_with_communication =
+          match relax with
+          | Plain edge :: _ -> is_communication_edge edge
+          | Predicate _ :: _ | [] -> false
+        in
+        let ends_with_communication =
+          match List.rev relax with
+          | Plain edge :: _ -> is_communication_edge edge
+          | Predicate _ :: _ | [] -> false
+        in
+        let needs_start_state = prefix || ends_with_communication in
+        let needs_end_state = suffix || starts_with_communication in
+        let relax =
+          match (needs_start_state, starts_with_communication) with
+          | true, true -> optional_state "EndExpM" :: relax
+          | true, false -> state "StartExpM" :: relax
+          | false, _ -> relax
+        in
+        match (needs_end_state, ends_with_communication) with
+        | true, true -> relax @ [ optional_state "StartExpM" ]
+        | true, false -> relax @ [ state "EndExpM" ]
+        | false, _ -> relax)
+      relaxs
+  in
+  if is_rmw then
+    ordinary
+    @ List.map
+        (fun relax -> optional_state "EndExpM" :: optional_hat :: relax)
+        relaxs
+  else ordinary
+
 let translate_seq (Seq l : seq_item Ir.seq) : concrete_relax list =
   let explicit_memory = Ir.Inter [ Ir.Prim "M" ] in
   let st =
@@ -903,6 +956,11 @@ let translate ~prune ~binding (nf : Ir.rel_nf) : relax list =
         let relaxs =
           if List.mem Communication prune then
             add_external_communication_edges l relaxs
+          else relaxs
+        in
+        let relaxs =
+          if List.mem Communication_state prune then
+            add_external_communication_states l relaxs
           else relaxs
         in
         acc @ relaxs)
