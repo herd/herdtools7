@@ -383,6 +383,7 @@ val same_instance : event -> event -> bool
   (* Identical, data input is first argument (usually commit evt) *)
   val bind_control_set_data_input_first :
       event_structure -> event_structure -> event_structure option
+
   (* Identical, keep second event structure input as input. *)
   val control_input_next :
     event_structure -> event_structure -> event_structure option
@@ -405,6 +406,16 @@ val same_instance : event -> event -> bool
   val bind_ctrl_sequence_data_po :
     event_structure -> event_structure -> event_structure option
 
+  val bind_control_set_input_first :
+    event_structure -> event_structure -> event_structure option
+  (** Like [=**=], but takes ordinary and data inputs from the first
+      component, or the second if the first has no events.
+
+      Explicit input sets are preserved. If an input field is [None],
+      its set is computed from the selected component's minimal events
+      and stored explicitly, rather than inferred from the merged
+      structure. If both components are empty, inputs remain [None]. *)
+
 (***********************)
 (* Custom compositions *)
 (***********************)
@@ -419,6 +430,11 @@ val same_instance : event -> event -> bool
   val bind_ctrldata_first_outputs :
       event_structure -> event_structure -> event_structure option
 
+  val bind_ctrldata_second_outputs :
+      event_structure -> event_structure -> event_structure option
+  (** Control and data composition with data and control outputs fixed to the
+      second structure. *)
+
 (* Sequential composition, add ctrl dependency
     keep first event structure output as data and control output. *)
   val bind_ctrl_first_outputs :
@@ -427,6 +443,11 @@ val same_instance : event -> event -> bool
 (* Order composition, same as [=*$=] but with order dependencies instead of data. *)
   val bind_order :
       event_structure -> event_structure -> event_structure option
+
+  val bind_order_set_input_first :
+      event_structure -> event_structure -> event_structure option
+  (** Like [bind_order], with ordinary and data inputs selected and made
+      explicit as in [bind_control_set_input_first]. *)
 
 (* exchange composition :
    xch rx ry wx wy ->
@@ -1460,6 +1481,15 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       if is_empty_event_structure  es1 then access es2
       else access es1
 
+    let do_explicit_seq_input minimals es1 es2 =
+      let entry =
+        if is_empty_event_structure es1 then es2 else es1 in
+      if is_empty_event_structure entry then None
+      else Some (minimals entry)
+
+    let explicit_seq_input = do_explicit_seq_input minimals
+    and explicit_seq_data_input = do_explicit_seq_input minimals_data
+
     let seq_input es1 es2 =
       let o = do_seq_input get_input es1 es2 in
       if dbg then
@@ -1644,6 +1674,17 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
       in
       Some { r with partial_po = seq_partial_po es1 es2 }
 
+    let bind_control_set_input_first es1 es2 =
+      let r =
+        control_comp
+          get_ctrl_output minimals sequence_control_output
+          es1 es2 in
+      Some
+        { r with
+          input = explicit_seq_input es1 es2;
+          data_input = explicit_seq_data_input es1 es2;
+        }
+
     let partial_po_union3 =
       if is_po_partial then fun es1 es2 es3 ->
         EventTransRel.union3 es1.partial_po es2.partial_po es3.partial_po
@@ -1753,6 +1794,14 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         output = sequence_data_output es2 es3;
        }
 
+    let bind_ctrldata_second_outputs es1 es2 =
+      let r = bind_ctrldata_data es1 empty es2 in
+      Some
+        { r with
+          output = Some (get_output es2);
+          ctrl_output = Some (get_ctrl_output es2);
+        }
+
 (* Control+data composition, both output stay in first structure *)
     let bind_ctrldata_first_outputs es1 es2 =
       let data_out1 = get_output es1
@@ -1801,6 +1850,15 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           (EventRel.cartesian (get_output es1) (minimals es2))
       in
       Some { r with intra_causality_order }
+
+    let bind_order_set_input_first es1 es2 =
+      Option.map
+        (fun r ->
+          { r with
+            input = explicit_seq_input es1 es2;
+            data_input = explicit_seq_data_input es1 es2;
+          })
+        (bind_order es1 es2)
 
 (* Multi composition for exchange *)
 

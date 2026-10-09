@@ -271,6 +271,8 @@ Monad type:
     let (>>*=) : 'a t -> ('a -> 'b t) -> ('b) t
       = fun s f -> data_comp (=**=) s f
 
+    let bind_ctrl = (>>*=)
+
     let control_input_union s f = data_comp E.control_input_union s f
     let control_input_next s f = data_comp E.control_input_next s f
 
@@ -289,6 +291,9 @@ Monad type:
     let bind_ctrl_seq_data s f = data_comp E.bind_ctrl_sequence_data s f
 
     let asl_ctrl s f = data_comp E.bind_ctrl_sequence_data_po s f
+
+    let bind_control_set_input_first s f =
+      data_comp E.bind_control_set_input_first s f
 
     let bind_data_to_minimals s f =  data_comp E.data_to_minimals s f
 
@@ -320,12 +325,18 @@ Monad type:
     let bind_ctrldata m1 m3 =
       bind_ctrldata_data m1 (unitT ()) (fun a () -> m3 a)
 
+    let bind_ctrldata_second_outputs s f =
+      data_comp E.bind_ctrldata_second_outputs s f
+
     let (>>**==) : 'a t -> ('a -> 'b t) -> ('b) t
         = fun s f -> data_comp E.bind_ctrldata_first_outputs s f
 
     let bind_ctrl_first_outputs s f = data_comp E.bind_ctrl_first_outputs s f
 
     let bind_order s f = data_comp E.bind_order s f
+
+    let bind_order_set_input_first s f =
+      data_comp E.bind_order_set_input_first s f
 
 (* Ad-hoc short-circuit *)
     let short p1 p2 m =
