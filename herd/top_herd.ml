@@ -62,8 +62,10 @@ module TestResult = struct
     | None -> false
     | Some f -> Flag.Map.mem (Flag.Flag f) c.flagged)
 
-  type ('conc, 'sets, 'rels) execution =
+  type ('conc, 'state, 'sets, 'rels) execution =
     { concrete : 'conc;
+      final_state : 'state;
+      is_valid : bool;
       passes_check : bool;
       flags : Flag.Set.t;
       sets : 'sets Lazy.t;
@@ -71,6 +73,8 @@ module TestResult = struct
     }
 
   let concrete x = x.concrete
+  let final_state x = x.final_state
+  let is_valid x = x.is_valid
   let passes_check x = x.passes_check
   let flags x = x.flags
   let sets x = Lazy.force x.sets
@@ -85,7 +89,7 @@ module TestResult = struct
     module T = Test_herd.Make (S.A)
 
     type nonrec stats = S.A.StateSet.t stats
-    type nonrec execution = (S.concrete, S.set_pp, S.rel_pp) execution
+    type nonrec execution = (S.concrete, S.A.final_state, S.set_pp, S.rel_pp) execution
     type nonrec t = (S.event_structure, execution, stats) t
 
     let count_prop ~byte test c =
@@ -118,6 +122,10 @@ module Printer (O : PrinterConfig) (S : SemExtra.S) = struct
 (* Location out printing *)
   let tr_out test = OutMapping.info_to_tr  test.Test_herd.info
 
+  let dump_final_state test =
+    A.do_dump_final_state
+      test.Test_herd.type_env test.Test_herd.ffaults (tr_out test)
+
 (* Check condition *)
 
   let check_cond cstr c =
@@ -126,6 +134,13 @@ module Printer (O : PrinterConfig) (S : SemExtra.S) = struct
     | ExistsState _ -> c.TestResult.pos > 0
     | NotExistsState _-> c.TestResult.pos = 0
     | ForallStates _  -> c.TestResult.neg = 0
+
+  let verdict test c =
+    let verdict =
+      if TestResult.has_bad_execs ~badflag:O.badflag c then "Undef"
+      else if check_cond (T.find_our_constraint test) c then "Ok"
+      else "No" in
+    (if Misc.is_some c.TestResult.cutoff then "Loop " else "") ^ verdict
 
   let check_wit cstr c =
     let open ConstrGen in
@@ -178,19 +193,12 @@ module Printer (O : PrinterConfig) (S : SemExtra.S) = struct
     let tr_out = tr_out test in
     fprintf fmt "States %i\n" nfinals ;
     let state_set_str =
-      A.StateSet.pp_str "\n" (fun st ->
-        A.do_dump_final_state
-          test.Test_herd.type_env test.Test_herd.ffaults
-          tr_out st) finals
+      A.StateSet.pp_str "\n" (dump_final_state test) finals
     in
     if nfinals > 0 then
       fprintf fmt "%s\n" state_set_str;
 (* Condition result *)
-    let has_bad_execs = TestResult.has_bad_execs ~badflag:O.badflag in
-    let ok = check_cond cstr c in
-    fprintf fmt "%s%s\n"
-      (if Misc.is_some c.cutoff then "Loop " else "")
-      (if has_bad_execs c then "Undef" else if ok then "Ok" else "No") ;
+    fprintf fmt "%s\n" (verdict test c) ;
     fprintf fmt "Witnesses\n" ;
     let pos,neg = check_wit cstr c in
     fprintf fmt "Positive: %i Negative: %i\n" pos neg ;
@@ -340,7 +348,7 @@ module Make(O:Config)(M:XXXMem.S) =
       let cstr = T.find_our_constraint test in
       let check = check_prop solver test in
 
-      fun conc (st,flts) (set_pp,vbpp) flags c ->
+      fun conc (st,flts) (set_pp,vbpp) flags is_valid c ->
         if do_observed && not (all_observed test conc) then c
         else if
           match O.throughflag with
@@ -381,10 +389,13 @@ module Make(O:Config)(M:XXXMem.S) =
               | ShowAll -> true
               | ShowNone -> false
               | ShowFlag f -> Flag.Set.mem (Flag.Flag f) flags in
+            let fsc = do_restrict test (st,flts,solver) in
             begin if show_exec then
               let exec =
                 {
                   TestResult.concrete = conc;
+                  final_state = fsc;
+                  is_valid;
                   passes_check = ok;
                   flags;
                   sets = set_pp;
@@ -393,7 +404,6 @@ module Make(O:Config)(M:XXXMem.S) =
               in
               emit_exec exec
             end;
-            let fsc = do_restrict test (st,flts,solver) in
             let r =
               Count.{
                 cands = c.cands+1;
@@ -435,7 +445,7 @@ module Make(O:Config)(M:XXXMem.S) =
     let check_failed_model_kont
           cutoff cs solver
           emit_exec test do_restrict
-          conc (st,flts) (set_pp,vbpp) flags c  =
+          conc (st,flts) (set_pp,vbpp) flags is_valid c  =
 
       let open S.M.VC in
       match cs with
@@ -444,7 +454,7 @@ module Make(O:Config)(M:XXXMem.S) =
           if O.debug.Debug_herd.top then
             model_kont solver
               emit_exec test do_restrict
-              conc (st,flts) (set_pp,vbpp) flags c
+              conc (st,flts) (set_pp,vbpp) flags is_valid c
           else raise e
       | Some (Warn msg) ->
          (* Warn and ignore *)
@@ -455,7 +465,7 @@ module Make(O:Config)(M:XXXMem.S) =
           else
             model_kont solver
               emit_exec test do_restrict
-              conc (st,flts) (set_pp,vbpp) flags c
+              conc (st,flts) (set_pp,vbpp) flags is_valid c
 
     type test_results = TestResult.Make(M.S).t
 
