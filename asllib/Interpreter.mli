@@ -83,6 +83,9 @@ module type Config = sig
 
   val out_buffer : Buffer.t option
   (** Print ASL output to stdout when [None], or to [buf] when [Some buf]. *)
+
+  val readonly_array_indices : bool
+  (** Whether array index expressions are evaluated without side effects. *)
 end
 
 module Make (B : Backend.S) (C : Config) : S with module B = B

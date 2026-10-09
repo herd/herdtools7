@@ -666,6 +666,9 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     else if SES.is_readonly ses then ()
     else fatal_from ~loc:expr_for_error (Error.MismatchedPurity "readonly")
 
+  let check_is_readonly_eac2 expr_for_error ses =
+    if C.version_eac2 then ok else check_is_readonly expr_for_error ses
+
   let check_is_pure ~loc (_, e, ses_e) () =
     if C.fine_grained_side_effects then
       if TimeFrame.is_before (SES.max_time_frame ses_e) TimeFrame.Constant then
@@ -2334,6 +2337,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   (* Begin AnnotateGetArray *)
   and annotate_get_array ~loc env t_elem (e_base, ses_base, e_index) =
     let t_index', e_index', ses_index = annotate_expr env e_index in
+    let+ () = check_is_readonly_eac2 e_index ses_index in
     let+ () = check_type_satisfies ~loc env t_index' integer in
     let ses = ses_non_conflicting_union ~loc ses_index ses_base in
     let new_e = E_GetArray (e_base, e_index') in
@@ -2481,6 +2485,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let annotate_set_array ~loc env t_elem rhs_ty (e_base, ses_base, e_index) =
     let+ () = check_type_satisfies ~loc env rhs_ty t_elem in
     let t_index', e_index', ses_index = annotate_expr env e_index in
+    let+ () = check_is_readonly_eac2 e_index ses_index in
     let+ () = check_type_satisfies ~loc env t_index' integer in
     let ses = ses_non_conflicting_union ~loc ses_base ses_index in
     let new_le = LE_SetArray (e_base, e_index') in
@@ -2543,7 +2548,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         |: TypingRule.LEDestructuring
     (* End *)
     | LE_Slice (le1, slices) -> (
-        let t_le1, _, _ = expr_of_lexpr le1 |> annotate_expr env in
+        let t_le1, le1_rexpr, ses_le1 =
+          expr_of_lexpr le1 |> annotate_expr env
+        in
+        let+ () = check_is_readonly_eac2 le1_rexpr ses_le1 in
         let t_le1_anon = Types.make_anonymous env t_le1 in
         (* Begin LESlice *)
         match t_le1_anon.desc with
@@ -2580,7 +2588,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | _ -> conflict ~loc:le1 [ default_t_bits ] t_le1
         (* End *))
     | LE_SetField (le1, field) ->
-        (let t_le1, _, _ = expr_of_lexpr le1 |> annotate_expr env in
+        (let t_le1, le1_rexpr, ses_le1 =
+           expr_of_lexpr le1 |> annotate_expr env
+         in
+         let+ () = check_is_readonly_eac2 le1_rexpr ses_le1 in
          let _, le2, ses = annotate_lexpr_ty env le1 t_le1 in
          let t_le1_anon = Types.make_anonymous env t_le1 in
          match t_le1_anon.desc with
@@ -2652,7 +2663,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* End *)
     (* Begin LESetFields *)
     | LE_SetFields (le_base, le_fields, []) -> (
-        let t_base, _, _ = expr_of_lexpr le_base |> annotate_expr env in
+        let t_base, le_base_rexpr, ses_le_base =
+          expr_of_lexpr le_base |> annotate_expr env
+        in
+        let+ () = check_is_readonly_eac2 le_base_rexpr ses_le_base in
         let _, le_base_annot, ses_base = annotate_lexpr_ty env le_base t_base in
         let t_base_anon = Types.make_anonymous env t_base in
         match t_base_anon.desc with
@@ -2717,13 +2731,17 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* End *)
     (* Begin LESetArray *)
     | LE_SetArray (e_base, e_index) -> (
-        let t_base, _, _ = expr_of_lexpr e_base |> annotate_expr env in
+        let t_base, e_base_rexpr, ses_base =
+          expr_of_lexpr e_base |> annotate_expr env
+        in
+        let+ () = check_is_readonly_eac2 e_base_rexpr ses_base in
         let t_anon_base = Types.make_anonymous env t_base in
         match t_anon_base.desc with
         | T_Array (_, t_elem) ->
-            let _, e_base', ses_base = annotate_lexpr_ty env e_base t_base in
+            let _, e_base', ses_base' = annotate_lexpr_ty env e_base t_base in
             let le', ses =
-              annotate_set_array ~loc env t_elem t_e (e_base', ses_base, e_index)
+              annotate_set_array ~loc env t_elem t_e
+                (e_base', ses_base', e_index)
             in
             (t_elem, le', ses)
         | _ -> conflict ~loc [ default_array_ty ] t_base)

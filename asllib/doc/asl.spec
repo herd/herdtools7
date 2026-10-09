@@ -2191,8 +2191,8 @@ typedef TNormal
     { "the \hyperlink{type-ResultLexpr}{assignable expression result configuration} with {graph} and {environment}" }
     | ResultLDI(graph: XGraphs, environment: envs)
     { "the \hyperlink{type-ResultLDI}{local declaration item result configuration} with {graph} and {environment}" }
-    | ResultSlices(slices_and_graph: (list0((native_value, native_value)), XGraphs), environment: envs)
-    { "the \hyperlink{type-ResultSlices}{slices result configuration} with slices-and-\executiongraphterm{} given by {slices_and_graph} and \environmentterm{} given by {environment}" }
+    | ResultSlices(ranges: list0((native_value, native_value)), graph: XGraphs)
+    { "the \hyperlink{type-ResultSlices}{slices result configuration} with {ranges} and {graph}" }
     | ResultExprList(values_and_graph: (list0(native_value), XGraphs), environment: envs)
     { "the \hyperlink{type-ResultExprList}{expression list result configuration} with values-and-\executiongraphterm{} given by {values_and_graph} and \environmentterm{} given by {environment}" }
     | ResultExprListM(value_graph_pairs: list0((native_value, XGraphs)), environment: envs)
@@ -2894,6 +2894,7 @@ typing relation annotate_get_array(
   math_layout = [(_,_,[_,_,_]),_],
 } =
   annotate_expr(tenv, e_index) -> (t_index', e_index', ses_index);
+  te_check(ses_is_readonly(ses_index), TE_SEV) -> True;
   check_type_satisfies(tenv, t_index', unconstrained_integer) -> True;
   ses := union(ses_index, ses_base);
   new_e := E_GetArray(e_base, e_index');
@@ -3103,22 +3104,22 @@ semantics relation eval_expr(env: envs, e: expr) ->
   case ESlice {
     e =: E_Slice(e_bv, slices);
     eval_expr(env, e_bv) -> ResultExpr((v_bv, g1), env1);
-    eval_slices(env1, slices) -> ResultSlices((slice_ranges, g2), new_env);
+    eval_slices(env1, slices) -> ResultSlices(slice_ranges, g2);
     read_from_bitvector(v_bv, slice_ranges) -> v;
     g := parallel(g1, g2);
     --
-    ResultExpr((v, g), new_env);
+    ResultExpr((v, g), env1);
   }
 
   case EGetArray {
     e =: E_GetArray(e_array, e_index);
     eval_expr(env, e_array) -> ResultExpr((v_array, g1), env1);
-    eval_expr(env1, e_index) -> ResultExpr((v_index, g2), new_env);
+    eval_expr_sef(env1, e_index) -> ResultExprSEF(v_index, g2);
     v_index =: nvint(i_index);
     get_index(i_index, v_array) -> v;
     g := parallel(g1, g2);
     --
-    ResultExpr((v, g), new_env);
+    ResultExpr((v, g), env1);
   }
 
   case EGetTupleItem {
@@ -3451,12 +3452,13 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
 
   case LESetArray {
     le =: LE_SetArray(e_base, e_index);
-    annotate_expr(tenv, rexpr(e_base)) -> (t_base, _, _);
+    annotate_expr(tenv, rexpr(e_base)) -> (t_base, _, ses_base);
+    te_check(ses_is_readonly(ses_base), TE_SEV) -> True;
     make_anonymous(tenv, t_base) -> t_anon_base;
     te_check(ast_label(t_anon_base) = label_T_Array, TE_UT) -> True;
     t_anon_base =: T_Array(_, t_elem);
-    annotate_lexpr(tenv, e_base, t_base) -> (e_base', ses_base);
-    annotate_set_array(tenv, t_elem, t_e, (e_base', ses_base, e_index)) -> (new_le, ses)
+    annotate_lexpr(tenv, e_base, t_base) -> (e_base', ses_base');
+    annotate_set_array(tenv, t_elem, t_e, (e_base', ses_base', e_index)) -> (new_le, ses)
     { math_layout = [_] };
     --
     (new_le, ses);
@@ -3464,7 +3466,8 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
 
   case LESlice {
     le =: LE_Slice(le1, slices);
-    annotate_expr(tenv, rexpr(le1)) -> (t_le1, _, _);
+    annotate_expr(tenv, rexpr(le1)) -> (t_le1, _, ses_le1);
+    te_check(ses_is_readonly(ses_le1), TE_SEV) -> True;
     make_anonymous(tenv, t_le1) -> t_le1_anon;
     te_check(ast_label(t_le1_anon) = label_T_Bits, TE_UT) -> True;
     annotate_lexpr(tenv, le1, t_le1) -> (le2, ses1);
@@ -3482,7 +3485,8 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
 
   case LESetField {
     le =: LE_SetField(le1, field_name);
-    annotate_expr(tenv, rexpr(le1)) -> (t_le1, _, _);
+    annotate_expr(tenv, rexpr(le1)) -> (t_le1, _, ses_le1);
+    te_check(ses_is_readonly(ses_le1), TE_SEV) -> True;
     annotate_lexpr(tenv, le1, t_le1) -> (le2, ses);
     make_anonymous(tenv, t_le1) -> t_le1_anon;
 
@@ -3557,7 +3561,8 @@ typing relation annotate_lexpr(tenv: static_envs, le: lexpr, t_e: ty) ->
 
  case LESetFields {
    le =: LE_SetFields(le_base, le_fields);
-   annotate_expr(tenv, rexpr(le_base)) -> (t_base, _, _);
+   annotate_expr(tenv, rexpr(le_base)) -> (t_base, _, ses_le_base);
+   te_check(ses_is_readonly(ses_le_base), TE_SEV) -> True;
    annotate_lexpr(tenv, le_base, t_base) -> (le_base_annot, ses_base);
    make_anonymous(tenv, t_base) -> t_base_anon;
 
@@ -3618,6 +3623,143 @@ render rule annotate_lexpr_LESetField_BitField = annotate_lexpr(LESetField.bitfi
 render rule annotate_lexpr_LESetBadField_error = annotate_lexpr(LESetField.error);
 render rule annotate_lexpr_LESetFields = annotate_lexpr(LESetFields);
 
+semantics relation eval_and_rewrite_slice(env: envs, slice: slice) ->
+        (new_slice: slice, new_g: XGraphs) | TDynError | TDiverging
+{
+    "evaluates the start and length expressions of the typed slice {slice},
+    from left to right, as \sideeffectfreeterm{} expressions in the
+    \environmentterm{} {env}, yielding the rewritten slice {new_slice}, in
+    which both expressions are replaced by the resulting integer literals,
+    and the \executiongraphterm{} {new_g}.
+    \ProseOtherwiseDynamicErrorOrDiverging",
+    prose_transition = "evaluating and rewriting the slice {slice} in {env}
+    yields",
+} =
+  slice =: Slice_Length(e_start, e_length);
+  eval_expr_sef(env, e_start) -> ResultExprSEF(nvint(i_start), g1);
+  eval_expr_sef(env, e_length) -> ResultExprSEF(nvint(i_length), g2);
+  e_start' := ELint(i_start);
+  e_length' := ELint(i_length);
+  new_g := ordered_data(g1, g2);
+  --
+  (Slice_Length(e_start', e_length'), new_g);
+;
+
+semantics relation eval_and_rewrite_slices(env: envs, slices: list0(slice)) ->
+        (new_slices: list0(slice), new_g: XGraphs) | TDynError | TDiverging
+{
+    "evaluates and rewrites each slice in {slices}, from left to right, in the
+    \environmentterm{} {env}, yielding the rewritten slices {new_slices} and
+    the \executiongraphterm{} {new_g}.
+    \ProseOtherwiseDynamicErrorOrDiverging",
+    prose_transition = "evaluating and rewriting the slices {slices} in {env}
+    yields",
+} =
+  case empty {
+    slices = empty_list;
+    --
+    (empty_list, empty_graph);
+  }
+
+  case nonempty {
+    slices =: match_cons(slice, slices1);
+    eval_and_rewrite_slice(env, slice) -> (slice', g1);
+    eval_and_rewrite_slices(env, slices1) -> (slices1', g2);
+    new_g := ordered_data(g1, g2);
+    new_slices := cons(slice', slices1');
+    --
+    (new_slices, new_g);
+  }
+;
+
+semantics relation eval_and_rewrite_indices(env: envs, le: lexpr) ->
+        (new_le: lexpr, new_g: XGraphs) | TDynError | TDiverging
+{
+    "evaluates every array index and slice expression in the
+    \assignableexpression{} {le} exactly once as a \sideeffectfreeterm{}
+    expression in the \environmentterm{} {env}, yielding the rewritten
+    \assignableexpression{} {new_le}, in which each such expression is replaced
+    by the resulting integer literal, and the \executiongraphterm{} {new_g}.
+    \ProseOtherwiseDynamicErrorOrDiverging",
+    prose_transition = "evaluating and rewriting the array index and slice
+    expressions in {le} in {env} yields",
+} =
+  case LEDiscard {
+    le = LE_Discard;
+    --
+    (le, empty_graph);
+  }
+
+  case LEVar {
+    le =: LE_Var(_);
+    --
+    (le, empty_graph);
+  }
+
+  case LESetCollectionFields {
+    le =: LE_SetCollectionFields(_, _, _);
+    --
+    (le, empty_graph);
+  }
+
+  case LESlice {
+    le =: LE_Slice(le_base, slices);
+    eval_and_rewrite_indices(env, le_base) -> (le_base', g1);
+    eval_and_rewrite_slices(env, slices) -> (slices', g2);
+    new_g := ordered_data(g1, g2);
+    --
+    (LE_Slice(le_base', slices'), new_g);
+  }
+
+  case LESetArray {
+    le =: LE_SetArray(le_base, e_index);
+    eval_and_rewrite_indices(env, le_base) -> (le_base', g1);
+    eval_expr_sef(env, e_index) -> ResultExprSEF(nvint(i), g2);
+    e_index' := ELint(i);
+    new_g := ordered_data(g1, g2);
+    --
+    (LE_SetArray(le_base', e_index'), new_g)
+    { [_] };
+  }
+
+  case LESetField {
+    le =: LE_SetField(le_record, field_name);
+    eval_and_rewrite_indices(env, le_record) -> (le_record', g);
+    --
+    (LE_SetField(le_record', field_name), g)
+    { [_] };
+  }
+
+  case LESetFields {
+    le =: typed_LE_SetFields(le_record, field_names, slices);
+    eval_and_rewrite_indices(env, le_record) -> (le_record', g);
+    --
+    (typed_LE_SetFields(le_record', field_names, slices), g)
+    { [_] };
+  }
+
+  case LEDestructuringEmpty {
+    le =: LE_Destructuring(les);
+    les = empty_list;
+    --
+    (le, empty_graph);
+  }
+
+  case LEDestructuringNonEmpty {
+    le =: LE_Destructuring(les);
+    les =: match_cons(le1, les1);
+    eval_and_rewrite_indices(env, le1) -> (le1', g1);
+    eval_and_rewrite_indices(env, LE_Destructuring(les1)) -> (le_rest, g2)
+    { [_] };
+    le_rest =: LE_Destructuring(les1');
+    new_g := ordered_data(g1, g2);
+    les' := cons(le1', les1');
+    --
+    (LE_Destructuring(les'), new_g)
+    { [_] };
+  }
+;
+
 // TODO: fix bug in aslspec to allow the following signature in comment.
 //semantics relation eval_lexpr(env: envs, le: lexpr, m: (v: native_value, g: XGraphs)) ->
 semantics relation eval_lexpr(env: envs, le: lexpr, m: (native_value, XGraphs)) ->
@@ -3674,16 +3816,12 @@ semantics relation eval_lexpr(env: envs, le: lexpr, m: (native_value, XGraphs)) 
   }
 
   case LESetArray {
-    le =: LE_SetArray(re_array, e_index);
+    le =: LE_SetArray(re_array, E_Literal(L_Int(n_to_n_pos(index))));
     m =: (v, g);
-    eval_expr(env, rexpr(re_array)) -> ResultExpr(rm_array, env1);
-    eval_expr(env1, e_index) -> ResultExpr(m_index, env2);
-    m_index =: (index, g1);
-    index =: nvint(n_to_n_pos(i));
-    rm_array =: (rv_array, g2);
-    set_index(i, v, rv_array) -> v1;
-    m1 := (v1, ordered_data(g, parallel(g1, g2)));
-    eval_lexpr(env2, re_array, m1) -> ResultLexpr(new_g, new_env);
+    eval_expr_sef(env, rexpr(re_array)) -> ResultExprSEF(rv_array, g1);
+    set_index(index, v, rv_array) -> v1;
+    m1 := (v1, ordered_data(g, g1));
+    eval_lexpr(env, re_array, m1) -> ResultLexpr(new_g, new_env);
     --
     ResultLexpr(new_g, new_env);
   }
@@ -3692,12 +3830,12 @@ semantics relation eval_lexpr(env: envs, le: lexpr, m: (native_value, XGraphs)) 
     le =: LE_Slice(e_bv, slices);
     m =: (v, g);
     eval_expr(env, rexpr(e_bv)) -> ResultExpr(m_bv, env1);
-    eval_slices(env1, slices) -> ResultSlices((slice_ranges, g1), env2);
+    eval_slices(env1, slices) -> ResultSlices(slice_ranges, g1);
     m_bv =: (v_bv, g2);
     check_non_overlapping_slices(slice_ranges) -> True;
     write_to_bitvector(slice_ranges, v, v_bv) -> v1;
     g3 := ordered_data(g, parallel(g1, g2));
-    eval_lexpr(env2, e_bv, (v1, g3)) -> ResultLexpr(new_g, new_env);
+    eval_lexpr(env1, e_bv, (v1, g3)) -> ResultLexpr(new_g, new_env);
     --
     ResultLexpr(new_g, new_env);
   }
@@ -3836,6 +3974,7 @@ typing relation annotate_set_array(
 } =
   check_type_satisfies(tenv, rhs_ty, t_elem) -> True;
   annotate_expr(tenv, e_index) -> (t_index', e_index', ses_index);
+  te_check(ses_is_readonly(ses_index), TE_SEV) -> True;
   check_type_satisfies(tenv, t_index', unconstrained_integer) -> True;
   ses := union(ses_base, ses_index);
   new_le := LE_SetArray(e_base, e_index');
@@ -7986,28 +8125,26 @@ typing relation annotate_slices(tenv: static_envs, slices: list0(slice)) ->
 ;
 
 semantics relation eval_slice(env: envs, s: slice) ->
-  | (((v_start: native_value, v_length: native_value), new_g: XGraphs), new_env: envs)
-  | TThrowing | TDynError | TDiverging
+  | ((v_start: native_value, v_length: native_value), new_g: XGraphs)
+  | TDynError | TDiverging
 {
    prose_description = "evaluates an individual slice {s} in an environment
                         {env}, resulting in the range starting from {v_start} of length {v_length},
-                        the \executiongraphterm{} {new_g}, and the \environmentterm{} {new_env}.
-                        \ProseOtherwiseAbnormal",
+                        and the \executiongraphterm{} {new_g}.
+                        \ProseOtherwiseDynamicErrorOrDiverging",
  prose_transition = "evaluating {s} in {env} yields",
   math_layout = [_,_],
 } =
   case single {
     s =: Slice_Single(e);
-    eval_expr(env, e) -> ResultExpr((v_start, new_g), new_env);
+    eval_expr_sef(env, e) -> ResultExprSEF(v_start, new_g);
     v_length := nvint(one);
   }
 
   case range {
     s =: Slice_Range(e_top, e_start);
-    eval_expr(env, e_top) -> ResultExpr(m_top, env1);
-    (v_top, g1) := m_top;
-    eval_expr(env1, e_start) -> ResultExpr(m_start, new_env);
-    (v_start, g2) := m_start;
+    eval_expr_sef(env, e_top) -> ResultExprSEF(v_top, g1);
+    eval_expr_sef(env, e_start) -> ResultExprSEF(v_start, g2);
     eval_binop(SUB, v_top, v_start) -> v_diff;
     eval_binop(ADD, nvint(one), v_diff) -> v_length;
     new_g := parallel(g1, g2);
@@ -8015,44 +8152,42 @@ semantics relation eval_slice(env: envs, s: slice) ->
 
   case length {
     s =: Slice_Length(e_start, e_length);
-    eval_expr(env, e_start) -> ResultExpr(m_start, env1);
-    (v_start, g1) := m_start;
-    eval_expr(env1, e_length) -> ResultExpr(m_length, new_env);
-    (v_length, g2) := m_length;
+    eval_expr_sef(env, e_start) -> ResultExprSEF(v_start, g1);
+    eval_expr_sef(env, e_length) -> ResultExprSEF(v_length, g2);
     new_g := parallel(g1, g2);
   }
 
   range := (v_start, v_length);
   range_and_graph := (range, new_g);
   --
-  (range_and_graph, new_env);
+  range_and_graph;
 ;
 
 relation eval_slices(env: envs, slices: list0(slice)) ->
-  | ResultSlices((ranges: list0((native_value, native_value)), new_g: XGraphs), new_env: envs)
-  | TThrowing | TDynError | TDiverging
+  | ResultSlices(ranges: list0((native_value, native_value)), new_g: XGraphs)
+  | TDynError | TDiverging
 {
    prose_description = "evaluates a list of slices {slices} in an environment
                         {env}, resulting in \\
-                        $\ResultSlices((\ranges, \newg), \newenv)$.
-                        \ProseOtherwiseAbnormal",
+                        $\ResultSlices(\ranges, \newg)$.
+                        \ProseOtherwiseDynamicErrorOrDiverging",
  prose_transition = "evaluating {slices} in {env} yields",
   math_layout = [_,_],
 } =
   case empty {
     slices = empty_list;
     --
-    ResultSlices((empty_list, empty_graph), env);
+    ResultSlices(empty_list, empty_graph);
   }
 
   case non_empty {
     slices =: match_cons(slice, slices1);
-    eval_slice(env, slice) -> ((range, g1), env1);
-    eval_slices(env1, slices1) -> ResultSlices((ranges1, g2), new_env);
+    eval_slice(env, slice) -> (range, g1);
+    eval_slices(env, slices1) -> ResultSlices(ranges1, g2);
     ranges := match_cons(range, ranges1);
     new_g := parallel(g1, g2);
     --
-    ResultSlices((ranges, new_g), new_env);
+    ResultSlices(ranges, new_g);
   }
 ;
 
@@ -9695,8 +9830,10 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
     not(
       and(lhs_is_destructuring, rhs_is_call, lhs_list_of_vars)
     );
-    eval_expr(env, re) -> ResultExpr(vm, env1);
-    eval_lexpr(env1, le, vm) -> ResultLexpr(new_g, new_env);
+    eval_expr(env, re) -> ResultExpr((v, g1), env1);
+    eval_and_rewrite_indices(env1, le) -> (le', g2);
+    m := (v, ordered_data(g1, g2));
+    eval_lexpr(env1, le', m) -> ResultLexpr(new_g, new_env);
     --
     Continuing(new_g, new_env);
   }

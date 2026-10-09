@@ -199,7 +199,8 @@ let run (args : args) : int =
       let instrumentation = if args.show_rules then true else false in
       let main_name = T.find_main static_env in
       let out_buffer = Option.map fst args.capture_output in
-      Native.interpret ~instrumentation ?out_buffer static_env main_name
+      Native.interpret ~instrumentation ?out_buffer
+        ~readonly_array_indices:(not args.version_eac2) static_env main_name
         typed_ast
     else (0, [])
   in

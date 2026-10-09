@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_SEV
+error_line: 12
+info: |-
+  File ../tests/typing/TypingRule.AnnotateGetArray.bad.asl, line 12,
+    characters 19 to 31:
+      return values[[next_index()]];
+                     ^^^^^^^^^^^^
+  ASL Type error (TE_SEV): expected a readonly expression/subprogram.

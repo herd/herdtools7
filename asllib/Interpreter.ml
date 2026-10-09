@@ -67,6 +67,7 @@ module type Config = sig
   val track_symbolic_path : bool
   val bit_clear_optimisation : bool
   val out_buffer : Buffer.t option
+  val readonly_array_indices : bool
 end
 
 module Make (B : Backend.S) (C : Config) = struct
@@ -625,10 +626,9 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalESlice *)
     | E_Slice (e_bv, slices) ->
         let*^ m_bv, env1 = eval_expr env e_bv in
-        let*^ m_positions, new_env = eval_slices env1 slices in
-        let* v_bv = m_bv and* positions = m_positions in
+        let* positions = eval_slices env1 slices and* v_bv = m_bv in
         let* v = B.read_from_bitvector ~loc:e positions v_bv in
-        return_normal (v, new_env) |: SemanticsRule.ESlice
+        return_normal (v, env1) |: SemanticsRule.ESlice
     (* End *)
     (* Begin EvalECall *)
     | E_Call { name; params; args } ->
@@ -646,11 +646,17 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalEGetArray *)
     | E_GetArray (e_array, e_index) ->
         let*^ m_array, env1 = eval_expr env e_array in
-        let*^ m_index, new_env = eval_expr env1 e_index in
-        let* v_array = m_array and* v_index = m_index in
-        let i_index = v_to_int ~loc:e v_index in
-        let* v = B.get_index i_index v_array in
-        return_normal (v, new_env) |: SemanticsRule.EGetArray
+        if C.readonly_array_indices then
+          let* v_array = m_array and* v_index = eval_expr_sef env1 e_index in
+          let i_index = v_to_int ~loc:e v_index in
+          let* v = B.get_index i_index v_array in
+          return_normal (v, env1) |: SemanticsRule.EGetArray
+        else
+          let*^ m_index, new_env = eval_expr env1 e_index in
+          let* v_array = m_array and* v_index = m_index in
+          let i_index = v_to_int ~loc:e v_index in
+          let* v = B.get_index i_index v_array in
+          return_normal (v, new_env) |: SemanticsRule.EGetArray
     (* End *)
     (* Begin EvalEGetTupleItem *)
     | E_GetItem (e_tuple, index) ->
@@ -821,6 +827,68 @@ module Make (B : Backend.S) (C : Config) = struct
     return res
   (* End *)
 
+  (** [eval_and_rewrite_indices le env] evaluates each array index and slice
+      expression in [le] exactly once as a side-effect-free expression and
+      returns a copy of [le] in which each such expression is replaced by the
+      resulting integer literal. Expressions in nested assignable expressions
+      and destructuring targets are evaluated from left to right. *)
+  and eval_and_rewrite_indices le env : lexpr m =
+    let with_desc desc = { le with desc } in
+    match le.desc with
+    | LE_Discard | LE_Var _ | LE_SetCollectionFields _ -> return le
+    | LE_Slice (le_base, slices) ->
+        let* le_base' = eval_and_rewrite_indices le_base env in
+        let* slices' = eval_and_rewrite_slices slices env in
+        LE_Slice (le_base', slices') |> with_desc |> return
+    | LE_SetArray (le_base, e_index) ->
+        let* le_base' = eval_and_rewrite_indices le_base env in
+        let* v_index = eval_expr_sef env e_index in
+        let index = v_to_int ~loc:e_index v_index in
+        let e_index' = expr_of_int ~loc:e_index index in
+        LE_SetArray (le_base', e_index') |> with_desc |> return
+    | LE_SetField (le_record, field_name) ->
+        let* le_record' = eval_and_rewrite_indices le_record env in
+        LE_SetField (le_record', field_name) |> with_desc |> return
+    | LE_SetFields (le_record, field_names, slices) ->
+        let* le_record' = eval_and_rewrite_indices le_record env in
+        LE_SetFields (le_record', field_names, slices) |> with_desc |> return
+    | LE_Destructuring les ->
+        let rec rewrite_left_to_right = function
+          | [] -> return []
+          | le :: les ->
+              let* le' = eval_and_rewrite_indices le env in
+              let* les' = rewrite_left_to_right les in
+              return (le' :: les')
+        in
+        let* les' = rewrite_left_to_right les in
+        LE_Destructuring les' |> with_desc |> return
+
+  (** [eval_and_rewrite_slice slice env] evaluates the start and length
+      expressions of the typed slice [slice], from left to right, and replaces
+      them with integer literals containing the resulting values. *)
+  and eval_and_rewrite_slice slice env : slice m =
+    match slice with
+    | Slice_Length (e_start, e_length) ->
+        let* v_start = eval_expr_sef env e_start in
+        let* v_length = eval_expr_sef env e_length in
+        let e_start' = v_to_int ~loc:e_start v_start |> expr_of_int in
+        let e_length' = v_to_int ~loc:e_length v_length |> expr_of_int in
+        return (Slice_Length (e_start', e_length'))
+    | _ -> assert false
+
+  (** [eval_and_rewrite_slices slices env] evaluates and rewrites each slice in
+      [slices], from left to right. *)
+  and eval_and_rewrite_slices slices env : slice list m =
+    let rewrite_left_to_right slices =
+      match slices with
+      | [] -> return []
+      | slice :: slices_rest ->
+          let* slice' = eval_and_rewrite_slice slice env in
+          let* slices_rest' = eval_and_rewrite_slices slices_rest env in
+          return (slice' :: slices_rest')
+    in
+    rewrite_left_to_right slices
+
   (* Evaluation of Left-Hand-Side Expressions *)
   (* ---------------------------------------- *)
 
@@ -858,20 +926,28 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalLESlice *)
     | LE_Slice (e_bv, slices) ->
         let*^ m_bv_lhs, env1 = expr_of_lexpr e_bv |> eval_expr env in
-        let*^ m_slice_ranges, env2 = eval_slices env1 slices in
         let new_m_bv =
           let* v_rhs = m
-          and* slice_ranges = m_slice_ranges
+          and* slice_ranges = eval_slices env1 slices
           and* v_bv_lhs = m_bv_lhs in
           let* () =
             check_non_overlapping_slices ~pos:le env slices slice_ranges
           in
           B.write_to_bitvector slice_ranges v_rhs v_bv_lhs
         in
-        eval_lexpr ver e_bv env2 new_m_bv |: SemanticsRule.LESlice
+        eval_lexpr ver e_bv env1 new_m_bv |: SemanticsRule.LESlice
     (* End *)
     (* Begin EvalLESetArray *)
+    | LE_SetArray (re_array, { desc = E_Literal (L_Int index) })
+      when C.readonly_array_indices ->
+        let m1 =
+          let* v = m in
+          let* rv_array = expr_of_lexpr re_array |> eval_expr_sef env in
+          B.set_index (Z.to_int index) v rv_array
+        in
+        eval_lexpr ver re_array env m1 |: SemanticsRule.LESetArray
     | LE_SetArray (re_array, e_index) ->
+        assert (not C.readonly_array_indices);
         let*^ rm_array, env1 = expr_of_lexpr re_array |> eval_expr env in
         let*^ m_index, env2 = eval_expr env1 e_index in
         let m1 =
@@ -966,34 +1042,31 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [eval_slices env slices] is the list of pair [(i_n, l_n)] that corresponds
       to the start (included) and the length of each slice in [slices]. *)
-  and eval_slices env :
-      slice list -> (B.value_range list * env) maybe_exception m =
+  and eval_slices env : slice list -> B.value_range list m =
     (* Begin EvalSlice *)
-    let eval_slice env = function
+    let eval_slice = function
       | Slice_Single e ->
-          let** v_start, new_env = eval_expr env e in
-          return_normal ((v_start, one), new_env) |: SemanticsRule.Slice
+          let* v_start = eval_expr_sef env e in
+          return (v_start, one) |: SemanticsRule.Slice
       | Slice_Length (e_start, e_length) ->
-          let*^ m_start, env1 = eval_expr env e_start in
-          let*^ m_length, new_env = eval_expr env1 e_length in
-          let* v_start = m_start and* v_length = m_length in
-          return_normal ((v_start, v_length), new_env) |: SemanticsRule.Slice
+          let* v_start = eval_expr_sef env e_start
+          and* v_length = eval_expr_sef env e_length in
+          return (v_start, v_length) |: SemanticsRule.Slice
       | Slice_Range (e_top, e_start) ->
-          let*^ m_top, env1 = eval_expr env e_top in
-          let*^ m_start, new_env = eval_expr env1 e_start in
-          let* v_top = m_top and* v_start = m_start in
+          let* v_top = eval_expr_sef env e_top
+          and* v_start = eval_expr_sef env e_start in
           let* v_length = B.binop `SUB v_top v_start >>= B.binop `ADD one in
-          return_normal ((v_start, v_length), new_env) |: SemanticsRule.Slice
+          return (v_start, v_length) |: SemanticsRule.Slice
       | Slice_Star (e_factor, e_length) ->
-          let*^ m_factor, env1 = eval_expr env e_factor in
-          let*^ m_length, new_env = eval_expr env1 e_length in
-          let* v_factor = m_factor and* v_length = m_length in
+          let* v_factor = eval_expr_sef env e_factor
+          and* v_length = eval_expr_sef env e_length in
           let* v_start = B.binop `MUL v_factor v_length in
-          return_normal ((v_start, v_length), new_env) |: SemanticsRule.Slice
+          return (v_start, v_length) |: SemanticsRule.Slice
       (* End *)
     in
     (* Begin EvalSlices *)
-    fold_par_list eval_slice env |: SemanticsRule.Slices
+    fun slices ->
+      List.map eval_slice slices |> sync_list |: SemanticsRule.Slices
   (* End *)
 
   (* Evaluation of Patterns *)
@@ -1112,10 +1185,17 @@ module Make (B : Backend.S) (C : Config) = struct
     (* End *)
     (* Begin EvalSAssign *)
     | S_Assign (le, re) ->
-        let*^ m, env1 = eval_expr env re in
-        let**| new_env = eval_lexpr s.version le env1 m in
-        return_continue new_env |: SemanticsRule.SAssign
-    (* End *)
+        let assign =
+          if C.readonly_array_indices then
+            let** v, env1 = eval_expr env re in
+            let* le' = eval_and_rewrite_indices le env1 in
+            eval_lexpr s.version le' env1 (return v)
+          else
+            let*^ m, env1 = eval_expr env re in
+            eval_lexpr s.version le env1 m
+        in
+        let**| new_env = assign in
+        return_continue new_env |: SemanticsRule.SAssign (* End *)
     (* Begin EvalSReturn *)
     | S_Return (Some { desc = E_Tuple es; _ }) ->
         let**| ms, new_env = eval_expr_list_m env es in

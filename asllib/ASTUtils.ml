@@ -446,7 +446,13 @@ let expr_of_var x = E_Var x |> add_dummy_pos
 let binop op = map2_desc (fun e1 e2 -> E_Binop (op, e1, e2))
 let neg e = E_Unop (NEG, e) |> add_pos_from e
 let literal v = E_Literal v |> add_dummy_pos
-let expr_of_int i = literal (L_Int (Z.of_int i))
+
+let expr_of_int ?loc i =
+  let desc = E_Literal (L_Int (Z.of_int i)) in
+  match loc with
+  | None -> add_dummy_pos desc
+  | Some loc -> add_pos_from loc desc
+
 let expr_of_z z = literal (L_Int z)
 let e_true = literal (L_Bool true) |> with_ty_annot boolean
 let e_false = literal (L_Bool false) |> with_ty_annot boolean

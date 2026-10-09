@@ -137,6 +137,7 @@ module Make (Conf : Config) = struct
     let display_call_stack_on_error = Conf.C.debug.Debug_herd.asl_stack
     let track_symbolic_path = true
     let bit_clear_optimisation = true
+    let readonly_array_indices = true
     let out_buffer = None
 
     module Instr = Asllib.Instrumentation.SemanticsNoInstr

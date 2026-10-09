@@ -12,6 +12,19 @@ Recall that when the \assignableexpression{} is a call to a setter
 followed by a slice or field access, it is desugared via \ASTRuleRef{DesugarSetter}
 to satisfy \\ \SyntacticSugarRef{SetterFieldAssignment}.
 
+\RequirementDef{ReadonlyAssignableExpressions}
+Except for arguments to setter calls, every subexpression of an
+\assignableexpression{} must be \readonlyterm{}.
+The intent is to ensure that determining the storage targeted by an assignment
+does not itself modify storage.
+
+\ExampleDef{Side-effecting Assignable Expression}
+In \listingref{typing-annotatesetarray-bad}, it is unclear which element of
+\verb|rows| is updated, since evaluating the index expression
+\verb|select_column()| modifies \verb|current_row|.
+The assignable expression is therefore ill-typed.
+\ASLListing{A side-effecting assignable expression}{typing-annotatesetarray-bad}{\typingtests/TypingRule.AnnotateSetArray.bad.asl}
+
 \ChapterOutline
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -26,6 +39,9 @@ to satisfy \\ \SyntacticSugarRef{SetterFieldAssignment}.
 \RenderRelation{annotate_lexpr}
 \paragraph{Semantics:} Assignable expressions are evaluated by $\evallexpr$.
 \RenderRelation{eval_lexpr}
+Before an assignment is evaluated, array index and slice expressions in its
+\assignableexpression{} are evaluated and replaced by the resulting integer
+literals by $\evalandrewriteindices$.
 \paragraph{A Convention for Assignable Expressions Semantics Rules:}
 In this chapter, variables containing $\vm$ range over values of the type $(\nativevalue, \XGraphs)$
 while variables in which $\vm$ is replaced with $\vv$ correspond to their value component.
@@ -606,10 +622,32 @@ The assignable expressions in \listingref{semantics-lesetarray} are well-typed.
 See \listingref{semantics-lesetarray}
 for examples of well-typed assignable array expressions.
 
+In \listingref{typing-annotatesetarray-bad}, the assignable array expression is ill-typed,
+since its index expression is not \readonlyterm{}.
+
 
 \RenderProseAndFormally{annotate_set_array}
 
 \subsection{Semantics}
+\SemanticsRuleDef{EvalAndRewriteIndices}
+\RenderRelation{eval_and_rewrite_indices}
+
+\ExampleDef{Evaluating and Rewriting Array Indices}
+Evaluating and rewriting the index in the assignable expression
+\verb|my_array[[1 + 2]]| yields \verb|my_array[[3]]| and an empty
+\executiongraphterm{}.
+
+Before applying $\evallexpr$, array index and slice expressions are evaluated
+exactly once as \sideeffectfreeterm{} expressions.  The resulting integer
+values replace the original expressions, so recursively evaluating the
+assignable expression does not evaluate an original expression more than once.
+The expressions are evaluated from left to right.  Thus, in
+\verb|a[[i]][[j]]|, \verb|i| is evaluated before \verb|j|.  Indices in a
+multi-assignment are likewise evaluated from left to right.
+\ASLListing{Evaluating and rewriting array indices}{semantics-evalandrewriteindices}{\semanticstests/SemanticsRule.EvalAndRewriteIndices.asl}
+
+\RenderProseAndFormally{eval_and_rewrite_indices}
+
 \SemanticsRuleDef{LESetArray}
 \ExampleDef{Array Update Assignments}
 In \listingref{semantics-lesetarray}, the assignment \verb|my_array[[3]] = 53;| binds the third element
@@ -657,6 +695,21 @@ See \ExampleRef{Typing Assignable Slice Expression}.
 \CodeSubsection{\CheckDisjointSlicesBegin}{\CheckDisjointSlicesEnd}{../Typing.ml}
 
 \subsection{Semantics}
+\SemanticsRuleDef{EvalAndRewriteSlice}
+\RenderRelation{eval_and_rewrite_slice}
+\ExampleDef{Evaluating and Rewriting a Slice}
+Evaluating and rewriting the slice \verb|(1 + 2) +: (2 + 2)| yields
+\verb|3 +: 4| and an empty \executiongraphterm{}.
+\RenderProseAndFormally{eval_and_rewrite_slice}
+
+\SemanticsRuleDef{EvalAndRewriteSlices}
+\RenderRelation{eval_and_rewrite_slices}
+\ExampleDef{Evaluating and Rewriting a Slice List}
+Evaluating and rewriting the slices in
+\verb|x[(1 + 2) +: 2, (8 - 2) +: 1]|, from left to right, yields the slices in
+\verb|x[3 +: 2, 6 +: 1]| and an empty \executiongraphterm{}.
+\RenderProseAndFormally{eval_and_rewrite_slices}
+
 \SemanticsRuleDef{LESlice}
 \ExampleDef{Slice Assignments}
 In \listingref{semantics-leslice}, the assignment\\ \texttt{x[3:0, 7:6] = '000000';} binds
