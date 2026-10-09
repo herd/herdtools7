@@ -17,7 +17,6 @@
 module type S =
   sig
     include ArchBase.S
-    val tr_endian : int -> int
     module ScopeGen:ScopeGen.S
     include Fence.S
     include Atom.S
