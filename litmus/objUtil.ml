@@ -182,6 +182,9 @@ module Make(O:Config)(Tar:Tar.S) =
     | Mac as os ->
         Warn.fatal "Affinity not implemented for %s" (TargetOS.pp os)
 
+    let cpy_std ?sub ?prf fnames name =
+      cpy ?sub ?prf (cpy ?sub ?prf fnames name ".c") name ".h"
+
     let dump flags =
       let fnames = [] in
       let fnames = match O.driver with
@@ -205,8 +208,7 @@ module Make(O:Config)(Tar:Tar.S) =
         |`BPF | `CPP|`LISA | `JAVA | `ASL -> Warn.fatal "no support for arch '%s'" (Archs.pp O.arch)
       in
       let fnames =
-        let fnames = cpy fnames "litmus_rand" ".c" in
-        let fnames = cpy fnames "litmus_rand" ".h" in
+        let fnames = cpy_std fnames "litmus_rand" in
         let sub = dir_of_sysarch O.sysarch in
         let fnames = cpy ~sub:sub fnames "cache" ".h" in
         fnames in
@@ -215,18 +217,14 @@ module Make(O:Config)(Tar:Tar.S) =
         else
           let fnames = cpy_platform fnames "io" ".c" in
           let fnames = cpy_platform fnames "io" ".h" in
-          let fnames = cpy fnames "litmus_io" ".c" in
-          let fnames = cpy fnames "litmus_io" ".h" in
+          let fnames = cpy_std fnames "litmus_io" in
           fnames in
       let fnames = match O.mode with
       | Mode.Std ->
-          let fnames = cpy fnames "utils" ".c" in
-(* Select cached conditional variables, disabled.
-          if O.cached then
-            cpy ~prf:"#define CACHE 1" fnames "utils" ".h"
-          else *)
-            cpy fnames "utils" ".h"
+          cpy_std fnames "utils"
       | Mode.PreSi ->
+         let fnames = cpy fnames "presi_io" ".h" in
+         let fnames = cpy fnames "presi_count" ".h" in
          if do_dynalloc then
            let fnames =
              cpy' ~prf:"#define DYNALLOC 1" fnames "presi" "utils" ".c" in
@@ -235,6 +233,8 @@ module Make(O:Config)(Tar:Tar.S) =
            let fnames = cpy' fnames "presi" "utils" ".c" in
            cpy' fnames "presi" "utils" ".h"
       |  Mode.Kvm ->
+          let fnames = cpy' fnames "kvm_io" "presi_io" ".h" in
+          let fnames = cpy' fnames "kvm_count" "presi_count" ".h" in
           let prf =
             if do_dynalloc then
               "#define KVM 1\n#define DYNALLOC 1"
@@ -244,16 +244,17 @@ module Make(O:Config)(Tar:Tar.S) =
           let fnames = cpy' ~prf:prf fnames "presi" "utils" ".h" in
           let fnames = cpy fnames "kvm_timeofday" ".h" in
           let module I = Insert(O) in
+          let fnames = "kvm_timeofday.c"::fnames in
           I.copy "kvm_timeofday.c" Tar.outname ;
           I.copy "kvm-headers.h" Tar.outname ;
           fnames in
       let fnames =
         match O.mode with
         | Mode.Std ->
-            let fnames = cpy fnames "outs" ".c" in
-            let fnames = cpy fnames "outs" ".h" in
-            fnames
+            cpy_std fnames "outs"
         | Mode.PreSi|Mode.Kvm ->
+            let fnames = cpy fnames "outhash" ".c" in
+            let fnames = cpy fnames "outhash" ".h" in
             fnames in
       let fnames =
         match O.affinity with
@@ -267,35 +268,27 @@ module Make(O:Config)(Tar:Tar.S) =
         if flags.Flags.memtag then
           begin
             let sub = dir_of_sysarch O.sysarch in
-            let fnames = cpy ~sub:sub fnames "memtag" ".c" in
-            let fnames = cpy ~sub:sub fnames "memtag" ".h" in
-            fnames
+            cpy_std ~sub:sub fnames "memtag"
           end
         else fnames in
       let fnames =
         if flags.Flags.exs then
           begin
             let sub = dir_of_sysarch O.sysarch in
-            let fnames = cpy ~sub:sub fnames "exs" ".c" in
-            let fnames = cpy ~sub:sub fnames "exs" ".h" in
-            fnames
+            cpy_std ~sub:sub fnames "exs"
           end
         else fnames in
       let fnames =
         if flags.Flags.ets then
           begin
             let sub = dir_of_sysarch O.sysarch in
-            let fnames = cpy ~sub:sub fnames "ets" ".c" in
-            let fnames = cpy ~sub:sub fnames "ets" ".h" in
-            fnames
+            cpy_std ~sub:sub fnames "ets"
           end
         else fnames in
       let fnames =
         if flags.Flags.pac then
           let sub = dir_of_sysarch O.sysarch in
-          let fnames = cpy ~sub:sub fnames "auth" ".c" in
-          let fnames = cpy ~sub:sub fnames "auth" ".h" in
-          fnames
+          cpy_std ~sub:sub fnames "auth"
         else fnames in
       fnames
 

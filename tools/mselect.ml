@@ -113,9 +113,8 @@ let prog =
 
 let () =
   Arg.parse
-    ["-v",Arg.Unit (fun () -> incr verbose), " be verbose";
-     "-q",Arg.Unit (fun () -> verbose := -1), " quiet mode, status only";
-     begin let module P = ParseTag.Make(Archs) in
+    (LibOpts.parse_verbose verbose
+    @ [begin let module P = ParseTag.Make(Archs) in
      P.parse_fun
        "-arch" (fun a -> archs := !archs @ [a]) "select architecture, can be repeated" end ;
      CheckName.parse_names names; CheckName.parse_oknames oknames;
@@ -128,7 +127,7 @@ let () =
      "-forall", Arg.Bool (fun b -> forall := b),
      sprintf "<bool> accept forall final conditions %b" !forall;
      "-exists", Arg.Bool (fun b -> exists := b),
-     sprintf "<bool> accept exists and ~exists final conditions %b" !exists;]
+     sprintf "<bool> accept exists and ~exists final conditions %b" !exists;])
     (fun s -> tests := s :: !tests)
     (sprintf "Usage: %s [options]* [test]*" prog)
 

@@ -22,11 +22,6 @@ val parse_oknames : StringSet.t ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_rename : string list ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_excl : string list ref ->  Arg.key * Arg.spec * Arg.doc
 val parse_nonames : StringSet.t ref ->  Arg.key * Arg.spec * Arg.doc
-val parse_hexa : bool ref ->  Arg.key * Arg.spec * Arg.doc
-val parse_int32 : bool ref ->  Arg.key * Arg.spec * Arg.doc
-val parse_faulttype : bool ref -> Arg.key * Arg.spec * Arg.doc
-val datafault_key : string
-val parse_datafault : bool ref -> Arg.key * Arg.spec * Arg.doc
 
 module Make :
   functor
@@ -41,7 +36,6 @@ module Make :
    end) ->
      sig
        val rename : string -> string
-       val rename_opt : string -> string option
        val names : StringSet.t option
        val ok : string -> bool
      end

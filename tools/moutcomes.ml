@@ -16,7 +16,6 @@
 
 
 open Printf
-open OptNames
 
 let verbose = ref 0
 let logs = ref []
@@ -26,17 +25,14 @@ let faulttype = ref true
 let datafault = ref true
 
 let options =
-  let open CheckName in
-  [
-  ("-q", Arg.Unit (fun _ -> verbose := -1),
-   "<non-default> be silent");
-  ("-v", Arg.Unit (fun _ -> incr verbose),
-   "<non-default> show various diagnostics, repeat to increase verbosity");
-     parse_hexa hexa;
-     parse_int32 int32;
-     parse_faulttype faulttype;
-     parse_datafault datafault;
-  ]@parse_withselect
+  LibOpts.parse_verbose verbose
+  @ [
+  ToolsOpts.parse_hexa hexa;
+  ToolsOpts.parse_int32 int32;
+  ToolsOpts.parse_faulttype faulttype;
+  ToolsOpts.parse_datafault datafault;
+  ]@OptNames.parse_withselect
+
 
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
@@ -49,7 +45,8 @@ let () =
 log is a log file names.
 Options are:" prog)
 
-let rename = !rename
+open OptNames
+
 let select = !select
 let names = !names
 let oknames = !oknames
@@ -58,6 +55,7 @@ let nonames = !nonames
 let verbose = !verbose
 let hexa = !hexa
 let int32 = !int32
+
 let log = match !logs with
 | [log;] -> Some log
 | [] -> None
@@ -77,7 +75,7 @@ module LL =
       include CheckName.Make
           (struct
             let verbose = verbose
-            let rename = rename
+            let rename = []
             let select = select
             let names = names
             let oknames = oknames

@@ -38,7 +38,6 @@ end) = struct
     Splitter.Make
       (struct
         let debug = TopConf.debug.Debug_herd.lexer
-        let check_rename = TopConf.check_rename
       end)
 
   let do_from_string env ~filename ~contents =

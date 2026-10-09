@@ -287,6 +287,10 @@ let fatal lexbuf desc =
     }
   |> Error.fatal
 
+let fatal_unterminated_string opening_pos lexbuf =
+  Error.fatal_here opening_pos (Lexing.lexeme_start_p lexbuf)
+    Error.UnterminatedString
+
 let tr_name s = match s with
 | "accessor"      -> ACCESSOR
 | "AND"           -> AND
@@ -365,6 +369,8 @@ let tr_name s = match s with
 }
 
 let asl_chars = ['\r' '\n' ' '-'~'] (* ASCII 10, 13, 32-126 *)
+let line_char = asl_chars # ['\r' '\n']
+let line_term = "\r\n" | '\n'
 let digit = ['0'-'9']
 let digit_ = digit | '_'
 let int_lit = digit digit_*
@@ -405,19 +411,20 @@ let forbidden_real_remaining = int_lit '.' int_lit alpha
        cannot match negatively on the two string character that escape the end
        of a string literal.
 *)
-rule escaped_string_chars acc = parse
-  | 'n'  { Buffer.add_char acc '\n'; string_lit acc lexbuf }
-  | 't'  { Buffer.add_char acc '\t'; string_lit acc lexbuf }
-  | '"'  { Buffer.add_char acc '"'; string_lit acc lexbuf }
-  | '\\' { Buffer.add_char acc '\\'; string_lit acc lexbuf }
+
+rule escaped_string_chars opening_pos acc = parse
+  | line_term | eof { fatal_unterminated_string opening_pos lexbuf }
+  | 'n'  { Buffer.add_char acc '\n'; string_lit opening_pos acc lexbuf }
+  | 't'  { Buffer.add_char acc '\t'; string_lit opening_pos acc lexbuf }
+  | '"'  { Buffer.add_char acc '"'; string_lit opening_pos acc lexbuf }
+  | '\\' { Buffer.add_char acc '\\'; string_lit opening_pos acc lexbuf }
   | [^ 'n' 't' '"' '\\'] { raise LexerError }
 
-and string_lit acc = parse
+and string_lit opening_pos acc = parse
   | '"'   { STRING_LIT (Buffer.contents acc) }
-  | '\\'  { escaped_string_chars acc lexbuf }
-  | '\n'  { Buffer.add_char acc '\n'; new_line lexbuf |> string_lit acc }
-  | (asl_chars # ['"' '\\' '\n' '\r'])+ as lxm { Buffer.add_string acc lxm; string_lit acc lexbuf }
-  | eof   { raise LexerError }
+  | '\\'  { escaped_string_chars opening_pos acc lexbuf }
+  | (line_char # ['"' '\\'])+ as lxm { Buffer.add_string acc lxm; string_lit opening_pos acc lexbuf }
+  | line_term | eof { fatal_unterminated_string opening_pos lexbuf }
   | _     { raise LexerError }
 
 (*
@@ -426,11 +433,11 @@ and string_lit acc = parse
 *)
 
 and c_comments = parse
-  | "*/"          { token      lexbuf }
-  | '*'           { c_comments lexbuf }
-  | '\n'          { new_line lexbuf |> c_comments }
-  | (asl_chars # ['*' '\n'])+ { c_comments lexbuf }
-  | _             { raise LexerError  }
+  | "*/"                    { token      lexbuf }
+  | '*'                     { c_comments lexbuf }
+  | line_term               { new_line lexbuf |> c_comments }
+  | (line_char # ['*'])+    { c_comments lexbuf }
+  | _                       { raise LexerError  }
 
 (*
    Lexing of ASL tokens
@@ -438,14 +445,17 @@ and c_comments = parse
 *)
 
 and token = parse
-    | '\n'                     { new_line lexbuf |> token         }
-    | [' ''\r']+               { token lexbuf                     }
-    | "//" (asl_chars # '\n')* { token lexbuf                     }
+    | line_term                { new_line lexbuf |> token         }
+    | ' '+                     { token lexbuf                     }
+    | "//" line_char*          { token lexbuf                     }
     | "/*"                     { c_comments lexbuf                }
     | int_lit as lxm           { INT_LIT(Z.of_string lxm)         }
     | hex_lit as lxm           { INT_LIT(Z.of_string lxm)         }
     | real_lit as lxm          { REAL_LIT(Q.of_string lxm)        }
-    | '"'                      { string_lit (Buffer.create 16) lexbuf }
+    | '"'                      {
+        let opening_pos = Lexing.lexeme_start_p lexbuf in
+        string_lit opening_pos (Buffer.create 16) lexbuf
+      }
     | '\'' (bits as lxm) '\''  { bitvector_lit lxm                }
     | '\'' (mask as lxm) '\''  { mask_lit lxm                     }  (* Warning: masks with no unknown 'x' characters will be lexed as bitvectors. *)
     | '!'                      { BNOT                             }

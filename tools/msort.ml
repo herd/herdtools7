@@ -255,11 +255,11 @@ let orders = ref []
 let reverse = ref false
 let tnames = ref false
 let keep_bad = ref true
-let names = ref [] and excl = ref []
-let oknames = ref StringSet.empty and nonames = ref StringSet.empty
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
   else "msort"
+
+open OptNames
 
 let () =
   let usage =
@@ -275,8 +275,9 @@ let () =
         "Options:" ;
       ] in
   Arg.parse
-    ["-v",Arg.Unit (fun () -> incr verbose), " be verbose";
-     "-d",Arg.Unit (fun () -> duplicates := Keep)," keep duplicates";
+    (LibOpts.parse_verbose verbose
+     @ parse_noselect
+     @ ["-d",Arg.Unit (fun () -> duplicates := Keep)," keep duplicates";
      "-dups",Arg.String (fun tag -> duplicates := parse_duplicates tag),
      sprintf
        "<keep|comment|delete> what to do with duplicates, default %s"
@@ -286,9 +287,7 @@ let () =
      "-keepbad",Arg.Bool (fun b -> keep_bad := b),sprintf "keep non-parsable tests, default %b" !keep_bad;
      "-cost",
      Arg.String (fun s -> orders := !orders @ [s]),
-     "<name> specify order file";
-     CheckName.parse_names names; CheckName.parse_oknames oknames;
-     CheckName.parse_excl excl; CheckName.parse_nonames nonames; ]
+     "<name> specify order file";])
     (fun s -> arg := s :: !arg)
     usage
 

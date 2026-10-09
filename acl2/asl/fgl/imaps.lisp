@@ -363,6 +363,12 @@
                                       val-imap-fix
                                       val-imap-has-key
                                       assoc-of-val-imap-add-pairs))))
+  
+  (fgl::def-fgl-rewrite val-imap-put-pairs-of-val-imap-add-pairs-multiple
+    (implies (syntaxp (not (equal rest nil)))
+             (equal (val-imap-put-pairs (cons pair1 rest) (val-imap-add-pairs pairs nil))
+                    (val-imap-put-pairs (list pair1) (val-imap-put-pairs rest (val-imap-add-pairs pairs nil))))))
+  
 
   (defthm val-imap-put-of-put-pairs-of-put
     (equal (val-imap-put k v (val-imap-put-pairs lst (val-imap-put k v2 x)))
@@ -1981,3 +1987,49 @@
 
 ;; (fgl::disable-if-merge-args val-imap-add-pairs)
 ;; (fgl::disable-if-merge-args val-imap-put-pairs)
+
+
+
+
+(define val-imap-to-pairs ((imap val-imap-p))
+  :verify-guards nil
+  :measure (acl2-count (val-imap-fix imap))
+  (b* ((imap (val-imap-fix imap))
+       ((when (omap::emptyp imap)) nil)
+       ((mv key val) (omap::head imap)))
+    (cons (cons key val) (val-imap-to-pairs (omap::tail imap))))
+  ///
+  (fty::deffixequiv val-imap-to-pairs)
+  (defthm hons-assoc-equal-of-val-imap-to-pairs
+    (equal (hons-assoc-equal key (val-imap-to-pairs imap))
+           (and (identifier-p key)
+                (val-imap-has-key key imap)
+                (cons key (val-imap-lookup key imap)))
+           ;; (omap::assoc key (val-imap-fix imap))
+           )
+    :hints(("Goal" :in-theory (enable omap::assoc
+                                      omap::lookup
+                                      val-imap-lookup
+                                      val-imap-has-key)
+            :induct (val-imap-to-pairs imap))))
+
+  (defthm val-imap-add-pairs-of-val-imap-to-pairs
+    (equal (val-imap-add-pairs (val-imap-to-pairs imap) nil)
+           (val-imap-fix imap))
+    :hints (("goal" :use ((:instance val-imap-lookup-diff-key-when-unequal
+                           (x (val-imap-add-pairs (val-imap-to-pairs imap) nil))
+                           (y imap)))
+             :in-theory (disable val-imap-to-pairs))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable val-imap-lookup
+                                      val-imap-has-key
+                                      omap::lookup))))))
+
+(fgl::def-fgl-rewrite val-imap-add-pairs-equal-constant
+  (equal (Equal (val-imap-add-pairs pairs nil) (fgl::concrete rec))
+         (and (val-imap-p rec)
+              (equal (val-imap-add-pairs pairs nil)
+                     (let ((pairs (val-imap-to-pairs rec)))
+                       (fgl::fgl-hide (val-imap-add-pairs pairs nil)))))))
+            
+

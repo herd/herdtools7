@@ -130,7 +130,13 @@
         \item \ExpR{E\textsubscript{1}}.
         \item \expandafter{\MakeUppercase\notthecase{\NoRet{E\textsubscript{1}}}}.
         \end{itemize}
-      \item \ImpTagR{E\textsubscript{1}}.
+      \item All of the following apply:
+        \begin{itemize}
+        \item \ImpTagR{E\textsubscript{1}}.
+        \item \expandafter{\MakeUppercase\sameinstance{E\textsubscript{1}}{E\textsubscript{4}}}.
+        \item \ExpR{E\textsubscript{4}}.
+        \item \expandafter{\MakeUppercase\notthecase{\NoRet{E\textsubscript{4}}}}.
+        \end{itemize}
       \end{itemize}
     \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \DSBLD{E\textsubscript{3}}.
@@ -144,8 +150,21 @@
   \item All of the following apply:
     \begin{itemize}
     \item \ETSTwo{} or \ETSThree{}.
-    \item \ExpR{E\textsubscript{1}}.
-    \item \expandafter{\MakeUppercase\notthecase{\NoRet{E\textsubscript{1}}}}.
+    \item One of the following applies:
+      \begin{itemize}
+      \item All of the following apply:
+        \begin{itemize}
+        \item \ExpR{E\textsubscript{1}}.
+        \item \expandafter{\MakeUppercase\notthecase{\NoRet{E\textsubscript{1}}}}.
+        \end{itemize}
+      \item All of the following apply:
+        \begin{itemize}
+        \item \ImpTagR{E\textsubscript{1}}.
+        \item \expandafter{\MakeUppercase\sameinstance{E\textsubscript{1}}{E\textsubscript{4}}}.
+        \item \ExpR{E\textsubscript{4}}.
+        \item \expandafter{\MakeUppercase\notthecase{\NoRet{E\textsubscript{4}}}}.
+        \end{itemize}
+      \end{itemize}
     \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \DSBLD{E\textsubscript{3}}.
     \item \expandafter{\MakeUppercase\po{E\textsubscript{3}}{E\textsubscript{2}}}.
@@ -293,6 +312,31 @@
   \item \W{E\textsubscript{2}}.
   \end{itemize}
 
+  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show TTD-in-same-scope aarch64.cat
+  \expandafter{\MakeUppercase\TTDinsamescopeemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
+  \begin{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ImpTTDR{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\trib{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item \ExpM{E\textsubscript{3}}.
+    \item \expandafter{\MakeUppercase\sameloworderbits{E\textsubscript{3}}{E\textsubscript{4}}}.
+    \item \ExpM{E\textsubscript{4}}.
+    \item \expandafter{\MakeUppercase\trib{E\textsubscript{2}}{E\textsubscript{4}}}.
+    \item \ImpTTDR{E\textsubscript{2}}.
+    \end{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ImpTTDR{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\trib{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item \ImpTagR{E\textsubscript{3}}.
+    \item \expandafter{\MakeUppercase\sameloworderbits{E\textsubscript{3}}{E\textsubscript{4}}}.
+    \item \ImpTagR{E\textsubscript{4}}.
+    \item \expandafter{\MakeUppercase\trib{E\textsubscript{2}}{E\textsubscript{4}}}.
+    \item \ImpTTDR{E\textsubscript{2}}.
+    \end{itemize}
+  \end{itemize}
+
   $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show TLBI-ob aarch64.cat
   \expandafter{\MakeUppercase\TLBIobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
@@ -305,13 +349,9 @@
     \end{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \ImpTTDR{E\textsubscript{1}}.
-    \item \expandafter{\MakeUppercase\trib{E\textsubscript{1}}{E\textsubscript{4}}}.
-    \item \expandafter{\MakeUppercase\sameloworderbits{E\textsubscript{4}}{E\textsubscript{5}}}.
-    \item \expandafter{\MakeUppercase\po{E\textsubscript{4}}{E\textsubscript{5}}}.
-    \item \expandafter{\MakeUppercase\trib{E\textsubscript{3}}{E\textsubscript{5}}}.
-    \item \ImpTTDR{E\textsubscript{3}}.
+    \item \expandafter{\MakeUppercase\TTDinsamescope{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \expandafter{\MakeUppercase\sametranslationcontext{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \expandafter{\MakeUppercase\TTDreadorderedbefore{E\textsubscript{3}}{E\textsubscript{2}}}.
     \item \expandafter{\MakeUppercase\ext{E\textsubscript{3}}{E\textsubscript{2}}}.
     \end{itemize}
@@ -334,7 +374,7 @@
   \item \expandafter{\MakeUppercase\HUca{E\textsubscript{1}}{E\textsubscript{2}}}.
   \item All of the following apply:
     \begin{itemize}
-    \item \HU{E\textsubscript{1}}.
+    \item \ImpTTDW{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\ca{E\textsubscript{1}}{E\textsubscript{2}}}.
     \item \W{E\textsubscript{2}}.
     \end{itemize}
@@ -342,7 +382,7 @@
     \begin{itemize}
     \item \W{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\ca{E\textsubscript{1}}{E\textsubscript{2}}}.
-    \item \HU{E\textsubscript{2}}.
+    \item \ImpTTDW{E\textsubscript{2}}.
     \end{itemize}
   \item \expandafter{\MakeUppercase\TLBIca{E\textsubscript{1}}{E\textsubscript{2}}}.
   \end{itemize}
@@ -396,8 +436,7 @@
     \begin{itemize}
     \item \ExpM{E\textsubscript{2}}.
     \item \ImpTagR{E\textsubscript{2}}.
-    \item \ImpTTDR{E\textsubscript{2}}.
-    \item \HU{E\textsubscript{2}}.
+    \item \ImpTTDM{E\textsubscript{2}}.
     \item \TLBI{E\textsubscript{2}}.
     \item \DCCVAU{E\textsubscript{2}}.
     \item \ICIVAU{E\textsubscript{2}}.
@@ -428,7 +467,7 @@
     \begin{itemize}
     \item \ImpTTDR{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\rmw{E\textsubscript{1}}{E\textsubscript{2}}}.
-    \item \HU{E\textsubscript{2}}.
+    \item \ImpTTDW{E\textsubscript{2}}.
     \end{itemize}
   \end{itemize}
 
@@ -482,11 +521,16 @@
       \begin{itemize}
       \item All of the following apply:
         \begin{itemize}
-        \item \Exp{E\textsubscript{1}}.
-        \item \R{E\textsubscript{1}}.
+        \item \ExpR{E\textsubscript{1}}.
         \item \expandafter{\MakeUppercase\notthecase{\NoRet{E\textsubscript{1}}}}.
         \end{itemize}
-      \item \ImpTagR{E\textsubscript{1}}.
+      \item All of the following apply:
+        \begin{itemize}
+        \item \ImpTagR{E\textsubscript{1}}.
+        \item \expandafter{\MakeUppercase\sameinstance{E\textsubscript{1}}{E\textsubscript{4}}}.
+        \item \ExpR{E\textsubscript{4}}.
+        \item \expandafter{\MakeUppercase\notthecase{\NoRet{E\textsubscript{4}}}}.
+        \end{itemize}
       \end{itemize}
     \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \DMBLD{E\textsubscript{3}}.
@@ -591,7 +635,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \ExpW{E\textsubscript{2}}.
-      \item \HU{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
       \item \TLBI{E\textsubscript{2}}.
       \item \DCCVAU{E\textsubscript{2}}.
       \item \IC{E\textsubscript{2}}.
@@ -605,7 +649,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \ExpW{E\textsubscript{2}}.
-      \item \HU{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
       \end{itemize}
     \end{itemize}
   \item All of the following apply:
@@ -639,7 +683,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \ExpW{E\textsubscript{2}}.
-      \item \HU{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
       \end{itemize}
     \end{itemize}
   \item All of the following apply:
@@ -651,7 +695,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \ExpW{E\textsubscript{2}}.
-      \item \HU{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
       \end{itemize}
     \end{itemize}
   \end{itemize}
@@ -691,7 +735,7 @@
   \item One of the following applies:
     \begin{itemize}
     \item \ExpW{E\textsubscript{5}}.
-    \item \HU{E\textsubscript{5}}.
+    \item \ImpTTDW{E\textsubscript{5}}.
     \end{itemize}
   \item One of the following applies:
     \begin{itemize}
@@ -701,7 +745,7 @@
   \item One of the following applies:
     \begin{itemize}
     \item \ExpW{E\textsubscript{2}}.
-    \item \HU{E\textsubscript{2}}.
+    \item \ImpTTDW{E\textsubscript{2}}.
     \end{itemize}
   \end{itemize}
 
@@ -809,8 +853,7 @@
     \begin{itemize}
     \item \ExpM{E\textsubscript{2}}.
     \item \ImpTagR{E\textsubscript{2}}.
-    \item \ImpTTDR{E\textsubscript{2}}.
-    \item \HU{E\textsubscript{2}}.
+    \item \ImpTTDM{E\textsubscript{2}}.
     \item \TLBI{E\textsubscript{2}}.
     \item \DCCVAU{E\textsubscript{2}}.
     \item \ICIVAU{E\textsubscript{2}}.
@@ -924,7 +967,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \ExpW{E\textsubscript{2}}.
-      \item \HU{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
       \item \TLBI{E\textsubscript{2}}.
       \item \DCCVAU{E\textsubscript{2}}.
       \item \IC{E\textsubscript{2}}.
@@ -937,7 +980,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \ExpW{E\textsubscript{2}}.
-      \item \HU{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
       \item \TLBI{E\textsubscript{2}}.
       \item \DCCVAU{E\textsubscript{2}}.
       \item \IC{E\textsubscript{2}}.
@@ -951,7 +994,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \ExpW{E\textsubscript{2}}.
-      \item \HU{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
       \end{itemize}
     \end{itemize}
   \end{itemize}
@@ -963,17 +1006,31 @@
   \item \expandafter{\MakeUppercase\notthecase{\ExpR{E\textsubscript{2}}}}.
   \end{itemize}
 
+  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show ii_direct_data aarch64.cat
+  \expandafter{\MakeUppercase\iidirectdataemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
+  \begin{itemize}
+  \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{1}}{E\textsubscript{2}}}.
+  \item \expandafter{\MakeUppercase\notthecase{all of the following apply}}:
+    \begin{itemize}
+    \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item \M{E\textsubscript{3}}.
+    \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{3}}{E\textsubscript{2}}}.
+    \end{itemize}
+  \end{itemize}
+
   $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show tr-ib aarch64.cat
   \expandafter{\MakeUppercase\tribemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ImpTTDR{E\textsubscript{1}}.
-  \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{1}}{E\textsubscript{3}}}.
+  \item \expandafter{\MakeUppercase\iidirectdata{E\textsubscript{1}}{E\textsubscript{3}}}.
   \item \B{E\textsubscript{3}}.
   \item \expandafter{\MakeUppercase\iicoctrl{E\textsubscript{3}}{E\textsubscript{2}}}.
   \item One of the following applies:
     \begin{itemize}
     \item \ExpM{E\textsubscript{2}}.
+    \item \ImpTagR{E\textsubscript{2}}.
     \item \MMUFAULT{E\textsubscript{2}}.
+    \item \TagCheckFAULT{E\textsubscript{2}}.
     \end{itemize}
   \end{itemize}
 
@@ -1087,7 +1144,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \ExpW{E\textsubscript{2}}.
-      \item \HU{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
       \end{itemize}
     \end{itemize}
   \end{itemize}
@@ -1121,7 +1178,7 @@
   \item One of the following applies:
     \begin{itemize}
     \item \ExpW{E\textsubscript{2}}.
-    \item \HU{E\textsubscript{2}}.
+    \item \ImpTTDW{E\textsubscript{2}}.
     \end{itemize}
   \end{itemize}
 
@@ -1130,5 +1187,5 @@
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
   \item \expandafter{\MakeUppercase\ca{E\textsubscript{1}}{E\textsubscript{2}}}.
-  \item \HU{E\textsubscript{2}}.
+  \item \ImpTTDW{E\textsubscript{2}}.
   \end{itemize}

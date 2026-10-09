@@ -23,11 +23,11 @@ let n = ref None
 let verbose = ref 0
 
 let opts =
-  ("-v", Arg.Unit (fun () -> incr verbose),"be verbose")::
-  ("-n", Arg.Int (fun x -> n := Some x),
-   "<n> filter cyles by number of accesses (mandatory)")::
-  Util.arch_opt arch::
-  []
+  LibOpts.parse_verbose verbose
+  @ [
+    "-n", Arg.Int (fun x -> n := Some x),
+    "<n> filter cyles by number of accesses (mandatory)";
+    Util.arch_opt arch; ]
 
 
 module type Config = sig

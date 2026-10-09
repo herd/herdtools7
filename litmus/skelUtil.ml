@@ -906,7 +906,7 @@ end
               O.f "static %s postlude(FILE *out,cmd_t *cmd,hist_t *hist,count_t p_true,count_t p_false,tsc_t total) {" t
           | Mode.PreSi|Mode.Kvm ->
               O.f "static %s postlude(FILE *out,global_t *g,count_t p_true,count_t p_false,tsc_t total) {" t ;
-              O.oi "hash_t *hash = &g->hash ;"
+              O.oi "outhash_t *hash = &g->hash ;"
           end ;
 (* Print header *)
           let c = test.T.condition in
@@ -925,7 +925,7 @@ end
               O.oi "just_dump_outcomes(out,hist);"
           | Mode.PreSi|Mode.Kvm ->
               pp_nstates "hash->nhash" ;
-              O.oi "pp_hash(out,hash,g->verbose > 1,g->group);" ;
+              O.oi "outhash_dump(out,dump_entry,hash);" ;
               ()
           end ;
 (* Print condition and witnesses *)
@@ -936,7 +936,7 @@ end
             | ForallStates _|NotExistsState _ -> "p_true == 0" in
             O.fi "int cond = %s;" to_check ;
             EPF.fi "%s\n" ["cond?\"Ok\":\"No\""] ;
-            EPF.fi "\nWitnesses\n" [] ;
+            EPF.fi "Witnesses\n" [] ;
             let fmt = "Positive: %PCTR, Negative: %PCTR\n" in
             EPF.fi fmt
               [(match c with
@@ -1080,6 +1080,7 @@ end
           | Mode.Std|Mode.PreSi ->
               let fmt = sprintf "Time %s %%f\n"  doc.Name.name in
               EPF.fi fmt ["total / 1000000.0"] ;
+              EPF.fi "\n" [];
               O.oi "fflush(out);"
           | Mode.Kvm ->
               if
@@ -1089,7 +1090,7 @@ end
               let s = sprintf "Time %s "  doc.Name.name in
               O.fi "puts(%S);" s ;
               O.oi "emit_millions(tsc_millions(total));" ;
-              O.oi "puts(\"\\n\");"
+              O.fi "puts(%S);" "\n\n"
           end ;
           begin match Cfg.mode with
           | Mode.PreSi|Mode.Kvm ->

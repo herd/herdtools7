@@ -4,6 +4,11 @@ error: TE_BO
 error_line: 2
 info: |-
   File ../tests/typing/TypingRule.CheckGlobalPragma.bad.asl, line 2,
+    characters 0 to 33:
+  pragma bad_pragma 1, (2==3.0), x;
+  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Warning: pragma bad_pragma will be ignored.
+  File ../tests/typing/TypingRule.CheckGlobalPragma.bad.asl, line 2,
     characters 22 to 28:
   pragma bad_pragma 1, (2==3.0), x;
                         ^^^^^^

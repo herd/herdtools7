@@ -26,12 +26,16 @@
 
 (include-book "toplevel")
 (include-book "trace-subset")
+(include-book "arbvals-proof-top")
+(include-book "trace-arbvals-interp")
 (include-book "stack-preserved")
+(include-book "stack-normalize")
 (include-book "proofs/stdlib/top")
 (include-book "xdoc/save" :dir :system)
 (include-book "oslib/date" :dir :system)
 (include-book "centaur/fty/top" :dir :system)
 (include-book "fgl/asl-fgl-top")
+(include-book "find")
 (defttag :manual-info)
 
 (value-triple (acl2::tshell-ensure))

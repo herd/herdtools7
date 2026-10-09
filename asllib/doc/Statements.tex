@@ -6,30 +6,9 @@ Statements update storage elements and determine the flow of control in a subpro
 \ASLListing{Examples of statements}{Statements}{\definitiontests/Statements.asl}
 
 \ChapterOutline
-\begin{itemize}
-  \item \FormalRelationsRef{Statements} defines the formal relations used for statements;
-  \item \secref{PassStatements} defines pass statements;
-  \item \secref{AssignmentStatements} defines assignment statements;
-  \item \secref{SetterAssignmentStatements} defines setter assignment statements;
-  \item \secref{DeclarationStatements} defines declaration statements;
-  \item \secref{SequencingStatement} defines sequencing statements;
-  \item \secref{CallStatements} defines call statements;
-  \item \secref{ConditionalStatements} defines conditional statements;
-  \item \secref{CaseStatements} defines case statements;
-  \item \secref{AssertionStatements} defines assertion statements;
-  \item \secref{WhileStatements} defines while statements;
-  \item \secref{RepeatStatements} defines repeat statements;
-  \item \secref{ForStatements} defines for-looping statements;
-  \item \secref{ThrowStatements} defines throw statements;
-  \item \secref{TryStatements} defines try statements;
-  \item \secref{ReturnStatements} defines return statements;
-  \item \secref{PrintStatements} defines print statements;
-  \item \secref{UnreachableStatement} defines unreachable statements;
-  \item \secref{PragmaStatements} defines pragma statements.
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\FormalRelationsDef{Statements}
+\FormalRelationsDef[defines the formal relations used for statements]{Statements}
 \paragraph{Syntax:} Statements are grammatically derived from $\Nstmt$.
 
 \paragraph{Abstract Syntax:} Statements are derived in the abstract syntax from $\stmt$
@@ -51,7 +30,8 @@ transforms a statement parse node $\vparsednode$ into a statement AST node $\vas
 \RenderRelation{eval_stmt}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Pass Statements\label{sec:PassStatements}}
+\SectionDef[defines pass statements]
+  {PassStatements}{Pass Statements}
 \hypertarget{def-passstatementterm}{}
 
 \ASLListing{A \texttt{pass} statement}{semantics-spass}{\semanticstests/SemanticsRule.SPass.asl}
@@ -94,7 +74,8 @@ In \listingref{semantics-spass}, \texttt{pass;} does not modify the environment.
 \CodeSubsection{\EvalSPassBegin}{\EvalSPassEnd}{../Interpreter.ml}
 
 \hypertarget{def-assignmentstatementterm}{}
-\section{Assignment Statements\label{sec:AssignmentStatements}}
+\SectionDef[defines assignment statements]
+  {AssignmentStatements}{Assignment Statements}
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \ & \Nlexpr \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &
@@ -179,7 +160,8 @@ and \verb|-| is a discarded \assignableexpression{}.
 
 \RenderProseAndFormally{lexpr_is_var}
 
-\section{Setter Assignment Statements\label{sec:SetterAssignmentStatements}}
+\SectionDef[defines setter assignment statements]
+  {SetterAssignmentStatements}{Setter Assignment Statements}
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \
@@ -395,7 +377,8 @@ builds a sequence of statements to read from the getter invocation $\vcall.\call
 As given by applying the relevant rules to the desugared AST.
 
 \hypertarget{def-declarationstatementterm}{}
-\section{Declaration Statements\label{sec:DeclarationStatements}}
+\SectionDef[defines declaration statements]
+  {DeclarationStatements}{Declaration Statements}
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \ & \Nlocaldeclkeyword \parsesep \Ndeclitem \parsesep \option{\Nasty} \parsesep \Teq \parsesep \Nexpr \parsesep \Tsemicolon &\\
@@ -533,7 +516,8 @@ In \listingref{semantics-sdeclnone},
 \RenderProseAndFormally{eval_stmt_SDecl}
 \CodeSubsection{\EvalSDeclBegin}{\EvalSDeclEnd}{../Interpreter.ml}
 
-\section{Sequencing Statements\label{sec:SequencingStatement}}
+\SectionDef[defines sequencing statements]
+  {SequencingStatement}{Sequencing Statements}
 \hypertarget{def-sequencestatementterm}{}
 
 \ASLListing{A sequence of statements}{semantics-sseq}{\semanticstests/SemanticsRule.SSeq.asl}
@@ -648,7 +632,8 @@ evaluates \texttt{let y = x + 1}.
 \RenderProseAndFormally{eval_stmt_SSeq}
 \CodeSubsection{\EvalSSeqBegin}{\EvalSSeqEnd}{../Interpreter.ml}
 
-\section{Call Statements\label{sec:CallStatements}}
+\SectionDef[defines call statements]
+  {CallStatements}{Call Statements}
 \hypertarget{def-callstatementterm}{}
 Call statements are used to invoke procedures and setters.
 
@@ -719,8 +704,8 @@ assigns \verb|'1101 111'| to the global variable \verb|g|.
 
 
 \hypertarget{def-conditionalstatementterm}{}
-\section{Conditional Statements\label{sec:ConditionalStatements}}
-
+\SectionDef[defines conditional statements]
+  {ConditionalStatements}{Conditional Statements}
 A conditional statement evaluates its \texttt{then} statement list if the
 condition expression evaluates to $\True$. If the condition expression
 evaluates to $\False$ each \texttt{elsif} condition expression is evaluated
@@ -828,7 +813,8 @@ The specification in \listingref{semantics-scond4} does not result in any error.
 \CodeSubsection{\EvalSCondBegin}{\EvalSCondEnd}{../Interpreter.ml}
 
 \hypertarget{def-casestatementterm}{}
-\section{Case Statements\label{sec:CaseStatements}}
+\SectionDef[defines case statements]
+  {CaseStatements}{Case Statements}
 Case statements allow executing different statements, based on which
 condition an expression satisfies.
 
@@ -836,12 +822,7 @@ condition an expression satisfies.
 and the output to a console when it is evaluated.
 
 \ASLListing{A side-effecting case discriminant}{case-discriminant}{\definitiontests/CaseStatement.discriminant.asl}
-% CONSOLE_BEGIN aslref \definitiontests/CaseStatement.discriminant.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-num_tests: 0
-selected case x=51
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{casestatement-discriminant}{\definitiontests/CaseStatement.discriminant.asl}
 \listingref{case-discriminant} shows an example of a \casestatementterm{}
 and the output to a console when it is evaluated.
 %
@@ -887,12 +868,7 @@ It is not a static error if it can be statically determined that none of the pat
 \listingref{case-otherwise} demonstrates how the \otherwisecaseterm{} is evaluated.
 
 \ASLListing{Executing the \texttt{otherwise} case alternative}{case-otherwise}{\definitiontests/CaseStatement.otherwise.asl}
-% CONSOLE_BEGIN aslref \definitiontests/CaseStatement.otherwise.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-num_tests: 0
-selected otherwise
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{casestatement-otherwise}{\definitiontests/CaseStatement.otherwise.asl}
 
 \RequirementDef{CaseNoOtherwiseError} If no \casealternativeterm\ is selected,
 and there is no \otherwisecaseterm, it is a \dynamicerrorterm{}.
@@ -1201,7 +1177,8 @@ In \listingref{CaseStatement.where} the expression \verb|a| will be evaluated tw
 \ASLListing{Evaluating case alternative sub-expressions}{CaseStatement.where}{\definitiontests/CaseStatement.where.asl}
 
 \hypertarget{def-assertionstatementterm}{}
-\section{Assertion Statements\label{sec:AssertionStatements}}
+\SectionDef[defines assertion statements]
+  {AssertionStatements}{Assertion Statements}
 Assertion statements are used to check that certain conditions are satisfied.
 They take a single \booleantypeterm{} operand, which we refer to as the
 \emph{condition}. If the condition is \False, the statement fails with a
@@ -1267,7 +1244,8 @@ evaluating \texttt{assert (42 == 3);} results in an \DynamicAssertionFailure{} e
 \CodeSubsection{\EvalSAssertBegin}{\EvalSAssertEnd}{../Interpreter.ml}
 
 
-\section{While Statements\label{sec:WhileStatements}}
+\SectionDef[defines while statements]
+  {WhileStatements}{While Statements}
 \hypertarget{def-whilestatementterm}{}
 
 \ASLListing{A \texttt{while} statement}{semantics-swhile}{\semanticstests/SemanticsRule.SWhile.asl}
@@ -1375,14 +1353,7 @@ limit expressions.
 \ExampleDef{Evaluation of While Statements}
 The specification in \listingref{semantics-swhile} prints the
 following to the console:
-% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SWhile.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-i = 0
-i = 1
-i = 2
-i = 3
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{semanticsrule-swhile}{\semanticstests/SemanticsRule.SWhile.asl}
 
 The specification in \listingref{swhile-limit-reached} yields a dynamic
 error once the loop limit for the \whilestatementterm{} is reached.
@@ -1447,7 +1418,8 @@ so the loop limit is immediately reached, resulting in a \dynamicerrorterm{} wit
 
 \RenderProseAndFormally{tick_loop_limit}
 
-\section{Repeat Statements\label{sec:RepeatStatements}}
+\SectionDef[defines repeat statements]
+  {RepeatStatements}{Repeat Statements}
 \hypertarget{def-repeatstatementterm}{}
 
 \ASLListing{A repeat statement}{semantics-srepeat}{\semanticstests/SemanticsRule.SRepeat.asl}
@@ -1494,28 +1466,14 @@ The \repeatstatementsterm{} in \listingref{semantics-srepeat} are well-typed.
 \SemanticsRuleDef{SRepeat}
 \ExampleDef{Evaluation of Repeat Statements}
 The specification in \listingref{semantics-srepeat} produces the following output to the console.
-% CONSOLE_BEGIN aslref  --type-check-no-warn \semanticstests/SemanticsRule.SRepeat.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-j = 0
-j = 1
-j = 2
-j = 3
-j = 4
-#ones in x = 5
-i = 0
-i = 1
-i = 2
-i = 3
-i = 4
-#ones in x = 5
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor[--type-check-no-warn]{semanticsrule-srepeat}{\semanticstests/SemanticsRule.SRepeat.asl}
 
 
 \RenderProseAndFormally{eval_stmt_SRepeat}
 \CodeSubsection{\EvalSRepeatBegin}{\EvalSRepeatEnd}{../Interpreter.ml}
 
-\section{For Statements\label{sec:ForStatements}}
+\SectionDef[defines for-looping statements]
+  {ForStatements}{For Statements}
 \hypertarget{def-forstatementterm}{}
 
 \ASLListing{\texttt{for} loops}{semantics-sfor}{\semanticstests/SemanticsRule.SFor.asl}
@@ -1630,22 +1588,7 @@ statement.
 \pagebreak % To avoid cutting the example output.
 \ExampleDef{Evaluation of For Statements}
 The specification in \listingref{semantics-sfor} is followed by its output to the console.
-% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SFor.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-j = 0
-j = 1
-j = 2
-j = 3
-j = 4
-#ones in x = 5
-i = 4
-i = 3
-i = 2
-i = 1
-i = 0
-#ones in x = 5
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{semanticsrule-sfor}{\semanticstests/SemanticsRule.SFor.asl}
 
 The specification in \listingref{SFor-nop} shows a \forstatementterm{}
 whose body does not evaluate since its lower bound is greater than its upper bound.
@@ -1690,7 +1633,8 @@ See \ExampleRef{Overall Evaluation of For Statements}.
 \RenderProseAndFormally{eval_for_step}
 
 \hypertarget{def-throwstatementterm}{}
-\section{Throw Statements\label{sec:ThrowStatements}}
+\SectionDef[defines throw statements]
+  {ThrowStatements}{Throw Statements}
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \ & \Tthrow \parsesep \Nexpr \parsesep \Tsemicolon &
@@ -1731,7 +1675,8 @@ terminates successfully. That is, no \dynamicerrorterm{} occurs.
 \CodeSubsection{\EvalSThrowBegin}{\EvalSThrowEnd}{../Interpreter.ml}
 
 \hypertarget{def-trystatementterm}{}
-\section{Try Statements\label{sec:TryStatements}}
+\SectionDef[defines try statements]
+  {TryStatements}{Try Statements}
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \ & \Ttry \parsesep \Nstmtlist \parsesep \Tcatch \parsesep \ListOne{\Ncatcher} \parsesep \Notherwiseopt &\\
@@ -1823,7 +1768,8 @@ does not result in any Assertion error, and the specification terminates with th
 \CodeSubsection{\EvalSTryBegin}{\EvalSTryEnd}{../Interpreter.ml}
 
 \hypertarget{def-returnstatementterm}{}
-\section{Return Statements\label{sec:ReturnStatements}}
+\SectionDef[defines return statements]
+  {ReturnStatements}{Return Statements}
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \ & \Treturn \parsesep \option{\Nexpr} \parsesep \Tsemicolon &
@@ -1886,7 +1832,7 @@ In \listingref{semantics-sreturntuple},
 \SemanticsRuleDef{EExprListM}
 \RenderRelation{eval_expr_list_m}
 
-\ExampleDef{Seperately Evaluating a List of Expressions}
+\ExampleDef{Separately Evaluating a List of Expressions}
 In \listingref{semantics-sreturntuple}, the expressions \verb|3| and \verb|42|
 are evaluated in left-to-right order in the statement \verb|return (3 , 42);|.
 
@@ -1908,7 +1854,8 @@ empty \executiongraphterm{}.
 \RenderProseAndFormally{write_folder}
 
 \hypertarget{def-printstatementterm}{}
-\section{Print Statements\label{sec:PrintStatements}}
+\SectionDef[defines print statements]
+  {PrintStatements}{Print Statements}
 \subsection{Syntax}
 \begin{flalign*}
 \Nstmt \derives \ & \Tprint \parsesep \ClistZero{\Nexpr} \parsesep \Tsemicolon & \\
@@ -1923,11 +1870,11 @@ empty \executiongraphterm{}.
 \begin{mathpar}
 \inferrule{%
   \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \\
-  \vnewline \eqdef \False \\
+  \vaddlinefeed \eqdef \False \\
 }{%
   \buildstmt(\overname{\Nstmt(\Tprint, \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)}{\vparsednode})
   \astarrow
-  \overname{\SPrint(\astversion{\vargs}, \vnewline)}{\vastnode}
+  \overname{\SPrint(\astversion{\vargs}, \vaddlinefeed)}{\vastnode}
 }
 \end{mathpar}
 
@@ -1935,11 +1882,11 @@ empty \executiongraphterm{}.
 \inferrule{%
   \vparsednode = \Nstmt(\Tprintln, \namednode{\vargs}{\ClistZero{\Nexpr}}, \Tsemicolon)\\
   \buildclist[\Nexpr](\vargs) \astarrow \astversion{\vargs} \hva\\
-  \vnewline \eqdef \True \\
+  \vaddlinefeed \eqdef \True \\
   \vdebug \eqdef \False \\
 }{%
   \buildstmt(\vparsednode) \astarrow
-  \overname{\SPrint(\astversion{\vargs}, \vnewline)}{\vastnode}
+  \overname{\SPrint(\astversion{\vargs}, \vaddlinefeed)}{\vastnode}
 }
 \end{mathpar}
 
@@ -1958,28 +1905,12 @@ empty \executiongraphterm{}.
 \listingref{semantics-literals} shows examples of printing various types of literals,
 followed by the output to the console resulting from running the specification.
 \ASLListing{Literals and how they are displayed}{semantics-literals}{\semanticstests/SemanticsRule.SPrint.asl}
-% CONSOLE_BEGIN aslref \semanticstests/SemanticsRule.SPrint.asl
-\begin{Verbatim}[fontsize=\footnotesize, frame=single]
-string_number_1
-0
-1000000
-53170898287292728730499578000
-TRUE
-FALSE
-12345678900123456789/10000000000
-0
-hello\world
-	 "here I am "
-0xd
-0x
-LABEL_B
-\end{Verbatim}
-% CONSOLE_END
+\RenderConsoleFor{semanticsrule-sprint}{\semanticstests/SemanticsRule.SPrint.asl}
 
 Notice that empty bitvectors are displayed as \verb|0x|.
 
-We define the constant \RenderConstant{new_line}, which stands
-for the newline character: $\vnewline \triangleq \ascii{10}$.
+A \texttt{println} statement behaves as the corresponding \texttt{print} statement
+followed by outputting a single line feed character (ASCII code \texttt{10}).
 
 \RenderProseAndFormally{eval_stmt_SPrint}
 \CodeSubsection{\EvalSPrintBegin}{\EvalSPrintEnd}{../Interpreter.ml}
@@ -2008,8 +1939,8 @@ only here to explain the modelling of a console.
 \RenderRelation{literal_to_string}
 The function is defined by \taref{literaltostringtable}.
 %
-Please note that surrounding quotations marks that appear in ASL text (for example, \verb|"hello"|)
-are not included in string literals, and thus will not appear in the printed string.
+The quotation marks surrounding a string literal in ASL source text delimit the literal
+and are not part of its value. Consequently, they do not appear in its string representation.
 
 \begin{table}
 \caption{How literals should be represented as strings\label{ta:literaltostringtable}}
@@ -2071,7 +2002,8 @@ with no other effect.
 }
 \end{mathpar}
 
-\section{The Unreachable Statement\label{sec:UnreachableStatement}}
+\SectionDef[defines unreachable statements]
+  {UnreachableStatement}{The Unreachable Statement}
 \hypertarget{def-unreachablestatementterm}{}
 \listingref{UnreachableStatement} shows an example of using an \unreachablestatementterm{}
 to implement a custom form of assertion checking.
@@ -2108,7 +2040,8 @@ since the \unreachablestatementterm{} is evaluated.
 
 \RenderProseAndFormally{eval_stmt_SUnreachable}
 
-\section{Pragma Statements\label{sec:PragmaStatements}}
+\SectionDef[defines pragma statements]
+  {PragmaStatements}{Pragma Statements}
 \hypertarget{def-pragmastatementterm}{}
 
 \ASLListing{A pragma statement}{typing-spragma}{\typingtests/TypingRule.SPragma.asl}

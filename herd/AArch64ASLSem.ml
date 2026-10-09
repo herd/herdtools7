@@ -1039,7 +1039,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
                   "n" ^= reg rn;
                   "offset" ^= litbv 64 k;
                   "nontemporal" ^= litb false;
-                  "tagchecked" ^= litb true;
+                  "tagchecked" ^= litb (wback || rn <> SP);
                   "wback" ^= litb wback;
                   "postindex" ^= litb postindex;
                   "rt_unknown" ^= litb false;

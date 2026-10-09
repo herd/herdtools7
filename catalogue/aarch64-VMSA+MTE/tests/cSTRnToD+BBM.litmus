@@ -1,0 +1,18 @@
+AArch64 cSTRnToD+BBM
+Variant=vmsa,fatal,mte,sync
+{
+ PTE(x)=(attrs:(TaggedNormal));
+ [tag(x)]=:green;  (* old *)
+ [tag(y)]=:red;    (* new *)
+ 0:X1=x:red; 1:X1=x;
+ 1:X0=(valid:0); 1:X3=PTE(x);
+ 1:X4=(oa:PA(y),attrs:(TaggedNormal));
+}
+ P0           | P1              ;
+  MOV W2,#1   | STR X0,[X3]     ;
+L0:           | DSB ISH         ;
+  STR W2,[X1] | LSR X9,X1,#12   ;
+              | TLBI VAAE1IS,X9 ;
+              | DSB ISH         ;
+              | STR X4,[X3]     ;
+exists(~fault(P0:L0,x,TagCheck) /\ [x]=1)

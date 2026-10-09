@@ -258,6 +258,7 @@ module Make
         O.o "/* Includes */" ;
         if do_dynalloc then O.o "#define DYNALLOC 1" ;
         if do_stats then O.o "#define STATS 1" ;
+        O.o "" ;
         if Cfg.is_kvm then begin
           O.o "#define KVM 1" ;
           O.o "#include <libcflat.h>" ;
@@ -299,6 +300,8 @@ module Make
             end
           end
         end ;
+        O.o {|#include "presi_count.h"|} ;
+        O.o {|#include "outhash.h"|} ;
         Insert.insert_when_exists O.o "intrinsics.h" ;
         if Cfg.variant Variant_litmus.MemTag then begin
           O.o "#include \"memtag.h\""
@@ -313,9 +316,6 @@ module Make
           O.o "#include \"auth.h\""
         end;
         O.o "#include \"cache.h\"" ;
-        O.o "" ;
-        O.o "typedef uint32_t count_t;" ;
-        O.o "#define PCTR PRIu32" ;
         O.o "" ;
         begin match Cfg.timelimit with
         | None -> ()
@@ -642,7 +642,7 @@ module Make
 
       let is_active = match Cfg.alloc with
         | Alloc.Dynamic -> false
-        | Alloc.Static|Alloc.Before -> not Cfg.is_kvm
+        | Alloc.Static|Alloc.Before -> not Cfg.is_kvm && do_inlined
 
       let dbg = false
 
@@ -736,14 +736,6 @@ module Make
 (************)
 (* Outcomes *)
 (************)
-
-      let does_pad t =
-        let open CType in
-        match t with
-        | Pointer _
-        | Array (("int"|"int32_t"|"uint32_t"|"int64_t"|"uint64_t"),_)
-        | Base ("int"|"int32_t"|"uint32_t"|"int64_t"|"uint64_t") -> true
-        | _ -> false
 
       let dump_loc_tag_coded loc =  sprintf "%s_idx" (A.dump_loc_tag loc)
 
@@ -883,17 +875,8 @@ module Make
 
         let fields_displayed = mk_fields rlocs_displayed in
 
-        let rec move_rec lst fs = match lst,fs with
-          | None,[] -> true,[]
-          | Some f,[] -> false, [f]
-          | None,(t,_ as f)::fs
-            when does_pad t -> move_rec (Some f) fs
-          | _,f::fs ->
-              let pad,fs = move_rec lst fs in
-              pad,f::fs in
         (* Hash table entries size must be a multiple of sizeof(int32) *)
-        let pad,fields_displayed = move_rec None fields_displayed in
-        let dump_log_def pad name fields =
+        let dump_log_def ~align name fields =
           O.o "typedef struct {" ;
           List.iter
             (fun (t,rloc) ->
@@ -915,16 +898,21 @@ module Make
             | _ ->
                 O.fi "th_faults_info_t th_faults[NTHREADS];"
           end ;
-          if pad  then O.oi "uint32_t _pad;" ;
-          O.f "} %s;" name ;
+          begin
+            if align then
+              O.f "} __attribute__ ((aligned(sizeof(uint32_t)))) %s;"
+            else
+              O.f "} %s;"
+          end name ;
           O.o "" in
-        dump_log_def pad "hashlog_t"  fields_displayed ;
+        dump_log_def ~align:true "hashlog_t"  fields_displayed ;
         if all_displayed then begin
-          O.o "typedef hashlog_t log_t;"
+          O.o "typedef hashlog_t log_t;" ;
+          O.o ""
         end else begin
           O.o "#define HASHLOG 1" ; O.o "" ;
           mk_fields rlocs_observed
-          |> dump_log_def pad "log_t"
+          |> dump_log_def ~align:false "log_t"
         end ;
 (* There are some pointers in log *)
         let some_ptr_pte =  U.ptr_pte_in_outs env test in
@@ -1114,34 +1102,6 @@ module Make
             O.fi "pp_negative_fault(&p->th_faults[%d], %d, %s, %s, %s);" p p
               pp_instr pp_data pp_ftype
           ) faults;
-        O.o "}" ;
-        O.o "" ;
-        let locs = A.RLocSet.elements rlocs_displayed in (* Now use lists *)
-        O.o "/* Equality of outcomes */" ;
-        O.o "static int eq_log(hashlog_t *p,hashlog_t *q) {" ;
-        O.oi "return" ;
-        let do_eq rloc suf =
-          let loc = choose_dump_rloc_tag rloc env in
-          O.fii "p->%s == q->%s%s" loc loc suf in
-        let do_eq_array rloc suf = match U.find_rloc_type rloc env with
-        | Array (_,sz) ->
-            let tag = choose_dump_rloc_tag rloc env in
-            let rec pp_rec k =
-              if k < sz then begin
-                let suf = if k = sz-1 then suf else " &&" in
-                O.fii "p->%s[%i] == q->%s[%i]%s" tag k tag k suf ;
-                pp_rec (k+1)
-              end in
-            pp_rec 0
-        | _ -> do_eq rloc suf in
-        let do_eq_faults = function
-          | [] -> O.oii "1;"
-          | _ -> O.oii "eq_faults(p->th_faults, q->th_faults);"
-        in
-        let rec do_rec = function
-          | [] -> do_eq_faults faults
-          | x::rem  -> do_eq_array x " &&" ; do_rec rem in
-        do_rec  locs ;
         O.o "}" ;
         O.o "" ;
         some_ptr_pte,all_displayed
@@ -1365,24 +1325,6 @@ module Make
         O.o "";
 (* Print *)
         if do_stats then begin
-          let is_delay tag =
-            List.exists (fun x -> Misc.string_eq x tag) d_tags in
-          O.f "static void pp_param(FILE *out,param_t *p) {" ;
-          let fmt =
-            "{" ^
-              String.concat ", "
-                (List.map (fun tag -> sprintf "%s=%%i" tag) all_tags) ^
-                "}"
-          and params =
-            List.map
-              (fun tag ->
-                sprintf
-                  (if is_delay tag then "p->%s-NSTEPS2" else "p->%s")
-                  tag)
-              all_tags  in
-          EPF.fi fmt params ;
-          O.o "}" ;
-          O.o "" ;
           (* Statistics *)
           O.o "typedef struct {" ;
           O.oi "count_t groups[SCANSZ];" ;
@@ -1429,19 +1371,11 @@ module Make
         let hashsz = 1+List.fold_left (fun k _ -> 2*k) hashsz faults in
         O.f "#define HASHSZ %i" hashsz ;
         O.o "" ;
-        ObjUtil.insert_lib_file O.o "_hash.c" ;
-        O.o "" ;
-        O.o "static void pp_entry(FILE *out,entry_t *p, int verbose, const char **group) {" ;
+        O.o
+          "static void dump_entry(FILE *out,outhash_entry_t *p,uint32_t *key) {" ;
         let fmt = "%-6PCTR%c>" in
         EPF.fi fmt ["p->c";"p->ok ? '*' : ':'";] ;
-        O.oi "pp_log(out,&p->key);" ;
-        if do_stats then begin
-          O.oi "if (verbose) {" ;
-          EPF.fii " # " [] ;
-          O.fii "pp_param(out,&p->p);" ;
-          EPF.fii " %s" ["group[p->p.part]"];
-          O.oi "}"
-        end ;
+        O.oi "pp_log(out,(hashlog_t *)key);" ;
         EPF.fi "%c" ["'\\n'"] ;
         O.o "}" ;
         O.o ""
@@ -2086,8 +2020,9 @@ module Make
                    O.fx id "_hlog->%s = _log->%s;" tag tag);
               "_hlog"
             end in
-          O.fx id "int _added = hash_add(&_ctx->t,%s%s,1,_cond);"
-            log (if do_stats then ",_p" else "") ;
+          O.fx id
+            "int _added = outhash_add(&_ctx->t,(uint32_t *)%s,1,_cond);"
+            log ;
           O.ox id "if (!_added && _g->hash_ok) _g->hash_ok = 0; // Avoid writing too much." ;
           (* Result and stats *)
           O.ox id "if (_cond) {" ;

@@ -1,6 +1,6 @@
 Test G006 Required
 States 2
-  ~Fault(P0);
+ ~Fault(P0);
  Fault(P0,GCS:SS2);
 No
 Witnesses

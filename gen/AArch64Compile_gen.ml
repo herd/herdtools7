@@ -32,7 +32,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         (struct
           let naturalsize = naturalsize
           let moreedges = Cfg.moreedges
-          let fullmixed = Cfg.variant Variant_gen.FullMixed
+          let fullmixed = Variant_gen.has Variant_gen.FullMixed Cfg.variant
           let variant = Cfg.variant
         end)
     include CompileCommon.Make(Cfg)(A64)
@@ -950,7 +950,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | [] -> true
       | _::_ ->
           Variant_gen.is_mixed Cfg.variant ||
-          Cfg.variant Variant_gen.Morello in
+          Variant_gen.has Variant_gen.Morello Cfg.variant in
       let st = if needs_type then
         let loc = A.of_reg p rA in
         let t = type_of_sz sz in
@@ -2043,7 +2043,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let same_sz sz1 sz2 = match sz1,sz2 with
       | None,None -> true
-      | Some s1,Some s2 ->  MachMixed.equal s1 s2
+      | Some s1,Some s2 ->  Mixed.equal s1 s2
       | (None,Some _)|(Some _,None) -> false
 
     let check_cu b =
@@ -2056,7 +2056,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       and aw = tr_none ew.C.atom in
       let different_mixed_accesses =
         match get_access_atom (Some ar),get_access_atom (Some aw) with
-        | Some a1,Some a2 -> not (MachMixed.equal a1 a2)
+        | Some a1,Some a2 -> not (Mixed.equal a1 a2)
         | _,_ -> false in
       if not different_mixed_accesses
          && not (A64.RMW.applies_atom_rmw A64.RMW.LrSc (Some ar) (Some aw)) then

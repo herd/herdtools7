@@ -1,0 +1,13 @@
+AArch64 STR-TaggedNormal-red-async
+Variant=vmsa,mte,async
+{
+ [PTE(x)]=(oa:PA(x),attrs:(TaggedNormal));
+ 0:X0=x:red;
+}
+  P0          ;
+  MOV W1,#1   ;
+ L0:          ;
+  STR W1,[X0] ;
+exists([x]=0)
+
+(* forall([x]=1 /\ 0:TFSR_ELx=1) *)

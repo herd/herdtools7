@@ -199,20 +199,6 @@ static void th_faults_info_init(th_faults_info_t *th_flts)
   th_flts->n = 0;
 }
 
-// Equality of sorted arrays.
-static int th_faults_info_eq(th_faults_info_t *th_flts1, th_faults_info_t *th_flts2)
-{
-  if (th_flts1->n != th_flts2->n)
-    return 0;
-
-  for (int k = 0 ; k < th_flts1->n ; k++) {
-    fault_info_t *f1 = &th_flts1->faults[k];
-    fault_info_t *f2 = &th_flts2->faults[k];
-    if (compare_fault_info(f1,f2)) return 0;
-  }
-  return 1;
-}
-
 static void pp_fault(int proc, int instr_symb, int data_symb, int ftype)
 {
   if (instr_symb != INSTR_SYMB_ID_UNKNOWN)
@@ -254,14 +240,5 @@ static void pp_negative_fault
     printf(" ~");
     pp_fault(proc, instr_symb, data_symb, ftype);
   }
-}
-
-static int eq_faults(th_faults_info_t *th_flts1, th_faults_info_t *th_flts2)
-{
-  for (int i = 0; i < NTHREADS; i++) {
-    if (!th_faults_info_eq(&th_flts1[i], &th_flts2[i]))
-      return 0;
-  }
-  return 1;
 }
 

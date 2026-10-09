@@ -96,7 +96,15 @@ end = struct
 
 (* Makefile utilities *)
 
-  let makefile_vars chan infile arch flags sources =
+  let get_util_bases =
+    List.filter_map
+      (fun s ->
+        if Filename.check_suffix s ".c" then
+          let b = Filename.chop_suffix (Filename.basename s) ".c" in
+          Some b
+        else None)
+
+  let makefile_vars chan infile arch flags utils sources =
     let module O = struct
       include Cfg
       include (val (get_arch arch) : ArchConf)
@@ -128,30 +136,11 @@ end = struct
     end ;
     begin
       match Cfg.mode with
-      | Mode.Std|Mode.PreSi -> ()
+      | Mode.Std|Mode.PreSi -> () (* UTILS defined by makefile_utils *)
       | Mode.Kvm ->
          let utils =
-           ["litmus_rand.o"; "utils.o"; "kvm_timeofday.o";] in
-         let utils =
-           if Cfg.stdio then utils
-           else
-             "platform_io.o" :: "litmus_io.o" :: utils in
-         let utils =
-           if flags.Flags.memtag then
-             "memtag.o"::utils
-           else utils in
-         let utils =
-           if flags.Flags.exs then
-             "exs.o"::utils
-           else utils in
-         let utils =
-           if flags.Flags.ets then
-             "ets.o"::utils
-           else utils in
-         let utils =
-           if flags.Flags.pac then
-             "auth.o"::utils
-           else utils in
+           get_util_bases utils
+           |> List.map (fun s -> s ^ ".o") in
          fprintf chan "UTILS=%s\n"
            (String.concat " " utils)
     end ;
@@ -168,13 +157,7 @@ end = struct
     ()
 
   let makefile_utils chan utils =
-    let utils =
-      List.fold_right
-        (fun s k ->
-          if Filename.check_suffix s ".c" then
-            let b = Filename.chop_suffix (Filename.basename s) ".c" in
-            b :: k
-          else k) utils [] in
+    let utils = get_util_bases utils in
     List.iter
       (fun u ->
         let src = u ^ ".c" and obj = u ^ ".o" in
@@ -244,7 +227,7 @@ let run_tests names flags out_chan =
            | Some a ->
                if a = arch then archo
                else
-                 Warn.fatal "diferent architectures in the same batch: %s (file %s) vs. %s"
+                 Warn.fatal "different architectures in the same batch: %s (file %s) vs. %s"
                    (Archs.pp arch) name (Archs.pp a) in
          let ans =
           try CT.from_file hashes name out_chan
@@ -466,7 +449,7 @@ let dump_shell_cont arch flags sources utils =
   Misc.output_protect
     (fun chan ->
 (* Variables *)
-      makefile_vars chan false arch flags sources ;
+      makefile_vars chan false arch flags utils sources ;
       fprintf chan "EXE=$(SRC:.c=%s)\n"
         (match Cfg.mode with
         | Mode.Std|Mode.PreSi -> ".exe"
@@ -642,21 +625,20 @@ let dump_c xcode names =
 let dump_c_cont xcode arch flags sources utils nts =
   let nts = IntSet.filter Param.mk_dsa nts in
   let shared_topology =  not (xcode || IntSet.is_empty nts) in
-  let sources = List.map Filename.basename  sources in
   let utils =
-    if shared_topology then utils@[Tar.outname "topology.c"]
+    if shared_topology then "topology.c"::utils
     else utils in
+  let sources = List.map Filename.basename  sources in
 (* Makefile *)
   let infile = not xcode in
   Misc.output_protect
     (fun chan ->
-      makefile_vars chan infile arch flags sources ;
+      makefile_vars chan infile arch flags utils sources ;
 (* Various intermediate targets *)
       fprintf chan "T=$(SRC:.c=.t)\n" ;
       fprintf chan "H=$(SRC:.c=.h)\n" ;
       if not xcode then begin
-        fprintf chan "OBJ=$(SRC:.c=.o)%s\n"
-          (if shared_topology then " topology.o" else "") ;
+        fprintf chan "OBJ=$(SRC:.c=.o)\n" ;
         fprintf chan "EXE=run.%s\n" (if is_kvm then "flat" else "exe") ;
         fprintf chan "\n" ;
       end ;

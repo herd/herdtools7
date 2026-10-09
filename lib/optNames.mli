@@ -16,7 +16,7 @@
 
 (** Command line parsing for selection of tests by name *)
 
-(* Destinaion of options arguments *)
+(* Destination of option arguments *)
 val rename : string list ref
 val select : string list ref
 val names : string list ref
@@ -26,4 +26,6 @@ val nonames : StringSet.t ref
 
 (* Command line options specifications *)
 val parse_noselect : (Arg.key * Arg.spec * Arg.doc) list
+val parse_noselect_rename : (Arg.key * Arg.spec * Arg.doc) list
 val parse_withselect : (Arg.key * Arg.spec * Arg.doc) list
+val parse_withselect_rename : (Arg.key * Arg.spec * Arg.doc) list

@@ -1,2 +1,7 @@
 mode: no-exec
 outcome: SUCCESS
+info: |
+  File ../tests/typing/TypingRule.TypeCheckAST.asl, line 8, characters 0 to 15:
+  pragma pragma1;
+  ^^^^^^^^^^^^^^^
+  ASL Warning: pragma pragma1 will be ignored.

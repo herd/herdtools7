@@ -71,8 +71,7 @@ let verbose = ref 0
 
 let args = ref []
 
-let opts =
-  [ "-v", Arg.Unit (fun () -> incr verbose)," be verbose";]
+let opts = LibOpts.parse_verbose verbose
 
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)

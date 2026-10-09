@@ -18,12 +18,11 @@
 
 module Config =
   struct
-    let variant _ = false
+    let variant = Variant_gen.empty
     let naturalsize = TypBase.get_size TypBase.default
     let wildcard = false
+    let debug = Debug_gen.none
   end
-
-let dbg = 0
 
 module type S = sig
   open Code
@@ -91,7 +90,7 @@ module type S = sig
 
   val parse_atom : string -> atom option
   val parse_atoms : string list -> atom option list
-  val get_access_atom: atom option -> MachMixed.t option
+  val get_access_atom: atom option -> Mixed.t option
 
   val equal_edge_atoms : edge -> edge -> bool
 
@@ -149,6 +148,8 @@ module type S = sig
 (* Utilities *)
   val is_ext : edge -> bool
   val is_com : edge -> bool
+  val is_co : edge -> bool
+  val is_fr : edge -> bool
   val is_fetch : edge -> bool
 
 (* Set/Map *)
@@ -164,9 +165,10 @@ module
   Make
     (Cfg:
        sig
-         val variant : Variant_gen.t -> bool
+         val variant : Variant_gen.set
          val naturalsize : MachSize.sz
          val wildcard : bool
+         val debug : Debug_gen.t
        end)
     (F:Fence.S)
     (A:Atom.S): S
@@ -179,11 +181,11 @@ and module Value = A.Value
 and type value = A.Value.v
 and module RMW = A.RMW = struct
   let ()  = ignore (Cfg.naturalsize)
-  let do_self = Cfg.variant Variant_gen.Self
+  let do_self = Variant_gen.has Variant_gen.Self Cfg.variant
   let do_mixed = Variant_gen.is_mixed Cfg.variant
   let do_kvm =  Variant_gen.is_kvm Cfg.variant
-  let do_disjoint = Cfg.variant Variant_gen.MixedDisjoint
-  let do_strict_overlap = Cfg.variant Variant_gen.MixedStrictOverlap
+  let do_disjoint = Variant_gen.has Variant_gen.MixedDisjoint Cfg.variant
+  let do_strict_overlap = Variant_gen.has Variant_gen.MixedStrictOverlap Cfg.variant
   let wildcard = Cfg.wildcard
 
   open Code
@@ -454,7 +456,7 @@ let fold_tedges f r =
     equal_atomo lhs.a1 rhs.a1 && equal_atomo lhs.a2 rhs.a2
 
   let same_access_atoms a1 a2 =
-    Misc.opt_eq MachMixed.equal (get_access_atom a1) (get_access_atom a2)
+    Misc.opt_eq Mixed.equal (get_access_atom a1) (get_access_atom a2)
 
   (* For rmw instruction any accesses is a priori.
      However identical accesses are forced for rmw instructions *)
@@ -494,7 +496,7 @@ let fold_tedges f r =
   let annotation_lookup_table = Hashtbl.create 37
 
   let add_lxm_atom lxm a =
-    if dbg > 1 then eprintf "ATOM: %s\n" lxm ;
+    if Cfg.debug.Debug_gen.lexer then eprintf "ADD ANNOTATION: %s\n" lxm ;
     try
       let old = Hashtbl.find annotation_lookup_table lxm in
       assert (compare_atomo old a = 0) ;
@@ -525,7 +527,7 @@ let fold_tedges f r =
   let edge_lookup_table = Hashtbl.create 40000
 
   let add_lxm_edge lxm e =
-    if dbg > 1 then eprintf "LXM: %s\n" lxm ;
+    if Cfg.debug.Debug_gen.lexer then eprintf "ADD EDGE: %s\n" lxm ;
     try
       let old = Hashtbl.find edge_lookup_table lxm in
       if compare old e <> 0 then begin
@@ -761,29 +763,89 @@ let fold_tedges f r =
   | Communication _|Leave _|Back _| Hat -> true
   | _ -> false
 
+  let is_co e = match e.edge with
+  | Communication (Co,_) -> true
+  | _ -> false
+
+  let is_fr e = match e.edge with
+  | Communication (Fr,_) -> true
+  | _ -> false
+
   let is_fetch e = match e.edge with
   | Communication (Rf,_) -> is_ifetch e.a2
   | Communication (Fr,_) -> is_ifetch e.a1
   | _ -> is_ifetch e.a1 || ( loc_sd e = Same && is_ifetch e.a2)
 
-  let compat_atoms a1 a2 = match merge_atoms a1 a2 with
-  | None -> false
-  | Some _ -> true
+  let set_a1 e a = match e.edge with
+  | Node _|Id -> { e with a1=a; a2=a;}
+  | _ -> { e with a1=a;}
+
+  let set_a2 e a = match e.edge with
+  | Node _|Id  -> { e with a1=a; a2=a;}
+  | _ -> { e with a2=a;}
+
+  (* Merges the end annotation and direction of `e1`
+     with the start of `e2`. *)
+  let merge_pair e1 e2 =
+    let update_dir (e1,e2) =
+      let d1 = dir_tgt e1 and d2 = dir_src e2 in
+      match d1,d2 with
+      | Irr,Dir d -> Some(set_tgt d e1,e2)
+      | Dir d,Irr -> Some(e1,set_src d e2)
+      | _,_ -> None in
+    let update_annotation (e1,e2) =
+      let a1 = e1.a2 and a2 = e2.a1 in
+      match a1,a2 with
+      | None,None -> None
+      | None,Some a
+      | Some a,None when is_ifetch (Some a) -> None
+      | None,Some _ -> Some(set_a2 e1 a2,e2)
+      | Some _,None -> Some(e1,set_a1 e2 a1)
+      | Some a1,Some a2 -> match merge_atoms a1 a2 with
+        | None when is_id e1.edge && is_id e2.edge ->
+            Warn.fatal "Incompatible annotations %s and %s"
+              (pp_atom a1) (pp_atom a2)
+        | None -> None
+        | Some _ as atom -> Some(set_a2 e1 atom,set_a1 e2 atom) in
+    let input = (e1,e2) in
+    let r = update_dir input
+        |> ( function
+          (* Propagate result `f e` if changed *)
+          | Some e -> Some(Option.value (update_annotation e) ~default:e)
+          | None -> update_annotation input ) in
+    if Cfg.debug.Debug_gen.parser then begin
+      let i1,i2 = input in
+      let r1,r2 = Option.value ~default:input r in
+      eprintf "MERGE PAIR <%s,%s> -> <%s,%s>\n"
+        (debug_edge i1) (debug_edge i2) (debug_edge r1) (debug_edge r2)
+    end ;
+    r
 
   let can_precede_atoms x y = match x.a2,y.a1 with
   | None,_
   | _,None -> true
-  | Some a1,Some a2 -> compat_atoms a1 a2
+  | Some a1,Some a2 -> Option.is_some (merge_atoms a1 a2)
 
   let can_precede_dp_data_read x y = match x.edge with
   | Dp (dp,_,Dir R) when F.is_data dp ->
       begin match y.edge with Rmw _ -> true | _ -> false end
   | _ -> true
 
+  let valid_atoms edge =
+    let applies atom dir = match atom,dir with
+      | None,_ | _,(NoDir|Irr) -> true
+      | Some atom,Dir dir -> A.applies_atom atom dir in
+    applies edge.a1 (dir_src edge) && applies edge.a2 (dir_tgt edge) &&
+    (* Further filter on annotation on rmw *)
+    match edge.edge with
+    | Rmw rmw -> A.RMW.applies_atom_rmw rmw edge.a1 edge.a2
+    | _ -> true
+
   let can_precede x y =
-    can_precede_dirs x y &&
-    can_precede_atoms x y &&
-    can_precede_dp_data_read x y
+    can_precede_dirs x y && can_precede_atoms x y &&
+    can_precede_dp_data_read x y &&
+    let merged_x,merged_y = Option.value ~default:(x,y) (merge_pair x y) in
+    valid_atoms merged_x && valid_atoms merged_y
 
 (*************************************************************)
 (* Expansion of irrelevant direction specifications in edges *)
@@ -849,53 +911,6 @@ let fold_tedges f r =
       else
         let bef,ni,aft = find_next_merge es in
         e::bef,ni,aft
-
-  let set_a1 e a = match e.edge with
-  | Node _|Id -> { e with a1=a; a2=a;}
-  | _ -> { e with a1=a;}
-
-  let set_a2 e a = match e.edge with
-  | Node _|Id  -> { e with a1=a; a2=a;}
-  | _ -> { e with a2=a;}
-
-  (* Merges the end annotation and direction of `e1`
-     with the start of `e2`. *)
-  let merge_pair e1 e2 =
-    let update_dir (e1,e2) =
-      let d1 = dir_tgt e1 and d2 = dir_src e2 in
-      match d1,d2 with
-      | Irr,Dir d -> Some(set_tgt d e1,e2)
-      | Dir d,Irr -> Some(e1,set_src d e2)
-      | _,_ -> None in
-    let update_annotation (e1,e2) =
-      let a1 = e1.a2 and a2 = e2.a1 in
-      match a1,a2 with
-      | None,None -> None
-      | None,Some a
-      | Some a,None when is_ifetch (Some a)-> None
-      | None,Some _ -> Some(set_a2 e1 a2,e2)
-      | Some _,None -> Some(e1, set_a1 e2 a1)
-      | Some a1,Some a2 ->
-        match merge_atoms a1 a2 with
-        | None when is_id e1.edge && is_id e2.edge ->
-            Warn.fatal "Incompatible annotations %s and %s"
-              (pp_atom a1) (pp_atom a2)
-        | None -> None
-        | Some _ as a ->
-          Some(set_a2 e1 a,set_a1 e2 a) in
-    let input = (e1,e2) in
-    let r = update_dir input
-        |> ( function
-          (* Propagate result `f e` if changed *)
-          | Some e -> Some(Option.value (update_annotation e) ~default:e)
-          | None -> update_annotation input ) in
-    if dbg > 0 then begin
-      let i1,i2 = input in
-      let r1,r2 = Option.value ~default:input r in
-      eprintf "Merge pair <%s,%s> -> <%s,%s>\n"
-        (debug_edge i1) (debug_edge i2) (debug_edge r1) (debug_edge r2)
-    end ;
-    r
 
   (* Assume `e` is neither `Store` nor `Insert`.
      Repeatedly merge the next mergeable edge from `es` into `e` until no

@@ -114,12 +114,7 @@ let setarg name = match !arg with
 | Some _ -> raise (Arg.Bad "One argument at most")
 
 let opts =
-  [
-   "-v",Arg.Unit (fun () -> incr verbose), " be verbose";
-   "-o",
-   Arg.String (fun name -> outname := Some name),
-   "<name> overide default filename"
-  ]
+  LibOpts.parse_verbose verbose @ [ LibOpts.parse_dest outname; ]
 
 let () =
   Arg.parse opts setarg

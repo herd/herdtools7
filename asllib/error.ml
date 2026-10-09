@@ -79,8 +79,14 @@ type error_desc =
   | AllDiscardLocalDeclaration
   | NonFunctionBuiltinDeclaration
   | UnknownSymbol of { symbol : string; alternative : string option }
+  | UnterminatedString
   | NoCallCandidate of string * ty list
-  | BadTypesForBinop of binop * ty * ty
+  | BadTypesForBinop of {
+      op : binop;
+      left : ty;
+      right : ty;
+      reason : string option;
+    }
   | ImpureExpression of expr * SideEffect.SES.t
       (** used for fine-grained analysis *)
   | MismatchedPurity of string  (** Used for coarse-grained analysis *)
@@ -274,7 +280,7 @@ module ErrorCode = struct
     | BadBinopPriority _ -> Some (Build BOP)
     | AllDiscardLocalDeclaration | NonFunctionBuiltinDeclaration ->
         Some (Build BD)
-    | UnknownSymbol _ -> Some (Build LE)
+    | UnterminatedString | UnknownSymbol _ -> Some (Build LE)
     | CannotParse _ | ObsoleteSyntax _ | MultipleWrites _ -> Some (Build PE)
     | BadField _ | MissingField _ -> Some (Typing BF)
     | BadTupleIndex _ -> Some (Typing BTI)
@@ -623,6 +629,7 @@ module PPrint = struct
           "A local declaration must declare at least one name."
     | NonFunctionBuiltinDeclaration ->
         pp_err Parse "Only subprogram declarations may be marked as builtins."
+    | UnterminatedString -> pp_err Lexical "Unterminated string literal."
     | UnknownSymbol { symbol; alternative } ->
         let codes = List.map Char.code (List.of_seq (String.to_seq symbol)) in
         let not_printable code = code < 33 || code > 126 in
@@ -639,9 +646,14 @@ module PPrint = struct
         pp_err Typing
           "No subprogram declaration matches the invocation:@ %s(%a)." name
           (pp_comma_list pp_ty) types
-    | BadTypesForBinop (op, t1, t2) ->
-        pp_err Typing "Illegal application of operator %s on types@ %a@ and %a."
-          (binop_to_string op) pp_ty t1 pp_ty t2
+    | BadTypesForBinop { op; left; right; reason } ->
+        let pp_reason f = function
+          | None -> ()
+          | Some reason -> fprintf f "@ %a" pp_print_text reason
+        in
+        pp_err Typing
+          "Illegal application of operator %s on types@ %a@ and %a.%a"
+          (binop_to_string op) pp_ty left pp_ty right pp_reason reason
     | ImpureExpression (e, ses) ->
         pp_err Typing
           "a pure expression was expected,@ found %a,@ which@ produces@ the@ \
@@ -906,6 +918,7 @@ module CSV = struct
     | BadBinopPriority _ -> "BadBinopPriority"
     | AllDiscardLocalDeclaration -> "AllDiscardLocalDeclaration"
     | NonFunctionBuiltinDeclaration -> "NonFunctionBuiltinDeclaration"
+    | UnterminatedString -> "UnterminatedString"
     | UnknownSymbol _ -> "UnknownSymbol"
     | NoCallCandidate _ -> "NoCallCandidate"
     | BadTypesForBinop _ -> "BadTypesForBinop"
@@ -1025,7 +1038,7 @@ module ErrorPrinter (C : ERROR_PRINTER_CONFIG) = struct
 
   let warn w =
     match C.output_format with
-    | HumanReadable -> Format.eprintf "@[<2>%a@]@." pp_warning w
+    | HumanReadable -> Format.fprintf err_formatter "@[<2>%a@]@." pp_warning w
     | CSV -> Printf.eprintf "%a\n" CSV.pp_warning w
     | GNU -> Printf.eprintf "%a\n" (GNU.pp pp_warning_desc) w
 

@@ -150,6 +150,25 @@
 \usepackage{mathpartir}  % For deduction rules and equations paragraphs
 \newcommand\hva[0]{} % Disable the macro, just for the current PR.
 \usepackage{fancyvrb}
+
+% Render the output produced by running aslref on a test file:
+%   \RenderConsoleFor[<options>]{<ID>}{<test-file>}
+%
+% <ID> must be unique and consist of letters, digits, and hyphens, beginning
+% with a letter. <test-file> must use one of \definitiontests, \syntaxtests,
+% \typingtests, or \semanticstests. Both identify the generated output; TeX
+% itself uses only <ID>.
+%
+% <options> contains options passed directly to aslref. It may also contain the
+% generator directives `expect-error`, to capture stdout and stderr from an
+% intentionally failing test, and `show-command`, to include the command in the
+% rendered output. The complete invocation must occupy one source line so that
+% doclint.py can find it. The Makefile regenerates the console-output text files
+% before building the document.
+\newcommand\RenderConsoleFor[3][]{%
+  \VerbatimInput[fontsize=\footnotesize,frame=single]{generated_console_output/#2.txt}%
+}
+
 \usepackage[
   % Notes on the right, should be less than outer
   marginparwidth=100pt,
@@ -192,16 +211,13 @@
 % Not imported here means, it is not yet considered for auto-generation.
 \newcommand\NotImportedToASLSpecYet[1]{#1}
 
-\newcommand\ChapterOutline[0]{\paragraph{Outline} The rest of this chapter is organized as follows:}
-\newcommand\FormalRelationsDef[1]{\section{Formal Relations for #1\label{sec:Formal Relations for #1}}}
-\newcommand\FormalRelationsRef[1]{\secref{Formal Relations for #1}}
-\newcommand\SyntaxDef[1]{\section{Syntax of #1\label{sec:Syntax of #1}}}
+\newcommand\FormalRelationsDef[2][]{\SectionDef[#1]{Formal Relations for #2}{Formal Relations for #2}}
+\newcommand\SyntaxDef[2][]{\SectionDef[#1]{Syntax of #2}{Syntax of #2}}
 \newcommand\SyntaxRef[1]{\secref{Syntax of #1}}
-\newcommand\AbstractSyntaxDef[1]{\section{Abstract Syntax of #1\label{sec:Abstract Syntax of #1}}}
+\newcommand\AbstractSyntaxDef[2][]{\SectionDef[#1]{Abstract Syntax of #2}{Abstract Syntax of #2}}
 \newcommand\AbstractSyntaxRef[1]{\secref{Abstract Syntax of #1}}
-\newcommand\TypeRulesDef[1]{\section{Type Rules for #1\label{sec:Type Rules for #1}}}
-\newcommand\TypeRulesRef[1]{\secref{Type Rules for #1}}
-\newcommand\SemanticsRulesDef[1]{\section{Dynamic Semantics Rules for #1\label{sec:Dynamic Semantics Rules for #1}}}
+\newcommand\TypeRulesDef[2][]{\SectionDef[#1]{Type Rules for #2}{Type Rules for #2}}
+\newcommand\SemanticsRulesDef[2][]{\SectionDef[#1]{Dynamic Semantics Rules for #2}{Dynamic Semantics Rules for #2}}
 \newcommand\SemanticsRulesRef[1]{\secref{Dynamic Semantics Rules for #1}}
 \newcommand\textfunc[1]{\textit{#1}}
 \newcommand\textastlabel[1]{\textsc{#1}}
@@ -317,6 +333,145 @@
     \immediate\write\@auxout{%
       \string\ASLRuleListEntry{Semantics}{\ASLCurrentSemanticsRuleList}{SemanticsRuleRef}{#2}{\unexpanded{#1}}%
     }%
+  \fi
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Chapter outline generation macros
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Use \ChapterOutline once in a chapter, after its introductory text and before
+% its first section.  It prints an itemized list of every \SectionDef in that
+% chapter.  Chapter membership is independent of file boundaries, so a chapter
+% and its sections may span multiple input files.
+%
+% Define an outlined section as follows:
+%
+%   \SectionDef[defines the relevant concepts]{StableLabel}{Displayed Title}
+%
+% The optional first argument is the text printed after the section reference
+% in the outline.  Descriptions are sentence fragments and should not end with
+% punctuation; the outline adds a final period.  The second argument is a stable
+% label key: the section receives the label
+% `sec:StableLabel' and can be referenced with \secref{StableLabel}.  The third
+% argument is the displayed section title.  Keep the label stable when changing
+% either the title or its outline description.
+%
+% \FormalRelationsDef, \SyntaxDef, \AbstractSyntaxDef, \TypeRulesDef, and
+% \SemanticsRulesDef are convenience forms of \SectionDef.  They accept the
+% same optional outline description before their existing required argument.
+%
+% Most subsections should continue to use \subsection and do not appear in the
+% chapter outline.  To include a selected subsection, use:
+%
+%   \OutlineSubsectionDef[defines a special case]{StableLabel}{Displayed Title}
+%
+% It is nested under the most recent \SectionDef in the same chapter, so it must
+% follow its intended parent section.
+%
+% Outlines are read from the previous LaTeX run, like the table of contents, so
+% run LaTeX twice after changing their structure or descriptions.  Their
+% auxiliary data and state are separate from the rule-list macros.
+\let\ASLCurrentOutlineSection\@empty
+\let\ASLCurrentOutlineSectionChapter\@empty
+
+\newcommand\ASLChapterOutlineSection[3]{%
+  \item \secref{#2}%
+  \def\ASLChapterOutlineDescription{#3}%
+  \ifx\ASLChapterOutlineDescription\@empty
+  \else
+    \space #3.%
+  \fi
+  \@ifundefined{ASLChapterOutlineSubsections@#1@#2}{}{%
+    \begin{itemize}%
+      \csname ASLChapterOutlineSubsections@#1@#2\endcsname
+    \end{itemize}%
+  }%
+}
+
+\newcommand\ASLChapterOutlineEntry[3]{%
+  \@ifundefined{ASLChapterOutlineSeen@#1@#2}{%
+    \expandafter\gdef\csname ASLChapterOutlineSeen@#1@#2\endcsname{}%
+    \@ifundefined{ASLChapterOutline@#1}{%
+      \expandafter\gdef\csname ASLChapterOutline@#1\endcsname{}%
+    }{}%
+    \expandafter\g@addto@macro\csname ASLChapterOutline@#1\endcsname{%
+      \ASLChapterOutlineSection{#1}{#2}{#3}%
+    }%
+  }{}%
+}
+
+\newcommand\ASLChapterOutlineSubentry[4]{%
+  \@ifundefined{ASLChapterOutlineSubsectionSeen@#1@#2@#3}{%
+    \expandafter\gdef\csname ASLChapterOutlineSubsectionSeen@#1@#2@#3\endcsname{}%
+    \@ifundefined{ASLChapterOutlineSubsections@#1@#2}{%
+      \expandafter\gdef\csname ASLChapterOutlineSubsections@#1@#2\endcsname{}%
+    }{}%
+    \expandafter\g@addto@macro\csname ASLChapterOutlineSubsections@#1@#2\endcsname{%
+      \item \secref{#3}%
+      \def\ASLChapterOutlineDescription{#4}%
+      \ifx\ASLChapterOutlineDescription\@empty
+      \else
+        \space #4.%
+      \fi
+    }%
+  }{}%
+}
+
+\newcommand\ASLPrintChapterOutline{%
+  \begin{itemize}%
+  \@ifundefined{ASLChapterOutline@\number\c@chapter}{%
+    \item \emph{Run LaTeX again to generate this chapter outline.}%
+  }{%
+    \csname ASLChapterOutline@\number\c@chapter\endcsname
+  }%
+  \end{itemize}%
+}
+
+\newcommand\ChapterOutline[0]{%
+  \@ifundefined{ASLChapterOutlinePrinted@\number\c@chapter}{%
+    \expandafter\gdef\csname ASLChapterOutlinePrinted@\number\c@chapter\endcsname{}%
+  }{%
+    \PackageError{ASLReference}{Multiple chapter outlines in chapter \number\c@chapter}{}%
+  }%
+  \global\let\ASLCurrentOutlineSection\@empty
+  \global\let\ASLCurrentOutlineSectionChapter\@empty
+  \paragraph{Outline} The rest of this chapter is organized as follows:
+  \ASLPrintChapterOutline
+}
+
+\newcommand\SectionDef[3][]{%
+  \section{#3\label{sec:#2}}%
+  \@ifundefined{ASLChapterOutlineWritten@\number\c@chapter @#2}{%
+    \expandafter\gdef\csname ASLChapterOutlineWritten@\number\c@chapter @#2\endcsname{}%
+  }{%
+    \PackageError{ASLReference}{Duplicate outline section `#2' in chapter \number\c@chapter}{}%
+  }%
+  \xdef\ASLCurrentOutlineSectionChapter{\number\c@chapter}%
+  \gdef\ASLCurrentOutlineSection{#2}%
+  \immediate\write\@auxout{%
+    \string\ASLChapterOutlineEntry{\number\c@chapter}{\unexpanded{#2}}{\unexpanded{#1}}%
+  }%
+}
+
+\newcommand\OutlineSubsectionDef[3][]{%
+  \subsection{#3\label{sec:#2}}%
+  \@ifundefined{ASLChapterOutlineSubsectionWritten@\number\c@chapter @#2}{%
+    \expandafter\gdef\csname ASLChapterOutlineSubsectionWritten@\number\c@chapter @#2\endcsname{}%
+  }{%
+    \PackageError{ASLReference}{Duplicate outline subsection `#2' in chapter \number\c@chapter}{}%
+  }%
+  \edef\ASLCurrentChapter{\number\c@chapter}%
+  \ifx\ASLCurrentOutlineSection\@empty
+    \PackageError{ASLReference}{Outline subsection `#2' has no preceding outline section}{}%
+  \else
+    \ifx\ASLCurrentChapter\ASLCurrentOutlineSectionChapter
+      \immediate\write\@auxout{%
+        \string\ASLChapterOutlineSubentry{\number\c@chapter}{\expandafter\unexpanded\expandafter{\ASLCurrentOutlineSection}}{\unexpanded{#2}}{\unexpanded{#1}}%
+      }%
+    \else
+      \PackageError{ASLReference}{Outline subsection `#2' has no preceding outline section in this chapter}{}%
+    \fi
   \fi
 }
 \makeatother
@@ -1170,6 +1325,8 @@
 
 \newcommand\REasciichar[0]{\hyperlink{def-reasciichar}{\texttt{<}\textsf{ascii\_char}\texttt{>}}}
 \newcommand\REchar[0]{\hyperlink{def-rechar}{\texttt{<}\textsf{char}\texttt{>}}}
+\newcommand\RElinechar[0]{\hyperlink{def-relinechar}{\texttt{<}\textsf{line\_char}\texttt{>}}}
+\newcommand\RElineterm[0]{\hyperlink{def-relineterm}{\texttt{<}\textsf{line\_term}\texttt{>}}}
 \newcommand\REdigit[0]{\hyperlink{def-redigit}{\texttt{<}\textsf{digit}\texttt{>}}}
 \newcommand\REintlit[0]{\hyperlink{def-reintlit}{\texttt{<}\textsf{int\_lit}\texttt{>}}}
 \newcommand\REhexletter[0]{\hyperlink{def-rehexletter}{\texttt{<}\textsf{hex\_letter}\texttt{>}}}
@@ -1179,7 +1336,9 @@
 \newcommand\REforbiddenhexfirst[0]{\hyperlink{def-forbiddenhexfirst}{\texttt{<}\textsf{forbidden\_hex\_first}\texttt{>}}}
 \newcommand\REforbiddenrealremaining[0]{\hyperlink{def-forbiddenrealremaining}{\texttt{<}\textsf{forbidden\_real\_remaining}\texttt{>}}}
 \newcommand\REforbiddenrealfirst[0]{\hyperlink{def-forbiddenrealfirst}{\texttt{<}\textsf{forbidden\_real\_first}\texttt{>}}}
-\newcommand\REstrchar[0]{\hyperlink{def-restrchar}{\texttt{<}\textsf{str\_char}\texttt{>}}}
+\newcommand\REunescapedstringchar[0]{\hyperlink{def-reunescapedstringchar}{\texttt{<}\textsf{unescaped\_string\_char}\texttt{>}}}
+\newcommand\REstringescape[0]{\hyperlink{def-restringescape}{\texttt{<}\textsf{string\_escape}\texttt{>}}}
+\newcommand\REstringelement[0]{\hyperlink{def-restringelement}{\texttt{<}\textsf{string\_element}\texttt{>}}}
 \newcommand\REstringlit[0]{\hyperlink{def-restringlit}{\texttt{<}\textsf{string\_lit}\texttt{>}}}
 \newcommand\REbit[0]{\hyperlink{def-rebit}{\texttt{<}\textsf{bit}\texttt{>}}}
 \newcommand\REbitvectorlit[0]{\hyperlink{def-rebitvectorlit}{\texttt{<}\textsf{bitvector\_lit}\texttt{>}}}
@@ -1203,7 +1362,6 @@
 \newcommand\discard[0]{\hyperlink{def-discard}{\textfunc{discard}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\hextolit[0]{\hyperlink{def-hextolit}{\textfunc{hex\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\realtolit[0]{\hyperlink{def-realtolit}{\textfunc{real\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
-\newcommand\strtolit[0]{\hyperlink{def-strtolit}{\textfunc{str\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\bitstolit[0]{\hyperlink{def-bitstolit}{\textfunc{bits\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\masktolit[0]{\hyperlink{def-masktolit}{\textfunc{mask\_to\_lit}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\truetolit[0]{\hyperlink{def-truetolit}{\textfunc{true\_lit}}} % NO_SPECIFICATION_REQUIRED
@@ -1219,14 +1377,15 @@
 \newcommand\Lang[1]{\hyperlink{def-lang}{\textsf{Lang}}\left(#1\right)}
 \newcommand\RegExp[0]{\hyperlink{def-regex}{\textsf{RegExp}}}
 \newcommand\ascii[1]{\hyperlink{def-ascii}{\textsf{ASCII}}\texttt{\{#1\}}}
-\newcommand\vnewline[0]{\hyperlink{constant-newline}{\texttt{newline}}}
+\newcommand\vaddlinefeed[0]{\texttt{add\_line\_feed}}
+\newcommand\linefeed[0]{\makelist{\ascii{10}}}
 
 \newcommand\spectoken[0]{\hyperlink{def-spectoken}{\textsc{spec\_token}}}
 \newcommand\specstring[0]{\hyperlink{def-specstring}{\textsc{spec\_string}}}
 \newcommand\speccomment[0]{\hyperlink{def-speccomment}{\textsc{spec\_comment}}}
 
 \newcommand\actiondiscard[0]{\hyperlink{def-actiondiscard}{\textfunc{discard}}} % NO_SPECIFICATION_REQUIRED
-\newcommand\discardcommentchar[0]{\hyperlink{def-discardcommentchar}{\textfunc{discard\_comment\_char}}} % NO_SPECIFICATION_REQUIRED
+\newcommand\discardcommentelement[0]{\hyperlink{def-discardcommentelement}{\textfunc{discard\_comment\_element}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\actiontoken[0]{\hyperlink{def-actiontoken}{\textfunc{return\_token}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\actionstartstring[0]{\hyperlink{def-actionstartstring}{\textfunc{start\_string}}} % NO_SPECIFICATION_REQUIRED
 \newcommand\actionstartcomment[0]{\hyperlink{def-actionstartcomment}{\textfunc{start\_comment}}} % NO_SPECIFICATION_REQUIRED
@@ -1839,7 +1998,7 @@
 \newcommand\returnstatement[1]{\hyperlink{def-returnstatementterm}{return statement} for the optional expression #1}
 \newcommand\printstatementterm[0]{\hyperlink{def-printstatementterm}{print statement}}
 \newcommand\printstatementsterm[0]{\hyperlink{def-printstatementterm}{print statements}}
-\newcommand\printstatement[2]{\hyperlink{def-printstatementterm}{print statement} with list of expressions #1 and newline flag #2}
+\newcommand\printstatement[2]{\hyperlink{def-printstatementterm}{print statement} with list of expressions #1 and add-line-feed flag #2}
 \newcommand\unreachablestatementterm[0]{\hyperlink{def-unreachablestatementterm}{unreachable statement}}
 \newcommand\pragmastatementterm[0]{\hyperlink{def-pragmastatementterm}{pragma statement}}
 \newcommand\pragmastatement[2]{\hyperlink{def-pragmastatementterm}{pragma statement} for the pragma #1 and list of expressions #2}

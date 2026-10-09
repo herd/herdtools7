@@ -1,6 +1,6 @@
 Test A28 Required
 States 1
-0:X1=42;  ~Fault(P0);
+0:X1=42; ~Fault(P0);
 Ok
 Witnesses
 Positive: 1 Negative: 0

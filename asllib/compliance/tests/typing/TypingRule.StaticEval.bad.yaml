@@ -1,4 +1,4 @@
-mode: exec
+mode: no-exec
 outcome: FAILURE
 error: TE_BO
 error_line: 3
@@ -8,4 +8,5 @@ info: |-
       [WORD_SIZE DIV 3 - 1:WORD_SIZE DIV 2] upper,
        ^^^^^^^^^^^^^^^
   ASL Type error (TE_BO): Illegal application of operator DIV on types
-    integer {64} and integer {3}.
+    integer {64} and integer {3}. The operands cannot be divided exactly for
+    any values allowed by their constraints.

@@ -34,7 +34,7 @@ let parse_oknames  oknames =
 
 let parse_rename rename =
   "-rename", Arg.String (fun s -> rename := !rename @ [s]),
-  "<name> specify a rename mapping, hashes are checked"
+  "<name> specify a rename mapping"
 
 let parse_excl excl =
   "-excl", Arg.String (fun s -> excl := !excl @ [s]),
@@ -43,26 +43,6 @@ let parse_excl excl =
 let parse_nonames  nonames =
   ArgUtils.parse_stringset "-nonames" nonames
     "<name,...,name> names of tests to be excluded"
-
-let parse_hexa hexa =
-  "-hexa", Arg.Bool (fun b -> hexa := b),
-  (Printf.sprintf "<bool> specify hexadecimal output, default %b" !hexa)
-
-let parse_int32 int32 =
-  "-int32", Arg.Bool (fun b -> int32 := b),
-  (Printf.sprintf "<bool> integer in logs are 32 bits wide, default %b" !int32)
-
-let parse_faulttype ft =
-   ("-faulttype", Arg.Bool (fun b -> ft := b),
-    Printf.sprintf
-      "<bool> consider fault types in comparisons, default %b" !ft)
-
-let datafault_key = "-mmu-faults-as-data"
-
-let parse_datafault ft =
-   (datafault_key, Arg.Bool (fun b -> ft := b),
-    Printf.sprintf
-      "<bool> all non-specific MMU faults are from data (i.e. are implicitly prefixed with \"D-\"), default %b" !ft)
 
 module
   Make
@@ -86,8 +66,6 @@ module
     let rename name =
       try TblRename.find_value rename_table name
       with Not_found -> name
-
-    let rename_opt name = TblRename.find_value_opt rename_table name
 
 (******************)
 (* Name selection *)

@@ -67,8 +67,8 @@ let f-ib =
 let DSB-ob =
 [M | DC.CVAU | IC | TLBI]; po; [dsb.full]; po; [~(Imp & TTD & M | Imp & Instr & R)]
  | (if "ETS2" || "ETS3" then [M | DC.CVAU | IC | TLBI]; po; [dsb.full]; po; [Imp & TTD & M] else 0)
- | [(Exp & R) \ NoRet | Imp & Tag & R]; po; [dsb.ld]; po; [~(Imp & TTD & M | Imp & Instr & R)]
- | (if "ETS2" || "ETS3" then [(Exp & R) \ NoRet]; po; [dsb.ld]; po; [Imp & TTD & M] else 0)
+ | [(Exp & R) \ NoRet | domain([Imp & Tag & R]; same-instance; [(Exp & R) \ NoRet])]; po; [dsb.ld]; po; [~(Imp & TTD & M | Imp & Instr & R)]
+ | (if "ETS2" || "ETS3" then [(Exp & R) \ NoRet | domain([Imp & Tag & R]; same-instance; [(Exp & R) \ NoRet])]; po; [dsb.ld]; po; [Imp & TTD & M] else 0)
  | [Exp & W]; po; [dsb.st]; po; [~(Imp & TTD & M | Imp & Instr & R)]
  | (if "ETS2" || "ETS3" then [Exp & W]; po; [dsb.st]; po; [Imp & TTD & M] else 0)
 
@@ -93,12 +93,12 @@ let IFB-ob =
 let dob =
  addr
  | data
- | ctrl; [Exp & W | HU | TLBI | DC.CVAU | IC]
- | addr; [Exp & M]; po; [Exp & W | HU]
+ | ctrl; [Exp & W | Imp & TTD & W | TLBI | DC.CVAU | IC]
+ | addr; [Exp & M]; po; [Exp & W | Imp & TTD & W]
  | addr; [Exp & M]; lmrs; [Exp & R | Imp & Tag & R]
  | data; [Exp & M]; lmrs; [Exp & R | Imp & Tag & R]
- | [Imp & TTD & R]; tr-ib; [Exp & M]; po; [Exp & W | HU]
- | [Imp & Tag & R]; tc-before; [Exp & M]; po; [Exp & W | HU]
+ | [Imp & TTD & R]; tr-ib; [Exp & M]; po; [Exp & W | Imp & TTD & W]
+ | [Imp & Tag & R]; tc-before; [Exp & M]; po; [Exp & W | Imp & TTD & W]
 
 (* Fetch-ordered-before *)
 let f-ob =
@@ -113,16 +113,16 @@ let intr-ob =
 
 (* Pick-ordered-before *)
 let pob = 
- pick-addr-dep; [Exp & W | HU | TLBI | DC.CVAU | IC]
+ pick-addr-dep; [Exp & W | Imp & TTD & W | TLBI | DC.CVAU | IC]
  | pick-data-dep
- | pick-ctrl-dep; [Exp & W | HU | TLBI | DC.CVAU | IC]
- | pick-addr-dep; [Exp & M]; po; [Exp & W | HU]
+ | pick-ctrl-dep; [Exp & W | Imp & TTD & W | TLBI | DC.CVAU | IC]
+ | pick-addr-dep; [Exp & M]; po; [Exp & W | Imp & TTD & W]
 
 (* Atomic-ordered-before *)
 let aob =
  [Exp & M]; rmw; [Exp & M]
  | [Exp & M]; rmw; lmrs; [(Exp & R & A) | (Exp & R & Q)]
- | [Imp & TTD & R]; rmw; [HU]
+ | [Imp & TTD & R]; rmw; [Imp & TTD & W]
 
 (* Barrier-ordered-before *)
 let bob =
@@ -130,7 +130,7 @@ let bob =
  | [Exp & M]; po; [dmb.full]; po; [DC.CVAU]
  | [DC.CVAU]; po; [dmb.full]; po; [Exp & M]
  | [DC.CVAU]; po; [dmb.full]; po; [DC.CVAU]
- | [Exp & (R \ NoRet) | Imp & Tag & R]; po; [dmb.ld]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
+ | [(Exp & R) \ NoRet | domain([Imp & Tag & R]; same-instance; [(Exp & R) \ NoRet])]; po; [dmb.ld]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
  | [Exp & W]; po; [dmb.st]; po; [Exp & W | MMU & FAULT]
  | [range([Exp & R & A]; amo; [Exp & W & L])]; po; [Exp & M | Imp & Tag & R | MMU & FAULT]
  | [Exp & W & L]; po; [Exp & R & A]

@@ -1,0 +1,13 @@
+AArch64 STRred-NormalXorV0-async
+Variant=mte,async,vmsa,fatal
+{
+ [tag(x)]=:green;
+ [PTE(x)]=(valid:0);
+ 0:X0=x:red;
+ 1:X3=(oa:PA(x),valid:1,attrs:(Normal)); 1:X4=PTE(x);
+}
+ P0          | P1          ;
+ MOV W1,#1   | STR X3,[X4] ;
+L0:          |             ;
+ STR W1,[X0] |             ;
+exists(0:TFSR_ELx=1)

@@ -1,2 +1,11 @@
 mode: no-exec
 outcome: SUCCESS
+info: |
+  File ../tests/definition/GlobalPragma.asl, line 2, characters 0 to 25:
+  pragma asl_op 1, "start";
+  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Warning: pragma asl_op will be ignored.
+  File ../tests/definition/GlobalPragma.asl, line 1, characters 0 to 19:
+  pragma asl_pragma1;
+  ^^^^^^^^^^^^^^^^^^^
+  ASL Warning: pragma asl_pragma1 will be ignored.

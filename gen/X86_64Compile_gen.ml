@@ -58,7 +58,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     module X86_64 = X86_64Arch_gen.Make
         (struct
           let naturalsize = naturalsize
-          let fullmixed = Cfg.variant Variant_gen.FullMixed
+          let fullmixed = Variant_gen.has Variant_gen.FullMixed Cfg.variant
         end)
     include CompileCommon.Make(Cfg)(X86_64)
     include X86_64
@@ -370,7 +370,7 @@ module Make(Cfg:CompileCommon.Config) : XXXCompile_gen.S =
     let get_access_exch er ew =
       let szr = get_access_atom er.C.atom
       and szw = get_access_atom ew.C.atom in
-      if not (Misc.opt_eq MachMixed.equal szr szw) then
+      if not (Misc.opt_eq Mixed.equal szr szw) then
         Warn.fatal "Exchange instruction with different accesses" ;
       szw
 

@@ -1,2 +1,7 @@
 mode: exec
 outcome: SUCCESS
+info: |
+  File ../tests/typing/TypingRule.ApproxStmt.asl, line 8, characters 4 to 30:
+      pragma require_positive x;
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  ASL Warning: pragma require_positive will be ignored.

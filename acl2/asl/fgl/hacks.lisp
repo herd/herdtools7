@@ -233,6 +233,39 @@
   ///
   (fgl::remove-fgl-rewrite eval-sqrtrounded-*t))
 
+
+(define eval-rounddown-*t (env params args
+                           &key
+                           (clk 'clk)
+                           (orac 'orac)
+                           ((static-env static_env_global-p) 'static-env)
+                           ((tracespec tracespec-p) 'tracespec)
+                           ((pos posn-p) 'pos))
+  :verify-guards nil
+  (b* (((mv res orac traces)
+        (eval_subprogram-*t env "RoundDown" params args)))
+    (mv res orac traces))
+  ///
+  (fgl::remove-fgl-rewrite eval-rounddown-*t))
+
+
+
+
+(define eval-roundup-*t (env params args
+                            &key
+                            (clk 'clk)
+                            (orac 'orac)
+                            ((static-env static_env_global-p) 'static-env)
+                            ((tracespec tracespec-p) 'tracespec)
+                            ((pos posn-p) 'pos))
+  :verify-guards nil
+  (b* (((mv res orac traces)
+        (eval_subprogram-*t env "RoundUp" params args)))
+    (mv res orac traces))
+  ///
+  (fgl::remove-fgl-rewrite eval-roundup-*t))
+
+
 (encapsulate
   nil
 
@@ -266,7 +299,18 @@
   (fgl::def-fgl-rewrite eval_subprogram-*t-of-sqrtrounded
     (equal (eval_subprogram-*t env "SqrtRounded" params args)
            (eval-sqrtrounded-*t env params args))
-    :hints(("Goal" :in-theory (enable eval-sqrtrounded-*t)))))
+    :hints(("Goal" :in-theory (enable eval-sqrtrounded-*t))))
+
+  (fgl::def-fgl-rewrite eval_subprogram-*t-of-rounddown
+    (equal (eval_subprogram-*t env "RoundDown" params args)
+           (eval-rounddown-*t env params args))
+    :hints(("Goal" :in-theory (enable eval-rounddown-*t))))
+
+  (fgl::def-fgl-rewrite eval_subprogram-*t-of-roundup
+    (equal (eval_subprogram-*t env "RoundUp" params args)
+           (eval-roundup-*t env params args))
+    :hints(("Goal" :in-theory (enable eval-roundup-*t))))
+  )
 
 (fgl::def-fgl-rewrite ilog2-*t-correct-fgl
   (B* (((V_real val)))
@@ -366,6 +410,112 @@
                                                           :g-apply (eq res.fn 'eval-sqrtrounded-*t-fn)
                                                           :otherwise nil))
                   (fgl::fgl-error :msg (msg "eval-sqrtrounded-*t call failed to rewrite")
+                                  :debug-obj res))
+             res)))))
+
+
+(fgl::def-fgl-rewrite rounddown-*t-correct-fgl
+  (B* (((v_real val)))
+    (IMPLIES (AND (SUBPROGRAMS-MATCH '("RoundDown" );;"Abs" "ILog2"
+                                     static-env
+                                     (STDLIB-prim-STATIC-ENV))
+                  (not (find-call-tracespec "RoundDown" pos tracespec))
+                  (trace-free-fnname-p "RoundDown")
+                  (trace-free-ty-timeframe-imap-p
+                   (static_env_global->declared_types static-env))
+                  (EQUAL (val-kind val) :v_real)
+                  ;; (equal upbound (<= (ilog2-safe-clock (abs val.val)) (expt 2 128)))
+                  ;; (syntaxp (progn$ (cw "upbound: ~x0~%" upbound)
+                  ;;                  t))
+                  ;; upbound
+                  )
+             (equal (eval-rounddown-*t ENV nil (list val))
+                    (b* (((mv res ?new-orac ?trace)
+                          (fgl::fgl-hide
+                           (eval-rounddown-*t ENV nil (list val)))))
+                      (mv (eval_result-case res
+                            :ev_error (termination-error-fix res)
+                            :otherwise (EV_NORMAL
+                                        (FUNC_RESULT
+                                         (LIST (V_INT (ACL2::FLOOR VAL.VAL 1)))
+                                         (GLOBAL-REPLACE-STATIC STATIC-ENV (ENV->GLOBAL ENV)))))
+                          orac
+                          nil)))))
+  :hints (("Goal"
+           :in-theory (e/d (eval-rounddown-*t)
+                           (rounddown-correct-prim
+                            rounddown-correct))
+           :use ((:instance rounddown-correct-prim
+                            (env (env-replace-static static-env env)))))))
+
+(fgl::remove-fgl-rewrite acl2::floor)
+
+(fgl::def-fgl-rewrite check-rounddown-rewrites
+  (implies
+   (and (fgl::bind-fn-annotation annot 'eval-rounddown-*t-fn)
+        (not annot))
+   (equal (eval-rounddown-*t env params args)
+          (b* ((res (fgl::annotate '(:check-rounddown-rewrites)
+                                   (eval-rounddown-*t env params args))))
+            (fgl::fgl-prog2
+             (and (fgl::syntax-bind res-is-call
+                                    (fgl::fgl-object-case res
+                                                          :g-apply (eq res.fn 'eval-rounddown-*t-fn)
+                                                          :otherwise nil))
+                  (fgl::fgl-error :msg (msg "eval-rounddown-*t call failed to rewrite")
+                                  :debug-obj res))
+             res)))))
+
+
+(fgl::def-fgl-rewrite roundup-*t-correct-fgl
+  (B* (((v_real val)))
+    (IMPLIES (AND (SUBPROGRAMS-MATCH '("RoundUp") ;; RoundTowardsZero Real
+                                     static-env
+                                     (STDLIB-prim-STATIC-ENV))
+                  (not (find-call-tracespec "RoundUp" pos tracespec))
+                  (trace-free-fnname-p "RoundUp")
+                  (trace-free-ty-timeframe-imap-p
+                   (static_env_global->declared_types static-env))
+                  (EQUAL (val-kind val) :v_real)
+                  ;; (equal upbound (<= (ilog2-safe-clock (abs val.val)) (expt 2 128)))
+                  ;; (syntaxp (progn$ (cw "upbound: ~x0~%" upbound)
+                  ;;                  t))
+                  ;; upbound
+                  )
+             (equal (eval-roundup-*t ENV nil (list val))
+                    (b* (((mv res ?new-orac ?trace)
+                          (fgl::fgl-hide
+                           (eval-roundup-*t ENV nil (list val)))))
+                      (mv (eval_result-case res
+                            :ev_error (termination-error-fix res)
+                            :otherwise (EV_NORMAL
+                                        (FUNC_RESULT
+                                         (LIST (V_INT (ACL2::CEILING VAL.VAL 1)))
+                                         (GLOBAL-REPLACE-STATIC STATIC-ENV (ENV->GLOBAL ENV)))))
+                          orac
+                          nil)))))
+  :hints (("Goal"
+           :in-theory (e/d (eval-roundup-*t)
+                           (roundup-correct-prim
+                            roundup-correct))
+           :use ((:instance roundup-correct-prim
+                            (env (env-replace-static static-env env)))))))
+
+(fgl::remove-fgl-rewrite acl2::ceiling)
+
+(fgl::def-fgl-rewrite check-roundup-rewrites
+  (implies
+   (and (fgl::bind-fn-annotation annot 'eval-roundup-*t-fn)
+        (not annot))
+   (equal (eval-roundup-*t env params args)
+          (b* ((res (fgl::annotate '(:check-roundup-rewrites)
+                                   (eval-roundup-*t env params args))))
+            (fgl::fgl-prog2
+             (and (fgl::syntax-bind res-is-call
+                                    (fgl::fgl-object-case res
+                                                          :g-apply (eq res.fn 'eval-roundup-*t-fn)
+                                                          :otherwise nil))
+                  (fgl::fgl-error :msg (msg "eval-roundup-*t call failed to rewrite")
                                   :debug-obj res))
              res)))))
 

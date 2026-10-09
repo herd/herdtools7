@@ -1,6 +1,6 @@
 Test G004 Required
 States 3
-0:X0=0;  ~Fault(P0);
+0:X0=0; ~Fault(P0);
 0:X0=0; Fault(P0,GCS:PRET);
 0:X0=0; Fault(P0:L2,GCS:PRET);
 No

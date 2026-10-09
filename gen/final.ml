@@ -15,11 +15,11 @@
 (****************************************************************************)
 
 module type Config = sig
-  val verbose : int
+  val debug : Debug_gen.t
   val cond : Config.cond
   val optcond : bool
   val hexa : bool
-  val variant : Variant_gen.t -> bool
+  val variant : Variant_gen.set
 end
 
 module Make : functor (O:Config) -> functor (C:ArchRun.S) ->

@@ -550,7 +550,7 @@
                 (consp (t_enum->elts (ty->desc ty))))
            (equal (ty-fix-val x ty)
                   (let* ((elts (t_enum->elts (ty->desc ty)))
-                         (rev-elts (acl2::rev elts))
+                         (rev-elts (acl2::rev (mergesort elts)))
                          (val (fgl::fgl-hide (v_label->val x)))
                          (ignore (fgl::trigger-constraints
                                   ;; Why do we skip the first element when
@@ -575,7 +575,7 @@
                 (type_desc-case (ty->desc ty) :t_enum))
            (equal (v_label->val x)
                   (let* ((elts (t_enum->elts (ty->desc ty)))
-                         (rev-elts (acl2::rev elts))
+                         (rev-elts (acl2::rev (mergesort elts)))
                          (val (fgl::fgl-hide (v_label->val x)))
                          (ignore (fgl::trigger-constraints
                                   ;; Why do we skip the first element? see above.
@@ -587,14 +587,17 @@
           :expand ((ty-satisfied x ty)))))
 
 
-
+(local (defthm consp-mergesort
+         (iff (consp (mergesort x))
+              (consp x))
+         :hints(("Goal" :in-theory (enable mergesort)))))
 
 (fgl::def-fgl-rewrite v_label->val-of-ty-fix-val
   (implies (ty-satisfiable ty)
            (equal (v_label->val (ty-fix-val x (fgl::concrete ty)))
                   (b* ((desc (ty->desc ty)))
                     (type_desc-case desc
-                      :t_enum (let* ((rev-elts (acl2::rev desc.elts))
+                      :t_enum (let* ((rev-elts (acl2::rev (mergesort desc.elts)))
                                      (val (fgl::fgl-hide (v_label->val x)))
                                      (ignore (fgl::trigger-constraints
                                               ;; Why do we skip the first element when
@@ -611,3 +614,4 @@
   :hints(("Goal"
           :expand ((ty-satisfiable ty)
                    (ty-fix-val x ty)))))
+

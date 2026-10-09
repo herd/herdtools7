@@ -23,6 +23,11 @@ cli_parser.add_argument(
     action="store_true",
 )
 cli_parser.add_argument(
+    "--console-macros-only",
+    help=argparse.SUPPRESS,
+    action="store_true",
+)
+cli_parser.add_argument(
     "-d",
     "--dictionary",
     help="Specifies reference dictionary file for spellchecking",
@@ -889,6 +894,9 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\end{(?:AST|Typing|Semantics)RuleList}",
         r"\\TypingRuleRef{.*?}",
         r"\\TypingRuleDef(?:\[.*?\])?{.*?}",
+        # Ignore the optional outline description and stable label, while
+        # leaving the displayed section title to be spellchecked.
+        r"\\(?:SectionDef|OutlineSubsectionDef)(?:\[.*?\])?\s*{.*?}",
         r"\\SemanticsRuleRef{.*?}",
         r"\\SemanticsRuleDef(?:\[.*?\])?{.*?}",
         r"\\RequirementDef{.*?}",
@@ -897,7 +905,7 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
         r"\\SyntacticSugarRef{.*?}",
         r"\\ConventionDef{.*?}",
         r"\\AllApplyCase{.*?}",
-        r"\% CONSOLE_BEGIN.*\% CONSOLE_END",
+        r"\\RenderConsoleFor(?:\[.*?\])?{.*?}{.*?}",
         r"\\hypertarget{.*?}",
         r"\\texthypertarget{.*?}",
         r"\\mathhypertarget{.*?}",
@@ -929,7 +937,7 @@ def spellcheck(reference_dictionary_path: str, latex_files: list[str]) -> int:
     ]
     extract_patterns = [
         # Patterns for extracting words from specific macros:
-        r"\\ASLListing\{(.*?)\}\{.*?\}\{.*?\}",
+        r"\\ASLListing\{(.*?)\}\s*\{.*?\}\s*\{.*?\}",
         r"\\hyperlink{.*?}{(.*?)}",
     ]
     num_errors = 0
@@ -1751,9 +1759,11 @@ def check_per_file(latex_files: list[str], checks):
 def main():
     start_time = time.time()
     args = cli_parser.parse_args()
-    if args.console_macros:
+    if args.console_macros or args.console_macros_only:
         aslref_path = args.aslref if args.aslref else "aslref"
         apply_console_macros(aslref_path)
+        if args.console_macros_only:
+            return
     print("Linting files...")
     all_latex_sources = get_latex_sources(False)
     content_latex_sources = get_latex_sources(True)

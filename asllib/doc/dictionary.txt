@@ -28,6 +28,7 @@ accessors
 accompanied
 according
 account
+accumulated
 accumulator
 achieve
 achieved
@@ -188,6 +189,7 @@ attempt
 attempted
 attempting
 attempts
+attributes
 authoritative
 automatically
 auxiliary
@@ -221,7 +223,9 @@ been
 before
 begin
 beginning
+begins
 behave
+behaves
 behaviour
 behaviours
 being
@@ -556,6 +560,7 @@ current
 currently
 custom
 customers
+cutting
 cycle
 cyclic
 data
@@ -745,6 +750,7 @@ encounters
 end
 endian
 ending
+ends
 enforce
 enforced
 england
@@ -798,12 +804,14 @@ event
 every
 exact
 exactly
+examined
 examining
 example
 examples
 exceed
 exceeded
 exceeding
+exceeds
 except
 exception
 exceptional
@@ -830,11 +838,13 @@ existent
 existing
 exists
 exit
+exits
 expand
 expanded
 expanding
 expands
 expansion
+expectations
 expected
 expecting
 expects
@@ -1000,6 +1010,7 @@ groups
 guarantee
 guaranteed
 guarantees
+guard
 guards
 guideline
 guidelines
@@ -1010,6 +1021,7 @@ handled
 handles
 handling
 hands
+happen
 happens
 hardware
 has
@@ -1456,6 +1468,7 @@ numeral
 numerator
 numeric
 numerous
+obey
 obeys
 object
 observable
@@ -1494,6 +1507,7 @@ operational
 operations
 operator
 operators
+opposite
 optimisation
 optimised
 option
@@ -1616,6 +1630,7 @@ positive
 possibility
 possible
 possibly
+postcondition
 potential
 potentially
 power
@@ -1629,6 +1644,7 @@ preceding
 precise
 precisely
 precision
+precondition
 predicate
 predicates
 predictability
@@ -1715,6 +1731,7 @@ quality
 quantifiers
 query
 quite
+quotation
 quotations
 quote
 quotes
@@ -1733,6 +1750,7 @@ re
 re-reading
 reachable
 reached
+reaching
 read
 readability
 readable
@@ -1858,6 +1876,7 @@ respect
 respected
 respective
 respectively
+response
 responsible
 rest
 restore
@@ -1932,6 +1951,7 @@ see
 seem
 seems
 seen
+selected
 selecting
 selection
 selectors
@@ -2055,6 +2075,7 @@ stand
 standard
 stands
 start
+started
 starting
 starts
 state
@@ -2070,9 +2091,11 @@ stay
 step
 steps
 still
+stopping
 storage
 store
 stored
+storing
 strictly
 string
 strings
@@ -2130,6 +2153,7 @@ sugar
 sum
 summarised
 summarises
+summary
 summation
 summing
 sums
@@ -2176,6 +2200,8 @@ terminals
 terminate
 terminates
 terminating
+termination
+terminator
 terms
 test
 tested
@@ -2254,6 +2280,7 @@ translated
 translates
 translating
 translation
+transliterates
 transliteration
 traversing
 treat
@@ -2312,6 +2339,7 @@ underscores
 understand
 understanding
 undertaken
+unescaped
 unevaluated
 unexpected
 uniformly

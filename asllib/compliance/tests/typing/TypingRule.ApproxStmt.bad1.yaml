@@ -1,8 +1,14 @@
-mode: exec
+mode: no-exec
 outcome: FAILURE
 error: TE_BSPD
 error_line: 8
 info: |-
+  File ../tests/typing/TypingRule.ApproxStmt.bad1.asl, line 8, character 4 to
+    line 10, character 8:
+      while (TRUE) do
+          pass;
+      end;
+  ASL Warning: Loop does not have a limit.
   File ../tests/typing/TypingRule.ApproxStmt.bad1.asl, line 8, character 4 to
     line 10, character 8:
       while (TRUE) do

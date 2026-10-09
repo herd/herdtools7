@@ -19,11 +19,15 @@ open Code
 
 module type DiyConfig = sig
   include DumpAll.Config
+  val nprocs : int
   val choice : Code.check
-  val variant : Variant_gen.t -> bool
+  val variant : Variant_gen.set
   val prefix : string list
   val cumul : string Config.cumul
   val max_ins : int
+  val mix : bool
+  val max_relax : int
+  val min_relax : int
   val upto : bool
   val varatom : string list
 end
@@ -88,9 +92,9 @@ open C.R
     include O
 
     type relax = C.R.relax
-    let mix = !Config.mix
-    let max_relax = !Config.max_relax
-    let min_relax = !Config.min_relax
+    let mix = O.mix
+    let max_relax = O.max_relax
+    let min_relax = O.min_relax
 
     let prefix =
       (* Parse each `-prefix` argument separately, then combine them as one
@@ -124,7 +128,7 @@ open C.R
   module M =  Alt.Make(C)(AltConfig)
 
   let gen lr ls rl n =
-    if O.verbose > 0 then begin
+    if O.debug.Debug_gen.parser then begin
       Printf.eprintf
         "expanded relax=%s\n" (C.R.pp_relax_list lr)
     end ;
@@ -180,7 +184,7 @@ let exec_conf s =
   let prog = Sys.argv.(0) in
   let cmd = Array.to_list Sys.argv in
   let cmd = norm_cmd cmd in
-  if !Config.verbose > 1 then
+  if !Config.debug.Debug_gen.parser then
     eprintf "EXEC: %s %s\n%!" prog (String.concat " " (conf @ cmd)) ;
   ignore (Unix.execvp prog (Array.of_list (prog::conf@cmd))) ;
   ()
@@ -202,7 +206,6 @@ let () =
 
   let module Co = struct
 (* Dump all *)
-    let verbose = !Config.verbose
     let generator = Config.baseprog
     let debug = !Config.debug
     let hout = match !Config.hout with
@@ -232,6 +235,9 @@ let () =
     let upto = !Config.upto
     let varatom = !varatom
     let max_ins = !Config.max_ins
+    let mix = !Config.mix
+    let max_relax = !Config.max_relax
+    let min_relax = !Config.min_relax
     let overload = !Config.overload
     let poll = !Config.poll
     let optcoherence = !Config.optcoherence
@@ -250,7 +256,7 @@ let () =
     let same_loc = !Config.same_loc
  end in
   let module C = struct
-    let verbose = !Config.verbose
+    let debug = !Config.debug
     let show = !Config.show
     let same_loc =
       !Config.same_loc ||

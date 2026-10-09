@@ -180,7 +180,7 @@ end;
 pure func AlignDownSize(x: integer, size: integer) => integer
 begin
     assert x >= 0 && size > 0;
-    return (x DIVRM size) * size;
+    return x - (x MOD size);
 end;
 
 

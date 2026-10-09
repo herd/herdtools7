@@ -19,12 +19,11 @@ open Code
 
 module type Config = sig
   val debug : Debug_gen.t
-  val verbose : int
   val libdir : string
   val prog : string
   val bell : string option
   val varatom : string list
-  val variant : Variant_gen.t -> bool
+  val variant : Variant_gen.set
 end
 
 module Make(O:Config) = struct
@@ -42,7 +41,7 @@ let bi = match O.bell with
         let debug_lexer = O.debug.Debug_gen.lexer
         let debug_model = O.debug.Debug_gen.model
         let debug_files = false
-        let verbose = O.verbose
+        let verbose = if O.debug.Debug_gen.model then 1 else 0
         let libfind =
           let module ML =
             MyLib.Make
@@ -50,12 +49,12 @@ let bi = match O.bell with
                 let includes = []
                 let env = None
                 let libdir = O.libdir
-                let debug = O.debug.Debug_gen.files
+                let debug = O.debug.Debug_gen.io
               end) in
           ML.find
         let compat = false
         let prog = O.prog
-        let variant = Misc.delay_parse O.variant Variant_gen.parse
+        let variant = Misc.delay_parse (fun v -> Variant_gen.has v O.variant) Variant_gen.parse
       end) in
   Some (R.read fname)
 | None -> None
@@ -101,7 +100,7 @@ let pp_annot a = match a with
 (* No atoms yet *)
 let bellatom = true
 
-module SIMD = NoSIMD
+module SIMD = Simd.No
 
 type atom = string list
 
@@ -127,7 +126,7 @@ let pp_atom_separate atom = [pp_atom atom]
 let compare_atom a1 a2 =
   List.compare String.compare a1 a2
 
-include MachMixed.No
+include Mixed.No
 
 let fold_annots eg f r =
   List.fold_left
@@ -178,7 +177,7 @@ let varatom = match  O.varatom with
     Some
       begin
         let x = P.parse lines in
-        if O.debug.Debug_gen.generator then
+        if O.debug.Debug_gen.parser then
           eprintf "Variations:\n%s\n" (BellModel.pp_event_decs x) ;
         x
       end
@@ -202,9 +201,7 @@ let varatom_rmw = match varatom with
 | None -> no_varatom
 | Some _va -> fun _ -> assert false
 
-include NoMixed
-
-include NoWide
+include Atom.NoWide
 
 (* End of atoms *)
 

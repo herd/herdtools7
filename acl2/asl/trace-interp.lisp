@@ -1053,12 +1053,12 @@ versions @(see eval_subprogram-*t1) and @(see eval_stmt-*t1).</p>")))
           (form (add-define-xdoc
                  "Tracing version of @(see <NAME>); see @(see asl-interpreter-mutual-recursion-*t) for overview."
                  form))
-          ;; Replace '(define eval_subprogram ...' with '(define eval_subprogram-*ft1'
-          ;; since it's going to be wrapped in a call that deals with collecting the trace data.
-          (form (find-def-and-rename 'eval_subprogram '*t form))
-          (form (find-def-and-rename 'eval_stmt '*t form))
           ;; Substitute function names with their -*t suffixed forms.
           (form (sublis *eval-trace-substitution* form))
+          ;; Replace '(define eval_subprogram ...' with '(define eval_subprogram-*ft1'
+          ;; since it's going to be wrapped in a call that deals with collecting the trace data.
+          (form (find-def-and-rename 'eval_subprogram-*t "1" form))
+          (form (find-def-and-rename 'eval_stmt-*t "1" form))
           ;; Replace all invocations of (global-env->static (env->global env)) with the variable static-env.
           (form (replace-static-envs form))
           ;; Add guard saying static-env equals the one in env.
@@ -1193,3 +1193,84 @@ versions @(see eval_subprogram-*t1) and @(see eval_stmt-*t1).</p>")))
         nil
       (append (asl-trace-find-calls fn (car x))
               (asl-tracelist-find-calls fn (cdr x))))))
+
+
+;; Basic property: if tracespecs are empty, then no trace data and no trace aborts are produced
+(define tracespec-emptyp ((x tracespec-p))
+  ;; This basically just recognizes the tracespec (nil nil nil nil), but is
+  ;; also true of plain NIL which we sometimes use as an (unfortunately
+  ;; illtyped) empty tracespec in rewrite rules.
+  (b* (((tracespec x)))
+    (and (not x.call-specs-permanent)
+         (not x.stmt-specs-permanent)
+         (not x.call-specs-transient)
+         (not x.stmt-specs-transient)))
+  ///
+  (defthm tracespec-emptyp-implies
+    (implies (tracespec-emptyp x)
+             (b* (((tracespec x)))
+               (and (not x.call-specs-permanent)
+                    (not x.stmt-specs-permanent)
+                    (not x.call-specs-transient)
+                    (not x.stmt-specs-transient)))))
+
+  (defthm find-call-tracespec-when-tracespec-emptyp
+    (implies (tracespec-emptyp tracespec)
+             (not (find-call-tracespec name pos tracespec)))
+    :hints(("Goal" :in-theory (enable find-call-tracespec
+                                      call-tracespeclist-find))))
+
+  (defthm find-stmt-tracespec-when-tracespec-emptyp
+    (implies (tracespec-emptyp tracespec)
+             (not (find-stmt-tracespec stmt tracespec)))
+    :hints(("Goal" :in-theory (enable find-stmt-tracespec
+                                      stmt-tracespeclist-find))))
+
+  (defthm tracespec-emptyp-of-combine-tracespecs
+    (implies (tracespec-emptyp x)
+             (tracespec-emptyp (combine-tracespecs callp nil x)))
+    :hints(("Goal" :in-theory (enable combine-tracespecs)))))
+
+
+
+
+(encapsulate nil
+  (local (in-theory (acl2::e/d* (ev_error->desc-when-wrong-kind
+                                 call-abort-after
+                                 stmt-abort-after
+                                 call-interior-tracespec
+                                 stmt-interior-tracespec
+                                 call-trace-output
+                                 stmt-trace-output)
+                                (asl-*t-equals-original-rules
+                                 tracespec-emptyp-implies
+                                 not xor atom eql
+                                 env-replace-static-with-self
+                                 eval_result-fix-when-eval_result-p
+                                 acl2::append-to-nil
+                                 eval_result-kind-possibilities
+                                 (tau-system)
+                                 (:rules-of-class :congruence :here)
+                                 (:rules-of-class :type-prescription :here)))))
+  (local (include-book "trace-aborts"))
+
+  (with-output
+    ;; makes it so it won't take forever to print the induction scheme
+    :evisc (:gag-mode (evisc-tuple 3 4 nil nil))
+    (std::defret-mutual-generate <fn>-no-trace-when-empty-tracespec
+      :rules ((t (:add-hyp (tracespec-emptyp tracespec))
+                 (:add-concl (not trace))
+                 (:add-concl (not (equal (ev_error->desc res) "Trace abort")))))
+      :hints ((vl::big-mutrec-default-hint 'eval_expr-*t-fn id nil world))
+      :mutual-recursion asl-interpreter-mutual-recursion-*t)))
+
+
+(make-event
+ `(defthm eval_subprogram-*t-without-trace-independent-of-pos
+    (implies (and (syntaxp (not (equal pos '',*dummy-position*)))
+                  (tracespec-emptyp tracespec))
+             (equal (eval_subprogram-*t env name vparams vargs)
+                    (eval_subprogram-*t env name vparams vargs :pos *dummy-position*)))
+    :hints(("Goal" :expand ((:free (pos) (eval_subprogram-*t env name vparams vargs)))
+            :in-theory (enable call-trace-output
+                               call-abort-after)))))

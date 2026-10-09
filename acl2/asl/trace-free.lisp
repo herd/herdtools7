@@ -2004,132 +2004,7 @@
 
 (local (in-theory (acl2::disable* asl-*t-equals-original-rules)))
 (local (in-theory (enable ev_error->desc-when-wrong-kind)))
-
-(local (defthm ev_error->desc-of-v_to_bool
-         (not (equal (ev_error->desc (v_to_bool x))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable v_to_bool)))))
-
-(local (defthm ev_error->desc-of-v_to_int
-         (not (equal (ev_error->desc (v_to_int x))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable v_to_int)))))
-
-(local (defthm ev_error->desc-of-v_to_label
-         (not (equal (ev_error->desc (v_to_label x))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable v_to_label)))))
-
-(local (defthm ev_error->desc-of-env-find-global
-         (not (equal (ev_error->desc (env-find-global v env))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable env-find-global)))))
-
-(local (defthm ev_error->desc-of-tick_loop_limit
-         (not (equal (ev_error->desc (tick_loop_limit x))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable tick_loop_limit)))))
-
-(local (defthm ev_error->desc-of-rethrow_implicit
-         (equal (ev_error->desc (rethrow_implicit throw blkres bt))
-                (ev_error->desc blkres))
-         :hints(("Goal" :in-theory (enable rethrow_implicit)))))
-
-(local (defthm ev_error->desc-of-bitvec_fields_to_record!
-         (not (equal (ev_error->desc (bitvec_fields_to_record! fields slices rec bv width))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable bitvec_fields_to_record!
-                                           (:i bitvec_fields_to_record!))
-                 :induct t))))
-
-(local (defthm ev_error->desc-of-bitvec_fields_to_record
-         (not (equal (ev_error->desc (bitvec_fields_to_record fields pairs res v))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable bitvec_fields_to_record)))))
-
-(local (defthm ev_error->desc-of-check_two_ranges_non_overlapping
-         (not (equal (ev_error->desc (check_two_ranges_non_overlapping x y))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable check_two_ranges_non_overlapping)))))
-
-(local (defthm ev_error->desc-of-check_non_overlapping_slices-1
-         (not (equal (ev_error->desc (check_non_overlapping_slices-1 x y))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable check_non_overlapping_slices-1)
-                 :induct t))))
-
-(local (defthm ev_error->desc-of-check_non_overlapping_slices
-         (not (equal (ev_error->desc (check_non_overlapping_slices x))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable check_non_overlapping_slices)
-                 :induct t))))
-
-(local (defthm ev_error->desc-of-vbv-to-int
-         (not (equal (ev_error->desc (vbv-to-int vec))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable vbv-to-int)))))
-
-(local (defthm ev_error->desc-of-check-bad-slices
-         (not (equal (ev_error->desc (check-bad-slices width slices))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable check-bad-slices)
-                 :induct t))))
-
-(local (defthm ev_error->desc-of-check_recurse_limit
-         (not (equal (ev_error->desc (check_recurse_limit env name res))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable check_recurse_limit)))))
-
-(local (defthm ev_error->desc-of-write_to_bitvector
-         (not (equal (ev_error->desc (write_to_bitvector pairs vec val))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable write_to_bitvector)))))
-
-(local (defthm ev_error->desc-of-eval_primitive
-         (not (equal (ev_error->desc (eval_primitive name params args))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable eval_primitive)))))
-
-(local (defthm ev_error->desc-of-eval_binop
-         (not (equal (ev_error->desc (eval_binop op arg1 arg2))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable eval_binop)))))
-
-(local (defthm ev_error->desc-of-eval_unop
-         (not (equal (ev_error->desc (eval_unop op arg))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable eval_unop)))))
-
-(local (defthm ev_error->desc-of-eval_pattern_mask
-         (not (equal (ev_error->desc (eval_pattern_mask val mask))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable eval_pattern_mask)))))
-
-(local (defthm ev_error->desc-of-get_field!
-         (not (equal (ev_error->desc (get_field! field rec))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable get_field!)))))
-
-(local (defthm ev_error->desc-of-get_field
-         (not (equal (ev_error->desc (get_field field rec))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable get_field)))))
-
-(local (defthm ev_error->desc-of-map-get_field!
-         (not (equal (ev_error->desc (map-get_field! field rec))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable map-get_field!)))))
-
-(local (defthm ev_error->desc-of-map-get_field
-         (not (equal (ev_error->desc (map-get_field field rec))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable map-get_field)))))
-
-(local (defthm ev_error->desc-of-concat_bitvectors
-         (not (equal (ev_error->desc (concat_bitvectors vals))
-                     "Trace abort"))
-         :hints(("Goal" :in-theory (enable concat_bitvectors)))))
-
+(local (include-book "trace-aborts"))
 
 
 (local
@@ -2492,29 +2367,7 @@
  (defthm find-call-tracespec-of-nil
    (not (find-call-tracespec fn pos '(nil nil nil nil)))
    :hints(("Goal" :in-theory (enable  find-call-tracespec)))))
-;;-------- Assisted by Codex - reasoning High
 
-(with-output
-  ;; Keep the generated event from printing a huge induction scheme.
-  :evisc (:gag-mode (evisc-tuple 3 4 nil nil))
-  :off (event)
-
-  (std::defret-mutual-generate <fn>-no-trace-when-empty-tracespec
-    :mutual-recursion asl-interpreter-mutual-recursion-*t
-    :rules
-    ((t
-      (:add-concl (not (equal (ev_error->desc res) "Trace abort")))
-      (:add-concl (equal trace nil))
-      (:add-hyp (equal tracespec '(nil nil nil nil))))
-     ((:fnname eval_call-*t)
-      (:add-hyp (not (find-call-tracespec name pos tracespec))))
-     ((:fnname eval_subprogram-*t)
-      (:add-hyp (not (find-call-tracespec name pos tracespec))))
-     ((:fnname eval_stmt-*t)
-      (:add-hyp (not (find-stmt-tracespec s tracespec)))))
-    :hints ((vl::big-mutrec-default-hint 'eval_expr-*t-fn id nil world))))
-
-;---------- End of Codex assistance
 (defthmd eval_stmt-*t-eliminate-tracespec
   (implies (and (syntaxp (not (equal tracespec ''nil)))
                 (equal ts-entry (find-stmt-tracespec s tracespec))
@@ -2569,7 +2422,9 @@
   :hints (("Goal"
            :expand ((:free (tracespec) (eval_subprogram-*t env fn vparams vargs))
                     (find-call-tracespec fn pos '(nil nil nil nil)))
-           :in-theory (enable call-interior-tracespec
-                              eval_subprogram-*t1-equals-original
-                              maybe-call-tracespec->interior-tracespec
-                              maybe-call-tracespec->empty-tracespec))))
+           :in-theory (e/d (call-interior-tracespec
+                            eval_subprogram-*t1-equals-original
+                            maybe-call-tracespec->interior-tracespec
+                            maybe-call-tracespec->empty-tracespec)
+                           (eval_subprogram-*t-without-trace-independent-of-pos)))))
+

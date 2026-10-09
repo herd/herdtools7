@@ -59,7 +59,6 @@ module DefaultConfig = struct
   let sme_vector_length = 128
   let macros = None
   let check_name = fun _ -> true
-  let check_rename = fun s -> Some s
   let hexa = false
 
   module PC = struct

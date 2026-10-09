@@ -24,12 +24,9 @@ let logs = ref []
 let acceptempty = ref false
 
 let options =
-  [
-  ("-q", Arg.Unit (fun _ -> verbose := -1),
-   "<non-default> be silent");
-  ("-v", Arg.Unit (fun _ -> incr verbose),
-   "<non-default> show various diagnostics, repeat to increase verbosity");
-   ("-acceptempty", Arg.Bool (fun b -> acceptempty := b),
+  LibOpts.parse_verbose verbose
+  @ [
+    ("-acceptempty", Arg.Bool (fun b -> acceptempty := b),
     sprintf
       "<bool> output empty conditions, default %b" !acceptempty);
    ]

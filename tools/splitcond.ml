@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 (********************)
-(*  Change condition *)
+(* Change condition *)
 (********************)
 
 open Printf
@@ -104,11 +104,9 @@ let set_tar x = tar := x
 let arg = ref None
 
 let opts =
-  [ "-v",
-    Arg.Unit (fun () -> incr verbose),
-    " be verbose";
-    "-hexa",Arg.Bool (fun b -> hexa := b),
-    " <bool> print numbers in hexadecimal";
+  LibOpts.parse_verbose verbose
+  @ [
+    ToolsOpts.parse_hexa hexa;
    "-o", Arg.String set_tar,
     sprintf
       "<name> output to directory or tar file <name>, default %s" !tar;

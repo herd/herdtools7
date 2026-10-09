@@ -1,7 +1,7 @@
 func main() => integer
 begin
 var x    =5;var y
-= x // comment
+= x
 
 ;
 return 0;

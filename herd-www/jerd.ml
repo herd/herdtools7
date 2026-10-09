@@ -169,7 +169,7 @@ let run_herd bell cat litmus cfg cat_label =
     CheckName.Make
       (struct
         include Verbose
-        let rename = !rename
+        let rename = []
         let select = []
         let names = !names
         let excl = !excl
@@ -204,7 +204,6 @@ let run_herd bell cat litmus cfg cat_label =
     let statelessrc11 = !statelessrc11
 
     let check_name = Check.ok
-    let check_rename = Check.rename_opt
     let check_kind = TblRename.find_value_opt kinds
     let check_cond =  TblRename.find_value_opt conds
     let libfind = libfind
@@ -349,7 +348,6 @@ let run_herd bell cat litmus cfg cat_label =
     Splitter.Make
       (struct
         let debug = Config.debug.Debug_herd.lexer
-        let check_rename = Config.check_rename
       end) in
 
   (* Standalone (non-AArch64) ASL tests are outside Jerd's supported architectures.

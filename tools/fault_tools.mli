@@ -16,7 +16,21 @@
 
 type t = (Proc.t * string option) * string option * string option
 
-val equal_ft : string option -> string option -> bool
-val equal : t -> t -> bool
+(* Returns true when the argument is prefixed by "D-" or "I-". *)
+val has_diprefix : string -> bool
+
+(* Returns argument with the "D-" or "I-" prefix stripped packed in
+   [Some], when prefixed. Otherwise, returns [None] *)
+val strip_diprefix : string -> string option
+
+(*
+ * [match ft0 ft] return true when [ft] "matches" [ft0] seen as a fault
+ *  specification. Notice:
+ *   + The absence of fault specification ([None]) filters any specification
+ *   + Unprefixed MMU specifications (Some "MMU:...") filters "D-" and "I-"
+ *     prefixed MMU specigications.
+ *   + In any case equality of fault types entails matching.
+ *)
+val match_fault_type : string option -> string option -> bool
 
 val pp : t -> string

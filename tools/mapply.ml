@@ -277,8 +277,8 @@ let usage = String.concat "\n" [
 
 let parse_args () =
   Arg.parse
-    ["-v", Arg.Unit (fun () -> incr verbose)," be verbose";
-     "-j", Arg.Int (fun i -> j := i),"<n> manage <n> simultaneous jobs" ;
+    (LibOpts.parse_verbose verbose
+    @ ["-j", Arg.Int (fun i -> j := i),"<n> manage <n> simultaneous jobs" ;
      "-exit",
      Arg.Bool (fun b -> do_exit := b),
      Printf.sprintf "replicate (first) non-zero exit status, default %b"
@@ -292,7 +292,7 @@ let parse_args () =
      ^ "Any parameters on its right side will be passed as is to the command" ;
      "-mode", Arg.String set_mode,
      sprintf
-       "(buff|file) use either internal buffers or files for comunication, default %s" (pp_mode !mode);]
+       "(buff|file) use either internal buffers or files for comunication, default %s" (pp_mode !mode);])
     (fun token -> tokens := token :: !tokens)
     usage
 

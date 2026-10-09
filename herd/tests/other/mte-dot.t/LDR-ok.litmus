@@ -1,0 +1,9 @@
+AArch64 LDR-ok
+{
+  [tag(x)]=:green;
+  [PTE(x)]=(oa:PA(x),attrs:(TaggedNormal));
+  int x=1;
+  0:X1=x:green;
+}
+P0          ;
+LDR W0,[X1] ;

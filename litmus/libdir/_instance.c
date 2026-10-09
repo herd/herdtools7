@@ -34,22 +34,29 @@ typedef struct {
 #ifdef HAVE_TIMEBASE
   tb_t next_tb;
 #endif
-  hash_t t;
+  outhash_t t;
   sense_t b;
   param_t p;
   int ind[N]; /* Indirection for role shuffle */
   int stop_now;
 } ctx_t ;
 
+#define KEYSZ (sizeof(hashlog_t)/sizeof(uint32_t))
 
-static void instance_init(ctx_t *p, int id, intmax_t *mem) {
+static void hash_init(outhash_t *t,outhash_mem_t mem) {
+  t->hash_sz = HASHSZ; t->key_sz = KEYSZ; t->mem = mem;
+  outhash_init(t);
+}
+
+static void instance_init
+  (ctx_t *p, int id, intmax_t *mem,outhash_mem_t hash_mem) {
   p->id = id;
   p->mem = mem;
-  hash_init(&p->t);
+  hash_init(&p->t,hash_mem);
 #ifdef HASHLOG
-  log_init(&p->hout);
+  outhash_init_key((uint32_t *)&p->hout,KEYSZ);
 #else
-  log_init(&p->out);
+  outhash_init_key((uint32_t *)&p->out,KEYSZ);
 #endif
   barrier_init(&p->b,N);
   interval_init((int *)&p->ind,N);
@@ -73,10 +80,7 @@ static void instance_free(ctx_t *p) {
 #define LINESZ (LINE/sizeof(intmax_t))
 #define VOFFSZ (VOFF/sizeof(intmax_t))
 #define MEMSZ ((NVARS*NEXE+1)*LINESZ)
-
-#ifndef DYNALLOC
-static intmax_t mem[MEMSZ] ;
-#endif
+#define KEYS_SZ (HASHSZ*KEYSZ)
 
 typedef struct global_t {
   /* Command-line parameter */
@@ -87,6 +91,7 @@ typedef struct global_t {
   const char **group ;
   /* memory */
   intmax_t *mem ;
+  outhash_mem_t hash_mem ;
   /* Cache control */
 #ifdef ACTIVE
   active_t *active;
@@ -106,7 +111,7 @@ typedef struct global_t {
   tsc_t start,now ;
   /* All instance contexts */
   ctx_t ctx[NEXE] ; /* All test instance contexts */
-  hash_t hash ;     /* Sum of outcomes */
+  outhash_t hash ;     /* Sum of outcomes */
   int hash_ok;
 #ifdef STATS
   /* statistics */
@@ -138,10 +143,16 @@ static void init_global(global_t *g) {
   uintptr_t x = (uintptr_t)(g->mem) ;
   x += LINE-1 ; x /=  LINE ; x *= LINE ;
   intmax_t *m = (intmax_t *)x ;
+  outhash_mem_t hash_mem = g->hash_mem ;
+  hash_init(&g->hash,hash_mem) ;
+  hash_mem.t += HASHSZ ;
+  hash_mem.keys += KEYS_SZ ;
   /* Instance contexts */
   for (int k = 0 ; k < NEXE ; k++) {
-    instance_init(&g->ctx[k],k,m) ;
+    instance_init(&g->ctx[k],k,m,hash_mem) ;
     m += NVARS*LINESZ ;
+    hash_mem.t += HASHSZ ;
+    hash_mem.keys += KEYS_SZ ;
   }
   g->hash_ok = 1;
 }
@@ -151,6 +162,8 @@ static void free_global(global_t *g) {
     instance_free(&g->ctx[k]);
   }
 #ifdef DYNALLOC
+  free(g->hash_mem.t);
+  free(g->hash_mem.keys);
   free(g->mem);
   free(g);
 #endif

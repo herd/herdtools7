@@ -1,7 +1,7 @@
 Test A31 Required
 States 2
 0:X3=0; Fault(P0:L0,PacCheck:DA);
-0:X3=1;  ~Fault(P0:L0,PacCheck:DA); pacda(x,0x0)=x;
+0:X3=1; ~Fault(P0:L0,PacCheck:DA); pacda(x,0x0)=x;
 Ok
 Witnesses
 Positive: 2 Negative: 0

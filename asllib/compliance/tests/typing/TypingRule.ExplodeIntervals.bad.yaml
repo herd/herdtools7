@@ -4,6 +4,11 @@ error: TE_PLD
 error_line: 10
 info: |-
   File ../tests/typing/TypingRule.ExplodeIntervals.bad.asl, line 10,
+    characters 23 to 28:
+      var z: integer{} = b * 2;
+                         ^^^^^
+  ASL Warning: Interval too large: [ 0 .. 16385 ]. Keeping it as an interval.
+  File ../tests/typing/TypingRule.ExplodeIntervals.bad.asl, line 10,
     characters 4 to 29:
       var z: integer{} = b * 2;
       ^^^^^^^^^^^^^^^^^^^^^^^^^
