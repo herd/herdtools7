@@ -1,8 +1,0 @@
-AArch64 V35
-{
-}
-
-P0;
-PTRUE P0.S,VL2;
-
-exists (true)
