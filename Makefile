@@ -171,6 +171,21 @@ test:: test.herd-asl.inst.AArch64
 test:: test.herd-asl.inst.AArch64.sve
 test:: test.herd-asl.inst.AArch64.kvm
 
+.PHONY: test.herd-asl-strict.inst.AArch64.sve
+test.herd-asl-strict.inst.AArch64.sve: asl-pseudocode
+	@ echo
+	$(HERD_REGRESSION_TEST) \
+		-j $(J) \
+		-herd-path $(HERD) \
+		-libdir-path $(HERD_LIB_DIR) \
+		-litmus-dir ./herd/tests/instructions/AArch64.sve \
+		-conf ./herd/tests/instructions/AArch64.sve/asl-strict.cfg \
+		-checkstates \
+		$(REGRESSION_TEST_MODE)
+	@ echo "herd7 AArch64.sve instructions tests (strict ASL): OK"
+
+test:: test.herd-asl-strict.inst.AArch64.sve
+
 test-local:: test.herd-asl.inst.AArch64.sve
 
 test-all-asl:: test.herd.inst.ASL
