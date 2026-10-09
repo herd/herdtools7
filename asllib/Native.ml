@@ -272,7 +272,12 @@ module NativeBackend (C : Config) = struct
 
     let sint = function
       | [ NV_Literal (L_BitVector bv) ] ->
-          L_Int (Bitvector.to_z_signed bv) |> nv_literal |> return_one
+          if Bitvector.length bv > 0 then
+            L_Int (Bitvector.to_z_signed bv) |> nv_literal |> return_one
+          else
+            Error.fatal_unknown_pos
+            @@ Error.BadPrimitiveArgument
+                 (C.error_handling_time, "SInt", "length greater than 0")
       | [ v ] -> mismatch_type v [ default_t_bits ]
       | li ->
           Error.fatal_unknown_pos
@@ -358,13 +363,8 @@ module NativeBackend (C : Config) = struct
          let two_pow_n_minus_one = pow_2 (minus_one var_N) in
          let minus_two_pow_n_minus_one = neg two_pow_n_minus_one
          and two_pow_n_minus_one_minus_one = minus_one two_pow_n_minus_one in
-         let if_0_then_0_else else_expr =
-           cond_expr (binop `EQ var_N zero_expr) zero_expr else_expr
-         in
          let returns =
-           integer_range
-             (if_0_then_0_else minus_two_pow_n_minus_one)
-             (if_0_then_0_else two_pow_n_minus_one_minus_one)
+           integer_range minus_two_pow_n_minus_one two_pow_n_minus_one_minus_one
          in
          p
            ~parameters:[ ("N", None) ]
