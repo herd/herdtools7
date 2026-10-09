@@ -155,7 +155,7 @@ module Make
         | Static|Before -> false
 
       (* Statistic struct may not be initialised when dynamically allocated *)
-      let do_stats = not do_dynalloc
+      let do_stats = Cfg.variant Variant_litmus.Statistics
 
       let do_inlined = (* inline topology description *)
         match Cfg.driver with

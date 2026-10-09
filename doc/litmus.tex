@@ -2106,14 +2106,18 @@ On a X86\_64  machine with four cores two-ways hyper-threaded cores,
 we compile the test~\atest{R} in presi mode as follows:
 \begin{verbatim}
 % mkdir -p R
-% litmus7 -mach x86_64 -mode presi -avail 8 -o R R.litmus
+% litmus7 -mach x86_64 -mode presi -avail 8 -variant statistics -o R R.litmus
 % cd R
 % make ...
 \end{verbatim}
-Namely, the machine has 8 ``logical'' cores, \emph{i.e}
+Notice the number of available cores is set explicitly:
+the machine has 8 ``logical'' cores, \emph{i.e}
 4~two-way hyper-threaded cores. Hence the harness spawns 8 threads,
 whether those threads being attached to hardware logical cores or not
 depends on the target system offering affinity control (Linux) or not (MacOs).
+Also notice the option `-variant statistics` that commands
+the collection of statistics.
+Such statistics are recordings of successful parameters.
 
 We now run the  test:
 \begin{verbatim}
@@ -2154,7 +2158,7 @@ r \times s$ experiments, where $n$ is the number of test instances
 
 In test output above. we see that the final state of the test is
 observed about $323$k~times over four billions tries. More
-significantly, we see some record of successful parameters. Each line
+significantly, some successful parameters are printed. Each line
 consists in a number of occurrences of and of a parameter choice,
 called \aname{statistics}{\emph{parameter statistics}}. For instance,
 the first line ``\texttt{Topology 56913 :> part=0 [[0],[1]]}'' signals
@@ -2229,17 +2233,22 @@ The barrier setting option \texttt{-barrier tb} of
 Section~\ref{timebase} is effective. The  timebase delay value
 is expressed in ``ticks'', depends on the target architecture and can
 be changed at runtime with option \texttt{-tb <num>}.  Moreover, this
-option introduces a new randomly selected parameter. The delay
-parameter of threads w.r.t. to the starting time of test thread~$T_0$,
+option introduces a new randomly selected parameter: the starting delay
+of threads w.r.t. the thread~$T_0$,
 as a (possibly negative) number of one eighth of the timebase delay
 value in the interval~$[-4..4]$.
+When statistics are activated, new statistics is produced with names
+\texttt{d1}, \texttt{d2}, etc.
 
 Option \ahrefloc{driver}{\texttt{-driver C}} is also implemented. It
-commands to the production of one executable \texttt{run.exe} in place
-of one executable per test  with the default \texttt{-driver
-shell}.
+commands the production of one executable \texttt{run.exe} in place
+of one executable per test with the default \texttt{-driver shell}.
+One may notice that setting parameters values on the command line
+is meaningful only in shell driver mode, where each test possesses
+its own executable. Namely, statistics and their names much
+depend on the tests themselves.
 
-Observe that non-implemented options are silently ignored.
+Non-implemented options are silently ignored.
 
 
 \subsection{\aname{sec:kvm}{Mode \texttt{kvm}}}
