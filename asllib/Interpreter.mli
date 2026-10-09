@@ -30,7 +30,7 @@ module type S = sig
 
   type 'a maybe_exception =
     | Normal of 'a
-    | Throwing of value_read_from * AST.ty * IEnv.env
+    | Throwing of value_read_from * AST.identifier * IEnv.env
     | Cutoff
 
   val eval_expr :
