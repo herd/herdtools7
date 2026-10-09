@@ -82,7 +82,7 @@ module Make
 
   let access_of_constant =
     function
-    | Symbolic (Virtual _) -> Access.VIR
+    | Symbolic (Virtual _) | Symbolic (EventReg _) -> Access.VIR
     | Symbolic (Physical _) -> Access.PHY
     | Symbolic (TagAddr _) -> Access.TAG
     | Symbolic (System ((PTE|PTE2),_)) -> Access.PTE DISide.Data

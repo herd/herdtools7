@@ -27,6 +27,7 @@ module type S =
     module V : Value.S with type Cst.Instr.exec = instruction
     module CS : ConstraintSolver.S with module V = V
 
+    val is_wfe : instruction -> bool
     val pp_barrier_short : barrier -> string
     val reject_mixed : bool (* perform a check that rejects mixed-size tests *)
     val mem_access_size : instruction -> MachSize.sz option

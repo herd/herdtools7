@@ -20,6 +20,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) = struct
 
   include JavaBase
 
+  let is_wfe _ = false
   let pp_barrier_short    = pp_barrier
   let reject_mixed        = false
   let mem_access_size _   = None

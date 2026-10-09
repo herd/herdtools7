@@ -22,6 +22,7 @@ module Make (C:Arch_herd.Config) (V:Value.S) =
   struct
     include RISCVBase
 
+    let is_wfe _ = false
     let pp_barrier_short = function
       | FenceI -> "fence.i"
       | FenceTSO -> "fence.tso"

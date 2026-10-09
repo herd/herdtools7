@@ -21,6 +21,7 @@ module Make
          (V:Value.S with type Cst.Instr.exec  = BellBase.instruction) = struct
   include BellBase
 
+  let is_wfe _ = false
   let pp_barrier_short = pp_barrier
   let reject_mixed = false
   let mem_access_size _ = None
