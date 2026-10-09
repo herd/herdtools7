@@ -1,5 +1,10 @@
+GCCOPTS += -DKVM
+
 clean:
-	/bin/rm -f *.o *.s *.t *.elf *.flat *~ *.t $(H)
+	/bin/rm -f *.o *.s *.t *.elf *.flat *~ *.t $(H) $(SHARED_OBJ) $(SHARED_LIB)
+
+cleansource:
+	/bin/rm -f *.o *.c *.h *.s *~ litmus/*.[aoch]
 
 %.s: %.c
 	$(CC) -DASS $(GCCOPTS) -S $<
@@ -15,11 +20,11 @@ clean:
 
 %.elf: LDFLAGS = -nostdlib -pie -n
 
-run.elf: run.o $(OBJ) $(UTILS) $(FLATLIBS) $(SRCDIR)/arm/flat.lds $(cstart.o)
+run.elf: run.o $(OBJ) $(UTILS) $(SHARED_LIB) $(FLATLIBS) $(SRCDIR)/arm/flat.lds $(cstart.o)
 	$(CC) $(CFLAGS) -c -o $(@:.elf=.aux.o) $(SRCDIR)/lib/auxinfo.c \
 		-DPROGNAME=\"$(@:.elf=.flat)\" -DAUXFLAGS=$(AUXFLAGS)
 	$(LD) $(LDFLAGS) -o $@ -T $(SRCDIR)/arm/flat.lds \
-		$(filter %.o, $^) $(FLATLIBS) $(@:.elf=.aux.o)
+		$(filter %.o, $^) $(SHARED_LIB) $(FLATLIBS) $(@:.elf=.aux.o)
 	$(RM) $(@:.elf=.aux.o)
 	@chmod a-x $@
 
@@ -27,3 +32,11 @@ run.elf: run.o $(OBJ) $(UTILS) $(FLATLIBS) $(SRCDIR)/arm/flat.lds $(cstart.o)
 	$(call arch_elf_check, $^)
 	$(OBJCOPY) -O binary $^ $@
 	@chmod a-x $@
+
+$(SHARED_SRC_DIR)/%.o: $(SHARED_SRC_DIR)/%.c
+	$(CC) $(GCCOPTS) -O2 -c -o $@ $<
+
+ifneq ($(SHARED_SRC),)
+$(SHARED_LIB): $(SHARED_OBJ)
+	$(AR) rcs $@ $^
+endif

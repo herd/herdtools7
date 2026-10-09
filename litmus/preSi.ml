@@ -316,6 +316,8 @@ module Make
           O.o "#include \"auth.h\""
         end;
         O.o "#include \"cache.h\"" ;
+        if do_self then
+          O.o "#include <self.h>" ;
         O.o "" ;
         begin match Cfg.timelimit with
         | None -> ()
@@ -372,8 +374,6 @@ module Make
           O.o ""
         end ;
         if do_self then begin
-          Insert.insert O.o "self.c" ;
-          O.o "" ;
           if Cfg.is_kvm then
             Insert.insert O.o "kvm-self.c"
           else
@@ -2467,8 +2467,11 @@ module Make
         dump_zyva_def doc.Name.name env test db procs_user ;
         dump_prelude_def doc test ;
         O.o "static int feature_check(void) {" ;
-        if do_self then
-          O.oi "cache_line_size = getcachelinesize();" ;
+        if do_self && Cfg.is_kvm then begin
+          (* Prime the unsynchronized lazy cache before on_cpus() can make
+             multiple CPUs initialize it through code_init() concurrently. *)
+          O.oi "cache_line_size();" ;
+        end ;
         if pac then begin
           if pauth1
           then O.fi "if (!check_pauth1_variant(%S)) return 0;" doc.Name.name
