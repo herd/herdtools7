@@ -1,0 +1,12 @@
+AArch64 STRB-SP
+Variant=memtag,sync
+
+{
+  [x]=0;
+  [tag(x)]=:green;
+  0:SP=x:red;
+  0:X0=1;
+}
+P0;
+  STRB W0,[SP];
+forall(x=1 /\ ~fault(P0,x,TagCheck))

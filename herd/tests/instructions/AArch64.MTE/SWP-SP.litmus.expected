@@ -1,0 +1,10 @@
+Test SWP-SP Required
+States 1
+0:X1=1; [x]=2;  ~Fault(P0,x,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([x]=2 /\ 0:X1=1 /\ not (fault(P0,x,TagCheck)))
+Observation SWP-SP Always 1 0
+Hash=9c53118fb9d056d2f380c0495a8a9f60
+
