@@ -1000,7 +1000,7 @@ module Make
        * check perfomed early in standard
        * (ie non-pte2) mode.
        *)
-       
+
 
       let set_elr_el1 v ii =
         write_reg AArch64Base.elr_el1 v ii
@@ -2836,7 +2836,7 @@ Arguments:
           write_reg_predicate p new_val ii >>|
           ( let last idx = get_predicate_last new_val psize idx in
             (* Fisrt active *)
-            let>= n = last 0 
+            let>= n = last 0
             and* z =
               let rec reduce idx op = match idx with
               | 0 ->  op >>| last idx >>= fun (v1,v2) -> M.op Op.Or v1 v2
@@ -3598,7 +3598,7 @@ Arguments:
         (read_reg_ord rn ii >>= loc_extract) >>|
         (read_reg_ord rm ii >>= fun v ->
           (* We support only 8 colors *)
-          M.op Op.Or v (V.intToV 0xff00)) >>= 
+          M.op Op.Or v (V.intToV 0xff00)) >>=
         fun (addr,exclude) ->
           let set color =
             let tag = V.Val (Constant.Tag (Misc.tag_of_int color)) in
@@ -3742,6 +3742,12 @@ Arguments:
 
         let read ac an a ii = do_read_mem_ret quad an AArch64Explicit.(NExp GCS) ac a ii
         and write ac an a v ii = do_write_mem quad an AArch64Explicit.(NExp GCS) ac a v ii
+
+        let is_gcs_access e =
+          match e.E.action with
+          | Act.Access (_, A.Location_global _, _, _, explicit, _, _) ->
+              AArch64.is_gcs explicit
+          | _ -> false
       end
 
 
@@ -3992,72 +3998,78 @@ Arguments:
             do_lift_memop ~tag rA dir updatedb checked mop perms ma mv an ii Fun.id DISide.Data in
           do_cas_with lift_memop quad Annot.N r ma mv mop_success mop_fail_with_wb mop_fail_no_wb false ii)
 
-    let gcsss2 r ii =
-      let open AArch64Base in
-      let an = Annot.N
-      and rA = SysReg GCSPR_EL1
-      and off = MachSize.nbytes quad in
-      let m =
-      M.delay_kont "gcsss2"
-      (read_reg_addr rA ii)
-      (fun a_virt ma ->
-      let mop ac incoming =
-        let m = GCSSem.read ac Annot.A incoming ii >>= fun outgoing ->
-          let mask = V.intToV 0x7 in
-          GCSSem.get_cap mask outgoing >>= fun cap ->
-            let(>>*=) = M.bind_control_set_data_input_first in
-            let commit =
-              let cond = Printf.sprintf "InProgress([%s])" (V.pp_v incoming) in
-              commit_pred_txt (Some cond) ii in
-            let mok =
-              commit >>*= fun () ->
-                let mop ac a outgoing =
-                  (GCSSem.reset_cap mask outgoing >>= M.add (V.intToV (-off)) >>= fun v -> write_reg r v ii) >>|
-                   (M.add a_virt (V.intToV (off)) >>= fun new_addr ->
-                      write_reg rA new_addr ii) >>|
-                      (GCSSem.make_valid outgoing >>= fun outgoing_value -> GCSSem.write ac Annot.L a outgoing_value ii)
+      let ( let@ ) = ( @@ )
+
+      let gcsss2 r ii =
+        let open AArch64Base in
+        let an = Annot.N and rA = SysReg GCSPR_EL1 and off = MachSize.nbytes quad in
+        let do_gcsss2 a_virt ma =
+          let mop ac incoming =
+            let m =
+              let* outgoing = GCSSem.read ac Annot.A incoming ii in
+              let mask = V.intToV 0x7 in
+              let* cap = GCSSem.get_cap mask outgoing in
+              let commit =
+                (* FIXME: `incoming` is still symbolic at this point *)
+                let cond = Printf.sprintf "InProgress([%s])" (V.pp_v incoming) in
+                commit_pred_txt (Some cond) ii
+              in
+              let mok =
+                let@ () = M.bind_control_set_data_input_first commit in
+                let* outgoing_record_addr =
+                  GCSSem.reset_cap mask outgoing >>= M.add (V.intToV (-off))
+                in
+                let write_target_reg = write_reg r outgoing_record_addr ii in
+                let update_gcspr =
+                  let* new_addr = M.add a_virt (V.intToV off) in
+                  write_reg rA new_addr ii
+                in
+                let write_outgoing_cap ac a =
+                  let* outgoing_value = GCSSem.make_valid outgoing in
+                  GCSSem.write ac Annot.L a outgoing_value ii
+                in
+                let finalize_gcs_switch ac ma =
+                  write_target_reg
+                    >>| update_gcspr
+                    >>| M.data_input_next ma (write_outgoing_cap ac)
                 in
                 lift_memop r Dir.W true false
-                (fun ac ma mv ->
-                  if is_branching && Access.is_physical ac then
-                    M.bind_ctrldata_data ma mv (fun a v -> mop ac a v)
-                  else
-                    ma >>| mv >>= fun (a,v) -> mop ac a v)
-                (to_perms "w" quad)
-                (GCSSem.reset_cap mask outgoing >>= M.add (V.intToV (-off)))
-                (M.unitT outgoing)
-                an
-                ii in
-            let inprogress = V.intToV 0x5 in
-            M.delay_kont "gcsss2(fault)"
-            (M.op Op.Ne cap inprogress)
-            (fun notvalid action ->
-              let open FaultType.AArch64 in
-              let mno = GCSSem.mk_fault action (GCSCheck SS2) ii in
-              let mok = action >>= fun _ -> mok in
-              M.choiceT notvalid mno mok)
+                  (fun ac ma _ ->
+                    if kvm && Access.is_physical ac then
+                      let* _, ma = M.delay ma in
+                      ma >>*= fun _ -> finalize_gcs_switch ac ma
+                    else finalize_gcs_switch ac ma)
+                  (to_perms "w" quad)
+                  (M.unitT outgoing_record_addr)
+                  mzero an ii
+              in
+              let inprogress = V.intToV 0x5 in
+              M.delay_kont "gcsss2(fault)" (M.op Op.Ne cap inprogress)
+                (fun notvalid action ->
+                  let open FaultType.AArch64 in
+                  let mno = GCSSem.mk_fault action (GCSCheck SS2) ii in
+                  let mok = action >>= fun _ -> mok in
+                  M.choiceT notvalid mno mok)
+            in
+            (* Register write and write to other stack depend on load from Shadow Stack *)
+            let load e = E.is_mem_load e && GCSSem.is_gcs_access e in
+            let store e =
+              (E.is_mem_store e && GCSSem.is_gcs_access e)
+              || is_this_reg r e
+            in
+            M.short load store m
           in
-        (* Register write and write to other stack depend on load from Shadow Stack *)
-        let store e = (E.is_mem_store e) || (is_this_reg r e) in
-        M.short (E.is_mem_load) store m in
-      do_lift_memop rA Dir.R false false
-      (fun ac ma _mv ->
-        if Access.is_physical ac then
-          M.bind_ctrldata ma (mop ac)
-        else
-          ma >>= mop ac)
-      (to_perms "r" quad)
-      ma
-      mzero
-      an
-      ii
-      Fun.id
-      DISide.Data) in
-      (* Value writen to GCSPR depends on previous read *)
-      let read e = (is_this_reg rA e) && (E.is_reg_load e ii.A.proc)
-      and write e = (is_this_reg rA e) && (E.is_reg_store e ii.A.proc) in
-      M.short read write m
-
+          do_lift_memop rA Dir.R false false
+            (fun ac ma _mv ->
+              if Access.is_physical ac then M.bind_ctrldata ma (mop ac)
+              else ma >>= mop ac)
+            (to_perms "r" quad) ma mzero an ii Fun.id DISide.Data
+        in
+        let m = M.delay_kont "gcsss2" (read_reg_addr rA ii) do_gcsss2 in
+        (* Value writen to GCSPR depends on previous read *)
+        let read e = is_this_reg rA e && E.is_reg_load e ii.A.proc
+        and write e = is_this_reg rA e && E.is_reg_store e ii.A.proc in
+        M.short read write m
 
 (********************)
 (* Main entry point *)
@@ -5205,7 +5217,7 @@ Arguments:
       let mk_mop_fetch exposed_page exposed_label test ii =
         let module InstrSet = AArch64.V.Cst.Instr.Set in
         let relevant_pagelbls = get_instr_ptevals test in
-       
+
         let default_cands =
           InstrSet.empty
           |> InstrSet.add ii.A.inst
@@ -5294,7 +5306,7 @@ Arguments:
         let is_on_exported_page =
           match ii.A.rel_addr with
           | Some (A.V.Val c) -> begin
-            let this_lbl = c in 
+            let this_lbl = c in
             List.exists
               (fun ttd_lbl ->
                 let this_triple = Constant.unmk_sym_virtual_label_with_offset this_lbl in
