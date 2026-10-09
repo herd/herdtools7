@@ -70,3 +70,11 @@ litmus, and msum
   Stores+Faults| Ok   Ok     Ok     Ok    
   $ mcompare7 -terse -show r Herd OLD.00 NEW.00 ALL.00 2>/dev/null | tail --lines=+2  > Revalidate
   $ diff Validate Revalidate
+Check revalidate on another tests that was wrong
+Yet another check, negative fault pattern without prefix
+  $ mcompare7 -terse -show r OLD.02
+  *Revalidation*
+                                  | OLD.02
+  -----------------------------------------
+  -----------------------------------------
+  MP+dmb.ish+addr-tlbi-dsb.ish-isb| No    
