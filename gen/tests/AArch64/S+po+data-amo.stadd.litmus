@@ -1,4 +1,4 @@
-(* diyone7 -metadata false -arch AArch64 PodWW Rfe DpDatadR Amo.StAdd Coe *)
+(* diyone7 -metadata false -arch AArch64 PodWW Rfe DpDatadW Amo.StAdd Coe *)
 AArch64 S+po+data-amo.stadd
 {
  0:X1=x; 0:X3=y;
