@@ -1,0 +1,11 @@
+AArch64 I01
+(* LD2W requires consecutive destination registers. *)
+{
+ int x[2] = {1,2};
+ 0:X0=x;
+}
+P0 ;
+ PTRUE P0.S,VL1 ;
+ LD2W {Z0.S,Z3.S},P0/Z,[X0] ;
+
+exists 0:V3.4S={2,0,0,0}
