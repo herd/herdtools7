@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(** Producing .dot output *)
+(** Producing .dot and .json output *)
 
 open Test_herd
 open Printf
@@ -46,6 +46,16 @@ module type S = sig
       out_channel -> test -> event_structure -> unit
   val dump_es_rfm :
       out_channel -> test -> event_structure -> rfmap -> unit
+
+(********************************************************)
+(* Functions generating execution graphs in JSON format *)
+(********************************************************)
+
+  module Json : sig
+    val graph :
+      id:string -> is_valid:bool -> satisfies_post_condition:bool ->
+        final_state_id:string -> S.concrete -> S.rel_pp -> Json.t
+  end
 
 (************************************)
 (* Show feature: pop up a gv window *)
@@ -83,7 +93,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
   | MemEvents|NonRegEvents|MemFenceEvents|NonBranchEvents -> false
 
 
-(* Printing the program with the nice_prog field *)
+(* Printing instructions *)
 
 (* Please avoid insterting references to Global in,
    for instance X86Base.ml, since this
@@ -1635,5 +1645,187 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
         let legend = if PC.showlegend then Some legend else None in
         pp_dot_event_structure
           chan test legend conc.S.str conc.S.rfmap sets vbs conc)
+
+  module Json = struct
+    let event_ref e =
+      Json.assoc ["type", Json.string "event"; "id", Json.int e.E.eiid]
+
+    (* without -initwrites, read from the synthetic S.Init *)
+    let pseudo_ref kind = Json.assoc ["type", Json.string kind]
+
+    let edge relation source target =
+      Json.assoc
+        ["relation", Json.string relation;
+         "source", source;
+         "target", target]
+
+    (* labels to be used with -showevents,
+       We might consider exposing more event predicates, e.g. is_barrier *)
+    let event_labels e =
+      let tags =
+        ["mem", E.is_mem e;
+         "noregs", not (E.is_reg_any e);
+         "memf", E.is_mem e || E.is_barrier e || E.is_fault e;
+         "nobranches", not (E.is_commit e);
+         "initwrites", E.is_mem_store_init e] in
+      tags
+      |> List.filter_map (fun (tag, present) ->
+           if present then Some (Json.string tag) else None)
+
+    let event_to_json e =
+      let action_details =
+        (* TODO: for now, only memory and register access have action_details, in
+           the future, this should be replaced by Action.pp_action_json *)
+        if not (E.is_access e) then [] else
+        let direction =
+          if E.is_mem e then
+            ["direction", Json.string (Dir.pp_dirn (E.get_mem_dir e))]
+          else if E.is_reg_load_any e then
+            ["direction", Json.string (Dir.pp_dirn Dir.R)]
+          else if E.is_reg_store_any e then
+            ["direction", Json.string (Dir.pp_dirn Dir.W)]
+          else [] in
+        let location = match E.location_of e with
+        | None -> []
+        | Some loc -> ["location", Json.string (A.pp_location loc)] in
+        let size =
+          if E.is_mem e then
+            ["size", Json.string (MachSize.pp (E.get_mem_size e))]
+          else if E.is_reg_any e then
+            ["size", Json.string (MachSize.pp (E.get_reg_size e))]
+          else [] in
+        let value = match E.value_of e with
+        | None -> []
+        | Some value -> ["value", Json.string (A.V.pp_v value)] in
+        ["action_details", Json.assoc (direction @ location @ size @ value)] in
+      let poi_field, instruction_fields =
+        match e.E.iiid with
+        | E.IdInit | E.IdSpurious -> [], []
+        | E.IdSome iiid ->
+            let labels =
+              Label.Set.elements iiid.A.labels
+              |> List.map (fun label -> Json.string (Label.pp label)) in
+            let instruction_origin =
+              ["proc", Json.int iiid.A.proc;
+              (* in miscParser, there is also a tag system, which is not used by
+                 catelogue, ignored for now *)
+               "function",
+               Json.string
+                 (if iiid.A.in_handler then "fault_handler" else "main");
+               "static_poi", Json.int iiid.A.static_poi] @
+              (if labels = [] then []
+               else ["instruction_labels", Json.list labels]) in
+            ["poi", Json.int iiid.A.program_order_index],
+            ["instruction", Json.string
+               (A.pp_instruction Ascii iiid.A.inst);
+             "instruction_origin", Json.assoc instruction_origin] in
+      Json.assoc
+        (["id", Json.int e.E.eiid;
+          "action", Json.string (E.pp_action e)] @
+         action_details @
+         poi_field @
+         ["event_labels", Json.list (event_labels e)] @
+         instruction_fields)
+
+    let pc_showevents = match PC.showevents with
+    | AllEvents -> "all"
+    | MemEvents -> "mem"
+    | NonRegEvents -> "noregs"
+    | MemFenceEvents -> "memf"
+    | NonBranchEvents -> "nobranches"
+
+    let graph ~id ~is_valid ~satisfies_post_condition ~final_state_id
+        conc rels =
+      let es = select_es conc.S.str in
+      let visible = select_event in
+      let events = E.EventSet.elements es.E.events in
+      let edges = ref [] in
+      let add_edge relation e1 e2 =
+        if visible e1 && visible e2 &&
+           (not (StringSet.mem relation PC.unshow)) &&
+           (not (StringSet.mem relation PC.noid && E.event_equal e1 e2))
+        then edges := edge relation (event_ref e1) (event_ref e2) :: !edges in
+      let add_relation (name, rel) =
+        E.EventRel.iter (fun (e1,e2) -> add_edge name e1 e2) rel in
+      let rels =
+        List.filter (fun (name,_) -> not (StringSet.mem name PC.unshow)) rels in
+      List.iter add_relation rels;
+      List.iter
+        (fun (name,rel) ->
+          E.EventRel.iter (fun (e1,e2) -> add_edge name e1 e2) rel)
+        ["iico_data", es.E.intra_causality_data;
+         "iico_ctrl", es.E.intra_causality_control;
+         "iico_order", es.E.intra_causality_order];
+      if PC.showpo && not (StringSet.mem "po" PC.unshow) then begin
+        let by_proc_and_poi = PU.make_by_proc_and_poi es in
+        let po = make_visible_po es by_proc_and_poi in
+        let replaces_po = match PC.graph with
+        | Graph.Free -> E.EventRel.empty
+        | Graph.Cluster|Graph.Columns ->
+            let displayed_rels =
+              List.filter
+                (fun (name,_) -> not (StringSet.mem name PC.unshow)) rels in
+            let all_vbss =
+              E.EventRel.unions (List.map snd displayed_rels) in
+            let rf =
+              S.RFMap.fold
+                (fun wt rf rel -> match wt,rf with
+                | S.Load er,S.Store ew when E.is_mem er ->
+                    E.EventRel.add (ew,er) rel
+                | _ -> rel)
+                (select_rfmap conc.S.rfmap) E.EventRel.empty in
+            let r = E.EventRel.union rf all_vbss in
+            E.EventRel.union r (E.EventRel.inverse r) in
+        let po = E.EventRel.diff po replaces_po in
+        E.EventRel.iter
+          (fun (e1,e2) ->
+            let label = match PC.graph, PC.showthread, E.proc_of e1 with
+            | Graph.Free, true, Some proc -> Printf.sprintf "po:%i" proc
+            | _ -> "po" in
+            add_edge label e1 e2)
+          po
+      end;
+      let show_rf_relation =
+        List.exists (fun (name,_) -> name = "rf") rels in
+      S.RFMap.iter
+        (fun wt rf -> match wt,rf with
+        | S.Load er,S.Store ew when not show_rf_relation ->
+            add_edge "rf" ew er
+        | S.Load er,S.Init when PC.showinitrf && visible er ->
+            if not (StringSet.mem "rf" PC.unshow) then
+              edges := edge "initrf" (pseudo_ref "init") (event_ref er)::!edges
+        | S.Final loc,S.Store ew when PC.showfinalrf && visible ew ->
+            if not (StringSet.mem "rf" PC.unshow) then
+              edges :=
+                edge "finalrf" (event_ref ew)
+                  (Json.assoc
+                     ["type", Json.string "final";
+                      "location", Json.string (A.pp_location loc)]) :: !edges
+        | _ -> ())
+        (select_rfmap conc.S.rfmap);
+      Json.assoc
+        ["id", Json.string id;
+         "is_valid", Json.bool is_valid;
+         "satisfies_post_condition", Json.bool satisfies_post_condition;
+         "final_state_id", Json.string final_state_id;
+         "pretty_conf", Json.assoc
+           ["events", Json.assoc
+              ["showevents", Json.string pc_showevents;
+               "showinitwrites", Json.bool PC.showinitwrites;
+               "showinitrf", Json.bool PC.showinitrf;
+               "showfinalrf", Json.bool PC.showfinalrf;
+               "showpo", Json.bool PC.showpo; ];
+            "relations", Json.assoc
+              ["doshow", Json.list
+                 (List.map Json.string (StringSet.elements PC.doshow));
+               "unshow", Json.list
+                 (List.map Json.string (StringSet.elements PC.unshow));
+               "showraw", Json.list
+                 (List.map Json.string (StringSet.elements PC.showraw));
+               "initwrites", Json.bool (PC.showinitwrites)]];
+         "events", Json.list (List.map event_to_json events);
+         "edges", Json.list (List.rev !edges)]
+
+  end
 
 end

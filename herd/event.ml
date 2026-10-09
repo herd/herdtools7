@@ -79,6 +79,8 @@ val same_instance : event -> event -> bool
 (* Predicates on events *)
 (************************)
 
+(* access to memory or register *)
+  val is_access : event -> bool
 (* relative to memory *)
   val is_mem_store : event -> bool
   val is_mem_store_init : event -> bool
@@ -110,6 +112,7 @@ val same_instance : event -> event -> bool
   val is_reg_store : event -> A.proc -> bool
   val is_reg_load : event -> A.proc -> bool
   val is_reg : event -> A.proc -> bool
+  val get_reg_size : event -> MachSize.sz
 
 (* Reg events, proc not specified *)
   val is_reg_store_any : event -> bool
@@ -682,6 +685,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
 
     let is_mem_load e = Act.is_mem_load e.action
     let is_additional_mem_load e = Act.is_additional_mem_load e.action
+    let is_access e = Act.is_access e.action
     let is_mem e = Act.is_mem e.action
     let is_ifetch e = Act.is_ifetch e.action
 
@@ -709,6 +713,7 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
     let is_reg_store e (p:int) = Act.is_reg_store e.action p
     let is_reg_load e (p:int) = Act.is_reg_load e.action p
     let is_reg e (p:int) = Act.is_reg e.action p
+    let get_reg_size e = Act.get_reg_size e.action
 
 (* Store/Load anywhere *)
     let is_store e = Act.is_store e.action
