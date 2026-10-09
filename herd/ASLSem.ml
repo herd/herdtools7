@@ -118,6 +118,7 @@ module Make (Conf : Config) = struct
     let use_field_getter_extension = false
     let fine_grained_side_effects = false
     let use_conflicting_side_effects_extension = false
+    let version_eac2 = false
     let override_mode = Asllib.Typing.Permissive
     let err_buffer = None
   end)

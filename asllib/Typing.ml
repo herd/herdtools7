@@ -144,6 +144,7 @@ module type ANNOTATE_CONFIG = sig
   val use_field_getter_extension : bool
   val fine_grained_side_effects : bool
   val use_conflicting_side_effects_extension : bool
+  val version_eac2 : bool
   val override_mode : override_mode
   val err_buffer : Buffer.t option
 end
@@ -4394,6 +4395,7 @@ module TypeCheckDefault = Annotate (struct
   let use_field_getter_extension = false
   let fine_grained_side_effects = false
   let use_conflicting_side_effects_extension = false
+  let version_eac2 = false
   let override_mode = Permissive
   let err_buffer = None
 end)
