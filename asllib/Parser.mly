@@ -70,6 +70,11 @@ let version = V1
 let t_bit ~loc = T_Bits (E_Literal (L_Int Z.one) |> add_pos_from loc, [])
 let zero ~loc = E_Literal (L_Int Z.zero) |> add_pos_from loc
 
+let supports_eac1_syntax =
+  match Config.asl1_revision with
+  | ASL1Revision.EAC1 -> true
+  | ASL1Revision.EAC2 | ASL1Revision.DEV -> false
+
 let prec =
   let open AST in
   function
@@ -342,7 +347,8 @@ let slice :=
   | e1=expr; PLUS_COLON; e2=expr; < Slice_Length  >
   | loc=annotated(COLON); e=expr;
   {
-    if Config.version_eac1 then Slice_Length(zero ~loc, e)
+    if supports_eac1_syntax then
+      Slice_Length(zero ~loc, e)
     else
     let msg fmt =
         Format.fprintf fmt "Deprecated slice syntax, use \"0 +: %a\" instead." PP.pp_expr e
@@ -352,7 +358,8 @@ let slice :=
   }
   | e1=expr; STAR_COLON; e2=expr;
   {
-    if Config.version_eac1 then Slice_Star(e1, e2)
+    if supports_eac1_syntax then
+      Slice_Star(e1, e2)
     else
       let msg fmt =
         Format.fprintf fmt "Deprecated slice syntax, use \"%a*%a +: %a\" instead."
@@ -599,14 +606,16 @@ let call :=
 let elided_param_call :=
   | name=IDENTIFIER; LBRACE; RBRACE; args=opt_call_args;
     {
-      if Config.version_eac1 then { name; params=[]; args; call_type = ST_Function }
+      if supports_eac1_syntax then
+        { name; params=[]; args; call_type = ST_Function }
       else
         Error.fatal_here $startpos $endpos @@
         obsolete_elided_parameter_call
     }
   | name=IDENTIFIER; LBRACE; COMMA; params=clist1(expr); RBRACE; args=opt_call_args;
     {
-      if Config.version_eac1 then { name; params; args; call_type = ST_Function }
+      if supports_eac1_syntax then
+        { name; params; args; call_type = ST_Function }
       else
         Error.fatal_here $startpos $endpos @@
         obsolete_elided_parameter_call

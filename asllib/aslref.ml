@@ -48,7 +48,10 @@ let parse_args () =
   let use_fine_grained_side_effects = ref false in
   let use_conflincting_side_effects_extension = ref false in
   let v0_use_split_chunks = ref false in
-  let version_eac1 = ref false in
+  let asl1_revision = ref ASL1Revision.DEV in
+  let version_eac1 () = asl1_revision := ASL1Revision.EAC1 in
+
+  let version_eac2 () = asl1_revision := ASL1Revision.EAC2 in
   let speclist =
     [
       ("--exec", Arg.Set exec, " Execute the asl program (default).");
@@ -123,7 +126,7 @@ let parse_args () =
         "filename Use ASLv0 parser for this file." );
       ( "-1",
         Arg.String (push_file NormalV1),
-        "filename Use ASLv1 parser for this file. (default)" );
+        "filename Use ASL1.0 parser for this file. (default)" );
       ("--version", Arg.Set show_version, " Print version and exit.");
       ( "--overriding-permissive",
         Arg.Unit (set_override_mode Permissive),
@@ -150,10 +153,14 @@ let parse_args () =
         " While lexing v0 files, split the files along separator comment \
          lines. Error display might be impacted." );
       ( "--version-eac1",
-        Arg.Set version_eac1,
-        " Enables deprecated ASLv1 features that exist only in EAC1:\n\
+        Arg.Unit version_eac1,
+        " Enables deprecated ASL1.0 features that exist only in EAC1:\n\
          1. the slicing shorthands [:N] and [A*:B].\n\
-         2. eliding parameters in function calls." );
+         2. eliding parameters in function calls.\n\
+         This implies --version-eac2." );
+      ( "--version-eac2",
+        Arg.Unit version_eac2,
+        " Enables ASL1.0 features that exist only in EAC2." );
     ]
     |> Arg.align ?limit:None
   in
@@ -192,7 +199,7 @@ let parse_args () =
       no_stdlib = !no_stdlib;
       no_stdlib0 = !no_stdlib0;
       v0_use_split_chunks = !v0_use_split_chunks;
-      version_eac1 = !version_eac1;
+      asl1_revision = !asl1_revision;
       capture_output = None;
     }
   in
