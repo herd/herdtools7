@@ -32,7 +32,7 @@ let set_signal timeout f dbg =
            f s
        else f in
      Sys.set_signal
-       26 (* SIGVTALARM *)
+       26 (* SIGVTALRM *)
        (Sys.Signal_handle g)
 
 let start n timeout =

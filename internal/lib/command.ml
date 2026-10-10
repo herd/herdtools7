@@ -18,13 +18,9 @@
 
 module Option = Base.Option
 
-type error = {
-  binary : string ;
-  args   : string list ;
-  status : Unix.process_status ;
-}
+type ctx = {must_succeed : bool ; binary : string ; args: string list}
 
-exception Error of error
+type error = {context : ctx ; status : Unix.process_status}
 
 let command bin args =
   match args with
@@ -37,7 +33,7 @@ let string_of_process_status = function
   | Unix.WSIGNALED n -> Printf.sprintf "killed by signal %i" n
   | Unix.WSTOPPED n -> Printf.sprintf "stopped by signal %i" n
 
-let string_of_error { binary = bin ; args = args ; status = s } =
+let string_of_error {context = {binary = bin ; args = args; _} ; status = s} =
   Printf.sprintf "Process %s (command: %s)"
     (string_of_process_status s)
     (command bin args)
@@ -54,6 +50,12 @@ let out_pipe nonblock =
   let in_fd, out_fd = Unix.pipe ~cloexec:true () in
   if nonblock then Unix.set_nonblock out_fd ;
   in_fd, Unix.out_channel_of_descr out_fd
+
+let to_result context = function
+  | Unix.WEXITED 0 -> Ok 0
+  | Unix.WEXITED r when not context.must_succeed -> Ok r
+  | status ->
+      Error { context; status }
 
 let do_run must_succeed ?stdin:in_f ?stdout:out_f ?stderr:err_f bin args =
   (* Notes:
@@ -102,15 +104,13 @@ let do_run must_succeed ?stdin:in_f ?stdout:out_f ?stderr:err_f bin args =
       )
   in
   let _, status = Unix.waitpid [] pid in
-  match status with
-  | Unix.WEXITED 0 -> 0
-  | Unix.WEXITED r when not must_succeed -> r
-  | status ->
-      raise (Error { binary = bin ; args = args ; status = status })
+  to_result {must_succeed; binary=bin; args} status
 
 let run ?stdin ?stdout ?stderr bin args =
-  ignore (do_run true ?stdin ?stdout ?stderr bin args)
-and run_status ?stdin ?stdout ?stderr bin args =
+  do_run true ?stdin ?stdout ?stderr bin args
+  |> Result.map (fun _ -> ())
+
+let run_status ?stdin ?stdout ?stderr bin args =
   do_run false ?stdin ?stdout ?stderr bin args
 
 
@@ -227,14 +227,12 @@ module NonBlock = struct
           loop i o e ;
           pid) in
   let _, status = Unix.waitpid [] pid in
-  match status with
-  | Unix.WEXITED 0 -> 0
-  | Unix.WEXITED r when not must_succeed -> r
-  | status ->
-      raise (Error { binary = bin ; args = args ; status = status })
+  to_result {must_succeed; args; binary=bin} status
 
-let run ?stdin ?stdout ?stderr bin args =
-  ignore (do_run true ?stdin ?stdout ?stderr bin args)
-and run_status ?stdin ?stdout ?stderr bin args =
-  do_run false ?stdin ?stdout ?stderr bin args
+  let run ?stdin ?stdout ?stderr bin args =
+    do_run true ?stdin ?stdout ?stderr bin args
+    |> Result.map (fun _ -> ())
+
+  let run_status ?stdin ?stdout ?stderr bin args =
+    do_run false ?stdin ?stdout ?stderr bin args
 end
