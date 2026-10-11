@@ -4234,7 +4234,16 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let env3 =
       let sess_prop =
         if C.fine_grained_side_effects then propagate_recursive_calls_sess sess
-        else sess
+        else
+          (* Keep only non-determinism from recursive callees. *)
+          List.map2
+            (fun (f, ses) (_, propagated_ses) ->
+              let ses =
+                if SES.is_deterministic propagated_ses then ses
+                else SES.add_non_determinism ses
+              in
+              (f, ses))
+            sess (propagate_recursive_calls_sess sess)
       in
       (* AddSubprogramDecls( *)
       List.fold_left

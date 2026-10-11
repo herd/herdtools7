@@ -60,6 +60,7 @@ which are configurations used to describe side effects, as explained below:
     \item[$\GlobalEffect$] is a \GlobalEffectTerm{} describing an evaluation of a construct whose minimum \purity{} for global reads/writes is $\vpurity$.
     \hypertarget{def-term-Immutability}{}
     \item[$\Immutability$] is an \ImmutabilityTerm{} describing an evaluation of a construct that accesses storage elements whose immutability is given by $\vb$ (that is, if $\vb$ is $\True$ then accesses are only to \texttt{constant}, \texttt{config}, or \texttt{let} elements).
+    \item[$\NonDeterministic$] describes an evaluation that may yield different results.
 \end{description}
 
 We now define a few helper functions over \sideeffectdescriptorsterm.
@@ -83,6 +84,7 @@ $\Effect(\SEReadonly)$  & \False{} & \True{}  & \True{}  \\
 $\Effect(\SEImpure)$    & \False{} & \False{} & \False{} \\
 $\Immutability(\True)$  & \True{}  & \True{}  & \True{}  \\
 $\Immutability(\False)$ & \False{} & \True{}  & \False{} \\
+$\NonDeterministic$      & \False{} & \True{}  & \False{} \\
 \end{tabular}
 \end{center}
 
@@ -126,7 +128,7 @@ See \ExampleRef{Pure, Read-only, and Symbolically Evaluable Side Effect Descript
 % implementation does not track *sets* of side-effects.  Rather, it considers
 % only the least pure `LocalEffect`/`GlobalEffect` descriptor, and the most
 % mutable `Immutability` descriptor. These are efficiently represented as a
-% record with three fields.
+% record with four fields.
 
 \TypingRuleDef{SideEffectsLDK}
 \RenderRelation{ses_ldk}
@@ -171,6 +173,11 @@ is used to reason about the equivalence of bitwidth expressions.
 \ASLListing{Symbolically evaluable expressions}{SESIsSymbolicallyEvaluable}{\typingtests/TypingRule.SESIsSymbolicallyEvaluable.asl}
 
 \RenderProseAndFormally{is_symbolically_evaluable}
+
+\TypingRuleDef{SESIsDeterministic}
+\RenderRelation{is_deterministic}
+
+\RenderProseAndFormally{is_deterministic}
 
 \TypingRuleDef{CheckSymbolicallyEvaluable}
 \RenderRelation{check_symbolically_evaluable}
@@ -235,7 +242,7 @@ appearing in bitvector widths for bitvector types with bitfields must be pure.
 
 \ExampleDef{Side effects for subprograms}
 The specification in \listingref{SESForSubprogram} shows example subprogram declarations and the \sideeffectdescriptorsterm{} derived from their subprogram qualifiers (see comments).
-Note that each subprogram shares the same body, the side effects are given by the qualifier keyword.
+Note that each subprogram shares the same deterministic body. The purity and immutability side effects are given by the qualifier keyword, while a \NonDeterministic{} side effect is retained from the body and signature.
 \ASLListing{Side effects for subprograms}{SESForSubprogram}{\typingtests/TypingRule.SESForSubprogram.asl}
 
 

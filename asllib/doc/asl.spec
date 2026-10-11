@@ -1651,6 +1651,8 @@ typedef TSideEffect { "\sideeffectdescriptorterm{}" } =
     { "the \GlobalEffectTerm{} with {purity}" }
     | Immutability(immutable: Bool)
     { "the \sideeffectdescriptorterm{} for a construct that accesses storage elements whose immutability is given by {immutable}" }
+    | NonDeterministic
+    { "the \sideeffectdescriptorterm{} for a construct that may evaluate non-deterministically" }
 ;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2757,7 +2759,8 @@ typing relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr
           make_set(
             GlobalEffect(SE_Readonly),
             Immutability(False),
-            LocalEffect(SE_Readonly)))
+            LocalEffect(SE_Readonly),
+            NonDeterministic))
     { math_layout = (lhs, (_, [_])) };
     --
     (ty1, E_Arbitrary(ty2), ses);
@@ -7726,6 +7729,12 @@ typing function side_effect_is_readonly(s: TSideEffect) -> (b: Bool)
     --
     True;
   }
+
+  case non_deterministic {
+    s = NonDeterministic;
+    --
+    True;
+  }
 ;
 
 typing function side_effect_is_symbolically_evaluable(s: TSideEffect) -> (b: Bool)
@@ -7751,6 +7760,12 @@ typing function side_effect_is_symbolically_evaluable(s: TSideEffect) -> (b: Boo
     s =: Immutability(b);
     --
     b;
+  }
+
+  case non_deterministic {
+    s = NonDeterministic;
+    --
+    False;
   }
 ;
 
@@ -7795,6 +7810,18 @@ typing function is_symbolically_evaluable(ses: powerset(TSideEffect)) ->
   b;
 ;
 
+typing function is_deterministic(ses: powerset(TSideEffect)) -> (b: Bool)
+{
+  "tests whether a set of \sideeffectdescriptorsterm\
+  {ses} does not contain a non-deterministic side effect, yielding the
+  result in {b}.",
+  prose_application = "{ses} is deterministic",
+  prose_transition = "testing whether {ses} is deterministic yields",
+} =
+  --
+  not(NonDeterministic in ses);
+;
+
 typing function check_symbolically_evaluable(ses: powerset(TSideEffect)) -> CheckResult | type_error
 {
   "returns $\True$ if the set of \sideeffectdescriptorsterm{} {ses} is \symbolicallyevaluableterm.
@@ -7834,30 +7861,35 @@ typing function ses_is_pure(ses: powerset(TSideEffect)) ->
 ;
 
 
-typing function ses_for_subprogram(qualifier: option(func_qualifier)) ->
+typing function ses_for_subprogram(
+  qualifier: option(func_qualifier),
+  ses: powerset(TSideEffect)) ->
          (s: powerset(TSideEffect))
 {
   "produces a \sideeffectsetterm{} given a subprogram
-  qualifier {qualifier}.",
-  prose_transition = "computing the \sideeffectsetterm{} for {qualifier} yields",
+  qualifier {qualifier} and its inferred \sideeffectsetterm{} {ses}.",
+  prose_transition = "computing the \sideeffectsetterm{} for {qualifier} and {ses} yields",
 } =
   case none_or_noreturn {
     binary_or(qualifier = none, qualifier = some(Noreturn));
-    s := make_set(GlobalEffect(SE_Impure), Immutability(False));
+    s1 := make_set(GlobalEffect(SE_Impure), Immutability(False));
+    s := if NonDeterministic in ses then union(s1, make_set(NonDeterministic)) else s1;
     --
     s;
   }
 
   case some_readonly {
     qualifier = some(Readonly);
-    s := make_set(GlobalEffect(SE_Readonly), Immutability(False));
+    s1 := make_set(GlobalEffect(SE_Readonly), Immutability(False));
+    s := if NonDeterministic in ses then union(s1, make_set(NonDeterministic)) else s1;
     --
     s;
   }
 
   case some_pure {
     qualifier = some(Pure);
-    s := make_set(GlobalEffect(SE_Pure), Immutability(True));
+    s1 := make_set(GlobalEffect(SE_Pure), Immutability(True));
+    s := if NonDeterministic in ses then union(s1, make_set(NonDeterministic)) else s1;
     --
     s;
   }
@@ -11259,7 +11291,7 @@ typing relation annotate_func_sig(genv: global_static_envs, func_sig: func) ->
   ses_list_no_locals := list_filter(se, ses_list, not(se = LocalEffect(_)));
   ses' := list_to_set(ses_list_no_locals);
   check_subprogram_purity(func_sig.qualifier, ses') -> True;
-  ses_for_subprogram(func_sig.qualifier) -> ses;
+  ses_for_subprogram(func_sig.qualifier, ses') -> ses;
   new_func_sig := func_sig(
     parameters: params,
     args: args,
@@ -11833,7 +11865,7 @@ typing relation annotate_subprogram(
   ses_body_no_locals := list_to_set(ses_body_list_no_locals);
   ses' := union(ses_func_sig, ses_body_no_locals);
   check_subprogram_purity(f.qualifier, ses') -> True;
-  ses_for_subprogram(f.qualifier) -> ses;
+  ses_for_subprogram(f.qualifier, ses') -> ses;
   --
   (f', ses);
 ;
