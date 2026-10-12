@@ -15,7 +15,7 @@
 (****************************************************************************)
 
 type relax (* Type of diy relaxations with predicates *)
-type prune = Communication | Communication_state | Pos_w
+type prune = Amo_all | Amo_m | Communication | Communication_state | Pos_w
 
 val prune_all : prune list
 val pp_relax : relax -> string

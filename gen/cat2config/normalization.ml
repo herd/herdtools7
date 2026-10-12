@@ -151,10 +151,7 @@ end = struct
           else set_union_l nfs
       | Op (_, Inter, expl) -> set_inter_l (List.map go expl)
       | Op (_, Diff, [ e1; e2 ]) -> set_diff (go e1) (go e2)
-      | Op1 (_, Comp, exp) ->
-          let nf = go exp in
-          let res = set_comp nf in
-          res
+      | Op1 (_, Comp, exp) -> set_comp (go exp)
       | App (_, fn, e) -> (
           match fn with
           | Var (_, v) when v = "domain" ->

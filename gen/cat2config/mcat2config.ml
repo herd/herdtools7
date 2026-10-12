@@ -107,9 +107,18 @@ module Opts = struct
            format." );
         ( "-prune",
           Arg.Symbol
-            ( [ "all"; "communication"; "communication_state"; "pos_w" ],
+            ( [
+                "all";
+                "amo_all";
+                "amo_m";
+                "communication";
+                "communication_state";
+                "pos_w";
+              ],
               function
               | "all" -> prune := Translation.prune_all
+              | "amo_all" -> prune := Translation.Amo_all :: !prune
+              | "amo_m" -> prune := Translation.Amo_m :: !prune
               | "communication" -> prune := Translation.Communication :: !prune
               | "communication_state" ->
                   prune := Translation.Communication_state :: !prune
