@@ -13,23 +13,53 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+
 open Printf
 
-let quote_command com args =
-  String.concat " " (List.map Filename.quote (com :: args))
+module TokenPosition = struct
 
+  type t = First | Last
+
+  let tags = [ "first"; "last"; ]
+
+  let parse s =
+    match String.lowercase_ascii s with
+    | "first" -> Some First
+    | "last" -> Some Last
+    | _ -> None
+
+  let pp = function
+    | First -> "first"
+    | Last -> "last"
+
+  let quote_command tokpos com args =
+    let com = Filename.quote com
+    and args = List.map Filename.quote args in
+    match tokpos with
+    | First ->
+        fun name ->
+          String.concat " " (com :: Filename.quote name :: args)
+    | Last ->
+        let com =  String.concat " " (com::args) in
+        fun name -> com ^ " " ^ Filename.quote name
+
+end
 (* Task engine *)
 
 module type TArg = sig
   val com : string
   val comargs : string list
   val verbose : int
+  val tokpos : TokenPosition.t
 end
 
 module Task(A:TArg) = struct
   let stdout_chan = stdout
   open Unix
   module W = Warn.Make(A)
+
+  let quote_command =
+    TokenPosition.quote_command A.tokpos A.com A.comargs
 
   let update_exit_status,get_exit_status =
     let exit_status = ref 0 in
@@ -39,14 +69,14 @@ module Task(A:TArg) = struct
   type task =
       { idx : int ; chan : in_channel ; buff : Buffer.t; }
 
-  let popen idx cmd args name =
-    let com = quote_command cmd (name :: args) in
+  let popen idx name =
+    let com = quote_command name in
     if A.verbose > 2 then eprintf "Starting: '%s' on %02i\n" com idx ;
     let chan = Unix.open_process_in com in
     set_nonblock (descr_of_in_channel chan) ;
     let buff = Buffer.create 128 in
     Some { idx; buff; chan; }
-  
+
   let table = Hashtbl.create 17
 
   let get_waiting () = Hashtbl.fold (fun fd _ r -> fd::r) table []
@@ -55,7 +85,7 @@ module Task(A:TArg) = struct
   | None -> k
   | Some iter -> match Misc.next_iter iter with
     | Some (name,iter) ->
-        let task = popen idx A.com A.comargs name in
+        let task = popen idx name in
         begin match task with
         | Some task ->
             let fd = descr_of_in_channel task.chan in
@@ -160,6 +190,7 @@ let tokens = ref []
 let com = ref "echo"
 let verbose = ref 0
 let j = ref 1
+let tokpos = ref TokenPosition.First
 let do_exit = ref false
 let comargs = ref []
 
@@ -179,6 +210,10 @@ let parse_args () =
   Arg.parse
     (LibOpts.parse_verbose verbose
     @ ["-j", Arg.Int (fun i -> j := i),"<n> manage <n> simultaneous jobs" ;
+     begin let module P = ParseTag.Make(TokenPosition) in
+       P.parse "-token-position" tokpos
+       "token argument position in forked command invokation"
+     end ;
      "-exit",
      Arg.Bool (fun b -> do_exit := b),
      Printf.sprintf "replicate (first) non-zero exit status, default %b"
@@ -198,8 +233,10 @@ let () =
   parse_args () ;
   if !j <= 1 then begin
     let exit_status = ref 0 in
+    let quote_command =
+      TokenPosition.quote_command !tokpos !com !comargs in
     let do_test name =
-      let com = quote_command !com (name :: !comargs) in
+      let com = quote_command name in
       let status = Sys.command com in
       if status <> 0 && !exit_status = 0 then exit_status := status in
     Misc.iter_argv_or_stdin do_test !tokens ;
@@ -211,6 +248,7 @@ let () =
           let com = !com
           let comargs = !comargs
           let verbose = !verbose
+          let tokpos = !tokpos
         end) in
     T.run !j !tokens ;
     if !do_exit then T.get_exit_status () |> exit
