@@ -120,6 +120,7 @@ module Make (Conf : Config) = struct
     let use_conflicting_side_effects_extension = false
     let override_mode = Asllib.Typing.Permissive
     let err_buffer = None
+    let asl1_revision = Asllib.AST.DEV
   end)
 
   module ASLInterpreterConfig = struct

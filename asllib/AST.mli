@@ -31,6 +31,10 @@
 (** {2 Utils} *)
 
 type version = V0 | V1
+
+(** Revisions of the ASL1 language. [DEV] is the latest development revision. *)
+type asl1_revision = EAC1 | EAC2 | DEV
+
 type position = Lexing.position
 
 type identifier = string
