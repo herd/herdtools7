@@ -296,7 +296,7 @@ let rec pp_stmt =
           pp_local_decl_item ldi (pp_option pp_ty) ty_opt (pp_option pp_expr)
           e_opt
     | S_Throw expr_ty ->
-        bprintf f "S_Throw (%a)" (pp_pair pp_expr (pp_option pp_ty)) expr_ty
+        bprintf f "S_Throw (%a)" (pp_pair pp_expr (pp_option pp_string)) expr_ty
     | S_Try (s, catchers, otherwise) ->
         bprintf f "S_Try (%a, %a, %a)" pp_stmt s (pp_list pp_catcher) catchers
           (pp_option pp_stmt) otherwise
@@ -309,8 +309,9 @@ let rec pp_stmt =
   in
   fun f s -> pp_annotated pp_desc f s
 
-and pp_catcher f (name, ty, s) =
-  bprintf f "(%a, %a, %a)" (pp_option pp_string) name pp_ty ty pp_stmt s
+and pp_catcher f (name, ty_name, s) =
+  bprintf f "(%a, %a, %a)" (pp_option pp_string) name pp_string ty_name pp_stmt
+    s
 
 let pp_gdk f gdk =
   addb f

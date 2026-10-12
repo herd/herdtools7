@@ -1,0 +1,10 @@
+mode: no-exec
+outcome: FAILURE
+error: BE_PE
+error_line: 6
+info: |-
+  File ../tests/syntax/ASTRule.Catcher.AnonymousType.asl, line 6,
+    characters 13 to 22:
+          when exception{-} =>
+               ^^^^^^^^^
+  ASL Grammar error (BE_PE): Cannot parse.

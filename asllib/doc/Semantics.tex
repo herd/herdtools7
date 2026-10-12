@@ -312,9 +312,8 @@ ASL dynamic semantics mainly utilise the following types of output \semanticscon
 
   \item[Exceptions.] \Semanticsconfigurationsterm{} in \RenderType{TThrowing} represent thrown exceptions.
 
-  There are two flavours of exceptions:
-  exceptions without an exception value (as in \texttt{throw;}), and ones with an exception value,
-  an identifier to which the Read Effect is attributed, and an associated type.
+  A thrown exception carries an exception value,
+  an identifier to which the Read Effect is attributed, and the name of its exception type.
   The ASL dynamic semantics propagate these \emph{exceptional \semanticsconfigurationsterm{}} to the nearest \catcherterm{} that matches
   them, and otherwise they are caught at the top-level and reported as errors (see \dynamicerrorsterm{} below).
 
