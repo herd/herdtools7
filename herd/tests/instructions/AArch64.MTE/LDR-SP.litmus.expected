@@ -1,0 +1,10 @@
+Test LDR-SP Required
+States 1
+0:X0=1;  ~Fault(P0,x,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1 /\ not (fault(P0,x,TagCheck)))
+Observation LDR-SP Always 1 0
+Hash=fc7388f51faba03108f5d973d14b18e6
+

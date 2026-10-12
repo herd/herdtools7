@@ -1,0 +1,9 @@
+AArch64 STR-postindex
+{
+ int x[2]={0,0};
+ 0:X0=x;
+ 0:X1=1;
+}
+ P0             ;
+ STR W1,[X0],#4 ;
+locations[x;0:X0;]
