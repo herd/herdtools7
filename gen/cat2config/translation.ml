@@ -27,11 +27,11 @@ end
 module E = Edge.Make (EdgeConfig) (A : Fence.S) (A : Atom.S)
 module R = Relax.Make (A) (E)
 
-type prune = Communication | Communication_state | Pos_w
+type prune = Amo_all | Amo_m | Communication | Communication_state | Pos_w
 
 (* [Communication_state] is an alternative representation of [Communication],
    so [-prune all] retains the existing communication representation. *)
-let prune_all = [ Communication; Pos_w ]
+let prune_all = [ Amo_all; Communication; Pos_w ]
 
 let merge_dir_opt d1 d2 =
   let open Code in
@@ -191,14 +191,27 @@ let apply_prim_set : partial_effect -> prim_set -> partial_effect option =
       (merge_atomo_opt eff.atom (Some a))
   in
   let open A.StructuredAtom in
+  let translate_plain eff = function
+    | Ir.Direction Ir.R -> build_dir_eff eff Code.R
+    | Ir.Direction Ir.W -> build_dir_eff eff Code.W
+    | Ir.Direction Ir.M -> Some { eff with explicit_mem = true }
+    | Ir.Acq_rel Ir.A ->
+        Option.bind (build_dir_eff eff Code.R) (fun eff ->
+            build_atom_eff eff (OrdinaryAccess `Acquire))
+    | Ir.Acq_rel Ir.Q ->
+        Option.bind (build_dir_eff eff Code.R) (fun eff ->
+            build_atom_eff eff (OrdinaryAccess `AcquirePC))
+    | Ir.Acq_rel Ir.L ->
+        Option.bind (build_dir_eff eff Code.W) (fun eff ->
+            build_atom_eff eff (OrdinaryAccess `Release))
+  in
   fun eff x ->
     match x with
-    | Prim "R" -> build_dir_eff eff Code.R
-    | Prim "W" -> build_dir_eff eff Code.W
-    | Prim "M" -> Some { eff with explicit_mem = true }
-    | Prim "A" -> build_atom_eff eff (OrdinaryAccess `Acquire)
-    | Prim "Q" -> build_atom_eff eff (OrdinaryAccess `AcquirePC)
-    | Prim "L" -> build_atom_eff eff (OrdinaryAccess `Release)
+    | Event { kind = None | Some Exp; access = Any direction } ->
+        translate_plain eff (Ir.Direction direction)
+    | Event { kind = None | Some Exp; access = Plain direction } ->
+        translate_plain eff direction
+    | Event { access = TTD _ | Tag _ | Instr _; _ } -> None
     | _ -> None
 
 let build_effect : partial_effect -> prim_set list -> partial_effect option =
@@ -241,12 +254,28 @@ let implied_constraints (l : prim_rel list) :
   l
   |> List.map (fun (x : prim_rel) ->
       match x with
-      | Prim "fr" -> ([ Ir.Prim "R" ], [ loc ], [ Ir.Prim "W" ])
-      | Prim "rf" -> ([ Prim "W" ], [ loc ], [ Prim "R" ])
-      | Prim "co" -> ([ Prim "W" ], [ loc ], [ Prim "W" ])
-      | Prim "amo" -> ([ Prim "R" ], [ loc ], [ Prim "W" ])
-      | Prim "data" -> ([ Prim "R" ], [], [ Prim "W" ])
-      | Prim ("ctrl" | "addr") -> ([ Prim "R" ], [], [])
+      | Prim "fr" ->
+          ( [ Ir.Event { Ir.default_event with access = Any R } ],
+            [ loc ],
+            [ Ir.Event { Ir.default_event with access = Any W } ] )
+      | Prim "rf" ->
+          ( [ Event { Ir.default_event with access = Any W } ],
+            [ loc ],
+            [ Event { Ir.default_event with access = Any R } ] )
+      | Prim "co" ->
+          ( [ Event { Ir.default_event with access = Any W } ],
+            [ loc ],
+            [ Event { Ir.default_event with access = Any W } ] )
+      | Prim "amo" ->
+          ( [ Event { Ir.default_event with access = Any R } ],
+            [ loc ],
+            [ Event { Ir.default_event with access = Any W } ] )
+      | Prim "data" ->
+          ( [ Event { Ir.default_event with access = Any R } ],
+            [],
+            [ Event { Ir.default_event with access = Any W } ] )
+      | Prim ("ctrl" | "addr") ->
+          ([ Event { Ir.default_event with access = Any R } ], [], [])
       | _ -> ([], [], []))
   |> List.fold_left
        (fun (x, y, z) (x', y', z') -> (x @ x', y @ y', z @ z'))
@@ -705,11 +734,18 @@ let is_po = function
         relations
   | _ -> false
 
-let is_explicit_memory edge po =
-  match edge with Ir.Set (Inter [ Prim "M" ]) -> is_po po | _ -> false
-
-let is_explicit_memory_set = function
-  | Ir.Set (Inter [ Prim "M" ]) -> true
+let is_explicit_memory edge relation =
+  match edge with
+  | Ir.Set
+      (Inter
+         [
+           Event
+             {
+               kind = None | Some Exp;
+               access = Any M | Plain (Direction M);
+             };
+         ]) ->
+      is_po relation || Ir.is_rmw relation
   | _ -> false
 
 (* The definitions of `addr`, `data`, and `ctrl` are kept as primitive
@@ -796,6 +832,10 @@ let after_observation =
       Ast.Choice
         [ Ast.One (Macro "ExpObs"); Ast.One (Concrete E.(plain_edge Hat)) ] )
 
+let rmw_marker = function
+  | Ir.Set (Ir.Inter [ Ir.Rmw endpoint ]) -> Some endpoint
+  | _ -> None
+
 let prefix_external_communication_edge = function
   (* For example, `[M]; po; [dmb.full]; ...`. *)
   | left :: rest -> begin
@@ -820,34 +860,20 @@ let suffix_external_communication_edge l =
 
 let rec first_relation_is_rmw = function
   | Ir.Set _ :: items -> first_relation_is_rmw items
-  | Ir.Rel (Inter relations) :: _ ->
-      List.exists
-        (fun (relation : prim_rel) ->
-          match relation with Ir.Prim "rmw" -> true | _ -> false)
-        relations
+  | item :: _ -> Ir.is_rmw item
   | [] -> false
 
 let external_communication_boundaries l =
-  let is_rmw = first_relation_is_rmw l in
-  let prefix =
-    prefix_external_communication_edge l
-    || is_rmw
-       && match l with item :: _ -> is_explicit_memory_set item | [] -> false
-  in
-  let suffix =
-    suffix_external_communication_edge l
-    || is_rmw
-       &&
-       match List.rev l with
-       | item :: _ -> is_explicit_memory_set item
-       | [] -> false
-  in
-  (prefix, suffix, is_rmw)
+  let prefix = prefix_external_communication_edge l in
+  let suffix = suffix_external_communication_edge l in
+  let rmw_prefix = first_relation_is_rmw l in
+  (prefix, suffix, rmw_prefix)
 
 let optional_hat = Predicate (Ast.Opt (Ast.One (Concrete E.(plain_edge Hat))))
+let hat = Plain E.(plain_edge Hat)
 
 let add_external_communication_edges l relaxs =
-  let prefix, suffix, is_rmw = external_communication_boundaries l in
+  let prefix, suffix, rmw_prefix = external_communication_boundaries l in
   let ordinary =
     if prefix then
       List.concat_map
@@ -855,13 +881,22 @@ let add_external_communication_edges l relaxs =
         relaxs
     else relaxs
   in
-  let ordinary =
-    if suffix then
-      List.map (fun relax -> relax @ [ Predicate after_observation ]) ordinary
-    else ordinary
+  let rmw_routes =
+    if rmw_prefix then
+      let hat = if prefix then hat else optional_hat in
+      [ (suffix, List.map (fun relax -> hat :: relax) relaxs) ]
+    else []
   in
-  if is_rmw then ordinary @ List.map (fun relax -> optional_hat :: relax) relaxs
-  else ordinary
+  let routes =
+    if rmw_prefix && not prefix then rmw_routes
+    else (suffix, ordinary) :: rmw_routes
+  in
+  List.concat_map
+    (fun (suffix, relaxs) ->
+      if suffix then
+        List.map (fun relax -> relax @ [ Predicate after_observation ]) relaxs
+      else relaxs)
+    routes
 
 let state name = Predicate (Ast.Predicate ("state", Ast.One (Macro name)))
 
@@ -872,7 +907,7 @@ let is_communication_edge (edge : E.edge) =
   match edge.edge with E.Communication _ -> true | _ -> false
 
 let add_external_communication_states l relaxs =
-  let prefix, suffix, is_rmw = external_communication_boundaries l in
+  let prefix, suffix, rmw_prefix = external_communication_boundaries l in
   let ordinary =
     List.map
       (fun relax ->
@@ -902,15 +937,20 @@ let add_external_communication_states l relaxs =
         | false, _ -> relax)
       relaxs
   in
-  if is_rmw then
-    ordinary
-    @ List.map
-        (fun relax -> optional_state "EndExpM" :: optional_hat :: relax)
+  if rmw_prefix then
+    let hat = if prefix then hat else optional_hat in
+    let rmw_relaxs =
+      List.map
+        (fun relax ->
+          let relax = optional_state "EndExpM" :: hat :: relax in
+          if suffix then relax @ [ state "EndExpM" ] else relax)
         relaxs
+    in
+    if prefix then ordinary @ rmw_relaxs else rmw_relaxs
   else ordinary
 
 let translate_seq (Seq l : seq_item Ir.seq) : concrete_relax list =
-  let explicit_memory = Ir.Inter [ Ir.Prim "M" ] in
+  let explicit_memory = Ir.Inter [ Ir.Event Ir.default_event ] in
   let st =
     fold_with_rest
       (fun st item rest ->
@@ -951,31 +991,111 @@ let translate_seq (Seq l : seq_item Ir.seq) : concrete_relax list =
   in
   if st.core = [] then st.relaxs else []
 
+let resolve_rmw ~partial ~all (Ir.Seq items) =
+  let rmw = Ir.Rel (Ir.Inter [ Ir.Prim "rmw" ]) in
+  let with_direction access direction =
+    match access with
+    | Ir.Any _ -> Ir.Any direction
+    | Ir.Plain _ -> Ir.Plain (Ir.Direction direction)
+    | Ir.TTD _ -> Ir.TTD direction
+    | Ir.Tag _ -> Ir.Tag direction
+    | Ir.Instr _ -> Ir.Instr direction
+  in
+  let endpoints marked endpoint =
+    match marked with
+    | Ir.Event { access = Ir.Any Ir.M | Ir.Plain (Ir.Direction Ir.M); _ }
+    | Ir.Event { access = Ir.TTD Ir.M | Ir.Tag Ir.M | Ir.Instr Ir.M; _ } ->
+        (endpoint, endpoint)
+    | Ir.Event ({ access = (Ir.Any Ir.R | Ir.Plain (Ir.Direction Ir.R)
+                           | Ir.TTD Ir.R | Ir.Tag Ir.R | Ir.Instr Ir.R) as access;
+                  _ } as event) ->
+        ( endpoint,
+          Ir.Set
+            (Ir.Inter
+               [ Ir.Event { event with access = with_direction access Ir.W } ]) )
+    | Ir.Event ({ access = (Ir.Any Ir.W | Ir.Plain (Ir.Direction Ir.W)
+                           | Ir.TTD Ir.W | Ir.Tag Ir.W | Ir.Instr Ir.W) as access;
+                  _ } as event) ->
+        ( Ir.Set
+            (Ir.Inter
+               [ Ir.Event { event with access = with_direction access Ir.R } ]),
+          endpoint )
+    | Ir.Event ({ access = Ir.Plain (Ir.Acq_rel (Ir.A | Ir.Q)); _ } as event) ->
+        ( endpoint,
+          Ir.Set
+            (Ir.Inter
+               [ Ir.Event { event with access = Ir.Plain (Ir.Direction Ir.W) } ]) )
+    | Ir.Event ({ access = Ir.Plain (Ir.Acq_rel Ir.L); _ } as event) ->
+        ( Ir.Set
+            (Ir.Inter
+               [ Ir.Event { event with access = Ir.Plain (Ir.Direction Ir.R) } ]),
+          endpoint )
+    | _ -> assert false
+  in
+  let is_pruned = function
+    | Ir.Event { access = Ir.Plain (Ir.Acq_rel _); _ } -> all
+    | Ir.Event _ -> partial || all
+    | _ -> true
+  in
+  let rec resolve = function
+    | [] -> Some []
+    | first :: second :: items -> begin
+        match (rmw_marker first, rmw_marker second, first, second) with
+        | Some marked, None, _, (Ir.Set _ as endpoint) ->
+            if is_pruned marked then None
+            else
+              let left, right = endpoints marked endpoint in
+              Option.map
+                (fun items -> left :: rmw :: right :: items)
+                (resolve items)
+        | None, Some marked, (Ir.Set _ as endpoint), _ ->
+            if is_pruned marked then None
+            else
+              let left, right = endpoints marked endpoint in
+              Option.map
+                (fun items -> left :: rmw :: right :: items)
+                (resolve items)
+        | _ ->
+            Option.map (fun items -> first :: items) (resolve (second :: items))
+      end
+    | item :: items -> Option.map (fun items -> item :: items) (resolve items)
+  in
+  Option.map (fun items -> Ir.Seq items) (resolve items)
+
 let translate ~prune ~binding (nf : Ir.rel_nf) : relax list =
   Log.info (fun m -> m "Translating component of `%s`" binding);
   Log.debug (fun m -> m "`%s` expression:@.%a" binding Ir.pp_rel_nf nf);
-  let nf = Ir.expand_acq_rel nf in
-  Log.debug (fun m -> m "`%s` after expanding A/L:@.%a" binding Ir.pp_rel_nf nf);
+  let nf = Ir.compress nf in
   let nf = Ir.expand_domain_range nf in
   Log.debug (fun m ->
       m "`%s` after expanding domain/range:@.%a" binding Ir.pp_rel_nf nf);
-  let nf = Ir.compress nf in
   let nf = filter_unsupported_relations nf in
+  let nf = Ir.compress nf in
+  let nf = Ir.expand_rmw nf in
+  Log.debug (fun m ->
+      m "`%s` after expanding RMW endpoints:@.%a" binding Ir.pp_rel_nf nf);
   let relaxs =
     List.fold_left
-      (fun acc (Ir.Seq l as seq) ->
-        let relaxs = translate_seq seq in
-        let relaxs =
-          if List.mem Communication prune then
-            add_external_communication_edges l relaxs
-          else relaxs
-        in
-        let relaxs =
-          if List.mem Communication_state prune then
-            add_external_communication_states l relaxs
-          else relaxs
-        in
-        acc @ relaxs)
+      (fun acc (Ir.Seq _ as seq) ->
+        match
+          resolve_rmw ~partial:(List.mem Amo_m prune)
+            ~all:(List.mem Amo_all prune) seq
+        with
+        | None -> acc
+        | Some (Ir.Seq l as seq) ->
+            let (Ir.Union seqs) = Ir.compress (Ir.Union [ seq ]) in
+            let relaxs = List.concat_map translate_seq seqs in
+            let relaxs =
+              if List.mem Communication prune then
+                add_external_communication_edges l relaxs
+              else relaxs
+            in
+            let relaxs =
+              if List.mem Communication_state prune then
+                add_external_communication_states l relaxs
+              else relaxs
+            in
+            acc @ relaxs)
       [] (Ir.get_union nf)
   in
   let relaxs = Util.List.uniq ~eq:( = ) relaxs in

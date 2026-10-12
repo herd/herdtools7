@@ -7,11 +7,11 @@
   
   ### Exp-haz-ob
   ## [Exp & R]; (po & same-loc); [Exp & R]; (ca & ext); [Exp & W]
-  -safe [PosRR,Fre]
+  -safe [PosRR,Fre] [PosRR,[LxSx|Amo.Safe],Coe] [[LxSx|Amo.Safe],PosWR,Fre] [[LxSx|Amo.Safe],PosWR,[LxSx|Amo.Safe],Coe]
   
   ### haz-ob
   ## Exp-haz-ob
-  -safe [PosRR,Fre]
+  -safe [PosRR,Fre] [PosRR,[LxSx|Amo.Safe],Coe] [[LxSx|Amo.Safe],PosWR,Fre] [[LxSx|Amo.Safe],PosWR,[LxSx|Amo.Safe],Coe]
   
   ### Exp-obs
   ## [Exp & M]; (rf & ext); [Exp & M]
@@ -21,23 +21,23 @@
   
   ### DSB-ob
   ## [M | DC.CVAU | IC]; po; [dsb.full]; po; [~((Imp & (TTD & M)) | (Imp & (Instr & R)))]
-  -safe DSB.SY***
+  -safe [[LxSx|Amo.Safe]?,DSB.SY***,[LxSx|Amo.Safe]?]
   ## [((Exp & R) \ NoRet) | (Imp & (Tag & R))]; po; [dsb.ld]; po; [~((Imp & (TTD & M)) | (Imp & (Instr & R)))]
-  -safe DSB.LD*R*
+  -safe [[LxSx|Amo.Safe],DSB.LD*W*,[LxSx|Amo.Safe]?] [DSB.LD*R*,[LxSx|Amo.Safe]?]
   ## [Exp & W]; po; [dsb.st]; po; [~((Imp & (TTD & M)) | (Imp & (Instr & R)))]
-  -safe DSB.ST*W*
+  -safe [[LxSx|Amo.Safe]?,DSB.ST*W*,[LxSx|Amo.Safe]?]
   
   ### IFB-ob
   ## [Exp & R]; ctrl; [IFB]; po
-  -safe [DpCtrl,ISB]
+  -safe [[LxSx|Amo.Safe]?,DpCtrl,ISB]
   ## [Exp & R]; pick-ctrl-dep; [IFB]; po
-  -safe [DpCtrlCsel,ISB]
+  -safe [[LxSx|Amo.Safe]?,DpCtrlCsel,ISB]
   ## [Exp & R]; addr; [Exp & M]; po; [IFB]; po
-  -safe [DpAddr,ISB***]
+  -safe [DpAddr,[LxSx|Amo.Safe]?,ISB***]
   ## [Exp & R]; pick-addr-dep; [Exp & M]; po; [IFB]; po
-  -safe [DpAddrCsel,ISB***]
+  -safe [[LxSx|Amo.Safe]?,DpAddrCsel,[LxSx|Amo.Safe]?,ISB***]
   ## DSB-ob; [IFB]; po
-  -safe [[DSB.LD*R*|DSB.ST*W*|DSB.SY***],ISB]
+  -safe [[LxSx|Amo.Safe],[DSB.LD*W*|DSB.ST*W*|DSB.SY***],ISB] [[DSB.LD*R*|DSB.ST*W*|DSB.SY***],ISB]
   
   ### dob
   ## addr
@@ -45,23 +45,23 @@
   ## data
   -safe DpData*W
   ## ctrl; [(Exp & W) | HU | TLBI | DC.CVAU | IC]
-  -safe DpCtrl*W
+  -safe [DpCtrl*R,[LxSx|Amo.Safe]] DpCtrl*W
   ## addr; [Exp & M]; po; [(Exp & W) | HU]
-  -safe [DpAddr,Po**W]
+  -safe [DpAddr,[LxSx|Amo.Safe]?,Po**R,[LxSx|Amo.Safe]] [DpAddr,[LxSx|Amo.Safe]?,Po**W]
   ## addr; [Exp & M]; lrs; [(Exp & R) | (Imp & (Tag & R))]
-  -safe [DpAddr*W,PosWR]
+  -safe [DpAddr*R,[LxSx|Amo.Safe],PosWR,[LxSx|Amo.Safe]?] [DpAddr*W,PosWR,[LxSx|Amo.Safe]?]
   ## data; [Exp & M]; lrs; [(Exp & R) | (Imp & (Tag & R))]
-  -safe [DpData*W,PosWR]
+  -safe [DpData*W,PosWR,[LxSx|Amo.Safe]?]
   
   ### pob
   ## pick-addr-dep; [(Exp & W) | HU | TLBI | DC.CVAU | IC]
-  -safe DpAddrCsel*W
+  -safe [DpAddrCsel*R,[LxSx|Amo.Safe]] DpAddrCsel*W
   ## pick-data-dep
   -safe DpDataCsel
   ## pick-ctrl-dep; [(Exp & W) | HU | TLBI | DC.CVAU | IC]
-  -safe DpCtrlCsel*W
+  -safe [DpCtrlCsel*R,[LxSx|Amo.Safe]] DpCtrlCsel*W
   ## pick-addr-dep; [Exp & M]; po; [(Exp & W) | HU]
-  -safe [DpAddrCsel,Po**W]
+  -safe [DpAddrCsel,[LxSx|Amo.Safe]?,Po**R,[LxSx|Amo.Safe]] [DpAddrCsel,[LxSx|Amo.Safe]?,Po**W]
   
   ### aob
   ## [Exp & M]; rmw; [Exp & M]
@@ -71,23 +71,23 @@
   
   ### bob
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [dmb.full]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe DMB.SY***
+  -safe [[LxSx|Amo.Safe]?,DMB.SY***,[LxSx|Amo.Safe]?]
   ## [(Exp & (R \ NoRet)) | (Imp & (Tag & R))]; po; [dmb.ld]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe DMB.LD*R*
+  -safe [[LxSx|Amo.Safe],DMB.LD*W*,[LxSx|Amo.Safe]?] [DMB.LD*R*,[LxSx|Amo.Safe]?]
   ## [Exp & W]; po; [dmb.st]; po; [(Exp & W) | (MMU & FAULT)]
-  -safe DMB.ST*WW
+  -safe [[LxSx|Amo.Safe]?,DMB.ST*WR,[LxSx|Amo.Safe]] [[LxSx|Amo.Safe]?,DMB.ST*WW]
   ## [range([A]; amo; [L])]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe [Po?,A,Amo.Safe,L,Po]
+  -safe [[LxSx|Amo.Safe]?,Po**R,A,Amo.Safe,L,Po*W*,[LxSx|Amo.Safe]?] [A,Amo.Safe,L,Po*W*,[LxSx|Amo.Safe]?]
   ## [L]; po; [A]
-  -safe [[LxSx|Amo.Safe]?,L,Po,A,[LxSx|Amo.Safe]?]
+  -safe [[LxSx|Amo.Safe]?,L,Po*WR,A,[LxSx|Amo.Safe]?]
   ## [A | Q]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe [[A|Q],[LxSx|Amo.Safe]?,Po]
+  -safe [[A|Q],[LxSx|Amo.Safe],Po*W*,[LxSx|Amo.Safe]?] [[A|Q],Po*R*,[LxSx|Amo.Safe]?]
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [L]
-  -safe [Po,[LxSx|Amo.Safe]?,L]
+  -safe [[LxSx|Amo.Safe]?,Po**R,[LxSx|Amo.Safe],L] [[LxSx|Amo.Safe]?,Po**W,L]
   
   ### lwfs
   ## [(Exp & M) | (Imp & (Tag & R))]; (po & same-loc); [Exp & W]
-  -safe Pos*W
+  -safe [[LxSx|Amo.Safe]?,Pos*R,[LxSx|Amo.Safe]] [[LxSx|Amo.Safe]?,Pos*W]
 
 Pos*W pruning is opt-in.
 
@@ -106,7 +106,7 @@ Without an explicit pruning option, all translated alternatives are retained.
   ### dob
   -safe DpAddr
   -safe DpData*W
-  -safe DpCtrl*W
-  -safe [DpAddr,Po**W]
-  -safe [DpAddr*W,PosWR]
-  -safe [DpData*W,PosWR]
+  -safe [DpCtrl*R,[LxSx|Amo.Safe]] DpCtrl*W
+  -safe [DpAddr,[LxSx|Amo.Safe]?,Po**R,[LxSx|Amo.Safe]] [DpAddr,[LxSx|Amo.Safe]?,Po**W]
+  -safe [DpAddr*R,[LxSx|Amo.Safe],PosWR,[LxSx|Amo.Safe]?] [DpAddr*W,PosWR,[LxSx|Amo.Safe]?]
+  -safe [DpData*W,PosWR,[LxSx|Amo.Safe]?]

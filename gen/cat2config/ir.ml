@@ -30,9 +30,6 @@ let map_union (f : 'a -> 'b) : 'a union -> 'b union =
 let union : 'a union -> 'a union -> 'a union =
  fun (Union x) (Union y) -> Union (List.append x y)
 
-let union_flat_map (f : 'a -> 'b union) (Union u : 'a union) : 'b union =
-  Union (List.concat_map (fun x -> get_union (f x)) u)
-
 let union_l : 'a union list -> 'a union =
  fun l -> List.fold_right union l (Union [])
 
@@ -42,12 +39,6 @@ let seq (s1 : 'a seq) (s2 : 'a seq) : 'a seq =
 let seq_l : 'a seq list -> 'a seq = function
   | [] -> raise (Invalid_argument "Sequence on empty list")
   | x :: xs -> List.fold_left seq x xs
-
-let seq_flat_map (f : 'a -> 'a seq union) (Seq seq : 'a seq) : 'a seq union =
-  seq
-  |> List.map (fun s -> get_union (f s))
-  |> Util.List.sequence |> List.map seq_l
-  |> fun l -> Union l
 
 let inter (e1 : 'a inter) (e2 : 'a inter) : 'a inter =
   match (e1, e2) with Inter i1, Inter i2 -> Inter (List.append i1 i2)
@@ -82,10 +73,172 @@ let universe_set = Union [ Inter [] ]
 
 type fence = AArch64Base.barrier
 type prim_rel = Fence of fence | Prim of string
+type event_kind = Exp | Imp
+type event_direction = M | R | W
+type acq_rel = A | L | Q
+type plain_direction = Direction of event_direction | Acq_rel of acq_rel
+
+type event_access =
+  | Any of event_direction
+  | Plain of plain_direction
+  | TTD of event_direction
+  | Tag of event_direction
+  | Instr of event_direction
+
+type event = {
+  kind : event_kind option;
+  access : event_access;
+}
+
+let default_event = { kind = None; access = Any M }
+
+type event_field = PlainField | TTDField | TagField | InstrField
+
+let access_parts = function
+  | Any direction -> (Direction direction, None)
+  | Plain direction -> (direction, Some PlainField)
+  | TTD direction -> (Direction direction, Some TTDField)
+  | Tag direction -> (Direction direction, Some TagField)
+  | Instr direction -> (Direction direction, Some InstrField)
+
+let access_of_parts direction field =
+  match (direction, field) with
+  | Direction direction, None -> Some (Any direction)
+  | direction, Some PlainField -> Some (Plain direction)
+  | Direction direction, Some TTDField -> Some (TTD direction)
+  | Direction direction, Some TagField -> Some (Tag direction)
+  | Direction direction, Some InstrField -> Some (Instr direction)
+  | Acq_rel _, None
+  | Acq_rel _, Some (TTDField | TagField | InstrField) -> None
+
+let direction_matches candidate constraint_ =
+  match (candidate, constraint_) with
+  | Direction (R | W), Direction M
+  | Direction R, (Direction R | Acq_rel (A | Q))
+  | Acq_rel (A | Q), Direction (M | R)
+  | Direction W, (Direction W | Acq_rel L)
+  | Acq_rel L, Direction (M | W)
+  | Acq_rel A, Acq_rel A
+  | Acq_rel Q, Acq_rel Q
+  | Acq_rel L, Acq_rel L -> true
+  | _ -> false
+
+let all_events =
+  List.concat_map
+    (fun kind ->
+      let fields =
+        match kind with
+        | Exp -> [ PlainField; TTDField; TagField; InstrField ]
+        | Imp -> [ TTDField; TagField; InstrField ]
+      in
+      List.concat_map
+        (fun field ->
+          List.map
+            (fun direction ->
+              let access = Option.get (access_of_parts direction (Some field)) in
+              { kind = Some kind; access })
+            [ Direction R; Direction W ])
+        fields)
+    [ Exp; Imp ]
+
+let event_matches candidate constraint_ =
+  (constraint_.kind = None || candidate.kind = constraint_.kind)
+  &&
+  let candidate_direction, candidate_field = access_parts candidate.access in
+  let constraint_direction, constraint_field =
+    access_parts constraint_.access
+  in
+  (constraint_field = None || candidate_field = constraint_field)
+  && direction_matches candidate_direction constraint_direction
+
+let compact_event_directions events =
+  let rec fold = function
+    | [] -> []
+    | event :: events ->
+        let same, events =
+          List.partition
+            (fun candidate ->
+              let _, candidate_field = access_parts candidate.access in
+              let _, event_field = access_parts event.access in
+              candidate.kind = event.kind && candidate_field = event_field)
+            events
+        in
+        let directions =
+          List.map (fun event -> fst (access_parts event.access)) (event :: same)
+        in
+        if List.mem (Direction R) directions && List.mem (Direction W) directions
+        then
+          let _, field = access_parts event.access in
+          let access = Option.get (access_of_parts (Direction M) field) in
+          { event with access } :: fold events
+        else (event :: same) @ fold events
+  in
+  fold events
+
+let compact_event_fields events =
+  let rec fold = function
+    | [] -> []
+    | event :: events ->
+        let same, events =
+          List.partition
+            (fun candidate ->
+              let candidate_direction, _ = access_parts candidate.access in
+              let event_direction, _ = access_parts event.access in
+              candidate.kind = event.kind
+              && candidate_direction = event_direction)
+            events
+        in
+        let fields =
+          List.map (fun event -> snd (access_parts event.access)) (event :: same)
+        in
+        if
+          List.mem None fields
+          || List.for_all
+               (fun field -> List.mem (Some field) fields)
+               [ PlainField; TTDField; TagField; InstrField ]
+        then
+          let direction, _ = access_parts event.access in
+          let access = Option.get (access_of_parts direction None) in
+          { event with access } :: fold events
+        else (event :: same) @ fold events
+  in
+  fold events
+
+let compact_event_kinds events =
+  let rec fold = function
+    | [] -> []
+    | event :: events ->
+        let same, events =
+          List.partition
+            (fun candidate ->
+              candidate.access = event.access)
+            events
+        in
+        let kinds = List.map (fun event -> event.kind) (event :: same) in
+        if
+          List.mem None kinds
+          || (List.mem (Some Exp) kinds && List.mem (Some Imp) kinds)
+        then { event with kind = None } :: fold events
+        else (event :: same) @ fold events
+  in
+  fold events
+
+let rec compact_events events =
+  let compacted =
+    events |> compact_event_directions |> compact_event_fields
+    |> compact_event_kinds
+  in
+  if compacted = events then events else compact_events compacted
+
+let neg_event event =
+  List.filter (fun candidate -> not (event_matches candidate event)) all_events
+  |> compact_events
 
 type prim_set =
   | Domain of seq_item seq
   | Range of seq_item seq
+  | Rmw of prim_set
+  | Event of event
   | Fence of fence option
   | Comp of prim_set
   | Prim of string
@@ -94,6 +247,78 @@ and seq_item = Set of prim_set inter | Rel of prim_rel inter
 and set_nf = prim_set inter union
 and rel_nf = seq_item seq union
 
+let merge_event_sets sets =
+  let events, sets =
+    List.partition_map
+      (function Event event -> Left event | set -> Right set)
+      sets
+  in
+  let fences, sets =
+    List.partition_map
+      (function Fence fence -> Left fence | set -> Right set)
+      sets
+  in
+  let event =
+    List.fold_left
+      (fun event next ->
+        let direction, field = access_parts event.access in
+        let next_direction, next_field = access_parts next.access in
+        let direction =
+          match (direction, next_direction) with
+          | Direction M, direction -> direction
+          | Direction R, (Acq_rel (A | Q) as direction)
+          | Direction W, (Acq_rel L as direction) -> direction
+          | direction, _ -> direction
+        in
+        let field = if field = None then next_field else field in
+        let access =
+          Option.value (access_of_parts direction field) ~default:event.access
+        in
+        {
+          kind = (if event.kind = None then next.kind else event.kind);
+          access;
+        })
+      default_event events
+  in
+  let sets =
+    match fences with
+    | [] -> sets
+    | _ :: _ ->
+        let fence = List.find_map (fun fence -> fence) fences in
+        Fence fence :: sets
+  in
+  match events with [] -> sets | _ :: _ -> Event event :: sets
+
+let merge_event_inter (Inter sets) = Inter (merge_event_sets sets)
+
+let is_rmw = function
+  | Rel (Inter relations) ->
+      List.exists
+        (fun (relation : prim_rel) ->
+          match relation with Prim "rmw" -> true | _ -> false)
+        relations
+  | Set (Inter [ Rmw _ ]) -> true
+  | Set _ -> false
+
+let is_amo_or_rmw item =
+  is_rmw item
+  ||
+  match item with
+  | Rel (Inter relations) ->
+      List.exists
+        (fun (relation : prim_rel) ->
+          match relation with Prim "amo" -> true | _ -> false)
+        relations
+  | Set _ -> false
+
+let is_communication = function
+  | Rel (Inter relations) ->
+      List.exists
+        (fun (relation : prim_rel) ->
+          match relation with Prim ("rf" | "fr" | "co") -> true | _ -> false)
+        relations
+  | Set _ -> false
+
 (* Compression *)
 
 let compress_seq (l : seq_item list) : seq_item list =
@@ -101,8 +326,9 @@ let compress_seq (l : seq_item list) : seq_item list =
   |> List.fold_left
        (fun acc x ->
          match (acc, x) with
+         | [], Set set -> [ Set (merge_event_inter set) ]
          | [], x -> [ x ]
-         | Set s :: acc, Set s' -> Set (inter s s') :: acc
+         | Set s :: acc, Set s' -> Set (merge_event_inter (inter s s')) :: acc
          | Rel r :: acc, Set s -> Set s :: Rel r :: acc
          | acc, Rel (Inter []) -> acc
          | acc, Rel r -> Rel r :: acc)
@@ -113,6 +339,7 @@ let compress : seq_item seq union -> seq_item seq union =
   let rec compress_set : prim_set -> prim_set = function
     | Domain (Seq r) -> Domain (Seq (compress_seq r))
     | Range (Seq r) -> Range (Seq (compress_seq r))
+    | Rmw s -> Rmw (compress_set s)
     | Comp s -> Comp (compress_set s)
     | s -> s
   in
@@ -121,7 +348,8 @@ let compress : seq_item seq union -> seq_item seq union =
       let s =
         List.map
           (function
-            | Set (Inter set) -> Set (Inter (List.map compress_set set))
+            | Set (Inter set) ->
+                Set (merge_event_inter (Inter (List.map compress_set set)))
             | Rel rel -> Rel rel)
           s
       in
@@ -163,27 +391,14 @@ let rel_inter : rel_nf -> rel_nf -> rel_nf =
   inter_of_unions ~inter
 
 let prim_set : prim_set -> set_nf = fun p -> Union [ Inter [ p ] ]
-let prim_sets : prim_set list -> set_nf = fun p -> Union [ Inter p ]
 let prim_rel : prim_rel -> rel_nf = fun p -> Union [ Seq [ Rel (Inter [ p ]) ] ]
 
-(* Computes the complement of a primitive set.
-
-   Currently the tool only handles explicit memory or fence effects.
-   Therefore:
-
-       ~M  -->  F
-       ~F  -->  M
-       ~R  -->  W | F
-
-    The [Comp] constructor is used to mark primitive sets X for which
-    we don't know how to compute complement, but still want to be able to
-    reduce away double complements: ~~X  -->  X.
- *)
+(* Computes the fallback complement of a primitive set. Event complements are
+   handled over [all_events] by [event_set_comp] below. A generic fence
+   complements to generic memory; unsupported primitives remain symbolic so
+   that double complements can still reduce: ~~X --> X. *)
 let prim_set_comp : prim_set -> prim_set inter union = function
-  | Fence None -> prim_set (Prim "M")
-  | Prim "M" -> prim_set (Fence None)
-  | Prim "R" -> union_l [ prim_set (Prim "W"); prim_set (Fence None) ]
-  | Prim "W" -> union_l [ prim_set (Prim "R"); prim_set (Fence None) ]
+  | Fence None -> prim_set (Event default_event)
   | Comp s -> prim_set s
   | s -> prim_set (Comp s)
 
@@ -229,7 +444,33 @@ let comp (atom_comp : 'a -> 'a inter union) : 'a inter union -> 'a inter union =
   set_inter_l
     (List.map (fun (Inter i_l) -> union_l (List.map atom_comp i_l)) u_l)
 
-let set_comp : set_nf -> set_nf = comp prim_set_comp
+let event_set_comp = function
+  | Union [] -> None
+  | Union sets ->
+      let rec events = function
+        | [] -> Some []
+        | Inter set :: sets -> begin
+            match (merge_event_sets set, events sets) with
+            | [ Event event ], Some events -> Some (event :: events)
+            | _ -> None
+          end
+      in
+      Option.map
+        (fun negated ->
+          all_events
+          |> List.filter (fun candidate ->
+              List.for_all
+                (fun event -> not (event_matches candidate event))
+                negated)
+          |> compact_events
+          |> List.map (fun event -> Inter [ Event event ])
+          |> fun sets ->
+          Inter [ Fence None ] :: sets |> fun sets -> Union sets)
+        (events sets)
+
+let set_comp nf =
+  match event_set_comp nf with Some nf -> nf | None -> comp prim_set_comp nf
+
 let set_diff : set_nf -> set_nf -> set_nf = fun a b -> set_inter a (set_comp b)
 
 let find_fence : set_nf -> fence option = function
@@ -238,6 +479,20 @@ let find_fence : set_nf -> fence option = function
   | _ -> None
 
 (* Parsing string identifiers into IR structures *)
+
+let event_of_name = function
+  | "Exp" -> Some { default_event with kind = Some Exp }
+  | "Imp" -> Some { default_event with kind = Some Imp }
+  | "M" -> Some default_event
+  | "R" -> Some { default_event with access = Any R }
+  | "W" -> Some { default_event with access = Any W }
+  | "A" -> Some { default_event with access = Plain (Acq_rel A) }
+  | "L" -> Some { default_event with access = Plain (Acq_rel L) }
+  | "Q" -> Some { default_event with access = Plain (Acq_rel Q) }
+  | "TTD" -> Some { default_event with access = TTD M }
+  | "Tag" -> Some { default_event with access = Tag M }
+  | "Instr" -> Some { default_event with access = Instr M }
+  | _ -> None
 
 (*
   For now, we only deal with:
@@ -269,11 +524,11 @@ let parse_set_id (s : string) : set_nf option =
   in
   let try_other_prims () =
     match s with
-    | "Exp" -> Some universe_set
-    | "R" | "W" | "M" | "A" | "L" | "Q" -> Some (prim_set (Prim s))
+    | ( "Exp" | "Imp" | "M" | "R" | "W" | "A" | "L" | "Q" | "TTD" | "Tag"
+      | "Instr" ) as s ->
+        Option.map (fun event -> prim_set (Event event)) (event_of_name s)
     | "F" -> Some (prim_set (Fence None))
-    | "TTD" | "Instr" | "emptyset" | "NoRet" | "T" | "NExp" | "Imp" ->
-        Some empty_set
+    | "emptyset" | "NoRet" | "T" | "NExp" -> Some empty_set
     | _ -> None
   in
   Util.Option.choice_fn [ try_other_prims; try_fences ]
@@ -282,9 +537,9 @@ let parse_rel_id (s : string) : rel_nf option =
   let poswr =
     rel_seq_l
       [
-        to_id (prim_set (Prim "W"));
+        to_id (prim_set (Event { default_event with access = Any W }));
         prim_rel_inter_l [ Prim "po"; Prim "loc" ];
-        to_id (prim_set (Prim "R"));
+        to_id (prim_set (Event { default_event with access = Any R }));
       ]
   in
   let pick_basic_dep = poswr in
@@ -344,6 +599,23 @@ let rec pp_prim_set fmt =
   function
   | Domain r -> fprintf fmt "domain(%a)" (pp_seq pp_prim_set pp_prim_rel) r
   | Range r -> fprintf fmt "range(%a)" (pp_seq pp_prim_set pp_prim_rel) r
+  | Rmw s -> fprintf fmt "rmw(%a)" pp_prim_set s
+  | Event { kind; access } ->
+      let direction, field = access_parts access in
+      fprintf fmt "%s%s%s"
+        (match kind with None -> "" | Some Exp -> "Exp" | Some Imp -> "Imp")
+        (match field with
+        | None | Some PlainField -> ""
+        | Some TTDField -> "&TTD"
+        | Some TagField -> "&Tag"
+        | Some InstrField -> "&Instr")
+        (match direction with
+        | Direction M -> "&M"
+        | Direction R -> "&R"
+        | Direction W -> "&W"
+        | Acq_rel A -> "&A"
+        | Acq_rel L -> "&L"
+        | Acq_rel Q -> "&Q")
   | Fence None -> fprintf fmt "F"
   | Fence (Some f) -> fprintf fmt "%s" (AArch64Base.pp_barrier_dot f)
   | Prim x -> fprintf fmt "%s" x
@@ -363,10 +635,6 @@ let find_partition (p : 'a -> 'b option) (l : 'a list) : ('b * 'a list) option =
         match p x with Some y -> Some (y, acc @ xs) | None -> go (x :: acc) xs)
   in
   go [] l
-
-let mem_partition (elem : 'a) (l : 'a list) : 'a list option =
-  find_partition (fun x -> if x = elem then Some () else None) l
-  |> Option.map snd
 
 let expand_domain_range (nf : rel_nf) : rel_nf =
   let can_expand (Seq seq : seq_item seq) : bool =
@@ -396,37 +664,65 @@ let expand_domain_range (nf : rel_nf) : rel_nf =
   in
   map_union (fun (Seq seq) -> Seq (List.concat_map expand_item seq)) nf
 
-let expand_acq_rel (nf : rel_nf) : rel_nf =
-  let mem = to_id (prim_set (Prim "M")) in
-  let rmw = prim_rel (Prim "rmw") in
-  let atom_a = Prim "A" in
-  let atom_q = Prim "Q" in
-  let atom_l = Prim "L" in
-  let rmw_ap = rel_seq_l [ to_id (prim_set atom_a); rmw; mem ] in
-  let rmw_qp = rel_seq_l [ to_id (prim_set atom_q); rmw; mem ] in
-  let rmw_pl = rel_seq_l [ mem; rmw; to_id (prim_set atom_l) ] in
+let expand_rmw (nf : rel_nf) : rel_nf =
+  let rec leads_to_communication = function
+    | Set (Inter []) :: items -> leads_to_communication items
+    | item :: _ -> is_communication item
+    | [] -> false
+  in
+  let contains_predicate =
+    List.exists (function
+      | Set (Inter sets) ->
+          List.exists (function Domain _ | Range _ -> true | _ -> false) sets
+      | Rel _ -> false)
+  in
+  let rec mark_each item before = function
+    | [] -> []
+    | (Event _ as atom) :: atoms ->
+        let rest = List.rev_append before atoms in
+        let write_side =
+          List.exists
+            (function
+              | Event { access = Any W | Plain (Direction W | Acq_rel L)
+                                     | TTD W | Tag W | Instr W; _ } -> true
+              | _ -> false)
+            (atom :: rest)
+        in
+        let marker = Set (Inter [ Rmw atom ]) in
+        let marked =
+          if write_side then Seq [ marker; item ] else Seq [ item; marker ]
+        in
+        marked :: mark_each item (atom :: before) atoms
+    | atom :: atoms -> mark_each item (atom :: before) atoms
+  in
+  let expand_item = function
+    | Set (Inter atoms) as item -> Seq [ item ] :: mark_each item [] atoms
+    | Rel _ as item -> [ Seq [ item ] ]
+  in
+  let rec expand_items first preserve_last previous_is_rmw = function
+    | [] -> []
+    | item :: items ->
+        let boundary_communication =
+          (first && leads_to_communication items)
+          || (items = [] && preserve_last)
+        in
+        let adjacent_rmw =
+          previous_is_rmw
+          || match items with next :: _ -> is_amo_or_rmw next | [] -> false
+        in
+        (if boundary_communication || adjacent_rmw then [ Seq [ item ] ]
+         else expand_item item)
+        :: expand_items false preserve_last (is_amo_or_rmw item) items
+  in
   nf
-  |> union_flat_map
-       (seq_flat_map (function
-         | Set (Inter x) ->
-             let s = Union [ Seq [ Set (Inter x) ] ] in
-             let s =
-               match mem_partition atom_a x with
-               | Some rest ->
-                   union s (to_id (set_inter (prim_sets rest) (domain rmw_ap)))
-               | None -> s
-             in
-             let s =
-               match mem_partition atom_q x with
-               | Some rest ->
-                   union s (to_id (set_inter (prim_sets rest) (domain rmw_qp)))
-               | None -> s
-             in
-             let s =
-               match mem_partition atom_l x with
-               | Some rest ->
-                   union s (to_id (set_inter (prim_sets rest) (range rmw_pl)))
-               | None -> s
-             in
-             s
-         | Rel r -> Union [ Seq [ Rel r ] ]))
+  |> map_union (fun (Seq items) ->
+      if contains_predicate items then [ Seq items ]
+      else
+        let preserve_last =
+          match List.rev items with
+          | _ :: before -> leads_to_communication before
+          | [] -> false
+        in
+        expand_items true preserve_last false items
+        |> Util.List.sequence |> List.map seq_l)
+  |> fun (Union seqs) -> Union (List.concat seqs)

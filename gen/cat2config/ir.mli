@@ -24,10 +24,32 @@ val get_union : 'a union -> 'a list
 
 type fence = AArch64Base.barrier
 type prim_rel = Fence of fence | Prim of string
+type event_kind = Exp | Imp
+type event_direction = M | R | W
+type acq_rel = A | L | Q
+type plain_direction = Direction of event_direction | Acq_rel of acq_rel
+
+type event_access =
+  | Any of event_direction
+  | Plain of plain_direction
+  | TTD of event_direction
+  | Tag of event_direction
+  | Instr of event_direction
+
+type event = {
+  kind : event_kind option;
+  access : event_access;
+}
+
+val default_event : event
+val all_events : event list
+val neg_event : event -> event list
 
 type prim_set =
   | Domain of seq_item seq
   | Range of seq_item seq
+  | Rmw of prim_set
+  | Event of event
   | Fence of fence option
   | Comp of prim_set
   | Prim of string
@@ -35,6 +57,8 @@ type prim_set =
 and seq_item = Set of prim_set inter | Rel of prim_rel inter
 and set_nf = prim_set inter union
 and rel_nf = seq_item seq union
+
+val is_rmw : seq_item -> bool
 
 include
   Normalization.S
@@ -64,13 +88,15 @@ val compress : rel_nf -> rel_nf
  *)
 val expand_domain_range : rel_nf -> rel_nf
 
-(* Expands occurrences of `A` and `L` effect variables into a set expression
-   which is the union of the original variable and a set expression generating
-   the same acquire/release effect via atomic memory operations.
+(* Labels eligible memory endpoints with [Rmw]. Translation later decides
+   whether each label denotes the plain endpoint, an RMW, or both.
 
-   Example:
+   Examples before translation:
 
-     [M & A]  -->  [M & (A | domain([A]; amo))]
-              -->  [M & A] | [M & domain([A]; amo))]
+     [R]; r  -->  [rmw(R)]; r
+     r; [W]  -->  r; [rmw(W)]
+     [A]; r  -->  [rmw(A)]; r
+
+   Endpoints adjacent to an existing [rmw] or [amo] are unchanged.
  *)
-val expand_acq_rel : rel_nf -> rel_nf
+val expand_rmw : rel_nf -> rel_nf
