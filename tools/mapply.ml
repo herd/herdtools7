@@ -15,8 +15,6 @@
 (****************************************************************************)
 open Printf
 
-type mode = Buff | File
-
 let quote_command com args =
   String.concat " " (List.map Filename.quote (com :: args))
 
@@ -26,7 +24,6 @@ module type TArg = sig
   val com : string
   val comargs : string list
   val verbose : int
-  val mode : mode
 end
 
 module Task(A:TArg) = struct
@@ -40,55 +37,16 @@ module Task(A:TArg) = struct
     (fun () -> !exit_status)
 
   type task =
-      { idx : int ; chan : in_channel ;
-        oname : string ; buff : Buffer.t; }
-(* Fork utility *)
-  let dir =
-    Filename.concat (Filename.get_temp_dir_name ())
-      (sprintf "mapply.%i" (getpid()))
-
-  let rmrf dir = ignore (Sys.command (sprintf "/bin/rm -rf %s" dir))
-
-  let _ =
-    match A.mode with
-    | File ->
-        let doit signum =
-          Sys.set_signal signum
-            (Sys.Signal_handle
-               (fun _ -> rmrf dir ; exit 2)) in
-        doit Sys.sigint ;
-        doit Sys.sigquit ;
-        doit Sys.sigterm ;
-        doit Sys.sighup ;
-        ()
-    | Buff -> ()
-
-
-  let nobuff = Buffer.create 0
+      { idx : int ; chan : in_channel ; buff : Buffer.t; }
 
   let popen idx cmd args name =
-    try
-      let base =
-        try
-          Filename.chop_extension (Filename.basename name)
-        with Invalid_argument _ ->
-          Warn.warn_always "Ignoring file %s, since it has no extension" name ;
-          raise Exit in
-      let oname = Filename.concat dir (sprintf "%s-%02i.txt" base idx) in
-      let com = quote_command cmd (name :: args) in
-      let com = match A.mode with
-        | File -> sprintf "%s > %s" com (Filename.quote oname)
-        | Buff -> com in
-      if A.verbose > 2 then eprintf "Starting: '%s' on %02i\n" com idx ;
-      let chan = Unix.open_process_in com in
-      begin match A.mode with
-      | File -> ()
-      | Buff -> set_nonblock (descr_of_in_channel chan)
-      end ;
-      let buff = match A.mode with  Buff -> Buffer.create 128 | File -> nobuff in
-      Some { idx; buff; chan; oname;}
-    with Exit -> None
-
+    let com = quote_command cmd (name :: args) in
+    if A.verbose > 2 then eprintf "Starting: '%s' on %02i\n" com idx ;
+    let chan = Unix.open_process_in com in
+    set_nonblock (descr_of_in_channel chan) ;
+    let buff = Buffer.create 128 in
+    Some { idx; buff; chan; }
+  
   let table = Hashtbl.create 17
 
   let get_waiting () = Hashtbl.fold (fun fd _ r -> fd::r) table []
@@ -108,7 +66,7 @@ module Task(A:TArg) = struct
       end
     | None -> nrun,None
 
-  let sz = match A.mode with File -> 1024 | Buff -> 1024
+  let sz = 1024
 
   let warn_status st =
     Warn.warn_always "task ended with %s"
@@ -116,37 +74,6 @@ module Task(A:TArg) = struct
       | WEXITED i -> sprintf "exit %i" i
       | WSIGNALED i -> sprintf "signaled %i" i
       | WSTOPPED i -> sprintf "stopped %i" i)
-
-  let to_stdout oname =
-    Misc.input_protect
-      (fun chan ->
-        let buff = Bytes.create sz in
-        try
-          while true do
-            match input chan buff 0 sz with
-            | 0 -> raise Exit
-            | n -> output stdout_chan buff 0 n
-          done
-        with Exit ->())
-      oname ;
-    flush stdout_chan ;
-    Sys.remove oname
-
-  let task_file (nrun,files) fd =
-    let task =
-      try Hashtbl.find table fd
-      with Not_found -> assert false in
-    Hashtbl.remove table fd ;
-    begin match close_process_in task.chan with
-    | WEXITED n ->
-       update_exit_status n ;
-       to_stdout task.oname ;
-        start_task task.idx (nrun-1,files)
-    | st ->
-        warn_status st ;
-        start_task task.idx (nrun-1,files)
-    end
-
 
   let to_buff fd t =
     let buff = Bytes.create sz in
@@ -165,7 +92,7 @@ module Task(A:TArg) = struct
       | e -> raise e in
     to_rec ()
 
-  let task_buff (nrun,files as k) fd =
+  let process_task (nrun,files as k) fd =
     let task =
       try Hashtbl.find table fd
       with Not_found -> assert false in
@@ -186,10 +113,6 @@ module Task(A:TArg) = struct
       if A.verbose > 2 then eprintf "Again %02i\n%!" task.idx ;
       k
     end
-
-  let process_task = match A.mode with
-  | File -> task_file
-  | Buff -> task_buff
 
   let ppok ok =
      List.iter
@@ -225,20 +148,11 @@ module Task(A:TArg) = struct
     | [] -> Misc.fold_stdin Misc.cons []
     | _::_ -> names in
     let names = Misc.mk_iter names in
-    begin match A.mode with
-    | File -> mkdir dir 0o700
-    | Buff -> ()
-    end ;
     let rec start_rec k = function
       | 0 -> k
       | j -> start_rec (start_task j k) (j-1) in
-    loop (start_rec (0,Some names) j) ;
-    begin match A.mode with
-    | File ->
-        begin try rmdir dir
-        with _ -> W.warn "Cannot delete directory %s" dir end
-    | Buff -> ()
-    end
+    loop (start_rec (0,Some names) j)
+
 end
 
 
@@ -247,21 +161,7 @@ let com = ref "echo"
 let verbose = ref 0
 let j = ref 1
 let do_exit = ref false
-let mode = ref Buff
 let comargs = ref []
-
-let parse_mode tag = match tag with
-| "buff" -> Buff
-| "file" -> File
-| _ ->
-    raise
-      (Arg.Bad (sprintf "%s: bad rag for option -mode" tag))
-
-let pp_mode = function
-  | Buff -> "buff"
-  | File -> "file"
-
-let set_mode tag = mode := parse_mode tag
 
 let usage = String.concat "\n" [
   Printf.sprintf "Usage: %s [options] [<token> ...] [-- <command> [<argument> ...]]"
@@ -290,9 +190,7 @@ let parse_args () =
        | [] -> raise (Arg.Bad "-- must be followed by a command")),
      "Separator between mapply and the command path and its arguments. "
      ^ "Any parameters on its right side will be passed as is to the command" ;
-     "-mode", Arg.String set_mode,
-     sprintf
-       "(buff|file) use either internal buffers or files for comunication, default %s" (pp_mode !mode);])
+    ])
     (fun token -> tokens := token :: !tokens)
     usage
 
@@ -313,7 +211,6 @@ let () =
           let com = !com
           let comargs = !comargs
           let verbose = !verbose
-          let mode = !mode
         end) in
     T.run !j !tokens ;
     if !do_exit then T.get_exit_status () |> exit
