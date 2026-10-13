@@ -2333,7 +2333,7 @@ Arguments:
 
       let cas sz rmw rs rt rn ii =
         let an = rmw_to_read rmw in
-        let read_rs = read_reg_data_sz sz rs ii
+        let read_rs = read_reg_sz Port.No sz rs ii
         and write_rs v = write_reg_sz sz rs v ii in
         let noret = match rs with | AArch64.ZR -> true | _ -> false in
         let branch a =
