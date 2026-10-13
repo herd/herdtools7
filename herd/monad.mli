@@ -197,7 +197,7 @@ module type S =
             (A.V.v -> A.V.v -> A.V.v -> unit t) -> (* write mem *)
               unit t
 
-    val bind_mem_write : ?branching:bool -> 'a t -> 'b t -> ('a -> 'b -> 'c t) -> 'c t
+    val bind_mem_write : 'a t -> 'b t -> ('a -> 'b -> 'c t) -> 'c t
     (** [bind_mem_write ma mv mop] returns an event structure where
         - ma and mv are parrallely composed,
         - [iico_causality_data] includes pairs (e1, e2) where e1 is

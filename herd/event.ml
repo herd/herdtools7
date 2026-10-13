@@ -478,8 +478,7 @@ val same_instance : event -> event -> bool
             event_structure
 
   val bind_mem_write :
-    bool -> event_structure -> event_structure -> event_structure ->
-      event_structure
+    event_structure -> event_structure -> event_structure -> event_structure
 
   val bind_pred_mem_writes :
     event_structure -> event_structure -> event_structure -> event_structure ->
@@ -2439,34 +2438,25 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           resa.aligned @ data.aligned @ addr.aligned
           @ wres.aligned @ wresult.aligned @ wmem.aligned ;}
 
-    let bind_mem_write branching ma mv mop =
-      if branching then
-          let input_mop = minimals mop in
-          let mem_stores = mem_stores_of mop.events in
-          let r = union3 ma mv mop in
-          { r with
-            intra_causality_data =
-              EventRel.union r.intra_causality_data
-                (EventRel.cartesian (get_output ma) mem_stores);
-            intra_causality_control =
-              EventRel.union
-                r.intra_causality_control
-                (EventRel.cartesian (get_ctrl_output_commits ma) input_mop);
-            to_data_port =
-              EventRel.union r.to_data_port
-                (EventRel.cartesian (get_ouput mv) mem_stores);
-            input = union_input ma mv;
-            data_input = union_data_input ma mv;
-            output = sequence_data_output mv mop;
-          }
-      else (* It's unclear whether we need this *)
-        let es12 = do_para_comp ma mv in
-        let r = data_comp minimals_data sequence_data_output es12 mop in
-        { r with
-          to_data_port =
-            EventRel.union r.to_data_port
-            (EventRel.cartesian (data_port_sources mv) (mem_stores_of mop.events));
-        }
+    let bind_mem_write ma mv mop =
+      let input_mop = minimals mop in
+      let mem_stores = mem_stores_of mop.events in
+      let r = union3 ma mv mop in
+      { r with
+        intra_causality_data =
+          EventRel.union r.intra_causality_data
+            (EventRel.cartesian (get_output ma) mem_stores);
+        intra_causality_control =
+          EventRel.union
+            r.intra_causality_control
+            (EventRel.cartesian (get_ctrl_output_commits ma) input_mop);
+        to_data_port =
+          EventRel.union r.to_data_port
+            (EventRel.cartesian (get_output mv) mem_stores);
+        input = union_input ma mv;
+        data_input = union_data_input ma mv;
+        output = sequence_data_output mv mop;
+      }
 
     let bind_pred_mem_writes mpred ma mv mops =
       let mem_stores = mem_stores_of mops.events in

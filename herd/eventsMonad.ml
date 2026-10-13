@@ -573,8 +573,8 @@ Monad type:
           read_addr (eiid,Evt.empty) in
       eiid,(acts,None)
 
-    let bind_mem_write ?(branching=false) ma mv mop eiid =
-      comp_comp (E.bind_mem_write branching) ma mv mop eiid
+    let bind_mem_write ma mv mop eiid =
+      comp_comp E.bind_mem_write ma mv mop eiid
 
 (* AArch64 successful cas *)
     let do_aarch64_cas_ok

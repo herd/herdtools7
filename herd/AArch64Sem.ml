@@ -1772,17 +1772,14 @@ Arguments:
         lift_memop ~tag:"ST" rA Dir.W true memtag
           (fun ac ma mv ->
             let open Precision in
-            let memtag_sync = memtag && (is_mte_sync Dir.W) in
             if morello then
               (* additional ctrl dep on address and data *)
               let mop a v =
                 commit_pred ii >>*== fun _ -> mop ac a v ii in
               M.bind_mem_write ma mv mop
             else
-              let branching = pac || memtag_sync ||
-                (is_branching && Access.is_physical ac) in
               let mop a v = mop ac a v ii in
-              M.bind_mem_write ~branching ma mv mop)
+              M.bind_mem_write ma mv mop)
           (to_perms "w" sz) ma mv an ii
 
 (***********************)
@@ -3524,7 +3521,7 @@ Arguments:
       let stg d rt rn k ii =
         let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii
         and mv = read_reg_data rt ii >>= tag_extract in
-        let do_stg ac ma mv =
+        let do_stg ma mv =
           let __do_stg a v =
             M.op1 Op.TagLoc a >>= fun a -> do_write_tag a v ii in
           let _do_stg =
@@ -3538,9 +3535,8 @@ Arguments:
                      (M.op1 (Op.AddK MachSize.granule_nbytes) a
                       >>= fun a ->  __do_stg a v)
                  end >>! () in
-          let branching = Access.is_physical ac in
-          M.bind_mem_write ~branching ma mv _do_stg in
-        lift_memop rn Dir.W true false (fun ac ma mv -> do_stg ac ma mv)
+          M.bind_mem_write ma mv _do_stg in
+        lift_memop rn Dir.W true false (fun _ac ma mv -> do_stg ma mv)
           (to_perms "w" MachSize.granule) ma mv Annot.N ii
 
       let stz d rn k ii =
@@ -3559,8 +3555,7 @@ Arguments:
         let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii >>= loc_extract in
         lift_memop rn Dir.W true false (* Unchecked *)
           (fun ac ma mv ->
-            let branching = Access.is_physical ac in
-            M.bind_mem_write ~branching ma mv (fun a v -> mop ac a v ii))
+            M.bind_mem_write ma mv (fun a v -> mop ac a v ii))
           (to_perms "w" sz) ma mzero Annot.N ii
 
       let do_stzg d rt rn k ii =
@@ -3773,8 +3768,7 @@ Arguments:
         let mop ac a v = GCSSem.write ac an a v ii in
         lift_memop r2 Dir.W true false
         (fun ac ma mv ->
-          let branching = is_branching && Access.is_physical ac in
-          M.bind_mem_write ~branching ma mv (fun a v -> mop ac a v))
+          M.bind_mem_write ma mv (fun a v -> mop ac a v))
         (to_perms "w" quad)
         (read_reg_addr r2 ii)
         (read_reg_data r1 ii)
@@ -3799,8 +3793,7 @@ Arguments:
             let (let**) = M.(>>==) in
             let** a = ma in
             M.unitT a in
-          let branching = is_branching && Access.is_physical ac in
-          M.bind_mem_write ~branching ma mv do_gcs_write in
+          M.bind_mem_write ma mv do_gcs_write in
         let mv = read_reg_data rs ii in
         let m = lift_memop rA Dir.W true false mop (to_perms "w" quad) ma
           mv an ii in
@@ -3856,14 +3849,13 @@ Arguments:
           M.add a off in
         let* a_virt, ma = M.delay ma in
         let check_branch ac ma mv =
-          let branching = is_branching && Access.is_physical ac in
           let mop a v =
             let* b = branch [rA, a_virt; AArch64Base.linkreg, v]
             and* () = write_reg rA a_virt ii
             and* () = write_reg linkreg v ii
             and* () = GCSSem.write ac an a v ii in
             M.unitT b in
-          M.bind_mem_write ~branching ma mv mop in
+          M.bind_mem_write ma mv mop in
         let mv = M.unitT v_ret in
         let m = do_lift_memop rA Dir.W true false check_branch
             (to_perms "w" quad) ma mv an ii Fun.id DISide.Data in
@@ -4030,10 +4022,7 @@ Arguments:
                 in
                 lift_memop r Dir.W true false
                 (fun ac ma mv ->
-                  if is_branching && Access.is_physical ac then
-                    M.bind_ctrldata_data ma mv (fun a v -> mop ac a v)
-                  else
-                    ma >>| mv >>= fun (a,v) -> mop ac a v)
+                  M.bind_mem_write ma mv (fun a v -> mop ac a v))
                 (to_perms "w" quad)
                 (GCSSem.reset_cap mask outgoing >>= M.add (V.intToV (-off)))
                 (M.unitT outgoing)
