@@ -146,6 +146,7 @@ module type ANNOTATE_CONFIG = sig
   val use_conflicting_side_effects_extension : bool
   val override_mode : override_mode
   val err_buffer : Buffer.t option
+  val asl1_revision : AST.asl1_revision
 end
 
 module type S = sig
@@ -4396,6 +4397,7 @@ module TypeCheckDefault = Annotate (struct
   let use_conflicting_side_effects_extension = false
   let override_mode = Permissive
   let err_buffer = None
+  let asl1_revision = AST.DEV
 end)
 
 let type_and_run ?instrumentation ast =

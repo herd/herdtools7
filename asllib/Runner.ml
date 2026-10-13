@@ -48,7 +48,7 @@ type args = {
   no_stdlib : bool;
   no_stdlib0 : bool;
   v0_use_split_chunks : bool;
-  version_eac1 : bool;
+  asl1_revision : AST.asl1_revision;
   capture_output : (Buffer.t * Buffer.t) option;
       (** Capture stdout/stderr (respectively) into the supplied buffers. *)
 }
@@ -74,7 +74,7 @@ let default_args =
     no_stdlib = false;
     no_stdlib0 = false;
     v0_use_split_chunks = false;
-    version_eac1 = false;
+    asl1_revision = AST.DEV;
     capture_output = None;
   }
 
@@ -85,7 +85,10 @@ let default_args =
 let run (args : args) : int =
   let parser_config =
     let v0_use_split_chunks = args.v0_use_split_chunks in
-    let version_eac1 = args.version_eac1 in
+    let version_eac1 =
+      let open AST in
+      match args.asl1_revision with EAC1 -> true | EAC2 | DEV -> false
+    in
     let open Builder in
     { v0_use_split_chunks; version_eac1 }
   in
@@ -158,6 +161,7 @@ let run (args : args) : int =
       args.use_conflicting_side_effects_extension
 
     let err_buffer = Option.map snd args.capture_output
+    let asl1_revision = args.asl1_revision
   end in
   let module T = Annotate (C) in
   let typed_ast, static_env = T.type_check_ast ast in
