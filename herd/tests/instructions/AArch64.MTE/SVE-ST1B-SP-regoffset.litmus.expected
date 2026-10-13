@@ -1,0 +1,11 @@
+Test SVE-ST1B-SP-regoffset Required
+States 1
+ Fault(P0,x:red,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Vector-Extensions-is-work-in-progress
+Condition forall (fault(P0,x,TagCheck))
+Observation SVE-ST1B-SP-regoffset Always 1 0
+Hash=173d985798d09d79741137b804c5e8c8
+

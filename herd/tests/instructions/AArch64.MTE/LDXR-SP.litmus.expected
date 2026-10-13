@@ -1,0 +1,10 @@
+Test LDXR-SP Required
+States 1
+0:X0=1;  ~Fault(P0,x,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1 /\ not (fault(P0,x,TagCheck)))
+Observation LDXR-SP Always 1 0
+Hash=521641e20b138c60bd36cc190a9cb47c
+

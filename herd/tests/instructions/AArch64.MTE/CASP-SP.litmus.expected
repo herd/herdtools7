@@ -1,0 +1,10 @@
+Test CASP-SP Required
+States 1
+x={3,4};  ~Fault(P0,x,TagCheck);
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall (x={3,4} /\ not (fault(P0,x,TagCheck)))
+Observation CASP-SP Always 2 0
+Hash=09f402f643c68f3cdd12fba2ff160450
+

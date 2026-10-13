@@ -1,0 +1,10 @@
+Test STRB-SP Required
+States 1
+[x]=1;  ~Fault(P0,x,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([x]=1 /\ not (fault(P0,x,TagCheck)))
+Observation STRB-SP Always 1 0
+Hash=88b9612d19c7282f7ec602e9760e14b8
+

@@ -1,0 +1,15 @@
+AArch64 STXP-SP
+Variant=memtag,sync
+
+{
+  uint32_t x[2]={0,0};
+  [tag(x)]=:green;
+  0:X2=x;
+  0:SP=x:red;
+  0:X3=1;
+  0:X4=2;
+}
+P0;
+  LDXP W0,W1,[X2];
+  STXP W5,W3,W4,[SP];
+forall(x={1,2} /\ 0:X5=0 /\ ~fault(P0,x,TagCheck))

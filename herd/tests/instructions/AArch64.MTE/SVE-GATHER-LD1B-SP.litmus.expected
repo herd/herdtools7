@@ -1,0 +1,11 @@
+Test SVE-GATHER-LD1B-SP Required
+States 1
+ Fault(P0,x:red+4,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Vector-Extensions-is-work-in-progress
+Condition forall (fault(P0,x,TagCheck))
+Observation SVE-GATHER-LD1B-SP Always 1 0
+Hash=7abf81fef56adf546d6be573d34c794e
+

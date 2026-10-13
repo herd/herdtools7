@@ -1,0 +1,15 @@
+AArch64 SVE-SCATTER-ST1B-SP
+Variant=memtag,sync,sve:128
+
+(* Active SVE scatter lanes check the tags of their effective addresses. *)
+{
+  uint8_t x[8]={0,0,0,0,0,0,0,0};
+  [tag(x)]=:green;
+  0:SP=x:red;
+}
+P0;
+  MOV Z0.D,#4;
+  MOV Z1.D,#1;
+  PTRUE P0.D,VL1;
+  ST1B {Z1.D},P0,[SP,Z0.D];
+forall(fault(P0,x,TagCheck))

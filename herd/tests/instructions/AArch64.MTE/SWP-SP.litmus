@@ -1,0 +1,12 @@
+AArch64 SWP-SP
+Variant=memtag,sync
+
+{
+  uint32_t x=1;
+  [tag(x)]=:green;
+  0:SP=x:red;
+  0:X0=2;
+}
+P0;
+  SWP W0,W1,[SP];
+forall(x=2 /\ 0:X1=1 /\ ~fault(P0,x,TagCheck))

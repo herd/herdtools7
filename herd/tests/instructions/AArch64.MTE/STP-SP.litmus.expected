@@ -1,0 +1,10 @@
+Test STP-SP Required
+States 1
+x={1,2};  ~Fault(P0,x,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x={1,2} /\ not (fault(P0,x,TagCheck)))
+Observation STP-SP Always 1 0
+Hash=bb67780912ce6ec2db6e3ff8714cd7af
+
