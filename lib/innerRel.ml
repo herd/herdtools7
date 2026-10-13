@@ -1,5 +1,5 @@
 (****************************************************************************)
-(*                           the diy toolsuite                              *)
+(*                           The diy toolsuite                              *)
 (*                                                                          *)
 (* Jade Alglave, University College London, UK.                             *)
 (* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
@@ -193,7 +193,7 @@ module Make(O:MySet.OrderedType) : S
         visit : int M.t;
         stack : elt0 list; }
 
-    let s0 = { id=0; visit=M.empty; stack=[]; }
+    let s0 = { id=0; visit=M.empty; stack=[];  }
 
     let rec pop_until n ns =
       match ns with
@@ -218,8 +218,8 @@ module Make(O:MySet.OrderedType) : S
             let min,(res,s) as r =
               Elts.fold
                 (fun v (m0,r) ->
-                   let m1,(res,s) = dfs v r in
-                   Misc.min_int m0 m1,(kont n v res,s))
+                  let m1,(res,s) = dfs v r in
+                  Misc.min_int m0 m1,(kont n v res,s))
                 (succs m n)
                 (id0,(res,s)) in
             if not (Misc.int_eq min id0) then
@@ -227,22 +227,12 @@ module Make(O:MySet.OrderedType) : S
             else
               let scc,stack = pop_until n s.stack in
               let visit =
-                List.fold_left
-                  (fun visit n -> M.add n max_int visit)
-                  s.visit scc in
+               List.fold_left
+                 (fun visit n -> M.add n max_int visit)
+                 s.visit scc in
               let res = kont_scc n scc res in
               min,(res,{ s with stack; visit; }) in
       dfs
-
-    (* Nodes are implicit keys of map *)
-    let scan_map kont kont_scc res m =
-      let dfs = dfs kont kont_scc m in
-      let (res,_) =
-        M.fold
-          (fun n _ r -> let _,r = dfs n r in r)
-          m
-          (res,s0) in
-      res
 
 (*
  * Graph is given as a set of nodes [nodes] and a relation [m].
@@ -258,26 +248,6 @@ module Make(O:MySet.OrderedType) : S
           (fun r n -> let _,r = dfs n r in r)
           (res,s0)
           nodes
-      in
-      res
-
-(*
- * Scan the graph [m] in topological order,
- * computing scc. Excluding paths that do not start from
- * the set [nodes]. By contrast with [scan_nodes_rel] above,
- * given [n] in [nodes] but not in [m],
- * [dfs] will *not* be called on [n].
- *)
-    let scan_restrict_domain_rel kont kont_scc res nodes m =
-      let dfs = dfs kont kont_scc m in
-      let (res,_) =
-        M.fold
-          (fun n _ r ->
-            if Elts.mem n nodes then
-              let _,r = dfs n r in r
-            else r)
-          m
-          (res,s0)
       in
       res
 
@@ -386,8 +356,8 @@ module Make(O:MySet.OrderedType) : S
 
   let up e r = up_from_set (Elts.singleton e) r
 
-
-  (*  Transitive closure by SCC scan. See for instance page 49 of:
+  (*  Transitive closure by SCC scan, optimised algorithm CR_TC.
+   *  See for instance page 56 of:
    *        NUUTILA, Esko.
    *        Efficient transitive closure computation in large digraphs.
    *        Doctor of technology dissertation,
@@ -395,24 +365,226 @@ module Make(O:MySet.OrderedType) : S
    *        1995.
    *)
 
-  let tr_edge n m res =
-      let vr = succs res m |> Elts.add m in
-      add_set n vr res
 
-  and tr_scc n scc res =
-    match scc with
-    | [] -> assert false
-    | [_] -> res
-    | ms ->
-       let vn = try M.find n res with Not_found -> assert false in
-       List.fold_left (fun res m -> M.add m vn res) res ms
+  module TrOpt = struct
 
-  let transitive_closure (m:t) =
-    FullSCC.scan_map tr_edge tr_scc M.empty m
+    type root_state =
+      { root : elt0 M.t;
+        succ : IntSet.t M.t; }
 
-  let restrict_domain_transitive_closure vs m =
-    FullSCC.scan_restrict_domain_rel tr_edge tr_scc M.empty vs m
-    |>  restrict_domain (fun v -> Elts.mem v vs)
+    let root0 = { root=M.empty; succ=M.empty; }
+
+    type scc_state =
+      {
+        ncomp:int;
+        comp:int M.t;
+        succ_scc:IntSet.t IntMap.t; }
+
+    let scc0 = { ncomp=0; comp=M.empty; succ_scc=IntMap.empty; } 
+
+    type dfs_state =
+      { id:int; visit: int M.t; stack: elt0 list;
+        root_state:root_state;
+        scc_state:scc_state; }
+
+    let dfs0 =
+      { id=0; visit=M.empty; stack=[];
+        root_state=root0; scc_state=scc0; }
+
+  let dfs m =
+    let rec dfs v s =
+      let idv = s.id in
+      let scc_state =
+        begin
+          let scc_state = s.scc_state in
+          { scc_state with comp = M.add v (-1) scc_state.comp; }
+        end
+      and root_state =
+        let root_state = s.root_state in
+        { root =  M.add v v root_state.root ;
+          succ = M.add v IntSet.empty root_state.succ; } in
+      let s =
+        { id = idv+1;
+          visit = M.add v idv s.visit;
+          stack =  v::s.stack;
+          scc_state; root_state;
+        } in
+      let self_loop = ref false in
+      let s =
+        Elts.fold
+          (fun w s ->
+            if O.compare v w = 0 then begin
+                self_loop := true; s
+              end else
+              let in_tree,idw,s =
+                try false,M.find w s.visit,s
+                with Not_found ->
+                  let s = dfs w s in
+                  true,M.find w s.visit,s in
+              let scc_state = s.scc_state in
+              let cw =  M.find w scc_state.comp in
+              let root_state = s.root_state in
+              if cw < 0 then begin
+                  let rv = M.find v root_state.root
+                  and rw = M.find w root_state.root in
+                  let id_rv = M.find rv s.visit
+                  and id_rw = M.find rw s.visit in
+                  if id_rw < id_rv then
+                    let root = M.add v rw root_state.root in
+                    { s with root_state = { root_state with root; } }
+                  else s
+              end else if not (idv < idw  && not in_tree) then
+                let rv = M.find v root_state.root in
+                let succ =
+                  M.update rv
+                    (function
+                     | None -> assert false
+                     | Some old ->
+                         Some
+                           begin
+                             if IntSet.mem cw old then old
+                             else
+                               IntSet.union old
+                                 (IntSet.add cw
+                                    (IntMap.find cw scc_state.succ_scc))
+                           end)
+                    root_state.succ in
+                { s with root_state = { root_state with succ;} }
+              else s)
+          (succs m v) s in
+      let root_state = s.root_state in
+      let succ = root_state.succ
+      and rv = M.find v root_state.root
+      and scc_state = s.scc_state in
+      if O.compare v rv = 0 then
+        let cv = scc_state.ncomp in
+        let rec pop_rec comp succ_cv = function
+          | [] -> assert false
+          | top::stack ->
+              let comp = M.add top cv comp in
+              if O.compare top v = 0 then
+                comp,succ_cv,stack
+              else
+                let succ_cv =
+                  IntSet.union succ_cv (M.find top succ) in
+                pop_rec comp succ_cv stack in
+        let succ_cv =
+          let top =
+            match s.stack with top::__ -> top | [] -> assert false in
+          if O.compare top v <> 0 || !self_loop then
+            IntSet.add cv (M.find v succ)
+          else M.find v succ in
+        let comp,succ_cv,stack = pop_rec scc_state.comp succ_cv s.stack in
+        let succ_scc = IntMap.add cv succ_cv scc_state.succ_scc in
+        let scc_state = { ncomp = cv+1; comp; succ_scc; } in
+        { s with stack; scc_state; }
+      else s in
+    dfs
+
+  let state2rel t =
+    let tab = Array.make t.ncomp Elts.empty in
+      M.iter
+        (fun v c -> tab.(c) <- Elts.add v tab.(c))
+      t.comp ;
+    let succ1 =
+      IntMap.map
+        (fun xs ->
+          IntSet.fold (fun c k -> tab.(c)::k) xs []
+          |> Elts.unions)
+        t.succ_scc in
+    IntMap.fold
+      (fun c vs k ->
+        if Elts.is_empty  vs then k
+        else
+          Elts.fold
+            (fun v k -> M.add v vs k)
+            tab.(c) k)
+      succ1 M.empty
+
+  let debug_tr =
+    let pp_ints chan =
+      Printf.fprintf
+        chan "{%a}"
+        (fun chan xs ->
+          IntSet.pp chan ","
+            (fun chan x -> Printf.fprintf chan "%d" x)
+            xs) in
+    fun m t ->
+      prerr_endline "** Graph **" ;
+      M.iter
+        (fun v vs ->
+          Printf.eprintf "%d -> %a\n"
+            (M.find v t.visit)
+            pp_ints
+            (Elts.to_list vs
+             |> List.map (fun v -> M.find v t.visit)
+             |> IntSet.of_list))
+        (m:t)  ;
+      prerr_endline "** comp **" ;
+      M.iter
+        (fun v c -> Printf.eprintf "%d -> %d\n" (M.find v t.visit) c)
+        t.scc_state.comp;
+      prerr_endline "** root **" ;
+      M.iter
+        (fun v w ->
+          Printf.eprintf "%d -> %d\n"
+            (M.find v t.visit)
+            (M.find w t.visit))
+        t.root_state.root ;
+      prerr_endline "** succ **" ;
+      M.iter
+        (fun v xs ->
+          Printf.eprintf "%d -> {%a}\n" (M.find v t.visit)
+            (fun chan ->
+              IntSet.pp chan ","
+                (fun chan -> Printf.fprintf chan "%d"))
+            xs)
+        t.root_state.succ ;
+      prerr_endline "** succ_scc **" ;
+      IntMap.iter
+        (fun x xs ->
+          Printf.eprintf "%d -> %a\n"
+            x pp_ints xs)
+        t.scc_state.succ_scc ;
+      prerr_endline "****\n"
+ 
+    
+  let transitive_closure m =
+    let dfs = dfs m in
+    let t =
+      M.fold
+        (fun v _ t -> if M.mem v t.visit then t else dfs v t)
+        m dfs0 in
+    if false then debug_tr m t ;
+    state2rel t.scc_state
+
+
+(*
+ * Scan the graph [m] in topological order,
+ * computing scc. Excluding paths that do not start from
+ * the set [nodes]. By contrast with [FullSCC.scan_nodes_rel] above,
+ * given [n] in [nodes] but not in [m],
+ * [dfs] will *not* be called on [n].
+ *)
+
+    let restrict_domain_transitive_closure  vs m =
+      let mem_vs v = Elts.mem v vs in
+      let t =
+        let dfs = dfs m in
+        M.fold
+          (fun v _ t ->
+            if not (mem_vs v) || M.mem v t.visit then t else dfs v t)
+      m dfs0 in
+     state2rel t.scc_state |> restrict_domain mem_vs
+
+
+  end
+
+  let transitive_closure =  TrOpt.transitive_closure
+  and restrict_domain_transitive_closure =
+    TrOpt.restrict_domain_transitive_closure
+
+
 
   (* Reflexivity check *)
 

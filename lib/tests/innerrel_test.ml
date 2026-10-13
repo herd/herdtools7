@@ -37,7 +37,7 @@ let pp_i fmt m =
   let open Format in
   fprintf fmt "@[%a@]"
     (pp_print_list ~pp_sep:pp_print_space
-      (fun fmt (i1, i2) -> fprintf fmt "@[%d<-%d@]" i1 i2))
+      (fun fmt (i1, i2) -> fprintf fmt "@[%d->%d@]" i1 i2))
     (to_list m)
 
 let simple_tr g =
