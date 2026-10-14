@@ -831,7 +831,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show obs aarch64.cat
+  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -compact-optional-relations=true -show obs aarch64.cat
   \expandafter{\MakeUppercase\obsemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item \Expobs{E\textsubscript{1}}{either  E\textsubscript{2}} or \sca{an Effect which}{E\textsubscript{2}}.
