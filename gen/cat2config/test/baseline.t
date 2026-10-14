@@ -24,12 +24,12 @@ aarch64hwreqs.cat
   [DSB.LD*R*,[LxSx|Amo.Safe]?]
   [[LxSx|Amo.Safe]?,DSB.ST*W*,[LxSx|Amo.Safe]?]
   $ mcat2config7 --set-libdir ./libdir --let IFB-ob libdir/aarch64.cat
-  [[LxSx|Amo.Safe]?,DpCtrl,ISB]
-  [[LxSx|Amo.Safe]?,DpCtrlCsel,ISB]
-  [DpAddr,[LxSx|Amo.Safe]?,ISB***]
-  [[LxSx|Amo.Safe]?,DpAddrCsel,[LxSx|Amo.Safe]?,ISB***]
-  [[LxSx|Amo.Safe],[DSB.LD*W*|DSB.ST*W*|DSB.SY***],ISB]
-  [[DSB.LD*R*|DSB.ST*W*|DSB.SY***],ISB]
+  [[LxSx|Amo.Safe]?,DpCtrl,ISB,[LxSx|Amo.Safe]?]
+  [[LxSx|Amo.Safe]?,DpCtrlCsel,ISB,[LxSx|Amo.Safe]?]
+  [DpAddr,[LxSx|Amo.Safe]?,ISB***,[LxSx|Amo.Safe]?]
+  [[LxSx|Amo.Safe]?,DpAddrCsel,[LxSx|Amo.Safe]?,ISB***,[LxSx|Amo.Safe]?]
+  [[LxSx|Amo.Safe],[DSB.LD*W*|DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?]
+  [[DSB.LD*R*|DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?]
   $ mcat2config7 --set-libdir ./libdir --let dob libdir/aarch64.cat
   DpAddr
   DpData*W
@@ -153,12 +153,12 @@ Pos*W pruning
   [[LxSx|Amo.Safe],DSB.ST*W*,[LxSx|Amo.Safe]?]
   [DSB.ST*W*,[LxSx|Amo.Safe]]
   $ mcat2config7 -prune pos_w --set-libdir ./libdir --let IFB-ob libdir/aarch64.cat
-  [[LxSx|Amo.Safe]?,DpCtrl,ISB]
-  [[LxSx|Amo.Safe]?,DpCtrlCsel,ISB]
-  [DpAddr,[LxSx|Amo.Safe]?,ISB***]
-  [[LxSx|Amo.Safe]?,DpAddrCsel,[LxSx|Amo.Safe]?,ISB***]
-  [[LxSx|Amo.Safe],[DSB.LD*W*|DSB.ST*W*|DSB.SY***],ISB]
-  [[DSB.LD*R*|DSB.ST*W*|DSB.SY***],ISB]
+  [[LxSx|Amo.Safe]?,DpCtrl,ISB,[LxSx|Amo.Safe]?]
+  [[LxSx|Amo.Safe]?,DpCtrlCsel,ISB,[LxSx|Amo.Safe]?]
+  [DpAddr,[LxSx|Amo.Safe]?,ISB***,[LxSx|Amo.Safe]?]
+  [[LxSx|Amo.Safe]?,DpAddrCsel,[LxSx|Amo.Safe]?,ISB***,[LxSx|Amo.Safe]?]
+  [[LxSx|Amo.Safe],[DSB.LD*W*|DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?]
+  [[DSB.LD*R*|DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?]
   $ mcat2config7 -prune pos_w --set-libdir ./libdir --let dob libdir/aarch64.cat
   [DpAddrdW|DpAddr*R]
   DpDatadW
