@@ -190,7 +190,7 @@ let tokens = ref []
 let com = ref "echo"
 let verbose = ref 0
 let j = ref 1
-let tokpos = ref TokenPosition.First
+let tokpos = ref TokenPosition.Last
 let do_exit = ref false
 let comargs = ref []
 
