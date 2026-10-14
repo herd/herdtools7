@@ -852,9 +852,6 @@ let prefix_external_communication_edge = function
 
 let suffix_external_communication_edge l =
   match List.rev l with
-  (* For example, `addr; [M]; po`: a relation precedes the final `po`. *)
-  | po :: rest when is_po po ->
-      List.exists (function Ir.Rel _ -> true | Ir.Set _ -> false) rest
   (* For example, `...; po; [M]`. *)
   | right :: po :: _ -> is_explicit_memory right po
   (* For example, a standalone `addr` leaves its target open. *)
@@ -1047,6 +1044,7 @@ let translate ~prune ~binding (nf : Ir.rel_nf) : relax list =
   Log.info (fun m -> m "Translating component of `%s`" binding);
   Log.debug (fun m -> m "`%s` expression:@.%a" binding Ir.pp_rel_nf nf);
   let nf = Ir.compress nf in
+  let nf = Ir.expand_trailing_po nf in
   let nf = Ir.expand_domain_range nf in
   Log.debug (fun m ->
       m "`%s` after expanding domain/range:@.%a" binding Ir.pp_rel_nf nf);

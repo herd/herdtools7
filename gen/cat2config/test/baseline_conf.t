@@ -29,15 +29,15 @@
   
   ### IFB-ob
   ## [Exp & R]; ctrl; [IFB]; po
-  -safe [[LxSx|Amo.Safe]?,DpCtrl,ISB]
+  -safe [[LxSx|Amo.Safe]?,DpCtrl,ISB,[LxSx|Amo.Safe]?]
   ## [Exp & R]; pick-ctrl-dep; [IFB]; po
-  -safe [[LxSx|Amo.Safe]?,DpCtrlCsel,ISB]
+  -safe [[LxSx|Amo.Safe]?,DpCtrlCsel,ISB,[LxSx|Amo.Safe]?]
   ## [Exp & R]; addr; [Exp & M]; po; [IFB]; po
-  -safe [DpAddr,[LxSx|Amo.Safe]?,ISB***]
+  -safe [DpAddr,[LxSx|Amo.Safe]?,ISB***,[LxSx|Amo.Safe]?]
   ## [Exp & R]; pick-addr-dep; [Exp & M]; po; [IFB]; po
-  -safe [[LxSx|Amo.Safe]?,DpAddrCsel,[LxSx|Amo.Safe]?,ISB***]
+  -safe [[LxSx|Amo.Safe]?,DpAddrCsel,[LxSx|Amo.Safe]?,ISB***,[LxSx|Amo.Safe]?]
   ## DSB-ob; [IFB]; po
-  -safe [[LxSx|Amo.Safe],[DSB.LD*W*|DSB.ST*W*|DSB.SY***],ISB] [[DSB.LD*R*|DSB.ST*W*|DSB.SY***],ISB]
+  -safe [[LxSx|Amo.Safe],[DSB.LD*W*|DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?] [[DSB.LD*R*|DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?]
   
   ### dob
   ## addr

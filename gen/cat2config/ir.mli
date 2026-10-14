@@ -81,6 +81,9 @@ val compress : rel_nf -> rel_nf
  *)
 val expand_domain_range : rel_nf -> rel_nf
 
+(* Makes the implicit memory target of a trailing [po] explicit. *)
+val expand_trailing_po : rel_nf -> rel_nf
+
 (* Labels eligible memory endpoints with [Rmw]. Translation later decides
    whether each label denotes the plain endpoint, an RMW, or both.
 

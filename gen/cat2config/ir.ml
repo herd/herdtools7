@@ -604,6 +604,23 @@ let expand_domain_range (nf : rel_nf) : rel_nf =
   in
   map_union (fun (Seq seq) -> Seq (List.concat_map expand_item seq)) nf
 
+let expand_trailing_po nf =
+  let has_po = function
+    | Rel (Inter relations) ->
+        List.exists
+          (fun (relation : prim_rel) ->
+            match relation with Prim "po" -> true | _ -> false)
+          relations
+    | Set _ -> false
+  in
+  map_union
+    (fun (Seq items) ->
+      match List.rev items with
+      | relation :: _ when has_po relation ->
+          Seq (items @ [ Set (Inter [ Event default_event ]) ])
+      | _ -> Seq items)
+    nf
+
 let expand_rmw (nf : rel_nf) : rel_nf =
   let rec leads_to_communication = function
     | Set (Inter []) :: items -> leads_to_communication items
