@@ -674,6 +674,10 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     else if SES.is_pure ses_e then ()
     else fatal_from ~loc:e (Error.MismatchedPurity "pure")
 
+  let check_is_deterministic expr_for_error ses () =
+    if SES.is_deterministic ses then ()
+    else fatal_from ~loc:expr_for_error (Error.MismatchedPurity "deterministic")
+
   let check_bits_equal_width' env t1 t2 () =
     let n = get_bitvector_width' env t1 and m = get_bitvector_width' env t2 in
     if bitwidth_equal (StaticModel.equal_in_env env) n m then ()
@@ -2481,6 +2485,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   let annotate_set_array ~loc env t_elem rhs_ty (e_base, ses_base, e_index) =
     let+ () = check_type_satisfies ~loc env rhs_ty t_elem in
     let t_index', e_index', ses_index = annotate_expr env e_index in
+    let+ () = check_is_deterministic e_index ses_index in
     let+ () = check_type_satisfies ~loc env t_index' integer in
     let ses = ses_non_conflicting_union ~loc ses_base ses_index in
     let new_le = LE_SetArray (e_base, e_index') in
@@ -4235,7 +4240,17 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let env3 =
       let sess_prop =
         if C.fine_grained_side_effects then propagate_recursive_calls_sess sess
-        else sess
+        else
+          (* Keep only non-determinism from recursive callees. *)
+          List.map2
+            (fun (f, ses) (_, propagated_ses) ->
+              let ses =
+                if SES.is_deterministic propagated_ses then ses
+                else SES.add_non_determinism ses
+              in
+              (f, ses))
+            sess
+            (propagate_recursive_calls_sess sess)
       in
       (* AddSubprogramDecls( *)
       List.fold_left
