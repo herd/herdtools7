@@ -198,9 +198,18 @@ let herd_wrapper_args ~nohash ~verbose ~check ~herd args =
 
 let full_path_of exe_name = Filename.(concat (dirname Sys.argv.(0))) exe_name
 
+(*
+ * It is more convenient for mapply to put token as the first argument
+ * of the forked command, as to propagate its command-line arrangement
+ * to wrappers:
+ *   wrapper [options and token(s)] -- [wrapped command with options].
+ *)
+
 let mapply_args ?(litmuses=[]) ?(exits=true) ~j ~com args =
   let exit = if exits then ["-exit"; "true"] else [] in
-  exit @ "-j" :: string_of_int j :: litmuses @ "--" :: com :: args
+  exit
+  @ "-j" :: string_of_int j :: "-token-position" :: "first":: litmuses
+  @ "--" :: com :: args
 
 let mapply_herd_wrapper_args ?(verbose=false) ?(nohash=false) ~litmuses ~j
     ~check ~exits ~wrapper ~herd args
