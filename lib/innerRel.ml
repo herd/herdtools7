@@ -356,8 +356,8 @@ module Make(O:MySet.OrderedType) : S
 
   let up e r = up_from_set (Elts.singleton e) r
 
-  (*  Transitive closure by SCC scan, optimised algorithm CR_TC.
-   *  See for instance page 56 of:
+  (*  Transitive closure by SCC scan, optimised algorithm STACK_TC.
+   *  See for instance page 62 of:
    *        NUUTILA, Esko.
    *        Efficient transitive closure computation in large digraphs.
    *        Doctor of technology dissertation,
@@ -365,141 +365,135 @@ module Make(O:MySet.OrderedType) : S
    *        1995.
    *)
 
+  module Table = struct
+    type 'a t = { x0:'a; mutable nxt : int ; mutable t : 'a array; }
+
+    let make x0 = { x0; nxt=0; t = Array.make 15 x0; }
+
+    let realloc sz t =
+      let sz2 = 2*sz+1 in
+      let nt = Array.make sz2 t.x0 in
+      Array.blit t.t 0 nt 0 sz ;
+      t.t <- nt
+
+    let next t =
+      let sz =  Array.length t.t in
+      if t.nxt >= sz then realloc sz t ;
+      let now = t.nxt in
+      t.nxt <- t.nxt+1;
+      now
+
+  end
 
   module TrOpt = struct
 
-    type root_state =
-      { root : elt0 M.t;
-        succ : IntSet.t M.t; }
-
-    let root0 = { root=M.empty; succ=M.empty; }
-
-    type scc_state =
-      {
-        ncomp:int;
-        comp:int M.t;
-        succ_scc:IntSet.t IntMap.t; }
-
-    let scc0 = { ncomp=0; comp=M.empty; succ_scc=IntMap.empty; } 
-
     type dfs_state =
-      { id:int; visit: int M.t; stack: elt0 list;
-        root_state:root_state;
-        scc_state:scc_state; }
+      { mutable id:int; mutable visit: int M.t;
+        mutable stack: elt0 list; mutable cstack:int list;
+        mutable root:elt0 M.t;
+        mutable comp:int M.t;
+        succ:IntSet.t Table.t; (* itself mutable *) }
 
-    let dfs0 =
-      { id=0; visit=M.empty; stack=[];
-        root_state=root0; scc_state=scc0; }
+    let dfs0 () =
+      { id=0; visit=M.empty; stack=[]; cstack=[];
+        root=M.empty;
+        comp=M.empty; succ=Table.make IntSet.empty; }
 
-  let dfs m =
-    let rec dfs v s =
-      let idv = s.id in
-      let scc_state =
-        begin
-          let scc_state = s.scc_state in
-          { scc_state with comp = M.add v (-1) scc_state.comp; }
-        end
-      and root_state =
-        let root_state = s.root_state in
-        { root =  M.add v v root_state.root ;
-          succ = M.add v IntSet.empty root_state.succ; } in
-      let s =
-        { id = idv+1;
-          visit = M.add v idv s.visit;
-          stack =  v::s.stack;
-          scc_state; root_state;
-        } in
-      let self_loop = ref false in
-      let s =
-        Elts.fold
-          (fun w s ->
+    let dfs s m =
+      let rec dfs v =
+        let idv = s.id in
+        let cstack_saved = s.cstack in
+        s.comp  <- M.add v (-1) s.comp;
+        s.id <- idv+1;
+        s.visit <- M.add v idv s.visit;
+        s.stack <- v::s.stack;
+        s.root <- M.add v v s.root;
+        let self_loop = ref false in
+        Elts.iter
+          (fun w ->
             if O.compare v w = 0 then begin
-                self_loop := true; s
-              end else
-              let in_tree,idw,s =
-                try false,M.find w s.visit,s
+              self_loop := true
+            end else
+              let in_tree,idw =
+                try false,M.find w s.visit
                 with Not_found ->
-                  let s = dfs w s in
-                  true,M.find w s.visit,s in
-              let scc_state = s.scc_state in
-              let cw =  M.find w scc_state.comp in
-              let root_state = s.root_state in
+                  dfs w;
+                  true,M.find w s.visit in
+              let cw =  M.find w s.comp in
               if cw < 0 then begin
-                  let rv = M.find v root_state.root
-                  and rw = M.find w root_state.root in
-                  let id_rv = M.find rv s.visit
-                  and id_rw = M.find rw s.visit in
-                  if id_rw < id_rv then
-                    let root = M.add v rw root_state.root in
-                    { s with root_state = { root_state with root; } }
-                  else s
+                let rv = M.find v s.root
+                and rw = M.find w s.root in
+                let id_rv = M.find rv s.visit
+                and id_rw = M.find rw s.visit in
+                if id_rw < id_rv then
+                  s.root <- M.add v rw s.root
               end else if not (idv < idw  && not in_tree) then
-                let rv = M.find v root_state.root in
-                let succ =
-                  M.update rv
-                    (function
-                     | None -> assert false
-                     | Some old ->
-                         Some
-                           begin
-                             if IntSet.mem cw old then old
-                             else
-                               IntSet.union old
-                                 (IntSet.add cw
-                                    (IntMap.find cw scc_state.succ_scc))
-                           end)
-                    root_state.succ in
-                { s with root_state = { root_state with succ;} }
-              else s)
-          (succs m v) s in
-      let root_state = s.root_state in
-      let succ = root_state.succ
-      and rv = M.find v root_state.root
-      and scc_state = s.scc_state in
-      if O.compare v rv = 0 then
-        let cv = scc_state.ncomp in
-        let rec pop_rec comp succ_cv = function
-          | [] -> assert false
-          | top::stack ->
-              let comp = M.add top cv comp in
-              if O.compare top v = 0 then
-                comp,succ_cv,stack
-              else
-                let succ_cv =
-                  IntSet.union succ_cv (M.find top succ) in
-                pop_rec comp succ_cv stack in
-        let succ_cv =
-          let top =
-            match s.stack with top::__ -> top | [] -> assert false in
-          if O.compare top v <> 0 || !self_loop then
-            IntSet.add cv (M.find v succ)
-          else M.find v succ in
-        let comp,succ_cv,stack = pop_rec scc_state.comp succ_cv s.stack in
-        let succ_scc = IntMap.add cv succ_cv scc_state.succ_scc in
-        let scc_state = { ncomp = cv+1; comp; succ_scc; } in
-        { s with stack; scc_state; }
-      else s in
-    dfs
+                s.cstack <- cw::s.cstack)
+          (succs m v) ;
+        let rv = M.find v s.root in
+        let succ = s.succ in
+        if O.compare v rv = 0 then
+          let cv = Table.next succ in
+          let rec pop_cstack succ_cv cstack =
+            if cstack == cstack_saved then succ_cv,cstack
+            else
+              match cstack  with
+              | [] -> assert false
+              | c::cstack ->
+                  let succ_cv =
+                    if IntSet.mem c succ_cv then succ_cv
+                    else
+                      IntSet.union succ_cv
+                        (IntSet.add c succ.Table.t.(c))
+                  in
+                  pop_cstack succ_cv cstack in
+          let stack = s.stack in
+          let succ_cv =
+            let top =
+              match stack with top::__ -> top | [] -> assert false in
+            if O.compare top v <> 0 || !self_loop then
+              IntSet.singleton cv
+            else IntSet.empty in
+          let succ_cv,cstack = pop_cstack succ_cv s.cstack in
+          let rec pop_rec comp = function
+            | [] -> assert false
+            | top::stack ->
+                let comp = M.add top cv comp in
+                if O.compare top v = 0 then
+                  comp,stack
+                else
+                  pop_rec comp stack in
+          let comp,stack = pop_rec s.comp s.stack in
+          succ.Table.t.(cv) <- succ_cv ;
+          s.stack <- stack;
+          s.cstack <- cstack;
+          s.comp <- comp in
+      dfs
 
   let state2rel t =
-    let tab = Array.make t.ncomp Elts.empty in
-      M.iter
-        (fun v c -> tab.(c) <- Elts.add v tab.(c))
+    let sz = t.succ.Table.nxt in
+    let tab = Array.make sz Elts.empty in
+    M.iter
+      (fun v c -> tab.(c) <- Elts.add v tab.(c))
       t.comp ;
-    let succ1 =
-      IntMap.map
-        (fun xs ->
-          IntSet.fold (fun c k -> tab.(c)::k) xs []
-          |> Elts.unions)
-        t.succ_scc in
-    IntMap.fold
-      (fun c vs k ->
-        if Elts.is_empty  vs then k
-        else
-          Elts.fold
-            (fun v k -> M.add v vs k)
-            tab.(c) k)
-      succ1 M.empty
+    let tsucc =
+      let tsucc = Array.make sz Elts.empty in
+      let t = t.succ.Table.t in
+      for k = 0 to sz-1 do
+        tsucc.(k) <-
+          IntSet.fold (fun c k -> tab.(c)::k) t.(k) []
+          |> Elts.unions
+      done ;
+      tsucc in
+    let rel = ref M.empty in
+    for c=0 to sz-1 do
+      let vs = tsucc.(c) in
+      if not (Elts.is_empty vs) then
+        Elts.iter
+          (fun v -> rel := M.add v vs !rel)
+          tab.(c)
+    done ;
+    !rel
 
   let debug_tr =
     let pp_ints chan =
@@ -523,40 +517,31 @@ module Make(O:MySet.OrderedType) : S
       prerr_endline "** comp **" ;
       M.iter
         (fun v c -> Printf.eprintf "%d -> %d\n" (M.find v t.visit) c)
-        t.scc_state.comp;
+        t.comp;
       prerr_endline "** root **" ;
       M.iter
         (fun v w ->
           Printf.eprintf "%d -> %d\n"
             (M.find v t.visit)
             (M.find w t.visit))
-        t.root_state.root ;
+        t.root ;
       prerr_endline "** succ **" ;
-      M.iter
-        (fun v xs ->
-          Printf.eprintf "%d -> {%a}\n" (M.find v t.visit)
-            (fun chan ->
-              IntSet.pp chan ","
-                (fun chan -> Printf.fprintf chan "%d"))
-            xs)
-        t.root_state.succ ;
-      prerr_endline "** succ_scc **" ;
-      IntMap.iter
-        (fun x xs ->
-          Printf.eprintf "%d -> %a\n"
-            x pp_ints xs)
-        t.scc_state.succ_scc ;
+      let t = t.succ.Table.t in
+      for x=0 to Array.length t-1 do
+        let xs = t.(x) in
+        Printf.eprintf "%d -> %a\n" x pp_ints xs
+      done ;
       prerr_endline "****\n"
  
     
   let transitive_closure m =
-    let dfs = dfs m in
-    let t =
-      M.fold
-        (fun v _ t -> if M.mem v t.visit then t else dfs v t)
-        m dfs0 in
+    let t = dfs0 () in
+    let dfs = dfs t m in
+    M.iter
+      (fun v _ -> if not (M.mem v t.visit) then dfs v)
+      m ;
     if false then debug_tr m t ;
-    state2rel t.scc_state
+    state2rel t
 
 
 (*
@@ -569,13 +554,13 @@ module Make(O:MySet.OrderedType) : S
 
     let restrict_domain_transitive_closure  vs m =
       let mem_vs v = Elts.mem v vs in
-      let t =
-        let dfs = dfs m in
-        M.fold
-          (fun v _ t ->
-            if not (mem_vs v) || M.mem v t.visit then t else dfs v t)
-      m dfs0 in
-     state2rel t.scc_state |> restrict_domain mem_vs
+      let t = dfs0 () in
+      let dfs = dfs t m in
+      M.iter
+        (fun v _ ->
+          if mem_vs v && not (M.mem v t.visit) then dfs v)
+        m ;
+     state2rel t |> restrict_domain mem_vs
 
 
   end
