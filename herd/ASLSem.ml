@@ -139,6 +139,8 @@ module Make (Conf : Config) = struct
     let bit_clear_optimisation = true
     let out_buffer = None
 
+    let version_eac2_or_before = false
+
     module Instr = Asllib.Instrumentation.SemanticsNoInstr
   end
 

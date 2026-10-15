@@ -1385,6 +1385,7 @@ model
 modelled
 modelling
 modified
+modifies
 modify
 modifying
 modulo
@@ -2189,6 +2190,8 @@ take
 taken
 takes
 taking
+target
+targeted
 team
 technical
 technically
