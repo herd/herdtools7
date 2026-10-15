@@ -25,8 +25,6 @@ include ARMBase
 module ScopeGen = ScopeGen.NoGen
 
 
-let tr_endian = Misc.identity
-
 include MachAtom.Make
     (struct
       let naturalsize=None

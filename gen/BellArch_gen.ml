@@ -30,9 +30,6 @@ module Make(O:Config) = struct
 
 include BellBase
 
-(* Assume little endian *)
-let tr_endian = Misc.identity
-
 let bi = match O.bell with
 | Some fname ->
     let module R =

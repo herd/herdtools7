@@ -24,9 +24,6 @@ module Make
 
    include RISCVBase
 
-(* Little endian, as far as I know *)
-   let tr_endian = Misc.identity
-
 (* No Scope *)
    module ScopeGen = ScopeGen.NoGen
 
