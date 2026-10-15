@@ -2491,7 +2491,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     let+ () = check_is_readonly_after_eac2 e_index ses_index in
     let+ () = check_type_satisfies ~loc env t_index' integer in
     let ses = ses_non_conflicting_union ~loc ses_base ses_index in
-    let new_le = LE_SetArray (e_base, e_index') in
+    let new_le = LE_SetArray (e_base, e_index', ()) in
     (new_le |> add_pos_from ~loc, ses) |: TypingRule.AnnotateSetArray
   (* End *)
 
@@ -2550,7 +2550,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
           | _ -> conflict ~loc [ T_Tuple [] ] t_e)
         |: TypingRule.LEDestructuring
     (* End *)
-    | LE_Slice (le1, slices) -> (
+    | LE_Slice (le1, slices, ()) -> (
         let t_le1, le1_rexpr, ses_le1 =
           expr_of_lexpr le1 |> annotate_expr env
         in
@@ -2577,7 +2577,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
               fatal_from ~loc Error.(BadSlices Empty)
             in
             let ses = ses_non_conflicting_union ~loc ses1 ses_slices in
-            (t, LE_Slice (le2, slices_annotated) |> here, ses)
+            (t, LE_Slice (le2, slices_annotated, ()) |> here, ses)
             |: TypingRule.LESlice
         | T_Array (_, t) when le.version = V0 -> (
             match slices with
@@ -2655,7 +2655,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
                    (t, slices)
              in
              let+ () = check_type_satisfies ~loc:le1 env t_e t in
-             let le3 = LE_Slice (le1, slices) |> here in
+             let le3 = LE_Slice (le1, slices, ()) |> here in
              annotate_lexpr_ty env le3 t_e |: TypingRule.LESetBitField
          (* End *)
          (* Begin LESetBadField *)
@@ -2683,7 +2683,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             in
             let le_slice =
               LE_Slice
-                (le_base_annot, List.concat_map slices_of_bitfield le_fields)
+                (le_base_annot, List.concat_map slices_of_bitfield le_fields, ())
               |> here
             in
             annotate_lexpr_ty env le_slice t_e |: TypingRule.LESetFields
@@ -2735,7 +2735,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         )
     (* End *)
     (* Begin LESetArray *)
-    | LE_SetArray (e_base, e_index) -> (
+    | LE_SetArray (e_base, e_index, ()) -> (
         let t_base, e_base_rexpr, ses_base =
           expr_of_lexpr e_base |> annotate_expr env
         in
@@ -3330,7 +3330,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         | _ ->
             let old_le le' = LE_SetFields (le', fields, slices) |> here in
             setter_should_reduce_to_call_recurse ~loc env typed_e old_le sub_le)
-    | LE_Slice (sub_le, slices) -> (
+    | LE_Slice (sub_le, slices, ()) -> (
         match sub_le.desc with
         | LE_Var x
           when should_reduce_to_call env x ST_Setter
@@ -3350,7 +3350,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
             let () = assert (ret_ty = None) in
             Some (S_Call call |> here, ses)
         | _ ->
-            let old_le le' = LE_Slice (le', slices) |> here in
+            let old_le le' = LE_Slice (le', slices, ()) |> here in
             setter_should_reduce_to_call_recurse ~loc env typed_e old_le sub_le)
     | LE_Destructuring les -> (
         match (Types.make_anonymous env t_e).desc with

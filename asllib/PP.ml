@@ -243,8 +243,8 @@ let pp_typed_identifier f (name, ty) = fprintf f "@[%s:@ %a@]" name pp_ty ty
 let rec pp_lexpr f le =
   match le.desc with
   | LE_Var x -> pp_print_string f x
-  | LE_Slice (le, args) -> fprintf f "%a[%a]" pp_lexpr le pp_slice_list args
-  | LE_SetArray (le, e) -> fprintf f "%a[[%a]]" pp_lexpr le pp_expr e
+  | LE_Slice (le, args, _) -> fprintf f "%a[%a]" pp_lexpr le pp_slice_list args
+  | LE_SetArray (le, e, _) -> fprintf f "%a[[%a]]" pp_lexpr le pp_expr e
   | LE_SetField (le, x) -> fprintf f "@[%a@,.%s@]" pp_lexpr le x
   | LE_SetCollectionFields (x, fields, _) ->
       fprintf f "@[%s@,.[@[%a@]]@]" x (pp_comma_list pp_print_string) fields

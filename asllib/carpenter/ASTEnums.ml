@@ -279,10 +279,10 @@ module Make (C : Config.S) = struct
       let make_destructuring les = LE_Destructuring les in
       list2 lexprs |> map make_destructuring
     and le_set_array =
-      let make_le_set_array (le, e) = LE_SetArray (le, e) in
+      let make_le_set_array (le, e) = LE_SetArray (le, e, ()) in
       lexprs ** exprs |> map make_le_set_array
     and le_slices =
-      let make_le_slices (le, slices) = LE_Slice (le, slices) in
+      let make_le_slices (le, slices) = LE_Slice (le, slices, ()) in
       lexprs ** slices |> map make_le_slices
     in
     [

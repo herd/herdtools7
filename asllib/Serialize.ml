@@ -238,10 +238,10 @@ and pp_precision_loss f = function
 let rec pp_lexpr =
   let pp_desc f = function
     | LE_Var x -> bprintf f "LE_Var %S" x
-    | LE_Slice (le, args) ->
-        bprintf f "LE_Slice (%a, %a)" pp_lexpr le pp_slice_list args
-    | LE_SetArray (le, e) ->
-        bprintf f "LE_SetArray (%a, %a)" pp_lexpr le pp_expr e
+    | LE_Slice (le, args, _) ->
+        bprintf f "LE_Slice (%a, %a, ())" pp_lexpr le pp_slice_list args
+    | LE_SetArray (le, e, _) ->
+        bprintf f "LE_SetArray (%a, %a, ())" pp_lexpr le pp_expr e
     | LE_SetField (le, x) -> bprintf f "LE_SetField (%a, %S)" pp_lexpr le x
     | LE_SetFields (le, x, slices) ->
         bprintf f "LE_SetFields (%a, %a, %a)" pp_lexpr le (pp_list pp_string) x

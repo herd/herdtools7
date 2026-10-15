@@ -696,11 +696,11 @@ let lexpr :=
   annotated (
     | MINUS; lexpr_ignore
     | le_var
-    | ~=lexpr; ~=bracketed(clist(slice));      < AST.LE_Slice       >
-    | ~=lexpr; LT; ~=clist(slice); GT;         < AST.LE_Slice       >
-    | ~=pared(nclist(lexpr));                  < AST.LE_Destructuring >
-    | ~=lexpr; DOT; ~=ident;                   < AST.LE_SetField    >
-    | l=lexpr; DOT; f=bracketed(clist(ident)); { AST.LE_SetFields (l, f, []) }
+    | le=lexpr; slices=bracketed(clist(slice)); { AST.LE_Slice (le, slices, ()) }
+    | le=lexpr; LT; slices=clist(slice); GT;    { AST.LE_Slice (le, slices, ()) }
+    | ~=pared(nclist(lexpr));                   < AST.LE_Destructuring >
+    | ~=lexpr; DOT; ~=ident;                    < AST.LE_SetField    >
+    | l=lexpr; DOT; f=bracketed(clist(ident));  { AST.LE_SetFields (l, f, []) }
 
     | unimplemented_lexpr (
       | bracketed(nclist(lexpr)); <>

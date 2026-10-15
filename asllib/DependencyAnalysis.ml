@@ -155,9 +155,9 @@ and use_le le =
   | LE_Var x -> add_maybe_pgm le x
   | LE_Destructuring les -> List.fold_right use_le les
   | LE_Discard -> Fun.id
-  | LE_SetArray (le, e) -> use_le le $ use_e e
+  | LE_SetArray (le, e, _) -> use_le le $ use_e e
   | LE_SetField (le, _) | LE_SetFields (le, _, _) -> use_le le
-  | LE_Slice (le, slices) -> use_slices slices $ use_le le
+  | LE_Slice (le, slices, _) -> use_slices slices $ use_le le
   | LE_SetCollectionFields (x, _, _) -> add_maybe_pgm le x
 
 and use_catcher (_name, ty_name, s) = use_s s $ add_other ty_name
