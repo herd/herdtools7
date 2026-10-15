@@ -510,19 +510,19 @@ let ldi_of_lexpr =
   in
   fun le -> try Some (tr le) with Exit -> None
 
-let expr_of_lexpr : lexpr -> expr =
+let expr_of_lexpr (le : ('a, 'i) gen_lexpr) : expr =
   let rec aux le =
     match le.desc with
     | LE_Var x -> E_Var x
-    | LE_Slice (le, args) -> E_Slice (map_desc aux le, args)
-    | LE_SetArray (le, e) -> E_GetArray (map_desc aux le, e)
+    | LE_Slice (le, args, _) -> E_Slice (map_desc aux le, args)
+    | LE_SetArray (le, e, _) -> E_GetArray (map_desc aux le, e)
     | LE_SetField (le, x) -> E_GetField (map_desc aux le, x)
     | LE_SetFields (le, x, _) -> E_GetFields (map_desc aux le, x)
     | LE_SetCollectionFields (x, fields, _) -> E_GetCollectionFields (x, fields)
     | LE_Discard -> E_Var "-"
     | LE_Destructuring les -> E_Tuple (List.map (map_desc aux) les)
   in
-  map_desc aux
+  map_desc aux le
 
 let global_ignored_prefix = "__global_ignored"
 let global_ignored () = fresh_var global_ignored_prefix
@@ -784,8 +784,9 @@ let rename_locals map_name ast =
     map_annotated le @@ function
     | LE_Discard -> le.desc
     | LE_Var x -> LE_Var (map_name x)
-    | LE_Slice (le1, slices) -> LE_Slice (map_le le1, map_slices slices)
-    | LE_SetArray (le1, i) -> LE_SetArray (map_le le1, map_e i)
+    | LE_Slice (le1, slices, annot) ->
+        LE_Slice (map_le le1, map_slices slices, annot)
+    | LE_SetArray (le1, i, annot) -> LE_SetArray (map_le le1, map_e i, annot)
     | LE_SetField (le1, f) -> LE_SetField (map_le le1, f)
     | LE_SetFields (le1, fl, annot) -> LE_SetFields (map_le le1, fl, annot)
     | LE_SetCollectionFields _ as le -> le (* No collection is local *)
@@ -838,6 +839,21 @@ let rename_locals map_name ast =
     (* End *)
   in
   List.map map_decl ast
+
+let rec map_lexpr_unit_to_none (le : lexpr) : ('a option, 'i option) gen_lexpr =
+  let here desc = add_pos_from le desc in
+  match le.desc with
+  | LE_Var x -> LE_Var x |> here
+  | LE_Destructuring li ->
+      LE_Destructuring (List.map map_lexpr_unit_to_none li) |> here
+  | LE_Discard -> LE_Discard |> here
+  | LE_Slice (x, y, ()) -> LE_Slice (map_lexpr_unit_to_none x, y, None) |> here
+  | LE_SetArray (x, y, ()) ->
+      LE_SetArray (map_lexpr_unit_to_none x, y, None) |> here
+  | LE_SetCollectionFields (x, y, z) -> LE_SetCollectionFields (x, y, z) |> here
+  | LE_SetField (x, y) -> LE_SetField (map_lexpr_unit_to_none x, y) |> here
+  | LE_SetFields (x, y, z) ->
+      LE_SetFields (map_lexpr_unit_to_none x, y, z) |> here
 
 (* Taken from lib/innerRel.ml *)
 let rec transitive_closure m0 =

@@ -311,9 +311,9 @@ module Make (Conf : PrinterConf) = struct
       (match x with
       | LE_Discard -> [ key "LE_DISCARD" ]
       | LE_Var i -> [ key "LE_VAR"; of_identifier i ]
-      | LE_Slice (lx, s) ->
+      | LE_Slice (lx, s, _) ->
           [ key "LE_SLICE"; of_lexpr lx; of_list_map of_slice s ]
-      | LE_SetArray (lx, x) -> [ key "LE_SETARRAY"; of_lexpr lx; of_expr x ]
+      | LE_SetArray (lx, x, _) -> [ key "LE_SETARRAY"; of_lexpr lx; of_expr x ]
       | LE_SetField (lx, i) ->
           [ key "LE_SETFIELD"; of_lexpr lx; of_identifier i ]
       | LE_SetFields (lx, i, pairs) ->

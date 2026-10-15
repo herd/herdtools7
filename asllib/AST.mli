@@ -295,24 +295,28 @@ and typed_identifier = identifier * ty
 
 (** {2 Statements} *)
 
+(* 's is the runtime annotation for slices and 'i for array indexes *)
+
 (** Type of left-hand side of assignments. *)
-type lexpr_desc =
+type ('s, 'i) gen_lexpr_desc =
   | LE_Discard
   | LE_Var of identifier
-  | LE_Slice of lexpr * slice list
-  | LE_SetArray of lexpr * expr
+  | LE_Slice of ('s, 'i) gen_lexpr * slice list * 's
+  | LE_SetArray of ('s, 'i) gen_lexpr * expr * 'i
       (** [LE_SetArray base index] represents a write to an array given by the
           expression [base] at index [index]. *)
-  | LE_SetField of lexpr * identifier
-  | LE_SetFields of lexpr * identifier list * (int * int) list
+  | LE_SetField of ('s, 'i) gen_lexpr * identifier
+  | LE_SetFields of ('s, 'i) gen_lexpr * identifier list * (int * int) list
       (** [LE_SetFields (le, fields, _)] unpacks the various fields. Third
           argument is a type annotation. *)
   | LE_SetCollectionFields of identifier * identifier list * (int * int) list
       (** [LE_SetCollectionFields (x, fields, _)] unpacks the various fields.
           Third argument is a type annotation. *)
-  | LE_Destructuring of lexpr list
+  | LE_Destructuring of ('s, 'i) gen_lexpr list
 
+and lexpr_desc = (unit, unit) gen_lexpr_desc
 and lexpr = (lexpr_desc, ty) t_annotated
+and ('s, 'i) gen_lexpr = (('s, 'i) gen_lexpr_desc, ty) t_annotated
 
 type local_decl_keyword = LDK_Var | LDK_Let
 

@@ -277,11 +277,11 @@ module Untyped (C : Config.S) = struct
     and le_slice lexpr n =
       let* n1, n2 = Nat.split2 n in
       let+ le = lexpr n1 and+ slices = slices n2 in
-      LE_Slice (le, slices) |> annot
+      LE_Slice (le, slices, ()) |> annot
     and le_setarray lexpr n =
       let* n1, n2 = Nat.split2 n in
       let+ le = lexpr n1 and+ e = expr n2 in
-      LE_SetArray (le, e) |> annot
+      LE_SetArray (le, e, ()) |> annot
     in
     fix @@ fun lexpr n ->
     let n = pay n in
@@ -836,7 +836,7 @@ module Typed (C : Config.S) = struct
               (let* n2 = 1 -- n in
                let n1 = n - n2 in
                let+ le' = lexpr (env, ty, n1) and+ slices = slices env n2 in
-               LE_Slice (le', slices) |> annot)
+               LE_Slice (le', slices, ()) |> annot)
         | _ -> None
       in
       fix @@ fun lexpr (env, ty, n) ->

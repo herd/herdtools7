@@ -87,13 +87,13 @@ let desugar_lhs_access (base, { access; slices }) =
         match x with
         | FieldAccess field ->
             LE_SetField (acc, field.desc) |> add_pos_from field
-        | ArrayAccess idx -> LE_SetArray (acc, idx) |> add_pos_from idx)
+        | ArrayAccess idx -> LE_SetArray (acc, idx, ()) |> add_pos_from idx)
       var access
   in
   let with_slices =
     match slices.desc with
     | [] -> with_access
-    | _ -> LE_Slice (with_access, slices.desc) |> add_pos_from slices
+    | _ -> LE_Slice (with_access, slices.desc, ()) |> add_pos_from slices
   in
   with_slices
 

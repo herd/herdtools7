@@ -75,6 +75,7 @@ module Make (B : Backend.S) (C : Config) = struct
   module SemanticsRule = Instrumentation.SemanticsRule
 
   type 'a m = 'a B.m
+  type runtime_lexpr = (B.value_range list option, B.value option) gen_lexpr
 
   module EnvConf = struct
     module Scope = B.Scope
@@ -399,12 +400,6 @@ module Make (B : Backend.S) (C : Config) = struct
     match B.v_to_z v with
     | Some z when Z.fits_int z -> Z.to_int z
     | Some z -> fatal_from_no_env loc (Error.ImplementationIntegerOverflow z)
-    | None ->
-        fatal_from_no_env loc (MismatchType (B.debug_value v, [ integer' ]))
-
-  let checked_v_to_z ~loc v =
-    match B.v_to_z v with
-    | Some z -> z
     | None ->
         fatal_from_no_env loc (MismatchType (B.debug_value v, [ integer' ]))
 
@@ -842,31 +837,27 @@ module Make (B : Backend.S) (C : Config) = struct
     return res
   (* End *)
 
-  (** [eval_and_rewrite_lexpr le env] evaluates each array index and slice
-      expression in [le] exactly once as a side-effect-free expression and
-      returns a copy of [le] in which each such expression is replaced by the
-      resulting integer literal. Nested subexpressions are evaluated from left
-      to right. *)
-  and eval_and_rewrite_lexpr le env : lexpr m =
-    let with_desc desc = { le with desc } in
+  and eval_and_rewrite_lexpr (le : lexpr) env : runtime_lexpr m =
+    let return_desc desc = return { le with desc } in
     match le.desc with
-    | LE_Discard | LE_Var _ | LE_SetCollectionFields _ -> return le
-    | LE_Slice (le_base, slices) ->
-        let* le_base' = eval_and_rewrite_lexpr le_base env in
-        let* slices' = eval_and_rewrite_slices slices env in
-        LE_Slice (le_base', slices') |> with_desc |> return
-    | LE_SetArray (le_base, e_index) ->
-        let* le_base' = eval_and_rewrite_lexpr le_base env in
-        let* v_index = eval_expr_sef env e_index in
-        let index = checked_v_to_z ~loc:e_index v_index in
-        let e_index' = expr_of_z ~loc:e_index index in
-        LE_SetArray (le_base', e_index') |> with_desc |> return
+    | LE_Discard -> LE_Discard |> return_desc
+    | LE_Var x -> LE_Var x |> return_desc
+    | LE_SetCollectionFields (x, y, z) ->
+        LE_SetCollectionFields (x, y, z) |> return_desc
+    | LE_Slice (le_base, slices, ()) ->
+        let* le_base' = eval_and_rewrite_lexpr le_base env
+        and* v_slices = eval_slices env slices in
+        LE_Slice (le_base', slices, Some v_slices) |> return_desc
+    | LE_SetArray (le_base, e_index, ()) ->
+        let* le_base' = eval_and_rewrite_lexpr le_base env
+        and* v_index = eval_expr_sef env e_index in
+        LE_SetArray (le_base', e_index, Some v_index) |> return_desc
     | LE_SetField (le_record, field_name) ->
         let* le_record' = eval_and_rewrite_lexpr le_record env in
-        LE_SetField (le_record', field_name) |> with_desc |> return
+        LE_SetField (le_record', field_name) |> return_desc
     | LE_SetFields (le_record, field_names, slices) ->
         let* le_record' = eval_and_rewrite_lexpr le_record env in
-        LE_SetFields (le_record', field_names, slices) |> with_desc |> return
+        LE_SetFields (le_record', field_names, slices) |> return_desc
     | LE_Destructuring les ->
         let rec rewrite_left_to_right = function
           | [] -> return []
@@ -876,39 +867,13 @@ module Make (B : Backend.S) (C : Config) = struct
               return (le' :: les')
         in
         let* les' = rewrite_left_to_right les in
-        LE_Destructuring les' |> with_desc |> return
-
-  (** [eval_and_rewrite_slice slice env] evaluates the start and length
-      expressions of the typed slice [slice], from left to right, and replaces
-      them with integer literals containing the resulting values. *)
-  and eval_and_rewrite_slice slice env : slice m =
-    match slice with
-    | Slice_Length (e_start, e_length) ->
-        let* v_start = eval_expr_sef env e_start in
-        let* v_length = eval_expr_sef env e_length in
-        let e_start' = checked_v_to_z ~loc:e_start v_start |> expr_of_z in
-        let e_length' = checked_v_to_z ~loc:e_length v_length |> expr_of_z in
-        return (Slice_Length (e_start', e_length'))
-    | _ -> assert false
-
-  (** [eval_and_rewrite_slices slices env] evaluates and rewrites each slice in
-      [slices], from left to right. *)
-  and eval_and_rewrite_slices slices env : slice list m =
-    let rewrite_left_to_right slices =
-      match slices with
-      | [] -> return []
-      | slice :: slices_rest ->
-          let* slice' = eval_and_rewrite_slice slice env in
-          let* slices_rest' = eval_and_rewrite_slices slices_rest env in
-          return (slice' :: slices_rest')
-    in
-    rewrite_left_to_right slices
+        LE_Destructuring les' |> return_desc
 
   (* Evaluation of Left-Hand-Side Expressions *)
   (* ---------------------------------------- *)
 
   (** [eval_lexpr version env le m] is [env[le --> m]]. *)
-  and eval_lexpr ver le env m : env maybe_exception B.m =
+  and eval_lexpr ver (le : runtime_lexpr) env m : env maybe_exception B.m =
     match le.desc with
     (* Begin EvalLEDiscard *)
     | LE_Discard -> return_normal env |: SemanticsRule.LEDiscard
@@ -939,11 +904,14 @@ module Make (B : Backend.S) (C : Config) = struct
                 >>= return_normal |: SemanticsRule.LEUndefIdentV0))
     (* End *)
     (* Begin EvalLESlice *)
-    | LE_Slice (e_bv, slices) ->
+    | LE_Slice (e_bv, slices, annot) ->
         let*^ m_bv_lhs, env1 = expr_of_lexpr e_bv |> eval_expr_after_eac2 env in
         let new_m_bv =
           let* v_rhs = m
-          and* slice_ranges = eval_slices env1 slices
+          and* slice_ranges =
+            match annot with
+            | Some s -> return s
+            | None -> eval_slices env1 slices
           and* v_bv_lhs = m_bv_lhs in
           let* () =
             check_non_overlapping_slices ~pos:le env slices slice_ranges
@@ -953,11 +921,15 @@ module Make (B : Backend.S) (C : Config) = struct
         eval_lexpr ver e_bv env1 new_m_bv |: SemanticsRule.LESlice
     (* End *)
     (* Begin EvalLESetArray *)
-    | LE_SetArray (re_array, e_index) ->
+    | LE_SetArray (re_array, e_index, annot) ->
         let*^ rm_array, env1 =
           expr_of_lexpr re_array |> eval_expr_after_eac2 env
         in
-        let*^ m_index, env2 = eval_expr_after_eac2 env1 e_index in
+        let*^ m_index, env2 =
+          match annot with
+          | Some i -> return_normal (i, env1)
+          | None -> eval_expr_after_eac2 env1 e_index
+        in
         let m1 =
           let* v = m and* v_index = m_index and* rv_array = rm_array in
           B.set_index (v_to_int ~loc:e_index v_index) v rv_array
@@ -1204,7 +1176,7 @@ module Make (B : Backend.S) (C : Config) = struct
             eval_lexpr s.version le' env1 (return v)
           else
             let*^ m, env1 = eval_expr env re in
-            eval_lexpr s.version le env1 m
+            eval_lexpr s.version (ASTUtils.map_lexpr_unit_to_none le) env1 m
         in
         let**| new_env = assign in
         return_continue new_env |: SemanticsRule.SAssign (* End *)
@@ -1652,13 +1624,15 @@ module Make (B : Backend.S) (C : Config) = struct
       tuple reads to access the elements corresponding to [les]. Otherwise, it
       raises a [BadArity] Error. *)
   and protected_multi_assign ver env pos les monads : env maybe_exception m =
-    if List.compare_lengths les monads = 0 then multi_assign ver env les monads
+    let runtime_les = List.map ASTUtils.map_lexpr_unit_to_none les in
+    if List.compare_lengths les monads = 0 then
+      multi_assign ver env runtime_les monads
     else
       match monads with
       | [ m ] ->
           let n = List.length les in
           let nmonads = List.init n (fun i -> m >>= B.get_index i) in
-          multi_assign ver env les nmonads
+          multi_assign ver env runtime_les nmonads
       | _ ->
           fatal_from pos env
           @@ Error.BadArity

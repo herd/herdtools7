@@ -327,7 +327,7 @@ val qualifier_equal : func_qualifier option -> func_qualifier option -> bool
 (** {1 Transformers} *)
 
 val ldi_of_lexpr : lexpr -> local_decl_item option
-val expr_of_lexpr : lexpr -> expr
+val expr_of_lexpr : ('a, 'i) gen_lexpr -> expr
 val slice_is_single : slice -> bool
 val slice_as_single : slice -> expr
 
@@ -429,3 +429,5 @@ val get_cycle : ISet.t IMap.t -> identifier list option
 val plug_primitives : AST.t -> ('f * string) list -> (AST.func * 'f) list
 (** [plug_primitives ast arg primitives] is the list of primitives as accepted
     by [Backend.mli]. *)
+
+val map_lexpr_unit_to_none : lexpr -> ('a option, 'b option) gen_lexpr
