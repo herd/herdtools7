@@ -50,9 +50,21 @@ type BRBSRC_EL1_Type of bits(64);
 // only to set up their values when necessary.
 
 // Argument is_vmsa is a boolean reflecting if stage 1 translation is activated
-// or not.
+// or not. The SVE arguments are provided by herd's selected SVE variant.
 
-func _SetUpRegisters (is_vmsa: boolean)
+var _HerdSVEEnabled: boolean = FALSE;
+var _HerdSVEVectorLength: integer = 128;
+
+func _SetUpSVE(sve_enabled: boolean, sve_vector_length: integer,
+                sve_zcr_len: bits(4))
+begin
+  _HerdSVEEnabled = sve_enabled;
+  _HerdSVEVectorLength = sve_vector_length;
+  _ZCR_EL1.LEN = sve_zcr_len;
+end;
+
+func _SetUpRegisters (is_vmsa: boolean, sve_enabled: boolean,
+                      sve_vector_length: integer, sve_zcr_len: bits(4))
 begin
   // Value found on Rasberry 4B, ArmBian
   // uname -a:
@@ -71,6 +83,7 @@ begin
     ;
 
   _SCTLR_EL1.M = if is_vmsa then '1' else '0';
+  _SetUpSVE(sve_enabled, sve_vector_length, sve_zcr_len);
 end;
 
 // =============================================================================
@@ -111,6 +124,9 @@ func ConstrainUnpredictableBool(which:Unpredictable) => boolean
 begin
   case which of
     when Unpredictable_Unsupported_Atomic_HW_Update => return FALSE;
+    // The nominal ASL fixes CPACHECK to FALSE. Keeping it arbitrary branches
+    // once per SVE load lane, although the checked-pointer path is unreachable.
+    when Unpredictable_CPACHECK => return FALSE;
     otherwise => return ARBITRARY: boolean;
   end;
 end;
@@ -144,6 +160,7 @@ begin
   case s of
     when "Maximum Physical Address Size" => return 48;
     when "Aligned quantity for atomic access" => return 32;
+    when "Max implemented VL" => return _HerdSVEVectorLength;
     otherwise => unreachable;
   end;
 end;
@@ -169,6 +186,7 @@ readonly func IsFeatureImplemented(f : Feature) => boolean
 begin
   case f of
     when FEAT_AA64EL0 => return TRUE;
+    when FEAT_SVE => return _HerdSVEEnabled;
     otherwise => return FALSE;
   end;
 end;
