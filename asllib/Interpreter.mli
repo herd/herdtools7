@@ -83,6 +83,9 @@ module type Config = sig
 
   val out_buffer : Buffer.t option
   (** Print ASL output to stdout when [None], or to [buf] when [Some buf]. *)
+
+  val version_eac2_or_before : bool
+  (** Whether the selected ASL revision is EAC2 or earlier. *)
 end
 
 module Make (B : Backend.S) (C : Config) : S with module B = B
