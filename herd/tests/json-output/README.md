@@ -18,3 +18,16 @@ text. `static_poi` still identifies the original code position, whose source tex
 may differ. Generated instructions, such as `.pagealign` padding branches, may
 have static indices absent from `test.program`. Consumers must allow this.
 Instruction labels remain in `test.program` rather than being repeated on events.
+
+JSON edge endpoints
+===================
+
+Each edge has `relation`, `source`, and `target` fields. Endpoint variants are
+distinguished by their JSON value type:
+
+- An integer is an event's `id` within this execution graph.
+- The string `"init"` is the synthetic initial state used by `initrf` edges.
+- An object `{"final": "[x]"}` is a final location used by `finalrf` edges.
+
+Explicit initial-write events have ordinary integer IDs. Synthetic initial and
+final endpoints do not have event IDs.

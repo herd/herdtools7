@@ -447,176 +447,40 @@
           }
         ],
         "edges": [
-          {
-            "relation": "rf-reg",
-            "source": { "type": "event", "id": 13 },
-            "target": { "type": "event", "id": 15 }
-          },
-          {
-            "relation": "rf-reg",
-            "source": { "type": "event", "id": 18 },
-            "target": { "type": "event", "id": 21 }
-          },
-          {
-            "relation": "rf",
-            "source": { "type": "event", "id": 2 },
-            "target": { "type": "event", "id": 4 }
-          },
-          {
-            "relation": "rf",
-            "source": { "type": "event", "id": 6 },
-            "target": { "type": "event", "id": 1 }
-          },
-          {
-            "relation": "rf",
-            "source": { "type": "event", "id": 6 },
-            "target": { "type": "event", "id": 3 }
-          },
-          {
-            "relation": "rf",
-            "source": { "type": "event", "id": 7 },
-            "target": { "type": "event", "id": 5 }
-          },
-          {
-            "relation": "ca",
-            "source": { "type": "event", "id": 5 },
-            "target": { "type": "event", "id": 0 }
-          },
-          {
-            "relation": "ca",
-            "source": { "type": "event", "id": 7 },
-            "target": { "type": "event", "id": 0 }
-          },
-          {
-            "relation": "ca",
-            "source": { "type": "event", "id": 8 },
-            "target": { "type": "event", "id": 2 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 1 },
-            "target": { "type": "event", "id": 2 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 1 },
-            "target": { "type": "event", "id": 20 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 3 },
-            "target": { "type": "event", "id": 4 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 3 },
-            "target": { "type": "event", "id": 23 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 4 },
-            "target": { "type": "event", "id": 24 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 5 },
-            "target": { "type": "event", "id": 26 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 10 },
-            "target": { "type": "event", "id": 0 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 11 },
-            "target": { "type": "event", "id": 0 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 12 },
-            "target": { "type": "event", "id": 13 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 15 },
-            "target": { "type": "event", "id": 16 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 19 },
-            "target": { "type": "event", "id": 1 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 21 },
-            "target": { "type": "event", "id": 2 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 22 },
-            "target": { "type": "event", "id": 3 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 25 },
-            "target": { "type": "event", "id": 5 }
-          },
-          {
-            "relation": "iico_ctrl",
-            "source": { "type": "event", "id": 20 },
-            "target": { "type": "event", "id": 2 }
-          },
-          {
-            "relation": "iico_ctrl",
-            "source": { "type": "event", "id": 23 },
-            "target": { "type": "event", "id": 4 }
-          },
-          {
-            "relation": "iico_ctrl",
-            "source": { "type": "event", "id": 26 },
-            "target": { "type": "event", "id": 27 }
-          },
-          {
-            "relation": "iico_ctrl",
-            "source": { "type": "event", "id": 26 },
-            "target": { "type": "event", "id": 28 }
-          },
-          {
-            "relation": "po",
-            "source": { "type": "event", "id": 0 },
-            "target": { "type": "event", "id": 12 }
-          },
-          {
-            "relation": "po",
-            "source": { "type": "event", "id": 13 },
-            "target": { "type": "event", "id": 14 }
-          },
-          {
-            "relation": "po",
-            "source": { "type": "event", "id": 14 },
-            "target": { "type": "event", "id": 15 }
-          },
-          {
-            "relation": "po",
-            "source": { "type": "event", "id": 16 },
-            "target": { "type": "event", "id": 17 }
-          },
-          {
-            "relation": "po",
-            "source": { "type": "event", "id": 17 },
-            "target": { "type": "event", "id": 18 }
-          },
-          {
-            "relation": "po",
-            "source": { "type": "event", "id": 18 },
-            "target": { "type": "event", "id": 19 }
-          },
-          {
-            "relation": "po",
-            "source": { "type": "event", "id": 24 },
-            "target": { "type": "event", "id": 25 }
-          }
+          { "relation": "rf-reg", "source": 13, "target": 15 },
+          { "relation": "rf-reg", "source": 18, "target": 21 },
+          { "relation": "rf", "source": 2, "target": 4 },
+          { "relation": "rf", "source": 6, "target": 1 },
+          { "relation": "rf", "source": 6, "target": 3 },
+          { "relation": "rf", "source": 7, "target": 5 },
+          { "relation": "ca", "source": 5, "target": 0 },
+          { "relation": "ca", "source": 7, "target": 0 },
+          { "relation": "ca", "source": 8, "target": 2 },
+          { "relation": "iico_data", "source": 1, "target": 2 },
+          { "relation": "iico_data", "source": 1, "target": 20 },
+          { "relation": "iico_data", "source": 3, "target": 4 },
+          { "relation": "iico_data", "source": 3, "target": 23 },
+          { "relation": "iico_data", "source": 4, "target": 24 },
+          { "relation": "iico_data", "source": 5, "target": 26 },
+          { "relation": "iico_data", "source": 10, "target": 0 },
+          { "relation": "iico_data", "source": 11, "target": 0 },
+          { "relation": "iico_data", "source": 12, "target": 13 },
+          { "relation": "iico_data", "source": 15, "target": 16 },
+          { "relation": "iico_data", "source": 19, "target": 1 },
+          { "relation": "iico_data", "source": 21, "target": 2 },
+          { "relation": "iico_data", "source": 22, "target": 3 },
+          { "relation": "iico_data", "source": 25, "target": 5 },
+          { "relation": "iico_ctrl", "source": 20, "target": 2 },
+          { "relation": "iico_ctrl", "source": 23, "target": 4 },
+          { "relation": "iico_ctrl", "source": 26, "target": 27 },
+          { "relation": "iico_ctrl", "source": 26, "target": 28 },
+          { "relation": "po", "source": 0, "target": 12 },
+          { "relation": "po", "source": 13, "target": 14 },
+          { "relation": "po", "source": 14, "target": 15 },
+          { "relation": "po", "source": 16, "target": 17 },
+          { "relation": "po", "source": 17, "target": 18 },
+          { "relation": "po", "source": 18, "target": 19 },
+          { "relation": "po", "source": 24, "target": 25 }
         ]
       },
       {
@@ -992,176 +856,40 @@
           }
         ],
         "edges": [
-          {
-            "relation": "rf-reg",
-            "source": { "type": "event", "id": 13 },
-            "target": { "type": "event", "id": 15 }
-          },
-          {
-            "relation": "rf-reg",
-            "source": { "type": "event", "id": 18 },
-            "target": { "type": "event", "id": 21 }
-          },
-          {
-            "relation": "rf",
-            "source": { "type": "event", "id": 2 },
-            "target": { "type": "event", "id": 4 }
-          },
-          {
-            "relation": "rf",
-            "source": { "type": "event", "id": 6 },
-            "target": { "type": "event", "id": 1 }
-          },
-          {
-            "relation": "rf",
-            "source": { "type": "event", "id": 6 },
-            "target": { "type": "event", "id": 3 }
-          },
-          {
-            "relation": "rf",
-            "source": { "type": "event", "id": 7 },
-            "target": { "type": "event", "id": 5 }
-          },
-          {
-            "relation": "ca",
-            "source": { "type": "event", "id": 5 },
-            "target": { "type": "event", "id": 0 }
-          },
-          {
-            "relation": "ca",
-            "source": { "type": "event", "id": 7 },
-            "target": { "type": "event", "id": 0 }
-          },
-          {
-            "relation": "ca",
-            "source": { "type": "event", "id": 8 },
-            "target": { "type": "event", "id": 2 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 1 },
-            "target": { "type": "event", "id": 2 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 1 },
-            "target": { "type": "event", "id": 20 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 3 },
-            "target": { "type": "event", "id": 4 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 3 },
-            "target": { "type": "event", "id": 23 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 4 },
-            "target": { "type": "event", "id": 24 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 5 },
-            "target": { "type": "event", "id": 26 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 10 },
-            "target": { "type": "event", "id": 0 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 11 },
-            "target": { "type": "event", "id": 0 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 12 },
-            "target": { "type": "event", "id": 13 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 15 },
-            "target": { "type": "event", "id": 16 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 19 },
-            "target": { "type": "event", "id": 1 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 21 },
-            "target": { "type": "event", "id": 2 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 22 },
-            "target": { "type": "event", "id": 3 }
-          },
-          {
-            "relation": "iico_data",
-            "source": { "type": "event", "id": 25 },
-            "target": { "type": "event", "id": 5 }
-          },
-          {
-            "relation": "iico_ctrl",
-            "source": { "type": "event", "id": 20 },
-            "target": { "type": "event", "id": 2 }
-          },
-          {
-            "relation": "iico_ctrl",
-            "source": { "type": "event", "id": 23 },
-            "target": { "type": "event", "id": 4 }
-          },
-          {
-            "relation": "iico_ctrl",
-            "source": { "type": "event", "id": 26 },
-            "target": { "type": "event", "id": 27 }
-          },
-          {
-            "relation": "iico_ctrl",
-            "source": { "type": "event", "id": 26 },
-            "target": { "type": "event", "id": 28 }
-          },
-          {
-            "relation": "po",
-            "source": { "type": "event", "id": 0 },
-            "target": { "type": "event", "id": 12 }
-          },
-          {
-            "relation": "po",
-            "source": { "type": "event", "id": 13 },
-            "target": { "type": "event", "id": 14 }
-          },
-          {
-            "relation": "po",
-            "source": { "type": "event", "id": 14 },
-            "target": { "type": "event", "id": 15 }
-          },
-          {
-            "relation": "po",
-            "source": { "type": "event", "id": 16 },
-            "target": { "type": "event", "id": 17 }
-          },
-          {
-            "relation": "po",
-            "source": { "type": "event", "id": 17 },
-            "target": { "type": "event", "id": 18 }
-          },
-          {
-            "relation": "po",
-            "source": { "type": "event", "id": 18 },
-            "target": { "type": "event", "id": 19 }
-          },
-          {
-            "relation": "po",
-            "source": { "type": "event", "id": 24 },
-            "target": { "type": "event", "id": 25 }
-          }
+          { "relation": "rf-reg", "source": 13, "target": 15 },
+          { "relation": "rf-reg", "source": 18, "target": 21 },
+          { "relation": "rf", "source": 2, "target": 4 },
+          { "relation": "rf", "source": 6, "target": 1 },
+          { "relation": "rf", "source": 6, "target": 3 },
+          { "relation": "rf", "source": 7, "target": 5 },
+          { "relation": "ca", "source": 5, "target": 0 },
+          { "relation": "ca", "source": 7, "target": 0 },
+          { "relation": "ca", "source": 8, "target": 2 },
+          { "relation": "iico_data", "source": 1, "target": 2 },
+          { "relation": "iico_data", "source": 1, "target": 20 },
+          { "relation": "iico_data", "source": 3, "target": 4 },
+          { "relation": "iico_data", "source": 3, "target": 23 },
+          { "relation": "iico_data", "source": 4, "target": 24 },
+          { "relation": "iico_data", "source": 5, "target": 26 },
+          { "relation": "iico_data", "source": 10, "target": 0 },
+          { "relation": "iico_data", "source": 11, "target": 0 },
+          { "relation": "iico_data", "source": 12, "target": 13 },
+          { "relation": "iico_data", "source": 15, "target": 16 },
+          { "relation": "iico_data", "source": 19, "target": 1 },
+          { "relation": "iico_data", "source": 21, "target": 2 },
+          { "relation": "iico_data", "source": 22, "target": 3 },
+          { "relation": "iico_data", "source": 25, "target": 5 },
+          { "relation": "iico_ctrl", "source": 20, "target": 2 },
+          { "relation": "iico_ctrl", "source": 23, "target": 4 },
+          { "relation": "iico_ctrl", "source": 26, "target": 27 },
+          { "relation": "iico_ctrl", "source": 26, "target": 28 },
+          { "relation": "po", "source": 0, "target": 12 },
+          { "relation": "po", "source": 13, "target": 14 },
+          { "relation": "po", "source": 14, "target": 15 },
+          { "relation": "po", "source": 16, "target": 17 },
+          { "relation": "po", "source": 17, "target": 18 },
+          { "relation": "po", "source": 18, "target": 19 },
+          { "relation": "po", "source": 24, "target": 25 }
         ]
       }
     ]

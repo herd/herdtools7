@@ -117,46 +117,14 @@ currently only describes plain memory and register accesses.
           }
         ],
         "edges": [
-          {
-            "relation": "scp",
-            "source": { "type": "event", "id": 0 },
-            "target": { "type": "event", "id": 0 }
-          },
-          {
-            "relation": "scp",
-            "source": { "type": "event", "id": 0 },
-            "target": { "type": "event", "id": 1 }
-          },
-          {
-            "relation": "scp",
-            "source": { "type": "event", "id": 2 },
-            "target": { "type": "event", "id": 0 }
-          },
-          {
-            "relation": "mo",
-            "source": { "type": "event", "id": 0 },
-            "target": { "type": "event", "id": 1 }
-          },
-          {
-            "relation": "mo",
-            "source": { "type": "event", "id": 2 },
-            "target": { "type": "event", "id": 0 }
-          },
-          {
-            "relation": "fr",
-            "source": { "type": "event", "id": 0 },
-            "target": { "type": "event", "id": 1 }
-          },
-          {
-            "relation": "rf",
-            "source": { "type": "event", "id": 2 },
-            "target": { "type": "event", "id": 0 }
-          },
-          {
-            "relation": "rf",
-            "source": { "type": "event", "id": 0 },
-            "target": { "type": "event", "id": 1 }
-          }
+          { "relation": "scp", "source": 0, "target": 0 },
+          { "relation": "scp", "source": 0, "target": 1 },
+          { "relation": "scp", "source": 2, "target": 0 },
+          { "relation": "mo", "source": 0, "target": 1 },
+          { "relation": "mo", "source": 2, "target": 0 },
+          { "relation": "fr", "source": 0, "target": 1 },
+          { "relation": "rf", "source": 2, "target": 0 },
+          { "relation": "rf", "source": 0, "target": 1 }
         ]
       },
       {
@@ -223,46 +191,14 @@ currently only describes plain memory and register accesses.
           }
         ],
         "edges": [
-          {
-            "relation": "scp",
-            "source": { "type": "event", "id": 1 },
-            "target": { "type": "event", "id": 0 }
-          },
-          {
-            "relation": "scp",
-            "source": { "type": "event", "id": 1 },
-            "target": { "type": "event", "id": 1 }
-          },
-          {
-            "relation": "scp",
-            "source": { "type": "event", "id": 2 },
-            "target": { "type": "event", "id": 1 }
-          },
-          {
-            "relation": "mo",
-            "source": { "type": "event", "id": 1 },
-            "target": { "type": "event", "id": 0 }
-          },
-          {
-            "relation": "mo",
-            "source": { "type": "event", "id": 2 },
-            "target": { "type": "event", "id": 1 }
-          },
-          {
-            "relation": "fr",
-            "source": { "type": "event", "id": 1 },
-            "target": { "type": "event", "id": 0 }
-          },
-          {
-            "relation": "rf",
-            "source": { "type": "event", "id": 1 },
-            "target": { "type": "event", "id": 0 }
-          },
-          {
-            "relation": "rf",
-            "source": { "type": "event", "id": 2 },
-            "target": { "type": "event", "id": 1 }
-          }
+          { "relation": "scp", "source": 1, "target": 0 },
+          { "relation": "scp", "source": 1, "target": 1 },
+          { "relation": "scp", "source": 2, "target": 1 },
+          { "relation": "mo", "source": 1, "target": 0 },
+          { "relation": "mo", "source": 2, "target": 1 },
+          { "relation": "fr", "source": 1, "target": 0 },
+          { "relation": "rf", "source": 1, "target": 0 },
+          { "relation": "rf", "source": 2, "target": 1 }
         ]
       }
     ]
