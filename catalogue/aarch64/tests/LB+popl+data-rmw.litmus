@@ -11,4 +11,4 @@ AArch64 LB+popl+data-rmw
               | LDXR W2,[X0]    ;
               | STXR W6,W4,[X0] ;
 
-exists (0:X1=1 /\ 1:X1=1 /\ 1:X4=0)
+exists (0:X1=1 /\ 1:X1=1)
