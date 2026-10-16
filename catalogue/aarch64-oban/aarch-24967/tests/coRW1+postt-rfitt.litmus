@@ -1,0 +1,11 @@
+AArch64 CoRW1+postt-rfitt
+Variant=memtag
+{
+ 0:X0=x; 0:X2=x:red;
+}
+ P0          ;
+ MOV X1,X0   ;
+ LDG X1,[X0] ;
+ STG X2,[X0] ;
+
+exists (0:X1=x:red)
