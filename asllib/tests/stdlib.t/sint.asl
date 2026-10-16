@@ -32,7 +32,6 @@ begin
   assert SInt('000') == 0;
   assert SInt('0') == 0;
   assert SInt('1') == -1;
-  assert SInt('') == 0;
 
   for N = 0 to 10 do
     test_sint{N}(Zeros{N});

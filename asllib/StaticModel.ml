@@ -230,7 +230,6 @@ let rec to_ir env (e : expr) =
   | E_Binop (op, { desc = E_Literal l1; _ }, { desc = E_Literal l2; _ }) ->
       Operations.binop_values e Error.Static op l1 l2 |> of_lit
   | E_Unop (NEG, e0) -> Polynomial.neg (to_ir env e0)
-  | E_ATC (e', _) -> to_ir env e'
   | _ -> raise NotSupported
 (* End *)
 

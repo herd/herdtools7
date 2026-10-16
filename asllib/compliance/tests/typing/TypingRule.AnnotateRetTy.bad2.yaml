@@ -1,0 +1,11 @@
+mode: no-exec
+outcome: FAILURE
+error: TE_BO
+error_line: 1
+info: |-
+  File ../tests/typing/TypingRule.AnnotateRetTy.bad2.asl, line 1,
+    characters 26 to 33:
+  func BadFunc{N}() => bits(N DIV 2)
+                            ^^^^^^^
+  ASL Type error (TE_BO): Illegal application of operator DIV on types
+    integer {3} and integer {2}.

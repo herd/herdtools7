@@ -1163,15 +1163,14 @@ showing how a \bitvectortypeterm{} may be safely converted
 into another \bitvectortypeterm.
 \ASLListing{Safely applying ATC to bitvector types}{typing-atc3}{\typingtests/TypingRule.ATC3.asl}
 
-Similarly, the specification in \listingref{typing-atc4} is well-typed,
-showing that even literals may require an asserting type conversion to ensure they meet
-type-satisfaction requirements.
-\ASLListing{Safely applying ATC to a bitvector literal}{typing-atc4}{\typingtests/TypingRule.ATC4.asl}
-
 \ExampleDef{Ill-typed Asserting Type Conversion}
 The specification in \listingref{typing-atc-bad} is ill-typed,
 as it is applied to unrelated kinds of types.
 \ASLListing{Ill-typed ATC of a bitvector type}{typing-atc-bad}{\typingtests/TypingRule.ATC.bad.asl}
+
+The specification in \listingref{typing-atc-bad2} is ill-typed,
+showing that ATCs can affect type-satisfaction.
+\ASLListing{Ill-typed ATC due to type-satisfaction}{typing-atc-bad2}{\typingtests/TypingRule.ATC.bad2.asl}
 
 \RenderProseAndFormally{annotate_expr_EATC}
 \CodeSubsection{\ATCBegin}{\ATCEnd}{../Typing.ml}

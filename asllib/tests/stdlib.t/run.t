@@ -1,6 +1,20 @@
 Tests using ASLRef OCaml primitives for some stdlib functions
   $ aslref uint.asl
   $ aslref sint.asl
+  $ aslref sint_zero_static.asl
+  : All values in constraints {-1} would fail with op ^, operation will always
+  fail.
+  ASL Type error (TE_BO): Illegal application of operator ^ on types
+    integer {2} and integer {-1}.
+  [1]
+  $ aslref sint_zero_dynamic.asl
+  ASL Warning: Removing some values that would fail with op ^ from constraint
+  set {-1..0} gave {0..0}. Continuing with this constraint set.
+  ASL Warning: Removing some values that would fail with op ^ from constraint
+  set {-1..0} gave {0..0}. Continuing with this constraint set.
+  ASL Dynamic error (DE_DAF):
+    SInt (primitive) expected an argument length greater than 0
+  [1]
   $ aslref pow2.asl
   $ aslref log2.asl
   $ aslref ilog2.asl
@@ -58,6 +72,23 @@ Checking that --no-primitives option actually removes OCaml primitives
 Tests using ASL stdlib only
   $ aslref --no-primitives uint.asl
   $ aslref --no-primitives sint.asl
+  $ aslref --no-primitives sint_zero_static.asl
+  File ASL Standard Library, line 33, characters 44 to 51: All values in
+  constraints {-1} would fail with op ^, operation will always fail.
+  File ASL Standard Library, line 33, characters 44 to 51:
+  ASL Type error (TE_BO): Illegal application of operator ^ on types
+    integer {2} and integer {-1}.
+  [1]
+  $ aslref --no-primitives sint_zero_dynamic.asl
+  File ASL Standard Library, line 33, characters 44 to 51:
+  ASL Warning: Removing some values that would fail with op ^ from constraint
+  set {-1..0} gave {0..0}. Continuing with this constraint set.
+  File ASL Standard Library, line 33, characters 57 to 64:
+  ASL Warning: Removing some values that would fail with op ^ from constraint
+  set {-1..0} gave {0..0}. Continuing with this constraint set.
+  File ASL Standard Library, line 35, characters 11 to 16:
+  ASL Dynamic error (DE_DAF): Assertion failed: (__stdlib_local_N > 0).
+  [1]
   $ aslref --no-primitives pow2.asl
   $ aslref --no-primitives log2.asl
   $ aslref --no-primitives ilog2.asl
