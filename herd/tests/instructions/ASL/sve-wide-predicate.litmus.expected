@@ -1,0 +1,10 @@
+Test SVEWidePredicate Required
+States 1
+0:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1)
+Observation SVEWidePredicate Always 1 0
+Hash=c25e04510646d8d97dec17af5d705125
+

@@ -205,7 +205,7 @@ begin
     setter
         assert n >= 0 && n <= 15;
         assert width == CurrentVL() DIV 8;
-        // TODO: not exact for larger VLs: herd does not preserve upper predicate bits.
+        // Bits above CurrentVL() DIV 8 are not modelled.
         write_predicate{width}(n, value);
     end;
 end;
@@ -231,7 +231,7 @@ begin
     setter
         assert n >= 0 && n <= 31;
         assert width == CurrentVL();
-        // TODO: not exact for larger VLs: herd does not preserve upper vector bits.
+        // Bits above CurrentVL() are not modelled.
         write_vector{width}(n, value);
     end;
 end;

@@ -359,9 +359,12 @@ module Make (Conf : Config) = struct
       let mk_action loc' = Act.Access (Dir.W, loc', v, sz, (a, e, acc)) in
       M.write_loc mk_action loc ii
 
-    let read_loc sz loc a e acc ii =
+    (* Register values can be wider than the event's MachSize. *)
+    let read_loc ?width sz loc a e acc ii =
+      let width = Option.value width ~default:(MachSize.nbits sz) in
       let mk_action loc' v' = Act.Access (Dir.R, loc', v', sz, (a, e, acc)) in
-      M.read_loc Port.No mk_action loc ii >>= to_bv sz
+      M.read_loc Port.No mk_action loc ii
+      >>= M.op1 (Op.ArchOp1 (ASLOp.ToBV width))
 
     (**************************************************************************)
     (* ASL-Backend implementation                                             *)
@@ -677,14 +680,15 @@ module Make (Conf : Config) = struct
           let arch_reg = AArch64Base.Preg (tpreds.(i), 32) in
           A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
 
-    let read_predicate (ii, poi) ~width:_ ~reg:r_m =
-      let* rval = r_m in
+    let read_predicate (ii, poi) ~width ~reg:r_m =
+      let* width = width and* rval = r_m in
       let loc = virtual_to_loc_predicate rval ii in
-      read_loc MachSize.S128 loc aneutral aexp areg (use_ii_with_poi ii poi)
-      >>= from_aarch64_val
+      read_loc ~width:(v_as_int width) MachSize.S128 loc aneutral aexp areg
+        (use_ii_with_poi ii poi)
 
-    let write_predicate (ii, poi) ~width:_ ~reg:r_m ~data:v_m =
-      let* v = v_m >>= to_aarch64_val and* r = r_m in
+    let write_predicate (ii, poi) ~width ~reg:r_m ~data:v_m =
+      let* width = width and* r = r_m in
+      let* v = v_m >>= M.op1 (Op.ArchOp1 (ASLOp.ToBV (v_as_int width))) in
       let loc = virtual_to_loc_predicate r ii in
       write_loc MachSize.S128 loc v aneutral aexp areg (use_ii_with_poi ii poi)
 
@@ -702,13 +706,16 @@ module Make (Conf : Config) = struct
           let arch_reg = AArch64Base.Zreg (tzregs.(i), 32) in
           A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
 
-    let read_vector (ii, poi) ~width:_ ~reg:r_m =
-      let* rval = r_m in
+    (* As in native SVE, S128 labels the register event, not the value width. *)
+    let read_vector (ii, poi) ~width ~reg:r_m =
+      let* width = width and* rval = r_m in
       let loc = virtual_to_loc_vector rval ii in
-      read_loc MachSize.S128 loc aneutral aexp areg (use_ii_with_poi ii poi)
+      read_loc ~width:(v_as_int width) MachSize.S128 loc aneutral aexp areg
+        (use_ii_with_poi ii poi)
 
-    let write_vector (ii, poi) ~width:_ ~reg:r_m ~data:v_m =
-      let* v = v_m >>= to_bv MachSize.S128 and* r = r_m in
+    let write_vector (ii, poi) ~width ~reg:r_m ~data:v_m =
+      let* width = width and* r = r_m in
+      let* v = v_m >>= M.op1 (Op.ArchOp1 (ASLOp.ToBV (v_as_int width))) in
       let loc = virtual_to_loc_vector r ii in
       write_loc MachSize.S128 loc v aneutral aexp areg (use_ii_with_poi ii poi)
 

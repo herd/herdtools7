@@ -1,0 +1,10 @@
+Test SVEWideVector Required
+States 1
+0:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1)
+Observation SVEWideVector Always 1 0
+Hash=f05484a1e2da838bb5272432ddf32f65
+
