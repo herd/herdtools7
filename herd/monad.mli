@@ -63,6 +63,7 @@ module type S =
 
     (* Data composition, entry for snd monad: minimals for iico_data *)
     val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+
  (* Input to second arg *)
     val data_input_next : 'a t -> ('a -> 'b t) -> 'b t
  (* Input to both args *)
@@ -84,6 +85,9 @@ module type S =
 
 (* Control composition *)
     val (>>*=) : 'a t -> ('a -> 'b t) -> 'b t
+
+    val bind_ctrl : 'a t -> ('a -> 'b t) -> 'b t
+    (** Alias for [>>*=]. *)
 
     val control_input_union :  'a t -> ('a -> 'b t) -> 'b t
     (** Input is union of both arg inputs *)
@@ -116,6 +120,15 @@ module type S =
     (* Similar as [bind_ctrl_seq_data] but sequences partial_po *)
     val asl_ctrl : 'a t -> ('a -> 'b t) -> 'b t
 
+    val bind_control_set_input_first : 'a t -> ('a -> 'b t) -> 'b t
+    (** Like [>>*=], but takes ordinary and data inputs from the first
+        component, or the second if the first has no events.
+
+        Explicit input sets are preserved. If an input field is [None],
+        its set is computed from the selected component's minimal events
+        and stored explicitly, rather than inferred from the merged
+        structure. If both components are empty, inputs remain [None]. *)
+
     (* Hybrid composition m1 m2 m3, m1 -ctrl+data-> m3 and m2 -data-> m3.
        ctrl+data -> ctrl from maximal commit evts + data from
        monad output *)
@@ -123,6 +136,10 @@ module type S =
 
     (* Similar, no second argument *)
     val bind_ctrldata : 'a t -> ('a -> 'c t) -> 'c t
+
+    val bind_ctrldata_second_outputs : 'a t -> ('a -> 'b t) -> 'b t
+    (** Like [bind_ctrldata], but explicitly exposes the second computation's
+        data and control outputs. *)
 
     (* Same as bind_ctrldata, all output from first argument *)
     val (>>**==) : 'a t -> ('a -> 'b t) -> 'b t
@@ -132,6 +149,10 @@ module type S =
 
     (* Same as [>>=] but with order deps instead of data between the arguments. *)
     val bind_order : 'a t -> ('a -> 'b t) -> 'b t
+
+    val bind_order_set_input_first : 'a t -> ('a -> 'b t) -> 'b t
+    (** Like [bind_order], with ordinary and data inputs selected and made
+        explicit as in [bind_control_set_input_first]. *)
 
     val short : (E.event -> bool) -> (E.event -> bool) -> 'a t -> 'a t
     (** [short p1 p2 s] adds iico_causality_data relations to [s].

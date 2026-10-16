@@ -1,0 +1,9 @@
+AArch64 GCSSS2-ss2-fault
+variant=shadowstack
+{
+  SS(x,1) = ssval_t: {0};
+  0:GCSPR_EL1=x;
+  0:X0=42;
+}
+P0;
+GCSSS2 X0;
