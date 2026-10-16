@@ -1647,11 +1647,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
           chan test legend conc.S.str conc.S.rfmap sets vbs conc)
 
   module Json = struct
-    let event_ref e =
-      Json.assoc ["type", Json.string "event"; "id", Json.int e.E.eiid]
-
-    (* without -initwrites, read from the synthetic S.Init *)
-    let pseudo_ref kind = Json.assoc ["type", Json.string kind]
+    let event_ref e = Json.int e.E.eiid
 
     let edge relation source target =
       Json.assoc
@@ -1817,14 +1813,13 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
             add_edge "rf" ew er
         | S.Load er,S.Init when PC.showinitrf && visible er ->
             if not (StringSet.mem "rf" PC.unshow) then
-              edges := edge "initrf" (pseudo_ref "init") (event_ref er)::!edges
+              edges := edge "initrf" (Json.string "init") (event_ref er)::!edges
         | S.Final loc,S.Store ew when PC.showfinalrf && visible ew ->
             if not (StringSet.mem "rf" PC.unshow) then
               edges :=
                 edge "finalrf" (event_ref ew)
                   (Json.assoc
-                     ["type", Json.string "final";
-                      "location", Json.string (A.pp_location loc)]) :: !edges
+                     ["final", Json.string (A.pp_location loc)]) :: !edges
         | _ -> ())
         (select_rfmap conc.S.rfmap);
       Json.assoc
