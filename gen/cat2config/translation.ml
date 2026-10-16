@@ -389,6 +389,9 @@ let fold_macro (name, choices) relaxs =
   in
   do_rec relaxs
 
+let characteristic_macros =
+  [ ("Amo.Safe", R.parse_expand_relaxs (Ast.One "Amo.Cas")) ]
+
 let fold_macros =
   (* Fold broader macros first so smaller overlapping expansions do not consume
      their alternatives. Prefer more choices; lexical order makes equal
@@ -410,6 +413,12 @@ let fold_macros =
         Misc.pair_compare Misc.int_compare String.compare (priority lhs)
           (priority rhs))
   in
+  let macro_entries =
+    List.map
+      (fun (name, relaxs) -> (name, R.Set.of_list relaxs))
+      characteristic_macros
+    @ macro_entries
+  in
   fun relaxs ->
     List.fold_left
       (fun relaxs entry -> fold_macro entry relaxs)
@@ -423,9 +432,12 @@ let unfold_macro =
       StringMap.empty
   in
   fun name ->
-    match StringMap.find_opt name macros with
-    | Some relaxs -> R.Set.elements relaxs
-    | None -> Warn.fatal "Unknown macro %s" name
+    match List.assoc_opt name characteristic_macros with
+    | Some relaxs -> relaxs
+    | None -> (
+        match StringMap.find_opt name macros with
+        | Some relaxs -> R.Set.elements relaxs
+        | None -> Warn.fatal "Unknown macro %s" name)
 
 (* Reconstruct choices and optional items from flat alternatives so that
    [pp_relax] prints, for example, `[A|Q]` instead of separate `A` and `Q`
