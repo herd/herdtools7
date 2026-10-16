@@ -16,26 +16,26 @@ currently only describes plain memory and register accesses.
         {
           "proc": 0,
           "function": "main",
-          "instructions": [
+          "source_instructions": [
             {
               "static_poi": 0,
-              "instruction": "atomic_fetch_add_explicit(y,1,memory_order_relaxed);;"
+              "source_instruction": "atomic_fetch_add_explicit(y,1,memory_order_relaxed);;"
             }
           ]
         },
         {
           "proc": 1,
           "function": "main",
-          "instructions": [
+          "source_instructions": [
             {
               "static_poi": 0,
-              "instruction": "atomic_fetch_add_explicit(y,1,memory_order_relaxed);;"
+              "source_instruction": "atomic_fetch_add_explicit(y,1,memory_order_relaxed);;"
             }
           ]
         }
       ],
       "init": "0:y=y; 1:y=y;",
-      "condition": "forall ([y]=2)"
+      "post_condition": "forall ([y]=2)"
     },
     "result": {
       "model": "Generic(C++11)",
@@ -59,18 +59,14 @@ currently only describes plain memory and register accesses.
         "satisfies_post_condition": true,
         "final_state_id": "state-0",
         "pretty_conf": {
-          "events": {
-            "showevents": "noregs",
-            "showinitwrites": true,
+          "events": { "showevents": "noregs", "showinitwrites": true },
+          "edges": {
             "showinitrf": false,
             "showfinalrf": false,
-            "showpo": true
-          },
-          "relations": {
+            "showpo": true,
             "doshow": [],
             "unshow": [],
-            "showraw": [],
-            "initwrites": true
+            "showraw": []
           }
         },
         "instructions": {
@@ -133,18 +129,14 @@ currently only describes plain memory and register accesses.
         "satisfies_post_condition": true,
         "final_state_id": "state-0",
         "pretty_conf": {
-          "events": {
-            "showevents": "noregs",
-            "showinitwrites": true,
+          "events": { "showevents": "noregs", "showinitwrites": true },
+          "edges": {
             "showinitrf": false,
             "showfinalrf": false,
-            "showpo": true
-          },
-          "relations": {
+            "showpo": true,
             "doshow": [],
             "unshow": [],
-            "showraw": [],
-            "initwrites": true
+            "showraw": []
           }
         },
         "instructions": {

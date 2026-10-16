@@ -7,11 +7,11 @@ Trailing labels are emitted in source order without an instruction or static_poi
         {
           "proc": 0,
           "function": "main",
-          "instructions": [
-            { "static_poi": 0, "instruction": "MOV W0,#1" },
+          "source_instructions": [
+            { "static_poi": 0, "source_instruction": "MOV W0,#1" },
             {
               "static_poi": 2,
-              "instruction": "ADD W0,W0,#1",
+              "source_instruction": "ADD W0,W0,#1",
               "labels": [ "first", "second" ]
             },
             { "labels": [ "end_first", "end_second" ] }

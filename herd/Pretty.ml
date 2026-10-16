@@ -1830,18 +1830,17 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
          "pretty_conf", Json.assoc
            ["events", Json.assoc
               ["showevents", Json.string pc_showevents;
-               "showinitwrites", Json.bool PC.showinitwrites;
-               "showinitrf", Json.bool PC.showinitrf;
+               "showinitwrites", Json.bool PC.showinitwrites];
+            "edges", Json.assoc
+              ["showinitrf", Json.bool PC.showinitrf;
                "showfinalrf", Json.bool PC.showfinalrf;
-               "showpo", Json.bool PC.showpo; ];
-            "relations", Json.assoc
-              ["doshow", Json.list
+               "showpo", Json.bool PC.showpo;
+               "doshow", Json.list
                  (List.map Json.string (StringSet.elements PC.doshow));
                "unshow", Json.list
                  (List.map Json.string (StringSet.elements PC.unshow));
                "showraw", Json.list
-                 (List.map Json.string (StringSet.elements PC.showraw));
-               "initwrites", Json.bool (PC.showinitwrites)]];
+                 (List.map Json.string (StringSet.elements PC.showraw))]];
          "instructions", instructions_to_json conc.S.str.E.events events;
          "events", Json.list (List.map event_to_json events);
          "edges", Json.list (List.rev !edges)]
