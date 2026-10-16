@@ -573,6 +573,9 @@ Monad type:
           read_addr (eiid,Evt.empty) in
       eiid,(acts,None)
 
+    let bind_mem_write ma mv mop eiid =
+      comp_comp E.bind_mem_write ma mv mop eiid
+
 (* AArch64 successful cas *)
     let do_aarch64_cas_ok
         (is_physical:bool) (prov_data: [`DataFromRRs | `DataFromRx])
@@ -791,6 +794,35 @@ Monad type:
 
     let seq_mem_list : 'a t -> 'a list t -> 'a list t
       = fun  s1 s2 -> combi Misc.cons E.seq_mem s1 s2
+
+    let bind_pred_mem_writes mpred ma mv mops eiid =
+      let eiid,(acts_pred,spec_pred) = mpred eiid in
+      assert (spec_pred=None);
+      let eiid,acts =
+        Evt.fold
+          (fun (vpred,cl_pred,es_pred) (eiid,acts) ->
+            let eiid,(acts1,spec1) = ma vpred eiid in
+            let eiid,(acts2,spec2) = mv vpred eiid in
+            assert (spec1=None); assert (spec2=None);
+            Evt.foldfold
+              (fun (v1,cl1,es1) (v2,cl2,es2) (eiid,acts) ->
+                let mops = List.map (fun mop -> mop v1 v2 vpred) mops in
+                let seq_mem_evts s f =
+                  data_comp E.para_po_seq_output_right s (fun _ -> f) in
+                let mop = List.fold_right seq_mem_evts mops (unitT []) in
+                let eiid,(acts3,spec3) = mop eiid in
+                assert (spec3=None);
+                let acts =
+                  Evt.fold
+                    (fun (v3,cl3,es3) acts ->
+                      let es =
+                        E.bind_pred_mem_writes es_pred es1 es2 es3 in
+                      Evt.add (v3,cl_pred@cl1@cl2@cl3,es) acts)
+                    acts3 acts in
+                eiid,acts)
+              acts1 acts2 (eiid,acts))
+          acts_pred (eiid,Evt.empty) in
+      eiid,(acts,None)
 
 (* Force monad value *)
     let forceT (v : 'a) : 'b t -> 'a t =

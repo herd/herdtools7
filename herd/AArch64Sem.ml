@@ -823,18 +823,6 @@ module Make
         | DB -> AArch64Op.SetDB
         | IFetch|Other|AFDB|GCS -> assert false
 
-      let do_test_and_set_bit v combine cond set a_pte iiid domain =
-        let nexp = AArch64Explicit.NExp set in
-        mextract_whole_pte_val Annot.X nexp a_pte iiid domain >>= fun pte_v ->
-        (M.eqT pte_v v >>| cond pte_v) >>*= fun ((),c) ->
-        combine c
-            (arch_op1 (op_of_set set) pte_v >>= fun v ->
-             write_whole_pte_val Annot.X nexp a_pte v iiid domain)
-            (M.unitT ())
-
-      let test_and_set_bit_succeeds v cond =
-        do_test_and_set_bit v (fun c m _ -> M.assertT c m) cond
-
       let bit_is_zero op v = arch_op1 op v >>= is_zero
       let bit_is_not_zero op v = arch_op1 op v >>= is_not_zero
       let m_op op m1 m2 = (m1 >>| m2) >>= fun (v1,v2) -> M.op op v1 v2
@@ -851,13 +839,6 @@ module Make
         let nexp = AArch64Explicit.NExp AArch64Explicit.AFDB in
         arch_op1 (AArch64Op.SetAF) pte_v >>= arch_op1 (AArch64Op.SetDB) >>= fun v ->
         write_whole_pte_val Annot.X nexp a_pte v (E.IdSome ii) domain
-
-      let cond_af v =
-        m_op Op.And
-          (bit_is_zero AArch64Op.AF v) (bit_is_not_zero AArch64Op.Valid v)
-
-      let test_and_set_af_succeeds value =
-        test_and_set_bit_succeeds value cond_af AArch64Explicit.AF
 
       let mextract_pte_vals pte_v =
         (extract_oa pte_v >>|
@@ -1790,18 +1771,15 @@ Arguments:
       let do_str rA mop sz an ma mv ii =
         lift_memop ~tag:"ST" rA Dir.W true memtag
           (fun ac ma mv ->
-            let memtag_sync = memtag && (is_mte_sync Dir.W) in
-            if pac || memtag_sync || (is_branching && Access.is_physical ac) then begin
-              (* additional ctrl dep on address *)
-              M.bind_ctrldata_data ma mv
-                (fun a v -> mop ac a v ii)
-            end else if morello then
+            let open Precision in
+            if morello then
               (* additional ctrl dep on address and data *)
-              do_insert_commit (ma >>| mv)
-                (fun (a,v) -> mop ac a v ii)
-                ii
+              let mop a v =
+                commit_pred ii >>*== fun _ -> mop ac a v ii in
+              M.bind_mem_write ma mv mop
             else
-              (ma >>| mv) >>= fun (a,v) -> mop ac a v ii)
+              let mop a v = mop ac a v ii in
+              M.bind_mem_write ma mv mop)
           (to_perms "w" sz) ma mv an ii
 
 (***********************)
@@ -2571,29 +2549,35 @@ Arguments:
       let simd_ldar = do_simd_ldr  Annot.Q
 
       let do_simd_str an sz ma rd ii =
-        ma >>|
-        read_reg_neon Port.Data rd ii >>= fun (addr,v) ->
-        if sz == MachSize.S128 then
-          do_write_mem_2_ops sz an aexp Access.VIR addr v ii >>= B.next2T
-        else
-          demote v >>= fun v ->
-          do_write_mem sz an aexp Access.VIR addr v ii >>= B.next1T
+        let mv = read_reg_neon Port.Data rd ii in
+        let mop a v =
+          if sz == MachSize.S128 then
+            let* (), () = do_write_mem_2_ops sz an aexp Access.VIR a v ii in
+            B.nextT
+          else
+            let* v = demote v in
+            let* () = do_write_mem sz an aexp Access.VIR a v ii in
+            B.nextT in
+        M.bind_mem_write ma mv mop
 
       let simd_str = do_simd_str Annot.N
       let simd_stlr = do_simd_str Annot.L
 
       let simd_str_p sz ma rd rs k ii =
-        ma >>|
-        read_reg_neon Port.Data rd ii >>= fun (addr,v) ->
-        if sz == MachSize.S128 then
-          (* 128-bit Neon LDR/STR and friends are split into two 64-bit
-           * single-copy atomic accesses. *)
-          write_mem_2_ops sz aexp Access.VIR addr v ii >>|
-          post_kr rs addr k ii >>= B.next3T
-        else
-          demote v >>= fun v ->
-          write_mem sz aexp Access.VIR addr v ii >>|
-          post_kr rs addr k ii >>= B.next2T
+        let mv = read_reg_neon Port.Data rd ii in
+        let mop a v =
+          if sz == MachSize.S128 then
+            (* 128-bit Neon LDR/STR and friends are split into two 64-bit
+             * single-copy atomic accesses. *)
+            let* (), () = write_mem_2_ops sz aexp Access.VIR a v ii
+            and* () = post_kr rs a k ii in
+            B.nextT
+          else
+            let* v = demote v in
+            let* () = write_mem sz aexp Access.VIR a v ii
+            and* () = post_kr rs a k ii in
+            B.nextT in
+        M.bind_mem_write ma mv mop
 
       let simd_ldp tnt var addr1 rd1 rd2 ii =
         let an = tnt2annot tnt in
@@ -2609,30 +2593,29 @@ Arguments:
         let an = tnt2annot tnt in
         let open AArch64Base in
         let sz = tr_simd_variant var in
+        let ma1 = M.unitT addr1
+        and mv1 = read_reg_neon Port.Data rd1 ii
+        and ma2 = M.add addr1 (neon_sz_k var)
+        and mv2 = read_reg_neon Port.Data rd2 ii in
+
         if sz == MachSize.S128 then
           (* 128-bit Neon LDR/STR are not single-copy atomic, but they
            * are single-copy atomic for each of the two 64-bit quantities
            * they access. This means that a 2x128-bit LDP/STP with Neon
            * registers results in 4 single-copy atomic accesses. *)
           begin
-            read_reg_neon Port.Data rd1 ii >>= fun v1 ->
-            do_write_mem_2_ops sz an aexp Access.VIR addr1 v1 ii
-          end >>|
-          begin
-            M.add addr1 (neon_sz_k var) >>|
-            read_reg_neon Port.Data rd2 ii >>= fun (addr2, v2) ->
-            do_write_mem_2_ops sz an aexp Access.VIR addr2 v2 ii
-          end >>= fun ((a, b), (c, d)) -> B.next4T (((a, b), c), d)
+            let mop a v = do_write_mem_2_ops sz an aexp Access.VIR a v ii in
+            let* (), () = M.bind_mem_write ma1 mv1 mop
+            and* (), () = M.bind_mem_write ma2 mv2 mop in
+            B.nextT
+          end
         else
           begin
-            read_reg_neon Port.Data rd1 ii >>= fun v1 ->
-            write_mem sz aexp Access.VIR addr1 v1 ii
-          end >>|
-          begin
-            M.add addr1 (neon_sz_k var) >>|
-            read_reg_neon Port.Data rd2 ii >>= fun (addr2, v2) ->
-            write_mem sz aexp Access.VIR addr2 v2 ii
-          end >>= B.next2T
+            let mop a v = write_mem sz aexp Access.VIR a v ii in
+            let* () = M.bind_mem_write ma1 mv1 mop
+            and* () = M.bind_mem_write ma2 mv2 mop in
+            B.nextT
+          end
 
       let m128 k = promote (V.intToV k)
 
@@ -3165,8 +3148,12 @@ Arguments:
 
       let do_store_elem an i r addr ii =
         let access_size = AArch64.simd_mem_access_size [r] in
-        read_reg_neon_elem Port.Data r i ii >>= demote >>= fun v ->
-        do_write_mem access_size an aexp Access.VIR addr v ii
+        let ma = M.unitT addr
+        and mv =
+          let* v = read_reg_neon_elem Port.Data r i ii in
+          demote v
+        and mop a v = do_write_mem access_size an aexp Access.VIR a v ii in
+        M.bind_mem_write ma mv mop
 
       let store_elem = do_store_elem Annot.N
       let store_elem_stlr = do_store_elem Annot.L
@@ -3300,29 +3287,36 @@ Arguments:
         let psize = predicate_psize r in
         let esize = scalable_esize r in
         let nregs = List.length rlist in
-          let<>= base = ma in
-          let>= pred = read_reg_predicate p ii in
-          let ops i r =
-            let<>= v =
-              any_active p pred psize nelem ii
-              (read_reg_scalable Port.Data r ii)
-              mzero
-            in
-            let op idx =
-              let store =
-                let offset = (idx * nregs + i) * MachSize.nbytes sz in
-                let>= addr = M.op1 (Op.AddK offset) base
-                and* v = scalable_getlane v idx esize >>= demote in
-                write_mem sz aexp Access.VIR addr v ii
-              in
-              is_active_element p pred psize idx ii store (M.unitT ())
-            in
-            let ops = List.map op (Misc.interval 0 nelem) in
-            List.fold_right M.seq_mem_list ops (M.unitT [])
-            (* List.fold_right M.seq_mem_list ops (M.unitT [()]) *)
-          in
-          let ops = List.mapi ops rlist in
-          List.fold_right  M.seq_mem_list  ops (M.unitT [])
+        let mpred =
+          let* pred = read_reg_predicate p ii in
+          let* any = get_predicate_any pred psize nelem in
+          let cond = Printf.sprintf "AnyActive(%s)" (A.pp_reg p) in
+          let* () = commit_pred_txt (Some cond) ii in
+          M.unitT (pred, any) in
+        let ma (_pred, any) =
+          M.choiceT any ma mzero in
+        let mv (_pred, any) =
+          let mv =
+            List.fold_right
+              (fun r macc -> read_reg_scalable Port.Data r ii >>:: macc)
+              rlist (M.unitT []) in
+          let zero = M.unitT (List.map (fun _ -> M.A.V.zero) rlist) in
+          M.choiceT any mv zero in
+        let ops =
+          let op i idx base vs (pred, _any) =
+            let store =
+              let offset = (idx * nregs + i) * MachSize.nbytes sz in
+              let* addr = M.op1 (Op.AddK offset) base in
+              let* v = List.nth vs i |> fun v -> scalable_getlane v idx esize in
+              let* v = demote v in
+              write_mem sz aexp Access.VIR addr v ii in
+            is_active_element p pred psize idx ii store (no_action ii) in
+          List.concat
+            (List.mapi
+               (fun i _r ->
+                 List.map (op i) (Misc.interval 0 nelem))
+               rlist) in
+        M.bind_pred_mem_writes mpred ma mv ops >>= fun rs -> M.unitT [rs]
 
       let load_gather_predicated_elem_or_zero sz p ma mo rs e k ii =
         let r = List.hd rs in
@@ -3358,25 +3352,33 @@ Arguments:
         let psize = predicate_psize r in
         let nelem = scalable_nelem r in
         let esize = scalable_esize r in
-        let>= pred = read_reg_predicate p ii in
-        let<>= ((base, offsets), v) =
-          any_active p pred psize nelem ii
-            (ma >>| mo >>| read_reg_scalable Port.Data r ii)
-            (M.unitT ((M.A.V.zero, M.A.V.zero), M.A.V.zero))
-        in
-        let op idx =
-          let store =
-            let>= lane = scalable_getlane offsets idx esize in
-            let>= lane = demote lane in
-            let>= o = memext_sext e k lane in
-            let>= addr = M.add base o in
-            let>= v = scalable_getlane v idx esize in
-            let>= v = demote v in
-            write_mem sz aexp Access.VIR addr v ii in
-          is_active_element r pred psize idx ii store (M.unitT ())
-        in
-        let ops = List.map op (Misc.interval 0 nelem) in
-        List.fold_right M.seq_mem_list ops (M.unitT [()])
+        let mpred =
+          let* pred = read_reg_predicate p ii in
+          let* any = get_predicate_any pred psize nelem in
+          let cond = Printf.sprintf "AnyActive(%s)" (A.pp_reg p) in
+          let* () = commit_pred_txt (Some cond) ii in
+          M.unitT (pred, any) in
+        let ma (_pred, any) =
+          let* base = M.choiceT any ma mzero
+          and* offsets = M.choiceT any mo mzero in
+          M.unitT (base, offsets) in
+        let mv (_pred, any) =
+          let mv = read_reg_scalable Port.Data r ii in
+          M.choiceT any mv mzero in
+        let ops =
+          let op idx (base, offsets) v (pred, _any) =
+            let store =
+              let* lane = scalable_getlane offsets idx esize in
+              let* lane = demote lane in
+              let* o = memext_sext e k lane in
+              let* addr = M.add base o in
+              let* v = scalable_getlane v idx esize in
+              let* v = demote v in
+              write_mem sz aexp Access.VIR addr v ii in
+            is_active_element r pred psize idx ii store (no_action ii)
+            in
+          List.map op (Misc.interval 0 nelem) in
+        M.bind_pred_mem_writes mpred ma mv ops
 
       let load_predicated_slice sz r ri k p ma ii =
         let dst,tile,dir,esize = match r with
@@ -3427,28 +3429,35 @@ Arguments:
         | _ -> assert false in
         let psize = predicate_psize src in
         let dim = scalable_nbits / esize; in
-        ma >>|
-        read_reg_za src ii >>|
-          read_reg_predicate p ii >>|
-            (read_reg_ord ri ii >>= fun index ->
+        let mpred =
+          let* pred = read_reg_predicate p ii in
+          let* any = get_predicate_any pred psize dim in
+          let cond = Printf.sprintf "AnyActive(%s)" (A.pp_reg p) in
+          let* () = commit_pred_txt (Some cond) ii in
+          M.unitT (pred, any) in
+        let ma (_pred, any) =
+          M.choiceT any ma mzero in
+        let mv (_pred, any) =
+          let mv =
+            let* orig = read_reg_za src ii
+            and* slice =
+              read_reg_ord ri ii >>= fun index ->
               M.add index (V.intToV k) >>= fun slice ->
-                M.op Op.Rem slice (V.intToV dim)) >>= fun ((((base,orig)),pred),slice) ->
-            let store idx =
-              let offset = idx * MachSize.nbytes sz in
-              get_predicate_last pred psize idx >>= fun last ->
-                M.choiceT
-                last
-                (M.op1 (Op.AddK offset) base >>|
-                 (za_getlane_dir dir orig tile slice (V.intToV idx) esize >>= demote)
-                 >>= fun (addr,v) -> write_mem sz aexp Access.VIR addr v ii)
-                (M.unitT ())
-            in
-            let rec reduce idx op =
-              match idx with
-              | 0 -> store idx >>:: op
-              | _ -> reduce (idx-1) (store idx >>:: op)
-            in
-            reduce (dim-1) (M.unitT [()])
+              M.op Op.Rem slice (V.intToV dim) in
+            M.unitT (orig, slice) in
+          M.choiceT any mv (M.unitT M.A.V.(zero, zero)) in
+        let ops =
+          let store idx base (orig, slice) (pred, _any) =
+            let offset = idx * MachSize.nbytes sz in
+            let store =
+              let* addr = M.op1 (Op.AddK offset) base
+              and* v =
+                let* v = za_getlane_dir dir orig tile slice (V.intToV idx) esize in
+                demote v
+              in write_mem sz aexp Access.VIR addr v ii in
+            is_active_element p pred psize idx ii store (no_action ii) in
+          List.map store (Misc.interval 0 dim) in
+        M.bind_pred_mem_writes mpred ma mv ops
 
 
       (* Data cache operations *)
@@ -3512,7 +3521,7 @@ Arguments:
       let stg d rt rn k ii =
         let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii
         and mv = read_reg_data rt ii >>= tag_extract in
-        let do_stg ac ma mv =
+        let do_stg ma mv =
           let __do_stg a v =
             M.op1 Op.TagLoc a >>= fun a -> do_write_tag a v ii in
           let _do_stg =
@@ -3526,11 +3535,8 @@ Arguments:
                      (M.op1 (Op.AddK MachSize.granule_nbytes) a
                       >>= fun a ->  __do_stg a v)
                  end >>! () in
-          if Access.is_physical ac then
-            M.bind_ctrldata_data ma mv _do_stg
-          else
-            (ma >>| mv) >>= fun (a,v) -> _do_stg a v in
-        lift_memop rn Dir.W true false (fun ac ma mv -> do_stg ac ma mv)
+          M.bind_mem_write ma mv _do_stg in
+        lift_memop rn Dir.W true false (fun _ac ma mv -> do_stg ma mv)
           (to_perms "w" MachSize.granule) ma mv Annot.N ii
 
       let stz d rn k ii =
@@ -3549,12 +3555,7 @@ Arguments:
         let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii >>= loc_extract in
         lift_memop rn Dir.W true false (* Unchecked *)
           (fun ac ma mv ->
-            if Access.is_physical ac then begin
-                (* additional ctrl dep on address *)
-                M.bind_ctrldata_data ma mv
-                  (fun a v -> mop ac a v ii)
-              end else
-              (ma >>| mv) >>= fun (a,v) -> mop ac a v ii)
+            M.bind_mem_write ma mv (fun a v -> mop ac a v ii))
           (to_perms "w" sz) ma mzero Annot.N ii
 
       let do_stzg d rt rn k ii =
@@ -3767,11 +3768,7 @@ Arguments:
         let mop ac a v = GCSSem.write ac an a v ii in
         lift_memop r2 Dir.W true false
         (fun ac ma mv ->
-          if is_branching && Access.is_physical ac then
-            M.bind_ctrldata_data ma mv (fun a v -> mop ac a v)
-          else
-            ma >>| mv >>= fun (a,v) -> mop ac a v
-        )
+          M.bind_mem_write ma mv (fun a v -> mop ac a v))
         (to_perms "w" quad)
         (read_reg_addr r2 ii)
         (read_reg_data r1 ii)
@@ -3787,26 +3784,17 @@ Arguments:
           let* a = read_reg_addr rA ii in
           M.add a off in
         let* a_virt, ma = M.delay ma in
-        let mv = read_reg_data rs ii
-        and mop ac ma mv =
-          let write_rA = write_reg rA a_virt ii in
-          let do_gcs_write a v = GCSSem.write ac an a v ii in
-          if is_branching && Access.is_physical ac then
-            let mop a =
-              let* () = write_rA
-              and* () = M.data_input_next mv (do_gcs_write a) in
+        let mop ac ma mv =
+          let do_gcs_write a v =
+            let* () = GCSSem.write ac an a v ii
+            and* () = write_reg rA a_virt ii in
             B.nextSetT rA a_virt in
-            let m = ma >>*= mop in
-            M.short E.is_mem_load E.is_mem_store m
-          else
-            let* a =
-              let (let**) = M.(>>==) in
-              let** a = ma in
-              let* () = write_rA in
-              M.unitT a
-            and* v = mv in
-            let* () = do_gcs_write a v in
-            B.nextSetT rA a_virt in
+          let ma =
+            let (let**) = M.(>>==) in
+            let** a = ma in
+            M.unitT a in
+          M.bind_mem_write ma mv do_gcs_write in
+        let mv = read_reg_data rs ii in
         let m = lift_memop rA Dir.W true false mop (to_perms "w" quad) ma
           mv an ii in
         GCSSem.bind_data_gcspr m ii
@@ -3860,35 +3848,19 @@ Arguments:
           let* a = read_reg_addr rA ii in
           M.add a off in
         let* a_virt, ma = M.delay ma in
-        let check_branch ac ma _mv =
-          let write_rA = write_reg rA a_virt ii
-          and write_lr = write_reg linkreg v_ret ii
-          and write_gcs_mem a = GCSSem.write ac an a v_ret ii
-          and bds = [rA, a_virt; AArch64Base.linkreg, v_ret] in
-          if is_branching && Access.is_physical ac then
-            let (let*=) = M.(>>*=) in
-            let*= a = ma in
-            let* b =
-              let* b = branch bds
-              and* () = write_rA
-              and* () = write_lr
-              and* () = write_gcs_mem a in
-              M.unitT b in
-            M.unitT b
-          else
-            let* b = branch bds
-            and* () = write_lr
-            and* () =
-              let* a = ma in
-              let* () = write_rA
-              and* () = write_gcs_mem a in
-              M.unitT () in
+        let check_branch ac ma mv =
+          let mop a v =
+            let* b = branch [rA, a_virt; AArch64Base.linkreg, v]
+            and* () = write_reg rA a_virt ii
+            and* () = write_reg linkreg v ii
+            and* () = GCSSem.write ac an a v ii in
             M.unitT b in
+          M.bind_mem_write ma mv mop in
+        let mv = M.unitT v_ret in
         let m = do_lift_memop rA Dir.W true false check_branch
-            (to_perms "w" quad) ma mzero an ii Fun.id DISide.Data in
+            (to_perms "w" quad) ma mv an ii Fun.id DISide.Data in
         (* Value writen to GCSPR depends on previous read *)
-        let m = GCSSem.bind_data_gcspr m ii in
-        M.short E.is_mem_load E.is_mem_store m
+        GCSSem.bind_data_gcspr m ii
 
       let retop test i r ii =
         let open AArch64Base in
@@ -4050,10 +4022,7 @@ Arguments:
                 in
                 lift_memop r Dir.W true false
                 (fun ac ma mv ->
-                  if is_branching && Access.is_physical ac then
-                    M.bind_ctrldata_data ma mv (fun a v -> mop ac a v)
-                  else
-                    ma >>| mv >>= fun (a,v) -> mop ac a v)
+                  M.bind_mem_write ma mv (fun a v -> mop ac a v))
                 (to_perms "w" quad)
                 (GCSSem.reset_cap mask outgoing >>= M.add (V.intToV (-off)))
                 (M.unitT outgoing)
@@ -4851,10 +4820,10 @@ Arguments:
             (* NB: only 1 access implemented out of the 4 *)
             lift_morello
               (fun _ac ma mv ->
-                do_insert_commit
-                  (ma >>| mv)
-                  (fun (a,v) -> !(do_write_morello_tag a v ii))
-                  ii)
+                let mop a v =
+                  commit_pred ii >>*==
+                    fun _ -> !(do_write_morello_tag a v ii) in
+                M.bind_mem_write ma mv mop)
               (to_perms "tw" MachSize.S128)
               (read_reg_addr rn ii)
               (read_reg_ord rt ii)
@@ -5393,8 +5362,25 @@ Arguments:
             end
         | _ -> None
 
+      let cond_af v =
+        m_op Op.And
+          (bit_is_zero AArch64Op.AF v) (bit_is_not_zero AArch64Op.Valid v)
+
+      let do_test_and_set_bit v0 cond set a iiid domain =
+        let nexp = AArch64Explicit.NExp set in
+        let ma = M.unitT a in
+        let mv =
+          let* v = mextract_whole_pte_val Annot.X nexp a iiid domain in
+          let* () = M.eqT v v0
+          and* c = cond v in
+          M.assertT c (M.unitT v) in
+        let write_op a v =
+          let* v = arch_op1 (op_of_set set) v in
+          write_whole_pte_val Annot.X nexp a v iiid domain in
+        M.bind_mem_write ma mv write_op
+
       let spurious_setaf ~value ~location =
-        test_and_set_af_succeeds value location E.IdSpurious DISide.Data
+        do_test_and_set_bit value cond_af AArch64Explicit.AF location E.IdSpurious DISide.Data
 
     end
 

@@ -197,6 +197,30 @@ module type S =
             (A.V.v -> A.V.v -> A.V.v -> unit t) -> (* write mem *)
               unit t
 
+    val bind_mem_write : 'a t -> 'b t -> ('a -> 'b -> 'c t) -> 'c t
+    (** [bind_mem_write ma mv mop] returns an event structure where
+        - ma and mv are parrallely composed,
+        - [iico_causality_data] includes pairs (e1, e2) where e1 is
+          the output of ma and e2 are the memory write events of the
+          input of [mop]
+        - [iico_causality_ctrl] includes pairs (e1, e2) where e1 is
+          the output of mv and e2 is the input of the data port
+          of [mop]
+        - [to_data_port] includes pairs (e1, e2) where e1 is
+          the (control) output of ma and e2 is the input of [mop] *)
+
+    val bind_pred_mem_writes :
+      'p t -> ('p -> 'a t) -> ('p -> 'b t) ->
+        ('a -> 'b -> 'p -> 'c t) list -> 'c list t
+    (** [bind_pred_mem_writes mpred ma mv mops] returns an event structure where
+        [iico_causality_data] includes pairs (e1, e2) where e1 is an
+        output of [ma] or [mv], and e2 is a memory write event of one of
+        [mops]. The memory writes in [mops] are not ordered with respect to
+        one another, except that writes to the same location, or writes whose
+        locations may alias because they are undetermined, are [iico_order]
+        ordered according to their order in [mops]. Predicate dependencies from
+        [mpred] are kept off [ma] and [mv]. *)
+
     val aarch64_store_conditional :
       bool -> (* must fail *)
         A.V.v t -> A.V.v t -> A.V.v t -> (* read reserve, data, address *)

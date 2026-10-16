@@ -299,6 +299,9 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     add_ea "iico_data"
       { def_ea with color="black" ; }
       { def_ea with color="black" ; } ;
+    add_ea "to_data_port"
+      { def_ea with color="darkblue" ; }
+      { def_ea with color="darkblue" ; } ;
     add_ea "iico_ctrl"
       { def_ea with color="grey" ; }
       { def_ea with color="grey" ; } ;
@@ -1321,6 +1324,14 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
         es.E.intra_causality_data ;
 
       pl "" ;
+      pl "/* the to_data_port edges */\n" ;
+      E.EventRel.pp chan ""
+        (fun chan (e,e') ->
+          pp_edge chan (pp_node_eiid e) (pp_node_eiid e') "to_data_port"
+            false false)
+        es.E.to_data_port ;
+
+      pl "" ;
       pl "/* the intra_causality_control edges */" ;
       E.EventRel.pp chan ""
         (fun chan (e,e') ->
@@ -1524,6 +1535,8 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
            end;
       intra_causality_data = select_rel
         es.E.intra_causality_data;
+      to_data_port = select_rel
+        es.E.to_data_port;
       intra_causality_control = select_rel
         es.E.intra_causality_control;
       intra_causality_order = select_rel
