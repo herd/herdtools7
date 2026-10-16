@@ -1,0 +1,6 @@
+AArch64 fault-handler
+{ 0:X2=0; }
+ P0          | P0.F      ;
+ SVC #0      | MOV W2,#1 ;
+ ADD W2,W2,#2| ERET      ;
+forall (0:X2=3)
