@@ -1,4 +1,4 @@
-(* diyone7 -metadata false -arch AArch64 PodWW Rfe DpDatadR Amo.Cas Coe *)
+(* diyone7 -metadata false -arch AArch64 PodWW Rfe DpDatadW Amo.Cas Coe *)
 AArch64 S+po+data-amo.cas
 {
  0:X1=x; 0:X3=y;
