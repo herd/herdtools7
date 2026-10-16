@@ -94,6 +94,21 @@
             "initwrites": true
           }
         },
+        "instructions": {
+          "0": {
+            "0": { "instruction": "STR X1,[X0]", "static_poi": 0 },
+            "1": { "instruction": "LSR X5,X4,#12", "static_poi": 1 },
+            "2": { "instruction": "DSB ISH", "static_poi": 2 },
+            "3": { "instruction": "TLBI VAAE1IS,X5", "static_poi": 3 },
+            "4": { "instruction": "DSB ISH", "static_poi": 4 },
+            "5": { "instruction": "MOV W2,#6", "static_poi": 5 },
+            "6": { "instruction": "STR W2,[X3]", "static_poi": 6 }
+          },
+          "1": {
+            "0": { "instruction": "LDR W2,[X3]", "static_poi": 0 },
+            "1": { "instruction": "LDR W5,[X4]", "static_poi": 1 }
+          }
+        },
         "events": [
           {
             "id": 0,
@@ -104,14 +119,9 @@
               "size": "quad",
               "value": "(oa:PA(x))"
             },
+            "proc": 0,
             "poi": 0,
-            "event_labels": [ "mem", "noregs", "memf", "nobranches" ],
-            "instruction": "STR X1,[X0]",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
           },
           {
             "id": 1,
@@ -122,14 +132,9 @@
               "size": "quad",
               "value": "(oa:PA(y))"
             },
+            "proc": 0,
             "poi": 6,
-            "event_labels": [ "mem", "noregs", "memf", "nobranches" ],
-            "instruction": "STR W2,[X3]",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 6
-            }
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
           },
           {
             "id": 2,
@@ -140,14 +145,9 @@
               "size": "word",
               "value": "6"
             },
+            "proc": 0,
             "poi": 6,
-            "event_labels": [ "mem", "noregs", "memf", "nobranches" ],
-            "instruction": "STR W2,[X3]",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 6
-            }
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
           },
           {
             "id": 3,
@@ -158,14 +158,9 @@
               "size": "quad",
               "value": "(oa:PA(y))"
             },
+            "proc": 1,
             "poi": 0,
-            "event_labels": [ "mem", "noregs", "memf", "nobranches" ],
-            "instruction": "LDR W2,[X3]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
           },
           {
             "id": 4,
@@ -176,14 +171,9 @@
               "size": "word",
               "value": "6"
             },
+            "proc": 1,
             "poi": 0,
-            "event_labels": [ "mem", "noregs", "memf", "nobranches" ],
-            "instruction": "LDR W2,[X3]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
           },
           {
             "id": 5,
@@ -194,15 +184,9 @@
               "size": "quad",
               "value": "(oa:PA(x), af:0)"
             },
+            "proc": 1,
             "poi": 1,
-            "event_labels": [ "mem", "noregs", "memf", "nobranches" ],
-            "instruction": "LDR W5,[X4]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 1,
-              "instruction_labels": [ "L00" ]
-            }
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
           },
           {
             "id": 6,
@@ -265,14 +249,9 @@
               "size": "quad",
               "value": "PTE(x)"
             },
+            "proc": 0,
             "poi": 0,
-            "event_labels": [ "nobranches" ],
-            "instruction": "STR X1,[X0]",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 11,
@@ -283,14 +262,9 @@
               "size": "quad",
               "value": "(oa:PA(x))"
             },
+            "proc": 0,
             "poi": 0,
-            "event_labels": [ "nobranches" ],
-            "instruction": "STR X1,[X0]",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 12,
@@ -301,14 +275,9 @@
               "size": "quad",
               "value": "x"
             },
+            "proc": 0,
             "poi": 1,
-            "event_labels": [ "nobranches" ],
-            "instruction": "LSR X5,X4,#12",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 1
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 13,
@@ -319,26 +288,16 @@
               "size": "quad",
               "value": "TLB(x)"
             },
+            "proc": 0,
             "poi": 1,
-            "event_labels": [ "nobranches" ],
-            "instruction": "LSR X5,X4,#12",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 1
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 14,
             "action": "DSB ISH",
+            "proc": 0,
             "poi": 2,
-            "event_labels": [ "noregs", "memf", "nobranches" ],
-            "instruction": "DSB ISH",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 2
-            }
+            "event_labels": [ "noregs", "memf", "nobranches" ]
           },
           {
             "id": 15,
@@ -349,38 +308,23 @@
               "size": "quad",
               "value": "TLB(x)"
             },
+            "proc": 0,
             "poi": 3,
-            "event_labels": [ "nobranches" ],
-            "instruction": "TLBI VAAE1IS,X5",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 3
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 16,
             "action": "TLBI(VAAE1IS,[TLB(x)])",
+            "proc": 0,
             "poi": 3,
-            "event_labels": [ "noregs", "nobranches" ],
-            "instruction": "TLBI VAAE1IS,X5",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 3
-            }
+            "event_labels": [ "noregs", "nobranches" ]
           },
           {
             "id": 17,
             "action": "DSB ISH",
+            "proc": 0,
             "poi": 4,
-            "event_labels": [ "noregs", "memf", "nobranches" ],
-            "instruction": "DSB ISH",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 4
-            }
+            "event_labels": [ "noregs", "memf", "nobranches" ]
           },
           {
             "id": 18,
@@ -391,14 +335,9 @@
               "size": "quad",
               "value": "6"
             },
+            "proc": 0,
             "poi": 5,
-            "event_labels": [ "nobranches" ],
-            "instruction": "MOV W2,#6",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 5
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 19,
@@ -409,26 +348,16 @@
               "size": "quad",
               "value": "y"
             },
+            "proc": 0,
             "poi": 6,
-            "event_labels": [ "nobranches" ],
-            "instruction": "STR W2,[X3]",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 6
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 20,
             "action": "Branching(pred)(valid:1 && af:1 && db:1)",
+            "proc": 0,
             "poi": 6,
-            "event_labels": [ "noregs" ],
-            "instruction": "STR W2,[X3]",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 6
-            }
+            "event_labels": [ "noregs" ]
           },
           {
             "id": 21,
@@ -439,14 +368,9 @@
               "size": "quad",
               "value": "6"
             },
+            "proc": 0,
             "poi": 6,
-            "event_labels": [ "nobranches" ],
-            "instruction": "STR W2,[X3]",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 6
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 22,
@@ -457,26 +381,16 @@
               "size": "quad",
               "value": "y"
             },
+            "proc": 1,
             "poi": 0,
-            "event_labels": [ "nobranches" ],
-            "instruction": "LDR W2,[X3]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 23,
             "action": "Branching(pred)(valid:1 && af:1)",
+            "proc": 1,
             "poi": 0,
-            "event_labels": [ "noregs" ],
-            "instruction": "LDR W2,[X3]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "noregs" ]
           },
           {
             "id": 24,
@@ -487,14 +401,9 @@
               "size": "quad",
               "value": "6"
             },
+            "proc": 1,
             "poi": 0,
-            "event_labels": [ "nobranches" ],
-            "instruction": "LDR W2,[X3]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 25,
@@ -505,28 +414,16 @@
               "size": "quad",
               "value": "x"
             },
+            "proc": 1,
             "poi": 1,
-            "event_labels": [ "nobranches" ],
-            "instruction": "LDR W5,[X4]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 1,
-              "instruction_labels": [ "L00" ]
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 26,
             "action": "Branching(pred)",
+            "proc": 1,
             "poi": 1,
-            "event_labels": [ "noregs" ],
-            "instruction": "LDR W5,[X4]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 1,
-              "instruction_labels": [ "L00" ]
-            }
+            "event_labels": [ "noregs" ]
           },
           {
             "id": 27,
@@ -537,28 +434,16 @@
               "size": "quad",
               "value": "label:\"P1:L00\""
             },
+            "proc": 1,
             "poi": 1,
-            "event_labels": [ "nobranches" ],
-            "instruction": "LDR W5,[X4]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 1,
-              "instruction_labels": [ "L00" ]
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 28,
             "action": "ExcEntry(R,loc:x,D-MMU:AccessFlag)",
+            "proc": 1,
             "poi": 1,
-            "event_labels": [ "noregs", "memf", "nobranches" ],
-            "instruction": "LDR W5,[X4]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 1,
-              "instruction_labels": [ "L00" ]
-            }
+            "event_labels": [ "noregs", "memf", "nobranches" ]
           }
         ],
         "edges": [
@@ -754,6 +639,21 @@
             "initwrites": true
           }
         },
+        "instructions": {
+          "0": {
+            "0": { "instruction": "STR X1,[X0]", "static_poi": 0 },
+            "1": { "instruction": "LSR X5,X4,#12", "static_poi": 1 },
+            "2": { "instruction": "DSB ISH", "static_poi": 2 },
+            "3": { "instruction": "TLBI VAAE1IS,X5", "static_poi": 3 },
+            "4": { "instruction": "DSB ISH", "static_poi": 4 },
+            "5": { "instruction": "MOV W2,#6", "static_poi": 5 },
+            "6": { "instruction": "STR W2,[X3]", "static_poi": 6 }
+          },
+          "1": {
+            "0": { "instruction": "LDR W2,[X3]", "static_poi": 0 },
+            "1": { "instruction": "LDR W5,[X4]", "static_poi": 1 }
+          }
+        },
         "events": [
           {
             "id": 0,
@@ -764,14 +664,9 @@
               "size": "quad",
               "value": "(oa:PA(x))"
             },
+            "proc": 0,
             "poi": 0,
-            "event_labels": [ "mem", "noregs", "memf", "nobranches" ],
-            "instruction": "STR X1,[X0]",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
           },
           {
             "id": 1,
@@ -782,14 +677,9 @@
               "size": "quad",
               "value": "(oa:PA(y))"
             },
+            "proc": 0,
             "poi": 6,
-            "event_labels": [ "mem", "noregs", "memf", "nobranches" ],
-            "instruction": "STR W2,[X3]",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 6
-            }
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
           },
           {
             "id": 2,
@@ -800,14 +690,9 @@
               "size": "word",
               "value": "6"
             },
+            "proc": 0,
             "poi": 6,
-            "event_labels": [ "mem", "noregs", "memf", "nobranches" ],
-            "instruction": "STR W2,[X3]",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 6
-            }
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
           },
           {
             "id": 3,
@@ -818,14 +703,9 @@
               "size": "quad",
               "value": "(oa:PA(y))"
             },
+            "proc": 1,
             "poi": 0,
-            "event_labels": [ "mem", "noregs", "memf", "nobranches" ],
-            "instruction": "LDR W2,[X3]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
           },
           {
             "id": 4,
@@ -836,14 +716,9 @@
               "size": "word",
               "value": "6"
             },
+            "proc": 1,
             "poi": 0,
-            "event_labels": [ "mem", "noregs", "memf", "nobranches" ],
-            "instruction": "LDR W2,[X3]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
           },
           {
             "id": 5,
@@ -854,15 +729,9 @@
               "size": "quad",
               "value": "(oa:PA(x), af:0)"
             },
+            "proc": 1,
             "poi": 1,
-            "event_labels": [ "mem", "noregs", "memf", "nobranches" ],
-            "instruction": "LDR W5,[X4]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 1,
-              "instruction_labels": [ "L00" ]
-            }
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
           },
           {
             "id": 6,
@@ -925,14 +794,9 @@
               "size": "quad",
               "value": "PTE(x)"
             },
+            "proc": 0,
             "poi": 0,
-            "event_labels": [ "nobranches" ],
-            "instruction": "STR X1,[X0]",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 11,
@@ -943,14 +807,9 @@
               "size": "quad",
               "value": "(oa:PA(x))"
             },
+            "proc": 0,
             "poi": 0,
-            "event_labels": [ "nobranches" ],
-            "instruction": "STR X1,[X0]",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 12,
@@ -961,14 +820,9 @@
               "size": "quad",
               "value": "x"
             },
+            "proc": 0,
             "poi": 1,
-            "event_labels": [ "nobranches" ],
-            "instruction": "LSR X5,X4,#12",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 1
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 13,
@@ -979,26 +833,16 @@
               "size": "quad",
               "value": "TLB(x)"
             },
+            "proc": 0,
             "poi": 1,
-            "event_labels": [ "nobranches" ],
-            "instruction": "LSR X5,X4,#12",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 1
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 14,
             "action": "DSB ISH",
+            "proc": 0,
             "poi": 2,
-            "event_labels": [ "noregs", "memf", "nobranches" ],
-            "instruction": "DSB ISH",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 2
-            }
+            "event_labels": [ "noregs", "memf", "nobranches" ]
           },
           {
             "id": 15,
@@ -1009,38 +853,23 @@
               "size": "quad",
               "value": "TLB(x)"
             },
+            "proc": 0,
             "poi": 3,
-            "event_labels": [ "nobranches" ],
-            "instruction": "TLBI VAAE1IS,X5",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 3
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 16,
             "action": "TLBI(VAAE1IS,[TLB(x)])",
+            "proc": 0,
             "poi": 3,
-            "event_labels": [ "noregs", "nobranches" ],
-            "instruction": "TLBI VAAE1IS,X5",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 3
-            }
+            "event_labels": [ "noregs", "nobranches" ]
           },
           {
             "id": 17,
             "action": "DSB ISH",
+            "proc": 0,
             "poi": 4,
-            "event_labels": [ "noregs", "memf", "nobranches" ],
-            "instruction": "DSB ISH",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 4
-            }
+            "event_labels": [ "noregs", "memf", "nobranches" ]
           },
           {
             "id": 18,
@@ -1051,14 +880,9 @@
               "size": "quad",
               "value": "6"
             },
+            "proc": 0,
             "poi": 5,
-            "event_labels": [ "nobranches" ],
-            "instruction": "MOV W2,#6",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 5
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 19,
@@ -1069,26 +893,16 @@
               "size": "quad",
               "value": "y"
             },
+            "proc": 0,
             "poi": 6,
-            "event_labels": [ "nobranches" ],
-            "instruction": "STR W2,[X3]",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 6
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 20,
             "action": "Branching(pred)(valid:1 && af:1 && db:1)",
+            "proc": 0,
             "poi": 6,
-            "event_labels": [ "noregs" ],
-            "instruction": "STR W2,[X3]",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 6
-            }
+            "event_labels": [ "noregs" ]
           },
           {
             "id": 21,
@@ -1099,14 +913,9 @@
               "size": "quad",
               "value": "6"
             },
+            "proc": 0,
             "poi": 6,
-            "event_labels": [ "nobranches" ],
-            "instruction": "STR W2,[X3]",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 6
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 22,
@@ -1117,26 +926,16 @@
               "size": "quad",
               "value": "y"
             },
+            "proc": 1,
             "poi": 0,
-            "event_labels": [ "nobranches" ],
-            "instruction": "LDR W2,[X3]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 23,
             "action": "Branching(pred)(valid:1 && af:1)",
+            "proc": 1,
             "poi": 0,
-            "event_labels": [ "noregs" ],
-            "instruction": "LDR W2,[X3]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "noregs" ]
           },
           {
             "id": 24,
@@ -1147,14 +946,9 @@
               "size": "quad",
               "value": "6"
             },
+            "proc": 1,
             "poi": 0,
-            "event_labels": [ "nobranches" ],
-            "instruction": "LDR W2,[X3]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 25,
@@ -1165,28 +959,16 @@
               "size": "quad",
               "value": "x"
             },
+            "proc": 1,
             "poi": 1,
-            "event_labels": [ "nobranches" ],
-            "instruction": "LDR W5,[X4]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 1,
-              "instruction_labels": [ "L00" ]
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 26,
             "action": "Branching(pred)",
+            "proc": 1,
             "poi": 1,
-            "event_labels": [ "noregs" ],
-            "instruction": "LDR W5,[X4]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 1,
-              "instruction_labels": [ "L00" ]
-            }
+            "event_labels": [ "noregs" ]
           },
           {
             "id": 27,
@@ -1197,28 +979,16 @@
               "size": "quad",
               "value": "label:\"P1:L00\""
             },
+            "proc": 1,
             "poi": 1,
-            "event_labels": [ "nobranches" ],
-            "instruction": "LDR W5,[X4]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 1,
-              "instruction_labels": [ "L00" ]
-            }
+            "event_labels": [ "nobranches" ]
           },
           {
             "id": 28,
             "action": "ExcEntry(R,loc:x,D-MMU:AccessFlag)",
+            "proc": 1,
             "poi": 1,
-            "event_labels": [ "noregs", "memf", "nobranches" ],
-            "instruction": "LDR W5,[X4]",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 1,
-              "instruction_labels": [ "L00" ]
-            }
+            "event_labels": [ "noregs", "memf", "nobranches" ]
           }
         ],
         "edges": [

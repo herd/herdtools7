@@ -1672,6 +1672,46 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
       |> List.filter_map (fun (tag, present) ->
            if present then Some (Json.string tag) else None)
 
+    let add_instruction iiid value by_proc =
+      let by_poi = IntMap.safe_find IntMap.empty iiid.A.proc by_proc in
+      IntMap.add iiid.A.proc
+        (IntMap.add iiid.A.program_order_index value by_poi) by_proc
+
+    let instructions_to_json all_events events =
+      (* Fetch values have been resolved for this execution. In self-modifying
+         code, iiid.inst still describes the originally loaded instruction.
+         Inspect the full event set before applying display filtering. *)
+      let fetched = E.EventSet.fold
+        (fun e fetched ->
+          match e.E.iiid, E.value_of e with
+          | E.IdSome iiid, Some (A.V.Val (Constant.Instruction inst))
+              when E.is_ifetch e ->
+              add_instruction iiid (A.V.Cst.Instr.to_exec inst) fetched
+          | _ -> fetched)
+        all_events IntMap.empty in
+      let instructions = List.fold_left
+        (fun instructions e -> match e.E.iiid with
+          | E.IdInit | E.IdSpurious -> instructions
+          | E.IdSome iiid -> add_instruction iiid iiid instructions)
+        IntMap.empty events in
+      let instruction_to_json iiid =
+        let inst =
+          let by_poi = IntMap.safe_find IntMap.empty iiid.A.proc fetched in
+          IntMap.safe_find iiid.A.inst iiid.A.program_order_index by_poi in
+        Json.assoc
+          (["instruction", Json.string (A.pp_instruction Ascii inst);
+            (* This identifies a loaded code position, even when its contents
+               were overwritten or it has no printed source row (.pagealign). *)
+            "static_poi", Json.int iiid.A.static_poi] @
+           (if iiid.A.in_handler then
+              ["function", Json.string "fault_handler"]
+            else [])) in
+      let int_map_to_json f m =
+        Json.assoc
+          (List.map (fun (key, value) -> string_of_int key, f value)
+             (IntMap.bindings m)) in
+      int_map_to_json (int_map_to_json instruction_to_json) instructions
+
     let event_to_json e =
       let action_details =
         (* TODO: for now, only memory and register access have action_details, in
@@ -1698,34 +1738,18 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
         | None -> []
         | Some value -> ["value", Json.string (A.V.pp_v value)] in
         ["action_details", Json.assoc (direction @ location @ size @ value)] in
-      let poi_field, instruction_fields =
+      let instruction_ref =
         match e.E.iiid with
-        | E.IdInit | E.IdSpurious -> [], []
+        | E.IdInit | E.IdSpurious -> []
         | E.IdSome iiid ->
-            let labels =
-              Label.Set.elements iiid.A.labels
-              |> List.map (fun label -> Json.string (Label.pp label)) in
-            let instruction_origin =
-              ["proc", Json.int iiid.A.proc;
-              (* in miscParser, there is also a tag system, which is not used by
-                 catelogue, ignored for now *)
-               "function",
-               Json.string
-                 (if iiid.A.in_handler then "fault_handler" else "main");
-               "static_poi", Json.int iiid.A.static_poi] @
-              (if labels = [] then []
-               else ["instruction_labels", Json.list labels]) in
-            ["poi", Json.int iiid.A.program_order_index],
-            ["instruction", Json.string
-               (A.pp_instruction Ascii iiid.A.inst);
-             "instruction_origin", Json.assoc instruction_origin] in
+            ["proc", Json.int iiid.A.proc;
+             "poi", Json.int iiid.A.program_order_index] in
       Json.assoc
         (["id", Json.int e.E.eiid;
           "action", Json.string (E.pp_action e)] @
          action_details @
-         poi_field @
-         ["event_labels", Json.list (event_labels e)] @
-         instruction_fields)
+         instruction_ref @
+         ["event_labels", Json.list (event_labels e)])
 
     let pc_showevents = match PC.showevents with
     | AllEvents -> "all"
@@ -1823,6 +1847,7 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
                "showraw", Json.list
                  (List.map Json.string (StringSet.elements PC.showraw));
                "initwrites", Json.bool (PC.showinitwrites)]];
+         "instructions", instructions_to_json conc.S.str.E.events events;
          "events", Json.list (List.map event_to_json events);
          "edges", Json.list (List.rev !edges)]
 
