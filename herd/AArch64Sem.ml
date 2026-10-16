@@ -4074,8 +4074,12 @@ Arguments:
           let write_outgoing_cap =
             let* outgoing_value = GCSSem.make_valid outgoing in
             let@ addr = M.data_input_next mwrite_addr in
-            with_data_from mread_outgoing
-              (GCSSem.write ac Annot.L addr outgoing_value ii)
+            let@ _ = M.data_input_next mread_outgoing in
+            let@ () =
+              M.bind_order_set_input_first
+                (GCSSem.write ac Annot.L addr outgoing_value ii)
+            in
+            create_barrier GCSB ii
           in
           let* _ = write_target_reg >>| update_gcspr >>| write_outgoing_cap in
           B.nextT
