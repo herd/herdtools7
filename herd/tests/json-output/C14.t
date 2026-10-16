@@ -73,30 +73,34 @@ currently only describes plain memory and register accesses.
             "initwrites": true
           }
         },
+        "instructions": {
+          "0": {
+            "1": {
+              "instruction": "atomic_fetch_add_explicit(y,1,memory_order_relaxed);;",
+              "static_poi": 0
+            }
+          },
+          "1": {
+            "1": {
+              "instruction": "atomic_fetch_add_explicit(y,1,memory_order_relaxed);;",
+              "static_poi": 0
+            }
+          }
+        },
         "events": [
           {
             "id": 0,
             "action": "RMW(Rlx)[y](0>1)",
+            "proc": 0,
             "poi": 1,
-            "event_labels": [ "mem", "noregs", "memf", "nobranches" ],
-            "instruction": "atomic_fetch_add_explicit(y,1,memory_order_relaxed);;",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
           },
           {
             "id": 1,
             "action": "RMW(Rlx)[y](1>2)",
+            "proc": 1,
             "poi": 1,
-            "event_labels": [ "mem", "noregs", "memf", "nobranches" ],
-            "instruction": "atomic_fetch_add_explicit(y,1,memory_order_relaxed);;",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
           },
           {
             "id": 2,
@@ -175,30 +179,34 @@ currently only describes plain memory and register accesses.
             "initwrites": true
           }
         },
+        "instructions": {
+          "0": {
+            "1": {
+              "instruction": "atomic_fetch_add_explicit(y,1,memory_order_relaxed);;",
+              "static_poi": 0
+            }
+          },
+          "1": {
+            "1": {
+              "instruction": "atomic_fetch_add_explicit(y,1,memory_order_relaxed);;",
+              "static_poi": 0
+            }
+          }
+        },
         "events": [
           {
             "id": 0,
             "action": "RMW(Rlx)[y](1>2)",
+            "proc": 0,
             "poi": 1,
-            "event_labels": [ "mem", "noregs", "memf", "nobranches" ],
-            "instruction": "atomic_fetch_add_explicit(y,1,memory_order_relaxed);;",
-            "instruction_origin": {
-              "proc": 0,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
           },
           {
             "id": 1,
             "action": "RMW(Rlx)[y](0>1)",
+            "proc": 1,
             "poi": 1,
-            "event_labels": [ "mem", "noregs", "memf", "nobranches" ],
-            "instruction": "atomic_fetch_add_explicit(y,1,memory_order_relaxed);;",
-            "instruction_origin": {
-              "proc": 1,
-              "function": "main",
-              "static_poi": 0
-            }
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
           },
           {
             "id": 2,
