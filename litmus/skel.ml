@@ -440,6 +440,9 @@ module Make
         O.o "#include <limits.h>" ;
         O.o "#include <string.h>";
         O.o "#include \"utils.h\"" ;
+        if do_self then begin
+          O.o "#include <self.h>"
+        end ;
         if Cfg.c11 then O.o "#include <stdatomic.h>";
         O.o "#include \"outs.h\"" ;
         if do_affinity then begin
@@ -675,13 +678,7 @@ module Make
           O.o "" ;
           O.o "inline static void mcautious(void) { mbar(); }" ;
           O.o ""
-        end ;
-        if do_self then begin
-          Insert.insert O.o "self.c" ;
-          O.o ""
         end
-
-
 (* All of them *)
 
       let dump_threads test =
@@ -1725,7 +1722,7 @@ module Make
         | NoBarrier|Pthread|User|UserFence|UserFence2 -> ()
         end ;
         if do_self then begin
-          O.oi "const int csz = cache_line_size / sizeof(ins_t);" ;
+          O.oi "const int csz = cache_line_size() / sizeof(ins_t);" ;
           for n = 0 to T.get_nprocs test-1 do
             O.fi "int _sz%i = _a->%s * _a->_p->size_of_test;" n
               (OutUtils.fmt_code_size n) ;
@@ -2806,9 +2803,6 @@ module Make
             O.oi "cpus_t *def_all_cpus = NULL;" ;
             false
           end in
-        if do_self then begin
-          O.oi "cache_line_size = getcachelinesize();"
-        end ;
         if alloc_def_all_cpus then begin
           O.oi "if (def_all_cpus->sz < N) {" ;
           if Cfg.limit then begin
