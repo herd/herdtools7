@@ -8,6 +8,7 @@ Successful switch
   eiid5 [label="f: Branching(pred)(InProgress([x]))\lproc:P0 poi:0\lGCSSS2 X0", shape="box", color="blue"];
   eiid6 [label="g: W0:X0q=y\lproc:P0 poi:0\lGCSSS2 X0", shape="box", color="blue"];
   eiid7 [label="h: W0:GCSPR_EL1q=x+8\lproc:P0 poi:0\lGCSSS2 X0", shape="box", color="blue"];
+  eiid8 [label="i: GCSB DSYNC\lproc:P0 poi:0\lGCSSS2 X0", shape="box", color="blue"];
   eiid0 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
   eiid0 -> eiid5 [label="iico_data", color="black", fontcolor="black"];
   eiid0 -> eiid6 [label="iico_data", color="black", fontcolor="black"];
@@ -16,6 +17,7 @@ Successful switch
   eiid5 -> eiid1 [label="iico_ctrl", color="grey", fontcolor="grey"];
   eiid5 -> eiid6 [label="iico_ctrl", color="grey", fontcolor="grey"];
   eiid5 -> eiid7 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid1 -> eiid8 [label="iico_order", color="darkgrey", fontcolor="darkgrey"];
 
 Successful switch under kvm.
 
@@ -31,6 +33,7 @@ Successful switch under kvm.
   eiid11 [label="l: Branching(pred)(valid:1 && af:1 && db:1)\lproc:P0 poi:0\lGCSSS2 X0", shape="box", color="blue"];
   eiid12 [label="m: W0:X0q=y\lproc:P0 poi:0\lGCSSS2 X0", shape="box", color="blue"];
   eiid13 [label="n: W0:GCSPR_EL1q=x+8\lproc:P0 poi:0\lGCSSS2 X0", shape="box", color="blue"];
+  eiid14 [label="o: GCSB DSYNC\lproc:P0 poi:0\lGCSSS2 X0", shape="box", color="blue"];
   eiid0 -> eiid1 [label="iico_data", color="black", fontcolor="black"];
   eiid0 -> eiid9 [label="iico_data", color="black", fontcolor="black"];
   eiid1 -> eiid3 [label="iico_data", color="black", fontcolor="black"];
@@ -45,6 +48,7 @@ Successful switch under kvm.
   eiid11 -> eiid3 [label="iico_ctrl", color="grey", fontcolor="grey"];
   eiid11 -> eiid12 [label="iico_ctrl", color="grey", fontcolor="grey"];
   eiid11 -> eiid13 [label="iico_ctrl", color="grey", fontcolor="grey"];
+  eiid3 -> eiid14 [label="iico_order", color="darkgrey", fontcolor="darkgrey"];
 
 Translation fault on read of incoming stack.
 
