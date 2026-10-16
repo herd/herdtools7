@@ -20,31 +20,31 @@
         {
           "proc": 0,
           "function": "main",
-          "instructions": [
-            { "static_poi": 0, "instruction": "STR X1,[X0]" },
-            { "static_poi": 1, "instruction": "LSR X5,X4,#12" },
-            { "static_poi": 2, "instruction": "DSB ISH" },
-            { "static_poi": 3, "instruction": "TLBI VAAE1IS,X5" },
-            { "static_poi": 4, "instruction": "DSB ISH" },
-            { "static_poi": 5, "instruction": "MOV W2,#6" },
-            { "static_poi": 6, "instruction": "STR W2,[X3]" }
+          "source_instructions": [
+            { "static_poi": 0, "source_instruction": "STR X1,[X0]" },
+            { "static_poi": 1, "source_instruction": "LSR X5,X4,#12" },
+            { "static_poi": 2, "source_instruction": "DSB ISH" },
+            { "static_poi": 3, "source_instruction": "TLBI VAAE1IS,X5" },
+            { "static_poi": 4, "source_instruction": "DSB ISH" },
+            { "static_poi": 5, "source_instruction": "MOV W2,#6" },
+            { "static_poi": 6, "source_instruction": "STR W2,[X3]" }
           ]
         },
         {
           "proc": 1,
           "function": "main",
-          "instructions": [
-            { "static_poi": 0, "instruction": "LDR W2,[X3]" },
+          "source_instructions": [
+            { "static_poi": 0, "source_instruction": "LDR W2,[X3]" },
             {
               "static_poi": 1,
-              "instruction": "LDR W5,[X4]",
+              "source_instruction": "LDR W5,[X4]",
               "labels": [ "L00" ]
             }
           ]
         }
       ],
       "init": "0:X0=PTE(x); 0:X1=(oa:PA(x)); 0:X3=y; 0:X4=x; 1:X3=y; 1:X4=x; [x]=1; [y]=5; [PTE(x)]=(oa:PA(x), af:0);",
-      "condition": "exists (1:X2=6 /\\ fault(P1:L00,x))"
+      "post_condition": "exists (1:X2=6 /\\ fault(P1:L00,x))"
     },
     "result": {
       "model": "Generic[withcatdep](Unknown)",
@@ -80,18 +80,14 @@
         "satisfies_post_condition": true,
         "final_state_id": "state-3",
         "pretty_conf": {
-          "events": {
-            "showevents": "all",
-            "showinitwrites": true,
+          "events": { "showevents": "all", "showinitwrites": true },
+          "edges": {
             "showinitrf": false,
             "showfinalrf": false,
-            "showpo": true
-          },
-          "relations": {
+            "showpo": true,
             "doshow": [],
             "unshow": [],
-            "showraw": [],
-            "initwrites": true
+            "showraw": []
           }
         },
         "instructions": {
@@ -489,18 +485,14 @@
         "satisfies_post_condition": true,
         "final_state_id": "state-3",
         "pretty_conf": {
-          "events": {
-            "showevents": "all",
-            "showinitwrites": true,
+          "events": { "showevents": "all", "showinitwrites": true },
+          "edges": {
             "showinitrf": false,
             "showfinalrf": false,
-            "showpo": true
-          },
-          "relations": {
+            "showpo": true,
             "doshow": [],
             "unshow": [],
-            "showraw": [],
-            "initwrites": true
+            "showraw": []
           }
         },
         "instructions": {
