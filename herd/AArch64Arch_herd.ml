@@ -548,6 +548,8 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
           module FaultType = FaultType.AArch64
         end)
 
+    type annotated_prog = CodeInstr.t prog
+
     module MemType = MemoryType.No
 
     module NoConf = struct
