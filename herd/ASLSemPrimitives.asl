@@ -95,6 +95,10 @@ begin return ARBITRARY: bits(width); end;
 func write_predicate{width}(reg: integer, data: bits(width))
 begin pass; end;
 
+// Test the element predicate bits without branching on each symbolic bit.
+func AnyActiveElementPrimitive{N}(mask: bits(N), esize: integer) => boolean
+begin return ARBITRARY: boolean; end;
+
 // =============================================================================
 // SVE Vectors
 // =============================================================================

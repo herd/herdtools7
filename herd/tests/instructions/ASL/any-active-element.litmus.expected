@@ -1,0 +1,10 @@
+Test AnyActiveElement Required
+States 1
+0:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1)
+Observation AnyActiveElement Always 1 0
+Hash=9273b163d3e7babf6806df0ea35f63c3
+

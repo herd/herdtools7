@@ -212,6 +212,14 @@ end;
 
 // =============================================================================
 
+// Avoid searching for the last active element when only its existence matters.
+func AnyActiveElement{N}(mask: bits(N), esize: integer) => boolean
+begin
+    return AnyActiveElementPrimitive{N}(mask, esize);
+end;
+
+// =============================================================================
+
 // SVE Vectors
 // ===========
 

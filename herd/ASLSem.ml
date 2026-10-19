@@ -692,6 +692,24 @@ module Make (Conf : Config) = struct
       let loc = virtual_to_loc_predicate r ii in
       write_loc MachSize.S128 loc v aneutral aexp areg (use_ii_with_poi ii poi)
 
+    (* Replace ASL's AnyActiveElement with an esize-dependent mask to check
+       whether any lane is active. *)
+    let any_active_element_primitive _ii ~n ~mask ~esize =
+      let* n = n and* mask = mask and* esize = esize in
+      let n = v_as_int n and esize = v_as_int esize in
+      let stride =
+        match esize with
+        | 8 | 16 | 32 | 64 | 128 -> esize / 8
+        | _ -> Warn.fatal "Invalid SVE element size: %d" esize
+      in
+      let module BV = Asllib.Bitvector in
+      let positions = List.init (n / stride) (fun e -> e * stride) in
+      let zero = BV.zeros n in
+      let selected = BV.write_slice zero (BV.ones (List.length positions)) positions in
+      let selected = v_of_literal (AST.L_BitVector selected)
+      and zero = v_of_literal (AST.L_BitVector zero) in
+      M.op Op.And mask selected >>= fun active -> M.op Op.Ne active zero
+
     (***************)
     (* SVE Vectors *)
     (***************)
@@ -867,6 +885,7 @@ module Make (Conf : Config) = struct
       let write_simd = write_simd
       let read_predicate = read_predicate
       let write_predicate = write_predicate
+      let any_active_element_primitive = any_active_element_primitive
       let read_vector = read_vector
       let write_vector = write_vector
       let read_memory = read_memory
