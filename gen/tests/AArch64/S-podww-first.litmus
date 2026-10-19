@@ -1,0 +1,13 @@
+(* diyone7 -arch AArch64 -metadata false PodWW Rfe PodRW Coe *)
+AArch64 S
+{
+ 0:X1=x; 0:X3=y;
+ 1:X1=x; 1:X3=y;
+}
+ P0          | P1          ;
+ MOV W0,#2   | LDR W0,[X3] ;
+ STR W0,[X1] | MOV W2,#1   ;
+ MOV W2,#1   | STR W2,[X1] ;
+ STR W2,[X3] |             ;
+
+exists ([x]=2 /\ 1:X0=1)

@@ -12,10 +12,12 @@ of the file:
 AArch64 CoRW1+pos-rfi
 ...
 ```
-For successful commands, the filename before `.litmus` must exactly match the
-generated `AArch64 <name>` line. Rejected commands use a descriptive
-`reject-...` filename. `-metadata false` keeps the output independent of
-version metadata.
+For successful commands, the filename before `.litmus` normally matches the
+generated `AArch64 <name>` line. When several commands generate the same name,
+keep the generated name in the test and manually give each file a descriptive
+suffix; do not add `-name` or `-stdout` merely to distinguish the fixtures.
+Rejected commands use a descriptive `reject-...` filename. `-metadata false`
+keeps the output independent of version metadata.
 
 `internal/diyone_test.ml` recursively finds files with this directive. `show`
 prints the commands, `test` compares generated and recorded output after
