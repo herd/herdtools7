@@ -184,6 +184,10 @@ module type CONFIG = sig
 end
 
 module Make (C : CONFIG) = struct
+  module StaticModel = StaticModel.Symbolic (struct
+    let handle_atc = false
+  end)
+
   let list_filter_map_modified f =
     let rec aux (accu, flag) = function
       | [] -> (List.rev accu, flag)
