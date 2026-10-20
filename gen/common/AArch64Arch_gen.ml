@@ -1180,7 +1180,8 @@ let fold_rmw_macros f r =
   let choices rmws = List.map (fun rmw -> [rmw]) rmws in
   let r = f "Rmw" [[LrSc]] r in
   let r = f "Amo" (choices all_concrete_rmw) r in
-  f "Amo.Safe" (choices [Swp; Cas; LdOp A_ADD; StOp A_ADD]) r
+  let r = f "Amo.Safe" (choices [Swp; Cas; LdOp A_ADD; StOp A_ADD]) r in
+  f "Amo.SafeNoReturn" (choices [Swp; Cas; LdOp A_ADD]) r
 
 (* Check legal anotation for AMO instructions and LxSx pairs *)
 
