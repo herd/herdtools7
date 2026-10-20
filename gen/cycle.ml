@@ -521,6 +521,7 @@ module CoSt = struct
       (struct type t = E.SIMD.atom Code.bank let compare = compare end)
 
   type t = { map : int M.t;
+             access_tag : int;
              co_cell : Value.v array;
              pte_value : Value.pte;
              (* - Irr, checks both
@@ -531,11 +532,11 @@ module CoSt = struct
              check_value : bool;
              machine_feature: StringSet.t }
 
-  let create init_value sz pte_value check_value check_fault machine_feature =
+  let create init_value access_tag sz pte_value check_value check_fault machine_feature =
     let map = List.fold_left (fun acc bank -> M.add bank 0 acc) M.empty
                   [Tag; CapaTag; CapaSeal; ] |> M.add Ord init_value
     and co_cell = Array.make (if sz <= 0 then 1 else sz) (Value.from_int init_value) in
-    { map; co_cell; pte_value; check_fault; check_value ; machine_feature }
+    { map; access_tag; co_cell; pte_value; check_fault; check_value ; machine_feature }
 
   let find_no_fail key map =
     try M.find key map with Not_found -> assert false
@@ -545,6 +546,9 @@ module CoSt = struct
   let set_co st bank v =
     let b = match bank with VecReg _ -> Ord | _ -> bank in
     { st with map=M.add b v st.map; }
+
+  let get_access_tag st = st.access_tag
+  let set_access_tag st access_tag = {st with access_tag;}
 
   let get_cell st = st.co_cell
 
@@ -593,7 +597,7 @@ module CoSt = struct
 
   (* Helper function returns a fresh label and a boolean for if it should fault,
      if a fault check is needed. Otherwise return `None`. *)
-  let fault_update st dir =
+  let fault_update st dir tag =
     let unset_check_fault st = {st with check_fault = NoDir } in
     let pte_val = get_pte_value st in
     match st.check_fault,dir with
@@ -609,7 +613,9 @@ module CoSt = struct
         None,st
     | _,R when do_store_only ->
         None,st
-    | _,_ when do_memtag || do_morello ->
+    | _,_ when do_memtag ->
+        Some ((Label.next_label "L"), tag <> Value.to_int (get_co st Tag)),st
+    | _,_ when do_morello ->
         Some ((Label.next_label "L"), false),st
     | _,_ -> None,unset_check_fault st
 
@@ -649,6 +655,18 @@ let pte_val_init ns loc =
         ( fun node -> node.evt.atom ) ns in
       Value.init_pte loc atom_list
     | _ -> pte_default
+
+let access_tag_init init ns =
+  let _,access_tag =
+    List.fold_left
+      (fun (tag,access_tag) n ->
+        match n.evt.bank,n.evt.dir with
+        | Tag,Some W ->
+            let tag = tag+1 in
+            tag,(if Value.is_tag_fault n.evt.atom then tag else access_tag)
+        | _ -> tag,access_tag)
+      (init,init) ns in
+  access_tag
 
 (****************************)
 (* Add events in edge cycle *)
@@ -984,7 +1002,9 @@ let check_cycle c =
       (* TODO: potentially rework the if-elseif-else here as it is confused *)
       begin if Code.is_data n.evt.loc then
         begin if do_memtag then
-          let tag = Value.to_int (CoSt.get_co st Tag) in
+          let tag = match n.evt.bank with
+            | Tag -> Value.to_int (CoSt.get_co st Tag)
+            | _ -> CoSt.get_access_tag st in
           n.evt <- { n.evt with tag; }
         else if do_morello then
           let ord = Value.to_int (CoSt.get_co st Ord) in
@@ -1013,7 +1033,8 @@ let check_cycle c =
       (* For a read-modify-write, preserve any label assigned while processing
          the read. *)
       let fault_update_without_rmw st =
-        if n.evt.rmw then n.evt.check_fault,st else CoSt.fault_update st W in
+        if n.evt.rmw then n.evt.check_fault,st
+        else CoSt.fault_update st W n.evt.tag in
       match n.evt.loc,n.evt.dir,bank with
       | Data _,Some W,Instr ->
         Warn.fatal "instruction annotation on a data location is not possible"
@@ -1036,8 +1057,11 @@ let check_cycle c =
         n.evt <- { n.evt with check_fault; check_value; };
         (next_x_ok, st)
       | Data _,Some W,Tag ->
-        let st = CoSt.next_co st bank |> CoSt.set_check_fault in
+        let st = CoSt.next_co st bank in
         let v = CoSt.get_co st bank in
+        let st = CoSt.set_access_tag st
+            (if Value.is_tag_fault n.evt.atom then n.evt.tag else Value.to_int v) in
+        let st = CoSt.set_check_fault st in
         n.evt <- { n.evt with v = v; check_value; } ;
         let e,st = CoSt.set_tcell st n.evt in
         n.evt <- e ;
@@ -1118,18 +1142,21 @@ let check_cycle c =
           else if n.evt.rmw then
             match n.edge.E.edge with
             | E.Rmw rmw when not (E.RMW.is_one_instruction rmw) ->
-              let check_fault,st = CoSt.fault_update st R in
-              let write_check_fault,st = CoSt.fault_update st W in
+              let check_fault,st = CoSt.fault_update st R n.evt.tag in
+              let write_check_fault,st = CoSt.fault_update st W n.evt.tag in
               n.next.evt <- {n.next.evt with check_fault=write_check_fault};
               check_fault,st
-            | _ -> CoSt.fault_update st W
-          else CoSt.fault_update st R in
-        n.evt <- { n.evt with check_fault };
+            | _ -> CoSt.fault_update st W n.evt.tag
+          else CoSt.fault_update st R n.evt.tag in
+        let check_value = match check_fault with
+          | Some (_,true) -> Some false
+          | _ -> check_value in
+        n.evt <- { n.evt with check_fault; check_value };
         (next_x_ok, st)
       | _,Some R,Pair ->
         let st = CoSt.implicit_pte_update st R in
         set_read_pair_v n cell check_value;
-        let check_fault, st = CoSt.fault_update st R in
+        let check_fault, st = CoSt.fault_update st R n.evt.tag in
         n.evt <- { n.evt with check_fault };
         (next_x_ok, st)
       | _,Some R,VecReg a ->
@@ -1138,7 +1165,7 @@ let check_cycle c =
         let v = E.SIMD.read a cell
           |> E.SIMD.reduce
           |> Value.from_int in
-        let check_fault, st = CoSt.fault_update st R in
+        let check_fault, st = CoSt.fault_update st R n.evt.tag in
         n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
         (next_x_ok, st)
       | _,Some R,Tag ->
@@ -1187,7 +1214,7 @@ let check_cycle c =
                   ( fun acc n ->
                     StringSet.union acc (E.get_machine_feature n.edge)
                   ) StringSet.empty ns in
-              let init_st = CoSt.create init_val sz pte_val check_value check_fault machine_feature in
+              let init_st = CoSt.create init_val access_tag sz pte_val check_value check_fault machine_feature in
               let next_x_ok,final_st = set_values_for_location false init_st ns in
               let vf = (CoSt.get_cell final_st).(0),CoSt.get_pte_value final_st in
               let env = if init_val = 0 then env
@@ -1265,8 +1292,11 @@ let set_dep_v nss =
         match tail with
         | [] -> assert false
         | next::_ ->
-          if next.evt.bank = Ord then Some next
-          else None
+          let is_write = match next.evt.dir,next.edge.E.edge with
+            | Some W,_ -> true
+            | Some R,E.Rmw rmw -> E.RMW.is_one_instruction rmw
+            | _ -> false in
+          if next.evt.bank = Ord && (do_kvm || is_write) then Some next else None
       else find_fault_com tail
 
   let propagate_fault by_loc =
