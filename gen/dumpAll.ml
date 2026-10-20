@@ -61,23 +61,28 @@ module Make(Config:Config)(T:Builder.S)
 (* High-level normalisation *)
 (****************************)
 
-      let normalise =
-        if Config.canonical_only then
-          let module Normer = Normaliser.Make(Config)(T.E) in
-          fun cy ->
-            let ncy = Normer.normalise cy in
-            if Config.debug.Debug_gen.io then
-              eprintf "Changed %s -> %s\n"
-                (T.E.pp_edges cy)
-                (T.E.pp_edges ncy) ;
-            ncy
-        else fun cy -> cy
-
       let mk_base = match Config.family with
       | Some b -> fun _cy -> b
       | None ->
           let module Normer = Normaliser.Make(Config)(T.E) in
           Normer.family
+
+      let normalise =
+        (* TODO: After macro unfolding, assume resolve_edges is not needed before normalisation. *)
+        let resolve cy = fst (T.C.resolve_edges cy) in
+        if Config.canonical_only then
+          let module Normer = Normaliser.Make(Config)(T.E) in
+          fun cy ->
+            let cy = resolve cy in
+            let normalised_base,ncy,_ = Normer.normalise_family cy in
+            if Config.debug.Debug_gen.io then
+              eprintf "Changed %s -> %s\n"
+                (T.E.pp_edges cy)
+                (T.E.pp_edges ncy) ;
+            (match Config.family with
+             | Some base -> base
+             | None -> normalised_base),ncy
+        else fun cy -> let cy = resolve cy in mk_base cy,cy
 
 (* Complete name *)
 
@@ -204,7 +209,8 @@ module Make(Config:Config)(T:Builder.S)
             (fun cy ->
               T.E.parse_edges cy
               |> T.E.resolve_edges
-              |> normalise)
+              |> normalise
+              |> snd)
             cys in
         List.fold_left
           (fun k es ->
@@ -231,6 +237,7 @@ module Make(Config:Config)(T:Builder.S)
 
       type prepared =
           {
+           base : string ;
            es : T.E.edge list ;
            relax : string ;
            t : T.test ;
@@ -254,14 +261,15 @@ module Make(Config:Config)(T:Builder.S)
 (*    printf "%s: %s\n" n (pp_edges cycle.orig) ; *)
         { res with ntests = res.ntests+1; }
 
-      let build_test check es mk_info =
+      let build_test check base es mk_info =
+        let name_es = es in
         let es,c = T.C.resolve_edges es in
         let c,init = T.C.finish c in
         let cy = T.E.pp_edges es in
         let info,relax = mk_info in
         let info = Config.info@("Cycle",cy)::info in
         let t = T.test_of_cycle "__tmp__" ~info ~check ~init es c in
-        { es; relax; t; }
+        { base; es=name_es; relax; t; }
 
 (* Dump from prepared test, with specified scope tree *)
       let dump_test_st keep_name all_chan generated_test env n mk_st res =
@@ -282,8 +290,7 @@ module Make(Config:Config)(T:Builder.S)
         let es = generated_test.es in
         let n,env = match mk_name es with
         | None ->
-            let fam = mk_base es in
-            let n,env = global_mk_name res.env fam es in
+            let n,env = global_mk_name res.env generated_test.base es in
             n,env
         | Some n ->
             n,res.env in
@@ -340,17 +347,18 @@ module Make(Config:Config)(T:Builder.S)
          `res` is the current dumper accumulator. *)
       let check_dump all_chan check es mk_info mk_name mk_scope res =
         try
-          let es = T.E.resolve_edges es |> normalise in
+          let es = T.E.resolve_edges es in
           T.E.varatom es
             (fun es res ->
               let es = T.E.resolve_edges es in
+              let base,es = normalise es in
               let res =
                 if Config.canonical_only then begin
                   let seen,sigs = have_seen res.sigs es in
                   if seen then Warn.fatal "Duplicate" ;
                   { res with sigs }
                 end else res in
-              let test = build_test check es mk_info in
+              let test = build_test check base es mk_info in
               dump_test all_chan mk_name mk_scope test res)
             res
         with
