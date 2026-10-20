@@ -30,9 +30,6 @@ module Make(O:Config) = struct
 
 include BellBase
 
-(* Assume little endian *)
-let tr_endian = Misc.identity
-
 let bi = match O.bell with
 | Some fname ->
     let module R =
@@ -268,6 +265,6 @@ include
       let free_registers = allowed_for_symb
       type arch_atom = atom
       module Value = Value
-      include NoSpecial
     end)
+    (ArchExtra_gen.NoSpecial)
 end

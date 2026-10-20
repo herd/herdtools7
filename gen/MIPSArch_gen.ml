@@ -22,7 +22,6 @@ module Make(C:sig val moreedges : bool end) = struct
 include MIPSBase
 module ScopeGen = ScopeGen.NoGen
 
-let tr_endian = Misc.identity
 include MachAtom.Make
     (struct
       let naturalsize=None
@@ -71,6 +70,6 @@ include
       let free_registers = allowed_for_symb
       type arch_atom = atom
       module Value = Value
-      include NoSpecial
     end)
+    (ArchExtra_gen.NoSpecial)
 end

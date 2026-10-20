@@ -17,7 +17,7 @@
 open Code
 
 module type Config = sig
-  include CompileCommon.Config
+  include XXXCompile_gen.Config
   val realdep : bool
 end
 
@@ -26,7 +26,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     module ARM = ARMArch_gen.Make(Cfg)
 
-    include CompileCommon.Make(Cfg)(ARM)
+    include XXXCompile_gen.Make(Cfg)(ARM)
 
 
 (******)
@@ -416,5 +416,4 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let get_xstore_results _ = []
 
-    include NoInfo
   end

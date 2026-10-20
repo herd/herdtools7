@@ -17,7 +17,7 @@
 open Code
 
 module type Config = sig
-  include CompileCommon.Config
+  include XXXCompile_gen.Config
   val moreedges : bool
   val realdep : bool
 end
@@ -35,7 +35,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let fullmixed = Variant_gen.has Variant_gen.FullMixed Cfg.variant
           let variant = Cfg.variant
         end)
-    include CompileCommon.Make(Cfg)(A64)
+    include XXXCompile_gen.Make(Cfg)(A64)
 
     let ppo _f k = k
 

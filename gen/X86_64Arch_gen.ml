@@ -28,8 +28,6 @@ module Make
       open Printf
 
       include X86_64Base
-      let tr_endian = Misc.identity
-
       type atom_acc = Plain | Atomic | NonTemporal
       type atom = atom_acc * Mixed.t option
 
@@ -231,13 +229,15 @@ module Make
               | _ -> false
             let pp_reg = pp_reg
             let free_registers = allowed_for_symb
+            type arch_atom = atom
+            module Value = Value
+          end)
+          (struct
             type special = xmm
             type special2
             type special3
             let specials = xmms
             let specials2 = []
             let specials3 = []
-            type arch_atom = atom
-            module Value = Value
           end)
     end

@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc Rfe PosRR R Fre *)
+(*
+[2]
+diyone7: Fatal error: Test CoRR [Rfe PosRR Read Fre] failed:
+Node pseudo edge Read appears in-between  PosRR..Fre (one neighbour at least must be an external edge)
+*)

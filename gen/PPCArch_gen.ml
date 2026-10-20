@@ -32,8 +32,6 @@ module Config =
 module Make(C:Config)  =
   struct
     include PPCBase
-    let tr_endian x = MachSize.tr_endian C.naturalsize x
-
     module ScopeGen = ScopeGen.NoGen
 
     include MachAtom.Make
@@ -106,6 +104,6 @@ module Make(C:Config)  =
           let free_registers = allowed_for_symb
           type arch_atom = atom
           module Value = Value
-          include NoSpecial
         end)
+        (ArchExtra_gen.NoSpecial)
   end

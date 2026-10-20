@@ -16,8 +16,6 @@
 
 open Code
 include X86Base
-let tr_endian = Misc.identity
-
 module ScopeGen = ScopeGen.NoGen
 
 let bellatom = false
@@ -109,5 +107,5 @@ include
       let free_registers = allowed_for_symb
       type arch_atom = atom
       module Value = Value
-      include NoSpecial
     end)
+    (ArchExtra_gen.NoSpecial)

@@ -9,8 +9,7 @@
   archRun
   arch_gen
   autoInterpret
-  builder
-  XXXCompile_gen)
+  builder)
  (modules
   (:standard
    \
