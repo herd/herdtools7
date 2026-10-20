@@ -113,6 +113,7 @@ module Opts = struct
                 "amo_m";
                 "communication";
                 "communication_state";
+                "dpctrl";
                 "pos_w";
               ],
               function
@@ -122,6 +123,7 @@ module Opts = struct
               | "communication" -> prune := Translation.Communication :: !prune
               | "communication_state" ->
                   prune := Translation.Communication_state :: !prune
+              | "dpctrl" -> prune := Translation.Dpctrl :: !prune
               | "pos_w" -> prune := Translation.Pos_w :: !prune
               | _ -> assert false ),
           "  Enable the selected relaxation pruning pass." );
