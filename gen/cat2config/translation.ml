@@ -27,11 +27,17 @@ end
 module E = Edge.Make (EdgeConfig) (A : Fence.S) (A : Atom.S)
 module R = Relax.Make (A) (E)
 
-type prune = Amo_all | Amo_m | Communication | Communication_state | Pos_w
+type prune =
+  | Amo_all
+  | Amo_m
+  | Communication
+  | Communication_state
+  | Dpctrl
+  | Pos_w
 
 (* [Communication_state] is an alternative representation of [Communication],
    so [-prune all] retains the existing communication representation. *)
-let prune_all = [ Amo_all; Communication; Pos_w ]
+let prune_all = [ Amo_all; Communication; Dpctrl; Pos_w ]
 
 let merge_dir_opt d1 d2 =
   let open Code in
@@ -612,6 +618,26 @@ let prune_relaxes relaxs =
       relaxs
   else relaxs
 
+let prune_dpctrl_relaxes =
+  List.filter (fun relax ->
+      let has_dpctrl_w =
+        List.exists
+          (function
+            | Plain { E.edge = E.Dp (dp, _, Code.Dir Code.W); _ } -> begin
+                match A.pp_dp dp with "Ctrl" | "CtrlCsel" -> true | _ -> false
+              end
+            | Plain _ | Predicate _ -> false)
+          relax
+      in
+      let has_insert =
+        List.exists
+          (function
+            | Plain { E.edge = E.Insert _; _ } -> true
+            | Plain _ | Predicate _ -> false)
+          relax
+      in
+      not (has_dpctrl_w && has_insert))
+
 (* For example, wrapping an edge with `L` and `A` produces the relaxation
    `[L,edge,A]`. *)
 let split_annotations item left right =
@@ -1079,6 +1105,9 @@ let translate ~prune ~binding (nf : Ir.rel_nf) : relax list =
   in
   let relaxs = Util.List.uniq ~eq:( = ) relaxs in
   let relaxs = if List.mem Pos_w prune then prune_relaxes relaxs else relaxs in
+  let relaxs =
+    if List.mem Dpctrl prune then prune_dpctrl_relaxes relaxs else relaxs
+  in
   relaxs |> fold_relaxes
 
 let pp_relax_item = function
