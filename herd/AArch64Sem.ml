@@ -2190,12 +2190,18 @@ Arguments:
                    (* Some, must fail when size differ *)
                    not (MachSize.equal szr sz)
               end in
-            M.aarch64_store_conditional must_fail
-              (read_reg_ord ResAddr ii)
-              mv ma
-              (write_reg ResAddr V.zero ii)
-              (fun v -> write_reg rr v ii)
-              (mw an ac))
+            let write_res = write_reg ResAddr V.zero ii in
+            let read_res = read_reg_ord ResAddr ii in
+            let branch _ = commit_pred ii in
+            let mno =
+              let write_rr = write_reg rr V.one ii
+              and noact _ _ _ = M.mk_singleton_es Act.NoAction ii in
+              M.aarch64_store_excl read_res mzero ma branch write_res write_rr noact
+            and mok =
+              let write_rr = write_reg rr V.zero ii
+              and write_mem = mw an ac in
+              M.aarch64_store_excl read_res mv ma branch write_res write_rr write_mem in
+            if must_fail then mno else M.altT mno mok)
           (to_perms "w" sz)
           (read_reg_addr rd ii)
           ms an ii
