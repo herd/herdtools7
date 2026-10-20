@@ -1,0 +1,13 @@
+(* diyone7 -arch AArch64 -variant memtag,storeonly -metadata false -oneloc T PosWW Coe Coe -obs oo *)
+AArch64 W+WW+postp
+Variant=memtag store-only
+{
+ 0:X0=x:red; 0:X1=x:green;
+ 1:X1=x:green;
+}
+ P0               | P1               ;
+ STG X0,[X1]      | MOV W2,#2        ;
+ MOV W2,#1        | L01: STR W2,[X1] ;
+ L00: STR W2,[X1] |                  ;
+
+exists (not (fault(P0:L00,x)) /\ not (fault(P1:L01,x)))
