@@ -1,0 +1,13 @@
+(* diyone7 -arch AArch64 -variant memtag,asym -metadata false -oneloc RevT Rfi PosRW Coi *)
+AArch64 CoRW1+pos-coiprevt-rfirevtp
+Variant=asym memtag
+{
+ 0:X0=x:red; 0:X1=x:green;
+}
+ P0               ;
+ STG X0,[X1]      ;
+ L01: LDR W2,[X1] ;
+ MOV W3,#1        ;
+ L00: STR W3,[X0] ;
+
+exists (fault(P0) /\ fault(P0:L01,x))
