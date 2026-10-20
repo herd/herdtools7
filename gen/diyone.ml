@@ -73,25 +73,19 @@ module Make(O:Config) (M:Builder.S) =
         end
 
     let dump name es =
-	    let es = M.E.resolve_edges es in
+      let es = M.E.resolve_edges es in
       let module Normer = Normaliser.Make(O)(M.E) in
-      (* Default scope *)
-      let scope = Normer.get_nprocs es |> get_scope in
-      (* normalised name and scope *)
-      let normalised_name_scope es =
-        let module Namer = Namer.Make(M.A)(M.A)(M.E) in
-        let es = fst @@ M.C.resolve_edges es in
-        let base,es,nprocs = Normer.normalise_family es in
-        let scope = get_scope nprocs in
-        let name = Namer.mk_name base ?scope es in
-        name,scope in
+      let module Namer = Namer.Make(M.A)(M.A)(M.E) in
+      let es,_ = M.C.resolve_edges es in
+      let base,es,nprocs = Normer.normalise_family es in
+      let scope = get_scope nprocs in
       (* Decide the test name *)
-      let test_name,scope = match O.norm,name with
+      let test_name = match O.norm,name with
         (* User specified name *)
-        | false, Some name -> name,scope
+        | false, Some name -> name
         | true, _
         (* Default test name *)
-        | false, None -> normalised_name_scope es in
+        | false, None -> Namer.mk_name base ?scope es in
       let test_name = test_name ^ (Option.value ~default:"" O.sufname) in
       (* generate test from `es` *)
       let t = M.make_test test_name ~info:O.info ?scope es in
