@@ -213,9 +213,9 @@ let apply_prim_set : partial_effect -> prim_set -> partial_effect option =
   in
   fun eff x ->
     match x with
-    | Event { kind = None | Some Exp; access = Any direction } ->
+    | Event { kind = None | Some Exp; access = Any direction; _ } ->
         translate_plain eff (Ir.Direction direction)
-    | Event { kind = None | Some Exp; access = Plain direction } ->
+    | Event { kind = None | Some Exp; access = Plain direction; _ } ->
         translate_plain eff direction
     | Event { access = TTD _ | Tag _ | Instr _; _ } -> None
     | _ -> None
@@ -232,6 +232,8 @@ let build_tedges : prim_rel -> tedge list = function
   | Prim "amo" -> [ mk_macro "Amo.Safe" ]
   | Prim "lxsx" -> [ mk_tedge (E.Rmw A.RMW.LrSc) ]
   | Prim "rmw" -> [ mk_tedge (E.Rmw A.RMW.LrSc); mk_macro "Amo.Safe" ]
+  | Prim "rmw-noret" ->
+      [ mk_tedge (E.Rmw A.RMW.LrSc); mk_macro "Amo.SafeNoReturn" ]
   | Prim "addr" -> [ mk_macro "DpAddr" ]
   | Prim "ctrl" -> [ mk_macro "DpCtrl" ]
   | Prim "data" -> [ mk_macro "DpData" ]
@@ -425,7 +427,13 @@ let fold_macro (name, choices) relaxs =
   do_rec relaxs
 
 let characteristic_macros =
-  [ ("Amo.Safe", R.parse_expand_relaxs (Ast.One "Amo.Cas")) ]
+  [
+    ( "Amo.SafeNoReturn",
+      R.parse_expand_relaxs
+        (Ast.Choice
+           [ Ast.One "Amo.Swp"; Ast.One "Amo.Cas"; Ast.One "Amo.LdAdd" ]) );
+    ("Amo.Safe", R.parse_expand_relaxs (Ast.One "Amo.Cas"));
+  ]
 
 let fold_macros =
   (* Fold broader macros first so smaller overlapping expansions do not consume
@@ -769,6 +777,7 @@ let is_explicit_memory edge relation =
              {
                kind = None | Some Exp;
                access = Any M | Plain (Direction M);
+               _;
              };
          ]) ->
       is_po relation || Ir.is_rmw relation
@@ -1015,7 +1024,11 @@ let translate_seq (Seq l : seq_item Ir.seq) : concrete_relax list =
   if st.core = [] then st.relaxs else []
 
 let resolve_rmw ~partial ~all (Ir.Seq items) =
-  let rmw = Ir.Rel (Ir.Inter [ Ir.Prim "rmw" ]) in
+  let rmw = function
+    | Ir.Event { is_no_return = true; _ } ->
+        Ir.Rel (Ir.Inter [ Ir.Prim "rmw-noret" ])
+    | _ -> Ir.Rel (Ir.Inter [ Ir.Prim "rmw" ])
+  in
   let with_direction access direction =
     match access with
     | Ir.Any _ -> Ir.Any direction
@@ -1069,14 +1082,14 @@ let resolve_rmw ~partial ~all (Ir.Seq items) =
             else
               let left, right = endpoints marked endpoint in
               Option.map
-                (fun items -> left :: rmw :: right :: items)
+                (fun items -> left :: rmw marked :: right :: items)
                 (resolve items)
         | None, Some marked, (Ir.Set _ as endpoint), _ ->
             if is_pruned marked then None
             else
               let left, right = endpoints marked endpoint in
               Option.map
-                (fun items -> left :: rmw :: right :: items)
+                (fun items -> left :: rmw marked :: right :: items)
                 (resolve items)
         | _ ->
             Option.map (fun items -> first :: items) (resolve (second :: items))

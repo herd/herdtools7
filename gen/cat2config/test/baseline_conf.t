@@ -23,7 +23,7 @@
   ## [M | DC.CVAU | IC]; po; [dsb.full]; po; [~((Imp & (TTD & M)) | (Imp & (Instr & R)))]
   -safe [[LxSx|Amo.Safe]?,DSB.SY***,[LxSx|Amo.Safe]?]
   ## [((Exp & R) \ NoRet) | (Imp & (Tag & R))]; po; [dsb.ld]; po; [~((Imp & (TTD & M)) | (Imp & (Instr & R)))]
-  -safe [[LxSx|Amo.Safe],DSB.LD*W*,[LxSx|Amo.Safe]?] [DSB.LD*R*,[LxSx|Amo.Safe]?]
+  -safe [[LxSx|Amo.SafeNoReturn],DSB.LD*W*,[LxSx|Amo.Safe]?] [DSB.LD*R*,[LxSx|Amo.Safe]?]
   ## [Exp & W]; po; [dsb.st]; po; [~((Imp & (TTD & M)) | (Imp & (Instr & R)))]
   -safe [[LxSx|Amo.Safe]?,DSB.ST*W*,[LxSx|Amo.Safe]?]
   
@@ -37,7 +37,7 @@
   ## [Exp & R]; pick-addr-dep; [Exp & M]; po; [IFB]; po
   -safe [[LxSx|Amo.Safe]?,DpAddrCsel,[LxSx|Amo.Safe]?,ISB***,[LxSx|Amo.Safe]?]
   ## DSB-ob; [IFB]; po
-  -safe [[LxSx|Amo.Safe],[DSB.LD*W*|DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?] [[DSB.LD*R*|DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?]
+  -safe [LxSx,[DSB.LD*W*|DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?] [Amo.Safe,[DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?] [Amo.SafeNoReturn,DSB.LD*W*,ISB,[LxSx|Amo.Safe]?] [[DSB.LD*R*|DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?]
   
   ### dob
   ## addr
@@ -73,7 +73,7 @@
   ## [(Exp & M) | (Imp & (Tag & R))]; po; [dmb.full]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
   -safe [[LxSx|Amo.Safe]?,DMB.SY***,[LxSx|Amo.Safe]?]
   ## [(Exp & (R \ NoRet)) | (Imp & (Tag & R))]; po; [dmb.ld]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]
-  -safe [[LxSx|Amo.Safe],DMB.LD*W*,[LxSx|Amo.Safe]?] [DMB.LD*R*,[LxSx|Amo.Safe]?]
+  -safe [[LxSx|Amo.SafeNoReturn],DMB.LD*W*,[LxSx|Amo.Safe]?] [DMB.LD*R*,[LxSx|Amo.Safe]?]
   ## [Exp & W]; po; [dmb.st]; po; [(Exp & W) | (MMU & FAULT)]
   -safe [[LxSx|Amo.Safe]?,DMB.ST*WR,[LxSx|Amo.Safe]] [[LxSx|Amo.Safe]?,DMB.ST*WW]
   ## [range([A]; amo; [L])]; po; [(Exp & M) | (Imp & (Tag & R)) | (MMU & FAULT)]

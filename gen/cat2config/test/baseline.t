@@ -20,7 +20,7 @@ aarch64.cat
 aarch64hwreqs.cat
   $ mcat2config7 --set-libdir ./libdir --let DSB-ob libdir/aarch64.cat
   [[LxSx|Amo.Safe]?,DSB.SY***,[LxSx|Amo.Safe]?]
-  [[LxSx|Amo.Safe],DSB.LD*W*,[LxSx|Amo.Safe]?]
+  [[LxSx|Amo.SafeNoReturn],DSB.LD*W*,[LxSx|Amo.Safe]?]
   [DSB.LD*R*,[LxSx|Amo.Safe]?]
   [[LxSx|Amo.Safe]?,DSB.ST*W*,[LxSx|Amo.Safe]?]
   $ mcat2config7 --set-libdir ./libdir --let IFB-ob libdir/aarch64.cat
@@ -28,7 +28,9 @@ aarch64hwreqs.cat
   [[LxSx|Amo.Safe]?,DpCtrlCsel,ISB,[LxSx|Amo.Safe]?]
   [DpAddr,[LxSx|Amo.Safe]?,ISB***,[LxSx|Amo.Safe]?]
   [[LxSx|Amo.Safe]?,DpAddrCsel,[LxSx|Amo.Safe]?,ISB***,[LxSx|Amo.Safe]?]
-  [[LxSx|Amo.Safe],[DSB.LD*W*|DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?]
+  [LxSx,[DSB.LD*W*|DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?]
+  [Amo.Safe,[DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?]
+  [Amo.SafeNoReturn,DSB.LD*W*,ISB,[LxSx|Amo.Safe]?]
   [[DSB.LD*R*|DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?]
   $ mcat2config7 --set-libdir ./libdir --let dob libdir/aarch64.cat
   DpAddr
@@ -53,7 +55,7 @@ aarch64hwreqs.cat
   [[LxSx|Amo.Safe],PosWR,[A|Q],[LxSx|Amo.Safe]?]
   $ mcat2config7 --set-libdir ./libdir --let bob libdir/aarch64.cat
   [[LxSx|Amo.Safe]?,DMB.SY***,[LxSx|Amo.Safe]?]
-  [[LxSx|Amo.Safe],DMB.LD*W*,[LxSx|Amo.Safe]?]
+  [[LxSx|Amo.SafeNoReturn],DMB.LD*W*,[LxSx|Amo.Safe]?]
   [DMB.LD*R*,[LxSx|Amo.Safe]?]
   [[LxSx|Amo.Safe]?,DMB.ST*WR,[LxSx|Amo.Safe]]
   [[LxSx|Amo.Safe]?,DMB.ST*WW]
@@ -81,7 +83,7 @@ Communication pruning
   [[Hat|ExpObs],[LxSx|Amo.Safe],DMB.SY***,[LxSx|Amo.Safe]?,@after([ExpObs|Hat])]
   [ExpObs,DMB.SY***,[LxSx|Amo.Safe]?,@after([ExpObs|Hat])]
   [DMB.LD*R*,[LxSx|Amo.Safe]?,@after([ExpObs|Hat])]
-  [Hat?,[LxSx|Amo.Safe],DMB.LD*W*,[LxSx|Amo.Safe]?,@after([ExpObs|Hat])]
+  [Hat?,[LxSx|Amo.SafeNoReturn],DMB.LD*W*,[LxSx|Amo.Safe]?,@after([ExpObs|Hat])]
   [DMB.ST*WR,[LxSx|Amo.Safe]]
   DMB.ST*WW
   [Hat?,[LxSx|Amo.Safe],DMB.ST*WR,[LxSx|Amo.Safe]]
@@ -125,7 +127,7 @@ Communication-state pruning
   [@state(EndExpM)?,Hat,[LxSx|Amo.Safe],DMB.SY***,[LxSx|Amo.Safe]?,@state(EndExpM)]
   [@state(StartExpM),[LxSx|Amo.Safe]?,DMB.SY***,[LxSx|Amo.Safe]?,@state(EndExpM)]
   [DMB.LD*R*,[LxSx|Amo.Safe]?,@state(EndExpM)]
-  [@state(EndExpM)?,Hat?,[LxSx|Amo.Safe],DMB.LD*W*,[LxSx|Amo.Safe]?,@state(EndExpM)]
+  [@state(EndExpM)?,Hat?,[LxSx|Amo.SafeNoReturn],DMB.LD*W*,[LxSx|Amo.Safe]?,@state(EndExpM)]
   [DMB.ST*WR,[LxSx|Amo.Safe]]
   DMB.ST*WW
   [@state(EndExpM)?,Hat?,[LxSx|Amo.Safe],DMB.ST*WR,[LxSx|Amo.Safe]]
@@ -147,7 +149,7 @@ Pos*W pruning
   [DSB.SY***,[LxSx|Amo.Safe]]
   [DSB.SY**R|DSB.SYd*W]
   [DSB.LDdRW|DSB.LD*RR]
-  [[LxSx|Amo.Safe],DSB.LD*W*,[LxSx|Amo.Safe]?]
+  [[LxSx|Amo.SafeNoReturn],DSB.LD*W*,[LxSx|Amo.Safe]?]
   [DSB.LD*R*,[LxSx|Amo.Safe]]
   [DSB.STdWW|DSB.ST*WR]
   [[LxSx|Amo.Safe],DSB.ST*W*,[LxSx|Amo.Safe]?]
@@ -157,7 +159,9 @@ Pos*W pruning
   [[LxSx|Amo.Safe]?,DpCtrlCsel,ISB,[LxSx|Amo.Safe]?]
   [DpAddr,[LxSx|Amo.Safe]?,ISB***,[LxSx|Amo.Safe]?]
   [[LxSx|Amo.Safe]?,DpAddrCsel,[LxSx|Amo.Safe]?,ISB***,[LxSx|Amo.Safe]?]
-  [[LxSx|Amo.Safe],[DSB.LD*W*|DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?]
+  [LxSx,[DSB.LD*W*|DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?]
+  [Amo.Safe,[DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?]
+  [Amo.SafeNoReturn,DSB.LD*W*,ISB,[LxSx|Amo.Safe]?]
   [[DSB.LD*R*|DSB.ST*W*|DSB.SY***],ISB,[LxSx|Amo.Safe]?]
   $ mcat2config7 -prune pos_w --set-libdir ./libdir --let dob libdir/aarch64.cat
   [DpAddrdW|DpAddr*R]
@@ -182,7 +186,7 @@ Pos*W pruning
   [DMB.SY***,[LxSx|Amo.Safe]]
   [DMB.SY**R|DMB.SYd*W]
   [DMB.LDdRW|DMB.LD*RR]
-  [[LxSx|Amo.Safe],DMB.LD*W*,[LxSx|Amo.Safe]?]
+  [[LxSx|Amo.SafeNoReturn],DMB.LD*W*,[LxSx|Amo.Safe]?]
   [DMB.LD*R*,[LxSx|Amo.Safe]]
   DMB.STdWW
   [[LxSx|Amo.Safe]?,DMB.ST*WR,[LxSx|Amo.Safe]]

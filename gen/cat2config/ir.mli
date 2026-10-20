@@ -39,6 +39,7 @@ type event_access =
 type event = {
   kind : event_kind option;
   access : event_access;
+  is_no_return : bool;
 }
 
 val default_event : event

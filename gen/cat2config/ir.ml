@@ -88,9 +88,10 @@ type event_access =
 type event = {
   kind : event_kind option;
   access : event_access;
+  is_no_return : bool;
 }
 
-let default_event = { kind = None; access = Any M }
+let default_event = { kind = None; access = Any M; is_no_return = false }
 
 type event_field = PlainField | TTDField | TagField | InstrField
 
@@ -136,7 +137,7 @@ let all_events =
           List.map
             (fun direction ->
               let access = Option.get (access_of_parts direction (Some field)) in
-              { kind = Some kind; access })
+              { kind = Some kind; access; is_no_return = false })
             [ Direction R; Direction W ])
         fields)
     [ Exp; Imp ]
@@ -160,7 +161,8 @@ let compact_event_directions events =
             (fun candidate ->
               let _, candidate_field = access_parts candidate.access in
               let _, event_field = access_parts event.access in
-              candidate.kind = event.kind && candidate_field = event_field)
+              candidate.kind = event.kind && candidate_field = event_field
+              && candidate.is_no_return = event.is_no_return)
             events
         in
         let directions =
@@ -185,7 +187,8 @@ let compact_event_fields events =
               let candidate_direction, _ = access_parts candidate.access in
               let event_direction, _ = access_parts event.access in
               candidate.kind = event.kind
-              && candidate_direction = event_direction)
+              && candidate_direction = event_direction
+              && candidate.is_no_return = event.is_no_return)
             events
         in
         let fields =
@@ -211,7 +214,8 @@ let compact_event_kinds events =
         let same, events =
           List.partition
             (fun candidate ->
-              candidate.access = event.access)
+              candidate.access = event.access
+              && candidate.is_no_return = event.is_no_return)
             events
         in
         let kinds = List.map (fun event -> event.kind) (event :: same) in
@@ -277,6 +281,7 @@ let merge_event_sets sets =
         {
           kind = (if event.kind = None then next.kind else event.kind);
           access;
+          is_no_return = event.is_no_return || next.is_no_return;
         })
       default_event events
   in
@@ -295,7 +300,7 @@ let is_rmw = function
   | Rel (Inter relations) ->
       List.exists
         (fun (relation : prim_rel) ->
-          match relation with Prim "rmw" -> true | _ -> false)
+          match relation with Prim ("rmw" | "rmw-noret") -> true | _ -> false)
         relations
   | Set (Inter [ Rmw _ ]) -> true
   | Set _ -> false
@@ -471,7 +476,20 @@ let event_set_comp = function
 let set_comp nf =
   match event_set_comp nf with Some nf -> nf | None -> comp prim_set_comp nf
 
-let set_diff : set_nf -> set_nf -> set_nf = fun a b -> set_inter a (set_comp b)
+let set_diff : set_nf -> set_nf -> set_nf =
+ fun a b ->
+  match b with
+  | Union [ Inter [ Prim "NoRet" ] ] ->
+      map_union
+        (fun (Inter sets) ->
+          Inter
+            (List.map
+               (function
+                 | Event event -> Event { event with is_no_return = true }
+                 | set -> set)
+               sets))
+        a
+  | _ -> set_inter a (set_comp b)
 
 let find_fence : set_nf -> fence option = function
   | Union [ Inter [ Fence None ] ] -> Some (DSB (SY, FULL))
@@ -528,7 +546,8 @@ let parse_set_id (s : string) : set_nf option =
       | "Instr" ) as s ->
         Option.map (fun event -> prim_set (Event event)) (event_of_name s)
     | "F" -> Some (prim_set (Fence None))
-    | "emptyset" | "NoRet" | "T" | "NExp" -> Some empty_set
+    | "NoRet" -> Some (prim_set (Prim "NoRet"))
+    | "emptyset" | "T" | "NExp" -> Some empty_set
     | _ -> None
   in
   Util.Option.choice_fn [ try_other_prims; try_fences ]
@@ -600,9 +619,9 @@ let rec pp_prim_set fmt =
   | Domain r -> fprintf fmt "domain(%a)" (pp_seq pp_prim_set pp_prim_rel) r
   | Range r -> fprintf fmt "range(%a)" (pp_seq pp_prim_set pp_prim_rel) r
   | Rmw s -> fprintf fmt "rmw(%a)" pp_prim_set s
-  | Event { kind; access } ->
+  | Event { kind; access; is_no_return } ->
       let direction, field = access_parts access in
-      fprintf fmt "%s%s%s"
+      fprintf fmt "%s%s%s%s"
         (match kind with None -> "" | Some Exp -> "Exp" | Some Imp -> "Imp")
         (match field with
         | None | Some PlainField -> ""
@@ -616,6 +635,7 @@ let rec pp_prim_set fmt =
         | Acq_rel A -> "&A"
         | Acq_rel L -> "&L"
         | Acq_rel Q -> "&Q")
+        (if is_no_return then "\\NoRet" else "")
   | Fence None -> fprintf fmt "F"
   | Fence (Some f) -> fprintf fmt "%s" (AArch64Base.pp_barrier_dot f)
   | Prim x -> fprintf fmt "%s" x
