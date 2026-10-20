@@ -2193,6 +2193,7 @@ Arguments:
             M.aarch64_store_conditional must_fail
               (read_reg_ord ResAddr ii)
               mv ma
+              (fun _ -> commit_pred ii)
               (write_reg ResAddr V.zero ii)
               (fun v -> write_reg rr v ii)
               (mw an ac))
