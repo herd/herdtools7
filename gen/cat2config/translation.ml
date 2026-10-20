@@ -199,25 +199,55 @@ let apply_prim_set : partial_effect -> prim_set -> partial_effect option =
   let open A.StructuredAtom in
   fun eff x ->
     match x with
-    | Event { kind = None | Some Exp; direction = R; field = None | Some Plain }
-      ->
+    | Event
+        {
+          kind = None | Some Exp;
+          direction = R;
+          field = None | Some Plain;
+          is_no_return = _;
+        } ->
         build_dir_eff eff Code.R
-    | Event { kind = None | Some Exp; direction = W; field = None | Some Plain }
-      ->
+    | Event
+        {
+          kind = None | Some Exp;
+          direction = W;
+          field = None | Some Plain;
+          is_no_return = _;
+        } ->
         build_dir_eff eff Code.W
-    | Event { kind = None | Some Exp; direction = M; field = None | Some Plain }
-      ->
+    | Event
+        {
+          kind = None | Some Exp;
+          direction = M;
+          field = None | Some Plain;
+          is_no_return = _;
+        } ->
         Some { eff with explicit_mem = true }
-    | Event { kind = None | Some Exp; direction = A; field = None | Some Plain }
-      ->
+    | Event
+        {
+          kind = None | Some Exp;
+          direction = A;
+          field = None | Some Plain;
+          is_no_return = _;
+        } ->
         Option.bind (build_dir_eff eff Code.R) (fun eff ->
             build_atom_eff eff (OrdinaryAccess `Acquire))
-    | Event { kind = None | Some Exp; direction = Q; field = None | Some Plain }
-      ->
+    | Event
+        {
+          kind = None | Some Exp;
+          direction = Q;
+          field = None | Some Plain;
+          is_no_return = _;
+        } ->
         Option.bind (build_dir_eff eff Code.R) (fun eff ->
             build_atom_eff eff (OrdinaryAccess `AcquirePC))
-    | Event { kind = None | Some Exp; direction = L; field = None | Some Plain }
-      ->
+    | Event
+        {
+          kind = None | Some Exp;
+          direction = L;
+          field = None | Some Plain;
+          is_no_return = _;
+        } ->
         Option.bind (build_dir_eff eff Code.W) (fun eff ->
             build_atom_eff eff (OrdinaryAccess `Release))
     | _ -> None
@@ -234,6 +264,8 @@ let build_tedges : prim_rel -> tedge list = function
   | Prim "amo" -> [ mk_macro "Amo.Safe" ]
   | Prim "lxsx" -> [ mk_tedge (E.Rmw A.RMW.LrSc) ]
   | Prim "rmw" -> [ mk_tedge (E.Rmw A.RMW.LrSc); mk_macro "Amo.Safe" ]
+  | Prim "rmw-noret" ->
+      [ mk_tedge (E.Rmw A.RMW.LrSc); mk_macro "Amo.SafeNoReturn" ]
   | Prim "addr" -> [ mk_macro "DpAddr" ]
   | Prim "ctrl" -> [ mk_macro "DpCtrl" ]
   | Prim "data" -> [ mk_macro "DpData" ]
@@ -427,7 +459,13 @@ let fold_macro (name, choices) relaxs =
   do_rec relaxs
 
 let characteristic_macros =
-  [ ("Amo.Safe", R.parse_expand_relaxs (Ast.One "Amo.Cas")) ]
+  [
+    ( "Amo.SafeNoReturn",
+      R.parse_expand_relaxs
+        (Ast.Choice
+           [ Ast.One "Amo.Swp"; Ast.One "Amo.Cas"; Ast.One "Amo.LdAdd" ]) );
+    ("Amo.Safe", R.parse_expand_relaxs (Ast.One "Amo.Cas"));
+  ]
 
 let fold_macros =
   (* Fold broader macros first so smaller overlapping expansions do not consume
@@ -772,6 +810,7 @@ let is_explicit_memory edge relation =
                kind = None | Some Exp;
                direction = M;
                field = None | Some Plain;
+               is_no_return = _;
              };
          ]) ->
       is_po relation || Ir.is_rmw relation
@@ -1018,7 +1057,11 @@ let translate_seq (Seq l : seq_item Ir.seq) : concrete_relax list =
   if st.core = [] then st.relaxs else []
 
 let resolve_rmw ~partial ~all (Ir.Seq items) =
-  let rmw = Ir.Rel (Ir.Inter [ Ir.Prim "rmw" ]) in
+  let rmw = function
+    | Ir.Event { is_no_return = true; _ } ->
+        Ir.Rel (Ir.Inter [ Ir.Prim "rmw-noret" ])
+    | _ -> Ir.Rel (Ir.Inter [ Ir.Prim "rmw" ])
+  in
   let endpoints marked endpoint =
     match marked with
     | Ir.Event { direction = Ir.M; _ } -> (endpoint, endpoint)
@@ -1050,14 +1093,14 @@ let resolve_rmw ~partial ~all (Ir.Seq items) =
             else
               let left, right = endpoints marked endpoint in
               Option.map
-                (fun items -> left :: rmw :: right :: items)
+                (fun items -> left :: rmw marked :: right :: items)
                 (resolve items)
         | None, Some marked, (Ir.Set _ as endpoint), _ ->
             if is_pruned marked then None
             else
               let left, right = endpoints marked endpoint in
               Option.map
-                (fun items -> left :: rmw :: right :: items)
+                (fun items -> left :: rmw marked :: right :: items)
                 (resolve items)
         | _ ->
             Option.map (fun items -> first :: items) (resolve (second :: items))

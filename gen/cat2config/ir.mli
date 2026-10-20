@@ -32,6 +32,7 @@ type event = {
   kind : event_kind option;
   direction : event_direction;
   field : event_field option;
+  is_no_return : bool;
 }
 
 val default_event : event
