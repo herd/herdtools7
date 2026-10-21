@@ -3373,7 +3373,7 @@ Arguments:
             let>= v = scalable_getlane v idx esize in
             let>= v = demote v in
             write_mem sz aexp Access.VIR addr v ii in
-          is_active_element r pred psize idx ii store (no_action ii)
+          is_active_element p pred psize idx ii store (no_action ii)
         in
         let ops = List.map op (Misc.interval 0 nelem) in
         List.fold_right M.seq_mem_list ops (M.unitT [()])
