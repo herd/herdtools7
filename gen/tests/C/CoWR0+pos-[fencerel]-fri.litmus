@@ -3,11 +3,6 @@
 Warning: optimised conditions are not supported by C arch
 *)
 C CoWR0+pos-[fencerel]-fri
-"PosWR FenceRel Fri"
-Generator=diyone7 (version 7.58+1)
-Prefetch=
-Com=Fr
-Orig=PosWR FenceRel Fri
 
 {}
 
