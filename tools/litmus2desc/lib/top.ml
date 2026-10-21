@@ -721,14 +721,17 @@ let explain_test ?libdir ?(latex_compat = false) ?(describe_dep_path = false)
     with Invalid_argument msg -> Error msg
   in
   let info = parsed.MiscParser.info in
-  let* () =
+  let* test_variant =
     match List.assoc_opt MiscParser.variant_key info with
-    | Some variant -> Error (Printf.sprintf "variant `%s`" variant)
-    | None -> Ok ()
+    | Some variant -> (
+        match variant with
+        | "vmsa" -> Ok (fun v -> v = Variant.VMSA)
+        | _ -> Error (Printf.sprintf "variant `%s`" variant))
+    | None -> Ok (fun _ -> false)
   in
   let proc_count = List.length parsed.MiscParser.prog in
   let code = LitmusTest.collect_instructions parsed in
-  let outcome = HerdDriver.top ~libdir contents in
+  let outcome = HerdDriver.top ~libdir ~variant:test_variant contents in
   let module R = (val outcome : RunTest.Outcome) in
   let module Expl = Make (R.M.S) in
   let descriptions_rev, _ =
