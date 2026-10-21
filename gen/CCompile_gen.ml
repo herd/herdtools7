@@ -1011,11 +1011,13 @@ module Make(O:Config) : Builder.S
 
       let dump_c_test_channel chan t =
         fprintf chan "C %s\n" t.name ;
-        if t.com <>  "" then fprintf chan "\"%s\"\n" t.com ;
-        List.iter
-          (fun (k,v) -> fprintf chan "%s=%s\n" k v)
-          t.info ;
-        Hint.dump O.hout t.name t.info ;
+        if O.metadata then begin
+          if t.com <>  "" then fprintf chan "\"%s\"\n" t.com ;
+          List.iter
+            (fun (k,v) -> fprintf chan "%s=%s\n" k v)
+            t.info ;
+          Hint.dump O.hout t.name t.info
+        end ;
         (* Empty init *)
         dump_init chan t.prog ;
         dump_code chan t.prog ;
