@@ -114,6 +114,7 @@ module Opts = struct
                 "communication";
                 "communication_state";
                 "dpctrl";
+                "dsb-ob";
                 "pos_w";
               ],
               function
@@ -124,6 +125,7 @@ module Opts = struct
               | "communication_state" ->
                   prune := Translation.Communication_state :: !prune
               | "dpctrl" -> prune := Translation.Dpctrl :: !prune
+              | "dsb-ob" -> prune := Translation.Dsb_ob :: !prune
               | "pos_w" -> prune := Translation.Pos_w :: !prune
               | _ -> assert false ),
           "  Enable the selected relaxation pruning pass." );

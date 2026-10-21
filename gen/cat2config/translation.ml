@@ -33,11 +33,12 @@ type prune =
   | Communication
   | Communication_state
   | Dpctrl
+  | Dsb_ob
   | Pos_w
 
 (* [Communication_state] is an alternative representation of [Communication],
    so [-prune all] retains the existing communication representation. *)
-let prune_all = [ Amo_all; Communication; Dpctrl; Pos_w ]
+let prune_all = [ Amo_all; Communication; Dpctrl; Dsb_ob; Pos_w ]
 
 let merge_dir_opt d1 d2 =
   let open Code in
@@ -676,6 +677,29 @@ let prune_dpctrl_relaxes =
       in
       not (has_dpctrl_w && has_insert))
 
+let prune_dsb_ob_relaxes =
+  List.filter (fun relax ->
+      let has_dsb =
+        List.exists
+          (function
+            | Plain
+                {
+                  E.edge = E.Fenced (A.Barrier (AArch64Base.DSB _), _, _, _);
+                  _;
+                } ->
+                true
+            | Plain _ | Predicate _ -> false)
+          relax
+      in
+      let has_isb_insert =
+        List.exists
+          (function
+            | Plain { E.edge = E.Insert (A.Barrier AArch64Base.ISB); _ } -> true
+            | Plain _ | Predicate _ -> false)
+          relax
+      in
+      not (has_dsb && has_isb_insert))
+
 (* For example, wrapping an edge with `L` and `A` produces the relaxation
    `[L,edge,A]`. *)
 let split_annotations item left right =
@@ -1150,6 +1174,9 @@ let translate ~prune ~binding (nf : Ir.rel_nf) : relax list =
   let relaxs = if List.mem Pos_w prune then prune_relaxes relaxs else relaxs in
   let relaxs =
     if List.mem Dpctrl prune then prune_dpctrl_relaxes relaxs else relaxs
+  in
+  let relaxs =
+    if List.mem Dsb_ob prune then prune_dsb_ob_relaxes relaxs else relaxs
   in
   relaxs |> fold_relaxes
 

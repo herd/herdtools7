@@ -22,6 +22,7 @@ type prune =
   | Communication
   | Communication_state
   | Dpctrl
+  | Dsb_ob
   | Pos_w
 
 val prune_all : prune list
