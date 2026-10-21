@@ -163,6 +163,7 @@ module Make (S : SemExtra.S) = struct
     | "EOR" -> Some "Exclusive Or"
     | "ADD" -> Some "Add"
     | "CBNZ" -> Some "Branch"
+    | "TLBI" -> Some "TLB Maintenance"
     | _ -> None
 
   let describe_instruction ctx (ins : LitmusTest.instr) : string =
@@ -222,6 +223,10 @@ module Make (S : SemExtra.S) = struct
                (LitmusTest.render_instruction ~latex:false ins))
     in
     Format.sprintf "a %s Effect" eff
+
+  let describe_tlbi_event (ins : LitmusTest.instr) =
+    ignore ins;
+    Printf.sprintf "a TLBI effect"
 
   (* Generate prose description of a dependency (addr, data, ctrl). *)
   let describe_dep ctx (dep : dependency) : string =
@@ -289,6 +294,7 @@ module Make (S : SemExtra.S) = struct
             when not is_implicit ->
               describe_mem_access ~loc ~dir ~value
           | Some Barrier -> describe_barrier_event ins
+          | Some TLBI -> describe_tlbi_event ins
           | _ -> failwith "unsupported event")
       |> Util.List.intersperse ", and "
       |> String.concat ""
@@ -646,6 +652,8 @@ module Make (S : SemExtra.S) = struct
             when not is_implicit ->
               Some (Located.make ev (find_instr_by_iiid iiid))
           | IdSome iiid, Some Barrier ->
+              Some (Located.make ev (find_instr_by_iiid iiid))
+          | IdSome iiid, Some TLBI ->
               Some (Located.make ev (find_instr_by_iiid iiid))
           | _ -> None)
       |> Located.group_by_proc_poi
