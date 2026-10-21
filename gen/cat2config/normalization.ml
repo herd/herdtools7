@@ -48,6 +48,7 @@ module type S = sig
   type set_nf
 
   val empty_set : set_nf
+  val id_rel : rel_nf
   val empty_rel : rel_nf
 
   (* Operations on sets and relations *)
@@ -214,8 +215,10 @@ end = struct
       | Op1 (_, Plus, exp) -> unroll config.unroll_depth (go exp)
       | Op1 (_, Star, exp) ->
           let unrolled = unroll config.unroll_depth (go exp) in
-          rel_union_l [ unrolled; empty_rel ]
-      | Op1 (_, Opt, exp) -> rel_union_l [ go exp; empty_rel ]
+          rel_union_l [ unrolled; id_rel ]
+      | Op1 (_, Opt, exp) ->
+          let optional = try go exp with NormalizationError _ -> empty_rel in
+          rel_union_l [ optional; id_rel ]
       | Konst (_, Empty _) -> empty_rel
       | App (_, fexp, exp) -> (
           match fexp with
