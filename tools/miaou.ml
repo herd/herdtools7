@@ -34,7 +34,7 @@ module Make
          val std : bool
 (* Definitons *)
          val names : StringSet.t
-         val inline : StringSet.t
+         val inline : StringSet.t ref
          val testmode : bool
          val texfile : string option
     end) =
@@ -183,7 +183,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
       check_nodefs loc name
 
     let find_inline_def id =
-      if StringSet.mem id O.inline then
+      if StringSet.mem id !O.inline then
         StringMap.find_opt id !inline_defs
       else None
 
@@ -907,7 +907,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
 
     and collect_bds defs (_,p,d) =
       match p with
-      | Pvar (Some id) when StringSet.mem id O.inline ->
+      | Pvar (Some id) when StringSet.mem id !O.inline ->
          begin match get_id_e_type id d with
          | Some SET -> defs
          | Some RLN|None ->
@@ -915,6 +915,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
             if StringMap.exists (fun k _ -> String.equal k id) defs then
               begin
                 eprintf "Multiple definitions of %s, cannot inline\n" id ;
+                O.inline := StringSet.remove id !O.inline ;
                 StringMap.remove id defs
               end
             else
@@ -1061,7 +1062,7 @@ let () =
         let includes = !includes
         let libdir = !libdir
         let names = !names
-        let inline = !inline
+        let inline = inline
         let expand = !expand
         let flatten = !flatten
         let std = !std
