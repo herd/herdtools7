@@ -188,6 +188,7 @@ let prim_set_comp : prim_set -> prim_set inter union = function
   | s -> prim_set (Comp s)
 
 let empty_set : set_nf = Union []
+let id_rel : rel_nf = Union [ Seq [] ]
 let empty_rel : rel_nf = Union []
 let domain : rel_nf -> set_nf = map_union (fun s -> Inter [ Domain s ])
 let range : rel_nf -> set_nf = map_union (fun s -> Inter [ Range s ])
