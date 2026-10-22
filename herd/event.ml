@@ -475,11 +475,11 @@ val same_instance : event -> event -> bool
           event_structure ->  event_structure ->  event_structure ->
             event_structure
 
-  val aarch64_sc :
-      event_structure -> event_structure -> event_structure ->
-        event_structure ->
-          event_structure ->  event_structure ->  event_structure ->
-            event_structure
+  val aarch64_store_excl :
+    event_structure -> event_structure -> event_structure ->
+      event_structure ->
+        event_structure ->  event_structure ->  event_structure ->
+          event_structure
 
   val aarch64_cas :
     bool (* Physical memory access *) ->
@@ -2389,93 +2389,35 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
           @ wres.aligned @ wresult.aligned @ wmem.aligned ;}
 
 (* AArch64 Store conditional *)
-    let aarch64_sc resa data addr br wres wresult wmem =
-      let in_wmem = minimals wmem
+    let aarch64_store_excl resa data addr br wres wresult wmem =
+      let base =
+        List.fold_left union resa [data; addr; br; wres; wresult; wmem] in
+      let in_wmem = minimals wmem in
+      let stores = mem_stores_of in_wmem
       and in_wres = minimals wres
       and in_wresult = minimals wresult
       and in_br = minimals br
       and out_data = maximals data
       and out_resa = maximals resa
       and out_br = get_ctrl_output br in
-      { procs = [];
-        events =
-        EventSet.union
-          (EventSet.union4 resa.events data.events addr.events br.events)
-          (EventSet.union3 wres.events wresult.events wmem.events);
-        speculated =
-        if do_deps then
-          EventSet.union
-            (EventSet.union4
-               resa.speculated data.speculated addr.speculated br.speculated)
-            (EventSet.union3 wres.speculated wresult.speculated wmem.speculated)
-        else
-          resa.speculated;
-        po = po_unions [resa; data; addr; br; wres; wresult; wmem];
-        partial_po = partial_po_unions [resa; data; addr; br; wres; wresult; wmem];
+      { base with
         intra_causality_data =
-        EventRel.unions
-          [EventRel.union4 resa.intra_causality_data
-             data.intra_causality_data addr.intra_causality_data
-             br.intra_causality_data;
-           EventRel.union3 wres.intra_causality_data
-             wresult.intra_causality_data wmem.intra_causality_data;
-           EventRel.cartesian (get_output addr) in_br;
-           EventRel.cartesian (get_output addr) in_wmem;
-           EventRel.cartesian out_resa in_br;
-           EventRel.cartesian out_data in_wmem; ];
+          EventRel.unions
+           [ base.intra_causality_data;
+             EventRel.cartesian (get_output addr) in_br;
+             EventRel.cartesian (get_output addr) stores;
+             EventRel.cartesian out_resa in_br;
+             EventRel.cartesian out_data stores; ];
         intra_causality_control =
           EventRel.unions
-            [EventRel.union4 resa.intra_causality_control
-               data.intra_causality_control addr.intra_causality_control
-               br.intra_causality_control;
-             EventRel.union3 wres.intra_causality_control
-               wresult.intra_causality_control wmem.intra_causality_control;
-             EventRel.cartesian (get_ctrl_output_commits addr) in_br;
-             EventRel.cartesian out_br in_wmem;
-             EventRel.cartesian out_br in_wres;
-             EventRel.cartesian out_br in_wresult;
-             EventRel.cartesian (get_ctrl_output_commits addr) in_wmem;];
-        intra_causality_order =
-          EventRel.unions
-            [resa.intra_causality_order;
-             data.intra_causality_order;
-             addr.intra_causality_order;
-             br.intra_causality_order;
-             wres.intra_causality_order;
-             wresult.intra_causality_order;
-             wmem.intra_causality_order];
-        control =
-        EventRel.union
-          (EventRel.union4 resa.control data.control addr.control br.control)
-          (EventRel.union3 wres.control wresult.control wmem.control);
-        ports =
-        emap_union
-          (emap_union4 resa.ports data.ports addr.ports br.ports)
-          (emap_union3 wres.ports wresult.ports wmem.ports);
-        success_ports =
-        EventSet.union
-          (EventSet.union4
-             resa.success_ports data.success_ports addr.success_ports
-             br.success_ports)
-          (EventSet.union3 wres.success_ports wresult.success_ports
-             wmem.success_ports);
-        input=None; data_input=None;
+            [ base.intra_causality_control;
+              EventRel.cartesian (get_ctrl_output_commits addr) in_br;
+              EventRel.cartesian out_br in_wmem;
+              EventRel.cartesian out_br in_wres;
+              EventRel.cartesian out_br in_wresult;
+              EventRel.cartesian (get_ctrl_output_commits addr) in_wmem;];
         output = Some (EventSet.union (get_output wresult) (get_output wres));
-        ctrl_output = None ;
-        sca =
-        EventSetSet.union
-          (EventSetSet.union4 resa.sca data.sca addr.sca br.sca)
-          (EventSetSet.union3 wres.sca wresult.sca wmem.sca);
-        mem_accesses =
-        EventSet.union
-          (EventSet.union4
-             resa.mem_accesses data.mem_accesses addr.mem_accesses
-             br.mem_accesses)
-          (EventSet.union3 wres.mem_accesses wresult.mem_accesses
-             wmem.mem_accesses);
-        aligned =
-          resa.aligned @ data.aligned @ addr.aligned @ br.aligned
-          @ wres.aligned @ wresult.aligned @ wmem.aligned ;}
+        ctrl_output = None; }
 
 (* AArch64 CAS *)
     let aarch64_cas is_phy mode rn rs rt wrs rm wm br =

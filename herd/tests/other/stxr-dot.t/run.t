@@ -44,6 +44,7 @@ No variant.
   stxr-address-read -iico_data-> stxr-branch
   stxr-address-read -iico_data-> stxr-write
   stxr-branch -iico_ctrl-> stxr-clear-reservation
+  stxr-branch -iico_ctrl-> stxr-empty
   stxr-branch -iico_ctrl-> stxr-result
   stxr-branch -iico_ctrl-> stxr-write
   stxr-data-read -iico_data-> stxr-write
@@ -57,9 +58,11 @@ MTE, synchronous by default.
   stxr-address-read -iico_data-> stxr-tag-read
   stxr-address-read -iico_data-> stxr-write
   stxr-branch -iico_ctrl-> stxr-clear-reservation
+  stxr-branch -iico_ctrl-> stxr-empty
   stxr-branch -iico_ctrl-> stxr-result
   stxr-branch -iico_ctrl-> stxr-write
   stxr-color-branch -iico_ctrl-> stxr-branch
+  stxr-color-branch -iico_ctrl-> stxr-empty
   stxr-color-branch -iico_ctrl-> stxr-write
   stxr-data-read -iico_data-> stxr-write
   stxr-reservation-read -iico_data-> stxr-branch
@@ -73,6 +76,7 @@ MTE, asynchronous.
   stxr-address-read -iico_data-> stxr-tag-read
   stxr-address-read -iico_data-> stxr-write
   stxr-branch -iico_ctrl-> stxr-clear-reservation
+  stxr-branch -iico_ctrl-> stxr-empty
   stxr-branch -iico_ctrl-> stxr-result
   stxr-branch -iico_ctrl-> stxr-write
   stxr-color-branch -iico_ctrl-> stxr-empty
@@ -85,6 +89,7 @@ VMSA.
   $ stxr_relations -variant=vmsa
   stxr-address-read -iico_data-> stxr-pte-read
   stxr-branch -iico_ctrl-> stxr-clear-reservation
+  stxr-branch -iico_ctrl-> stxr-empty
   stxr-branch -iico_ctrl-> stxr-result
   stxr-branch -iico_ctrl-> stxr-write
   stxr-data-read -iico_data-> stxr-write
@@ -93,4 +98,5 @@ VMSA.
   stxr-pte-read -iico_data-> stxr-write
   stxr-reservation-read -iico_data-> stxr-branch
   stxr-translation-branch -iico_ctrl-> stxr-branch
+  stxr-translation-branch -iico_ctrl-> stxr-empty
   stxr-translation-branch -iico_ctrl-> stxr-write
