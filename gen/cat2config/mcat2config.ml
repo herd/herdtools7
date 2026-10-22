@@ -262,8 +262,10 @@ let run ~(opts : Opts.t) (tree : AST.ins list) =
               let relaxs = List.filter (fun r -> not (List.mem r acc)) relaxs in
               if relaxs <> [] then (
                 print_cat_rel ();
-                printf "-safe %s@."
-                  (String.concat " " (List.map Translation.pp_relax relaxs)));
+                List.iter
+                  (fun relax ->
+                    printf "-safe %s@." (Translation.pp_relax relax))
+                  relaxs);
               acc @ relaxs)
             [] relaxss
         in
