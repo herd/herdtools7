@@ -81,6 +81,10 @@ end = struct
   | Access (_,A.Location_reg (q,_),_,_,_) -> p = q
   | _ -> false
 
+  let get_reg_size a = match a with
+  | Access (_,A.Location_reg _,_,_,sz) -> sz
+  | _ -> assert false
+
   let is_mem a = match a with
   | Access (_,A.Location_global _,_,_,_) -> true
   | RMW (A.Location_global _,_,_,_,_) -> true
