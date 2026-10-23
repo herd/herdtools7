@@ -258,6 +258,9 @@ and an ill-typed call expression \verb|proc()|, since procedures can only be use
 and functions can only be used in call expressions.
 \ASLListing{Ill-typed Subprogram Calls}{AnnotateRetTy-bad}{\typingtests/TypingRule.AnnotateRetTy.bad.asl}
 
+\listingref{AnnotateRetTy-bad2} shows an example of an ill-typed function call \verb|BadFunc{3}()|, since its return type (after applying $\renametyeqs$) is ill-formed.
+\ASLListing{Ill-typed Subprogram Calls}{AnnotateRetTy-bad2}{\typingtests/TypingRule.AnnotateRetTy.bad2.asl}
+
 
 \RenderProseAndFormally{annotate_ret_ty}
 

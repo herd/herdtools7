@@ -25,6 +25,10 @@ open ASTUtils
 open Infix
 module SEnv = StaticEnv
 
+module StaticModel = StaticModel.Symbolic (struct
+  let handle_atc = false
+end)
+
 type env = SEnv.env
 
 module TypingRule = Instrumentation.TypingRule

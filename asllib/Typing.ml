@@ -67,49 +67,6 @@ let sum = function
   | [ x ] -> x
   | h :: t -> List.fold_left plus h t
 
-(* Begin SlicesWidth *)
-let slices_width env =
-  let slice_width = function
-    | Slice_Single _ -> one_expr
-    | Slice_Star (_, e) | Slice_Length (_, e) -> e
-    | Slice_Range (e1, e2) -> plus one_expr (minus e1 e2)
-  in
-  fun li -> List.map slice_width li |> sum |> StaticModel.try_normalize env
-(* End *)
-
-let width_plus env acc w = plus acc w |> StaticModel.try_normalize env
-
-(* Begin RenameTyEqs *)
-let rename_ty_eqs : env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty
-    =
-  let subst_expr_normalize env eqs e =
-    subst_expr eqs e |> StaticModel.try_normalize env
-  in
-  let subst_constraint env eqs = function
-    | Constraint_Exact e -> Constraint_Exact (subst_expr_normalize env eqs e)
-    | Constraint_Range (e1, e2) ->
-        Constraint_Range
-          (subst_expr_normalize env eqs e1, subst_expr_normalize env eqs e2)
-  in
-  let subst_constraints env eqs = List.map (subst_constraint env eqs) in
-  let rec rename env eqs ty =
-    let loc = to_pos ty in
-    let here desc = add_pos_from ~loc desc in
-    match ty.desc with
-    | T_Bits (e, fields) ->
-        T_Bits (subst_expr_normalize env eqs e, fields) |> here
-    | T_Int (WellConstrained (constraints, precision)) ->
-        let constraints = subst_constraints env eqs constraints in
-        well_constrained ~loc ~precision constraints
-    | T_Int (Parameterized name) ->
-        let e = E_Var name |> here |> subst_expr_normalize env eqs in
-        integer_exact ~loc e
-    | T_Tuple tys -> T_Tuple (List.map (rename env eqs) tys) |> here
-    | _ -> ty
-  in
-  rename |: TypingRule.RenameTyEqs
-(* End *)
-
 (* Begin Lit *)
 let annotate_literal env = function
   | L_Int _ as v -> integer_exact' (literal v)
@@ -401,10 +358,60 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
   open Property (C)
   module Fn = FunctionRenaming (C)
 
+  let handle_atc =
+    match C.asl1_revision with EAC1 | EAC2 -> true | DEV -> false
+
+  module StaticModel = StaticModel.Symbolic (struct
+    let handle_atc = handle_atc
+  end)
+
   module SOp = StaticOperations.Make (struct
     let fail reason = assumption_failed ~reason ()
     let warn_from = warn_from
   end)
+
+  (* Begin SlicesWidth *)
+  let slices_width env =
+    let slice_width = function
+      | Slice_Single _ -> one_expr
+      | Slice_Star (_, e) | Slice_Length (_, e) -> e
+      | Slice_Range (e1, e2) -> plus one_expr (minus e1 e2)
+    in
+    fun li -> List.map slice_width li |> sum |> StaticModel.try_normalize env
+  (* End *)
+
+  let width_plus env acc w = plus acc w |> StaticModel.try_normalize env
+
+  (* Begin RenameTyEqs *)
+  let rename_ty_eqs :
+      env -> (AST.identifier * AST.expr) list -> AST.ty -> AST.ty =
+    let subst_expr_normalize env eqs e =
+      subst_expr eqs e |> StaticModel.try_normalize env
+    in
+    let subst_constraint env eqs = function
+      | Constraint_Exact e -> Constraint_Exact (subst_expr_normalize env eqs e)
+      | Constraint_Range (e1, e2) ->
+          Constraint_Range
+            (subst_expr_normalize env eqs e1, subst_expr_normalize env eqs e2)
+    in
+    let subst_constraints env eqs = List.map (subst_constraint env eqs) in
+    let rec rename env eqs ty =
+      let loc = to_pos ty in
+      let here desc = add_pos_from ~loc desc in
+      match ty.desc with
+      | T_Bits (e, fields) ->
+          T_Bits (subst_expr_normalize env eqs e, fields) |> here
+      | T_Int (WellConstrained (constraints, precision)) ->
+          let constraints = subst_constraints env eqs constraints in
+          well_constrained ~loc ~precision constraints
+      | T_Int (Parameterized name) ->
+          let e = E_Var name |> here |> subst_expr_normalize env eqs in
+          integer_exact ~loc e
+      | T_Tuple tys -> T_Tuple (List.map (rename env eqs) tys) |> here
+      | _ -> ty
+    in
+    rename |: TypingRule.RenameTyEqs
+  (* End *)
 
   (* Begin LDKIsImmutable *)
   let ldk_is_immutable = function LDK_Let -> true | LDK_Var -> false
@@ -1672,7 +1679,23 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
     (* Substitute parameters into the return type *)
     let return_type =
       match (call_type, func_sig.return_type) with
-      | (ST_Function | ST_Getter), Some ty -> Some (rename_ty_eqs env eqs ty)
+      | (ST_Function | ST_Getter), Some ty ->
+          let renamed_ty = rename_ty_eqs env eqs ty in
+          let ret_ty =
+            match C.asl1_revision with
+            | EAC1 | EAC2 -> renamed_ty
+            | DEV ->
+                (* Annotate the return type with parameters substituted in.
+                   The return type has previously been annotated by
+                   [annotate_func_sig]. This should not cause an issue because:
+                   - expressions in function signatures are restricted by
+                     [extract_parameters]
+                   - global constants cannot evaluate to tuples for use in
+                     signatures
+                *)
+                annotate_type ~loc env renamed_ty |> fst
+          in
+          Some ret_ty
       | (ST_Procedure | ST_Setter), None -> None
       | _ ->
           fatal_from ~loc

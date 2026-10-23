@@ -20,7 +20,8 @@ end;
 func halfsize3{size}() => bits(size*8)
 begin
     var value = ARBITRARY: bits(size*8);
-    let halfsize = (size DIV 2) as integer{4,8};
+    assert size IN {8,16};
+    let halfsize = size DIV 2;
     var lowhalf = Zeros {halfsize * 8};
     var highhalf = Zeros {halfsize * 8};
     lowhalf = returnOnes{halfsize};
