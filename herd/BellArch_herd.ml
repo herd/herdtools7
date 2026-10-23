@@ -58,6 +58,8 @@ module Make
         module FaultType=FaultType.No
       end)
 
+  type annotated_prog = CodeInstr.t prog
+
     module MemType=MemoryType.No
 
     module Barrier = AllBarrier.No(struct type a = barrier end)
