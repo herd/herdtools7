@@ -1215,6 +1215,21 @@ ast lexpr { "\assignableexpression{}" } =
       "the multi-field write \assignableexpression{} for {base}, field names given by {field_names}, and inferred slices given by {slices}",
       math_macro = \typedLESetFields,
     }
+
+////////////////////////////////////////////////
+// Prepared AST
+////////////////////////////////////////////////
+
+    | prepared_LE_Slice(base: lexpr, slice_ranges: list0((native_value, native_value)))
+    {
+      "the prepared slice \assignableexpression{} for {base} and evaluated slice ranges {slice_ranges}",
+      math_macro = \LESlice,
+    }
+    | prepared_LE_SetArray(base: lexpr, index: native_value)
+    {
+      "the prepared array write \assignableexpression{} for {base} at index {index}",
+      math_macro = \LESetArray,
+    }
 ;
 
 constant label_LE_Destructuring : ASTLabels { math_macro = \LEDestructuring };
@@ -1231,6 +1246,10 @@ render untyped_lexpr = lexpr(
     LE_Destructuring,
 );
 render typed_lexpr { lhs_hypertargets = false } = lexpr(LE_SetCollectionFields, typed_LE_SetFields);
+render prepared_lexpr { lhs_hypertargets = false } = lexpr(
+    prepared_LE_Slice,
+    prepared_LE_SetArray,
+);
 
 render lexpr_discard = lexpr(LE_Discard);
 render lexpr_var = lexpr(LE_Var);
@@ -3272,7 +3291,7 @@ semantics relation eval_expr_sef(env: envs, e: expr) -> ResultExprSEF(v: native_
    prose_description = "specializes the expression evaluation relation for
                         \sideeffectfreeexpressionsterm{} by omitting throwing
                         configurations as possible output configurations.",
- prose_transition = "evaluating the \sideeffectfreeterm{} {e} in {env} yields",
+ prose_transition = "\sideeffectfreeevaluationterm{} of {e} in {env} yields",
 } =
   eval_expr(env, e) -> ResultExpr((v, g), _) | DynErrorConfig(), DivergingConfig();
   --
@@ -3619,6 +3638,162 @@ render rule annotate_lexpr_LESetField_BitField = annotate_lexpr(LESetField.bitfi
 render rule annotate_lexpr_LESetBadField_error = annotate_lexpr(LESetField.error);
 render rule annotate_lexpr_LESetFields = annotate_lexpr(LESetFields);
 
+semantics relation eval_and_rewrite_lexpr(env: envs, le: lexpr) ->
+        (new_le: lexpr, new_g: XGraphs) | TDynError | TDiverging
+{
+    "evaluates every array index and slice expression in the
+    \assignableexpression{} {le} exactly once as a \sideeffectfreeterm{}
+    expression in the \environmentterm{} {env}, yielding the prepared
+    \assignableexpression{} {new_le}, which retains each resulting value, and
+    the \executiongraphterm{} {new_g}.
+    \ProseOtherwiseDynamicErrorOrDiverging",
+    prose_transition = "evaluating and rewriting the array index and slice
+    expressions in {le} in {env} yields",
+} =
+  case LEDiscard {
+    le = LE_Discard;
+    --
+    (le, empty_graph);
+  }
+
+  case LEVar {
+    le =: LE_Var(name);
+    --
+    (le, empty_graph);
+  }
+
+  case LESetCollectionFields {
+    le =: LE_SetCollectionFields(base, field_names, slices);
+    --
+    (le, empty_graph);
+  }
+
+  case LESlice {
+    le =: LE_Slice(le_base, slices);
+    eval_and_rewrite_lexpr(env, le_base) -> (le_base', g1);
+    eval_slices(env, slices) -> ResultSlices(slice_ranges, g2);
+    new_g := parallel(g1, g2);
+    --
+    (prepared_LE_Slice(le_base', slice_ranges), new_g);
+  }
+
+  case LESetArray {
+    le =: LE_SetArray(le_base, e_index);
+    eval_and_rewrite_lexpr(env, le_base) -> (le_base', g1);
+    eval_expr_sef(env, e_index) -> ResultExprSEF(index_value, g2);
+    new_g := parallel(g1, g2);
+    --
+    (prepared_LE_SetArray(le_base', index_value), new_g)
+    { [_] };
+  }
+
+  case LESetField {
+    le =: LE_SetField(le_record, field_name);
+    eval_and_rewrite_lexpr(env, le_record) -> (le_record', g);
+    --
+    (LE_SetField(le_record', field_name), g)
+    { [_] };
+  }
+
+  case LESetFields {
+    le =: typed_LE_SetFields(le_record, field_names, slices);
+    eval_and_rewrite_lexpr(env, le_record) -> (le_record', g);
+    --
+    (typed_LE_SetFields(le_record', field_names, slices), g)
+    { [_] };
+  }
+
+  case LEDestructuringEmpty {
+    le =: LE_Destructuring(les);
+    les = empty_list;
+    --
+    (le, empty_graph);
+  }
+
+  case LEDestructuringNonEmpty {
+    le =: LE_Destructuring(les);
+    les =: match_cons(le1, les1);
+    eval_and_rewrite_lexpr(env, le1) -> (le1', g1);
+    eval_and_rewrite_lexpr(env, LE_Destructuring(les1)) -> (le_rest, g2)
+    { [_] };
+    le_rest =: LE_Destructuring(les1');
+    new_g := parallel(g1, g2);
+    les' := cons(le1', les1');
+    --
+    (LE_Destructuring(les'), new_g)
+    { [_] };
+  }
+;
+
+semantics relation eval_prepared_lexpr_as_expr(env: envs, le: lexpr) ->
+        ResultExprSEF(v: native_value, new_g: XGraphs) | TDynError | TDiverging
+{
+    "evaluates the prepared \assignableexpression{} {le} as an expression in
+    the \environmentterm{} {env}, using its prepared array indices and slice
+    ranges, yielding the native value {v} and \executiongraphterm{} {new_g}.
+    \ProseOtherwiseDynamicErrorOrDiverging",
+    prose_transition = "evaluating the prepared assignable expression {le} as
+    an expression in {env} yields",
+    math_layout = (_, [_]),
+} =
+  case LEVar {
+    le =: LE_Var(name);
+    eval_expr_sef(env, E_Var(name)) -> ResultExprSEF(v, new_g)
+    { [_] };
+    --
+    ResultExprSEF(v, new_g);
+  }
+
+  case LESlice {
+    le =: prepared_LE_Slice(le_bv, slice_ranges);
+    eval_prepared_lexpr_as_expr(env, le_bv) -> ResultExprSEF(v_bv, new_g)
+    { [_] };
+    read_from_bitvector(v_bv, slice_ranges) -> v;
+    --
+    ResultExprSEF(v, new_g);
+  }
+
+  case LESetArray {
+    le =: prepared_LE_SetArray(le_array, index_value);
+    eval_prepared_lexpr_as_expr(env, le_array) -> ResultExprSEF(v_array, new_g)
+    { [_] };
+    index_value =: nvint(n_to_n_pos(i));
+    get_index(i, v_array) -> v;
+    --
+    ResultExprSEF(v, new_g);
+  }
+
+  case LESetField {
+    le =: LE_SetField(le_record, field_name);
+    eval_prepared_lexpr_as_expr(env, le_record) -> ResultExprSEF(v_record, new_g)
+    { [_] };
+    get_field(field_name, v_record) -> v;
+    --
+    ResultExprSEF(v, new_g);
+  }
+
+  case LESetFields {
+    le =: typed_LE_SetFields(le_record, field_names, slices);
+    eval_prepared_lexpr_as_expr(env, le_record) -> ResultExprSEF(v_record, new_g)
+    { [_] };
+    ( INDEX(i, field_names: get_field(field_names[i], v_record) -> NV_Literal(L_Bitvector(field_bits[i]))) )
+    { ([_,[_] ]) };
+    field_bitvectors := list_map(bits, field_bits, nvbitvector(bits));
+    concat_bitvectors(field_bitvectors) -> v;
+    --
+    ResultExprSEF(v, new_g);
+  }
+
+  case LESetCollectionFields {
+    le =: LE_SetCollectionFields(base, field_names, slices);
+    eval_expr_sef(env, E_GetCollectionFields(base, field_names)) ->
+      ResultExprSEF(v, new_g)
+    { [_] };
+    --
+    ResultExprSEF(v, new_g);
+  }
+;
+
 // TODO: fix bug in aslspec to allow the following signature in comment.
 //semantics relation eval_lexpr(env: envs, le: lexpr, m: (v: native_value, g: XGraphs)) ->
 semantics relation eval_lexpr(env: envs, le: lexpr, m: (native_value, XGraphs)) ->
@@ -3628,7 +3803,8 @@ semantics relation eval_lexpr(env: envs, le: lexpr, m: (native_value, XGraphs)) 
         | TDiverging
 {
     "evaluates the assignment of the value-graph pair {m}
-        to the \assignableexpression{} {le} in the \environmentterm{} {env},
+        to the prepared \assignableexpression{} {le} in the
+        \environmentterm{} {env},
         resulting in the configuration $\ResultLexpr({new_g}, {new_env})$. \ProseOtherwiseAbnormal",
     prose_transition = "evaluating the assignment of {m} to {le} in {env}
         yields",
@@ -3675,42 +3851,36 @@ semantics relation eval_lexpr(env: envs, le: lexpr, m: (native_value, XGraphs)) 
   }
 
   case LESetArray {
-    le =: LE_SetArray(re_array, e_index);
+    le =: prepared_LE_SetArray(le_array, index_value);
     m =: (v, g);
-    eval_expr(env, rexpr(re_array)) -> ResultExpr(rm_array, env1);
-    eval_expr(env1, e_index) -> ResultExpr(m_index, env2);
-    m_index =: (index, g1);
-    index =: nvint(n_to_n_pos(i));
-    rm_array =: (rv_array, g2);
-    set_index(i, v, rv_array) -> v1;
-    m1 := (v1, ordered_data(g, parallel(g1, g2)));
-    eval_lexpr(env2, re_array, m1) -> ResultLexpr(new_g, new_env);
+    eval_prepared_lexpr_as_expr(env, le_array) -> ResultExprSEF(v_array, g1);
+    index_value =: nvint(n_to_n_pos(i));
+    set_index(i, v, v_array) -> v1;
+    m1 := (v1, parallel(g, g1));
+    eval_lexpr(env, le_array, m1) -> ResultLexpr(new_g, new_env);
     --
     ResultLexpr(new_g, new_env);
   }
 
   case LESlice {
-    le =: LE_Slice(e_bv, slices);
+    le =: prepared_LE_Slice(le_bv, slice_ranges);
     m =: (v, g);
-    eval_expr(env, rexpr(e_bv)) -> ResultExpr(m_bv, env1);
-    eval_slices(env1, slices) -> ResultSlices(slice_ranges, g1);
-    m_bv =: (v_bv, g2);
+    eval_prepared_lexpr_as_expr(env, le_bv) -> ResultExprSEF(v_bv, g1);
     check_non_overlapping_slices(slice_ranges) -> True;
     write_to_bitvector(slice_ranges, v, v_bv) -> v1;
-    g3 := ordered_data(g, parallel(g1, g2));
-    eval_lexpr(env1, e_bv, (v1, g3)) -> ResultLexpr(new_g, new_env);
+    g2 := parallel(g, g1);
+    eval_lexpr(env, le_bv, (v1, g2)) -> ResultLexpr(new_g, new_env);
     --
     ResultLexpr(new_g, new_env);
   }
 
   case LESetField {
-    le =: LE_SetField(re_record, field_name);
+    le =: LE_SetField(le_record, field_name);
     m =: (v, g);
-    eval_expr(env, rexpr(re_record)) -> ResultExpr(rm_record, env1);
-    rm_record =: (rv_record, g1);
-    set_field(field_name, v, rv_record) -> v1;
-    m1 := (v1, ordered_data(g, g1));
-    eval_lexpr(env1, re_record, m1) -> ResultLexpr(new_g, new_env);
+    eval_prepared_lexpr_as_expr(env, le_record) -> ResultExprSEF(v_record, g1);
+    set_field(field_name, v, v_record) -> v1;
+    m1 := (v1, parallel(g, g1));
+    eval_lexpr(env, le_record, m1) -> ResultLexpr(new_g, new_env);
     --
     ResultLexpr(new_g, new_env);
   }
@@ -3718,11 +3888,10 @@ semantics relation eval_lexpr(env: envs, le: lexpr, m: (native_value, XGraphs)) 
   case LESetFields {
     le =: typed_LE_SetFields(le_record, fields, slices);
     m =: (v, g);
-    eval_expr(env, rexpr(le_record)) -> ResultExpr(rm_record, env1);
-    rm_record =: (v_record, g1);
+    eval_prepared_lexpr_as_expr(env, le_record) -> ResultExprSEF(v_record, g1);
     assign_bitvector_fields(v, v_record, fields, slices) -> v2;
-    m2 := (v2, ordered_data(g, g1));
-    eval_lexpr(env1, le_record, m2) -> ResultLexpr(new_g, new_env);
+    m2 := (v2, parallel(g, g1));
+    eval_lexpr(env, le_record, m2) -> ResultLexpr(new_g, new_env);
     --
     ResultLexpr(new_g, new_env);
   }
@@ -9687,8 +9856,11 @@ semantics relation eval_stmt(env: envs, s: stmt) ->
     not(
       and(lhs_is_destructuring, rhs_is_call, lhs_list_of_vars)
     );
-    eval_expr(env, re) -> ResultExpr(vm, env1);
-    eval_lexpr(env1, le, vm) -> ResultLexpr(new_g, new_env);
+    eval_expr(env, re) -> ResultExpr((v, g1), env1);
+    eval_and_rewrite_lexpr(env1, le) -> (le', g2);
+    m := (v, g1);
+    eval_lexpr(env1, le', m) -> ResultLexpr(g3, new_env);
+    new_g := ordered_data(g2, g3);
     --
     Continuing(new_g, new_env);
   }
