@@ -14,13 +14,26 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type relax (* Type of diy relaxations *)
+type relax (* Type of diy relaxations with predicates *)
 
+type prune =
+  | Amo_all
+  | Amo_m
+  | Communication
+  | Communication_state
+  | Dpctrl
+  | Dsb_ob
+  | Pos_w
+
+val prune_all : prune list
 val pp_relax : relax -> string
+
+(* Resolve set predicates against the other clauses of the same binding. *)
+val resolve_predicates : Ir.rel_nf list -> Ir.rel_nf list
 
 (* Translate a cat relation into a (possibly-empty) list of diy relaxations.
 
    Each relaxation from this list is to be interpreted as a stand-alone,
    alternative representation, out of possibly many, of the input relation.
  *)
-val translate : binding:string -> Ir.rel_nf -> relax list
+val translate : prune:prune list -> binding:string -> Ir.rel_nf -> relax list

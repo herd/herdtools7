@@ -21,12 +21,12 @@ module type S = sig
   val pp_rmw : bool -> rmw -> string
   val equal_rmw : rmw -> rmw -> bool
   val is_one_instruction : rmw -> bool
-  val fold_rmw : bool -> (rmw -> 'a -> 'a) -> 'a -> 'a
-  val fold_rmw_compat : (rmw -> 'a -> 'a) -> 'a -> 'a
+  val fold_rmw : (rmw -> 'a -> 'a) -> 'a -> 'a
+  val fold_rmw_macros :
+    (string -> rmw list list -> 'a -> 'a) -> 'a -> 'a
   val applies_atom_rmw : rmw -> atom option -> atom option -> bool
   val show_rmw_reg : rmw -> bool
   val compute_rmw : rmw -> old:int -> operand:int -> int
-  val expand_rmw : rmw -> rmw list
   val is_valid_rmw : rmw list -> bool
 end
 
@@ -40,12 +40,11 @@ module No(A:sig
   let pp_rmw _ _ = assert false
   let equal_rmw () () = true
   let is_one_instruction _ = assert false
-  let fold_rmw _ _ r = r
-  let fold_rmw_compat _ r = r
+  let fold_rmw _ r = r
+  let fold_rmw_macros _ r = r
   let applies_atom_rmw _ _ _ = assert false
   let show_rmw_reg _ = assert false
   let compute_rmw _ ~old:_ ~operand:_ = assert false
-  let expand_rmw r = [r]
   let is_valid_rmw _ = assert false
 end
 
@@ -67,8 +66,8 @@ module
 
     let is_one_instruction _ = I.is_one_instruction
 
-    let fold_rmw _b f r = f () r
-    let fold_rmw_compat f r = f () r
+    let fold_rmw f r = f () r
+    let fold_rmw_macros f r = f "Rmw" [[()]] r
 
     let applies_atom_rmw () ar aw = match ar,aw with
       | None,None -> true
@@ -77,8 +76,6 @@ module
     let show_rmw_reg () = false
 
     let compute_rmw _ ~old:_ ~operand  = operand
-
-    let expand_rmw rmw = [rmw]
 
     let is_valid_rmw _ = true
   end

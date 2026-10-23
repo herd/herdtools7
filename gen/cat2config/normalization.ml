@@ -152,10 +152,7 @@ end = struct
           else set_union_l nfs
       | Op (_, Inter, expl) -> set_inter_l (List.map go expl)
       | Op (_, Diff, [ e1; e2 ]) -> set_diff (go e1) (go e2)
-      | Op1 (_, Comp, exp) ->
-          let nf = go exp in
-          let res = set_comp nf in
-          res
+      | Op1 (_, Comp, exp) -> set_comp (go exp)
       | App (_, fn, e) -> (
           match fn with
           | Var (_, v) when v = "domain" ->
@@ -211,6 +208,11 @@ end = struct
       | Op1 (_, ToId, exp) ->
           to_id (normalize_set ~config ~env ~name ~is_recursive exp)
       | Op1 (_, Inv, exp) -> inv (go exp)
+      | Op1 (_, Comp, App (_, Var (_, "intervening"), _)) -> begin
+          match parse_rel_id "intervening" with
+          | Some nf -> nf
+          | None -> assert false
+        end
       | Op1 (_, Comp, _) -> raise (NormalizationError (Exp_not_supported e))
       | Op1 (_, Plus, exp) -> unroll config.unroll_depth (go exp)
       | Op1 (_, Star, exp) ->

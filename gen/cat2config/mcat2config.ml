@@ -26,6 +26,7 @@ module Opts = struct
     dump : StringSet.t;
     log : (string * Logs.level option) list;
     conf : bool;
+    prune : Translation.prune list;
   }
 
   let valid_dump_opts = [ "tree"; "origin" ]
@@ -71,6 +72,7 @@ module Opts = struct
     let dump = ref StringSet.empty in
     let log = ref [] in
     let conf = ref false in
+    let prune = ref [] in
     let valid_srcs = Logs.Src.list () |> List.map Logs.Src.name in
     let log_opt_msg =
       Format.sprintf "<%s>  Fine-grained logging control for specific modules."
@@ -103,6 +105,30 @@ module Opts = struct
           Arg.Unit (fun () -> conf := true),
           " Causes the tool to print its output in diy7 configuration file \
            format." );
+        ( "-prune",
+          Arg.Symbol
+            ( [
+                "all";
+                "amo_all";
+                "amo_m";
+                "communication";
+                "communication_state";
+                "dpctrl";
+                "dsb-ob";
+                "pos_w";
+              ],
+              function
+              | "all" -> prune := Translation.prune_all
+              | "amo_all" -> prune := Translation.Amo_all :: !prune
+              | "amo_m" -> prune := Translation.Amo_m :: !prune
+              | "communication" -> prune := Translation.Communication :: !prune
+              | "communication_state" ->
+                  prune := Translation.Communication_state :: !prune
+              | "dpctrl" -> prune := Translation.Dpctrl :: !prune
+              | "dsb-ob" -> prune := Translation.Dsb_ob :: !prune
+              | "pos_w" -> prune := Translation.Pos_w :: !prune
+              | _ -> assert false ),
+          "  Enable the selected relaxation pruning pass." );
       ]
     in
     let prog =
@@ -128,6 +154,7 @@ module Opts = struct
         dump = !dump;
         log = !log;
         conf = !conf;
+        prune = !prune;
       }
     in
     (opts, file_path)
@@ -200,6 +227,10 @@ let run ~(opts : Opts.t) (tree : AST.ins list) =
             Logs.err (fun m -> m "Failed to evaluate let binding `%s`.@." var);
             None
         | Some nfs ->
+            let resolved = Translation.resolve_predicates (List.map fst nfs) in
+            let nfs =
+              List.map2 (fun nf (_, ast_e) -> (nf, ast_e)) resolved nfs
+            in
             (if Opts.should_dump_tree opts then
                let compressed =
                  Ir.rel_union_l (List.map fst nfs) |> Ir.compress
@@ -208,7 +239,9 @@ let run ~(opts : Opts.t) (tree : AST.ins list) =
             let translated =
               nfs
               |> List.map (fun (nf, ast_e) ->
-                  let relaxs = Translation.translate ~binding:var nf in
+                  let relaxs =
+                    Translation.translate ~prune:opts.prune ~binding:var nf
+                  in
                   (relaxs, ast_e))
             in
             Some (var, translated))
@@ -229,8 +262,10 @@ let run ~(opts : Opts.t) (tree : AST.ins list) =
               let relaxs = List.filter (fun r -> not (List.mem r acc)) relaxs in
               if relaxs <> [] then (
                 print_cat_rel ();
-                printf "-safe %s@."
-                  (String.concat " " (List.map Translation.pp_relax relaxs)));
+                List.iter
+                  (fun relax ->
+                    printf "-safe %s@." (Translation.pp_relax relax))
+                  relaxs);
               acc @ relaxs)
             [] relaxss
         in

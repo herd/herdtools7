@@ -40,10 +40,10 @@ type dir = W | R
 (* Edges compoments that do not depend on architecture *)
 
 (* Change or proc accross edge *)
-type ie = Int|Ext|UnspecCom
+type ie = Int|Ext
 
 (* Change of location across edge *)
-type sd = Same|Diff|UnspecLoc
+type sd = Same|Diff
 
 (* Direction of related events *)
 type extr = Dir of dir | Irr | NoDir
@@ -57,16 +57,20 @@ val pp_ie : ie -> string
 val pp_dir : dir -> string
 val pp_extr : extr -> string
 val pp_sd : sd -> string
-val seq_sd : sd -> sd -> sd option
+val pp_dir_macro : dir option -> string
+val pp_sd_macro : sd option -> string
+val seq_sd : sd -> sd -> sd
 val is_same_loc : sd -> bool
 val is_diff_loc : sd -> bool
-val is_unspec_loc : sd -> bool
-(* The first boolean indicates whether wildcard syntax is included in the fold *)
-val fold_ie : bool -> (ie -> 'a -> 'a) -> 'a -> 'a
-val fold_extr : bool -> (extr -> 'a -> 'a) -> 'a -> 'a
-val fold_sd : bool -> (sd -> 'a -> 'a) -> 'a -> 'a
-val fold_sd_extr : bool -> (sd -> extr -> 'a -> 'a) -> 'a -> 'a
-val fold_sd_extr_extr : bool -> (sd -> extr -> extr -> 'a -> 'a) -> 'a -> 'a
+val fold_ie : (ie -> 'a -> 'a) -> 'a -> 'a
+val fold_sd : (sd -> 'a -> 'a) -> 'a -> 'a
+val fold_sd_extr_extr : (sd -> extr -> extr -> 'a -> 'a) -> 'a -> 'a
+val expand_sd_macro : sd option -> (sd -> 'a -> 'a) -> 'a -> 'a
+val expand_dir_macro : dir option -> (dir -> 'a -> 'a) -> 'a -> 'a
+val fold_sd_extr_macros :
+  (sd option -> dir option -> (sd * dir) list -> 'a -> 'a) -> 'a -> 'a
+val fold_sd_extr_extr_macros :
+  (sd option -> dir option -> dir option -> (sd * dir * dir) list -> 'a -> 'a) -> 'a -> 'a
 
 type check =
   | Default | Sc | Uni | Thin | Critical | Free

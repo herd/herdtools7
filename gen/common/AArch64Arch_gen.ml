@@ -244,34 +244,7 @@ let pp_w_pte ws = WPTESet.pp_str "." WPTE.pp ws
 
 type neon_opt = SIMD.atom
 
-type rmw = LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas | AllAmo
-  (* `SafeAmo` unfolds to
-     `[Swp; Cas; LdOp A_ADD; StOp A_ADD]`, that is,
-     edges `[Amo.Swp; Amo.Cas; Amo.LdAdd; Amo.StAdd]` and
-     the corresponding instructions `[SWP; CAS; LDADD; STADD]`.
-     These edges, `Amo.R`, can be safely used to generate cycles.
-     That is, for any `Amo.R`,
-     (1) given a value `a` (of a location), e.g. 0,
-     (2) given the current operand `b`, e.g. 1, where `b` is picked
-     by `diy` internally from an incremental counter starting from 1,
-     then the result value of `a Amo.R b` should be
-     distinct from the initial value `a`. Hence we can distinguish
-     whether `Amo.R` takes effect by reading the value of `a Amo.R b`,
-     making it safe to use when generating tests.
-     A counterexample is
-     `diyone7 -arch AArch64 "PodWR Amo.LdClr Rfe PodRW Coe"`
-     ```
-     P0               | P1          ;
-     ...              | LDR W0,[X2] ;
-     MOV W4,#1        | ...         ;
-     LDCLR W4,W3,[X2] |             ;
-     exists (... /\ 0:X3=0 /\ 1:X0=0)
-     ```
-     Here the initial value is observed by `0:X3 = 0`, the instruction
-     calculates `0 LDCLR 1`, and the result is observed by `1:X1 = 0`.
-     The problem here is `1:X1 = 0:X3`, thus the test cannot
-     distinguish whether `LDCLR` or `Amo.LdClr` takes effect. *)
-  | SafeAmo
+type rmw = LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas
 
 module StructuredAtom : sig
   type nonrec access_read = access_read
@@ -602,7 +575,7 @@ end = struct
         (get_access_atom ar) (get_access_atom aw) in
     match rmw with
     | LrSc -> ok_rw ar aw && (do_cu || same_mixed)
-    | Swp|Cas|LdOp _|AllAmo|SafeAmo -> ok_rw ar aw && same_mixed
+    | Swp|Cas|LdOp _ -> ok_rw ar aw && same_mixed
     | StOp _ -> ok_w ar aw && same_mixed
 
   let is_tthm fields =
@@ -1134,8 +1107,6 @@ type nonrec rmw = rmw =
   | StOp of atomic_op
   | Swp
   | Cas
-  | AllAmo
-  | SafeAmo
 
 type nonrec atom = atom
 
@@ -1147,22 +1118,18 @@ let pp_rmw compat = function
   | Cas -> "Amo.Cas"
   | LdOp op -> sprintf "Amo.Ld%s" (pp_aop op)
   | StOp op -> sprintf "Amo.St%s" (pp_aop op)
-  | AllAmo -> sprintf "Amo"
-  | SafeAmo -> sprintf "Amo.Safe"
 
 let equal_rmw rmw1 rmw2 = match rmw1,rmw2 with
   | LrSc,LrSc
   | Swp,Swp
-  | Cas,Cas
-  | AllAmo,AllAmo
-  | SafeAmo,SafeAmo -> true
+  | Cas,Cas -> true
   | LdOp op1,LdOp op2
   | StOp op1,StOp op2 -> atomic_op_equal op1 op2
-  | (LrSc|LdOp _|StOp _|Swp|Cas|AllAmo|SafeAmo),_ -> false
+  | (LrSc|LdOp _|StOp _|Swp|Cas),_ -> false
 
 let is_one_instruction = function
   | LrSc -> false
-  | LdOp _ | StOp _ | Swp | Cas | AllAmo | SafeAmo -> true
+  | LdOp _ | StOp _ | Swp | Cas -> true
 
 let fold_aop f r =
   let r = f A_ADD r in
@@ -1171,25 +1138,50 @@ let fold_aop f r =
   let r = f A_CLR r in
   r
 
-let fold_rmw wildcard f r =
+let fold_rmw f r =
   let r = f LrSc r in
   let r = f Swp r in
   let r = f Cas r in
   let r = fold_aop (fun op r -> f (LdOp op) r) r in
-  let r = fold_aop (fun op r -> f (StOp op) r) r in
-  let r = if wildcard then f AllAmo r |> f SafeAmo else r in
-  r
+  fold_aop (fun op r -> f (StOp op) r) r
 
 let all_concrete_rmw =
-  fold_rmw false ( fun rmw acc ->
-    if rmw <> AllAmo && rmw <> LrSc then rmw :: acc else acc
+  fold_rmw ( fun rmw acc ->
+    if rmw <> LrSc then rmw :: acc else acc
   ) []
-let expand_rmw rmw = match rmw with
-  | LrSc | Swp | Cas | LdOp _ | StOp _ -> [rmw]
-  | AllAmo -> all_concrete_rmw
-  | SafeAmo -> [Swp; Cas; LdOp A_ADD; StOp A_ADD]
 
-let fold_rmw_compat f r = f LrSc r
+(* `Amo.Safe` unfolds to
+   `[Swp; Cas; LdOp A_ADD; StOp A_ADD]`, that is,
+   edges `[Amo.Swp; Amo.Cas; Amo.LdAdd; Amo.StAdd]` and
+   the corresponding instructions `[SWP; CAS; LDADD; STADD]`.
+   These edges, `Amo.R`, can be safely used to generate cycles.
+   That is, for any `Amo.R`,
+   (1) given a value `a` (of a location), e.g. 0,
+   (2) given the current operand `b`, e.g. 1, where `b` is picked
+   by `diy` internally from an incremental counter starting from 1,
+   then the result value of `a Amo.R b` should be
+   distinct from the initial value `a`. Hence we can distinguish
+   whether `Amo.R` takes effect by reading the value of `a Amo.R b`,
+   making it safe to use when generating tests.
+   A counterexample is
+   `diyone7 -arch AArch64 "PodWR Amo.LdClr Rfe PodRW Coe"`
+   ```
+   P0               | P1          ;
+   ...              | LDR W0,[X2] ;
+   MOV W4,#1        | ...         ;
+   LDCLR W4,W3,[X2] |             ;
+   exists (... /\ 0:X3=0 /\ 1:X0=0)
+   ```
+   Here the initial value is observed by `0:X3 = 0`, the instruction
+   calculates `0 LDCLR 1`, and the result is observed by `1:X1 = 0`.
+   The problem here is `1:X1 = 0:X3`, thus the test cannot
+   distinguish whether `LDCLR` or `Amo.LdClr` takes effect. *)
+let fold_rmw_macros f r =
+  let choices rmws = List.map (fun rmw -> [rmw]) rmws in
+  let r = f "Rmw" [[LrSc]] r in
+  let r = f "Amo" (choices all_concrete_rmw) r in
+  let r = f "Amo.Safe" (choices [Swp; Cas; LdOp A_ADD; StOp A_ADD]) r in
+  f "Amo.SafeNoReturn" (choices [Swp; Cas; LdOp A_ADD]) r
 
 (* Check legal anotation for AMO instructions and LxSx pairs *)
 
@@ -1199,7 +1191,6 @@ let applies_atom_rmw rmw ar aw =
 let show_rmw_reg = function
 | StOp _ -> false
 | LdOp _|Cas|Swp|LrSc -> true
-| AllAmo | SafeAmo -> assert false
 
 let compute_rmw r ~old ~operand =
     match r with
@@ -1219,7 +1210,6 @@ let compute_rmw r ~old ~operand =
         | A_CLR -> old land (lnot operand)
     end
     | LrSc | Swp | Cas  -> operand
-    | AllAmo | SafeAmo -> assert false
 
 (* Rule out `rmw_list` that contains the same type of atomic operation for a location. *)
 let is_valid_rmw rmw_list =
