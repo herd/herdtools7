@@ -60,6 +60,10 @@ val parse_string : string tref
 val parse_string_opt : string option tref
 
 
+(** Parsing of string lists. The syntax of argument is a comma separated
+    list of strings *)
+val parse_stringlistfun : string list tfun
+
 (** Parsing of string sets. The syntax of argument is a comma separated
     list of strings *)
 val parse_stringsetfun : StringSet.t tfun

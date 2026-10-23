@@ -102,6 +102,12 @@ let parse_string_opt opt v msg =
   Arg.String (fun s -> match s with "none" -> v := None | _ -> v := Some s),
   sprintf "<string|none> %s" msg
 
+let parse_stringlistfun opt f msg =
+  opt,
+  Arg.String
+    (fun tag -> f @@ Misc.split_comma tag),
+  sprintf "<name,..,name> %s" msg
+
 let parse_stringsetfun opt f msg =
   opt,
   Arg.String

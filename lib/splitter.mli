@@ -61,4 +61,9 @@ module Make : functor (O:Config) -> sig
   (* Init section with info changed or added *)
   val reinfo : info -> Lexing.lexbuf -> string
   val rehash : string -> Lexing.lexbuf -> string
+  (* Rename test, _i.e._ change internal name *)
+  val rename : string -> Lexing.lexbuf -> string
+  (* Check validity of testname *)
+  val testname_valid : string -> bool
+
 end
