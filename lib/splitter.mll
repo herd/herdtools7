@@ -177,6 +177,14 @@ and find_eof = parse
 
 (* Change info in the init section *)
 and change_main buff p = parse
+| "(*" as lexed
+    { Buffer.add_string buff lexed ;
+      skip_comment_fun (Buffer.add_char buff) lexbuf ;
+      change_main buff p lexbuf }
+| '\n' as lexed
+    { incr_lineno lexbuf ;
+      Buffer.add_char buff lexed ;
+      change_main buff p lexbuf }
 | blank* (alpha|digit|'_')+
   blank+
   testname
@@ -188,6 +196,7 @@ and change_main buff p = parse
     incr_lineno lexbuf ;
     Buffer.add_string buff lexed ;
     change_info false p buff lexbuf }
+| "" { error "change_main" lexbuf }
 
 and change_info found p buff = parse
 | eof
