@@ -1,0 +1,14 @@
+AArch64 M009
+(* LDADDH must wrap the stored halfword result before mixed write decomposition. *)
+{
+  uint32_t x=0x1122ffff;
+  0:X0=x;
+  0:X1=1;
+}
+
+P0;
+LDADDH W1,W2,[X0];
+
+forall (
+  0:X2=0xffff /\
+  [x]=0x11220000)

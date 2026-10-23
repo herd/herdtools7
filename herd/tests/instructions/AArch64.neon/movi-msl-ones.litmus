@@ -1,0 +1,7 @@
+AArch64 movi-msl-ones 
+{
+}
+P0                    ;
+  MOVI V0.2S,#0,MSL #8;
+
+forall (0:V0.2S={255,255})

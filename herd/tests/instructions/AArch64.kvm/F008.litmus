@@ -1,0 +1,12 @@
+AArch64 F008
+{
+  [PTE(x)]=(valid:0);
+  0:X1=x;
+}
+ P0           | P0.F           ;
+L0:           | MOV W3,#1      ;
+ LDR X2,[X1]  | MRS X9,ELR_EL1 ;
+ MOV W4,#1    | ADD X9,X9,#4   ;
+              | MSR ELR_EL1,X9 ;
+              | ERET           ;
+forall (0:X3=1 /\ 0:X4=1)
