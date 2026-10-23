@@ -1354,6 +1354,7 @@ module Make
             begin match eval_ord env e with
             | V.Empty -> V.Empty
             | Unv -> Rel (Lazy.force env.EV.ks.id)
+            | Event e -> Rel (E.EventRel.singleton (e,e))
             | Set s -> Rel (E.EventRel.set_to_rln s)
             | v -> error_events env.EV.silent (get_loc e) v
             end
@@ -1778,7 +1779,7 @@ module Make
       and seq_args env = function
         | [] -> Runv
         | e::es ->
-            match eval_rels env e with
+            match eval_seq_arg env e with
             | Runv -> seq_args env es
             | Rid s -> seq_args_id env s es
             | Revent r -> seq_args_rel env r es
@@ -1788,7 +1789,7 @@ module Make
                 let r =
                   List.fold_left
                     (fun r e ->
-                       match eval_rels env e with
+                       match eval_seq_arg env e with
                        | Rclass c -> ClassRel.sequence r c
                        | _ ->
                             error env.EV.silent (get_loc e)
@@ -1801,7 +1802,7 @@ module Make
         match es with
         | [] -> Rid s
         | e::es ->
-            match eval_rels env e with
+            match eval_seq_arg env e with
             | Runv -> seq_args_id env s es
             | Rid t ->
                 seq_args_id env
@@ -1826,7 +1827,7 @@ module Make
         match es with
         | [] -> Revent r
         | e::es ->
-            match eval_rels env e with
+            match eval_seq_arg env e with
             | Runv ->  seq_args_rel env r es
             | Rid s ->
                 begin
@@ -1919,12 +1920,13 @@ module Make
       | Unv -> Lazy.force env.EV.ks.unv
       | v -> error_rel env.EV.silent (get_loc e) v
 
-      and eval_rels env e =
+      and eval_seq_arg env e =
         match e with
         | Op1 (_,ToId,e) ->
           begin
             match eval_ord env e with
             | Set es -> Rid es
+            | Event e -> Rid (E.EventSet.singleton e)
             | V.Empty -> raise Exit
             | Unv     -> Runv
             | v -> error_events env.EV.silent (get_loc e) v

@@ -14,7 +14,7 @@ let detour = po-loc & (coe;rfe)
 
 let ii0 = dp | rdw | rfi
 let ic0 = 0
-let ci0 = ctrlcfence(ISYNC) | detour
+let ci0 = ctrlcfence(ctrl,ISYNC) | detour
 let cc0 = dp | po-loc | ctrl | (addr;po)
 
 let rec ii = ii0 | ci | (ic;ci) | (ii;ii)

@@ -9,7 +9,6 @@ bells = [
 cats = [
     "cats/x86.cat",
     "cats/arm.cat",
-    "cats/ptx.cat",
     "cats/c11.cat",
 ]
 
@@ -26,9 +25,6 @@ x86_tests = \
 
 arm_tests = \
   glob.glob("tests/*-arm*.litmus")
-
-ptx_tests = \
-  glob.glob("tests/*-ptx*.litmus")
 
 c11_tests = \
  glob.glob("tests/*-c11*.litmus")
@@ -48,11 +44,6 @@ compatibilities = [
         "bells": ["bells/anarchy.bell"],
         "cats": ["cats/arm.cat"],
         "litmuses": arm_tests,
-    },
-    {
-        "bells": ["bells/anarchy.bell"],
-        "cats": ["cats/ptx.cat"],
-        "litmuses": ptx_tests,
     },
     {
         "bells": ["bells/anarchy.bell"],
