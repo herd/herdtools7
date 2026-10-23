@@ -27,9 +27,9 @@ module type AltConfig = sig
   val max_relax : int
   val min_relax : int
   val choice : check
-  type relax
-  val prefix : relax list list
+  val prefix : string list
   val variant : Variant_gen.set
+  val varatom : string list
   type fence
   val cumul : fence list Config.cumul
   val wildcard : bool
@@ -43,6 +43,7 @@ module Filter
       val debug : Debug_gen.t
     end) =
 struct
+
   open C.E
 
     let is_cumul =
@@ -55,10 +56,6 @@ struct
           (fun f -> List.exists (equal_fence f) fs)
 
     let choice_sc po_safe e1 e2 =
-      let seq_sd e1 e2 =
-        match Code.seq_sd e1 e2 with
-        | None -> Warn.user_error "Unexpected UnspecLoc"
-        | Some b -> b in
       let r = match e1.edge,e2.edge with
 (*
   Now accept internal with internal composition
@@ -74,13 +71,13 @@ struct
         not (po_safe sd (dir_src e1) (dir_tgt e2))
     | Po (sd1,_,_), Dp (_,sd2,_) ->
         not (po_safe sd1 (dir_src e1) (dir_tgt e1)) &&
-        not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
+        not (po_safe (Code.seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
     | Dp (_,sd1,_),Po (sd2,_,_) ->
         not (po_safe sd2 (dir_src e2) (dir_tgt e2)) &&
-        not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
+        not (po_safe (Code.seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
 (* Check Po is safe *)
     | Po (sd1,_,_),Po (sd2,_,_) ->
-        not (po_safe (seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
+        not (po_safe (Code.seq_sd sd1 sd2) (dir_src e1) (dir_tgt e2))
     | Communication (Rf,Int),Po (sd,_,_) ->
         po_safe sd (dir_src e2) (dir_tgt e2) &&
         not (po_safe sd (dir_src e1) (dir_tgt e2))
@@ -93,8 +90,7 @@ struct
     | _,_ ->
         match get_ie e1, get_ie e2 with
         | Int,Int -> false
-        | Ext,_|_,Ext -> true
-        | UnspecCom,_ | _,UnspecCom -> assert false in
+        | Ext,_|_,Ext -> true in
       if O.debug.Debug_gen.searchsteps then
         eprintf "NEXT RELAX: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
@@ -120,8 +116,7 @@ struct
           (* Reject other internal followed by internal sequences *)
           match get_ie e1, get_ie e2 with
           | Int,Int -> false
-          | Ext,_|_,Ext -> true
-          | UnspecCom,_ | _,UnspecCom -> assert false in
+          | Ext,_|_,Ext -> true in
       if O.debug.Debug_gen.searchsteps then
         eprintf "NEXT RELAX: %s %s -> %b\n%!" (C.E.pp_edge e1) (C.E.pp_edge e2) r ;
       r
@@ -156,11 +151,9 @@ struct
                 | (Same,Same) | (Diff,Same) | (Same,Diff)
                   -> true
                 | Diff,Diff -> false
-                | _ -> assert false
                 end
             | Ext,Ext -> false
-            | (Ext,Int) | (Int,Ext) -> true
-            | UnspecCom,_ | _,UnspecCom -> assert false in
+            | (Ext,Int) | (Int,Ext) -> true in
 (*      eprintf "Choice: %s %s -> %b\n" (C.E.pp_edge e1) (C.E.pp_edge e2) r ; *)
       r
     let choice_uni e1 e2 =  match e1.edge,e2.edge with
@@ -270,10 +263,27 @@ struct
 end
 
 module Make(C:Builder.S)
-    (O:AltConfig with type relax = C.R.relax and type fence = C.A.fence) :
+    (O:AltConfig with type fence = C.A.fence) :
     sig
-      val gen : ?relax:C.R.relax list -> ?safe:C.R.relax list -> ?reject:C.R.relax list -> int -> unit
-      val filter_check: relax:C.R.relax list -> safe:C.R.relax list -> C.E.edge list -> C.E.edge list -> bool
+      type predicate_relax
+
+      module PredicateRelax : sig
+        type t = predicate_relax
+        val pp_list : t list -> string
+      end
+
+      val to_relax : predicate_relax -> C.R.relax
+      val lift : C.R.relax -> predicate_relax
+      val gen : ?relax:predicate_relax list -> ?safe:predicate_relax list ->
+        ?reject:predicate_relax list -> int -> unit
+      val parse_argument : string -> predicate_relax list
+      val parse_input :
+        relax:string list -> safe:string list ->
+        reject:string list ->
+        predicate_relax list * predicate_relax list * predicate_relax list
+      val remove_invalid_relaxes : predicate_relax list -> predicate_relax list
+      val filter_check:
+        safe:predicate_relax list -> predicate_relax -> predicate_relax -> bool
     end
 
     =
@@ -284,35 +294,297 @@ module Make(C:Builder.S)
     open C.E
     open C.R
 
+    module PredicateRelax = struct
+      type edge =
+        | Plain of C.E.edge
+        | Before of C.E.edge
+        | After of C.E.edge
+        | With of C.E.edge
+        | State of StringSet.t
+
+      let compare_edge lhs rhs =
+        let rank = function
+          | Plain _ -> 0 | Before _ -> 1 | After _ -> 2 | With _ -> 3 | State _ -> 4 in
+        match Misc.int_compare (rank lhs) (rank rhs) with
+        | 0 ->
+            begin match lhs,rhs with
+            | Plain lhs,Plain rhs
+            | Before lhs,Before rhs
+            | After lhs,After rhs
+            | With lhs,With rhs -> C.E.compare lhs rhs
+            | State lhs,State rhs -> StringSet.compare lhs rhs
+            | _,_ -> assert false
+            end
+        | r -> r
+
+      (* [ast] is the untouched predicate argument, while [parse_ast] parses
+         that argument as relaxation edges on demand. [parse_ast] is a thunk
+         which captures only the current predicate's child AST, not the
+         surrounding AST; its unit argument invokes the deferred recursive
+         mapping of that child. For example:
+         - [@state(ImpTagObs)] reads [ImpTagObs] directly from [ast]; parsing
+           it as an edge would fail.
+         - [@before(PodRW)] calls [parse_ast] so that [PodRW] becomes a
+           concrete edge before it is decorated. *)
+      let parse_predicate_node pred ast parse_ast =
+        let decorate make same conflict = function
+          | Plain edge -> make edge
+          | Before _ as edge when same edge -> edge
+          | After _ as edge when same edge -> edge
+          | With _ as edge when same edge -> edge
+          | Before _ | After _ | With _ -> Warn.user_error "%s" conflict
+          | State _ ->
+              Warn.user_error
+                "predicate state cannot be decorated by before/after/with." in
+        let decorate_ast make same conflict =
+          (* Invoke the deferred transformation of the predicate argument. *)
+          Ast.bind (parse_ast ())
+            (fun edge -> Ast.One (decorate make same conflict edge)) in
+        let rec parse_state = function
+          | Ast.One state -> StringSet.singleton state
+          | Ast.Seq states ->
+              List.fold_left
+                (fun set state -> StringSet.union set (parse_state state))
+                StringSet.empty states
+          | Ast.Opt _|Ast.Choice _|Ast.Predicate _ ->
+              Warn.user_error
+                "predicate state expects a word or a sequence of words." in
+        match pred,ast with
+        | "state",ast -> Ast.One (State (parse_state ast))
+        | "before",_ ->
+            decorate_ast
+              (fun edge -> Before edge)
+              (function Before _ -> true | _ -> false)
+              "before and after predicates cannot apply to the same edge"
+        | "after",_ ->
+            decorate_ast
+              (fun edge -> After edge)
+              (function After _ -> true | _ -> false)
+              "before and after predicates cannot apply to the same edge"
+        | "with",_ ->
+            decorate_ast
+              (fun edge -> With edge)
+              (function With _ -> true | _ -> false)
+              "with predicate cannot decorate another predicate"
+        | pred,_ -> Warn.user_error "predicate %s is not supported." pred
+
+      let pp_states states = match StringSet.elements states with
+        | [state] -> state
+        | states -> sprintf "[%s]" (String.concat " " states)
+
+      let pp_edge = function
+        | Plain edge -> pp_edge edge
+        | Before edge -> sprintf "@before(%s)" (pp_edge edge)
+        | After edge -> sprintf "@after(%s)" (pp_edge edge)
+        | With edge -> sprintf "@with(%s)" (pp_edge edge)
+        | State states ->
+            StringSet.elements states
+            |> List.map (sprintf "@state(%s)")
+            |> String.concat ","
+
+      type t = edge list
+
+      let pp = function
+        | [edge] -> pp_edge edge
+        | edges -> sprintf "[%s]" (String.concat "," (List.map pp_edge edges))
+
+      let pp_list relaxes = String.concat " " (List.map pp relaxes)
+
+      let compare = List.compare compare_edge
+
+      module Set =
+        MySet.Make
+          (struct
+            type nonrec t = t
+            let compare = compare
+          end)
+
+      let to_relax relax =
+        List.filter_map
+          (function
+            | Plain edge | Before edge | After edge | With edge -> Some edge
+            | State _ -> None)
+          relax
+
+      let parse_argument_ast input =
+        String.trim input |> C.R.parse_ast Parser.diy7
+
+      let varatom_ess predicate_relaxes =
+        let varatom_es =
+          if C.A.bellatom then Misc.identity
+          else match O.varatom with
+          | [] -> Misc.identity
+          | ["all"] ->
+              let module Fold = struct
+                type atom = C.E.atom
+                let fold = C.E.fold_atomo
+              end in
+              let module V = VarAtomic.Make(C.E)(Fold) in
+              V.varatom_es
+          | atoms ->
+              let atoms = C.E.parse_atoms atoms in
+              let module Fold = struct
+                type atom = C.E.atom
+                let fold f k = C.E.fold_atomo_list atoms f k
+              end in
+              let module V = VarAtomic.Make(C.E)(Fold) in
+              V.varatom_es in
+        let reattach_predicates template_predicate_relax edges =
+          let rec do_rec template edges = match template,edges with
+            | [],[] -> []
+            | State state::template,edges -> State state::do_rec template edges
+            | Plain _::template,edge::edges -> Plain edge::do_rec template edges
+            | Before _::template,edge::edges -> Before edge::do_rec template edges
+            | After _::template,edge::edges -> After edge::do_rec template edges
+            | With _::template,edge::edges -> With edge::do_rec template edges
+            | _,_ -> Warn.fatal "predicate expansion changed relaxation length" in
+          do_rec template_predicate_relax edges in
+        List.concat_map
+          (fun predicate_relax ->
+            varatom_es [to_relax predicate_relax]
+            |> List.map (reattach_predicates predicate_relax))
+          predicate_relaxes
+
+      let remove_leading_with =
+        let rec do_rec = function
+          | With _::rest -> do_rec rest
+          | State state::rest -> State state::do_rec rest
+          | rest -> rest in
+        do_rec
+
+      let remove_trailing_with edges =
+        remove_leading_with (List.rev edges) |> List.rev
+
+      let remove_invalid_relaxes relaxes =
+        let valid_relaxes =
+          List.map to_relax relaxes
+          |> C.R.remove_invalid_relaxes
+          |> C.R.Set.of_list in
+        (* Predicate-only edges are only meaningful at relaxation boundaries:
+           `before(...)` predicates must form a leading prefix, and `after(...)`
+           predicates must form a trailing suffix. Once a plain edge appears,
+           no later `before(...)` is valid; once an `after(...)` appears, only
+           more `after(...)` predicates may follow. *)
+        let rec leading_before_trailing_after_predicate = function
+          | Before _::rest ->
+              leading_before_trailing_after_predicate rest
+          | rest -> plain_then_after rest
+        and plain_then_after = function
+          | [] -> true
+          | Plain _::rest -> plain_then_after rest
+          | After _::rest ->
+              List.for_all (function After _ -> true | _ -> false) rest
+          | Before _::_ | With _::_ | State _::_ -> false in
+        let valid_state_boundaries relax =
+          let finish_leading states =
+            if StringSet.is_empty states then true
+            else
+              Warn.user_error
+                "predicate state(%s) cannot be used without a relaxation."
+                (pp_states states) in
+          let rec leading_boundary states = function
+            | Before _::rest -> leading_boundary states rest
+            | State state::rest ->
+                leading_boundary (StringSet.union states state) rest
+            (* Report state predicates that have no plain relaxation edge. *)
+            | [] -> finish_leading states
+            | rest -> plain_body rest
+          and plain_body = function
+            | [] -> true
+            | Plain _::rest -> plain_body rest
+            | (State _|After _)::_ as rest -> trailing_boundary rest
+            | Before _::_ | With _::_ -> false
+          and trailing_boundary = function
+            | [] -> true
+            | (After _|State _)::rest -> trailing_boundary rest
+            | Plain _::_ | Before _::_ | With _::_ -> false in
+          leading_boundary StringSet.empty relax in
+        let has_plain_edge =
+          List.exists (function Plain _ -> true | _ -> false) in
+        let require_plain_edge relax =
+          if has_plain_edge relax then true
+          else match relax with
+          | Before _::_ ->
+              Warn.user_error
+                "predicate before cannot be used without a relaxation."
+          | After _::_ ->
+              Warn.user_error
+                "predicate after cannot be used without a relaxation."
+          | [] -> false
+          | State _::_ | With _::_ -> false
+          | Plain _::_ -> assert false in
+        List.filter
+          (fun relax ->
+            let core = remove_leading_with relax |> remove_trailing_with in
+            let edges = List.filter (function State _ -> false | _ -> true) core in
+            valid_state_boundaries core
+            && require_plain_edge edges
+            && C.R.Set.mem (to_relax relax) valid_relaxes
+            && leading_before_trailing_after_predicate edges)
+          relaxes
+
+      let parse_argument_ast_expanded ast =
+        let parse_one str =
+          C.R.parse_expand_relaxs_ast ~ppo:C.ppo (Ast.One str)
+          |> Ast.map
+               ~one:(fun edge -> Ast.One (Plain edge))
+               ~predicate:
+                 (fun pred _ _ ->
+                   Warn.fatal
+                     "unexpected predicate %s in relaxation expansion" pred) in
+        Ast.map ~one:parse_one ~predicate:parse_predicate_node ast
+        |> Ast.expand (fun _ _ -> assert false)
+        |> varatom_ess
+
+      let parse_argument input_argument =
+        parse_argument_ast input_argument
+        |> parse_argument_ast_expanded
+
+      let parse_arguments input_argument_list =
+        List.map parse_argument input_argument_list
+        |> List.flatten
+        |> remove_invalid_relaxes
+        |> List.sort_uniq compare
+    end
+
+    open PredicateRelax
+    type predicate_relax = PredicateRelax.t
+    let to_relax = PredicateRelax.to_relax
+    let parse_argument = PredicateRelax.parse_argument
+    let remove_invalid_relaxes = PredicateRelax.remove_invalid_relaxes
+
     let is_int e = match get_ie e with
     | Int -> true
     | Ext -> false
-    | UnspecCom -> assert false
+
+    let lift r = List.map (fun edge -> Plain edge) r
+    let lift_list rs = List.map lift rs
 
     module Chunk : sig
       type chunk
       type t
 
-      val to_relax : chunk -> C.R.relax
+      val to_relax : chunk -> predicate_relax
+      val to_cycle : chunk -> C.E.edge list
       val process_count_of_chunk : chunk -> int
       val instruction_count_of_chunk : chunk -> int * int option * int
       val process_count : chunk list -> int
       val pp_list : chunk list -> string
 
       (** [make safes po_safe prefix relax safe] converts the three lists of
-          relaxations into chunks and precomputes which chunks can be adjacent.
-          The first two arguments configure the {!FilterImpl.can_precede}
-          check: [safes] is the set of safe relaxation sequences used by the
-          selected filter, and [po_safe sd src tgt] reports whether a
-          program-order edge is safe in [Sc] mode.  [prefix] contains the fixed
-          cycle prefix, [relax] the relations being tested, and [safe] the safe
-          relations that may be added while constructing a cycle.
-          The result preserves those three groups and returns a table in which
-          [table.(next.id).(exist.id)] checks whether [next] can be prepended to a
-          suffix whose current head is [exist]. *)
+          predicate relaxations into chunks and precomputes which chunks can be
+          adjacent. The first two arguments configure the
+          {!FilterImpl.can_precede} check: [safes] is the set of safe relaxation
+          sequences used by the selected filter, and [po_safe sd src tgt]
+          reports whether a program-order edge is safe in [Sc] mode. [prefix]
+          contains the fixed cycle prefix, [relax] the relations being tested,
+          and [safe] the safe relations that may be added while constructing a
+          cycle. The result preserves those three groups and returns a table in
+          which [table.(next.id).(exist.id)] checks whether [next] can be
+          prepended to a suffix whose current head is [exist]. *)
       val make :
         C.R.Set.t -> (sd -> extr -> extr -> bool) ->
-        C.R.relax list -> C.R.relax list -> C.R.relax list ->
+        predicate_relax list -> predicate_relax list -> predicate_relax list ->
         chunk list * chunk list * chunk list * t
       val can_precede : t -> chunk -> chunk list -> bool
       val fold_relax_predecessors :
@@ -320,12 +592,25 @@ module Make(C:Builder.S)
       val fold_safe_predecessors :
         t -> chunk list -> ('a -> chunk -> 'a) -> 'a -> 'a
     end = struct
+      type cache_edges =
+        {
+          to_cycle : C.E.edge list ;
+          concrete_edges_with_atom : C.E.edge list ;
+          non_pseudo_edges : C.E.edge list ;
+          concrete_edges : C.E.edge list ;
+          leading_before : C.E.edge list ;
+          trailing_after : C.E.edge list ;
+          leading_with : C.E.edge list ;
+          trailing_with : C.E.edge list ;
+          leading_state : StringSet.t ;
+          trailing_state : StringSet.t ;
+        }
+
       type chunk =
         {
           id : int ;
-          relax : C.R.relax ;
-          concrete_edges_with_atom : C.E.edge list ;
-          non_pseudo_edges : C.E.edge list ;
+          predicate_relax : predicate_relax ;
+          cache : cache_edges ;
           process_count : int ;
           left_instruction_count : int ;
           (** Internal edges before the first external edge. *)
@@ -344,18 +629,166 @@ module Make(C:Builder.S)
         safe_predecessors : chunk array array;
       }
 
-      let to_relax c = c.relax
+      (** For example, while scanning
+          [[@with(Rfe) @state(A) @before(PodRW) PodRW Fre
+            @after(PodRR) @state(B) @with(Coe)]], the accumulator contains:
+          - [concrete_rev = [Fre; PodRW]]
+          - [concrete_with_atom_rev = [Fre; PodRW]]
+          - [non_pseudo_rev = [Fre; PodRW]]
+          - [leading_before_rev = [PodRW]]
+          - [trailing_after_rev = [PodRR]]
+          - [leading_with_rev = [Rfe]]
+          - [trailing_with_rev = [Coe]]
+          - [trailing_with_atom_rev = [Coe]]
+          - [trailing_with_non_pseudo_rev = [Coe]].
+
+          The lists are accumulated in reverse order. Finalisation reverses
+          them and produces [concrete_edges = [PodRW; Fre]] and
+          [to_cycle = [PodRW; Fre; Coe]]. The state accumulators, which are
+          carried separately, produce [leading_state = {A}] and
+          [trailing_state = {B}]. *)
+      type cache_edges_acc =
+        {
+          concrete_rev : C.E.edge list ;
+          concrete_with_atom_rev : C.E.edge list ;
+          non_pseudo_rev : C.E.edge list ;
+          leading_before_rev : C.E.edge list ;
+          trailing_after_rev : C.E.edge list ;
+          leading_with_rev : C.E.edge list ;
+          trailing_with_rev : C.E.edge list ;
+          trailing_with_atom_rev : C.E.edge list ;
+          trailing_with_non_pseudo_rev : C.E.edge list ;
+        }
+
+      let empty_cache_edges_acc =
+        {
+          concrete_rev=[];
+          concrete_with_atom_rev=[];
+          non_pseudo_rev=[];
+          leading_before_rev=[];
+          trailing_after_rev=[];
+          leading_with_rev=[];
+          trailing_with_rev=[];
+          trailing_with_atom_rev=[];
+          trailing_with_non_pseudo_rev=[];
+        }
+
+      let add_concrete edge cache =
+        {
+          cache with
+          concrete_rev=edge::cache.concrete_rev;
+          concrete_with_atom_rev=
+            if C.E.is_insert_store edge.C.E.edge
+            then cache.concrete_with_atom_rev
+            else edge::cache.concrete_with_atom_rev;
+          non_pseudo_rev=
+            if C.E.is_non_pseudo edge.C.E.edge
+            then edge::cache.non_pseudo_rev
+            else cache.non_pseudo_rev;
+        }
+
+      let add_trailing_with edge cache =
+        {
+          cache with
+          trailing_with_rev=edge::cache.trailing_with_rev;
+          trailing_with_atom_rev=
+            if C.E.is_insert_store edge.C.E.edge
+            then cache.trailing_with_atom_rev
+            else edge::cache.trailing_with_atom_rev;
+          trailing_with_non_pseudo_rev=
+            if C.E.is_non_pseudo edge.C.E.edge
+            then edge::cache.trailing_with_non_pseudo_rev
+            else cache.trailing_with_non_pseudo_rev;
+        }
+
+      let reset_trailing_with cache =
+        {
+          cache with
+          trailing_with_rev=[];
+          trailing_with_atom_rev=[];
+          trailing_with_non_pseudo_rev=[];
+        }
+
+      let cache_predicate_relax predicate_relax =
+        let step
+            (cache_acc,
+             collect_leading_before,collect_leading_with,collect_leading_state,
+             leading_state,trailing_state) predicate =
+          let cache = match predicate with
+            | Plain edge -> add_concrete edge cache_acc
+            | _ -> cache_acc in
+          let cache,collect_leading_before =
+            if collect_leading_before then match predicate with
+              | Before edge ->
+                  {cache with
+                   leading_before_rev=edge::cache.leading_before_rev},true
+              | State _|With _ -> cache,true
+              | Plain _|After _ -> cache,false
+            else cache,false in
+          let cache,collect_leading_with =
+            if collect_leading_with then match predicate with
+              | With edge ->
+                  {cache with
+                   leading_with_rev=edge::cache.leading_with_rev},true
+              | State _ -> cache,true
+              | Plain _|Before _|After _ -> cache,false
+            else cache,false in
+          let leading_state,collect_leading_state =
+            if collect_leading_state then match predicate with
+              | State states -> StringSet.union leading_state states,true
+              | Before _|With _ -> leading_state,true
+              | Plain _|After _ -> leading_state,false
+            else leading_state,false in
+          let cache = match predicate with
+            | After edge ->
+                { (reset_trailing_with cache) with
+                  trailing_after_rev=edge::cache.trailing_after_rev; }
+            | With edge -> add_trailing_with edge cache
+            | State _ -> cache
+            | Plain _|Before _ ->
+                { (reset_trailing_with cache) with trailing_after_rev=[]; } in
+          let trailing_state = match predicate with
+            | State states -> StringSet.union trailing_state states
+            | After _|With _ -> trailing_state
+            | Plain _|Before _ -> StringSet.empty in
+          cache,collect_leading_before,collect_leading_with,collect_leading_state,
+          leading_state,trailing_state in
+        let cache,_,_,_,leading_state,trailing_state =
+          List.fold_left step
+            (empty_cache_edges_acc,true,true,true,
+             StringSet.empty,StringSet.empty)
+            predicate_relax in
+        let rev = List.rev in
+        let concrete_edges = rev cache.concrete_rev
+        and trailing_with = rev cache.trailing_with_rev in
+        let to_cycle = concrete_edges @ trailing_with
+        and concrete_edges_with_atom =
+          rev cache.concrete_with_atom_rev @ rev cache.trailing_with_atom_rev
+        and non_pseudo_edges =
+          rev cache.non_pseudo_rev @ rev cache.trailing_with_non_pseudo_rev in
+        {
+          to_cycle;
+          concrete_edges_with_atom;
+          non_pseudo_edges;
+          concrete_edges;
+          leading_before=rev cache.leading_before_rev;
+          trailing_after=rev cache.trailing_after_rev;
+          leading_with=rev cache.leading_with_rev;
+          trailing_with;
+          leading_state;
+          trailing_state;
+        }
+
+      let to_relax c = c.predicate_relax
+      let to_cycle c = c.cache.to_cycle
       let process_count_of_chunk c = c.process_count
       let instruction_count_of_chunk c =
         c.left_instruction_count,
         c.max_instruction_count_opt,
         c.right_instruction_count
-
       let pp_list chunks =
-        chunks |> List.map
-          (fun chunk ->
-            chunk.relax |> List.map pp_edge |> String.concat " ")
-          |> String.concat " "
+        String.concat " "
+          (List.map (fun chunk -> PredicateRelax.pp chunk.predicate_relax) chunks)
 
       let process_count chunks =
         List.fold_left
@@ -384,39 +817,91 @@ module Make(C:Builder.S)
                 left,Some max,0)
           (0,None,0) es
 
+      (* Check whether `list` starts with `expected`, comparing edge atoms. *)
+      let rec starts_with_edges list expected =
+        match list, expected with
+        | _, [] -> true
+        | [], _::_  -> false
+        | hd :: tail, hd_expected :: tail_expected ->
+            C.E.equal_edge_atoms hd hd_expected
+            && starts_with_edges tail tail_expected
+
+      (* Check whether `list` ends with `expected`, comparing edge atoms. *)
+      let ends_with_edges list expected =
+        starts_with_edges (List.rev list) (List.rev expected)
+
+      let merge_with next exist =
+        match next.cache.trailing_with,exist.cache.leading_with with
+        | trailing,leading when trailing <> [] && leading <> [] ->
+            C.R.compare trailing leading = 0
+        | _ -> false
+
+      (* Given `next = [....; after(..); after(..)]` and
+         `exist = [before(..); before(..); ....]`, check whether the optional
+         boundary predicates can be merged with the neighbouring concrete edge:
+           - `before` merges with concrete if edge matches.
+           - `after` merges with concrete if edge matches.
+           - `before` pairing with `after` fails. *)
+      let merge_predicate next exist =
+        (* Match `after` or `before` predicates when present. *)
+        match next.cache.trailing_after,exist.cache.leading_before with
+        | (_::_ as after),[] ->
+            starts_with_edges exist.cache.concrete_edges after
+        | [],(_::_ as before) ->
+            ends_with_edges next.cache.concrete_edges before
+        (* Reject an `after` predicate directly meeting a `before` predicate. *)
+        | [],[] | _::_,_::_ -> false
+
       let edge_lists_can_precede next exist =
         match next,exist with
         | _::_,exist::_ -> C.E.can_precede (Misc.last next) exist
         | _ -> true
 
-      let can_precede can_precede next exist =
+      let can_precede_edges can_precede next exist =
         (* Checking adjacency after removing all pseudo-edges rules out, for
            example, the AArch64 adjacency `PosRR Store -> PosRR ISB`. *)
-        edge_lists_can_precede next.non_pseudo_edges exist.non_pseudo_edges
+        edge_lists_can_precede next.cache.non_pseudo_edges exist.cache.non_pseudo_edges
         (* Checking atom-bearing concrete edges rules out, for example,
            the AArch64 adjacency `PosRWPX -> PosWRLP`. *)
         && edge_lists_can_precede
-             next.concrete_edges_with_atom exist.concrete_edges_with_atom
-        && can_precede next.relax exist.relax
+             next.cache.concrete_edges_with_atom exist.cache.concrete_edges_with_atom
+        && can_precede next.cache.to_cycle exist.cache.to_cycle
+      (* Resolve boundary metadata from the outside in:
+         - Require equal state sets.
+         - Match and remove any `with` predicates.
+         - Match `before`/`after` predicates against neighbouring plain edges.
+         - Otherwise, check plain-edge adjacency with the internal filter. *)
+      let can_precede can_precede next exist =
+        if not
+             (StringSet.equal
+                next.cache.trailing_state exist.cache.leading_state) then false
+        else if
+          next.cache.trailing_with <> [] || exist.cache.leading_with <> [] then
+          if merge_with next exist then begin
+              (* Both relaxations are already valid. The matching `with`
+                 sequence concretises their shared boundary, leaving only any
+                 newly exposed boundary predicates to check. *)
+              if next.cache.trailing_after <> [] || exist.cache.leading_before <> []
+              then merge_predicate next exist
+              else true
+          end else false
+        else if next.cache.trailing_after <> [] || exist.cache.leading_before <> [] then
+          merge_predicate next exist
+        else can_precede_edges can_precede next exist
 
       let make safes po_safe prefix relax safe =
         let next_id = ref 0 in
-        let mk_chunk relax =
+        let mk_chunk predicate_relax =
           let id = !next_id in
           incr next_id ;
+          let cache = cache_predicate_relax predicate_relax in
           let left_instruction_count,max_instruction_count_opt,
-              right_instruction_count = count_instructions relax in
-          let concrete_edges_with_atom =
-            List.filter
-              (fun edge -> not (C.E.is_insert_store edge.C.E.edge)) relax in
-          let non_pseudo_edges =
-            List.filter (fun edge -> C.E.is_non_pseudo edge.C.E.edge) relax in
+              right_instruction_count = count_instructions cache.to_cycle in
           {
             id;
-            relax;
-            concrete_edges_with_atom;
-            non_pseudo_edges;
-            process_count=count_processes relax;
+            predicate_relax;
+            cache;
+            process_count=count_processes cache.to_cycle;
             left_instruction_count;
             max_instruction_count_opt;
             right_instruction_count;
@@ -530,16 +1015,26 @@ module Make(C:Builder.S)
 (* Functional for recursive call of generators *)
 
 (* Prefix *)
+    let parse_prefixes prefix =
+      (* Parse each `-prefix` argument separately, then combine them as one
+         top-level choice. Thus `-prefix A -prefix B` is interpreted as
+         `-prefix [A|B]`. *)
+      let prefixes =
+        PredicateRelax.parse_arguments prefix
+        |> List.map (fun chunk -> [chunk]) in
+      match prefixes with
+      | [] -> [[]] (* No prefix <=> one empty prefix *)
+      | prefixes -> prefixes
+
+    let prefixes = parse_prefixes O.prefix
+
     let () =
       if O.debug.Debug_gen.parser && O.prefix <> [] then begin
         eprintf "Prefixes:\n" ;
         List.iter
-          (fun rs ->
-            eprintf "  %s\n" (C.R.pp_relax_list rs))
-          O.prefix
+          (fun rs -> eprintf "  %s\n" (PredicateRelax.pp_list rs))
+          prefixes
       end
-
-    let prefixes = O.prefix
 
     let can_prefix prefix can_precede_relax r_suff = match prefix with
       | [] -> can_precede_relax (Misc.last r_suff) r_suff
@@ -550,7 +1045,8 @@ module Make(C:Builder.S)
     let rec is_prefix prefix values =
       match prefix,values with
       | expected::prefix, value::values ->
-          C.E.compare expected value = 0 && is_prefix prefix values
+          PredicateRelax.compare_edge expected value = 0 &&
+          is_prefix prefix values
       | [], _ -> true (* end of prefix before or at the end of values *)
       | _, [] -> false (* end of values before end of prefix*)
 
@@ -580,10 +1076,12 @@ module Make(C:Builder.S)
             (n = 0 || (n > 0 && O.upto)) &&
             can_prefix prefix can_precede_relax (Search.chunks r_suff)
           then begin
+            (* Predicate edges have been resolved at this point; [tr] still
+               retains them for the final predicate-aware checks. *)
             let tr = prefix@Search.chunks r_suff in
             if O.debug.Debug_gen.search then
             eprintf "CHECK CANDIDATE: '%s'\n"
-              (C.E.pp_edges (List.flatten (List.map Chunk.to_relax tr))) ;
+              (C.E.pp_edges (List.flatten (List.map Chunk.to_cycle tr))) ;
             try f0 po_safe tr k
             with  Misc.Exit -> k
             | Misc.Fatal msg |Misc.UserError msg ->
@@ -610,7 +1108,7 @@ module Make(C:Builder.S)
       | Sc ->
           let d2 =
             List.fold_right
-              (fun r k -> match r with
+              (fun chunk k -> match to_relax chunk with
               | [{edge=Po (sd,e1,e2); _}] -> SdDir2Set.add (sd,e1,e2) k
               | _ -> k)
               rs SdDir2Set.empty in
@@ -667,10 +1165,10 @@ module Make(C:Builder.S)
       (* Alternative: mix relaxation from relax list *)
       (* ******************************************* *)
       let all_relax k =
-        let relax_set = RelaxSet.of_list (List.map Chunk.to_relax relax) in
+        let relax_set = PredicateRelax.Set.of_list (List.map Chunk.to_relax relax) in
         let extract_relaxs suff =
-          let suff_set = RelaxSet.of_list (List.map Chunk.to_relax suff)  in
-          RelaxSet.elements (RelaxSet.inter suff_set relax_set) in
+          let suff_set = PredicateRelax.Set.of_list (List.map Chunk.to_relax suff)  in
+          PredicateRelax.Set.elements (PredicateRelax.Set.inter suff_set relax_set) in
 
         (* Partially apply function `call_rec_base` *)
         let call_rec_all_relax =
@@ -739,13 +1237,11 @@ module Make(C:Builder.S)
 
     let count_changes = count_p change_loc
 
-    let build_safe r0 es =
-      let rs =
-        List.fold_right
-          (fun chunk -> RelaxSet.add (Chunk.to_relax chunk))
-          es RelaxSet.empty in
-      let rs = RelaxSet.diff rs (RelaxSet.of_list r0) in
-      RelaxSet.elements rs
+    let build_safe relaxes candidate =
+      PredicateRelax.Set.diff
+        (PredicateRelax.Set.of_list (List.map Chunk.to_relax candidate))
+        (PredicateRelax.Set.of_list relaxes)
+      |> PredicateRelax.Set.elements
 
     let cyclic_substringp xs ys =
       let rec do_rec n ys = match n,ys with
@@ -759,7 +1255,7 @@ module Make(C:Builder.S)
 
     let last_check_call rej f rs _po_safe res k =
       if Misc.nilp res then k else
-          let le = List.map Chunk.to_relax res |> List.flatten in
+          let le = List.map Chunk.to_cycle res |> List.flatten in
           if Chunk.process_count res <= O.nprocs &&
              Search.max_instruction_count_cycle res <= O.max_ins-1 &&
              not
@@ -774,16 +1270,18 @@ module Make(C:Builder.S)
                      | []|[_] -> false
                      | _::_::_ -> true)
                     rej  in
-                check_rejects rej le in
+                let predicate_cycle =
+                  List.concat (List.map Chunk.to_relax res) in
+                check_rejects rej predicate_cycle in
               if ok then
+                let ss = build_safe rs res in
                 let mk_info =
-                  let ss = build_safe rs res in
                   let info =
                     [
-                      "Relax",pp_relax_list rs;
-                      "Safe", pp_relax_list ss;
+                      "Relax",PredicateRelax.pp_list rs;
+                      "Safe",PredicateRelax.pp_list ss;
                     ] in
-                  info,C.R.Set.of_list rs in
+                  info,PredicateRelax.pp_list rs in
                 if O.debug.Debug_gen.search then begin
                   eprintf "------------------------------------------------------\n" ;
                   eprintf "Cycle: %s\n" (C.E.pp_edges le)
@@ -796,7 +1294,8 @@ module Make(C:Builder.S)
 
     let last_minute rej ess =
       not (List.exists (fun es -> List.length es > O.max_ins) ess)
-      && let es = List.flatten ess in check_rejects rej es
+      && let es = List.flatten ess |> List.map (fun edge -> Plain edge) in
+         check_rejects rej es
 
     (* Note that we use `edge` here to refer a single edge or a compositional edges.
        e.g. PosRR or [PosRR Fre].
@@ -816,31 +1315,46 @@ module Make(C:Builder.S)
       List.fold_left ( fun k pref -> zyva pref aset relax safe reject n f k ) k prefixes
 
     let do_gen relax safe rej n =
-      let sset = C.R.Set.of_list safe in
-      let rset = C.R.Set.of_list relax in
-      let aset = C.R.Set.union sset rset in
+      let predicate_aset =
+        PredicateRelax.Set.union
+          (PredicateRelax.Set.of_list safe) (PredicateRelax.Set.of_list relax) in
+      let aset =
+        PredicateRelax.Set.fold
+          (fun pred -> C.R.Set.add (to_relax pred))
+          predicate_aset C.R.Set.empty in
+      let plain_rej =
+        List.filter_map
+          (fun reject ->
+            if List.for_all (function Plain _ -> true | _ -> false) reject
+            then Some reject
+            else None)
+          rej in
       D.all
-        ~check:(last_minute rej)
+        ~check:(last_minute plain_rej)
         (fun f ->
           zyva_prefix prefixes aset relax safe rej n
             (last_check_call rej f))
 
     let debug_rs chan rs =
-      List.iter (fun r -> fprintf chan "%s\n" (pp_relax r)) rs
+      fprintf chan "%s\n" (PredicateRelax.pp_list rs)
 
     let parse_input ~relax ~safe ~reject =
-      if O.debug.Debug_gen.parser then begin
-        eprintf "** Relax0 **\n" ;
-        debug_rs stderr relax ;
-        eprintf "** Safe0 **\n" ;
-        debug_rs stderr safe
-      end ;
-      let relax_set = C.R.Set.of_list relax
-      and safe_set = C.R.Set.of_list safe
-      and reject_set = C.R.Set.of_list reject in
-      let relax = C.R.Set.elements relax_set
-      and safe = C.R.Set.elements (C.R.Set.diff safe_set relax_set)
-      and reject = C.R.Set.elements reject_set in
+      let r_nempty = Misc.consp relax in
+      let s_nempty = Misc.consp safe in
+      let relax_set = PredicateRelax.parse_arguments relax |> PredicateRelax.Set.of_list
+      and safe_set = PredicateRelax.parse_arguments safe |> PredicateRelax.Set.of_list
+      and reject_set = PredicateRelax.parse_arguments reject |> PredicateRelax.Set.of_list in
+      let relax_set = PredicateRelax.Set.diff relax_set reject_set in
+      let safe_set =
+        PredicateRelax.Set.diff safe_set
+          (PredicateRelax.Set.union relax_set reject_set) in
+      if PredicateRelax.Set.is_empty relax_set && r_nempty then
+        Warn.fatal "relaxations provided in relaxlist could not be used to generate cycles" ;
+      if PredicateRelax.Set.is_empty safe_set && s_nempty then
+        Warn.fatal "relaxations provided in safelist could not be used to generate cycles" ;
+      let relax = PredicateRelax.Set.elements relax_set
+      and safe = PredicateRelax.Set.elements safe_set
+      and reject = PredicateRelax.Set.elements reject_set in
       if O.debug.Debug_gen.parser then begin
         eprintf "** Relax **\n" ;
         debug_rs stderr relax ;
@@ -850,7 +1364,6 @@ module Make(C:Builder.S)
       relax, safe, reject
 
     let secret_gen relax safe reject n =
-      let relax,safe,reject = parse_input ~relax ~safe ~reject in
       do_gen relax safe reject n
 
 (**********************)
@@ -860,7 +1373,7 @@ module Make(C:Builder.S)
     let fold_ie f k = f (Int) (f (Ext) k)
     let fold_dir f k = f Irr k (* expand later ! *)
     let fold_dir2 f = fold_dir (fun i1 k -> fold_dir (f i1) k)
-    let fold_sd = Code.fold_sd O.wildcard
+    let fold_sd = Code.fold_sd
     let fold_sd_dir2 f =
       fold_sd
         (fun sd -> fold_dir2 (fun d1 d2 -> f sd d1 d2))
@@ -894,15 +1407,17 @@ module Make(C:Builder.S)
       let k = er (Hat)::k in
       k
 
-    let gen ?(relax=relax) ?(safe=safe) ?(reject=[]) n =
+    let gen ?(relax=lift_list relax) ?(safe=lift_list safe) ?(reject=[]) n =
       try secret_gen relax safe reject n
       with e ->
         eprintf "Exc: '%s'\n" (Printexc.to_string e) ;
         raise e
 
-    let filter_check ~relax ~safe lhs rhs =
-      let safe,_,_ = parse_input ~relax ~safe ~reject:[] in
-      let safe_set = C.R.Set.of_list safe in
+    let filter_check ~safe lhs rhs =
+      let safe_set = C.R.Set.of_list (List.map to_relax safe) in
       let po_safe = extract_po safe in
-      FilterImpl.can_precede safe_set po_safe lhs rhs
+      let lhs,rhs,_,adjacency = Chunk.make safe_set po_safe [lhs] [rhs] [] in
+      match lhs,rhs with
+      | [lhs],[rhs] -> Chunk.can_precede adjacency lhs [rhs]
+      | _,_ -> assert false
   end

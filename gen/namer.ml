@@ -59,6 +59,8 @@ module Make
          | Fenced (f,Diff,_,_) -> Some (Misc.lowercase (pp_fence f))
          | Dp (dp,Same,_) -> Some (Misc.lowercase (pp_dp dp) ^ "s")
          | Dp (dp,Diff,_) -> Some (Misc.lowercase (pp_dp dp))
+         | Exception exception_handler ->
+             Some (Misc.lowercase (pp_exception_handler exception_handler))
          | Communication (com,(Int|Ext as ie)) -> Some (pp_communication com ie)
          | Rmw rmw ->
             (* Note: backward compatible item ("rmw") in names *)
@@ -75,14 +77,14 @@ module Make
            -> true
          |Communication (_,_)
          |Id|Hat|Leave _|Back _
-         |Insert _|Store|Node _|Rmw _
+         |Insert _|Store|Node _|Rmw _|Exception _
            -> false
        and ambiguous_source = function
          | Po _|Fenced _
            -> true
          |Dp _| Communication (_,_)
          |Id|Hat|Leave _|Back _
-         |Insert _|Store|Node _|Rmw _
+         |Insert _|Store|Node _|Rmw _|Exception _
            -> false
 
        let plain  = Misc.lowercase (A.pp_plain)

@@ -39,7 +39,7 @@ type t =
 (* Do not  observe faults, in KVM mode *)
   | NoFault
 (* Synchronisation mode *)
-  | Sync | Async
+  | Sync | Async | Asym
 (* Store-only mode *)
   | StoreOnly
 (* Neon AArch64 extension *)

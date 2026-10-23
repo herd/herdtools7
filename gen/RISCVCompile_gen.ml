@@ -571,6 +571,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
        (fun st p init loc r ->
          STORE.emit_store_reg AV.Rlx st p init loc r)
 
+    let emit_exc_enter _ _ = Warn.user_error "Exception handlers are not supported for RISCV"
+    let emit_eret _ _ _ = Warn.user_error "Exception handlers are not supported for RISCV"
+
     let get_strx_result k = function
       | StoreConditional (_,_,r,_,_)  -> r::k
       | _ -> k

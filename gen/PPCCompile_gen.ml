@@ -532,6 +532,8 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
 (* Postlude *)
 
     let postlude = mk_postlude emit_store_reg
+    let emit_exc_enter _ _ = Warn.user_error "Exception handlers are not supported for PPC"
+    let emit_eret _ _ _ = Warn.user_error "Exception handlers are not supported for PPC"
 
     let get_xstore_results _ = []
 

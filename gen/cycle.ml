@@ -26,6 +26,13 @@ module type S = sig
   module SIMD : Simd.S
   module RMW : Rmw.S with type atom = atom
 
+  type fault_state = Neg | Pos | Handler
+
+  type fault_check = {
+    label : Label.t;
+    state : fault_state;
+  }
+
   (* TODO can be parametric by dir *)
   type event =
       { loc : loc ; ord : int;
@@ -48,7 +55,7 @@ module type S = sig
         idx : int ;
         (* If need to check this operation can fault.
            Label the instruction with `Label.t`. *)
-        check_fault : (Label.t * bool) option;
+        check_fault : fault_check option;
         (* If the effect of this event should be check in the postcondition.
            E.g., if the value changes since last time,
            therefore, any read event should lead to a postcondition
@@ -73,6 +80,9 @@ module type S = sig
       mutable next : node ;
       mutable prev : node ;
       mutable store : node ;
+      mutable exception_handlers : exception_handler list ;
+      (* Logical source of the outgoing edge after Eret. *)
+      mutable exception_source : node ;
     }
   val nil : node
   val str_node : node -> string
@@ -138,6 +148,7 @@ module type Config = sig
   val allow_back : bool
   val naturalsize : MachSize.sz
   val hexa : bool
+  val init_value : int
   val variant : Variant_gen.set
 end
 
@@ -165,6 +176,18 @@ module Make (O:Config) (E:Edge.S) :
   module Value = E.Value
   module RMW = E.RMW
 
+  type fault_state = Neg | Pos | Handler
+
+  type fault_check = {
+    label : Label.t;
+    state : fault_state;
+  }
+
+  let fault_state_of_bool = function true -> Pos | false -> Neg
+
+  let make_fault faults =
+    {label=Label.next_label "L"; state=fault_state_of_bool faults}
+
   type event =
       { loc : loc ; ord : int; tag : int;
         ctag : int; cseal : int; dep : int;
@@ -178,7 +201,7 @@ module Make (O:Config) (E:Edge.S) :
         tcell : Value.v array ; (* value of tag cell at node exit *)
         bank : SIMD.atom Code.bank ;
         idx : int ;
-        check_fault : (Label.t * bool) option;
+        check_fault : fault_check option;
         check_value : bool option }
 
   let pte_default = Value.default_pte "*"
@@ -219,6 +242,9 @@ module Make (O:Config) (E:Edge.S) :
       mutable next : node ;
       mutable prev : node ;
       mutable store : node ;
+      mutable exception_handlers : exception_handler list ;
+      (* Logical source of the outgoing edge after Eret. *)
+      mutable exception_source : node ;
     }
 
   let debug_dir d = match d with
@@ -259,7 +285,11 @@ module Make (O:Config) (E:Edge.S) :
       ( if e.rmw then "rmw" else "" )
       ( match debug_vec e.cell with | "" -> "" | s -> "cell=[" ^ s ^"] ")
       (debug_val e.v) (debug_tag e) (debug_morello e) (debug_vector e)
-      ( match e.check_fault with | Some (n,b) -> sprintf "%s:%b" n b | None -> "none" )
+      (match e.check_fault with
+       | Some {label;state} ->
+           sprintf "%s:%s" label
+             (match state with Neg -> "neg" | Pos -> "pos" | Handler -> "handler")
+       | None -> "none")
       ( match e.check_value with | Some b -> sprintf "%b" b | None -> "none" )
 
   let debug_edge = E.pp_edge
@@ -272,6 +302,8 @@ module Make (O:Config) (E:Edge.S) :
      next = nil ;
      prev = nil ;
      store = nil ;
+     exception_handlers = [] ;
+     exception_source = nil ;
     }
 
   let  debug_node chan n =
@@ -305,6 +337,8 @@ let do_alloc_node idx e =
    next = nil ;
    prev = nil ;
    store = nil ;
+   exception_handlers = [] ;
+   exception_source = nil ;
   }
 
 let alloc_node idx e =
@@ -402,6 +436,9 @@ let find_non_insert_store_prev m = find_edge_prev non_insert_store m
 let non_pseudo e = E.is_non_pseudo e.E.edge
 let find_non_pseudo m = find_edge non_pseudo m
 let find_non_pseudo_prev m = find_edge_prev non_pseudo m
+
+let edge_source n =
+  if n.exception_source == nil then n else n.exception_source
 
 
 (* generic scan *)
@@ -520,6 +557,7 @@ module CoSt = struct
       (struct type t = E.SIMD.atom Code.bank let compare = compare end)
 
   type t = { map : int M.t;
+             access_tag : int;
              co_cell : Value.v array;
              pte_value : Value.pte;
              (* - Irr, checks both
@@ -530,11 +568,11 @@ module CoSt = struct
              check_value : bool;
              machine_feature: StringSet.t }
 
-  let create init_value sz pte_value check_value check_fault machine_feature =
-    let map = List.fold_left ( fun acc bank -> M.add bank init_value acc ) M.empty
-                  [Tag; CapaTag; CapaSeal; Ord; ]
+  let create init_value access_tag sz pte_value check_value check_fault machine_feature =
+    let map = List.fold_left (fun acc bank -> M.add bank 0 acc) M.empty
+                  [Tag; CapaTag; CapaSeal; ] |> M.add Ord init_value
     and co_cell = Array.make (if sz <= 0 then 1 else sz) (Value.from_int init_value) in
-    { map; co_cell; pte_value; check_fault; check_value ; machine_feature }
+    { map; access_tag; co_cell; pte_value; check_fault; check_value ; machine_feature }
 
   let find_no_fail key map =
     try M.find key map with Not_found -> assert false
@@ -544,6 +582,9 @@ module CoSt = struct
   let set_co st bank v =
     let b = match bank with VecReg _ -> Ord | _ -> bank in
     { st with map=M.add b v st.map; }
+
+  let get_access_tag st = st.access_tag
+  let set_access_tag st access_tag = {st with access_tag;}
 
   let get_cell st = st.co_cell
 
@@ -588,11 +629,11 @@ module CoSt = struct
 
   (* Check if `pte_val` might fault *)
   let label_pte_fault dir pte_val =
-    Some ( (Label.next_label "L"), (Value.can_fault dir pte_val) )
+    Some (make_fault (Value.can_fault dir pte_val))
 
   (* Helper function returns a fresh label and a boolean for if it should fault,
      if a fault check is needed. Otherwise return `None`. *)
-  let fault_update st dir =
+  let fault_update st dir tag =
     let unset_check_fault st = {st with check_fault = NoDir } in
     let pte_val = get_pte_value st in
     match st.check_fault,dir with
@@ -608,8 +649,10 @@ module CoSt = struct
         None,st
     | _,R when do_store_only ->
         None,st
-    | _,_ when do_memtag || do_morello ->
-      Some ((Label.next_label "L"), false),st
+    | _,_ when do_memtag ->
+        Some (make_fault (tag <> Value.to_int (get_co st Tag))),st
+    | _,_ when do_morello ->
+        Some (make_fault false),st
     | _,_ -> None,unset_check_fault st
 
   let implicit_pte_update st dir =
@@ -649,6 +692,18 @@ let pte_val_init ns loc =
       Value.init_pte loc atom_list
     | _ -> pte_default
 
+let access_tag_init init ns =
+  let _,access_tag =
+    List.fold_left
+      (fun (tag,access_tag) n ->
+        match n.evt.bank,n.evt.dir with
+        | Tag,Some W ->
+            let tag = tag+1 in
+            tag,(if Value.is_tag_fault n.evt.atom then tag else access_tag)
+        | _ -> tag,access_tag)
+      (init,init) ns in
+  access_tag
+
 (****************************)
 (* Add events in edge cycle *)
 (****************************)
@@ -661,10 +716,17 @@ let rec next_dir m = match m.next.evt.dir with
 
 let patch_edges n =
   let rec do_rec m =
-    let e = match  m.evt.dir with
-    | None -> m.edge
+    let source,edge,set_source =
+      if m.exception_source == nil then m,m.edge,true
+      else
+        m.exception_source,
+        {m.edge with E.a1=m.exception_source.evt.atom},
+        E.dir_src m.edge = Irr in
+    let e = match source.evt.dir with
+    | None -> edge
     | Some d ->
-        E.set_src d (E.set_tgt (next_dir m) m.edge) in
+        let edge = E.set_tgt (next_dir m) edge in
+        if set_source then E.set_src d edge else edge in
     m.edge <- e ;
     if m.next != n then do_rec m.next in
   do_rec n
@@ -704,11 +766,56 @@ let remove_store n0 =
   do_rec n0 ;
   n0
 
+let remove_exception_edges n0 =
+  let get_exception_handler n = match n.edge.E.edge with
+    | E.Exception exception_handler -> Some exception_handler
+    | _ -> None in
+  let n0 =
+    try find_node (fun n -> get_exception_handler n = None) n0
+    with Not_found -> Warn.fatal "Cycle contains only exception edges" in
+  fold
+    (fun n () -> match get_exception_handler n with
+      | Some exception_handler ->
+        let annotated = find_non_pseudo n.next in
+        annotated.exception_handlers <-
+          annotated.exception_handlers @ [exception_handler] ;
+        n.prev.next <- n.next ;
+        n.next.prev <- n.prev
+      | None -> ())
+    n0 () ;
+  n0
+
+let set_exception_sources n0 =
+  (* Eret retries the faulting instruction, hence its following edge starts
+     from that instruction rather than from the last handler event. *)
+  let find_exc_enter n =
+    try Some (find_node_prev
+      (fun n -> match n.edge.E.edge with
+        | E.Exception ExcEnter -> true
+        | E.Exception (Eret|EretNext) -> raise Not_found
+        | _ when E.is_ext n.edge -> raise Not_found
+        | _ -> false)
+      n.prev)
+    with Not_found -> None in
+  iter
+    (fun n -> match n.edge.E.edge with
+      | E.Exception Eret ->
+          begin match find_exc_enter n with
+          | Some enter ->
+              let fault_site = find_non_pseudo enter.next
+              and outgoing = find_non_pseudo n.next in
+              outgoing.exception_source <- fault_site
+          | None -> ()
+          end
+      | _ -> ())
+    n0
+
  let set_dir n0 =
   iter
     (fun m ->
       if non_insert_store m.edge then begin
-        let cur_d = E.dir_src m.edge in
+        let cur_d =
+          if m.exception_source == nil then E.dir_src m.edge else Irr in
         let p = find_non_insert_store_prev m.prev in
 (*    eprintf "p=%a, m=%a\n" debug_node p debug_node m; *)
         let prev_d = E.dir_tgt p.edge in
@@ -726,13 +833,15 @@ let remove_store n0 =
         | (NoDir,_)|(_,NoDir) -> assert false in
         let atom =
           let a2 = p.edge.E.a2 and a1 = m.edge.E.a1 in
-          if E.compare_atomo a1 a2 = 0 then a1
+          if m.exception_source != nil then a2
           else
-            if a1 = None && E.is_ext p.edge then a2
-            else if a2 = None &&  E.is_ext m.edge then a1
-            else
-              Warn.fatal "Impossible atomicity %s %s"
-                (E.pp_edge p.edge) (E.pp_edge m.edge) in
+              if E.compare_atomo a1 a2 = 0 then a1
+              else
+                if a1 = None && E.is_ext p.edge then a2
+                else if a2 = None &&  E.is_ext m.edge then a1
+                else
+                  Warn.fatal "Impossible atomicity %s %s"
+                    (E.pp_edge p.edge) (E.pp_edge m.edge) in
         let rmw = is_rmw dir m in
         m.evt <- { m.evt with dir=Some dir; atom; rmw}
       end)
@@ -778,7 +887,7 @@ let set_diff_loc st n0 =
   let rec do_rec st p m =
     let loc,st =
       if same_loc p.edge then begin
-        p.evt.loc,st
+        (edge_source p).evt.loc,st
       end
     else
       let n1 = try
@@ -858,6 +967,7 @@ let check_cycle c =
             (E.pp_edge n.edge) (E.pp_edge p.edge) (E.pp_edge next.edge)
         | _ -> ()
         end
+      | E.Exception _ -> ()
       | E.Insert _ ->
         let p = find_non_pseudo_prev n.prev in
         begin match p.edge.E.edge with
@@ -871,6 +981,53 @@ let check_cycle c =
           Warn.fatal "Data dependency to a read must be followed by an RMW"
       | _ -> ())
     c ;
+  (* Check that ExcEnter and return edges form well-formed handler sequences,
+     with at most one exception handler per process. *)
+  let check_exception_edges c =
+    let get_exception_handler n = match n.edge.E.edge with
+      | E.Exception exception_handler -> Some exception_handler
+      | _ -> None in
+    iter
+      (fun n -> match n.exception_source != nil,E.dir_src n.edge with
+        | true,Dir d when n.exception_source.evt.dir <> Some d ->
+            Warn.fatal "Impossible direction %s[%s] %s[%s]"
+              (str_node n.exception_source) (pp_extr (Dir d))
+              (str_node n) (pp_extr (E.dir_src n.edge))
+        | true,(Irr|NoDir|Dir _)|false,_ -> ())
+      c ;
+    let first_exc_enter =
+      try (find_node (fun n -> E.is_ext n.edge) c).next
+      with Not_found -> try find_node (fun n -> get_exception_handler n = Some ExcEnter) c
+      with Not_found -> c in
+    let in_handler,_ = fold
+      (fun n (in_handler,has_handler) ->
+        let exception_handler = get_exception_handler n
+        and is_external_comm = E.is_ext n.edge in
+        match in_handler,has_handler,exception_handler,is_external_comm with
+        | false,false,Some ExcEnter,_ -> true,true
+        | false,true,Some ExcEnter,_ ->
+            Warn.user_error
+              "Only one exception handler is allowed per process."
+        | false,_,(Some Eret|Some EretNext),_ ->
+            Warn.user_error
+              "Exception-handler return without a preceding ExcEnter."
+        | true,_,Some ExcEnter,_ ->
+            Warn.user_error "Nested ExcEnter is not allowed."
+        | true,_,Some EretNext,_ ->
+            let next = find_non_pseudo n.next in
+            if E.is_com next.edge then
+              Warn.user_error
+                "EretNext must be followed by an instruction in the same process." ;
+            false,true
+        | true,_,Some Eret,_ -> false,true
+        | _,_,None,true -> false,false
+        | false,_,None,false -> false,has_handler
+        | true,_,None,false -> true,has_handler)
+      first_exc_enter (false,false) in
+    if in_handler then
+      Warn.user_error
+        "ExcEnter must end with Eret, EretNext, or a communication edge." in
+  check_exception_edges c ;
   (* Collect all the rmw edges, organise by location
      and then check if all the rmw edges per locations are valid *)
   fold ( fun n lst ->
@@ -983,7 +1140,9 @@ let check_cycle c =
       (* TODO: potentially rework the if-elseif-else here as it is confused *)
       begin if Code.is_data n.evt.loc then
         begin if do_memtag then
-          let tag = Value.to_int (CoSt.get_co st Tag) in
+          let tag = match n.evt.bank with
+            | Tag -> Value.to_int (CoSt.get_co st Tag)
+            | _ -> CoSt.get_access_tag st in
           n.evt <- { n.evt with tag; }
         else if do_morello then
           let ord = Value.to_int (CoSt.get_co st Ord) in
@@ -1012,7 +1171,7 @@ let check_cycle c =
       (* No need to add fault check in read modify write situation,
          as the label will be assigned in read *)
       let fault_update_without_rmw st =
-        if n.evt.rmw then None,st else CoSt.fault_update st W in
+        if n.evt.rmw then None,st else CoSt.fault_update st W n.evt.tag in
       match n.evt.loc,n.evt.dir,bank with
       | Data _,Some W,Instr ->
         Warn.fatal "instruction annotation on a data location is not possible"
@@ -1035,8 +1194,11 @@ let check_cycle c =
         n.evt <- { n.evt with check_fault; check_value; };
         (next_x_ok, st)
       | Data _,Some W,Tag ->
-        let st = CoSt.next_co st bank |> CoSt.set_check_fault in
+        let st = CoSt.next_co st bank in
         let v = CoSt.get_co st bank in
+        let st = CoSt.set_access_tag st
+            (if Value.is_tag_fault n.evt.atom then n.evt.tag else Value.to_int v) in
+        let st = CoSt.set_check_fault st in
         n.evt <- { n.evt with v = v; check_value; } ;
         let e,st = CoSt.set_tcell st n.evt in
         n.evt <- e ;
@@ -1046,7 +1208,7 @@ let check_cycle c =
            if it is followed by a depend address edge *)
         let check_fault =
           if E.is_dp_addr n.prev.edge.E.edge then
-            Some (Label.next_label "L", false)
+            Some (make_fault false)
           else None in
         let st = CoSt.next_co st bank in
         let v = CoSt.get_co st bank in
@@ -1117,18 +1279,21 @@ let check_cycle c =
           else if n.evt.rmw then
             match n.edge.E.edge with
             | E.Rmw rmw when not (E.RMW.is_one_instruction rmw) ->
-              let check_fault,st = CoSt.fault_update st R in
-              let write_check_fault,st = CoSt.fault_update st W in
+              let check_fault,st = CoSt.fault_update st R n.evt.tag in
+              let write_check_fault,st = CoSt.fault_update st W n.evt.tag in
               n.next.evt <- {n.next.evt with check_fault=write_check_fault};
               check_fault,st
-            | _ -> CoSt.fault_update st W
-          else CoSt.fault_update st R in
-        n.evt <- { n.evt with check_fault };
+            | _ -> CoSt.fault_update st W n.evt.tag
+          else CoSt.fault_update st R n.evt.tag in
+        let check_value = match check_fault with
+          | Some {state=Pos;_} -> Some false
+          | _ -> check_value in
+        n.evt <- { n.evt with check_fault; check_value };
         (next_x_ok, st)
       | _,Some R,Pair ->
         let st = CoSt.implicit_pte_update st R in
         set_read_pair_v n cell check_value;
-        let check_fault, st = CoSt.fault_update st R in
+        let check_fault, st = CoSt.fault_update st R n.evt.tag in
         n.evt <- { n.evt with check_fault };
         (next_x_ok, st)
       | _,Some R,VecReg a ->
@@ -1137,7 +1302,7 @@ let check_cycle c =
         let v = E.SIMD.read a cell
           |> E.SIMD.reduce
           |> Value.from_int in
-        let check_fault, st = CoSt.fault_update st R in
+        let check_fault, st = CoSt.fault_update st R n.evt.tag in
         n.evt <- { n.evt with v=v ; vecreg=[]; bank=Ord; check_value; check_fault ; };
         (next_x_ok, st)
       | _,Some R,Tag ->
@@ -1148,7 +1313,7 @@ let check_cycle c =
            if it is followed by a depend address edge *)
         let check_fault =
           if E.is_dp_addr n.prev.edge.E.edge then
-            Some (Label.next_label "L", false)
+            Some (make_fault false)
           else None in
         n.evt <- { n.evt with v = CoSt.get_co st bank; check_value; check_fault };
         (next_x_ok, st)
@@ -1173,8 +1338,9 @@ let check_cycle c =
                  process the nodes in list `ns` for the location `loc` *)
               let loc = n.evt.loc in
               let sz = get_wide_list ns in
-              let init_val = if do_kvm then k else 0 in
+              let init_val = if do_kvm then k else O.init_value in
               let pte_val = pte_val_init ns loc in
+              let access_tag = access_tag_init 0 ns in
               (* Since it is a cycle, the initial value of `check_value`
                  and `check_fault` depend on if there are write to
                  the variable and pte respectively. *)
@@ -1185,7 +1351,7 @@ let check_cycle c =
                   ( fun acc n ->
                     StringSet.union acc (E.get_machine_feature n.edge)
                   ) StringSet.empty ns in
-              let init_st = CoSt.create init_val sz pte_val check_value check_fault machine_feature in
+              let init_st = CoSt.create init_val access_tag sz pte_val check_value check_fault machine_feature in
               let next_x_ok,final_st = set_values_for_location false init_st ns in
               let vf = (CoSt.get_cell final_st).(0),CoSt.get_pte_value final_st in
               let env = if init_val = 0 then env
@@ -1263,9 +1429,24 @@ let set_dep_v nss =
         match tail with
         | [] -> assert false
         | next::_ ->
-          if next.evt.bank = Ord then Some next
-          else None
+          let is_write = match next.evt.dir,next.edge.E.edge with
+            | Some W,_ -> true
+            | Some R,E.Rmw rmw -> E.RMW.is_one_instruction rmw
+            | _ -> false in
+          if next.evt.bank = Ord && (do_kvm || is_write) then Some next else None
       else find_fault_com tail
+
+  let label_exception_faults n =
+    let make_handler n =
+      let check_fault = match n.evt.check_fault with
+        | Some check -> Some {check with state=Handler}
+        | None -> Some {label=Label.next_label "L"; state=Handler} in
+      n.evt <- {n.evt with check_fault} in
+    fold
+      (fun n () -> match n.edge.E.edge with
+        | E.Exception ExcEnter -> make_handler (find_non_pseudo n.next)
+        | _ -> ())
+      n ()
 
   let propagate_fault by_loc =
     let rec iter_with_tail f l =
@@ -1286,12 +1467,12 @@ let set_dep_v nss =
       iter_with_tail ( fun node tail ->
         match node.evt.check_fault with
           | None -> ()
-          | Some (_label, fault_bool) ->
+          | Some {state;_} ->
             (* circulate `tail` back to `node_list` *)
             match find_fault_com (node :: tail @ node_list) with
             | Some n ->
               if n.evt.check_fault = None then
-                let check_fault = Some ((Label.next_label "L", fault_bool)) in
+                let check_fault = Some {label=Label.next_label "L"; state} in
                 n.evt <- { n.evt with check_fault }
             | None -> ()
         ) node_list
@@ -1327,8 +1508,7 @@ let finish n =
   let _nv,_st =
     match sd with
     | Diff -> set_diff_loc st n
-    | Same -> set_same_loc st n
-    | UnspecLoc -> assert false in
+    | Same -> set_same_loc st n in
 
   (* Check if the cycle is valid, function may fail hence
      terminate the program *)
@@ -1350,6 +1530,7 @@ let finish n =
     debug_cycle stderr start_node
   end ;
   propagate_fault by_loc;
+  label_exception_faults start_node;
 (* Set dependency values *)
   (if do_morello then set_dep_v by_loc) ;
   if O.debug.Debug_gen.cycle then begin
@@ -1410,12 +1591,14 @@ let resolve_edges = function
   | es ->
       let c = build_cycle es in
       let c = remove_store c in
+      set_exception_sources c ;
       set_dir c ;
       extract_edges c,c
 
 let make es =
   let es,c = resolve_edges es in
   let c,initvals = finish c in
+  let c = remove_exception_edges c in
   es,c,initvals
 
 (*************************)

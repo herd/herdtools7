@@ -88,6 +88,17 @@ module U = TopUtils.Make(O)(Comp)
     | Po (_,Dir R,Dir (W|R)) -> true
     | _ -> false
 
+  type compiled_code = {
+    main : A.pseudo list;
+    handler : A.pseudo list;
+    handler_reg : A.reg option;
+  }
+
+  let map_code in_handler f compiled =
+    if in_handler then {compiled with handler=f compiled.handler}
+    else {compiled with main=f compiled.main}
+
+  let add_code in_handler code = map_code in_handler (fun rest -> code@rest)
 (* Catch exchanges at the very last moment... *)
   let as_rmw n =
     let open E in
@@ -190,13 +201,16 @@ let get_fence n =
       - [init] is the initial-state environment.
       - [nodes] are the remaining cycle nodes.
       - [check_init] records whether an initial-value check is needed.
+      - [in_handler] selects the main or fault-handler output.
       - [previous_load] is an optional previous load used for dependencies.
       - [prefix] stores code that must precede subsequently compiled
         instructions. For a [Node] followed by inserted fences, it accumulates
         the emitted fence code until the prefix is materialised. *)
   let compile_proc loc_writes proc_num state init nodes =
-    let rec do_rec prefix check_init state previous_load init = function
-  | [] -> init,prefix [],(C.EventMap.empty,[]),state
+    let rec do_rec prefix check_init state in_handler previous_load init = function
+  | [] ->
+      let compiled = {main=[]; handler=[]; handler_reg=None} in
+      init,map_code in_handler prefix compiled,(C.EventMap.empty,[]),state
   | n::nodes ->
       if O.debug.Debug_gen.cycle then eprintf "COMPILE PROC: <%s>\n" (C.str_node n);
       begin match n.C.edge.E.edge with
@@ -211,7 +225,8 @@ let get_fence n =
                      Comp.emit_fence state proc_num init n fence in
                    fence_code@following_code)
                  fs following_code) in
-          do_rec prefix check_init state previous_load init nodes
+          do_rec prefix check_init state in_handler previous_load init nodes
+      | E.Exception _ -> assert false
       (* A single fence *)
       | E.Insert fence ->
           let loaded_reg,init,fence_code,state,n1 =
@@ -225,9 +240,9 @@ let get_fence n =
               Comp.emit_fence_dp state proc_num init n fence dp r1 n1 in
               loaded_reg,init,fence_code,state,n1 in
           let previous_load = edge_to_prev_load loaded_reg n1 in
-          let init,following_code,finals,state =
-            do_rec prefix check_init state previous_load init nodes in
-          init,fence_code@following_code,finals,state
+          let init,compiled,finals,state =
+            do_rec prefix check_init state in_handler previous_load init nodes in
+          init,add_code in_handler fence_code compiled,finals,state
       | _ -> (* Common case *)
           let reg,init,access_code,state =
             emit_access previous_load state proc_num init n in
@@ -237,16 +252,40 @@ let get_fence n =
                 true,Comp.check_load proc_num r n.C.evt
             | _ -> check_init,no_check_load in
           let init,mk_c,state = add_check init state in
-          let previous_load = edge_to_prev_load reg n in
-          let init,following_code,finals,state =
-            do_rec prefix next_check_init state previous_load init nodes in
+          let state,next_in_handler,enter,leave =
+            match n.C.exception_handlers with
+            | [] -> state,in_handler,None,[]
+            | [ExcEnter] ->
+                let r,code,state = Comp.emit_exc_enter state proc_num in
+                state,true,Some (r,code),[]
+            | [(Eret|EretNext as exception_handler)] ->
+                let code,state =
+                  Comp.emit_eret (exception_handler = EretNext) state proc_num in
+                state,false,None,code
+            | [ExcEnter;(Eret|EretNext as exception_handler)] ->
+                let r,enter,state = Comp.emit_exc_enter state proc_num in
+                let leave,state =
+                  Comp.emit_eret (exception_handler = EretNext) state proc_num in
+                state,false,Some (r,enter@leave),[]
+            | _ -> assert false in
+          let previous_load = match n.C.exception_handlers with
+            | [] -> edge_to_prev_load reg n
+            | _::_ -> None in
+          let init,compiled,finals,state =
+            do_rec prefix next_check_init state next_in_handler previous_load init nodes in
+          let compiled = match enter with
+            | Some (r,code) ->
+                {(add_code true code compiled) with handler_reg=Some r}
+            | None -> compiled in
           let init,current_fence_code,state =
             match get_fence n with
             | Some fence -> Comp.emit_fence state proc_num init n fence
             | None -> init,[],state in
           add_init_check check_init proc_num reg init,
-          access_code@
-          mk_c (current_fence_code @ following_code),
+          map_code in_handler
+            (fun following_code ->
+              access_code@mk_c (current_fence_code@leave@following_code))
+            compiled,
           (match n.C.evt.C.loc with
           | Data loc ->
             let call_add =
@@ -264,7 +303,7 @@ let get_fence n =
             end),
           state
       end in
-    do_rec Misc.identity false state None init nodes
+    do_rec Misc.identity false state false None init nodes
   (* END of compile_proc *)
 
 (*************)
@@ -648,8 +687,20 @@ let opt_coherence = function
 
   let do_memtag = Variant_gen.has Variant_gen.MemTag O.variant
   let do_async = Variant_gen.has Variant_gen.Async O.variant
+  let do_asym = Variant_gen.has Variant_gen.Asym O.variant
   let do_morello = Variant_gen.has Variant_gen.Morello O.variant
   let do_kvm = Variant_gen.is_kvm O.variant
+
+  let is_async_fault n =
+    let e = n.C.evt in
+    let is_one_instruction_rmw =
+      match n.C.edge.E.edge with
+      | E.Rmw rmw -> E.RMW.is_one_instruction rmw
+      | _ -> false in
+    do_async
+    (* A single-instruction RMW carries its fault on the read event, although
+       herd treats its tag check as a write. *)
+    || (do_asym && (e.C.dir = Some W || is_one_instruction_rmw))
 
   let compile_cycle check initial_values cycle =
     if O.debug.Debug_gen.cycle then begin
@@ -682,8 +733,9 @@ let opt_coherence = function
       | nodes::remaining_processes ->
           let initial_state =
             A.remove_reg_allocator A.st0 (A.used_register init) in
-          let init,code,(event_map,final),state =
+          let init,compiled,(event_map,final),state =
             compile_proc loc_writes proc_num initial_state init nodes in
+          let code = compiled.main in
           let init,code,state =
             compile_stores state proc_num init nodes code in
           let exclusive_results = Comp.get_xstore_results code in
@@ -699,12 +751,19 @@ let opt_coherence = function
             | (Cycle|Observe),Local ->
                 add_co_local_check avoid_local_ptes last_writes nodes state proc_num init code final in
           let init,code,state = Comp.postlude state proc_num init code in
+          let handler,final,state =
+            match compiled.handler_reg with
+            | Some r ->
+                Some ((proc_num,None,MiscParser.FaultHandler),compiled.handler),
+                F.add_final_v proc_num r (IntSet.singleton 1) final,state
+            | None -> None,final,state in
           let process_env = A.get_env state in
           let ok_final = gather_final_oks proc_num state in
           let init,code_list,(event_maps,remaining_final),ios,env =
             compile_processes (proc_num+1) init remaining_processes in
           let io = U.io_of_thread nodes in
-          init,code::code_list,
+          let main = (proc_num,None,MiscParser.Main),code in
+          init,(main,handler)::code_list,
           (C.union_map event_map event_maps, F.add_int_sets (final@remaining_final) ok_final),
           io::ios,
           A.LocMap.union_std
@@ -734,9 +793,15 @@ let opt_coherence = function
           then
             let edge_lists = List.map (List.map (fun n -> n.C.edge)) processes in
             if check edge_lists then
+              let observer_processes =
+                List.mapi
+                  (fun proc_num code ->
+                    (((proc_num,None,MiscParser.Main),code),None))
+                  observer_code in
               let init,process_code,(event_map,process_final),ios,type_env =
                 compile_processes (List.length observer_code) init processes in
-              init,observer_code@process_code, (event_map,final@process_final),ios,type_env
+              init,observer_processes@process_code,
+              (event_map,final@process_final),ios,type_env
             else Warn.fatal "Last minute check"
           else Warn.fatal "Too many procs" in
         let type_env = A.LocMap.map (fun typ -> Typ typ) type_env in
@@ -787,17 +852,21 @@ let opt_coherence = function
                (fun (positive_faults,negative_faults) node ->
                   let event = node.C.evt in
                   match event.C.check_fault,event.C.loc,event.C.bank with
-                  | Some (label,do_fault),Data loc,(Ord|CapaTag|CapaSeal) ->
+                  | Some C.{label;state},Data loc,(Ord|CapaTag|CapaSeal) ->
                     let proc_num = event.C.proc in
-                    (* No location and label information if we are in `async` *)
+                    (* Asynchronous faults have no location or label. *)
+                    let async = is_async_fault node in
                     let fault =
-                      if do_async then ((proc_num,None),None,None)
+                      if async then ((proc_num,None),None,None)
                       else ((proc_num,Some label),Some (F.S loc),None) in
-                    if do_fault then
-                      F.FaultAtomSet.add fault positive_faults,negative_faults
-                    else
-                      positive_faults,
-                      F.FaultAtomSet.add fault negative_faults
+                    begin match state with
+                    | C.Pos ->
+                        F.FaultAtomSet.add fault positive_faults,negative_faults
+                    | C.Neg ->
+                        positive_faults,
+                        F.FaultAtomSet.add fault negative_faults
+                    | C.Handler -> positive_faults,negative_faults
+                    end
                   | _ -> positive_faults,negative_faults)
                (F.FaultAtomSet.empty,F.FaultAtomSet.empty) nodes
            else (* no fault-related flag *)
@@ -823,7 +892,7 @@ let opt_coherence = function
           match O.cond with
           | Unicond | Cycle -> []
           | Observe -> F.location_list final faults in
-        let init = if do_kvm then A.complete_init O.hexa initial_values init else init in
+        let init = A.complete_init O.hexa initial_values init in
         (init,code,make_condition faults,type_env,observed_locations),
         (U.compile_prefetch_ios (List.length observer_code) ios,
          U.compile_coms processes)
@@ -915,9 +984,8 @@ let opt_coherence = function
   end)
 
   let add_proc_to_prog prog =
-    List.mapi ( fun index code ->
-      ((index, None, MiscParser.Main),code)
-    ) prog
+    let mains,handlers = List.split prog in
+    mains @ List.filter_map Fun.id handlers
 
   let bell_data = function
     | None -> []
@@ -967,17 +1035,17 @@ let opt_coherence = function
     else
       dump_test_channel_full chan t
 
-  let num_labels code =
+  let num_labels =
     let rec num_ins proc_num labels = function
       | A.Label (lab,instruction) ->
           num_ins proc_num (StringMap.add lab proc_num labels) instruction
       | _ -> labels in
-    let num_code proc_num = List.fold_left (num_ins proc_num) in
-    let _,labels =
-      List.fold_left
-        (fun (proc_num,labels) c -> proc_num+1,num_code proc_num labels c)
-        (0,StringMap.empty) code in
-    labels
+    let num_code labels ((proc_num,_,_),code) =
+      List.fold_left (num_ins proc_num) labels code in
+    let rec num_rec labels = function
+      | [] -> labels
+      | (main,_)::code -> num_rec (num_code labels main) code in
+    num_rec StringMap.empty
 
 let tr_labs m init =
   List.map
@@ -1000,7 +1068,18 @@ let variant_info =
     |> ( function
       | [] -> None
       | l -> Some ("Variant", StringSet.pp_id " " (StringSet.of_list l)) )
-let basic_info scope prefetch com_edges cycle_description =
+let fault_handler_info c =
+  let labels =
+    C.fold
+      (fun n labels ->
+        match n.C.evt.C.check_fault with
+        | Some {C.label;state=C.Handler} when not (is_async_fault n) ->
+            Label.Set.add label labels
+        | _ -> labels)
+      c Label.Set.empty in
+  Label.Set.pp_str " " Label.pp labels
+
+let basic_info scope prefetch com_edges cycle_description faults =
   let convert_to_option_pair key value =
     match key,value with "",_ | _,"" -> None | _ -> Some(key, value) in
   (* Some internal metadata might be empty, if the string value is "".
@@ -1012,6 +1091,7 @@ let basic_info scope prefetch com_edges cycle_description =
     :: ( if Variant_gen.has Variant_gen.Self O.variant then None else convert_to_option_pair "Prefetch" prefetch )
     :: ( convert_to_option_pair "Com" com_edges )
     :: ( convert_to_option_pair "Orig" cycle_description )
+    :: ( convert_to_option_pair "FaultHandler" faults )
     :: [] )
 
 (* Merge user specified `info` with internal defined `info`.
@@ -1046,9 +1126,10 @@ let test_of_cycle name
     match variant_info with
     | None -> Comp.get_archinfo c
     | Some variant -> variant :: Comp.get_archinfo c in
+  let faults = fault_handler_info c in
   let info =
     if O.metadata then
-      merge_to_left ( mandatory_info @ (basic_info scope prf coms com) ) info
+      merge_to_left ( mandatory_info @ (basic_info scope prf coms com faults) ) info
     else mandatory_info in
   let dump = {
     MiscParser.info = info;

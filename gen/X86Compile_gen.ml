@@ -183,6 +183,9 @@ struct
     mk_postlude
       (fun st _p init loc r -> init,[Instruction (emit_store_reg loc r)],st)
 
+  let emit_exc_enter _ _ = Warn.user_error "Exception handlers are not supported for X86"
+  let emit_eret _ _ _ = Warn.user_error "Exception handlers are not supported for X86"
+
   let get_xstore_results _ = []
 
 end

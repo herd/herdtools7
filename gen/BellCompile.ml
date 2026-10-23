@@ -302,6 +302,8 @@ let emit_rmw _ = assert false
 (* Postlude for adding exit label *)
 
     let postlude = mk_postlude emit_store_reg
+    let emit_exc_enter _ _ = Warn.user_error "Exception handlers are not supported for Bell"
+    let emit_eret _ _ _ = Warn.user_error "Exception handlers are not supported for Bell"
 
     let get_xstore_results _ = []
 
