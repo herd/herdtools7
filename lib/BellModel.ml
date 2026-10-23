@@ -24,7 +24,7 @@ type event_dec = annot_group list
 type event_decs = event_dec StringMap.t
 let event_decs_empty = StringMap.empty
 
-let pp_string_set set = StringSet.pp_str "," Misc.identity set
+let pp_string_set set = StringSet.pp_str "," Base.Misc.identity set
 
 let pp_annot_set set = sprintf "{%s}" (pp_string_set set)
 

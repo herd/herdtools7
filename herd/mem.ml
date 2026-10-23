@@ -156,6 +156,7 @@ let end_profile t0 msg : unit =
 module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
   struct
     module S = S
+    module Misc = Base.Misc
 
     module A = S.A
     module B = S.B

@@ -74,7 +74,7 @@ module Make(P:PteType) = struct
     match lhs, rhs with
     | NoValue, NoValue -> 0
     | NoValue, _ -> -1
-    | Plain lhs, Plain rhs -> Misc.int_compare lhs rhs
+    | Plain lhs, Plain rhs -> Base.Misc.int_compare lhs rhs
     | Plain _, NoValue -> 1
     | Plain _, _ -> -1
     | PteValue lhs, PteValue rhs -> pte_compare lhs rhs

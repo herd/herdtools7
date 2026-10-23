@@ -18,7 +18,7 @@ open Printf
 
 type t = string
 
-let pp = Misc.identity
+let pp = Base.Misc.identity
 
 let equal = String.equal
 
@@ -48,8 +48,8 @@ module Full =
     type full = Proc.t * t
 
     let pp (p,lbl) = Printf.sprintf "%s:%s" (Proc.pp p) (pp lbl)
-    let equal = Misc.pair_eq Proc.equal equal
-    and compare = Misc.pair_compare Proc.compare compare
+    let equal = Base.Misc.pair_eq Proc.equal equal
+    and compare = Base.Misc.pair_compare Proc.compare compare
 
     module Set =
       MySet.Make

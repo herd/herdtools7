@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module Misc = Base.Misc
+
 module Make
     (TopConf:AArch64Sig.Config)
     (V:Value.AArch64 with type Cst.Instr.t = AArch64Base.instruction)

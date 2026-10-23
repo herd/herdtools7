@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Gen_common
+
 open Printf
 open Code
 
@@ -58,7 +60,7 @@ module Make (F:Fence.S)(A:Atom.S) =
             match do_rec es with
             | [] -> assert false
             | fst::rem as es ->
-                let lst = Misc.last es in
+                let lst = Base.Misc.last es in
                 if is_ext fst || is_ext lst then
                   { fst with E.a1 = atomic;}::rem
                 else es
@@ -84,7 +86,7 @@ module Make (F:Fence.S)(A:Atom.S) =
             let base,es,_ = Normer.normalise_family (atomize es) in
             let name = Namer.mk_name base es in
             printf "%s: %s\n" name (pp_edges es)
-          with Misc.Fatal msg -> Warn.warn_always "%s" msg
+          with Base.Misc.Fatal msg -> Warn.warn_always "%s" msg
         done with End_of_file -> ()
 
       let zyva_argv es =

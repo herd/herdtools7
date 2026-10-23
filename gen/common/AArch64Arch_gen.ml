@@ -41,6 +41,7 @@ let do_mixed = Variant_gen.is_mixed  C.variant
 let do_cu = Variant_gen.has Variant_gen.ConstrainedUnpredictable C.variant
 
 open Code
+module Misc = Base.Misc
 open Printf
 
 include MakeAArch64Base.Make(struct let is_morello = do_morello end)

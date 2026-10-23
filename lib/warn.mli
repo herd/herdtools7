@@ -38,9 +38,9 @@ val exit : ('a, unit, string, unit) format4 -> 'a
    wrong or unhandled input, such as for instance
    a jump when jumps are not implemented, or
    an illegal operation on symbolic constants.
-   raises Misc.UserError (formatted message) *)
+   raises Base.Misc.UserError (formatted message) *)
 val user_error : ('a, unit, string, 'b) format4 -> 'a
 
 (* Idem, but the user should not be blamed,
-   exception Misc.Fatal *)
+   exception Base.Misc.Fatal *)
     val fatal :  ('a, unit, string, 'b) format4 -> 'a

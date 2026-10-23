@@ -20,7 +20,7 @@ type t = Linux | Mac | AIX | FreeBsd | Android8
 
 let tags = ["linux"; "mac"; "aix"; "freebsd"; "android8"; ]
 
-let parse tag = match Misc.lowercase tag with
+let parse tag = match Base.Misc.lowercase tag with
 | "linux" -> Some Linux
 | "freebsd" -> Some FreeBsd
 | "mac"|"macos" -> Some Mac

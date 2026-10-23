@@ -33,7 +33,7 @@ module
     MyMap.Make
       (struct
         type t = int
-        let compare = Misc.int_compare
+        let compare = Base.Misc.int_compare
       end)
 
   type v = ParsedConstant.v
@@ -46,7 +46,7 @@ module
   type global = ParsedConstant.v
   let maybevToGlobal c = c
 
-  include Location.Make
+  include Base.Location.Make
       (struct
         type arch_reg = A.reg
         let pp_reg = A.pp_reg

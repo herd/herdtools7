@@ -16,4 +16,4 @@
 
 include MySet.Make(String)
 
-let pp_id sep t = pp_str sep Misc.identity t
+let pp_id sep t = pp_str sep Base.Misc.identity t

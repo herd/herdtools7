@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module Misc = Base.Misc
+
 (* Edges, ie specifications of an event pair in a model relation  *)
 
 module Config =

@@ -135,5 +135,5 @@ rm32:
 
 operand:
   | effaddr { X86.Operand_effaddr $1}
-  | k { X86.Operand_immediate (Misc.string_as_int $1) }
-  | INTEL_NUM { X86.Operand_immediate (Misc.string_as_int $1)} /* enough ? */
+  | k { X86.Operand_immediate (Base.Misc.string_as_int $1) }
+  | INTEL_NUM { X86.Operand_immediate (Base.Misc.string_as_int $1)} /* enough ? */

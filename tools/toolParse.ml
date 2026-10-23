@@ -201,7 +201,7 @@ end = struct
 
 
   let from_file name =
-    Misc.input_protect
+    Base.Misc.input_protect
       (fun chan ->
         let (splitted:Splitter.result) = SP.split name chan in
         from_source (Channel chan) splitted) name
@@ -246,7 +246,7 @@ module Tops
                 name (Archs.pp Arg.arch)  (Archs.pp arch) ;
             justparse chan splitted
 
-          let from_name name = Misc.input_protect (from_chan name) name
+          let from_name name = Base.Misc.input_protect (from_chan name) name
 
           let rec from_names ns = match ns with
           | [] -> []
@@ -404,7 +404,7 @@ module Tops
       | [] -> assert false
       | n::_ ->
           let arch =
-            Misc.input_protect
+            Base.Misc.input_protect
               (fun chan ->
                 let (splitted:Splitter.result) =  SP.split n chan in
                 splitted.Splitter.arch) n in

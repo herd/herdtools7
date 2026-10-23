@@ -860,7 +860,7 @@ struct
               es
           in
           ( sol,
-            Misc.fold_cross results
+            Base.Misc.fold_cross results
               (fun effs acc ->
                 let inter =
                   List.fold_left (intersect defs) universe_effect effs
@@ -1174,7 +1174,7 @@ let () =
       (Printf.sprintf
          "Usage %s [options], output all chains of relations between e1 and e2."
          prog)
-  with Misc.Fatal msg ->
+  with Base.Misc.Fatal msg ->
     Printf.eprintf "%s: %s\n" prog msg;
     exit 2
 

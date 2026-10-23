@@ -51,7 +51,7 @@ let cat p out_chan line =
 let run out err =
   let stdout = cat TestHerd.is_stable out
   and stderr = cat (fun _ -> true) err
-  and stdin = Base.Iter.of_list [litmus] in
+  and stdin = Internal.Base.Iter.of_list [litmus] in
   ignore
     (Command.NonBlock.run_status ~stdin ~stdout ~stderr com wrapped)
 
@@ -60,9 +60,9 @@ let rm_if_empty name =
   if st.Unix.st_size = 0 then Sys.remove name
 
 let () =
-  Base.Fun.open_out_protect
+  Internal.Base.Fun.open_out_protect
     (fun out ->
-      Base.Fun.open_out_protect (run out) err_name)
+      Internal.Base.Fun.open_out_protect (run out) err_name)
     out_name ;
   rm_if_empty out_name ;
   rm_if_empty err_name ;

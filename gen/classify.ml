@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+open Gen_common
+
 open Printf
 
 let arch = ref `PPC
@@ -118,12 +120,12 @@ module Make(Co:Config)(F:Fence.S)(A:Atom.S) = struct
   let zyva chan =
     try
       let k = scan chan in
-      Misc.output_protect
+      Base.Misc.output_protect
         (fun chan ->  dump_map chan k)
         (match Co.outmap with
         | None -> "/dev/null"
         | Some s -> s)
-    with Misc.Fatal msg ->
+    with Base.Misc.Fatal msg ->
       eprintf "Fatal error: %s\n" msg ;
       exit 2
 

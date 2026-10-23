@@ -17,6 +17,7 @@
 let _dbg = false
 
 open Printf
+module Misc = Base.Misc
 
 (** Constants in code *)
 

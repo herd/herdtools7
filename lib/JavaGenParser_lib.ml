@@ -28,7 +28,7 @@ module DefaultConfig = struct
   let check_kind _  = None
   let check_cond _  = None
   let macros        = None
-  let libfind       = Misc.identity
+  let libfind       = Base.Misc.identity
 end
 
 (* input signature, a lexer and a parser for a given architecture *)
@@ -98,7 +98,7 @@ struct
 
     (* Check whether the thread numbers starts from 0 and are consecutive *)
     let check_procs procs =
-      Misc.iteri
+      Base.Misc.iteri
         (fun k p ->
           if k <> p then
             Warn.fatal "Processes must be Thread0, Thread1, ...")

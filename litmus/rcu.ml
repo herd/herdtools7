@@ -20,7 +20,7 @@ type t = Only | Yes | No
 
 let tags = ["yes";"no";"only";]
 
-let parse tag  = match Misc.lowercase tag with
+let parse tag  = match Base.Misc.lowercase tag with
 | "only" -> Some Only
 | "yes" -> Some Yes
 | "no" -> Some No

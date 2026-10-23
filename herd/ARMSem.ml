@@ -32,7 +32,7 @@ module
       ARMBase.fold_barrier_option
         (fun o k ->
           { barrier = ARMBase.DMB o;
-            pp = Misc.lowercase
+            pp = Base.Misc.lowercase
               (ARMBase.pp_barrier_option "dmb" o);}::k)
         []
 
@@ -40,7 +40,7 @@ module
       ARMBase.fold_barrier_option
         (fun o k ->
           { barrier = ARMBase.DSB o;
-            pp = Misc.lowercase
+            pp = Base.Misc.lowercase
               (ARMBase.pp_barrier_option "dsb" o);}::k)
         dmb
 
