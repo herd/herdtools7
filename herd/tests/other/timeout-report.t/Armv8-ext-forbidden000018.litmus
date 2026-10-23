@@ -1,0 +1,25 @@
+AArch64 Armv8-ext-forbidden000018
+"TLBI-sync.ISHdWWPteAF0P Rfe DpAddrdR LxSx PosWRPA FreAPteAF0"
+Cycle=Rfe DpAddrdR LxSx PosWRPA FreAPteAF0 TLBI-sync.ISHdWWPteAF0P
+Relax=[Fre,PteAF0,TLBI-sync.ISHdWW]
+Safe=Rfe DpAddrdR [LxSx,PosWR,A]
+Generator=diy7 (version 7.58+1)
+Prefetch=0:x=F,0:y=W,1:y=F,1:x=T
+Com=Rf Fr
+Orig=TLBI-sync.ISHdWWPteAF0P Rfe DpAddrdR LxSx PosWRPA FreAPteAF0
+{ int y=0x4;
+0:X0=PTE(x); 0:X1=(oa:PA(x), af:0); 0:X3=y; 0:X4=x;
+1:X3=y; 1:X4=x;
+}
+ P0              | P1                ;
+ STR X1,[X0]     | LDR W2,[X3]       ;
+ DSB ISH         | MOV W8,#1         ;
+ LSR X5,X4,#12   | EOR W5,W2,W2      ;
+ TLBI VAAE1IS,X5 | ADD X6,X4,W5,SXTW ;
+ DSB ISH         | Loop00:           ;
+ MOV W2,#5       | L00:              ;
+ STR W2,[X3]     | LDXR W7,[X6]      ;
+                 | STXR W9,W8,[X6]   ;
+                 | CBNZ W9,Loop00    ;
+                 | LDAR W10,[X4]     ;
+exists (1:X2=0x5 /\ 1:X7=0x0 /\ 1:X10=0x1 /\ ~Fault(P1:L00,x))
