@@ -680,6 +680,42 @@ module Make (S : SemExtra.S) = struct
     in
     Util.Option.keep_some constrs
 
+  (* return a pte location if the event
+     directly accesses a pte *)
+  let pte_location_of_event ev =
+    match EU.as_access ev with
+    | Some { loc = Location_global loc; _ } when E.Act.is_pte_access ev.E.action
+      ->
+        Some loc
+    | _ -> None
+
+  let add_pte_location loc locs =
+    if List.exists (global_loc_equal loc) locs then locs else loc :: locs
+
+  (* a pte location is "relevant," if it is updated by an explicit or
+     implicit event, or if it appears as a final condition, or a final
+     fault condition is on event that interacts with the pte. *)
+  let relevant_pte_locations (exec : exec) (constrs : Descriptum.constr list) :
+      S.global_loc list =
+    let locations_from_writes =
+      E.EventSet.fold
+        (fun ev locs ->
+          match (EU.as_access ev, pte_location_of_event ev) with
+          | Some { dir = W; _ }, Some loc when not (EU.is_initial ev) ->
+              add_pte_location loc locs
+          | _ -> locs)
+        (Exec.events exec) []
+    in
+    List.fold_left
+      (fun locs -> function
+        | Descriptum.Mem_constr { store_ev; _ }
+        | Descriptum.Fault_constr { ttd_read = store_ev; _ } -> (
+            match pte_location_of_event store_ev with
+            | Some loc -> add_pte_location loc locs
+            | None -> locs)
+        | Descriptum.Reg_constr _ -> locs)
+      locations_from_writes constrs
+
   (**********************************************************)
   (*              Detecting dependencies                    *)
   (**********************************************************)
@@ -792,6 +828,11 @@ module Make (S : SemExtra.S) = struct
 
   let describe_execution ~latex_compat ~describe_dep_path ~proc_count
       (code : code) (test : S.test) (exec : exec) : string list =
+    let constrs = constrs_of_test code test exec in
+    let relevant_pte_locs = relevant_pte_locations exec constrs in
+    let is_relevant_pte_location loc =
+      List.exists (global_loc_equal loc) relevant_pte_locs
+    in
     let find_instr_by_iiid iiid =
       find_instr_by_proc_poi ~proc:iiid.S.A.proc ~poi:iiid.S.A.static_poi code
     in
@@ -802,6 +843,11 @@ module Make (S : SemExtra.S) = struct
           | ( IdSome iiid,
               Some (Access { loc = Location_global _; is_implicit; _ }) )
             when not is_implicit ->
+              Some (Located.make ev (find_instr_by_iiid iiid))
+          | ( IdSome iiid,
+              Some (Access { loc = Location_global loc; is_implicit = true; _ })
+            )
+            when is_relevant_pte_location loc ->
               Some (Located.make ev (find_instr_by_iiid iiid))
           | IdSome iiid, Some Barrier ->
               Some (Located.make ev (find_instr_by_iiid iiid))
@@ -846,7 +892,6 @@ module Make (S : SemExtra.S) = struct
       |> List.sort Located.compare_by_proc_poi
       |> List.map Located.get
     in
-    let constrs = constrs_of_test code test exec in
     let constrs_descriptions = List.map (describe_constr render_ctx) constrs in
     located_descriptions @ constrs_descriptions
 end
