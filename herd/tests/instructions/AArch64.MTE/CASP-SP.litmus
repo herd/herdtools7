@@ -1,0 +1,15 @@
+AArch64 CASP-SP
+Variant=memtag,sync
+
+{
+  uint64_t x[2]={1,2};
+  [tag(x)]=:green;
+  0:SP=x:red;
+  0:X0=1;
+  0:X1=2;
+  0:X2=3;
+  0:X3=4;
+}
+P0;
+  CASP X0,X1,X2,X3,[SP];
+forall(x={3,4} /\ ~fault(P0,x,TagCheck))

@@ -1,0 +1,12 @@
+AArch64 LDP-SP-postindex
+Variant=memtag,sync
+
+(* Writeback LDP is tag-checked even when Rn is SP. *)
+{
+  uint32_t x[2]={1,2};
+  [tag(x)]=:green;
+  0:SP=x:red;
+}
+P0;
+  LDP W0,W1,[SP],#8;
+forall(fault(P0,x,TagCheck))

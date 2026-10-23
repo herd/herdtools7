@@ -1,0 +1,10 @@
+Test LDAR-SP Required
+States 1
+0:X0=1;  ~Fault(P0,x,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1 /\ not (fault(P0,x,TagCheck)))
+Observation LDAR-SP Always 1 0
+Hash=7f984fd20a061758eef8fa0a326f8f0a
+

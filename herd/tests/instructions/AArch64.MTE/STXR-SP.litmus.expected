@@ -1,0 +1,11 @@
+Test STXR-SP Required
+States 2
+0:X3=0; [x]=1;  ~Fault(P0,x,TagCheck);
+0:X3=1; [x]=0;  ~Fault(P0,x,TagCheck);
+No
+Witnesses
+Positive: 1 Negative: 1
+Condition forall ([x]=1 /\ 0:X3=0 /\ not (fault(P0,x,TagCheck)))
+Observation STXR-SP Sometimes 1 1
+Hash=65918a14fb82d579a39f14840e0ed395
+
