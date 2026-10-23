@@ -2,5 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+pospptea-rfipteap [PosRWPPteA RfiPteAP] failed:
-Atom `Read|ReadAcq|ReadAcqPc` is not a pteval write
+Atom `Pte` is not a pteval write
 *)
