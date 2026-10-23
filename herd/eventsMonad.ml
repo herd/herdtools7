@@ -640,20 +640,40 @@ Monad type:
         let un =  Evt.union act1 act2 in
         (eiid, (un,None))
 
-    let aarch64_or_riscv_store_conditional
-          must_fail read_res read_data read_addr
-          cancel_res write_result write_mem =
-      let m_fail = riscv_sc false
-           read_res read_data read_addr cancel_res
-           (write_result V.one)
-           (fun _a _resa _v -> unitT ()) in
-      if must_fail then m_fail
-      else
-        altT m_fail
-          (riscv_sc true
-             read_res read_data read_addr cancel_res
-             (write_result V.zero)
-             write_mem)
+    let aarch64_store_excl read_res read_data read_addr
+      branch cancel_res write_result write_mem eiid =
+        let eiid,read_res = read_res eiid in
+        let eiid,(read_addr,spec) = read_addr eiid in
+        assert (spec=None) ;
+        let resa,cl_resa,es_resa = Evt.as_singleton_nospecul read_res in
+        let eiid,data,cl_data,es_data =
+          let eiid,read_data = read_data eiid in
+          let data,cl_data,es_data =
+            Evt.as_singleton_nospecul read_data in
+          eiid,data,cl_data,es_data in
+        let eiid,acts =
+          Evt.fold
+            (fun (addr,cl_addr,es_addr) (eiid,acts) ->
+              let eiid,branch = branch addr eiid in
+              let eiid,cancel_res = cancel_res eiid in
+              let eiid,write_result = write_result eiid in
+              let eiid,write_mem = write_mem addr resa data eiid in
+              let (),cl_br,es_br = Evt.as_singleton_nospecul branch
+              and (),cl_wres,es_wres = Evt.as_singleton_nospecul cancel_res
+              and (),cl_wresult,es_wresult =
+                Evt.as_singleton_nospecul write_result
+              and r,cl_wmem,es_wmem = Evt.as_singleton_nospecul write_mem in
+              let es =
+                E.aarch64_store_excl
+                  es_resa es_data es_addr es_br es_wres es_wresult es_wmem in
+              eiid,
+              Evt.add
+                (r,
+                 cl_resa@cl_data@cl_addr@cl_br@cl_wres@cl_wresult@cl_wmem,
+                 es)
+                acts)
+            read_addr (eiid,Evt.empty) in
+        eiid,(acts,None)
 
     let aarch64_cas_ok (is_physical: bool) (read_rn: 'loc t) (read_rs: 'v t)
         (read_rt: 'v t) (write_rs: 'v -> 'a t) (read_mem: 'loc -> 'v t)
@@ -705,9 +725,20 @@ Monad type:
       eiid,(acts, None)
 
     (* RISCV store conditional may always succeed? *)
-    let riscv_store_conditional = aarch64_or_riscv_store_conditional false
-
-    let aarch64_store_conditional = aarch64_or_riscv_store_conditional
+    let riscv_store_conditional read_res read_data read_addr
+          cancel_res write_result write_mem =
+      let must_fail = false in
+      let m_fail = riscv_sc false
+           read_res read_data read_addr cancel_res
+           (write_result V.one)
+           (fun _a _resa _v -> unitT ()) in
+      if must_fail then m_fail
+      else
+        altT m_fail
+          (riscv_sc true
+             read_res read_data read_addr cancel_res
+             (write_result V.zero)
+             write_mem)
 
 (* stu combinator *)
     let stu : 'a t -> 'b t -> ('a -> unit t) -> (('a * 'b) -> unit t) -> unit t
