@@ -33,6 +33,10 @@ let keyword_list = [
   "hint", HINT;
   (* Halt instructions are used by Debug mode, not needed here - NOP *)
   "hlt", HLT;
+  (* Event Register *)
+  "wfe", WFE;
+  "sev", SEV;
+  "sevl", SEVL;
   (* Branch *)
   "b", TOK_B;
   "br", BR;
