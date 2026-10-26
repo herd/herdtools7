@@ -114,6 +114,7 @@ test.aarch64assumptions:
 
 test.herd.inst.ASL-pseudo-arch: NOHASH=-nohash
 test.herd.inst.ASL: NOHASH=-nohash
+test.herd.inst.ASL: asl-pseudocode
 
 test.herd.inst.%:
 	@ echo

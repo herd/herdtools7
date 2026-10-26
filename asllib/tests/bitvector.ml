@@ -435,9 +435,11 @@ let test_printable () =
   in
   one 32 (Z.of_string "0xffffffff") Z.minus_one;
   one 64 (Z.of_string "0xffffffffffffffff") Z.minus_one;
-  one 128 (Z.of_string "0x00000003000000030000000300000003")
+  one 128
+    (Z.of_string "0x00000003000000030000000300000003")
     (Z.of_string "0x00000003000000030000000300000003");
-  one 128 (Z.of_string "0x80000000000000000000000000000000")
+  one 128
+    (Z.of_string "0x80000000000000000000000000000000")
     (Z.of_string "0x80000000000000000000000000000000")
 
 let () =

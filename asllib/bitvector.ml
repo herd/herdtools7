@@ -269,8 +269,7 @@ let to_z_signed ((sz, _) as bv) =
   let r = to_z_unsigned bv in
   if sgn = 0 then r else Z.sub r (Z.shift_left Z.one sz)
 
-let printable bv =
-  if length bv > 64 then to_z_unsigned bv else to_z_signed bv
+let printable bv = if length bv > 64 then to_z_unsigned bv else to_z_signed bv
 
 let of_string s =
   let result = Buffer.create ((String.length s / 8) + 1) in
