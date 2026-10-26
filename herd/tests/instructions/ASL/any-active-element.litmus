@@ -1,31 +1,42 @@
 ASL AnyActiveElement
-(* Ignore non-element predicate bits, including above bit 127. *)
+(* Check the patched helper with concrete and symbolic masks. *)
+Variant=asl+aarch64
 
-{}
+{ uint64_t x=2; uint64_t y=256; 0:X1=x; 0:X2=y; }
 
 func main() => integer
 begin
-  CheckProp(!AnyActiveElementPrimitive{16}('0000000000000000', 8));
-  CheckProp(AnyActiveElementPrimitive{16}('0000000000000010', 8));
-  CheckProp(!AnyActiveElementPrimitive{16}('0000000000000010', 16));
-  CheckProp(AnyActiveElementPrimitive{16}('0100000000000000', 16));
-  CheckProp(!AnyActiveElementPrimitive{16}('1000000000000000', 16));
-  CheckProp(!AnyActiveElementPrimitive{16}('0000000000000100', 32));
-  CheckProp(AnyActiveElementPrimitive{16}('0001000000000000', 32));
-  CheckProp(!AnyActiveElementPrimitive{16}('0000000000010000', 64));
-  CheckProp(AnyActiveElementPrimitive{16}('0000000100000000', 64));
-  CheckProp(!AnyActiveElementPrimitive{16}('0000000100000000', 128));
-  CheckProp(AnyActiveElementPrimitive{16}('0000000000000001', 128));
+  // Only the predicate bits selected by esize count.
+  CheckProp(!AnyActiveElement{16}('0000000000000000', 8));
+  CheckProp(AnyActiveElement{16}('0000000000000010', 8));
+  CheckProp(!AnyActiveElement{16}('0000000000000010', 16));
+  CheckProp(AnyActiveElement{16}('0100000000000000', 16));
+  CheckProp(!AnyActiveElement{16}('1000000000000000', 16));
+  CheckProp(!AnyActiveElement{16}('0000000000000100', 32));
+  CheckProp(AnyActiveElement{16}('0001000000000000', 32));
+  CheckProp(!AnyActiveElement{16}('0000000000010000', 64));
+  CheckProp(AnyActiveElement{16}('0000000100000000', 64));
+  CheckProp(!AnyActiveElement{16}('0000000100000000', 128));
+  CheckProp(AnyActiveElement{16}('0000000000000001', 128));
 
+  // Relevant and irrelevant bits above bit 127.
   var wide = Zeros{256};
   wide[240] = '1';
-  CheckProp(AnyActiveElementPrimitive{256}(wide, 128));
+  CheckProp(AnyActiveElement{256}(wide, 128));
   wide[240] = '0';
   wide[241] = '1';
-  CheckProp(!AnyActiveElementPrimitive{256}(wide, 128));
+  CheckProp(!AnyActiveElement{256}(wide, 128));
 
-  write_register(0, '0000000000000000000000000000000000000000000000000000000000000001');
+  // Memory reads remain symbolic during ASL interpretation.
+  let inactive = read_memory{64}(read_register(1));
+  let active = read_memory{64}(read_register(2));
+  CheckProp(AnyActiveElement{64}(inactive, 8));
+  CheckProp(!AnyActiveElement{64}(inactive, 16));
+  CheckProp(AnyActiveElement{64}(active, 64));
+  CheckProp(AnyActiveElement{256}(active :: Zeros{192}, 64));
+
+  write_register(0, active);
   return 0;
 end;
 
-forall 0:X0=1
+forall 0:X0=256
