@@ -16,7 +16,7 @@
 
 open Printf
 
-module type I = sig
+module type Base = sig
   type arch_reg
   type arch_atom
 
@@ -24,6 +24,10 @@ module type I = sig
   val pp_reg : arch_reg -> string
   val free_registers : arch_reg list
 
+  module Value:Value_gen.S with type atom = arch_atom
+end
+
+module type Special = sig
   type special
   type special2
   type special3
@@ -31,7 +35,15 @@ module type I = sig
   val specials : special list
   val specials2 : special2 list
   val specials3 : special3 list
-  module Value:Value_gen.S with type atom = arch_atom
+end
+
+module NoSpecial = struct
+  type special
+  type special2
+  type special3
+  let specials = []
+  let specials2 = []
+  let specials3 = []
 end
 
 module type S = sig
@@ -110,11 +122,11 @@ module type S = sig
   val next_addr : st -> string * st
 end
 
-module Make(I:I) : S
+module Make(I:Base)(Special:Special) : S
 with type arch_reg = I.arch_reg
-and type special = I.special
-and type special2 = I.special2
-and type special3 = I.special3
+and type special = Special.special
+and type special2 = Special.special2
+and type special3 = Special.special3
 and type arch_atom = I.arch_atom
 and module Value := I.Value
 = struct
@@ -272,9 +284,9 @@ and module Value := I.Value
   type st =
       { regs : arch_reg list ;
         map  : arch_reg StringMap.t ;
-        specials : I.special list ;
-        specials2 : I.special2 list ;
-        specials3 : I.special3 list ;
+        specials : Special.special list ;
+        specials2 : Special.special2 list ;
+        specials3 : Special.special3 list ;
         noks : int ;
         env : TypBase.t LocMap.t ; (* Record types *)
         (* Group special registers together *)
@@ -290,9 +302,9 @@ and module Value := I.Value
   let st0 =
     { regs = I.free_registers;
       map = StringMap.empty;
-      specials = I.specials;
-      specials2 = I.specials2;
-      specials3 = I.specials3;
+      specials = Special.specials;
+      specials2 = Special.specials2;
+      specials3 = Special.specials3;
       noks = 0;
       env = LocMap.empty;
       friends = RegMap.empty;
@@ -330,9 +342,9 @@ and module Value := I.Value
   let alloc_trashed_reg k st = do_alloc_trashed_reg alloc_reg k st
   and alloc_loop_idx k st = do_alloc_trashed_reg alloc_last_reg k st
 
-  type special = I.special
-  type special2 = I.special2
-  type special3 = I.special3
+  type special = Special.special
+  type special2 = Special.special2
+  type special3 = Special.special3
 
   let alloc_special st = match st.specials with
   | [] -> Warn.fatal "No more special registers"

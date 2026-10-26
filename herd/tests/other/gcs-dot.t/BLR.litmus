@@ -1,0 +1,12 @@
+AArch64 BLR
+variant=shadowstack
+{
+  SS(x,1);
+  0:GCSPR_EL1=&x[1];
+  0:X0=P0:L1;
+}
+
+P0        ;
+BLR X0    ;
+NOP       ;
+L1:       ;

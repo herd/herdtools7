@@ -30,7 +30,7 @@ module type S = sig
 
   type 'a maybe_exception =
     | Normal of 'a
-    | Throwing of value_read_from * AST.ty * IEnv.env
+    | Throwing of value_read_from * AST.identifier * IEnv.env
     | Cutoff
 
   val eval_expr :
@@ -83,6 +83,9 @@ module type Config = sig
 
   val out_buffer : Buffer.t option
   (** Print ASL output to stdout when [None], or to [buf] when [Some buf]. *)
+
+  val version_eac2_or_before : bool
+  (** Whether the selected ASL revision is EAC2 or earlier. *)
 end
 
 module Make (B : Backend.S) (C : Config) : S with module B = B

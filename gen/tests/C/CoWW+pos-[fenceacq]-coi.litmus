@@ -3,11 +3,6 @@
 Warning: optimised conditions are not supported by C arch
 *)
 C CoWW+pos-[fenceacq]-coi
-"PosWW FenceAcq Coi"
-Generator=diyone7 (version 7.58+1)
-Prefetch=
-Com=Co
-Orig=PosWW FenceAcq Coi
 
 {}
 

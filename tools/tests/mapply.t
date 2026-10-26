@@ -12,7 +12,13 @@ When no tokens are given, mapply reads them from standard input.
 
 An explicit command and its arguments can still be given after "--".
 
-  $ mapply7 one -- echo two three
+  $ mapply7 three -- echo one two
+  one two three
+
+Token arguments come last by default. However,
+with  option `-token-position first` it comes first.
+
+  $ mapply7 -token-position first one -- echo two three
   one two three
 
 The separator must be followed by a command.
@@ -26,9 +32,9 @@ The separator must be followed by a command.
 Tokens and command arguments containing spaces remain individual arguments.
 Use test to verify mapply is not using more than one argument
 
-  $ mapply7 'argument with spaces.litmus' -- test = 'argument with spaces.litmus'
+  $ mapply7 'argument with spaces.litmus' -- test 'argument with spaces.litmus' =
 
-  $ mapply7 -j 2 'argument with spaces.litmus' -- test = 'argument with spaces.litmus'
+  $ mapply7 -j 2 'argument with spaces.litmus' -- test 'argument with spaces.litmus' =
 
 Mapply propagates the first non-zero status when requested.
 

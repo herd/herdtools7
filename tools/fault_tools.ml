@@ -24,17 +24,24 @@ let strip_diprefix s =
   else None
 
 (* Notice: ft1 is a fault specification or pattern *)
+
 let match_fault_type ft1 ft2 = match ft1, ft2 with
   | Some ft1, Some ft2 ->
       begin
-        match  strip_diprefix ft1 with
-        | Some ft1 ->
-            let ft2 =
-              match strip_diprefix ft2 with
-              | Some ft2 -> ft2
-              | None -> ft2 in
-            String.equal ft1 ft2
-        | None -> String.equal ft1 ft2
+        match strip_diprefix ft1 with
+        | Some b1 ->
+           begin
+             if has_diprefix ft2 then
+               String.equal ft1 ft2
+             else
+               String.equal b1 ft2
+           end
+        | None ->
+           begin
+             match strip_diprefix ft2 with
+             | Some b2 -> String.equal ft1 b2
+             | None -> String.equal ft1 ft2
+           end
       end
   | None,(None|Some _) -> true
   | Some _,None -> false

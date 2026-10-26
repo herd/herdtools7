@@ -72,3 +72,4 @@ MP+rel+data-lrs-acq             Forbidden
 MP+rel+ctrl-lrs-acq             Allowed
 MP+rel+rmw-lrs-acq              Forbidden
 LB+dmb.sy+data-amo.swp          Forbidden
+LB+popl+data-rmw                Forbidden

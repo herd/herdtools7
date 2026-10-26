@@ -3,11 +3,6 @@
 Warning: optimised conditions are not supported by C arch
 *)
 C CoRW1+pos-[fencear]-rfi
-"PosRW FenceAR Rfi"
-Generator=diyone7 (version 7.58+1)
-Prefetch=
-Com=Rf
-Orig=PosRW FenceAR Rfi
 
 {}
 

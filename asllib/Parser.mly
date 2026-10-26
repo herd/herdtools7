@@ -523,7 +523,7 @@ let case_alt_list == list1(case_alt)
 
 let otherwise == OTHERWISE; ARROW; stmt_list
 let otherwise_opt := ioption(otherwise)
-let catcher := WHEN; ~=ioption(terminated(IDENTIFIER, COLON)); ~=ty; ARROW; ~=stmt_list; <>
+let catcher := WHEN; ~=ioption(terminated(IDENTIFIER, COLON)); ~=IDENTIFIER; ARROW; ~=stmt_list; <>
 let loop_limit := ioption(LOOPLIMIT; expr)
 
 let setter_access :=

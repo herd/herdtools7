@@ -332,11 +332,11 @@ let rec pp_stmt f s =
 
 and pp_stmt_block f s = fprintf f "@[<v>%a@]" pp_stmt s
 
-and pp_catcher f (name, ty, s) =
+and pp_catcher f (name, ty_name, s) =
   match name with
-  | None -> fprintf f "@[<2>when@ %a@ => %a@]" pp_ty ty pp_stmt_block s
+  | None -> fprintf f "@[<2>when@ %s@ => %a@]" ty_name pp_stmt_block s
   | Some name ->
-      fprintf f "@[<2>when %s@ :@ %a@ => %a@]" name pp_ty ty pp_stmt_block s
+      fprintf f "@[<2>when %s@ :@ %s@ => %a@]" name ty_name pp_stmt_block s
 
 let pp_gdk f gdk =
   pp_print_string f

@@ -17,7 +17,7 @@
 open Sign
 
 module type Config = sig
-  include CompileCommon.Config
+  include XXXCompile_gen.Config
   val realdep : bool
 end
 
@@ -32,7 +32,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
           let naturalsize = naturalsize
           let  moreedges = Cfg.moreedges
         end)
-    include CompileCommon.Make(Cfg)(RISCV)
+    include XXXCompile_gen.Make(Cfg)(RISCV)
 
     let ppo _f k = k
 
@@ -584,5 +584,4 @@ module Make(Cfg:Config) : XXXCompile_gen.S  =
           List.rev_map (fun r -> r,0) rs
     | Some _|None -> fun _ -> []
 
-    include NoInfo
   end

@@ -14,8 +14,55 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module type Config = sig
+  val debug : Debug_gen.t
+  val show : ShowGen.t option
+  val same_loc : bool
+  val unrollatomic : int option
+  val allow_back : bool
+  val typ : TypBase.t
+  val hexa : bool
+  val moreedges : bool
+  val variant : Variant_gen.set
+  val wildcard : bool
+end
+
+module type Common = sig
+  module A : Arch_gen.S
+  module E : Edge.S
+  with type fence = A.fence
+  and type dp = A.dp
+  and module SIMD = A.SIMD
+  and type atom = A.atom
+  and module Value = A.Value
+  and module RMW = A.RMW
+  type check = E.edge list list -> bool
+  module R : Relax.S
+  with type fence = A.fence
+  and type dp = A.dp
+  and type edge = E.edge
+  module C : Cycle.S
+  with type fence = A.fence
+  and type edge=E.edge
+  and module SIMD = A.SIMD
+  and type atom = A.atom
+  and module Value = A.Value
+  and module RMW = A.RMW
+end
+
+module Make(C:Config)(A:Arch_gen.S) : sig
+  include Common with module A = A
+  val kbig : int
+  val mk_postlude :
+    (A.st -> Code.proc -> A.init -> string -> A.reg ->
+      A.init * A.pseudo list * A.st) ->
+    A.st -> Code.proc -> A.init -> A.pseudo list ->
+      A.init * A.pseudo list * A.st
+  val get_archinfo : 'a -> 'b list
+end
+
 module type S = sig
-  include CompileCommon.S
+  include Common
 
   val ppo : (R.relax -> 'a -> 'a) -> 'a -> 'a
 

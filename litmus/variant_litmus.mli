@@ -34,6 +34,7 @@ type t =
   | NoPacKey of PAC.key
   | FPac (* Fault on pointer authentication *)
   | ConstPacField (* Bit 55 is used to compute the VA-range in ComputePAC *)
+  | Statistics (* Produce statistics (presi and kvm mode only) *)
 
 val tags : string list
 val helper_message: string 

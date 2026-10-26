@@ -74,28 +74,29 @@ let check k i =
       pp_i i pp_i it pp_i il ;
   k && ok
 
-let check_manual k edges = check k (R.of_list edges)
+let manual_gs =
+  [ [(0, 0);];
+    [(0, 1);];
+    [(1, 1);];
+    [(0, 1); (1, 0)];
+    [(0, 1); (1, 1)];
+    [(0, 1); (1, 2); (2, 1)];
+    [(4, 5); (1, 4); (5, 1); (0, 4)];
+    [(1, 0); (1, 2); (2, 1)];
+    [(0, 1); (1, 0); (1, 2); (2, 1)];
+    [(0,1); (1,2); (2,3); (3,4); (4,5); (5,0);];
+    [(0,1); (0,2); (1,6); (1,3); (1,4); (2,5); (2,6);];
+    [(0,1); (0,2); (1,3); (1,4); (2,5); (2,6); (3,3); (1,1);]; ]
+  |> List.map R.of_list
 
 let () =
   assert
     begin
-      List.fold_left check_manual true
-        [[(0, 0);];
-         [(0, 1);];
-         [(1, 1);];
-         [(0, 1); (1, 0)];
-         [(0, 1); (1, 1)];
-         [(0, 1); (1, 2); (2, 1)];
-         [(4, 5); (1, 4); (5, 1); (0, 4)];
-         [(1, 0); (1, 2); (2, 1)];
-         [(0, 1); (1, 0); (1, 2); (2, 1)];
-         [(0,1); (1,2); (2,3); (3,4); (4,5); (5,0);];
-         [(0,1); (0,2); (1,6); (1,3); (1,4); (2,5); (2,6);];
-         [(0,1); (0,2); (1,3); (1,4); (2,5); (2,6); (3,3); (1,1);];
-        ]
+      List.fold_left check true manual_gs
     end
 
-let rand_graph p n l =
+let rand_graph self p n l =
+
   let sub x y =
     let d = x-y in
     if d < 0 then d+n
@@ -109,21 +110,42 @@ let rand_graph p n l =
         if c < 0 then g
         else
           let g =
-            if Random.float 1.0 < p  then R.add (i,j) g
+            if Random.float 1.0 < p  && (self || i <> j) then
+              R.add (i,j) g
             else g in
           do2 g (c-1) (inc j) in
       do_rec (do2 g (2*l+1) (sub i l)) (i-1) in
   do_rec R.empty (n-1)
 
-let sz = 64
-and p = 0.5
+let sz = 128
+and p = 0.2
 and l = 5
 and n = 10
 
 let gs =
   let rec do_rec k gs =
     if k <= 0 then gs
-    else do_rec (k-1) (rand_graph p sz l::gs) in
+    else do_rec (k-1) (rand_graph (k mod 2 = 0) p sz l::gs) in
   do_rec n []
 
 let  () = assert (List.fold_left check true gs)
+
+let check2 k g =
+  let vs =
+    List.init sz Fun.id
+    |> List.filter_map
+         (fun k -> if Random.float 1.0 < p then Some k else None)
+    |> R.Elts.of_list in
+  let tr_s =
+    simple_tr g
+    |> R.restrict_domain (fun v -> R.Elts.mem v vs) in
+  let tr_o = R.restrict_domain_transitive_closure vs g in
+  let ok = R.equal tr_s tr_o in
+  if not ok then
+    Format.eprintf "@[<hv>%a@ gave with trajan@ %a@ and with naive@ %a@]@."
+      pp_i g pp_i tr_o pp_i tr_s ;
+  k && ok
+
+let  () =
+  let checks = List.fold_left check2 in
+  assert (checks (checks true manual_gs) gs)

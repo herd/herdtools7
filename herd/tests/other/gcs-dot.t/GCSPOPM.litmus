@@ -1,0 +1,11 @@
+AArch64 GCSPOPM-dot
+variant=shadowstack
+{
+  SS(x,1) = ssval_t: {4};
+  0:GCSPR_EL1=&x[0];
+}
+
+P0         ;
+GCSPOPM X1 ;
+
+forall true

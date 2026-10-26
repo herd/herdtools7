@@ -36,7 +36,7 @@ module type S = sig
 
   type 'a maybe_exception =
     | Normal of 'a
-    | Throwing of value_read_from * AST.ty * IEnv.env
+    | Throwing of value_read_from * AST.identifier * IEnv.env
     | Cutoff
   (* the [Cutoff] variant is an implementation only variant, used to
      short-cut executions that do not comply with loop unrolling parameters.
@@ -67,6 +67,7 @@ module type Config = sig
   val track_symbolic_path : bool
   val bit_clear_optimisation : bool
   val out_buffer : Buffer.t option
+  val version_eac2_or_before : bool
 end
 
 module Make (B : Backend.S) (C : Config) = struct
@@ -90,7 +91,7 @@ module Make (B : Backend.S) (C : Config) = struct
 
   type 'a maybe_exception =
     | Normal of 'a
-    | Throwing of value_read_from * ty * env
+    | Throwing of value_read_from * identifier * env
     | Cutoff
 
   (** An intermediate result of a statement. *)
@@ -309,8 +310,9 @@ module Make (B : Backend.S) (C : Config) = struct
               let* eval_res = eval_expr env init_expr in
               match eval_res with
               | Normal (v, env2) -> return (v, env2)
-              | Throwing (_, ty, _env2) ->
-                  fatal_from d env (UnexpectedInitialisationThrow (ty, name))
+              | Throwing (_, ty_name, _env2) ->
+                  fatal_from d env
+                    (UnexpectedInitialisationThrow (ty_name, name))
               | Cutoff ->
                   Printf.eprintf "Unexpected initialisation cutoff.\n%!";
                   assert false)
@@ -625,10 +627,9 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalESlice *)
     | E_Slice (e_bv, slices) ->
         let*^ m_bv, env1 = eval_expr env e_bv in
-        let*^ m_positions, new_env = eval_slices env1 slices in
-        let* v_bv = m_bv and* positions = m_positions in
+        let* positions = eval_slices env1 slices and* v_bv = m_bv in
         let* v = B.read_from_bitvector ~loc:e positions v_bv in
-        return_normal (v, new_env) |: SemanticsRule.ESlice
+        return_normal (v, env1) |: SemanticsRule.ESlice
     (* End *)
     (* Begin EvalECall *)
     | E_Call { name; params; args } ->
@@ -646,7 +647,7 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalEGetArray *)
     | E_GetArray (e_array, e_index) ->
         let*^ m_array, env1 = eval_expr env e_array in
-        let*^ m_index, new_env = eval_expr env1 e_index in
+        let*^ m_index, new_env = eval_expr_eac2 env1 e_index in
         let* v_array = m_array and* v_index = m_index in
         let i_index = v_to_int ~loc:e v_index in
         let* v = B.get_index i_index v_array in
@@ -750,16 +751,24 @@ module Make (B : Backend.S) (C : Config) = struct
   and eval_expr_sef env e : B.value m =
     eval_expr env e >>= function
     | Normal (v, _env) -> return v
-    | Throwing (_, ty, _) ->
+    | Throwing (_, ty_name, _) ->
         let msg =
           Format.asprintf
-            "@[<hov 2>An exception of type @[<hv>%a@]@ was@ thrown@ when@ \
+            "@[<hov 2>An exception of type @[<hv>%s@]@ was@ thrown@ when@ \
              evaluating@ %a@]@."
-            PP.pp_ty ty PP.pp_expr e
+            ty_name PP.pp_expr e
         in
         fatal_from e env (Error.UnexpectedSideEffect msg)
     | Cutoff -> assert false
   (* End *)
+
+  (** Evaluates an expression that is considered side-effect-free after EAC2,
+      while preserving ordinary evaluation for EAC2 and earlier. *)
+  and eval_expr_eac2 env e : expr_eval_type =
+    if C.version_eac2_or_before then eval_expr env e
+    else
+      let* v = eval_expr_sef env e in
+      return_normal (v, env)
 
   (* Runtime checks *)
   (* -------------- *)
@@ -858,17 +867,16 @@ module Make (B : Backend.S) (C : Config) = struct
     (* Begin EvalLESlice *)
     | LE_Slice (e_bv, slices) ->
         let*^ m_bv_lhs, env1 = expr_of_lexpr e_bv |> eval_expr env in
-        let*^ m_slice_ranges, env2 = eval_slices env1 slices in
         let new_m_bv =
           let* v_rhs = m
-          and* slice_ranges = m_slice_ranges
+          and* slice_ranges = eval_slices env1 slices
           and* v_bv_lhs = m_bv_lhs in
           let* () =
             check_non_overlapping_slices ~pos:le env slices slice_ranges
           in
           B.write_to_bitvector slice_ranges v_rhs v_bv_lhs
         in
-        eval_lexpr ver e_bv env2 new_m_bv |: SemanticsRule.LESlice
+        eval_lexpr ver e_bv env1 new_m_bv |: SemanticsRule.LESlice
     (* End *)
     (* Begin EvalLESetArray *)
     | LE_SetArray (re_array, e_index) ->
@@ -966,34 +974,31 @@ module Make (B : Backend.S) (C : Config) = struct
 
   (** [eval_slices env slices] is the list of pair [(i_n, l_n)] that corresponds
       to the start (included) and the length of each slice in [slices]. *)
-  and eval_slices env :
-      slice list -> (B.value_range list * env) maybe_exception m =
+  and eval_slices env : slice list -> B.value_range list m =
     (* Begin EvalSlice *)
-    let eval_slice env = function
+    let eval_slice = function
       | Slice_Single e ->
-          let** v_start, new_env = eval_expr env e in
-          return_normal ((v_start, one), new_env) |: SemanticsRule.Slice
+          let* v_start = eval_expr_sef env e in
+          return (v_start, one) |: SemanticsRule.Slice
       | Slice_Length (e_start, e_length) ->
-          let*^ m_start, env1 = eval_expr env e_start in
-          let*^ m_length, new_env = eval_expr env1 e_length in
-          let* v_start = m_start and* v_length = m_length in
-          return_normal ((v_start, v_length), new_env) |: SemanticsRule.Slice
+          let* v_start = eval_expr_sef env e_start
+          and* v_length = eval_expr_sef env e_length in
+          return (v_start, v_length) |: SemanticsRule.Slice
       | Slice_Range (e_top, e_start) ->
-          let*^ m_top, env1 = eval_expr env e_top in
-          let*^ m_start, new_env = eval_expr env1 e_start in
-          let* v_top = m_top and* v_start = m_start in
+          let* v_top = eval_expr_sef env e_top
+          and* v_start = eval_expr_sef env e_start in
           let* v_length = B.binop `SUB v_top v_start >>= B.binop `ADD one in
-          return_normal ((v_start, v_length), new_env) |: SemanticsRule.Slice
+          return (v_start, v_length) |: SemanticsRule.Slice
       | Slice_Star (e_factor, e_length) ->
-          let*^ m_factor, env1 = eval_expr env e_factor in
-          let*^ m_length, new_env = eval_expr env1 e_length in
-          let* v_factor = m_factor and* v_length = m_length in
+          let* v_factor = eval_expr_sef env e_factor
+          and* v_length = eval_expr_sef env e_length in
           let* v_start = B.binop `MUL v_factor v_length in
-          return_normal ((v_start, v_length), new_env) |: SemanticsRule.Slice
+          return (v_start, v_length) |: SemanticsRule.Slice
       (* End *)
     in
     (* Begin EvalSlices *)
-    fold_par_list eval_slice env |: SemanticsRule.Slices
+    fun slices ->
+      List.map eval_slice slices |> sync_list |: SemanticsRule.Slices
   (* End *)
 
   (* Evaluation of Patterns *)
@@ -1381,25 +1386,18 @@ module Make (B : Backend.S) (C : Config) = struct
   (* Evaluation of Catchers *)
   (* ---------------------- *)
   and eval_catchers catchers otherwise_opt s_m : stmt_eval_type =
-    (* [catcher_matches t c] returns true if the catcher [c] match the raised
-       exception type [t]. *)
-    (* Begin EvalFindCatcher *)
-    let catcher_matches v_ty (_e_name, e_ty, _stmt) =
-      match (v_ty.desc, e_ty.desc) with
-      | T_Named s1, T_Named s2 ->
-          String.equal s1 s2 |: SemanticsRule.FindCatcher
-      | _ -> false
-      (* End *)
-    in
-    (* Main logic: *)
     (* If an explicit throw has been made in the [try] block: *)
     B.bind_seq s_m @@ function
     (*  Begin CatchNoThrow *)
     | (Normal _ | Cutoff) as res -> return res |: SemanticsRule.CatchNoThrow
     (* End *)
-    | Throwing (v, v_ty, env_throw) -> (
+    | Throwing (v, v_ty_name, env_throw) -> (
         (* We compute the environment in which to compute the catch statements. *)
-        match List.find_opt (catcher_matches v_ty) catchers with
+        match
+          List.find_opt
+            (fun (_, ty_name, _) -> String.equal v_ty_name ty_name)
+            catchers
+        with
         (* If any catcher matches the exception type: *)
         | Some catcher -> (
             (* Begin EvalCatch *)
@@ -1598,8 +1596,8 @@ module Make (B : Backend.S) (C : Config) = struct
           Error.(
             fatal_unknown_pos
               (BadArity (C.error_handling_time, main_name, 1, List.length values)))
-      | Throwing ((v, _, _), ty, _genv) ->
-          let msg = Format.asprintf "%a %s" PP.pp_ty ty (B.debug_value v) in
+      | Throwing ((v, _, _), ty_name, _genv) ->
+          let msg = Format.asprintf "%s %s" ty_name (B.debug_value v) in
           Error.fatal_unknown_pos (Error.UncaughtException msg)
       | Cutoff -> return zero)
     |: SemanticsRule.Spec

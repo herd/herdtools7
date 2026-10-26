@@ -1657,6 +1657,7 @@ See \ExampleRef{Overall Evaluation of For Statements}.
 \TypingRuleDef{SThrow}
 \listingref{semantics-sthrowsometyped}
 shows examples of well-typed \throwstatementsterm.
+The annotation records the name of the exception type inferred for the thrown expression.
 
 
 \RenderProseAndFormally{annotate_stmt_SThrow}
@@ -2079,10 +2080,6 @@ The \pragmastatementterm{} in \listingref{typing-spragma} is well-typed.
 \CodeSubsection{\SPragmaBegin}{\SPragmaEnd}{../Typing.ml}
 
 \subsection{Semantics\label{sec:PragmaSemantics}}
-Pragmas are structures present in the \untypedast{} that are designed to be used
-by third-party tools.
 
-To avoid conflicts between different ASL parsers, it is recommended that the pragma's identifier $\Tidentifier(\id)$ be prefixed by the name of the ASL tool that supports that pragma
-(e.g. ARM for Arm's internal ASL tools). An ASL language processor that does not recognise a pragma directive should generate a warning for that pragma.
-
-Pragmas are not associated with semantics and are discarded from the \typedast.
+Pragmas have no associated semantics.
+See \chapref{Global Pragma Declarations}.

@@ -16,7 +16,7 @@
 
 open Code
 module type Config = sig
-  include CompileCommon.Config
+  include XXXCompile_gen.Config
   val realdep : bool
 end
 
@@ -25,7 +25,7 @@ module Make(Cfg:Config)(BO:BellArch_gen.Config) : XXXCompile_gen.S =
 
 (* Common *)
     module Bell = BellArch_gen.Make(BO)
-    include CompileCommon.Make(Cfg)(Bell)
+    include XXXCompile_gen.Make(Cfg)(Bell)
 
     let ppo _f k = k
 
@@ -305,5 +305,4 @@ let emit_rmw _ = assert false
 
     let get_xstore_results _ = []
 
-    include NoInfo
   end

@@ -44,6 +44,50 @@ let rec litmus_files path =
   else if Filename.check_suffix path ".litmus" then [path]
   else []
 
+let chan2string chan =
+  Channel.read_lines chan
+  |> String.concat "\n"
+
+let add_comment comment out =
+  match comment,out with
+  | "",_ -> out
+  | comment,"" -> Printf.sprintf "(*\n%s\n*)" comment
+  | comment,_ -> Printf.sprintf "(*\n%s\n*)\n%s" comment out
+
+let run_diycross tmp flags command =
+  let stdout = ref []
+  and stderr = ref [] in
+  let shell_command =
+    Printf.sprintf "PATH=%s:$PATH; export PATH; exec %s %s -o %s"
+      (Filename.quote (Filename.dirname flags.diyone))
+      (Filename.quote "diycross7") command tmp in
+  let status = Command.run_status
+    ~stdout:(fun chan -> stdout := Channel.read_lines chan)
+    ~stderr:(fun chan -> stderr := Channel.read_lines chan)
+    "/bin/sh" ["-c";shell_command ] in
+  match status,!stderr,!stdout with
+  | 0,stderr,["Generator produced 1 tests"] ->
+     Filesystem.read_file
+       (Filename.concat tmp "@all")
+       (fun chan ->
+         let litmuses =
+           Channel.read_lines chan
+           |> List.filter
+                (fun s -> Filename.check_suffix s ".litmus") in
+         match litmuses with
+         | [testfile] ->
+            let testfile = Filename.concat tmp testfile in
+            let test = Filesystem.read_file testfile chan2string in
+            Some (add_comment (String.concat "\n" stderr) test)
+         | _ -> assert false)
+  | 0,_,["Generator produced 0 tests"] -> None
+  | 0,_,(_::_ as lines) ->
+     Printf.eprintf
+       "Warning: successful diycross7 output not recognised:%s\n"
+       (String.concat "\n" lines) ;
+     raise Exit
+  | _,_,_ -> None
+
 let run_diyone flags command =
   let stdout = ref ""
   and stderr = ref "" in
@@ -60,10 +104,7 @@ let run_diyone flags command =
     | 0,stderr -> stderr
     | status,"" -> Printf.sprintf "[%d]" status
     | status,stderr -> Printf.sprintf "[%d]\n%s" status stderr in
-  match comment,!stdout with
-  | "",stdout -> stdout
-  | comment,"" -> Printf.sprintf "(*\n%s\n*)" comment
-  | comment,stdout -> Printf.sprintf "(*\n%s\n*)\n%s" comment stdout
+  add_comment comment !stdout
 
 let tests flags =
   List.map litmus_files flags.litmus_dirs
@@ -78,19 +119,43 @@ let tests flags =
           end
         | [] -> None)
 
+let reject = Str.regexp ".*reject"
+
 let run_tests flags =
+  let tmpdir = Filesystem.new_temp_dir () in
   let tests = tests flags in
   let failed =
-    List.fold_left
-      (fun failed (path,command,expected) ->
-        let actual = run_diyone flags command in
-        if String.trim actual = String.trim expected then failed
-        else begin
-          Printf.eprintf "%s: generated output differs\nExpected:\n%s\nActual:\n%s\n"
-            path expected actual ;
-          failed + 1
-        end)
-      0 tests in
+    Fun.protect
+      ~finally:(fun () -> Filesystem.remove_recursive tmpdir)
+      (fun () ->
+        List.fold_left
+          (fun failed (path,command,expected) ->
+            let actual = run_diyone flags command in
+            if String.trim actual <> String.trim expected then begin
+              Printf.eprintf
+                "%s: generated output differs\nExpected:\n%s\nActual:\n%s\n"
+                path expected actual ;
+              failed + 1
+            end else
+              (* Compare diyone7 and diycross7 produced test. *)
+              match run_diycross tmpdir flags command with
+              | exception Exit -> failed+1
+              | None -> (* diycross7 fails *)
+                 if Str.string_match reject path 0 then failed
+                 else begin
+                   Printf.eprintf
+                     "%s: diycross7 fails while diyone7 succeeds\n"
+                     path ;
+                   failed+1
+                 end
+             | Some also -> (* diycross7 succeeds, compare test *)
+                 if String.trim actual <> String.trim also then begin
+                   Printf.eprintf
+                     "%s: generators output differ\ndiyone7:\n%s\ndiycross7:\n%s\n"
+                     path actual also ;
+                   failed+1
+                 end else failed)
+          0 tests) in
   let tested = List.length tests in
   Printf.printf "Tested %d litmus file%s: %d passed, %d failed\n"
     tested (if tested = 1 then "" else "s") (tested - failed) failed ;

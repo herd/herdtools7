@@ -68,6 +68,8 @@ rule main_pos = parse
     }
 
 and main start = parse
+| "(*" { skip_comment lexbuf ;  main start lexbuf }
+| '\n' { incr_lineno lexbuf ; main start lexbuf }
 | blank* (alpha|digit|'_')+ as arch
   blank+
   (testname as tname)
@@ -257,7 +259,8 @@ let split_lexbuf name lexbuf =
     try main_pos lexbuf
     with
     | LexMisc.Error (msg,loc) ->
-       failwith (Printf.sprintf "%s: splitter error in sublexer %s" (Pos.str_pos loc) msg)
+        Warn.user_error "%s: splitter error in sublexer %s"
+          (Pos.str_pos loc) msg
     | Assert_failure _ as e ->  raise e
     | e ->
        failwith (Printf.sprintf "%s: Uncaught exception in splitter %s" (Pos.str_pos lexbuf.lex_curr_p) (Printexc.to_string e))

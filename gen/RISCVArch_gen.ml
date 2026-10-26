@@ -24,9 +24,6 @@ module Make
 
    include RISCVBase
 
-(* Little endian, as far as I know *)
-   let tr_endian = Misc.identity
-
 (* No Scope *)
    module ScopeGen = ScopeGen.NoGen
 
@@ -222,7 +219,7 @@ include
       let free_registers = allowed_for_symb
       type arch_atom = atom
       module Value = Value
-      include NoSpecial
     end)
+    (ArchExtra_gen.NoSpecial)
 
  end

@@ -16,12 +16,12 @@
 
 open Code
 
-module Make(C:CompileCommon.Config) : XXXCompile_gen.S =
+module Make(C:XXXCompile_gen.Config) : XXXCompile_gen.S =
 
 struct
 
   module X86 = X86Arch_gen
-  include CompileCommon.Make(C)(X86)
+  include XXXCompile_gen.Make(C)(X86)
 
 (******)
   let ppo _f k = k
@@ -184,7 +184,5 @@ struct
       (fun st _p init loc r -> init,[Instruction (emit_store_reg loc r)],st)
 
   let get_xstore_results _ = []
-
-  include NoInfo
 
 end

@@ -1158,7 +1158,15 @@ end
                  | [] -> assert false
                  | ((p,_),_)::_ ->
                      check_ascall () ;
-                     O.fi "size_t %s = prelude_size((ins_t *)code%i);"
+                     begin
+                       match Cfg.mode with
+                       | Mode.Kvm ->
+                          O.fi
+                            "size_t %s = ALIGN(prelude_size((ins_t *)code%i),PAGE_SIZE)/sizeof(ins_t)-1;"
+                       | Mode.(PreSi|Std) ->
+                          O.fi
+                            "size_t %s = prelude_size((ins_t *)code%i);"
+                     end
                        (fmt_prelude p) p ;
                      List.iter
                        (fun ((p,_ as lbl),_) ->

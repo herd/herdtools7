@@ -155,7 +155,7 @@ module Make
         | Static|Before -> false
 
       (* Statistic struct may not be initialised when dynamically allocated *)
-      let do_stats = not do_dynalloc
+      let do_stats = Cfg.variant Variant_litmus.Statistics
 
       let do_inlined = (* inline topology description *)
         match Cfg.driver with
@@ -189,12 +189,6 @@ module Make
         (timebase_possible || SkelUtil.no_timebase_error Cfg.sysarch)
 
       let do_self = Cfg.variant Variant_litmus.Self
-
-      let is_pte =
-        let open Mode in
-        match Cfg.mode with
-        | Std|PreSi -> false
-        | Kvm -> true
 
 (*************)
 (* Utilities *)
@@ -1481,7 +1475,7 @@ module Make
                   O.fi "_vars->%s = code_size((ins_t *)%s,%i);"
                     (fmt_code_size n) (fmt_code n) (A.Out.get_nrets t) ;
                   let prelude_size =
-                    if do_self && is_pte then
+                    if Cfg.is_kvm then
                       sprintf "ALIGN(prelude_size((ins_t *)%s),PAGE_SIZE)/sizeof(ins_t)-1" (fmt_code n)
                     else
                       sprintf "prelude_size((ins_t *)%s)" (fmt_code n)

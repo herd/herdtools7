@@ -1,15 +1,27 @@
 \chapter{Global Pragma Declarations\label{chap:Global Pragma Declarations}}
 
-Global pragmas are statically checked by the typechecker, but do not produce \typedast{} nodes,
-and thus are not associated with a dynamic semantics.
+Pragmas are constructs present in the \untypedast{} that are designed to be used
+by third-party tools.
+They do not produce \typedast{} nodes, and therefore have no dynamic semantics.
 
 \ExampleDef{Global Pragma Declarations}
 The specification in \listingref{GlobalPragma} contains two global pragmas,
 which are ignored by the dynamic semantics.
 \ASLListing{Global pragmas}{GlobalPragma}{\definitiontests/GlobalPragma.asl}
 
-It is recommended that tools that process ASL should warn users of unrecognised, tool-specific, pragmas.
+\ConventionDef{PragmaNaming}
 
+To avoid conflicts between different ASL parsers, it is recommended that the pragma's identifier $\Tidentifier(\id)$ be prefixed by the name of the ASL tool that supports that pragma
+(e.g. ARM for Arm's internal ASL tools).
+For example, the pragmas prefixed with \verb|my_tool| in \listingref{GlobalPragma2} may be intended for a tool named \verb|my_tool|.
+
+\ConventionDef{PragmaWarnings}
+
+An ASL tool that does not recognise a pragma directive may:
+\begin{itemize}
+  \item Choose whether to warn that the pragma is not recognised.
+  \item Choose whether to typecheck the pragma (and report type errors appropriately) before discarding it.
+\end{itemize}
 
 For example, a tool processing the specification in \listingref{GlobalPragma2} may recognise \\
 \verb|my_tool_pragma1| but not \verb|other_tool_op|, and warn about it.

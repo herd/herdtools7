@@ -84,6 +84,8 @@ module Make (C:Config) (A : A) : sig
 
   val access_of_location_std : A.location -> Access.t
 
+  val is_gcs : action -> bool
+
 end = struct
 
   module A = A

@@ -193,6 +193,8 @@ module Make(O:MySet.OrderedType) : S
         visit : int M.t;
         stack : elt0 list; }
 
+    let s0 = { id=0; visit=M.empty; stack=[]; }
+
     let rec pop_until n ns =
       match ns with
       | [] -> assert false
@@ -239,7 +241,7 @@ module Make(O:MySet.OrderedType) : S
         M.fold
           (fun n _ r -> let _,r = dfs n r in r)
           m
-          (res,{id=0; visit=M.empty; stack=[];} ) in
+          (res,s0) in
       res
 
 (*
@@ -254,7 +256,7 @@ module Make(O:MySet.OrderedType) : S
       let (res,_) =
         List.fold_left
           (fun r n -> let _,r = dfs n r in r)
-          (res,{id=0; visit=M.empty; stack=[];} )
+          (res,s0)
           nodes
       in
       res
@@ -275,7 +277,7 @@ module Make(O:MySet.OrderedType) : S
               let _,r = dfs n r in r
             else r)
           m
-          (res,{id=0; visit=M.empty; stack=[];})
+          (res,s0)
       in
       res
 
@@ -403,8 +405,7 @@ module Make(O:MySet.OrderedType) : S
     | [_] -> res
     | ms ->
        let vn = try M.find n res with Not_found -> assert false in
-       if Elts.is_empty vn then res
-       else List.fold_left (fun res m -> add_set m vn res) res ms
+       List.fold_left (fun res m -> M.add m vn res) res ms
 
   let transitive_closure (m:t) =
     FullSCC.scan_map tr_edge tr_scc M.empty m

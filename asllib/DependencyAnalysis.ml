@@ -160,7 +160,7 @@ and use_le le =
   | LE_Slice (le, slices) -> use_slices slices $ use_le le
   | LE_SetCollectionFields (x, _, _) -> add_maybe_pgm le x
 
-and use_catcher (_name, ty, s) = use_s s $ use_ty ty
+and use_catcher (_name, ty_name, s) = use_s s $ add_other ty_name
 and use_catchers catchers = use_list use_catcher catchers
 
 and use_decl d =

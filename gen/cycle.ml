@@ -413,6 +413,8 @@ let find_non_pseudo_prev m = find_edge_prev non_pseudo m
       else fold_rec nxt k in
     fold_rec m k
 
+  let iter f m = fold (fun n () -> f n) m ()
+
 (* Get size (as integers) from annotations *)
 
   let as_integers n = match n.evt.loc with
@@ -703,56 +705,38 @@ let remove_store n0 =
   n0
 
  let set_dir n0 =
-  let rec do_rec m =
-    if non_insert_store m.edge then begin
-      let my_d =  E.dir_src m.edge in
-      let p = find_non_insert_store_prev m.prev in
-      if E.is_node m.edge.E.edge then begin (* perform sanity checks specific to Node pseudo-edge *)
-        if E.is_node p.edge.E.edge then begin
-          Warn.fatal "Double 'Node' pseudo edge %s %s"
-          (E.pp_edge p.edge) (E.pp_edge m.edge)
-        end ;
-        let n = find_non_insert_store m.next in
-        if not (E.is_ext p.edge && E.is_ext n.edge) then
-           Warn.fatal "Node pseudo edge %s appears in-between  %s..%s (one neighbour at least must be an external edge)"
-           (E.pp_edge m.edge)  (E.pp_edge p.edge)  (E.pp_edge n.edge)
-      end ;
+  iter
+    (fun m ->
+      if non_insert_store m.edge then begin
+        let cur_d = E.dir_src m.edge in
+        let p = find_non_insert_store_prev m.prev in
 (*    eprintf "p=%a, m=%a\n" debug_node p debug_node m; *)
-      let prev_d = E.dir_tgt p.edge in
-      let d = match prev_d,my_d with
-      | Irr,Irr ->
-          Warn.fatal "Ambiguous direction %s %s"
-            (E.pp_edge p.edge) (E.pp_edge m.edge)
-      | (Dir d,Irr)|(Irr,Dir d) -> d
+        let prev_d = E.dir_tgt p.edge in
+        let dir = match prev_d,cur_d with
+        | Irr,Irr ->
+            Warn.fatal "Ambiguous direction %s %s"
+              (E.pp_edge p.edge) (E.pp_edge m.edge)
+        | (Dir d,Irr)|(Irr,Dir d) -> d
 (*      | Dir W,Dir R when is_rmw W m -> R  *)
-      | Dir d1,Dir d2 ->
-          if d1=d2 then d1
+        | Dir d1,Dir d2 ->
+            if d1=d2 then d1
+            else
+              Warn.fatal "Impossible direction %s[%s] %s[%s]"
+                (str_node p) (pp_extr prev_d) (str_node m) (pp_extr cur_d)
+        | (NoDir,_)|(_,NoDir) -> assert false in
+        let atom =
+          let a2 = p.edge.E.a2 and a1 = m.edge.E.a1 in
+          if E.compare_atomo a1 a2 = 0 then a1
           else
-            Warn.fatal "Impossible direction %s[%s] %s[%s]"
-              (str_node p) (pp_extr prev_d) (str_node m) (pp_extr my_d)
-      | (NoDir,_)|(_,NoDir) -> assert false in
-      let a =
-        let a2 = p.edge.E.a2 and a1 = m.edge.E.a1 in
-        if E.compare_atomo a1 a2 = 0 then a1
-        else
-          if a1 = None && E.is_ext p.edge then a2
-          else if a2 = None &&  E.is_ext m.edge then a1
-          else
-            Warn.fatal "Impossible atomicity %s %s"
-              (E.pp_edge p.edge) (E.pp_edge m.edge) in
-      let rmw = is_rmw d m in
-      m.evt <- { m.evt with dir=Some d; atom=a; rmw=rmw}
-    end else
-    begin
-      let p = find_non_pseudo_prev m.prev in
-      match p.edge.E.edge with
-      | (E.Communication (Rf,Ext) | E.Communication (Fr,Ext)) ->
-        Warn.fatal "Insert pseudo edge %s appears after external communication edge %s"
-        (E.pp_edge m.edge) (E.pp_edge p.edge)
-      | _ -> ()
-    end ;
-    if m.next != n0 then do_rec m.next in
-  do_rec n0 ;
+            if a1 = None && E.is_ext p.edge then a2
+            else if a2 = None &&  E.is_ext m.edge then a1
+            else
+              Warn.fatal "Impossible atomicity %s %s"
+                (E.pp_edge p.edge) (E.pp_edge m.edge) in
+        let rmw = is_rmw dir m in
+        m.evt <- { m.evt with dir=Some dir; atom; rmw}
+      end)
+    n0 ;
   patch_edges n0 ;
   if O.debug.Debug_gen.cycle then begin
     eprintf "DIRECTIONS\n" ;
@@ -856,12 +840,37 @@ let by_loc xvs =
   |> group
 
 let check_cycle c =
-  fold
-    (fun n () ->
-      if E.is_dp_data n.edge.E.edge && n.next.evt.dir = Some R &&
-         not n.next.evt.rmw then
-        Warn.fatal "Data dependency to a read must be followed by an RMW")
-    c () ;
+  iter
+    (fun n ->
+      match n.edge.E.edge with
+      | E.Node _ ->
+        let p = find_non_insert_store_prev n.prev in
+        let next = find_non_insert_store n.next in
+        begin match p.edge.E.edge,next.edge.E.edge with
+        | E.Node _,_ ->
+          Warn.fatal "Double 'Node' pseudo edge %s %s"
+            (E.pp_edge p.edge) (E.pp_edge n.edge)
+        | _,E.Node _ ->
+          Warn.fatal "Double 'Node' pseudo edge %s %s"
+            (E.pp_edge n.edge) (E.pp_edge next.edge)
+        | _ when not (E.is_ext p.edge && E.is_ext next.edge) ->
+          Warn.fatal "Node pseudo edge %s appears in-between  %s..%s (one neighbour at least must be an external edge)"
+            (E.pp_edge n.edge) (E.pp_edge p.edge) (E.pp_edge next.edge)
+        | _ -> ()
+        end
+      | E.Insert _ ->
+        let p = find_non_pseudo_prev n.prev in
+        begin match p.edge.E.edge with
+        | E.Communication (Rf,Ext) | E.Communication (Fr,Ext) ->
+          Warn.fatal "Insert pseudo edge %s appears after external communication edge %s"
+            (E.pp_edge n.edge) (E.pp_edge p.edge)
+        | _ -> ()
+        end
+      | edge when E.is_dp_data edge && n.next.evt.dir = Some R &&
+                   not n.next.evt.rmw ->
+          Warn.fatal "Data dependency to a read must be followed by an RMW"
+      | _ -> ())
+    c ;
   (* Collect all the rmw edges, organise by location
      and then check if all the rmw edges per locations are valid *)
   fold ( fun n lst ->
@@ -1205,7 +1214,7 @@ let check_cycle c =
         start_node,split_by_loc start_node
       with
       | Not_found ->
-        fold (fun n0 _ -> if E.is_id n0.edge.E.edge then assert false) n ();
+        iter (fun n0 -> if E.is_id n0.edge.E.edge then assert false) n;
         let is_com_rmw n0 = E.is_com n0.edge || is_rmw_edge n0.edge in
         let to_com_rmw n0 = not (is_com_rmw n0.prev) && is_com_rmw n0 in
         let to_com n0 = not (E.is_com n0.prev.edge) && E.is_com n0.edge in

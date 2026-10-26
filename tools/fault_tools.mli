@@ -14,6 +14,9 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+(** Utiities for faults in tools *)
+
+(* Type of faults, little structure *)
 type t = (Proc.t * string option) * string option * string option
 
 (* Returns true when the argument is prefixed by "D-" or "I-". *)

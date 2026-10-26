@@ -43,6 +43,7 @@ module type ANNOTATE_CONFIG = sig
   val use_conflicting_side_effects_extension : bool
   val override_mode : override_mode
   val err_buffer : Buffer.t option
+  val asl1_revision : AST.asl1_revision
 end
 
 module type S = sig
