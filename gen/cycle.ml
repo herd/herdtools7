@@ -1009,10 +1009,10 @@ let check_cycle c =
                || n.evt.rmw )
             && CoSt.get_check_value st) in
       let cell = CoSt.get_cell st in
-      (* No need to add fault check in read modify write situation,
-         as the label will be assigned in read *)
+      (* For a read-modify-write, preserve any label assigned while processing
+         the read. *)
       let fault_update_without_rmw st =
-        if n.evt.rmw then None,st else CoSt.fault_update st W in
+        if n.evt.rmw then n.evt.check_fault,st else CoSt.fault_update st W in
       match n.evt.loc,n.evt.dir,bank with
       | Data _,Some W,Instr ->
         Warn.fatal "instruction annotation on a data location is not possible"
