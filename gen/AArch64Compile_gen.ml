@@ -2217,12 +2217,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_swp =  do_emit_ldop swp swp_mixed
     and emit_ldop op = do_emit_ldop (ldop op) (ldop_mixed op)
 
-    let emit_cas_rA emit_data st p init er ew rA =
+    let emit_cas_rA read_dp write_dp st p init er ew rA =
       check_rmw_metadata er ew;
       let sz,a,opt = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
       let rS,init,csS,st = mk_emit_mov_fresh sz st p init (Value.to_int er.C.v) in
+      let cread,st = read_dp sz rS st in
       let rT,init,csT,st = mk_emit_mov sz st p init (Value.to_int ew.C.v) in
-      let cdata,st = emit_data sz rT st in
+      let cwrite,st = write_dp sz rT st in
       let sz = get_rmw_size opt sz in
       let init,csS2,st = emit_str_addon st p init rS rA opt er in
       let init,csT2,st = emit_str_addon st p init rT rA opt ew in
@@ -2233,12 +2234,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           cs@[cas_mixed sz a rS rT rA],st in
       let cs = add_label_to_last_instructions er (pseudo cs) in
       let cs2 = emit_ldr_addon opt rS in
-      rS,init,csS@csS2@csT@cdata@csT2@cs@pseudo cs2,st
+      rS,init,csS@cread@csS2@csT@cwrite@csT2@cs@pseudo cs2,st
 
     let emit_cas  st p init er ew =
       let rA,init,st =
         U.next_init st p init (get_tagged_loc er) in
-      emit_cas_rA emit_data_rmw_simple st p init er ew rA
+      emit_cas_rA emit_data_rmw_simple emit_data_rmw_simple st p init er ew rA
 
     let emit_stop_rA emit_data op st p init er ew rA =
       let a = tr_none ew.C.atom
@@ -2897,11 +2898,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let rA,init,st = U.next_init st p init (get_tagged_loc er) in
         do_emit_ldop_rA emit_data ins ins_mixed st p init er ew rA
 
-    let emit_cas_dep  st p init er ew (dp,csel) vdep rd = match dp with
+    let emit_cas_dep  st p init er ew (dp,csel) vdep rd n = match dp with
     | D.ADDR ->
        let rA,init,caddr,st =
          emit_addr_dep csel vdep st p init (get_tagged_loc er) rd in
-        let rR,init,cs,st = emit_cas_rA emit_data_rmw_simple st p init er ew rA in
+        let rR,init,cs,st =
+          emit_cas_rA emit_data_rmw_simple emit_data_rmw_simple st p init er ew rA in
         rR,init,caddr@cs,st
     | D.CTRL|D.CTRLISYNC ->
         let c,st = emit_ctrl_gen csel st vdep rd in
@@ -2909,8 +2911,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         rR,init,insert_isb (is_ctrlisync dp) c cs,st
     | D.DATA ->
         let emit_data = emit_data_rmw_dep csel vdep rd in
+        (* CAS has two input operands: its expected read value and its
+           replacement write value. The dependency target selects which one
+           is computed from the preceding load. *)
+        let read_dp,write_dp = match n.C.edge.E.edge with
+        | E.Dp (_,_,Dir R) -> emit_data,emit_data_rmw_simple
+        | E.Dp (_,_,Dir W) -> emit_data_rmw_simple,emit_data
+        | _ -> assert false in
         let rA,init,st = U.next_init st p init (get_tagged_loc er) in
-        emit_cas_rA emit_data st p init er ew rA
+        emit_cas_rA read_dp write_dp st p init er ew rA
 
     let emit_stop_dep  op st p init er ew (dp,csel) rd n =
       let vdep = node2vdep n in
@@ -2941,7 +2950,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | LrSc -> map_some_dp emit_exch_dep
         | LdOp op -> map_some_dp (emit_ldop_dep (ldop op) (ldop_mixed op))
         | Swp ->  map_some_dp (emit_ldop_dep swp swp_mixed)
-        | Cas -> map_some_dp emit_cas_dep
+        | Cas ->
+            fun st p init er ew dp rd n ->
+              let vdep = node2vdep n in
+              let r,init,cs,st = emit_cas_dep st p init er ew dp vdep rd n in
+              Some r,init,cs,st
         | StOp op -> emit_stop_dep op
         | AllAmo | SafeAmo ->
             Warn.fatal "Cannot compile aggregate atomic operation"

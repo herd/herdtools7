@@ -19,6 +19,7 @@ module type S = sig
 
   val equal_dp : dp -> dp -> bool
   val pp_dp : dp -> string
+  val pp_dp_pred : dp -> string
   val fold_dp : (dp -> 'a -> 'a) -> 'a -> 'a
 
   (* Defaults for backward compatibility *)

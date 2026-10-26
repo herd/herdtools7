@@ -312,6 +312,8 @@ and module RMW = A.RMW = struct
     | Fenced (f,sd,e1,e2) ->
       sprintf "%s%s%s%s" (pp_fence f) (pp_sd sd) (pp_extr e1) (pp_extr e2)
     | Dp (dp,UnspecLoc,Irr) -> sprintf "Dp%s" (F.pp_dp dp)
+    | Dp (dp,sd,Dir R) when F.is_data dp ->
+      sprintf "Dp%s%s" (F.pp_dp_pred dp) (pp_sd sd)
     | Dp (dp,sd,e) ->
       sprintf "Dp%s%s%s"(F.pp_dp dp) (pp_sd sd) (pp_extr e)
     | Hat -> "Hat"
@@ -828,7 +830,10 @@ let fold_tedges f r =
 
   let can_precede_dp_data_read x y = match x.edge with
   | Dp (dp,_,Dir R) when F.is_data dp ->
-      begin match y.edge with Rmw _ -> true | _ -> false end
+      begin match y.edge with
+      | Rmw rmw -> A.RMW.can_data_dep_read rmw
+      | _ -> false
+      end
   | _ -> true
 
   let valid_atoms edge =

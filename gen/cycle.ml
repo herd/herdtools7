@@ -874,9 +874,12 @@ let check_cycle c =
             (E.pp_edge n.edge) (E.pp_edge p.edge)
         | _ -> ()
         end
-      | edge when E.is_dp_data edge && n.next.evt.dir = Some R &&
-                   not n.next.evt.rmw ->
-          Warn.fatal "Data dependency to a read must be followed by an RMW"
+      | edge when E.is_dp_data edge && E.dir_tgt n.edge = Dir R &&
+                   not
+                     (match n.next.edge.E.edge with
+                      | E.Rmw rmw -> E.RMW.can_data_dep_read rmw
+                      | _ -> false) ->
+          Warn.fatal "Predicate dependency DpPred* must be followed by a CAS"
       | _ -> ())
     c ;
   (* Collect all the rmw edges, organise by location
