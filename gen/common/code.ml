@@ -67,25 +67,25 @@ type dir = W | R
 (* Edges compoments that do not depend on architecture *)
 
 (* Change or proc accross edge *)
-type ie = Int|Ext|UnspecCom
+type ie = Int|Ext
 
 (* Change of location across edge *)
-type sd = Same|Diff|UnspecLoc
+type sd = Same|Diff
 
 (* Direction of related events *)
 type extr = Dir of dir | Irr | NoDir
 
+type exception_handler = ExcEnter | Eret | EretNext
+
 let equal_ie ie1 ie2 = match ie1,ie2 with
   | Int,Int
-  | Ext,Ext
-  | UnspecCom,UnspecCom -> true
-  | (Int|Ext|UnspecCom),_ -> false
+  | Ext,Ext -> true
+  | (Int|Ext),_ -> false
 
 let equal_sd sd1 sd2 = match sd1,sd2 with
   | Same,Same
-  | Diff,Diff
-  | UnspecLoc,UnspecLoc -> true
-  | (Same|Diff|UnspecLoc),_ -> false
+  | Diff,Diff -> true
+  | (Same|Diff),_ -> false
 
 let equal_extr e1 e2 = match e1,e2 with
   | Dir W,Dir W
@@ -102,7 +102,6 @@ let pp_dir = function
 let pp_ie = function
   | Int -> "i"
   | Ext -> "e"
-  | UnspecCom -> "*"
 
 let pp_extr = function
   | Dir d -> pp_dir d
@@ -112,7 +111,14 @@ let pp_extr = function
 let pp_sd = function
   | Same -> "s"
   | Diff -> "d"
-  | UnspecLoc -> "*"
+
+let pp_sd_macro = function
+| None -> "*"
+| Some sd -> pp_sd sd
+
+let pp_dir_macro = function
+| None -> "*"
+| Some d -> pp_dir d
 
 let is_same_loc = function
   | Same -> true
@@ -122,22 +128,90 @@ let is_diff_loc = function
   | Diff -> true
   | _ -> false
 
-let is_unspec_loc = function
-  | UnspecLoc -> true
-  | _ -> false
-
 let seq_sd sd1 sd2 =
   match sd1,sd2 with
-  | UnspecLoc,_|_, UnspecLoc -> None
-  | Same,Same -> Some Same
-  | Diff,_|_,Diff -> Some Diff
+  | Same,Same -> Same
+  | Diff,_|_,Diff -> Diff
 
-let fold_ie wildcard f r = let r = if wildcard then (f UnspecCom r) else r in f Ext (f Int r)
-let fold_sd wildcard f r = let r = if wildcard then (f UnspecLoc r) else r in f Diff (f Same r)
-let fold_extr wildcard f r = let r = if wildcard then (f Irr r) else r in f (Dir W) (f (Dir R) r)
-let fold_sd_extr wildcard f = fold_sd wildcard (fun sd -> fold_extr wildcard (fun e -> f sd e))
-let fold_sd_extr_extr wildcard f =
-  fold_sd_extr wildcard (fun sd e1 -> fold_extr wildcard (fun e2 -> f sd e1 e2))
+let fold_ie f r = f Int (f Ext r)
+let fold_sd f r = f Diff (f Same r)
+let fold_extr f r = f (Dir W) (f (Dir R) r)
+let fold_sd_extr_extr f =
+  fold_sd (fun sd -> fold_extr (fun e1 -> fold_extr (fun e2 -> f sd e1 e2)))
+
+let expand_sd_macro sd f r = match sd with
+| None -> f Same (f Diff r)
+| Some sd -> f sd r
+
+let expand_dir_macro d f r = match d with
+| None -> f W (f R r)
+| Some d -> f d r
+
+(* Macro components for location: `None` represents any Same/Diff location. *)
+let fold_sd_macro_component f r =
+  f None (f (Some Diff) (f (Some Same) r))
+
+(* Macro components for direction: `None` represents any R/W direction. *)
+let fold_dir_macro_component f r =
+  f None (f (Some W) (f (Some R) r))
+
+(* Fold over Same/Diff and direction macro forms, keeping only names with at
+   least one wildcard component.  The `choices` argument passed to `f` is the
+   concrete expansion of that macro form. *)
+let fold_sd_extr_macros f r =
+  fold_sd_macro_component
+    (fun sd ->
+      fold_dir_macro_component
+        (fun d r ->
+          match sd,d with
+          (* Keep only forms that still contain at least one wildcard component. *)
+          | Some _,Some _ -> r
+          | _,_ ->
+              let choices =
+                expand_dir_macro d
+                  (fun d ->
+                    expand_sd_macro sd
+                      (fun sd k -> (sd,d)::k))
+                  [] in
+              f sd d choices r))
+    r
+
+(* Fold over all Same/Diff and direction macro triples that contain at least
+   one wildcard component.  The `choices` argument passed to `f` is the
+   concrete expansion of that triple. *)
+let fold_sd_extr_extr_macros f r =
+  fold_sd_macro_component
+    (fun sd ->
+      fold_dir_macro_component
+        (fun d1 ->
+          fold_dir_macro_component
+            (fun d2 r ->
+              match sd,d1,d2 with
+              (* Keep only forms that still contain at least one wildcard component. *)
+              | Some _,Some _,Some _ -> r
+              | _,_,_ ->
+                  let choices =
+                    expand_dir_macro d1
+                      (fun d1 ->
+                        expand_dir_macro d2
+                          (fun d2 ->
+                            expand_sd_macro sd
+                              (fun sd k -> (sd,d1,d2)::k)))
+                      [] in
+                  f sd d1 d2 choices r)))
+    r
+
+let compare_exception_handler e1 e2 = match e1,e2 with
+  | ExcEnter,ExcEnter|Eret,Eret|EretNext,EretNext -> 0
+  | ExcEnter,(Eret|EretNext)|Eret,EretNext -> -1
+  | (Eret|EretNext),ExcEnter|EretNext,Eret -> 1
+
+let pp_exception_handler = function
+  | ExcEnter -> "ExcEnter"
+  | Eret -> "Eret"
+  | EretNext -> "EretNext"
+
+let fold_exception_handler f r = f ExcEnter (f Eret (f EretNext r))
 
 type check =
   | Default | Sc | Uni | Thin | Critical

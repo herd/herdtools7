@@ -123,7 +123,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           | Rmw rmw -> RMW.show_rmw_reg rmw
           | Po _ | Fenced _ | Dp _ ->
             Code.is_same_loc @@ loc_sd e
-          |Insert _|Store|Node _ -> false
+          |Insert _|Store|Node _|Exception _ -> false
           | Id -> assert false in
         let is_ord_event m =
             let open C.E in

@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -variant memtag -metadata false -oneloc PosRW ExcEnter EretNext Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+pos-excenter-eretnext-rfi [PosRW ExcEnter EretNext Rfi] failed:
+EretNext must be followed by an instruction in the same process.
+*)

@@ -1346,7 +1346,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | (OrdinaryAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
         |ArrayCellAccess (`AcquirePC,_)
         |MorelloAccess `AcquirePC) -> Warn.fatal "AcqPC annotation on xload"
-      | (MemoryTagAccess|MorelloTagAccess|MorelloSealAccess) -> Warn.fatal "variant annotation on xload"
+      | (MemoryTagAccess|MemoryTagFaultAccess|MorelloTagAccess|MorelloSealAccess) -> Warn.fatal "variant annotation on xload"
       | atom -> Warn.fatal "Bad annotation for Lx: %s\n" (pp atom)
 
 
@@ -1361,7 +1361,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         |ArrayCellAccess (`Release,_)) as atom ->
           let sz,_ = get_access_size atom in
           stxr_sz LY sz
-      | (MemoryTagAccess|MorelloTagAccess|MorelloSealAccess) -> Warn.fatal "variant annotation on xstore"
+      | (MemoryTagAccess|MemoryTagFaultAccess|MorelloTagAccess|MorelloSealAccess) -> Warn.fatal "variant annotation on xstore"
       | atom -> Warn.fatal "Bad annotation for Sx: %s\n" (pp atom)
 
     let get_xstore_addon atom r2 r3 e init st p = match atom with
@@ -1759,7 +1759,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let add_label_to_last_instructions e cs =
       match e.C.check_fault with
-      | Some (label_name, _) ->
+      | Some C.{label=label_name;_} ->
         let rec do_rec = function
           | [] -> Warn.fatal "No instruction to label for fault"
           | [instr] -> [Label(label_name, instr)]
@@ -1786,7 +1786,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let add_label_to_exclusive_load_and_store er ew cs =
       let add_label e instr =
         match e.C.check_fault with
-        | Some (label_name, _) -> Label(label_name, instr)
+        | Some C.{label=label_name;_} -> Label(label_name, instr)
         | None -> instr in
       let rec do_rec = function
         | [] -> []
@@ -1942,7 +1942,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                 end) in
             let init,cs,st = S.emit_store st p init loc (Value.to_int e.C.v) is_morello e in
             Some (None,init,cs,st)
-        | W,MemoryTagAccess ->
+        | W,(MemoryTagAccess|MemoryTagFaultAccess) ->
             let init,cs,st = STG.emit_store st p init e in
             Some (None,init,cs,st)
         | W,PairAccess opt ->
@@ -2277,8 +2277,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Cas -> map_some emit_cas
         | LdOp op -> map_some (emit_ldop op)
         | StOp op -> emit_stop op
-        | AllAmo | SafeAmo ->
-            Warn.fatal "Cannot compile aggregate atomic operation"
 
 (* Fences *)
     let emit_cachesync s isb r =
@@ -2519,7 +2517,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_idx st p init loc r2 (Value.to_int e.C.v) is_morello e in
               Some (None,init,pseudo cs0@cs,st)
-          | W,MemoryTagAccess ->
+          | W,(MemoryTagAccess|MemoryTagFaultAccess) ->
               let init,cs,st = STG.emit_store_idx vdep st p init e r2 in
               Some (None,init,pseudo cs0@cs,st)
           | W,PairAccess opt ->
@@ -2661,7 +2659,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                       sxtw r2 r3::cs,st in
                 let cs2 = pseudo cs2 in
                 r2,cs2,init,st,[]
-            | MemoryTagAccess ->
+            | (MemoryTagAccess|MemoryTagFaultAccess) ->
                 let cs0,st = calc0_gen csel st vdep r2 r1 in
                 let rA,init,st =
                   U.next_init st p init
@@ -2749,7 +2747,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                   end) in
               let init,cs,st = S.emit_store_reg st p init loc r2 is_morello e in
               Some (None,init,cs2@cs,st)
-          | MemoryTagAccess ->
+          | (MemoryTagAccess|MemoryTagFaultAccess) ->
               let init,cs,st = STG.emit_store_reg st p init loc r2 in
               Some (None,init,cs2@cs,st)
           | PteAccess (Set (`Plain,pte))
@@ -2852,6 +2850,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let tr_atom = function
       | Some MemoryTagAccess
+      | Some MemoryTagFaultAccess
       | Some (PteAccess _) -> V64
       | atom ->
          begin match get_access_atom atom with
@@ -2941,8 +2940,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         | Swp ->  map_some_dp (emit_ldop_dep swp swp_mixed)
         | Cas -> map_some_dp emit_cas_dep
         | StOp op -> emit_stop_dep op
-        | AllAmo | SafeAmo ->
-            Warn.fatal "Cannot compile aggregate atomic operation"
 
     let emit_fence_dp st p init n f (dp,csel) r1 n1 =
       let vdep = node2vdep n1 in
@@ -3000,6 +2997,23 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         (fun st p init loc r ->
           STR.emit_store_reg st p init loc r false C.evt_null)
 
+    let emit_exc_enter st p =
+      let r,st = next_reg st in
+      let st = A.add_type (A.of_reg p r) TypBase.Int st in
+      r,[Instruction (incr r)],st
+
+    let emit_eret is_skip st p =
+      if is_skip then
+        let r_elr,st = next_reg st in
+        let st =
+          A.add_type
+            (A.of_reg p r_elr)
+            (TypBase.Std (TypBase.Unsigned,MachSize.Quad)) st in
+        [Instruction (I_MRS (r_elr,ELR_EL1));
+         Instruction (addi_64 r_elr r_elr 4);
+         Instruction (I_MSR (ELR_EL1,r_elr));
+         Instruction I_ERET],st
+      else [Instruction I_ERET],st
 
     let get_strx_result k = function
       | I_STXR (_,_,r,_,_)|I_STXRBH (_,_,r,_,_)

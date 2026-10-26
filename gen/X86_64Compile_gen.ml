@@ -451,6 +451,9 @@ module Make(Cfg:XXXCompile_gen.Config) : XXXCompile_gen.S =
         (fun st p init loc r ->
           emit_store_mixed_reg Word 0 st p init loc r)
 
+    let emit_exc_enter _ _ = Warn.user_error "Exception handlers are not supported for X86_64"
+    let emit_eret _ _ _ = Warn.user_error "Exception handlers are not supported for X86_64"
+
     let get_xstore_results _ = []
 
 (* Info computation, compute extra alignement constraints *)

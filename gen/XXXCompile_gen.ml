@@ -16,7 +16,7 @@
 
 module type Config = sig
   val debug : Debug_gen.t
-  val show : ShowGen.t option
+  val show : Config.show option
   val same_loc : bool
   val unrollatomic : int option
   val allow_back : bool
@@ -63,20 +63,22 @@ module Make(C:Config)(A:Arch_gen.S) = struct
       end)
       (A)(A)
 
+  module R = Relax.Make(A)(E)
+
   type check = E.edge list list -> bool
 
   let () = match C.show with
   | Some s -> begin
-      try E.show s ; exit 0
+      try R.show s ; exit 0
       with e -> Printexc.print_backtrace stderr ;
         flush stderr ; raise e
   end
   | None -> ()
 
-  module R = Relax.Make(A) (E)
   module Conf = struct
     include C
     let naturalsize = TypBase.get_size C.typ
+    let init_value = !Config.init_value
   end
   module C = Cycle.Make(Conf)(E)
 
@@ -154,6 +156,12 @@ module type S = sig
 
   val postlude : A.st -> Code.proc -> A.init -> A.pseudo list ->
     A.init * A.pseudo list * A.st
+
+  val emit_exc_enter :
+    A.st -> Code.proc -> A.reg * A.pseudo list * A.st
+
+  val emit_eret :
+    bool -> A.st -> Code.proc -> A.pseudo list * A.st
 
   val get_xstore_results : A.pseudo list -> (A.reg * int) list
   val get_archinfo : C.node -> (string * string) list

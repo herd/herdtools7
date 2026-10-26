@@ -34,7 +34,6 @@ module Make (F:Fence.S)(A:Atom.S) =
       let is_ext e = match E.get_ie e with
       | Ext -> true
       | Int -> false
-      | UnspecCom -> assert false
 
       let atomic = Some A.default_atom
 
