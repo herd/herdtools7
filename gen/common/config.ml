@@ -20,6 +20,7 @@ let verbose = ref 0
 let libdir = ref (Filename.concat Version.libdir "herd")
 let nprocs = ref 4
 let size = ref 6
+let max_tests = ref None
 let one = ref false
 let arch = ref (`PPC: Archs.t)
 let typ = ref TypBase.default
@@ -352,6 +353,10 @@ let diy_spec () =
     sprintf
       "<n> set the maximal size of cycles (default %i)"
       !size)::
+   ("-max-tests", Arg.Int (fun n ->
+      if n < 0 then raise (Arg.Bad "-max-tests must be non-negative") ;
+      max_tests := Some n),
+    "<n> stop search after <n> tests per prefix and relaxation (requires -relax; default unlimited; unsupported with -mix true)")::
    ("-exact", Arg.Clear upto, " produce cycle of size exactly <n>")::
    ("-nprocs", Arg.Int (fun n -> nprocs := n),
    sprintf "<n> reject tests with more than <n> threads  (default %i)"
@@ -400,6 +405,10 @@ let valid_stdout_flag is_diyone =
   then Warn.user_error "-stdout will be ignored."
 
 let validate_variant () = Variant_gen.validate !variant
+
+let validate_max_tests_mix () =
+  if !max_tests <> None && !mix then
+    Warn.user_error "-max-tests is not supported with -mix true"
 
 let prog = if Array.length Sys.argv > 0 then Sys.argv.(0) else "XXX"
 let baseprog = sprintf "%s (version %s)" (Filename.basename prog) (Version.version)

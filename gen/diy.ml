@@ -25,6 +25,7 @@ module type DiyConfig = sig
   val prefix : string list
   val cumul : string Config.cumul
   val max_ins : int
+  val max_tests : int option
   val mix : bool
   val max_relax : int
   val min_relax : int
@@ -235,6 +236,7 @@ let () =
     let upto = !Config.upto
     let varatom = !varatom
     let max_ins = !Config.max_ins
+    let max_tests = !Config.max_tests
     let mix = !Config.mix
     let max_relax = !Config.max_relax
     let min_relax = !Config.min_relax
@@ -296,6 +298,7 @@ let () =
   let module Builder = (val builder : Builder.S) in
   let module M = Make(Builder)(Co) in
   try
+    Config.validate_max_tests_mix ();
     (* Parse inputs `relax` `safe` and `reject` *)
     let r_nempty = Misc.consp !Config.relaxs in
     let relax = M.parse_argument_list !Config.relaxs in
@@ -304,6 +307,8 @@ let () =
     if Misc.nilp relax then if r_nempty then begin
       Warn.fatal "relaxations provided in relaxlist could not be used to generate cycles"
     end ;
+    if Misc.nilp relax && !Config.max_tests <> None then
+      Warn.user_error "-max-tests requires at least one -relax" ;
     let safe = M.parse_argument_list !Config.safes in
     let reject = M.parse_argument_list !Config.rejects in
     match !Config.filter_check with

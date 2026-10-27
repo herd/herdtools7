@@ -174,6 +174,8 @@ module Make(Config:Config)(T:Builder.S)
            relaxed : T.R.SetSet.t ;
          }
 
+      let ntests t = t.ntests
+
       type check = edge list list -> bool
       type info = (string * string) list
       (* `mk_info` is part of the prepared-test stage and should stay pure:
