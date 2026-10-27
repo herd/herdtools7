@@ -111,6 +111,10 @@ module Make (S : SemExtra.S) = struct
       let rfmap = (TestResult.concrete t).S.rfmap in
       try S.RFMap.find (S.Load e) rfmap
       with Not_found -> failwith "cannot find store for load event"
+
+    let invalidated_by (t : t) (e : E.event) =
+      let inv = relation "inv-domain" t in
+      E.EventSet.elements (E.EventRel.succs inv e)
   end
 
   type exec = Exec.t
@@ -273,9 +277,28 @@ module Make (S : SemExtra.S) = struct
     in
     Format.sprintf "a %s Effect" eff
 
-  let describe_tlbi_event (ins : LitmusTest.instr) =
-    ignore ins;
-    Printf.sprintf "a TLBI effect"
+  let describe_tlbi_event (ins : LitmusTest.instr) locations =
+    match ins.instruction with
+    | I_TLBI _ -> (
+        match locations with
+        | [] -> "a TLBI Effect"
+        | [ loc ] ->
+            Printf.sprintf
+              "a TLBI Effect which includes the Virtual Address of %s in its \
+               invalidation scope"
+              loc
+        | locs ->
+            let names =
+              match List.rev locs with
+              | last :: rest ->
+                  String.concat ", " (List.rev rest) ^ " and " ^ last
+              | [] -> assert false
+            in
+            Printf.sprintf
+              "a TLBI Effect which includes the Virtual Addresses of %s in its \
+               invalidation scope"
+              names)
+    | _ -> invalid_arg "unsupported instruction"
 
   (* Generate prose description of a dependency (addr, data, ctrl). *)
   let describe_dep ctx (dep : dependency) : string =
@@ -343,7 +366,20 @@ module Make (S : SemExtra.S) = struct
             ->
               describe_mem_access ~ev ~loc ~dir ~value ~is_implicit
           | Some Barrier -> describe_barrier_event ins
-          | Some TLBI -> describe_tlbi_event ins
+          | Some TLBI ->
+              let open Constant in
+              let locations =
+                Exec.invalidated_by ctx.exec ev
+                |> List.filter_map E.location_of
+                |> Util.List.uniq ~eq:(fun l1 l2 ->
+                    S.A.location_compare l1 l2 = 0)
+                |> List.filter_map (function
+                  | S.A.Location_global (A.I.V.Val (Symbolic (System (PTE, s))))
+                    ->
+                      Some s
+                  | _ -> None)
+              in
+              describe_tlbi_event ins locations
           | _ -> failwith "unsupported event")
       |> Util.List.intersperse ", and "
       |> String.concat ""

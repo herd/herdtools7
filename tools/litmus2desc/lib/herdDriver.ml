@@ -114,12 +114,15 @@ module DefaultConfig = struct
     let fixedsize = !PP.fixedsize
     let extrachars = !PP.extrachars
     let edgeattrs = PP.get_edgeattrs ()
-    let doshow = StringSet.of_list [ "dob"; "dtrm"; "co"; "tr-ib" ]
+
+    let doshow =
+      StringSet.of_list [ "dob"; "dtrm"; "co"; "tr-ib"; "inv-domain" ]
+
     let unshow = !PP.unshow
     let noid = !PP.noid
     let symetric = !PP.symetric
     let classes = !PP.classes
-    let showraw = StringSet.of_list [ "dob"; "dtrm"; "tr-ib" ]
+    let showraw = StringSet.of_list [ "dob"; "dtrm"; "tr-ib"; "inv-domain" ]
     let dotheader = None
     let shift = !PP.shift
     let edgemerge = !PP.edgemerge
