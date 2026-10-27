@@ -2966,13 +2966,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         let r2,st = next_reg st in
         let cs0,st =  calc0_gen csel st vdep r2 r1 in
         let rB,init,st = U.next_init st p init loc in
-        let r,st = match f with
-          | CMO _ -> rB,st
-          | _ -> tempo1 st in
-        let cs2 = (if do_morello then
-          [do_addcapa rB r r2]
+        let cs2 = if do_morello then
+          [do_addcapa rB rB r2]
         else
-          [do_add64 vloc rB r r2]) in
+          [do_add64 vloc rB rB r2] in
         let _,cs, st = emit_fence st p init n f in
         None, init, pseudo cs0@pseudo cs2@cs, st
       | D.DATA -> let init,cs, st = emit_fence st p init n f in
