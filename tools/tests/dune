@@ -1,4 +1,11 @@
 (cram
+ (applies_to hashes)
+ (deps
+  (file %{workspace_root}/gen/tests/AArch64/MP.litmus)
+  %{bin:mshowhashes7}
+  %{bin:rehash7}))
+
+(cram
  (applies_to miaou)
  (deps
   (source_tree libdir)
