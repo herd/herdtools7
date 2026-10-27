@@ -259,7 +259,7 @@ let build_edge : partial_edge -> prim_rel list -> partial_edge option =
 
 let implied_constraints (l : prim_rel list) :
     prim_set list * prim_rel list * prim_set list =
-  let loc : prim_rel = Prim "loc" in
+  let loc : prim_rel = Prim "same-loc" in
   l
   |> List.map (fun (x : prim_rel) ->
       match x with
@@ -279,6 +279,8 @@ let implied_constraints (l : prim_rel list) :
           ( [ Event { Ir.default_event with access = Any R } ],
             [ loc ],
             [ Event { Ir.default_event with access = Any W } ] )
+      | Prim ("rmw" | "rmw-noret") ->
+          ([], [ loc ], [])
       | Prim "data" ->
           ( [ Event { Ir.default_event with access = Any R } ],
             [],
