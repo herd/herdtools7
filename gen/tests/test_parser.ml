@@ -1,3 +1,5 @@
+open Gen_common
+
 let pp_list pp xs =
   Printf.sprintf "[%s]" (String.concat ";" (List.map pp xs))
 
