@@ -1,0 +1,19 @@
+ASL BranchDecisionsMemory
+(* Two reads of one address must not share a symbolic value. *)
+
+{ uint64_t x=0; 0:X1=x; }
+
+func main() => integer
+begin
+  let addr = read_register(1);
+  let before = read_memory{64}(addr);
+  var result = 0;
+  if before[0] == '1' then result = result + 1; end;
+  write_memory{64}(addr, 1[63:0]);
+  let after = read_memory{64}(addr);
+  if after[0] == '1' then result = result + 2; end;
+  write_register(0, result[63:0]);
+  return 0;
+end;
+
+exists 0:X0=2
