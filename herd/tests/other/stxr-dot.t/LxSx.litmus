@@ -1,0 +1,7 @@
+AArch64 LxSx
+{
+  0:X0=x;
+}
+P0               ;
+ LDXR W1,[X0]    ;
+ STXR W3,W2,[X0] ;

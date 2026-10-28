@@ -475,6 +475,12 @@ val same_instance : event -> event -> bool
           event_structure ->  event_structure ->  event_structure ->
             event_structure
 
+  val aarch64_store_excl :
+    event_structure -> event_structure -> event_structure ->
+      event_structure ->
+        event_structure ->  event_structure ->  event_structure ->
+          event_structure
+
   val aarch64_cas :
     bool (* Physical memory access *) ->
     [< `DataFromRRs | `DataFromRx | `No] ->
@@ -2381,6 +2387,37 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
         aligned =
           resa.aligned @ data.aligned @ addr.aligned
           @ wres.aligned @ wresult.aligned @ wmem.aligned ;}
+
+(* AArch64 Store conditional *)
+    let aarch64_store_excl resa data addr br wres wresult wmem =
+      let base =
+        List.fold_left union resa [data; addr; br; wres; wresult; wmem] in
+      let in_wmem = minimals wmem in
+      let stores = mem_stores_of in_wmem
+      and in_wres = minimals wres
+      and in_wresult = minimals wresult
+      and in_br = minimals br
+      and out_data = maximals data
+      and out_resa = maximals resa
+      and out_br = get_ctrl_output br in
+      { base with
+        intra_causality_data =
+          EventRel.unions
+           [ base.intra_causality_data;
+             EventRel.cartesian (get_output addr) in_br;
+             EventRel.cartesian (get_output addr) stores;
+             EventRel.cartesian out_resa in_br;
+             EventRel.cartesian out_data stores; ];
+        intra_causality_control =
+          EventRel.unions
+            [ base.intra_causality_control;
+              EventRel.cartesian (get_ctrl_output_commits addr) in_br;
+              EventRel.cartesian out_br in_wmem;
+              EventRel.cartesian out_br in_wres;
+              EventRel.cartesian out_br in_wresult;
+              EventRel.cartesian (get_ctrl_output_commits addr) in_wmem;];
+        output = Some (EventSet.union (get_output wresult) (get_output wres));
+        ctrl_output = None; }
 
 (* AArch64 CAS *)
     let aarch64_cas is_phy mode rn rs rt wrs rm wm br =
