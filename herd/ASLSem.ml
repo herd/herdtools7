@@ -376,10 +376,16 @@ module Make (Conf : Config) = struct
     let commit (ii, poi) msg =
       M.mk_singleton_es (Act.Branching msg) (use_ii_with_poi ii poi)
 
-    let choice (m1 : V.v M.t) (m2 : 'b M.t) (m3 : 'b M.t) : 'b M.t =
+    let choice decisions ?(assumptions = [])
+        (m1 : V.v M.t) (m2 : 'b M.t) (m3 : 'b M.t) : 'b M.t =
       M.asl_data m1 @@ function
       | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) -> if b then m2 else m3
-      | b -> M.choiceT b m2 m3
+      | b ->
+          (* Keep the chosen guard constraint and all condition/branch effects. *)
+          match ASLBranchDecisions.find decisions ~assumptions b with
+          | Some true -> M.choiceT b m2 M.zeroT
+          | Some false -> M.choiceT b M.zeroT m3
+          | None -> M.choiceT b m2 m3
 
     let logor v1 v2 =
       match (v1, v2) with
@@ -951,6 +957,7 @@ module Make (Conf : Config) = struct
 
     let build_semantics t ii =
       let ii_env = (ii, ref ii.A.program_order_index) in
+      let decisions = ASLBranchDecisions.create () in
       let module ASLBackend = struct
         module Scope = Scope
 
@@ -972,13 +979,22 @@ module Make (Conf : Config) = struct
         let appl_data m f = m >>= fun v -> return (f v)
         let debugT = M.debugT
         let commit = commit ii_env
-        let choice = choice
+        let choice ?assumptions m1 m2 m3 =
+          choice decisions ?assumptions m1 m2 m3
         let delay m k = M.delay_kont "ASL" m k
         let return = M.unitT
         let cutoffT msg v = cutoffT ii_env msg v
         let on_write_identifier = on_write_identifier ii_env
         let on_read_identifier = on_read_identifier ii_env
-        let binop = binop
+        let binop op left right =
+          binop op left right >>= fun result ->
+          let () =
+            match op with
+            | `EQ | `BEQ ->
+                ASLBranchDecisions.record_equal decisions ~result ~left ~right
+            | _ -> ()
+          in
+          return result
         let unop = unop
         let ternary = ternary
         let create_vector = create_vector
@@ -988,7 +1004,13 @@ module Make (Conf : Config) = struct
         let set_index = set_index
         let get_field = get_field
         let set_field = set_field
-        let read_from_bitvector = read_from_bitvector
+        let read_from_bitvector ~loc positions source =
+          read_from_bitvector ~loc positions source >>= fun result ->
+          let positions =
+            Asllib.ASTUtils.slices_to_positions v_as_int positions
+          in
+          ASLBranchDecisions.record_slice decisions ~result ~source ~positions;
+          return result
         let write_to_bitvector = write_to_bitvector
         let concat_bitvectors = concat_bitvectors
         let bitvector_length = bitvector_length
