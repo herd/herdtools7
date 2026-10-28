@@ -16,6 +16,17 @@
 
 (* Create a set of relaxations for diy using a cat file *)
 
+module SourceCache = TxtLoc.Extract ()
+
+let pp_source_exp fmt exp =
+  let source = SourceCache.extract (ASTUtils.exp2loc exp) in
+  source
+  |> String.split_on_char '\n'
+  |> List.map String.trim
+  |> List.filter (fun line -> line <> "")
+  |> String.concat " "
+  |> Format.pp_print_string fmt
+
 module Opts = struct
   type t = {
     log_level : Logs.level;
@@ -257,7 +268,7 @@ let run ~(opts : Opts.t) (tree : AST.ins list) =
             (fun acc (relaxs, ast_e) ->
               let print_cat_rel () =
                 if Opts.should_dump_origin opts then
-                  printf "## %a@." AstUtils.pp_exp ast_e
+                  printf "## %a@." pp_source_exp ast_e
               in
               let relaxs = List.filter (fun r -> not (List.mem r acc)) relaxs in
               if relaxs <> [] then (
