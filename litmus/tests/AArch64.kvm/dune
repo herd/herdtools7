@@ -7,5 +7,6 @@
   (env_var KVM_UNIT_TESTS)
   (env_var QEMU)
   %{bin:litmus7}
+  %{workspace_root}/gen/tests/AArch64.MTE/memtag-CoRW2+rmw+T.litmus
   (glob_files %{workspace_root}/herd/tests/instructions/AArch64.kvm/*.litmus)
   (source_tree %{workspace_root}/litmus/libdir)))
