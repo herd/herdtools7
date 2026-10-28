@@ -1,0 +1,10 @@
+Test BranchDecisionsExpressions Required
+States 1
+0:calls=4; 0:X0=4;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=4 /\ 0:calls=4)
+Observation BranchDecisionsExpressions Always 1 0
+Hash=0a0c3798a5c4e80c0c0c196728288551
+

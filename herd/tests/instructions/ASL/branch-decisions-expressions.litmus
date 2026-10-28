@@ -1,0 +1,25 @@
+ASL BranchDecisionsExpressions
+(* Recomputed conversions and arithmetic must reuse decisions, not effects. *)
+
+{ uint64_t x=3; 0:X1=x; }
+
+var calls: integer = 0;
+
+func below_limit(value: bits(64)) => boolean
+begin
+  calls = calls + 1;
+  return UInt(value) + 1 < 8;
+end;
+
+func main() => integer
+begin
+  let value = read_memory{64}(read_register(1));
+  var result = 0;
+  for r = 0 to 3 do
+    if below_limit(value) then result = result + 1; end;
+  end;
+  write_register(0, result[63:0]);
+  return 0;
+end;
+
+forall (0:X0=4 /\ 0:calls=4)

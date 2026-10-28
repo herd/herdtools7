@@ -1,0 +1,10 @@
+Test BranchDecisionsUpdates Required
+States 1
+0:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1)
+Observation BranchDecisionsUpdates Always 1 0
+Hash=2ee48912e59f60bfda6ba864479643f0
+

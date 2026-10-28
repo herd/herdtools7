@@ -106,6 +106,8 @@ module Make (Conf : Config) = struct
   module Act = ASLAction.Make (Conf.C.PC) (ASL64AH)
   include SemExtra.Make (Conf.C) (ASL64AH) (Act)
 
+  module BranchDecisions = ASLBranchDecisions.Make (M.VC)
+
   module TypeCheck = Asllib.Typing.Annotate (struct
     let check =
       let open Asllib.Typing in
@@ -382,7 +384,7 @@ module Make (Conf : Config) = struct
       | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) -> if b then m2 else m3
       | b ->
           (* Keep the chosen guard constraint and all condition/branch effects. *)
-          match ASLBranchDecisions.find decisions ~assumptions b with
+          match BranchDecisions.find decisions ~assumptions b with
           | Some true -> M.choiceT b m2 M.zeroT
           | Some false -> M.choiceT b M.zeroT m3
           | None -> M.choiceT b m2 m3
@@ -957,7 +959,7 @@ module Make (Conf : Config) = struct
 
     let build_semantics t ii =
       let ii_env = (ii, ref ii.A.program_order_index) in
-      let decisions = ASLBranchDecisions.create () in
+      let decisions = BranchDecisions.create () in
       let module ASLBackend = struct
         module Scope = Scope
 
@@ -972,7 +974,11 @@ module Make (Conf : Config) = struct
         let v_of_literal = v_of_literal
         let v_to_z = v_to_z
         let v_to_label = v_to_label
-        let bind_data = M.asl_data
+        (* Observe equations before their result reaches the ASL continuation. *)
+        let bind_data m f =
+          M.asl_data (M.with_constraints m) (fun (value, constraints) ->
+            BranchDecisions.record decisions constraints;
+            f value)
         let bind_seq = M.asl_seq
         let bind_ctrl = M.asl_ctrl
         let prod_par = M.( >>| )
@@ -986,15 +992,7 @@ module Make (Conf : Config) = struct
         let cutoffT msg v = cutoffT ii_env msg v
         let on_write_identifier = on_write_identifier ii_env
         let on_read_identifier = on_read_identifier ii_env
-        let binop op left right =
-          binop op left right >>= fun result ->
-          let () =
-            match op with
-            | `EQ | `BEQ ->
-                ASLBranchDecisions.record_equal decisions ~result ~left ~right
-            | _ -> ()
-          in
-          return result
+        let binop = binop
         let unop = unop
         let ternary = ternary
         let create_vector = create_vector
@@ -1004,13 +1002,7 @@ module Make (Conf : Config) = struct
         let set_index = set_index
         let get_field = get_field
         let set_field = set_field
-        let read_from_bitvector ~loc positions source =
-          read_from_bitvector ~loc positions source >>= fun result ->
-          let positions =
-            Asllib.ASTUtils.slices_to_positions v_as_int positions
-          in
-          ASLBranchDecisions.record_slice decisions ~result ~source ~positions;
-          return result
+        let read_from_bitvector = read_from_bitvector
         let write_to_bitvector = write_to_bitvector
         let concat_bitvectors = concat_bitvectors
         let bitvector_length = bitvector_length

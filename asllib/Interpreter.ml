@@ -194,8 +194,7 @@ module Make (B : Backend.S) (C : Config) = struct
   let choice ~pos env m v1 v2 =
     let next (res, decision, v) =
       let env =
-        if B.is_undetermined v then
-          IEnv.push_branch_assumption v decision env
+        if B.is_undetermined v then IEnv.push_branch_assumption v decision env
         else env
       in
       let env =
@@ -215,8 +214,9 @@ module Make (B : Backend.S) (C : Config) = struct
         Format.eprintf "@[<2>%a:@ non-deterministic choice@]@." pp_pos
           (pos, env.IEnv.global)
     in
-    B.choice ~assumptions:env.IEnv.global.branch_assumptions
-      (return v) (next (v1, true, v)) (next (v2, false, v))
+    B.choice ~assumptions:env.IEnv.global.branch_assumptions (return v)
+      (next (v1, true, v))
+      (next (v2, false, v))
 
   (*
    * Choice with inserted branching (commit) effect/

@@ -90,7 +90,8 @@ module NativeBackend (C : Config) = struct
   let debugT _s m = m
   let commit _ : unit m = ()
 
-  let choice ?assumptions:_ (c : value m) (m_true : 'b m) (m_false : 'b m) : 'b m =
+  let choice ?assumptions:_ (c : value m) (m_true : 'b m) (m_false : 'b m) :
+      'b m =
     let open AST in
     bind c (function
       | NV_Literal (L_Bool true) -> m_true

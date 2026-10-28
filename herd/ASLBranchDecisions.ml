@@ -1,63 +1,70 @@
-(* Reuse decisions for identical symbolic values or slice/literal comparisons.
-   Provenance is local to an interpreter instance; decisions stay in its paths. *)
+(* Reuse decisions for structurally identical symbolic computations.
+   Definitions are local to an interpreter instance; decisions stay in its paths. *)
 
 module V = ASLValue.V
 
-type slice = V.v * int list
-type comparison = slice * Asllib.Bitvector.t
+module Make (VC : Valconstraint.S with type atom = V.v) = struct
+  type t = { mutable definitions : VC.expr option V.ValueMap.t }
 
-type t = {
-  mutable slices : slice V.ValueMap.t;
-  mutable comparisons : comparison V.ValueMap.t;
-}
+  let create () = { definitions = V.ValueMap.empty }
 
-let create () =
-  { slices = V.ValueMap.empty; comparisons = V.ValueMap.empty }
+  (* Operation results are fresh symbols. Branch assumptions (Atom), initial
+     reads and other constraints must never become shared definitions. *)
+  let record t constraints =
+    List.iter
+      (function
+        | VC.Assign ((V.Var _ as result),
+                     ((VC.Unop _ | VC.Binop _ | VC.Terop _) as expression)) ->
+            begin match V.ValueMap.find_opt result t.definitions with
+            | None ->
+                t.definitions <- V.ValueMap.add result (Some expression) t.definitions
+            | Some (Some previous) when previous <> expression ->
+                t.definitions <- V.ValueMap.add result None t.definitions
+            | Some _ -> ()
+            end
+        | _ -> ())
+      constraints
 
-(* Keep the symbolic source, not its register name or memory address. *)
-let record_slice t ~result ~source ~positions =
-  match result with
-  | V.Var _ when not (V.equal result source)
-                 && not (V.ValueMap.mem result t.slices) ->
-      t.slices <- V.ValueMap.add result (source, positions) t.slices
-  | _ -> ()
+  module Pairs = Map.Make (struct
+    type t = V.v * V.v
+    let compare = Misc.pair_compare V.compare V.compare
+  end)
 
-(* Only an exact slice/literal equality is recognized; no algebraic reasoning. *)
-let record_equal t ~result ~left ~right =
-  let comparison slice literal =
-    match V.ValueMap.find_opt slice t.slices, literal with
-    | Some source, V.Val (Constant.Concrete (ASLScalar.S_BitVector bits)) ->
-        Some (source, bits)
-    | _ -> None
-  in
-  match result with
-  | V.Var _ when not (V.equal result left || V.equal result right)
-                 && not (V.ValueMap.mem result t.comparisons) ->
-      let key =
-        match comparison left right with
-        | Some _ as key -> key
-        | None -> comparison right left
-      in
-      Option.iter
-        (fun key ->
-          t.comparisons <- V.ValueMap.add result key t.comparisons)
-        key
-  | _ -> ()
-
-(* A missing match means that both branches must still be explored. *)
-let find t ~assumptions condition =
-  let same_comparison other =
-    match V.ValueMap.find_opt condition t.comparisons,
-          V.ValueMap.find_opt other t.comparisons with
-    | Some ((source, positions), bits),
-      Some ((other_source, other_positions), other_bits) ->
-        V.equal source other_source
-        && List.equal Int.equal positions other_positions
-        && Asllib.Bitvector.equal bits other_bits
-    | _ -> false
-  in
-  List.find_map
-    (fun (other, decision) ->
-      if V.equal condition other || same_comparison other then Some decision
-      else None)
-    assumptions
+  (* Compare definitions, retaining symbol identities at opaque leaves.
+     Memoization avoids expanding shared subexpressions repeatedly and stops
+     cycles conservatively. Equality also accepts reversed operands. *)
+  let find t ~assumptions condition =
+    let memo = ref Pairs.empty in
+    let definition value =
+      Option.join (V.ValueMap.find_opt value t.definitions)
+    in
+    let rec same left right =
+      V.equal left right ||
+      match Pairs.find_opt (left, right) !memo with
+      | Some result -> result
+      | None ->
+          memo := Pairs.add (left, right) false !memo;
+          let result =
+            match definition left, definition right with
+            | Some left, Some right -> same_expression left right
+            | _ -> false
+          in
+          memo := Pairs.add (left, right) result !memo;
+          result
+    and same_expression left right =
+      match left, right with
+      | VC.Unop (op, value), VC.Unop (other_op, other_value) ->
+          op = other_op && same value other_value
+      | VC.Binop (op, left, right), VC.Binop (other_op, other_left, other_right) ->
+          op = other_op &&
+          ((same left other_left && same right other_right) ||
+           (op = Op.Eq && same left other_right && same right other_left))
+      | VC.Terop (op, a, b, c), VC.Terop (other_op, x, y, z) ->
+          op = other_op && same a x && same b y && same c z
+      | _ -> false
+    in
+    List.find_map
+      (fun (previous, decision) ->
+        if same condition previous then Some decision else None)
+      assumptions
+end
