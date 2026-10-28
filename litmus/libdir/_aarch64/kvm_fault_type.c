@@ -109,16 +109,18 @@ static enum fault_type_t get_fault_type(unsigned long esr)
 
 // Fault structure, notice that the originating thread is omitted.
 typedef struct {
-  int instr_symb;
+  int instr_symb[MAX_LABELS_PER_FAULT];
   int data_symb;
   enum fault_type_t type;
 } fault_info_t;
 
 // Total order on fault occurrences.
 static int compare_fault_info (fault_info_t *f1, fault_info_t *f2) {
-  if (f1->instr_symb < f2->instr_symb) return -1;
-  else if (f1->instr_symb > f2->instr_symb) return 1;
-  else if (f1->data_symb < f2->data_symb) return -1;
+  for (int i = 0; i < MAX_LABELS_PER_FAULT; i++) {
+    if (f1->instr_symb[i] < f2->instr_symb[i]) return -1;
+    if (f1->instr_symb[i] > f2->instr_symb[i]) return 1;
+  }
+  if (f1->data_symb < f2->data_symb) return -1;
   else if (f1->data_symb > f2->data_symb) return 1;
   else if (f1->type < f2->type) return -1;
   else if (f1->type > f2->type) return 1;
@@ -155,11 +157,28 @@ static void insert_fault(fault_info_t *f,th_faults_info_t *t) {
   do_insert(t->n,f,t); // Add at end.
 }
 
+/* Store in ids the fault type for each matching label;
+ * the entry zero of fault_label_offsets is NULL. */
+static void get_fault_instr_symbs(labels_t *lbls, ins_t *pc, int *ids) {
+  for (int i = 0; i < MAX_LABELS_PER_FAULT; i++)
+    ids[i] = INSTR_SYMB_ID_UNKNOWN;
+  ids[0] = get_instr_symb_id(lbls, pc);
+  if (!pc) return;
+  int n = 0;
+  for (int i = 1; i < INSTR_SYMB_ID_UNKNOWN; i++) {
+    ins_t *label = *(ins_t **)((char *)lbls + fault_label_offsets[i]);
+    if (pc == label) ids[n++] = i;
+  }
+}
+
 // Match fault (*flt) against specification (instr_symb,data_symb,ftype).
 static int match_fault_info(int instr_symb, int data_symb, int ftype, fault_info_t *flt) {
   int r = 1;
   if (instr_symb != INSTR_SYMB_ID_UNKNOWN) { // Absence catch them all.
-    r &= flt->instr_symb == instr_symb;
+    int found = 0;
+    for (int i = 0; i < MAX_LABELS_PER_FAULT; i++)
+      found |= flt->instr_symb[i] == instr_symb;
+    r &= found;
   }
   if (data_symb != DATA_SYMB_ID_UNKNOWN) { // Absence catch them all.
     r &= flt->data_symb == data_symb;
@@ -196,7 +215,8 @@ static void th_faults_info_init(th_faults_info_t *th_flts)
 {
   for (int i = 0; i < MAX_FAULTS_PER_THREAD; i++) {
     fault_info_t *f = &th_flts->faults[i];
-    f->instr_symb = INSTR_SYMB_ID_UNKNOWN;
+    for (int j = 0; j < MAX_LABELS_PER_FAULT; j++)
+      f->instr_symb[j] = INSTR_SYMB_ID_UNKNOWN;
     f->data_symb = DATA_SYMB_ID_UNKNOWN;
     f->type = FaultUnknown;
   }
@@ -221,8 +241,11 @@ static void pp_positive_faults(th_faults_info_t *p) {
     th_faults_info_t *t = &p[proc];
     for (int k=0; k < t->n; k++) {
       fault_info_t *f = &t->faults[k];
-      printf(" ");
-      pp_fault(proc, f->instr_symb, f->data_symb, f->type);
+      for (int i = 0; i < MAX_LABELS_PER_FAULT; i++) {
+        if (i > 0 && f->instr_symb[i] == INSTR_SYMB_ID_UNKNOWN) break;
+        printf(" ");
+        pp_fault(proc, f->instr_symb[i], f->data_symb, f->type);
+      }
     }
   }
 }
