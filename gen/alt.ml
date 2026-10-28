@@ -35,6 +35,7 @@ module type AltConfig = sig
   type fence
   val cumul : fence list Config.cumul
   val wildcard : bool
+  val max_tests: int option
 end
 
 module Filter
@@ -642,6 +643,9 @@ module Make(C:Builder.S)
       (* ********************************** *)
       let choose_relax rs k =
       List.fold_left (fun k relax_edge ->
+        let below_limit nk = match O.max_tests with
+          | None -> true
+          | Some max_tests -> D.ntests nk - D.ntests k < max_tests in
         (* Build simple cycles for relaxation `relax_edge` *)
         (* Partially apply function `call_rec_base` *)
         let call_rec_add_safe =
@@ -650,15 +654,20 @@ module Make(C:Builder.S)
         (* Add safe edge to suffix *)
         let rec add_safe over n suf k =
           Chunk.fold_safe_predecessors adjacency (Search.chunks suf)
-            (fun k s -> call_rec_add_safe over n s suf (add_relaxs over) k) k
+            (fun k s ->
+              if below_limit k then
+                call_rec_add_safe over n s suf (add_relaxs over) k
+              else k) k
         (* Add some relax edges `relax_edge` to suffix, or nothing *)
         and add_relaxs over n suf k =
+          if not (below_limit k) then k else
           let k = call_rec_add_safe true n relax_edge suf (add_relaxs true) k in
           add_safe over n suf k in
 
         (* Decide what is the accumulator `k` for the next iteration
            based on if `prefix` is empty *)
-        if Misc.nilp prefix then
+        if not (below_limit k) then k
+        else if Misc.nilp prefix then
           (* Optimise: start with a relax edge `relax_edge` *)
             call_rec_add_safe true n relax_edge Search.empty (add_relaxs true) k
         else

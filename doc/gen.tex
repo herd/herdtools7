@@ -1523,6 +1523,12 @@ The tool \diy{} also accepts the following, additional, documented options.
 A configuration file consists in a list of options, one option per line.
 Lines introduced by \verb+#+ are comments and are thus ignored.
 \item[{\tt -size <n>}] Set the maximal size of cycles. Default is~$6$.
+\item[{\tt -max-tests <n>}] Stop searching each prefix and relaxation
+combination after it has produced~\opt{<n>} tests. With no explicit
+\opt{-prefix}, there is one implicit empty prefix. A single candidate can
+produce several output tests, so the final count for a combination may exceed
+\opt{<n>}. By default, there is no limit. This option requires at least one
+\opt{-relax} and is not supported with \opt{-mix true}.
 \item[{\tt -exact}] Produce cycles of size exactly~\opt{<n>},
 in place of size up to~\opt{<n>}.
 \item[{\tt -nprocs <n>}] Reject tests with more than \opt{<n>} threads.

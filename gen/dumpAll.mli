@@ -56,6 +56,8 @@ module Make(Config:Config) (T:Builder.S) : sig
 (* Remains abstract: for dumper internal usage *)
   type t
 
+  val ntests: t -> int
+
 (* Type of cycle generator *)
   type generator =
       (edge list -> mk_info -> mk_name ->  mk_scope -> t -> t) -> t -> t
