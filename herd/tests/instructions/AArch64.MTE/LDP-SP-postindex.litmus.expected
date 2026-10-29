@@ -1,0 +1,10 @@
+Test LDP-SP-postindex Required
+States 1
+ Fault(P0,x:red,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0,x,TagCheck))
+Observation LDP-SP-postindex Always 1 0
+Hash=c0fd1501e7a5b96d87c347fbb7387c4c
+

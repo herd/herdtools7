@@ -1,0 +1,10 @@
+Test LDXP-SP Required
+States 1
+0:X0=1; 0:X1=2;  ~Fault(P0,x,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1 /\ 0:X1=2 /\ not (fault(P0,x,TagCheck)))
+Observation LDXP-SP Always 1 0
+Hash=e742da184e6aebeccd3bc006e2b6b2a0
+

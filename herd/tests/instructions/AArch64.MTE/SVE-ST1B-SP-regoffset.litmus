@@ -1,0 +1,14 @@
+AArch64 SVE-ST1B-SP-regoffset
+Variant=memtag,sync,sve:128
+
+(* SVE register-offset stores are tag-checked with SP as the base. *)
+{
+  uint8_t x=0;
+  [tag(x)]=:green;
+  0:SP=x:red;
+  0:X1=0;
+}
+P0;
+  PTRUE P0.B,VL1;
+  ST1B {Z0.B},P0,[SP,X1];
+forall(fault(P0,x,TagCheck))

@@ -1,0 +1,10 @@
+Test CAS-SP Required
+States 1
+0:X0=1; [x]=2;  ~Fault(P0,x,TagCheck);
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall ([x]=2 /\ 0:X0=1 /\ not (fault(P0,x,TagCheck)))
+Observation CAS-SP Always 2 0
+Hash=242d8cc2d81721da2d1d709e0c7b86cf
+

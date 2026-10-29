@@ -1,0 +1,10 @@
+Test STP-SP-preindex Required
+States 1
+ Fault(P0,x:red,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0,x,TagCheck))
+Observation STP-SP-preindex Always 1 0
+Hash=d11ff69496bdee19c8f2fb26647537a7
+

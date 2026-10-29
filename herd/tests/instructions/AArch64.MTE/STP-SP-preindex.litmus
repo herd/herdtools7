@@ -1,0 +1,14 @@
+AArch64 STP-SP-preindex
+Variant=memtag,sync
+
+(* Writeback STP is tag-checked even when Rn is SP. *)
+{
+  uint32_t x[2]={0,0};
+  [tag(x)]=:green;
+  0:SP=x:red;
+  0:X0=1;
+  0:X1=2;
+}
+P0;
+  STP W0,W1,[SP,#0]!;
+forall(fault(P0,x,TagCheck))
