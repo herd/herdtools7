@@ -127,7 +127,7 @@ end) = struct
                 else ["labels", Json.list (List.rev_map Json.string labels)] in
               let row = Json.assoc
                 (["static_poi", Json.int code_instr.A.CodeInstr.static_poi;
-                  "instruction",
+                  "source_instruction",
                     Json.string
                       (A.pp_instruction
                         PPMode.Ascii
@@ -152,7 +152,7 @@ end) = struct
             Json.assoc
               ["proc", Json.int (MiscParser.proc_num proc);
                "function", Json.string (MiscParser.(pp_func (proc_func proc)));
-               "instructions", Json.list (instruction_rows code)])
+               "source_instructions", Json.list (instruction_rows code)])
           test.Test_herd.annotated_prog in
       let tr_out = OutMapping.info_to_tr test.Test_herd.info in
       let filter = match test.Test_herd.filter with
@@ -173,7 +173,7 @@ end) = struct
               test.Test_herd.info);
          "program", Json.list program;
          "init", Json.string (A.dump_state test.Test_herd.init_state);
-         "condition", Json.string
+         "post_condition", Json.string
            (C.do_constraints_to_string tr_out test.Test_herd.cond)] @ filter) in
     let executions = ref [] in
     let collect_execution exec =

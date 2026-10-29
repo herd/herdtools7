@@ -13,34 +13,34 @@
         {
           "proc": 0,
           "function": "main",
-          "instructions": [
-            { "static_poi": 0, "instruction": "MOV W1,#1" },
-            { "static_poi": 1, "instruction": "MOV W2,#2" },
-            { "static_poi": 2, "instruction": "CAS W1,W2,[X0]" },
-            { "static_poi": 3, "instruction": "LDR W3,[X0]" },
-            { "static_poi": 4, "instruction": "CBNZ W3,LC00" },
+          "source_instructions": [
+            { "static_poi": 0, "source_instruction": "MOV W1,#1" },
+            { "static_poi": 1, "source_instruction": "MOV W2,#2" },
+            { "static_poi": 2, "source_instruction": "CAS W1,W2,[X0]" },
+            { "static_poi": 3, "source_instruction": "LDR W3,[X0]" },
+            { "static_poi": 4, "source_instruction": "CBNZ W3,LC00" },
             {
               "static_poi": 5,
-              "instruction": "MOV W4,#1",
+              "source_instruction": "MOV W4,#1",
               "labels": [ "LC00" ]
             },
-            { "static_poi": 6, "instruction": "STR W4,[X5]" }
+            { "static_poi": 6, "source_instruction": "STR W4,[X5]" }
           ]
         },
         {
           "proc": 1,
           "function": "main",
-          "instructions": [
-            { "static_poi": 0, "instruction": "MOV W0,#2" },
-            { "static_poi": 1, "instruction": "STR W0,[X1]" },
-            { "static_poi": 2, "instruction": "DMB ST" },
-            { "static_poi": 3, "instruction": "MOV W2,#1" },
-            { "static_poi": 4, "instruction": "STR W2,[X3]" }
+          "source_instructions": [
+            { "static_poi": 0, "source_instruction": "MOV W0,#2" },
+            { "static_poi": 1, "source_instruction": "STR W0,[X1]" },
+            { "static_poi": 2, "source_instruction": "DMB ST" },
+            { "static_poi": 3, "source_instruction": "MOV W2,#1" },
+            { "static_poi": 4, "source_instruction": "STR W2,[X3]" }
           ]
         }
       ],
       "init": "0:X0=x; 0:X5=y; 1:X1=y; 1:X3=x;",
-      "condition": "exists ([x]=2 /\\ [y]=2 /\\ 0:X1=1 /\\ 0:X3=2)"
+      "post_condition": "exists ([x]=2 /\\ [y]=2 /\\ 0:X1=1 /\\ 0:X3=2)"
     },
     "result": {
       "model": "Generic[withcatdep](Unknown)",
@@ -86,18 +86,14 @@
         "satisfies_post_condition": true,
         "final_state_id": "state-19",
         "pretty_conf": {
-          "events": {
-            "showevents": "all",
-            "showinitwrites": true,
+          "events": { "showevents": "all", "showinitwrites": true },
+          "edges": {
             "showinitrf": false,
             "showfinalrf": false,
-            "showpo": true
-          },
-          "relations": {
+            "showpo": true,
             "doshow": [],
             "unshow": [],
-            "showraw": [],
-            "initwrites": true
+            "showraw": []
           }
         },
         "instructions": {
@@ -548,18 +544,14 @@
         "satisfies_post_condition": true,
         "final_state_id": "state-19",
         "pretty_conf": {
-          "events": {
-            "showevents": "all",
-            "showinitwrites": true,
+          "events": { "showevents": "all", "showinitwrites": true },
+          "edges": {
             "showinitrf": false,
             "showfinalrf": false,
-            "showpo": true
-          },
-          "relations": {
+            "showpo": true,
             "doshow": [],
             "unshow": [],
-            "showraw": [],
-            "initwrites": true
+            "showraw": []
           }
         },
         "instructions": {
