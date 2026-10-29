@@ -18,9 +18,5 @@ The files can be extracted using the `tar` command:
 tar xvf V01.tar
 ```
 
-Running `comp.sh` will compile the C code to an executable.
-Note that this script may need to be given execute permissions.
-Running the executable will execute the litmus test on hardware.
-
-Alternatively, `run.sh` can be used to run the test.
-Again, this may need to be given execute permissions.
+`run.sh` can be used to run the test. This script may need to be given execute
+permissions.

@@ -101,13 +101,12 @@ Then, on the remote machine ppc:
 ppc% mkdir SB && cd SB
 ppc% tar xf /tmp/a.tar
 ppc% ls
-comp.sh  Makefile  outs.c  outs.h  README.txt  run.sh  SB-PPC.c  show.awk  utils.c  utils.h
+Makefile  outs.c  outs.h  README.txt  run.sh  SB-PPC.c  show.awk  utils.c  utils.h
 \end{verbatim}
-Test is compiled by the shell script \file{comp.sh} (or
-by (Gnu) \texttt{make}, at user's choice) and run by the shell script
+Test is compiled by (Gnu) \texttt{make} and run by the shell script
 \file{run.sh}:
 \begin{verbatim}
-ppc% sh comp.sh
+ppc% make
 ppc% sh run.sh
 ...
 Test SB-PPC Allowed
@@ -379,7 +378,7 @@ $ scp ppc.tar vargas:/var/tmp
 \end{verbatim}
 On \texttt{vargas} we unpack the archive and compile the test:
 \begin{verbatim}
-vargas% tar xf /var/tmp/ppc.tar && sh comp.sh
+vargas% tar xf /var/tmp/ppc.tar && make
 \end{verbatim}
 Then we run the test:
 \begin{verbatim}

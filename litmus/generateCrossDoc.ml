@@ -133,7 +133,7 @@ let gen_readme_src chan arch sources =
     (Archs.pp arch) (pp_os O.targetos) ;
   pl "" ;
   pl "COMPILING" ;
-  pl "  with command 'make [-j N]' or 'sh comp.sh'" ;
+  pl "  with command 'make [-j N]'" ;
   pl "" ;
   pl "RUNNING ALL TESTS" ;
   pl "  with command 'sh run.sh'. Test result on standard output." ;
