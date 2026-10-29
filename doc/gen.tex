@@ -202,7 +202,7 @@ By the coherence hypothesis, checking the final
 value of locations suffices to characterise those two coherence orders,
 as expressed by the final condition of~\ahref{x86-2+2W.litmus}{\ltest{x86-2+2W}}:
 \begin{verbatim}
-exists (x=2 /\ y=2)
+exists ([x]=2 /\ [y]=2)
 \end{verbatim}
 See Sec.~\ref{observers} for alternative means
 to identify coherence orders.
@@ -446,7 +446,7 @@ operations.
 
 
 \label{unroll:example}Loop unrolling of lr/sc idioms is controlled
-through the \opt{-ua <$n$>} (abbreviation of \opt{-unrollatonic <$n$>}) command line option. Of some interest is the setting \opt{-ua 0} that commands unrolling the loops once and
+through the \opt{-ua <$n$>} (abbreviation of \opt{-unrollatomic <$n$>}) command line option. Of some interest is the setting \opt{-ua 0} that commands unrolling the loops once and
 testing store conditional  success in the final condition:
 \begin{verbatim}
 % diyone7 -ua 0 -arch AArch64 PodWW XL Rfe XA PodRR Fre

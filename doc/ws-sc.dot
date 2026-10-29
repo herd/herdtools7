@@ -30,8 +30,8 @@ eiid0 -> finaleiid0 [label="rf", color="red", fontcolor="red"];
 /* The viewed-before edges */
 eiid0 -> eiid1 [label="PodWW", color="brown", fontcolor="brown", style="setlinewidth(3)"];
 eiid2 -> eiid3 [label="PodWW", color="brown", fontcolor="brown", style="setlinewidth(3)"];
-eiid1 -> eiid2 [label="Wse", color="brown", fontcolor="brown", style="setlinewidth(3)"];
-eiid3 -> eiid0 [label="Wse", color="brown", fontcolor="brown", style="setlinewidth(3)"];
+eiid1 -> eiid2 [label="Coe", color="brown", fontcolor="brown", style="setlinewidth(3)"];
+eiid3 -> eiid0 [label="Coe", color="brown", fontcolor="brown", style="setlinewidth(3)"];
 /* The calculated basic viewed-before edges */
 
 /* the groupA and groupB of barriers */
