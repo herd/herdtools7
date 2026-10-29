@@ -301,6 +301,17 @@ module
 
   and sub v1 v2 = (* Used for comparison for by some arch, so let us compare *)
     match v1,v2 with
+    | ( Val (Symbolic (Virtual s1)),
+        Val (Symbolic (Virtual s2)) )
+      when Constant.Symbol.equal s1.name s2.name
+           && Misc.opt_eq String.equal s1.tag s2.tag
+           && Int64.equal s1.cap s2.cap
+           && PAC.compare s1.pac s2.pac = 0 ->
+        Val (Concrete (Cst.Scalar.of_int (s1.offset - s2.offset)))
+    | ( Val (Symbolic (Physical (s1,o1))),
+        Val (Symbolic (Physical (s2,o2))) )
+      when String.equal s1 s2 ->
+        Val (Concrete (Cst.Scalar.of_int (o1 - o2)))
     | (Val (Tag _),Val (Tag _))
     | (Val (Symbolic _),Val (Symbolic _))
     | (Val (PteVal _),Val (PteVal _))
