@@ -77,6 +77,10 @@ static enum fault_type_t get_fault_type(unsigned long esr)
   fsc = esr & 0x3fU;
   fault_class = fsc >> 2;
 
+  /* Tag Check faults have an exact DFSC */
+  if (domain == 1 && fsc == 0x11U)
+    return FaultTagCheck;
+
   switch (fault_class) {
   case 0:
     return FaultMMUAddressSize;
