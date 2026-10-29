@@ -72,6 +72,7 @@ module type S = sig
   val is_reg_store : action -> A.proc -> bool
   val is_reg_load : action -> A.proc -> bool
   val is_reg : action -> A.proc -> bool
+  val get_reg_size : action -> MachSize.sz
 
 (* Reg events, proc not specified *)
   val is_reg_store_any : action -> bool
