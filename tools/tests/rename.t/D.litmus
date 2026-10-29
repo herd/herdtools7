@@ -1,0 +1,5 @@
+AArch64 D
+{ }
+  P0       ;
+ MOV W0,#4 ;
+forall 0:X0=4
