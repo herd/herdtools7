@@ -253,9 +253,8 @@ let dump_bd chan loc v =
   if add_brk loc v then fprintf chan " [%s]=%s;" loc v
   else fprintf chan " %s=%s;" loc v
 
-let dump_state chan is_litmus st =
-  if is_litmus then fprintf chan  "%-8s:>" (Int64.to_string st.p_noccs) ;
-  let {HashedState.S.e=e; f; a;} = HashedState.as_t st.p_st in
+let dump_st chan st =
+  let {HashedState.S.e=e; f; a;} = HashedState.as_t st in
   HashedEnv.iter
     (fun p ->
       let loc,v = HashedBinding.as_t p in
@@ -267,7 +266,11 @@ let dump_state chan is_litmus st =
         let f = HashedFault.as_t p in
         fprintf chan " %s%s;" prf (Fault_tools.pp f)) in
   dump_faults "" f ;
-  dump_faults "~" a ;
+  dump_faults "~" a
+
+let dump_state chan is_litmus st =
+  if is_litmus then fprintf chan  "%-8s:>" (Int64.to_string st.p_noccs) ;
+  dump_st chan st.p_st ;
   output_char chan '\n'
 
 let dump_states_cond chan is_litmus t =
@@ -278,6 +281,17 @@ let dump_states_cond chan is_litmus t =
   List.iter (dump_state chan is_litmus) t.p_sts
 
 let dump_states chan t = dump_states_cond chan true t
+
+let dump_simple_state chan t =
+  fprintf chan "Test %s\n" t.s_tname ;
+  List.iter (fprintf chan "[%a]\n" dump_st) t.s_states
+
+let dump_simple_states chan ts =
+  List.iter (dump_simple_state chan) ts
+
+let dump_simple_log chan s =
+  fprintf chan "Log: %s\n" s.s_name ;
+  dump_simple_states chan s.s_tests
 
 let no_states sts = match sts.p_sts with
 | [] -> true
@@ -1423,11 +1437,15 @@ let normalize_simple name _is_litmus ts =
           s_states = norm_states sts ;
           s_hash = hash ; })
       ts in
+  if O.verbose > 2 then
+    eprintf "Input from %s\n%a" name dump_simple_states ts ;
   let ts =
     union_same_log_simple
       (union_litmus_simple name)
       ts in
-  { s_name = name ; s_tests = ts ; }
+  let s = { s_name = name ; s_tests = ts ; } in
+  if O.verbose > 2 then dump_simple_log stderr s ;
+  s
 
 
 let simple_same out1 out2 t1 t2 k =
