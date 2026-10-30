@@ -800,8 +800,29 @@ module Make
         end ;
         if see_faults test || U.ptr_in_outs env test then
           dump_data_indices test ;
-        if see_faults test then
-          Insert.insert O.o  "kvm_fault_type.c"
+        if see_faults test then begin
+          (* Labels at the same instruction share a fault occurrence. *)
+          let counts =
+            List.fold_left
+              (fun counts (p,lbl) ->
+                let key = p,U.find_label_offset p lbl test in
+                match List.assoc_opt key counts with
+                | Some n -> (key,n+1) :: List.remove_assoc key counts
+                | None -> (key,1) :: counts)
+              [] CfgLoc.all_labels in
+          let max_labels =
+            List.fold_left (fun n (_,k) -> max n k) 1 counts in
+          O.f "#define MAX_LABELS_PER_FAULT %d" max_labels ;
+          O.o "#include <stddef.h>" ;
+          O.o "static const size_t fault_label_offsets[] = {" ;
+          O.oi "INSTR_SYMB_ID_NULL," ;
+          List.iter
+            (fun (p,lbl) ->
+              O.fi "offsetof(labels_t, %s)," (OutUtils.fmt_lbl_var p lbl))
+            CfgLoc.all_labels ;
+          O.o "};" ;
+          Insert.insert O.o "kvm_fault_type.c"
+        end
 
 (* Collected locations *)
 
