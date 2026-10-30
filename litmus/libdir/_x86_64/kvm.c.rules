@@ -1,5 +1,5 @@
 clean:
-	/bin/rm -f *.o *.s *.t *.elf *.flat *~ *.t $(H)
+	$(RM) *.o *.s *.t *.elf *.flat *~ *.t $(H)
 
 %.s: %.c
 	$(CC) -DASS $(GCCOPTS) -S $<
