@@ -2,5 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+amo.swppcs-rficsp [Amo.SwpPCs RfiCsP] failed:
-Bad Morello annotation for Amo
+Bad annotation for Amo.Swp: R=P, W=Cs
 *)

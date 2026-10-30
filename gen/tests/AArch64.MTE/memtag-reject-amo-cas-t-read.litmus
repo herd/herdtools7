@@ -2,5 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+amo.castp-rfipt [Amo.CasTP RfiPT] failed:
-Bad annotation for Amo: R=T, W=P
+Bad annotation for Amo.Cas: R=T, W=P
 *)

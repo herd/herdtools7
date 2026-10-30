@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc Pte Amo.StAdd PteV1 Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+amo.staddpteptev1-rfiptev1pte [Amo.StAddPtePteV1 RfiPteV1Pte] failed:
+Bad annotation for Amo.StAdd: R=Pte, W=PteV1
+*)

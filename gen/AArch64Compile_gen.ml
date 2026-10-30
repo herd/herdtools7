@@ -1336,11 +1336,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let get_xload = function
       | OrdinaryAccess `Plain -> ldxr
+      | PteAccess (Read `Plain) -> ldxr_sz XX MachSize.Quad
       | (MorelloAccess `Plain|MixedSizeAccess (`Plain,_)
         |ArrayCellAccess (`Plain,_)) as atom ->
           let sz,_ = get_access_size atom in
           ldxr_sz XX sz
       | OrdinaryAccess `Acquire -> ldaxr
+      | PteAccess (Read `Acquire) -> ldxr_sz AX MachSize.Quad
       | (MorelloAccess `Acquire|MixedSizeAccess (`Acquire,_)
         |ArrayCellAccess (`Acquire,_)) as atom ->
           let sz,_ = get_access_size atom in
@@ -1354,11 +1356,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     and get_xstore = function
       | OrdinaryAccess `Plain -> stxr
+      | PteAccess (Set (`Plain,_)) -> stxr_sz YY MachSize.Quad
       | (MorelloAccess `Plain|MixedSizeAccess (`Plain,_)
         |ArrayCellAccess (`Plain,_)) as atom ->
           let sz,_ = get_access_size atom in
           stxr_sz YY sz
       | OrdinaryAccess `Release -> stlxr
+      | PteAccess (Set (`Release,_)) -> stxr_sz LY MachSize.Quad
       | (MorelloAccess `Release|MixedSizeAccess (`Release,_)
         |ArrayCellAccess (`Release,_)) as atom ->
           let sz,_ = get_access_size atom in
@@ -1756,8 +1760,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         else if do_morello then Code.add_capability loc 0
         else loc
 
-    let get_tagged_loc e =
-      add_tag e.C.atom (as_data e.C.loc) e.C.tag
+    let get_tagged_loc e = match e.C.atom with
+      | Some (PteAccess (Read _)) -> Misc.add_pte (as_data e.C.loc)
+      | Some (PteAccess (Set (_,fields)))
+        when let open WPTE in
+          not (WPTESet.mem HA fields || WPTESet.mem HD fields) ->
+          Misc.add_pte (as_data e.C.loc)
+      | _ -> add_tag e.C.atom (as_data e.C.loc) e.C.tag
 
     let add_label_to_last_instructions e cs =
       match e.C.check_fault with
@@ -2053,39 +2062,35 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         Warn.fatal
           "Refuse to generate constrained unpredictable, use -variant CU to accept"
 
-    let check_arw_lxsx er ew =
-      let ar = tr_none er.C.atom
-      and aw = tr_none ew.C.atom in
-      let different_mixed_accesses =
-        match get_access_atom (Some ar),get_access_atom (Some aw) with
-        | Some a1,Some a2 -> not (Mixed.equal a1 a2)
-        | _,_ -> false in
-      if not different_mixed_accesses
-         && not (A64.RMW.applies_atom_rmw A64.RMW.LrSc (Some ar) (Some aw)) then
-        Warn.fatal "Bad annotation for LxSx: R=%s, W=%s" (pp ar) (pp aw) ;
-      let szr = get_access_atom (Some ar)
-      and szw = get_access_atom (Some aw) in
-      check_cu (not (A64.do_cu || same_sz szr szw)) ;
-      ar,aw
-
     let emit_addr_simple  st p init er =
       let rA,init,st = U.next_init st p init (get_tagged_loc er) in
       rA,init,[],st
 
     let emit_data_simple _rW st = [],st
 
+    let emit_rmw_value emit_plain_value st p init e = match e.C.atom with
+      | Some (PteAccess _) ->
+          let r,init,st = U.emit_pteval st p init (Value.to_pte e.C.v) in
+          r,init,[],st
+      | _ -> emit_plain_value st p init (Value.to_int e.C.v)
+
+    let emit_rmw_value_fresh emit_plain_value st p init e = match e.C.atom with
+      | Some (PteAccess _) ->
+          U.emit_pteval_fresh st p init (Value.to_pte e.C.v)
+      | _ -> emit_plain_value st p init (Value.to_int e.C.v)
+
     let do_emit_exch1 emit_data emit_addr st p init er ew =
-      let arw = check_arw_lxsx er ew in
+      let arw = tr_none er.C.atom,tr_none ew.C.atom in
       let rA,init,caddr,st = emit_addr st p init er in
       let rR,st = next_reg st in
-      let rW,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
+      let rW,init,csi,st = emit_rmw_value U.emit_mov st p init ew in
       let cdata,st = emit_data rW st in
       let init,cs,st = XSingle.emit_pair arw p st init rR rW rA ew in
       let cs = add_label_to_exclusive_load_and_store er ew cs in
       rR,init,csi@cdata@caddr@cs,st
 
     let do_emit_exch22 emit_data emit_addr st p init er ew =
-      let arw = check_arw_lxsx er ew in
+      let arw = tr_none er.C.atom,tr_none ew.C.atom in
       let rA,init,caddr,st = emit_addr st p init er in
       let rR1,rR2,st = next_reg2 st in
       let rW1,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
@@ -2097,7 +2102,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       rR1,init,csi@cdata@caddr@cs,st
 
     let do_emit_exch21 emit_data emit_addr st p init er ew =
-      let arw = check_arw_lxsx er ew in
+      let arw = tr_none er.C.atom,tr_none ew.C.atom in
       let rA,init,caddr,st = emit_addr st p init er in
       let rR1,rR2,st = next_reg2 st in
       let rW,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
@@ -2109,7 +2114,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       rR1,init,csi@cdata@caddr@cs,st
 
     let do_emit_exch12 emit_data emit_addr st p init er ew =
-      let arw = check_arw_lxsx er ew in
+      let arw = tr_none er.C.atom,tr_none ew.C.atom in
       let rA,init,caddr,st = emit_addr st p init er in
       let rR,st = next_reg st in
       let rW1,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
@@ -2138,16 +2143,25 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_exch = do_emit_exch emit_data_simple emit_addr_simple
 
-    let do_sz sz1 sz2 =
-      if same_sz sz1 sz2 then sz1
-      else
-        Warn.fatal "Amo instructions with different sizes or offsets"
+    let do_sz a1 a2 = match a1,a2 with
+      | PteAccess (Read _),PteAccess (Set _) -> Some (MachSize.Quad,0)
+      | _,_ ->
+          let sz1 = get_access_atom (Some a1)
+          and sz2 = get_access_atom (Some a2) in
+          if same_sz sz1 sz2 then sz1
+          else
+            Warn.fatal "Amo instructions with different sizes or offsets"
 
     let do_rmw_type a1 a2 =
       let capa_opt = function
       | OrdinaryAccess o|MixedSizeAccess (o,_)|ArrayCellAccess (o,_) ->
           Some (false,o)
       | MorelloAccess o -> Some (true,o)
+      | PteAccess (Read o) -> Some (false,(o :> access_order))
+      | PteAccess (Set (o,fields))
+        when let open WPTE in
+          not (WPTESet.mem HA fields || WPTESet.mem HD fields) ->
+          Some (false,(o :> access_order))
       | _ -> None in
       match capa_opt a1,capa_opt a2 with
       | Some (o1,r),Some (o2,w) when o1 = o2 ->
@@ -2165,9 +2179,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             (pp a1) (pp a2)
 
     let do_rmw_annot ar aw =
-      let szr = get_access_atom (Some ar)
-      and szw = get_access_atom (Some aw) in
-      let sz =  do_sz szr szw in
+      let sz = do_sz ar aw in
       let a,opt = do_rmw_type ar aw in
       sz,a,opt
 
@@ -2196,7 +2208,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       check_rmw_metadata er ew;
       let sz,a,opt = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
       let rR,st = next_reg st in
-      let rW,init,csi,st = mk_emit_mov sz st p init (Value.to_int ew.C.v) in
+      let rW,init,csi,st = emit_rmw_value (mk_emit_mov sz) st p init ew in
       let cdata,st = emit_data sz rW st in
       let sz = get_rmw_size opt sz in
       let init,csi2,st = emit_str_addon st p init rW rA opt ew in
@@ -2220,8 +2232,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_cas_rA emit_data st p init er ew rA =
       check_rmw_metadata er ew;
       let sz,a,opt = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
-      let rS,init,csS,st = mk_emit_mov_fresh sz st p init (Value.to_int er.C.v) in
-      let rT,init,csT,st = mk_emit_mov sz st p init (Value.to_int ew.C.v) in
+      let rS,rT,init,csS,csT,st = match er.C.atom with
+        | Some (PteAccess _) ->
+            let rS,init,csS,st =
+              emit_rmw_value_fresh (mk_emit_mov_fresh sz) st p init er in
+            let rT,init,csT,st =
+              emit_rmw_value_fresh (mk_emit_mov_fresh sz) st p init ew in
+            rS,rT,init,csS,csT,st
+        | _ ->
+            let rS,init,csS,st =
+              emit_rmw_value_fresh (mk_emit_mov_fresh sz) st p init er in
+            let rT,init,csT,st = emit_rmw_value (mk_emit_mov sz) st p init ew in
+            rS,rT,init,csS,csT,st in
       let cdata,st = emit_data sz rT st in
       let sz = get_rmw_size opt sz in
       let init,csS2,st = emit_str_addon st p init rS rA opt er in
@@ -2243,9 +2265,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let emit_stop_rA emit_data op st p init er ew rA =
       let a = tr_none ew.C.atom
       and b = tr_none er.C.atom in
-      let sz1 = get_access_atom (Some a)
-      and sz2 = get_access_atom (Some b) in
-      let sz = do_sz sz1 sz2 in
+      let sz = do_sz b a in
       let a = match access_order b,access_order a with
       | Some `Plain,Some `Plain -> W_P
       | Some `Plain,Some `Release -> W_L

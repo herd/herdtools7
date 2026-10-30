@@ -2,5 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+amo.caspct-rfictp [Amo.CasPCt RfiCtP] failed:
-Bad Morello annotation for Amo
+Bad annotation for Amo.Cas: R=P, W=Ct
 *)

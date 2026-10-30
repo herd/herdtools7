@@ -1,0 +1,12 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc Pte Amo.Cas PteV1 Rfi *)
+AArch64 CoRW1+amo.caspteptev1-rfiptev1pte
+Variant=vmsa
+{
+ [x]=1;
+ [PTE(x)]=(oa:PA(x), valid:0);
+ 0:X0=PTE(x); 0:X1=(oa:PA(x)); 0:X2=(oa:PA(x));
+}
+ P0             ;
+ CAS X1,X2,[X0] ;
+
+exists (0:X1=(oa:PA(x)))
