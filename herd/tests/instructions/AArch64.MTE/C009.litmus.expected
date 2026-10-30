@@ -1,0 +1,11 @@
+Test C009 Allowed
+States 2
+0:X2=0; [x]=42;
+0:X2=42; [x]=42;
+Ok
+Witnesses
+Positive: 2 Negative: 2
+Condition exists (0:X2=0 /\ [x]=42)
+Observation C009 Sometimes 2 2
+Hash=c5cbe7753612b2585177ec62ddbff869
+

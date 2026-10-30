@@ -1,0 +1,24 @@
+AArch64 C010
+Variant=mte
+
+(* Tests that message passing works with a post-indexed store *)
+
+{
+ int x;
+ int y[8];
+
+ tag(y)=:green;
+ tag(y+16)=:green;
+
+ 0:X0=x; 0:X1=y;
+ 1:X0=x; 1:X1=y;
+}
+
+P0              | P1              ; 
+LDR X1,[X0]     | MOV W2,#1       ;
+CBZ X1,L0       | STR W2,[X1,#16] ;
+STG X1,[X1],#0  | DMB SY          ;
+LDR X3,[X1,#16] | STR X1, [X0]    ;
+L0:             |                 ;
+
+~exists (0:X1=y /\ 0:X3=0 /\ ~fault(P0))
