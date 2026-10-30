@@ -1,0 +1,30 @@
+"Uniproc, no co generated"
+
+(* Utilities *)
+let invrf = rf^-1
+let WW(r) = r & (W * W)
+let RW(r) = r & (R * W)
+
+(* Collect constraints on U order *)
+
+let U0 = po-loc | rf | co0
+let rec U =
+  U0
+| WW(U;invrf)\id  (* WR observation of co *)
+| RW(invrf;U)\id  (* RW observation of co *)
+| U;U
+
+
+let co = WW(U)
+and fr = RW(U)
+
+(* From now, co is a coherence order *)
+let coi = co & int
+let coe = co \ coi
+
+(* Compute fr *)
+let fri = fr & int
+let fre = fr \ fri
+
+
+show fr,co
