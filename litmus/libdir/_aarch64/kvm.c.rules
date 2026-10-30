@@ -1,7 +1,7 @@
 GCCOPTS += -DKVM
 
 clean:
-	$(RM) -f *.o *.s *.t *.elf *.flat *~ *.t $(H) $(SHARED_OBJ) $(SHARED_LIB)
+	$(RM) *.o *.s *.t *.elf *.flat *~ *.t $(H) $(SHARED_OBJ) $(SHARED_LIB)
 
 %.s: %.c
 	$(CC) -DASS $(GCCOPTS) -S $<
