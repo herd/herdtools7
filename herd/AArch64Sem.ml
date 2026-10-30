@@ -144,6 +144,7 @@ module Make
       let (>>!) = M.(>>!)
       let (>>::) = M.(>>::)
       let ( ||| ) = M.( ||| )
+      let (let@) = (@@)
 
       let sxt_op sz = M.op1 (Op.Sxt sz)
       and uxt_op sz = M.op1 (Op.Mask sz)
@@ -1911,7 +1912,7 @@ Arguments:
         m_sext v >>= m_shift
 
 
-(* Complete effective adress computation *)
+(* Complete effective address computation *)
       let get_ea rs kr s ii =
         let open AArch64Base in
         match kr, s with
@@ -3580,21 +3581,44 @@ Arguments:
         lift_memop rn Dir.W true false (* Unchecked *)
           mop (to_perms "w" MachSize.granule) ma mv Annot.N ii
 
-      let stg d rt rn k ii =
-        let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii
-        and mv = read_reg_data rt ii >>= tag_extract in
+      (* Wraps a tag access function in a write-back, conditional on the success of the access & indexing mode *)
+      let with_tag_writeback rn k mode ii access =
+        let init_offset = AArch64.K (if mode = AArch64Base.PostIdx then 0 else k) in
+        M.delay_kont "tag access"
+          (get_ea rn init_offset AArch64.S_NOEXT ii)
+          (fun _ ma ->
+            (* Avoids introducing dependency between tag access and register write-back *)
+            M.para_bind_output_right (access ma) (fun result ->
+              match result with
+              | B.Next _ -> ma >>= (fun a_virt ->
+                match mode with
+                  | AArch64Base.Idx     -> (M.unitT ())
+                  | AArch64Base.PreIdx  -> (M.unitT a_virt)           >>= fun wb -> write_reg rn wb ii
+                  | AArch64Base.PostIdx -> (M.op1 (Op.AddK k) a_virt) >>= fun wb -> write_reg rn wb ii
+              ) >>! result
+              | _ -> M.unitT result
+            )
+          )
+
+      let do_stg d rt rn ii ma =
+        let mv = read_reg_data rt ii >>= tag_extract in
         let do_stg _ac a v =  M.op1 Op.TagLoc a >>= fun tag_addr -> do_write_tag tag_addr v ii in
         do_store_tag_op d rn do_stg ma mv ii
 
-      let stz d rn k ii =
+      let do_stz d rn ii ma =
         let sz = MachSize.granule in
-        let ma = get_ea rn (AArch64.K k) AArch64.S_NOEXT ii >>= loc_extract in
         let do_stz ac a v = do_write_mem sz Annot.N aexp ac a v ii in
         do_store_tag_op d rn do_stz (ma >>= loc_extract) mzero ii
 
-      let do_stzg d rt rn k ii =
-        let do_stz = stz d rn k ii in
-        let do_stg = stg d rt rn k ii in
+      (* Tag store with optional write-back continuation *)
+      let stg d rt rn k idx_mode ii =
+        with_tag_writeback rn k idx_mode ii (do_stg d rt rn ii)
+
+      (* Tag store zeroed with optional write-back continuation *)
+      let do_stzg d rt rn k idx_mode ii =
+        let@ ma    = with_tag_writeback rn k idx_mode ii in
+        let do_stz = do_stz d rn ii ma in
+        let do_stg = do_stg d rt rn ii ma in
         if kvm then
           (* The two operations include their own translations, if
              there is a fault, it has to be ordered after any other
@@ -4059,8 +4083,6 @@ Arguments:
           do_cas_with MTE.Tagcheck.never lift_memop quad Annot.N r ma mv
             mop_success mop_fail_with_wb mop_fail_no_wb ii)
 
-      let ( let@ ) = ( @@ )
-
       let lift_gcs_access ii dir ma mop =
         let perm, updatedb = match dir with Dir.R -> "r", false | Dir.W -> "w", true in
         do_lift_memop AArch64Base.ZR dir updatedb false
@@ -4275,21 +4297,21 @@ Arguments:
         | I_STLRBH(bh,rs,rd) ->
             stlr (bh_to_sz bh) rs rd ii
 
-        | I_STZG(rt,rn,(k,Idx)) ->
+        | I_STZG(rt,rn,(k,idx_mode)) ->
             check_memtag "STZG" ;
-            stzg rt rn k ii
-        | I_STZ2G(rt,rn,(k,Idx)) ->
+            stzg rt rn k idx_mode ii
+        | I_STZ2G(rt,rn,(k,idx_mode)) ->
             check_memtag "STZ2G" ;
             check_mixed "STZ2G" ;
-            stz2g rt rn k ii
+            stz2g rt rn k idx_mode ii
 
-        | I_STG(rt,rn,(k,Idx)) ->
+        | I_STG(rt,rn,(k,idx_mode)) ->
             check_memtag "STG" ;
-            stg Once rt rn k ii
-        | I_ST2G(rt,rn,(k,Idx)) ->
+          stg Once rt rn k idx_mode ii
+        | I_ST2G(rt,rn,(k,idx_mode)) ->
           check_memtag "ST2G" ;
           check_mixed "ST2G" ;
-          st2g rt rn k ii
+          st2g rt rn k idx_mode ii
         | I_LDG (rt,rn,k) ->
             check_memtag "LDG" ;
             ldg rt rn k ii
@@ -5227,8 +5249,7 @@ Arguments:
           gcsss2 r ii
 (*  Cannot handle *)
         (* | I_BL _|I_BLR _|I_BR _|I_RET _ *)
-        | (I_STG _|I_ST2G _|I_STZG _|I_STZ2G _
-        | I_OP3_SIMD _ | I_OP3_SV _
+        | (I_OP3_SIMD _ | I_OP3_SV _
         | I_LDR_SIMD _| I_STR_SIMD _
         | I_LD1SP _| I_LD2SP _| I_LD3SP _| I_LD4SP _
         | I_ST1SP _|I_ST2SP _|I_ST3SP _|I_ST4SP _
