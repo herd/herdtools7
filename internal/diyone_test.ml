@@ -66,7 +66,7 @@ let run_diycross tmp flags command =
     ~stderr:(fun chan -> stderr := Channel.read_lines chan)
     "/bin/sh" ["-c";shell_command ] in
   match status,!stderr,!stdout with
-  | 0,stderr,["Generator produced 1 tests"] ->
+  | Ok 0, stderr, ["Generator produced 1 tests"] ->
      Filesystem.read_file
        (Filename.concat tmp "@all")
        (fun chan ->
@@ -80,8 +80,8 @@ let run_diycross tmp flags command =
             let test = Filesystem.read_file testfile chan2string in
             Some (add_comment (String.concat "\n" stderr) test)
          | _ -> assert false)
-  | 0,_,["Generator produced 0 tests"] -> None
-  | 0,_,(_::_ as lines) ->
+  | Ok 0,_,["Generator produced 0 tests"] -> None
+  | Ok 0,_,(_::_ as lines) ->
      Printf.eprintf
        "Warning: successful diycross7 output not recognised:%s\n"
        (String.concat "\n" lines) ;
@@ -101,9 +101,12 @@ let run_diyone flags command =
     "/bin/sh" ["-c";shell_command] in
   let comment =
     match status,!stderr with
-    | 0,stderr -> stderr
-    | status,"" -> Printf.sprintf "[%d]" status
-    | status,stderr -> Printf.sprintf "[%d]\n%s" status stderr in
+    | Ok 0,stderr -> stderr
+    | Ok status,"" -> Printf.sprintf "[%d]" status
+    | Ok status,stderr -> Printf.sprintf "[%d]\n%s" status stderr
+    | Error err, stderr ->
+        Printf.sprintf "[%s]\n%s" (Command.string_of_error err) stderr
+  in
   add_comment comment !stdout
 
 let tests flags =
