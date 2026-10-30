@@ -32,7 +32,7 @@ rule main add env = parse
     ([^'\n']* as rem) '\n'
   ("Safe" blank* '=' blank* ([^'\n']* as safes) '\n') ?
     {
-     let name = Misc.clean_name name in
+     let name = Base.Misc.clean_name name in
      let v =
        match v with
        | "Ok" -> true | "No" -> false

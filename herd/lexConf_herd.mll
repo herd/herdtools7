@@ -73,7 +73,7 @@ let lex_float r arg = lex_float_fun (fun x -> r := x) arg
 let lex_float_opt r arg =
   r :=  lex_some "float"  float_of_string arg
 
-let lex_pos_fun set arg = match Misc.pos_of_string arg with
+let lex_pos_fun set arg = match Base.Misc.pos_of_string arg with
 | Some p -> set p
 | None -> error "pair of float parameter expected"
 
@@ -84,7 +84,7 @@ let lex_string_opt v arg =
   v := lex_some "string" (fun s -> s) arg
 
 let lex_stringsetfun f arg =
-  let es =  Misc.split_comma arg in
+  let es =  Base.Misc.split_comma arg in
   f (StringSet.of_list es)
 
 let lex_stringset v arg =
@@ -99,7 +99,7 @@ let dolex main fname =
     lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname=fname;};
     try main dir lexbuf
     with LocError msg -> LexMisc.error msg lexbuf in
-  try Misc.input_protect dolex fname
+  try Base.Misc.input_protect dolex fname
   with Error (msg,pos) ->
     eprintf "%a: %s\n" Pos.pp_pos pos msg ;
     exit 2
@@ -277,13 +277,13 @@ let handle_key dir main key arg = match key with
 | "showraw" ->
      lex_stringset PP.showraw arg
 | "edgeattr" ->
-    begin match Misc.split_comma arg with
+    begin match Base.Misc.split_comma arg with
     | [lbl;a;v;] -> PP.add_edgeattr lbl a v
     | _ ->
         error (sprintf "bad ->ument for key edgeattr: '%s'" arg)
     end
 | "shift" ->
-    let fs = Misc.split_comma arg in
+    let fs = Base.Misc.split_comma arg in
     let fs =
       List.map
         (fun f ->

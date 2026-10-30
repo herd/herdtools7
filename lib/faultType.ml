@@ -187,7 +187,7 @@ module AArch64 = struct
 
   let is s = try ignore (parse s); true  with  _ -> false
 
-  let compare ft1 ft2 = Misc.polymorphic_compare ft1 ft2
+  let compare ft1 ft2 = Base.Misc.polymorphic_compare ft1 ft2
 
   let matches actual expected =
     match actual, expected with

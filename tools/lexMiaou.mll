@@ -40,7 +40,7 @@ rule main m = parse
 {
 
  let csnames fname =
-   Misc.input_protect
+   Base.Misc.input_protect
      (fun chan -> main StringMap.empty (Lexing.from_channel chan))
      fname
 }

@@ -11,5 +11,5 @@
   herd_assumptions_test
   check_obs
   diyone_test)
- (libraries internal_lib)
+ (libraries internal_lib internal)
  (modes native))

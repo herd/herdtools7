@@ -73,14 +73,14 @@ module Top
         end ;
         if Opt.verbose < 0 then exit (if ok then 0 else 1)
       with
-      | Misc.Exit -> ()
-      | Misc.Fatal msg|Misc.UserError msg ->
+      | Base.Misc.Exit -> ()
+      | Base.Misc.Fatal msg|Base.Misc.UserError msg ->
           Warn.warn_always "%a %s" Pos.pp_pos0 name msg
       | e ->
           Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 name ;
           raise e
 
-    let zyva = Misc.iter_argv_or_stdin do_test
+    let zyva = Base.Misc.iter_argv_or_stdin do_test
 
   end
 

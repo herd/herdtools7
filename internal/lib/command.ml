@@ -16,7 +16,7 @@
 
 (** Utilities for running commands. *)
 
-module Option = Base.Option
+module Option = Internal.Base.Option
 
 type error = {
   binary : string ;

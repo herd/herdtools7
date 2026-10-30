@@ -21,6 +21,8 @@
 
 (** A monad for event structures *)
 
+module Misc = Base.Misc
+
 module type Config = sig
   val hexa : bool
   val debug : Debug_herd.t

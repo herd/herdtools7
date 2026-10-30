@@ -14,4 +14,4 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-include MySet.Make(IntOrd)
+include MySet.Make(Base.IntOrd)

@@ -41,12 +41,12 @@ let warn_always fmt =
 let prerr_exit s =
   prerr_string "Stop here: " ;
   prerr_endline s ;
-  raise Misc.Exit
+  raise Base.Misc.Exit
 
 let exit fmt = ksprintf prerr_exit fmt
 
 let user_error fmt =
-  ksprintf (fun msg ->raise  (Misc.UserError msg))  fmt
+  ksprintf (fun msg ->raise  (Base.Misc.UserError msg))  fmt
 
 let fatal fmt =
-  ksprintf (fun msg ->raise  (Misc.Fatal msg))  fmt
+  ksprintf (fun msg ->raise  (Base.Misc.Fatal msg))  fmt

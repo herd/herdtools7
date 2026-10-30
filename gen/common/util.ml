@@ -35,7 +35,7 @@ let parse_tags opt set_one all_tags msg =
   opt,
   Arg.String
     (fun tags ->
-      let tags = Misc.split_comma tags in
+      let tags = Base.Misc.split_comma tags in
       List.iter
         (fun tag -> match set_one tag with
         | false ->

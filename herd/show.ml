@@ -113,6 +113,6 @@ module Make(O:PrettyConf.S) = struct
     | Some view ->
         let name_dot = Filename.temp_file "herd" ".dot" in
         with_temp_file name_dot @@ fun () ->
-        Misc.output_protect ouput_dot name_dot;
+        Base.Misc.output_protect ouput_dot name_dot;
         show_file_with_view view name_dot
 end

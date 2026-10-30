@@ -45,7 +45,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
       let equal_cases cs1 cs2 =
         List.equal
           (fun (i1,j1) (i2,j2) ->
-             Scalar.compare i1 i2 = 0 && Misc.int_eq j1 j2)
+             Scalar.compare i1 i2 = 0 && Base.Misc.int_eq j1 j2)
           cs1 cs2
 
       let equal_rhs rhs1 rhs2 =
@@ -57,7 +57,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
       | Switch (loc1,cs1,d1,rhs1),Switch (loc2,cs2,d2,rhs2) ->
           I.Loc.compare loc1 loc2 = 0 &&
           equal_cases cs1 cs2 &&
-          Misc.int_eq d1 d2 &&
+          Base.Misc.int_eq d1 d2 &&
           equal_rhs rhs1 rhs2
 
       let rec hash_list hash_elt acc = function
@@ -105,7 +105,7 @@ module Make (O:Indent.S) (I:CompCondUtils.I) :
       let xs = HH.fold (fun s k r -> (k,s)::r) ht [] in
       let xs =
         List.sort
-          (fun (k1,_) (k2,_) -> Misc.int_compare k1 k2)
+          (fun (k1,_) (k2,_) -> Base.Misc.int_compare k1 k2)
           xs in
       let rhs = List.map snd xs in
       cs,d,rhs
