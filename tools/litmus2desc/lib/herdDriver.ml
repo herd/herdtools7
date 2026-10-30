@@ -46,7 +46,6 @@ module DefaultConfig = struct
   let initwrites = ModelOption.default.init
   let check_filter = true
   let maxphantom = None
-  let variant = fun _ -> false
   let fault_handling = Fault.Handling.default
   let mte_precision = Precision.default
   let mte_store_only = false
@@ -115,21 +114,23 @@ module DefaultConfig = struct
     let fixedsize = !PP.fixedsize
     let extrachars = !PP.extrachars
     let edgeattrs = PP.get_edgeattrs ()
-    let doshow = StringSet.of_list [ "dob"; "dtrm"; "co" ]
+
+    let doshow =
+      StringSet.of_list [ "dob"; "dtrm"; "co"; "tr-ib"; "inv-domain" ]
+
     let unshow = !PP.unshow
     let noid = !PP.noid
     let symetric = !PP.symetric
     let classes = !PP.classes
-    let showraw = StringSet.of_list [ "dob"; "dtrm" ]
+    let showraw = StringSet.of_list [ "dob"; "dtrm"; "tr-ib"; "inv-domain" ]
     let dotheader = None
     let shift = !PP.shift
     let edgemerge = !PP.edgemerge
     let labelinit = !PP.labelinit
-    let variant = variant
   end
 end
 
-let top ~libdir str =
+let top ~libdir ~variant:test_variant str =
   let libfind =
     let module ML = MyLib.Make (struct
       let includes = []
@@ -146,6 +147,14 @@ let top ~libdir str =
   in
   let module C = struct
     include DefaultConfig
+
+    let variant = test_variant
+
+    module PC = struct
+      include DefaultConfig.PC
+
+      let variant = test_variant
+    end
 
     let libfind = libfind
   end in

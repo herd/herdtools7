@@ -16,7 +16,11 @@
 
 open Herd_core
 
-val top : libdir:string option -> string -> (module RunTest.Outcome)
+val top :
+  libdir:string option ->
+  variant:(Variant.t -> bool) ->
+  string ->
+  (module RunTest.Outcome)
 
 val fold_execs :
   ('exec -> 'a -> 'a) ->

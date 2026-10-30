@@ -83,6 +83,38 @@ module Make (S : SemExtra.S) = struct
       |> Misc.List.find_map (function
         | S.Final l, store when location_equal l location -> Some store
         | _ -> None)
+
+    let get_ins_translation (t : t) (ins : LitmusTest.instr) =
+      let tr_ib = relation "tr-ib" t in
+      let same_instruction ev =
+        match ev.E.iiid with
+        | IdSome iiid ->
+            Int.equal iiid.S.A.proc ins.proc
+            && Int.equal iiid.S.A.static_poi ins.static_poi
+        | IdInit | IdSpurious -> false
+      in
+      (* If multiple translations match, this selects the first. *)
+      let translation_opt =
+        EU.rel_to_list tr_ib
+        |> List.find_opt (fun (e1, e2) ->
+            same_instruction e1 && same_instruction e2)
+      in
+      match translation_opt with
+      | Some (ttd_read, _) -> ttd_read
+      | None -> failwith "labelled instruction does not perform translation."
+
+    let is_initial_source = function
+      | S.Init -> true
+      | S.Store store -> EU.is_initial store
+
+    let get_source (t : t) (e : E.event) =
+      let rfmap = (TestResult.concrete t).S.rfmap in
+      try S.RFMap.find (S.Load e) rfmap
+      with Not_found -> failwith "cannot find store for load event"
+
+    let invalidated_by (t : t) (e : E.event) =
+      let inv = relation "inv-domain" t in
+      E.EventSet.elements (E.EventRel.succs inv e)
   end
 
   type exec = Exec.t
@@ -118,7 +150,21 @@ module Make (S : SemExtra.S) = struct
       ca_source : E.event option;
     }
 
-    type constr = Reg_constr of reg_constr | Mem_constr of mem_constr
+    type fault_constr = {
+      faults : bool;
+      proc : int;
+      label : string;
+      virtual_loc : S.global_loc option;
+      instr : LitmusTest.instr;
+      ttd_read : E.event;
+      source : S.read_from;
+      ca_target : E.event option;
+    }
+
+    type constr =
+      | Reg_constr of reg_constr
+      | Mem_constr of mem_constr
+      | Fault_constr of fault_constr
   end
 
   type code = LitmusTest.instr list
@@ -163,6 +209,7 @@ module Make (S : SemExtra.S) = struct
     | "EOR" -> Some "Exclusive Or"
     | "ADD" -> Some "Add"
     | "CBNZ" -> Some "Branch"
+    | "TLBI" -> Some "TLB Maintenance"
     | _ -> None
 
   let describe_instruction ctx (ins : LitmusTest.instr) : string =
@@ -197,12 +244,19 @@ module Make (S : SemExtra.S) = struct
           Printf.sprintf "the %s %s instruction in program order on P%d"
             poi_description ins_render_name proc
 
-  let describe_mem_access ~loc ~dir ~(value : V.v) =
+  let memory_kind ev ~dir ~is_implicit =
+    if is_implicit && dir = Dir.R && E.Act.is_pte_access ev.E.action then
+      "TTD Memory"
+    else "Memory"
+
+  let describe_mem_access ~ev ~loc ~dir ~(value : V.v) ~is_implicit =
     let eff_ty = match dir with Dir.R -> "Read" | W -> "Write" in
     let value_descr =
       if dir = W then Format.asprintf " with value %a" pp_value value else ""
     in
-    Format.asprintf "an Explicit Memory %s Effect of Location %a%s" eff_ty
+    let plicitness = if is_implicit then "Implicit" else "Explicit" in
+    let kind = memory_kind ev ~dir ~is_implicit in
+    Format.asprintf "an %s %s %s Effect of Location %a%s" plicitness kind eff_ty
       pp_global_loc loc value_descr
 
   let describe_barrier_event (ins : LitmusTest.instr) =
@@ -222,6 +276,29 @@ module Make (S : SemExtra.S) = struct
                (LitmusTest.render_instruction ~latex:false ins))
     in
     Format.sprintf "a %s Effect" eff
+
+  let describe_tlbi_event (ins : LitmusTest.instr) locations =
+    match ins.instruction with
+    | I_TLBI _ -> (
+        match locations with
+        | [] -> "a TLBI Effect"
+        | [ loc ] ->
+            Printf.sprintf
+              "a TLBI Effect which includes the Virtual Address of %s in its \
+               invalidation scope"
+              loc
+        | locs ->
+            let names =
+              match List.rev locs with
+              | last :: rest ->
+                  String.concat ", " (List.rev rest) ^ " and " ^ last
+              | [] -> assert false
+            in
+            Printf.sprintf
+              "a TLBI Effect which includes the Virtual Addresses of %s in its \
+               invalidation scope"
+              names)
+    | _ -> invalid_arg "unsupported instruction"
 
   (* Generate prose description of a dependency (addr, data, ctrl). *)
   let describe_dep ctx (dep : dependency) : string =
@@ -286,9 +363,23 @@ module Make (S : SemExtra.S) = struct
       |> List.map (fun ev ->
           match EU.action_view ev with
           | Some (Access { loc = Location_global loc; dir; value; is_implicit })
-            when not is_implicit ->
-              describe_mem_access ~loc ~dir ~value
+            ->
+              describe_mem_access ~ev ~loc ~dir ~value ~is_implicit
           | Some Barrier -> describe_barrier_event ins
+          | Some TLBI ->
+              let open Constant in
+              let locations =
+                Exec.invalidated_by ctx.exec ev
+                |> List.filter_map E.location_of
+                |> Util.List.uniq ~eq:(fun l1 l2 ->
+                    S.A.location_compare l1 l2 = 0)
+                |> List.filter_map (function
+                  | S.A.Location_global (A.I.V.Val (Symbolic (System (PTE, s))))
+                    ->
+                      Some s
+                  | _ -> None)
+              in
+              describe_tlbi_event ins locations
           | _ -> failwith "unsupported event")
       |> Util.List.intersperse ", and "
       |> String.concat ""
@@ -301,9 +392,14 @@ module Make (S : SemExtra.S) = struct
     | IdInit, Some (Access { loc = Location_global loc; _ }) ->
         Format.asprintf "the initialization event of location %a" pp_global_loc
           loc
-    | IdSome iiid, Some (Access ({ loc = Location_global loc; _ } as access))
-      when not access.is_implicit ->
+    | IdSome iiid, Some (Access ({ loc = Location_global loc; _ } as access)) ->
+        let plicitness =
+          if access.is_implicit then "Implicit" else "Explicit"
+        in
         let eff_dir = if access.dir = R then "Read" else "Write" in
+        let kind =
+          memory_kind ev ~dir:access.dir ~is_implicit:access.is_implicit
+        in
         let similar_accesses =
           Exec.events ctx.exec
           |> E.EventSet.filter (fun ev ->
@@ -313,11 +409,14 @@ module Make (S : SemExtra.S) = struct
               | _ -> false)
         in
         let should_dump_instr = E.EventSet.cardinal similar_accesses > 1 in
+        let should_describe_in_detail =
+          access.is_implicit || should_dump_instr
+        in
         let proc_details =
           if should_print_proc then Printf.sprintf " on P%d" iiid.S.A.proc
           else ""
         in
-        if should_dump_instr then
+        if should_describe_in_detail then
           let instr_descr =
             let ins =
               find_instr_by_proc_poi ctx.code ~proc:iiid.S.A.proc
@@ -326,10 +425,11 @@ module Make (S : SemExtra.S) = struct
             Printf.sprintf " generated by %s" (render_instruction ctx ins)
           in
           let loc_descr = Format.asprintf " of Location %a" pp_global_loc loc in
-          Printf.sprintf "the Explicit Memory %s Effect%s%s%s" eff_dir loc_descr
-            proc_details instr_descr
+          Printf.sprintf "the %s %s %s Effect%s%s%s" plicitness kind eff_dir
+            loc_descr proc_details instr_descr
         else
-          Printf.sprintf "the Explicit Memory %s Effect%s" eff_dir proc_details
+          Printf.sprintf "the %s %s %s Effect%s" plicitness kind eff_dir
+            proc_details
     | IdSome iiid, Some (Access { loc = Location_reg _; dir; _ }) ->
         let ins =
           find_instr_by_proc_poi ctx.code ~proc:iiid.S.A.proc
@@ -408,9 +508,49 @@ module Make (S : SemExtra.S) = struct
           "The Register %s on P%d holds the value %a in the end, because %s%s"
           reg_pretty proc pp_value value read_explanation ca_explanation
 
+  let describe_fault_constraint ctx (constr : Descriptum.fault_constr) : string
+      =
+    let qualifier = if constr.faults then "did" else "did not" in
+    let virtual_loc_descr =
+      match constr.virtual_loc with
+      | Some loc ->
+          Printf.sprintf " accessing the Virtual Address of %s" (V.pp_v loc)
+      | None -> ""
+    in
+    let ttd_loc =
+      match EU.location_of_exn constr.ttd_read with
+      | Location_global loc -> Format.asprintf "%a" pp_global_loc loc
+      | Location_reg _ -> invalid_arg "TTD read accesses a register"
+    in
+    let source_descr =
+      match constr.source with
+      | S.Init -> "the initial state"
+      | S.Store store when EU.is_initial store -> "the initial state"
+      | S.Store store -> describe_ev ctx store
+    in
+    let ca_explanation =
+      match constr.ca_target with
+      | None -> ""
+      | Some target ->
+          let connective =
+            if Exec.is_initial_source constr.source then ", and therefore"
+            else ", and"
+          in
+          Printf.sprintf "%s is Coherence-before %s" connective
+            (describe_ev ctx target)
+    in
+    Printf.sprintf
+      "On P%d, the instruction at label %s%s %s fault, because the Implicit \
+       TTD Memory Read Effect of Location %s on P%d generated by %s \
+       Reads-from-memory %s%s"
+      constr.proc constr.label virtual_loc_descr qualifier ttd_loc constr.proc
+      (render_instruction ctx constr.instr)
+      source_descr ca_explanation
+
   let describe_constr ctx : Descriptum.constr -> string = function
     | Mem_constr mem_constr -> describe_mem_constr ctx mem_constr
     | Reg_constr reg_constr -> describe_reg_constr ctx reg_constr
+    | Fault_constr fault_constr -> describe_fault_constraint ctx fault_constr
 
   (**********************************************************)
   (*     Detecting constraints of the final condition       *)
@@ -510,17 +650,107 @@ module Make (S : SemExtra.S) = struct
     let loc_pretty = V.pp_v mem_loc in
     Some Descriptum.(Mem_constr { loc_pretty; value; store_ev; ca_source })
 
-  let constrs_of_test (test : S.test) (exec : exec) : Descriptum.constr list =
-    ConstrGen.fold_constr
-      (fun a l ->
-        match a with
-        | LV (Loc (S.A.Location_reg (proc, reg)), _) ->
-            constr_of_reg exec proc reg :: l
-        | LV (Loc (Location_global loc), _) ->
-            constr_of_global_loc exec loc :: l
-        | _ -> l)
-      test.Test_herd.cond []
-    |> Util.Option.keep_some
+  let instr_of_label ~(code : code) label =
+    List.find_opt
+      (fun (ins : LitmusTest.instr) ->
+        match ins.label with
+        | None -> false
+        | Some ins_label -> String.equal label ins_label)
+      code
+
+  let constr_of_fault ~code ~exec ~faults ((proc, label), virtual_loc, _ftype) =
+    let label, ins =
+      match label with
+      | Some label -> (label, instr_of_label ~code label)
+      | None -> failwith "no label associated with fault"
+    in
+    let ins =
+      match ins with
+      | Some ins -> ins
+      | None ->
+          failwith
+            (Printf.sprintf "no instruction associated with label %s" label)
+    in
+    let ttd_read = Exec.get_ins_translation exec ins in
+    let source = Exec.get_source exec ttd_read in
+    let ca = Exec.relation "ca" exec |> E.EventRel.remove_transitive_edges in
+    let ca_target =
+      EU.rel_succs ttd_read ca |> E.EventSet.find_first_opt (fun _ -> true)
+    in
+
+    Some
+      Descriptum.(
+        Fault_constr
+          {
+            faults;
+            proc;
+            label;
+            virtual_loc;
+            instr = ins;
+            ttd_read;
+            source;
+            ca_target;
+          })
+
+  let constrs_of_test (code : code) (test : S.test) (exec : exec) :
+      Descriptum.constr list =
+    let open ConstrGen in
+    let rec go prop acc =
+      match prop with
+      | Atom (LV (Loc (S.A.Location_reg (proc, reg)), _)) ->
+          constr_of_reg exec proc reg :: acc
+      | Atom (LV (Loc (Location_global loc), _)) ->
+          constr_of_global_loc exec loc :: acc
+      | Atom (FF fault) -> constr_of_fault ~code ~exec ~faults:true fault :: acc
+      | Not (Atom (FF fault)) ->
+          constr_of_fault ~code ~exec ~faults:false fault :: acc
+      | And props -> List.fold_right go props acc
+      | Atom (LV (Deref _, _)) | Atom (LL _) | Not _ | Or _ | Implies _ ->
+          failwith "unsupported constraint shape"
+    in
+    let constrs =
+      match test.Test_herd.cond with
+      | ExistsState prop -> go prop []
+      | ForallStates _ | NotExistsState _ ->
+          failwith "unsupported constraint shape"
+    in
+    Util.Option.keep_some constrs
+
+  (* return a pte location if the event
+     directly accesses a pte *)
+  let pte_location_of_event ev =
+    match EU.as_access ev with
+    | Some { loc = Location_global loc; _ } when E.Act.is_pte_access ev.E.action
+      ->
+        Some loc
+    | _ -> None
+
+  let add_pte_location loc locs =
+    if List.exists (global_loc_equal loc) locs then locs else loc :: locs
+
+  (* a pte location is "relevant," if it is updated by an explicit or
+     implicit event, or if it appears as a final condition, or a final
+     fault condition is on event that interacts with the pte. *)
+  let relevant_pte_locations (exec : exec) (constrs : Descriptum.constr list) :
+      S.global_loc list =
+    let locations_from_writes =
+      E.EventSet.fold
+        (fun ev locs ->
+          match (EU.as_access ev, pte_location_of_event ev) with
+          | Some { dir = W; _ }, Some loc when not (EU.is_initial ev) ->
+              add_pte_location loc locs
+          | _ -> locs)
+        (Exec.events exec) []
+    in
+    List.fold_left
+      (fun locs -> function
+        | Descriptum.Mem_constr { store_ev; _ }
+        | Descriptum.Fault_constr { ttd_read = store_ev; _ } -> (
+            match pte_location_of_event store_ev with
+            | Some loc -> add_pte_location loc locs
+            | None -> locs)
+        | Descriptum.Reg_constr _ -> locs)
+      locations_from_writes constrs
 
   (**********************************************************)
   (*              Detecting dependencies                    *)
@@ -634,6 +864,11 @@ module Make (S : SemExtra.S) = struct
 
   let describe_execution ~latex_compat ~describe_dep_path ~proc_count
       (code : code) (test : S.test) (exec : exec) : string list =
+    let constrs = constrs_of_test code test exec in
+    let relevant_pte_locs = relevant_pte_locations exec constrs in
+    let is_relevant_pte_location loc =
+      List.exists (global_loc_equal loc) relevant_pte_locs
+    in
     let find_instr_by_iiid iiid =
       find_instr_by_proc_poi ~proc:iiid.S.A.proc ~poi:iiid.S.A.static_poi code
     in
@@ -645,7 +880,14 @@ module Make (S : SemExtra.S) = struct
               Some (Access { loc = Location_global _; is_implicit; _ }) )
             when not is_implicit ->
               Some (Located.make ev (find_instr_by_iiid iiid))
+          | ( IdSome iiid,
+              Some (Access { loc = Location_global loc; is_implicit = true; _ })
+            )
+            when is_relevant_pte_location loc ->
+              Some (Located.make ev (find_instr_by_iiid iiid))
           | IdSome iiid, Some Barrier ->
+              Some (Located.make ev (find_instr_by_iiid iiid))
+          | IdSome iiid, Some TLBI ->
               Some (Located.make ev (find_instr_by_iiid iiid))
           | _ -> None)
       |> Located.group_by_proc_poi
@@ -686,7 +928,6 @@ module Make (S : SemExtra.S) = struct
       |> List.sort Located.compare_by_proc_poi
       |> List.map Located.get
     in
-    let constrs = constrs_of_test test exec in
     let constrs_descriptions = List.map (describe_constr render_ctx) constrs in
     located_descriptions @ constrs_descriptions
 end
@@ -721,14 +962,17 @@ let explain_test ?libdir ?(latex_compat = false) ?(describe_dep_path = false)
     with Invalid_argument msg -> Error msg
   in
   let info = parsed.MiscParser.info in
-  let* () =
+  let* test_variant =
     match List.assoc_opt MiscParser.variant_key info with
-    | Some variant -> Error (Printf.sprintf "variant `%s`" variant)
-    | None -> Ok ()
+    | Some variant -> (
+        match variant with
+        | "vmsa" -> Ok (fun v -> v = Variant.VMSA)
+        | _ -> Error (Printf.sprintf "variant `%s`" variant))
+    | None -> Ok (fun _ -> false)
   in
   let proc_count = List.length parsed.MiscParser.prog in
   let code = LitmusTest.collect_instructions parsed in
-  let outcome = HerdDriver.top ~libdir contents in
+  let outcome = HerdDriver.top ~libdir ~variant:test_variant contents in
   let module R = (val outcome : RunTest.Outcome) in
   let module Expl = Make (R.M.S) in
   let descriptions_rev, _ =
