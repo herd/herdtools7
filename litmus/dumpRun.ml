@@ -162,7 +162,7 @@ end = struct
       (fun u ->
         let src = u ^ ".c" and obj = u ^ ".o" in
         fprintf chan "%s: %s\n" obj src ;
-        fprintf chan "\t$(GCC) $(GCCOPTS) %s-O2 -c %s\n"
+        fprintf chan "\t$(GCC) $(GCCOPTS) %s-c %s\n"
           (if
             TargetOS.is_freebsd Cfg.targetos &&
             u = "affinity"
