@@ -9,6 +9,6 @@ Variant=mixed
  Loop00:         ;
  LDXR W1,[X0]    ;
  STXR W3,W2,[X0] ;
- CBNZ X3,Loop00  ;
+ CBNZ W3,Loop00  ;
 
 exists (0:X1=0x1010101)

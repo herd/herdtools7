@@ -10,6 +10,6 @@ Variant=morello
  Loop00:         ;
  LDXR X1,[C0]    ;
  STXR W3,C2,[X0] ;
- CBNZ X3,Loop00  ;
+ CBNZ W3,Loop00  ;
 
 exists (0:X1=1)
