@@ -1,15 +1,17 @@
-(* Reuse decisions for structurally identical symbolic computations.
-   Definitions are local to an interpreter instance; decisions stay in its paths. *)
+(* Recognize repeated symbolic conditions and reuse earlier branch decisions. *)
 
 module V = ASLValue.V
 
 module Make (VC : Valconstraint.S with type atom = V.v) = struct
+  (* Map each symbol to its defining expression.
+     None marks a symbol with conflicting definitions. *)
   type t = { mutable definitions : VC.expr option V.ValueMap.t }
 
   let create () = { definitions = V.ValueMap.empty }
 
-  (* Operation results are fresh symbols. Branch assumptions (Atom), initial
-     reads and other constraints must never become shared definitions. *)
+  (* Record equations such as result = operation(inputs).
+     Ignore branch constraints such as condition = true: they only hold
+     on the path that selected that branch. *)
   let record t constraints =
     List.iter
       (function
@@ -30,10 +32,11 @@ module Make (VC : Valconstraint.S with type atom = V.v) = struct
     let compare = Misc.pair_compare V.compare V.compare
   end)
 
-  (* Compare definitions, retaining symbol identities at opaque leaves.
-     Memoization avoids expanding shared subexpressions repeatedly and stops
-     cycles conservatively. Equality also accepts reversed operands. *)
+  (* Find an earlier condition with the same expression and return its decision.
+     Symbols without a recorded definition only match themselves. *)
   let find t ~assumptions condition =
+    (* Cache comparisons within this search to avoid comparing shared
+       subexpressions repeatedly. *)
     let memo = ref Pairs.empty in
     let definition value =
       Option.join (V.ValueMap.find_opt value t.definitions)
@@ -43,6 +46,7 @@ module Make (VC : Valconstraint.S with type atom = V.v) = struct
       match Pairs.find_opt (left, right) !memo with
       | Some result -> result
       | None ->
+          (* Assume no match while comparing this pair, to stop recursive cycles. *)
           memo := Pairs.add (left, right) false !memo;
           let result =
             match definition left, definition right with

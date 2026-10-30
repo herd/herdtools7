@@ -383,7 +383,8 @@ module Make (Conf : Config) = struct
       M.asl_data m1 @@ function
       | V.Val (Constant.Concrete (ASLScalar.S_Bool b)) -> if b then m2 else m3
       | b ->
-          (* Keep the chosen guard constraint and all condition/branch effects. *)
+          (* Skip the contradictory alternative, keeping choiceT to add the
+             constraint for the selected branch. *)
           match BranchDecisions.find decisions ~assumptions b with
           | Some true -> M.choiceT b m2 M.zeroT
           | Some false -> M.choiceT b M.zeroT m3
@@ -974,7 +975,7 @@ module Make (Conf : Config) = struct
         let v_of_literal = v_of_literal
         let v_to_z = v_to_z
         let v_to_label = v_to_label
-        (* Observe equations before their result reaches the ASL continuation. *)
+        (* Record the equations produced by a computation before using its result. *)
         let bind_data m f =
           M.asl_data (M.with_constraints m) (fun (value, constraints) ->
             BranchDecisions.record decisions constraints;
