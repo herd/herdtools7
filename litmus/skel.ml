@@ -1093,8 +1093,12 @@ module Make
         O.o "}" ;
         O.o "" ;
         O.o "static void just_dump_outcomes(FILE *fhist, hist_t *h) {" ;
-        O.oi "outcome_t buff ;" ;
-        O.oi "dump_outs(fhist,do_dump_outcome,h->outcomes,buff,NOUTS) ;" ;
+        if nouts > 0 then begin
+          O.oi "outcome_t buff ;" ;
+          O.oi "dump_outs(fhist,do_dump_outcome,h->outcomes,buff,NOUTS) ;"
+        end else begin
+          O.oi "dump_outs_empty(fhist,do_dump_outcome,h->outcomes) ;"
+        end ;
         O.o "}" ;
         O.o "" ;
         ()

@@ -26,15 +26,16 @@ static void free_outs(outs_t *p) {
 static outs_t *
 loop_add_outcome_outs(outs_t *p, u64 *k, int i, count_t c, int show) {
   outs_t *r = p ;
-  if (p == NULL || k[i] < p->k) {
-    r = alloc_outs(k[i]) ;
+  u64 v = i < 0 ? 0 : k[i] ;
+  if (p == NULL || v < p->k) {
+    r = alloc_outs(v) ;
     if (r == NULL) return p ; /* simply ignore insert */
     r->next = p ;
     p = r ;
   }
   for ( ; ; ) {
     outs_t **q ;
-    if (k[i] > p->k) {
+    if (v > p->k) {
       q = &(p->next) ;
       p = p->next ;
     } else if (i <= 0) {
@@ -42,12 +43,12 @@ loop_add_outcome_outs(outs_t *p, u64 *k, int i, count_t c, int show) {
       p->show = show || p->show ;
       return r ;
     } else {
-      i-- ;
+      v=k[--i] ;
       q = &(p->down) ;
       p = p->down ;
     }
-    if (p == NULL || k[i] < p->k) {
-      outs_t *a = alloc_outs(k[i]) ;
+    if (p == NULL || v < p->k) {
+      outs_t *a = alloc_outs(v) ;
       if (a == NULL) return r ;
       a->next = p ;
       p = a ;

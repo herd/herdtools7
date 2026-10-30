@@ -223,7 +223,7 @@ module Make
 (* Only dump depends on test... *)
       O.o "static void do_dump_outs (struct seq_file *m,outs_t *p,u64 *o,int sz) {" ;
       O.oi "for ( ; p ; p = p->next) {" ;
-      O.oii "o[sz-1] = p->k;" ;
+      if nouts > 0 then O.oii "o[sz-1] = p->k;" ;
       O.oii "if (p->c > 0) {" ;
       let fmt_var = fmt_outcome test outs env in
       let fmt ="\"%-8\"PCTR\"%c>" ^ fmt_var ^ "\\n\"" in
@@ -727,8 +727,11 @@ let dump_zyva tname env test =
   O.oii "for (int _t = 0 ; _t < nth ; _t++) wake_up_process(th[_t]);" ;
   O.oii "wait_event_interruptible(*wq, atomic_read(&done) == nth);" ;
   O.oii "smp_mb();" ;
+  let observed = U.get_observed_locs test in
   O.oii "for (int _ni = 0 ; _ni < ninst ; _ni++) {" ;
-  O.oiii "ctx_t *_a = c[_ni];" ;
+  if not @@ A.RLocSet.is_empty observed then
+    O.fiii "ctx_t *_a = c[_ni]; /* observed={%s} */"
+      (A.RLocSet.pp_str "," A.pp_rlocation observed) ;
   O.oiii "for (int _i = 0 ; _i < size ; _i++) {" ;
   let tag_copy s = sprintf "_%s_i" s in
   let dump_a_rloc loc =
@@ -754,7 +757,7 @@ let dump_zyva tname env test =
             pp_t ptr pp_t (sprintf "_a->%s[_i]" tag) ;
           O.fiv "%s %s = *%s;" pp_t (tag_copy tag) ptr
         end)
-    (U.get_observed_locs test) ;
+    observed ;
   begin match test.T.filter with
   | None -> ()
   | Some f ->

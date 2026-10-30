@@ -43,6 +43,7 @@ outs_t *add_outcome_outs(outs_t *p, intmax_t *o, int sz, count_t v, int show) ;
 int finals_outs(outs_t *p) ;
 count_t sum_outs(outs_t *p) ;
 typedef void dump_outcome(FILE *chan, intmax_t *o, count_t c, int show) ;
+void dump_outs_empty (FILE *chan, dump_outcome *dout,outs_t *p) ;
 void dump_outs (FILE *chan, dump_outcome *dout,outs_t *p, intmax_t *buff, int sz) ;
 outs_t *merge_outs(outs_t *p,outs_t *q, int sz) ;
 int same_outs(outs_t *p,outs_t *q) ;

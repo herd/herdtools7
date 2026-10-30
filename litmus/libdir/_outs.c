@@ -51,14 +51,15 @@ void free_outs(outs_t *p) {
 /* Worth writing as a loop, since called many times */
 static outs_t *loop_add_outcome_outs(outs_t *p, intmax_t *k, int i, count_t c, int show) {
   outs_t *r = p ;
-  if (p == NULL || k[i] < p->k) {
-    r = alloc_outs(k[i]) ;
+  intmax_t v = i < 0 ? -1 : k[i] ; /* for sz == 0 value stored is irrelevant */
+  if (p == NULL || v < p->k) {
+    r = alloc_outs(v) ;
     r->next = p ;
     p = r ;
   }
   for ( ; ; ) {
     outs_t **q ;
-    if (k[i] > p->k) {
+    if (v > p->k) {
       q = &(p->next) ;
       p = p->next ;
     } else if (i <= 0) {
@@ -66,12 +67,12 @@ static outs_t *loop_add_outcome_outs(outs_t *p, intmax_t *k, int i, count_t c, i
       p->show = show || p->show ;
       return r ;
     } else {
-      i-- ;
+      v = k[--i] ;
       q = &(p->down) ;
       p = p->down ;
     }
-    if (p == NULL || k[i] < p->k) {
-      outs_t *a = alloc_outs(k[i]) ;
+    if (p == NULL || v < p->k) {
+      outs_t *a = alloc_outs(v) ;
       a->next = p ;
       p = a ;
       *q = a ;
@@ -99,6 +100,10 @@ int finals_outs(outs_t *p) {
     r += finals_outs(p->down) ;
   }
   return r ;
+}
+
+void dump_outs_empty(FILE *chan, dump_outcome *dout,outs_t *p) {
+  if (p && p->c > 0) dout(chan,NULL,p->c,p->show) ;
 }
 
 void dump_outs (FILE *chan, dump_outcome *dout,outs_t *p, intmax_t *buff,int sz) {
