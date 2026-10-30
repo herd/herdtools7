@@ -217,8 +217,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     and op3r v op r1 r2 r3 =
       let open OpExt in I_OP3 (v,op,r1,r2,Reg (r3,no_shift))
 
-    let cbz r1 lbl = I_CBZ (vloc,r1,BranchTarget.Lbl lbl)
+    let do_cbz v r1 lbl = I_CBZ (v,r1,BranchTarget.Lbl lbl)
+    let cbz32 = do_cbz V32
+    let cbz = do_cbz vloc
     let do_cbnz v r1 lbl = I_CBNZ (v,r1,BranchTarget.Lbl lbl)
+    let cbnz32 = do_cbnz V32
     let cbnz = do_cbnz vloc
     let is_branch_instruction = function
       | Instruction ins -> is_branch ins
@@ -1426,7 +1429,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let cs =
             Label (lbl,Nop)
             ::lift_code (emit_xpair ar rR rAR aw r rW rAW)
-            @[Instruction (cbnz r lbl)] in
+            @[Instruction (cbnz32 r lbl)] in
           init,pseudo cs0@cs1@cs,st
 
         let emit_one_pair (ar, aw) p st init r rR rW rAR rAW k e =
@@ -1435,7 +1438,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           init,
           cs1
           @lift_code (emit_xpair ar rR rAR aw r rW rAW)
-          @[Instruction (cbnz r (Label.last p))]
+          @[Instruction (cbnz32 r (Label.last p))]
           @(k (Instruction (incr ok))),
           A.next_ok st
 
@@ -1467,7 +1470,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                  let init,cs,st = do_rec (u-1) in
                  init,
                  pseudo (emit_xpair ar rR rAR aw r rW rAW)
-                 @(Instruction (cbz r out)::cs1@cs),
+                 @(Instruction (cbz32 r out)::cs1@cs),
                  st in
             let init,cs,st = do_rec u in
             init,cs0@cs,st
