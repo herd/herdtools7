@@ -62,6 +62,12 @@ rule main ok st = parse
   { incr_lineno lexbuf ; incr_lineno lexbuf ;
     if st.inside then outline line ;
     main ok st lexbuf }
+| nl (validation as line) nl
+(* Or precedes a validation tag,
+   as in herd logs when displayed locations is the empty set *)
+  { incr_lineno lexbuf ; incr_lineno lexbuf ;
+    if st.inside then (outline ""; outline line) ;
+    main ok st lexbuf }
 | ['h''H']['a''A']['s''S']['h''H']
     blank* '=' blank* [^' ''\t''\n''\r']+ blank*  as line nl
 (* Detect hash metadata *)

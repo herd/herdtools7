@@ -360,9 +360,9 @@ and main_simple  mk islitmus rem = parse
       | Some (islitmusst,st) ->
           let t = O.rename t in
           if O.ok t then
-            main_simple  mk (islitmusst || islitmus) (mk (t,st)::rem) lexbuf
+            main_simple mk (islitmusst || islitmus) (mk (t,st)::rem) lexbuf
           else begin
-            main_simple  mk islitmus rem lexbuf
+            main_simple mk islitmus rem lexbuf
           end
       end }
 | [^'\r''\n']*  nl  { incr_lineno lexbuf ; main_simple  mk islitmus rem lexbuf }
@@ -392,9 +392,13 @@ and slines k = parse
       (* No absent faults in simple states *)
       let st = LS.as_st_concrete bds fs [] in
       slines (st::k) lexbuf }
-|  ("Loop" blank+ )?
-   ((validation ([^'\r''\n']*))
-   |("")  nl ) (* missing validation result, from some litmus logs *)
+|""  nl  (* Empty line present herd logs when no location displayed *)
+    { let st = LS.as_st_concrete [] [] [] in
+      incr_lineno lexbuf ;
+      let hash = shash lexbuf in
+      (st::k,hash) }
+|  ("Loop" blank+)?
+   validation [^'\r''\n']*
     { incr_lineno lexbuf ;
       let hash = shash lexbuf in
       (k,hash) }
