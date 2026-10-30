@@ -860,9 +860,10 @@ let opt_coherence = function
     let init_type_env_to_states inits env =
       (* annotation the inits list with typing *)
       let type_inits = List.map ( fun (loc, init_opt) ->
-          let typing = match loc with
+          let typing = match loc,init_opt with
             (* NOT add typing information of `pte` to loc *)
-            | A.Location.Location_global l when Misc.is_pte l -> TestType.TyDef
+            | A.Location.Location_global l,_ when Misc.is_pte l -> TestType.TyDef
+            | _,Some (A.P _) -> TestType.TyDef
             | _ -> A.LocMap.find_opt loc env
                     |> Option.map typ_to_testtype
                     |> Option.value ~default:TestType.TyDef in
