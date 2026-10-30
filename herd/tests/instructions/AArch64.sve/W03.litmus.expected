@@ -1,0 +1,11 @@
+Test W03 Required
+States 1
+y={1,1,1,1};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Vector-Extensions-is-work-in-progress
+Condition forall (y={1,1,1,1})
+Observation W03 Always 1 0
+Hash=d2f4da8e6a8ed7ab5cd011f38abf1290
+

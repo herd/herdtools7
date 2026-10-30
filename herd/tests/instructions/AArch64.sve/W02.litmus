@@ -1,0 +1,11 @@
+AArch64 W02
+(* Read all Z lanes between instructions and write a 256-bit predicate. *)
+Variant=sve:2048
+{
+}
+P0                    ;
+ MOV Z0.D,#1          ;
+ ADD Z1.D,Z0.D,Z0.D   ;
+ PTRUE P0.B           ;
+
+forall 0:V1.4S={2,0,2,0}

@@ -48,6 +48,7 @@ module type S = sig
     pending_calls : Z.t IMap.t;
     call_stack : identifier annotated list;
     symbolic_path : symbolic_choice list;
+    branch_assumptions : (v * bool) list;
   }
 
   type local
@@ -79,6 +80,7 @@ module type S = sig
   val incr_pending_calls : pos:'a annotated -> identifier -> global -> global
   val decr_pending_calls : identifier -> global -> global
   val push_symbolic_choice : symbolic_choice -> env -> env
+  val push_branch_assumption : v -> bool -> env -> env
 end
 
 module RunTime (C : RunTimeConf) = struct
@@ -98,6 +100,7 @@ module RunTime (C : RunTimeConf) = struct
     pending_calls : Z.t IMap.t;
     call_stack : identifier annotated list;
     symbolic_path : symbolic_choice list;
+    branch_assumptions : (v * bool) list;
   }
 
   type int_stack = int list
@@ -121,6 +124,7 @@ module RunTime (C : RunTimeConf) = struct
       pending_calls = IMap.empty;
       call_stack = [];
       symbolic_path = [];
+      branch_assumptions = [];
     }
 
   let to_static env =
@@ -291,5 +295,17 @@ module RunTime (C : RunTimeConf) = struct
       env with
       global =
         { env.global with symbolic_path = choice :: env.global.symbolic_path };
+    }
+
+  (* Assumptions belong to a path and survive subprogram calls. *)
+  let push_branch_assumption condition decision env =
+    {
+      env with
+      global =
+        {
+          env.global with
+          branch_assumptions =
+            (condition, decision) :: env.global.branch_assumptions;
+        };
     }
 end

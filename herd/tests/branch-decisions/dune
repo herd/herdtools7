@@ -1,0 +1,14 @@
+(test
+ (name decisions)
+ (libraries herd_core herdtools aslref))
+
+(cram
+ (deps
+  %{bin:herd7}
+  (source_tree ../../libdir)
+  ../instructions/ASL/branch-decisions.litmus
+  ../instructions/ASL/branch-decisions-paths.litmus
+  ../instructions/ASL/branch-decisions-inputs.litmus
+  ../instructions/ASL/branch-decisions-memory.litmus
+  ../instructions/ASL/branch-decisions-expressions.litmus
+  ../instructions/ASL/branch-decisions-updates.litmus))

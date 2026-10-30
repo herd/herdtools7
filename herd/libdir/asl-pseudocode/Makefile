@@ -41,7 +41,7 @@ TARGETS_LOG := $(addsuffix .log,$(TARGETS_NAME))
 TARGETS_OFILE := $(ISA_A64_OFILE) $(FEATURES_OFILE) $(SYSREGS_OFILE)
 TARGETS_DIR := $(ISA_A64_DIR) $(SYSREGS_DIR) $(FEATURES_DIR)
 
-WANTED_A64_REGS := sctlr_el2 sctlr_el1 sctlr2_el2 tcr_el1 tcr_el2 oslsr_el1 hcr_el2 ttbr1_el1 ttbr0_el1 spsr_el1 spsr_el2 mair_el1 s2pir_el2 hpfar_el2
+WANTED_A64_REGS := sctlr_el2 sctlr_el1 sctlr2_el2 tcr_el1 tcr_el2 oslsr_el1 hcr_el2 ttbr1_el1 ttbr0_el1 spsr_el1 spsr_el2 mair_el1 s2pir_el2 hpfar_el2 zcr_el1
 WANTED_A32_REGS := scr
 WANTED_EXT_REGS := edscr
 WANTED_REGS := $(addprefix AArch64-,$(WANTED_A64_REGS)) $(addprefix ext-,$(WANTED_EXT_REGS)) $(addprefix AArch32-,$(WANTED_A32_REGS))

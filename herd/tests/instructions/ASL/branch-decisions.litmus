@@ -1,0 +1,25 @@
+ASL BranchDecisions
+(* Repeated function calls must share a bit decision, not their events. *)
+
+{ uint64_t x=1; 0:X1=x; }
+
+var calls: integer = 0;
+
+func active(mask: bits(64), index: integer) => boolean
+begin
+  calls = calls + 1;
+  return mask[index] == '1';
+end;
+
+func main() => integer
+begin
+  let mask = read_memory{64}(read_register(1));
+  var result = 0;
+  for r = 0 to 3 do
+    if active(mask, 0) then result = result + 1; end;
+  end;
+  write_register(0, result[63:0]);
+  return 0;
+end;
+
+forall (0:X0=4 /\ 0:calls=4)

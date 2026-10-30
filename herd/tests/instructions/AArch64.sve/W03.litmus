@@ -1,0 +1,13 @@
+AArch64 W03
+(* Store all four 64-bit lanes of a 256-bit Z register. *)
+Variant=sve:256
+{
+ uint64_t y[4];
+ 0:X0=y;
+}
+P0                         ;
+ PTRUE P0.D                ;
+ MOV Z0.D,#1               ;
+ ST1D {Z0.D},P0,[X0]       ;
+
+forall y={1,1,1,1}

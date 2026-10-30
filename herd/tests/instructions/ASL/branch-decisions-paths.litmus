@@ -1,0 +1,19 @@
+ASL BranchDecisionsPaths
+(* A choice in one path must not constrain its sibling. *)
+
+{ uint64_t x=1; 0:X1=x; }
+
+func main() => integer
+begin
+  let mask = read_memory{64}(read_register(1));
+  var result = 0;
+  if mask[0] == '1' then
+    if mask[0] == '1' then result = 1; else result = 2; end;
+  else
+    if mask[0] == '1' then result = 3; else result = 4; end;
+  end;
+  write_register(0, result[63:0]);
+  return 0;
+end;
+
+forall 0:X0=1
