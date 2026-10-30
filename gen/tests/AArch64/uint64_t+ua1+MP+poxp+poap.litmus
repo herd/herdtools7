@@ -1,0 +1,20 @@
+(* diyone7 -arch AArch64 -metadata false X PodWW Rfe A PodRR Fre -type uint64_t -ua 1 *)
+AArch64 MP+poxp+poap
+{
+ uint64_t x=0;
+ uint64_t y=0;
+ 0:X0=x; uint64_t 0:X2=0; 0:X6=y; 0:X7=ok0;
+ 1:X0=x; uint64_t 1:X1=0; uint64_t 1:X2=0; 1:X6=y;
+}
+ P0              | P1           ;
+ MOV X1,#1       | LDAR X1,[X6] ;
+ LDXR X2,[X0]    | LDR X2,[X0]  ;
+ STXR W3,X1,[X0] |              ;
+ CBNZ W3,End0    |              ;
+ ADD W4,W4,#1    |              ;
+ MOV X5,#1       |              ;
+ STR X5,[X6]     |              ;
+ End0:           |              ;
+ STR X4,[X7]     |              ;
+
+exists (0:X2=0 /\ 1:X1=1 /\ 1:X2=0 /\ [ok0]=1)
