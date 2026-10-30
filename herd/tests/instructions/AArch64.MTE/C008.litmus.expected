@@ -1,0 +1,10 @@
+Test C008 Required
+States 1
+x={0,0,0,0,0,0,0,0,9,10,11,12}; ~Fault(P0,x,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x={0,0,0,0,0,0,0,0,9,10,11,12} /\ not (fault(P0,x,TagCheck)))
+Observation C008 Always 1 0
+Hash=922cc8ee555fdfede76d39e5059816b8
+

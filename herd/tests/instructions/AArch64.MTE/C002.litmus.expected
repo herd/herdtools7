@@ -1,0 +1,10 @@
+Test C002 Required
+States 1
+x={42,2,3,4,42,6,7,8}; ~Fault(P0,x,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (x={42,2,3,4,42,6,7,8} /\ not (fault(P0,x,TagCheck)))
+Observation C002 Always 1 0
+Hash=c996be9a047e52421b2223e137b09f3a
+

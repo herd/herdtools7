@@ -3502,14 +3502,12 @@ let is_valid i =
     -> is_6bits_signed k
   | I_CNT_INC_SVE (_,_,_,k)
     -> is_4bits_unsigned (k-1)
-  | I_STG (_,_,(k,Idx))
-  | I_ST2G (_,_,(k,Idx))
-  | I_STZG (_,_,(k,Idx))
-  | I_STZ2G (_,_,(k,Idx))
-  | I_LDG (_,_,k)
+  | I_STG   (_,_,(k,_))
+  | I_ST2G  (_,_,(k,_))
+  | I_STZG  (_,_,(k,_))
+  | I_STZ2G (_,_,(k,_))
+  | I_LDG   (_,_,k)
     -> is_granule_offset k
-  | I_STG _ |I_ST2G _|I_STZG _|I_STZ2G _
-    -> false
   | I_LDAP1 ([Vreg(_,(0,64))],_,_,_)
   | I_STL1 ([Vreg(_,(0,64))],_,_,_)
     -> true

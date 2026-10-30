@@ -1,0 +1,20 @@
+AArch64 C003
+Variant=mixed,mte
+
+(* Check pre-indexing of STZG that memory associated with granules is zeroed *)
+
+{
+    int x[8]={1,2,3,4,5,6,7,8};
+
+    tag(x)   =:red;
+    tag(x+16)=:red;
+
+    0:X0=x:green; 0:X1=x:yellow;
+}
+P0                ;
+MOV W2,#42        ;
+
+STZG X1,[X1]      ;
+STZG X1,[X0, #16]!; (* Offset with pre-index + write-back *)
+
+forall (x={0,0,0,0,0,0,0,0} /\ ~fault(P0,x,TagCheck))
