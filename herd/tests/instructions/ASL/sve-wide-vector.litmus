@@ -1,0 +1,16 @@
+ASL SVEWideVector
+(* Preserve bit 2047 through the vector register primitives. *)
+
+{}
+
+func main() => integer
+begin
+  var data : bits(2048) = Zeros{2048};
+  data[2047] = '1';
+  write_vector{2048}(0, data);
+  let vector = read_vector{2048}(0);
+  write_register(0, Zeros{63} :: vector[2047]);
+  return 0;
+end;
+
+forall 0:X0=1
