@@ -1,10 +1,10 @@
 GCCOPTS += -DKVM
 
 clean:
-	/bin/rm -f *.o *.s *.t *.elf *.flat *~ $(H) $(SHARED_OBJ) $(SHARED_LIB)
+	$(RM) *.o *.s *.t *.elf *.flat *~ $(H) $(SHARED_OBJ) $(SHARED_LIB)
 
 cleansource:
-	/bin/rm -f *.o *.c *.h *.s *~ litmus/*.[aoch]
+	$(RM) *.o *.c *.h *.s *~ litmus/*.[aoch]
 
 %.s: %.c
 	$(CC) $(GCCOPTS) -S -o $@ $<
