@@ -45,6 +45,7 @@
   mcond
   mproj
   rehash
+  rename
   splitdot
   mlock
   mtrue
@@ -88,6 +89,7 @@
   mcond7
   mproj7
   rehash7
+  rename7
   splitdot7
   mlock7
   mtrue7
@@ -101,7 +103,7 @@
   cat2table7
   mlogselect7)
  (libraries herdtools unix str)
- (modules_without_implementation arch_tools))
+ (modules_without_implementation arch_tools copyTest))
 
 (install
  (source_trees

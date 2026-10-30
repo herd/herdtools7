@@ -18,63 +18,43 @@
 
 open Printf
 
-module type Opt = sig
+module type Config = sig
+  val verbose : int
   val get_hash : string -> string
   val check_name : string -> bool
 end
 
-module Make(Opt:Opt)(Out:OutTests.S) =
+module Make(Opt:Config) =
   struct
-    module D = Splitter.Default
-    module LU = LexUtils.Make(D)
+    module D = struct let debug = Opt.verbose > 1  end
     module S = Splitter.Make(D)
 
-    let from_chan idx_out fname in_chan =
-      try
-        let { Splitter.locs = locs; start = start; name=name; _} =
-          S.split fname in_chan in
-        if Opt.check_name name.Name.name then begin
-          let base = Filename.basename fname in
-          let out = Out.open_file base in
-          Misc.output_protect_close Out.close
-            (fun out ->
-              let echo sec =
-                let lexbuf = LU.from_section sec in_chan in
-                Echo.echo_fun lexbuf (Out.put_char out) in
-              let (init_start,_),_,_,(_,loc_eof) = locs in
+    module Copy =
+      ChangeFst.Make
+        (struct
+          type state =  unit
+          let verbose = Opt.verbose
+          let split = S.split
+          let rewrite_fst (st:unit) name lexbuf =
+            let { Name.name; _ } = name in
+            begin
               try
-                let new_v = Opt.get_hash name.Name.name in (* raise Not_found *)
-                let lexbuf = LU.from_section (start,init_start) in_chan in
-                let new_init = S.rehash new_v lexbuf in
-                Out.fprintf out "%s" new_init ;
-                echo (init_start,loc_eof)
-              with Not_found ->
-                echo (start,loc_eof)) out ;
-          Out.fprintf idx_out "%s\n" base
-        end
-      with LexMisc.Error (msg,pos) ->
-        Printf.eprintf
-	  "%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg fname ;
-        raise Misc.Exit
- let from_file idx_chan name =
-      try
-        Misc.input_protect
-          (fun in_chan -> from_chan idx_chan name in_chan)
-          name
-      with Misc.Exit -> ()
-      | Misc.Fatal msg|Misc.UserError msg ->
-          eprintf "Fatal error is not fatal, %s\n" msg
+                let hash = Opt.get_hash name in
+                Some (S.rehash hash lexbuf)
+              with Not_found -> None
+            end,st
+        end)
 
-    let from_args args =
-      let idx_out = Out.open_all () in
-      Misc.output_protect_close Out.close
-        (fun idx_out ->
-          Misc.iter_argv_or_stdin (from_file idx_out) args)
-        idx_out ;
-      Out.tar ()
+    module OptGen = struct
+      type state = unit
+      include Opt
+    end
+
+    module Gen = GenTests.Make(OptGen)(Copy)
+
+    let from_tokens = Gen.from_tokens
 
   end
-
 
 open OptNames
 
@@ -88,7 +68,7 @@ let set_list r c = r := !r @ [c]
 
 let prog =
   if Array.length Sys.argv > 0 then Sys.argv.(0)
-  else "mrehash"
+  else "rehash"
 
 let opts =
   LibOpts.parse_verbose verbose
@@ -98,10 +78,8 @@ let opts =
 let () =
   Arg.parse
     opts
-    (fun s -> arg := !arg @ [s])
+    (fun tok -> arg := tok :: !arg)
     (sprintf "Usage: %s [options]* [test]*" prog)
-
-let tests = List.rev !arg
 
 module Check =
   CheckName.Make
@@ -119,25 +97,13 @@ module LR = LexRename.Make(struct let verbose = !verbose end)
 let hashes = LR.read_from_files !hashes (fun s -> Some s)
 
 (* Call *)
-let from_args =
-  let module X =
-    Make
-      (struct
-        let check_name = Check.ok
-        let get_hash name = TblRename.find_value hashes name
-      end) in
-  match !tar with
-  | None ->
-      let module Y = X(OutStd) in
-      Y.from_args
-  | Some _ as t ->
-      let module T =
-        OutTar.Make
-          (struct
-	    let verbose = !verbose
-	    let outname = t
-	  end) in
-       let module Y = X(T) in
-       Y.from_args
 
-let () = from_args tests
+module Zyva =
+  Make
+    (struct
+      let verbose = !verbose
+      let check_name = Check.ok
+      let get_hash name = TblRename.find_value hashes name
+    end)
+
+let () = Zyva.from_tokens !arg () !tar

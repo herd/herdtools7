@@ -2,6 +2,7 @@
  (applies_to hashes)
  (deps
   (file %{workspace_root}/gen/tests/AArch64/MP.litmus)
+  (file %{workspace_root}/gen/tests/AArch64/MP+po+addr.litmus)
   %{bin:mshowhashes7}
   %{bin:rehash7}))
 
@@ -24,3 +25,7 @@
 (cram
  (applies_to mapply)
  (deps %{bin:mapply7}))
+
+(cram
+ (applies_to rename)
+ (deps %{bin:rename7}))

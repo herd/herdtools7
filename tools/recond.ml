@@ -37,18 +37,19 @@ module type Config = sig
   val hexa : bool
 end
 
-module Make(Config:Config)(Out:OutTests.S) =
-  struct
-    module D = Splitter.Default
-    module LU = LexUtils.Make(D)
-    module S = Splitter.Make(D)
+module Make(Opt:Config) = struct
+  module D = Splitter.Default
+  module LU = LexUtils.Make(D)
+  module S = Splitter.Make(D)
+
+  module Copy(Out:OutTests.S) = struct
 
     let mk_dump_loc map = match map with
-    | None -> MiscParser.dump_location
-    | Some m ->
-        fun loc ->
-          let pp = MiscParser.dump_location loc in
-          StringMap.safe_find pp pp m
+      | None -> MiscParser.dump_location
+      | Some m ->
+         fun loc ->
+           let pp = MiscParser.dump_location loc in
+           StringMap.safe_find pp pp m
 
     let dump_outcomes chan dump_loc c =
       CondUtils.fold_outcomes c
@@ -58,7 +59,7 @@ module Make(Config:Config)(Out:OutTests.S) =
             (fun (loc,v) ->
               Out.fprintf chan "%s=%s;"
                 (dump_loc loc)
-                (ToolsConstant.pp Config.hexa v))
+                (ToolsConstant.pp Opt.hexa v))
             bds ;
           Out.fprintf chan "\n") ()
 
@@ -73,7 +74,7 @@ module Make(Config:Config)(Out:OutTests.S) =
                 (fun (loc,v) ->
                   sprintf "%s=%s;"
                     (dump_loc loc)
-                    (ToolsConstant.pp Config.hexa v)) bds in
+                    (ToolsConstant.pp Opt.hexa v)) bds in
             let pp = String.concat " " pp in
             Out.fprintf chan "%s\n" pp ;
             "and ")
@@ -81,15 +82,15 @@ module Make(Config:Config)(Out:OutTests.S) =
       ()
 
     let dump_locs out dump_loc dump_v dump_ft locs = match locs with
-    | [] -> ()
-    | _::_ ->
-        Out.fprintf out "%s\n"
-          (DumpUtils.dump_locations dump_loc dump_v dump_ft locs)
+      | [] -> ()
+      | _::_ ->
+         Out.fprintf out "%s\n"
+           (DumpUtils.dump_locations dump_loc dump_v dump_ft locs)
 
     let reparse map =
       if
-        Config.outcomes || Config.asobserved ||
-        Config.toexists || (match map with Some _ -> true | None -> false)
+        Opt.outcomes || Opt.asobserved ||
+          Opt.toexists || (match map with Some _ -> true | None -> false)
       then
         fun mk x -> LogConstr.parse_locs_cond (mk x)
       else
@@ -103,149 +104,156 @@ module Make(Config:Config)(Out:OutTests.S) =
       | ForallStates (And []) -> ExistsState (And [])
       | ForallStates p -> ExistsState (Not p)
 
+    let split = S.split
 
-    let from_chan idx_out fname in_chan =
+    type state = unit
+    type out = Out.t
+
+    let from_splitted () idx_out splitted in_chan =
 
       let _debug sec =
         let lexbuf = LU.from_section sec in_chan in
-        Echo.echo_fun lexbuf (Printf.eprintf "%c")  in
+          Echo.echo_fun lexbuf (Printf.eprintf "%c")  in
 
+      let { Splitter.locs; start; name; info; _} = splitted in
+      let { Name.name; file; _ } = name in
       try
-        let { Splitter.locs = locs; start = start; name=name; info; _} =
-          S.split fname in_chan in
-        if Config.check_name name.Name.name then begin
-          if Config.verbose > 0 then
-            eprintf "Let's go on %s\n%!" fname ;
-          let map =
-            try
-              let map = List.assoc OutMapping.key info in
-              let map =
-                try LexOutMapping.parse map with _ -> assert false in
-              let map = OutMapping.inverse map in
-              Some map
-            with Not_found -> None in
-          let base = Filename.basename fname in
-          let out = Out.open_file base in
-          Misc.output_protect_close Out.close
-            (fun out ->
-              let _,_,(constr_start,_constr_end as constr_sec),(last_start,loc_eof) = locs in
+        if Opt.verbose > 0 then
+          eprintf "Let's go on %s\n%!" file ;
+        let map =
+          try
+            let map = List.assoc OutMapping.key info in
+            let map =
+              try LexOutMapping.parse map with _ -> assert false in
+            let map = OutMapping.inverse map in
+            Some map
+          with Not_found -> None in
+        let base = Filename.basename file in
+        let out = Out.open_file base in
+        Misc.output_protect_close Out.close
+          (fun out ->
+             let _,_,
+                 (constr_start,_constr_end as constr_sec),
+                 (last_start,loc_eof) = locs in
 
-              let echo sec =
-                let lexbuf = LU.from_section sec in_chan in
-                Echo.echo_fun lexbuf (Out.put_char out)  in
+             let echo sec =
+               let lexbuf = LU.from_section sec in_chan in
+               Echo.echo_fun lexbuf (Out.put_char out)  in
 
-              let module D =
-                LogConstr.Dump
-                  (struct
-                    let hexa = Config.hexa
-                    let tr = match map with
-                    | None -> Misc.identity
-                    | Some m ->
-                        fun loc -> StringMap.safe_find loc loc m
-                  end) in
+             let module D =
+               LogConstr.Dump
+                 (struct
+                   let hexa = Opt.hexa
+                   let tr = match map with
+                     | None -> Misc.identity
+                     | Some m ->
+                         fun loc -> StringMap.safe_find loc loc m
+                 end) in
 
-              let dump_filter sec =
-                match LogConstr.parse_filter (LU.from_section sec in_chan) with
-                | None -> ()
-                | Some p ->
-                    Out.fprintf out "filter " ;
-                    D.dump_prop (Out.chan out) p ;
-                    Out.fprintf out "\n" in
+             let dump_filter sec =
+               match
+                 LogConstr.parse_filter (LU.from_section sec in_chan)
+               with
+               | None -> ()
+               | Some p ->
+                   Out.fprintf out "filter " ;
+                   D.dump_prop (Out.chan out) p ;
+                   Out.fprintf out "\n" in
 
-              echo (start,constr_start) ;
+             echo (start,constr_start) ;
 
-              let echocond =
-                not
-                  (Config.asobserved || Config.toexists || Misc.is_some map) in
+             let echocond =
+               not
+                 (Opt.asobserved || Opt.toexists
+                  || Misc.is_some map) in
 
-              let cond_checked =  Config.check_cond name.Name.name in
+             let cond_checked =  Opt.check_cond name in
 
-              let echo_cond c = match c with
-              | Some f ->
-                  dump_filter constr_sec ;
-                  Out.fprintf out "%s\n" f
-              | None -> echo constr_sec in
+             let echo_cond c =
+               match c with
+               | Some f ->
+                   dump_filter constr_sec ;
+                   Out.fprintf out "%s\n" f
+               | None -> echo constr_sec in
 
-              let cond =
-                begin match cond_checked with
-                | Some f ->
-                    if echocond then begin
-                      echo_cond cond_checked
-                    end ;
-                    reparse map (fun s -> Lexing.from_string s) f
-                | None ->
-                    if
-                      not
-                        (Config.asobserved || Config.toexists) then
-                      echo_cond None ;
-                    reparse None (LU.from_section constr_sec) in_chan
-                end in
+             let cond =
+               match cond_checked with
+               | Some f ->
+                   if echocond then begin
+                     echo_cond cond_checked
+                   end ;
+                   reparse map (fun s -> Lexing.from_string s) f
+               | None ->
+                   if
+                     not
+                       (Opt.asobserved || Opt.toexists) then
+                     echo_cond None ;
+                   reparse None (LU.from_section constr_sec) in_chan in
 
-              if Config.asobserved then begin match cond with
-                  | Some (locs,cond) ->
-                      dump_filter constr_sec ;
-                      dump_locs out (mk_dump_loc map) ParsedConstant.pp_v MiscParser.dump_fault_type locs ;
-                      dump_observed out (mk_dump_loc map) cond ;
-              | None -> assert false
-              end else if Config.toexists then begin match cond with
-                | Some (locs,cond) ->
-                    begin match cond,map with
-                    | ConstrGen.ExistsState _,None ->
-                        echo_cond cond_checked
-                    | _ ->
-                        dump_filter constr_sec ;
-                        dump_locs out (mk_dump_loc map) ParsedConstant.pp_v MiscParser.dump_fault_type locs ;
-                        D.dump (Out.chan out) (toexists cond) ;
-                        Out.fprintf out "\n"
-                  end
-                | None -> assert false
-              end else begin match cond with
-              | Some (locs,cond) ->
-                  dump_filter constr_sec ;
-                  dump_locs out (mk_dump_loc map) ParsedConstant.pp_v (fun x -> x) locs ;
-                  D.dump (Out.chan out) cond ;
-                  Out.fprintf out "\n"
-              | None -> ()
-              end ;
-              echo (last_start,loc_eof) ;
-              if Config.outcomes then begin match cond with
-              | None -> ()
-              | Some (_,c) ->
-                  Out.fprintf out "(* Outcomes: \n" ;
-                  dump_outcomes out (mk_dump_loc map) c ;
-                  Out.fprintf out "*)\n"
-              end ;
-              ())
-            out ;
-          Out.fprintf idx_out "%s\n" base
-        end
+             if Opt.asobserved then begin
+               match cond with
+               | Some (locs,cond) ->
+                   dump_filter constr_sec ;
+                   dump_locs out
+                     (mk_dump_loc map)
+                     ParsedConstant.pp_v MiscParser.dump_fault_type locs ;
+                   dump_observed out (mk_dump_loc map) cond ;
+               | None -> assert false
+             end else if Opt.toexists then begin
+               match cond with
+               | Some (locs,cond) ->
+                   begin
+                     match cond,map with
+                     | ConstrGen.ExistsState _,None ->
+                         echo_cond cond_checked
+                     | _ ->
+                         dump_filter constr_sec ;
+                         dump_locs out (mk_dump_loc map)
+                           ParsedConstant.pp_v MiscParser.dump_fault_type
+                           locs ;
+                         D.dump (Out.chan out) (toexists cond) ;
+                         Out.fprintf out "\n"
+                   end
+               | None -> assert false
+             end else begin
+               match cond with
+               | Some (locs,cond) ->
+                   dump_filter constr_sec ;
+                   dump_locs
+                     out (mk_dump_loc map)
+                     ParsedConstant.pp_v (fun x -> x) locs ;
+                   D.dump (Out.chan out) cond ;
+                   Out.fprintf out "\n"
+               | None -> ()
+             end ;
+             echo (last_start,loc_eof) ;
+             if Opt.outcomes then begin
+               match cond with
+               | None -> ()
+               | Some (_,c) ->
+                   Out.fprintf out "(* Outcomes: \n" ;
+                   dump_outcomes out (mk_dump_loc map) c ;
+                   Out.fprintf out "*)\n"
+             end ;
+             ())
+          out ;
+        Out.fprintf idx_out "%s\n" base
       with LexMisc.Error (msg,pos) ->
         Printf.eprintf
-          "%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg fname ;
+          "%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg file ;
         raise Misc.Exit
-
-    let from_file idx_chan name =
-      if Config.verbose > 0 then eprintf "Test file %s\n" name ;
-      try
-        Misc.input_protect
-          (fun in_chan -> from_chan idx_chan name in_chan)
-          name
-      with Misc.Exit -> ()
-      | Misc.Fatal msg|Misc.UserError msg ->
-          eprintf "Fatal error is not fatal, %s\n" msg
-
-    let from_args args =
-      if Config.verbose > 0 then
-        eprintf "Scanning test files from %s\n"
-          (String.concat "," args) ;
-      let idx_out = Out.open_all () in
-      Misc.output_protect_close Out.close
-        (fun idx_out ->
-          Misc.iter_argv_or_stdin (from_file idx_out) args)
-        idx_out ;
-      Out.tar ()
-
   end
+
+  module OptGen = struct
+    type state = unit
+    include Opt
+  end
+
+  module Gen = GenTests.Make(OptGen)(Copy)
+
+  let from_tokens = Gen.from_tokens
+
+end
 
 (**********)
 (* Driver *)
@@ -292,7 +300,7 @@ let usage = String.concat "\n" [
 
 let () =
   Arg.parse opts
-    (fun a -> args := a :: !args)
+    (fun tok -> args := tok :: !args)
     usage
 
 (* Read names *)
@@ -312,39 +320,16 @@ module Check =
 module LR = LexRename.Make(struct let verbose = !verbose end)
 let conds = LR.read_from_files !conds (fun s -> Some s)
 
-let () =
-  if !verbose > 0 then
-    eprintf "%s: conditions loaded\n%!" nprog
+module Zyva =
+  Make
+    (struct
+      let verbose = !verbose
+      let outcomes = !outcomes
+      let asobserved = !asobserved
+      let toexists = !toexists
+      let check_name = Check.ok
+      let check_cond name = TblRename.find_value_opt conds name
+      let hexa = !hexa
+    end)
 
-let from_args =
-  let module X =
-    Make
-      (struct
-        let verbose = !verbose
-        let outcomes = !outcomes
-        let asobserved = !asobserved
-        let toexists = !toexists
-        let check_name = Check.ok
-        let check_cond name = TblRename.find_value_opt conds name
-        let hexa = !hexa
-      end) in
-  match !tar with
-  | None ->
-      let module Y = X(OutStd) in
-      Y.from_args
-  | Some n as t ->
-      let module T =
-        OutTar.Make
-          (struct
-            let verbose = !verbose
-            let outname = t
-          end) in
-      let module Y = X(T) in
-      if !verbose > 0 then eprintf "%s: output to %s\n%!" nprog n ;
-      Y.from_args
-
-let () =
-  if !verbose > 0 then
-    eprintf "%s: calling from_args\n%!" nprog
-
-let () = from_args !args
+let () = Zyva.from_tokens !args () !tar

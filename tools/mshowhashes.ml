@@ -88,8 +88,6 @@ module Check =
     end)
 
 
-let tests = List.rev !arg
-
 module X =
   Top
     (struct
@@ -98,4 +96,4 @@ module X =
       let recompute_hash = !recompute_hash
     end)
 
-let () = X.zyva tests
+let () = X.zyva !arg

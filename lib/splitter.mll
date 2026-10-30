@@ -234,6 +234,24 @@ and change_info found p buff = parse
       change_info found p buff lexbuf }
 | "" { error "change info" lexbuf }
 
+and change_name name buff = parse
+| "(*" as lexed
+    { Buffer.add_string buff lexed ;
+      skip_comment_fun (Buffer.add_char buff) lexbuf ;
+      change_name name buff lexbuf }
+| '\n' as lexed
+    { incr_lineno lexbuf ;
+      Buffer.add_char buff lexed ;
+      change_name name buff lexbuf }
+| (blank* (alpha|digit|'_')+ blank+ as prefix)
+  testname
+  { Buffer.add_string buff prefix ;
+    Buffer.add_string buff name ;
+    Echo.echo_fun lexbuf (Buffer.add_char buff) }
+
+and is_testname = parse
+| testname eof { true }
+| ""           { false }
 
 {
 
@@ -277,13 +295,6 @@ let split_lexbuf name lexbuf =
   if O.debug then show r ;
   r
 
-let reinfo p lexbuf =
-  let buff = Buffer.create 32 in
-  change_main buff p lexbuf ;
-  Buffer.contents buff
-
-let rehash v lexbuf = reinfo (MiscParser.hash_key,v) lexbuf
-
 let split name chan =
   let lexbuf = from_channel chan in
   split_lexbuf name lexbuf
@@ -291,5 +302,20 @@ let split name chan =
 let split_string name s =
   let lexbuf = from_string s in
   split_lexbuf name lexbuf
+
+let reinfo p lexbuf =
+  let buff = Buffer.create 32 in
+  change_main buff p lexbuf ;
+  Buffer.contents buff
+
+let rehash v lexbuf = reinfo (MiscParser.hash_key,v) lexbuf
+
+let rename name lexbuf =
+  let buff = Buffer.create 32 in
+  change_name name buff lexbuf ;
+  Buffer.contents buff
+
+let testname_valid t = Lexing.from_string t |> is_testname
+
 end
 }
