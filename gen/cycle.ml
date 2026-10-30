@@ -875,7 +875,7 @@ let check_cycle c =
      and then check if all the rmw edges per locations are valid *)
   fold ( fun n lst ->
     match n.edge.E.edge with
-    | E.Rmw rmw ->
+    | E.Rmw _ ->
       (* Encode the mixed size access into location, so reuse `by_loc` function.
          This allows atomic operations on different bytes of a location. *)
       let access_suffix = match E.get_access_atom n.edge.E.a1 with
@@ -884,15 +884,13 @@ let check_cycle c =
       let loc = match n.evt.loc with
       | Data s -> Data (s ^ access_suffix)
       | Code _ -> Warn.fatal "RMW edge on a code location is not possible" in
-      (loc,rmw)::lst
+      (loc,n.edge)::lst
     | _ -> lst
   ) c []
   (* group all the RMW events by locations *)
   |> by_loc
   (* check if there exists invalid RMW events for a location *)
-  |> List.exists (fun e -> not @@ E.is_valid_rmw @@ List.flatten @@ snd e)
-  |> ( fun exist_invalid_rmw -> if exist_invalid_rmw then
-    Warn.fatal "There are two `Amo.St*` of the same type on the same location. A cycle will not form due to commutativity." )
+  |> List.iter (fun e -> E.is_valid_rmw @@ List.flatten @@ snd e)
 
 
 

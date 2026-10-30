@@ -2,5 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+rmwpi-rfiip [LxSxPI RfiIP] failed:
-instruction annotation on a data location is not possible
+Bad annotation for LxSx: R=P, W=I
 *)

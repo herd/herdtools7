@@ -2060,21 +2060,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         Warn.fatal
           "Refuse to generate constrained unpredictable, use -variant CU to accept"
 
-    let check_arw_lxsx er ew =
-      let ar = tr_none er.C.atom
-      and aw = tr_none ew.C.atom in
-      let different_mixed_accesses =
-        match get_access_atom (Some ar),get_access_atom (Some aw) with
-        | Some a1,Some a2 -> not (Mixed.equal a1 a2)
-        | _,_ -> false in
-      if not different_mixed_accesses
-         && not (A64.RMW.applies_atom_rmw A64.RMW.LrSc (Some ar) (Some aw)) then
-        Warn.fatal "Bad annotation for LxSx: R=%s, W=%s" (pp ar) (pp aw) ;
-      let szr = get_access_atom (Some ar)
-      and szw = get_access_atom (Some aw) in
-      check_cu (not (A64.do_cu || same_sz szr szw)) ;
-      ar,aw
-
     let emit_addr_simple  st p init er =
       let rA,init,st = U.next_init st p init (get_tagged_loc er) in
       rA,init,[],st
@@ -2093,7 +2078,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | _ -> emit_plain_value st p init (Value.to_int e.C.v)
 
     let do_emit_exch1 emit_data emit_addr st p init er ew =
-      let arw = check_arw_lxsx er ew in
+      let arw = tr_none er.C.atom,tr_none ew.C.atom in
       let rA,init,caddr,st = emit_addr st p init er in
       let rR,st = next_reg st in
       let rW,init,csi,st = emit_rmw_value U.emit_mov st p init ew in
@@ -2103,7 +2088,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       rR,init,csi@cdata@caddr@cs,st
 
     let do_emit_exch22 emit_data emit_addr st p init er ew =
-      let arw = check_arw_lxsx er ew in
+      let arw = tr_none er.C.atom,tr_none ew.C.atom in
       let rA,init,caddr,st = emit_addr st p init er in
       let rR1,rR2,st = next_reg2 st in
       let rW1,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
@@ -2115,7 +2100,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       rR1,init,csi@cdata@caddr@cs,st
 
     let do_emit_exch21 emit_data emit_addr st p init er ew =
-      let arw = check_arw_lxsx er ew in
+      let arw = tr_none er.C.atom,tr_none ew.C.atom in
       let rA,init,caddr,st = emit_addr st p init er in
       let rR1,rR2,st = next_reg2 st in
       let rW,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
@@ -2127,7 +2112,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       rR1,init,csi@cdata@caddr@cs,st
 
     let do_emit_exch12 emit_data emit_addr st p init er ew =
-      let arw = check_arw_lxsx er ew in
+      let arw = tr_none er.C.atom,tr_none ew.C.atom in
       let rA,init,caddr,st = emit_addr st p init er in
       let rR,st = next_reg st in
       let rW1,init,csi,st = U.emit_mov st p init (Value.to_int ew.C.v) in
