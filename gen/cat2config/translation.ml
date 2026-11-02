@@ -695,6 +695,47 @@ let make_concrete_relax left_atom right_atom insert edges =
   in
   List.map (fun edge -> Plain edge) edges
 
+let event_direction = function
+  | Ir.Any direction
+  | Plain (Direction direction)
+  | TTD direction
+  | Tag direction
+  | Instr direction ->
+      direction
+  | Plain (Acq_rel (A | Q)) -> R
+  | Plain (Acq_rel L) -> W
+
+let event_access_field = function
+  | Ir.Event { access = TTD _; _ } -> Some `TTD
+  | Ir.Event { access = Tag _; _ } -> Some `Tag
+  | Ir.Event { access = Instr _; _ } -> Some `Instr
+  | Ir.Event { access = Any _ | Plain _; _ } | _ -> None
+
+let propagate_event_access_field field endpoint_constraint =
+  match endpoint_constraint with
+  | Ir.Event ({ access = (Any _ | Plain _) as access; _ } as event) ->
+      let direction = event_direction access in
+      let access =
+        match field with
+        | `TTD -> Ir.TTD direction
+        | `Tag -> Ir.Tag direction
+        | `Instr -> Ir.Instr direction
+      in
+      Ir.Event { event with access }
+  | endpoint_constraint -> endpoint_constraint
+
+(* Same-location endpoints refer to the same access field. For example,
+   `[Imp & Tag & R]; (po & same-loc); [Exp & W]` refines the right endpoint to
+   `[Exp & Tag & W]` while preserving its write direction. *)
+let propagate_same_location_constraint left right =
+  let find_field sets = List.find_map event_access_field sets in
+  match (find_field left, find_field right) with
+  | Some field, None ->
+      (left, List.map (propagate_event_access_field field) right)
+  | None, Some field ->
+      (List.map (propagate_event_access_field field) left, right)
+  | _ -> (left, right)
+
 let try_match_edge (left : prim_set list) (core : seq_item list)
     (right : prim_set list) : concrete_relax list option =
   let open Util.Option.Infix in
@@ -749,9 +790,15 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
     | _ -> None
   in
   let* tedges = pedge.tedges in
-  let* left = build_effect initial_effect (left @ implied_left) in
+  let left, right =
+    let left, right = (left @ implied_left, right @ implied_right) in
+    match pedge.sd with
+    | Some Code.Same -> propagate_same_location_constraint left right
+    | Some Code.Diff | None -> (left, right)
+  in
+  let* left = build_effect initial_effect left in
   let* _ = Util.Option.guard left.explicit_mem in
-  let* right = build_effect initial_effect (right @ implied_right) in
+  let* right = build_effect initial_effect right in
   let* _ = Util.Option.guard right.explicit_mem in
   let relaxs =
     tedges
