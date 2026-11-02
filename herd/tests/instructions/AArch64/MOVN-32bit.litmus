@@ -1,0 +1,15 @@
+AArch64 MOVN-32bit
+
+(*
+ * Any write through W0 clears X0[63:32].  After MOVN W0,#0, a 64-bit shift
+ * right by 32 must therefore produce zero.
+ *)
+
+{
+}
+
+P0              ;
+  MOVN W0,#0     ;
+  LSR X1,X0,#32  ;
+
+exists (0:X1=0)

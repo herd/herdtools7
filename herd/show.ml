@@ -81,8 +81,12 @@ module Make(O:PrettyConf.S) = struct
 
   let do_show_file_preview name_dot =
     let dirname, name_dot = Filename.(dirname name_dot, basename name_dot) in
+    let err_msg =
+      sprintf "%s not found. Please install graphviz to display graphs" generator in
     run_cmds
       [
+        (* check if <generator> is available otherwise exit *)
+        sprintf "which %s 2>&1 > /dev/null || echo %s. 1>&2" generator err_msg;
         (* cd in temp dir, just so that command is easier to read in debug mode *)
         sprintf "cd %s" dirname;
         (* Generate the pdfs *)

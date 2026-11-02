@@ -1,0 +1,16 @@
+AArch64 LSLV-32bit
+
+(*
+ * C6.2.271 LSLV takes UInt(X[m]) MOD datasize as the shift amount.
+ * A 32-bit shift operand of 32 must therefore act as a shift by zero here.
+ *)
+
+{
+  0:X1=1;
+  0:X2=32;
+}
+
+P0                ;
+  LSLV W0,W1,W2   ;
+
+exists (0:X0=1)

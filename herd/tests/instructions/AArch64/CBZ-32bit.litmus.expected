@@ -1,0 +1,10 @@
+Test CBZ-32bit Allowed
+States 1
+0:X1=2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition exists (0:X1=2)
+Observation CBZ-32bit Always 1 0
+Hash=aeecab75604c99c050e3f5d81ff4afcc
+

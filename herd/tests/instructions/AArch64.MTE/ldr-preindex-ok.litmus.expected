@@ -1,0 +1,10 @@
+Test ldr-preindex-ok Required
+States 1
+0:X1=x:green+4;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (true)
+Observation ldr-preindex-ok Always 1 0
+Hash=2bf8b24dc2e69f0d045d8abbab47e42a
+
