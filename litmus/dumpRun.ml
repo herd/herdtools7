@@ -134,6 +134,13 @@ end = struct
         (List.rev sources) ;
       fprintf chan "\n"
     end ;
+    fprintf chan "SHARED_SRC_DIR=$(CURDIR)/litmus\n" ;
+    fprintf chan "GCCOPTS += -I $(SHARED_SRC_DIR)\n" ;
+    fprintf chan "SHARED_SRC=$(wildcard $(SHARED_SRC_DIR)/*.c)\n" ;
+    fprintf chan "SHARED_OBJ=$(SHARED_SRC:.c=.o)\n\n" ;
+    fprintf chan "ifneq ($(SHARED_SRC),)\n" ;
+    fprintf chan "SHARED_LIB=$(SHARED_SRC_DIR)/liblitmus.a\n" ;
+    fprintf chan "endif\n\n" ;
     begin
       match Cfg.mode with
       | Mode.Std|Mode.PreSi -> () (* UTILS defined by makefile_utils *)
@@ -148,11 +155,11 @@ end = struct
 
   let makefile_clean chan extra =
     fprintf chan "clean:\n" ;
-    fprintf chan "\t/bin/rm -f *.o *.s *.t *%s *~%s\n"
+    fprintf chan "\t$(RM) litmus/*.[oa] *.o *.s *.t *%s *~%s\n"
       (Mode.exe Cfg.mode) extra ;
     fprintf chan "\n" ;
     fprintf chan "cleansource:\n" ;
-    fprintf chan "\t/bin/rm -f *.o *.c *.h *.s *~\n" ;
+    fprintf chan "\t$(RM) litmus/*.[oach] *.o *.c *.h *.s *~\n" ;
     fprintf chan "\n" ;
     ()
 
@@ -162,7 +169,7 @@ end = struct
       (fun u ->
         let src = u ^ ".c" and obj = u ^ ".o" in
         fprintf chan "%s: %s\n" obj src ;
-        fprintf chan "\t$(GCC) $(GCCOPTS) %s-O2 -c %s\n"
+        fprintf chan "\t$(GCC) $(GCCOPTS) %s-c %s\n"
           (if
             TargetOS.is_freebsd Cfg.targetos &&
             u = "affinity"
@@ -171,6 +178,13 @@ end = struct
           src ;
         fprintf chan "\n")
       utils ;
+    (* shared objs, in the directory litmus/ *)
+    fprintf chan "$(SHARED_SRC_DIR)/%%.o: $(SHARED_SRC_DIR)/%%.c\n" ;
+    fprintf chan "\t$(GCC) $(GCCOPTS) -c -o $@ $<\n\n" ;
+    fprintf chan "ifneq ($(SHARED_SRC),)\n" ;
+    fprintf chan "$(SHARED_LIB): $(SHARED_OBJ)\n" ;
+    fprintf chan "\t$(AR) rcs $@ $^\n" ;
+    fprintf chan "endif\n\n" ;
 (* UTIL objs *)
     let utils_objs =
       String.concat " " (List.map (fun s -> s ^ ".o") utils) in
@@ -386,7 +400,7 @@ let dump_shell names =
       let module RU = RunUtils.Make(O) in
       RU.report_machine out_chan ;
       if not is_kvm then begin
-        output_line out_chan "sed '2q;d' comp.sh"
+        fprintf out_chan "printf '%%s\\n' 'GCC=%s'\n" Cfg.gcc
        end ;
       dump_shell_postfix out_chan ;
       arch,sources,utils,flags)
@@ -399,47 +413,6 @@ let dump_shell_cont arch flags sources utils =
     include Cfg
     include (val (get_arch arch) : ArchConf)
   end in
-  begin match Cfg.mode with
-  | Mode.Std|Mode.PreSi ->
-      let module RU = RunUtils.Make(O) in
-      Misc.output_protect
-        (fun chan ->
-          fprintf chan "#!/bin/sh\n" ;
-          let gcc_opts = RU.get_gcc_opts in
-          fprintf chan "GCC=%s\n" Cfg.gcc ;
-          fprintf chan "GCCOPTS=\"%s\"\n" gcc_opts ;
-          let link_opts = RU.get_link_opts  in
-          fprintf chan "LINKOPTS=\"%s\"\n" link_opts ;
-          fprintf chan "/bin/rm -f *%s *.s\n" (Mode.exe Cfg.mode) ;
-          List.iter
-            (fun s ->
-              if Filename.check_suffix s ".c" then
-                fprintf chan "$GCC $GCCOPTS -O2 -c %s\n"
-                  (Filename.basename s))
-            utils ;
-          let utils_objs =
-            List.fold_right
-              (fun s k ->
-                if Filename.check_suffix s ".c" then
-                  let b = Filename.chop_suffix (Filename.basename s) ".c" in
-                  (b ^ ".o") :: k
-                else k) utils [] in
-          let utils_objs = String.concat " " utils_objs in
-          List.iter
-            (fun src ->
-              let exe = Filename.chop_extension src ^ (Mode.exe Cfg.mode) in
-(* No more moderate parallelism [blocks on abducens, sh bug ?] *)
-              fprintf chan
-                "$GCC $GCCOPTS $LINKOPTS -o %s %s %s\n" exe utils_objs src ;
-              let srcS = Filename.chop_extension src ^ ".s" in
-              let srcT = Filename.chop_extension src ^ ".t" in
-              fprintf chan "$GCC $GCCOPTS -S %s && awk -f show.awk %s > %s && /bin/rm %s\n"
-                src srcS srcT srcS ;
-              ())
-            (List.rev sources))
-        (Tar.outname (MyName.outname "comp" ".sh")) ;
-  | Mode.Kvm -> ()
-  end ;
 (* Add a small README file *)
   Misc.output_protect
     (fun chan ->
@@ -475,9 +448,9 @@ let dump_shell_cont arch flags sources utils =
           | TargetOS.Linux|TargetOS.AIX
           | TargetOS.FreeBsd|TargetOS.Android8
             -> 's' in
-          fprintf chan "%%.exe:%%.%c $(UTILS)\n" src_ext ;
+          fprintf chan "%%.exe:%%.%c $(UTILS) $(SHARED_LIB)\n" src_ext ;
           fprintf chan
-            "\t$(GCC) $(GCCOPTS) $(LINKOPTS) -o $@ $(UTILS) $<\n" ;
+            "\t$(GCC) $(GCCOPTS) $(LINKOPTS) -o $@ $(UTILS) $< $(SHARED_LIB)\n" ;
           fprintf chan "\n" ;
 (* .s pattern rule *)
           fprintf chan "%%.s:%%.c\n" ;
@@ -665,10 +638,10 @@ let dump_c_cont xcode arch flags sources utils nts =
             fprintf chan "\tsed -e 's|.c$$|.o|g' < src > obj\n\n"
           end ;
           let o1 =
-            if infile then "$(UTILS) obj run.o"
-            else "$(UTILS) $(OBJ) run.o" in
+            if infile then "$(UTILS) obj run.o $(SHARED_LIB)"
+            else "$(UTILS) $(OBJ) run.o $(SHARED_LIB)" in
           let o2 =
-            if infile then "$(UTILS) @obj run.o"
+            if infile then "$(UTILS) @obj run.o $(SHARED_LIB)"
             else o1 in
           fprintf chan "$(EXE): %s\n" o1 ;
           fprintf chan "\t$(GCC)  $(GCCOPTS) $(LINKOPTS) -o $@ %s\n" o2 ;
