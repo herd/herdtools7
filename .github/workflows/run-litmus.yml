@@ -6,6 +6,7 @@ on:
       - "Makefile.aarch64"
       - ".github/workflows/run-litmus.yml"
       - "litmus/**"
+      - "herd/tests/instructions/AArch64.kvm/**"
   schedule:
     - cron: '0 10 * * 0'
   workflow_dispatch:
@@ -44,7 +45,7 @@ jobs:
           opam exec -- dune build litmus/litmus.exe internal/check_obs.exe
 
       - name: Run tests
-        run: make ${{ matrix.arch.make-test-target }} LITMUS=${LITMUS}
+        run: opam exec -- make ${{ matrix.arch.make-test-target }} LITMUS=${LITMUS}
         env:
           ACCEL: tcg
           LITMUS: ${{ github.workspace }}/_build/default/litmus/litmus.exe
