@@ -30,8 +30,6 @@ in the folder `${KUT_DIR}`:
     % cd ..
     % sh ./litmus/run.sh
 
-> **_NOTE:_** litmus7 does not support MTE and, consequently, cannot run the test LDRredF.
-
 Support for fault atoms in herd7 and litmus7
 --------------------------------------------
 
@@ -50,7 +48,7 @@ Currently, herdtools7 supports the following types of faults:
     - `MMU:Translation` fault, illustrated by 3faults.litmus test.
     - `MMU:AccessFlag` fault, illustrated by 3faults.litmus and LDRaf0F.litmus tests.
     - `MMU:Permission` fault, illustrated by STRdb0F.litmus.
-    - `TagCheck` fault, illustrated by LDRredF.litmus test. Not applicable to litmus7.
+    - `TagCheck` fault, illustrated by LDRredF.litmus test.
     - `UndefinedInstruction`, illustrated by UDF.litmus and noUDF.litmus tests.
     - `SupervisorCall`, illustrated by SVC*.litmus and MP+dmb.st+ctrl-svc.*.litmus tests.
 
