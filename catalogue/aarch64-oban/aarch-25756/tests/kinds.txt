@@ -1,0 +1,3 @@
+MP+popl+amo.stadd-rfi-dmb.ld			Forbidden
+MP+popl+datacsel-rfipa-poap-ctrl-[isb]		Forbidden
+MP+popl+datas-rfi-addr				Forbidden
