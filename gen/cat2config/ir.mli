@@ -43,6 +43,9 @@ type event = {
 }
 
 val default_event : event
+val event_direction : event -> event_direction
+val merge_events : event -> event -> event
+val expand_event : event -> event list
 val all_events : event list
 val neg_event : event -> event list
 

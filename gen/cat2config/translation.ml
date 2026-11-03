@@ -214,15 +214,29 @@ let apply_prim_set : partial_effect -> prim_set -> partial_effect option =
   in
   fun eff x ->
     match x with
-    | Event { kind = None | Some Exp; access = Any direction; _ } ->
+    | Event { kind = Some Imp; _ } ->
+        Some { eff with explicit_mem = true }
+    | Event { access = Any direction; _ } ->
         translate_plain eff (Ir.Direction direction)
-    | Event { kind = None | Some Exp; access = Plain direction; _ } ->
+    | Event { access = Plain direction; _ } ->
         translate_plain eff direction
-    | Event { access = TTD _ | Tag _ | Instr _; _ } -> None
+    | Event { access = TTD direction | Tag direction | Instr direction; _ } ->
+        translate_plain eff (Ir.Direction direction)
     | _ -> None
 
 let build_effect : partial_effect -> prim_set list -> partial_effect option =
   UList.fold_left_opt apply_prim_set
+
+let build_event =
+  List.fold_left
+    (fun event -> function
+      | Ir.Event next ->
+          Some
+            (match event with
+            | None -> next
+            | Some event -> Ir.merge_events event next)
+      | _ -> event)
+    None
 
 let build_tedges : prim_rel -> tedge list = function
   | Prim "po" -> [ mk_macro "Po" ]
@@ -672,12 +686,13 @@ let prune_dsb_ob_relaxes =
 
 (* For example, wrapping an edge with `L` and `A` produces the relaxation
    `[L,edge,A]`. *)
+let annotation atom = E.{ edge = Id; a1 = Some atom; a2 = Some atom }
+
 let split_annotations item left right =
-  let annotation atom = E.{ edge = Id; a1 = Some atom; a2 = Some atom } in
   let annotations = function None -> [] | Some atom -> [ annotation atom ] in
   annotations left @ [ item ] @ annotations right
 
-let make_concrete_relax left_atom right_atom insert edges =
+let make_explicit_relax left_atom right_atom insert edges =
   let edges =
     match edges with
     | [] -> []
@@ -695,7 +710,76 @@ let make_concrete_relax left_atom right_atom insert edges =
   in
   List.map (fun edge -> Plain edge) edges
 
-let event_direction = function
+let state name = Predicate (Ast.Predicate ("state", Ast.One (Macro name)))
+
+let resolve_imp_communication left_event right_event =
+  let matches event direction = match event.Ir.kind with
+    | Some Imp -> true
+    | Some Exp -> Ir.event_direction event = direction
+    | None -> assert false in
+  let communications =
+    [ (Code.Rf, W, R); (Code.Fr, R, W); (Code.Co, W, W) ]
+    |> List.filter_map (fun (com,source,target) ->
+        if matches left_event source && matches right_event target then Some com
+        else None) in
+  let rec resolve = function
+    | (({ edge = E.Communication (_, Code.Ext); _ } : E.edge) as edge) :: edges ->
+        List.map
+          (fun com ->
+            { edge with edge = E.Communication (com, Code.Ext) } :: edges)
+          communications
+    | edge :: edges -> List.map (fun edges -> edge :: edges) (resolve edges)
+    | [] -> [ [] ] in
+  resolve
+
+let resolve_imp ~communication_state event atom =
+  if not communication_state then Some (atom, [])
+  else
+    let name = match event.Ir.access with
+      | TTD R -> "ImpTTDR"
+      | TTD W -> "ImpTTDW"
+      | Tag R -> "ImpTagR"
+      | Tag W -> "ImpTagW"
+      | Instr R -> "ImpInstrR"
+      | Instr W -> "ImpInstrW"
+      | Any _ | Plain _ | TTD M | Tag M | Instr M -> assert false in
+    Some (atom, [ state name ])
+
+let resolve_event ~communication_state event atom =
+  match event.Ir.kind with
+  | Some Exp ->
+      let event_atom = match event.Ir.access with
+        | Tag (R | W) -> Some A.StructuredAtom.MemoryTagAccess
+        | TTD R -> Some (A.StructuredAtom.PteAccess (A.Read `Plain))
+        | TTD W ->
+            let fields = A.WPTESet.singleton (A.WPTE.One A.WPTE.VALID) in
+            Some (A.StructuredAtom.PteAccess (A.Set (`Plain, fields)))
+        | Instr (R | W) -> Some A.StructuredAtom.InstrAccess
+        | Any _ | Plain _ | TTD M | Tag M | Instr M -> None in
+      Option.map (fun atom -> (atom, [])) (merge_atomo_opt atom event_atom)
+  | Some Imp -> resolve_imp ~communication_state event atom
+  | None -> assert false
+
+let make_concrete_relax ~communication_state left_atom left_event right_atom
+    right_event insert edges =
+  let open Util.List.Infix in
+  let* left_event = Ir.expand_event left_event in
+  let* right_event = Ir.expand_event right_event in
+  let* edges = match (left_event.Ir.kind, right_event.Ir.kind) with
+    | Some Exp, Some Exp -> [ edges ]
+    | Some (Exp | Imp), Some (Exp | Imp) ->
+        resolve_imp_communication left_event right_event edges
+    | None, _ | _, None -> assert false in
+  let* left_atom,left_state =
+    Option.to_list
+      (resolve_event ~communication_state left_event left_atom) in
+  let* right_atom,right_state =
+    Option.to_list
+      (resolve_event ~communication_state right_event right_atom) in
+  let relax = make_explicit_relax left_atom right_atom insert edges in
+  [ left_state @ relax @ right_state ]
+
+let event_access_direction = function
   | Ir.Any direction
   | Plain (Direction direction)
   | TTD direction
@@ -713,8 +797,8 @@ let event_access_field = function
 
 let propagate_event_access_field field endpoint_constraint =
   match endpoint_constraint with
-  | Ir.Event ({ access = (Any _ | Plain _) as access; _ } as event) ->
-      let direction = event_direction access in
+  | Ir.Event ({ access = Any _ as access; _ } as event) ->
+      let direction = event_access_direction access in
       let access =
         match field with
         | `TTD -> Ir.TTD direction
@@ -736,8 +820,8 @@ let propagate_same_location_constraint left right =
       (List.map (propagate_event_access_field field) left, right)
   | _ -> (left, right)
 
-let try_match_edge (left : prim_set list) (core : seq_item list)
-    (right : prim_set list) : concrete_relax list option =
+let try_match_edge ~communication_state (left : prim_set list)
+    (core : seq_item list) (right : prim_set list) : concrete_relax list option =
   let open Util.Option.Infix in
   let* implied_left, pedge, implied_right =
     match core with
@@ -796,8 +880,10 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
     | Some Code.Same -> propagate_same_location_constraint left right
     | Some Code.Diff | None -> (left, right)
   in
+  let* left_event = build_event left in
   let* left = build_effect initial_effect left in
   let* _ = Util.Option.guard left.explicit_mem in
+  let* right_event = build_event right in
   let* right = build_effect initial_effect right in
   let* _ = Util.Option.guard right.explicit_mem in
   let relaxs =
@@ -813,11 +899,12 @@ let try_match_edge (left : prim_set list) (core : seq_item list)
               let edge = set_tgt right.extr edge in
               [ [ edge ] ]
         in
-        List.map
-          (make_concrete_relax left.atom right.atom tedge.insert)
+        List.concat_map
+          (make_concrete_relax ~communication_state left.atom left_event
+             right.atom right_event tedge.insert)
           head_relaxs)
   in
-  Some relaxs
+  Some (Util.List.uniq ~eq:( = ) relaxs)
 
 type state = {
   relaxs : concrete_relax list;
@@ -963,10 +1050,20 @@ let suffix_external_communication_edge l =
   | edge :: _ -> dependency_has_open_target edge
   | _ -> false
 
-let rec first_relation_is_rmw = function
-  | Ir.Set _ :: items -> first_relation_is_rmw items
-  | item :: _ -> Ir.is_rmw item
-  | [] -> false
+let first_relation_is_rmw items =
+  let rec find leading_implicit = function
+    | Ir.Set (Ir.Inter sets) :: items ->
+        let leading_implicit =
+          leading_implicit ||
+          List.exists
+            (function
+              | Ir.Event { kind = Some Ir.Imp; _ } -> true
+              | _ -> false)
+            sets in
+        find leading_implicit items
+    | item :: _ -> not leading_implicit && Ir.is_rmw item
+    | [] -> false in
+  find false items
 
 let external_communication_boundaries l =
   let prefix = prefix_external_communication_edge l in
@@ -1002,8 +1099,6 @@ let add_external_communication_edges l relaxs =
         List.map (fun relax -> relax @ [ Predicate after_observation ]) relaxs
       else relaxs)
     routes
-
-let state name = Predicate (Ast.Predicate ("state", Ast.One (Macro name)))
 
 let optional_state name =
   Predicate (Ast.Opt (Ast.Predicate ("state", Ast.One (Macro name))))
@@ -1054,7 +1149,7 @@ let add_external_communication_states l relaxs =
     if prefix then ordinary @ rmw_relaxs else rmw_relaxs
   else ordinary
 
-let translate_seq (Seq l : seq_item Ir.seq) : concrete_relax list =
+let translate_seq ~communication_state (Seq l : seq_item Ir.seq) : concrete_relax list =
   let explicit_memory = Ir.Inter [ Ir.Event Ir.default_event ] in
   let st =
     fold_with_rest
@@ -1071,7 +1166,7 @@ let translate_seq (Seq l : seq_item Ir.seq) : concrete_relax list =
             in
             if should_try_match then
               match
-                try_match_edge (Ir.get_inter st.left) st.core
+                try_match_edge ~communication_state (Ir.get_inter st.left) st.core
                   (Ir.get_inter st.right)
               with
               | Some edge_alts ->
@@ -1110,6 +1205,18 @@ let resolve_rmw ~partial ~all (Ir.Seq items) =
     | Ir.Tag _ -> Ir.Tag direction
     | Ir.Instr _ -> Ir.Instr direction
   in
+  let rmw_endpoint event access direction =
+    (* An RMW marker adds a synthetic opposite endpoint.  For an implicit
+       access, make that endpoint plain and explicit so that only the original
+       endpoint emits the implicit-access state. *)
+    match event.Ir.kind with
+    | Some Imp ->
+        Ir.Event
+          { event with kind = Some Exp;
+                       access = Ir.Plain (Ir.Direction direction) }
+    | None | Some Exp ->
+        Ir.Event { event with access = with_direction access direction }
+  in
   let endpoints marked endpoint =
     match marked with
     | Ir.Event { access = Ir.Any Ir.M | Ir.Plain (Ir.Direction Ir.M); _ }
@@ -1119,15 +1226,12 @@ let resolve_rmw ~partial ~all (Ir.Seq items) =
                            | Ir.TTD Ir.R | Ir.Tag Ir.R | Ir.Instr Ir.R) as access;
                   _ } as event) ->
         ( endpoint,
-          Ir.Set
-            (Ir.Inter
-               [ Ir.Event { event with access = with_direction access Ir.W } ]) )
+          Ir.Set (Ir.Inter [ rmw_endpoint event access Ir.W ]) )
     | Ir.Event ({ access = (Ir.Any Ir.W | Ir.Plain (Ir.Direction Ir.W)
                            | Ir.TTD Ir.W | Ir.Tag Ir.W | Ir.Instr Ir.W) as access;
                   _ } as event) ->
         ( Ir.Set
-            (Ir.Inter
-               [ Ir.Event { event with access = with_direction access Ir.R } ]),
+            (Ir.Inter [ rmw_endpoint event access Ir.R ]),
           endpoint )
     | Ir.Event ({ access = Ir.Plain (Ir.Acq_rel (Ir.A | Ir.Q)); _ } as event) ->
         ( endpoint,
@@ -1194,7 +1298,11 @@ let translate ~prune ~binding (nf : Ir.rel_nf) : relax list =
         | None -> acc
         | Some (Ir.Seq l as seq) ->
             let (Ir.Union seqs) = Ir.compress (Ir.Union [ seq ]) in
-            let relaxs = List.concat_map translate_seq seqs in
+            let relaxs =
+              List.concat_map
+                (translate_seq
+                   ~communication_state:(List.mem Communication_state prune))
+                seqs in
             let relaxs =
               if List.mem Communication prune then
                 add_external_communication_edges l relaxs

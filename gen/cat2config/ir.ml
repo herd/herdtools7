@@ -102,6 +102,12 @@ let access_parts = function
   | Tag direction -> (Direction direction, Some TagField)
   | Instr direction -> (Direction direction, Some InstrField)
 
+let event_direction event =
+  match fst (access_parts event.access) with
+  | Direction direction -> direction
+  | Acq_rel (A | Q) -> R
+  | Acq_rel L -> W
+
 let access_of_parts direction field =
   match (direction, field) with
   | Direction direction, None -> Some (Any direction)
@@ -151,6 +157,12 @@ let event_matches candidate constraint_ =
   in
   (constraint_field = None || candidate_field = constraint_field)
   && direction_matches candidate_direction constraint_direction
+
+let expand_event event =
+  List.filter (fun candidate -> event_matches candidate event) all_events
+  |> List.map (fun candidate ->
+      { candidate with is_no_return = event.is_no_return })
+  |> List.sort_uniq compare
 
 let compact_event_directions events =
   let rec fold = function
@@ -251,6 +263,26 @@ and seq_item = Set of prim_set inter | Rel of prim_rel inter
 and set_nf = prim_set inter union
 and rel_nf = seq_item seq union
 
+let merge_events event next =
+  let direction, field = access_parts event.access in
+  let next_direction, next_field = access_parts next.access in
+  let direction =
+    match (direction, next_direction) with
+    | Direction M, direction -> direction
+    | Direction R, (Acq_rel (A | Q) as direction)
+    | Direction W, (Acq_rel L as direction) -> direction
+    | direction, _ -> direction
+  in
+  let field = if field = None then next_field else field in
+  let access =
+    Option.value (access_of_parts direction field) ~default:event.access
+  in
+  {
+    kind = (if event.kind = None then next.kind else event.kind);
+    access;
+    is_no_return = event.is_no_return || next.is_no_return;
+  }
+
 let merge_event_sets sets =
   let events, sets =
     List.partition_map
@@ -262,29 +294,7 @@ let merge_event_sets sets =
       (function Fence fence -> Left fence | set -> Right set)
       sets
   in
-  let event =
-    List.fold_left
-      (fun event next ->
-        let direction, field = access_parts event.access in
-        let next_direction, next_field = access_parts next.access in
-        let direction =
-          match (direction, next_direction) with
-          | Direction M, direction -> direction
-          | Direction R, (Acq_rel (A | Q) as direction)
-          | Direction W, (Acq_rel L as direction) -> direction
-          | direction, _ -> direction
-        in
-        let field = if field = None then next_field else field in
-        let access =
-          Option.value (access_of_parts direction field) ~default:event.access
-        in
-        {
-          kind = (if event.kind = None then next.kind else event.kind);
-          access;
-          is_no_return = event.is_no_return || next.is_no_return;
-        })
-      default_event events
-  in
+  let event = List.fold_left merge_events default_event events in
   let sets =
     match fences with
     | [] -> sets
@@ -715,6 +725,8 @@ let expand_rmw (nf : rel_nf) : rel_nf =
   in
   let rec mark_each item before = function
     | [] -> []
+    | (Event { kind = Some Exp; access = TTD _ | Tag _; _ } as atom) :: atoms ->
+        mark_each item (atom :: before) atoms
     | (Event _ as atom) :: atoms ->
         let rest = List.rev_append before atoms in
         let write_side =
