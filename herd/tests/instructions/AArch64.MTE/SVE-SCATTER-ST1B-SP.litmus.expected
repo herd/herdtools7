@@ -1,0 +1,11 @@
+Test SVE-SCATTER-ST1B-SP Required
+States 1
+ Fault(P0,x:red+4,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Vector-Extensions-is-work-in-progress
+Condition forall (fault(P0,x,TagCheck))
+Observation SVE-SCATTER-ST1B-SP Always 1 0
+Hash=0a32aebe6ec9eb616ffa7312ad9540e8
+
