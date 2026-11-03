@@ -152,7 +152,7 @@ module Opts = struct
                   | "ifetch" -> Translation.Ifetch
                   | _ -> assert false in
                 modes := Some (mode :: Option.value ~default:[] !modes) ),
-          "  Restrict event translation to the selected mode. Can be set \
+          "  Enable the selected event translation mode. Can be set \
            multiple times." );
       ]
     in

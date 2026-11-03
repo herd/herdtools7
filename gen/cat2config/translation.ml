@@ -810,7 +810,7 @@ let propagate_same_location_constraint left right =
 let resolve_events modes sd left right =
   let open Util.List.Infix in
   let mode_enabled mode = match modes with
-    | None -> true
+    | None -> false
     | Some modes -> List.mem mode modes in
   let enabled event = match event.Ir.access with
     | Ir.Tag _ -> mode_enabled Memtag
