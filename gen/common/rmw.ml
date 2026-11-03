@@ -21,6 +21,7 @@ module type S = sig
   val pp_rmw : bool -> rmw -> string
   val equal_rmw : rmw -> rmw -> bool
   val is_one_instruction : rmw -> bool
+  val can_data_dep_read : rmw -> bool
   val fold_rmw : bool -> (rmw -> 'a -> 'a) -> 'a -> 'a
   val fold_rmw_compat : (rmw -> 'a -> 'a) -> 'a -> 'a
   val applies_atom_rmw : rmw -> atom option -> atom option -> bool
@@ -40,6 +41,7 @@ module No(A:sig
   let pp_rmw _ _ = assert false
   let equal_rmw () () = true
   let is_one_instruction _ = assert false
+  let can_data_dep_read _ = false
   let fold_rmw _ _ r = r
   let fold_rmw_compat _ r = r
   let applies_atom_rmw _ _ _ = assert false
@@ -66,6 +68,7 @@ module
     let equal_rmw () () = true
 
     let is_one_instruction _ = I.is_one_instruction
+    let can_data_dep_read _ = false
 
     let fold_rmw _b f r = f () r
     let fold_rmw_compat f r = f () r

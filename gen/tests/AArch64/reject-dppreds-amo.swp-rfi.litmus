@@ -1,0 +1,6 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc DpPreds Amo.Swp Rfi *)
+(*
+[2]
+diyone7: Fatal error: Test CoRW1+preds-amo.swp-rfi [DpPreds Amo.Swp Rfi] failed:
+Predicate dependency DpPred* must be followed by a CAS
+*)

@@ -21,6 +21,7 @@ module type S = sig
 
   val equal_dp : dp -> dp -> bool
   val pp_dp : dp -> string
+  val pp_dp_pred : dp -> string
   val fold_dp : (dp -> 'a -> 'a) -> 'a -> 'a
 
   val ddr_default : dp option
@@ -41,6 +42,7 @@ module No = struct
 
   let equal_dp _ _ = assert false
   let pp_dp _ = assert false
+  let pp_dp_pred _ = assert false
   let fold_dp _f r = r
 
   let ddr_default = None
@@ -69,6 +71,8 @@ module Basic = struct
     | ADDR -> "Addr"
     | DATA -> "Data"
     | CTRL -> "Ctrl"
+
+  let pp_dp_pred _ = "Pred"
 
   let fold_dp f r = f ADDR (f DATA (f CTRL r))
 
@@ -114,6 +118,8 @@ let pp_dp = function
   | DATA -> "Data"
   | CTRL -> "Ctrl"
   | CTRLISYNC -> "CtrlIsync"
+
+let pp_dp_pred _ = "Pred"
 
 let fold_dp f r =  f ADDR (f DATA (f CTRL (f CTRLISYNC r)))
 
@@ -166,6 +172,10 @@ module AArch64 = struct
     match c with
     | NoCsel -> pp_d
     | OkCsel -> pp_d^"Csel"
+
+  let pp_dp_pred (_,c) = match c with
+    | NoCsel -> "Pred"
+    | OkCsel -> "PredCsel"
 
   let fold_dp f r =
     Full.fold_dp

@@ -1164,6 +1164,10 @@ let is_one_instruction = function
   | LrSc -> false
   | LdOp _ | StOp _ | Swp | Cas | AllAmo | SafeAmo -> true
 
+let can_data_dep_read = function
+  | Cas -> true
+  | LrSc | LdOp _ | StOp _ | Swp | AllAmo | SafeAmo -> false
+
 let fold_aop f r =
   let r = f A_ADD r in
   let r = f A_EOR r in

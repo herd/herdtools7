@@ -245,6 +245,8 @@ let equal_rmw rmw1 rmw2 = match rmw1,rmw2 with
 
 let is_one_instruction _ = true
 
+let can_data_dep_read _ = false
+
 let fold_rmw _b f r = let r = f Add r in  f Exch r
 
 let fold_rmw_compat f r = f Exch r

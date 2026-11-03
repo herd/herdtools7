@@ -1,0 +1,14 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc DpPreds Amo.Cas Rfi *)
+AArch64 CoRW1+preds-amo.cas-rfi
+{
+ 0:X0=x;
+}
+ P0             ;
+ LDR W1,[X0]    ;
+ MOV W2,#0      ;
+ EOR W3,W1,W1   ;
+ ADD W2,W2,W3   ;
+ MOV W4,#1      ;
+ CAS W2,W4,[X0] ;
+
+exists (0:X1=1 /\ 0:X2=0)

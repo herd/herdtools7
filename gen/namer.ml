@@ -52,13 +52,20 @@ module Make
          Misc.lowercase (sprintf "%s%s" (pp_com com) (pp_ie ie))
        let pp_fence = F.pp_fence
        let pp_dp = F.pp_dp
+       let pp_dp_pred = F.pp_dp_pred
        let pp_atom = A.pp_atom
+
+       let is_pred = function
+         | Dp (dp,_,Dir R) -> F.is_data dp
+         | _ -> false
 
        let edge_name = function
          | Po (Same,_,_) -> Some "pos"
          | Po (Diff,_,_) -> Some "po"
          | Fenced (f,Same,_,_) -> Some (Misc.lowercase (pp_fence f) ^ "s")
          | Fenced (f,Diff,_,_) -> Some (Misc.lowercase (pp_fence f))
+         | Dp (dp,sd,Dir R) when F.is_data dp ->
+           Some (Misc.lowercase (pp_dp_pred dp) ^ if sd = Same then "s" else "")
          | Dp (dp,Same,_) -> Some (Misc.lowercase (pp_dp dp) ^ "s")
          | Dp (dp,Diff,_) -> Some (Misc.lowercase (pp_dp dp))
          | Communication (com,(Int|Ext as ie)) -> Some (pp_communication com ie)
@@ -100,7 +107,7 @@ module Make
        let one_name no_dir e = match edge_name e.edge with
        | Some n ->
           let d =
-            if no_dir then ""
+            if no_dir || is_pred e.edge then ""
             else Code.pp_extr (E.dir_tgt e) in
           Some (sprintf "%s%s%s" n d (atoms_name e.a1 e.a2))
        | None -> None
