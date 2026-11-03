@@ -6,4 +6,5 @@
   (glob_files %{workspace_root}/herd/tests/instructions/X86_64/*.litmus)
   (glob_files %{workspace_root}/doc/SB-PPC.litmus)
   (glob_files %{workspace_root}/doc/SB-PPC*.log)
+  (glob_files %{workspace_root}/gen/tests/AArch64/CoRW1+amo.*-rfi.litmus)
   (source_tree %{workspace_root}/herd/libdir)))

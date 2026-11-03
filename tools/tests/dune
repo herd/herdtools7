@@ -17,6 +17,7 @@
  (applies_to mcompare)
  (deps
   (source_tree libdir)
+  (glob_files %{workspace_root}/gen/tests/AArch64/CoRW1+amo.*-rfi.litmus)
   %{bin:herd7}
   %{bin:mcmp7}
   %{bin:mcompare7}
