@@ -9,6 +9,6 @@ AArch64 CoRW1+rmw-rfi
  Loop00:         ;
  LDXR X1,[X0]    ;
  STXR W3,X2,[X0] ;
- CBNZ X3,Loop00  ;
+ CBNZ W3,Loop00  ;
 
 exists (0:X1=1)

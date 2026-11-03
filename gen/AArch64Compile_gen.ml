@@ -113,8 +113,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let tempo1 st = A.alloc_trashed_reg "T1" st (* May be used for address  *)
     let tempo2 st = A.alloc_trashed_reg "T2" st (* May be used for second address *)
-    let tempo3 st = A.alloc_trashed_reg "T3" st (* May be used for STRX flag *)
+    let tempo3 p st =
+      let r,st =
+        A.alloc_trashed_reg "T3" st (* May be used for STRX flag *) in
+      let st = A.add_type (A.of_reg p r) TypBase.Int st in
+      r,st
+
     let tempo4 st = A.alloc_loop_idx "I4" st (* Loop observer index *)
+
+    let ok_reg32 p st =
+      let r,st = A.ok_reg st in
+      let st = A.add_type (A.of_reg p r) TypBase.Int st in
+      r,st
 
     let emit_vregs =
       let rec call_rec n st =
@@ -217,8 +227,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     and op3r v op r1 r2 r3 =
       let open OpExt in I_OP3 (v,op,r1,r2,Reg (r3,no_shift))
 
-    let cbz r1 lbl = I_CBZ (vloc,r1,BranchTarget.Lbl lbl)
+    let do_cbz v r1 lbl = I_CBZ (v,r1,BranchTarget.Lbl lbl)
+    let cbz32 = do_cbz V32
+    let cbz = do_cbz vloc
     let do_cbnz v r1 lbl = I_CBNZ (v,r1,BranchTarget.Lbl lbl)
+    let cbnz32 = do_cbnz V32
     let cbnz = do_cbnz vloc
     let is_branch_instruction = function
       | Instruction ins -> is_branch ins
@@ -333,6 +346,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | S128 -> I_STR (V128,r1,r2,idx)
 
     let do_str v r1 r2 = I_STR (v,r1,r2,MemExt.Imm (0,Idx))
+    let str32 = do_str V32
     let str = do_str vloc
     let stg r1 r2 = I_STG (r1,r2,(0,Idx))
     let stct r1 r2 = I_STCT(r1,r2)
@@ -340,8 +354,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let stlr = do_stlr vloc
 
     let do_str_idx v r1 r2 idx = I_STR (vloc,r1,r2,MemExt.v2idx_reg v idx)
+    let str_idx32 = do_str_idx V32
     let str_idx = do_str_idx vloc
-    let stxr r1 r2 r3 = I_STXR (vloc,YY,r1,r2,r3)
+    let stxr r1 r2 r3 =
+      I_STXR (vloc,YY,r1,r2,r3)
     let stlxr r1 r2 r3 = I_STXR (vloc,LY,r1,r2,r3)
     let stn n rs rt =
       let open SIMD in
@@ -1422,20 +1438,20 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let rAR,rAW,cs0,st = get_rmw_addrs arw st rA in
           let init,cs1,st = Store.store_addon ar rW rAW e init st p in
           let lbl = Label.next_label "Loop" in
-          let r,st = tempo3 st in
+          let r,st = tempo3 p st in
           let cs =
             Label (lbl,Nop)
             ::lift_code (emit_xpair ar rR rAR aw r rW rAW)
-            @[Instruction (cbnz r lbl)] in
+            @[Instruction (cbnz32 r lbl)] in
           init,pseudo cs0@cs1@cs,st
 
         let emit_one_pair (ar, aw) p st init r rR rW rAR rAW k e =
-          let ok,st = A.ok_reg st in
+          let ok,st = ok_reg32 p st in
           let init,cs1,st = Store.store_addon ar rW rAW e init st p in
           init,
           cs1
           @lift_code (emit_xpair ar rR rAR aw r rW rAW)
-          @[Instruction (cbnz r (Label.last p))]
+          @[Instruction (cbnz32 r (Label.last p))]
           @(k (Instruction (incr ok))),
           A.next_ok st
 
@@ -1443,19 +1459,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let rAR,rAW,cs0,st = get_rmw_addrs arw st rA in
           let cs0 = pseudo cs0 in
           if u <= 0 then
-            let r,st = next_reg st in
             let init,cs1,st = Store.store_addon ar rW rA e init st p in
+            let r,st = tempo3 p st in
             init,
             cs0@cs1
             @pseudo  (emit_xpair ar rR rAR aw r rW rAW),
             st
           else if u = 1 then
-            let r,st = tempo3 st in
+            let r,st = tempo3 p st in
             let init,cs,st =
               emit_one_pair arw p st init r rR rW rAR rAW (fun i -> [i]) e in
             init,cs0@cs,st
           else
-            let r,st = tempo3 st in
+            let r,st = tempo3 p st in
             let init,cs1,st = Store.store_addon ar rW rA e init st p in
             let out = Label.next_label "Go" in
             let rec do_rec = function
@@ -1467,7 +1483,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
                  let init,cs,st = do_rec (u-1) in
                  init,
                  pseudo (emit_xpair ar rR rAR aw r rW rAW)
-                 @(Instruction (cbz r out)::cs1@cs),
+                 @(Instruction (cbz32 r out)::cs1@cs),
                  st in
             let init,cs,st = do_rec u in
             init,cs0@cs,st
@@ -2980,7 +2996,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         None,init,insert_isb (is_ctrlisync dp) c cs,st
 
     let do_check_load p st r e =
-      let ok,st = A.ok_reg st in
+      let ok,st = ok_reg32 p st in
       (fun k ->
         Instruction (cmpi r (Value.to_int e.C.v))::
         Instruction (bne (Label.last p))::
@@ -2997,7 +3013,14 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     let postlude =
       mk_postlude
         (fun st p init loc r ->
-          STR.emit_store_reg st p init loc r false C.evt_null)
+          let module STR32 =
+            STORE
+              (struct
+                let store = wrap_st str32
+                let store_idx st rA rB idx = [str_idx32 rA rB idx],st
+                let emit_mov = U.emit_mov
+              end) in
+          STR32.emit_store_reg st p init loc r false C.evt_null)
 
 
     let get_strx_result k = function

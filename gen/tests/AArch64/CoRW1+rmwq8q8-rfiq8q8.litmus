@@ -10,6 +10,6 @@ AArch64 CoRW1+rmwq8q8-rfiq8q8
  Loop00:         ;
  LDXR X1,[X3]    ;
  STXR W4,X2,[X3] ;
- CBNZ X4,Loop00  ;
+ CBNZ W4,Loop00  ;
 
 exists (0:X1=1)
