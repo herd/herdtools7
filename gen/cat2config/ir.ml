@@ -89,9 +89,11 @@ type event = {
   kind : event_kind option;
   access : event_access;
   is_no_return : bool;
+  is_synthetic : bool;
 }
 
-let default_event = { kind = None; access = Any M; is_no_return = false }
+let default_event =
+  { kind = None; access = Any M; is_no_return = false; is_synthetic = false }
 
 type event_field = PlainField | TTDField | TagField | InstrField
 
@@ -143,7 +145,8 @@ let all_events =
           List.map
             (fun direction ->
               let access = Option.get (access_of_parts direction (Some field)) in
-              { kind = Some kind; access; is_no_return = false })
+              { kind = Some kind; access; is_no_return = false;
+                is_synthetic = false })
             [ Direction R; Direction W ])
         fields)
     [ Exp; Imp ]
@@ -161,7 +164,8 @@ let event_matches candidate constraint_ =
 let expand_event event =
   List.filter (fun candidate -> event_matches candidate event) all_events
   |> List.map (fun candidate ->
-      { candidate with is_no_return = event.is_no_return })
+      { candidate with is_no_return = event.is_no_return;
+                       is_synthetic = event.is_synthetic })
   |> List.sort_uniq compare
 
 let compact_event_directions events =
@@ -174,7 +178,8 @@ let compact_event_directions events =
               let _, candidate_field = access_parts candidate.access in
               let _, event_field = access_parts event.access in
               candidate.kind = event.kind && candidate_field = event_field
-              && candidate.is_no_return = event.is_no_return)
+              && candidate.is_no_return = event.is_no_return
+              && candidate.is_synthetic = event.is_synthetic)
             events
         in
         let directions =
@@ -200,7 +205,8 @@ let compact_event_fields events =
               let event_direction, _ = access_parts event.access in
               candidate.kind = event.kind
               && candidate_direction = event_direction
-              && candidate.is_no_return = event.is_no_return)
+              && candidate.is_no_return = event.is_no_return
+              && candidate.is_synthetic = event.is_synthetic)
             events
         in
         let fields =
@@ -227,7 +233,8 @@ let compact_event_kinds events =
           List.partition
             (fun candidate ->
               candidate.access = event.access
-              && candidate.is_no_return = event.is_no_return)
+              && candidate.is_no_return = event.is_no_return
+              && candidate.is_synthetic = event.is_synthetic)
             events
         in
         let kinds = List.map (fun event -> event.kind) (event :: same) in
@@ -281,6 +288,7 @@ let merge_events event next =
     kind = (if event.kind = None then next.kind else event.kind);
     access;
     is_no_return = event.is_no_return || next.is_no_return;
+    is_synthetic = event.is_synthetic || next.is_synthetic;
   }
 
 let merge_event_sets sets =
@@ -629,7 +637,7 @@ let rec pp_prim_set fmt =
   | Domain r -> fprintf fmt "domain(%a)" (pp_seq pp_prim_set pp_prim_rel) r
   | Range r -> fprintf fmt "range(%a)" (pp_seq pp_prim_set pp_prim_rel) r
   | Rmw s -> fprintf fmt "rmw(%a)" pp_prim_set s
-  | Event { kind; access; is_no_return } ->
+  | Event { kind; access; is_no_return; is_synthetic = _ } ->
       let direction, field = access_parts access in
       fprintf fmt "%s%s%s%s"
         (match kind with None -> "" | Some Exp -> "Exp" | Some Imp -> "Imp")

@@ -746,7 +746,8 @@ let resolve_imp ~communication_state event atom =
     Some (atom, [ state name ])
 
 let resolve_event ~communication_state event atom =
-  match event.Ir.kind with
+  if event.Ir.is_synthetic then Some (atom, [])
+  else match event.Ir.kind with
   | Some Exp ->
       let event_atom = match event.Ir.access with
         | Tag (R | W) -> Some A.StructuredAtom.MemoryTagAccess
@@ -760,25 +761,6 @@ let resolve_event ~communication_state event atom =
   | Some Imp -> resolve_imp ~communication_state event atom
   | None -> assert false
 
-let make_concrete_relax ~communication_state left_atom left_event right_atom
-    right_event insert edges =
-  let open Util.List.Infix in
-  let* left_event = Ir.expand_event left_event in
-  let* right_event = Ir.expand_event right_event in
-  let* edges = match (left_event.Ir.kind, right_event.Ir.kind) with
-    | Some Exp, Some Exp -> [ edges ]
-    | Some (Exp | Imp), Some (Exp | Imp) ->
-        resolve_imp_communication left_event right_event edges
-    | None, _ | _, None -> assert false in
-  let* left_atom,left_state =
-    Option.to_list
-      (resolve_event ~communication_state left_event left_atom) in
-  let* right_atom,right_state =
-    Option.to_list
-      (resolve_event ~communication_state right_event right_atom) in
-  let relax = make_explicit_relax left_atom right_atom insert edges in
-  [ left_state @ relax @ right_state ]
-
 let event_access_direction = function
   | Ir.Any direction
   | Plain (Direction direction)
@@ -790,10 +772,11 @@ let event_access_direction = function
   | Plain (Acq_rel L) -> W
 
 let event_access_field = function
+  | Ir.Event { access = Plain _; _ } -> Some `Plain
   | Ir.Event { access = TTD _; _ } -> Some `TTD
   | Ir.Event { access = Tag _; _ } -> Some `Tag
   | Ir.Event { access = Instr _; _ } -> Some `Instr
-  | Ir.Event { access = Any _ | Plain _; _ } | _ -> None
+  | Ir.Event { access = Any _; _ } | _ -> None
 
 let propagate_event_access_field field endpoint_constraint =
   match endpoint_constraint with
@@ -801,6 +784,7 @@ let propagate_event_access_field field endpoint_constraint =
       let direction = event_access_direction access in
       let access =
         match field with
+        | `Plain -> Ir.Plain (Ir.Direction direction)
         | `TTD -> Ir.TTD direction
         | `Tag -> Ir.Tag direction
         | `Instr -> Ir.Instr direction
@@ -814,11 +798,43 @@ let propagate_event_access_field field endpoint_constraint =
 let propagate_same_location_constraint left right =
   let find_field sets = List.find_map event_access_field sets in
   match (find_field left, find_field right) with
+  | Some left, Some right when left <> right -> None
   | Some field, None ->
-      (left, List.map (propagate_event_access_field field) right)
+      Some (left, List.map (propagate_event_access_field field) right)
   | None, Some field ->
-      (List.map (propagate_event_access_field field) left, right)
-  | _ -> (left, right)
+      Some (List.map (propagate_event_access_field field) left, right)
+  | _ -> Some (left, right)
+
+let resolve_events sd left right =
+  let open Util.List.Infix in
+  let* left = Ir.expand_event left in
+  let* right = Ir.expand_event right in
+  match sd with
+  | Some Code.Same -> begin
+      match propagate_same_location_constraint
+          [ Ir.Event left ] [ Ir.Event right ] with
+      | Some ([ Ir.Event left ], [ Ir.Event right ]) -> [ (left, right) ]
+      | Some _ -> assert false
+      | None -> []
+    end
+  | Some Code.Diff | None -> [ (left, right) ]
+
+let make_concrete_relax ~communication_state left_atom left_event right_atom
+    right_event insert edges =
+  let open Util.List.Infix in
+  let* edges = match (left_event.Ir.kind, right_event.Ir.kind) with
+    | Some Exp, Some Exp -> [ edges ]
+    | Some (Exp | Imp), Some (Exp | Imp) ->
+        resolve_imp_communication left_event right_event edges
+    | None, _ | _, None -> assert false in
+  let* left_atom,left_state =
+    Option.to_list
+      (resolve_event ~communication_state left_event left_atom) in
+  let* right_atom,right_state =
+    Option.to_list
+      (resolve_event ~communication_state right_event right_atom) in
+  let relax = make_explicit_relax left_atom right_atom insert edges in
+  [ left_state @ relax @ right_state ]
 
 let try_match_edge ~communication_state (left : prim_set list)
     (core : seq_item list) (right : prim_set list) : concrete_relax list option =
@@ -874,18 +890,14 @@ let try_match_edge ~communication_state (left : prim_set list)
     | _ -> None
   in
   let* tedges = pedge.tedges in
-  let left, right =
-    let left, right = (left @ implied_left, right @ implied_right) in
-    match pedge.sd with
-    | Some Code.Same -> propagate_same_location_constraint left right
-    | Some Code.Diff | None -> (left, right)
-  in
+  let left, right = (left @ implied_left, right @ implied_right) in
   let* left_event = build_event left in
   let* left = build_effect initial_effect left in
   let* _ = Util.Option.guard left.explicit_mem in
   let* right_event = build_event right in
   let* right = build_effect initial_effect right in
   let* _ = Util.Option.guard right.explicit_mem in
+  let events = resolve_events pedge.sd left_event right_event in
   let relaxs =
     tedges
     |> List.concat_map (filter_tedge pedge.sd pedge.ie left.extr right.extr)
@@ -900,8 +912,12 @@ let try_match_edge ~communication_state (left : prim_set list)
               [ [ edge ] ]
         in
         List.concat_map
-          (make_concrete_relax ~communication_state left.atom left_event
-             right.atom right_event tedge.insert)
+          (fun edges ->
+            List.concat_map
+              (fun (left_event, right_event) ->
+                make_concrete_relax ~communication_state left.atom left_event
+                  right.atom right_event tedge.insert edges)
+              events)
           head_relaxs)
   in
   Some (Util.List.uniq ~eq:( = ) relaxs)
@@ -1207,13 +1223,14 @@ let resolve_rmw ~partial ~all (Ir.Seq items) =
   in
   let rmw_endpoint event access direction =
     (* An RMW marker adds a synthetic opposite endpoint.  For an implicit
-       access, make that endpoint plain and explicit so that only the original
-       endpoint emits the implicit-access state. *)
+       access, make that endpoint explicit but retain its field for
+       same-location validation.  The synthetic marker suppresses its output. *)
     match event.Ir.kind with
     | Some Imp ->
         Ir.Event
           { event with kind = Some Exp;
-                       access = Ir.Plain (Ir.Direction direction) }
+                       access = with_direction access direction;
+                       is_synthetic = true }
     | None | Some Exp ->
         Ir.Event { event with access = with_direction access direction }
   in
@@ -1313,18 +1330,22 @@ let translate ~prune ~binding (nf : Ir.rel_nf) : relax list =
                 add_external_communication_states l relaxs
               else relaxs
             in
-            acc @ relaxs)
+            let relaxs = List.sort_uniq compare relaxs in
+            let relaxs =
+              if List.mem Pos_w prune then prune_relaxes relaxs else relaxs
+            in
+            let relaxs =
+              if List.mem Dpctrl prune then prune_dpctrl_relaxes relaxs
+              else relaxs
+            in
+            let relaxs =
+              if List.mem Dsb_ob prune then prune_dsb_ob_relaxes relaxs
+              else relaxs
+            in
+            acc @ fold_relaxes relaxs)
       [] (Ir.get_union nf)
   in
-  let relaxs = Util.List.uniq ~eq:( = ) relaxs in
-  let relaxs = if List.mem Pos_w prune then prune_relaxes relaxs else relaxs in
-  let relaxs =
-    if List.mem Dpctrl prune then prune_dpctrl_relaxes relaxs else relaxs
-  in
-  let relaxs =
-    if List.mem Dsb_ob prune then prune_dsb_ob_relaxes relaxs else relaxs
-  in
-  relaxs |> fold_relaxes
+  List.sort_uniq compare relaxs
 
 let pp_relax_item = function
   | Concrete edge -> E.pp_edge edge

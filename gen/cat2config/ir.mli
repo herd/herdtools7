@@ -40,6 +40,7 @@ type event = {
   kind : event_kind option;
   access : event_access;
   is_no_return : bool;
+  is_synthetic : bool;
 }
 
 val default_event : event
