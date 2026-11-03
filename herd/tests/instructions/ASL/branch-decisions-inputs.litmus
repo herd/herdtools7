@@ -1,0 +1,19 @@
+ASL BranchDecisionsInputs
+(* Different bits, values and comparison literals are separate conditions. *)
+
+{ uint64_t x=1; uint64_t y=0; 0:X1=x; 0:X2=y; }
+
+func main() => integer
+begin
+  var mask = read_memory{64}(read_register(1));
+  var result = Zeros{64};
+  if mask[0] == '1' then result[0] = '1'; end;
+  if mask[1] == '1' then result[1] = '1'; end;
+  mask = read_memory{64}(read_register(2));
+  if mask[0] == '1' then result[2] = '1'; end;
+  if mask[0] == '0' then result[3] = '1'; end;
+  write_register(0, result);
+  return 0;
+end;
+
+forall 0:X0=9

@@ -67,6 +67,8 @@ module type S = sig
         (** the call stack, with the name of the called program and the position
             of the call. *)
     symbolic_path : symbolic_choice list;  (** the symbolic path taken *)
+    branch_assumptions : (v * bool) list;
+        (** Symbolic conditions already decided along this path. *)
   }
   (** The global part of an environment. *)
 
@@ -177,6 +179,9 @@ module type S = sig
   val push_symbolic_choice : symbolic_choice -> env -> env
   (** [push_symbolic_choice choice env] registers the choice in the symbolic
       path. *)
+
+  val push_branch_assumption : v -> bool -> env -> env
+  (** Record a condition's decision in this path, including across calls. *)
 end
 
 module RunTime (C : RunTimeConf) :

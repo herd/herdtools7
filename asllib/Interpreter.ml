@@ -194,6 +194,10 @@ module Make (B : Backend.S) (C : Config) = struct
   let choice ~pos env m v1 v2 =
     let next (res, decision, v) =
       let env =
+        if B.is_undetermined v then IEnv.push_branch_assumption v decision env
+        else env
+      in
+      let env =
         if C.track_symbolic_path && B.is_undetermined v then
           let open IEnv in
           let choice =
@@ -204,15 +208,15 @@ module Make (B : Backend.S) (C : Config) = struct
       in
       return (env, res)
     in
-    if C.log_nondet_choice || C.track_symbolic_path then
-      let* v = m in
-      let () =
-        if C.log_nondet_choice && B.is_undetermined v then
-          Format.eprintf "@[<2>%a:@ non-deterministic choice@]@." pp_pos
-            (pos, env.IEnv.global)
-      in
-      B.choice (return v) (next (v1, true, v)) (next (v2, false, v))
-    else B.choice m (return (env, v1)) (return (env, v2))
+    let* v = m in
+    let () =
+      if C.log_nondet_choice && B.is_undetermined v then
+        Format.eprintf "@[<2>%a:@ non-deterministic choice@]@." pp_pos
+          (pos, env.IEnv.global)
+    in
+    B.choice ~assumptions:env.IEnv.global.branch_assumptions (return v)
+      (next (v1, true, v))
+      (next (v2, false, v))
 
   (*
    * Choice with inserted branching (commit) effect/
