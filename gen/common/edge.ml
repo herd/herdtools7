@@ -64,6 +64,8 @@ module type S = sig
     | Hat
     | Rmw of RMW.rmw  (* Various sorts of read-modify-write *)
 
+  type edge = { edge: tedge;  a1:atom option; a2: atom option; }
+
   val is_id : tedge -> bool
   val is_node : tedge -> bool
   val is_insert_store : tedge -> bool
@@ -71,9 +73,7 @@ module type S = sig
   val is_dp_addr : tedge -> bool
   val is_dp_data : tedge -> bool
   val compute_rmw : RMW.rmw -> value -> value -> value
-  val is_valid_rmw : RMW.rmw list -> bool
-
-  type edge = { edge: tedge;  a1:atom option; a2: atom option; }
+  val is_valid_rmw : edge list -> unit
 
   val plain_edge : tedge -> edge
 
@@ -212,8 +212,6 @@ and module RMW = A.RMW = struct
   let compute_rmw rmw old operand =
     Value.from_int @@ RMW.compute_rmw rmw ~old:(Value.to_int old) ~operand:(Value.to_int operand)
 
-  let is_valid_rmw = RMW.is_valid_rmw
-
   let pp_atom = A.pp_atom
   let pp_atom_separate = A.pp_atom_separate
   let tr_value = A.tr_value
@@ -290,6 +288,28 @@ and module RMW = A.RMW = struct
   let pp_atom_option = function
     | None -> pp_plain
     | Some a -> pp_atom a
+
+  let is_valid_rmw edges =
+    (* Check annotations around rmw and collect all rmw *)
+    let rmws = List.filter_map (function
+      | { edge=Rmw rmw; a1; a2; } ->
+          let different_mixed_accesses = match
+            A.get_access_atom a1,A.get_access_atom a2 with
+            | Some x,Some y -> not (Mixed.equal x y)
+            | _,_ -> false in
+          let different_pair_width = A.is_pair a1 <> A.is_pair a2 in
+          if not (RMW.applies_atom_rmw rmw a1 a2) then
+            if (different_mixed_accesses || different_pair_width) &&
+               not (RMW.is_one_instruction rmw) then
+              Warn.fatal
+                "Refuse to generate constrained unpredictable, use -variant CU to accept"
+            else
+              Warn.fatal "Bad annotation for %s: R=%s, W=%s"
+                (RMW.pp_rmw false rmw) (pp_atom_option a1) (pp_atom_option a2);
+          Some rmw
+      | _ -> None) edges in
+    if not (RMW.is_valid_rmw rmws) then
+      Warn.fatal "There are two `Amo.St*` of the same type on the same location. A cycle will not form due to commutativity."
 
   let pp_annotations edge a1 a2 = match edge, a1, a2 with
   | Id, _, _ -> pp_atom_option a1

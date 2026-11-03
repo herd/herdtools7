@@ -56,6 +56,10 @@ functor (Cfg:Config) ->
     val emit_pteval :
         A.st -> Code.proc -> A.init -> A.Value.pte -> A.reg * A.init * A.st
 
+    val emit_pteval_fresh :
+        A.st -> Code.proc -> A.init -> A.Value.pte ->
+          A.reg * A.init * Extra.instruction list * A.st
+
     val emit_nop :
         A.st -> Code.proc -> A.init -> string -> A.reg * A.init * A.st
 

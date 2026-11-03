@@ -2,5 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+amo.caspq-rfiqp [Amo.CasPQ RfiQP] failed:
-Bad annotation for Amo: R=P, W=Q
+Bad annotation for Amo.Cas: R=P, W=Q
 *)

@@ -2,5 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+amo.swppac-rfiacp [Amo.SwpPAc RfiAcP] failed:
-Bad annotation for Amo: R=P, W=Ac
+Bad annotation for Amo.Swp: R=P, W=Ac
 *)

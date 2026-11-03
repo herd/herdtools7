@@ -578,6 +578,12 @@ end = struct
     | _ -> false
 
   let applies_rmw rmw ar aw =
+    let open WPTE in
+    let ok_pte ar aw = match ar,aw with
+      | Some (PteAccess (Read (`Plain|`Acquire))),
+        Some (PteAccess (Set ((`Plain|`Release),fields))) ->
+          not (WPTESet.mem HA fields || WPTESet.mem HD fields)
+      | _,_ -> false in
     let ok_rw ar aw = match ar,aw with
       | (None|Some (OrdinaryAccess (`Plain|`Acquire))
         |Some (MixedSizeAccess ((`Plain|`Acquire),_))
@@ -601,8 +607,9 @@ end = struct
       Misc.opt_eq Mixed.equal
         (get_access_atom ar) (get_access_atom aw) in
     match rmw with
-    | LrSc -> ok_rw ar aw && (do_cu || same_mixed)
-    | Swp|Cas|LdOp _|AllAmo|SafeAmo -> ok_rw ar aw && same_mixed
+    | LrSc -> (ok_rw ar aw && (do_cu || same_mixed)) || ok_pte ar aw
+    | Swp|Cas -> (ok_rw ar aw && same_mixed) || ok_pte ar aw
+    | LdOp _|AllAmo|SafeAmo -> ok_rw ar aw && same_mixed
     | StOp _ -> ok_w ar aw && same_mixed
 
   let is_tthm fields =
