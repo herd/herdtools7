@@ -16,6 +16,8 @@
 
 type relax (* Type of diy relaxations with predicates *)
 
+type mode = Memtag | Vmsa | Ifetch
+
 type prune =
   | Amo_all
   | Amo_m
@@ -36,4 +38,5 @@ val resolve_predicates : Ir.rel_nf list -> Ir.rel_nf list
    Each relaxation from this list is to be interpreted as a stand-alone,
    alternative representation, out of possibly many, of the input relation.
  *)
-val translate : prune:prune list -> binding:string -> Ir.rel_nf -> relax list
+val translate : modes:mode list option -> prune:prune list -> binding:string ->
+  Ir.rel_nf -> relax list

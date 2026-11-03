@@ -37,6 +37,7 @@ module Opts = struct
     dump : StringSet.t;
     log : (string * Logs.level option) list;
     conf : bool;
+    modes : Translation.mode list option;
     prune : Translation.prune list;
   }
 
@@ -83,6 +84,7 @@ module Opts = struct
     let dump = ref StringSet.empty in
     let log = ref [] in
     let conf = ref false in
+    let modes = ref None in
     let prune = ref [] in
     let valid_srcs = Logs.Src.list () |> List.map Logs.Src.name in
     let log_opt_msg =
@@ -140,6 +142,18 @@ module Opts = struct
               | "pos_w" -> prune := Translation.Pos_w :: !prune
               | _ -> assert false ),
           "  Enable the selected relaxation pruning pass." );
+        ( "-mode",
+          Arg.Symbol
+            ( [ "memtag"; "vmsa"; "ifetch" ],
+              fun mode ->
+                let mode = match mode with
+                  | "memtag" -> Translation.Memtag
+                  | "vmsa" -> Translation.Vmsa
+                  | "ifetch" -> Translation.Ifetch
+                  | _ -> assert false in
+                modes := Some (mode :: Option.value ~default:[] !modes) ),
+          "  Restrict event translation to the selected mode. Can be set \
+           multiple times." );
       ]
     in
     let prog =
@@ -165,6 +179,7 @@ module Opts = struct
         dump = !dump;
         log = !log;
         conf = !conf;
+        modes = !modes;
         prune = !prune;
       }
     in
@@ -251,7 +266,8 @@ let run ~(opts : Opts.t) (tree : AST.ins list) =
               nfs
               |> List.map (fun (nf, ast_e) ->
                   let relaxs =
-                    Translation.translate ~prune:opts.prune ~binding:var nf
+                    Translation.translate ~modes:opts.modes ~prune:opts.prune
+                      ~binding:var nf
                   in
                   (relaxs, ast_e))
             in

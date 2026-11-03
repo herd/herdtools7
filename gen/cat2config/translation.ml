@@ -36,6 +36,8 @@ type prune =
   | Dsb_ob
   | Pos_w
 
+type mode = Memtag | Vmsa | Ifetch
+
 (* [Communication_state] is an alternative representation of [Communication],
    so [-prune all] retains the existing communication representation. *)
 let prune_all = [ Amo_all; Communication; Dpctrl; Dsb_ob; Pos_w ]
@@ -805,10 +807,18 @@ let propagate_same_location_constraint left right =
       Some (List.map (propagate_event_access_field field) left, right)
   | _ -> Some (left, right)
 
-let resolve_events sd left right =
+let resolve_events modes sd left right =
   let open Util.List.Infix in
-  let* left = Ir.expand_event left in
-  let* right = Ir.expand_event right in
+  let mode_enabled mode = match modes with
+    | None -> true
+    | Some modes -> List.mem mode modes in
+  let enabled event = match event.Ir.access with
+    | Ir.Tag _ -> mode_enabled Memtag
+    | Ir.TTD _ -> mode_enabled Vmsa
+    | Ir.Instr _ -> mode_enabled Ifetch
+    | Ir.Any _ | Ir.Plain _ -> true in
+  let* left = List.filter enabled (Ir.expand_event left) in
+  let* right = List.filter enabled (Ir.expand_event right) in
   match sd with
   | Some Code.Same -> begin
       match propagate_same_location_constraint
@@ -836,7 +846,7 @@ let make_concrete_relax ~communication_state left_atom left_event right_atom
   let relax = make_explicit_relax left_atom right_atom insert edges in
   [ left_state @ relax @ right_state ]
 
-let try_match_edge ~communication_state ~left_event:selected_left_event
+let try_match_edge ~modes ~communication_state ~left_event:selected_left_event
     (left : prim_set list) (core : seq_item list) (right : prim_set list) :
     (concrete_relax * Ir.event) list option =
   let open Util.Option.Infix in
@@ -908,7 +918,7 @@ let try_match_edge ~communication_state ~left_event:selected_left_event
   let* right_event = build_event right in
   let* right = build_effect initial_effect right in
   let* _ = Util.Option.guard right.explicit_mem in
-  let events = resolve_events pedge.sd left_event right_event in
+  let events = resolve_events modes pedge.sd left_event right_event in
   let relaxs =
     tedges
     |> List.concat_map (filter_tedge pedge.sd pedge.ie left.extr right.extr)
@@ -1187,7 +1197,8 @@ let add_external_communication_states l relaxs =
     if prefix then ordinary @ rmw_relaxs else rmw_relaxs
   else ordinary
 
-let translate_seq ~communication_state (Seq l : seq_item Ir.seq) : concrete_relax list =
+let translate_seq ~modes ~communication_state (Seq l : seq_item Ir.seq) :
+    concrete_relax list =
   let explicit_memory = Ir.Inter [ Ir.Event Ir.default_event ] in
   let st =
     fold_with_rest
@@ -1207,7 +1218,7 @@ let translate_seq ~communication_state (Seq l : seq_item Ir.seq) : concrete_rela
                 List.concat_map
                   (fun path ->
                     match
-                      try_match_edge ~communication_state
+                      try_match_edge ~modes ~communication_state
                         ~left_event:path.left_event (Ir.get_inter st.left)
                         st.core (Ir.get_inter st.right)
                     with
@@ -1319,7 +1330,7 @@ let resolve_rmw ~partial ~all (Ir.Seq items) =
   in
   Option.map (fun items -> Ir.Seq items) (resolve items)
 
-let translate ~prune ~binding (nf : Ir.rel_nf) : relax list =
+let translate ~modes ~prune ~binding (nf : Ir.rel_nf) : relax list =
   Log.info (fun m -> m "Translating component of `%s`" binding);
   Log.debug (fun m -> m "`%s` expression:@.%a" binding Ir.pp_rel_nf nf);
   let nf = Ir.compress nf in
@@ -1344,7 +1355,7 @@ let translate ~prune ~binding (nf : Ir.rel_nf) : relax list =
             let (Ir.Union seqs) = Ir.compress (Ir.Union [ seq ]) in
             let relaxs =
               List.concat_map
-                (translate_seq
+                (translate_seq ~modes
                    ~communication_state:(List.mem Communication_state prune))
                 seqs in
             let relaxs =
