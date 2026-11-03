@@ -105,6 +105,13 @@ litmus-aarch64-dep:
 	./configure $(KUT_CONFIG_PARAMS);                                  \
 	make $(SILENTOPT) -j $(J)
 
+.PHONY: litmus-cram-aarch64-test-kvm
+litmus-aarch64-run:: litmus-cram-aarch64-test-kvm
+litmus-cram-aarch64-test-kvm: Version.ml litmus-aarch64-dep
+	KVM_UNIT_TESTS="$(KUT_DIR_AARCH64)/kvm-unit-tests" \
+	  $(D) build --profile=$(DUNE_PROFILE) \
+	  @litmus/tests/AArch64.kvm/runtest-litmus-kvm-aarch64 --force
+
 litmus-aarch64-run:: litmus-cata-aarch64-test-kvm
 litmus-cata-aarch64-test-kvm: litmus-aarch64-dep
 	mkdir $(KUT_DIR_AARCH64)/kvm-unit-tests/t
