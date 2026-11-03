@@ -16,36 +16,16 @@
 
 open Printf
 
-type 'loc rloc =
+type 'loc rloc = 'loc Base.Location.Rel.t =
   | Loc of 'loc
   | Deref of 'loc * int
 
-let dump_rloc pp_loc = function
-  | Loc loc -> pp_loc loc
-  | Deref (loc,i) -> sprintf "%s[%d]" (pp_loc loc) i
-
-let compare_rloc loc_compare r1 r2 = match r1,r2 with
-  | Loc l1,Loc l2 -> loc_compare l1 l2
-  | Deref (l1,i1),Deref (l2,i2) ->
-      Misc.pair_compare loc_compare Misc.int_compare
-        (l1,i1) (l2,i2)
-  | Loc _,Deref _ -> -1
-  | Deref _,Loc _ -> +1
-
-let rloc_of_loc loc = Loc loc
-
-let loc_of_rloc = function
-  | Loc loc|Deref (loc,_) -> loc
-
-let map_rloc f = function
-  | Loc loc -> Loc (f loc)
-  | Deref (loc,i) -> Deref (f loc,i)
-
-let fold_rloc f rl k = f (loc_of_rloc rl) k
-
-let match_rloc f g = function
-  | Loc loc -> f loc
-  | Deref (loc,i) -> g loc i
+let dump_rloc = Base.Location.Rel.dump
+let compare_rloc = Base.Location.Rel.compare
+let loc_of_rloc = Base.Location.Rel.to_loc
+let map_rloc = Base.Location.Rel.map
+let fold_rloc = Base.Location.Rel.fold
+let match_rloc = Base.Location.Rel.apply
 
 type ('loc,'v,'ftype) atom =
   | LV of 'loc rloc * 'v

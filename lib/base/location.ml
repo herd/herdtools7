@@ -14,6 +14,39 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module Rel = struct
+  type 'loc t =
+    | Loc of 'loc
+    | Deref of 'loc * int
+
+  let dump pp_loc = function
+    | Loc loc -> pp_loc loc
+    | Deref (loc,i) -> Printf.sprintf "%s[%d]" (pp_loc loc) i
+
+  let compare loc_compare r1 r2 = match r1,r2 with
+    | Loc l1,Loc l2 -> loc_compare l1 l2
+    | Deref (l1,i1),Deref (l2,i2) ->
+        Misc.pair_compare loc_compare Misc.int_compare
+          (l1,i1) (l2,i2)
+    | Loc _,Deref _ -> -1
+    | Deref _,Loc _ -> +1
+
+  let of_loc loc = Loc loc
+
+  let to_loc = function
+    | Loc loc|Deref (loc,_) -> loc
+
+  let map f = function
+    | Loc loc -> Loc (f loc)
+    | Deref (loc,i) -> Deref (f loc,i)
+
+  let fold f rl k = f (to_loc rl) k
+
+  let apply on_loc on_deref = function
+    | Loc loc -> on_loc loc
+    | Deref (loc,i) -> on_deref loc i
+end
+
 module type I = sig
   type arch_reg
   val pp_reg : arch_reg -> string
@@ -50,15 +83,15 @@ module type S = sig
  *)
   val env_for_pp : (location * 'a) list -> (location * 'a) list list
 
-  module LocSet : MySet.S with type elt = location
-  module LocMap : MyMap.S with type key = location
+  module LocSet : Set.S with type elt = location
+  module LocMap : Map.S with type key = location
 
-  type rlocation = location ConstrGen.rloc
+  type rlocation = location Rel.t
   val pp_rlocation : rlocation -> string
   val rlocation_compare : rlocation -> rlocation -> int
 
-  module RLocSet : MySet.S with type elt = rlocation
-  module RLocMap : MyMap.S with type key = rlocation
+  module RLocSet : Set.S with type elt = rlocation
+  module RLocMap : Map.S with type key = rlocation
 end
 
 module Make(A:I) : S
@@ -131,16 +164,16 @@ with type loc_reg = A.arch_reg and type loc_global = A.arch_global =
       let compare = location_compare
     end
 
-    module LocSet = MySet.Make(OL)
-    module LocMap = MyMap.Make(OL)
+    module LocSet = Set.Make(OL)
+    module LocMap = Map.Make(OL)
 
-    type rlocation = location ConstrGen.rloc
-    let pp_rlocation = ConstrGen.dump_rloc pp_location
-    let rlocation_compare = ConstrGen.compare_rloc location_compare
+    type rlocation = location Rel.t
+    let pp_rlocation = Rel.dump pp_location
+    let rlocation_compare = Rel.compare location_compare
     module RL = struct
       type t = rlocation
       let compare = rlocation_compare
     end
-    module RLocSet = MySet.Make(RL)
-    module RLocMap = MyMap.Make(RL)
+    module RLocSet = Set.Make(RL)
+    module RLocMap = Map.Make(RL)
   end

@@ -67,7 +67,7 @@ module
       | Narrow i -> Narrow.as_bool i
       | Wide i -> Warn.fatal "as_bool on wide scalar '%s'" @@ Wide.pp i
 
-    let printable = map Narrow.printable Misc.identity
+    let printable = map Narrow.printable Base.Misc.identity
 
     let compare s1 s2 = match s1,s2 with
       | Narrow i1,Narrow i2 -> Narrow.compare i1 i2
@@ -137,7 +137,7 @@ module
     and logand = map2 Narrow.logand Wide.logand
     and logxor = map2 Narrow.logxor Wide.logxor
     and lognot = map Narrow.lognot Wide.lognot
-    and abs = map Narrow.abs Misc.identity
+    and abs = map Narrow.abs Base.Misc.identity
 
 
     let mapIntArg fn fw s1 k =

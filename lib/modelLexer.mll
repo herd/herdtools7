@@ -140,7 +140,7 @@ let do_token f lexbuf =
    end ;
    tok
 
-let token lexbuf = do_token Misc.ing2 lexbuf
+let token lexbuf = do_token Base.Misc.ing2 lexbuf
 
 let token_fun f lexbuf = ignore (do_token f lexbuf)
 

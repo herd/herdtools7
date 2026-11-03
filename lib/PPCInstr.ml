@@ -19,10 +19,10 @@ open PPCBase
 type exec = instruction
 type t = instruction
 
-let from_exec = Misc.identity
-let to_exec = Misc.identity
+let from_exec = Base.Misc.identity
+let to_exec = Base.Misc.identity
 
-let compare = Misc.polymorphic_compare
+let compare = Base.Misc.polymorphic_compare
 let eq = (=)
 
 let pp = function

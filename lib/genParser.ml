@@ -78,10 +78,10 @@ module Make
 *)
     let transpose procs prog =
       try
-        let prog = Misc.transpose prog in
+        let prog = Base.Misc.transpose prog in
         List.combine procs prog
       with
-      |  Misc.TransposeFailure | Invalid_argument _ ->
+      |  Base.Misc.TransposeFailure | Invalid_argument _ ->
           Warn.fatal "mismatch in instruction lines"
 
 

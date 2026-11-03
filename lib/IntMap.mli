@@ -16,4 +16,4 @@
 
 (** A map, whose keys are ints *)
 
-include MyMap.S with type key = int
+include module type of Base.IntMap

@@ -42,7 +42,7 @@ module Make(P:Input)
 
       let digest_code code =
         let code = List.map (P.dump_prog true) code in
-        let pp =  Misc.string_of_prog code in
+        let pp =  Base.Misc.string_of_prog code in
         debug "CODE" pp ;
         Digest.string pp
 

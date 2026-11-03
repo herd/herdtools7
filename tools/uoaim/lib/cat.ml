@@ -125,7 +125,7 @@ module RelExp = struct
       | Op1 (_, Inv, Var (_, s)) -> [ s ]
       | Op1 (_, ToId, _) -> []
       | Op1 (_, _, e) -> go e
-      | Op (_, _, es) -> Misc.List.concat_map go es
+      | Op (_, _, es) -> Base.Misc.List.concat_map go es
       | Var _ -> []
       | _ -> assert false
     in

@@ -121,7 +121,7 @@ let do_grep out_chan pat in_chan =
         output_line out_chan line)
     ()
 
-let grep chan pat name = Misc.input_protect (do_grep chan pat) name
+let grep chan pat name = Base.Misc.input_protect (do_grep chan pat) name
 
 
 (*******************)
@@ -131,7 +131,7 @@ let grep chan pat name = Misc.input_protect (do_grep chan pat) name
 let cat_chan chan kont = read_by_line chan (fun line () -> kont line) ()
 
 let cat name kont =
-  Misc.input_protect (fun chan -> cat_chan chan kont)  name
+  Base.Misc.input_protect (fun chan -> cat_chan chan kont)  name
 
 let cat_and_remove name kont =
   let r = cat name kont in
@@ -139,7 +139,7 @@ let cat_and_remove name kont =
   r
 
 let cp ?prf ichan name =
-  Misc.output_protect
+  Base.Misc.output_protect
     (fun chan ->
       begin match prf with
       | None -> ()

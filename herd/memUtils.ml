@@ -16,6 +16,8 @@
 
 open Printf
 
+module Misc = Base.Misc
+
 module Make(S : SemExtra.S) = struct
 
   module S = S

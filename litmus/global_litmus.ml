@@ -14,6 +14,8 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
+module Misc = Base.Misc
+
 type t = Addr of string | Pte of string | Phy of string | AddrT of string * int | Tag of string * int
 
 let pp_old = function

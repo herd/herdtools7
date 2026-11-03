@@ -27,7 +27,7 @@ let as_var = function
   | Var (loc,id) -> Some (loc,id)
   | _ -> None
 
-let as_vars = Misc.opt_list_fold as_var
+let as_vars = Base.Misc.opt_list_fold as_var
 
 (* Position *)
 let exp2loc = function
@@ -177,7 +177,7 @@ let rec free = function
         (StringSet.union (free ifso) (free ifnot))
 
 and remove_pat0 x = match x with
-| None -> Misc.identity
+| None -> Base.Misc.identity
 | Some x ->  StringSet.remove x
 
 and free_cl = function
