@@ -68,18 +68,25 @@ module TestResult : sig
       undefined execution, or an execution carrying [badflag] when one is
       configured. *)
 
-  type ('conc, 'sets, 'rels) execution
+  type ('conc, 'state, 'sets, 'rels) execution
 
-  val concrete : ('conc, 'sets, 'rels) execution -> 'conc
+  val concrete : ('conc, 'state, 'sets, 'rels) execution -> 'conc
 
-  val passes_check : ('conc, 'sets, 'rels) execution -> bool
+  val final_state : ('conc, 'state, 'sets, 'rels) execution -> 'state
+  (** Final state projected to the locations and faults displayed in outcomes. *)
+
+  val passes_check : ('conc, 'state, 'sets, 'rels) execution -> bool
   (** Whether the execution satisfies the test proposition. *)
 
-  val flags : ('conc, 'sets, 'rels) execution -> Flag.Set.t
+  val is_valid : ('conc, 'state, 'sets, 'rels) execution -> bool
+  (** Whether the CAT model accepts this execution. *)
 
-  val sets : ('conc, 'sets, 'rels) execution -> 'sets
 
-  val relations : ('conc, 'sets, 'rels) execution -> 'rels
+  val flags : ('conc, 'state, 'sets, 'rels) execution -> Flag.Set.t
+
+  val sets : ('conc, 'state, 'sets, 'rels) execution -> 'sets
+
+  val relations : ('conc, 'state, 'sets, 'rels) execution -> 'rels
 
   type ('es, 'exec, 'stats) t =
     { event_structures : 'es list;
@@ -98,7 +105,7 @@ module TestResult : sig
         {!TestResult} module. *)
 
     type nonrec stats = S.A.StateSet.t stats
-    type nonrec execution = (S.concrete, S.set_pp, S.rel_pp) execution
+    type nonrec execution = (S.concrete, S.A.final_state, S.set_pp, S.rel_pp) execution
     type nonrec t = (S.event_structure, execution, stats) t
 
     val count_prop : byte:MachSize.Tag.t -> S.test -> stats -> int
@@ -132,6 +139,8 @@ module Printer (O : PrinterConfig) (S : SemExtra.S) : sig
   type stats := TestResult.Make(S).stats
   type execution := TestResult.Make(S).execution
 
+  val dump_final_state : S.test -> S.A.final_state -> string
+  val verdict : S.test -> stats -> string
   val pp_stats : ?time:float -> S.test -> stats -> Format.formatter -> unit
   val dump_exec_graph : Model.t -> S.test -> execution -> out_channel -> unit
 end
