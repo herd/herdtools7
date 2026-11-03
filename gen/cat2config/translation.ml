@@ -1178,6 +1178,11 @@ let rec relax_starts_with_communication = function
   | Plain edge :: _ -> is_communication_edge edge
   | Predicate _ :: _ | [] -> false
 
+let relax_starts_with_implicit_state = function
+  | Predicate (Ast.Predicate ("state", Ast.One (Macro name))) :: _ ->
+      Misc.is_prefix "Imp" name
+  | Plain _ :: _ | Predicate _ :: _ | [] -> false
+
 let add_external_communication_states l relaxs =
   let prefix, suffix, rmw_prefix = external_communication_boundaries l in
   let ordinary =
@@ -1188,14 +1193,20 @@ let add_external_communication_states l relaxs =
         let starts_with_communication = relax_starts_with_communication relax in
         let ends_with_communication =
           relax_starts_with_communication (List.rev relax) in
+        let starts_with_implicit_state =
+          relax_starts_with_implicit_state relax in
+        let ends_with_implicit_state =
+          relax_starts_with_implicit_state (List.rev relax) in
         let relax =
           if starts_with_communication then optional_state "EndExpM" :: relax
-          else if prefix then state "StartExpM" :: relax
+          else if prefix && not starts_with_implicit_state then
+            state "StartExpM" :: relax
           else relax
         in
         if ends_with_communication then
           relax @ [ optional_state "StartExpM" ]
-        else if suffix then relax @ [ state "EndExpM" ]
+        else if suffix && not ends_with_implicit_state then
+          relax @ [ state "EndExpM" ]
         else relax)
       relaxs
   in
@@ -1207,7 +1218,9 @@ let add_external_communication_states l relaxs =
           let relax = optional_state "EndExpM" :: hat :: relax in
           if relax_starts_with_communication (List.rev relax) then
             relax @ [ optional_state "StartExpM" ]
-          else if suffix then relax @ [ state "EndExpM" ]
+          else if suffix &&
+                  not (relax_starts_with_implicit_state (List.rev relax)) then
+            relax @ [ state "EndExpM" ]
           else relax)
         relaxs
     in
