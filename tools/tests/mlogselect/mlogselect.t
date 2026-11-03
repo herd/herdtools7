@@ -79,3 +79,27 @@ Extract test output from herd log
   Observation A012 Always 1 0
   Hash=3b021e40517dcff1f1cb8894d645b677
   
+Herd log, "one empty line case"
+  $ herd7 -set-libdir ../../../herd/libdir ../../../gen/tests/AArch64/CoRW1+amo.*-rfi.litmus | mlogselect7 -oknames CoRW1+amo.stadd-rfi,CoRW1+amo.ldadd-rfi
+  Test CoRW1+amo.ldadd-rfi Allowed
+  States 1
+  0:X1=0;
+  No
+  Witnesses
+  Positive: 0 Negative: 1
+  Condition exists (0:X1=1)
+  Observation CoRW1+amo.ldadd-rfi Never 0 1
+  Time CoRW1+amo.ldadd-rfi 0.00
+  Hash=c982a07ffa30e9f9561539a4083a71cd
+  
+  Test CoRW1+amo.stadd-rfi Allowed
+  States 1
+  
+  Ok
+  Witnesses
+  Positive: 1 Negative: 0
+  Condition exists (true)
+  Observation CoRW1+amo.stadd-rfi Always 1 0
+  Time CoRW1+amo.stadd-rfi 0.00
+  Hash=e778205195c62d0973e6f377ef6e77e6
+  

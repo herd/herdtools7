@@ -78,3 +78,14 @@ Yet another check, negative fault pattern without prefix
   -----------------------------------------
   -----------------------------------------
   MP+dmb.ish+addr-tlbi-dsb.ish-isb| No    
+Herd log with empty line
+  $ herd7 -set-libdir ../libdir ../../../gen/tests/AArch64/CoRW1+amo.*-rfi.litmus > AMO.01
+  $ mcmp7 AMO.00 AMO.01
+  $ mcompare7 -oknames CoRW1+amo.stadd-rfi AMO.01 AMO.00
+  *Diffs*
+                     |Kind | AMO.01 AMO.00
+  ----------------------------------------
+  ----------------------------------------
+  CoRW1+amo.stadd-rfi|Allow| []     ==    
+                     |Ok   |              
+  

@@ -1,0 +1,131 @@
+Tue Nov  3 15:17:36 2026
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for gen/tests/AArch64/CoRW1+amo.cas-rfi.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 CoRW1+amo.cas-rfi
+{
+ 0:X0=x;
+}
+ P0             ;
+ MOV W1,#1      ;
+ MOV W2,#1      ;
+ CAS W1,W2,[X0] ;
+
+exists (0:X1=1)
+Generated assembler
+#START _litmus_P0
+	mov w2,#1
+	mov w8,#1
+	cas w2,w8,[x0]
+Test CoRW1+amo.cas-rfi Allowed
+Histogram (1 states)
+10000000:>0:X1=0;
+No
+Witnesses
+Positive: 0, Negative: 10000000
+Condition exists (0:X1=1) is NOT validated
+Hash=5f5caf4b588db39740113e5538764065
+Observation CoRW1+amo.cas-rfi Never 0 10000000
+Time CoRW1+amo.cas-rfi 0.46
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for gen/tests/AArch64/CoRW1+amo.ldadd-rfi.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 CoRW1+amo.ldadd-rfi
+{
+ 0:X0=x;
+}
+ P0               ;
+ MOV W2,#1        ;
+ LDADD W2,W1,[X0] ;
+
+exists (0:X1=1)
+Generated assembler
+#START _litmus_P0
+	mov w8,#1
+	ldadd w8,w2,[x0]
+Test CoRW1+amo.ldadd-rfi Allowed
+Histogram (1 states)
+10000000:>0:X1=0;
+No
+Witnesses
+Positive: 0, Negative: 10000000
+Condition exists (0:X1=1) is NOT validated
+Hash=c982a07ffa30e9f9561539a4083a71cd
+Observation CoRW1+amo.ldadd-rfi Never 0 10000000
+Time CoRW1+amo.ldadd-rfi 0.44
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for gen/tests/AArch64/CoRW1+amo.stadd-rfi.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 CoRW1+amo.stadd-rfi
+{
+ 0:X0=x;
+}
+ P0            ;
+ MOV W1,#1     ;
+ STADD W1,[X0] ;
+
+exists (true)
+Generated assembler
+#START _litmus_P0
+	mov w1,#1
+	stadd w1,[x0]
+Test CoRW1+amo.stadd-rfi Allowed
+Histogram (1 states)
+10000000*>
+Ok
+Witnesses
+Positive: 10000000, Negative: 0
+Condition exists (true) is validated
+Hash=e778205195c62d0973e6f377ef6e77e6
+Observation CoRW1+amo.stadd-rfi Always 10000000 0
+Time CoRW1+amo.stadd-rfi 0.31
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for gen/tests/AArch64/CoRW1+amo.swp-rfi.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 CoRW1+amo.swp-rfi
+{
+ 0:X0=x;
+}
+ P0             ;
+ MOV W2,#1      ;
+ SWP W2,W1,[X0] ;
+
+exists (0:X1=1)
+Generated assembler
+#START _litmus_P0
+	mov w8,#1
+	swp w8,w2,[x0]
+Test CoRW1+amo.swp-rfi Allowed
+Histogram (1 states)
+10000000:>0:X1=0;
+No
+Witnesses
+Positive: 0, Negative: 10000000
+Condition exists (0:X1=1) is NOT validated
+Hash=ff1ea5250d04a9122d81e8331e35a390
+Observation CoRW1+amo.swp-rfi Never 0 10000000
+Time CoRW1+amo.swp-rfi 0.44
+
+Revision 12d252ef9ffb31afbd1e730949fbf2ed105b24ae, version 7.58+1
+Command line: litmus7 -o /tmp/A.tar -mach armv8.3 -driver C gen/tests/AArch64/CoRW1+amo.cas-rfi.litmus gen/tests/AArch64/CoRW1+amo.ldadd-rfi.litmus gen/tests/AArch64/CoRW1+amo.stadd-rfi.litmus gen/tests/AArch64/CoRW1+amo.swp-rfi.litmus
+Parameters
+#define SIZE_OF_TEST 5000
+#define NUMBER_OF_RUN 200
+#define AVAIL 1
+#define STRIDE 1
+#define MAX_LOOP 0
+/* gcc options: -D_GNU_SOURCE -DFORCE_AFFINITY -Wall -std=gnu99 -O2 -march=armv8.3-a -pthread */
+/* barrier: userfence */
+/* launch: changing */
+/* affinity: incr0 */
+/* memory: direct */
+/* stride: 1 */
+/* safer: write */
+/* preload: random */
+/* speedcheck: no */
+/* alloc: dynamic */
+Command: ./run.exe -s 5k -r 2k
+Tue Nov  3 15:17:37 2026
