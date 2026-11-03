@@ -416,6 +416,7 @@ compiler
 compilers
 complement
 complete
+completed
 completes
 complex
 complexity
@@ -1280,6 +1281,7 @@ lexicographic
 liable
 library
 like
+likewise
 limit
 limitation
 limited
@@ -1656,6 +1658,8 @@ prefixed
 premature
 premise
 premises
+prepared
+preparing
 prepending
 preprocessing
 presence
@@ -1890,6 +1894,7 @@ result
 resulting
 results
 retain
+retained
 retaining
 retains
 retrieves
