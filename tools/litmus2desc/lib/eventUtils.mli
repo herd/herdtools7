@@ -26,7 +26,11 @@ module Make (E : Event.S) : sig
     is_implicit : bool;
   }
 
-  type action_view = Access of access | Branching of branch_type | Barrier
+  type action_view =
+    | Access of access
+    | Branching of branch_type
+    | Barrier
+    | TLBI
 
   val action_view : E.event -> action_view option
   val as_access : E.event -> access option
