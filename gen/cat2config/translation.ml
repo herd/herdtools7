@@ -1140,6 +1140,17 @@ let optional_state name =
 let is_communication_edge (edge : E.edge) =
   match edge.edge with E.Communication _ -> true | _ -> false
 
+let is_annotation_edge (edge : E.edge) =
+  match edge with
+  | { edge = E.Id; a1 = Some _; _ } | { edge = E.Id; a2 = Some _; _ } -> true
+  | _ -> false
+
+let rec relax_starts_with_communication = function
+  | Plain edge :: relax when is_annotation_edge edge ->
+      relax_starts_with_communication relax
+  | Plain edge :: _ -> is_communication_edge edge
+  | Predicate _ :: _ | [] -> false
+
 let add_external_communication_states l relaxs =
   let prefix, suffix, rmw_prefix = external_communication_boundaries l in
   let ordinary =
@@ -1147,28 +1158,18 @@ let add_external_communication_states l relaxs =
       (fun relax ->
         (* A leading communication finishes at the relaxation's far end, while
          a trailing communication starts at its near end. *)
-        let starts_with_communication =
-          match relax with
-          | Plain edge :: _ -> is_communication_edge edge
-          | Predicate _ :: _ | [] -> false
-        in
+        let starts_with_communication = relax_starts_with_communication relax in
         let ends_with_communication =
-          match List.rev relax with
-          | Plain edge :: _ -> is_communication_edge edge
-          | Predicate _ :: _ | [] -> false
-        in
-        let needs_start_state = prefix || ends_with_communication in
-        let needs_end_state = suffix || starts_with_communication in
+          relax_starts_with_communication (List.rev relax) in
         let relax =
-          match (needs_start_state, starts_with_communication) with
-          | true, true -> optional_state "EndExpM" :: relax
-          | true, false -> state "StartExpM" :: relax
-          | false, _ -> relax
+          if starts_with_communication then optional_state "EndExpM" :: relax
+          else if prefix then state "StartExpM" :: relax
+          else relax
         in
-        match (needs_end_state, ends_with_communication) with
-        | true, true -> relax @ [ optional_state "StartExpM" ]
-        | true, false -> relax @ [ state "EndExpM" ]
-        | false, _ -> relax)
+        if ends_with_communication then
+          relax @ [ optional_state "StartExpM" ]
+        else if suffix then relax @ [ state "EndExpM" ]
+        else relax)
       relaxs
   in
   if rmw_prefix then
@@ -1177,7 +1178,10 @@ let add_external_communication_states l relaxs =
       List.map
         (fun relax ->
           let relax = optional_state "EndExpM" :: hat :: relax in
-          if suffix then relax @ [ state "EndExpM" ] else relax)
+          if relax_starts_with_communication (List.rev relax) then
+            relax @ [ optional_state "StartExpM" ]
+          else if suffix then relax @ [ state "EndExpM" ]
+          else relax)
         relaxs
     in
     if prefix then ordinary @ rmw_relaxs else rmw_relaxs
