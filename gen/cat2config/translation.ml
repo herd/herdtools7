@@ -836,8 +836,9 @@ let make_concrete_relax ~communication_state left_atom left_event right_atom
   let relax = make_explicit_relax left_atom right_atom insert edges in
   [ left_state @ relax @ right_state ]
 
-let try_match_edge ~communication_state (left : prim_set list)
-    (core : seq_item list) (right : prim_set list) : concrete_relax list option =
+let try_match_edge ~communication_state ~left_event:selected_left_event
+    (left : prim_set list) (core : seq_item list) (right : prim_set list) :
+    (concrete_relax * Ir.event) list option =
   let open Util.Option.Infix in
   let* implied_left, pedge, implied_right =
     match core with
@@ -891,7 +892,17 @@ let try_match_edge ~communication_state (left : prim_set list)
   in
   let* tedges = pedge.tedges in
   let left, right = (left @ implied_left, right @ implied_right) in
-  let* left_event = build_event left in
+  let* left_constraint = build_event left in
+  let* left_event = match selected_left_event with
+    | None -> Some left_constraint
+    | Some event when event.Ir.is_synthetic || left_constraint.Ir.is_synthetic ->
+        Some left_constraint
+    | Some event ->
+        if List.mem event (Ir.expand_event left_constraint) then Some event
+        else None in
+  let left =
+    Ir.Event left_event
+    :: List.filter (function Ir.Event _ -> false | _ -> true) left in
   let* left = build_effect initial_effect left in
   let* _ = Util.Option.guard left.explicit_mem in
   let* right_event = build_event right in
@@ -915,15 +926,22 @@ let try_match_edge ~communication_state (left : prim_set list)
           (fun edges ->
             List.concat_map
               (fun (left_event, right_event) ->
-                make_concrete_relax ~communication_state left.atom left_event
-                  right.atom right_event tedge.insert edges)
+                List.map
+                  (fun relax -> relax,right_event)
+                  (make_concrete_relax ~communication_state left.atom left_event
+                     right.atom right_event tedge.insert edges))
               events)
           head_relaxs)
   in
   Some (Util.List.uniq ~eq:( = ) relaxs)
 
+type translation_path = {
+  relax : concrete_relax;
+  left_event : Ir.event option;
+}
+
 type state = {
-  relaxs : concrete_relax list;
+  paths : translation_path list;
   left : prim_set Ir.inter;
   core : seq_item list;
   right : prim_set Ir.inter;
@@ -1181,20 +1199,24 @@ let translate_seq ~communication_state (Seq l : seq_item Ir.seq) : concrete_rela
               match rest with [] -> true | Rel _ :: _ -> true | _ -> false
             in
             if should_try_match then
-              match
-                try_match_edge ~communication_state (Ir.get_inter st.left) st.core
-                  (Ir.get_inter st.right)
-              with
-              | Some edge_alts ->
-                  let relaxs =
-                    let open Util.List.Infix in
-                    let* edge = edge_alts in
-                    let* prev_edges = st.relaxs in
-                    [ prev_edges @ edge ]
-                  in
-                  let left = st.right in
-                  { relaxs; left; core = []; right = Inter [] }
-              | None -> st
+              let paths =
+                List.concat_map
+                  (fun path ->
+                    match
+                      try_match_edge ~communication_state
+                        ~left_event:path.left_event (Ir.get_inter st.left)
+                        st.core (Ir.get_inter st.right)
+                    with
+                    | Some edge_alts ->
+                        List.map
+                          (fun (edge, left_event) ->
+                            { relax = path.relax @ edge;
+                              left_event = Some left_event })
+                          edge_alts
+                    | None -> [])
+                  st.paths in
+              let left = st.right in
+              { paths; left; core = []; right = Inter [] }
             else st
         | core, Rel r ->
             let core =
@@ -1202,10 +1224,11 @@ let translate_seq ~communication_state (Seq l : seq_item Ir.seq) : concrete_rela
               else core @ [ Set st.right; Rel r ]
             in
             { st with core; right = Inter [] })
-      { relaxs = [ [] ]; left = explicit_memory; core = []; right = Inter [] }
+      { paths = [ { relax = []; left_event = None } ];
+        left = explicit_memory; core = []; right = Inter [] }
       (l @ [ Ir.Set explicit_memory ])
   in
-  if st.core = [] then st.relaxs else []
+  if st.core = [] then List.map (fun path -> path.relax) st.paths else []
 
 let resolve_rmw ~partial ~all (Ir.Seq items) =
   let rmw = function
