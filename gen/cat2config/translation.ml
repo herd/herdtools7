@@ -829,8 +829,8 @@ let resolve_events modes sd left right =
     end
   | Some Code.Diff | None -> [ (left, right) ]
 
-let make_concrete_relax ~communication_state left_atom left_event right_atom
-    right_event insert edges =
+let make_concrete_relax ~terminal ~communication_state left_atom left_event
+    right_atom right_event insert edges =
   let open Util.List.Infix in
   let* edges = match (left_event.Ir.kind, right_event.Ir.kind) with
     | Some Exp, Some Exp -> [ edges ]
@@ -844,10 +844,27 @@ let make_concrete_relax ~communication_state left_atom left_event right_atom
     Option.to_list
       (resolve_event ~communication_state right_event right_atom) in
   let relax = make_explicit_relax left_atom right_atom insert edges in
-  [ left_state @ relax @ right_state ]
+  let implicit_rmw = match left_event.Ir.kind with
+    | Some Imp when right_event.Ir.is_synthetic ->
+        List.exists (fun (edge : E.edge) -> match edge.edge with
+          | E.Rmw _ -> true
+          | _ -> false) edges
+    | None | Some Exp | Some Imp -> false in
+  if terminal && implicit_rmw then [ relax @ left_state @ right_state ]
+  else [ left_state @ relax @ right_state ]
 
-let try_match_edge ~modes ~communication_state ~left_event:selected_left_event
-    (left : prim_set list) (core : seq_item list) (right : prim_set list) :
+let append_relax left right =
+  match (List.rev left, List.rev right) with
+  | Predicate lhs :: left, Predicate rhs :: _
+    when lhs = rhs && List.exists (function
+      | Plain { E.edge = E.Rmw _; _ } -> true
+      | Plain _ | Predicate _ -> false) right ->
+      List.rev_append left right
+  | _ -> left @ right
+
+let try_match_edge ~terminal ~modes ~communication_state
+    ~left_event:selected_left_event (left : prim_set list)
+    (core : seq_item list) (right : prim_set list) :
     (concrete_relax * Ir.event) list option =
   let open Util.Option.Infix in
   let* implied_left, pedge, implied_right =
@@ -938,8 +955,8 @@ let try_match_edge ~modes ~communication_state ~left_event:selected_left_event
               (fun (left_event, right_event) ->
                 List.map
                   (fun relax -> relax,right_event)
-                  (make_concrete_relax ~communication_state left.atom left_event
-                     right.atom right_event tedge.insert edges))
+                  (make_concrete_relax ~terminal ~communication_state left.atom
+                     left_event right.atom right_event tedge.insert edges))
               events)
           head_relaxs)
   in
@@ -1218,14 +1235,15 @@ let translate_seq ~modes ~communication_state (Seq l : seq_item Ir.seq) :
                 List.concat_map
                   (fun path ->
                     match
-                      try_match_edge ~modes ~communication_state
+                      try_match_edge ~terminal:(rest = []) ~modes
+                        ~communication_state
                         ~left_event:path.left_event (Ir.get_inter st.left)
                         st.core (Ir.get_inter st.right)
                     with
                     | Some edge_alts ->
                         List.map
                           (fun (edge, left_event) ->
-                            { relax = path.relax @ edge;
+                            { relax = append_relax path.relax edge;
                               left_event = Some left_event })
                           edge_alts
                     | None -> [])
