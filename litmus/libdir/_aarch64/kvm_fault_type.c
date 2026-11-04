@@ -107,17 +107,30 @@ static enum fault_type_t get_fault_type(unsigned long esr)
   }
 }
 
+static int select_fault_label(int id, int proc, long offset) {
+  if (id != INSTR_SYMB_ID_UNKNOWN) return id;
+  int label = INSTR_SYMB_ID_UNKNOWN;
+  for (int id = 1; id < INSTR_SYMB_ID_UNKNOWN; id++) {
+    if (fault_labels[id].proc == proc && fault_labels[id].offset == offset) {
+      /* A label-free predicate must not choose between instruction aliases. */
+      if (label != INSTR_SYMB_ID_UNKNOWN) return INSTR_SYMB_ID_UNKNOWN;
+      label = id;
+    }
+  }
+  return label;
+}
+
 // Fault structure, notice that the originating thread is omitted.
 typedef struct {
-  int instr_symb;
+  long instr_offset; /* In instructions, relative to this thread's test code. */
   int data_symb;
   enum fault_type_t type;
 } fault_info_t;
 
-// Total order on fault occurrences.
-static int compare_fault_info (fault_info_t *f1, fault_info_t *f2) {
-  if (f1->instr_symb < f2->instr_symb) return -1;
-  else if (f1->instr_symb > f2->instr_symb) return 1;
+// Total order on fault occurrences, within a thread.
+static int compare_fault_info_within_thread (fault_info_t *f1, fault_info_t *f2) {
+  if (f1->instr_offset < f2->instr_offset) return -1;
+  else if (f1->instr_offset > f2->instr_offset) return 1;
   else if (f1->data_symb < f2->data_symb) return -1;
   else if (f1->data_symb > f2->data_symb) return 1;
   else if (f1->type < f2->type) return -1;
@@ -144,7 +157,7 @@ static void do_insert(int k,fault_info_t *f,th_faults_info_t *t) {
 // Insert fault information in a sorted array.
 static void insert_fault(fault_info_t *f,th_faults_info_t *t) {
   for (int k=0 ; k < t->n ; k++) {
-    int r = compare_fault_info(f,&t->faults[k]);
+    int r = compare_fault_info_within_thread(f,&t->faults[k]);
     if (r < 0) { // Insert here
       do_insert(k,f,t);
       return;
@@ -159,7 +172,7 @@ static void insert_fault(fault_info_t *f,th_faults_info_t *t) {
 static int match_fault_info(int instr_symb, int data_symb, int ftype, fault_info_t *flt) {
   int r = 1;
   if (instr_symb != INSTR_SYMB_ID_UNKNOWN) { // Absence catch them all.
-    r &= flt->instr_symb == instr_symb;
+    r &= flt->instr_offset == fault_labels[instr_symb].offset;
   }
   if (data_symb != DATA_SYMB_ID_UNKNOWN) { // Absence catch them all.
     r &= flt->data_symb == data_symb;
@@ -196,7 +209,7 @@ static void th_faults_info_init(th_faults_info_t *th_flts)
 {
   for (int i = 0; i < MAX_FAULTS_PER_THREAD; i++) {
     fault_info_t *f = &th_flts->faults[i];
-    f->instr_symb = INSTR_SYMB_ID_UNKNOWN;
+    f->instr_offset = 0;
     f->data_symb = DATA_SYMB_ID_UNKNOWN;
     f->type = FaultUnknown;
   }
@@ -216,13 +229,24 @@ static void pp_fault(int proc, int instr_symb, int data_symb, int ftype)
   printf(");");
 }
 
-static void pp_positive_faults(th_faults_info_t *p) {
-  for (int proc=0; proc < NTHREADS; proc++) {
-    th_faults_info_t *t = &p[proc];
-    for (int k=0; k < t->n; k++) {
-      fault_info_t *f = &t->faults[k];
+static inline void pp_positive_faults(th_faults_info_t *t, int proc, int id) {
+  for (int k=0; k < t->n; k++) {
+    fault_info_t *f = &t->faults[k];
+    if (match_fault_info(id, DATA_SYMB_ID_UNKNOWN, FaultUnknown, f)) {
+      int label = select_fault_label(id, proc, f->instr_offset);
+      if (id == INSTR_SYMB_ID_UNKNOWN) {
+        /* Distinct instruction offsets can produce the same displayed fault. */
+        int j;
+        for (j=0; j < k; j++) {
+          fault_info_t *prev = &t->faults[j];
+          if (prev->data_symb == f->data_symb && prev->type == f->type &&
+              select_fault_label(id, proc, prev->instr_offset) == label)
+            break;
+        }
+        if (j < k) continue;
+      }
       printf(" ");
-      pp_fault(proc, f->instr_symb, f->data_symb, f->type);
+      pp_fault(proc, label, f->data_symb, f->type);
     }
   }
 }
