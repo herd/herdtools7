@@ -242,7 +242,7 @@ let run ~(opts : Opts.t) (tree : AST.ins list) =
   in
   let nf_map = Nf.normalize_bindings ~config:norm_config bindings in
   let requested_bindings :
-      (string * (Translation.relax list * AST.exp) list) list =
+      (string * (Translation.output list * AST.exp) list) list =
     opts.lets_to_print
     |> List.filter_map (fun var ->
         match Nf.find_opt var nf_map with
@@ -290,8 +290,11 @@ let run ~(opts : Opts.t) (tree : AST.ins list) =
               if relaxs <> [] then (
                 print_cat_rel ();
                 List.iter
-                  (fun relax ->
-                    printf "-safe %s@." (Translation.pp_relax relax))
+                  (fun output ->
+                    let option = match Translation.output_kind output with
+                      | Translation.Safe -> "-safe"
+                      | Translation.Relax -> "-relax" in
+                    printf "%s %s@." option (Translation.pp_output output))
                   relaxs);
               acc @ relaxs)
             [] relaxss
@@ -304,7 +307,7 @@ let run ~(opts : Opts.t) (tree : AST.ins list) =
         |> List.iter (fun (relaxs, _) ->
             relaxs
             |> List.iter (fun relax ->
-                Format.printf "%s@." (Translation.pp_relax relax))))
+                Format.printf "%s@." (Translation.pp_output relax))))
 
 let () =
   Logs.set_reporter (Logs.format_reporter ());

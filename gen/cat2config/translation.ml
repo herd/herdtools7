@@ -37,6 +37,7 @@ type prune =
   | Pos_w
 
 type mode = Memtag | Vmsa | Ifetch
+type output_kind = Safe | Relax
 
 (* [Communication_state] is an alternative representation of [Communication],
    so [-prune all] retains the existing communication representation. *)
@@ -312,6 +313,7 @@ type relax_item = Concrete of E.edge | Macro of string
 
 (* [relax] is the final factored form consumed by the pretty-printer. *)
 type relax = (string, relax_item) Ast.t
+type output = { kind : output_kind; relax : relax }
 
 (* Predicate ASTs remain opaque while plain edges pass through the concrete,
    prune, and refold stages. *)
@@ -865,7 +867,7 @@ let append_relax left right =
 let try_match_edge ~terminal ~modes ~communication_state
     ~left_event:selected_left_event (left : prim_set list)
     (core : seq_item list) (right : prim_set list) :
-    (concrete_relax * Ir.event) list option =
+    (concrete_relax * Ir.event * bool) list option =
   let open Util.Option.Infix in
   let* implied_left, pedge, implied_right =
     match core with
@@ -953,8 +955,14 @@ let try_match_edge ~terminal ~modes ~communication_state
           (fun edges ->
             List.concat_map
               (fun (left_event, right_event) ->
+                let mode_specific =
+                  List.exists
+                    (fun event -> match event.Ir.access with
+                      | Ir.TTD _ | Ir.Tag _ | Ir.Instr _ -> true
+                      | Ir.Any _ | Ir.Plain _ -> false)
+                    [left_event;right_event] in
                 List.map
-                  (fun relax -> relax,right_event)
+                  (fun relax -> (relax,right_event,mode_specific))
                   (make_concrete_relax ~terminal ~communication_state left.atom
                      left_event right.atom right_event tedge.insert edges))
               events)
@@ -965,6 +973,7 @@ let try_match_edge ~terminal ~modes ~communication_state
 type translation_path = {
   relax : concrete_relax;
   left_event : Ir.event option;
+  mode_specific : bool;
 }
 
 type state = {
@@ -1228,7 +1237,7 @@ let add_external_communication_states l relaxs =
   else ordinary
 
 let translate_seq ~modes ~communication_state (Seq l : seq_item Ir.seq) :
-    concrete_relax list =
+    (bool * concrete_relax) list =
   let explicit_memory = Ir.Inter [ Ir.Event Ir.default_event ] in
   let st =
     fold_with_rest
@@ -1255,9 +1264,11 @@ let translate_seq ~modes ~communication_state (Seq l : seq_item Ir.seq) :
                     with
                     | Some edge_alts ->
                         List.map
-                          (fun (edge, left_event) ->
+                          (fun (edge, left_event,edge_mode_specific) ->
+                            let mode_specific =
+                              path.mode_specific || edge_mode_specific in
                             { relax = append_relax path.relax edge;
-                              left_event = Some left_event })
+                              left_event = Some left_event; mode_specific })
                           edge_alts
                     | None -> [])
                   st.paths in
@@ -1270,11 +1281,13 @@ let translate_seq ~modes ~communication_state (Seq l : seq_item Ir.seq) :
               else core @ [ Set st.right; Rel r ]
             in
             { st with core; right = Inter [] })
-      { paths = [ { relax = []; left_event = None } ];
+      { paths = [ { relax = []; left_event = None; mode_specific = false } ];
         left = explicit_memory; core = []; right = Inter [] }
       (l @ [ Ir.Set explicit_memory ])
   in
-  if st.core = [] then List.map (fun path -> path.relax) st.paths else []
+  if st.core = [] then
+    List.map (fun path -> (path.mode_specific,path.relax)) st.paths
+  else []
 
 let resolve_rmw ~partial ~all (Ir.Seq items) =
   let rmw = function
@@ -1361,7 +1374,7 @@ let resolve_rmw ~partial ~all (Ir.Seq items) =
   in
   Option.map (fun items -> Ir.Seq items) (resolve items)
 
-let translate ~modes ~prune ~binding (nf : Ir.rel_nf) : relax list =
+let translate ~modes ~prune ~binding (nf : Ir.rel_nf) : output list =
   Log.info (fun m -> m "Translating component of `%s`" binding);
   Log.debug (fun m -> m "`%s` expression:@.%a" binding Ir.pp_rel_nf nf);
   let nf = Ir.compress nf in
@@ -1384,40 +1397,50 @@ let translate ~modes ~prune ~binding (nf : Ir.rel_nf) : relax list =
         | None -> acc
         | Some (Ir.Seq l as seq) ->
             let (Ir.Union seqs) = Ir.compress (Ir.Union [ seq ]) in
-            let relaxs =
+            let classified_relaxs =
               List.concat_map
                 (translate_seq ~modes
                    ~communication_state:(List.mem Communication_state prune))
                 seqs in
-            let relaxs =
-              if List.mem Communication prune then
-                add_external_communication_edges l relaxs
-              else relaxs
-            in
-            let relaxs =
-              if List.mem Communication_state prune then
-                add_external_communication_states l relaxs
-              else relaxs
-            in
-            let relaxs = List.sort_uniq compare relaxs in
-            let relaxs =
-              if List.mem Pos_w prune then prune_relaxes relaxs else relaxs
-            in
-            let relaxs =
-              if List.mem Dpctrl prune then prune_dpctrl_relaxes relaxs
-              else relaxs
-            in
-            let relaxs =
-              if List.mem Dsb_ob prune then prune_dsb_ob_relaxes relaxs
-              else relaxs
-            in
-            acc @ fold_relaxes relaxs)
+            let finish kind relaxs =
+              let relaxs =
+                if List.mem Communication prune then
+                  add_external_communication_edges l relaxs
+                else relaxs in
+              let relaxs =
+                if List.mem Communication_state prune then
+                  add_external_communication_states l relaxs
+                else relaxs in
+              let relaxs = List.sort_uniq compare relaxs in
+              let relaxs =
+                if List.mem Pos_w prune then prune_relaxes relaxs else relaxs in
+              let relaxs =
+                if List.mem Dpctrl prune then prune_dpctrl_relaxes relaxs
+                else relaxs in
+              let relaxs =
+                if List.mem Dsb_ob prune then prune_dsb_ob_relaxes relaxs
+                else relaxs in
+              List.map (fun relax -> {kind;relax}) (fold_relaxes relaxs) in
+            let safe,mode =
+              List.partition_map
+                (fun (mode_specific,relax) ->
+                  if mode_specific then Right relax else Left relax)
+                classified_relaxs in
+            acc @ finish Safe safe @ finish Relax mode)
       [] (Ir.get_union nf)
   in
-  List.sort_uniq compare relaxs
+  let outputs = List.sort_uniq compare relaxs in
+  let safe = List.filter_map (fun output -> match output.kind with
+    | Safe -> Some output.relax
+    | Relax -> None) outputs in
+  List.filter (fun output -> match output.kind with
+    | Safe -> true
+    | Relax -> not (List.mem output.relax safe)) outputs
 
 let pp_relax_item = function
   | Concrete edge -> E.pp_edge edge
   | Macro name -> name
 
-let pp_relax relax = Ast.pp Misc.identity pp_relax_item relax
+let output_kind (output : output) = output.kind
+let pp_output (output : output) =
+  Ast.pp Misc.identity pp_relax_item output.relax

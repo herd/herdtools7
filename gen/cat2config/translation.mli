@@ -15,6 +15,8 @@
 (****************************************************************************)
 
 type relax (* Type of diy relaxations with predicates *)
+type output
+type output_kind = Safe | Relax
 
 type mode = Memtag | Vmsa | Ifetch
 
@@ -28,7 +30,8 @@ type prune =
   | Pos_w
 
 val prune_all : prune list
-val pp_relax : relax -> string
+val output_kind : output -> output_kind
+val pp_output : output -> string
 
 (* Resolve set predicates against the other clauses of the same binding. *)
 val resolve_predicates : Ir.rel_nf list -> Ir.rel_nf list
@@ -39,4 +42,4 @@ val resolve_predicates : Ir.rel_nf list -> Ir.rel_nf list
    alternative representation, out of possibly many, of the input relation.
  *)
 val translate : modes:mode list option -> prune:prune list -> binding:string ->
-  Ir.rel_nf -> relax list
+  Ir.rel_nf -> output list
