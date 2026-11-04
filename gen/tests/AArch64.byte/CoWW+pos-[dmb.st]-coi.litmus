@@ -1,0 +1,14 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc PosWW DMB.ST Coi -type int8_t *)
+AArch64 CoWW+pos-[dmb.st]-coi
+{
+ int8_t x=0;
+ 0:X1=x;
+}
+ P0           ;
+ MOV W0,#2    ;
+ STRB W0,[X1] ;
+ DMB ST       ;
+ MOV W2,#1    ;
+ STRB W2,[X1] ;
+
+exists ([x]=2)

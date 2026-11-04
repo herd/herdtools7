@@ -1,0 +1,13 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc DSB.STsWR Fri -type int8_t *)
+AArch64 CoWR0+dsb.sts-fri
+{
+ int8_t x=0;
+ 0:X1=x; int8_t 0:X2=0;
+}
+ P0           ;
+ MOV W0,#1    ;
+ STRB W0,[X1] ;
+ DSB ST       ;
+ LDRB W2,[X1] ;
+
+exists (0:X2=0)

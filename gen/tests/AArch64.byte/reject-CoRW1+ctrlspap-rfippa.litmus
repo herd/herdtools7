@@ -1,0 +1,5 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc Pa DpCtrlsW Rfi -type int8_t *)
+(*
+[2]
+diyone7: Fatal error: Bad edge: Pa
+*)

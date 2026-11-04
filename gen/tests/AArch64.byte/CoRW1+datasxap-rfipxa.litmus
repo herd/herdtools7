@@ -1,0 +1,16 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc XA DpDatasW Rfi -type int8_t *)
+AArch64 CoRW1+datasxap-rfipxa
+{
+ int8_t x=0;
+ 0:X0=x; int8_t 0:X1=0;
+}
+ P0               ;
+ Loop00:          ;
+ LDAXRB W1,[X0]   ;
+ STXRB W2,W1,[X0] ;
+ CBNZ W2,Loop00   ;
+ EOR W3,W1,W1     ;
+ ADD W3,W3,#1     ;
+ STRB W3,[X0]     ;
+
+exists (0:X1=1)

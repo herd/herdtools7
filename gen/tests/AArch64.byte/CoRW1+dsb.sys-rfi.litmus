@@ -1,0 +1,13 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc DSB.SYsRW Rfi -type int8_t *)
+AArch64 CoRW1+dsb.sys-rfi
+{
+ int8_t x=0;
+ 0:X0=x; int8_t 0:X1=0;
+}
+ P0           ;
+ LDRB W1,[X0] ;
+ DSB SY       ;
+ MOV W2,#1    ;
+ STRB W2,[X0] ;
+
+exists (0:X1=1)
