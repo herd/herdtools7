@@ -28,13 +28,19 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
   struct
 
 (* Common *)
-    let naturalsize = TypBase.get_size Cfg.typ
+
+    let do_morello = Variant_gen.has Variant_gen.Morello Cfg.variant
+
+    let naturalsize =
+      if do_morello then MachSize.Quad else TypBase.get_size Cfg.typ
+
     module A64 =
       AArch64Arch_gen.Make
         (struct
           let naturalsize = naturalsize
           let moreedges = Cfg.moreedges
           let fullmixed = Variant_gen.has Variant_gen.FullMixed Cfg.variant
+          let do_morello = do_morello
           let variant = Cfg.variant
         end)
     include XXXCompile_gen.Make(Cfg)(A64)
@@ -291,21 +297,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Quad -> I_LDR (V64,r1,r2,idx)
       | S128 -> I_LDR (V128,r1,r2,idx)
 
-    let do_ldr v r1 r2 = I_LDR (v,r1,r2,MemExt.Imm(0,Idx))
     let ldg r1 r2 = I_LDG (r1,r2,0)
     let ldct r1 r2 = I_LDCT(r1,r2)
-    let do_ldar vr r1 r2 = I_LDAR (vr,AA,r1,r2)
-    let do_ldapr vr r1 r2 = I_LDAR (vr,AQ,r1,r2)
-    let ldxr r1 r2 = I_LDAR (vloc,XX,r1,r2)
-    let ldaxr r1 r2 = I_LDAR (vloc,AX,r1,r2)
     let sxtw r1 r2 = I_SXTW (r1,r2)
-
-    let do_ldr_idx v1 v2 r1 r2 idx =
-      let open MemExt in
-      let sext = match v2 with
-        | V32 -> SXTW
-        | V64|V128 -> LSL in
-      I_LDR (v1,r1,r2,Reg (v2,idx,sext,0))
 
     let ldn n rs rt =
       let open SIMD in
@@ -347,18 +341,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let do_str v r1 r2 = I_STR (v,r1,r2,MemExt.Imm (0,Idx))
     let str32 = do_str V32
-    let str = do_str vloc
     let stg r1 r2 = I_STG (r1,r2,(0,Idx))
     let stct r1 r2 = I_STCT(r1,r2)
     let do_stlr v r1 r2 = I_STLR (v,r1,r2)
-    let stlr = do_stlr vloc
 
     let do_str_idx v r1 r2 idx = I_STR (vloc,r1,r2,MemExt.v2idx_reg v idx)
     let str_idx32 = do_str_idx V32
-    let str_idx = do_str_idx vloc
-    let stxr r1 r2 r3 =
-      I_STXR (vloc,YY,r1,r2,r3)
-    let stlxr r1 r2 r3 = I_STXR (vloc,LY,r1,r2,r3)
     let stn n rs rt =
       let open SIMD in
       match n with
@@ -386,6 +374,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Quad -> I_STXR (V64,t,r1,r2,r3)
       | S128 -> I_STXR (V128,t,r1,r2,r3)
 
+    let stxr = stxr_sz YY naturalsize
+    and stlxr = stxr_sz LY naturalsize
+
     let ldxr_sz t sz r1 r2 =
       let open MachSize in
       match sz with
@@ -394,6 +385,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Word -> I_LDAR (V32,t,r1,r2)
       | Quad -> I_LDAR (V64,t,r1,r2)
       | S128 -> I_LDAR (V128,t,r1,r2)
+
+    let ldxr = ldxr_sz XX naturalsize
+    let ldaxr = ldxr_sz AX naturalsize
 
     let sumi_addr_gen tempo st rA o = match o with
     | 0 -> rA,[],st
@@ -422,8 +416,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Quad ->  I_SWP (V64,a,rS,rT,rN)
       | S128 ->  I_SWP (V128,a,rS,rT,rN)
 
-    let swp a rS rT rN =  I_SWP (vloc,a,rS,rT,rN)
-
     let sctag a rN rM = I_SC (SCTAG,a,rN,rM)
 
     let cas_mixed sz a rS rT rN =
@@ -435,8 +427,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Quad ->  I_CAS (V64,a,rS,rT,rN)
       | S128 ->  I_CAS (V128,a,rS,rT,rN)
 
-    let cas a rS rT rN =  I_CAS (vloc,a,rS,rT,rN)
-
     let ldop_mixed op sz a rS rT rN =
       let open MachSize in
       match sz with
@@ -446,8 +436,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Quad ->  I_LDOP (op,V64,a,rS,rT,rN)
       | S128 ->  I_LDOP (op,V128,a,rS,rT,rN)
 
-    let ldop op a rS rT rN =  I_LDOP (op,vloc,a,rS,rT,rN)
-
     let stop_mixed op sz a rS rN =
       let open MachSize in
       match sz with
@@ -456,8 +444,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       | Word ->  I_STOP (op,V32,a,rS,rN)
       | Quad ->  I_STOP (op,V64,a,rS,rN)
       | S128 ->  I_STOP (op,V128,a,rS,rN)
-
-    let stop op a rS rN =  I_STOP (op,vloc,a,rS,rN)
 
     let do_sum_addr v st rA idx =
       let r,st = tempo1 st in
@@ -522,11 +508,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 (*********)
 
     module type L = sig
-      type sz
-      val sz0 : sz
-      val load : sz -> A.st -> reg -> reg -> instruction list * A.st
-      val load_idx : sz -> sz -> A.st -> reg -> reg -> reg -> instruction list * A.st
-      val next_reg : A.st -> Code.proc -> sz -> reg * A.st
+      val sz0 : MachSize.sz
+      val load : MachSize.sz -> A.st -> reg -> reg -> instruction list * A.st
+      val load_idx :
+        MachSize.sz -> A64.variant -> A.st -> reg -> reg -> reg -> instruction list * A.st
+      val next_reg : A.st -> Code.proc -> MachSize.sz -> reg * A.st
     end
 
     let type_of_sz sz =
@@ -538,8 +524,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let loc = A.of_reg p r in
       let st = A.add_type loc (type_of_sz sz) st in
       r,st
-
-    let next_reg_var st p var = next_reg_sz st p (v2sz var)
 
     let emit_load_mixed sz o st p init x =
       let rA,st = next_reg_sz st p sz in
@@ -661,11 +645,13 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     module LDR =
       LOAD
         (struct
-          type sz = A64.variant
-          let sz0 = vloc
-          let load vr = wrap_st (do_ldr vr)
-          let load_idx v1 v2 st rA rB idx = [do_ldr_idx v1 v2 rA rB idx],st
-          let next_reg = next_reg_var
+          let sz0 = naturalsize
+          let load sz =
+            wrap_st
+              (fun rA rB ->  ldr_mixed rA rB sz 0)
+          let load_idx sz v2 st rA rB idx =
+            [ldr_mixed_idx v2 rA rB idx sz],st
+          let next_reg = next_reg_sz
         end)
 
     module LDN = struct
@@ -888,7 +874,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     module OBS =
       LOAD
         (struct
-          type sz = MachSize.sz
           let sz0 = naturalsize
           let load vr st rA rB = [ldr_mixed rA rB vr 0],st
           let load_idx v1 _v2 st rA rB idx =
@@ -896,31 +881,20 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let next_reg = next_reg_sz
         end)
 
-(* Load pair *)
+(* Load Acquire *)
 
-
-    module LDAR = LOAD
+    module LOAD_ACQ(Acq:sig val acq : ld_type end) =
+      LOAD
         (struct
-          type sz = A64.variant
-          let sz0 = vloc
-          let load vr = wrap_st (do_ldar vr)
-          let load_idx v1 v2 st rA rB idx =
-            let r,ins,st = do_sum_addr v2 st rB idx in
-            ins@[do_ldar v1 rA r],st
-          let next_reg = next_reg_var
+          let sz0 = naturalsize
+          let load sz = ldar_mixed Acq.acq sz 0
+          let load_idx sz v2 st rA rB idx =
+            do_ldar_mixed_idx v2 Acq.acq sz 0 st rA rB idx
+          let next_reg = next_reg_sz
         end)
 
-    module LDAPR = LOAD
-        (struct
-          type sz = A64.variant
-          let sz0 = vloc
-          let load vr = wrap_st (do_ldapr vr)
-          let load_idx v1 v2 st rA rB idx =
-            let r,ins,st = do_sum_addr v2 st rB idx in
-            ins@[do_ldapr v1 rA r],st
-          let next_reg = next_reg_var
-        end)
-
+    module LDAR = LOAD_ACQ(struct let acq = AA end)
+    module LDAPR = LOAD_ACQ(struct let acq = AQ end)
 
 (**********)
 (* Stores *)
@@ -1023,9 +997,18 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     module STR =
       STORE
         (struct
-          let store = wrap_st str
-          let store_idx st rA rB idx = [str_idx rA rB idx],st
+          let store = wrap_st (str_mixed naturalsize 0)
+          let store_idx st rA rB idx =
+            [str_mixed_idx naturalsize vloc rA rB idx],st
           let emit_mov = U.emit_mov
+        end)
+
+    module STLR =
+      STORE
+         (struct
+           let store = stlr_mixed naturalsize 0
+           let store_idx = stlr_mixed_idx naturalsize
+           let emit_mov = U.emit_mov
         end)
 
     module STN = struct
@@ -1328,16 +1311,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         init,csi@pseudo ([sctag rC rB idx; stct rA rC]),st
     end
 
-    module STLR =
-      STORE
-        (struct
-          let store = wrap_st stlr
-          let store_idx st rA rB idx =
-            let r,ins,st = sum_addr st rB idx in
-            ins@[stlr rA r],st
-          let emit_mov = U.emit_mov
-        end)
-
 (***************************)
 (* Atomic loads and stores *)
 (***************************)
@@ -1502,7 +1475,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     module XStore = struct
       type store_regs = A.reg
-      let store  aw r rW rAW = [get_xstore aw r rW rAW]
+      let store aw r rW rAW = [get_xstore aw r rW rAW]
       let store_addon = get_xstore_addon
     end
 
@@ -1733,7 +1706,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
         r,init,cs,st
     | Code.Pte->
         fun st p init loc ->
-        let r,init,cs,st = LDR.emit_load_var A64.V64 st p init (Misc.add_pte loc) in
+          let r,init,cs,st =
+            LDR.emit_load_var MachSize.Quad st p init (Misc.add_pte loc) in
         r,init,cs,st
     | Code.Tag -> LDG.emit_load
     | Code.CapaTag -> LDCT.emit_load
@@ -1843,6 +1817,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | Some d,Data loc ->
         let structured_atom = tr_none structured_atom in
         let loc = add_tag (Some structured_atom) loc e.C.tag in
+(*
+        Printf.eprintf "Access %s, %s, %s\n%!"
+          (Code.pp_dir d) loc
+          (StructuredAtom.pp structured_atom) ;
+*)
         let ordinary_access = match d,structured_atom with
         | R,OrdinaryAccess `Plain ->
             let r,init,cs,st = LDR.emit_load st p init loc in
@@ -1856,7 +1835,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let module L =
               LOAD
                 (struct
-                  type sz = MachSize.sz
                   let sz0 = sz
                   let load sz = ldar_mixed AA sz o
                   let load_idx sz _ = ldar_mixed_idx AA sz o
@@ -1874,7 +1852,6 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             let module L =
               LOAD
                 (struct
-                  type sz = MachSize.sz
                   let sz0 = sz
                   let load sz = ldar_mixed AQ sz o
                   let load_idx sz _ = ldar_mixed_idx AQ sz o
@@ -1973,7 +1950,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             | `Plain -> LDR.emit_load_var
             | `Acquire -> LDAR.emit_load_var
             | `AcquirePC -> LDAPR.emit_load_var in
-            let r,init,cs,st = emit A64.V64 st p init (Misc.add_pte loc) in
+            let r,init,cs,st =
+              emit MachSize.Quad st p init (Misc.add_pte loc) in
             Some (Some r,init,cs,st)
         | R,PteAccess (ReadHA `Plain) ->
             let r,init,cs,st = LDR.emit_load st p init loc in
@@ -2208,7 +2186,15 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
 
     let emit_data_rmw_simple _sz _rW st = [],st
 
-    let do_emit_ldop_rA emit_data ins ins_mixed st p init er ew rA =
+    let wrap_sum_iaddr_sz op sz st rA =
+      let sz,o =
+        match sz  with
+        | None -> naturalsize,0
+        | Some (sz,o) -> sz,o in
+      let rA,cs,st = sumi_addr st rA o in
+      cs@[op sz rA],st
+
+    let do_emit_ldop_rA emit_data ins_mixed st p init er ew rA =
       check_rmw_metadata er ew;
       let sz,a,opt = do_rmw_annot (tr_none er.C.atom) (tr_none ew.C.atom) in
       let rR,st = next_reg st in
@@ -2216,22 +2202,21 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let cdata,st = emit_data sz rW st in
       let sz = get_rmw_size opt sz in
       let init,csi2,st = emit_str_addon st p init rW rA opt ew in
-      let cs,st = match sz with
-      | None -> [ins a rW rR rA],st
-      | Some (sz,o) ->
-          let rA,cs,st = sumi_addr st rA o in
-          cs@[ins_mixed sz a rW rR rA],st in
+      let cs,st =
+        wrap_sum_iaddr_sz
+          (fun sz rA -> ins_mixed sz a rW rR rA)
+          sz st rA in
       let cs = add_label_to_last_instructions er (pseudo cs) in
       let cs2 = emit_ldr_addon opt rR in
       rR,init,(csi@cdata@csi2@cs@pseudo cs2),st
 
-    let do_emit_ldop ins ins_mixed st p init er ew =
+    let do_emit_ldop ins_mixed st p init er ew =
       let rA,init,st =
         U.next_init st p init (get_tagged_loc er) in
-      do_emit_ldop_rA emit_data_rmw_simple ins ins_mixed st p init er ew rA
+      do_emit_ldop_rA emit_data_rmw_simple ins_mixed st p init er ew rA
 
-    let emit_swp =  do_emit_ldop swp swp_mixed
-    and emit_ldop op = do_emit_ldop (ldop op) (ldop_mixed op)
+    let emit_swp =  do_emit_ldop swp_mixed
+    and emit_ldop op = do_emit_ldop (ldop_mixed op)
 
     let emit_cas_rA emit_data st p init er ew rA =
       check_rmw_metadata er ew;
@@ -2242,11 +2227,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let sz = get_rmw_size opt sz in
       let init,csS2,st = emit_str_addon st p init rS rA opt er in
       let init,csT2,st = emit_str_addon st p init rT rA opt ew in
-      let cs,st = match sz with
-      | None -> [cas a rS rT rA],st
-      | Some (sz,o) ->
-          let rA,cs,st = sumi_addr st rA o in
-          cs@[cas_mixed sz a rS rT rA],st in
+      let cs,st =
+        wrap_sum_iaddr_sz
+          (fun sz rA -> cas_mixed sz a rS rT rA)
+          sz st rA in
       let cs = add_label_to_last_instructions er (pseudo cs) in
       let cs2 = emit_ldr_addon opt rS in
       rS,init,csS@csS2@csT@cdata@csT2@cs@pseudo cs2,st
@@ -2270,11 +2254,10 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
             (pp b) (pp a) in
       let rW,init,csi,st = mk_emit_mov sz st p init (Value.to_int ew.C.v) in
       let cdata,st = emit_data sz rW st in
-      let cs,st = match sz with
-      | None -> [stop op a rW rA],st
-      | Some (sz,o) ->
-          let rA,cs,st = sumi_addr st rA o in
-          cs@[stop_mixed op sz a rW rA],st in
+      let cs,st =
+        wrap_sum_iaddr_sz
+          (fun sz rA -> stop_mixed op sz a rW rA)
+          sz st rA in
       let cs = add_label_to_last_instructions er (pseudo cs) in
       None,init,csi@cdata@cs,st
 
@@ -2384,11 +2367,11 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
           let ordinary_access = match d,structured_atom with
           | R,OrdinaryAccess `Plain ->
               let r,init,cs,st =
-                LDR.emit_load_idx_var vloc vdep st p init loc r2 in
+                LDR.emit_load_idx_var naturalsize vdep st p init loc r2 in
               Some (Some r,init,pseudo cs0@cs,st)
           | R,OrdinaryAccess `Acquire ->
               let r,init,cs,st =
-                LDAR.emit_load_idx_var vloc vdep st p init loc r2 in
+                LDAR.emit_load_idx_var naturalsize vdep st p init loc r2 in
               Some (Some r,init,pseudo cs0@cs,st)
           | R,((MorelloAccess `Acquire|MixedSizeAccess (`Acquire,_)
                |ArrayCellAccess (`Acquire,_)) as atom) ->
@@ -2403,7 +2386,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               Some (Some r,init,pseudo cs0@cs@pseudo cs2,st)
           | R,OrdinaryAccess `AcquirePC ->
               let r,init,cs,st =
-                LDAPR.emit_load_idx_var vloc vdep st p init loc r2 in
+                LDAPR.emit_load_idx_var naturalsize vdep st p init loc r2 in
               Some (Some r,init,pseudo cs0@cs,st)
           | R,((MorelloAccess `AcquirePC|MixedSizeAccess (`AcquirePC,_)
                |ArrayCellAccess (`AcquirePC,_)) as atom) ->
@@ -2458,9 +2441,9 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let module STR =
                 STORE
                   (struct
-                    let store = wrap_st str
+                    let store = wrap_st (str_mixed naturalsize 0)
                     let store_idx st rA rB idx =
-                      [do_str_idx vdep rA rB idx],st
+                      [str_mixed_idx naturalsize vdep rA rB idx],st
                     let emit_mov = U.emit_mov
                   end) in
               let init,cs,st = STR.emit_store_idx st p init loc r2 (Value.to_int e.C.v) false C.evt_null in
@@ -2469,11 +2452,12 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let module STLR =
                 STORE
                   (struct
-                    let store = wrap_st stlr
+                    let store = stlr_mixed naturalsize 0
                     let store_idx st rA rB idx =
                       let r,ins,st = do_sum_addr vdep st rB idx in
-                      ins@[stlr rA r],st
-                      let emit_mov = U.emit_mov
+                      let cs,st = stlr_mixed naturalsize 0 st rA r in
+                      ins@cs,st
+                    let emit_mov = U.emit_mov
                   end) in
               let init,cs,st = STLR.emit_store_idx st p init loc r2 (Value.to_int e.C.v) false C.evt_null in
               Some (None,init,pseudo cs0@cs,st)
@@ -2562,7 +2546,7 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
               let loc = Misc.add_pte loc in
               let rA,init,st = U.next_init st p init loc in
               let rA,cs1,st = do_sum_addr vdep st rA r2 in
-              let r,init,cs,st = emit A64.V64 st p init rA in
+              let r,init,cs,st = emit MachSize.Quad st p init rA in
               Some (Some r,init,pseudo cs0@pseudo cs1@cs,st)
           | W,MorelloTagAccess ->
               (* TODO: don't waste r2 *)
@@ -2895,23 +2879,23 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
     | D.CTRL -> emit_exch_ctrl csel vdep false st p init er ew rd
     | D.CTRLISYNC -> emit_exch_ctrl csel vdep true st p init er ew rd
 
-    let emit_ldop_dep ins ins_mixed  st p init er ew (dp,csel) vdep rd =
+    let emit_ldop_dep ins_mixed st p init er ew (dp,csel) vdep rd =
       match dp with
     | D.ADDR ->
        let rA,init,caddr,st =
          emit_addr_dep csel vdep st p init
            (get_tagged_loc er) rd in
         let rR,init,cs,st =
-          do_emit_ldop_rA emit_data_rmw_simple ins ins_mixed st p init er ew rA in
+          do_emit_ldop_rA emit_data_rmw_simple ins_mixed st p init er ew rA in
         rR,init,caddr@cs,st
     | D.CTRL|D.CTRLISYNC ->
         let c = emit_ctrl vdep rd in
-        let rR,init,cs,st = do_emit_ldop ins ins_mixed st p init er ew in
+        let rR,init,cs,st = do_emit_ldop ins_mixed st p init er ew in
         rR,init,insert_isb (is_ctrlisync dp) c cs,st
     | D.DATA ->
         let emit_data = emit_data_rmw_dep csel vdep rd in
         let rA,init,st = U.next_init st p init (get_tagged_loc er) in
-        do_emit_ldop_rA emit_data ins ins_mixed st p init er ew rA
+        do_emit_ldop_rA emit_data ins_mixed st p init er ew rA
 
     let emit_cas_dep  st p init er ew (dp,csel) vdep rd = match dp with
     | D.ADDR ->
@@ -2955,8 +2939,8 @@ module Make(Cfg:Config) : XXXCompile_gen.S =
       let open A64.RMW in
       match rmw with
         | LrSc -> map_some_dp emit_exch_dep
-        | LdOp op -> map_some_dp (emit_ldop_dep (ldop op) (ldop_mixed op))
-        | Swp ->  map_some_dp (emit_ldop_dep swp swp_mixed)
+        | LdOp op -> map_some_dp (emit_ldop_dep (ldop_mixed op))
+        | Swp ->  map_some_dp (emit_ldop_dep swp_mixed)
         | Cas -> map_some_dp emit_cas_dep
         | StOp op -> emit_stop_dep op
         | AllAmo | SafeAmo ->

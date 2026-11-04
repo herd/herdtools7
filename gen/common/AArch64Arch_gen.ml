@@ -18,6 +18,7 @@ module Config = struct
   let naturalsize = MachSize.Word
   let moreedges = false
   let fullmixed = false
+  let do_morello = false
   let variant = Variant_gen.empty
 end
 
@@ -26,19 +27,26 @@ module Make
       val naturalsize : MachSize.sz
       val moreedges : bool
       val fullmixed : bool
+      val do_morello : bool
       val variant : Variant_gen.set
     end) = struct
 
 let do_self = Variant_gen.has Variant_gen.Self C.variant
 let do_memtag = Variant_gen.has Variant_gen.MemTag C.variant
 let do_store_only = Variant_gen.has Variant_gen.StoreOnly C.variant
-let do_morello = Variant_gen.has Variant_gen.Morello C.variant
+let do_morello = C.do_morello
 let do_kvm = Variant_gen.has Variant_gen.KVM C.variant
 let do_neon = Variant_gen.has Variant_gen.Neon C.variant
 let do_sve = Variant_gen.has Variant_gen.SVE C.variant
 let do_sme = Variant_gen.has Variant_gen.SME C.variant
 let do_mixed = Variant_gen.is_mixed  C.variant
 let do_cu = Variant_gen.has Variant_gen.ConstrainedUnpredictable C.variant
+let has_pair_access =
+  let open MachSize in
+  match C.naturalsize with
+  | Word|Quad -> true
+  | Byte|Short|S128 -> false
+
 
 open Code
 open Printf
@@ -736,7 +744,8 @@ end = struct
 
   let fold f r =
     let r = fold_accesses f r in
-    let r = if do_mixed then r else fold_pair_access f r in
+    let r = if do_mixed || not has_pair_access then r
+      else fold_pair_access f r in
     let r = if do_memtag then f MemoryTagAccess r else r in
     let r = if do_self then f InstrAccess r else r in
     if do_morello then f MorelloTagAccess (f MorelloSealAccess r) else r

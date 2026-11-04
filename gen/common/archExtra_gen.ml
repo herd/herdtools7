@@ -368,7 +368,11 @@ and module Value := I.Value
   let next_ok st = { st with noks = st.noks+1; }
   let get_noks st = st.noks
 
-  let add_type loc t st = { st with env = LocMap.add loc t st.env; }
+  let add_type loc t st =
+    if false then
+      Printf.eprintf "Add type %s -> %s\n"
+        (pp_location loc) (TypBase.pp t) ;
+    { st with env = LocMap.add loc t st.env; }
   let get_env st = st.env
 
   let next_addr st =
