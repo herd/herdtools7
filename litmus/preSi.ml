@@ -787,6 +787,7 @@ module Make
                 O.fi "pteval_t *%s;" (OutUtils.fmt_pte_tag lbl_var);
                 O.fi "pteval_t %s;" (OutUtils.fmt_phy_tag lbl_var);
               end;) CfgLoc.all_labels ;
+          if see_faults test then O.fi "ins_t *instr_base[NTHREADS];" ;
           if do_precise then O.fi "ins_t *ret[N];" ;
           O.o "} labels_t;" ;
           O.o ""
@@ -796,12 +797,42 @@ module Make
         let need_symbols = pp_faults || pp_labels in
         if need_symbols then begin
           UD.dump_label_defs ~pp_faults ~pp_labels CfgLoc.all_labels ;
-          UD.dump_label_funcs do_self CfgLoc.all_labels (T.get_nprocs test)
+          if pp_labels then
+            UD.dump_label_funcs do_self CfgLoc.all_labels (T.get_nprocs test)
         end ;
         if see_faults test || U.ptr_in_outs env test then
           dump_data_indices test ;
-        if see_faults test then
-          Insert.insert O.o  "kvm_fault_type.c"
+        if see_faults test then begin
+          let label_sites =
+            List.map (fun (proc,label) ->
+                (proc,U.find_label_offset proc label test),label)
+              CfgLoc.all_labels in
+          let labels_by_site =
+            label_sites
+            |> Misc.group (fun (site1,_) (site2,_) ->
+                Misc.pair_compare Proc.compare Int.compare site1 site2)
+            |> List.filter_map (function
+                | [] -> None
+                | (site,_)::_ as labels ->
+                    let names =
+                        List.map snd labels |> List.sort String.compare in
+                    let text = match names with
+                      | [name] -> name
+                      | _ -> "{" ^ String.concat "," names ^ "}" in
+                    Some (site,text)) in
+          let fault_labels =
+            List.map (fun ((proc,offset) as site,_) ->
+                proc,offset,List.assoc site labels_by_site) label_sites in
+          O.o "static const struct {" ;
+          O.oi "int proc, offset;" ;
+          O.oi "const char *labels;" ;
+          O.o "} fault_labels[] = {" ;
+          O.fi "{ -1, 0, NULL }," ;
+          List.iter (fun (proc,offset,labels) ->
+              O.fi "{ %d, %d, %S }," proc offset labels) fault_labels;
+          O.o "};" ;
+          Insert.insert O.o "kvm_fault_type.c"
+        end
 
 (* Collected locations *)
 
@@ -1507,11 +1538,19 @@ module Make
           O.o "}" ;
           O.o "" ;
           O.o "static void labels_init(vars_t *_vars) {" ;
-          if do_label_init || do_precise then
+          if do_label_init || do_precise || see_faults test then
             O.fi "labels_t *lbls = &_vars->labels;" ;
           if Cfg.is_kvm && do_self && Misc.consp CfgLoc.all_labels then
             O.oi "pteval_t *_p;" ;
           O.o "";
+          if see_faults test then
+            List.iter (fun (p,_) ->
+                let code = LangUtils.code_fun p in
+                let instr_base = if do_self then
+                    sprintf "(ins_t *)_vars->%s + _vars->%s" code (OutUtils.fmt_prelude p)
+                  else sprintf "(ins_t *)%s + prelude_size((ins_t *)%s)" code code in
+                O.fi "lbls->instr_base[%d] = %s;" p instr_base)
+              test.T.code ;
           List.iter (fun (p,lbl) ->
               let lbl_var = OutUtils.fmt_lbl_var p lbl in
               let off = U.find_label_offset p lbl test in
@@ -2426,6 +2465,7 @@ module Make
                 else []
 
               let need_prelude =
+                Misc.consp (T.C.get_faults test.T.condition) || Misc.consp test.T.ffaults ||
                 has_instruction_ptr &&
                   begin
                     Misc.consp all_labels
