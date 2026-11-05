@@ -1,0 +1,1002 @@
+  $ herd7 -set-libdir ./libdir -show prop -through all -showevents all -o - -output-format json fixtures/R+CAS-rfi-ctrl+DMBST.litmus | sed -n '/^JSONBEGIN /,$p'
+  JSONBEGIN R+CAS-rfi-ctrl+DMBST
+  {
+    "schema_version": 1,
+    "test": {
+      "name": "R+CAS-rfi-ctrl+DMBST",
+      "kind": "Allowed",
+      "architecture": "AArch64",
+      "info": [
+        { "key": "Hash", "value": "b589428dc0b391a69fd4b31fe524a5d0" }
+      ],
+      "program": [
+        {
+          "proc": 0,
+          "function": "main",
+          "source_instructions": [
+            { "static_poi": 0, "source_instruction": "MOV W1,#1" },
+            { "static_poi": 1, "source_instruction": "MOV W2,#2" },
+            { "static_poi": 2, "source_instruction": "CAS W1,W2,[X0]" },
+            { "static_poi": 3, "source_instruction": "LDR W3,[X0]" },
+            { "static_poi": 4, "source_instruction": "CBNZ W3,LC00" },
+            {
+              "static_poi": 5,
+              "source_instruction": "MOV W4,#1",
+              "labels": [ "LC00" ]
+            },
+            { "static_poi": 6, "source_instruction": "STR W4,[X5]" }
+          ]
+        },
+        {
+          "proc": 1,
+          "function": "main",
+          "source_instructions": [
+            { "static_poi": 0, "source_instruction": "MOV W0,#2" },
+            { "static_poi": 1, "source_instruction": "STR W0,[X1]" },
+            { "static_poi": 2, "source_instruction": "DMB ST" },
+            { "static_poi": 3, "source_instruction": "MOV W2,#1" },
+            { "static_poi": 4, "source_instruction": "STR W2,[X3]" }
+          ]
+        }
+      ],
+      "init": "0:X0=x; 0:X5=y; 1:X1=y; 1:X3=x;",
+      "post_condition": "exists ([x]=2 /\\ [y]=2 /\\ 0:X1=1 /\\ 0:X3=2)"
+    },
+    "result": {
+      "model": "Generic[withcatdep](Unknown)",
+      "verdict": "Ok",
+      "observation": "Sometimes",
+      "positive": 2,
+      "negative": 38,
+      "candidates": 40,
+      "failed_candidates": 0,
+      "execution_graph_count": 2,
+      "final_states": [
+        { "id": "state-0", "value": "0:X1=0; 0:X3=0; [x]=0; [y]=1;" },
+        { "id": "state-1", "value": "0:X1=0; 0:X3=0; [x]=0; [y]=2;" },
+        { "id": "state-2", "value": "0:X1=0; 0:X3=0; [x]=1; [y]=1;" },
+        { "id": "state-3", "value": "0:X1=0; 0:X3=0; [x]=1; [y]=2;" },
+        { "id": "state-4", "value": "0:X1=0; 0:X3=1; [x]=0; [y]=1;" },
+        { "id": "state-5", "value": "0:X1=0; 0:X3=1; [x]=0; [y]=2;" },
+        { "id": "state-6", "value": "0:X1=0; 0:X3=1; [x]=1; [y]=1;" },
+        { "id": "state-7", "value": "0:X1=0; 0:X3=1; [x]=1; [y]=2;" },
+        { "id": "state-8", "value": "0:X1=1; 0:X3=0; [x]=1; [y]=1;" },
+        { "id": "state-9", "value": "0:X1=1; 0:X3=0; [x]=1; [y]=2;" },
+        { "id": "state-10", "value": "0:X1=1; 0:X3=0; [x]=2; [y]=1;" },
+        { "id": "state-11", "value": "0:X1=1; 0:X3=0; [x]=2; [y]=2;" },
+        { "id": "state-12", "value": "0:X1=1; 0:X3=1; [x]=1; [y]=1;" },
+        { "id": "state-13", "value": "0:X1=1; 0:X3=1; [x]=1; [y]=2;" },
+        { "id": "state-14", "value": "0:X1=1; 0:X3=1; [x]=2; [y]=1;" },
+        { "id": "state-15", "value": "0:X1=1; 0:X3=1; [x]=2; [y]=2;" },
+        { "id": "state-16", "value": "0:X1=1; 0:X3=2; [x]=1; [y]=1;" },
+        { "id": "state-17", "value": "0:X1=1; 0:X3=2; [x]=1; [y]=2;" },
+        { "id": "state-18", "value": "0:X1=1; 0:X3=2; [x]=2; [y]=1;" },
+        { "id": "state-19", "value": "0:X1=1; 0:X3=2; [x]=2; [y]=2;" }
+      ],
+      "invoked_with_cli": [
+        "-set-libdir", "./libdir", "-show", "prop", "-through", "all",
+        "-showevents", "all", "-o", "-", "-output-format", "json",
+        "fixtures/R+CAS-rfi-ctrl+DMBST.litmus"
+      ]
+    },
+    "execution_graphs": [
+      {
+        "id": "execution-0",
+        "is_valid": false,
+        "satisfies_post_condition": true,
+        "final_state_id": "state-19",
+        "pretty_conf": {
+          "events": { "showevents": "all", "showinitwrites": true },
+          "edges": {
+            "showinitrf": false,
+            "showfinalrf": false,
+            "showpo": true,
+            "doshow": [],
+            "unshow": [],
+            "showraw": []
+          }
+        },
+        "instructions": {
+          "0": {
+            "0": { "instruction": "MOV W1,#1", "static_poi": 0 },
+            "1": { "instruction": "MOV W2,#2", "static_poi": 1 },
+            "2": { "instruction": "CAS W1,W2,[X0]", "static_poi": 2 },
+            "3": { "instruction": "LDR W3,[X0]", "static_poi": 3 },
+            "4": { "instruction": "CBNZ W3,.+4", "static_poi": 4 },
+            "5": { "instruction": "MOV W4,#1", "static_poi": 5 },
+            "6": { "instruction": "STR W4,[X5]", "static_poi": 6 }
+          },
+          "1": {
+            "0": { "instruction": "MOV W0,#2", "static_poi": 0 },
+            "1": { "instruction": "STR W0,[X1]", "static_poi": 1 },
+            "2": { "instruction": "DMB ST", "static_poi": 2 },
+            "3": { "instruction": "MOV W2,#1", "static_poi": 3 },
+            "4": { "instruction": "STR W2,[X3]", "static_poi": 4 }
+          }
+        },
+        "events": [
+          {
+            "id": 0,
+            "action": "R[x]*=1",
+            "action_details": {
+              "direction": "R",
+              "location": "[x]",
+              "size": "word",
+              "value": "1"
+            },
+            "proc": 0,
+            "poi": 2,
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
+          },
+          {
+            "id": 1,
+            "action": "W[x]*=2",
+            "action_details": {
+              "direction": "W",
+              "location": "[x]",
+              "size": "word",
+              "value": "2"
+            },
+            "proc": 0,
+            "poi": 2,
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
+          },
+          {
+            "id": 2,
+            "action": "R[x]=2",
+            "action_details": {
+              "direction": "R",
+              "location": "[x]",
+              "size": "word",
+              "value": "2"
+            },
+            "proc": 0,
+            "poi": 3,
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
+          },
+          {
+            "id": 3,
+            "action": "W[y]=1",
+            "action_details": {
+              "direction": "W",
+              "location": "[y]",
+              "size": "word",
+              "value": "1"
+            },
+            "proc": 0,
+            "poi": 6,
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
+          },
+          {
+            "id": 4,
+            "action": "W[y]=2",
+            "action_details": {
+              "direction": "W",
+              "location": "[y]",
+              "size": "word",
+              "value": "2"
+            },
+            "proc": 1,
+            "poi": 1,
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
+          },
+          {
+            "id": 5,
+            "action": "W[x]=1",
+            "action_details": {
+              "direction": "W",
+              "location": "[x]",
+              "size": "word",
+              "value": "1"
+            },
+            "proc": 1,
+            "poi": 4,
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
+          },
+          {
+            "id": 6,
+            "action": "W[y]=0",
+            "action_details": {
+              "direction": "W",
+              "location": "[y]",
+              "size": "word",
+              "value": "0"
+            },
+            "event_labels": [
+              "mem", "noregs", "memf", "nobranches", "initwrites"
+            ]
+          },
+          {
+            "id": 7,
+            "action": "W[x]=0",
+            "action_details": {
+              "direction": "W",
+              "location": "[x]",
+              "size": "word",
+              "value": "0"
+            },
+            "event_labels": [
+              "mem", "noregs", "memf", "nobranches", "initwrites"
+            ]
+          },
+          {
+            "id": 8,
+            "action": "W0:X1q=1",
+            "action_details": {
+              "direction": "W",
+              "location": "0:X1",
+              "size": "quad",
+              "value": "1"
+            },
+            "proc": 0,
+            "poi": 0,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 9,
+            "action": "W0:X2q=2",
+            "action_details": {
+              "direction": "W",
+              "location": "0:X2",
+              "size": "quad",
+              "value": "2"
+            },
+            "proc": 0,
+            "poi": 1,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 10,
+            "action": "R0:X0q=x",
+            "action_details": {
+              "direction": "R",
+              "location": "0:X0",
+              "size": "quad",
+              "value": "x"
+            },
+            "proc": 0,
+            "poi": 2,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 11,
+            "action": "R0:X1q=1",
+            "action_details": {
+              "direction": "R",
+              "location": "0:X1",
+              "size": "quad",
+              "value": "1"
+            },
+            "proc": 0,
+            "poi": 2,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 12,
+            "action": "R0:X2q=2",
+            "action_details": {
+              "direction": "R",
+              "location": "0:X2",
+              "size": "quad",
+              "value": "2"
+            },
+            "proc": 0,
+            "poi": 2,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 13,
+            "action": "W0:X1q=1",
+            "action_details": {
+              "direction": "W",
+              "location": "0:X1",
+              "size": "quad",
+              "value": "1"
+            },
+            "proc": 0,
+            "poi": 2,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 14,
+            "action": "Branching(pred)([x]==0:X1)",
+            "proc": 0,
+            "poi": 2,
+            "event_labels": [ "noregs" ]
+          },
+          {
+            "id": 15,
+            "action": "R0:X0q=x",
+            "action_details": {
+              "direction": "R",
+              "location": "0:X0",
+              "size": "quad",
+              "value": "x"
+            },
+            "proc": 0,
+            "poi": 3,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 16,
+            "action": "W0:X3q=2",
+            "action_details": {
+              "direction": "W",
+              "location": "0:X3",
+              "size": "quad",
+              "value": "2"
+            },
+            "proc": 0,
+            "poi": 3,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 17,
+            "action": "R0:X3q=2",
+            "action_details": {
+              "direction": "R",
+              "location": "0:X3",
+              "size": "quad",
+              "value": "2"
+            },
+            "proc": 0,
+            "poi": 4,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 18,
+            "action": "Branching(bcc)",
+            "proc": 0,
+            "poi": 4,
+            "event_labels": [ "noregs" ]
+          },
+          {
+            "id": 19,
+            "action": "W0:X4q=1",
+            "action_details": {
+              "direction": "W",
+              "location": "0:X4",
+              "size": "quad",
+              "value": "1"
+            },
+            "proc": 0,
+            "poi": 5,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 20,
+            "action": "R0:X5q=y",
+            "action_details": {
+              "direction": "R",
+              "location": "0:X5",
+              "size": "quad",
+              "value": "y"
+            },
+            "proc": 0,
+            "poi": 6,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 21,
+            "action": "R0:X4q=1",
+            "action_details": {
+              "direction": "R",
+              "location": "0:X4",
+              "size": "quad",
+              "value": "1"
+            },
+            "proc": 0,
+            "poi": 6,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 22,
+            "action": "W1:X0q=2",
+            "action_details": {
+              "direction": "W",
+              "location": "1:X0",
+              "size": "quad",
+              "value": "2"
+            },
+            "proc": 1,
+            "poi": 0,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 23,
+            "action": "R1:X1q=y",
+            "action_details": {
+              "direction": "R",
+              "location": "1:X1",
+              "size": "quad",
+              "value": "y"
+            },
+            "proc": 1,
+            "poi": 1,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 24,
+            "action": "R1:X0q=2",
+            "action_details": {
+              "direction": "R",
+              "location": "1:X0",
+              "size": "quad",
+              "value": "2"
+            },
+            "proc": 1,
+            "poi": 1,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 25,
+            "action": "DMB ST",
+            "proc": 1,
+            "poi": 2,
+            "event_labels": [ "noregs", "memf", "nobranches" ]
+          },
+          {
+            "id": 26,
+            "action": "W1:X2q=1",
+            "action_details": {
+              "direction": "W",
+              "location": "1:X2",
+              "size": "quad",
+              "value": "1"
+            },
+            "proc": 1,
+            "poi": 3,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 27,
+            "action": "R1:X3q=x",
+            "action_details": {
+              "direction": "R",
+              "location": "1:X3",
+              "size": "quad",
+              "value": "x"
+            },
+            "proc": 1,
+            "poi": 4,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 28,
+            "action": "R1:X2q=1",
+            "action_details": {
+              "direction": "R",
+              "location": "1:X2",
+              "size": "quad",
+              "value": "1"
+            },
+            "proc": 1,
+            "poi": 4,
+            "event_labels": [ "nobranches" ]
+          }
+        ],
+        "edges": [
+          { "relation": "rf-reg", "source": 8, "target": 11 },
+          { "relation": "rf-reg", "source": 9, "target": 12 },
+          { "relation": "rf-reg", "source": 16, "target": 17 },
+          { "relation": "rf-reg", "source": 19, "target": 21 },
+          { "relation": "rf-reg", "source": 22, "target": 24 },
+          { "relation": "rf-reg", "source": 26, "target": 28 },
+          { "relation": "rf", "source": 1, "target": 2 },
+          { "relation": "rf", "source": 5, "target": 0 },
+          { "relation": "dmb.st", "source": 4, "target": 5 },
+          { "relation": "dmb.st", "source": 4, "target": 26 },
+          { "relation": "dmb.st", "source": 4, "target": 27 },
+          { "relation": "dmb.st", "source": 4, "target": 28 },
+          { "relation": "dmb.st", "source": 22, "target": 5 },
+          { "relation": "dmb.st", "source": 22, "target": 26 },
+          { "relation": "dmb.st", "source": 22, "target": 27 },
+          { "relation": "dmb.st", "source": 22, "target": 28 },
+          { "relation": "dmb.st", "source": 23, "target": 5 },
+          { "relation": "dmb.st", "source": 23, "target": 26 },
+          { "relation": "dmb.st", "source": 23, "target": 27 },
+          { "relation": "dmb.st", "source": 23, "target": 28 },
+          { "relation": "dmb.st", "source": 24, "target": 5 },
+          { "relation": "dmb.st", "source": 24, "target": 26 },
+          { "relation": "dmb.st", "source": 24, "target": 27 },
+          { "relation": "dmb.st", "source": 24, "target": 28 },
+          { "relation": "ctrl", "source": 2, "target": 3 },
+          { "relation": "ctrl", "source": 2, "target": 19 },
+          { "relation": "ctrl", "source": 2, "target": 20 },
+          { "relation": "ctrl", "source": 2, "target": 21 },
+          { "relation": "ca", "source": 0, "target": 1 },
+          { "relation": "ca", "source": 3, "target": 4 },
+          { "relation": "ca", "source": 5, "target": 1 },
+          { "relation": "ca", "source": 6, "target": 3 },
+          { "relation": "ca", "source": 7, "target": 5 },
+          { "relation": "iico_data", "source": 0, "target": 13 },
+          { "relation": "iico_data", "source": 0, "target": 14 },
+          { "relation": "iico_data", "source": 2, "target": 16 },
+          { "relation": "iico_data", "source": 10, "target": 0 },
+          { "relation": "iico_data", "source": 10, "target": 1 },
+          { "relation": "iico_data", "source": 11, "target": 14 },
+          { "relation": "iico_data", "source": 12, "target": 1 },
+          { "relation": "iico_data", "source": 15, "target": 2 },
+          { "relation": "iico_data", "source": 17, "target": 18 },
+          { "relation": "iico_data", "source": 20, "target": 3 },
+          { "relation": "iico_data", "source": 21, "target": 3 },
+          { "relation": "iico_data", "source": 23, "target": 4 },
+          { "relation": "iico_data", "source": 24, "target": 4 },
+          { "relation": "iico_data", "source": 27, "target": 5 },
+          { "relation": "iico_data", "source": 28, "target": 5 },
+          { "relation": "iico_ctrl", "source": 14, "target": 1 },
+          { "relation": "po", "source": 1, "target": 15 },
+          { "relation": "po", "source": 4, "target": 25 },
+          { "relation": "po", "source": 8, "target": 9 },
+          { "relation": "po", "source": 9, "target": 10 },
+          { "relation": "po", "source": 9, "target": 11 },
+          { "relation": "po", "source": 13, "target": 15 },
+          { "relation": "po", "source": 18, "target": 19 },
+          { "relation": "po", "source": 19, "target": 20 },
+          { "relation": "po", "source": 22, "target": 23 },
+          { "relation": "po", "source": 25, "target": 26 },
+          { "relation": "po", "source": 26, "target": 27 }
+        ]
+      },
+      {
+        "id": "execution-1",
+        "is_valid": false,
+        "satisfies_post_condition": true,
+        "final_state_id": "state-19",
+        "pretty_conf": {
+          "events": { "showevents": "all", "showinitwrites": true },
+          "edges": {
+            "showinitrf": false,
+            "showfinalrf": false,
+            "showpo": true,
+            "doshow": [],
+            "unshow": [],
+            "showraw": []
+          }
+        },
+        "instructions": {
+          "0": {
+            "0": { "instruction": "MOV W1,#1", "static_poi": 0 },
+            "1": { "instruction": "MOV W2,#2", "static_poi": 1 },
+            "2": { "instruction": "CAS W1,W2,[X0]", "static_poi": 2 },
+            "3": { "instruction": "LDR W3,[X0]", "static_poi": 3 },
+            "4": { "instruction": "CBNZ W3,.+4", "static_poi": 4 },
+            "5": { "instruction": "MOV W4,#1", "static_poi": 5 },
+            "6": { "instruction": "STR W4,[X5]", "static_poi": 6 }
+          },
+          "1": {
+            "0": { "instruction": "MOV W0,#2", "static_poi": 0 },
+            "1": { "instruction": "STR W0,[X1]", "static_poi": 1 },
+            "2": { "instruction": "DMB ST", "static_poi": 2 },
+            "3": { "instruction": "MOV W2,#1", "static_poi": 3 },
+            "4": { "instruction": "STR W2,[X3]", "static_poi": 4 }
+          }
+        },
+        "events": [
+          {
+            "id": 0,
+            "action": "R[x]*=1",
+            "action_details": {
+              "direction": "R",
+              "location": "[x]",
+              "size": "word",
+              "value": "1"
+            },
+            "proc": 0,
+            "poi": 2,
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
+          },
+          {
+            "id": 1,
+            "action": "W[x]*=2",
+            "action_details": {
+              "direction": "W",
+              "location": "[x]",
+              "size": "word",
+              "value": "2"
+            },
+            "proc": 0,
+            "poi": 2,
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
+          },
+          {
+            "id": 2,
+            "action": "R[x]=2",
+            "action_details": {
+              "direction": "R",
+              "location": "[x]",
+              "size": "word",
+              "value": "2"
+            },
+            "proc": 0,
+            "poi": 3,
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
+          },
+          {
+            "id": 3,
+            "action": "W[y]=1",
+            "action_details": {
+              "direction": "W",
+              "location": "[y]",
+              "size": "word",
+              "value": "1"
+            },
+            "proc": 0,
+            "poi": 6,
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
+          },
+          {
+            "id": 4,
+            "action": "W[y]=2",
+            "action_details": {
+              "direction": "W",
+              "location": "[y]",
+              "size": "word",
+              "value": "2"
+            },
+            "proc": 1,
+            "poi": 1,
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
+          },
+          {
+            "id": 5,
+            "action": "W[x]=1",
+            "action_details": {
+              "direction": "W",
+              "location": "[x]",
+              "size": "word",
+              "value": "1"
+            },
+            "proc": 1,
+            "poi": 4,
+            "event_labels": [ "mem", "noregs", "memf", "nobranches" ]
+          },
+          {
+            "id": 6,
+            "action": "W[y]=0",
+            "action_details": {
+              "direction": "W",
+              "location": "[y]",
+              "size": "word",
+              "value": "0"
+            },
+            "event_labels": [
+              "mem", "noregs", "memf", "nobranches", "initwrites"
+            ]
+          },
+          {
+            "id": 7,
+            "action": "W[x]=0",
+            "action_details": {
+              "direction": "W",
+              "location": "[x]",
+              "size": "word",
+              "value": "0"
+            },
+            "event_labels": [
+              "mem", "noregs", "memf", "nobranches", "initwrites"
+            ]
+          },
+          {
+            "id": 8,
+            "action": "W0:X1q=1",
+            "action_details": {
+              "direction": "W",
+              "location": "0:X1",
+              "size": "quad",
+              "value": "1"
+            },
+            "proc": 0,
+            "poi": 0,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 9,
+            "action": "W0:X2q=2",
+            "action_details": {
+              "direction": "W",
+              "location": "0:X2",
+              "size": "quad",
+              "value": "2"
+            },
+            "proc": 0,
+            "poi": 1,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 10,
+            "action": "R0:X0q=x",
+            "action_details": {
+              "direction": "R",
+              "location": "0:X0",
+              "size": "quad",
+              "value": "x"
+            },
+            "proc": 0,
+            "poi": 2,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 11,
+            "action": "R0:X1q=1",
+            "action_details": {
+              "direction": "R",
+              "location": "0:X1",
+              "size": "quad",
+              "value": "1"
+            },
+            "proc": 0,
+            "poi": 2,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 12,
+            "action": "R0:X2q=2",
+            "action_details": {
+              "direction": "R",
+              "location": "0:X2",
+              "size": "quad",
+              "value": "2"
+            },
+            "proc": 0,
+            "poi": 2,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 13,
+            "action": "W0:X1q=1",
+            "action_details": {
+              "direction": "W",
+              "location": "0:X1",
+              "size": "quad",
+              "value": "1"
+            },
+            "proc": 0,
+            "poi": 2,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 14,
+            "action": "Branching(pred)([x]==0:X1)",
+            "proc": 0,
+            "poi": 2,
+            "event_labels": [ "noregs" ]
+          },
+          {
+            "id": 15,
+            "action": "R0:X0q=x",
+            "action_details": {
+              "direction": "R",
+              "location": "0:X0",
+              "size": "quad",
+              "value": "x"
+            },
+            "proc": 0,
+            "poi": 3,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 16,
+            "action": "W0:X3q=2",
+            "action_details": {
+              "direction": "W",
+              "location": "0:X3",
+              "size": "quad",
+              "value": "2"
+            },
+            "proc": 0,
+            "poi": 3,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 17,
+            "action": "R0:X3q=2",
+            "action_details": {
+              "direction": "R",
+              "location": "0:X3",
+              "size": "quad",
+              "value": "2"
+            },
+            "proc": 0,
+            "poi": 4,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 18,
+            "action": "Branching(bcc)",
+            "proc": 0,
+            "poi": 4,
+            "event_labels": [ "noregs" ]
+          },
+          {
+            "id": 19,
+            "action": "W0:X4q=1",
+            "action_details": {
+              "direction": "W",
+              "location": "0:X4",
+              "size": "quad",
+              "value": "1"
+            },
+            "proc": 0,
+            "poi": 5,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 20,
+            "action": "R0:X5q=y",
+            "action_details": {
+              "direction": "R",
+              "location": "0:X5",
+              "size": "quad",
+              "value": "y"
+            },
+            "proc": 0,
+            "poi": 6,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 21,
+            "action": "R0:X4q=1",
+            "action_details": {
+              "direction": "R",
+              "location": "0:X4",
+              "size": "quad",
+              "value": "1"
+            },
+            "proc": 0,
+            "poi": 6,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 22,
+            "action": "W1:X0q=2",
+            "action_details": {
+              "direction": "W",
+              "location": "1:X0",
+              "size": "quad",
+              "value": "2"
+            },
+            "proc": 1,
+            "poi": 0,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 23,
+            "action": "R1:X1q=y",
+            "action_details": {
+              "direction": "R",
+              "location": "1:X1",
+              "size": "quad",
+              "value": "y"
+            },
+            "proc": 1,
+            "poi": 1,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 24,
+            "action": "R1:X0q=2",
+            "action_details": {
+              "direction": "R",
+              "location": "1:X0",
+              "size": "quad",
+              "value": "2"
+            },
+            "proc": 1,
+            "poi": 1,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 25,
+            "action": "DMB ST",
+            "proc": 1,
+            "poi": 2,
+            "event_labels": [ "noregs", "memf", "nobranches" ]
+          },
+          {
+            "id": 26,
+            "action": "W1:X2q=1",
+            "action_details": {
+              "direction": "W",
+              "location": "1:X2",
+              "size": "quad",
+              "value": "1"
+            },
+            "proc": 1,
+            "poi": 3,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 27,
+            "action": "R1:X3q=x",
+            "action_details": {
+              "direction": "R",
+              "location": "1:X3",
+              "size": "quad",
+              "value": "x"
+            },
+            "proc": 1,
+            "poi": 4,
+            "event_labels": [ "nobranches" ]
+          },
+          {
+            "id": 28,
+            "action": "R1:X2q=1",
+            "action_details": {
+              "direction": "R",
+              "location": "1:X2",
+              "size": "quad",
+              "value": "1"
+            },
+            "proc": 1,
+            "poi": 4,
+            "event_labels": [ "nobranches" ]
+          }
+        ],
+        "edges": [
+          { "relation": "rf-reg", "source": 8, "target": 11 },
+          { "relation": "rf-reg", "source": 9, "target": 12 },
+          { "relation": "rf-reg", "source": 16, "target": 17 },
+          { "relation": "rf-reg", "source": 19, "target": 21 },
+          { "relation": "rf-reg", "source": 22, "target": 24 },
+          { "relation": "rf-reg", "source": 26, "target": 28 },
+          { "relation": "rf", "source": 1, "target": 2 },
+          { "relation": "rf", "source": 5, "target": 0 },
+          { "relation": "dmb.st", "source": 4, "target": 5 },
+          { "relation": "dmb.st", "source": 4, "target": 26 },
+          { "relation": "dmb.st", "source": 4, "target": 27 },
+          { "relation": "dmb.st", "source": 4, "target": 28 },
+          { "relation": "dmb.st", "source": 22, "target": 5 },
+          { "relation": "dmb.st", "source": 22, "target": 26 },
+          { "relation": "dmb.st", "source": 22, "target": 27 },
+          { "relation": "dmb.st", "source": 22, "target": 28 },
+          { "relation": "dmb.st", "source": 23, "target": 5 },
+          { "relation": "dmb.st", "source": 23, "target": 26 },
+          { "relation": "dmb.st", "source": 23, "target": 27 },
+          { "relation": "dmb.st", "source": 23, "target": 28 },
+          { "relation": "dmb.st", "source": 24, "target": 5 },
+          { "relation": "dmb.st", "source": 24, "target": 26 },
+          { "relation": "dmb.st", "source": 24, "target": 27 },
+          { "relation": "dmb.st", "source": 24, "target": 28 },
+          { "relation": "ctrl", "source": 2, "target": 3 },
+          { "relation": "ctrl", "source": 2, "target": 19 },
+          { "relation": "ctrl", "source": 2, "target": 20 },
+          { "relation": "ctrl", "source": 2, "target": 21 },
+          { "relation": "ca", "source": 0, "target": 1 },
+          { "relation": "ca", "source": 3, "target": 4 },
+          { "relation": "ca", "source": 5, "target": 1 },
+          { "relation": "ca", "source": 6, "target": 3 },
+          { "relation": "ca", "source": 7, "target": 5 },
+          { "relation": "iico_data", "source": 0, "target": 14 },
+          { "relation": "iico_data", "source": 2, "target": 16 },
+          { "relation": "iico_data", "source": 10, "target": 0 },
+          { "relation": "iico_data", "source": 10, "target": 1 },
+          { "relation": "iico_data", "source": 11, "target": 13 },
+          { "relation": "iico_data", "source": 11, "target": 14 },
+          { "relation": "iico_data", "source": 12, "target": 1 },
+          { "relation": "iico_data", "source": 15, "target": 2 },
+          { "relation": "iico_data", "source": 17, "target": 18 },
+          { "relation": "iico_data", "source": 20, "target": 3 },
+          { "relation": "iico_data", "source": 21, "target": 3 },
+          { "relation": "iico_data", "source": 23, "target": 4 },
+          { "relation": "iico_data", "source": 24, "target": 4 },
+          { "relation": "iico_data", "source": 27, "target": 5 },
+          { "relation": "iico_data", "source": 28, "target": 5 },
+          { "relation": "iico_ctrl", "source": 14, "target": 1 },
+          { "relation": "iico_ctrl", "source": 14, "target": 13 },
+          { "relation": "po", "source": 1, "target": 15 },
+          { "relation": "po", "source": 4, "target": 25 },
+          { "relation": "po", "source": 8, "target": 9 },
+          { "relation": "po", "source": 9, "target": 10 },
+          { "relation": "po", "source": 9, "target": 11 },
+          { "relation": "po", "source": 13, "target": 15 },
+          { "relation": "po", "source": 18, "target": 19 },
+          { "relation": "po", "source": 19, "target": 20 },
+          { "relation": "po", "source": 22, "target": 23 },
+          { "relation": "po", "source": 25, "target": 26 },
+          { "relation": "po", "source": 26, "target": 27 }
+        ]
+      }
+    ]
+  }
+  JSONEND R+CAS-rfi-ctrl+DMBST
