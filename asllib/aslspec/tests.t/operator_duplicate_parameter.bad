@@ -1,0 +1,4 @@
+operator duplicate[T, T](x: T) -> T
+{
+  prose_application = "{x}",
+};
