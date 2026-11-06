@@ -201,7 +201,7 @@ let run (args : args) : int =
       let main_name = T.find_main static_env in
       let out_buffer = Option.map fst args.capture_output in
       let version_eac2_or_before =
-        match args.asl1_revision with EAC1 | EAC2 -> true | DEV -> false
+        ASTUtils.asl1_revision_is_up_to ~up_to:EAC2 args.asl1_revision
       in
       Native.interpret ~instrumentation ?out_buffer ~version_eac2_or_before
         static_env main_name typed_ast
