@@ -1,7 +1,12 @@
 (cram
- (enabled_if
-  (= %{ocaml-config:architecture} "arm64"))
+ (alias runtest-litmus-kvm-aarch64)
+ (runtest_alias false)
+ ; Run these tests one at a time to limit concurrent QEMU instances and CPU contention.
+ (locks kvm-qemu)
  (deps
+  (env_var KVM_UNIT_TESTS)
+  (env_var QEMU)
   %{bin:litmus7}
+  %{workspace_root}/gen/tests/AArch64.MTE/memtag-CoRW2+rmw+T.litmus
   (glob_files %{workspace_root}/herd/tests/instructions/AArch64.kvm/*.litmus)
   (source_tree %{workspace_root}/litmus/libdir)))
