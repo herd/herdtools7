@@ -674,9 +674,8 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
 
   (** Checks [ses] is readonly when the ASL1 revision is greater than EAC2. *)
   let check_is_readonly_after_eac2 expr_for_error ses =
-    match C.asl1_revision with
-    | DEV -> check_is_readonly expr_for_error ses
-    | EAC1 | EAC2 -> ok
+    if asl1_revision_is_up_to ~up_to:EAC2 C.asl1_revision then ok
+    else check_is_readonly expr_for_error ses
 
   let check_is_pure ~loc (_, e, ses_e) () =
     if C.fine_grained_side_effects then
