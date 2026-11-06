@@ -102,5 +102,6 @@ illustrative_tests = [
      "tests/InitNegInt8Int32.litmus",
      "tests/InitNegInt8Int8.litmus",
      "tests/InitNegInt8UInt8.litmus",
-
+     "tests/IntNegUInt16.litmus",
+     "tests/IntNegInt16.litmus",
 ]
