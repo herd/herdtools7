@@ -313,7 +313,7 @@ module Make
             then
               let conc = ks.I.conc in
               kont conc conc.S.fs (st.I.out_sets,st.I.out_show)
-                st.I.out_flags ~is_valid:st.I.out_valid res
+                st.I.out_flags ~check_result:st.I.out_check_result res
             else res)
           res
 
@@ -705,8 +705,8 @@ module Make
         U.apply_process_co test  conc process_co res
       else
 (*        let m = I.add_rels m ["co0",lazy  conc.S.pco] in *)
-        let kont x y z t ~is_valid:u =
+        let kont x y z t ~check_result =
           if O.debug then prerr_endline "Cat over" ;
-          kont x y z t ~is_valid:u in
+          kont x y z t ~check_result in
         run_interpret test kfail ks m vb_pp kont res
   end
