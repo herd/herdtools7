@@ -59,6 +59,10 @@ let generate_rules actual_stems base =
   actual_stems
 
 let () =
-  let files = find_compliance_files "../tests" in
+  let dir =
+    if Array.length Sys.argv > 1 then Sys.argv.(1)
+    else failwith "missing argument!"
+  in
+  let files = find_compliance_files dir in
   let _ = List.fold_left generate_rules StringMap.empty files in
   ()

@@ -16,9 +16,9 @@
  generate
  (rule
   (deps
-   (glob_files_rec ../tests/*.asl)
-   (glob_files_rec ../tests/*.yaml))
+   (glob_files_rec ../%{env:ASL_TEST_DIR=tests}/*.asl)
+   (glob_files_rec ../%{env:ASL_TEST_DIR=tests}/*.yaml))
   (action
    (with-stdout-to
     dune.inc
-    (run ../gen.exe)))))
+    (run ../gen.exe ../%{env:ASL_TEST_DIR=tests})))))
