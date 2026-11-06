@@ -1027,7 +1027,10 @@ let add_eq v1 v2 eqs =
     let debug_solver = C.debug.Debug_herd.solver > 0
 
     let wanted_final_value test =
+      let tenv = S.type_env test in
       let add_check loc v m =
+        let t = A.look_type tenv loc in
+        let v = A.mask_type t v in
         A.LocMap.update loc
           (function
            | None -> Some v
