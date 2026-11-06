@@ -96,6 +96,7 @@ module type S = sig
   type event_structure = E.event_structure
   type event_set = E.EventSet.t
   type event_rel = E.EventRel.t
+  type check_result = event CheckResult.t
 
   (* Abreviations *)
   val tr : event_rel -> event_rel
@@ -374,6 +375,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     type event_structure = E.event_structure
 
     type event_rel = E.EventRel.t
+    type check_result = event CheckResult.t
   (* Abreviations *)
     let tr = E.EventRel.transitive_closure
     let rt = E.EventRel.remove_transitive_edges

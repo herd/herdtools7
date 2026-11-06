@@ -182,9 +182,9 @@ module Make (O:Cfg)(S:Sem.Semantics)
         then
           if not (ER.is_empty dr) then
             kont conc conc.S.fs pp_relns
-              (Flag.Set.add Flag.Undef Flag.Set.empty) true res
+              (Flag.Set.add Flag.Undef Flag.Set.empty) CheckResult.Valid res
         else
-          kont conc conc.S.fs pp_relns Flag.Set.empty true res
+          kont conc conc.S.fs pp_relns Flag.Set.empty CheckResult.Valid res
         else res in
       U.apply_process_co test conc proc_ws res
   end

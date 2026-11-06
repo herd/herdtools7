@@ -68,25 +68,27 @@ module TestResult : sig
       undefined execution, or an execution carrying [badflag] when one is
       configured. *)
 
-  type ('conc, 'state, 'sets, 'rels) execution
+  type ('conc, 'state, 'sets, 'rels, 'event) execution
 
-  val concrete : ('conc, 'state, 'sets, 'rels) execution -> 'conc
+  val concrete : ('conc, 'state, 'sets, 'rels, 'event) execution -> 'conc
 
-  val final_state : ('conc, 'state, 'sets, 'rels) execution -> 'state
+  val final_state : ('conc, 'state, 'sets, 'rels, 'event) execution -> 'state
   (** Final state projected to the locations and faults displayed in outcomes. *)
 
-  val passes_check : ('conc, 'state, 'sets, 'rels) execution -> bool
+  val passes_check : ('conc, 'state, 'sets, 'rels, 'event) execution -> bool
   (** Whether the execution satisfies the test proposition. *)
 
-  val is_valid : ('conc, 'state, 'sets, 'rels) execution -> bool
-  (** Whether the CAT model accepts this execution. *)
+  val check_result :
+    ('conc, 'state, 'sets, 'rels, 'event) execution -> 'event CheckResult.t
+  (** Model acceptance, carrying one witness per reached, non-skipped ordinary
+      CAT check failure, in evaluation order. *)
 
 
-  val flags : ('conc, 'state, 'sets, 'rels) execution -> Flag.Set.t
+  val flags : ('conc, 'state, 'sets, 'rels, 'event) execution -> Flag.Set.t
 
-  val sets : ('conc, 'state, 'sets, 'rels) execution -> 'sets
+  val sets : ('conc, 'state, 'sets, 'rels, 'event) execution -> 'sets
 
-  val relations : ('conc, 'state, 'sets, 'rels) execution -> 'rels
+  val relations : ('conc, 'state, 'sets, 'rels, 'event) execution -> 'rels
 
   type ('es, 'exec, 'stats) t =
     { event_structures : 'es list;
@@ -105,7 +107,7 @@ module TestResult : sig
         {!TestResult} module. *)
 
     type nonrec stats = S.A.StateSet.t stats
-    type nonrec execution = (S.concrete, S.A.final_state, S.set_pp, S.rel_pp) execution
+    type nonrec execution = (S.concrete, S.A.final_state, S.set_pp, S.rel_pp, S.event) execution
     type nonrec t = (S.event_structure, execution, stats) t
 
     val count_prop : byte:MachSize.Tag.t -> S.test -> stats -> int

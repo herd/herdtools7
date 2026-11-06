@@ -149,3 +149,33 @@ let check2 k g =
 let  () =
   let checks = List.fold_left check2 in
   assert (checks (checks true manual_gs) gs)
+
+
+(* Witness getters agree with the predicates and return members *)
+let () =
+  List.iter
+    (fun r ->
+      begin match R.get_cycle r with
+      | None -> assert (R.is_acyclic r)
+      | Some es ->
+        assert begin match es with
+          | [] -> assert false
+          | [x] -> R.mem (x,x) r
+          | fst::_ ->
+            let rec tst = function
+              | [] -> true
+              | [lst] -> Int.equal fst lst
+              | e1::(e2::_ as es) ->
+                  R.mem (e1,e2) r && tst es in
+            tst es
+        end ;
+      end ;
+      begin match R.get_reflexive r with
+      | None -> assert (R.is_irreflexive r)
+      | Some x -> assert (R.mem (x,x) r)
+      end ;
+      begin match R.choose_opt r with
+      | None -> assert (R.is_empty r)
+      | Some edge -> assert (R.mem edge r)
+      end)
+    (R.empty :: R.singleton (1,1) :: R.singleton (1,2) :: manual_gs @ gs)

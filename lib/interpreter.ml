@@ -122,7 +122,7 @@ module Make
           out_sets : S.set_pp Lazy.t ;
           out_skipped : StringSet.t ;
           out_flags : Flag.Set.t ;
-          out_valid : bool ;
+          out_check_result : S.event CheckResult.t ;
           out_bell_info :  BellModel.info ;
         }
 
@@ -578,7 +578,7 @@ module Make
         show : Shown.t StringMap.t Lazy.t ;
         skipped : StringSet.t ;
         flags : Flag.Set.t ;
-        valid : bool ;
+        check_result : S.event CheckResult.t ;
         ks : ks ;
         bell_info : BellModel.info ;
         st : inter_st ;
@@ -590,7 +590,7 @@ module Make
         out_sets : S.event_set StringMap.t Lazy.t ;
         out_skipped : StringSet.t ;
         out_flags : Flag.Set.t ;
-        out_valid : bool ;
+        out_check_result : S.event CheckResult.t ;
         out_bell_info :  BellModel.info ;
       }
 
@@ -622,7 +622,9 @@ module Make
        out_sets = lazy (show_to_sets st) ;
        out_skipped = st.skipped ;
        out_flags = st.flags ;
-       out_valid = st.valid ;
+       out_check_result = (match st.check_result with
+         | CheckResult.Valid -> CheckResult.Valid
+         | CheckResult.Invalid failures -> CheckResult.Invalid (List.rev failures)) ;
        out_bell_info = st.bell_info ; }
 
 
@@ -819,22 +821,61 @@ module Make
 
 
 (* Tests are polymorphic, acting on relations, class relations and sets *)
-    let test2pred env t e v = match t,v with
-    | (Acyclic,(Rel r|TransRel r))
-    | (Irreflexive,TransRel r)  -> E.EventRel.is_acyclic r
-    | Acyclic,ClassRel r -> ClassRel.is_acyclic r
-    | Irreflexive,Rel r -> E.EventRel.is_irreflexive r
-    | Irreflexive,ClassRel r -> ClassRel.is_irreflexive r
-    | TestEmpty,(Rel r|TransRel r) -> E.EventRel.is_empty r
-    | TestEmpty,ClassRel r -> ClassRel.is_empty r
-    | TestEmpty,Set s -> E.EventSet.is_empty s
-    | (Acyclic|Irreflexive),Set _ ->
-        error env.EV.silent (get_loc e) "relation expected"
-    | _,_ -> assert false (* Called on Rel or Set *)
-
-    let test2pred  env t e v = match  t with
-    | Yes t -> test2pred env t e v
-    | No t -> not (test2pred env t e v)
+    let test2check env (loc,pos,t,e,name) v =
+      let open CheckResult in
+      let predicate = match t with Yes p | No p -> p in
+      let witness = match predicate,v with
+      | Acyclic,(Rel r|TransRel r) ->
+          begin match E.EventRel.get_cycle r with
+          | None -> None
+          | Some es -> Some (Cycle (Events es))
+          end
+      | Irreflexive,TransRel r ->
+          begin match E.EventRel.get_cycle r with
+          | None -> None
+          | Some (e::_) -> Some (Reflexive (Event e))
+          | Some [] -> assert false
+          end
+      | Acyclic,ClassRel r ->
+          begin match ClassRel.get_cycle r with
+          | None -> None
+          | Some cs -> Some (Cycle (Classes (List.map E.EventSet.elements cs)))
+          end
+      | Irreflexive,Rel r ->
+          begin match E.EventRel.get_reflexive r with
+          | None -> None
+          | Some e -> Some (Reflexive (Event e))
+          end
+      | Irreflexive,ClassRel r ->
+          begin match ClassRel.get_reflexive r with
+          | None -> None
+          | Some c -> Some (Reflexive (Class (E.EventSet.elements c)))
+          end
+      | TestEmpty,(Rel r|TransRel r) ->
+          begin match E.EventRel.choose_opt r with
+          | None -> None
+          | Some (a,b) -> Some (Nonempty (Edge (Event a,Event b)))
+          end
+      | TestEmpty,ClassRel r ->
+          begin match ClassRel.choose_opt r with
+          | None -> None
+          | Some (a,b) ->
+              Some (Nonempty (Edge (Class (E.EventSet.elements a),Class (E.EventSet.elements b))))
+          end
+      | TestEmpty,Set s ->
+          begin match E.EventSet.choose_opt s with
+          | None -> None
+          | Some e -> Some (Nonempty (Member (Event e)))
+          end
+      | (Acyclic|Irreflexive),Set _ ->
+          error env.EV.silent (get_loc e) "relation expected"
+      | _,_ -> assert false (* Called on Rel or Set *) in
+      let invalid assertion =
+        Invalid [{name; source=loc; check_statement=pos; assertion;}] in
+      match t,witness with
+      | Yes _,None | No _,Some _ -> Valid
+      | Yes p,Some w -> invalid (FailedYes (p,w))
+      | No p,None -> invalid (FailedNo p)
 
 
 (********************************)
@@ -2270,23 +2311,25 @@ module Make
               st bds
         else fun _bds st -> st in
 
-(* Evaluate test -> bool *)
+(* Evaluate a test and apply the supplied check to its result. *)
 
-      let eval_test check env t e =
+      let eval_test check env (_,_,t,e,_ as tst) =
         let accept_implicit =
           match t with
           | Yes Acyclic|No Acyclic -> true
           | _ -> false in
-        check (test2pred env t e (eval_rel_set accept_implicit env e)) in
+        check (test2check env tst (eval_rel_set accept_implicit env e)) in
 
       let make_eval_test = function
         | None -> fun _env -> true
-        | Some (_,_,t,e,name) ->
+        | Some (_,_,_,_,name as tst) ->
             if skip_this_check name then
               fun _env -> true
             else
               fun env ->
-                eval_test (check_through Check) env t e in
+                eval_test
+                  (fun result -> check_through Check (CheckResult.is_valid result))
+                  env tst in
 
       let pp_check_failure (st:st) (loc,pos,_,e,_) =
         warn loc "check failed" ;
@@ -2421,11 +2464,11 @@ module Make
 (* Check again for strictskip *)
                   let st = match testo with
                   | None -> st
-                  | Some (_,_,t,e,name) ->
+                  | Some (_,_,_,_,name as tst) ->
                       if
                         O.strictskip &&
                         skip_this_check name &&
-                        not (eval_test Misc.identity (from_st st) t e)
+                        not (eval_test CheckResult.is_valid (from_st st) tst)
                       then begin
                         { st with
                           skipped =
@@ -2641,19 +2684,20 @@ module Make
                 'a.st -> app_test -> test_type ->
                   ('a -> 'a) ->
                     (st -> 'a -> 'a) -> 'a -> 'a =
-                      fun st (loc,_,t,e,name as tst) test_type kfail kont res ->
+                      fun st (loc,_,t,_,name as tst) test_type kfail kont res ->
                         let skip = skip_this_check name in
                         let cycle = cycle_this_check name in
                         if O.debug &&  skip then warn loc "skipping check: %s" (Misc.as_some name) ;
                         if
                           O.strictskip || not skip || cycle
                         then
-                          let raw_ok = eval_test Misc.identity (from_st st) t e in
-                          let ok = check_through test_type raw_ok in
-                          let st =
-                            if test_type = Check && not skip && not raw_ok then
-                              { st with valid = false }
-                            else st in
+                          let check_result = eval_test Misc.identity (from_st st) tst in
+                          let ok = check_through test_type (CheckResult.is_valid check_result) in
+                          let st = match check_result with
+                            | CheckResult.Invalid failures when test_type = Check && not skip ->
+                                {st with check_result=CheckResult.rev_append_invalid
+                                   failures st.check_result;}
+                            | _ -> st in
                           if
                             cycle &&
                             begin match ok,t with
@@ -2768,7 +2812,7 @@ module Make
         let st =
           {env=m; show=show; skipped=StringSet.empty;
            flags=Flag.Set.empty;
-           valid=true;
+           check_result=CheckResult.Valid;
            ks; bell_info=BellModel.empty_info;
            st=inter_st_empty; } in
 

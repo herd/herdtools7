@@ -65,6 +65,8 @@ module type S =  sig
   val restrict_domain_transitive_closure : Elts.t -> t -> t
 
 (* Direct cycles *)
+  (* One node with a self-edge, or None if the relation is irreflexive. *)
+  val get_reflexive : t -> elt0 option
   val is_reflexive : t -> bool
   val is_irreflexive : t -> bool
 

@@ -101,6 +101,9 @@ and module Es2 = MySet.Make(O2)
       try x, Elts2.choose ys
       with Not_found -> choose (M.remove x m)
 
+    let choose_opt m =
+      try Some (choose m) with Not_found -> None
+
     let cardinal m =
       M.fold
         (fun _ ys k -> Elts2.cardinal ys + k)

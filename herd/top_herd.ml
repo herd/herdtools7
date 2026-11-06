@@ -62,10 +62,10 @@ module TestResult = struct
     | None -> false
     | Some f -> Flag.Map.mem (Flag.Flag f) c.flagged)
 
-  type ('conc, 'state, 'sets, 'rels) execution =
+  type ('conc, 'state, 'sets, 'rels, 'event) execution =
     { concrete : 'conc;
       final_state : 'state;
-      is_valid : bool;
+      check_result : 'event CheckResult.t;
       passes_check : bool;
       flags : Flag.Set.t;
       sets : 'sets Lazy.t;
@@ -74,7 +74,7 @@ module TestResult = struct
 
   let concrete x = x.concrete
   let final_state x = x.final_state
-  let is_valid x = x.is_valid
+  let check_result x = x.check_result
   let passes_check x = x.passes_check
   let flags x = x.flags
   let sets x = Lazy.force x.sets
@@ -89,7 +89,7 @@ module TestResult = struct
     module T = Test_herd.Make (S.A)
 
     type nonrec stats = S.A.StateSet.t stats
-    type nonrec execution = (S.concrete, S.A.final_state, S.set_pp, S.rel_pp) execution
+    type nonrec execution = (S.concrete, S.A.final_state, S.set_pp, S.rel_pp, S.event) execution
     type nonrec t = (S.event_structure, execution, stats) t
 
     let count_prop ~byte test c =
@@ -348,7 +348,7 @@ module Make(O:Config)(M:XXXMem.S) =
       let cstr = T.find_our_constraint test in
       let check = check_prop solver test in
 
-      fun conc (st,flts) (set_pp,vbpp) flags is_valid c ->
+      fun conc (st,flts) (set_pp,vbpp) flags check_result c ->
         if do_observed && not (all_observed test conc) then c
         else if
           match O.throughflag with
@@ -395,7 +395,7 @@ module Make(O:Config)(M:XXXMem.S) =
                 {
                   TestResult.concrete = conc;
                   final_state = fsc;
-                  is_valid;
+                  check_result;
                   passes_check = ok;
                   flags;
                   sets = set_pp;
@@ -445,7 +445,7 @@ module Make(O:Config)(M:XXXMem.S) =
     let check_failed_model_kont
           cutoff cs solver
           emit_exec test do_restrict
-          conc (st,flts) (set_pp,vbpp) flags ~is_valid:is_valid c  =
+          conc (st,flts) (set_pp,vbpp) flags ~check_result c  =
 
       let open S.M.VC in
       match cs with
@@ -454,7 +454,7 @@ module Make(O:Config)(M:XXXMem.S) =
           if O.debug.Debug_herd.top then
             model_kont solver
               emit_exec test do_restrict
-              conc (st,flts) (set_pp,vbpp) flags is_valid c
+              conc (st,flts) (set_pp,vbpp) flags check_result c
           else raise e
       | Some (Warn msg) ->
          (* Warn and ignore *)
@@ -465,7 +465,7 @@ module Make(O:Config)(M:XXXMem.S) =
           else
             model_kont solver
               emit_exec test do_restrict
-              conc (st,flts) (set_pp,vbpp) flags is_valid c
+              conc (st,flts) (set_pp,vbpp) flags check_result c
 
     type test_results = TestResult.Make(M.S).t
 
