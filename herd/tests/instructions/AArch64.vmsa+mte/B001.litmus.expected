@@ -1,0 +1,11 @@
+Test B001 Required
+States 1
+0:X0=x:green+16; 0:X2=x:green+16;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag combining-vmsa-and-memtag-is-not-supported
+Condition forall (0:X0=0:X2)
+Observation B001 Always 1 0
+Hash=902d44ca60c3dcc841c743e58027facb
+

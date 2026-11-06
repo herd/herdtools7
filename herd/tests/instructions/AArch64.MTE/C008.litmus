@@ -1,0 +1,19 @@
+AArch64 C008
+Variant=mixed,mte
+
+(* Check post-indexing of STZ2G *)
+
+{
+    int x[12]={1,2,3,4,5,6,7,8,9,10,11,12};
+
+    tag(x)   =:red;
+    tag(x+16)=:red;
+
+    0:X0=x:green; 0:X1=x:yellow;
+}
+P0                ;
+MOV W2,#42        ;
+
+STZ2G X1,[X1], #16; (* Offset with post-index + write-back *)
+
+forall (x={0,0,0,0,0,0,0,0,9,10,11,12} /\ ~fault(P0,x,TagCheck))

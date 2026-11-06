@@ -1,0 +1,21 @@
+AArch64 C009
+Variant=mte
+
+(* Checks post-indexed STG write-back doesn't create a dependency on LDR *)
+
+{
+ 0:X0=x:red; 0:X1=y; 0:X2=z:red;
+ 1:X0=x:red; 1:X1=42;
+
+ z=y:red;
+
+ tag(x)=:red;
+ tag(z)=:red;
+}
+
+P0             | P1          ;
+LDR X1,[X2]    | STR X1,[X0] ;
+STG X1,[X0],#0 |             ;
+LDR X2,[X0]    |             ;
+
+exists (0:X2=0 /\ [x]=42)
