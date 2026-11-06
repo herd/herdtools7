@@ -62,7 +62,7 @@ module Make (S : SemExtra.S) = struct
 
   module Exec = struct
     type t =
-      (S.concrete, S.A.final_state, S.set_pp, S.rel_pp) TestResult.execution
+      (S.concrete, S.A.final_state, S.set_pp, S.rel_pp, S.event) TestResult.execution
 
     let events t = (TestResult.concrete t).S.str.E.events
     let iico_data t = (TestResult.concrete t).S.str.E.intra_causality_data

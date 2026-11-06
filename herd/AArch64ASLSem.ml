@@ -1713,7 +1713,7 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
               acc
             in
             let ksuccess conc _fs (out_sets, out_show) _flags
-                  ~is_valid:_is_valid acc =
+                  ~check_result:_check_result acc =
               let () = if _dbg then prerr_endline "ASL cat, success" in
               let c = (conc, cs, Lazy.force out_sets, Lazy.force out_show) in
               let () = end_profile t0 "ASL cat, success" in
