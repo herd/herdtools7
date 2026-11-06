@@ -99,4 +99,8 @@ illustrative_tests = [
      "tests/MP+rel+rmw-lrs-acq.litmus",
      "tests/LB+dmb.sy+data-amo.swp.litmus",
      "tests/LB+popl+data-rmw.litmus",
+     "tests/InitNegInt8Int32.litmus",
+     "tests/InitNegInt8Int8.litmus",
+     "tests/InitNegInt8UInt8.litmus",
+
 ]
