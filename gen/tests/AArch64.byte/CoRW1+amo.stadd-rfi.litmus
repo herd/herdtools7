@@ -1,0 +1,11 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc Amo.StAdd Rfi -type int8_t *)
+AArch64 CoRW1+amo.stadd-rfi
+{
+ int8_t x=0;
+ 0:X0=x;
+}
+ P0             ;
+ MOV W1,#1      ;
+ STADDB W1,[X0] ;
+
+exists (true)

@@ -413,6 +413,15 @@ diy-test-aarch64:
 		$(REGRESSION_TEST_MODE)
 	@ echo "diyone7 AArch64 tests: OK"
 
+diy-test:: diy-test-aarch64.byte
+diy-test-aarch64.byte:
+	@ echo
+	$(DIYONE_TEST) \
+		-diyone-path $(DIYONE) \
+		./gen/tests/AArch64.byte \
+		$(REGRESSION_TEST_MODE)
+	@ echo "diyone7 AArch64 byte tests: OK"
+
 diy-test::  diy-test-C
 diy-test-C:
 	@ echo

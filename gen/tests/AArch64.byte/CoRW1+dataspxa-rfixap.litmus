@@ -1,0 +1,16 @@
+(* diyone7 -arch AArch64 -metadata false -oneloc DpDatasW XA Rfi -type int8_t *)
+AArch64 CoRW1+dataspxa-rfixap
+{
+ int8_t x=0;
+ 0:X0=x; int8_t 0:X1=0; int8_t 0:X3=0;
+}
+ P0               ;
+ LDRB W1,[X0]     ;
+ EOR W2,W1,W1     ;
+ ADD W2,W2,#1     ;
+ Loop00:          ;
+ LDAXRB W3,[X0]   ;
+ STXRB W4,W2,[X0] ;
+ CBNZ W4,Loop00   ;
+
+exists (0:X1=1 /\ 0:X3=0)
