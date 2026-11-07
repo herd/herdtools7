@@ -73,3 +73,6 @@ MP+rel+ctrl-lrs-acq             Allowed
 MP+rel+rmw-lrs-acq              Forbidden
 LB+dmb.sy+data-amo.swp          Forbidden
 LB+popl+data-rmw                Forbidden
+InitNegInt8Int32                Allowed
+InitNegInt8Int8                 Allowed
+InitNegInt8UInt8                Allowed

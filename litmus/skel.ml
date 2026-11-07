@@ -67,14 +67,15 @@ module type Config = sig
 end
 
 let sentinel   = "-239487" (* Susmit's sentinel *)
-let sentinel16 =   "39487"
+let sentinel16 =   "31487"
 let sentinel8  =      "87"
 
 let sentinel_of t =
-  match t with
-  | CType.Base "uint8_t"  -> sentinel8
-  | CType.Base "uint16_t" -> sentinel16
-  | _ -> sentinel
+  let open MachSize in
+  match CType.base_size t with
+  | Some Byte -> sentinel8
+  | Some Short -> sentinel16
+  | None|Some _ -> sentinel
 
 module Make
     (Cfg:sig include Config val sysarch : Archs.System.t end)
@@ -1188,6 +1189,8 @@ module Make
               sprintf "mem_%s[_i]" a in
 
           let dump_test dump_addr wrap (a,t as p) =
+            let dump_a_v v =
+              sprintf "(%s)%s" (CType.dump t) (dump_a_v v) in
             let v = find_global_init a test in
             let addr = dump_addr p in
             match memory,t with
@@ -1201,7 +1204,7 @@ module Make
                   load (sprintf "%s_values[_j]" a)
             | Indirect,_ ->
                 let load = U.do_load t (wrap addr) in
-                sprintf "%s != %s" load (A.Out.dump_v v)
+                sprintf "%s != %s" load (dump_a_v v)
             | (Direct,Array _) ->
                 let load = U.do_load t (wrap addr) in
                 sprintf "%s != %s"
