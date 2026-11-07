@@ -173,11 +173,12 @@ Other example from typing.t:
 
 Other polynomial equations:
   $ aslref rat-poly-00.asl
-  File rat-poly-00.asl, line 15, characters 9 to 19:
-    assert c == '000';
-           ^^^^^^^^^^
-  ASL Type error (TE_BO): Illegal application of operator == on types
-    bits((7 DIV 2)) and bits(3).
+  File rat-poly-00.asl, line 1, characters 42 to 49:
+  func FirstHalf {N} (bv: bits(N)) => bits (N DIV 2)
+                                            ^^^^^^^
+  ASL Type error (TE_BO): Illegal application of operator DIV on types
+    integer {7} and integer {2}. The operands cannot be divided exactly for any
+    values allowed by their constraints.
   [1]
 
   $ aslref rat-poly-01.asl

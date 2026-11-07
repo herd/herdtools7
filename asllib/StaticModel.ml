@@ -182,99 +182,106 @@ let rec make_anonymous (env : StaticEnv.env) (ty : ty) : ty =
 
 let of_lit = function L_Int i -> Polynomial.of_int i | _ -> raise NotSupported
 
-(* Begin ToIR *)
-let rec to_ir env (e : expr) =
-  match e.desc with
-  | E_Literal l -> of_lit l
-  | E_Var s -> (
-      try StaticEnv.lookup_constant env s |> of_lit
-      with Not_found -> (
-        try StaticEnv.lookup_immutable_expr env s |> to_ir env
-        with Not_found | NotSupported -> (
-          let t =
-            try StaticEnv.type_of env s
-            with Not_found ->
-              Error.fatal_from e (UndefinedIdentifier (Static, s))
-          in
-          let ty1 = make_anonymous env t in
-          match ty1.desc with
-          | T_Int (WellConstrained ([ Constraint_Exact e ], _)) -> to_ir env e
-          | T_Int _ -> Polynomial.of_var s
-          | _ -> raise NotSupported)))
-  | E_Binop (`ADD, e1, e2) ->
-      let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
-      Polynomial.add ir1 ir2
-  | E_Binop (`SUB, e1, e2) ->
-      let e2 = E_Unop (NEG, e2) |> ASTUtils.add_pos_from_st e2 in
-      E_Binop (`ADD, e1, e2) |> ASTUtils.add_pos_from_st e |> to_ir env
-  | E_Binop (`MUL, { desc = E_Binop (`DIV, e1, e2); _ }, e3) ->
-      to_ir env (binop `DIV (binop `MUL e1 e3) e2)
-  | E_Binop (`MUL, e1, { desc = E_Binop (`DIV, e2, e3); _ }) ->
-      to_ir env (binop `DIV (binop `MUL e1 e2) e3)
-  | E_Binop (`MUL, e1, e2) ->
-      let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
-      Polynomial.mult ir1 ir2
-  | E_Binop (`DIV, e1, { desc = E_Literal (L_Int i2); _ }) ->
-      let ir1 = to_ir env e1 and f2 = Q.(Z.one /// i2) in
-      (Polynomial.scale f2) ir1
-  | E_Binop (`DIV, e1, e2) -> (
-      let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
-      match Polynomial.to_mono ir2 with
-      | Some (mono, factor) -> Polynomial.divide_by_term ir1 factor mono
-      | None -> raise NotSupported)
-  | E_Binop (`SHL, e1, { desc = E_Literal (L_Int i2); _ }) when Z.leq Z.zero i2
-    ->
-      let ir1 = to_ir env e1
-      and f2 = Z.to_int i2 |> Z.shift_left Z.one |> Q.of_bigint in
-      Polynomial.scale f2 ir1
-  | E_Binop (op, { desc = E_Literal l1; _ }, { desc = E_Literal l2; _ }) ->
-      Operations.binop_values e Error.Static op l1 l2 |> of_lit
-  | E_Unop (NEG, e0) -> Polynomial.neg (to_ir env e0)
-  | E_ATC (e', _) -> to_ir env e'
-  | _ -> raise NotSupported
-(* End *)
+module Symbolic (Config : sig
+  val handle_atc : bool
+end) =
+struct
+  (* Begin ToIR *)
+  let rec to_ir env (e : expr) =
+    match e.desc with
+    | E_Literal l -> of_lit l
+    | E_Var s -> (
+        try StaticEnv.lookup_constant env s |> of_lit
+        with Not_found -> (
+          try StaticEnv.lookup_immutable_expr env s |> to_ir env
+          with Not_found | NotSupported -> (
+            let t =
+              try StaticEnv.type_of env s
+              with Not_found ->
+                Error.fatal_from e (UndefinedIdentifier (Static, s))
+            in
+            let ty1 = make_anonymous env t in
+            match ty1.desc with
+            | T_Int (WellConstrained ([ Constraint_Exact e ], _)) -> to_ir env e
+            | T_Int _ -> Polynomial.of_var s
+            | _ -> raise NotSupported)))
+    | E_Binop (`ADD, e1, e2) ->
+        let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
+        Polynomial.add ir1 ir2
+    | E_Binop (`SUB, e1, e2) ->
+        let e2 = E_Unop (NEG, e2) |> ASTUtils.add_pos_from_st e2 in
+        E_Binop (`ADD, e1, e2) |> ASTUtils.add_pos_from_st e |> to_ir env
+    | E_Binop (`MUL, { desc = E_Binop (`DIV, e1, e2); _ }, e3) ->
+        to_ir env (binop `DIV (binop `MUL e1 e3) e2)
+    | E_Binop (`MUL, e1, { desc = E_Binop (`DIV, e2, e3); _ }) ->
+        to_ir env (binop `DIV (binop `MUL e1 e2) e3)
+    | E_Binop (`MUL, e1, e2) ->
+        let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
+        Polynomial.mult ir1 ir2
+    | E_Binop (`DIV, e1, { desc = E_Literal (L_Int i2); _ }) ->
+        let ir1 = to_ir env e1 and f2 = Q.(Z.one /// i2) in
+        (Polynomial.scale f2) ir1
+    | E_Binop (`DIV, e1, e2) -> (
+        let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
+        match Polynomial.to_mono ir2 with
+        | Some (mono, factor) -> Polynomial.divide_by_term ir1 factor mono
+        | None -> raise NotSupported)
+    | E_Binop (`SHL, e1, { desc = E_Literal (L_Int i2); _ })
+      when Z.leq Z.zero i2 ->
+        let ir1 = to_ir env e1
+        and f2 = Z.to_int i2 |> Z.shift_left Z.one |> Q.of_bigint in
+        Polynomial.scale f2 ir1
+    | E_Binop (op, { desc = E_Literal l1; _ }, { desc = E_Literal l2; _ }) ->
+        Operations.binop_values e Error.Static op l1 l2 |> of_lit
+    | E_Unop (NEG, e0) -> Polynomial.neg (to_ir env e0)
+    | E_ATC (e', _) when Config.handle_atc -> to_ir env e'
+    | _ -> raise NotSupported
+  (* End *)
 
-(*---------- Solving in the symbolic representation  ----------*)
+  (*---------- Solving in the symbolic representation  ----------*)
 
-(* Begin Normalize *)
-let normalize env e =
-  let { desc } = e |> to_ir env |> Polynomial.to_expr in
-  let normalized_expr = add_pos_from e desc in
-  { normalized_expr with ty_opt = e.ty_opt }
-(* End *)
+  (* Begin Normalize *)
+  let normalize env e =
+    let { desc } = e |> to_ir env |> Polynomial.to_expr in
+    let normalized_expr = add_pos_from e desc in
+    { normalized_expr with ty_opt = e.ty_opt }
+  (* End *)
 
-let try_normalize env e =
-  try normalize env e with Error.ASLException _ | NotSupported -> e
+  let try_normalize env e =
+    try normalize env e with Error.ASLException _ | NotSupported -> e
 
-let normalize_opt env e =
-  try Some (normalize env e) with Error.ASLException _ | NotSupported -> None
+  let normalize_opt env e =
+    try Some (normalize env e)
+    with Error.ASLException _ | NotSupported -> None
 
-let equal_in_env env e1 e2 =
-  let dbg = false in
-  let () =
-    if dbg then
-      Format.eprintf "@[<hv 2>Are %a@ and %a@ equal?@]@ " PP.pp_expr e1
-        PP.pp_expr e2
-  in
-  try
-    let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
+  let equal_in_env env e1 e2 =
+    let dbg = false in
     let () =
       if dbg then
-        Format.eprintf "@[<hv 2>i.e. are %a@ and %a@ equal?@]@ " Polynomial.pp
-          ir1 Polynomial.pp ir2
+        Format.eprintf "@[<hv 2>Are %a@ and %a@ equal?@]@ " PP.pp_expr e1
+          PP.pp_expr e2
     in
-    let res = Polynomial.equal ir1 ir2 in
-    let () =
-      if dbg then if res then Format.eprintf "YES@." else Format.eprintf "NO@."
-    in
-    res
-  with NotSupported ->
-    let () = if dbg then Format.eprintf "Cannot answer this question yet." in
-    false
+    try
+      let ir1 = to_ir env e1 and ir2 = to_ir env e2 in
+      let () =
+        if dbg then
+          Format.eprintf "@[<hv 2>i.e. are %a@ and %a@ equal?@]@ " Polynomial.pp
+            ir1 Polynomial.pp ir2
+      in
+      let res = Polynomial.equal ir1 ir2 in
+      let () =
+        if dbg then
+          if res then Format.eprintf "YES@." else Format.eprintf "NO@."
+      in
+      res
+    with NotSupported ->
+      let () = if dbg then Format.eprintf "Cannot answer this question yet." in
+      false
 
-(* Begin ReduceToZOpt *)
-let reduce_to_z_opt env e =
-  match (try_normalize env e).desc with
-  | E_Literal (L_Int z) -> Some z
-  | _ -> None
-(* End *)
+  (* Begin ReduceToZOpt *)
+  let reduce_to_z_opt env e =
+    match (try_normalize env e).desc with
+    | E_Literal (L_Int z) -> Some z
+    | _ -> None
+  (* End *)
+end
