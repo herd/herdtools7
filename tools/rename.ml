@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-(* Change the internam names of tests. *)
+(* Change the internal name of tests. *)
 
 open Printf
 open OptNames
@@ -31,6 +31,7 @@ module type Config = sig
   val check_name : string -> bool
   val get_rename : string -> string
   val mode : mode
+  val prefix : string option
 end
 
 module Make(Opt:Config) =
@@ -41,42 +42,52 @@ module Make(Opt:Config) =
     let name_from_file file =
       Filename.basename file |> Filename.remove_extension
 
-    let rename_file  st { Name.name; file; _ } lexbuf =
+    let rename_file st {Name.name; file; _ } =
       let name2 = name_from_file file in
       if String.equal name name2 then None,st
       else if not (S.testname_valid name2) then
         Warn.user_error
           "The filename %s is not a valid test name" name2
-      else Some (S.rename name2 lexbuf),st
+      else Some name2,st
 
-    let rename_num pad st { Name.name; _ } lexbuf =
+    let rename_num pad st { Name.name; _ } =
       let idx = StringMap.safe_find 0 name st in
       (match idx with
       | 0 -> None
-      | _ ->
-          let name =  Printf.sprintf "%s%0*i" name pad idx in
-          Some (S.rename name lexbuf)),
+      | _ -> Some (Printf.sprintf "%s%0*i" name pad idx)),
       StringMap.add name (idx+1) st
 
-    let rename_explicit t st { Name.name; _ } lexbuf =
+    let rename_explicit t st { Name.name; _}  =
       let idx = StringMap.safe_find 0 name st in
       (match idx with
-      | 0 -> None
-      | _ ->
+       | 0 -> None
+       | _ ->
           if idx >= Array.length t+1 then
             Warn.user_error
-               "Suffix list exhausted by name %s" name ;
-          let name =
-            Printf.sprintf "%s%s" name t.(idx-1) in
-          Some (S.rename name lexbuf)),
+              "Suffix list exhausted by name %s" name ;
+          Some (Printf.sprintf "%s%s" name t.(idx-1))),
       StringMap.add name (idx+1) st
 
-    let rename =
+    let rename_not_found =
       match Opt.mode with
       | File -> rename_file
       | Num pad -> rename_num pad
       | Suffixes t -> rename_explicit t
 
+    let rename st  ({ Name.name; _ } as n) =
+      try
+        Some (Opt.get_rename name),st
+      with Not_found ->
+        rename_not_found st n
+
+    let rename =
+      match Opt.prefix with
+      | None -> rename
+      | Some pref ->
+         fun st name ->
+           match rename st name with
+           | None,st -> Some (pref ^ name.Name.name),st
+           | Some name ,st-> Some (pref ^ name),st
 
     module Copy  =
       ChangeFst.Make
@@ -86,12 +97,9 @@ module Make(Opt:Config) =
           let split = S.split
 
           let rewrite_fst st name lexbuf =
-            try
-              let { Name.name; _ } = name in
-              let name = Opt.get_rename name in
-              Some (S.rename name lexbuf),st
-            with Not_found ->
-              rename st name lexbuf
+            match rename st name with
+            | None,_ as none -> none
+            | Some name,st -> Some (S.rename name lexbuf),st
 
         end)
 
@@ -113,6 +121,7 @@ let tar = ref None
 let arg = ref []
 let renames = ref []
 let mode = ref File
+let prefix = ref None
 
 let set_list r c = r := !r @ [c]
 let set_mode m =
@@ -142,7 +151,10 @@ let opts =
      ArgUtils.parse_stringlistfun
        "-suffixes"
        (fun xs -> set_mode (Suffixes (Array.of_list xs)))
-       "explicit suffix mode, argument is the list of suffixes"; ]
+       "explicit suffix mode, argument is the list of suffixes";
+     "-prefix", Arg.String (fun s -> prefix := Some s),
+     "<name> add <name> in front of all names";]
+
 
 let () =
   Arg.parse
@@ -172,6 +184,7 @@ module Zyva =
       let check_name = Check.ok
       let get_rename name = TblRename.find_value names name
       let mode = !mode
+      let prefix = !prefix
     end)
 
 let () = Zyva.from_tokens !arg StringMap.empty !tar

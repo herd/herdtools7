@@ -28,4 +28,4 @@
 
 (cram
  (applies_to rename)
- (deps %{bin:rename7}))
+ (deps %{bin:rename7} %{bin:mnames7}))
