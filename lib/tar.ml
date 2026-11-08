@@ -96,8 +96,21 @@ module Make(O:Option) : S =
           Warn.fatal "directory %s does not exist"  arg
     | Tar|TarGz -> mk_temp_dir ()
 
-
-    let outname name = Filename.concat out_dir name
+    let outname =
+      let module H = Hashtbl.Make(String) in
+      let seen = H.create 31 in
+      fun name ->
+      let name =
+        try
+          let idx = H.find seen name in
+          H.replace seen name (idx+1) ;
+          let ext = Filename.extension name in
+          let base = Filename.chop_suffix name ext in
+          Printf.sprintf "%s%02d%s" base idx ext
+        with Not_found ->
+          H.add seen name 1 ;
+          name in
+      Filename.concat out_dir name
 
     let tarz () =  match style with
     | TarGz -> "z"
