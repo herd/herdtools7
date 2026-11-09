@@ -29,11 +29,9 @@ let do_op loc op e1 e2 =
   and es2 = as_op op e2 in
   Op (loc,op,es1@es2)
 
-let pp () =
-  let start = Parsing.symbol_start_pos ()
-  and fin = Parsing.symbol_end () in
+let pp (start,fin) =
   let pos = start.Lexing.pos_cnum in
-  let len = fin - pos in
+  let len = fin.Lexing.pos_cnum - pos in
   Pos {pos;len}
 
 let tuple_pat = function
@@ -185,7 +183,7 @@ deftest:
 
 
 app_test:
-| test exp optional_name { (mk_loc $loc,pp (),$1,$2,$3) }
+| test exp optional_name { (mk_loc $loc,pp $loc,$1,$2,$3) }
 
 test_type:
 |          { Check }
