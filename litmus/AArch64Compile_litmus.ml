@@ -1768,6 +1768,10 @@ module Make(V:Constant.S)(C:Config) =
 
       let compile_ins tr_lab ins k = match ins with
     | I_NOP -> { empty_ins with memo = "nop"; }::k
+(* Event Register Instructions *)
+    | I_WFE -> { empty_ins with memo = "wfe"; }::k
+    | I_SEV -> { empty_ins with memo = "sev"; }::k
+    | I_SEVL -> { empty_ins with memo = "sevl"; }::k
 (* Branches *)
     | I_B lbl -> b tr_lab lbl::k
     | I_BR r -> br r::k
