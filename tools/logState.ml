@@ -664,18 +664,20 @@ module LC =
          *     cf. [(~none:false)] below.
          *)
         let match_opt eq x0 =
-          match x0 with
-          | None -> Fun.const true
-          | Some x0 -> Option.fold ~none:false ~some:(eq x0) in
-        let match_label =  match_opt String.equal lbl0 in
+          Option.fold
+            ~none:(Fun.const true)
+            ~some:(fun x0 -> Option.fold ~none:false ~some:(eq x0))
+            x0 in
+        let match_label =
+          Option.fold lbl0 ~none:(Fun.const true) ~some:StringSet.mem in
         let match_loc =
           match_opt
             (fun v0 sym -> String.equal (ToolsConstant.pp_v v0) sym)
             v0 in
         HashedFaults.exists
           (fun f ->
-             let ((p,lbl),sym,ftype) = HashedFault.as_t f in
-             Int.equal p0 p && match_label lbl
+             let ((p,lbls),sym,ftype) = HashedFault.as_t f in
+             Int.equal p0 p && match_label lbls
              && match_loc sym
              && Fault_tools.match_fault_type ftype0 ftype)
           fs

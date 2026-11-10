@@ -14,7 +14,7 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-type t = ((Proc.t * string option) * string option * string option)
+type t = ((Proc.t * StringSet.t) * string option * string option)
 
 let has_diprefix s =
   String.(starts_with ~prefix:"D-" s || starts_with ~prefix:"I-" s)
@@ -46,8 +46,16 @@ let match_fault_type ft1 ft2 = match ft1, ft2 with
   | None,(None|Some _) -> true
   | Some _,None -> false
 
-let pp ((p,lab),v,ft) =
+let pp_labels lbls =
+  if StringSet.is_empty lbls then ""
+  else
+    match StringSet.as_singleton lbls with
+    | Some lbl -> ":" ^ lbl
+    | None ->
+        StringSet.pp_str "," Fun.id lbls |> Printf.sprintf ":{%s}"
+
+let pp ((p,lbls),v,ft) =
   Printf.sprintf "fault(%s%s%s%s)"
-    (Proc.pp p) (match lab with None -> "" | Some lab -> ":"^lab)
+    (Proc.pp p) (pp_labels lbls)
     (match v with None -> "" | Some v -> ","^v)
     (match ft with None -> "" | Some ft -> ","^ft)
