@@ -1,0 +1,10 @@
+Test LDR-SP-preindex Required
+States 1
+ Fault(P0,x:red,TagCheck);
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (fault(P0,x,TagCheck))
+Observation LDR-SP-preindex Always 1 0
+Hash=3f4d7ff9cb0298a2b01c181cf8c0251f
+

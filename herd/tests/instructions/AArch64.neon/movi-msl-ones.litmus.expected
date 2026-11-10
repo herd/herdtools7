@@ -1,0 +1,10 @@
+Test movi-msl-ones Required
+States 1
+0:V0.2S={255,255};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:V0.2S={255,255})
+Observation movi-msl-ones Always 1 0
+Hash=461319df1bf3008135590b40d80761cf
+
