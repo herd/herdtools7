@@ -78,3 +78,17 @@ Yet another check, negative fault pattern without prefix
   -----------------------------------------
   -----------------------------------------
   MP+dmb.ish+addr-tlbi-dsb.ish-isb| No    
+Test faults with several labels
+  $ herd7 -set-libdir ../libdir duolabel/@all > duolabel/Herd
+  $ mcmp7 duolabel/Herd duolabel/RUN.00
+  $ mcompare7 -oknames U2,V2,W2  -show s duolabel/Herd
+  *Outcomes*
+    | Herd                                                                        
+  ---------------------------------------------------------------------------------
+  ---------------------------------------------------------------------------------
+  U2| [fault(P0:{L0,L1},x,D-MMU:Translation)]                                     
+  ---------------------------------------------------------------------------------
+  V2| [fault(P0:{L0,L1},x,D-MMU:Translation) ~fault(P0:L2) ~fault(P0:L3)]         
+  ---------------------------------------------------------------------------------
+  W2| [fault(P0:{L0,L2},x,D-MMU:Translation) fault(P0:{L1,L3},y,D-MMU:Permission)]
+  

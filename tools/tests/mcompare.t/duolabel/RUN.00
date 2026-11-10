@@ -1,0 +1,359 @@
+Tue 10 Nov 16:36:40 CET 2026
+/usr/bin/qemu-system-aarch64 -nodefaults -machine virt,gic-version=host -accel kvm -cpu host -device virtio-serial-device -device virtconsole,chardev=ctd -chardev testdev,id=ctd -device pci-testdev -display none -serial stdio -kernel T/./run.flat -smp 4 -append -q -s 5k -r 200 # -initrd /tmp/tmp.PFaSCbKHOP
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for U0.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 U0
+{
+ int x=1;
+ [PTE(x)]=(oa:PA(x), valid:0);
+ 0:X1=x;
+}
+ P0          ;
+ L0:         ;
+ LDR W0,[X1] ;
+
+exists (fault(P0:L0,x))
+Generated assembler
+#START _litmus_P0
+	nop
+1:
+	ldr w2,[x0]
+	nop
+Test U0 Allowed
+Histogram (1 states)
+4000000*> fault(P0:L0,x,D-MMU:Translation);
+Ok
+Witnesses
+Positive: 4000000, Negative: 0
+Condition exists (fault(P0:L0,x)) is validated
+Hash=c159dc89432abbd3914867f2e1cb0b38
+Variant=vmsa
+Observation U0 Always 4000000 0
+Faults U0 4000000 P0:4000000
+Time U0 2.24
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for U1.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 U1
+{
+ int x=1;
+ [PTE(x)]=(oa:PA(x), valid:0);
+ 0:X1=x;
+}
+ P0          ;
+ L0:         ;
+ L1:         ;
+ LDR W0,[X1] ;
+
+exists (fault(P0:L1,x))
+Generated assembler
+#START _litmus_P0
+	nop
+1:
+2:
+	ldr w2,[x0]
+	nop
+Test U1 Allowed
+Histogram (1 states)
+4000000*> fault(P0:{L0,L1},x,D-MMU:Translation);
+Ok
+Witnesses
+Positive: 4000000, Negative: 0
+Condition exists (fault(P0:L1,x)) is validated
+Hash=ea4e8e962bd3f4251e2b781cdfd519d4
+Variant=vmsa
+Observation U1 Always 4000000 0
+Faults U1 4000000 P0:4000000
+Time U1 2.36
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for U2.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 U2
+{
+ int x=1;
+ [PTE(x)]=(oa:PA(x), valid:0);
+ 0:X1=x;
+}
+ P0          ;
+ L0:         ;
+ L1:         ;
+ LDR W0,[X1] ;
+
+exists (fault(P0:L1,x) /\ fault(P0:L0,x))
+Generated assembler
+#START _litmus_P0
+	nop
+1:
+2:
+	ldr w2,[x0]
+	nop
+Test U2 Allowed
+Histogram (1 states)
+4000000*> fault(P0:{L0,L1},x,D-MMU:Translation);
+Ok
+Witnesses
+Positive: 4000000, Negative: 0
+Condition exists (fault(P0:L1,x) /\ fault(P0:L0,x)) is validated
+Hash=ea4e8e962bd3f4251e2b781cdfd519d4
+Variant=vmsa
+Observation U2 Always 4000000 0
+Faults U2 4000000 P0:4000000
+Time U2 2.38
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for V0.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 V0
+{
+ int x=1;
+ [PTE(x)]=(oa:PA(x), valid:0);
+ 0:X1=x;
+}
+ P0          ;
+ L0:         ;
+ LDR W0,[X1] ;
+ L2:         ;
+
+exists (fault(P0:L0,x) /\ not (fault(P0:L2)))
+Generated assembler
+#START _litmus_P0
+	nop
+1:
+	ldr w2,[x0]
+2:
+	nop
+Test V0 Allowed
+Histogram (1 states)
+4000000*> fault(P0:L0,x,D-MMU:Translation); ~fault(P0:L2);
+Ok
+Witnesses
+Positive: 4000000, Negative: 0
+Condition exists (fault(P0:L0,x) /\ not (fault(P0:L2))) is validated
+Hash=b373f91dff93d84c42c96ddf76bbf6fc
+Variant=vmsa
+Observation V0 Always 4000000 0
+Faults V0 4000000 P0:4000000
+Time V0 2.90
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for V1.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 V1
+{
+ int x=1;
+ [PTE(x)]=(oa:PA(x), valid:0);
+ 0:X1=x;
+}
+ P0          ;
+ L0:         ;
+ L1:         ;
+ LDR W0,[X1] ;
+ L2:         ;
+ L3:         ;
+
+exists (fault(P0:L1,x) /\ not (fault(P0:L2)))
+Generated assembler
+#START _litmus_P0
+	nop
+1:
+2:
+	ldr w2,[x0]
+3:
+4:
+	nop
+Test V1 Allowed
+Histogram (1 states)
+4000000*> fault(P0:{L0,L1},x,D-MMU:Translation); ~fault(P0:L2);
+Ok
+Witnesses
+Positive: 4000000, Negative: 0
+Condition exists (fault(P0:L1,x) /\ not (fault(P0:L2))) is validated
+Hash=0bbb2a856a607a4312323a1b032def2d
+Variant=vmsa
+Observation V1 Always 4000000 0
+Faults V1 4000000 P0:4000000
+Time V1 2.29
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for V2.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 V2
+{
+ int x=1;
+ [PTE(x)]=(oa:PA(x), valid:0);
+ 0:X1=x;
+}
+ P0          ;
+ L0:         ;
+ L1:         ;
+ LDR W0,[X1] ;
+ L2:         ;
+ L3:         ;
+
+exists (fault(P0:L1,x) /\ fault(P0:L0,x) /\ not (fault(P0:L2)) /\ not (fault(P0:L3)))
+Generated assembler
+#START _litmus_P0
+	nop
+1:
+2:
+	ldr w2,[x0]
+3:
+4:
+	nop
+Test V2 Allowed
+Histogram (1 states)
+4000000*> fault(P0:{L0,L1},x,D-MMU:Translation); ~fault(P0:L2); ~fault(P0:L3);
+Ok
+Witnesses
+Positive: 4000000, Negative: 0
+Condition exists (fault(P0:L1,x) /\ fault(P0:L0,x) /\ not (fault(P0:L2)) /\ not (fault(P0:L3))) is validated
+Hash=0bbb2a856a607a4312323a1b032def2d
+Variant=vmsa
+Observation V2 Always 4000000 0
+Faults V2 4000000 P0:4000000
+Time V2 2.24
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for W0.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 W0
+{
+ int x=1;
+ int y=2;
+ [PTE(x)]=(oa:PA(x), valid:0);
+ [PTE(y)]=(oa:PA(y), db:0);
+ 0:X1=x; 0:X3=y;
+ 1:X1=x; 1:X3=y;
+}
+ P0              | P1              ;
+ L0: LDR W0,[X1] | L1: STR W0,[X3] ;
+ STR W0,[X3]     | LDR W0,[X1]     ;
+
+exists (fault(P0,x) /\ fault(P0,y) /\ fault(P1,y) /\ fault(P1,x))
+Generated assembler
+#START _litmus_P0
+	nop
+1:
+	ldr w3,[x0]
+	str w3,[x1]
+#START _litmus_P1
+	nop
+1:
+	str w2,[x1]
+	ldr w2,[x0]
+Test W0 Allowed
+Histogram (1 states)
+2000000*> fault(P0:L0,x,D-MMU:Translation); fault(P0,y,D-MMU:Permission); fault(P1:L1,y,D-MMU:Permission); fault(P1,x,D-MMU:Translation);
+Ok
+Witnesses
+Positive: 2000000, Negative: 0
+Condition exists (fault(P0,x) /\ fault(P0,y) /\ fault(P1,y) /\ fault(P1,x)) is validated
+Hash=22267a8515017c1707f63b8649e1b5e7
+Variant=vmsa,skip
+Observation W0 Always 2000000 0
+Faults W0 8000000 P0:4000000 P1:4000000
+Time W0 3.64
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for W1.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 W1
+{
+ int x=1;
+ int y=2;
+ [PTE(x)]=(oa:PA(x), valid:0);
+ [PTE(y)]=(oa:PA(y), db:0);
+ 0:X1=x; 0:X3=y;
+ 1:X1=x; 1:X3=y;
+}
+ P0              | P1              ;
+ L0: LDR W0,[X1] | L3: STR W0,[X3] ;
+ L1: STR W0,[X3] | L2: LDR W0,[X1] ;
+
+exists (fault(P0,x) /\ fault(P0,y) /\ fault(P1,y) /\ fault(P1,x))
+Generated assembler
+#START _litmus_P0
+	nop
+1:
+	ldr w3,[x0]
+2:
+	str w3,[x1]
+#START _litmus_P1
+	nop
+1:
+	str w2,[x1]
+2:
+	ldr w2,[x0]
+Test W1 Allowed
+Histogram (1 states)
+2000000*> fault(P0:L0,x,D-MMU:Translation); fault(P0:L1,y,D-MMU:Permission); fault(P1:L3,y,D-MMU:Permission); fault(P1:L2,x,D-MMU:Translation);
+Ok
+Witnesses
+Positive: 2000000, Negative: 0
+Condition exists (fault(P0,x) /\ fault(P0,y) /\ fault(P1,y) /\ fault(P1,x)) is validated
+Hash=8b2e744ffc9ca2b2d9563918465b5c8e
+Variant=vmsa,skip
+Observation W1 Always 2000000 0
+Faults W1 8000000 P0:4000000 P1:4000000
+Time W1 3.60
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for W2.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+AArch64 W2
+{
+ int x=1;
+ int y=2;
+ [PTE(x)]=(oa:PA(x), valid:0);
+ [PTE(y)]=(oa:PA(y), db:0);
+ 0:X1=x; 0:X3=y;
+}
+ P0          ;
+ L0:         ;
+ L2:         ;
+ LDR W0,[X1] ;
+ L1:         ;
+ L3:         ;
+ STR W0,[X3] ;
+
+exists (fault(P0:L0,x) /\ fault(P0,y) /\ fault(P0:L1,y) /\ fault(P0:L3,y))
+Generated assembler
+#START _litmus_P0
+	nop
+1:
+2:
+	ldr w3,[x0]
+3:
+4:
+	str w3,[x1]
+Test W2 Allowed
+Histogram (1 states)
+4000000*> fault(P0:{L0,L2},x,D-MMU:Translation); fault(P0:{L1,L3},y,D-MMU:Permission);
+Ok
+Witnesses
+Positive: 4000000, Negative: 0
+Condition exists (fault(P0:L0,x) /\ fault(P0,y) /\ fault(P0:L1,y) /\ fault(P0:L3,y)) is validated
+Hash=4d50fce0f70739be1c01e2c4f2a8cee6
+Variant=vmsa,skip
+Observation W2 Always 4000000 0
+Faults W2 8000000 P0:8000000
+Time W2 3.64
+
+Revision 0029c88e9c70ba354425b7f8ee5809d8e1b1da78, version 7.58+1
+Command line: /opt/PR/bin/litmus7 -mach kvm-armv8.1 @all -driver C -ascall true -o /tmp/A.tar
+Parameters
+#define SIZE_OF_TEST 5000
+#define NUMBER_OF_RUN 200
+#define AVAIL 4
+/* gcc options: -Wall -std=gnu99 -std=gnu99 -ffreestanding -I $(SRCDIR)/lib -I $(SRCDIR)/libfdt -Wall -Werror  -fomit-frame-pointer -Wno-frame-address   -fno-pic  -no-pie -Wmissing-parameter-type -Wold-style-declaration -Woverride-init -O2 $(call optional-ccopt, -mno-outline-atomics) -march=armv8.1-a */
+/* barrier: userfence */
+/* alloc: dynamic */
+/* proc used: 4 */
+Command: run.flat -q -s 5k -r 200
+
+EXIT: STATUS=1
+LITMUSOPTS=-s 5k -r 200
+Tue 10 Nov 16:37:06 CET 2026

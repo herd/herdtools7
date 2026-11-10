@@ -1,0 +1,11 @@
+AArch64 U1
+Variant=vmsa
+{
+int x=1; 0:X1=x;
+[PTE(x)]=(valid:0)
+}
+   P0          ;
+ L0:           ;
+ L1:           ;
+   LDR W0,[X1] ;
+exists Fault(P0:L1,x)
