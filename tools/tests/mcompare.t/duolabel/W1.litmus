@@ -1,0 +1,15 @@
+AArch64 W1
+Variant=vmsa,skip
+{
+int x=1; 0:X1=x; 1:X1=x;
+int y=2; 0:X3=y; 1:X3=y;
+PTE(x)=(valid:0);
+PTE(y)=(db:0);
+}
+  P0             | P1              ;
+ L0: LDR W0,[X1] | L3: STR W0,[X3] ;
+ L1: STR W0,[X3] | L2: LDR W0,[X1] ;
+exists
+Fault(P0,x) /\ Fault(P0,y)
+/\
+Fault(P1,y) /\ Fault(P1,x)

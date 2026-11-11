@@ -15,12 +15,12 @@
 (****************************************************************************)
 
 module S = struct
-  type t = int * HashedStringOpt.t * HashedStringOpt.t * HashedStringOpt.t
+  type t = int * HashedStringSet.t * HashedStringOpt.t * HashedStringOpt.t
 
   let equal (p1,a1,b1,c1) (p2,a2,b2,c2) =  p1 == p2 && a1 == a2 && b1 == b2 && c1 == c2
 
   let hash (p,a,b,c) =
-    let ah =  HashedStringOpt.as_hash a
+    let ah =  HashedStringSet.as_hash a
     and bh = HashedStringOpt.as_hash b
     and ch = HashedStringOpt.as_hash c in
     abs (Misc.mix (Misc.mix (0x4F1BBCDC+ah) (0x4F1BBCDC+bh) (0x4F1BBCDC+p)) (0x4F1BBCDC+ch) 0)
@@ -34,13 +34,13 @@ let as_tt h = h.Hashcons.node
 
 let as_hashed ((p,lab),x,ft) =
   hashcons table
-    (p,HashedStringOpt.as_hashed lab,
+    (p,HashedStringSet.as_hashed lab,
      HashedStringOpt.as_hashed x,
      HashedStringOpt.as_hashed ft)
 
 let as_t h =
   let p,hlab,hx,hft = h.Hashcons.node in
-  ((p,HashedStringOpt.as_t hlab),HashedStringOpt.as_t hx,HashedStringOpt.as_t hft)
+  ((p,HashedStringSet.as_t hlab),HashedStringOpt.as_t hx,HashedStringOpt.as_t hft)
 
 let as_hash h = h.Hashcons.hkey
 
@@ -88,7 +88,7 @@ let equivalent f1 f2 =
   let p1,lab1,x1,ft1 = as_tt f1
   and p2,lab2,x2,ft2 = as_tt f2 in
   Int.equal p1 p2
-  && HashedStringOpt.equal_node lab1 lab2
+  && HashedStringSet.equal_node lab1 lab2
   && HashedStringOpt.equal_node x1 x2
   && equivalent_ftypes (HashedStringOpt.as_t ft1) (HashedStringOpt.as_t ft2)
 
@@ -96,7 +96,7 @@ let equivalent f1 f2 =
    Can be used for building sets, sorting, etc. *)
 let compare h1 h2 =
   Misc.tuple4_compare
-    Misc.int_compare  HashedStringOpt.compare
+    Misc.int_compare  HashedStringSet.compare
     HashedStringOpt.compare HashedStringOpt.compare
     (as_tt h1) (as_tt h2)
 

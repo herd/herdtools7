@@ -17,7 +17,7 @@
 (** Utiities for faults in tools *)
 
 (* Type of faults, little structure *)
-type t = (Proc.t * string option) * string option * string option
+type t = (Proc.t * StringSet.t) * string option * string option
 
 (* Returns true when the argument is prefixed by "D-" or "I-". *)
 val has_diprefix : string -> bool

@@ -81,6 +81,22 @@ let norm_pteval s =
   | Parsing.Parse_error
     -> assert false
 
+let strip_curly_braces s =
+  try
+    let idx0 = 1+String.index_from s 0 '{' in
+    let idx1 = String.index_from s idx0 '}' in
+    String.sub s idx0 (idx1-idx0)
+  with Not_found -> s
+
+let lex_names = function
+  | None -> StringSet.empty
+  | Some names ->
+      try
+        strip_curly_braces names
+        |> LexSplit.strings_spaces
+        |> StringSet.of_list
+      with LexSplit.Error -> assert false
+
 (* Notice about normalisation of values
  + A leading left parenthesis unambiguously specifies a pteval.
    Normalisation originates from old logs being different from new ones.
@@ -125,6 +141,7 @@ let set = '{' (' '|','|('-'?(num|hexanum)))* '}'
 let alpha = [ 'a'-'z' 'A'-'Z']
 let pteval = '(' ([' ''_'','':''('')']|alpha|digit)+ ')'
 let name = (alpha|'_'|'.'|'$') (alpha|digit|'_'| '.')*
+let names = name (',' ' '* name)*
 let label = ('P'? num) ':' 'L' (alpha|digit)+
 let fault = (['f''F'] "ault")
 let reg = name
@@ -250,12 +267,14 @@ and pline bds fs abs = parse
      let p = poolize loc v in
      pline (p::bds) fs abs lexbuf }
 | blank* ('~'? as neg) fault blank*
-    '(' blank* ('P'? (num as proc)) (':' (name as lbl))? blank*
+    '(' blank* ('P'? (num as proc))
+     (':' (name | '{' names '}' as lbls))? blank*
      (','((loc|new_loc) as loc) (':' alpha+)?)? blank* (* NB: skip optional tag *)
      (',' blank* (fault_type as ftype))? blank*
      (',' [^')']*)?  (* skip optional comment *)
       ')' blank* ';'
     {
+     let lbls = lex_names lbls in
      let loc,ftype = (* Resolve ambiguity if one args only *)
        match loc,ftype with
        | (None,Some v) | (Some v,None)
@@ -274,7 +293,7 @@ and pline bds fs abs = parse
              | "kvm" -> None
              | f -> Some (norm_fault f))
        else None in
-     let f = (to_proc proc,lbl),loc,ftype in
+     let f = (to_proc proc,lbls),loc,ftype in
      let f = HashedFault.as_hashed f in
      match neg with
      | "" ->
