@@ -1125,13 +1125,12 @@ module Make(C:Builder.S)
       and safe_set = PredicateRelax.parse_arguments safe |> PredicateRelax.Set.of_list
       and reject_set = PredicateRelax.parse_arguments reject |> PredicateRelax.Set.of_list in
       let relax_set = PredicateRelax.Set.diff relax_set reject_set in
-      let safe_set =
-        PredicateRelax.Set.diff safe_set
-          (PredicateRelax.Set.union relax_set reject_set) in
+      let safe_set = PredicateRelax.Set.diff safe_set reject_set in
       if PredicateRelax.Set.is_empty relax_set && r_nempty then
         Warn.fatal "relaxations provided in relaxlist could not be used to generate cycles" ;
       if PredicateRelax.Set.is_empty safe_set && s_nempty then
         Warn.fatal "relaxations provided in safelist could not be used to generate cycles" ;
+      let safe_set = PredicateRelax.Set.diff safe_set relax_set in
       let relax = PredicateRelax.Set.elements relax_set
       and safe = PredicateRelax.Set.elements safe_set
       and reject = PredicateRelax.Set.elements reject_set in
