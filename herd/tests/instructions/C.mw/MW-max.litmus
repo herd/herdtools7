@@ -1,0 +1,18 @@
+C MW-max
+{ [srlx]=-5; int64_t srel=0xffffffff00000000;
+  uint32_t urlx=0xffffffff; uint32_t urel=0xffffffff;
+  __int128_t s128=-4294967296; intptr_t iptr=-4294967296; }
+
+P0 (int* srlx, int64_t* srel, uint32_t* urlx, uint32_t* urel,
+    __int128_t* s128, intptr_t* iptr) {
+  atomic_store_max_explicit(srlx, -2, memory_order_relaxed);
+  atomic_store_max_explicit(srel, -2, memory_order_release);
+  atomic_store_max_explicit(urlx, 1, memory_order_relaxed);
+  atomic_store_max_explicit(urel, 1, memory_order_release);
+  atomic_store_max_explicit(s128, -2, memory_order_relaxed);
+  atomic_store_max_explicit(iptr, -2, memory_order_release);
+}
+
+forall ([srlx]=0xfffffffe /\ [srel]=0xfffffffffffffffe
+        /\ [urlx]=0xffffffff /\ [urel]=0xffffffff
+        /\ [s128]=-2 /\ [iptr]=-2)

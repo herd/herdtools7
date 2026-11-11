@@ -1,0 +1,10 @@
+Test MW-two-adds Required
+States 1
+[x]=0x2;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall ([x]=0x2)
+Observation MW-two-adds Always 2 0
+Hash=b8d334b20e31a7fda66305e52a1b0681
+

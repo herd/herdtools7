@@ -1,0 +1,9 @@
+C MW-and
+{ [rlx]=13; [rel]=13; }
+
+P0 (int* rlx, int* rel) {
+  atomic_store_and_explicit(rlx, 10, memory_order_relaxed);
+  atomic_store_and_explicit(rel, 10, memory_order_release);
+}
+
+forall ([rlx]=8 /\ [rel]=8)

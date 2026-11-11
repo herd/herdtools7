@@ -1,0 +1,10 @@
+Test MW-min Required
+States 1
+[srel]=0xfffffffffffffffb; [srlx]=0xfffffffb; [u128]=0x100000000; [uptr]=0x100000000; [urel]=0x1; [urlx]=0x1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([srlx]=0xfffffffb /\ [srel]=0xfffffffffffffffb /\ [urlx]=0x1 /\ [urel]=0x1 /\ [u128]=0x100000000 /\ [uptr]=0x100000000)
+Observation MW-min Always 1 0
+Hash=0b2dcb8be73230257e38e28548a97981
+
