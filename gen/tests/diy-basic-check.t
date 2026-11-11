@@ -48,10 +48,19 @@ A diy7 predicate merge test for before on composite relaxations
   LB000: PodRW Rfe PodRW Rfe
   3.LB000: PodRW Rfe PodRW Rfe PodRW Rfe
   4.LB000: PodRW Rfe PodRW Rfe PodRW Rfe PodRW Rfe
+A diy7 safe relaxation duplicated in the relax list is accepted
+  $ diy7 -arch AArch64 -unfold-only -relax PodRW -safe PodRW 2>&1 | grep -v '^$'
+  ***relax***
+  PodRW
+  ***safe***
+  ***reject***
 A diy7 predicate reject cannot silently fall back to default relaxations
   $ diy7 -arch AArch64 -safe '[@before([PodRW Rfe]) PodRW Rfe]' -reject '[@before([PodRW Rfe]) PodRW Rfe]' -size 2 -exact -stdout 2>&1
   diy7: Fatal error: relaxations provided in safelist could not be used to generate cycles
   [2]
+A diy7 filter check for incompatible after/before boundary predicates
+  $ diy7 -arch AArch64 -filter-check '[PodRW Rfe @after(PosRR)]' '[@before(Rfe) PosRR PodRW]'
+  Sequence `[PodRW,Rfe,@after(PosRR)]` `[@before(Rfe),PosRR,PodRW]` is prohibited in the internal filter in mode `default`
 A VMSA test for a negated exists check, `-neg true`
   $ diyone7 -arch AArch64 -neg true -info "User-define=User-define" PodWR Fre PodWR Fre
   AArch64 SB
