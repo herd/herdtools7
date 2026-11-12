@@ -56,6 +56,9 @@ module type S =
     val delay_kont : string -> 'a t -> ('a -> 'a t -> 'b t) -> 'b t
     val delay : 'a t -> ('a * 'a t) t
 
+    (* Expose each result's constraints without removing them or its events. *)
+    val with_constraints : 'a t -> ('a * VC.cnstrnts) t
+
     val set_standard_input_output : 'a t -> 'a t
 
     (* [restrict constraints] is an empty monad with the constraints [constraints] *)
