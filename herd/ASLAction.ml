@@ -160,6 +160,10 @@ module Make (C: Config) (A : S) = struct
     | Access _|Fault _|Branching _|Barrier _|CutOff _|NoAction
       -> false
 
+  let is_access = function
+    | Access _ -> true
+    | _ -> false
+
   let is_mem = function
     | Access (_, A.Location_global _, _, _, _) -> true
     | Access _|Fault _|Branching _|Barrier _|CutOff _|NoAction
@@ -235,6 +239,11 @@ module Make (C: Config) (A : S) = struct
     | Access (_, A.Location_reg (p, _), _, _, _) -> Proc.equal p
     | Access _|Fault _|Barrier _|Branching _|CutOff _|NoAction
       -> fun _ -> false
+
+  let get_reg_size = function
+    | Access (_, A.Location_reg _, _, sz, _) -> sz
+    | Access _|Fault _|Branching _|Barrier _|CutOff _|NoAction
+      -> assert false
 
   (* Reg events, proc not specified *)
   let is_reg_store_any = function

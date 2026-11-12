@@ -17,7 +17,7 @@
 type proc_info = (string * int list) list
 
 type
-  ('prog,'nice_prog,'start,'ret,'entry,'state,
+  ('prog,'annotated_prog,'start,'ret,'entry,'state,
    'size_env, 'type_env,
    'prop,'loc,'locset,'fset) t =
     {
@@ -25,7 +25,7 @@ type
      name : Name.t ;
      info : MiscParser.info ;
      program : 'prog ;
-     nice_prog : 'nice_prog ;
+     annotated_prog : 'annotated_prog ;
      start_points : 'start ;
      code_segment : 'ret ;
      entry_points : 'entry;
@@ -61,7 +61,8 @@ module Make(A:Arch_herd.S) =
   struct
 
     type result =
-      (A.program, A.nice_prog, A.start_points, A.code_segment, A.entry_points, A.state,
+      (A.program, A.annotated_prog,
+       A.start_points, A.code_segment, A.entry_points, A.state,
        A.size_env, A.type_env,
        A.prop, A.location, A.RLocSet.t,A.FaultAtomSet.t) t
 
@@ -212,7 +213,8 @@ module Make(A:Arch_herd.S) =
     let mem_access_size_of_code sz code =
       List.fold_left
         (A.pseudo_fold
-           (fun sz0 ins -> match A.mem_access_size ins with
+           (fun sz0 ins ->
+             match A.mem_access_size ins.A.CodeInstr.instr with
            | Some sz -> MachSize.Set.add sz sz0
            | None -> sz0))
         sz
@@ -249,7 +251,7 @@ module Make(A:Arch_herd.S) =
            extra_data = extra_data ;
          } = t in
 
-      let prog,starts,rets = Load.load nice_prog in
+      let prog,starts,rets,annotated_prog = Load.load nice_prog in
       (* ensure labels in the init list are present in the body of the test*)
       List.iter (fun (_,(_,v)) ->
         let open Constant in
@@ -290,14 +292,14 @@ module Make(A:Arch_herd.S) =
                     let old = StringMap.safe_find [] an m in
                     StringMap.add an (p::old) m)
                   m ans)
-            StringMap.empty nice_prog in
+            StringMap.empty annotated_prog in
         StringMap.bindings m in
       {
        arch = A.arch ;
        name = name ;
        info = info ;
        program = prog ;
-       nice_prog = nice_prog ;
+       annotated_prog = annotated_prog ;
        start_points = starts ;
        code_segment = rets ;
        entry_points = entry_points;
@@ -310,7 +312,7 @@ module Make(A:Arch_herd.S) =
        extra_data = extra_data ;
        size_env = A.build_size_env init ;
        type_env;
-       access_size = mem_access_size init nice_prog ;
+       access_size = mem_access_size init annotated_prog ;
        proc_info;
      }
 
@@ -331,7 +333,7 @@ module Make(A:Arch_herd.S) =
        name = empty_name ;
        info = [] ;
        program = Label.Map.empty ;
-       nice_prog = [] ;
+       annotated_prog = [] ;
        start_points = [] ;
        code_segment = IntMap.empty ;
        entry_points = (fun _ -> Label.Set.empty) ;

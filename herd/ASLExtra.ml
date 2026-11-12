@@ -61,6 +61,8 @@ module Make (B : ArchBaseHerd) (C : Arch_herd.Config) (V : Value.S) = struct
         module CS = CS
       end)
 
+  type annotated_prog = CodeInstr.t prog
+
   module MemType = MemoryType.No
 
   module Barrier = AllBarrier.No (struct
