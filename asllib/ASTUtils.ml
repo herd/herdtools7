@@ -62,6 +62,13 @@ module IMap = struct
     fprintf f "{@[@,%a@]}" (pp_print_list ~pp_sep:pp_comma pp_one) (bindings t)
 end
 
+let asl1_revision_is_up_to ~up_to rev =
+  match (up_to, rev) with
+  | EAC1, EAC1 -> true
+  | EAC2, (EAC1 | EAC2) -> true
+  | DEV, (EAC1 | EAC2 | DEV) -> true
+  | _ -> false
+
 let dummy_pos = Lexing.dummy_pos
 let default_version = V1
 let desc v = v.desc

@@ -21,6 +21,6 @@ begin
     var myResult: bits(M as integer{8,16}); // A dynamic error if (M IN !{8,16}).
 
     // The return type of invokedN{M}(myVal) is bits(M)
-    // which type-satisfies bits(M as integer {8, 16})
+    // which does not type-satisfy bits(M as integer {8, 16})
     myResult = invokedN{M}(myVal);
 end;

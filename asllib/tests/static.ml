@@ -42,6 +42,10 @@ let build_consts () =
   let _ = Typing.type_and_run ast in
   ()
 
+module StaticModel = StaticModel.Symbolic (struct
+  let handle_atc = false
+end)
+
 let normalize () =
   let do_one (e1, e2, env) =
     let e1' = StaticModel.normalize env e1 in
