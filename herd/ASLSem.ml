@@ -362,9 +362,12 @@ module Make (Conf : Config) = struct
       let mk_action loc' = Act.Access (Dir.W, loc', v, sz, (a, e, acc)) in
       M.write_loc mk_action loc ii
 
-    let read_loc sz loc a e acc ii =
+    (* Register values can be wider than the event's MachSize. *)
+    let read_loc ?width sz loc a e acc ii =
+      let width = Option.value width ~default:(MachSize.nbits sz) in
       let mk_action loc' v' = Act.Access (Dir.R, loc', v', sz, (a, e, acc)) in
-      M.read_loc Port.No mk_action loc ii >>= to_bv sz
+      M.read_loc Port.No mk_action loc ii
+      >>= M.op1 (Op.ArchOp1 (ASLOp.ToBV width))
 
     (**************************************************************************)
     (* ASL-Backend implementation                                             *)
@@ -642,6 +645,101 @@ module Make (Conf : Config) = struct
       let loc = virtual_to_loc_reg r ii in
       write_loc MachSize.Quad loc v aneutral aexp areg (use_ii_with_poi ii poi)
 
+    (******************************)
+    (* SVE scalar V destinations  *)
+    (******************************)
+
+    let virtual_to_loc_simd =
+      let tvecs = Array.of_list AArch64Base.vec_regs in
+      fun rv ii ->
+        let i = v_as_int rv in
+        if i >= Array.length tvecs || i < 0 then
+          Warn.fatal "Invalid SIMD register number: %d" i
+        else
+          let arch_reg = AArch64Base.SIMDreg tvecs.(i) in
+          A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
+
+    let read_simd (ii, poi) ~reg:r_m =
+      let* rval = r_m in
+      let loc = virtual_to_loc_simd rval ii in
+      read_loc MachSize.S128 loc aneutral aexp areg (use_ii_with_poi ii poi)
+
+    let write_simd (ii, poi) ~reg:r_m ~data:v_m =
+      let* v = v_m >>= to_bv MachSize.S128 and* r = r_m in
+      let loc = virtual_to_loc_simd r ii in
+      write_loc MachSize.S128 loc v aneutral aexp areg (use_ii_with_poi ii poi)
+
+    (******************)
+    (* SVE Predicates *)
+    (******************)
+
+    let virtual_to_loc_predicate =
+      let tpreds = Array.of_list AArch64Base.pred_regs in
+      fun rv ii ->
+        let i = v_as_int rv in
+        if i >= Array.length tpreds || i < 0 then
+          Warn.fatal "Invalid predicate register number: %d" i
+        else
+          let arch_reg = AArch64Base.Preg (tpreds.(i), 32) in
+          A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
+
+    let read_predicate (ii, poi) ~width ~reg:r_m =
+      let* width = width and* rval = r_m in
+      let loc = virtual_to_loc_predicate rval ii in
+      read_loc ~width:(v_as_int width) MachSize.S128 loc aneutral aexp areg
+        (use_ii_with_poi ii poi)
+
+    let write_predicate (ii, poi) ~width ~reg:r_m ~data:v_m =
+      let* width = width and* r = r_m in
+      let* v = v_m >>= M.op1 (Op.ArchOp1 (ASLOp.ToBV (v_as_int width))) in
+      let loc = virtual_to_loc_predicate r ii in
+      write_loc MachSize.S128 loc v aneutral aexp areg (use_ii_with_poi ii poi)
+
+    (* Replace ASL's AnyActiveElement with an esize-dependent mask to check
+       whether any lane is active. *)
+    let any_active_element_primitive _ii ~n ~mask ~esize =
+      let* n = n and* mask = mask and* esize = esize in
+      let n = v_as_int n and esize = v_as_int esize in
+      let stride =
+        match esize with
+        | 8 | 16 | 32 | 64 | 128 -> esize / 8
+        | _ -> Warn.fatal "Invalid SVE element size: %d" esize
+      in
+      let module BV = Asllib.Bitvector in
+      let positions = List.init (n / stride) (fun e -> e * stride) in
+      let zero = BV.zeros n in
+      let selected = BV.write_slice zero (BV.ones (List.length positions)) positions in
+      let selected = v_of_literal (AST.L_BitVector selected)
+      and zero = v_of_literal (AST.L_BitVector zero) in
+      M.op Op.And mask selected >>= fun active -> M.op Op.Ne active zero
+
+    (***************)
+    (* SVE Vectors *)
+    (***************)
+
+    let virtual_to_loc_vector =
+      let tzregs = Array.of_list AArch64Base.vec_regs in
+      fun rv ii ->
+        let i = v_as_int rv in
+        if i >= Array.length tzregs || i < 0 then
+          Warn.fatal "Invalid SVE vector register number: %d" i
+        else
+          let arch_reg = AArch64Base.Zreg (tzregs.(i), 32) in
+          A.Location_reg (ii.A.proc, ASLBase.ArchReg arch_reg)
+
+    (* As in native SVE, S128 labels the register event, not the value width. *)
+    let read_vector (ii, poi) ~width ~reg:r_m =
+      let* width = width and* rval = r_m in
+      let loc = virtual_to_loc_vector rval ii in
+      read_loc ~width:(v_as_int width) MachSize.S128 loc aneutral aexp areg
+        (use_ii_with_poi ii poi)
+
+    let write_vector (ii, poi) ~width ~reg:r_m ~data:v_m =
+      let* width = width and* r = r_m in
+      let* v = v_m >>= M.op1 (Op.ArchOp1 (ASLOp.ToBV (v_as_int width))) in
+      let loc = virtual_to_loc_vector r ii in
+      write_loc MachSize.S128 loc v aneutral aexp areg (use_ii_with_poi ii poi)
+
     let do_read_memory (ii, poi) addr_m datasize_m an aexp acc =
       let* addr = M.as_addr_port addr_m and* datasize = datasize_m in
       let sz = datasize_to_machsize datasize in
@@ -786,6 +884,13 @@ module Make (Conf : Config) = struct
       let primitive_dsb = primitive_dsb
       let read_register = read_register
       let write_register = write_register
+      let read_simd = read_simd
+      let write_simd = write_simd
+      let read_predicate = read_predicate
+      let write_predicate = write_predicate
+      let any_active_element_primitive = any_active_element_primitive
+      let read_vector = read_vector
+      let write_vector = write_vector
       let read_memory = read_memory
       let read_memory_gen = read_memory_gen
       let write_memory = write_memory

@@ -1,0 +1,11 @@
+Test W01 Required
+States 1
+0:V2.4S={8,0,0,0};
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Flag Scalable-Vector-Extensions-is-work-in-progress
+Condition forall (0:V2.4S={8,0,0,0})
+Observation W01 Always 1 0
+Hash=1c751f7bf1fbacf3e361cb4b77439682
+

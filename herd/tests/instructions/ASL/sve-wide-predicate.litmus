@@ -1,0 +1,15 @@
+ASL SVEWidePredicate
+(* Preserve predicate bits above bit 127 through the register primitives. *)
+
+{}
+
+func main() => integer
+begin
+  let word = '0000000000000000000000000000000000000000000000000000000000000001';
+  write_predicate{256}(0, word :: Zeros{192});
+  let pred = read_predicate{256}(0);
+  write_register(0, pred[255:192]);
+  return 0;
+end;
+
+forall 0:X0=1

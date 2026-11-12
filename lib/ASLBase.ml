@@ -76,14 +76,17 @@ module Scope = struct
       Local (name, index)
 end
 
-let arch_reg_to_int =
+let reg_to_int regs =
   let rec index_of elt pos li =
     match li with
     | [] -> raise Not_found
     | h :: _ when compare elt h = 0 -> pos
     | _ :: t -> index_of elt (pos + 1) t
   in
-  fun r -> index_of r 0 AArch64Base.gprs
+  fun r -> index_of r 0 regs
+
+let arch_reg_to_int = reg_to_int AArch64Base.gprs
+let pred_reg_to_int = reg_to_int AArch64Base.pred_regs
 
 (*****************************************************************************)
 (*                                                                           *)
