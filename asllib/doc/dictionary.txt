@@ -751,6 +751,7 @@ encounters
 end
 endian
 ending
+endings
 ends
 enforce
 enforced
@@ -1583,6 +1584,7 @@ parsing
 part
 partial
 particular
+particularly
 partitions
 partnership
 party
@@ -2294,6 +2296,7 @@ traversing
 treat
 treated
 treating
+treatment
 tree
 trees
 trial
