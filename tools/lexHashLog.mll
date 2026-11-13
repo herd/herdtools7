@@ -46,7 +46,7 @@ let validation = "Undef"|"Succeeded"|"Failed"|"Ok"|"No"|"??"
 
 rule main keep same out name = parse
 | ("Test" blank+ (testname as t) ((blank+ (name))| ("")) as line) nl
-    {let t = Misc.clean_name t in
+    {let t = Base.Misc.clean_name t in
      let keep = C.check_name t in
      out keep line ;
      incr_lineno lexbuf ;
@@ -153,7 +153,7 @@ and pline out map = parse
 
 {
 let call_lexer out fname =
-  Misc.input_protect
+  Base.Misc.input_protect
     (fun chan ->
       let lexbuf = Lexing.from_channel chan in
       LexMisc.init_file fname lexbuf ;
@@ -170,7 +170,7 @@ let check fname = ignore (call_lexer no_out fname)
 let rewrite fname =
   let outname = sprintf "%s.tmp" fname in
   let same =
-    Misc.output_protect
+    Base.Misc.output_protect
       (fun ochan ->
         let out b line = if b then MySys.output_line ochan line in
         call_lexer out fname)

@@ -61,11 +61,11 @@ let do_test fname =
       with Not_found -> defkind in
     printf "%s %s\n" name (L.pp_kind k)
   with
-  | Misc.Exit -> ()
-  | Misc.Fatal msg|Misc.UserError msg ->
+  | Base.Misc.Exit -> ()
+  | Base.Misc.Fatal msg|Base.Misc.UserError msg ->
       Warn.warn_always "%a %s" Pos.pp_pos0 fname msg
   | e ->
       Printf.eprintf "\nFatal: %a Adios\n" Pos.pp_pos0 fname ;
       raise e
 
-let () =  Misc.iter_argv_or_stdin do_test tests
+let () =  Base.Misc.iter_argv_or_stdin do_test tests

@@ -181,7 +181,7 @@ let parse_list =
   [("lr",LR)]
 
 let parse_reg s =
-  let s = Misc.lowercase s in
+  let s = Base.Misc.lowercase s in
   try Some (List.assoc s parse_list)
   with Not_found -> None
 

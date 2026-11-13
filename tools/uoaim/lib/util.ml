@@ -97,7 +97,7 @@ module Arg = struct
   let parse (opts : (string * string list * Arg.spec * string) list) =
     let opts =
       opts
-      |> Misc.List.concat_map (fun (cmd, aliases, spec, desc) ->
+      |> Base.Misc.List.concat_map (fun (cmd, aliases, spec, desc) ->
           (cmd, spec, desc)
           :: List.map
                (fun a -> (a, spec, Format.sprintf "alias of %s" cmd))

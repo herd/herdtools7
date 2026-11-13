@@ -126,7 +126,7 @@ include Arch.MakeArch(struct
     match lp,li with
     | Lbl lp,Lbl li -> add_subs [Lab(lp,li)] subs
     | Offset ip,Offset ii
-         when Misc.int_eq ip ii -> Some subs
+         when Base.Misc.int_eq ip ii -> Some subs
     | _,_ -> None
 
   let match_instr subs pattern instr = match pattern,instr with

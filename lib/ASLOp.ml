@@ -362,7 +362,7 @@ let orop p m = AArch64PteVal.orop p @@ ASLScalar.to_int64 m
 and andnot2 p m = AArch64PteVal.andnot2 p @@ ASLScalar.to_int64 m
 and andop p m  =
   AArch64PteVal.andop p @@ ASLScalar.to_int64 m
-  |> Misc.app_opt ASLScalar.int64_to_bv
+  |> Base.Misc.app_opt ASLScalar.int64_to_bv
 
 let mask c sz =
   let open MachSize in

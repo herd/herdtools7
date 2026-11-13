@@ -27,7 +27,7 @@ let fconcat d1 d2 = match d1 with
       d2
 
 let do_include lex fname =
-  Misc.input_protect
+  Base.Misc.input_protect
     (fun chan ->
       try
         let lexbuf = Lexing.from_channel chan in
@@ -36,7 +36,7 @@ let do_include lex fname =
       with Error (msg,pos) ->
         Printf.eprintf
 	"%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg fname ;
-      raise Misc.Exit)
+      raise Base.Misc.Exit)
     fname
 
 }

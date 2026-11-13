@@ -49,6 +49,7 @@ let has_pair_access =
 
 
 open Code
+module Misc = Base.Misc
 open Printf
 
 include MakeAArch64Base.Make(struct let is_morello = do_morello end)

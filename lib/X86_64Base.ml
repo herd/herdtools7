@@ -191,15 +191,15 @@ let reg64_string r = reg_string r R64b
 let xmm_string xmm = List.assoc xmm xmm_regs
 
 let parse_reg s =
-  try Some (List.assoc (Misc.lowercase s) parse_list64)
+  try Some (List.assoc (Base.Misc.lowercase s) parse_list64)
   with Not_found -> None
 
 let parse_any_reg s =
-  try Some (List.assoc (Misc.lowercase s) parse_list)
+  try Some (List.assoc (Base.Misc.lowercase s) parse_list)
   with Not_found -> None
 
 let parse_xmm_reg s =
-   try Some (List.assoc (Misc.lowercase s) parse_list_xmm)
+   try Some (List.assoc (Base.Misc.lowercase s) parse_list_xmm)
    with Not_found -> None
 
 

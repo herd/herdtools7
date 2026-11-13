@@ -70,10 +70,10 @@ let pp_norm p =
 (* used in symbConstant.ml *)
 
 let compare =
-  let cmp = (fun p1 p2 -> Misc.int_compare p1.f p2.f) in
+  let cmp = (fun p1 p2 -> Base.Misc.int_compare p1.f p2.f) in
   cmp
 
-let eq p1 p2 = OutputAddress.eq p1.oa p2.oa && Misc.int_eq p1.f p2.f
+let eq p1 p2 = OutputAddress.eq p1.oa p2.oa && Base.Misc.int_eq p1.f p2.f
 
 (*For Litmus*)
 let dump_pack pp_oa a =
