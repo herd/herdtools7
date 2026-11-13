@@ -28,6 +28,7 @@ val empty : 'a t
 val is_empty : 'a t -> bool
 
 val iter : (Proc.t -> 'a -> unit) -> 'a t -> unit
+val iter_structured : (Proc.t -> 'a list -> unit) -> 'a t -> unit
 val iteri : (int -> Proc.t -> 'a -> unit) -> 'a t -> unit
 val map : (Proc.t -> 'a -> 'b) -> 'a t -> 'b t
 val fold : ('b -> Proc.t -> 'a -> 'b) -> 'b -> 'a t -> 'b

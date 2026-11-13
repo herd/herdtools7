@@ -845,6 +845,50 @@ module Make
             (fun _ (proc,offset,labels) ->
                O.fi "{ %d, %d, %S }," proc offset labels) fault_labels;
           O.o "};" ;
+          O.o "" ;
+          O.o
+            "/* Returns the smallest label index for the given processor id and offset," ;
+          O.o " * when it exists. */" ;
+          let nprocs = List.length @@ ByProc.to_procs label_sites in
+          let return_unknown =
+            sprintf "return %s;" (SkelUtil.instr_symb_id "UNKNOWN") in
+          O.o "static int fault_label(int proc, long offset) {" ;
+          begin match nprocs with
+          | 0 ->  O.oi return_unknown
+          | _ ->
+              let indent =
+              if nprocs > 1 then begin
+                O.oi "switch (proc) {" ;
+                Indent.indent2
+              end else Indent.indent in
+              ByProc.iter_structured
+                (fun p xs ->
+                   if nprocs > 1 then O.fi "case %d:" p ;
+                   O.ox indent "switch (offset) {" ;
+                   let _ =
+                     List.fold_left
+                       (fun seen ((_,off),lbl) ->
+                          if not (IntSet.mem off seen) then begin
+                            O.fx indent "case %d:" off ;
+                            O.fx (Indent.tab indent)
+                              "return %s;"
+                              (OutUtils.fmt_lbl_var p lbl
+                               |> SkelUtil.instr_symb_id)
+                          end ;
+                          IntSet.add off seen)
+                       IntSet.empty xs in
+                   O.ox indent "default:" ;
+                   O.ox (Indent.tab indent) return_unknown ;
+               O.ox indent "}")
+                label_sites ;
+              if nprocs > 1 then begin
+                  O.oi "default:" ;
+                  O.oii return_unknown ;
+                  O.oi "}"
+                end
+          end ;
+          O.o "}" ;
+          O.o "" ;
           Insert.insert O.o "kvm_fault_type.c"
         end
 

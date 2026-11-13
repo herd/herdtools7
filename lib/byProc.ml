@@ -30,6 +30,8 @@ let sorted2byproc lbls =
 let iter f =
   List.iter (fun (p,lbls) -> List.iter (f p) lbls)
 
+let iter_structured f = List.iter (fun (p,lbls) -> f p lbls)
+
 let iteri f =
   let i = ref 0 in
   iter

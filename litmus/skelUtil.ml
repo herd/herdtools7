@@ -766,7 +766,7 @@ end
             else
             (* Otherwise, initial values are enough *)
               T.get_init_labels test in
-          if ByProc.is_empty lbls then begin
+          if not (ByProc.is_empty lbls) then begin
             let find p lbl = find_label_offset p lbl test in
             ByProc.iter
               (fun p lbl ->
