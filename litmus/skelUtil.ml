@@ -214,22 +214,21 @@ module Make
         val dump_array_typedefs : T.t -> unit
 
         (* Dump definition of struct fields that point in code*)
-        val define_label_fields : Label.Full.Set.t -> unit
+        val define_label_fields : Label.t ByProc.t -> unit
 
         (* Dump initialisation code of label constants,
            first argument is a pointer to struct *)
-        val initialise_labels : string -> Label.Full.Set.t -> unit
+        val initialise_labels : string -> Label.t ByProc.t -> unit
 
         (* Dump definition of label offsets, _i.e_ offset from code start *)
         val define_label_offsets : env -> T.t -> unit
 
         (* Dump definitions relating to labels in the post-condition *)
         val dump_label_defs :
-          pp_faults:bool -> pp_labels:bool ->
-          Label.Full.full list -> unit
+          pp_faults:bool -> pp_labels:bool -> Label.t ByProc.t -> unit
 
         (* Dump functions relating to labels in the post-condition *)
-        val dump_label_funcs : bool -> Label.Full.full list -> int -> unit
+        val dump_label_funcs : bool -> Label.t ByProc.t -> unit
 
         (* Same output as shell script in (normal) shell driver mode *)
         val prelude : Name.t -> T.t -> unit
@@ -724,11 +723,13 @@ end
 
 (* Definition of label constant fields *)
         let define_label_fields lbls =
-          if not (Label.Full.Set.is_empty lbls) then begin
+          if not (ByProc.is_empty lbls) then begin
             let pp =
-              Label.Full.Set.pp_str ","
-                (fun (p,lbl) -> "*" ^ OutUtils.fmt_lbl_var p lbl)
-                lbls in
+              ByProc.fold
+                (fun k p lbl -> ("*" ^ OutUtils.fmt_lbl_var p lbl)::k)
+                [] lbls
+              |> List.rev (* optional *)
+              |> String.concat "," in
             O.fi "ins_t %s;"pp
           end
 
@@ -740,18 +741,15 @@ end
 (* Label constant initialisation *)
         let initialise_labels ptr label_init =
           let open OutUtils in
-          let procs =
-            Label.Full.Set.fold
-              (fun (p,_) k -> IntSet.add p k)
-              label_init IntSet.empty in
-          IntSet.iter
+          let procs = ByProc.to_procs label_init in
+          List.iter
             (fun p ->
-              check_ascall () ;
-              O.fi "size_t %s = prelude_size((ins_t *)code%i);"
-                (fmt_prelude p) p)
+               check_ascall () ;
+               O.fi "size_t %s = prelude_size((ins_t *)code%i);"
+                 (fmt_prelude p) p)
             procs ;
-          Label.Full.Set.iter
-            (fun (p,lbl) ->
+          ByProc.iter
+            (fun p lbl ->
               O.fi
                 "%s->%s = ((ins_t *)code%i)+%s+%s;" ptr
                 (fmt_lbl_var p lbl) p
@@ -767,14 +765,14 @@ end
               T.all_labels test
             else
             (* Otherwise, initial values are enough *)
-              T.get_init_labels test |> Label.Full.Set.elements in
-          if Misc.consp lbls then begin
+              T.get_init_labels test in
+          if ByProc.is_empty lbls then begin
             let find p lbl = find_label_offset p lbl test in
-            List.iter
-              (fun (p,lbl) ->
-                let off = find p lbl in
-                O.f "static const size_t %s = %i;"
-                  (OutUtils.fmt_lbl_offset p lbl) off)
+            ByProc.iter
+              (fun p lbl ->
+                 let off = find p lbl in
+                 O.f "static const size_t %s = %i;"
+                   (OutUtils.fmt_lbl_offset p lbl) off)
               lbls ;
             O.o ""
           end
@@ -782,20 +780,23 @@ end
         let dump_label_defs ~pp_faults ~pp_labels lbls =
           O.f "#define %-25s  0" (instr_symb_id "NULL") ;
           (* Define indices for labels *)
-          List.iteri
-            (fun i (p,lbl) ->
+          let length = ref 0 in
+          ByProc.iteri
+            (fun i p lbl ->
+               incr length ;
                let flbl = OutUtils.fmt_lbl_var p lbl in
                O.f "#define %-25s  %d" (instr_symb_id flbl) (i + 1))
             lbls ;
           O.f "#define %-25s  %d"
             (instr_symb_id "UNKNOWN")
-            (List.length lbls+1) ;
+            (!length+1) ;
           O.o "" ;
           (* Define names for code pointers in faults *)
           if pp_faults then begin
             O.f "static const char *instr_symb_name[] = {" ;
             O.oi "\"NULL\"," ;
-            List.iter (fun (p,lbl) -> O.fi "\"%d:%s\","p lbl) lbls ;
+            ByProc.iter
+              (fun p lbl -> O.fi "\"%d:%s\","p lbl) lbls ;
             O.oi "\"UNKNOWN\"," ;
             O.o "};" ;
             O.o ""
@@ -804,33 +805,32 @@ end
           if pp_labels then begin
             O.f "static const char *instr_symb_label[] = {" ;
             O.oi "\"0\"," ;
-            List.iter
-              (fun (p,lbl) -> O.fi "\"label:\\\"P%d:%s\\\"\"," p lbl) lbls ;
+            ByProc.iter
+              (fun p lbl -> O.fi "\"label:\\\"P%d:%s\\\"\"," p lbl) lbls ;
             O.oi "\"UNKNOWN\"," ;
             O.o "};"
           end ;
           O.o ""
 
-        let dump_label_funcs_skel do_self lbls nprocs =
+        let dump_label_funcs_skel do_self lbls =
           if do_self then
             O.o "static int get_instr_symb_id(ctx_t *ctx, ins_t* ins, int i) {"
           else
             O.o "static int get_instr_symb_id(ctx_t *ctx, ins_t* ins) {" ;
           O.fi "if (!ins) return %s;" (instr_symb_id "NULL") ;
-          for p=0 to nprocs - 1 do
-            if List.exists (fun (p1,_) -> p = p1) lbls then begin
-              let code = OutUtils.fmt_code p in
-              let prelude = OutUtils.fmt_prelude p in
-              O.fi "size_t %s = prelude_size((ins_t *)%s);" prelude code ;
-              if do_self then
-                let sz = OutUtils.fmt_code_size p in
-                O.fi "ins_t *_%s = &ctx->%s[ctx->%s * i];" code code sz
-              else
-                O.fi "ins_t *_%s = (ins_t *)%s;" code code
-            end
-          done ;
           List.iter
-            (fun (p,lbl) ->
+            (fun p ->
+               let code = OutUtils.fmt_code p in
+               let prelude = OutUtils.fmt_prelude p in
+               O.fi "size_t %s = prelude_size((ins_t *)%s);" prelude code ;
+               if do_self then
+                 let sz = OutUtils.fmt_code_size p in
+                 O.fi "ins_t *_%s = &ctx->%s[ctx->%s * i];" code code sz
+               else
+                 O.fi "ins_t *_%s = (ins_t *)%s;" code code)
+            (ByProc.to_procs lbls) ;
+          ByProc.iter
+            (fun p lbl ->
                let lbl_off = OutUtils.fmt_lbl_offset p lbl in
                let code = OutUtils.fmt_code p in
                let prelude = OutUtils.fmt_prelude p in
@@ -842,11 +842,11 @@ end
           O.o "};" ;
           O.o ""
 
-        let dump_label_funcs_presi _do_self lbls _nprocs =
+        let dump_label_funcs_presi _do_self lbls =
           O.o "static int get_instr_symb_id(labels_t *lbls, ins_t* pc) {" ;
           O.fi "if (!pc) return %s;" (instr_symb_id "NULL") ;
-          List.iter
-            (fun (p,lbl) ->
+          ByProc.iter
+            (fun p lbl ->
                let flbl = (OutUtils.fmt_lbl_var p lbl) in
                O.fi "if (pc == lbls->%s)" flbl ;
                O.fii "return %s;" (instr_symb_id flbl))

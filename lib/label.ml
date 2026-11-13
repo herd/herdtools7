@@ -45,7 +45,7 @@ let norm lbls = try Some (Set.min_elt lbls) with Not_found -> None
 
 module Full =
   struct
-    type full = Proc.t * t
+    type nonrec t = Proc.t * t
 
     let pp (p,lbl) = Printf.sprintf "%s:%s" (Proc.pp p) (pp lbl)
     let equal = Misc.pair_eq Proc.equal equal
@@ -54,7 +54,8 @@ module Full =
     module Set =
       MySet.Make
         (struct
-          type t = full
+          type nonrec t = t
           let compare = compare
         end)
+
   end

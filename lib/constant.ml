@@ -25,7 +25,7 @@ open Printf
 (*needed for is-non-mixed-symbol and global vectors *)
 
 module Symbol = struct
-  type t = Data of string | Label of Label.Full.full
+  type t = Data of string | Label of Label.Full.t
 
   let compare n1 n2 = match n1, n2 with
     | Data s1, Data s2 -> String.compare s1 s2

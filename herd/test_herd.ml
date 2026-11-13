@@ -148,9 +148,12 @@ module Make(A:Arch_herd.S) =
           StringSet.empty init in
       let code_symbols = locs_in_code init_symbols prog in
       let prog_init_symbols =
-        List.fold_left
-          (fun acc lbl -> StringSet.add (Label.Full.pp lbl) acc)
-           code_symbols (A.all_labels prog) in
+        StringSet.union
+          code_symbols
+          (A.all_labels prog |>
+           ByProc.fold
+             (fun k p lbl -> Label.Full.pp (p,lbl)::k) []
+           |> StringSet.of_list) in
       let postcondition_symbols =
         add_postcondition_symbols condition StringSet.empty in
       let unexpected_symbols =

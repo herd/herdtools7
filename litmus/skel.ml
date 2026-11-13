@@ -90,8 +90,8 @@ module Make
   module MakeLoc
            (CfgLoc:
               sig
-                val label_init : Label.Full.Set.t
-                val all_labels : Label.Full.full list
+                val label_init : Label.t  ByProc.t
+                val all_labels : Label.t ByProc.t
                 val need_prelude : bool
               end) = struct
       module G = Global_litmus
@@ -104,8 +104,10 @@ module Make
 
 (* Options *)
       let do_self = Cfg.variant Variant_litmus.Self
-      let do_label_init = not (Label.Full.Set.is_empty CfgLoc.label_init &&
-                               CfgLoc.all_labels = [])
+      let do_label_init =
+        not
+          (ByProc.is_empty CfgLoc.label_init &&
+           ByProc.is_empty CfgLoc.all_labels)
 
       let do_ascall =
         (* Self-modifing code or label constants in init section
@@ -2429,7 +2431,7 @@ module Make
             O.fi "ins_t *code%i;" n
           done
         end else begin
-            UD.define_label_fields CfgLoc.label_init
+          UD.define_label_fields CfgLoc.label_init
         end;
         O.o "} ctx_t;" ;
         O.o "" ;
@@ -2933,8 +2935,7 @@ module Make
 
               let all_labels = T.all_labels test
 
-              let need_prelude =
-                not (Label.Full.Set.is_empty label_init)
+              let need_prelude = not (ByProc.is_empty label_init)
                 || Misc.consp (T.from_labels test)
             end) in
         let open MLoc in
@@ -2955,9 +2956,8 @@ module Make
         dump_check_globals env doc test ;
         dump_templates env doc.Name.name test ;
         dump_reinit env test cpys ;
-        let nprocs = T.get_nprocs test in
         if U.label_in_outs env test then
-          UD.dump_label_funcs do_self (T.all_labels test) nprocs ;
+          UD.dump_label_funcs do_self (T.all_labels test) ;
         dump_zyva doc cpys env test ;
         if do_vp then UD.prelude doc test ;
         dump_run doc env test ;
