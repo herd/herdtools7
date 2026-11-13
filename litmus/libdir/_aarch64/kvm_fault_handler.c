@@ -27,7 +27,10 @@ static void record_fault(who_t *w, unsigned long pc, unsigned long esr) {
     pc -= 4;
   }
 
-  flt.instr_symb = get_instr_symb_id(lbls, (ins_t *)pc);
+  const long offset =
+    ((long)pc - (long)lbls->instr_base[w->proc]) / (long)sizeof(ins_t);
+  flt.instr_offset = fault_label(w->proc, offset) == INSTR_SYMB_ID_UNKNOWN
+    ? -1 : offset;
   if (!is_iabt(esr) && get_far(esr, &far)) {
     flt.data_symb = idx_addr((intmax_t *)far, vars_ptr[w->instance]);
   } else {

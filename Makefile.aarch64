@@ -92,6 +92,8 @@ litmus-cata-aarch64-ifetch-test:
 KUT_AARCH64_PREFFIX = $(AARCH64_PREFIX)
 ifeq ($(OS),Darwin)
 KUT_AARCH64_PREFFIX = aarch64-elf-
+# HVF cannot expose MTE to the guest.
+litmus-cata-aarch64-MTE-test-kvm: export ACCEL=tcg
 endif
 KUT_CONFIG_PARAMS=--arch=arm64 --page-size=4k --cross-prefix=$(KUT_AARCH64_PREFFIX)
 
@@ -104,6 +106,14 @@ litmus-aarch64-dep:
 	cd kvm-unit-tests;                                                 \
 	./configure $(KUT_CONFIG_PARAMS);                                  \
 	make $(SILENTOPT) -j $(J)
+
+.PHONY: litmus-cram-aarch64-test-kvm
+litmus-aarch64-run:: litmus-cram-aarch64-test-kvm
+litmus-cram-aarch64-test-kvm: Version.ml litmus-aarch64-dep
+	KVM_UNIT_TESTS="$(KUT_DIR_AARCH64)/kvm-unit-tests" \
+	  $(D) build --profile=$(DUNE_PROFILE) \
+	  @litmus/tests/AArch64.kvm/runtest-litmus-kvm-aarch64 --force
+	@ echo "litmus7 in -mode kvm aarch64 cram tests: OK"
 
 litmus-aarch64-run:: litmus-cata-aarch64-test-kvm
 litmus-cata-aarch64-test-kvm: litmus-aarch64-dep
@@ -173,6 +183,7 @@ litmus-cata-aarch64-ifetch-test-kvm: litmus-aarch64-dep
 	@ echo "litmus7 in -mode kvm catalogue aarch64-ifetch tests: OK"
 
 litmus-aarch64-run:: litmus-cata-aarch64-faults-test-kvm
+# LDRredF needs MTE; build/run it with the MTE target below instead.
 litmus-cata-aarch64-faults-test-kvm: litmus-aarch64-dep
 	mkdir $(KUT_DIR_AARCH64)/kvm-unit-tests/t
 	# These tests compile, but on CI their KVM runs have not reliably produced
@@ -213,7 +224,8 @@ litmus-cata-aarch64-MTE-test-kvm: litmus-aarch64-dep
                 -driver C -ascall true		                \
                 -variant memtag,sync		                \
                 -outnames $(KUT_NAMES)                  	\
-		catalogue/aarch64-MTE/tests/@sync
+		catalogue/aarch64-MTE/tests/@sync                  \
+		catalogue/aarch64-faults/tests/LDRredF.litmus
 	cd $(KUT_DIR_AARCH64)/kvm-unit-tests/t; make $(SILENTOPT) -j $(J)
 	if $(RUN_TESTS); then                                       \
           ( cd $(KUT_DIR_AARCH64)/kvm-unit-tests && sh t/run.sh ) | \
