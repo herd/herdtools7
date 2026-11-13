@@ -71,9 +71,13 @@ let Translation = if "vmsa" then Translation else emptyset
 let AccessFlag = if "vmsa" then AccessFlag else emptyset
 
 (* DC-by-addr includes DC by VA and DC by PA except for DC Z*VA instructions *)
-let GC.GVA = try DG.GVA with emptyset
+let DC.GVA = try DC.GVA with emptyset
+let DC.ZVA = try DC.ZVA with emptyset
 let DC.GZVA = try DC.GZVA with emptyset
 let DC-by-addr = DC \ (DC.ZVA | DC.GVA | DC.GZVA)
+(* herd does not support DCs by PA yet *)
+let DC-by-PA = emptyset
+let DC-by-VA = DC-by-addr \ DC-by-PA
 
 (*
  * Include default definitions for sets that might be undefined without
