@@ -196,6 +196,8 @@ do not match the memory contents at the OA of #2}
 \newcommand{\DCGZVA}[1]{#1 is a DC GZVA Effect}
 \newcommand{\DCZVA}[1]{#1 is a DC ZVA Effect}
 \newcommand{\DCbyaddr}[1]{#1 is a DC-by-address Effect}
+\newcommand{\DCbyVA}[1]{#1 is a DC-by-VA Effect}
+\newcommand{\DCbyPA}[1]{#1 is a DC-by-PA Effect}
 \newcommand{\DC}[1]{#1 is a DC Effect}
 \newcommand{\IC}[1]{#1 is an IC Effect}
 \newcommand{\ICIVAU}[1]{#1 is an IC IVAU Effect}
@@ -466,6 +468,7 @@ do not match the memory contents at the OA of #2}
 \newcommand{\samecacheability}[2]{#1 and #2 have the \samecacheabilityname{}}
 
 \newcommand{\marked}[2]{#1 to a Location marked #2}
+\newcommand{\iWB}[1]{\marked{#1}{Normal, Inner Write-Back Cacheable}}
 \newcommand{\WB}[1]{\marked{#1}{Normal, Write-Back Cacheable}}
 \newcommand{\WT}[1]{\marked{#1}{Normal, Write-Through}}
 \newcommand{\NC}[1]{\marked{#1}{Normal, Non-cacheable}}
@@ -474,3 +477,5 @@ do not match the memory contents at the OA of #2}
 \newcommand{\DevicenGnRE}[1]{\marked{#1}{Device-nGnRE}}
 \newcommand{\DevicenGnRnE}[1]{\marked{#1}{Device-nGnRnE}}
 \newcommand{\Device}[1]{\marked{#1}{Device}}
+
+\newcommand{\ExpMiWB}[1]{\iWB{\ExpM{#1}}}

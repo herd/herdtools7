@@ -99,8 +99,8 @@ let same-outer-cacheability =
   | TTDoNC * TTDoNC
 
 let same-xs =
-  PTEXS * PTEXS
-  | (TTD \ PTEXS) * (TTD \ PTEXS)
+  TTDXS * TTDXS
+  | (TTD \ TTDXS) * (TTD \ TTDXS)
 
 let same-Normal = (TTDNormal * TTDNormal) & same-shareability &
     same-inner-cacheability & same-outer-cacheability & same-xs
