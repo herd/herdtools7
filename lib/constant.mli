@@ -17,7 +17,7 @@
 (** Constants, both symbolic (ie addresses) and concrete (eg integers)  *)
 
 module Symbol : sig
-  type t = Data of string | Label of Label.Full.full
+  type t = Data of string | Label of Label.Full.t
 
   val compare : t -> t -> int
   val equal : t -> t -> bool
@@ -171,7 +171,7 @@ val is_symbol : ('scalar,'pte,'addrreg,'instr) t -> bool
 val is_data : ('scalar,'pte,'addrreg,'instr) t -> bool
 val is_label : ('scalar,'pte,'addrreg,'instr) t -> bool
 (* Extract label, if any *)
-val as_label :  ('scalar,'pte,'addrreg,'instr)  t -> Label.Full.full option
+val as_label :  ('scalar,'pte,'addrreg,'instr)  t -> Label.Full.t option
 
 val is_non_mixed_symbol : symbol -> bool
 

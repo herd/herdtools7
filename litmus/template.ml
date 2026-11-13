@@ -108,7 +108,7 @@ module type S = sig
   val get_addrs_only : t -> string list
   val get_phys_only : t -> string list
   val get_addrs : t -> string list * string list (* addresses X ptes *)
-  val get_labels : t -> Label.Full.full list
+  val get_labels : t -> Label.Full.t list
   val get_instructions : t -> V.Instr.t list
   val fmt_reg : arch_reg -> string
   val dump_label : string -> string

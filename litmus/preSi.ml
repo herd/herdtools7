@@ -138,11 +138,11 @@ module Make
       LocMake
         (CfgLoc:
            sig
-             val all_labels : Label.Full.full list
+             val all_labels : Label.t ByProc.t
              val need_prelude : bool
            end) = struct
 
-    let do_label_init = Misc.consp CfgLoc.all_labels
+    let do_label_init = not @@ ByProc.is_empty CfgLoc.all_labels
 
     let do_ascall =
       Cfg.ascall || Cfg.is_kvm || do_label_init || CfgLoc.need_prelude
@@ -481,9 +481,11 @@ module Make
              | _::_ ->
                 O.o "#define SEE_FAULTS 1" ;
                 O.o "" ;
-                begin match CfgLoc.all_labels with
-                | [] -> if do_precise then insert_ins_ops ()
-                | _ -> insert_ins_ops ()
+                begin
+                  if
+                    not (ByProc.is_empty CfgLoc.all_labels)
+                    || do_precise
+                  then insert_ins_ops ()
                 end ;
                 if do_dynalloc then begin
                     O.o "static th_faults_info_t **th_faults;" ;
@@ -777,16 +779,16 @@ module Make
 
       let dump_fault_type env test =
         if some_labels test then begin
-
           O.o "typedef struct {" ;
-          List.iter
-            (fun (p,lbl) ->
-              let lbl_var = OutUtils.fmt_lbl_var p lbl in
-              O.fi "ins_t *%s;" lbl_var;
-              if Cfg.is_kvm && do_self then begin
-                O.fi "pteval_t *%s;" (OutUtils.fmt_pte_tag lbl_var);
-                O.fi "pteval_t %s;" (OutUtils.fmt_phy_tag lbl_var);
-              end;) CfgLoc.all_labels ;
+          ByProc.iter
+            (fun p lbl ->
+               let lbl_var = OutUtils.fmt_lbl_var p lbl in
+               O.fi "ins_t *%s;" lbl_var;
+               if Cfg.is_kvm && do_self then begin
+                 O.fi "pteval_t *%s;" (OutUtils.fmt_pte_tag lbl_var);
+                 O.fi "pteval_t %s;" (OutUtils.fmt_phy_tag lbl_var)
+               end)
+            CfgLoc.all_labels ;
           if see_faults test then O.fi "ins_t *instr_base[NTHREADS];" ;
           if do_precise then O.fi "ins_t *ret[N];" ;
           O.o "} labels_t;" ;
@@ -798,39 +800,95 @@ module Make
         if need_symbols then begin
           UD.dump_label_defs ~pp_faults ~pp_labels CfgLoc.all_labels ;
           if pp_labels then
-            UD.dump_label_funcs do_self CfgLoc.all_labels (T.get_nprocs test)
+            UD.dump_label_funcs do_self CfgLoc.all_labels
         end ;
         if see_faults test || U.ptr_in_outs env test then
           dump_data_indices test ;
         if see_faults test then begin
           let label_sites =
-            List.map (fun (proc,label) ->
-                (proc,U.find_label_offset proc label test),label)
+            ByProc.map
+              (fun proc label ->
+                 (proc,U.find_label_offset proc label test),label)
               CfgLoc.all_labels in
-          let labels_by_site =
-            label_sites
-            |> Misc.group (fun (site1,_) (site2,_) ->
-                Misc.pair_compare Proc.compare Int.compare site1 site2)
-            |> List.filter_map (function
-                | [] -> None
-                | (site,_)::_ as labels ->
-                    let names =
-                        List.map snd labels |> List.sort String.compare in
-                    let text = match names with
-                      | [name] -> name
-                      | _ -> "{" ^ String.concat "," names ^ "}" in
-                    Some (site,text)) in
+          let module SiteMap =
+            MyMap.Make
+              (struct
+                type t = Proc.t * int (* site = proc X offset *)
+                let compare = Misc.pair_compare Proc.compare Int.compare
+              end) in
+          let site2labels =
+            ByProc.fold
+              (fun k _ (site,lbl) -> SiteMap.accumulate site lbl k)
+              SiteMap.empty label_sites in
           let fault_labels =
-            List.map (fun ((proc,offset) as site,_) ->
-                proc,offset,List.assoc site labels_by_site) label_sites in
+            ByProc.map
+              (fun _ ((proc,offset) as site,_) ->
+                proc,offset,
+                begin
+                  try
+                    let labels =
+                      SiteMap.find site site2labels
+                      |> List.sort String.compare in
+                    match labels with
+                    | [] -> ""
+                    | [lbl] -> lbl
+                    | _::_::_ ->
+                        String.concat "," labels |> sprintf "{%s}"
+                with Not_found -> assert false
+              end) label_sites in
           O.o "static const struct {" ;
           O.oi "int proc, offset;" ;
           O.oi "const char *labels;" ;
           O.o "} fault_labels[] = {" ;
           O.fi "{ -1, 0, NULL }," ;
-          List.iter (fun (proc,offset,labels) ->
-              O.fi "{ %d, %d, %S }," proc offset labels) fault_labels;
+          ByProc.iter
+            (fun _ (proc,offset,labels) ->
+               O.fi "{ %d, %d, %S }," proc offset labels) fault_labels;
           O.o "};" ;
+          O.o "" ;
+          O.o
+            "/* Returns the smallest label index for the given processor id and offset," ;
+          O.o " * when it exists. */" ;
+          let nprocs = List.length @@ ByProc.to_procs label_sites in
+          let return_unknown =
+            sprintf "return %s;" (SkelUtil.instr_symb_id "UNKNOWN") in
+          O.o "static int fault_label(int proc, long offset) {" ;
+          begin match nprocs with
+          | 0 ->  O.oi return_unknown
+          | _ ->
+              let indent =
+              if nprocs > 1 then begin
+                O.oi "switch (proc) {" ;
+                Indent.indent2
+              end else Indent.indent in
+              ByProc.iter_structured
+                (fun p xs ->
+                   if nprocs > 1 then O.fi "case %d:" p ;
+                   O.ox indent "switch (offset) {" ;
+                   let _ =
+                     List.fold_left
+                       (fun seen ((_,off),lbl) ->
+                          if not (IntSet.mem off seen) then begin
+                            O.fx indent "case %d:" off ;
+                            O.fx (Indent.tab indent)
+                              "return %s;"
+                              (OutUtils.fmt_lbl_var p lbl
+                               |> SkelUtil.instr_symb_id)
+                          end ;
+                          IntSet.add off seen)
+                       IntSet.empty xs in
+                   O.ox indent "default:" ;
+                   O.ox (Indent.tab indent) return_unknown ;
+               O.ox indent "}")
+                label_sites ;
+              if nprocs > 1 then begin
+                  O.oi "default:" ;
+                  O.oii return_unknown ;
+                  O.oi "}"
+                end
+          end ;
+          O.o "}" ;
+          O.o "" ;
           Insert.insert O.o "kvm_fault_type.c"
         end
 
@@ -1540,7 +1598,10 @@ module Make
           O.o "static void labels_init(vars_t *_vars) {" ;
           if do_label_init || do_precise || see_faults test then
             O.fi "labels_t *lbls = &_vars->labels;" ;
-          if Cfg.is_kvm && do_self && Misc.consp CfgLoc.all_labels then
+          if
+            Cfg.is_kvm && do_self
+            && not (ByProc.is_empty CfgLoc.all_labels)
+          then
             O.oi "pteval_t *_p;" ;
           O.o "";
           if see_faults test then
@@ -1551,7 +1612,8 @@ module Make
                   else sprintf "(ins_t *)%s + prelude_size((ins_t *)%s)" code code in
                 O.fi "lbls->instr_base[%d] = %s;" p instr_base)
               test.T.code ;
-          List.iter (fun (p,lbl) ->
+          ByProc.iter
+            (fun p lbl ->
               let lbl_var = OutUtils.fmt_lbl_var p lbl in
               let off = U.find_label_offset p lbl test in
               let lhs = sprintf "lbls->%s" lbl_var in
@@ -1841,42 +1903,43 @@ module Make
               inits;
             if Cfg.is_kvm && do_self then begin
               List.iter
-                (fun (p,lbl) ->
-                  if p = proc then begin
-                    let x = sprintf "%d:%s" p lbl in
-                    let lbl_var =  OutUtils.fmt_lbl_var p lbl in
-                    let lbl_loc = sprintf "_vars->labels.%s" lbl_var in
-                    let lbl_pte = sprintf "_vars->labels.pte_%s" lbl_var in
-                    try
-                      begin match Misc.Simple.assoc x bds with
-                      | P phy ->
-                          O.fii
-                            "(void)litmus_set_pte_safe(%s,%s,_vars->labels.saved_pte_%s);" lbl_loc lbl_pte phy ;
-                          O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
-                      | Z ->
-                          O.fii "(void)litmus_set_pte(%s,%s,litmus_set_pte_invalid(*%s));" lbl_loc lbl_pte lbl_pte ;
-                          O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
-                      | V (o,pteval) ->
-                          let is_default = A.V.PteVal.is_default pteval in
-                          if not (o = None && is_default) then begin
-                            let arg = match o with
-                              | None -> sprintf "_vars->labels.saved_pte_%s" lbl_var
-                              | Some s -> sprintf "_vars->labels.saved_pte_%s" s in
-                            O.fii "pteval_t pte_%s = %s;" lbl_var (PU.dump_pteval_flags arg pteval) ;
-                            List.iter
-                              (fun attr ->
+                (fun lbl ->
+                   let x = sprintf "%d:%s" proc lbl in
+                   let lbl_var =  OutUtils.fmt_lbl_var proc lbl in
+                   let lbl_loc = sprintf "_vars->labels.%s" lbl_var in
+                   let lbl_pte = sprintf "_vars->labels.pte_%s" lbl_var in
+                   try
+                     match Misc.Simple.assoc x bds with
+                     | P phy ->
+                         O.fii
+                           "(void)litmus_set_pte_safe(%s,%s,_vars->labels.saved_pte_%s);"
+                           lbl_loc lbl_pte phy ;
+                         O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+                     | Z ->
+                         O.fii
+                           "(void)litmus_set_pte(%s,%s,litmus_set_pte_invalid(*%s));"
+                           lbl_loc lbl_pte lbl_pte ;
+                         O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+                     | V (o,pteval) ->
+                         let is_default = A.V.PteVal.is_default pteval in
+                         if not (o = None && is_default) then begin
+                           let arg = match o with
+                             | None -> sprintf "_vars->labels.saved_pte_%s" lbl_var
+                             | Some s -> sprintf "_vars->labels.saved_pte_%s" s in
+                           O.fii
+                             "pteval_t pte_%s = %s;"
+                             lbl_var (PU.dump_pteval_flags arg pteval) ;
+                           List.iter
+                             (fun attr ->
                                 O.fii "litmus_set_pte_attribute(&pte_%s, %s);" lbl_var attr)
-                              (A.V.PteVal.attrs_as_kvm_symbols pteval) ;
-                            O.fii "(void)litmus_set_pte_safe(%s,%s,pte_%s);" lbl_loc lbl_pte lbl_var ;
-                            O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
-                          end
-                      end
-                    with Not_found ->
-                      ()
-                  end else
-                  ()
-                )
-                CfgLoc.all_labels
+                             (A.V.PteVal.attrs_as_kvm_symbols pteval) ;
+                           O.fii
+                             "(void)litmus_set_pte_safe(%s,%s,pte_%s);"
+                             lbl_loc lbl_pte lbl_var ;
+                           O.fii "litmus_flush_tlb((void *)%s);" lbl_loc
+                         end
+                   with Not_found -> ())
+                (ByProc.of_proc proc CfgLoc.all_labels)
             end
         end ;
         (* Synchronise *)
@@ -1936,9 +1999,9 @@ module Make
             (fun a -> O.fii "litmus_flush_tlb((void *)%s);" a)
             inits;
           if Cfg.is_kvm && do_self then begin
-            List.iter
-              (fun (p,lbl) ->
-                if p = proc then begin
+            ByProc.iter
+              (fun p lbl ->
+                if Proc.equal p proc then begin
                   let lbl_var =  OutUtils.fmt_lbl_var p lbl in
                   let lbl_loc = sprintf "_vars->labels.%s" lbl_var in
                   let lbl_pte = sprintf "_vars->labels.pte_%s" lbl_var in
@@ -2457,19 +2520,19 @@ module Make
               let label_init =
                 if has_instruction_ptr then
                   T.get_init_labels test
-                else Label.Full.Set.empty
+                else ByProc.empty
 
               let all_labels =
                 if has_instruction_ptr then
                   T.all_labels test
-                else []
+                else ByProc.empty
 
               let need_prelude =
                 Misc.consp (T.C.get_faults test.T.condition) || Misc.consp test.T.ffaults ||
                 has_instruction_ptr &&
                   begin
-                    Misc.consp all_labels
-                    || not (Label.Full.Set.is_empty label_init)
+                    not (ByProc.is_empty all_labels)
+                    || not (ByProc.is_empty label_init)
                     || Misc.consp (T.from_labels test)
                     || Cfg.variant Variant_litmus.Self
                   end

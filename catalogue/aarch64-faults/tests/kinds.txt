@@ -1,4 +1,5 @@
 3faults                     Required
+3faults+ifetch              Required
 LDRaf0F                     Required
 LDRredF                     Required
 noUDF                       Forbid
