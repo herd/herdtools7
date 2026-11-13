@@ -47,29 +47,29 @@
 include "aarch64memattrs.cat"
 
 let TTD-MT-update =
-  [Normal]; ca; [Device]
-  | [Device]; ca; [Normal]
+  [TTDNormal]; ca; [TTDDevice]
+  | [TTDDevice]; ca; [TTDNormal]
 
 let TTD-SH-update =
-  [NSH]; ca; [ISH | OSH]
-  | [ISH]; ca; [OSH | NSH]
-  | [OSH]; ca; [NSH | ISH]
+  [TTDNSH]; ca; [TTDISH | TTDOSH]
+  | [TTDISH]; ca; [TTDOSH | TTDNSH]
+  | [TTDOSH]; ca; [TTDNSH | TTDISH]
 
 let TTD-ICH-update =
-  [iNC]; ca; [iWT | iWB]
-  | [iWT]; ca; [iWB | iNC]
-  | [iWB]; ca; [iNC | iWT]
+  [TTDiNC]; ca; [TTDiWT | TTDiWB]
+  | [TTDiWT]; ca; [TTDiWB | TTDTTDiNC]
+  | [TTDiWB]; ca; [TTDiNC | TTDiWT]
 
 let TTD-OCH-update =
-  [oNC]; ca; [oWT | oWB]
-  | [oWT]; ca; [oWB | oNC]
-  | [oWB]; ca; [oNC | oWT]
+  [TTDoNC]; ca; [TTDoWT | TTDoWB]
+  | [TTDoWT]; ca; [TTDoWB | TTDoNC]
+  | [TTDoWB]; ca; [TTDoNC | TTDoWT]
 
 let TTD-DT-update =
-  [Device-GRE]; ca; [Device-nGRE | Device-nGnRE | Device-nGnRnE]
-  | [Device-nGRE]; ca; [Device-GRE | Device-nGnRE | Device-nGnRnE]
-  | [Device-nGnRE]; ca; [Device-GRE | Device-nGRE | Device-nGnRnE]
-  | [Device-nGnRnE]; ca; [Device-GRE | Device-nGRE | Device-nGnRE]
+  [TTDDevice-GRE]; ca; [TTDDevice-nGRE | TTDDevice-nGnRE | TTDDevice-nGnRnE]
+  | [TTDDevice-nGRE]; ca; [TTDDevice-GRE | TTDDevice-nGnRE | TTDDevice-nGnRnE]
+  | [TTDDevice-nGnRE]; ca; [TTDDevice-GRE | TTDDevice-nGRE | TTDDevice-nGnRnE]
+  | [TTDDevice-nGnRnE]; ca; [TTDDevice-GRE | TTDDevice-nGRE | TTDDevice-nGnRE]
 
 let TTD-OA-update = [TTD & M]; ca \ same-oa((TTD & M) * (TTD & M)); [TTD & W]
 let TTD-at-least-one-writable = at-least-one-writable((TTD & M) * (TTD & M))

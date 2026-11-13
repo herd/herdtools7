@@ -141,7 +141,6 @@ let IC-ca =
 let Instr-obs =
     rf; [Imp & Instr & R]
     | IC-after
-    | [DC.CVAU]; DC-after; [W] | [W]; DC-after; [DC.CVAU]
     | IC-ca
 
 (** Observed-by **)
@@ -150,6 +149,7 @@ let obs =
     | Tag-obs; sca-class?
     | TTD-obs
     | Instr-obs
+    | DC-after
 
 (*** Ordered-before ***)
 let rec ob =

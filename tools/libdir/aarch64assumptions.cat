@@ -131,7 +131,7 @@ assert empty rf-reg \ (Wreg * Rreg) as rf-reg-extremities
 assert empty fr \ (R * W) as fr-extremities
 assert empty sm \ ((M | FAULT) * (M | FAULT)) as sm-extremities
 assert empty TLBI-after \ ((TLBI * (Imp & PTE & R)) | ((Imp & PTE & R) * TLBI)) as TLBI-after-extremities
-assert empty DC-after \ ((DC.CVAU * (Exp & W)) | ((Exp & W) * DC.CVAU)) as DC-after-extremities
+assert empty DC-after \ ((DC-by-addr * M) | (M * DC-by-addr)) as DC-after-extremities
 assert empty IC-after \ ((IC * (Imp & Instr & R)) | ((Imp & Instr & R) * IC)) as IC-after-extremities
 assert empty same-low-order-bits \ ((M | DC.CVAU | IC | FAULT) * (M | DC.CVAU | IC | FAULT)) as same-low-order-bits-extremities
 assert empty inv-domain \ ((PTE * TLBI) | (TLBI * PTE)) as inv-domain-extremities

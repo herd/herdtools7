@@ -250,6 +250,8 @@ end = struct
   let pp_isync = ""
   let is_isync _a = false
 
+  let is_cmo _ = assert false
+
   let arch_sets =
     [
       "X",is_atomic;

@@ -66,6 +66,8 @@ end = struct
   let is_isync _ = raise Misc.NoIsync
   let pp_isync = "???"
 
+  let is_cmo _ = assert false
+
   let is_barrier a = match a with
   | Fence _ -> true
   | _ -> false

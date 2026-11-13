@@ -6,7 +6,7 @@ let ii_direct_data = iico_data \ (iico_data; [M]; iico_data)
 
 (* Translation-intrinsically-before *)
 let tr-ib =
-  [Imp & TTD & R]; ii_direct_data; [B]; iico_ctrl; [Exp & M | Imp & Tag & R | MMU & FAULT | TagCheck & FAULT]
+  [Imp & TTD & R]; ii_direct_data; [B]; iico_ctrl; [Exp & M | Imp & Tag & R | DC-by-addr | IC.IVAU | MMU & FAULT | TagCheck & FAULT]
 
 (* Effect with valid PA *)
 let E-valid-PA = M | DC.CVAU | IC
@@ -22,6 +22,25 @@ let same-low-order-bits = [E-valid-PA]; same-low-order-bits; [E-valid-PA]
 (* NOTE : currently assumes all locations are on different cache lines *)
 (*        also extends to IC without a location specified              *)
 let scl = loc
-  | (M | DC.CVAU | IC) * (IC.IALLU | IC.IALLUIS)
-  | (IC.IALLU | IC.IALLUIS) * (M | DC.CVAU | IC)
- 
+  | (M | DC-by-addr | IC) * (IC.IALLU | IC.IALLUIS)
+  | (IC.IALLU | IC.IALLUIS) * (M | DC-by-addr | IC)
+
+(* Assume all Effects are iWB oWB when variat vmsa is not enabled *)
+let iWB = if "vmsa" then range([TTDiWB]; tr-ib; [Exp & M | DC-by-VA | IC]) else (M | DC-by-VA | IC)
+let oWB = if "vmsa" then range([TTDoWB]; tr-ib; [Exp & M | DC-by-VA | IC]) else (M | DC-by-VA | IC)
+let WB = iWB & oWB
+let iWT = range([TTDiWT]; tr-ib; [Exp & M | DC-by-VA | IC])
+let oWT = range([TTDoWT]; tr-ib; [Exp & M | DC-by-VA | IC])
+let WT = iWT & oWT
+let NC = range([TTDiNC & TTDoNC]; tr-ib; [Exp & M | DC-by-VA | IC])
+let Device-GRE = range([TTDDevice-GRE]; tr-ib; [Exp & M | DC-by-VA | IC])
+let Device-nGRE = range([TTDDevice-nGRE]; tr-ib; [Exp & M | DC-by-VA | IC])
+let Device-nGnRE = range([TTDDevice-nGnRE]; tr-ib; [Exp & M | DC-by-VA | IC])
+let Device-nGnRnE = range([TTDDevice-nGnRnE]; tr-ib; [Exp & M | DC-by-VA | IC])
+let Device = Device-GRE | Device-nGRE | Device-nGnRE | Device-nGnRnE
+
+let same-cacheability =
+  WB * WB
+  | WT * WT
+  | NC * NC
+  | Device * Device

@@ -36,6 +36,8 @@ module type S = sig
   val is_isync : action -> bool
   val pp_isync : string
 
+  val is_cmo : action -> bool
+
 (**************************************)
 (* Access to sub_components of events *)
 (**************************************)
