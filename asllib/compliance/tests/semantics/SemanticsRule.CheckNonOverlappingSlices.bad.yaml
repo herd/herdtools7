@@ -1,5 +1,10 @@
 mode: exec
 outcome: FAILURE
 error: DE_OSA
+error_line: 4
 info: |-
-  ASL Dynamic error (DE_OSA): overlapping slices (N - 2)+:2, 0+:1.
+  File ../tests/semantics/SemanticsRule.CheckNonOverlappingSlices.bad.asl,
+    line 4, characters 5 to 17:
+      y[N-1:N-2, 0] = '111';
+       ^^^^^^^^^^^^
+  ASL Dynamic error (DE_OSA): overlapping slices.

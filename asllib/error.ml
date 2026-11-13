@@ -99,7 +99,7 @@ type error_desc =
   | BadReturnStmt of ty option
   | UnexpectedSideEffect of string
   | UncaughtException of string
-  | OverlappingSlices of slice list * error_handling_time
+  | OverlappingSlices of slice list option * error_handling_time
   | BadLDI of AST.local_decl_item
   | BadRecursiveDecls of identifier list
   | UnrespectedParserInvariant
@@ -686,10 +686,12 @@ module PPrint = struct
         pp_err Typing "cannot return something from a procedure."
     | UnexpectedSideEffect s -> pp_err Dynamic "Unexpected side-effect: %s." s
     | UncaughtException s -> pp_err Dynamic "Uncaught exception: %s." s
-    | OverlappingSlices (slices, t) ->
+    | OverlappingSlices (Some slices, t) ->
         pp_err
           (ErrorKind.of_error_handling_time t)
           "overlapping slices@ @[%a@]." pp_slice_list slices
+    | OverlappingSlices (None, t) ->
+        pp_err (ErrorKind.of_error_handling_time t) "overlapping slices."
     | BadLDI ldi ->
         pp_err Typing "Unsupported declaration:@ @[%a@]." pp_local_decl_item ldi
     | BadRecursiveDecls decls ->
