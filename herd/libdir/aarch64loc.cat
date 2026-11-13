@@ -25,3 +25,23 @@ let scl = loc
   | (M | DC.CVAU | IC) * (IC.IALLU | IC.IALLUIS)
   | (IC.IALLU | IC.IALLUIS) * (M | DC.CVAU | IC)
  
+
+(* Assume all Effects are iWB oWB when variat vmsa is not enabled *)
+let iWB = if "vmsa" then range([iWB]; tr-ib; [Exp & M | DC | IC]) else (M | DC | IC)
+let oWB = if "vmsa" then range([oWB]; tr-ib; [Exp & M | DC | IC]) else (M | DC | IC)
+let WB = iWB & oWB
+let iWT = range([iWT]; tr-ib; [Exp & M | DC | IC])
+let oWT = range([oWT]; tr-ib; [Exp & M | DC | IC])
+let WT = iWT & oWT
+let NC = range([iNC & oNC]; tr-ib; [Exp & M | DC | IC])
+let Device-GRE = range([Device-GRE]; tr-ib; [Exp & M | DC | IC])
+let Device-nGRE = range([Device-nGRE]; tr-ib; [Exp & M | DC | IC])
+let Device-nGnRE = range([Device-nGnRE]; tr-ib; [Exp & M | DC | IC])
+let Device-nGnRnE = range([Device-nGnRnE]; tr-ib; [Exp & M | DC | IC])
+let Device = Device-GRE | Device-nGRE | Device-nGnRE | Device-nGnRnE
+
+let same-cacheability =
+  WB * WB
+  | WT * WT
+  | NC * NC
+  | Device * Device

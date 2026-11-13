@@ -460,3 +460,17 @@ do not match the memory contents at the OA of #2}
 
 \newcommand{\nointerv}[4]{there is no #1 in #2 between #3 and #4}
 \renewcommand{\int}[2]{#1 and #2 are from the same Processing Element}
+
+\newcommand{\samecacheabilityname}{Same Cacheability}
+\newcommand{\samecacheabilityemph}[2]{#1 and #2 have the \emph{\samecacheabilityname}}
+\newcommand{\samecacheability}[2]{#1 and #2 have the \samecacheabilityname{}}
+
+\newcommand{\marked}[2]{#1 to a Location marked #2}
+\newcommand{\WB}[1]{\marked{#1}{Normal, Write-Back Cacheable}}
+\newcommand{\WT}[1]{\marked{#1}{Normal, Write-Through}}
+\newcommand{\NC}[1]{\marked{#1}{Normal, Non-cacheable}}
+\newcommand{\DeviceGRE}[1]{\marked{#1}{Device-GRE}}
+\newcommand{\DevicenGRE}[1]{\marked{#1}{Device-nGRE}}
+\newcommand{\DevicenGnRE}[1]{\marked{#1}{Device-nGnRE}}
+\newcommand{\DevicenGnRnE}[1]{\marked{#1}{Device-nGnRnE}}
+\newcommand{\Device}[1]{\marked{#1}{Device}}
