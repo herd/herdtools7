@@ -1,4 +1,5 @@
 3faults.litmus
+3faults+ifetch.litmus
 LDRaf0F.litmus
 LDRredF.litmus
 STRdb0F.litmus
