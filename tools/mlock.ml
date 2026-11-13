@@ -130,6 +130,8 @@ module Top(O:Config)(Out:OutTests.S) = struct
         nxt,StringSet.empty,StoreReg (t,r,tr_expr e)
     | StoreMem (e1,e2,m) ->
          nxt,StringSet.empty,StoreMem(tr_expr e1,tr_expr e2,m)
+    | StoreOp (e1,op,e2,m) ->
+         nxt,StringSet.empty,StoreOp(tr_expr e1,op,tr_expr e2,m)
     | PCall (f,es) ->
         nxt,StringSet.empty,PCall (f,List.map tr_expr es)
     | Seq (is,b) ->
@@ -277,6 +279,10 @@ module Top(O:Config)(Out:OutTests.S) = struct
         let s1 = expr_read e1 and s2 = expr_read e2 in
         let s = StringSet.union s1 s2 in
         add_locks s i
+    | StoreOp (e1,_,e2,_) ->
+        let s1 = expr_read e1 and s2 = expr_read e2 in
+        let s = StringSet.union s1 s2 in
+        add_locks s i
     | PCall ("WRITE_ONCE",[LoadMem (LoadReg r,AN []);e]) ->
         changed := true ;
         let s = expr_read e in
@@ -375,6 +381,8 @@ module Top(O:Config)(Out:OutTests.S) = struct
             PCall ("WRITE_ONCE",[LoadMem (e1,AN []);e2])
         | _ -> StoreMem (e1,e2,a)
         end
+    | StoreOp (e1,op,e2,a) ->
+        StoreOp (tr_expr e1,op,tr_expr e2,a)
     | PCall (f,es) -> PCall (f,tr_exprs es)
     | AtomicOp (loc,op,e,a) -> AtomicOp(tr_expr loc,op,tr_expr e,a)
     | InstrSRCU(eloc,a,oe) -> InstrSRCU(tr_expr eloc,a,Misc.app_opt tr_expr oe) in

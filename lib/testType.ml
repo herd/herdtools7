@@ -68,7 +68,7 @@ let is_signed = function
 | "char"|"int8_t"
 | "short"|"int16_t"
 | "int64_t"
-| "int128_t"
+| "int128_t" | "__int128_t"
 | "__int128"
 | "intptr_t" -> true
 | _ -> false

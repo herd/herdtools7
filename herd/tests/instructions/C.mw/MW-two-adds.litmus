@@ -1,0 +1,12 @@
+C MW-two-adds
+{ [x]=0; }
+
+P0 (int* x) {
+  atomic_store_add_explicit(x, 1, memory_order_relaxed);
+}
+
+P1 (int* x) {
+  atomic_store_add_explicit(x, 1, memory_order_relaxed);
+}
+
+forall ([x]=2)

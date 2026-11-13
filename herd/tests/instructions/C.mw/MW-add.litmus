@@ -1,0 +1,10 @@
+C MW-add
+{ [rlx]=5; [rel]=0x7fffffff; [zero]=7; }
+
+P0 (int* rlx, int* rel, int* zero) {
+  atomic_store_add_explicit(rlx, 3, memory_order_relaxed);
+  atomic_store_add_explicit(rel, 1, memory_order_release);
+  atomic_store_add_explicit(zero, 0, memory_order_relaxed);
+}
+
+forall ([rlx]=8 /\ [rel]=0x80000000 /\ [zero]=7)

@@ -1,0 +1,10 @@
+Test MW-xor Required
+States 1
+[rel]=0x6; [rlx]=0x6;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([rlx]=0x6 /\ [rel]=0x6)
+Observation MW-xor Always 1 0
+Hash=23279d784af4fb2dbfdbdd43f921c38e
+

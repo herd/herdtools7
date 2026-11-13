@@ -188,6 +188,8 @@ end = struct
   (* The following definition of is_atomic is quite arbitrary. *)
 
   let old_is_atomic a = match a with
+  (* Store updates have an atomic internal read without a memory-order tag. *)
+  | Access (_,A.Location_global _,_,AN [],true,_) -> true
   | Access (_,A.Location_global _,_,AN _,_,_) -> false
   | Access (_,A.Location_global _,_,MO _,_,_) -> true
   | RMW _ -> true

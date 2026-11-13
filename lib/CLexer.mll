@@ -61,6 +61,13 @@ let tr_name s = match s with
 | "atomic_fetch_or_explicit" -> ATOMIC_FETCH_EXPLICIT Op.Or
 | "atomic_fetch_xor_explicit" -> ATOMIC_FETCH_EXPLICIT Op.Xor
 | "atomic_fetch_and_explicit" -> ATOMIC_FETCH_EXPLICIT Op.And
+| "atomic_store_add_explicit" -> ATOMIC_STORE_OP_EXPLICIT Op.Add
+| "atomic_store_sub_explicit" -> ATOMIC_STORE_OP_EXPLICIT Op.Sub
+| "atomic_store_and_explicit" -> ATOMIC_STORE_OP_EXPLICIT Op.And
+| "atomic_store_or_explicit" -> ATOMIC_STORE_OP_EXPLICIT Op.Or
+| "atomic_store_xor_explicit" -> ATOMIC_STORE_OP_EXPLICIT Op.Xor
+| "atomic_store_max_explicit" -> ATOMIC_STORE_OP_EXPLICIT Op.Max
+| "atomic_store_min_explicit" -> ATOMIC_STORE_OP_EXPLICIT Op.Min
 | "memory_order_acquire" -> MEMORDER (MemOrder.Acq)
 | "memory_order_release" -> MEMORDER (MemOrder.Rel)
 | "memory_order_acq_rel" -> MEMORDER (MemOrder.Acq_Rel)

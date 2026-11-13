@@ -63,6 +63,7 @@ open MemOrderOrAnnot
 %token   UNDERATOMICOP  UNDERATOMICOPRETURN UNDERATOMICFETCHOP UNDERATOMICADDUNLESS
 %token SRCU
 %token <CBase.op> ATOMIC_FETCH_EXPLICIT
+%token <CBase.op> ATOMIC_STORE_OP_EXPLICIT
 
 %left PIPE
 %left XOR
@@ -279,6 +280,13 @@ instruction:
   { InstrSRCU($6,$3,Some $8) }
 | ST_EXPLICIT LPAR expr COMMA expr COMMA MEMORDER RPAR SEMI
   { StoreMem($3, $5, MO $7) }
+| ATOMIC_STORE_OP_EXPLICIT LPAR expr COMMA expr COMMA MEMORDER RPAR SEMI
+  { match $7 with
+    | Rlx | Rel -> StoreOp($3, $1, $5, $7)
+    | mo ->
+        Warn.user_error
+          "atomic_store_%s_explicit requires memory_order_relaxed or memory_order_release (got %s)"
+          (CBase.dump_op $1) (MemOrder.pp_mem_order mo) }
 | LOCK LPAR expr RPAR SEMI
   { Lock ($3,MutexC11) }
 | UNLOCK LPAR expr RPAR SEMI

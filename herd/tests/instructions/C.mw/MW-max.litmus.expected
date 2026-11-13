@@ -1,0 +1,10 @@
+Test MW-max Required
+States 1
+[iptr]=0xfffffffffffffffffffffffffffffffe; [s128]=0xfffffffffffffffffffffffffffffffe; [srel]=0xfffffffffffffffe; [srlx]=0xfffffffe; [urel]=0xffffffff; [urlx]=0xffffffff;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([srlx]=0xfffffffe /\ [srel]=0xfffffffffffffffe /\ [urlx]=0xffffffff /\ [urel]=0xffffffff /\ [s128]=0xfffffffffffffffffffffffffffffffe /\ [iptr]=0xfffffffffffffffffffffffffffffffe)
+Observation MW-max Always 1 0
+Hash=689afd1b29a7955d2d358cf6a9a50f29
+

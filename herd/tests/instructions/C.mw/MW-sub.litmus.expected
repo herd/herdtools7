@@ -1,0 +1,10 @@
+Test MW-sub Required
+States 1
+[rel]=0xffffffff; [rlx]=0x2;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([rlx]=0x2 /\ [rel]=0xffffffff)
+Observation MW-sub Always 1 0
+Hash=b574d75a074aea6152a661909b29bc50
+

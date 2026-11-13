@@ -86,6 +86,7 @@ type instruction =
   | DeclReg of CType.t * reg
   | StoreReg of CType.t option * reg option * expression (* None reg does not store result*)
   | StoreMem of expression * expression * MemOrderOrAnnot.t
+  | StoreOp of expression * op * expression * mem_order
   | Lock of expression * mutex_kind
   | Unlock of expression * mutex_kind
   | AtomicOp of expression * op * expression * MemOrderOrAnnot.annot
@@ -107,6 +108,8 @@ let dump_op =
     | Or -> "or"
     | Xor -> "xor"
     | And -> "and"
+    | Max -> "max"
+    | Min -> "min"
     | _ -> assert false
 
 let dump_ws = function
@@ -214,6 +217,10 @@ let rec do_dump_instruction indent =
   | StoreMem(l,e,MO mo) ->
      pindent "atomic_store_explicit(%s,%s,%s);"
              (dump_expr l) (dump_expr e) (MemOrder.pp_mem_order mo)
+  | StoreOp(l,op,e,mo) ->
+      pindent "atomic_store_%s_explicit(%s,%s,%s);"
+        (dump_op op) (dump_expr l) (dump_expr e)
+        (MemOrder.pp_mem_order mo)
   | Lock (l,MutexC11) ->
      pindent "lock(%s);" (dump_expr l)
   | Unlock (l,MutexC11) ->
@@ -301,6 +308,8 @@ include Pseudo.Make
         | StoreReg(ot,l,e) -> StoreReg(ot,l,parsed_expr_tr e)
         | StoreMem(l,e,mo) ->
             StoreMem(parsed_expr_tr l,parsed_expr_tr e,mo)
+        | StoreOp(l,op,e,mo) ->
+            StoreOp(parsed_expr_tr l,op,parsed_expr_tr e,mo)
         | Lock (e,k) -> Lock (parsed_expr_tr e,k)
         | Unlock (e,k) -> Unlock  (parsed_expr_tr e,k)
         | AtomicOp(l,op,e,a) -> AtomicOp(parsed_expr_tr l,op,parsed_expr_tr e,a)
@@ -339,6 +348,7 @@ include Pseudo.Make
               get_opt (get_rec k ifso) ifno
           | While (e,i,_) -> get_exp (get_rec k i) e
           | CastExpr e|StoreReg (_,_,e) -> get_exp k e
+          | StoreOp(loc,_,e,_) -> get_exp (get_exp (k+2) e) loc
           | StoreMem (loc,e,_)
           | AtomicOp(loc,_,e,_) -> get_exp (get_exp k loc) e
           | Lock (e,_)|Unlock (e,_) -> get_exp (k+1) e
@@ -452,6 +462,8 @@ let rec subst env i = match i with
     with Not_found -> StoreReg (ot,Some r,e) end
 | StoreMem (loc,e,mo) ->
     StoreMem (subst_expr env loc,subst_expr env e,mo)
+| StoreOp (loc,op,e,mo) ->
+    StoreOp (subst_expr env loc,op,subst_expr env e,mo)
 | Lock (loc,k) -> Lock (subst_expr env loc,k)
 | Unlock (loc,k) -> Unlock (subst_expr env loc,k)
 | AtomicOp (loc,op,e,a) -> AtomicOp(subst_expr env loc,op,subst_expr env e,a)
