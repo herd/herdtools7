@@ -1836,8 +1836,6 @@ Arguments:
 
       let ext_sext e ko v =
         let k = match ko with None -> 0 | Some k -> k in
-        lsl_op k v
-        >>=
           M.op1
             begin
               let open AArch64.Ext in
@@ -1851,7 +1849,8 @@ Arguments:
               | SXTH -> Op.Sxt Short
               | SXTW -> Op.Sxt Word
               | SXTX ->  Op.Sxt Quad
-            end
+            end v
+          >>= lsl_op k
 
 (* Apply a shift as monadic op *)
       let shift sz s =
