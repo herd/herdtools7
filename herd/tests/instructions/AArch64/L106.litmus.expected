@@ -1,0 +1,10 @@
+Test L106 Required
+States 1
+0:X3=3120; 0:X4=-165644; 0:X5=-19005;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X3=3120 /\ 0:X4=-165644 /\ 0:X5=4294948291)
+Observation L106 Always 1 0
+Hash=16344defd4ee4d5ff6d8d201074b9ef0
+
