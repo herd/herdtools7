@@ -480,7 +480,7 @@ module Annotate (C : ANNOTATE_CONFIG) : S = struct
         let interval = interval_of_slice env slice in
         let new_diet = DI.add interval DI.empty in
         if DI.is_empty (Diet.Int.inter new_diet diet) then DI.add interval diet
-        else fatal_from ~loc Error.(OverlappingSlices (slices, Static))
+        else fatal_from ~loc Error.(OverlappingSlices (Some slices, Static))
       with NonStatic -> diet
     in
     List.fold_left (bitfield_slice_to_positions ~loc env) Diet.Int.empty slices
