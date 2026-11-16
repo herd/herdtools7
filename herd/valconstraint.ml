@@ -590,32 +590,29 @@ let get_failed cns =
 
       let atom_compare = A.V.compare
 
-      let atom2_compare p1 p2 =
-        Misc.pair_compare atom_compare atom_compare p1 p2
+      let atom2_compare cmpx cmpy x1 y1 x2 y2 =
+        match cmpx x1 x2 with
+        | 0 -> cmpy y1 y2
+        | r -> r
 
-      let atom3_compare (e1,e2,e3) (f1,f2,f3) =
-        Misc.pair_compare
-          atom_compare atom2_compare (e1,(e2,e3)) (f1,(f2,f3))
+      let atom3_compare f1 f2 f3 x1 x2 x3 y1 y2 y3 = match atom2_compare f1 f2 x1 x2 y1 y2 with
+        | 0 -> f3 x3 y3
+        | r -> r
+
+      let atom4_compare f1 f2 f3 f4 x1 x2 x3 x4 y1 y2 y3 y4 = match atom3_compare f1 f2 f3 x1 x2 x3 y1 y2 y3 with
+        | 0 -> f4 x4 y4
+        | r -> r
 
       let expr_compare e1 e2 = match e1,e2 with
         | Atom v1,Atom v2 -> atom_compare v1 v2
         | ReadInit (loc1,_),ReadInit (loc2,_) ->
-           A.location_compare loc1 loc2 (* second componant is fixed *)
+            A.location_compare loc1 loc2 (* second componant is fixed *)
         | Unop (op1,e1),Unop (op2,e2) ->
-           Misc.pair_compare
-             Misc.polymorphic_compare
-             atom_compare
-             (op1,e1) (op2,e2)
+            atom2_compare Misc.polymorphic_compare atom_compare op1 e1 op2 e2
         | Binop (o,e1,e2),Binop (p,f1,f2) ->
-           Misc.pair_compare
-             Misc.polymorphic_compare
-             atom2_compare
-             (o,(e1,e2)) (p,(f1,f2))
+            atom3_compare Misc.polymorphic_compare atom_compare atom_compare o e1 e2 p f1 f2
         | Terop (o,e1,e2,e3),Terop (p,f1,f2,f3) ->
-           Misc.pair_compare
-             Misc.polymorphic_compare
-             atom3_compare
-             (o,(e1,e2,e3)) (p,(f1,f2,f3))
+            atom4_compare Misc.polymorphic_compare atom_compare atom_compare atom_compare o e1 e2 e3 p f1 f2 f3
         | (Atom _,(ReadInit _|Unop _|Binop _|Terop _))
         | (ReadInit _,(Unop _|Binop _|Terop _))
         | (Unop _,(Binop _|Terop _))
@@ -631,10 +628,7 @@ let get_failed cns =
         | Predicate p1,Predicate p2 ->
             A.CS.compare_predicate p1 p2
         | Assign (v1,e1),Assign (v2,e2) ->
-           Misc.pair_compare
-             atom_compare
-             expr_compare
-             (v1,e1) (v2,e2)
+          atom2_compare atom_compare expr_compare v1 e1 v2 e2
         | Failed exn1,Failed exn2 ->
            Misc.polymorphic_compare exn1 exn2
         | Warn w1,Warn w2 ->
