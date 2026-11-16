@@ -1,5 +1,7 @@
 .DEFAULT_GOAL = all
 
+PROJECT_ROOT := $(CURDIR)
+
 OS := $(shell uname)
 PREFIX=$$HOME
 D=dune
@@ -41,7 +43,7 @@ HERD_CATALOGUE_REGRESSION_TEST += $(CATA_HERD_TEST_MODE)
 
 .PHONY: Version.ml
 Version.ml:
-	sh ./version-gen.sh $(PREFIX)
+	sh ./version-gen.sh "$(PROJECT_ROOT)"
 
 just-build: Version.ml
 	dune build -j $(J) --profile $(DUNE_PROFILE)
