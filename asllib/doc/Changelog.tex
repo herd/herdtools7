@@ -1,5 +1,63 @@
 \chapter*{Changelog}
 
+\section*{EAC3}
+
+The following changes were introduced in version EAC3.
+\subsection*{AARCH-26192: Ensure validity of return types in ASL}
+
+Return types of function and getter calls are checked after substituting the call's parameters.
+For example, given the following function:
+\begin{lstlisting}
+func Bad{N}() => bits(N DIV 2)
+begin
+    var result : bits(N DIV 2);
+    return result;
+end;
+\end{lstlisting}
+the following local declaration is no longer permitted:
+\begin{lstlisting}
+var x = Bad{3}();
+\end{lstlisting}
+Its inferred type, \lstinline{bits(3 DIV 2)}, is invalid because \lstinline{DIV} requires exact division.
+See \chapref{SubprogramCalls}.
+
+Symbolic reduction no longer looks through asserting type conversions (\chapref{SymbolicEquivalenceTesting}).
+The standard library function \lstinline{SInt} no longer accepts zero-width bitvectors, for example \lstinline|SInt(Zeros{0})|.
+
+\subsection*{AARCH-26193: ASL side effects for array indices and left-hand sides}
+
+Array index expressions in reads and writes must be readonly.
+For example, if \lstinline{next_index()} is not marked \lstinline{readonly}, the following is no longer valid ASL:
+\begin{lstlisting}
+a[[next_index()]] = 42;
+\end{lstlisting}
+Except for arguments to setter calls, all subexpressions of an assignable expression must therefore be readonly.
+
+The evaluation order of assignments is updated:
+\begin{itemize}
+  \item First the right-hand side is evaluated.
+  \item Then array index and slice expressions on the left-hand side are evaluated exactly once, in left-to-right order.
+  \item The assignment is performed with the already-evaluated array index and slice expressions.
+\end{itemize}
+Setter slice and field assignments retain their read-modify-write behaviour.
+See \chapref{AssignableExpressions}, particularly \secref{PreparingAssignableExpressions}.
+
+\subsection*{AARCH-26176: Clarify grammar of ASL1.0 exception catchers}
+
+Exception catchers require a type name rather than a general type expression.
+Parentheses around exception type names, such as \lstinline{when (E) => ...}, are no longer permitted.
+Exception matching is unchanged.
+See \chapref{CatchingExceptions}.
+
+\subsection*{ASL-986: Source line endings and string literals}
+
+The treatment of line endings and string literals has been clarified in the following sections:
+\begin{itemize}
+  \item \secref{Lexical Regular Expressions} and \secref{Whitespace}
+  \item \secref{Comments}
+  \item \secref{String Literals}
+\end{itemize}
+
 \section*{EAC2}
 
 The following changes were introduced in version EAC2.
