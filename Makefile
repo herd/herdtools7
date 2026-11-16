@@ -1,7 +1,5 @@
 .DEFAULT_GOAL = all
 
-PROJECT_ROOT := $(CURDIR)
-
 OS := $(shell uname)
 PREFIX=$$HOME
 D=dune
@@ -41,14 +39,10 @@ all: build
 CATA_HERD_TEST_MODE := $(if $(ALL_TESTS), ,-fast)
 HERD_CATALOGUE_REGRESSION_TEST += $(CATA_HERD_TEST_MODE)
 
-.PHONY: Version.ml
-Version.ml:
-	sh ./version-gen.sh "$(PROJECT_ROOT)"
-
-just-build: Version.ml
+just-build:
 	dune build -j $(J) --profile $(DUNE_PROFILE)
 
-build-release: Version.ml
+build-release:
 	dune build -j $(J) -p herdtools7 @install
 
 build: check-deps | just-build
@@ -71,12 +65,11 @@ uninstall-aslref:
 	dune uninstall aslref --prefix=$(PREFIX)
 
 clean: dune-clean clean-asl-pseudocode clean-asldoc
-	rm -f Version.ml
 
 dune-clean:
 	dune clean
 
-versions: Version.ml
+versions:
 	@ dune build -j $(J) --workspace dune-workspace.versions
 
 

@@ -45,7 +45,6 @@ jobs:
         working-directory: herd-www
         run: opam install . --deps-only --yes
       - run: |
-          opam exec -- make Version.ml
           opam exec -- dune build tools/cat2html.exe
           opam exec -- make -C herd-www
       - name: Upload www artifact (manual only)
@@ -70,5 +69,4 @@ jobs:
           install-dependencies: "false"
 
       - run: |
-          opam exec -- make Version.ml
           opam exec -- dune build --profile=release asllib/asllib-www
