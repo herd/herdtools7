@@ -17,6 +17,7 @@ install: [make "install-herdtools" "PREFIX=%{prefix}%"]
 depends: [
   "ocaml" {>= "4.14.0"}
   "dune"  {>= "3.14.0" }
+  "dune-site" {>= "3.14.0"}
   "menhir" {>= "20231231"}
   "zarith" {>= "1.13"}
   "conf-which"

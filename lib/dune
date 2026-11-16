@@ -94,6 +94,7 @@
  (wrapped false)
  (libraries
   (re_export base)
+  dune-site
   str
   aslref
   zarith)
@@ -111,3 +112,7 @@
   value
   wideScalar
   hashInfo))
+
+(generate_sites_module
+ (module Herdtools_paths)
+ (sites herdtools7))
