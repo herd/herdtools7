@@ -16,7 +16,7 @@ open Printf
 module Misc = Base.Misc
 
 let verbose = ref 0
-let libdir = ref (Filename.concat Version.libdir "jingle")
+let libdir = ref (Libdir.path "jingle")
 let includes = ref []
 let map = ref None
 let call = ref None

@@ -5,4 +5,4 @@
  (names main extractdefs)
  (public_names uoaim7 extractdefs7)
  (optional)
- (libraries herdtools uoaim))
+ (libraries herdtools libdir uoaim))

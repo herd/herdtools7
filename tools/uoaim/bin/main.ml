@@ -34,7 +34,7 @@ type opts = {
 
 let parse_args () =
   let verbose = ref 0 in
-  let libdir = ref (Filename.concat Version.libdir "herd") in
+  let libdir = ref (Libdir.path "herd") in
   let includes = ref [] in
   let cat = ref "aarch64.cat" in
   let name = ref None in

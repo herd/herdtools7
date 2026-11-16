@@ -98,6 +98,8 @@
   str
   aslref
   zarith)
+ (modules
+  (:standard \ libdir herdtools_paths root_path))
  (modules_without_implementation
   myRel
   sign
@@ -113,6 +115,22 @@
   wideScalar
   hashInfo))
 
+(library
+ (name libdir)
+ (modules libdir herdtools_paths root_path)
+ (libraries dune-site))
+
 (generate_sites_module
- (module Herdtools_paths)
+ (module herdtools_paths)
  (sites herdtools7))
+
+(rule
+ (target root_path.ml)
+ (deps
+  (sandbox none))
+ (action
+  (chdir
+   %{workspace_root}
+   (with-stdout-to
+    %{target}
+    (run sh -c "printf 'let v = \"%s\"\n' \"$(pwd -P)\"")))))

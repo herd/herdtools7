@@ -236,7 +236,7 @@ module Make
 
 
 let verbose = ref 0
-let libdir = ref (Filename.concat Version.libdir "herd")
+let libdir = ref (Libdir.path "herd")
 let includes = ref []
 
 let options =

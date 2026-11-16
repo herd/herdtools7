@@ -961,7 +961,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
 (****************************************)
 
 let verbose = ref 0
-let libdir = ref (Filename.concat Version.libdir "herd")
+let libdir = ref (Libdir.path "herd")
 let includes = ref []
 let names = ref StringSet.empty
 let testmode = ref false

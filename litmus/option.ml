@@ -72,7 +72,7 @@ let argfloato opt r msg =
 let verbose = ref 0
 
 (* Libdir *)
-let libdir = ref (Filename.concat Version.libdir "litmus")
+let libdir = ref (Libdir.path "litmus")
 
 (* Special *)
 let tar = ref None
