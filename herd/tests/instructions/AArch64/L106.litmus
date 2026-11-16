@@ -1,0 +1,12 @@
+AArch64 L106
+{ int32_t 0:X0=0xc3;
+  int64_t 0:X1=0x1000;
+  int32_t 0:X2=0xa5c3;
+  int64_t 0:X3;
+  int64_t 0:X4;
+  int32_t 0:X6=0x1000; }
+ P0                    ;
+ ADD X3,X1,W0,SXTB #4  ;
+ SUB X4,X1,W2,UXTH #2  ;
+ ADD W5,W6,W2,SXTH     ;
+forall (0:X3=0xc30 /\ 0:X4=0xfffffffffffd78f4 /\ 0:X5=0xffffb5c3)
