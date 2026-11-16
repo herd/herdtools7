@@ -19,7 +19,7 @@ open Gen_common
 
 module type I = sig
   type relax
-  val parse : string Ast.t -> relax
+  val parse : (string,string) Ast.t -> relax
 end
 
 module type S = sig
