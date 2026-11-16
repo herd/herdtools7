@@ -42,8 +42,10 @@ let do_run flags =
     |> Fun.flip List.nth 1
     |> String.trim in
     cycles := cycle :: !cycles in
-  (* ignore the output to stderr *)
-  Command.NonBlock.run ~stdout:read_line ~stderr:(fun _ -> ()) flags.diy (diy_argument flags);
+  let ignore _ = () in
+  let raise_e e = failwith (Command.string_of_error e) in
+  Command.NonBlock.run ~stdout:read_line ~stderr:ignore flags.diy (diy_argument flags)
+  |> Result.fold ~ok:ignore ~error:raise_e ;
   StringSet.of_list !cycles
 
 let run_tests flags =

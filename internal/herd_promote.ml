@@ -40,6 +40,16 @@ let () =
       Sys.argv.(0) com (String.concat "; " wrapped)
 
 let () =
-  let st = TestHerd.run_herd_args com wrapped litmus in
-  let ok = TestHerd.promote litmus st in
-  exit (if ok then 0 else 1)
+   let ok =
+    TestHerd.run_herd_args com wrapped litmus
+     |> Result.map (TestHerd.promote litmus)
+   in
+   let err_code = match ok with
+     | Ok true -> 0
+     | Ok false -> 1
+     | Error e ->
+         Printf.eprintf "%s: Error when running test: %s\n%!"
+           (Filename.basename Sys.argv.(0)) (Command.string_of_error e) ;
+         1
+   in
+   exit err_code
