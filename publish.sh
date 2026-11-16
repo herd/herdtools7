@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Assume run as ./publish.sh
-. ./defs.sh
-
 set -o errexit
+
+VERSION=$(dune exec --profile=release ./internal/print_version.exe)
 
 if ! git branch | grep -e "^\* master$" -e "^\* release" >/dev/null
 then

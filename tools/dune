@@ -1,6 +1,3 @@
-(rule
- (copy ../Version.ml Version.ml))
-
 (ocamllex
  lexHashLog
  lexInterval
@@ -102,7 +99,7 @@
   dot2desc7
   cat2table7
   mlogselect7)
- (libraries herdtools libdir unix str)
+ (libraries herdtools unix libdir str version)
  (modules_without_implementation arch_tools copyTest))
 
 (install

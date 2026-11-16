@@ -3,10 +3,7 @@
 (menhir
  (modules parser))
 
-(rule
- (copy ../../Version.ml Version.ml))
-
 (library
  (name gen_common)
- (libraries herdtools libdir unix)
+ (libraries herdtools unix libdir version)
  (modules_without_implementation fence))

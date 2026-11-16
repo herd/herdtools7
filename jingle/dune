@@ -1,12 +1,9 @@
-(rule
- (copy ../Version.ml Version.ml))
-
 (ocamllex callMap parseMap)
 
 (executables
  (names jingle gen_theme)
  (public_names jingle7 gen_theme7)
- (libraries herdtools libdir str)
+ (libraries herdtools libdir str version)
  (modules_without_implementation))
 
 (install
