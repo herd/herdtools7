@@ -56,13 +56,14 @@ module type S = sig
   type constr = A.constr
 
   type nice_prog = A.nice_prog
+  type annotated_prog = A.annotated_prog
   type start_points = A.start_points
   type code_segment = A.code_segment
   type entry_points = A.entry_points
 
   type proc_info = Test_herd.proc_info
   type test =
-      (program, nice_prog, start_points, code_segment, entry_points,
+      (program, annotated_prog, start_points, code_segment, entry_points,
        state, A.size_env, A.type_env,
        prop, location, A.RLocSet.t, A.FaultAtomSet.t) Test_herd.t
 
@@ -96,6 +97,7 @@ module type S = sig
   type event_structure = E.event_structure
   type event_set = E.EventSet.t
   type event_rel = E.EventRel.t
+  type check_result = event CheckResult.t
 
   (* Abreviations *)
   val tr : event_rel -> event_rel
@@ -242,13 +244,14 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
 
     type program = A.program
     type nice_prog = A.nice_prog
+    type annotated_prog = A.annotated_prog
     type start_points = A.start_points
     type code_segment = A.code_segment
     type entry_points = A.entry_points
 
     type proc_info = Test_herd.proc_info
     type test =
-      (program, nice_prog, start_points, code_segment, entry_points, state,
+      (program, annotated_prog, start_points, code_segment, entry_points, state,
        A.size_env, A.type_env,
        prop, location, A.RLocSet.t, A.FaultAtomSet.t) Test_herd.t
 
@@ -326,7 +329,15 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     module AU = ArchUtils.Make(A)
 
     let get_exported_labels_code test =
-      let { Test_herd.nice_prog=prog; _ } = test in
+      let { Test_herd.annotated_prog=prog; _ } = test in
+      let prog =
+        List.map
+          (fun (proc,code) ->
+            proc,List.map
+              (A.pseudo_map
+                 (fun ins -> ins.A.CodeInstr.instr))
+              code)
+          prog in
       AU.get_exported_labels_code prog
 
     let get_exported_labels test =
@@ -374,6 +385,7 @@ module Make(C:Config) (A:Arch_herd.S) (Act:Action.S with module A = A)
     type event_structure = E.event_structure
 
     type event_rel = E.EventRel.t
+    type check_result = event CheckResult.t
   (* Abreviations *)
     let tr = E.EventRel.transitive_closure
     let rt = E.EventRel.remove_transitive_edges

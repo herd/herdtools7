@@ -121,6 +121,7 @@ module Make
           out_sets : S.set_pp Lazy.t ;
           out_skipped : StringSet.t ;
           out_flags : Flag.Set.t ;
+          out_check_result : S.event CheckResult.t ;
           out_bell_info :  BellModel.info ;
         }
 
@@ -576,6 +577,7 @@ module Make
         show : Shown.t StringMap.t Lazy.t ;
         skipped : StringSet.t ;
         flags : Flag.Set.t ;
+        check_result : S.event CheckResult.t ;
         ks : ks ;
         bell_info : BellModel.info ;
         st : inter_st ;
@@ -587,6 +589,7 @@ module Make
         out_sets : S.event_set StringMap.t Lazy.t ;
         out_skipped : StringSet.t ;
         out_flags : Flag.Set.t ;
+        out_check_result : S.event CheckResult.t ;
         out_bell_info :  BellModel.info ;
       }
 
@@ -618,6 +621,9 @@ module Make
        out_sets = lazy (show_to_sets st) ;
        out_skipped = st.skipped ;
        out_flags = st.flags ;
+       out_check_result = (match st.check_result with
+         | CheckResult.Valid -> CheckResult.Valid
+         | CheckResult.Invalid failures -> CheckResult.Invalid (List.rev failures)) ;
        out_bell_info = st.bell_info ; }
 
 
@@ -830,6 +836,55 @@ module Make
     let test2pred  env t e v = match  t with
     | Yes t -> test2pred env t e v
     | No t -> not (test2pred env t e v)
+
+    (* Evaluate the predicate and retain one native counterexample. In
+       particular, do not discard and recompute the acyclicity search. *)
+    let test_with_witness env (loc,pos,t,e,name) v =
+      let open CheckResult in
+      let invalid assertion =
+        Invalid [{name; source=loc; reason=pos; assertion;}] in
+      let positive predicate witness = FailedYes (predicate,witness) in
+      let result = function
+        | None -> Valid
+        | Some w -> invalid w in
+      match t,v with
+      | AST.No p,_ ->
+          if test2pred env t e v then Valid
+          else invalid (FailedNo p)
+      | AST.Yes AST.Acyclic,(Rel r|TransRel r) ->
+          result (Option.map (fun es -> positive AST.Acyclic (Cycle (Events es))) (E.EventRel.get_cycle r))
+      | AST.Yes AST.Irreflexive,TransRel r ->
+          result (Option.map
+                    (function e::_ -> positive AST.Irreflexive (Reflexive (Event e)) | [] -> assert false)
+                    (E.EventRel.get_cycle r))
+      | AST.Yes AST.Irreflexive,Rel r ->
+          if E.EventRel.is_irreflexive r then Valid
+          else
+            let e = E.EventSet.find_opt
+                (fun e -> E.EventRel.mem (e,e) r) (E.EventRel.domain r) in
+            invalid (positive AST.Irreflexive (Reflexive (Event (Misc.as_some e))))
+      | AST.Yes AST.TestEmpty,(Rel r|TransRel r) ->
+          if E.EventRel.is_empty r then Valid
+          else let a,b = E.EventRel.choose r in invalid (positive AST.TestEmpty (Nonempty (Edge (Event a,Event b))))
+      | AST.Yes AST.TestEmpty,Set s ->
+          if E.EventSet.is_empty s then Valid
+          else invalid (positive AST.TestEmpty (Nonempty (Member (Event (E.EventSet.choose s)))))
+      | AST.Yes AST.Acyclic,ClassRel r ->
+          result (Option.map
+                    (fun cs -> positive AST.Acyclic (Cycle (Classes (List.map E.EventSet.elements cs))))
+                    (ClassRel.get_cycle r))
+      | AST.Yes AST.Irreflexive,ClassRel r ->
+          if ClassRel.is_irreflexive r then Valid
+          else
+            let c = ClassRel.Elts.find_opt
+                (fun c -> ClassRel.mem (c,c) r) (ClassRel.domain r) in
+            invalid (positive AST.Irreflexive (Reflexive (Class (E.EventSet.elements (Misc.as_some c)))))
+      | AST.Yes AST.TestEmpty,ClassRel r ->
+          if ClassRel.is_empty r then Valid
+          else let a,b = ClassRel.choose r in
+            invalid (positive AST.TestEmpty (Nonempty (Edge (Class (E.EventSet.elements a),Class (E.EventSet.elements b)))))
+      | _ ->
+          if test2pred env t e v then Valid else assert false
 
 
 (********************************)
@@ -2643,7 +2698,27 @@ module Make
                         if
                           O.strictskip || not skip || cycle
                         then
-                          let ok = eval_test (check_through test_type) (from_st st) t e in
+                          let check_result =
+                            if test_type = Check && not skip then
+                              let env = from_st st in
+                              let accept_implicit = match t with
+                                | Yes Acyclic | No Acyclic -> true
+                                | _ -> false in
+                              let v = eval_rel_set accept_implicit env e in
+                              test_with_witness env tst v
+                            else if eval_test Misc.identity (from_st st) t e then
+                              CheckResult.Valid
+                            else CheckResult.Invalid [] in
+                          let raw_ok = CheckResult.is_valid check_result in
+                          let ok = check_through test_type raw_ok in
+                          let st = match test_type,skip,check_result with
+                            | Check,false,CheckResult.Invalid failures ->
+                                let previous = match st.check_result with
+                                  | CheckResult.Valid -> []
+                                  | CheckResult.Invalid previous -> previous in
+                                {st with check_result=CheckResult.Invalid
+                                   (List.rev_append failures previous);}
+                            | _ -> st in
                           if
                             cycle &&
                             begin match ok,t with
@@ -2758,6 +2833,7 @@ module Make
         let st =
           {env=m; show=show; skipped=StringSet.empty;
            flags=Flag.Set.empty;
+           check_result=CheckResult.Valid;
            ks; bell_info=BellModel.empty_info;
            st=inter_st_empty; } in
 

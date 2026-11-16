@@ -95,6 +95,12 @@ end = struct
   | Access (_,loc, _,_,_,_) -> Some loc
   | _ -> None
 
+
+(* access to memory or register *)
+  let is_access = function
+    | Access _ -> true
+    | _ -> false
+
 (* relative to memory *)
   let is_mem_store a = match a with
   | Access (W,A.Location_global _,_,_,_,_) -> true
@@ -156,6 +162,10 @@ end = struct
   let is_reg a (p:int) = match a with
   | Access (_,A.Location_reg (q,_),_,_,_,_) -> p = q
   | _ -> false
+
+  let get_reg_size a = match a with
+  | Access (_,A.Location_reg _,_,_,_,sz) -> sz
+  | _ -> assert false
 
 
 (* Store/Load anywhere *)

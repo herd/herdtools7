@@ -86,6 +86,8 @@ module Make
           module FaultType=FaultType.No
 	end)
 
+    type annotated_prog = CodeInstr.t prog
+
     module MemType=MemoryType.No
 
     module NoConf = struct

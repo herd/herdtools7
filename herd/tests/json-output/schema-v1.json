@@ -1,0 +1,632 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "herd7 JSON output, version 1",
+  "description": "JSON emitted by herd7 -output-format json. Optional fields may be absent or null.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "test",
+    "result",
+    "execution_graphs"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "test": {
+      "$ref": "#/$defs/test"
+    },
+    "result": {
+      "$ref": "#/$defs/result"
+    },
+    "execution_graphs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/executionGraph"
+      },
+      "description": "Execution graphs filtered by -show options."
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "index": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stringList": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "info": {
+      "type": "object",
+      "required": [
+        "key",
+        "value"
+      ],
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "sourceInstruction": {
+      "type": "object",
+      "required": [
+        "static_poi",
+        "source_instruction"
+      ],
+      "properties": {
+        "static_poi": {
+          "$ref": "#/$defs/index",
+          "description": "Static program order index. Note for self-modifying code, might not be the actual instruction executed."
+        },
+        "source_instruction": {
+          "type": "string"
+        },
+        "labels": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/stringList"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "trailingLabels": {
+      "type": "object",
+      "required": [
+        "labels"
+      ],
+      "properties": {
+        "labels": {
+          "$ref": "#/$defs/stringList",
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "sourceFunction": {
+      "type": "object",
+      "required": [
+        "proc",
+        "function",
+        "source_instructions"
+      ],
+      "properties": {
+        "proc": {
+          "$ref": "#/$defs/index"
+        },
+        "function": {
+          "enum": [
+            "main",
+            "fault_handler"
+          ]
+        },
+        "source_instructions": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/sourceInstruction"
+              },
+              {
+                "$ref": "#/$defs/trailingLabels"
+              }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "test": {
+      "type": "object",
+      "required": [
+        "name",
+        "kind",
+        "architecture",
+        "info",
+        "program",
+        "init",
+        "post_condition"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "Allowed",
+            "Forbidden",
+            "Required"
+          ]
+        },
+        "architecture": {
+          "type": "string",
+          "description": "For example AArch64 or C."
+        },
+        "info": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/info"
+          },
+          "description": "Litmus test \"info\" section; order and duplicate keys are preserved."
+        },
+        "program": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sourceFunction"
+          }
+        },
+        "init": {
+          "type": "string",
+          "description": "Pretty printed initial state."
+        },
+        "post_condition": {
+          "type": "string",
+          "description": "Pretty printed post condition, including its quantifier."
+        },
+        "filter": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Pretty printed filter for executions."
+        }
+      },
+      "additionalProperties": false
+    },
+    "finalState": {
+      "type": "object",
+      "required": [
+        "id",
+        "value"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^state-[0-9]+$"
+        },
+        "value": {
+          "type": "string",
+          "description": "Pretty printed final state."
+        }
+      },
+      "additionalProperties": false
+    },
+    "result": {
+      "type": "object",
+      "required": [
+        "model",
+        "verdict",
+        "observation",
+        "positive",
+        "negative",
+        "candidates",
+        "failed_candidates",
+        "execution_graph_count",
+        "final_states"
+      ],
+      "properties": {
+        "model": {
+          "type": "string"
+        },
+        "verdict": {
+          "enum": [
+            "Ok",
+            "No",
+            "Undef",
+            "Loop Ok",
+            "Loop No",
+            "Loop Undef"
+          ]
+        },
+        "observation": {
+          "enum": [
+            "Never",
+            "Always",
+            "Sometimes"
+          ],
+          "description": "Never if positive is zero; otherwise Always if negative is zero; otherwise Sometimes."
+        },
+        "positive": {
+          "$ref": "#/$defs/index",
+          "description": "Counted executions satisfying the post condition. Note when -through all is set, this include invalid executions (i.e. the ones rejected by the cat model)."
+        },
+        "negative": {
+          "$ref": "#/$defs/index",
+          "description": "Counted executions not satisfying the post condition. Note when -through all is set, this include invalid executions (i.e. the ones rejected by the cat model)."
+        },
+        "candidates": {
+          "$ref": "#/$defs/index",
+          "description": "Equals positive + negative; counts cover the run, regardless of execution graph filtering. Note when -through all is set, this include invalid executions (i.e. the ones rejected by the cat model)."
+        },
+        "failed_candidates": {
+          "$ref": "#/$defs/index",
+          "description": "Candidates filtered out by the cat model."
+        },
+        "execution_graph_count": {
+          "$ref": "#/$defs/index",
+          "description": "Number of emitted execution graphs."
+        },
+        "final_states": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/finalState"
+          }
+        },
+        "invoked_with_cli": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/stringList"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "If invoked through CLI, print an arrary of arguments."
+        }
+      },
+      "additionalProperties": false
+    },
+    "prettyConf": {
+      "type": "object",
+      "description": "Subset of the resolved pretty-printer settings for execution graph events and edges.",
+      "required": [
+        "events",
+        "edges"
+      ],
+      "properties": {
+        "events": {
+          "type": "object",
+          "required": [
+            "showevents",
+            "showinitwrites"
+          ],
+          "properties": {
+            "showevents": {
+              "enum": [
+                "all",
+                "mem",
+                "noregs",
+                "memf",
+                "nobranches"
+              ]
+            },
+            "showinitwrites": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "edges": {
+          "type": "object",
+          "required": [
+            "showinitrf",
+            "showfinalrf",
+            "showpo",
+            "doshow",
+            "unshow",
+            "showraw"
+          ],
+          "properties": {
+            "showinitrf": {
+              "type": "boolean"
+            },
+            "showfinalrf": {
+              "type": "boolean"
+            },
+            "showpo": {
+              "type": "boolean"
+            },
+            "doshow": {
+              "$ref": "#/$defs/stringList"
+            },
+            "unshow": {
+              "$ref": "#/$defs/stringList"
+            },
+            "showraw": {
+              "$ref": "#/$defs/stringList"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "instruction": {
+      "type": "object",
+      "required": [
+        "instruction",
+        "static_poi"
+      ],
+      "properties": {
+        "instruction": {
+          "type": "string",
+          "description": "Resolved instruction-fetch text when available, otherwise the instruction attached to the events. Note for self-modifying code, might not be the actual instruction executed."
+        },
+        "static_poi": {
+          "$ref": "#/$defs/index",
+          "description": "Original loaded code position within its function. Generated instructions, such as from .pagealign padding, may have no matching source row. For the same reason, the numbers may not be continuous."
+        },
+        "function": {
+          "enum": [
+            "fault_handler",
+            null
+          ],
+          "description": "Optional origin qualifier; absent or null means main."
+        }
+      },
+      "additionalProperties": false
+    },
+    "instructions": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^(0|[1-9][0-9]*)$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "propertyNames": {
+          "pattern": "^(0|[1-9][0-9]*)$"
+        },
+        "additionalProperties": {
+          "$ref": "#/$defs/instruction"
+        }
+      },
+      "description": "Map from processor number to (dynamic) poi (program order index), both decimal-string keys, and finally to the dynamic instruction. Dynamic poi distinguishes loop iterations and continues through fault handlers (in contrast with static poi)."
+    },
+    "actionDetails": {
+      "type": "object",
+      "description": "Structured information of some actions, mainly focused on read and write actions. Currently the pretty printed \"action\" string contains more information, but not all information.",
+      "required": [],
+      "properties": {
+        "direction": {
+          "enum": [
+            "R",
+            "W",
+            null
+          ]
+        },
+        "location": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "size": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "value": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "event": {
+      "type": "object",
+      "required": [
+        "id",
+        "action",
+        "event_labels"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/index",
+          "description": "Event identifier (eiid), local to this execution graph."
+        },
+        "action": {
+          "type": "string"
+        },
+        "proc": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/index"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "poi": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/index"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Dynamic program order index."
+        },
+        "event_labels": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "mem",
+              "noregs",
+              "memf",
+              "nobranches",
+              "initwrites"
+            ]
+          },
+          "description": "Labels for -showevents options."
+        },
+        "action_details": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/actionDetails"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "description": "proc and poi can be used to index instructions to get the dynamic instruction. initwrites and spurious events have no instruction reference.",
+      "oneOf": [
+        {
+          "description": "Event with an instruction reference: proc and poi must both be present as nonnegative integers. Can be used to index instructions with execution_graphs.instructions[String(proc)][String(poi)].",
+          "required": [
+            "proc",
+            "poi"
+          ],
+          "properties": {
+            "proc": {
+              "$ref": "#/$defs/index"
+            },
+            "poi": {
+              "$ref": "#/$defs/index"
+            }
+          }
+        },
+        {
+          "description": "Event without an instruction reference: proc and poi must each be absent or null.",
+          "properties": {
+            "proc": {
+              "type": "null"
+            },
+            "poi": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    },
+    "finalEndpoint": {
+      "type": "object",
+      "required": [
+        "final"
+      ],
+      "properties": {
+        "final": {
+          "type": "string",
+          "description": "Pretty-printed location, for example [x]."
+        }
+      },
+      "additionalProperties": false
+    },
+    "edge": {
+      "type": "object",
+      "required": [
+        "relation",
+        "source",
+        "target"
+      ],
+      "properties": {
+        "relation": {
+          "type": "string",
+          "description": "Model-defined or generated relation name, for example rf, po, po:0, iico_data, initrf, or finalrf."
+        },
+        "source": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/index",
+              "description": "Event ID within this graph, used to index execution_graphs.events[]."
+            },
+            {
+              "const": "init",
+              "description": "Synthetic initial state used by initrf; has no event ID. Not to be confused with initwrites, when set, actual events are created."
+            }
+          ]
+        },
+        "target": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/index",
+              "description": "Event ID within this graph, used to index execution_graphs.events[]."
+            },
+            {
+              "$ref": "#/$defs/finalEndpoint",
+              "description": "Synthetic final location used by finalrf; has no event ID."
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "executionGraph": {
+      "type": "object",
+      "required": [
+        "id",
+        "is_valid",
+        "satisfies_post_condition",
+        "final_state_id",
+        "pretty_conf",
+        "instructions",
+        "events",
+        "edges"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^execution-[0-9]+$"
+        },
+        "is_valid": {
+          "type": "boolean",
+          "description": "Indicates if the execution is allowed by the cat model, not to be confused with satisfies_post_condition."
+        },
+        "satisfies_post_condition": {
+          "type": "boolean",
+          "description": "Indicates if the execution satisfies the post condition, regardless of whether the execution is allowed by the cat model. Not to be confused with is_valid."
+        },
+        "final_state_id": {
+          "type": "string",
+          "pattern": "^state-[0-9]+$",
+          "description": "Reference to result.final_states[].id. Several execution graphs may refer to the same state."
+        },
+        "pretty_conf": {
+          "$ref": "#/$defs/prettyConf"
+        },
+        "instructions": {
+          "$ref": "#/$defs/instructions"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/event"
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edge"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
