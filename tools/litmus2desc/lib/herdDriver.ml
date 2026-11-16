@@ -136,9 +136,7 @@ let top ~libdir str =
       let env = Some "HERDLIB"
 
       let libdir =
-        match libdir with
-        | Some libdir -> libdir
-        | None -> Filename.concat Version.libdir "herd"
+        match libdir with Some libdir -> libdir | None -> Libdir.path "herd"
 
       let debug = false
     end) in

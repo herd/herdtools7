@@ -4,6 +4,6 @@
 (executable
  (name mcat2config)
  (public_name mcat2config7)
- (libraries herdtools unix logs gen_common)
+ (libraries herdtools libdir unix logs gen_common)
  (flags
   (:standard -w -40-42)))

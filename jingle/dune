@@ -6,7 +6,7 @@
 (executables
  (names jingle gen_theme)
  (public_names jingle7 gen_theme7)
- (libraries herdtools str)
+ (libraries herdtools libdir str)
  (modules_without_implementation))
 
 (install

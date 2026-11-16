@@ -34,7 +34,7 @@ let load_config s =
       (struct
         let includes = !includes
         let env = None
-        let libdir = Version.libdir
+        let libdir = Libdir.path "herd"
         let debug = false
       end) in
   let found = ML.find s in
@@ -137,7 +137,7 @@ let run_herd bell cat litmus cfg cat_label =
       (struct
         let includes = includes
         let env = None
-        let libdir = Version.libdir
+        let libdir = Libdir.path "herd"
         let debug = false
       end) in
 

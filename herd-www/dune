@@ -2,7 +2,7 @@
  (name jerd)
  (modes js)
  (optional)
- (libraries herdtools herd_core js_of_ocaml zarith_stubs_js)
+ (libraries herdtools libdir herd_core js_of_ocaml zarith_stubs_js)
  (modules jerd webInput webRun)
  (preprocess
   (per_module

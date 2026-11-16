@@ -1118,8 +1118,8 @@ struct
 end
 
 let verbose = ref 0
-let herd_libdir = ref (Filename.concat Version.libdir "herd")
-let libdir = ref (Filename.concat Version.libdir "tools")
+let herd_libdir = ref (Libdir.path "herd")
+let libdir = ref (Libdir.path "tools")
 let includes = ref []
 let model = ref (Filename.concat !herd_libdir "aarch64.cat")
 let assumptions_file = ref (Filename.concat !libdir "aarch64assumptions.cat")

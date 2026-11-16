@@ -17,7 +17,7 @@
 open Printf
 open Code
 let verbose = ref 0
-let libdir = ref (Filename.concat Version.libdir "herd")
+let libdir = ref (Libdir.path "herd")
 let nprocs = ref 4
 let size = ref 6
 let max_tests = ref None
