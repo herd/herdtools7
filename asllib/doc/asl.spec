@@ -12885,7 +12885,7 @@ typing function type_equal(tenv: static_envs, t1: ty, t2: ty) ->
     t1 =: make_structured(L1, fields1);
     t2 =: make_structured(L2, fields2);
     L1 = L2;
-    ast_label(L1) in make_set(label_T_Exception, label_T_Record);
+    L1 in make_set(label_T_Exception, label_T_Record, label_T_Collection);
     names1 := list_fst(fields1);
     names2 := list_fst(fields2);
     bool_transition(list_to_set(names1) = list_to_set(names2)) -> True | False;
