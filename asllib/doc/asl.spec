@@ -6458,8 +6458,8 @@ typing function type_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | t
         or(
           ast_label(t) != label_T_Bits,
           ast_label(s_struct) != label_T_Bits,
-          (t =: T_Bits(_, t_fields)) && t_fields = empty_list
-        );
+          (t =: T_Bits(_, t_fields)) && t_fields != empty_list
+        ) { [_] };
         --
         False;
       }
