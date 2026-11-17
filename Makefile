@@ -42,13 +42,7 @@ HERD_CATALOGUE_REGRESSION_TEST += $(CATA_HERD_TEST_MODE)
 just-build:
 	dune build -j $(J) --profile $(DUNE_PROFILE)
 
-build-release:
-	dune build -j $(J) -p herdtools7 @install
-
 build: check-deps | just-build
-
-install-herdtools:
-	dune install herdtools7 --prefix=$(PREFIX)
 
 build-aslref:
 	dune build -p aslref --profile $(DUNE_PROFILE)
@@ -56,7 +50,8 @@ build-aslref:
 install-aslref:
 	dune install aslref --prefix=$(PREFIX)
 
-install: install-herdtools
+install:
+	dune install herdtools7 --prefix=$(PREFIX)
 
 uninstall:
 	dune uninstall herdtools7 --prefix=$(PREFIX)
