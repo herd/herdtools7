@@ -1,0 +1,119 @@
+(****************************************************************************)
+(*                           the diy toolsuite                              *)
+(*                                                                          *)
+(* Jade Alglave, University College London, UK.                             *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                          *)
+(*                                                                          *)
+(* Copyright 2010-present Institut National de Recherche en Informatique et *)
+(* en Automatique and the authors. All rights reserved.                     *)
+(*                                                                          *)
+(* This software is governed by the CeCILL-B license under French law and   *)
+(* abiding by the rules of distribution of free software. You can use,      *)
+(* modify and/ or redistribute the software under the terms of the CeCILL-B *)
+(* license as circulated by CEA, CNRS and INRIA at the following URL        *)
+(* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
+(****************************************************************************)
+
+(** Operations on maps *)
+
+open Printf
+
+module type S = sig
+  include Stdlib.Map.S
+
+(* Available even when not in stdlib *)
+  val filter_map : (key -> 'a -> 'b option) -> 'a t -> 'b t
+
+  val pp : out_channel -> (out_channel -> key -> 'a -> unit) -> 'a t -> unit
+  val pp_str_delim :  string -> (key -> 'a -> string) -> 'a t -> string
+  val pp_str : (key -> 'a -> string) -> 'a t -> string
+
+(* find with a default value *)
+  val safe_find : 'a -> key -> 'a t -> 'a
+
+(* union from stdlib *)
+   val union_std : (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
+
+(* map union *)
+  val union : ('a -> 'a -> 'a) -> 'a t -> 'a t -> 'a t
+  val unions : ('a -> 'a -> 'a) -> 'a t list -> 'a t
+
+
+(* filter bindings according to key predicate *)
+  val filter_by_key : (key -> bool) -> 'a t -> 'a t
+
+(* List bindings *)
+  val add_bindings : (key * 'a) list -> 'a t -> 'a t
+  val from_bindings :  (key * 'a) list -> 'a t
+
+  val fold_values : ('a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
+
+(* Bind keys to list of values *)
+  val accumulate : key -> 'a -> 'a list t -> 'a list t
+
+(* `to_list` and `of_list` are only supported since 5.1 *)
+  val to_list : 'a t -> (key * 'a) list
+  val of_list : (key * 'a) list -> 'a t
+
+end
+
+module Make(O:Set.OrderedType) : S with type key = O.t =
+  struct
+
+    module M = Stdlib.Map.Make(O)
+
+    let filter_map f m =
+      M.fold
+        (fun x y k ->
+           match f x y with
+           | None -> k
+           | Some z -> M.add x z k)
+        m M.empty
+    [@@warning "-32"]
+
+    include M
+
+    let pp_str_delim delim pp_bind m =
+      let bds = fold (fun k v r -> (k,v)::r) m [] in
+      let bds = List.map (fun (k,v) -> pp_bind k v) bds in
+      String.concat delim bds
+
+    let pp_str pp_bind m = pp_str_delim ";" pp_bind m
+
+    let pp chan pp_bind m =
+      iter
+        (fun k v -> pp_bind chan k v ; fprintf chan ";")
+        m
+
+    let safe_find d k m = try find k m with Not_found -> d
+
+    let union_std = union
+
+    let union u m1 m2 = union_std (fun _ v1 v2 -> Some (u v1 v2)) m1 m2
+
+    let unions u ms = match ms with
+    | [] -> empty
+    | m::ms -> List.fold_left (union u) m ms
+
+    let filter_by_key p m = filter (fun k _ ->  p k) m
+
+    let add_bindings bds m =
+      List.fold_left (fun m (k,v) -> add k v m) m bds
+
+    let from_bindings bds = add_bindings bds empty
+
+    let fold_values fold_value =
+      let fold_binding _key v acc = fold_value v acc in
+      fun t acc -> fold fold_binding t acc
+
+    let accumulate k v m =
+      update k
+        (function
+         | None -> Some [v]
+         | Some vs -> Some (v::vs))
+        m
+
+    let to_list m = M.to_seq m |> List.of_seq
+    let of_list m = List.to_seq m |> M.of_seq
+
+  end

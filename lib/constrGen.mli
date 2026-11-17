@@ -19,7 +19,7 @@
 
 (* Type of locations on the right of LV atoms *)
 
-type 'loc rloc =
+type 'loc rloc = 'loc Base.Location.Rel.t =
   | Loc of 'loc
   | Deref of 'loc * int
 
@@ -27,7 +27,6 @@ val dump_rloc : ('loc -> string) -> 'loc rloc -> string
 
 val compare_rloc : ('loc -> 'loc -> int) -> 'loc rloc -> 'loc rloc -> int
 
-val rloc_of_loc : 'loc -> 'loc rloc
 val loc_of_rloc : 'loc rloc -> 'loc
 
 val map_rloc : ('a -> 'b) -> 'a rloc -> 'b rloc

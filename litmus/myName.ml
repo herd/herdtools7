@@ -69,7 +69,7 @@ let read_cfg name =
     LexConf_litmus.lex chan ;
     close_in chan
   else
-    Misc.input_protect LexConf_litmus.lex name
+    Base.Misc.input_protect LexConf_litmus.lex name
   with
   | Arg.Bad msg
   | LexConf_litmus.Error msg ->

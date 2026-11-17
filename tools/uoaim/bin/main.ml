@@ -13,6 +13,7 @@
 (* license as circulated by CEA, CNRS and INRIA at the following URL        *)
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
+open Base
 
 (** uoiam is miaou backwards *)
 

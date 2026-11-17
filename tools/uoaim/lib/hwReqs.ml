@@ -78,7 +78,9 @@ module MakeInterpreter (NP : NameParser.S) = struct
     let str = Preprocess.normalize_effs str in
     let parsed = P.parse str in
     Log.debug (fun m -> m "Parsed:@.  @[<v 0>%a@]" P.pp parsed);
-    let endpoints = Eff.detect parsed.P.post |> Misc.List.uniq ~eq:Eff.equal in
+    let endpoints =
+      Eff.detect parsed.P.post |> Base.Misc.List.uniq ~eq:Eff.equal
+    in
     let stru = Structure.And [ parsed.P.pre; Structure.constr parsed.P.post ] in
     let eff_constrs, stru =
       Structure.fold_map
@@ -103,7 +105,8 @@ module MakeInterpreter (NP : NameParser.S) = struct
       | e :: _ when irrefl -> (e, e)
       | [ e1; e2 ] -> (e1, e2)
       | _ ->
-          raise (Misc.Fatal "Cannot determine hardware requirement endpoints")
+          raise
+            (Base.Misc.Fatal "Cannot determine hardware requirement endpoints")
     in
     (* Format.printf "Detected endpoints in post %S: %a@." post (Util.pp_list_semicolon Eff.pp) endpoints; *)
     let exps = Reconstruction.exp_of_structure ~src_eff:e1 ~tgt_eff:e2 stru in

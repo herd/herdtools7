@@ -201,8 +201,8 @@ let remove_invalid_relaxes_test_diy7 input =
     let filtered = List.map TestAlt.to_relax filtered in
     Printf.printf "%s\n" (pp_list TestBuilder.R.pp_relax filtered)
   with
-  | Misc.UserError msg -> Printf.printf "UserError: %s\n" msg
-  | Misc.Fatal msg -> Printf.printf "Fatal: %s\n" msg
+  | Base.Misc.UserError msg -> Printf.printf "UserError: %s\n" msg
+  | Base.Misc.Fatal msg -> Printf.printf "Fatal: %s\n" msg
 
 let () =
   List.iter

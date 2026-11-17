@@ -18,7 +18,7 @@ open Printf
 
 (* Should be put in a bell library *)
 let string_of_annot_list a = String.concat "," a
-let string_of_labels a = Label.Set.pp_str "," Misc.identity a
+let string_of_labels a = Label.Set.pp_str "," Base.Misc.identity a
 
 (* Who am i ? *)
 let arch = Archs.lisa
@@ -369,7 +369,7 @@ let dump_instruction_hash = dump_instruction
 let pp_instruction _m = dump_instruction
 
 (* 100 registers are probably enough *)
-let allowed_for_symb = List.map (fun r ->  GPRreg r) (Misc.interval 0 100)
+let allowed_for_symb = List.map (fun r ->  GPRreg r) (Base.Misc.interval 0 100)
 
 
 let _get_reg_list _ins = ([], [])

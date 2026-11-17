@@ -181,14 +181,14 @@ let do_opt =
           end
       | Fa f ->
           begin try
-            let fs = remove (Misc.string_eq f) fs in
+            let fs = remove (Base.Misc.string_eq f) fs in
             ((bds,fs,abs)::ok,no)
           with
             Not_found -> (ok,t::no)
           end
       | Ab f ->
           begin try
-            let abs = remove (Misc.string_eq f) abs in
+            let abs = remove (Base.Misc.string_eq f) abs in
             ((bds,fs,abs)::ok,no)
           with
             Not_found -> (ok,t::no)

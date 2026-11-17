@@ -32,4 +32,4 @@ let parse tag = match tag with
 let pp = function
   | All -> "all"
   | No -> "none"
-  | Not s -> StringSet.pp_str "," Misc.identity s
+  | Not s -> StringSet.pp_str "," Base.Misc.identity s

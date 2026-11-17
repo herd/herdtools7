@@ -306,7 +306,7 @@ module Make(C:Config) = struct
         | FF (_,Some x,_) as a -> ignore (Constant.check_sym x) ; a) in
 
     let condition = ConstrGen.map_constr map_lv_ll src.condition
-    and filter = Misc.app_opt (ConstrGen.map_prop map_lv_ll) src.filter in
+    and filter = Base.Misc.app_opt (ConstrGen.map_prop map_lv_ll) src.filter in
     let locations =
       LocationsItem.map_locs (fun loc -> conv_loc map loc) src.locations in
     { info = (OutMapping.key,dump_map map)::src.info;

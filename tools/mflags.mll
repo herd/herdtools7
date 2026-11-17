@@ -39,7 +39,7 @@ let testname = (alpha|digit|'_' | '/' | '.' | '-' | '+' | '[' | ']' | ':')+
 
 rule main name_ok tst k = parse
 | "Test" blank+ (testname as name) ('\n'|blank+ [^'\n']* '\n')
-  { main name_ok (Some (Misc.clean_name name))  k lexbuf }
+  { main name_ok (Some (Base.Misc.clean_name name))  k lexbuf }
 | "Flag" blank+ (name as flag) [^'\n']* '\n'
   {
     let tst = match tst with Some tst -> tst | None -> assert false in
@@ -58,7 +58,7 @@ rule main name_ok tst k = parse
 let zyva name_ok chan =
   main name_ok None StringMap.empty (Lexing.from_channel chan)
 
-let zyva name_ok fname = Misc.input_protect (zyva name_ok) fname
+let zyva name_ok fname = Base.Misc.input_protect (zyva name_ok) fname
 
 
 
@@ -88,7 +88,7 @@ module Check =
 
 let flag name tst fs =
   printf "Only in %s, flags {%s}, test %s\n" name
-    (StringSet.pp_str "," Misc.identity fs) tst
+    (StringSet.pp_str "," Base.Misc.identity fs) tst
 
 
 let check name k1 k2 =

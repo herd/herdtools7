@@ -21,6 +21,8 @@
 open Answer
 open Printf
 
+module Misc = Base.Misc
+
 module type Config = sig
   val carch : Archs.System.t
   val platform : string

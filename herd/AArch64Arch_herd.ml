@@ -68,7 +68,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
       type t = | DC of AArch64Base.DC.op | IC of AArch64Base.IC.op
 
       let pp cmo loc =
-        let loc = (Misc.pp_opt_arg Fun.id loc) in
+        let loc = (Base.Misc.pp_opt_arg Fun.id loc) in
         match cmo with
         | DC op ->
            Printf.sprintf "DC(%s%s)" (AArch64Base.DC.pp_op op) loc
@@ -334,7 +334,7 @@ module Make (C:Arch_herd.Config)(V:Value.AArch64) =
     let opt_env = true
 
     let killed_idx r = function
-      | (_,Idx) -> Misc.identity
+      | (_,Idx) -> Base.Misc.identity
       | (_,(PostIdx|PreIdx)) -> fun k -> r::k
 
     let killed i =

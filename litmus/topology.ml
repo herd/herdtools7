@@ -95,7 +95,7 @@ end = struct
   let pp_intsss = pp_t pp_intss
 
 
-  let procs = Misc.interval 0 nthreads
+  let procs = Base.Misc.interval 0 nthreads
 
 (*
   let pp_ints xs =

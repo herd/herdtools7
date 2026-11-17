@@ -82,7 +82,7 @@ module Make(O:Config)(Tar:Tar.S)(D:CoreDumper.S) =
         Showcode.No
 
     let showcode chan name =
-      ignore (Misc.input_protect (do_show chan) name)
+      ignore (Base.Misc.input_protect (do_show chan) name)
 
     let assemble_test chan name source =
       let sS = MyName.outname name ".s" in

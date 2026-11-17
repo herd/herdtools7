@@ -59,8 +59,8 @@ let sxt sz v =
      let m = shift_left one (nb-1) in
      sub (logxor v m) m
 
-let of_int64 = Misc.identity
-let to_int64 = Misc.identity
+let of_int64 = Base.Misc.identity
+let to_int64 = Base.Misc.identity
 
 let as_bool v = Some (Bool.not (Int64.equal Int64.zero v))
 let s_true = one

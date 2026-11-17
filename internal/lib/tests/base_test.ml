@@ -17,7 +17,7 @@
 (** Tests for the Base modules. *)
 
 let tests = [
-  "Base.List.compare", (fun () ->
+  "Internal.Base.List.compare", (fun () ->
     let tests = [
       [], [], 0 ;
       ["a"], [], 1 ;
@@ -28,14 +28,14 @@ let tests = [
 
     List.iteri
       (fun i (xs, ys, expected) ->
-        let actual = Base.List.compare Base.String.compare xs ys in
+        let actual = Internal.Base.List.compare Internal.Base.String.compare xs ys in
         if actual <> expected then
           Test.fail (Printf.sprintf "[%i] expected %i, got %i" i expected actual)
       )
       tests
   );
 
-  "Base.List.to_ocaml_string", (fun () ->
+  "Internal.Base.List.to_ocaml_string", (fun () ->
     let tests = [
       [], "[]" ;
       ["a"], "[\"a\"]" ;
@@ -44,14 +44,14 @@ let tests = [
 
     List.iter
       (fun (xs, expected) ->
-        let actual = Base.List.to_ocaml_string Base.String.to_ocaml_string xs in
+        let actual = Internal.Base.List.to_ocaml_string Internal.Base.String.to_ocaml_string xs in
         if String.compare actual expected <> 0 then
           Test.fail (Printf.sprintf "expected %s, got %s" expected actual)
       )
       tests
   );
 
-  "Base.List.split_when", (fun () ->
+  "Internal.Base.List.split_when", (fun () ->
     let tests = [
       (([], (fun _ -> true)), ([], [])) ;
       ((['a'; 'b'; 'c'], (Char.equal 'a')), ([], ['a'; 'b'; 'c'])) ;
@@ -64,14 +64,14 @@ let tests = [
       Printf.sprintf "(%s, %s)" (a_str a) (b_str b)
     in
 
-    let charlist_to_string = Base.List.to_ocaml_string (String.make 1) in
+    let charlist_to_string = Internal.Base.List.to_ocaml_string (String.make 1) in
     let result_to_string =
       tuple_to_string charlist_to_string charlist_to_string
     in
 
     List.iter
       (fun ((xs, p), expected) ->
-        let actual = Base.List.split_when p xs in
+        let actual = Internal.Base.List.split_when p xs in
         if not (actual = expected)  then
           let expected = result_to_string expected in
           let actual = result_to_string actual in
@@ -80,7 +80,7 @@ let tests = [
       tests
   );
 
-  "Base.Option.compare", (fun () ->
+  "Internal.Base.Option.compare", (fun () ->
     let tests = [
       None, None, 0 ;
       Some "a", None, 1 ;
@@ -91,14 +91,14 @@ let tests = [
 
     List.iteri
       (fun i (xs, ys, expected) ->
-        let actual = Base.Option.compare Base.String.compare xs ys in
+        let actual = Internal.Base.Option.compare Internal.Base.String.compare xs ys in
         if actual <> expected then
           Test.fail (Printf.sprintf "[%i] expected %i, got %i" i expected actual)
       )
       tests
   );
 
-  "Base.Option.to_ocaml_string", (fun () ->
+  "Internal.Base.Option.to_ocaml_string", (fun () ->
     let tests = [
       None, "None" ;
       Some "a", "Some (\"a\")" ;
@@ -106,7 +106,7 @@ let tests = [
 
     List.iter
       (fun (xs, expected) ->
-        let actual = Base.Option.to_ocaml_string Base.String.to_ocaml_string xs in
+        let actual = Internal.Base.Option.to_ocaml_string Internal.Base.String.to_ocaml_string xs in
         if String.compare actual expected <> 0 then
           Test.fail (Printf.sprintf "expected %s, got %s" expected actual)
       )

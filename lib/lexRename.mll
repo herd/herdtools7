@@ -64,14 +64,14 @@ let read_from idx fname chan t parse_value =
   with LexMisc.Error (msg,loc) ->
     Printf.eprintf "%a: error in rename map, %s\n"
       Pos.pp_pos loc msg ;
-    raise Misc.Exit (* silent, message printed above *)
+    raise Base.Misc.Exit (* silent, message printed above *)
 
 let read_from_files fnames parse_value =
   let _,tbl  =
     List.fold_right
       (fun name (idx,t) ->
         try
-          Misc.input_protect
+          Base.Misc.input_protect
             (fun chan -> read_from idx name chan t parse_value)
             name
         with Exit -> raise Error)

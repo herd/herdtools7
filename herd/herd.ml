@@ -17,6 +17,7 @@
 (** Entry point to Herd  *)
 
 open Herd_core
+module Misc = Base.Misc
 open Printf
 open Archs
 open Opts

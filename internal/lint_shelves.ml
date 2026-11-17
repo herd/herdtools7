@@ -16,7 +16,7 @@
 
 (** A tool to lint the contents of one or more Catalogue Shelf files. *)
 
-module Option = Base.Option
+module Option = Internal.Base.Option
 
 let flatten_fields fields =
   let flatten_field (name, values) =

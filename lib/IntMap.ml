@@ -14,4 +14,4 @@
 (* "http://www.cecill.info". We also give a copy in LICENSE.txt.            *)
 (****************************************************************************)
 
-include MyMap.Make(IntOrd)
+include Base.IntMap

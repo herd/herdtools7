@@ -16,7 +16,7 @@
 
 module S = struct
   type t = string
-  let equal s1 s2 = Misc.string_eq s1 s2
+  let equal s1 s2 = Base.Misc.string_eq s1 s2
   let hash = Hashtbl.hash
 end
 

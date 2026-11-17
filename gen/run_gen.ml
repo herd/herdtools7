@@ -34,6 +34,8 @@ module Make (O:Config) (C:ArchRun.S) :
     end
     =
   struct
+    module Misc = Base.Misc
+
     module A = C.A
     module C = C.C
 

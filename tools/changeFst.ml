@@ -44,7 +44,7 @@ module Make(Opt:Config)(Out:OutTests.S) = struct
       let base = Filename.basename file in
       let out = Out.open_file base in
       let st =
-        Misc.output_protect_close Out.close
+        Base.Misc.output_protect_close Out.close
           (fun out ->
              let (init_start,_),_,_,(_,loc_eof) = locs in
              let lexbuf = LU.from_section (start,init_start) in_chan in
@@ -67,5 +67,5 @@ module Make(Opt:Config)(Out:OutTests.S) = struct
     with LexMisc.Error (msg,pos) ->
       Printf.eprintf
         "%a: Lex error %s (in %s)\n" Pos.pp_pos pos msg file ;
-      raise Misc.Exit
+      raise Base.Misc.Exit
 end

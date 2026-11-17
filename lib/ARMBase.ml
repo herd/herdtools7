@@ -107,7 +107,7 @@ let parse_list =
        regs)
 
 let parse_reg s =
-  try Some (List.assoc (Misc.uppercase s) parse_list)
+  try Some (List.assoc (Base.Misc.uppercase s) parse_list)
   with Not_found -> None
 
 let pp_reg r = match r with
