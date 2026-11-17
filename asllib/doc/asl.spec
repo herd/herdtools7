@@ -6317,7 +6317,7 @@ typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) 
     ast_label(s2) = label_T_Int;
     symdom_of_type(tenv, s) -> d_s;
     symdom_of_type(tenv, t) -> d_t;
-    symdom_subset_unions(tenv, d_s, d_t) -> b;
+    symdom_subset_unions(tenv, d_t, d_s) -> b;
     --
     b;
   }
@@ -6335,7 +6335,7 @@ typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) 
     bitfields_included(tenv, bfs_s, bfs_t) -> True;
     symdom_of_width_expr(w_s) -> d_s;
     symdom_of_width_expr(w_t) -> d_t;
-    symdom_subset_unions(tenv, d_s, d_t) -> b;
+    symdom_subset_unions(tenv, d_t, d_s) -> b;
     --
     b;
   }
@@ -6458,8 +6458,8 @@ typing function type_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) | t
         or(
           ast_label(t) != label_T_Bits,
           ast_label(s_struct) != label_T_Bits,
-          (t =: T_Bits(_, t_fields)) && t_fields = empty_list
-        );
+          (t =: T_Bits(_, t_fields)) && t_fields != empty_list
+        ) { [_] };
         --
         False;
       }
@@ -12885,7 +12885,7 @@ typing function type_equal(tenv: static_envs, t1: ty, t2: ty) ->
     t1 =: make_structured(L1, fields1);
     t2 =: make_structured(L2, fields2);
     L1 = L2;
-    ast_label(L1) in make_set(label_T_Exception, label_T_Record);
+    L1 in make_set(label_T_Exception, label_T_Record, label_T_Collection);
     names1 := list_fst(fields1);
     names2 := list_fst(fields2);
     bool_transition(list_to_set(names1) = list_to_set(names2)) -> True | False;
