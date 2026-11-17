@@ -1,0 +1,11 @@
+Test G011 Required
+States 1
+y[0]=x+5; ~Fault(P0);
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Flag Guarded-Control-Stack-is-work-in-progress
+Condition forall (y[0]=x+5 /\ not (fault(P0)))
+Observation G011 Always 2 0
+Hash=638963de7ac64a789027d9eadc8bcdc7
+
