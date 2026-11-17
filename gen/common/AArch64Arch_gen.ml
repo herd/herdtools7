@@ -574,7 +574,7 @@ end = struct
       |ArrayCellAccess (`Release,_)
       |MorelloAccess `Release),W -> true
     | PteAccess (Read _|ReadHA _),R -> true
-    | PteAccess (Set (`Plain,pte)),R when WPTESet.mem WPTE.HA pte -> true
+    | PteAccess (Set (`Plain,pte)),R when WPTESet.equal pte (WPTESet.singleton WPTE.HA) -> true
     | PteAccess (Set _),W -> true
     | InstrAccess,R -> true
     | (OrdinaryAccess `Plain|MixedSizeAccess (`Plain,_)
