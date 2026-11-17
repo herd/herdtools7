@@ -111,6 +111,9 @@ module type S =  sig
 
 (* Strongly connected compoments, processed in inverse dependency order. *)
   val scc_kont : (elt0 list -> 'a -> 'a) -> 'a -> elt0 list -> t -> 'a
+  val scc_kont_succs :
+    (elt0 list -> 'a -> 'a) -> 'a -> elt0 list ->
+    (elt0 -> Elts.t) -> 'a
 
 
 (* Is the parent relation of a hierarchy *)
@@ -206,7 +209,7 @@ module Make(O:MySet.OrderedType) : S
             let ms,ns = pop_until n ns in
             m::ms,ns
 
-    let dfs kont kont_scc m =
+    let dfs kont kont_scc successors =
       let rec dfs n ((res,s) as r) =
         try M.find n s.visit,r
         with
@@ -222,7 +225,7 @@ module Make(O:MySet.OrderedType) : S
                 (fun v (m0,r) ->
                    let m1,(res,s) = dfs v r in
                    Misc.min_int m0 m1,(kont n v res,s))
-                (succs m n)
+                (successors n)
                 (id0,(res,s)) in
             if not (Misc.int_eq min id0) then
               r (* n is part of previously returned scc *)
@@ -238,7 +241,7 @@ module Make(O:MySet.OrderedType) : S
 
     (* Nodes are implicit keys of map *)
     let scan_map kont kont_scc res m =
-      let dfs = dfs kont kont_scc m in
+      let dfs = dfs kont kont_scc (succs m) in
       let (res,_) =
         M.fold
           (fun n _ r -> let _,r = dfs n r in r)
@@ -247,14 +250,15 @@ module Make(O:MySet.OrderedType) : S
       res
 
 (*
- * Graph is given as a set of nodes [nodes] and a relation [m].
- * Notice that for a node [n] in [nodes] but not in [m],
+ * Graph is given as a set of nodes [nodes] and a set of
+ * events [successors] from an evaluated relation.
+ * Notice that for a node [n] in [nodes] but not in [successors],
  * [dfs ....] is called on [n] and this is important,
  * for instance for the equation solving as performed
  * by [scc_kont ...] below.
  *)
-    let scan_nodes_rel kont kont_scc res nodes m =
-      let dfs = dfs kont kont_scc m in
+    let scan_nodes_succs kont kont_scc res nodes successors =
+      let dfs = dfs kont kont_scc successors in
       let (res,_) =
         List.fold_left
           (fun r n -> let _,r = dfs n r in r)
@@ -262,6 +266,10 @@ module Make(O:MySet.OrderedType) : S
           nodes
       in
       res
+
+(* Equivalent to scan_nodes_succs but accepting an relation [m] *)
+    let scan_nodes_rel kont kont_scc res nodes m =
+      scan_nodes_succs kont kont_scc res nodes (succs m)
 
 (*
  * Scan the graph [m] in topological order,
@@ -271,7 +279,7 @@ module Make(O:MySet.OrderedType) : S
  * [dfs] will *not* be called on [n].
  *)
     let scan_restrict_domain_rel kont kont_scc res nodes m =
-      let dfs = dfs kont kont_scc m in
+      let dfs = dfs kont kont_scc (succs m) in
       let (res,_) =
         M.fold
           (fun n _ r ->
@@ -618,6 +626,11 @@ module Make(O:MySet.OrderedType) : S
       let kont _ _ r = r
       and kont_scc _ ns r = kont ns r in
       FullSCC.scan_nodes_rel kont kont_scc res nodes edges
+
+    let scc_kont_succs kont res nodes successors =
+      let kont _ _ r = r
+      and kont_scc _ ns r = kont ns r in
+      FullSCC.scan_nodes_succs kont kont_scc res nodes successors
 
     (* Check hierarchy *)
 

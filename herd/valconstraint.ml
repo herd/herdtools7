@@ -673,6 +673,10 @@ let get_failed cns =
         ()
         ns r
 
+    (* [get_succs m c] returns the set of successors in [m] of all the
+       variables used by [c]. *)
+    let get_succs m c = fold_vars_eq (env_find m) c [] |> EqSet.unions
+
     (** [eq2g cs] constructs the map from an equation to the equations of the
         form [x = <e>] where [x] is a variable present in [c].
 
@@ -683,9 +687,6 @@ let get_failed cns =
             x=bar --> { x=foo, x=bar }
     *)
     let eq2g cs: EqRel.t =
-      (* [get_succs m c] returns the set of successors in [m] of all the
-         variables used by [c]. *)
-      let get_succs m c = fold_vars_eq (env_find m) c [] |> EqSet.unions in
       (* [m] maps a symbolic variable to the equations that use it. *)
       let m = var2eq cs in
       List.fold_left (fun map c -> EqRel.add_set c (get_succs m c) map)
@@ -764,8 +765,9 @@ let get_failed cns =
       * some contradictory equation cst = cst`
       *)
     let solve_topo_step cs =
-      let r = eq2g cs in
+      let m = var2eq cs in
       if debug > 0 then begin
+        let r = eq2g cs in
         if false then begin
           prerr_endline "** Solve topo **" ;
           eprintf "%s\n%!" (pp_cnstrnts cs) ;
@@ -783,7 +785,7 @@ let get_failed cns =
         eprintf "** Equations ordered**\n%!" ;
         debug_topo stderr cs r
       end ;
-      EqRel.scc_kont topo_step (V.Solution.empty,[]) cs r
+      EqRel.scc_kont_succs topo_step (V.Solution.empty,[]) cs (get_succs m)
 
     let solve_topo cs =
       (* Replace equivalent variables by a class representative *)
