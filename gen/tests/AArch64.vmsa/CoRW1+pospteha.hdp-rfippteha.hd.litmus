@@ -12,4 +12,4 @@ TTHM=P0:HA P0:HD
  MOV W2,#2        ;
  L00: STR W2,[X0] ;
 
-exists (0:X1=2 /\ fault(P0:L00,x) /\ not (fault(P0:L01,x)))
+exists (0:X1=2 /\ not (fault(P0:L00,x)) /\ not (fault(P0:L01,x)))

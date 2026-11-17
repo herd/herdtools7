@@ -933,12 +933,15 @@ module Value = struct
     let implicitly_set_pteval dir machine_feature p =
       let open WPTE in
       let open AArch64PteVal in
-      if StringSet.mem (WPTE.pp HA) machine_feature && p.af = 0 then
-          Some (Irr,{p with af = 1})
-      else if StringSet.mem (WPTE.pp HD) machine_feature
-        && dir = Code.W && p.db = 0  && p.dbm = 1 then
-          Some (Dir W,{p with db = 1})
-      else None
+      let hd = StringSet.mem (WPTE.pp HD) machine_feature in
+      let set_db = hd && dir = Code.W && p.db = 0 && p.dbm = 1 in
+      let ha = StringSet.mem (WPTE.pp HA) machine_feature in
+      let set_af = (ha || hd) && p.af = 0 in
+      match set_af,set_db with
+      | false,false -> None
+      | true,false -> Some (Irr,{p with af = 1})
+      | false,true -> Some (Dir W,{p with db = 1})
+      | true,true -> Some (Irr,{p with af = 1; db = 1})
 
     let refers_virtual p = OutputAddress.refers_virtual p.AArch64PteVal.oa
   end)
