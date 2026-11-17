@@ -182,7 +182,7 @@ let with_top_level_choice_doc doc =
 
 let common_specs () =
   LibOpts.parse_verbose verbose @
-  ("-version", Arg.Unit (fun () -> print_endline Version.version ; exit 0),
+  ("-version", Arg.Unit (fun () -> Version.print (); exit 0),
    " show version number and exit")::
   ("-set-libdir", Arg.String (fun s -> libdir := s),
    " <path> path to libdir")::

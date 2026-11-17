@@ -37,7 +37,7 @@ let opts =
   LibOpts.parse_verbose verbose
   @ [
 (* General behavior *)
-   "-version", Arg.Unit (fun () -> print_endline Version.version; exit 0),
+   "-version", Arg.Unit (fun () -> Version.print (); exit 0),
    " show version number and exit";
    "-libdir", Arg.Unit (fun () -> print_endline !Option.libdir; exit 0),
    " show installation directory and exit";

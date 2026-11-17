@@ -156,4 +156,5 @@
      (run
       sh
       -c
-      "printf 'let rev = \"%s\"\n' \"$(git rev-parse HEAD 2>/dev/null || echo exported)\""))))))
+      "printf 'let rev = \"%s\"\n' \"$(git rev-parse HEAD 2>/dev/null || echo exported)\"")
+     (echo "let print () = Printf.printf \"%s, Rev: %s\\n\" version rev\n"))))))
