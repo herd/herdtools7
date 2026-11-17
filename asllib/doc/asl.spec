@@ -6317,7 +6317,7 @@ typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) 
     ast_label(s2) = label_T_Int;
     symdom_of_type(tenv, s) -> d_s;
     symdom_of_type(tenv, t) -> d_t;
-    symdom_subset_unions(tenv, d_s, d_t) -> b;
+    symdom_subset_unions(tenv, d_t, d_s) -> b;
     --
     b;
   }
@@ -6335,7 +6335,7 @@ typing function subtype_satisfies(tenv: static_envs, t: ty, s: ty) -> (b: Bool) 
     bitfields_included(tenv, bfs_s, bfs_t) -> True;
     symdom_of_width_expr(w_s) -> d_s;
     symdom_of_width_expr(w_t) -> d_t;
-    symdom_subset_unions(tenv, d_s, d_t) -> b;
+    symdom_subset_unions(tenv, d_t, d_s) -> b;
     --
     b;
   }
