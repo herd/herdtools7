@@ -136,10 +136,7 @@ let () =
   Arg.parse
     (LibOpts.parse_verbose verbose
     @ ["-version",
-     Arg.Unit
-       (fun () ->
-         printf "%s, Rev: %s\n" Version.version Version.rev ;
-         exit 0),
+     Arg.Unit (fun () -> Version.print () ; exit 0),
      " show version number and exit" ;
      "-libdir",
      Arg.Unit (fun () -> print_endline !libdir; exit 0),

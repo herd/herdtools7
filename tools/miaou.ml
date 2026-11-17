@@ -974,9 +974,8 @@ let options =
   LibOpts.parse_verbose verbose
   @ [
 (* Basic *)
-    ("-version", Arg.Unit
-     (fun () -> printf "%s, Rev: %s\n" Version.version Version.rev ; exit 0),
-   " show version number and exit") ;
+    ("-version", Arg.Unit (fun () -> Version.print () ; exit 0),
+    " show version number and exit") ;
     ("-libdir", Arg.Unit (fun () -> print_endline !libdir; exit 0),
     " show installation directory and exit");
     ("-set-libdir", Arg.String (fun s -> libdir := s),

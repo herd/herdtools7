@@ -348,9 +348,7 @@ let graph_presentation_options = Arg.align ~limit:40 [
 let setup_options = Arg.align ~limit:40 ([
    "-help", Arg.Unit Fun.id, "" ;
   "--help", Arg.Unit Fun.id, "";
-  ("-version", Arg.Unit
-     (fun () -> printf "%s, Rev: %s\n" Version.version Version.rev ; exit 0),
-   " ") ;
+  ("-version", Arg.Unit (fun () -> Version.print () ; exit 0), " ") ;
   ("-libdir", Arg.Unit (fun () -> print_endline !Opts.libdir; exit 0),
     " show the default search path for .cat files and ASL pseudocode files");
   ("-set-libdir", Arg.String (fun s -> Opts.libdir := s),
