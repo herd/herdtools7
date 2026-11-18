@@ -33,6 +33,7 @@ depends: [
   "zarith" {>= "1.13"}
   "conf-which"
   "logs"
+  "aslref"
   "conf-python-3" {= "9.0.0" & with-test}
   "conf-gcc" {with-test}
 ]
