@@ -329,11 +329,9 @@ and type state = A.state =
 (* Simplify equations *)
 
     let subst_atom m v =
-      V.map_csym
-        (fun x ->
-          try V.Var (Part.Sol.find x m)
-          with Not_found -> V.Var x)
-        v
+      V.map_csym (fun x ->
+        V.Var (Option.fold ~none:x ~some:(fun x -> x) (Part.Sol.find_opt x m))
+      ) v
 
     let subst_expr m = map_expr (subst_atom m)
 
@@ -476,7 +474,7 @@ and type state = A.state =
 
 
 (* Phase 2, "solving": just collect equations S := cst / cst := S *)
-    let singleton v i = V.Solution.add v i V.Solution.empty
+    let singleton v i = V.Solution.singleton v i
     and empty = V.Solution.empty
 
     let solve_cnstrnt cnstr = match cnstr with
