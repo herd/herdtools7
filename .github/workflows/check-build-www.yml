@@ -39,7 +39,7 @@ jobs:
       - name: Set up OCaml
         uses: ./.github/actions/setup-opam
         with:
-          ocaml-compiler: dune,menhir,zarith,js_of_ocaml,js_of_ocaml-ppx,zarith_stubs_js,logs
+          ocaml-compiler: 5
           install-dependencies: "false"
       - name: Install herd-www dependencies
         working-directory: herd-www
@@ -65,8 +65,12 @@ jobs:
       - name: Set up OCaml
         uses: ./.github/actions/setup-opam
         with:
-          ocaml-compiler: dune,menhir,zarith,js_of_ocaml,js_of_ocaml-ppx,zarith_stubs_js,logs
+          ocaml-compiler: 5
           install-dependencies: "false"
+
+      - name: Install asllib-www dependencies
+        working-directory: asllib
+        run: opam list --short --required-by=aslref --depopts --color=never | xargs opam install
 
       - run: |
           opam exec -- dune build --profile=release asllib/asllib-www
