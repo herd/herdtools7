@@ -1,0 +1,10 @@
+Test A018 Required
+States 1
+1:X0=42;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition forall (1:X0=42)
+Observation A018 Always 2 0
+Hash=dd115cc1f30fc80905e34a7a542cfaf0
+
