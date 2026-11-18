@@ -1,0 +1,11 @@
+AArch64 coRW2+posxp-pospx
+{
+ 0:X1=x; 1:X1=x;
+}
+P0              |  P1         ;
+LDXR W0,[X1]    | MOV W0,#3   ;
+MOV W6,#2       | STR W0,[X1] ;
+STR W6,[X1]     |             ;
+MOV W2,#1       |             ;
+STXR W4,W2,[X1] |             ;
+exists(0:X0=0 /\ [x]=1)

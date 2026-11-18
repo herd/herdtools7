@@ -49,6 +49,7 @@ let iico_ctrl = iico_ctrl+
 let iico_order = iico_order+
 let ii_addr = [ADDR]; iico_data
 let ii_data = [DATA]; (iico_data|iico_ctrl)+
+let to_data_port = [NExp & PTE & R]; iico_data; [NExp & PTE & W]
 
 (*
  * Include default definitions for sets that are undefined without
@@ -96,7 +97,7 @@ let IC = IC.IALLUIS | IC.IALLU | IC.IVAU
 
 (* Renaming default herd names *)
 let Imp = NExp
-let SPONTANEOUS = SPURIOUS
+let AUTONOMOUS = SPURIOUS
 let inv-scope = inv-domain
 let D-TTD = if "vmsa" then D-PTE else emptyset
 let I-TTD = if "vmsa" then I-PTE else emptyset
