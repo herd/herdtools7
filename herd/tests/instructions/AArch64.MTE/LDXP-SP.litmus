@@ -1,0 +1,11 @@
+AArch64 LDXP-SP
+Variant=memtag,sync
+
+{
+  uint32_t x[2]={1,2};
+  [tag(x)]=:green;
+  0:SP=x:red;
+}
+P0;
+  LDXP W0,W1,[SP];
+forall(0:X0=1 /\ 0:X1=2 /\ ~fault(P0,x,TagCheck))
