@@ -11,6 +11,7 @@
  * Authors:
  * Jade Alglave <jade.alglave@arm.com>
  * Artem Khyzha <artem.khyzha@arm.com>
+ * Nikos Nikoleris <nikos.nikoleris@arm.com>
  *
  * Copyright (C) 2016-present, Arm Ltd.
  * All rights reserved.
@@ -41,8 +42,6 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
-catdep (* This option tells that the cat file computes dependencies *)
-
 include "aarch64util.cat"
 
 (* Local register read successor *)
@@ -57,40 +56,37 @@ let lmws =
 (* Local memory read successor *)
 let lmrs = [W]; ((po & same-loc) & ~(intervening(W,(po & same-loc)))); [R]
 
-(* Dependency through registers and memory *)
-let rec dtrm =
+(* Dependency through registers *)
+let rec dtr =
   [~range(lxsx)]; lrrs
-  | lmrs
   | iico_data
-  | dtrm; dtrm
+  | dtr; dtr
 
 (** Data, Address and Control dependencies *)
-
-let data = [Exp & R]; dtrm & po; [Rreg]; iico_data & ii_data; [Exp & W]
-let addr = [Exp & R]; dtrm & po; [Rreg]; iico_data & ii_addr; [Exp & M | Imp & Tag & R | Imp & TTD & M | TLBI | DC.CVAU | IC.IVAU]
-let ctrl = [Exp & R]; dtrm & po; [Rreg]; iico_data; [BCC]; po
+let data = [Exp & R]; (dtr & po; [Rreg])?; iico_data & ii_data; [Exp & W]
+let addr = [Exp & R]; dtr & po; [Rreg]; iico_data & ii_addr; [Exp & M | Imp & Tag & R | Imp & TTD & M | TLBI | DC.CVAU | IC.IVAU]
+let ctrl = [Exp & R]; dtr & po; [Rreg]; iico_data; [BCC]; po
 
 (** Pick dependencies *)
-let rec pick-dtrm =
-  dtrm
-  | iico_ctrl
-  | pick-dtrm; pick-dtrm
 
-let pick-basic-dep =
-   [Exp & R]; pick-dtrm
+let ii-pick-dep = (iico_data; [B]; iico_ctrl) \ iico_data
+let rec pick-dtr =
+   dtr?; ii-pick-dep; dtr?
+   | pick-dtr; pick-dtr
+
+let pred-ctrl-dep =
+   [Exp & R]; (dtr | pick-dtr) & po; [Rreg]; ii-pick-dep; [Exp & M]
 
 let pick-addr-dep =
-   [Exp & R]; pick-dtrm & po; [Rreg]; iico_data & ii_addr; [Exp & M | Imp & Tag & R | Imp & TTD & M | TLBI | DC.CVAU | IC.IVAU]
+   [Exp & R]; pick-dtr & po; [Rreg]; iico_data & ii_addr; [Exp & M | Imp & Tag & R | Imp & TTD & M | TLBI | DC.CVAU | IC.IVAU]
 let pick-data-dep =
-   [Exp & R]; pick-dtrm & po; [Rreg]; (iico_data | (iico_data; iico_ctrl)) & ii_data; [Exp & W]
+   [Exp & R]; pick-dtr & po; [Rreg]; iico_data & ii_data; [Exp & W]
 let pick-ctrl-dep =
-   [Exp & R]; pick-dtrm & po; [Rreg]; iico_data; [BCC]; po
+   [Exp & R]; pick-dtr & po; [Rreg]; iico_data; [BCC]; po
+   | pred-ctrl-dep
 
-let pick-dep =
-   ( pick-basic-dep
-   | pick-addr-dep
-   | pick-data-dep
-   | pick-ctrl-dep
-   ) & ~same-instance
+let rec pick-chain =
+  [Exp & R]; pick-data-dep; [Exp & W]; lmrs; [Exp & R | Imp & Tag & R]
+  | [Exp & R]; pred-ctrl-dep; [Exp & W]; lmrs; [Exp & R | Imp & Tag & R]
+  | pick-chain; pick-chain
 
-include "aarch64show.cat"

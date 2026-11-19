@@ -32,6 +32,7 @@ module Make
          val libdir : string
          val expand : bool
          val flatten : bool
+         val compact_opt : bool
          val std : bool
 (* Definitons *)
          val names : StringSet.t
@@ -506,7 +507,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
          tr_evts_from_rel e1 e::tr_seq e1 e2 es
       | [e] ->
          [tr_rel e1 e2 e]
-      | Var (loc1,id1)::Op1 (_,Opt,Var (loc2,id2))::es ->
+      | Var (loc1,id1)::Op1 (_,Opt,Var (loc2,id2))::es when O.compact_opt ->
          let e1,e3,e2 =
            match es with
            | [] -> e1,e2,e2
@@ -967,6 +968,7 @@ let names = ref StringSet.empty
 let testmode = ref false
 let texfile = ref None
 let expand = ref true
+let compact_opt = ref false
 let flatten = ref true
 let std = ref false
 
@@ -985,6 +987,8 @@ let options =
     ArgUtils.parse_stringset "-show" names "show those names definitions";
     ArgUtils.parse_bool "-test" testmode "translate as many names as possible";
     ArgUtils.parse_bool "-expand" expand "expand include statements";
+    ArgUtils.parse_bool "-compact-optional-relations" compact_opt
+      "compact text for the optional ? operator" ;
     ArgUtils.parse_bool "-flatten" flatten "flatten associative operators";
     ArgUtils.parse_bool "-stdlatex" std "output for standard latex";
     ArgUtils.parse_string_opt "-tex" texfile "file of LaTeX definitions";
@@ -1014,6 +1018,7 @@ let () =
         let names = !names
         let expand = !expand
         let flatten = !flatten
+        let compact_opt = !compact_opt
         let std = !std
         let testmode = !testmode
         let texfile = !texfile

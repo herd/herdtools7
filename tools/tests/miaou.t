@@ -427,7 +427,7 @@
   \expandafter{\MakeUppercase\addremph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
-  \item \expandafter{\MakeUppercase\dtrm{E\textsubscript{1}}{E\textsubscript{3}}}.
+  \item \expandafter{\MakeUppercase\dtr{E\textsubscript{1}}{E\textsubscript{3}}}.
   \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
   \item \Rreg{E\textsubscript{3}}.
   \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{3}}{E\textsubscript{2}}}.
@@ -604,7 +604,7 @@
   \expandafter{\MakeUppercase\ctrlemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
-  \item \expandafter{\MakeUppercase\dtrm{E\textsubscript{1}}{E\textsubscript{3}}}.
+  \item \expandafter{\MakeUppercase\dtr{E\textsubscript{1}}{E\textsubscript{3}}}.
   \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
   \item \Rreg{E\textsubscript{3}}.
   \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{3}}{E\textsubscript{4}}}.
@@ -616,9 +616,16 @@
   \expandafter{\MakeUppercase\dataemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
-  \item \expandafter{\MakeUppercase\dtrm{E\textsubscript{1}}{E\textsubscript{3}}}.
-  \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
-  \item \Rreg{E\textsubscript{3}}.
+  \item One of the following applies:
+    \begin{itemize}
+    \item All of the following apply:
+      \begin{itemize}
+      \item \expandafter{\MakeUppercase\dtr{E\textsubscript{1}}{E\textsubscript{3}}}.
+      \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
+      \item \Rreg{E\textsubscript{3}}.
+      \end{itemize}
+    \item \expandafter{\MakeUppercase\sameEffect{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \end{itemize}
   \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{3}}{E\textsubscript{2}}}.
   \item \expandafter{\MakeUppercase\iidata{E\textsubscript{3}}{E\textsubscript{2}}}.
   \item \ExpW{E\textsubscript{2}}.
@@ -700,20 +707,19 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show dtrm aarch64.cat
-  \expandafter{\MakeUppercase\dtrmemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
+  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show dtr aarch64.cat
+  \expandafter{\MakeUppercase\dtremph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
     \begin{itemize}
     \item \expandafter{\MakeUppercase\notthecase{\rangelxsx{E\textsubscript{1}}}}.
     \item \expandafter{\MakeUppercase\lrrs{E\textsubscript{1}}{E\textsubscript{2}}}.
     \end{itemize}
-  \item \expandafter{\MakeUppercase\lmrs{E\textsubscript{1}}{E\textsubscript{2}}}.
   \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{1}}{E\textsubscript{2}}}.
   \item All of the following apply:
     \begin{itemize}
-    \item \expandafter{\MakeUppercase\dtrm{E\textsubscript{1}}{E\textsubscript{3}}}.
-    \item \expandafter{\MakeUppercase\dtrm{E\textsubscript{3}}{E\textsubscript{2}}}.
+    \item \expandafter{\MakeUppercase\dtr{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item \expandafter{\MakeUppercase\dtr{E\textsubscript{3}}{E\textsubscript{2}}}.
     \end{itemize}
   \end{itemize}
 
@@ -831,7 +837,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show obs aarch64.cat
+  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -compact-optional-relations=true -show obs aarch64.cat
   \expandafter{\MakeUppercase\obsemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item \Expobs{E\textsubscript{1}}{either  E\textsubscript{2}} or \sca{an Effect which}{E\textsubscript{2}}.
@@ -844,7 +850,7 @@
   \expandafter{\MakeUppercase\pickaddrdepemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
-  \item \expandafter{\MakeUppercase\pickdtrm{E\textsubscript{1}}{E\textsubscript{3}}}.
+  \item \expandafter{\MakeUppercase\pickdtr{E\textsubscript{1}}{E\textsubscript{3}}}.
   \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
   \item \Rreg{E\textsubscript{3}}.
   \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{3}}{E\textsubscript{2}}}.
@@ -860,76 +866,96 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pick-basic-dep aarch64.cat
-  \expandafter{\MakeUppercase\pickbasicdepemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
+  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pred-ctrl-dep aarch64.cat
+  \expandafter{\MakeUppercase\predctrldepemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
-  \item \expandafter{\MakeUppercase\pickdtrm{E\textsubscript{1}}{E\textsubscript{2}}}.
+  \item One of the following applies:
+    \begin{itemize}
+    \item \expandafter{\MakeUppercase\dtr{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item \expandafter{\MakeUppercase\pickdtr{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \end{itemize}
+  \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
+  \item \Rreg{E\textsubscript{3}}.
+  \item \expandafter{\MakeUppercase\iipickdep{E\textsubscript{3}}{E\textsubscript{2}}}.
+  \item \ExpM{E\textsubscript{2}}.
   \end{itemize}
 
   $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pick-ctrl-dep aarch64.cat
-  \expandafter{\MakeUppercase\pickctrldepemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
+  \expandafter{\MakeUppercase\pickctrldepemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
-  \item \ExpR{E\textsubscript{1}}.
-  \item \expandafter{\MakeUppercase\pickdtrm{E\textsubscript{1}}{E\textsubscript{3}}}.
-  \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
-  \item \Rreg{E\textsubscript{3}}.
-  \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{3}}{E\textsubscript{4}}}.
-  \item \BCC{E\textsubscript{4}}.
-  \item \expandafter{\MakeUppercase\po{E\textsubscript{4}}{E\textsubscript{2}}}.
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ExpR{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\pickdtr{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item \Rreg{E\textsubscript{3}}.
+    \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{3}}{E\textsubscript{4}}}.
+    \item \BCC{E\textsubscript{4}}.
+    \item \expandafter{\MakeUppercase\po{E\textsubscript{4}}{E\textsubscript{2}}}.
+    \end{itemize}
+  \item \expandafter{\MakeUppercase\predctrldep{E\textsubscript{1}}{E\textsubscript{2}}}.
   \end{itemize}
 
   $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pick-data-dep aarch64.cat
   \expandafter{\MakeUppercase\pickdatadepemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
-  \item \expandafter{\MakeUppercase\pickdtrm{E\textsubscript{1}}{E\textsubscript{3}}}.
+  \item \expandafter{\MakeUppercase\pickdtr{E\textsubscript{1}}{E\textsubscript{3}}}.
   \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
   \item \Rreg{E\textsubscript{3}}.
-  \item One of the following applies:
-    \begin{itemize}
-    \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{3}}{E\textsubscript{2}}}.
-    \item All of the following apply:
-      \begin{itemize}
-      \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{3}}{E\textsubscript{4}}}.
-      \item \expandafter{\MakeUppercase\iicoctrl{E\textsubscript{4}}{E\textsubscript{2}}}.
-      \end{itemize}
-    \end{itemize}
+  \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{3}}{E\textsubscript{2}}}.
   \item \expandafter{\MakeUppercase\iidata{E\textsubscript{3}}{E\textsubscript{2}}}.
   \item \ExpW{E\textsubscript{2}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pick-dep aarch64.cat
-  \expandafter{\MakeUppercase\pickdepemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
+  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pick-dtr aarch64.cat
+  \expandafter{\MakeUppercase\pickdtremph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
-  \item One of the following applies:
-    \begin{itemize}
-    \item \expandafter{\MakeUppercase\pickbasicdep{E\textsubscript{1}}{E\textsubscript{2}}}.
-    \item \expandafter{\MakeUppercase\pickaddrdep{E\textsubscript{1}}{E\textsubscript{2}}}.
-    \item \expandafter{\MakeUppercase\pickdatadep{E\textsubscript{1}}{E\textsubscript{2}}}.
-    \item \expandafter{\MakeUppercase\pickctrldep{E\textsubscript{1}}{E\textsubscript{2}}}.
-    \end{itemize}
-  \item \expandafter{\MakeUppercase\notthecase{\expandafter{\MakeUppercase\sameinstance{E\textsubscript{1}}{E\textsubscript{2}}}}}.
-  \end{itemize}
-
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pick-dtrm aarch64.cat
-  \expandafter{\MakeUppercase\pickdtrmemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
-  \begin{itemize}
-  \item \expandafter{\MakeUppercase\dtrm{E\textsubscript{1}}{E\textsubscript{2}}}.
-  \item \expandafter{\MakeUppercase\iicoctrl{E\textsubscript{1}}{E\textsubscript{2}}}.
   \item All of the following apply:
     \begin{itemize}
-    \item \expandafter{\MakeUppercase\pickdtrm{E\textsubscript{1}}{E\textsubscript{3}}}.
-    \item \expandafter{\MakeUppercase\pickdtrm{E\textsubscript{3}}{E\textsubscript{2}}}.
+    \item One of the following applies:
+      \begin{itemize}
+      \item \expandafter{\MakeUppercase\dtr{E\textsubscript{1}}{E\textsubscript{3}}}.
+      \item \expandafter{\MakeUppercase\sameEffect{E\textsubscript{1}}{E\textsubscript{3}}}.
+      \end{itemize}
+    \item \expandafter{\MakeUppercase\iipickdep{E\textsubscript{3}}{E\textsubscript{4}}}.
+    \item One of the following applies:
+      \begin{itemize}
+      \item \expandafter{\MakeUppercase\dtr{E\textsubscript{4}}{E\textsubscript{2}}}.
+      \item \expandafter{\MakeUppercase\sameEffect{E\textsubscript{4}}{E\textsubscript{2}}}.
+      \end{itemize}
+    \end{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \expandafter{\MakeUppercase\pickdtr{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item \expandafter{\MakeUppercase\pickdtr{E\textsubscript{3}}{E\textsubscript{2}}}.
     \end{itemize}
   \end{itemize}
 
   $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pick-lob aarch64.cat
-  \expandafter{\MakeUppercase\picklobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
+  \expandafter{\MakeUppercase\picklobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
-  \item \expandafter{\MakeUppercase\pickdep{E\textsubscript{1}}{E\textsubscript{3}}}.
-  \item \expandafter{\MakeUppercase\lob{E\textsubscript{3}}{E\textsubscript{2}}}.
-  \item \ExpW{E\textsubscript{2}}.
+  \item All of the following apply:
+    \begin{itemize}
+    \item \expandafter{\MakeUppercase\pickchain{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item \expandafter{\MakeUppercase\lob{E\textsubscript{3}}{E\textsubscript{2}}}.
+    \item One of the following applies:
+      \begin{itemize}
+      \item \ExpW{E\textsubscript{2}}.
+      \item \ImpTTDW{E\textsubscript{2}}.
+      \end{itemize}
+    \end{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \expandafter{\MakeUppercase\pickchain{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item One of the following applies:
+      \begin{itemize}
+      \item \expandafter{\MakeUppercase\lob{E\textsubscript{3}}{E\textsubscript{4}}}.
+      \item \expandafter{\MakeUppercase\sameEffect{E\textsubscript{3}}{E\textsubscript{4}}}.
+      \end{itemize}
+    \item \expandafter{\MakeUppercase\IFBob{E\textsubscript{4}}{E\textsubscript{2}}}.
+    \end{itemize}
   \end{itemize}
 
   $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show po-scl-ob aarch64.cat
