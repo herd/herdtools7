@@ -1,0 +1,10 @@
+Test MW-or Required
+States 1
+[rel]=0xf; [rlx]=0xf;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([rlx]=0xf /\ [rel]=0xf)
+Observation MW-or Always 1 0
+Hash=dc1104b394375a51d42b988494fbe573
+

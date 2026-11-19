@@ -1,0 +1,9 @@
+C MW-xor
+{ [rlx]=12; [rel]=12; }
+
+P0 (int* rlx, int* rel) {
+  atomic_store_xor_explicit(rlx, 10, memory_order_relaxed);
+  atomic_store_xor_explicit(rel, 10, memory_order_release);
+}
+
+forall ([rlx]=6 /\ [rel]=6)

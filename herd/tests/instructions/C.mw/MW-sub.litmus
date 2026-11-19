@@ -1,0 +1,9 @@
+C MW-sub
+{ [rlx]=5; [rel]=0; }
+
+P0 (int* rlx, int* rel) {
+  atomic_store_sub_explicit(rlx, 3, memory_order_relaxed);
+  atomic_store_sub_explicit(rel, 1, memory_order_release);
+}
+
+forall ([rlx]=2 /\ [rel]=0xffffffff)

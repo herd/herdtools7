@@ -1,0 +1,12 @@
+Test MW-fence-no-acquire Allowed
+States 2
+1:r0=0x0;
+1:r0=0x1;
+Undef
+Witnesses
+Positive: 1 Negative: 1
+Flag *undef*
+Condition exists (1:r0=0x0)
+Observation MW-fence-no-acquire Sometimes 1 1
+Hash=1bc60277b184557316df9215327ac1c9
+

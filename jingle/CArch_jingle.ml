@@ -112,6 +112,10 @@ include Arch.MakeArch(struct
     | StoreMem(l,ex,mo),StoreMem(l',ex',mo') when mo=mo' ->
         match_location subs l l' >>> fun subs ->
         match_expr subs ex ex'
+    | StoreOp(l,op,ex,mo),StoreOp(l',op',ex',mo')
+      when mo=mo' && op=op' ->
+        match_location subs l l' >>> fun subs ->
+        match_expr subs ex ex'
     | Lock (l,MutexC11),Lock (l',MutexC11) -> match_location subs l l'
     | Lock (l,MutexLinux),Lock (l',MutexLinux) -> match_location subs l l'
     | Unlock (l,MutexC11),Unlock (l',MutexC11) -> match_location subs l l'
@@ -223,6 +227,10 @@ include Arch.MakeArch(struct
           expl_expr loc >> fun loc ->
           expl_expr e >! fun e ->
           StoreMem(loc,e,mo)
+      | StoreOp(loc,op,e,mo) ->
+          expl_expr loc >> fun loc ->
+          expl_expr e >! fun e ->
+          StoreOp(loc,op,e,mo)
     | Lock (l,k) -> expl_expr l >! fun  l -> Lock(l,k)
     | Unlock (l,k) -> expl_expr l >! fun l -> Unlock(l,k)
     | Symb s -> find_code s
