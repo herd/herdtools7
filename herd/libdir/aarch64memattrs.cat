@@ -44,34 +44,65 @@
 (*** Device Memory ***)
 
 (* Device Memory Types *)
-let Device-GRE = try PTEDevice-GRE with emptyset
-let Device-nGRE = try PTEDevice-nGRE with emptyset
-let Device-nGnRE = try PTEDevice-nGnRE with emptyset
-let Device-nGnRnE = try PTEDevice-nGnRnE with emptyset
-let Device = Device-GRE | Device-nGRE | Device-nGnRE | Device-nGnRnE
+let TTDDevice-GRE = try PTEDevice-GRE with emptyset
+let TTDDevice-nGRE = try PTEDevice-nGRE with emptyset
+let TTDDevice-nGnRE = try PTEDevice-nGnRE with emptyset
+let TTDDevice-nGnRnE = try PTEDevice-nGnRnE with emptyset
+let TTDDevice = TTDDevice-GRE | TTDDevice-nGRE | TTDDevice-nGnRE | TTDDevice-nGnRnE
 
 (* Device memory cannot have more than one Device subtypes *)
-assert empty Device-GRE & Device-nGRE & Device-nGnRE & Device-nGnRnE as Conflicting-Device-types
+assert empty TTDDevice-GRE & TTDDevice-nGRE & TTDDevice-nGnRE & TTDDevice-nGnRnE as Conflicting-Device-types
 
 (*** Normal Memory ***)
 
-let NSH = try PTENSH with emptyset
-let ISH = try PTEISH with emptyset
-let OSH = try PTEOSH with emptyset
-let Shareability = NSH | ISH | OSH
+let TTDNSH = try PTENSH with emptyset
+let TTDISH = try PTEISH with emptyset
+let TTDOSH = try PTEOSH with emptyset
+let Shareability = TTDNSH | TTDISH | TTDOSH
 
-let iWB = try PTEiWB with emptyset
-let iWT = try PTEiWT with emptyset
-let iNC = try PTEiNC with emptyset
-let InnerCacheability = iWB | iWT | iNC
+let TTDiWB = try PTEiWB with emptyset
+let TTDiWT = try PTEiWT with emptyset
+let TTDiNC = try PTEiNC with emptyset
+let InnerCacheability = TTDiWB | TTDiWT | TTDiNC
 
-let oWB = try PTEoWB with emptyset
-let oWT = try PTEoWT with emptyset
-let oNC = try PTEoNC with emptyset
-let OuterCacheability = oWB | oWT | oNC
+let TTDoWB = try PTEoWB with emptyset
+let TTDoWT = try PTEoWT with emptyset
+let TTDoNC = try PTEoNC with emptyset
+let OuterCacheability = TTDoWB | TTDoWT | TTDoNC
 
 let TaggedNormal = try PTETaggedNormal with emptyset
-let Normal = try PTENormal with emptyset
+let TTDNormal = try PTENormal with emptyset
 
 (*** Common attributes ***)
-let PTEXS = try PTEXS with emptyset
+let TTDXS = try PTEXS with emptyset
+
+(*** Definition of a relation between TTDs with the Same Attributes ***)
+let same-Device =
+  TTDDevice-GRE * TTDDevice-GRE
+  | TTDDevice-nGRE * TTDDevice-nGRE
+  | TTDDevice-nGnRE * TTDDevice-nGnRE
+  | TTDDevice-nGnRnE * TTDDevice-nGnRnE
+
+let same-shareability =
+  TTDNSH * TTDNSH
+  | TTDISH * TTDISH
+  | TTDOSH * TTDOSH
+
+let same-inner-cacheability =
+  TTDiWB * TTDiWB
+  | TTDiWT * TTDiWT
+  | TTDiNC * TTDiNC
+
+let same-outer-cacheability =
+  TTDoWB * TTDoWB
+  | TTDoWT * TTDoWT
+  | TTDoNC * TTDoNC
+
+let same-xs =
+  TTDXS * TTDXS
+  | (TTD \ TTDXS) * (TTD \ TTDXS)
+
+let same-Normal = (TTDNormal * TTDNormal) & same-shareability &
+    same-inner-cacheability & same-outer-cacheability & same-xs
+
+let TTD-same-attrs = same-Normal | same-Device

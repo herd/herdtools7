@@ -93,7 +93,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \M{E\textsubscript{1}}.
-      \item \DCCVAU{E\textsubscript{1}}.
+      \item \DCbyaddr{E\textsubscript{1}}.
       \item \IC{E\textsubscript{1}}.
       \item \TLBI{E\textsubscript{1}}.
       \end{itemize}
@@ -112,7 +112,7 @@
     \item One of the following applies:
       \begin{itemize}
       \item \M{E\textsubscript{1}}.
-      \item \DCCVAU{E\textsubscript{1}}.
+      \item \DCbyaddr{E\textsubscript{1}}.
       \item \IC{E\textsubscript{1}}.
       \item \TLBI{E\textsubscript{1}}.
       \end{itemize}
@@ -265,18 +265,6 @@
     \item \ImpInstrR{E\textsubscript{2}}.
     \end{itemize}
   \item \expandafter{\MakeUppercase\ICafter{E\textsubscript{1}}{E\textsubscript{2}}}.
-  \item All of the following apply:
-    \begin{itemize}
-    \item \DCCVAU{E\textsubscript{1}}.
-    \item \expandafter{\MakeUppercase\DCafter{E\textsubscript{1}}{E\textsubscript{2}}}.
-    \item \W{E\textsubscript{2}}.
-    \end{itemize}
-  \item All of the following apply:
-    \begin{itemize}
-    \item \W{E\textsubscript{1}}.
-    \item \expandafter{\MakeUppercase\DCafter{E\textsubscript{1}}{E\textsubscript{2}}}.
-    \item \DCCVAU{E\textsubscript{2}}.
-    \end{itemize}
   \item \expandafter{\MakeUppercase\ICca{E\textsubscript{1}}{E\textsubscript{2}}}.
   \end{itemize}
 
@@ -438,7 +426,7 @@
     \item \ImpTagR{E\textsubscript{2}}.
     \item \ImpTTDM{E\textsubscript{2}}.
     \item \TLBI{E\textsubscript{2}}.
-    \item \DCCVAU{E\textsubscript{2}}.
+    \item \DCbyaddr{E\textsubscript{2}}.
     \item \ICIVAU{E\textsubscript{2}}.
     \end{itemize}
   \end{itemize}
@@ -480,6 +468,7 @@
       \begin{itemize}
       \item \ExpM{E\textsubscript{1}}.
       \item \ImpTagR{E\textsubscript{1}}.
+      \item \DCbyaddr{E\textsubscript{1}}.
       \end{itemize}
     \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
     \item \DMBFULL{E\textsubscript{3}}.
@@ -488,32 +477,9 @@
       \begin{itemize}
       \item \ExpM{E\textsubscript{2}}.
       \item \ImpTagR{E\textsubscript{2}}.
+      \item \DCbyaddr{E\textsubscript{2}}.
       \item \MMUFAULT{E\textsubscript{2}}.
       \end{itemize}
-    \end{itemize}
-  \item All of the following apply:
-    \begin{itemize}
-    \item \ExpM{E\textsubscript{1}}.
-    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
-    \item \DMBFULL{E\textsubscript{3}}.
-    \item \expandafter{\MakeUppercase\po{E\textsubscript{3}}{E\textsubscript{2}}}.
-    \item \DCCVAU{E\textsubscript{2}}.
-    \end{itemize}
-  \item All of the following apply:
-    \begin{itemize}
-    \item \DCCVAU{E\textsubscript{1}}.
-    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
-    \item \DMBFULL{E\textsubscript{3}}.
-    \item \expandafter{\MakeUppercase\po{E\textsubscript{3}}{E\textsubscript{2}}}.
-    \item \ExpM{E\textsubscript{2}}.
-    \end{itemize}
-  \item All of the following apply:
-    \begin{itemize}
-    \item \DCCVAU{E\textsubscript{1}}.
-    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
-    \item \DMBFULL{E\textsubscript{3}}.
-    \item \expandafter{\MakeUppercase\po{E\textsubscript{3}}{E\textsubscript{2}}}.
-    \item \DCCVAU{E\textsubscript{2}}.
     \end{itemize}
   \item All of the following apply:
     \begin{itemize}
@@ -637,7 +603,7 @@
       \item \ExpW{E\textsubscript{2}}.
       \item \ImpTTDW{E\textsubscript{2}}.
       \item \TLBI{E\textsubscript{2}}.
-      \item \DCCVAU{E\textsubscript{2}}.
+      \item \DCbyaddr{E\textsubscript{2}}.
       \item \IC{E\textsubscript{2}}.
       \end{itemize}
     \end{itemize}
@@ -838,6 +804,7 @@
   \item \Tagobs{E\textsubscript{1}}{either  E\textsubscript{2}} or \sca{an Effect which}{E\textsubscript{2}}.
   \item \expandafter{\MakeUppercase\TTDobs{E\textsubscript{1}}{E\textsubscript{2}}}.
   \item \expandafter{\MakeUppercase\Instrobs{E\textsubscript{1}}{E\textsubscript{2}}}.
+  \item \expandafter{\MakeUppercase\DCafter{E\textsubscript{1}}{E\textsubscript{2}}}.
   \end{itemize}
 
   $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pick-addr-dep aarch64.cat
@@ -855,7 +822,7 @@
     \item \ImpTagR{E\textsubscript{2}}.
     \item \ImpTTDM{E\textsubscript{2}}.
     \item \TLBI{E\textsubscript{2}}.
-    \item \DCCVAU{E\textsubscript{2}}.
+    \item \DCbyaddr{E\textsubscript{2}}.
     \item \ICIVAU{E\textsubscript{2}}.
     \end{itemize}
   \end{itemize}
@@ -937,24 +904,26 @@
   \begin{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \ExpM{E\textsubscript{1}}.
+    \item \ExpMiWB{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{2}}}.
     \item \expandafter{\MakeUppercase\scl{E\textsubscript{1}}{E\textsubscript{2}}}.
-    \item \DCCVAU{E\textsubscript{2}}.
+    \item \expandafter{\MakeUppercase\samecacheability{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \DCbyaddr{E\textsubscript{2}}.
     \end{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \DCCVAU{E\textsubscript{1}}.
+    \item \DCbyaddr{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{2}}}.
     \item \expandafter{\MakeUppercase\scl{E\textsubscript{1}}{E\textsubscript{2}}}.
-    \item \ExpM{E\textsubscript{2}}.
+    \item \expandafter{\MakeUppercase\samecacheability{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \ExpMiWB{E\textsubscript{2}}.
     \end{itemize}
   \item All of the following apply:
     \begin{itemize}
-    \item \DCCVAU{E\textsubscript{1}}.
+    \item \DCbyaddr{E\textsubscript{1}}.
     \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{2}}}.
     \item \expandafter{\MakeUppercase\scl{E\textsubscript{1}}{E\textsubscript{2}}}.
-    \item \DCCVAU{E\textsubscript{2}}.
+    \item \DCbyaddr{E\textsubscript{2}}.
     \end{itemize}
   \end{itemize}
 
@@ -969,7 +938,7 @@
       \item \ExpW{E\textsubscript{2}}.
       \item \ImpTTDW{E\textsubscript{2}}.
       \item \TLBI{E\textsubscript{2}}.
-      \item \DCCVAU{E\textsubscript{2}}.
+      \item \DCbyaddr{E\textsubscript{2}}.
       \item \IC{E\textsubscript{2}}.
       \end{itemize}
     \end{itemize}
@@ -982,7 +951,7 @@
       \item \ExpW{E\textsubscript{2}}.
       \item \ImpTTDW{E\textsubscript{2}}.
       \item \TLBI{E\textsubscript{2}}.
-      \item \DCCVAU{E\textsubscript{2}}.
+      \item \DCbyaddr{E\textsubscript{2}}.
       \item \IC{E\textsubscript{2}}.
       \end{itemize}
     \end{itemize}
@@ -1029,6 +998,8 @@
     \begin{itemize}
     \item \ExpM{E\textsubscript{2}}.
     \item \ImpTagR{E\textsubscript{2}}.
+    \item \DCbyaddr{E\textsubscript{2}}.
+    \item \ICIVAU{E\textsubscript{2}}.
     \item \MMUFAULT{E\textsubscript{2}}.
     \item \TagCheckFAULT{E\textsubscript{2}}.
     \end{itemize}
