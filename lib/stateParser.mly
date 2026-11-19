@@ -227,7 +227,11 @@ maybev_notag:
 (* TODO: restrict to something like "NUM COLON BOOL"? *)
 | NUM COLON NUM { Concrete ($1 ^ ":" ^ $3) }
 | NAME LBRK NUM RBRK { Constant.mk_sym_with_index $1 (Base.Misc.string_as_int $3) }
-| TOK_SSCAP LPAR NAME COMMA NUM RPAR { Constant.mk_sym_with_index $3 (Base.Misc.string_as_int $5) }
+| TOK_SSCAP LPAR NAME COMMA sscap_state RPAR { Constant.mk_sym_with_index $3 $5 }
+
+sscap_state:
+| NUM { let n = Base.Misc.string_as_int $1 in if n >= 0 && (n mod 8 = 1 || n mod 8 = 5) then n else raise Parsing.Parse_error }
+| NAME { match $1 with "valid" -> 1 | "inprogress" -> 5 | _ -> raise Parsing.Parse_error }
 
 maybev_amper:
 | AMPER NAME { Constant.mk_sym $2 }
