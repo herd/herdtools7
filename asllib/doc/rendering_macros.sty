@@ -133,6 +133,16 @@
 \makeatother
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \ProseMath{content} - Render an indivisible inline mathematical fragment.
+%% The balanced fill glue has zero natural width when unbroken and provides a
+%% discouraged breakpoint that can carry the whole fragment to the next line.
+\newcommand{\ProseMath}[1]{%
+  \leavevmode
+  \hskip 0pt plus 1fill\penalty100\hskip 0pt plus -1fill\relax
+  \mbox{$#1$}%
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% \DefineProse{name}{content} - Define a macro for later rendering the prose
 %% for the named rule
 %% \RenderProse{name} - Render the defined prose for the rule

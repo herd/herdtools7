@@ -48,6 +48,22 @@ module Make (S : SPEC_VALUE) = struct
     | Some id -> pp_print_string fmt (get_or_gen_math_macro id)
     | None -> ()
 
+  (** [pp_prose_math pp fmt value] renders [value] as an indivisible inline
+      mathematical fragment in prose. *)
+  let pp_prose_math pp fmt value = fprintf fmt "\\ProseMath{%a}" pp value
+
+  (** [var_to_prose id] converts a variable [id] to its prose representation. *)
+  let var_to_prose id =
+    Format.asprintf "%a"
+      (pp_prose_math pp_print_string)
+      (spec_var_to_latex_var ~font_type:TextTT id)
+
+  (** [substitute_prose_vars template vars] substitutes the variables in a prose
+      template with indivisible prose identifiers. *)
+  let substitute_prose_vars template vars =
+    let bindings = List.map (fun var -> (var, var_to_prose var)) vars in
+    substitute template bindings
+
   (** [hypertarget_for_id id] returns a string [target] that can be used for the
       LaTeX [\hypertarget{target}{}] for [id]. *)
   let hypertarget_for_id id =
@@ -187,9 +203,7 @@ module Make (S : SPEC_VALUE) = struct
     let output_vars = List.concat_map vars_of_type_term output in
     let vars = input_vars @ output_vars in
     let instantiated_prose_description =
-      substitute_spec_vars_by_latex_vars ~math_mode:true
-        (Relation.prose_description def)
-        vars
+      substitute_prose_vars (Relation.prose_description def) vars
       (* necessary to avoid spurious line breaks. *)
       |> StringOps.shrink_whitespace
     in
@@ -694,25 +708,23 @@ module Make (S : SPEC_VALUE) = struct
           in
           String.concat ", " numbered_parts
 
+    (** [expr_to_prose_math expr] renders [expr] as an indivisible inline
+        mathematical fragment for inclusion in generated prose. *)
+    let expr_to_prose_math expr =
+      Format.asprintf "%a" (pp_prose_math pp_expr) (expr, Unspecified)
+
     (** [prose_or_empty_message ~name prose] returns [prose] if it is not empty,
         and a placeholder message using [name] otherwise, to help the user catch
         missing prose templates. *)
     let prose_or_empty_message ~name prose =
       if Utils.string_is_empty prose then
-        Format.asprintf "``empty prose for %s''"
-          (Latex.spec_var_to_latex_var ~font_type:TextTT name)
+        Format.asprintf "``empty prose for %s''" (var_to_prose name)
       else prose
 
     (** [prose_or_math prose expr] returns [prose] if it is not empty, and a
         math rendering of [expr] otherwise. *)
     let prose_or_math prose expr =
-      if Utils.string_is_empty prose then
-        Format.asprintf "$%a$" pp_expr (expr, Unspecified)
-      else prose
-
-    (** [var_to_prose id] converts a variable [id] to its prose representation.
-    *)
-    let var_to_prose id = spec_var_to_latex_var ~font_type:TextTT id
+      if Utils.string_is_empty prose then expr_to_prose_math expr else prose
 
     (** [strip_names_from_expr expr] removes names from the expression [expr].
     *)
@@ -780,6 +792,56 @@ module Make (S : SPEC_VALUE) = struct
       | Tuple _ | Record _ -> true
       | Transition _ | Indexed _ | UnresolvedApplication _ -> assert false
 
+    (** Maximum structural cost of an expression rendered as a single
+        mathematical island in prose. A limit of five admits a binary operation
+        or a three-operand nested operation over atomic expressions. *)
+    let max_prose_math_cost = 5
+
+    (** [expr_math_cost expr] returns a monotonic structural estimate of the
+        complexity of rendering [expr] as a single mathematical island. *)
+    let rec expr_math_cost expr =
+      let open Expr in
+      match expr with
+      | Var _ -> 1
+      | NamedExpr { expr; same_name } ->
+          expr_math_cost expr + if same_name then 0 else 1
+      | FieldAccess { base } -> 1 + expr_math_cost base
+      | ListIndex { index } -> 2 + expr_math_cost index
+      | Tuple { args } ->
+          List.fold_left (fun cost expr -> cost + expr_math_cost expr) 1 args
+      | Record { fields } ->
+          List.fold_left
+            (fun cost (_, expr) -> cost + expr_math_cost expr)
+            2 fields
+      | RecordUpdate { record_expr; updates } ->
+          List.fold_left
+            (fun cost (_, expr) -> cost + expr_math_cost expr)
+            (2 + expr_math_cost record_expr)
+            updates
+      | Map { lhs; args } ->
+          List.fold_left
+            (fun cost expr -> cost + expr_math_cost expr)
+            (2 + expr_math_cost lhs)
+            args
+      | Relation { name; is_operator; args } ->
+          let relation = Spec.relation_for_id S.spec name in
+          let initial =
+            if is_operator && Relation.is_custom_operator relation then 2 else 1
+          in
+          List.fold_left
+            (fun cost expr -> cost + expr_math_cost expr)
+            initial args
+      | Transition { lhs; rhs; short_circuit } -> (
+          let initial = 2 + expr_math_cost lhs + expr_math_cost rhs in
+          match short_circuit with
+          | None -> initial
+          | Some alternatives ->
+              List.fold_left
+                (fun cost expr -> cost + expr_math_cost expr)
+                initial alternatives)
+      | Indexed { body } -> 2 + expr_math_cost body
+      | UnresolvedApplication _ -> assert false
+
     (** [expr_to_prose expr] converts an expression [expr] to its prose
         representation. *)
     let rec expr_to_prose expr =
@@ -789,7 +851,7 @@ module Make (S : SPEC_VALUE) = struct
           (* We strip names from the sub-expression to avoid prose like
             "... (for the output variable a) (for the output variable b)". *)
           let stripped_sub_expr = strip_names_from_expr sub_expr in
-          let expr_prose = expr_to_prose stripped_sub_expr in
+          let expr_prose = expr_to_prose_or_math stripped_sub_expr in
           let pp_output_variable_prose fmt name =
             if same_name then ()
             else fprintf fmt " (for the output variable %s)" (var_to_prose name)
@@ -814,13 +876,14 @@ module Make (S : SPEC_VALUE) = struct
               var_to_prose id)
       | ListIndex { list_var; index = Var _ as index } ->
           (* An optimization of the prose for variable indices. *)
-          Format.asprintf "%s[%s]" (var_to_prose list_var) (expr_to_prose index)
+          Format.asprintf "%s[%s]" (var_to_prose list_var)
+            (expr_to_prose_or_math index)
       | ListIndex { list_var; index } ->
           Format.asprintf "the element of %s at %s" (var_to_prose list_var)
-            (expr_to_prose index)
-      | Tuple { label_opt = None; args = [ arg ] } -> expr_to_prose arg
+            (expr_to_prose_or_math index)
+      | Tuple { label_opt = None; args = [ arg ] } -> expr_to_prose_or_math arg
       | Tuple { label_opt = None; args } -> (
-          let args_prose = List.map expr_to_prose args in
+          let args_prose = List.map expr_to_prose_or_math args in
           match args with
           | [] -> assert false
           | [ _ ] -> assert false
@@ -833,7 +896,8 @@ module Make (S : SPEC_VALUE) = struct
                   (prose_numbered_list args_prose)
               else
                 Format.asprintf "the pair consisting of %s and %s"
-                  (expr_to_prose elem1) (expr_to_prose elem2)
+                  (expr_to_prose_or_math elem1)
+                  (expr_to_prose_or_math elem2)
           | _ ->
               Format.asprintf "the tuple consisting of: %s"
                 (prose_numbered_list args_prose))
@@ -849,7 +913,7 @@ module Make (S : SPEC_VALUE) = struct
             TypeVariant.prose_description variant
             |> prose_or_empty_message ~name
           in
-          let args_prose = List.map expr_to_prose args in
+          let args_prose = List.map expr_to_prose_or_math args in
           let formal_arg_opts =
             List.map (fun (arg_name_opt, _) -> arg_name_opt) formal_args
           in
@@ -904,23 +968,25 @@ module Make (S : SPEC_VALUE) = struct
           in
           let field_to_prose =
             List.map
-              (fun (field, field_expr) -> (field, expr_to_prose field_expr))
+              (fun (field, field_expr) ->
+                (field, expr_to_prose_or_math field_expr))
               (fields @ unspecified_defaults)
           in
           substitute expr_prose field_to_prose
       | RecordUpdate { record_expr; updates } ->
-          let record_prose = expr_to_prose record_expr in
+          let record_prose = expr_to_prose_or_math record_expr in
           let updates_prose =
             List.map
               (fun (field, update_expr) ->
-                let update_prose = expr_to_prose update_expr in
-                Format.asprintf "$%a$ updated to %s" pp_field_name field
-                  update_prose)
+                let update_prose = expr_to_prose_or_math update_expr in
+                Format.asprintf "%a updated to %s"
+                  (pp_prose_math pp_field_name)
+                  field update_prose)
               updates
           in
           Format.asprintf "%s with %s" record_prose (prose_list updates_prose)
       | FieldAccess { base; field } ->
-          let base_prose = expr_to_prose base in
+          let base_prose = expr_to_prose_or_math base in
           let field_def =
             match Spec.defining_node_opt_for_id S.spec field with
             | Some (Node_RecordField d) -> d
@@ -930,13 +996,15 @@ module Make (S : SPEC_VALUE) = struct
           let field_prose =
             if Utils.string_is_empty prose_template then
               (* Default prose. *)
-              Format.asprintf "the field $%a$" pp_field_name field_def.name
+              Format.asprintf "the field %a"
+                (pp_prose_math pp_field_name)
+                field_def.name
             else prose_template
           in
           Format.asprintf "%s of %s" field_prose base_prose
       | Map { lhs; args } ->
-          let lhs_prose = expr_to_prose lhs in
-          let args_prose = List.map expr_to_prose args in
+          let lhs_prose = expr_to_prose_or_math lhs in
+          let args_prose = List.map expr_to_prose_or_math args in
           Format.asprintf "the application of the function given by %s to %s"
             lhs_prose (prose_list args_prose)
       | Relation { name; args } ->
@@ -953,7 +1021,7 @@ module Make (S : SPEC_VALUE) = struct
           let lhs_prose =
             relation_expr_to_prose relation args transition_prose
           in
-          let rhs_prose = expr_to_prose rhs in
+          let rhs_prose = expr_to_prose_or_math rhs in
           let short_circuit_prose = short_circuit_to_prose name short_circuit in
           Format.asprintf "%s %s%s" lhs_prose rhs_prose short_circuit_prose
       | Indexed { index; list_var; body } ->
@@ -970,7 +1038,13 @@ module Make (S : SPEC_VALUE) = struct
         (* A variadic operator has just one formal argument that matches
            the entire list of argument expression. *)
         let args_prose =
-          List.map expr_to_prose args
+          List.map
+            (* The built-in conditional's prose opens an [itemize], and each
+               case's prose supplies the corresponding [\item]. *)
+            (if Spec.is_cond_operator_name S.spec relation.name then
+               expr_to_prose
+             else expr_to_prose_or_math)
+            args
           |>
           (* Compound arguments better be separated by numbered items,
              whereas the prose for simple arguments is more natural as
@@ -1028,23 +1102,24 @@ module Make (S : SPEC_VALUE) = struct
             terms_with_layouts
 
     (** [named_args_for_opt_named_term (opt_name, term) expr] returns a list of
-        pairs of argument names and their corresponding prose for a given
-        optionally-named term and expression.
+        pairs of argument names and their corresponding prose-or-math renderings
+        for a given optionally-named term and expression.
 
         For example, given them term [a : (b: A, c: C)] and expression [(x, y)],
-        we need to bind [a] to the prose for [(x, y)], and then continue
-        recursively into [(b: A, c: C)] with [(x, y)] to bind [b] to the prose
-        for [x] and bind [c] to the prose for [y]. *)
+        we need to bind [a] to the selected rendering of [(x, y)], and then
+        continue recursively into [(b: A, c: C)] with [(x, y)] to bind [b] to
+        the selected rendering of [x] and [c] to that of [y]. *)
     and named_args_for_opt_named_term (opt_name, term) expr =
       let top_level_pair =
         match opt_name with
         | None -> []
-        | Some name -> [ (name, expr_to_prose expr) ]
+        | Some name -> [ (name, expr_to_prose_or_math expr) ]
       in
       top_level_pair @ named_args_for_term term expr
 
     (** [named_args_for_term term expr] returns a list of pairs of argument
-        names and their corresponding prose for a given term and expression. *)
+        names and their corresponding prose-or-math renderings for a given term
+        and expression. *)
     and named_args_for_term term expr =
       match (term, expr) with
       | ( Term.Tuple { args = opt_named_term_args },
@@ -1055,6 +1130,13 @@ module Make (S : SPEC_VALUE) = struct
             (List.combine opt_named_term_args expr_args)
       | _ -> []
 
+    (** [expr_to_prose_or_math expr] renders [expr] as a single mathematical
+        island when its structural cost is small, and otherwise renders its
+        outermost description as prose. *)
+    and expr_to_prose_or_math expr =
+      if expr_math_cost expr <= max_prose_math_cost then expr_to_prose_math expr
+      else expr_to_prose expr
+
     (** [pp_prose_judgment fmt judgment] renders the prose for a single judgment
         with the formatter [fmt]. *)
     let pp_prose_judgment fmt { Rule.expr; is_output } =
@@ -1064,7 +1146,8 @@ module Make (S : SPEC_VALUE) = struct
       in
       if is_output then
         let expr = transition_to_output expr in
-        Format.fprintf fmt "\\textbf{the result is:} %s." (expr_to_prose expr)
+        Format.fprintf fmt "\\textbf{the result is:} %s."
+          (expr_to_prose_or_math expr)
       else Format.fprintf fmt "%s" (expr_to_prose expr)
 
     (** [pp_prose_rule_element fmt element] renders the prose for a single
