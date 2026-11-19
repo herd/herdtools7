@@ -16,4 +16,5 @@ depends: [
   "js_of_ocaml-ppx" {>= "6.4.0"}
   "zarith" {>= "1.13"}
   "zarith_stubs_js" {>= "v0.17.0"}
+  "herdtools7" {= version}
 ]

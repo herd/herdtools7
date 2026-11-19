@@ -18,6 +18,7 @@ Requirements
 
 - OCaml (version >= 4.14.0)
 - dune (version >= 3.14.0)
+- dune-site (version >= 3.14.0)
 - menhir (version >= 20231231)
 - zarith
 - logs
@@ -36,6 +37,9 @@ Build
 -----
 
     % make all
+
+Before installation, executables use the resources staged by Dune under
+`_build/install/default/share/herdtools7` in this repository.
 
 Testing
 -------

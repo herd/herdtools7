@@ -34,7 +34,7 @@ module Make
         (struct
           let includes = O.includes
           let env =  Some "HERDLIB"
-          let libdir = Filename.concat Version.libdir "herd"
+          let libdir = Libdir.path "herd"
           let debug = O.verbose > 0
         end)
 

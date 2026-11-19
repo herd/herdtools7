@@ -18,7 +18,7 @@ module Misc = Base.Misc
 open Printf
 
 let verbose = ref 0
-let libdir = ref (Filename.concat Version.libdir "jingle")
+let libdir = ref (Libdir.path "jingle")
 let includes = ref []
 let map = ref None
 let outdir = ref None
@@ -136,10 +136,7 @@ let () =
   Arg.parse
     (LibOpts.parse_verbose verbose
     @ ["-version",
-     Arg.Unit
-       (fun () ->
-         printf "%s, Rev: %s\n" Version.version Version.rev ;
-         exit 0),
+     Arg.Unit (fun () -> Version.print () ; exit 0),
      " show version number and exit" ;
      "-libdir",
      Arg.Unit (fun () -> print_endline !libdir; exit 0),

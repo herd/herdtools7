@@ -1118,8 +1118,8 @@ struct
 end
 
 let verbose = ref 0
-let herd_libdir = ref (Filename.concat Version.libdir "herd")
-let libdir = ref (Filename.concat Version.libdir "tools")
+let herd_libdir = ref (Libdir.path "herd")
+let libdir = ref (Libdir.path "tools")
 let includes = ref []
 let model = ref (Filename.concat !herd_libdir "aarch64.cat")
 let assumptions_file = ref (Filename.concat !libdir "aarch64assumptions.cat")
@@ -1131,10 +1131,7 @@ let options =
   LibOpts.parse_verbose verbose
   @ [
     ( "-version",
-      Arg.Unit
-        (fun () ->
-          Printf.printf "%s, Rev: %s\n" Version.version Version.rev;
-          exit 0),
+      Arg.Unit (fun () -> Version.print (); exit 0),
       " show version number and exit" );
     ( "-libdir",
       Arg.Unit
