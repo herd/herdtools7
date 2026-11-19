@@ -329,11 +329,9 @@ and type state = A.state =
 (* Simplify equations *)
 
     let subst_atom m v =
-      V.map_csym
-        (fun x ->
-          try V.Var (Part.Sol.find x m)
-          with Not_found -> V.Var x)
-        v
+      V.map_csym (fun x ->
+        V.Var (Option.fold ~none:x ~some:(fun x -> x) (Part.Sol.find_opt x m))
+      ) v
 
     let subst_expr m = map_expr (subst_atom m)
 
@@ -476,7 +474,7 @@ and type state = A.state =
 
 
 (* Phase 2, "solving": just collect equations S := cst / cst := S *)
-    let singleton v i = V.Solution.add v i V.Solution.empty
+    let singleton v i = V.Solution.singleton v i
     and empty = V.Solution.empty
 
     let solve_cnstrnt cnstr = match cnstr with
@@ -590,32 +588,29 @@ let get_failed cns =
 
       let atom_compare = A.V.compare
 
-      let atom2_compare p1 p2 =
-        Misc.pair_compare atom_compare atom_compare p1 p2
+      let atom2_compare cmpx cmpy x1 y1 x2 y2 =
+        match cmpx x1 x2 with
+        | 0 -> cmpy y1 y2
+        | r -> r
 
-      let atom3_compare (e1,e2,e3) (f1,f2,f3) =
-        Misc.pair_compare
-          atom_compare atom2_compare (e1,(e2,e3)) (f1,(f2,f3))
+      let atom3_compare f1 f2 f3 x1 x2 x3 y1 y2 y3 = match atom2_compare f1 f2 x1 x2 y1 y2 with
+        | 0 -> f3 x3 y3
+        | r -> r
+
+      let atom4_compare f1 f2 f3 f4 x1 x2 x3 x4 y1 y2 y3 y4 = match atom3_compare f1 f2 f3 x1 x2 x3 y1 y2 y3 with
+        | 0 -> f4 x4 y4
+        | r -> r
 
       let expr_compare e1 e2 = match e1,e2 with
         | Atom v1,Atom v2 -> atom_compare v1 v2
         | ReadInit (loc1,_),ReadInit (loc2,_) ->
-           A.location_compare loc1 loc2 (* second componant is fixed *)
+            A.location_compare loc1 loc2 (* second componant is fixed *)
         | Unop (op1,e1),Unop (op2,e2) ->
-           Misc.pair_compare
-             Misc.polymorphic_compare
-             atom_compare
-             (op1,e1) (op2,e2)
+            atom2_compare Misc.polymorphic_compare atom_compare op1 e1 op2 e2
         | Binop (o,e1,e2),Binop (p,f1,f2) ->
-           Misc.pair_compare
-             Misc.polymorphic_compare
-             atom2_compare
-             (o,(e1,e2)) (p,(f1,f2))
+            atom3_compare Misc.polymorphic_compare atom_compare atom_compare o e1 e2 p f1 f2
         | Terop (o,e1,e2,e3),Terop (p,f1,f2,f3) ->
-           Misc.pair_compare
-             Misc.polymorphic_compare
-             atom3_compare
-             (o,(e1,e2,e3)) (p,(f1,f2,f3))
+            atom4_compare Misc.polymorphic_compare atom_compare atom_compare atom_compare o e1 e2 e3 p f1 f2 f3
         | (Atom _,(ReadInit _|Unop _|Binop _|Terop _))
         | (ReadInit _,(Unop _|Binop _|Terop _))
         | (Unop _,(Binop _|Terop _))
@@ -631,10 +626,7 @@ let get_failed cns =
         | Predicate p1,Predicate p2 ->
             A.CS.compare_predicate p1 p2
         | Assign (v1,e1),Assign (v2,e2) ->
-           Misc.pair_compare
-             atom_compare
-             expr_compare
-             (v1,e1) (v2,e2)
+          atom2_compare atom_compare expr_compare v1 e1 v2 e2
         | Failed exn1,Failed exn2 ->
            Misc.polymorphic_compare exn1 exn2
         | Warn w1,Warn w2 ->
@@ -681,6 +673,10 @@ let get_failed cns =
         ()
         ns r
 
+    (* [get_succs m c] returns the set of successors in [m] of all the
+       variables used by [c]. *)
+    let get_succs m c = fold_vars_eq (env_find m) c [] |> EqSet.unions
+
     (** [eq2g cs] constructs the map from an equation to the equations of the
         form [x = <e>] where [x] is a variable present in [c].
 
@@ -691,9 +687,6 @@ let get_failed cns =
             x=bar --> { x=foo, x=bar }
     *)
     let eq2g cs: EqRel.t =
-      (* [get_succs m c] returns the set of successors in [m] of all the
-         variables used by [c]. *)
-      let get_succs m c = fold_vars_eq (env_find m) c [] |> EqSet.unions in
       (* [m] maps a symbolic variable to the equations that use it. *)
       let m = var2eq cs in
       List.fold_left (fun map c -> EqRel.add_set c (get_succs m c) map)
@@ -772,8 +765,9 @@ let get_failed cns =
       * some contradictory equation cst = cst`
       *)
     let solve_topo_step cs =
-      let r = eq2g cs in
+      let m = var2eq cs in
       if debug > 0 then begin
+        let r = eq2g cs in
         if false then begin
           prerr_endline "** Solve topo **" ;
           eprintf "%s\n%!" (pp_cnstrnts cs) ;
@@ -791,7 +785,7 @@ let get_failed cns =
         eprintf "** Equations ordered**\n%!" ;
         debug_topo stderr cs r
       end ;
-      EqRel.scc_kont topo_step (V.Solution.empty,[]) cs r
+      EqRel.scc_kont_succs topo_step (V.Solution.empty,[]) cs (get_succs m)
 
     let solve_topo cs =
       (* Replace equivalent variables by a class representative *)
