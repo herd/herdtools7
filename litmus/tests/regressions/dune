@@ -1,0 +1,7 @@
+(cram
+ (alias runtest-litmus-features)
+ (runtest_alias false)
+ (deps
+  %{bin:litmus7}
+  (glob_files *.litmus)
+  (source_tree %{workspace_root}/litmus/libdir)))
