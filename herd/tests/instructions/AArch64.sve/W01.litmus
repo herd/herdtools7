@@ -1,0 +1,12 @@
+AArch64 W01
+(* Preserve upper Z lanes between instructions at VL=256. *)
+Variant=sve:256
+{
+}
+P0                    ;
+ MOV Z0.D,#1          ;
+ ADD Z1.D,Z0.D,Z0.D   ;
+ PTRUE P0.D           ;
+ UADDV D2,P0,Z1.D     ;
+
+forall 0:V2.4S={8,0,0,0}
