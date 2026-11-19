@@ -78,6 +78,7 @@ module Make(O:Config) (M:Builder.S) =
       let es = M.E.resolve_edges es in
       let module Normer = Normaliser.Make(O)(M.E) in
       let module Namer = Namer.Make(M.A)(M.A)(M.E) in
+      (* TODO: After macro unfolding, assume resolve_edges is not needed before normalisation. *)
       let es,_ = M.C.resolve_edges es in
       let base,es,nprocs = Normer.normalise_family es in
       let scope = get_scope nprocs in

@@ -132,7 +132,7 @@ end
 
 module TestCompileConfig = struct
   let debug = TestGeneratorConfig.debug
-  let show : ShowGen.t option = None
+  let show : Config.show option = None
   let same_loc = TestGeneratorConfig.same_loc
   let unrollatomic : int option = None
   let allow_back = false
@@ -158,6 +158,7 @@ module TestAltConfig = struct
 end
 
 let remove_invalid_relaxes_inputs_main = [
+  "ExpObs";
   "[Po,Rfe]";
   "[Rfe,Rfe]";
   "[Rfe,Fre]";
@@ -188,6 +189,14 @@ let remove_invalid_relaxes_inputs_diy7 = [
   "[PodRW @after(Rfe) Fre]";
   "[PodRW @before([Rfe Fre])]";
   "[@before([Rfe PodRW])]";
+  "[Rfe @state(ImpTagObs)]";
+  "[@state(ImpTagObs) PodWW L]";
+  "[@state(ImpTagObs)|@state(ExpObs) PodWW L]";
+  "[@state(L) PodWR @state(A)]";
+  "[PodWW @state(A) Rfe]";
+  "@state(ImpTagObs)";
+  "[PodWW @state([ImpTagObs ExpObs])]";
+  "[PodWW @state(ImpTagObs) @state(ExpObs)]";
 ]
 
 module TestAlt = Alt.Make(TestBuilder)(TestAltConfig)
@@ -197,9 +206,9 @@ let remove_invalid_relaxes_test_diy7 input =
   try
     let filtered =
       TestAlt.parse_argument input
-      |> TestAlt.remove_invalid_relaxes in
-    let filtered = List.map TestAlt.to_relax filtered in
-    Printf.printf "%s\n" (pp_list TestBuilder.R.pp_relax filtered)
+      |> TestAlt.remove_invalid_relaxes
+      |> TestAlt.PredicateRelax.pp_list in
+    Printf.printf "%s\n" (if filtered = "" then "[]" else filtered)
   with
   | Base.Misc.UserError msg -> Printf.printf "UserError: %s\n" msg
   | Base.Misc.Fatal msg -> Printf.printf "Fatal: %s\n" msg
