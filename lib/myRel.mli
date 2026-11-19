@@ -39,6 +39,7 @@ module type S = sig
   val add : (elt1 * elt2) -> t -> t
   val add_set : elt1 -> Elts2.t -> t -> t
   val remove : (elt1 * elt2) -> t -> t
+  val choose_opt : t -> (elt1 * elt2) option
   val choose : t -> (elt1 * elt2)
   val cardinal : t -> int
 

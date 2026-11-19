@@ -66,6 +66,7 @@ module type S =  sig
   val restrict_domain_transitive_closure : Elts.t -> t -> t
 
 (* Direct cycles *)
+  val get_reflexive : t -> elt0 option
   val is_reflexive : t -> bool
   val is_irreflexive : t -> bool
 
@@ -426,7 +427,17 @@ module Make(O:MySet.OrderedType) : S
 
   (* Reflexivity check *)
 
-  let is_reflexive m = M.exists Elts.mem m
+  let get_reflexive m =
+    let exception Found of elt0 in
+    try
+      M.iter (fun x ys -> if Elts.mem x ys then raise (Found x)) m ;
+      None
+    with Found x -> Some x
+
+  let is_reflexive m =
+    match get_reflexive m with
+    | None -> false
+    | Some _ -> true
 
   let is_irreflexive r = not (is_reflexive r)
 
