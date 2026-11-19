@@ -5,5 +5,8 @@
  (libraries asllib zarith_stubs_js)
  (flags
   (:standard -w -40-42-44-48))
+ (js_of_ocaml
+  (flags
+   (:standard --effects=cps)))
  (preprocess
   (pps js_of_ocaml-ppx)))
