@@ -759,7 +759,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
      *     `[e]; r1; r2; ...; r ; [e1]; [e2]; ...; [en]`
      *
      * where `r` is again not an effect expression. *)
-    let tr_check =
+    let tr_check_irreflexive =
       let is_identity (e : AST.exp) =
         match e with
         | Op1(_, ToId, _) -> true
@@ -806,6 +806,56 @@ and cons_seqs (fs:exp list) (es:exp list) =
           let pref = sprintf "For two effects %s and %s, if" (pp_evt e1) (pp_evt e2) in
           pp_def pref "" precond_tr;
           pp_def "then it is not the case that" "." postcond_tr
+
+    (*
+     * Transliterate an empty check.
+     * For now, only support empty checks with following the pattern:
+     *
+     *     `a & b`
+     *
+     * where if `b` follows the pattern
+     *
+     *     `r1; [E]; r2`
+     *
+     * before transliterating r2, it makes a special mention to E.
+     *)
+    let tr_check_empty loc id exp =
+      let exp = ASTUtils.flatten exp in
+      match get_type exp with
+      | Some SET ->
+          eprintf "%a: %S: Test type not supported\n" TxtLoc.pp loc id
+      | Some RLN | None ->
+          begin match exp with
+          | Op (_,Inter,[a;b]) ->
+              Next.reset ();
+              let e1 = Next.next ()
+              and e2 = Next.next ()
+              and tr_rel e1 e2 exp =
+                if O.flatten then
+                  tr_rel e1 e2 exp |> flatten_out |> rm_dups
+                else tr_rel e1 e2 exp in
+              pp_def
+                (sprintf "For two effects %s and %s if" (pp_evt e1) (pp_evt e2))
+                "" (tr_rel e1 e2 a);
+              begin match b with
+              | Op (_,Seq,[r1;Op1 (_,ToId,evts);r2]) ->
+                  let e3 = Next.next () in
+                  let items =
+                    [tr_rel e1 e3 r1; tr_evts e3 evts; tr_rel e3 e2 r2] in
+                  let items =
+                    if O.flatten then
+                      mk_list Seq items |> flatten_out |> rm_dups
+                    else mk_list Seq items in
+                  pp_def
+                    (sprintf "It is architecturally forbidden that there is an Effect %s such that"
+                       (pp_evt e3)) "." items
+              | _ ->
+                  pp_def "It is architecturally forbidden that"
+                    "." (tr_rel e1 e2 b)
+              end
+          | _ ->
+              eprintf "%a: %S: Test type not supported\n" TxtLoc.pp loc id
+          end
 
     (* Translate and print a definition *)
     let get_id_e_type id e =
@@ -891,15 +941,15 @@ and cons_seqs (fs:exp list) (es:exp list) =
                 bds
          then tr_bds as_name bds
       | Test ((loc, _, test, exp, Some name), _) ->
-         if StringSet.mem name O.names then
-           let is_supported = (
-             match test with
-             | Yes Irreflexive  -> true
-             | _ -> false)
-           in
-           if is_supported then
-             tr_check loc name exp
-           else eprintf "%a: %S: Test type not supported\n" TxtLoc.pp loc name
+         if StringSet.mem name O.names then begin
+           match test with
+             | Yes Irreflexive ->
+                 tr_check_irreflexive loc name exp
+             | Yes TestEmpty ->
+                 tr_check_empty loc name exp
+             | _ ->
+                 eprintf "%a: %S: Test type not supported\n" TxtLoc.pp loc name
+           end
          else ()
       | Include (_,fname) when O.expand -> tr_ast fname
       | _ -> ()

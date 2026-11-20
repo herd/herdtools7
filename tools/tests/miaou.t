@@ -1189,3 +1189,70 @@
   \item \expandafter{\MakeUppercase\ca{E\textsubscript{1}}{E\textsubscript{2}}}.
   \item \ImpTTDW{E\textsubscript{2}}.
   \end{itemize}
+  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show amo aarch64.cat
+  \expandafter{\MakeUppercase\amoemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
+  \begin{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ExpRX{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\sameinstance{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \expandafter{\MakeUppercase\sameloc{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \ExpWX{E\textsubscript{2}}.
+    \end{itemize}
+  \item All of the following apply:
+    \begin{itemize}
+    \item \ImpTTDR{E\textsubscript{1}}.
+    \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \expandafter{\MakeUppercase\todataport{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \expandafter{\MakeUppercase\loc{E\textsubscript{1}}{E\textsubscript{2}}}.
+    \item \ImpTTDW{E\textsubscript{2}}.
+    \end{itemize}
+  \end{itemize}
+  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show lxsx aarch64.cat
+  \expandafter{\MakeUppercase\lxsxemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
+  \begin{itemize}
+  \item \ExpREX{E\textsubscript{1}}.
+  \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{2}}}.
+  \item \expandafter{\MakeUppercase\notthecase{all of the following apply}}:
+    \begin{itemize}
+    \item \expandafter{\MakeUppercase\po{E\textsubscript{1}}{E\textsubscript{3}}}.
+    \item \ExpMEX{E\textsubscript{3}}.
+    \item \expandafter{\MakeUppercase\po{E\textsubscript{3}}{E\textsubscript{2}}}.
+    \end{itemize}
+  \item \ExpWEX{E\textsubscript{2}}.
+  \end{itemize}
+  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show rmw aarch64.cat
+  \expandafter{\MakeUppercase\rmwemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
+  \begin{itemize}
+  \item \expandafter{\MakeUppercase\amo{E\textsubscript{1}}{E\textsubscript{2}}}.
+  \item \expandafter{\MakeUppercase\lxsx{E\textsubscript{1}}{E\textsubscript{2}}}.
+  \end{itemize}
+  $ miaou7 -q -set-libdir ./libdir -show atomic-amo aarch64.cat
+  For two effects E\textsubscript{1} and E\textsubscript{2} if all of the following apply:
+  \begin{itemize}
+  \item \R{E\textsubscript{1}}.
+  \item \expandafter{\MakeUppercase\amo{E\textsubscript{1}}{E\textsubscript{2}}}.
+  \item \W{E\textsubscript{2}}
+  \end{itemize}
+  It is architecturally forbidden that there is an Effect E\textsubscript{3} such that all of the following apply:
+  \begin{itemize}
+  \item \expandafter{\MakeUppercase\ca{E\textsubscript{1}}{E\textsubscript{3}}}.
+  \item \W{E\textsubscript{3}}.
+  \item \expandafter{\MakeUppercase\ca{E\textsubscript{3}}{E\textsubscript{2}}}.
+  \end{itemize}
+  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show atomic-lxsx aarch64.cat
+  For two effects E\textsubscript{1} and E\textsubscript{2} if all of the following apply:
+  \begin{itemize}
+  \item \ExpR{E\textsubscript{1}}.
+  \item \expandafter{\MakeUppercase\lxsx{E\textsubscript{1}}{E\textsubscript{2}}}.
+  \item \ExpW{E\textsubscript{2}}
+  \end{itemize}
+  It is architecturally forbidden that there is an Effect E\textsubscript{3} such that all of the following apply:
+  \begin{itemize}
+  \item \expandafter{\MakeUppercase\ca{E\textsubscript{1}}{E\textsubscript{3}}}.
+  \item \expandafter{\MakeUppercase\ext{E\textsubscript{1}}{E\textsubscript{3}}}.
+  \item \W{E\textsubscript{3}}.
+  \item \expandafter{\MakeUppercase\ca{E\textsubscript{3}}{E\textsubscript{2}}}.
+  \item \expandafter{\MakeUppercase\ext{E\textsubscript{3}}{E\textsubscript{2}}}.
+  \end{itemize}
+

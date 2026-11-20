@@ -168,7 +168,8 @@ irreflexive [Exp & W]; (po & same-loc); [Exp & R]; (ca & int); [Exp & W] as coWR
 irreflexive [Exp & Tag & W]; (po & same-loc); [Imp & Tag & R]; (ca & int) as coWR-MTE
 
 (*** Atomic: LDXR/STXR, AMO and HU constraint to forbid intervening writes. ***)
-empty (rmw & (fr; co)) \ (([Exp]; rmw; [Exp]) & (fri ; [Exp & W]; coi)) as atomic
+empty ([Exp & R]; lxsx; [Exp & W]) & (ca & ext; [W]; ca & ext) as atomic-lxsx
+empty ([R]; amo; [W]) & (ca; [W]; ca) as atomic-amo
 
 (*** Break Before Make ***)
 let BBM = [TLBCacheableTTD]; ca; [TLBUncacheableTTD]; ob; [TLBI]; ob & inv-scope; [TLBCacheableTTD]
