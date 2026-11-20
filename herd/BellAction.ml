@@ -95,6 +95,12 @@ end = struct
   | Access (_,loc, _,_,_,_) -> Some loc
   | _ -> None
 
+
+(* access to memory or register *)
+  let is_access = function
+    | Access _ -> true
+    | _ -> false
+
 (* relative to memory *)
   let is_mem_store a = match a with
   | Access (W,A.Location_global _,_,_,_,_) -> true

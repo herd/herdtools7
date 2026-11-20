@@ -160,6 +160,10 @@ module Make (C: Config) (A : S) = struct
     | Access _|Fault _|Branching _|Barrier _|CutOff _|NoAction
       -> false
 
+  let is_access = function
+    | Access _ -> true
+    | _ -> false
+
   let is_mem = function
     | Access (_, A.Location_global _, _, _, _) -> true
     | Access _|Fault _|Branching _|Barrier _|CutOff _|NoAction

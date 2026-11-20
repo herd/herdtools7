@@ -149,6 +149,11 @@ end = struct
     -> Some loc
   | Fence _|CutOff _ -> None
 
+(* access memory or register *)
+  let is_access = function
+    | Access _ -> true
+    | _ -> false
+
 (* relative to memory *)
   let is_mem_store a = match a with
   | Access (W,A.Location_global _,_,_,_,_)

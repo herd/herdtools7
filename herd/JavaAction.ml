@@ -77,6 +77,10 @@ end = struct
   | RMW _ -> true
   | _ -> false
 
+  let is_access = function
+    | Access _ -> true
+    | _ -> false
+
   let is_reg a (p:int) = match a with
   | Access (_,A.Location_reg (q,_),_,_,_) -> p = q
   | _ -> false
