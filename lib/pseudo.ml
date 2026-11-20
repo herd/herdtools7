@@ -90,10 +90,10 @@ module type S = sig
 
 (* Get instructions pointed to by a set of labels *)
   val from_labels :
-    Label.Full.Set.t -> ins prog -> (Label.Full.full * ins) list
+    Label.Full.Set.t -> ins prog -> (Label.Full.t * ins) list
 
   (* Get all labels in the code *)
-  val all_labels : ins prog -> Label.Full.full list
+  val all_labels : ins prog -> Label.t ByProc.t
 
   (* Load code, the herd way *)
   val size_of_ins : ins -> int
@@ -129,7 +129,7 @@ module Make
     (I : I) : S
 with type ins = I.ins and type pins = I.pins and type reg_arg = I.reg_arg
 =
-struct
+ struct
   type ins = I.ins
   type pins = I.pins
   type reg_arg = I.reg_arg
@@ -336,20 +336,15 @@ struct
         [] prog
 
   let all_labels prog =
-    let rec fold_labels f k ins = match ins with
-      | Label (lbl,ins) -> fold_labels f (f k lbl) ins
-      | _ -> k
-    in
-    let flbls =
-      List.fold_left
-        (fun flbls (p,code) ->
-          List.fold_left
-            (fun flbls ins ->
-              fold_labels
-                (fun flbls lbl -> (MiscParser.proc_num p,lbl)::flbls) flbls ins)
-            flbls code)
-        [] prog in
-    List.rev flbls
+    let rec fold_ins f k ins = match ins with
+      | Label (lbl,ins) -> fold_ins f (f k lbl) ins
+      | _ -> k in
+    List.fold_left
+      (fun k (p,code) ->
+         let p = MiscParser.proc_num p in
+         List.fold_left
+           (fold_ins (fun k lbl -> (p,lbl)::k)) k code)
+      [] prog |> ByProc.of_list
 
   let size_of_ins = I.size_of_ins
 

@@ -107,15 +107,6 @@ static enum fault_type_t get_fault_type(unsigned long esr)
   }
 }
 
-/* Returns the smallest label index for the given processor id and offset, when
- * it exists. */
-static int fault_label(int proc, long offset) {
-  for (int id = 1; id < INSTR_SYMB_ID_UNKNOWN; id++)
-    if (fault_labels[id].proc == proc && fault_labels[id].offset == offset)
-      return id;
-  return INSTR_SYMB_ID_UNKNOWN;
-}
-
 // Fault structure, notice that the originating thread is omitted.
 typedef struct {
   long instr_offset; // Thread-relative instruction offset, or -1 if unlabeled
