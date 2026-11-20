@@ -2,5 +2,5 @@
 (*
 [2]
 diyone7: Fatal error: Test CoRW1+amo.swpctp-rfipct [Amo.SwpCtP RfiPCt] failed:
-Bad annotation for Amo: R=Ct, W=P
+Bad annotation for Amo.Swp: R=Ct, W=P
 *)
