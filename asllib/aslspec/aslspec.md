@@ -15,20 +15,19 @@ Types definitions define mathematical types (like Booleans) and AST node types.
 For example a *basic type*:
 ```
 typedef N
-{  prose_description = "natural number",
-    math_macro = \N,
-};
+  @prose_description "natural number"
+  @math_macro \N;
 ```
 defines a type `N` whose domain of values is left unspecified (although it is
 intended to represent natural numbers).
 As the example shows, definitions can (and often are required) specify
 attributes, which are used to produce LaTeX content.
 
-The attribute `prose_description` is used when the description of the type `N`
+The attribute `@prose_description` is used when the description of the type `N`
 is needed for producing prose. This attribute is mandatory for type definitions.
 
-The optional attribute `math_macro` is used when the type is used in a LaTeX
-math mode. When no `math_macro` is provided, a default one is created
+The optional attribute `@math_macro` is used when the type is used in a LaTeX
+math mode. When no `@math_macro` is provided, a default one is created
 (the name of the generated macro is produced from the type definition by
 removing underscores, e.g., `My_Type` generates a macro `MyType`).
 
@@ -36,20 +35,16 @@ In order to specify the the domain of values for a type, use *complex types*.
 For example
 ```
 typedef static_envs
-    {
-        prose_description = "static environment",
-        math_macro = \staticenvs,
-    } =
- (G: global_static_envs, L: local_static_envs)
-    {
-        prose_description = "static environment with global static environment {G} and local static environment {L}",
-    }
+  @prose_description "static environment"
+  @math_macro \staticenvs =
+  (G: global_static_envs, L: local_static_envs)
+    @prose_description "static environment with global static environment {G} and local static environment {L}"
 ;
 ```
 means that the type `static_envs` has the domain of all pairs of values where the first
 component is from the type `global_static_envs` and the second is from the type `local_static_envs`.
 The notation `G: global_static_envs` means that `G` can be used when describing values
-of this form, based on the template given by `prose_description`.
+of this form, based on the template given by `@prose_description`.
 
 aslspec supports the following type constructors:
 - `powerset(T)`: any subset of elements from type `T`
@@ -68,9 +63,9 @@ Complex type definitions can also use *variants* where by a union of different t
 is used to define the domain of values.
 For example:
 ```
-ast lexpr { prose_description = "\assignableexpression{}", } =
+ast lexpr @prose_description "\assignableexpression{}" =
     | LE_Discard
-    { prose_description = "discarding \assignableexpression{}", }
+      @prose_description "discarding \assignableexpression{}"
     | LE_Var(var: Identifier)
 ;
 ```
@@ -96,15 +91,14 @@ This does not change the semantics of the type `A` as a singleton tuple
 # Constant definitions
 Constants definitions introduce a single (immutable) named value.
 They support the following attributes, with the same meaning as type definitions:
-- `prose_description`: A LaTeX string describing the constant in prose.
-- `math_macro`: Optional LaTeX macro name to use in LaTeX math mode.
+- `@prose_description`: A LaTeX string describing the constant in prose.
+- `@math_macro`: Optional LaTeX macro name to use in LaTeX math mode.
 
 Example:
 ```
-constant empty_tenv {
-    prose_description = "empty static environment",
-    math_macro = \emptytenv,
-};
+constant empty_tenv
+  @prose_description "empty static environment"
+    @math_macro \emptytenv;
 ```
 
 # Relation definitions
@@ -113,26 +107,24 @@ Relations define the type, or *signature* of a relation symbol.
 For example:
 ```
 relation annotate_expr(tenv: static_envs, e: expr) -> (t: ty, new_e: expr, ses: powerset(TSideEffect)) | type_error
-{
-    prose_description = "annotates the expression {e} in the \staticenvironmentterm{} {tenv},
+  @prose_description "annotates the expression {e} in the \staticenvironmentterm{} {tenv},
                         resulting in the following:
                         {t} is the type inferred for {e};
                         {new_e} is the \typedast{} for {e}, also known as the \emph{annotated expression};
-                        and {ses} is the \sideeffectsetterm{} inferred for {e}. \ProseOtherwiseTypeError",
-    prose_application = "annotating {e} in {tenv} yields
-        {t}, the annotated expression {new_e} and {ses}\ProseOrTypeError",
-    math_layout = ((_,_),(_,_)),
-};
+                        and {ses} is the \sideeffectsetterm{} inferred for {e}. \ProseOtherwiseTypeError"
+  @prose_application "annotating {e} in {tenv} yields
+        {t}, the annotated expression {new_e} and {ses}\ProseOrTypeError"
+  @math_layout ((_,_),(_,_));
 ```
 defines a relation `annotate_expr` between input values of the type `(static_envs,expr)`
 and output values of the type `(ty, expr, powerset(TSideEffect)) | type_error`
 where `|` is a shorthand for union.
 
 Relation definitions support the following attributes, with the same meaning as type definitions:
-- `prose_description`: A LaTeX string describing the relation in prose.
-- `prose_application`: A LaTeX string describing the relation in prose relative to given inputs
+- `@prose_description`: A LaTeX string describing the relation in prose.
+- `@prose_application`: A LaTeX string describing the relation in prose relative to given inputs
     and outputs (in the premise/conclusion of an inference rule).
-- `math_macro`: Optional LaTeX macro name to use in LaTeX math mode.
+- `@math_macro`: Optional LaTeX macro name to use in LaTeX math mode.
 
 # Operator definitions
 Operators define typed expression forms. They are written like function
@@ -140,10 +132,8 @@ signatures, may have type parameters, and do not have inference rules:
 
 ```
 operator equal[T](a: T, b: T) -> Bool
-{
-    math_macro = \equal,
-    prose_application = "{a} is equal to {b}",
-};
+  @math_macro \equal
+  @prose_application "{a} is equal to {b}";
 ```
 
 An operator application can use ordinary application syntax, such as
@@ -157,24 +147,22 @@ is `list0(T)` or `list1(T)`:
 
 ```
 variadic operator union[T](sets: list1(powerset(T))) -> powerset(T)
-{
-    associative = true,
-    math_macro = \unionop,
-    prose_application = "the union of {sets}",
-};
+  @associative
+  @math_macro \unionop
+  @prose_application "the union of {sets}";
 ```
 
 Operator definitions support the following attributes:
 
-- `math_macro`: Optional LaTeX macro name used when rendering the operator.
-- `prose_application`: A LaTeX string describing the operator applied to its
+- `@math_macro`: Optional LaTeX macro name used when rendering the operator.
+- `@prose_application`: A LaTeX string describing the operator applied to its
   arguments.
-- `associative`: A Boolean attribute. When `true` on a variadic operator,
+- `@associative`: A flag. When present on a variadic operator,
   rendering separates the arguments with the operator macro instead of rendering
   the macro as a function applied to a comma-separated argument list.
-- `custom`: A Boolean attribute. When `true`, binary operators use the general
+- `@custom`: A flag. When present, binary operators use the general
   custom-operator rendering form instead of the default infix rendering form.
-- `typecast`: A Boolean attribute used to guide typechecking for operators
+- `@typecast`: A flag used to guide typechecking for operators
   that behave as type conversions. It is transparent for rendering.
 
 # Expressions
@@ -230,7 +218,7 @@ Relations can include inference rules after their attributes by adding `=`
 followed by one or more rule elements:
 
 ```
-relation if_then_else(flag: Bool, a: Num, b: Num) -> Num {} =
+relation if_then_else(flag: Bool, a: Num, b: Num) -> Num =
     case Left {
         flag = True;
         --
@@ -256,21 +244,21 @@ The conclusion is written as an expression, but it is checked and rendered as
 an application of the surrounding relation to its inputs. For example, in:
 
 ```
-relation id(x: Num) -> Num {} =
+relation id(x: Num) -> Num =
     --
     x;
 ;
 ```
 
 the conclusion `x` is treated as the transition judgment `id(x) -> x`. This is
-why a conclusion-level `math_layout` has a top-level left/right pair, as
+why a conclusion-level `@math_layout` has a top-level left/right pair, as
 described in the layout section below.
 
 Premises can be ordinary Boolean expressions, transition judgments, or indexed
 judgments. A transition judgment has the form `lhs -> rhs`:
 
 ```
-relation step_one(x: Num) -> Num {} =
+relation step_one(x: Num) -> Num =
     id(x) -> y;
     --
     y;
@@ -286,7 +274,7 @@ INDEX(i, xs: step(xs[i]) -> ys[i]);
 Inference-rule checking type-checks every premise and conclusion. Ordinary
 premises must have type `Bool`. Transition premises and conclusions must match
 the signature of the relation they apply, including tuple-shaped outputs.
-Judgment attributes currently support `math_layout`, which is checked against
+Judgment attributes currently support `@math_layout`, which is checked against
 the resolved judgment shape before rendering.
 
 # Type rendering definitions
@@ -302,7 +290,13 @@ For example:
   specifies three types, where the notation `(-)` for `int_constraint` is used to select
   all of its variants.
 
-Type renders do not support any attributes.
+Type renders support `@no_lhs_hypertargets`, which suppresses hyperlink targets
+on the left-hand side of the rendered type definitions. Targets are generated
+by default. Use the flag when rendering a type again to avoid duplicate targets:
+
+```
+render typed_expr @no_lhs_hypertargets = expr(E_Call);
+```
 
 # Inference rule rendering definitions
 Rule rendering definitions select which inference rules are emitted as LaTeX
@@ -334,7 +328,7 @@ For example, `if_then_else(Outer)` selects rules under `Outer` and
 
 # Laying out mathematical expressions
 
-The `math_layout` attribute controls whether a compound mathematical object is
+The `@math_layout` attribute controls whether a compound mathematical object is
 rendered horizontally or vertically, and how layouts are passed to its
 sub-objects. A layout is structural: it must have the same shape as the term or
 expression it is attached to.
@@ -348,7 +342,7 @@ Layouts use the following notation:
 - `[_, ..., _]`: a vertical layout. Each cell is the layout for the corresponding
   sub-object.
 
-For example, `(a, (b, c)) { (_, (_, _)) }` lays out the outer tuple
+For example, `(a, (b, c)) @math_layout (_, (_, _))` lays out the outer tuple
 horizontally, passes `_` to `a`, and passes `(_, _)` to the nested tuple
 `(b, c)`.
 
@@ -361,10 +355,11 @@ match the number of immediate components being rendered. Thus, `[_]` means
 means `(_, ..., _)`. The enclosing parentheses or brackets control only the
 layout of those immediate components; each `_` gives its corresponding
 component the default layout rather than recursively making it horizontal or
-vertical. For example, `(a, (b, c)) { [_] }` is equivalent to
-`(a, (b, c)) { [_, _] }`: `a` and `(b, c)` are arranged vertically, while the
-nested tuple `(b, c)` uses its default layout. Consequently, `x { [_] }`,
-`r(a, b) { (_) }`, and `make_set(a, b, c) { [_] }` are all valid.
+vertical. For example, `(a, (b, c)) @math_layout [_]` is equivalent to
+`(a, (b, c)) @math_layout [_, _]`: `a` and `(b, c)` are arranged vertically,
+while the nested tuple `(b, c)` uses its default layout. Consequently,
+`x @math_layout [_]`, `r(a, b) @math_layout (_)`, and
+`make_set(a, b, c) @math_layout [_]` are all valid.
 
 ## Layouts for type terms
 
@@ -385,16 +380,14 @@ constructor:
 - Type operators such as `powerset(T)` and parameterized types pass their layout
   through to the enclosed term.
 
-Relation `math_layout` attributes are checked against a pair consisting of the
+Relation `@math_layout` attributes are checked against a pair consisting of the
 relation inputs and outputs. For example, this relation has a top-level
 input/output pair; the input side has two arguments, and the output side has two
 components:
 
 ```
 relation r(a: Num, b: Num) -> (c: Num, d: Num)
-{
-    math_layout = ((_, _), (_, _)),
-};
+  @math_layout ((_, _), (_, _));
 ```
 
 ## Layouts for rule expressions
@@ -402,31 +395,32 @@ relation r(a: Num, b: Num) -> (c: Num, d: Num)
 For rule judgments and premises, `_` is always valid. Any more specific layout
 follows the resolved expression:
 
-- Variables are atomic leaves: `x { _ }` and `x { (_) }` are valid, but
-  `x { (_, _) }` is not.
-- Nullary operators are also atomic leaves: `op { _ }`, `op { (_) }`, and
-  `op { [_] }` are valid, but `op { () }` and `op { [] }` are not.
+- Variables are atomic leaves: `x @math_layout _` and `x @math_layout (_)` are
+  valid, but `x @math_layout (_, _)` is not.
+- Nullary operators are also atomic leaves: `op @math_layout _`,
+  `op @math_layout (_)`, and `op @math_layout [_]` are valid, but
+  `op @math_layout ()` and `op @math_layout []` are not.
 - Unary operators pass their layout to their single argument.
 - Relations, tuples, maps, and non-unary operators use one layout cell per
-  argument: `r(a, (b, c)) { (_, (_, _)) }` is valid. The shorthand `(_)` or
-  `[_]` defaults all arguments, so `r(a, b) { (_) }` is also valid, while
-  `r(a, b) { (_, _, _) }` is not.
+  argument: `r(a, (b, c)) @math_layout (_, (_, _))` is valid. The shorthand
+  `(_)` or `[_]` defaults all arguments, so `r(a, b) @math_layout (_)` is also
+  valid, while `r(a, b) @math_layout (_, _, _)` is not.
 - Records use one layout cell per field value:
-  `[f: a, g: (b, c)] { (_, (_, _)) }`. The shorthand `(_)` or `[_]` defaults
-  all field values.
+  `[f: a, g: (b, c)] @math_layout (_, (_, _))`. The shorthand `(_)` or `[_]`
+  defaults all field values.
 - Record updates are a pair of the base record expression and the update fields:
-  `r(f: a, g: b) { (_, (_, _)) }`. Record updates do not use the pair-renderer
-  shorthand, so `r(f: a) { (_) }` is not valid.
+  `r(f: a, g: b) @math_layout (_, (_, _))`. Record updates do not use the
+  pair-renderer shorthand, so `r(f: a) @math_layout (_)` is not valid.
 - List indexing and field access pass the layout through to the expression they
-  contain: `xs[(a, b)] { (_, _) }` checks the index expression, and
-  `r.f { _ }` checks the base expression.
+  contain: `xs[(a, b)] @math_layout (_, _)` checks the index expression, and
+  `r.f @math_layout _` checks the base expression.
 - Transition judgments are a pair around the arrow:
-  `r(a) -> (b, c) { (_, (_, _)) }`. The shorthand `(_)` or `[_]` defaults both
-  sides.
+  `r(a) -> (b, c) @math_layout (_, (_, _))`. The shorthand `(_)` or `[_]`
+  defaults both sides.
 
 Constant initializer layouts are checked as expression layouts. For example,
-`constant c = (True, False) { math_layout = (_, _) };` is valid, and
-`constant c = (True, False) { math_layout = (_, _, _) };` is not.
+`constant c = (True, False) @math_layout (_, _);` is valid, and
+`constant c = (True, False) @math_layout (_, _, _);` is not.
 
 ## Layouts for conclusion judgments
 
@@ -434,7 +428,7 @@ Output judgments in rules are written as expressions:
 
 ```
 --
-(b, c) { (_, (_, _)) };
+(b, c) @math_layout (_, (_, _));
 ```
 
 Before rendering and layout checking, aslspec rewrites the output expression into
@@ -455,7 +449,7 @@ For a relation `r(a: Num) -> (b: Num, c: Num)`, this is legal:
 
 ```
 --
-(b, c) { (_, (_, _)) };
+(b, c) @math_layout (_, (_, _));
 ```
 
 The first `_` is the layout for the implicit left-hand side `r(a)`, and
@@ -463,14 +457,24 @@ The first `_` is the layout for the implicit left-hand side `r(a)`, and
 
 ```
 --
-(b, c) { (_, _, _) };
+(b, c) @math_layout (_, _, _);
 ```
 
 because the rewritten transition has two top-level parts, not three.
 
-# A note on attributes
-A string with an unspecified attribute name, for example, `"description"` is shorthand
-for `prose_description = "description"`.
+# Attribute syntax
+Every attribute starts with `@`. Attributes follow the element they describe,
+without enclosing braces, commas between attributes, or `=` before values:
+
+```
+typedef Count
+  @prose_description "count"
+  @math_macro \Count;
+```
+
+The flags `@associative`, `@custom`, `@typecast`, and `@no_lhs_hypertargets`
+take no value. Their presence enables the named behavior; omitting them disables
+it. In particular, omitting `@no_lhs_hypertargets` keeps hyperlink targets enabled.
 
 # Using definitions in LaTeX
 Running aslspec with `--render` writes a generated LaTeX file, named

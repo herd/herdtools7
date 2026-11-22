@@ -16,14 +16,6 @@ let check_definition_name loc name =
      let msg = Format.sprintf "illegal element-defining identifier: %s" name in
      raise (SpecError { loc; msg })
 
-let bool_of_string loc s =
-  match String.lowercase_ascii s with
-  | "true" -> true
-  | "false" -> false
-  | _ ->
-      let msg = Format.sprintf "expected boolean string (true/false), got: %s" s in
-      raise (SpecError { loc; msg })
-
 (** Checks that the given string has balanced braces, which avoids LaTeX compilation errors. *)
 let check_balanced_braces loc s =
   let rec scan i depth =
@@ -71,7 +63,7 @@ let check_balanced_braces loc s =
 %token LIST1
 %token MATH_MACRO
 %token MATH_LAYOUT
-%token LHS_HYPERTARGETS
+%token NO_LHS_HYPERTARGETS
 %token OPTION
 %token OPERATOR
 %token PARTIAL
@@ -274,7 +266,7 @@ let opt_value_and_attributes :=
 
 let constant_value_attributes ==
     | { [] }
-    | LBRACE; attr=math_layout_attribute; RBRACE; { [attr] }
+    | attr=math_layout_attribute; { [attr] }
 
 let relation_property :=
     | RELATION; { Relation.RelationProperty_Relation }
@@ -285,9 +277,7 @@ let relation_category :=
     | TYPING; { Some Relation.RelationCategory_Typing }
     | SEMANTICS; { Some Relation.RelationCategory_Semantics }
 
-let type_attributes ==
-    | { [] }
-    | LBRACE; pairs=tclist0(type_attribute); RBRACE; { pairs }
+let type_attributes == list(type_attribute)
 
 let type_attribute :=
     | prose_description_attribute
@@ -301,25 +291,21 @@ let checked_template_attribute == template=STRING; {
 }
 
 let prose_description_attribute ==
-    | PROSE_DESCRIPTION; EQ; template=checked_template_attribute; {
-        (Prose_Description, template)
-    }
-    | template=checked_template_attribute; {
+    | PROSE_DESCRIPTION; template=checked_template_attribute; {
         (Prose_Description, template)
     }
 
 let math_macro_attribute ==
-    MATH_MACRO; EQ; macro=LATEX_MACRO; { (Math_Macro, MathMacroAttribute macro) }
+    MATH_MACRO; macro=LATEX_MACRO; { (Math_Macro, MathMacroAttribute macro) }
 
 let math_layout_attribute ==
-    | MATH_LAYOUT; EQ; ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
-    | ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
+    MATH_LAYOUT; ~=math_layout; { (Math_Layout, MathLayoutAttribute math_layout) }
 
 let short_circuit_macro_attribute ==
-    SHORT_CIRCUIT_MACRO; EQ; macro=LATEX_MACRO; { (Short_Circuit_Macro, MathMacroAttribute macro) }
+    SHORT_CIRCUIT_MACRO; macro=LATEX_MACRO; { (Short_Circuit_Macro, MathMacroAttribute macro) }
 
 let relation_attributes ==
-    LBRACE; pairs=tclist0(relation_attribute); RBRACE; { pairs }
+    pairs=list(relation_attribute); { pairs }
 
 let relation_attribute :=
     | prose_application_attribute
@@ -327,27 +313,25 @@ let relation_attribute :=
     | type_attribute
 
 let operator_attributes ==
-    LBRACE; pairs=tclist0(operator_attribute); RBRACE; { pairs }
+    pairs=list(operator_attribute); { pairs }
 
 let operator_attribute :=
     | math_macro_attribute
     | operator_style_attribute
     | prose_application_attribute
 
-let bool_attribute_value == value=IDENTIFIER; { BoolAttribute (bool_of_string (loc $sloc) value) }
-
 let operator_style_attribute ==
-    | ASSOCIATIVE; EQ; value=bool_attribute_value; { (Associative, value) }
-    | CUSTOM; EQ; value=bool_attribute_value; { (Custom, value) }
-    | TYPECAST; EQ; value=bool_attribute_value; { (Typecast, value) }
+    | ASSOCIATIVE; { (Associative, FlagAttribute) }
+    | CUSTOM; { (Custom, FlagAttribute) }
+    | TYPECAST; { (Typecast, FlagAttribute) }
 
 let prose_application_attribute ==
-    PROSE_APPLICATION; EQ; template=checked_template_attribute; {
+    PROSE_APPLICATION; template=checked_template_attribute; {
         (Prose_Application, template)
     }
 
 let prose_transition_attribute ==
-    PROSE_TRANSITION; EQ; template=checked_template_attribute; {
+    PROSE_TRANSITION; template=checked_template_attribute; {
         (Prose_Transition, template)
     }
 
@@ -413,14 +397,10 @@ let type_subset_pointer :=
     | type_name=IDENTIFIER; LPAR; variant_names=tclist1(IDENTIFIER); RPAR; { (type_name, variant_names) }
 
 let render_types_attributes ==
-    | { [] }
-    | LBRACE; pairs=tclist0(render_types_attribute); RBRACE; { pairs }
+    pairs=list(render_types_attribute); { pairs }
 
 let render_types_attribute :=
-    | lhs_hypertargets
-
-let lhs_hypertargets ==
-    | LHS_HYPERTARGETS; EQ; value=bool_attribute_value; { (LHS_Hypertargets, value) }
+    | NO_LHS_HYPERTARGETS; { (No_LHS_Hypertargets, FlagAttribute) }
 
 let opt_relation_rule := { None }
     | EQ; ~=rule; { Some rule }
@@ -534,11 +514,9 @@ let infix_expr_operator ==
 let field_and_value == field=IDENTIFIER; COLON; value=expr; { (field, value) }
 
 let judgment_attributes ==
-    | { [] }
-    | LBRACE; pairs=tclist0(judgment_attribute); RBRACE; { pairs }
+    pairs=list(judgment_attribute); { pairs }
 
-let judgment_attribute :=
-    | math_layout_attribute
+let judgment_attribute == math_layout_attribute
 
 let render_rule :=
   | RENDER; RULE; name=checked_identifier; EQ; relation_name=IDENTIFIER; rule_name=pared(rule_name);

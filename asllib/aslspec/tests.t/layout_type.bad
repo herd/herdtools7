@@ -1,2 +1,2 @@
 typedef BadAtomicType
-{ math_layout = (_, _) };
+  @math_layout (_, _);

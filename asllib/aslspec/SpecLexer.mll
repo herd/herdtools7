@@ -31,23 +31,18 @@ rule token = parse
                                }
 
     (* Keywords *)
-    | "associative"         { ASSOCIATIVE }
     | "ast"                 { AST }
     | "case"                { CASE }
     | "cond"                { COND }
     | "constant"            { CONSTANT }
     | "constants_set"       { CONSTANTS_SET }
-    | "custom"              { CUSTOM }
     | "function"            { FUNCTION }
     | "if"                  { IF }
     | "in"                  { IN }
     | "INDEX"               { INDEX }
     | "else"                { ELSE }
-    | "lhs_hypertargets"    { LHS_HYPERTARGETS }
     | "list0"               { LIST0 }
     | "list1"               { LIST1 }
-    | "math_macro"          { MATH_MACRO }
-    | "math_layout"         { MATH_LAYOUT }
     | "not_in"              { NOT_IN }
     | "option"              { OPTION }
     | "operator"            { OPERATOR }
@@ -55,19 +50,25 @@ rule token = parse
     | "partial"             { PARTIAL }
     | "powerset"            { POWERSET }
     | "powerset_finite"     { POWERSET_FINITE }
-    | "prose_application"   { PROSE_APPLICATION }
-    | "prose_description"   { PROSE_DESCRIPTION }
-    | "prose_transition"    { PROSE_TRANSITION }
     | "relation"            { RELATION }
     | "render"              { RENDER }
     | "rule"                { RULE }
     | "semantics"           { SEMANTICS }
-    | "short_circuit_macro" { SHORT_CIRCUIT_MACRO }
     | "then"                { THEN }
-    | "typecast"            { TYPECAST }
     | "typedef"             { TYPEDEF }
     | "typing"              { TYPING }
     | "variadic"            { VARIADIC }
+    (* attributes *)
+    | "@associative"         { ASSOCIATIVE }
+    | "@custom"              { CUSTOM }
+    | "@math_macro"          { MATH_MACRO }
+    | "@math_layout"         { MATH_LAYOUT }
+    | "@prose_application"   { PROSE_APPLICATION }
+    | "@prose_description"   { PROSE_DESCRIPTION }
+    | "@prose_transition"    { PROSE_TRANSITION }
+    | "@short_circuit_macro" { SHORT_CIRCUIT_MACRO }
+    | "@typecast"            { TYPECAST }
+    | "@no_lhs_hypertargets" { NO_LHS_HYPERTARGETS }
 
     (* Punctuation and operators *)
     | '.'            { DOT }

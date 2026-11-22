@@ -56,10 +56,9 @@ module AttributeKey = struct
         (** A LaTeX macro name to succinctly denote any value of a type [T].
             This is used to denote the short-circuit result of a relation
             application yielding a value of type [T]. *)
-    | LHS_Hypertargets
-        (** An attribute for [TypesRender] elements indicating whether
-            hypertargets should be generated for the LHS of type definitions in
-            the rendered output. *)
+    | No_LHS_Hypertargets
+        (** Suppresses hypertargets for the LHS of type definitions in
+            [TypesRender] elements. *)
 
   (* A total ordering on attribute keys. *)
   let compare a b =
@@ -70,7 +69,7 @@ module AttributeKey = struct
       | Math_Macro -> 3
       | Math_Layout -> 4
       | Short_Circuit_Macro -> 5
-      | LHS_Hypertargets -> 6
+      | No_LHS_Hypertargets -> 6
       | Associative -> 7
       | Custom -> 8
       | Typecast -> 9
@@ -82,16 +81,16 @@ module AttributeKey = struct
   (** Converts an attribute key with the same string as the corresponding token.
   *)
   let to_str = function
-    | Prose_Description -> "prose_description"
-    | Prose_Application -> "prose_application"
-    | Prose_Transition -> "prose_transition"
-    | Math_Macro -> "math_macro"
-    | Math_Layout -> "math_layout"
-    | Short_Circuit_Macro -> "short_circuit_macro"
-    | LHS_Hypertargets -> "lhs_hypertargets"
-    | Associative -> "associative"
-    | Custom -> "custom"
-    | Typecast -> "typecast"
+    | Prose_Description -> "@prose_description"
+    | Prose_Application -> "@prose_application"
+    | Prose_Transition -> "@prose_transition"
+    | Math_Macro -> "@math_macro"
+    | Math_Layout -> "@math_layout"
+    | Short_Circuit_Macro -> "@short_circuit_macro"
+    | No_LHS_Hypertargets -> "@no_lhs_hypertargets"
+    | Associative -> "@associative"
+    | Custom -> "@custom"
+    | Typecast -> "@typecast"
 end
 
 (** A value associated with an attribute key. *)
@@ -99,7 +98,8 @@ type attribute =
   | StringAttribute of string
   | MathMacroAttribute of string
   | MathLayoutAttribute of layout
-  | BoolAttribute of bool
+  | FlagAttribute
+      (** An enabled flag. An absent attribute means the flag is disabled. *)
 
 type attribute_pairs = (AttributeKey.t * attribute) list
 
@@ -169,13 +169,13 @@ module Attributes = struct
     | Some _ -> assert false
     | _ -> None
 
-  (** [get_bool key ~default attrs] returns the bool value for [key] in [attrs],
-      or [default] if not found. *)
-  let get_bool key ~default attrs =
+  (** [has_flag key attrs] returns whether the flag [key] is present in [attrs].
+  *)
+  let has_flag key attrs =
     match find_opt key attrs with
-    | Some (BoolAttribute b) -> b
+    | Some FlagAttribute -> true
     | Some _ -> assert false
-    | _ -> default
+    | None -> false
 end
 
 module Term = struct
@@ -236,7 +236,7 @@ module Term = struct
 
               relation walk_tree(x: Tree[[Z]]) -> list0(Z) = ...
             ]}
-            then {[ Tree[[Z]] ]} is represented by a [ParamType] with [typename] =
+            then [ Tree[[Z]] ] is represented by a [ParamType] with [typename] =
             "Tree" and [term] represented by the type parameter [Z]. *)
     | Tuple of {
         loc : source_location;
@@ -825,13 +825,12 @@ end = struct
     Attributes.find_layout AttributeKey.Math_Layout self.att
 
   let is_associative_operator self =
-    Attributes.get_bool AttributeKey.Associative ~default:false self.att
+    Attributes.has_flag AttributeKey.Associative self.att
 
-  let is_custom_operator self =
-    Attributes.get_bool AttributeKey.Custom ~default:false self.att
+  let is_custom_operator self = Attributes.has_flag AttributeKey.Custom self.att
 
   let is_typecast_operator self =
-    Attributes.get_bool AttributeKey.Typecast ~default:false self.att
+    Attributes.has_flag AttributeKey.Typecast self.att
 end
 
 (** A datatype for grouping (subsets of) type definitions. *)
@@ -881,7 +880,7 @@ end = struct
   let attributes_to_list self = Attributes.bindings self.att
 
   let lhs_hypertargets self =
-    Attributes.get_bool AttributeKey.LHS_Hypertargets ~default:true self.att
+    not (Attributes.has_flag AttributeKey.No_LHS_Hypertargets self.att)
 end
 
 module RuleRender : sig

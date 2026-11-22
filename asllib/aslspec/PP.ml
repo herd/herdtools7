@@ -16,7 +16,7 @@ let rec pp_layout fmt layout =
   match layout with
   | Unspecified -> pp_print_string fmt "_"
   | Horizontal l -> fprintf fmt "(%a)" (pp_sep_list ~sep:"," pp_layout) l
-  | Vertical l -> fprintf fmt "[%a]" (pp_sep_list ~sep:"," pp_layout) l
+  | Vertical l -> fprintf fmt "[ %a ]" (pp_sep_list ~sep:"," pp_layout) l
 
 let pp_attribute_key fmt key = pp_print_string fmt (AttributeKey.to_str key)
 
@@ -26,15 +26,17 @@ let pp_attribute fmt = function
       fprintf fmt "\"@[<hov>%a@]\"" pp_print_text s
   | MathLayoutAttribute layout -> pp_layout fmt layout
   | MathMacroAttribute macro -> pp_print_string fmt macro
-  | BoolAttribute b -> pp_print_bool fmt b
+  | FlagAttribute -> ()
 
 let pp_attribute_key_value fmt (key, value) =
-  fprintf fmt "%a = %a," pp_attribute_key key pp_attribute value
+  match value with
+  | FlagAttribute -> pp_attribute_key fmt key
+  | _ -> fprintf fmt "%a %a" pp_attribute_key key pp_attribute value
 
 let pp_attribute_key_values fmt attributes =
   if Utils.list_is_empty attributes then ()
   else
-    fprintf fmt "{@[<v>@;<0 2>%a@]@,}"
+    fprintf fmt "@[<v>@;<0 2>%a@]@,"
       (fun fmt attrs ->
         pp_sep_list ~sep:"@;<0 2>"
           (fun fmt attr -> pp_attribute_key_value fmt attr)
