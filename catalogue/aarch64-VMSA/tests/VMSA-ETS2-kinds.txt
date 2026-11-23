@@ -902,7 +902,7 @@ MP+rel+pickctrlW-mmufault-po           Forbid
 MP+rel+pickctrlW-mmufault_db-po        Forbid
 MP+rel+pickctrlisb-mmufault-po         Forbid
 MP+rel+pickdata-lrs-data-mmufault-po   Forbid
-MP+rel+pickdata-lrs-data-mmufault_db-poAllow
+MP+rel+pickdata-lrs-data-mmufault_db-po Allow
 MP+rel+pickdata-mmufault-po            Forbid
 MP+rel+pickdata-mmufault_db-po         Allow
 MP+rel+pickdata_rmw-mmufault-po        Forbid

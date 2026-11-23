@@ -720,6 +720,7 @@ NT-20-tlbi                                     Forbidden
 NT-23-tlbi                                     Forbidden
 NT-23-tlbi+dsb                                 Forbidden
 Marc03                                         Forbidden
+Marc03+BIS                                      Allowed
 S+dmb.st+addr-HUaf                             Allowed
 S+dmb.st+dmb-HUaf                              Allowed
 S+dmb.st+dsb-HUaf                              Allowed
@@ -732,11 +733,17 @@ LB+dmb.sy+addr-po-HUdb                         Forbidden
 LB+dmb.sy+addrisb-HU                           Forbidden
 Sc01                                           Allowed
 MP+dmb.sy+addrR-pos-addr                       Allowed
+MP+dmb.sy+addrR-pos-addr+PTE                    Forbidden
+MP+dmb.sy+addrR-pos-addr+PTE+BIS                Forbidden
 Sc02                                           Forbidden
 MP+dmb.sy+addr-store-pos-addr                  Allowed
+MP+dmb.sy+addr-store-pos-addr+PTE               Forbidden
+MP+dmb.sy+addr-store-pos-addr+PTE+BIS           Forbidden
 Sc03                                           Forbidden
 MP+dmb.sy+addrR-pos-addr+W                     Allowed
+MP+dmb.sy+addrR-pos-addr+W+PTE                  Forbidden
 MP+dmb.sy+addr-store-pos-addr+W                Allowed
+MP+dmb.sy+addr-store-pos-addr+W+PTE             Allowed
 NT-30-dmbld+dsb                                Allowed
 NT-30-dmb                                      Allowed
 NT-30-dmb+dsb                                  Allowed
@@ -904,7 +911,7 @@ MP+rel+pickctrlW-mmufault-po           Forbid
 MP+rel+pickctrlW-mmufault_db-po        Forbid
 MP+rel+pickctrlisb-mmufault-po         Forbid
 MP+rel+pickdata-lrs-data-mmufault-po   Allow
-MP+rel+pickdata-lrs-data-mmufault_db-poAllow
+MP+rel+pickdata-lrs-data-mmufault_db-po Allow
 MP+rel+pickdata-mmufault-po            Allow
 MP+rel+pickdata-mmufault_db-po         Allow
 MP+rel+pickdata_rmw-mmufault-po        Allow
