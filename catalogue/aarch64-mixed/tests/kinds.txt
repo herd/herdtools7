@@ -10,3 +10,11 @@ MP+HAmo+BAcqAmo                Forbidden
 MP+dmb.syb0b1+datab1b1-rfib1h0 Allowed
 MP-Koeln                       Forbidden
 SmallEndian                    Required
+2+2W+posw0w0+posw4w4            Allowed
+CO-MIXED-20cc                   Forbidden
+CoRW2+posq0q0+q0                Allowed
+CoRW2+posw0w0+w0                Allowed
+LB+dmb.sy+data-wsi-wsi+MIXED    Forbidden
+MP+QAmo+AcqAmo                  Forbidden
+MP+dmb.syw0w4+dataw4w4-rfiw4q0  Allowed
+MP+popl.w0-posl.w0q0+poa.w4p    Forbidden
