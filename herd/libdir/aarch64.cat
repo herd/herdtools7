@@ -175,7 +175,8 @@ let BBM = [TLBCacheableTTD]; ca; [TLBUncacheableTTD]; ob; [TLBI]; ob & inv-scope
 flag ~empty (TTD-update-needsBBM \ BBM) as Warning-BBM-expected
 
 (*** Additional synchronisation requirements for CMODX ***)
-let CMODX-conflicts = same-loc & (
+
+let CMODX-conflicts = same-loc & different-values (
   (Imp & Instr & R & Within-CMODX-List) * W
   | (Imp & Instr & R) * (Within-CMODX-List & W)
   | W * (Within-CMODX-List & Imp & Instr & R)
