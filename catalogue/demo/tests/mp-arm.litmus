@@ -1,4 +1,4 @@
-ARM MP
+ARM MP-ARM
 {
 %x0=x; %y0=y;
 %y1=y; %x1=x;
