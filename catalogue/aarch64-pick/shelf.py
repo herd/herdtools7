@@ -68,4 +68,12 @@ illustrative_tests = [
     "tests/LB+rel+CSEL-CSEL.litmus",
     "tests/LB-ldxr-stxr-rel.litmus",
     "tests/LB-swp-rel.litmus",
+    "tests/Pick4.litmus",
+    "tests/T11bis.litmus",
+    "tests/T14Bbis-corrected.litmus",
+    "tests/T14Bbis.litmus",
+    "tests/T5.litmus",
+    "tests/T6.litmus",
+    "tests/T7bis.litmus",
+    "tests/T7ter.litmus",
 ]

@@ -17,8 +17,12 @@ T3-bis                        Forbid
 LB+rel+data                   Forbid
 S+rel+CSEL                   Allow
 S+rel+CSEL-rf-reg            Forbid
+T5                         Forbid
+T6                         Allow
 T7                        Forbid
+T7bis                      Forbid
 T7dep                     Forbid
+T7ter                      Forbid
 T8                        Allow
 T8+BIS                    Forbid
 T9                        Allow
@@ -27,6 +31,7 @@ T9C                       Allow
 T10B                      Forbid
 T10C                      Forbid
 T11                       Allow
+T11bis                     Allow
 T12                       Allow
 T12B                      Allow
 T13                       Allow
@@ -37,11 +42,14 @@ T13-mod4                  Allow
 T14                       Allow
 T14B                      Allow
 T14B-corrected            Allow
+T14Bbis                    Allow
+T14Bbis-corrected          Allow
 T14-controldep            Allow
 T14B-controldep           Allow
 TLDAR                     Allow
 Pick3                     Allow
 Pick3-mod                 Allow
+Pick4                      Allow
 T99                       Allow
 T99-excls                 Allow
 T99-excls-RZR             Allow
