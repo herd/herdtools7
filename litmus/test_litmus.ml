@@ -69,7 +69,8 @@ module type S = sig
   val code_exists : (P.ins -> bool) -> t -> bool
   val get_exported_labels_init_code :
       A.state -> P.code list ->  Label.Full.Set.t
-  val get_init_labels : t -> Label.Full.Set.t
+
+  val get_init_labels : t -> Label.t ByProc.t
   (** [get_init_labels t] returns the set of labels that appear in the
       initialisation of [t]. *)
 
@@ -78,12 +79,12 @@ module type S = sig
       appear in the initialisation of test [t] or are referenced by the
       code of the threads of [t]. *)
 
-  val from_labels : t -> (Label.Full.full * P.ins) list
+  val from_labels : t -> (Label.Full.t * P.ins) list
   (** [from_labels t] returns the [(label, instruction)] pairs for
       labels in [get_exported_labels t] that are defined in the code of
       the threads of [t]. *)
 
-  val all_labels : t -> Label.Full.full list
+  val all_labels : t -> Label.t ByProc.t
   (** [all_labels t] returns the list of labels defined in the code of
       the threads of [t]. *)
 
@@ -226,7 +227,8 @@ struct
       (P.exported_labels_code prog)
       (get_exported_labels_init init)
 
-  let get_init_labels { init; _ } = get_exported_labels_init init
+  let get_init_labels { init; _ } =
+    get_exported_labels_init init |> ByProc.of_set
 
   let get_exported_labels  { init; src; _ } =
      get_exported_labels_init_code  init src.MiscParser.prog
@@ -235,7 +237,6 @@ struct
     let lbls = get_exported_labels_init_code init src.MiscParser.prog in
     P.from_labels lbls src.MiscParser.prog
 
-  let all_labels { src; _ } =
-    P.all_labels src.MiscParser.prog
+  let all_labels { src; _ } = P.all_labels src.MiscParser.prog
 
 end
