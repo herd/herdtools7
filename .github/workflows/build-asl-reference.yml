@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
+      - 'VERSION.txt'
+      - 'version-gen.sh'
       - 'asllib/doc/**'
       - 'asllib/aslspec/**'
       - '.github/workflows/build-asl-reference.yml'
