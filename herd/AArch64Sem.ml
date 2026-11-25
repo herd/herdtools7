@@ -3768,9 +3768,6 @@ Arguments:
       module GCSSem = struct
         let base_mk_fault = mk_fault
 
-        let mk_fault action ft ii =
-          emit_fault None action Dir.R Annot.N (Some ft) None ii
-
         let lift_fault dir txt ft ii =
           let>* () = commit_pred_txt txt ii in
           let lbl_v = get_instr_label ii.A.proc ii in
@@ -3994,87 +3991,82 @@ Arguments:
               (M.short is_gcs_mem_read E.is_bcc m)
               (M.short (is_reg_read r) E.is_bcc m)
 
-      let gcsss1 r ii =
-        let open AArch64Base in
-        let an = Annot.X
-        and rA = SysReg GCSPR_EL1 in
-        M.delay_kont "gcsss1"
-        (read_reg_addr r ii)
-        (fun incoming ma ->
-          (* Valid cap entry is expected *)
-          let cmpoperand = read_reg_data r ii >>= GCSSem.make_valid in (* incoming_pointer[63:12]:'000000000001' *)
-          let cond2 = Some "(data==cmpoperand)" in
-          let branch = commit_pred_txt cond2 ii in
-          let update data =
-             GCSSem.make_valid incoming >>= fun v ->
-              let(>>*=) = M.bind_control_set_data_input_first in
-              let mok =
-                branch >>*=
-                fun () -> write_reg rA incoming ii >>= fun () -> B.nextSetT rA incoming in
-              M.op Op.Eq data v >>= fun cond ->  (* if data == cmpoperand then                             *)
-              M.assertT cond mok                (*     SetCurrentGCSPointer(incoming_pointer[63:3]:'000'); *)
-          in
-          let fault data =
-             GCSSem.make_valid incoming >>= fun v ->
-              M.delay_kont "gcsss1(fault)"
-              (M.op Op.Ne data v)             (* if data != cmpoperand then                   *)
-              (fun cond action ->
-                let open FaultType.AArch64 in (*     GCSDataCheckException(GCSInstType_SS1);  *)
-                let mno = GCSSem.mk_fault action (GCSCheck SS1) ii in
-                M.assertT cond mno)
-          in
-          let branch a =
-            let cond1 = Some (Printf.sprintf "Valid([%s])" (V.pp_v a)) in
-            commit_pred_txt cond1 ii in
-          let shortcut =
-            let read_reg e =
-              let is_reg = is_this_reg r e
-              and is_load = E.is_reg_load e ii.A.proc in
-              is_reg && is_load
-            in
-            M.short read_reg (E.is_pred_txt cond2) in
-          let mop_fail_no_wb ac ma _ =
-            (* GCSSS1 fails, there is no Explicit Write Effect *)
-            let read_mem a = GCSSem.read ac an a ii in
-            let noact _ _ = M.mk_singleton_es Act.NoAction ii in
-            M.altT (
-              M.aarch64_cas_no (Access.is_physical ac) ma cmpoperand update read_mem noact branch M.neqT |> shortcut
-            )(
-              M.aarch64_cas_no (Access.is_physical ac) ma cmpoperand fault read_mem noact branch M.neqT |> shortcut
-            )
-          in
-          let mop_fail_with_wb ac ma _ =
-            (* GCSSS1 fails, there is an Explicit Write Effect writing back *)
-            (* the value that is already in memory                          *)
-            let read_mem a = GCSSem.read ac Annot.X a ii
-            and write_mem a v = GCSSem.write ac Annot.X a v ii in
-            M.altT(
-                M.aarch64_cas_no (Access.is_physical ac) ma cmpoperand update read_mem write_mem branch M.neqT |> shortcut
-              )(
-                M.aarch64_cas_no (Access.is_physical ac) ma cmpoperand fault read_mem write_mem branch M.neqT |> shortcut
-              )
-          in
-          let mop_success ac ma mv =
-            (* GCSSS1 succeeds, there is an Explicit Write Effect *)
-            (* mv is read new value from reg, not important       *)
-            (* as this code is not executed in morello mode       *)
-            (* In-progress cap entry should be stored if the comparison is successful *)
-            let operand = mv >>= GCSSem.make_inprogress (* outgoing_pointer[63:3]:'101' *)
-            and read_mem a = GCSSem.read ac Annot.X a ii
-            and write_mem a v = GCSSem.write ac Annot.X a v ii in
-           M.altT(
-             M.aarch64_cas_ok (Access.is_physical ac) ma cmpoperand operand update read_mem write_mem branch M.eqT |> shortcut
-            )(
-              M.aarch64_cas_ok (Access.is_physical ac) ma cmpoperand operand fault read_mem write_mem branch M.eqT |> shortcut
-            )
-          in
-          let mv = read_reg_data rA ii in
-          let lift_memop ~tag rA dir updatedb checked mop perms ma mv an ii =
-            do_lift_memop ~tag rA dir updatedb checked mop perms ma mv an ii Fun.id DISide.Data in
-          do_cas_with MTE.Tagcheck.never lift_memop quad Annot.N r ma mv
-            mop_success mop_fail_with_wb mop_fail_no_wb ii)
 
       let ( let@ ) = ( @@ )
+
+      let gcsss1 r ii =
+        let open AArch64Base in
+        let gcspr = SysReg GCSPR_EL1 in
+        let* incoming, mread_incoming_ptr = M.delay (read_reg_addr r ii) in
+
+        let ss1_memop outcome ac ma _ =
+          let* _, maddr = M.delay ma in
+          let mread =
+            M.bind_ctrldata_second_outputs maddr (fun addr ->
+              GCSSem.read ac Annot.X addr ii)
+          in
+          let* actual, mread = M.delay mread in
+          let* expected = GCSSem.make_valid incoming in
+
+          let commit =
+            let@ _ = M.data_input_next mread_incoming_ptr in
+            let@ _ = M.data_input_next mread in
+            commit_pred_txt (Some (Printf.sprintf "Valid([%s])" (V.pp_v incoming))) ii
+          in
+          let* (), mcommit = M.delay commit in
+
+          let mread_outgoing_ptr =
+            let@ () = M.control_input_next mcommit in
+            read_reg_data gcspr ii
+          in
+          let* _, mread_outgoing_ptr = M.delay mread_outgoing_ptr in
+          let gcs_write mv =
+            let@ addr = M.bind_ctrldata maddr in
+            let@ value = M.data_input_next mv in
+            let@ () = M.control_input_next mcommit in
+            GCSSem.write ac Annot.X addr value ii
+          in
+          let update_gcspr =
+            let@ _ = M.bind_order mread_outgoing_ptr in
+            let@ incoming = M.data_input_next mread_incoming_ptr in
+            let@ () = M.control_input_next mcommit in
+            let* () = write_reg gcspr incoming ii in
+            B.nextSetT gcspr incoming
+          in
+          let fault =
+            let elr = get_instr_label ii.A.proc ii in
+            let ft = Some FaultType.AArch64.(GCSCheck SS1) in
+            let@ () = M.control_input_next mcommit in
+            set_elr_el1 elr ii >>| mk_fault None Dir.R Annot.N ii ft None
+              >>! B.fault [AArch64Base.elr_el1, elr]
+          in
+
+          let* _, branch =
+            match outcome with
+            | `Success ->
+                let* () = M.eqT actual expected in
+                let mv = mread_outgoing_ptr >>= GCSSem.make_inprogress in
+                gcs_write mv >>| update_gcspr
+            | `FaultWithWriteback ->
+                let* () = M.neqT actual expected in
+                gcs_write mread >>| fault
+            | `FaultWithoutWriteback ->
+                let* () = M.neqT actual expected in
+                let noact =
+                  let@ () = M.control_input_next mcommit in
+                  M.mk_singleton_es Act.NoAction ii
+                in
+                noact >>| fault
+          in
+          M.unitT branch
+        in
+        let mop_success = ss1_memop `Success in
+        let mop_fail_with_wb = ss1_memop `FaultWithWriteback in
+        let mop_fail_no_wb = ss1_memop `FaultWithoutWriteback in
+        let lift_memop ~tag rA dir updatedb checked mop perms ma mv an ii =
+          do_lift_memop ~tag rA dir updatedb checked mop perms ma mv an ii Fun.id DISide.Data in
+        do_cas_with MTE.Tagcheck.never lift_memop quad Annot.N r mread_incoming_ptr mzero
+          ~mop_success ~mop_fail_with_wb ~mop_fail_no_wb ii
 
       let lift_gcs_access ii dir ma mop =
         let perm, updatedb = match dir with Dir.R -> "r", false | Dir.W -> "w", true in
