@@ -1,0 +1,17 @@
+ASL BranchDecisionsUpdates
+(* Reassigning an ASL variable changes the symbolic expression of its test. *)
+
+{ uint64_t x=3; 0:X1=x; }
+
+func main() => integer
+begin
+  var value = UInt(read_memory{64}(read_register(1)));
+  var result = 0;
+  if value < 8 then result = result + 1; end;
+  value = value + 8;
+  if value < 8 then result = result + 2; end;
+  write_register(0, result[63:0]);
+  return 0;
+end;
+
+forall 0:X0=1

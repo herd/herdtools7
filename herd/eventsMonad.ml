@@ -137,6 +137,10 @@ Monad type:
       let eid', (evt, evt_spec) = m eid in
       (eid', (Evt.map f evt, Option.map (Evt.map f) evt_spec))
 
+    let with_constraints m =
+      map_elt (fun (value, constraints, events) ->
+        ((value, constraints), constraints, events)) m
+
  (* Code monad slight differs as regardes agument *)
  (* Threading by instruction instance identifier and event id proper *)
 

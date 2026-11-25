@@ -1,0 +1,10 @@
+Test BranchDecisionsPaths Required
+States 1
+0:X0=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X0=1)
+Observation BranchDecisionsPaths Always 1 0
+Hash=987d8908a19dc77df438563ffcd2a3e0
+

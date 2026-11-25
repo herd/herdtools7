@@ -105,8 +105,10 @@ module type S = sig
   val commit : string option -> unit m
   (** Branching event *)
 
-  val choice : value m -> 'b m -> 'b m -> 'b m
-  (** choice is a boolean if operator. *)
+  val choice :
+    ?assumptions:(value * bool) list -> value m -> 'b m -> 'b m -> 'b m
+  (** Boolean choice. A backend may reuse earlier decisions from the same path,
+      provided it preserves evaluation of the condition and its effects. *)
 
   val delay : 'a m -> ('a -> 'a m -> 'b m) -> 'b m
   (** delay operator spits monad into result ['a] and hidden structure. This
