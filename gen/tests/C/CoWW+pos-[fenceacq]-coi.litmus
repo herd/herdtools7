@@ -8,6 +8,7 @@ C CoWW+pos-[fenceacq]-coi
 
 P0 (volatile int* x) {
   *x = 2;
+  atomic_thread_fence(memory_order_acquire);
   *x = 1;
 }
 
