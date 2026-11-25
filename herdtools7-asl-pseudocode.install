@@ -1,0 +1,5 @@
+share: [
+  "ISA_A64_xml_A_profile-2026-06.tar.gz"
+  "SysReg_xml_A_profile_FAT-2026-06.tar.gz"
+  "AARCHMRS_A_profile_FAT-2026-06.tar.gz"
+]

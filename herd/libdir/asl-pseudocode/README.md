@@ -1,5 +1,11 @@
 # ASL code in this folder
 
+The optional `herdtools7-asl-pseudocode` opam package installs the three Arm
+archives. Its archive `extra-source` entries intentionally omit checksums so
+`opam admin cache` skips mirroring them. The archives are verified by
+`make asl-pseudocode` before extraction instead. This makes this package
+incompatible with opam's option `--require-checksums`.
+
 For use by herd, this is only for when the architecture is `AArch64` with
 variant `asl`, or the architecture is `ASL` with variant `asl+aarch64`.
 
