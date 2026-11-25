@@ -720,6 +720,7 @@ NT-20-tlbi                                     Forbidden
 NT-23-tlbi                                     Forbidden
 NT-23-tlbi+dsb                                 Forbidden
 Marc03                                         Forbidden
+Marc03+BIS                                      Allowed
 S+dmb.st+addr-HUaf                             Allowed
 S+dmb.st+dmb-HUaf                              Allowed
 S+dmb.st+dsb-HUaf                              Allowed
@@ -732,11 +733,17 @@ LB+dmb.sy+addr-po-HUdb                         Forbidden
 LB+dmb.sy+addrisb-HU                           Forbidden
 Sc01                                           Allowed
 MP+dmb.sy+addrR-pos-addr                       Allowed
+MP+dmb.sy+addrR-pos-addr+PTE                    Forbidden
+MP+dmb.sy+addrR-pos-addr+PTE+BIS                Forbidden
 Sc02                                           Forbidden
 MP+dmb.sy+addr-store-pos-addr                  Allowed
+MP+dmb.sy+addr-store-pos-addr+PTE               Forbidden
+MP+dmb.sy+addr-store-pos-addr+PTE+BIS           Forbidden
 Sc03                                           Forbidden
 MP+dmb.sy+addrR-pos-addr+W                     Allowed
+MP+dmb.sy+addrR-pos-addr+W+PTE                  Forbidden
 MP+dmb.sy+addr-store-pos-addr+W                Allowed
+MP+dmb.sy+addr-store-pos-addr+W+PTE             Allowed
 NT-30-dmbld+dsb                                Allowed
 NT-30-dmb                                      Allowed
 NT-30-dmb+dsb                                  Allowed
@@ -779,22 +786,12 @@ S+dmb.st+trib-po                               Forbidden
 ################################################################################
 # New tests
 
-MP-mPTEv0+dmb.st+pickaddr-po-tlbi-dsb.ish-isb    Allowed
-MP-mPTEv0+dmb.st+pickctrl-isb-tlbi-dsb.ish-isb   Forbid
-MP+dmb.ish+addr-tlbi-dsb.ish-isb                 Forbid
 MP+dmb.ish+scope-tlbi.vmall-dsb.ish-isb          Allow
-MP+dmb.st+addr-isb-tlbi-dsb.ish-isb              Forbid
 MP+dmb.st+addr-tlbi-dsb.ish-isb                  Forbid
-MP+dmb.st+pickaddr-isb-tlbi-dsb.ish-isb          Forbid
-MP+dmb.st+pickaddr-tlbi-dsb.ish-isb              Forbid
 MP+dmb.st+tlbi.vmall-dsb.ish-isb                 Allow
 S+dsb.st-tlbi.vae1is-dsb.ish+addr-HUaf           Forbid
-S+dsb.sy-tlbi-dsb.sy+addr_mmufault_db            Forbid # w\ & w\o ETS2
 S+dsb.sy-tlbi-dsb.sy+ctrl                        Forbid # w\ ETS2, Forbid too
-S+dsb.sy-tlbi-dsb.sy+ctrl_mmufault_db            Allow # w\ ETS2, Allow too
 S+dsb.sy-tlbi-dsb.sy+data_db0                    Forbid
-S+dsb.sy-tlbi-dsb.sy+data_mmufault_db            Allow    # Allow with ETS2
-S+dsb.sy-tlbi-dsb.sy+dmb.sy_mmufault_db          Allow    # w\ & w\o ETS2
 V2I-W+R-CTRL-TLBI-DSB.ISH-ISB-R                  Forbid
 
 #####
@@ -810,10 +807,8 @@ LB+dmb.sy+dsb.sy-HU                    Allow
 LB+dmb.sy+dsb.sy-isb-HU                Forbid
 LB+dmb.sy+pickaddr-po-HUdb             Forbid
 LB+dmb.sy+rel-HU                       Allow
-MP.I2V+dmb.st+swp-acq                  Forbid
 MP.I2V+dmb.st+swpal-po                 Forbid
 MP.I2V+dmb.st+swpl-acq                 Forbid
-MP.I2V+dmb.st+swpl-po                  Forbid
 MP+dmb.st+addrisb-Imp_TTD_R            Forbid
 RWRR+HU-dmb.sy+acq                     Allow
 RWRR+HU-dsb.sy+acq                     Forbid
@@ -830,35 +825,6 @@ S+dmb.st+dsb-HUaf                      Allow
 S+dmb.st+dsb.ish-isb-HUaf              Allow
 S+dmb.st+pickaddr-HUdb                 Forbid
 S+dmb.st+pickctrl-HUdb                 Forbid
-
-#####
-
-MP+dmb.st+addr_mmufault                     Forbid # w\ & w\o ETS2
-MP+dmb.st+dmb.sy_mmufault                   Allow  # w\ & w\o ETS2
-MP+dmb.st+addr_mmufault_af                  Forbid # w\ & w\o ETS2
-S+dmb.st+data_mmufault                      Allow
-# with ets2: S+dmb.st+data_mmufault         Forbid
-S+dmb.st+data_mmufault_af                   Allow
-# with ets2: S+dmb.st+data_mmufault_af      Forbid
-S+dmb.st+ctrl_mmufault                      Allow
-# with ets2: S+dmb.st+ctrl_mmufault         Forbid
-S+dmb.st+addr-po_mmufault                   Allow # with ets2, forbid
-S+dmb.st+addr-po_mmufault_db                Allow # with ets2, allow
-S+dmb.st+addr_mmufault-po                   Forbid
-S+dmb.st+data_mmufault-po                   Allow # with ets2, forbid
-S+dmb.st+addr_mmufault_db-po                Forbid
-S+dmb.st+addr_mmufault_af-po                Forbid
-MP+dmb.st+addr_mmufault-po                  Forbid
-MP+dmb.st+addr_mmufault_af-po               Forbid
-MP+dmb.st+addr_mmufault_db-po               Forbid
-MP+dmb.st+addr_mmufault_db-lrs              Forbid
-MP+dmb.st+data_mmufault_db-lrs              Allow
-MP+dmb.st+mmufault-po                       Forbid
-S+shoot+dmb.sy-mmufault                     Allow # for ETS2, Allow too
-S+shoot+addr-mmufault                       Forbid
-S+shoot+dsb.sy-mmufault                     Forbid
-MP+dmb.st+mmufault-dmb.ld                   Forbid
-MP+dmb.st+swpal-mmufault-po                 Forbid
 
 ################################################################################
 # Order to faults
@@ -945,7 +911,7 @@ MP+rel+pickctrlW-mmufault-po           Forbid
 MP+rel+pickctrlW-mmufault_db-po        Forbid
 MP+rel+pickctrlisb-mmufault-po         Forbid
 MP+rel+pickdata-lrs-data-mmufault-po   Allow
-MP+rel+pickdata-lrs-data-mmufault_db-poAllow
+MP+rel+pickdata-lrs-data-mmufault_db-po Allow
 MP+rel+pickdata-mmufault-po            Allow
 MP+rel+pickdata-mmufault_db-po         Allow
 MP+rel+pickdata_rmw-mmufault-po        Allow

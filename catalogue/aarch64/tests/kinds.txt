@@ -73,6 +73,12 @@ MP+rel+ctrl-lrs-acq             Allowed
 MP+rel+rmw-lrs-acq              Forbidden
 LB+dmb.sy+data-amo.swp          Forbidden
 LB+popl+data-rmw                Forbidden
+LB+CAS-rfi-ctrl+DMBSY           Forbidden
+MP+CAS-rfi-ctrl+acq             Allowed
+R+CAS+DMBLD                     Allowed
+R+CAS-rfi-ctrl+DMBST            Forbidden
+SB+CAS-rfi-addr+DMBSY           Allowed
+SB+SWP-rfi-addr+DMBSY           Allowed
 InitNegInt8Int32                Allowed
 InitNegInt8Int8                 Allowed
 InitNegInt8UInt8                Allowed

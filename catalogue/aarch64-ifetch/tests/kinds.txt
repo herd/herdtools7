@@ -317,3 +317,10 @@ MP+irfi+dmb.ld                                           Forbidden
 2SM.B+dsb.ish-ic.vau-dsb.ish                             Allowed
 2SM.B+dmb.sy-dsb.ish-ic.vau-dsb.ish+dmb.sy               Allowed
 2SM.B+cachesync-isb                                      Forbidden
+DIC1.MP+dmb.st+addrisb-Imp_Instr_R                       Forbidden
+IDC1.MP+dmb.st+addrisb-Imp_Instr_R                       Allowed
+IDC1.MP.FF+dsb.ish-ic.ivau-dsb.ish+po                    Forbidden
+MP+dmb.st+addrisb-Imp_Instr_R                            Allowed
+MP.RF+dc.cvau-dmb.ish+ctrl-ic.ivau-dsb.ish-isb           Forbidden
+MP.RF+dc.cvau-dmb.ish+pickctrl-ic.ivau-isb               Forbidden
+MP.RF+dmb.st+pickaddr-cachesyncisb                       Forbidden
