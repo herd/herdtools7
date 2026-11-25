@@ -29,7 +29,16 @@ module Make (E : Event.S) = struct
     is_implicit : bool;
   }
 
-  type action_view = Access of access | Branching of branch_type | Barrier
+  type action_view =
+    | Access of access
+    | Branching of branch_type
+    | Barrier
+    | TLBI
+
+  let is_tlbi action =
+    match List.assoc_opt "TLBI" Act.arch_sets with
+    | None -> false
+    | Some f -> f action
 
   let action_view (e : E.event) : action_view option =
     let action = e.E.action in
@@ -55,6 +64,7 @@ module Make (E : Event.S) = struct
         else invalid_arg "invalid commit action"
       in
       Some (Branching ty)
+    else if is_tlbi action then Some TLBI
     else None
 
   let as_access ev =
