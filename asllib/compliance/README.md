@@ -27,7 +27,8 @@ asllib/compliance/
 ```
 
 The `tests/` directory may contain nested subdirectories. Dune rules are
-generated dynamically for every `.asl` / `.yaml` pair discovered under `tests/`.
+generated dynamically for every `.asl` / `.yaml` pair discovered under the
+selected test directory, which defaults to `tests/`.
 
 ## Running the compliance tests
 
@@ -38,7 +39,18 @@ dune runtest asllib/compliance
 ```
 
 The generated rules run ASLRef through `asltest`, produce an actual YAML result
-for each test, and compare it with the expected YAML file in `tests/`.
+for each test, and compare it with the expected YAML file in the selected test
+directory, which defaults to `tests/`.
+
+To select a test directory, set `ASL_TEST_DIR=path/to/test/dir` before running
+the command above.  The path is relative to `asllib/compliance/generate/`.  It
+may be outside of `asllib/compliance`, but must remain within the `dune`
+workspace.
+
+For example:
+```sh
+ASL_TEST_DIR=../../../other-test-dir dune runtest asllib/compliance
+```
 
 To update expected YAML files after an intentional change:
 
@@ -61,7 +73,8 @@ block formatting, but may replace hand-written YAML formatting.
 
 ## Adding a test
 
-Add an `.asl` file under `tests/` and a sibling `.yaml` file with the same stem.
+Add an `.asl` file under `tests/` (or the directory selected by `ASL_TEST_DIR`
+above) and a sibling `.yaml` file with the same stem.
 For a new test, the YAML file can start with just the execution mode:
 
 ```yaml
@@ -90,6 +103,9 @@ The YAML files can be validated directly with:
 ```sh
 python3 asllib/compliance/validate-schemas.py
 ```
+
+This validator checks only `asllib/compliance/tests/`; it does not use
+`ASL_TEST_DIR`.
 
 This requires Python packages for YAML and JSON Schema support. On Ubuntu:
 
