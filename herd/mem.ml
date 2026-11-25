@@ -340,6 +340,13 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       Warn.user_error
         "Segmentation fault (kidding, label %s not found)"
 
+(* Check unrolling *)
+    type check_t =
+      | Dont  (* Do not check *)
+      | Do    (* Do check *)
+      | ERet  (* Do, special treatment when at end of code *)
+
+
     let glommed_event_structures ~is_pgm (test:S.test) =
       profile "glommed_event_structures" @@ fun () ->
       let prog = test.Test_herd.program in
@@ -569,12 +576,14 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
         | B.Lbl lbl -> lbl
         | B.Addr addr -> get_label None addr in
 
-    let fetch_addr check_back seen proc_jmp addr_jmp lbl addr =
+      let fetch_addr check_back seen proc_jmp addr_jmp lbl addr =
         try
           let (proc_tgt,_) as tgt = IntMap.find addr code_segment in
           if (* Limit jump threshold to non determined jumps ? *)
             Misc.int_eq proc_jmp proc_tgt
-            && check_back
+            && (match check_back with
+                | Dont -> false
+                | Do|ERet -> true)
             && is_back_jump addr_jmp addr
           then
             let x,seen = see seen addr in
@@ -684,13 +693,26 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       and add_tgt re_exec check_back proc env seen addr_jmp tgt =
         match fetch_code check_back seen proc addr_jmp tgt with
         | No (tgt_proc,(addr,inst)::_) ->
+            (* Prune execution by fear of non-termination *)
             let m ii =
               EM.addT
                 (A.next_po_index ii.A.program_order_index)
                 (EM.cutoffT (tgt2lbl tgt) ii (S.B.Next [])) in
             wrap
-              re_exec tgt_proc proc inst addr env m >>> fun _ -> EM.unitcodeT true
-        | No (_,[]) -> assert false (* Backward jump cannot be to end of code *)
+              re_exec tgt_proc proc inst addr env m
+            >>> fun _ -> EM.unitcodeT true
+        | No (tgt_proc,[]) ->
+            begin
+              match check_back with
+              | Do|Dont ->
+            (* Checked (Do) jumps are backward and cannot be to end of code,
+               Unchecked jumps cannot lead here. *)
+                  assert false
+              | ERet ->
+                  (* Here, non-termination is not to be feared,
+                     as there is no code no be executed. *)
+                  add_code re_exec tgt_proc proc env seen []
+            end
         | Ok ((tgt_proc,code),seen) -> add_code re_exec tgt_proc proc env seen code
         | Segfault addr ->
           let msg = Printf.sprintf
@@ -730,19 +752,20 @@ module Make(C:Config) (S:Sem.Semantics) : S with module S = S	=
       | S.B.Next _ ->
           add_code re_exec fetch_proc proc env seen nexts
       | S.B.Jump (tgt,_) ->
-          add_tgt re_exec true proc env seen addr tgt
+          add_tgt re_exec Do proc env seen addr tgt
       | S.B.Fault (syscall,_) ->
           add_fault re_exec code_instr fetch_proc proc env seen addr syscall nexts
       | S.B.FaultRet tgt ->
-          add_tgt false true proc env seen addr tgt
+          add_tgt false ERet proc env seen addr tgt
       | S.B.CondJump (v,tgt) ->
           EM.condJumpT v
-            (add_tgt re_exec (not (V.is_var_determined v))
+            (add_tgt re_exec
+               (if V.is_var_determined v then Dont else Do)
                proc env seen addr tgt)
             (add_code re_exec fetch_proc proc env seen nexts)
       | S.B.IndirectJump (v,lbls,_) ->
          EM.indirectJumpT v lbls
-           (add_lbl re_exec true proc env seen addr)
+           (add_lbl re_exec Do proc env seen addr)
       in
 
 (* Code monad returns a boolean. When false the code must be discarded.
