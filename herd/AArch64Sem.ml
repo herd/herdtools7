@@ -2353,7 +2353,7 @@ Arguments:
           action tagchecked ma
 
       let do_cas_with (tagchecked : MTE.Tagcheck.t) lift sz an rn ma mv
-          mop_success mop_fail_with_wb mop_fail_no_wb  ii =
+          ~mop_success ~mop_fail_with_wb ~mop_fail_no_wb  ii =
         let tagchecked = (tagchecked :> B.reg -> bool) rn in
         let tagchecked = memtag && tagchecked in
         let ma = mte_untag_address tagchecked ma in
@@ -2416,7 +2416,7 @@ Arguments:
         in
         let ma = read_reg_addr rn ii
         and mv = read_reg_data_sz sz rt ii in
-        do_cas sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb ii
+        do_cas sz an rn ma mv ~mop_success ~mop_fail_with_wb ~mop_fail_no_wb ii
 
       let casp sz rmw rs1 rs2 rt1 rt2 rn ii =
         let an = rmw_to_read rmw in
@@ -2477,7 +2477,7 @@ Arguments:
         in
         let ma = read_reg_addr rn ii
         and mv = read_reg_data_sz sz rt1 ii >>> fun _ -> read_reg_data_sz sz rt2 ii in
-        do_cas sz an rn ma mv mop_success mop_fail_with_wb mop_fail_no_wb ii
+        do_cas sz an rn ma mv ~mop_success ~mop_fail_with_wb ~mop_fail_no_wb ii
 
       (* Temporary morello variation of CAS *)
       let cas_morello sz rmw rs rt rn ii =
