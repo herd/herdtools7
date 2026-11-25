@@ -1,0 +1,9 @@
+Test F009 Required
+States 0
+Loop Ok
+Witnesses
+Positive: 0 Negative: 0
+Condition forall (not (0:X5=0))
+Observation F009 Never 0 0
+Hash=be072503a53078388c77f2399cc02b02
+
