@@ -99,6 +99,7 @@ module DefaultConfig = struct
     let labelbox = !PP.labelbox
     let showthread = !PP.showthread
     let showlegend = !PP.showlegend
+    let showfinalstate = !PP.showfinalstate
     let showkind = !PP.showkind
     let shortlegend = !PP.shortlegend
     let showfinalrf = !PP.showfinalrf

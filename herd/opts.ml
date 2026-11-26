@@ -116,6 +116,7 @@ module PP = struct
   let labelbox = ref false
   let showthread = ref true
   let showlegend = ref true
+  let showfinalstate = ref false
   let showfinalrf = ref false
   let showinitrf = ref false
   let finaldotpos = ref (0.4,-0.3333)

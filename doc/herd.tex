@@ -1926,6 +1926,15 @@ and kind \texttt{Require} being \verb+forall+.
 Default is~\opt{false}.
 \item[{\tt -shortlegend <bool>}]
 Limit legend to test name. Default is~\opt{false}.
+\item[{\tt -showfinalstate <bool>}]
+Add the execution's final state beneath the picture, using the same
+locations, values and faults as the textual states output.
+Long states wrap across multiple lines. The caption is independent of
+\opt{-showlegend} and \opt{-shortlegend}. Default is~\opt{false}.
+Several executions may have the same final state.
+With \opt{-outcomereads true}, selected executions are retained until
+exploration finishes so their captions use the same register set as the
+reported states; this increases memory use when many executions are shown.
 \end{description}
 
 A few options control what is shown in nodes
