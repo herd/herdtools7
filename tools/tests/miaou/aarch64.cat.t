@@ -1,4 +1,13 @@
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show IFB-ob aarch64.cat
+AArch64 model descriptions.
+
+  $ show_relation () {
+  >   miaou_relation=$1
+  >   shift
+  >   miaou7 -q -set-libdir ../libdir -tex catdefinitions.tex \
+  >     -show "$miaou_relation" "$@" aarch64.cat
+  > }
+
+  $ show_relation IFB-ob
   \expandafter{\MakeUppercase\IFBobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -85,7 +94,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show DSB-ob aarch64.cat
+  $ show_relation DSB-ob
   \expandafter{\MakeUppercase\DSBobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -193,7 +202,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show Exp-obs aarch64.cat
+  $ show_relation Exp-obs
   \expandafter{\MakeUppercase\Expobsemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -212,7 +221,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show IC-ca aarch64.cat
+  $ show_relation IC-ca
   \expandafter{\MakeUppercase\ICcaemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -247,7 +256,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show IC-ob aarch64.cat
+  $ show_relation IC-ob
   \expandafter{\MakeUppercase\ICobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ImpInstrR{E\textsubscript{1}}.
@@ -256,7 +265,7 @@
   \item \expandafter{\MakeUppercase\Instrreadob{E\textsubscript{3}}{E\textsubscript{2}}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show Instr-obs aarch64.cat
+  $ show_relation Instr-obs
   \expandafter{\MakeUppercase\Instrobsemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -280,7 +289,7 @@
   \item \expandafter{\MakeUppercase\ICca{E\textsubscript{1}}{E\textsubscript{2}}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show Instr-read-ordered-before aarch64.cat
+  $ show_relation Instr-read-ordered-before
   \expandafter{\MakeUppercase\Instrreadobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -302,7 +311,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show TLBI-ca aarch64.cat
+  $ show_relation TLBI-ca
   \expandafter{\MakeUppercase\TLBIcaemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \TLBI{E\textsubscript{1}}.
@@ -312,7 +321,7 @@
   \item \W{E\textsubscript{2}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show TTD-in-same-scope aarch64.cat
+  $ show_relation TTD-in-same-scope
   \expandafter{\MakeUppercase\TTDinsamescopeemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -337,7 +346,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show TLBI-ob aarch64.cat
+  $ show_relation TLBI-ob
   \expandafter{\MakeUppercase\TLBIobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item \expandafter{\MakeUppercase\TTDreadorderedbefore{E\textsubscript{1}}{E\textsubscript{2}}}.
@@ -357,7 +366,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show TTD-obs aarch64.cat
+  $ show_relation TTD-obs
   \expandafter{\MakeUppercase\TTDobsemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -387,7 +396,7 @@
   \item \expandafter{\MakeUppercase\TLBIca{E\textsubscript{1}}{E\textsubscript{2}}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show TTD-read-ordered-before aarch64.cat
+  $ show_relation TTD-read-ordered-before
   \expandafter{\MakeUppercase\TTDreadorderedbeforeemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -404,7 +413,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show Tag-obs aarch64.cat
+  $ show_relation Tag-obs
   \expandafter{\MakeUppercase\Tagobsemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -423,7 +432,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show addr aarch64.cat
+  $ show_relation addr
   \expandafter{\MakeUppercase\addremph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
@@ -443,7 +452,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show aob aarch64.cat
+  $ show_relation aob
   \expandafter{\MakeUppercase\aobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -471,7 +480,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show bob aarch64.cat
+  $ show_relation bob
   \expandafter{\MakeUppercase\bobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -600,7 +609,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show ctrl aarch64.cat
+  $ show_relation ctrl
   \expandafter{\MakeUppercase\ctrlemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
@@ -612,7 +621,7 @@
   \item \expandafter{\MakeUppercase\po{E\textsubscript{4}}{E\textsubscript{2}}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show data aarch64.cat
+  $ show_relation data
   \expandafter{\MakeUppercase\dataemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
@@ -624,7 +633,7 @@
   \item \ExpW{E\textsubscript{2}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show dob aarch64.cat
+  $ show_relation dob
   \expandafter{\MakeUppercase\dobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item \expandafter{\MakeUppercase\addr{E\textsubscript{1}}{E\textsubscript{2}}}.
@@ -700,7 +709,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show dtrm aarch64.cat
+  $ show_relation dtrm
   \expandafter{\MakeUppercase\dtrmemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -717,7 +726,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show Exp-haz-ob aarch64.cat
+  $ show_relation Exp-haz-ob
   \expandafter{\MakeUppercase\Exphazobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
@@ -749,7 +758,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show f-ib aarch64.cat
+  $ show_relation f-ib
   \expandafter{\MakeUppercase\fibemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ImpInstrR{E\textsubscript{1}}.
@@ -766,7 +775,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show haz-ob aarch64.cat
+  $ show_relation haz-ob
   \expandafter{\MakeUppercase\hazobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item \expandafter{\MakeUppercase\Exphazob{E\textsubscript{1}}{E\textsubscript{2}}}.
@@ -774,14 +783,14 @@
   \item \expandafter{\MakeUppercase\ICob{E\textsubscript{1}}{E\textsubscript{2}}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show hw-reqs aarch64.cat
+  $ show_relation hw-reqs
   \expandafter{\MakeUppercase\hwreqsemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item \expandafter{\MakeUppercase\localhwreqs{E\textsubscript{1}}{E\textsubscript{2}}}.
   \item \expandafter{\MakeUppercase\hazob{E\textsubscript{1}}{E\textsubscript{2}}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show lob aarch64.cat
+  $ show_relation lob
   \expandafter{\MakeUppercase\lobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item \expandafter{\MakeUppercase\introb{E\textsubscript{1}}{E\textsubscript{2}}}.
@@ -807,7 +816,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show local-hw-reqs aarch64.cat
+  $ show_relation local-hw-reqs
   \expandafter{\MakeUppercase\localhwreqsemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item \expandafter{\MakeUppercase\lob{E\textsubscript{1}}{E\textsubscript{2}}}.
@@ -819,7 +828,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show ob aarch64.cat
+  $ show_relation ob
   \expandafter{\MakeUppercase\obemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item \expandafter{\MakeUppercase\hwreqs{E\textsubscript{1}}{E\textsubscript{2}}}.
@@ -831,7 +840,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show obs aarch64.cat
+  $ show_relation obs
   \expandafter{\MakeUppercase\obsemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item \Expobs{E\textsubscript{1}}{either  E\textsubscript{2}} or \sca{an Effect which}{E\textsubscript{2}}.
@@ -840,7 +849,7 @@
   \item \expandafter{\MakeUppercase\Instrobs{E\textsubscript{1}}{E\textsubscript{2}}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pick-addr-dep aarch64.cat
+  $ show_relation pick-addr-dep
   \expandafter{\MakeUppercase\pickaddrdepemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
@@ -860,14 +869,14 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pick-basic-dep aarch64.cat
+  $ show_relation pick-basic-dep
   \expandafter{\MakeUppercase\pickbasicdepemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
   \item \expandafter{\MakeUppercase\pickdtrm{E\textsubscript{1}}{E\textsubscript{2}}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pick-ctrl-dep aarch64.cat
+  $ show_relation pick-ctrl-dep
   \expandafter{\MakeUppercase\pickctrldepemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
@@ -879,7 +888,7 @@
   \item \expandafter{\MakeUppercase\po{E\textsubscript{4}}{E\textsubscript{2}}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pick-data-dep aarch64.cat
+  $ show_relation pick-data-dep
   \expandafter{\MakeUppercase\pickdatadepemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
@@ -899,7 +908,7 @@
   \item \ExpW{E\textsubscript{2}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pick-dep aarch64.cat
+  $ show_relation pick-dep
   \expandafter{\MakeUppercase\pickdepemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item One of the following applies:
@@ -912,7 +921,7 @@
   \item \expandafter{\MakeUppercase\notthecase{\expandafter{\MakeUppercase\sameinstance{E\textsubscript{1}}{E\textsubscript{2}}}}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pick-dtrm aarch64.cat
+  $ show_relation pick-dtrm
   \expandafter{\MakeUppercase\pickdtrmemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item \expandafter{\MakeUppercase\dtrm{E\textsubscript{1}}{E\textsubscript{2}}}.
@@ -924,7 +933,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pick-lob aarch64.cat
+  $ show_relation pick-lob
   \expandafter{\MakeUppercase\picklobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \expandafter{\MakeUppercase\pickdep{E\textsubscript{1}}{E\textsubscript{3}}}.
@@ -932,7 +941,7 @@
   \item \ExpW{E\textsubscript{2}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show po-scl-ob aarch64.cat
+  $ show_relation po-scl-ob
   \expandafter{\MakeUppercase\posclobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -958,7 +967,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show pob aarch64.cat
+  $ show_relation pob
   \expandafter{\MakeUppercase\pobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -999,14 +1008,14 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show tc-ib aarch64.cat
+  $ show_relation tc-ib
   \expandafter{\MakeUppercase\tcibemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \expandafter{\MakeUppercase\tcbefore{E\textsubscript{1}}{E\textsubscript{2}}}.
   \item \expandafter{\MakeUppercase\notthecase{\ExpR{E\textsubscript{2}}}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show ii_direct_data aarch64.cat
+  $ show_relation ii_direct_data
   \expandafter{\MakeUppercase\iidirectdataemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \expandafter{\MakeUppercase\iicodata{E\textsubscript{1}}{E\textsubscript{2}}}.
@@ -1018,7 +1027,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show tr-ib aarch64.cat
+  $ show_relation tr-ib
   \expandafter{\MakeUppercase\tribemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ImpTTDR{E\textsubscript{1}}.
@@ -1034,7 +1043,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show f-ob aarch64.cat
+  $ show_relation f-ob
   \expandafter{\MakeUppercase\fobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ImpInstrR{E\textsubscript{1}}.
@@ -1042,7 +1051,7 @@
   \item \expandafter{\MakeUppercase\notthecase{\ImpInstrR{E\textsubscript{2}}}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show ets-ob aarch64.cat
+  $ show_relation ets-ob
   \expandafter{\MakeUppercase\etsobemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -1074,7 +1083,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show tc-before aarch64.cat
+  $ show_relation tc-before
   \expandafter{\MakeUppercase\tcbeforeemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ImpTagR{E\textsubscript{1}}.
@@ -1088,7 +1097,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show lrrs aarch64.cat
+  $ show_relation lrrs
   \expandafter{\MakeUppercase\lrrsemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \Wreg{E\textsubscript{1}}.
@@ -1105,7 +1114,7 @@
   \item \Rreg{E\textsubscript{2}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show lmrs aarch64.cat
+  $ show_relation lmrs
   \expandafter{\MakeUppercase\lmrsemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \W{E\textsubscript{1}}.
@@ -1122,7 +1131,7 @@
   \item \R{E\textsubscript{2}}.
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show lmws aarch64.cat
+  $ show_relation lmws
   \expandafter{\MakeUppercase\lmwsemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -1149,7 +1158,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show same-loc aarch64.cat
+  $ show_relation same-loc
   \expandafter{\MakeUppercase\samelocemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if one of the following applies:
   \begin{itemize}
   \item All of the following apply:
@@ -1168,7 +1177,7 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show TLBuncacheable-ca aarch64.cat
+  $ show_relation TLBuncacheable-ca
   \expandafter{\MakeUppercase\TLBuncacheablecaemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ImpTTDR{E\textsubscript{1}}.
@@ -1182,10 +1191,11 @@
     \end{itemize}
   \end{itemize}
 
-  $ miaou7 -q -set-libdir ./libdir -tex catdefinitions.tex -show HU-ca aarch64.cat
+  $ show_relation HU-ca
   \expandafter{\MakeUppercase\HUcaemph{an Effect E\textsubscript{1}}{an Effect E\textsubscript{2}}} if all of the following apply:
   \begin{itemize}
   \item \ExpR{E\textsubscript{1}}.
   \item \expandafter{\MakeUppercase\ca{E\textsubscript{1}}{E\textsubscript{2}}}.
   \item \ImpTTDW{E\textsubscript{2}}.
   \end{itemize}
+

@@ -188,6 +188,22 @@ and cons_seqs (fs:exp list) (es:exp list) =
         StringMap.find_opt id !inline_defs
       else None
 
+    (* Expand before normalization and pretty printing, including the special
+     * cases for optional sequences and transitive closures. Unsupported binding
+     * expressions are left intact rather than substituting under their scope. *)
+    let rec inline_rel e = match e with
+      | Var (_,id) ->
+         begin match find_inline_def id with
+         | None -> e
+         | Some d -> inline_rel d
+         end
+      | Op1 (loc,op,e) -> Op1 (loc,op,inline_rel e)
+      | Op (loc,op,es) -> Op (loc,op,List.map inline_rel es)
+      | App (loc,f,arg) -> App (loc,f,inline_rel arg)
+      | If (loc,c,a,b) -> If (loc,c,inline_rel a,inline_rel b)
+      | Konst _|Tag _|Bind _|BindRec _|Fun _|ExplicitSet _
+      | Match _|MatchSet _|Try _ -> e
+
     let id_name id = tr_id id |> sprintf "\\%sname"
 
     let pp_transitive = sprintf "transitive{%s}"
@@ -391,10 +407,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
          let a = tr_evts_from_rel e1 a and b = tr_evts_from_rel e2 b in
          mk_list Cartesian [a;b;]
       | Var (loc,id) ->
-         begin match find_inline_def id with
-         | None -> tr_rel_id e1 e2 loc id
-         | Some d -> tr_rel e1 e2 d
-         end
+         tr_rel_id e1 e2 loc id
       | If (_,VariantCond vc,Konst (_,Empty _),e) ->
          let op = Inter in
          mk_list op
@@ -807,6 +820,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
           let e1 = Next.next () in
           let e2 = Next.next () in
           let tr_rel e1 e2 exp =
+            let exp = inline_rel exp in
             if O.flatten then
               ASTUtils.flatten exp |> tr_rel e1 e2 |> flatten_out |> rm_dups
             else tr_rel e1 e2 exp
@@ -868,6 +882,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
              (makeuppercase
               @@ sprintf "\\%s{an Effect %s}"
                    (pp_id loc id) (pp_evt es.(0))) in
+      let d = inline_rel d in
       let d =
         if O.flatten then
          ASTUtils.flatten d |> tr |> flatten_out |> rm_dups
@@ -879,6 +894,20 @@ and cons_seqs (fs:exp list) (es:exp list) =
     (* Find definitions *)
     (********************)
 
+    (* Share file traversal and include handling while letting each pass process
+     * whole binding groups, including simultaneous and recursive bindings. *)
+    let rec fold_ast ~bindings ~test fname state =
+      let (_,_,ast) = P.parse fname in
+      List.fold_left
+        (fun state -> function
+          | Let (_,bds) -> bindings IsNotRec state bds
+          | Rec (_,bds,_) -> bindings IsRec state bds
+          | Test (check,kind) -> test state check kind
+          | Include (_,fname) when O.expand ->
+             fold_ast ~bindings ~test fname state
+          | _ -> state)
+        state ast
+
     let in_names = function
       | Pvar (Some id) -> if StringSet.mem id O.names then Some id else None
       | Pvar None|Ptuple _ -> None
@@ -887,61 +916,55 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | Pvar id -> id
       | Ptuple _ ->  None
 
-    let rec collect_ast fname defs =
-      let (_,_,ast) = P.parse fname in
-      List.fold_left collect_ins defs ast
+    let collect_bds is_rec (defs,seen,used) bds =
+      (* Simultaneous bindings all refer to the preceding environment. Track
+       * every pattern, even when its definition cannot itself be inlined. *)
+      let used = List.fold_left
+          (fun used (_,_,d) ->
+            StringSet.union used (ASTUtils.free_body [] d)) used bds in
+      let add_id seen = function
+        | Some id when StringSet.mem id O.inline ->
+           if StringSet.mem id seen then begin
+             eprintf "Multiple definitions of %s, cannot inline.\n" id ;
+             exit 1
+           end ;
+           StringSet.add id seen
+        | _ -> seen in
+      List.fold_left
+        (fun (defs,seen,used) (_,p,d) ->
+          let seen = match p with
+            | Pvar id -> add_id seen id
+            | Ptuple ids -> List.fold_left add_id seen ids in
+          let defs = match p with
+            | Pvar (Some id)
+                when is_rec = IsNotRec && StringSet.mem id O.inline ->
+               begin match get_id_e_type id d with
+               | Some SET -> defs
+               | Some RLN|None ->
+                  (* A previous use, including a use in this RHS, refers to an
+                   * earlier binding (possibly a built-in), not this definition.
+                   * Reject it instead of capturing it or expanding forever. *)
+                  if StringSet.mem id used then begin
+                    eprintf
+                      "References to %s precede its definition, cannot inline.\n"
+                      id ;
+                    exit 1
+                  end ;
+                  StringMap.add id d defs
+               end
+            | _ -> defs in
+          defs,seen,used)
+        (defs,seen,used) bds
 
-    and collect_ins defs = function
-      | Let (_,bds) -> List.fold_left collect_bds defs bds
-      | Rec _ -> defs
-      | Include (_,fname) when O.expand -> collect_ast fname defs
-      | _ -> defs
+    let collect_inline_defs fname =
+      let test (defs,seen,used) (_,_,_,e,_) _ =
+        defs,seen,StringSet.union used (ASTUtils.free_body [] e) in
+      let defs,_,_ =
+        fold_ast ~bindings:collect_bds ~test fname
+          (StringMap.empty,StringSet.empty,StringSet.empty) in
+      defs
 
-    and collect_bds defs (_,p,d) =
-      match p with
-      | Pvar (Some id) when StringSet.mem id O.inline ->
-         begin match get_id_e_type id d with
-         | Some SET -> defs
-         | Some RLN|None ->
-            let d = if O.flatten then ASTUtils.flatten d else d in
-            if StringMap.exists (fun k _ -> String.equal k id) defs then
-              begin
-                eprintf "Multiple definitions of %s, cannot inline.\n" id ;
-                exit 1 ;
-              end
-            else
-              StringMap.add id (norm_rel d) defs
-         end
-      | Pvar _|Ptuple _ -> defs
-
-    let rec tr_ast fname =
-      let (_,_,ast) = P.parse fname in
-      List.iter tr_ins ast
-
-    and tr_ins = function
-      | Let (_,bds) -> tr_bds in_names bds
-      | Rec (_,bds,_) ->
-         if
-           List.exists (fun (_,id,_) -> in_names id |> Misc.is_some) bds
-           && List.for_all
-                (function | (_,Pvar (Some _),_) -> true |_ -> false)
-                bds
-         then tr_bds as_name bds
-      | Test ((loc, _, test, exp, Some name), _) ->
-         if StringSet.mem name O.names then
-           let is_supported = (
-             match test with
-             | Yes Irreflexive  -> true
-             | _ -> false)
-           in
-           if is_supported then
-             tr_check loc name exp
-           else eprintf "%a: %S: Test type not supported\n" TxtLoc.pp loc name
-         else ()
-      | Include (_,fname) when O.expand -> tr_ast fname
-      | _ -> ()
-
-    and tr_bds pred bds =
+    let tr_bds pred bds =
       List.iter
         (fun (loc,p,d) ->
           match pred p with
@@ -954,23 +977,41 @@ and cons_seqs (fs:exp list) (es:exp list) =
           | None -> ())
         bds
 
+    let tr_bindings is_rec () bds =
+      match is_rec with
+      | IsNotRec -> tr_bds in_names bds
+      | IsRec ->
+         if
+           List.exists (fun (_,id,_) -> in_names id |> Misc.is_some) bds
+           && List.for_all
+                (function | (_,Pvar (Some _),_) -> true |_ -> false)
+                bds
+         then tr_bds as_name bds
+
+    let tr_test () check _ =
+      match check with
+      | loc, _, test, exp, Some name ->
+         if StringSet.mem name O.names then
+           let is_supported = (
+             match test with
+             | Yes Irreflexive  -> true
+             | _ -> false)
+           in
+           if is_supported then
+             tr_check loc name exp
+           else eprintf "%a: %S: Test type not supported\n" TxtLoc.pp loc name
+         else ()
+      | _, _, _, _, None -> ()
+
+    let tr_ast fname =
+      fold_ast ~bindings:tr_bindings ~test:tr_test fname ()
+
     let ok_def pat e =
       match pat with
       | Pvar (Some id) when Misc.is_some (get_id_e_type id e) -> Some id
       | _ -> None
 
-    let rec tst_ast fname =
-      let (_,_,ast) = P.parse fname in
-      List.iter tst_ins ast
-
-    and tst_ins = function
-      | Let (_,bds)
-      | Rec (_,bds,_)
-        ->tst_bds bds
-      | Include (_,fname) when O.expand -> tst_ast fname
-      | _ -> ()
-
-    and tst_bds bds =
+    let tst_bds _ () bds =
       List.iter
         (fun (loc,p,d) ->
           match ok_def p d with
@@ -981,8 +1022,11 @@ and cons_seqs (fs:exp list) (es:exp list) =
           | None -> ())
         bds
 
+    let tst_ast fname =
+      fold_ast ~bindings:tst_bds ~test:(fun () _ _ -> ()) fname ()
+
     let tr_ast name =
-      inline_defs := collect_ast name StringMap.empty;
+      inline_defs := collect_inline_defs name;
       (if O.testmode then tst_ast else tr_ast) name ;
       let defs = get_nodefs () in
       if not (StringSet.is_empty defs) then begin
