@@ -271,6 +271,8 @@ let applies_atom_rmw _ ar aw = match ar,aw with
     | Some _ -> true
     | None -> false
 
+let rmw_state _ = true
+
 let show_rmw_reg _ = true
 
 let compute_rmw rmw ~old ~operand =

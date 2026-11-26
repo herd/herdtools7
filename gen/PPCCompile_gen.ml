@@ -316,7 +316,7 @@ module Make(O:Config)(C:sig val eieio : bool end) : XXXCompile_gen.S =
         | Data loc ->
             begin match d,e.atom with
             | R,None ->
-                let emit = if e.rmw then emit_lwarx else emit_load in
+                let emit = if Option.is_some e.rmw then emit_lwarx else emit_load in
                 let r,init,cs,st = emit st p init loc  in
                 Some r,init,cs,st
             | W,None ->

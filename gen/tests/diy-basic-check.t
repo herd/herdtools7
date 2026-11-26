@@ -314,7 +314,7 @@ Backward-compatible edge aliases are accepted by the edge parser
   
   $ diy7 -arch AArch64 -relax Amo -unfold-only 2>&1
   ***relax***
-  Amo.Swp Amo.Cas Amo.LdAdd Amo.LdEor Amo.LdSet Amo.LdClr Amo.StAdd Amo.StEor Amo.StSet Amo.StClr
+  Amo.Swp Amo.Cas Amo.CasFail Amo.LdAdd Amo.LdEor Amo.LdSet Amo.LdClr Amo.StAdd Amo.StEor Amo.StSet Amo.StClr
   ***safe***
   
   ***reject***

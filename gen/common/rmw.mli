@@ -20,6 +20,7 @@ module type S = sig
 
   val pp_rmw : bool -> rmw -> string
   val equal_rmw : rmw -> rmw -> bool
+  val rmw_state : rmw -> bool
   val is_one_instruction : rmw -> bool
   val fold_rmw : bool -> (rmw -> 'a -> 'a) -> 'a -> 'a
   val fold_rmw_compat : (rmw -> 'a -> 'a) -> 'a -> 'a

@@ -253,7 +253,7 @@ let pp_w_pte ws = WPTESet.pp_str "." WPTE.pp ws
 
 type neon_opt = SIMD.atom
 
-type rmw = LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas | AllAmo
+type rmw = LrSc | LdOp of atomic_op | StOp of atomic_op | Swp | Cas | CasFail | AllAmo
   (* `SafeAmo` unfolds to
      `[Swp; Cas; LdOp A_ADD; StOp A_ADD]`, that is,
      edges `[Amo.Swp; Amo.Cas; Amo.LdAdd; Amo.StAdd]` and
@@ -611,7 +611,7 @@ end = struct
         (get_access_atom ar) (get_access_atom aw) in
     match rmw with
     | LrSc -> ok_rw ar aw && (do_cu || same_mixed)
-    | Swp|Cas|LdOp _|AllAmo|SafeAmo -> ok_rw ar aw && same_mixed
+    | Swp|Cas|CasFail|LdOp _|AllAmo|SafeAmo -> ok_rw ar aw && same_mixed
     | StOp _ -> ok_w ar aw && same_mixed
 
   let is_tthm fields =
@@ -1144,6 +1144,7 @@ type nonrec rmw = rmw =
   | StOp of atomic_op
   | Swp
   | Cas
+  | CasFail
   | AllAmo
   | SafeAmo
 
@@ -1155,6 +1156,7 @@ let pp_rmw compat = function
   | LrSc -> if compat then "Rmw" else "LxSx"
   | Swp -> "Amo.Swp"
   | Cas -> "Amo.Cas"
+  | CasFail -> "Amo.CasFail"
   | LdOp op -> sprintf "Amo.Ld%s" (pp_aop op)
   | StOp op -> sprintf "Amo.St%s" (pp_aop op)
   | AllAmo -> sprintf "Amo"
@@ -1164,15 +1166,18 @@ let equal_rmw rmw1 rmw2 = match rmw1,rmw2 with
   | LrSc,LrSc
   | Swp,Swp
   | Cas,Cas
+  | CasFail,CasFail
   | AllAmo,AllAmo
   | SafeAmo,SafeAmo -> true
   | LdOp op1,LdOp op2
   | StOp op1,StOp op2 -> atomic_op_equal op1 op2
-  | (LrSc|LdOp _|StOp _|Swp|Cas|AllAmo|SafeAmo),_ -> false
+  | (LrSc|LdOp _|StOp _|Swp|Cas|CasFail|AllAmo|SafeAmo),_ -> false
+
+let rmw_state = function CasFail -> false | _ -> true
 
 let is_one_instruction = function
   | LrSc -> false
-  | LdOp _ | StOp _ | Swp | Cas | AllAmo | SafeAmo -> true
+  | LdOp _ | StOp _ | Swp | Cas | CasFail | AllAmo | SafeAmo -> true
 
 let fold_aop f r =
   let r = f A_ADD r in
@@ -1185,6 +1190,7 @@ let fold_rmw wildcard f r =
   let r = f LrSc r in
   let r = f Swp r in
   let r = f Cas r in
+  let r = f CasFail r in
   let r = fold_aop (fun op r -> f (LdOp op) r) r in
   let r = fold_aop (fun op r -> f (StOp op) r) r in
   let r = if wildcard then f AllAmo r |> f SafeAmo else r in
@@ -1195,7 +1201,7 @@ let all_concrete_rmw =
     if rmw <> AllAmo && rmw <> LrSc then rmw :: acc else acc
   ) []
 let expand_rmw rmw = match rmw with
-  | LrSc | Swp | Cas | LdOp _ | StOp _ -> [rmw]
+  | LrSc | Swp | Cas | CasFail | LdOp _ | StOp _ -> [rmw]
   | AllAmo -> all_concrete_rmw
   | SafeAmo -> [Swp; Cas; LdOp A_ADD; StOp A_ADD]
 
@@ -1208,7 +1214,7 @@ let applies_atom_rmw rmw ar aw =
 
 let show_rmw_reg = function
 | StOp _ -> false
-| LdOp _|Cas|Swp|LrSc -> true
+| LdOp _|Cas|CasFail|Swp|LrSc -> true
 | AllAmo | SafeAmo -> assert false
 
 let compute_rmw r ~old ~operand =
@@ -1229,6 +1235,8 @@ let compute_rmw r ~old ~operand =
         | A_CLR -> old land (lnot operand)
     end
     | LrSc | Swp | Cas  -> operand
+    (* A failed CAS preserves the old value. *)
+    | CasFail -> old
     | AllAmo | SafeAmo -> assert false
 
 (* Rule out `rmw_list` that contains the same type of atomic operation for a location. *)

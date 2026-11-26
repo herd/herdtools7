@@ -177,6 +177,12 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         let v = match evt.C.C.dir with
         | Some Code.R ->
             begin match bank with
+            | Code.Ord when evt.C.C.rmw = Some false ->
+                (* Failed CAS keeps its comparison operand in v. *)
+                (* TODO: Fold SIMD values into Value.v and refactor value handling
+                   so cell consistently holds the current memory value and v
+                   holds the operand used for compilation. *)
+                Some (I evt.C.C.cell.(0))
             | Code.CapaTag
             | Code.CapaSeal
             | Code.Ord

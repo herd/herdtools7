@@ -100,7 +100,7 @@ module U = TopUtils.Make(O)(Comp)
 
   let call_emit_access state proc_num init n =
     let e = n.C.evt in
-    if e.C.rmw then match e.C.dir with
+    if Option.is_some e.C.rmw then match e.C.dir with
     | Some R ->
         Comp.emit_rmw
           (as_rmw n) state proc_num init e n.C.next.C.evt
@@ -138,9 +138,9 @@ module U = TopUtils.Make(O)(Comp)
   let call_emit_access_dep state proc_num init n dp r1 n1 =
     let e = n.C.evt in
     match e.C.rmw,e.C.dir with
-    | true,Some R -> Comp.emit_rmw_dep (as_rmw n) state proc_num init e n.C.next.C.evt dp r1 n1
-    | true,(Some W|None) -> None,init,[],state
-    | false,_ -> Comp.emit_access_dep state proc_num init e dp r1 n1
+    | Some _,Some R -> Comp.emit_rmw_dep (as_rmw n) state proc_num init e n.C.next.C.evt dp r1 n1
+    | Some _,(Some W|None) -> None,init,[],state
+    | None,_ -> Comp.emit_access_dep state proc_num init e dp r1 n1
 
 (* Encodes load of first non-initial value in chain,
    can poll on value in place of checking it *)
