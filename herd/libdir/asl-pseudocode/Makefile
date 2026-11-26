@@ -16,30 +16,24 @@ BUNDLER_ARGS := -vv $(BUNDLER_JOBS)
 BUNDLER := bundler.py
 BUNDLER_CMD := $(PYTHON) $(BUNDLER) $(BUNDLER_ARGS)
 
-ARCHITECTURE_RELEASE = 2026-06
+include download.manifest
 
-BASE_URL := https://developer.arm.com/-/cdn-downloads/permalink
-
-ISA_A64_DIR := Exploration-Tools-A64-ISA/ISA_A64
-ISA_A64_NAME := ISA_A64_xml_A_profile-$(ARCHITECTURE_RELEASE)
+ISA_A64_NAME := $(ISA_A64_PREFIX)-$(ARCHITECTURE_RELEASE)
 ISA_A64_OFILE := aarch64
 ISA_A64_TAR_GZ := $(ISA_A64_NAME).tar.gz
 
-SYSREGS_DIR := Exploration-Tools-Arm-Architecture-System-Registers/SysReg
-SYSREGS_NAME := SysReg_xml_A_profile_FAT-$(ARCHITECTURE_RELEASE)
+SYSREGS_NAME := $(SYSREGS_PREFIX)-$(ARCHITECTURE_RELEASE)
 SYSREGS_OFILE := system_registers.asl
 SYSREGS_TAR_GZ := $(SYSREGS_NAME).tar.gz
 
-FEATURES_DIR := Exploration-Tools-Arm-Architecture-Features/AARCHMRS
-FEATURES_NAME := AARCHMRS_A_profile_FAT-$(ARCHITECTURE_RELEASE)/Features.json
+FEATURES_NAME := $(FEATURES_PREFIX)-$(ARCHITECTURE_RELEASE)/Features.json
 FEATURES_OFILE := features.asl
-FEATURES_TAR_GZ := AARCHMRS_A_profile_FAT-$(ARCHITECTURE_RELEASE).tar.gz
+FEATURES_TAR_GZ := $(FEATURES_PREFIX)-$(ARCHITECTURE_RELEASE).tar.gz
 
 TARGETS_TAR_GZ := $(ISA_A64_TAR_GZ) $(SYSREGS_TAR_GZ) $(FEATURES_TAR_GZ)
 TARGETS_NAME := $(ISA_A64_NAME) $(SYSREGS_NAME) $(FEATURES_NAME)
 TARGETS_LOG := $(addsuffix .log,$(TARGETS_NAME))
 TARGETS_OFILE := $(ISA_A64_OFILE) $(FEATURES_OFILE) $(SYSREGS_OFILE)
-TARGETS_DIR := $(ISA_A64_DIR) $(SYSREGS_DIR) $(FEATURES_DIR)
 
 WANTED_A64_REGS := sctlr_el2 sctlr_el1 sctlr2_el2 tcr_el1 tcr_el2 oslsr_el1 hcr_el2 ttbr1_el1 ttbr0_el1 spsr_el1 spsr_el2 mair_el1 s2pir_el2 hpfar_el2
 WANTED_A32_REGS := scr
@@ -54,24 +48,26 @@ TO_CLEANUP +=  $(TARGETS_TAR_GZ)
 .SECONDARY: $(TARGETS_NAME)
 TO_CLEANUP += $(TARGETS_NAME)
 
-# Trick with a phony order-only dependency to be able to pass an argument to a
-# recipe shared between multiple targets
-.PHONY: $(TARGETS_DIR)
-$(TARGETS_DIR):
+$(ISA_A64_TAR_GZ) $(ISA_A64_NAME): ARCHIVE_DIR = $(ISA_A64_DIR)
+$(ISA_A64_TAR_GZ) $(ISA_A64_NAME): ARCHIVE_SHA256 = $(ISA_A64_SHA256)
+$(SYSREGS_TAR_GZ) $(SYSREGS_NAME): ARCHIVE_DIR = $(SYSREGS_DIR)
+$(SYSREGS_TAR_GZ) $(SYSREGS_NAME): ARCHIVE_SHA256 = $(SYSREGS_SHA256)
+$(FEATURES_TAR_GZ) $(FEATURES_NAME): ARCHIVE_DIR = $(FEATURES_DIR)
+$(FEATURES_TAR_GZ) $(FEATURES_NAME): ARCHIVE_SHA256 = $(FEATURES_SHA256)
 
-$(ISA_A64_TAR_GZ): | $(ISA_A64_DIR)
-$(SYSREGS_TAR_GZ): | $(SYSREGS_DIR)
-$(FEATURES_TAR_GZ): | $(FEATURES_DIR)
+DOWNLOAD_ARCHIVE = sh -eu -c '. ./download.manifest; \
+  . ./download-archive.sh; download_archive "$$@"' --
 
 $(TARGETS_TAR_GZ):
 	@ echo "Downloading $@ from developer.arm.com ..."
-	@ curl --silent $(BASE_URL)/$|/$@ --output $@
+	@ $(DOWNLOAD_ARCHIVE) "$(ARCHIVE_DIR)" "$@" "$(ARCHIVE_SHA256)"
 
 $(ISA_A64_NAME): $(ISA_A64_TAR_GZ)
 $(SYSREGS_NAME): $(SYSREGS_TAR_GZ)
 $(FEATURES_NAME): $(FEATURES_TAR_GZ)
 
 $(TARGETS_NAME):
+	@ $(DOWNLOAD_ARCHIVE) "$(ARCHIVE_DIR)" "$<" "$(ARCHIVE_SHA256)"
 	@ echo "Unpacking xml archive $^ ..."
 	@ tar -zxf $^ $@
 
