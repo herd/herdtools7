@@ -2,6 +2,7 @@
  (copy ../../../Version.ml Version.ml))
 
 (executables
+ (package herdtools7)
  (names main extractdefs)
  (public_names uoaim7 extractdefs7)
  (optional)

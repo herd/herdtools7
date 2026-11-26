@@ -43,6 +43,7 @@
 
 (test
  (name capture_output)
+ (package aslref)
  (modules capture_output)
  (libraries asllib)
  (deps capture_output.asl))
@@ -60,4 +61,5 @@
    (run %{test} -e))))
 
 (cram
+ (package aslref)
  (deps %{bin:aslref}))

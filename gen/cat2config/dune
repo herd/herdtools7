@@ -2,6 +2,7 @@
  (copy ../../Version.ml Version.ml))
 
 (executable
+ (package herdtools7)
  (name mcat2config)
  (public_name mcat2config7)
  (libraries herdtools unix logs gen_common)

@@ -1,4 +1,5 @@
 (cram
+ (package herdtools7)
  (enabled_if
   (= %{ocaml-config:architecture} "amd64"))
  (deps

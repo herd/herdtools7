@@ -26,6 +26,7 @@
    critical)))
 
 (executables
+ (package herdtools7)
  (names
   readRelax
   atoms

@@ -2,6 +2,7 @@
  (copy ../Version.ml Version.ml))
 
 (executables
+ (package herdtools7)
  (names diymicro diymicroenum)
  (public_names diymicro7 diymicroenum7)
  (libraries herdtools unix))

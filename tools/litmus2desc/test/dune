@@ -1,4 +1,5 @@
 (cram
+ (package herdtools7)
  (deps
   (glob_files barrier_litmus_tests/*.litmus)
   (glob_files other_litmus_tests/*.litmus)

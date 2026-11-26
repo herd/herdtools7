@@ -1,4 +1,5 @@
 (cram
+ (package herdtools7)
  (applies_to hashes)
  (deps
   (file %{workspace_root}/gen/tests/AArch64/MP.litmus)
@@ -7,6 +8,7 @@
   %{bin:rehash7}))
 
 (cram
+ (package herdtools7)
  (applies_to miaou)
  (deps
   (source_tree libdir)
@@ -14,6 +16,7 @@
  (enabled_if %{bin-available:miaou7}))
 
 (cram
+ (package herdtools7)
  (applies_to mcompare)
  (deps
   (source_tree libdir)
@@ -23,9 +26,11 @@
   %{bin:msum7}))
 
 (cram
+ (package herdtools7)
  (applies_to mapply)
  (deps %{bin:mapply7}))
 
 (cram
+ (package herdtools7)
  (applies_to rename)
  (deps %{bin:rename7} %{bin:mnames7}))
