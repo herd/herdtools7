@@ -1,0 +1,12 @@
+AArch64 S+dmb.stpt+amo.ldadd-po
+Variant=asym memtag
+{
+ 0:X1=x:green; 0:X2=y:red; 0:X3=y:green;
+ 1:X1=x:green; 1:X2=y:red;
+}
+ P0          | P1                    ;
+ MOV W0,#2   | MOV W4,#1             ;
+ STR W0,[X1] | L00: LDADD W4,W0,[X2] ;
+ DMB ST      | MOV W5,#1             ;
+ STG X2,[X3] | STR W5,[X1]           ;
+exists ([x]=2 /\ 1:X0=0 /\ not (fault(P1)))
