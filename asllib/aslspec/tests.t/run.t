@@ -21,6 +21,20 @@
   $ aslspec typedefs.spec --pp > tmp1.spec; aslspec tmp1.spec --pp > tmp2.spec; diff --ignore-all-space tmp1.spec tmp2.spec
   $ aslspec relations.spec --pp > tmp1.spec; aslspec tmp1.spec --pp > tmp2.spec; diff --ignore-all-space tmp1.spec tmp2.spec
 
+# Attribute syntax, round trips, and the negated hyperlink-target flag
+  $ aslspec attributes.spec --render-out attributes.tex
+  Generated LaTeX macros into attributes.tex
+  $ aslspec attributes.spec --pp > tmp.spec; aslspec tmp.spec --render-out roundtrip.tex
+  Generated LaTeX macros into roundtrip.tex
+# Pretty-printing preserves rendering.
+  $ diff -w attributes.tex roundtrip.tex
+
+# A constant initializer accepts at most one layout attribute.
+  $ printf 'constant c = True @math_layout _ @math_layout _;\n' > invalid.spec
+  $ aslspec invalid.spec
+  Syntax Error: invalid.spec:1:34: Syntax error at invalid.spec line 1 column 34
+  [1]
+
   $ aslspec unmatched_prose_var.spec
   Specification Error: Unknown location: The prose template "transforms {a} to {b}" contains the following unmatched variables: {b}
   [1]
@@ -40,7 +54,7 @@
   Specification Error: instantiation_function.bad:9:25: Unable to determine that `fun O -> P` is subsumed by `fun P -> P`
   [1]
   $ aslspec instantiation_constant.bad
-  Specification Error: instantiation_constant.bad:3:18: Int is used as a constant even though it is not defined as one
+  Specification Error: instantiation_constant.bad:3:35: Int is used as a constant even though it is not defined as one
   [1]
   $ aslspec instantiation_record.bad
   Specification Error: instantiation_record.bad:6:17: The type term `A[f: Int]` cannot be instantiated since A is not a labelled record type
@@ -52,7 +66,7 @@
   Specification Error: instantiation_recursion.bad:9:11: Unable to determine that `B` is subsumed by `A`
   [1]
   $ aslspec parameterized_type_instantiation.bad
-  Specification Error: parameterized_type_instantiation.bad:12:3: Unable to determine that `Leaf(Int)` is subsumed by `Leaf(value: T)`
+  Specification Error: parameterized_type_instantiation.bad:10:3: Unable to determine that `Leaf(Int)` is subsumed by `Leaf(value: T)`
   [1]
   $ aslspec relation_unnamed_arguments.bad
   Specification Error: relation_unnamed_arguments.bad:6:38: The term Num in relation unnamed_arg_has_rule does not provide a name for at least one of its sub-terms.

@@ -3,7 +3,7 @@ typedef Rec =
 ;
 
 relation bad_record_update(r: Rec, a: N) -> Rec
-{} =
+ =
     --
     r(rg: a);
 ;

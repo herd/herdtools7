@@ -5,9 +5,7 @@ typedef Tree[[T]] =
 ;
 
 typing relation make_leaf(x: Int) -> (Tree[[Int]])
-{
-  prose_transition = ""
-} =
+  @prose_transition "" =
   --
   Leaf(x);
 ;

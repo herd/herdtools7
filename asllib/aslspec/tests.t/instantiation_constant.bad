@@ -1,3 +1,3 @@
-constant A {""};
-typedef Int {""};
-typedef B {""} = constants_set(A, Int);
+constant A @prose_description "";
+typedef Int @prose_description "";
+typedef B @prose_description "" = constants_set(A, Int);

@@ -1,6 +1,6 @@
 typedef Num;
 typedef A =
-    | L {""}
+    | L @prose_description ""
     | M(A, Num)
 ;
 typedef B =
