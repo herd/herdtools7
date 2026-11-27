@@ -1,0 +1,11 @@
+Test S+dmb.stpt+amo.ldadd-po Allowed
+States 2
+1:X0=0; [x]=1; ~Fault(P1);
+1:X0=0; [x]=2; Fault(P1:L00,y:red,TagCheck);
+No
+Witnesses
+Positive: 0 Negative: 2
+Condition exists ([x]=2 /\ 1:X0=0 /\ not (fault(P1)))
+Observation S+dmb.stpt+amo.ldadd-po Never 0 2
+Hash=ecd112ab7852e16e1cf08023572e3f73
+

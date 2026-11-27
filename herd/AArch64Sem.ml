@@ -261,8 +261,8 @@ module Make
         let is_sync access =
           let open Precision in
           match C.mte_precision,access with
-          | Synchronous,_ | Asymmetric,Read -> true
-          | Asynchronous,_ | Asymmetric,(Write | ReadModifyWrite) -> false
+          | Synchronous,_ | Asymmetric,(Read | ReadModifyWrite) -> true
+          | Asynchronous,_ | Asymmetric,Write -> false
       end
 
       let mk_fault ?(is_sync = true) a dir annot ii ft msg =
