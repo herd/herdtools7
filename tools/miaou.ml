@@ -35,6 +35,7 @@ module Make
          val std : bool
 (* Definitons *)
          val names : StringSet.t
+         val inline : StringSet.t
          val testmode : bool
          val texfile : string option
     end) =
@@ -158,6 +159,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
 (***********************)
 
     let nodefs = ref StringSet.empty
+    let inline_defs = ref StringMap.empty
 
     let get_nodefs () =
       let d = !nodefs in
@@ -180,6 +182,27 @@ and cons_seqs (fs:exp list) (es:exp list) =
     let pp_id loc s =
       let name = tr_id s in
       check_nodefs loc name
+
+    let find_inline_def id =
+      if StringSet.mem id O.inline then
+        StringMap.find_opt id !inline_defs
+      else None
+
+    (* Expand before normalization and pretty printing, including the special
+     * cases for optional sequences and transitive closures. Unsupported binding
+     * expressions are left intact rather than substituting under their scope. *)
+    let rec inline_rel e = match e with
+      | Var (_,id) ->
+         begin match find_inline_def id with
+         | None -> e
+         | Some d -> inline_rel d
+         end
+      | Op1 (loc,op,e) -> Op1 (loc,op,inline_rel e)
+      | Op (loc,op,es) -> Op (loc,op,List.map inline_rel es)
+      | App (loc,f,arg) -> App (loc,f,inline_rel arg)
+      | If (loc,c,a,b) -> If (loc,c,inline_rel a,inline_rel b)
+      | Konst _|Tag _|Bind _|BindRec _|Fun _|ExplicitSet _
+      | Match _|MatchSet _|Try _ -> e
 
     let id_name id = tr_id id |> sprintf "\\%sname"
 
@@ -738,7 +761,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
               items = ts;
             })
 
-        and pp_txts indent s1 s2 s3 = function
+    and pp_txts indent s1 s2 s3 = function
       | [] -> ()
       | [txt] ->
          pp_txt indent s3 txt
@@ -748,6 +771,14 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | txt::txts ->
          pp_txt indent s1 txt ;
          pp_txts indent s1 s2 s3 txts
+
+    let pp_check_def loc id postcond precond =
+      match postcond with
+      | Item txt1 ->
+        let pref =  makeuppercase @@ sprintf "\\forbidden{%s} if" txt1 in
+        pp_def pref "." precond
+      | _ ->
+        eprintf "%a: %S: Unsupported test shape\n" TxtLoc.pp loc id
 
     (* Translate and print a check/test.
      * For now, only support tests with expression following the pattern:
@@ -779,6 +810,8 @@ and cons_seqs (fs:exp list) (es:exp list) =
           match exp with
           | Op (loc, Seq, l) -> (
             match find_first_non_id (List.rev l) with
+            | Some (0, e1, [e2]) ->
+                Some (e2, e1)
             | Some (0, e, es) ->
                 (* No trailing identities. *)
                 Some (Op (loc, Seq, List.rev es), e)
@@ -797,15 +830,15 @@ and cons_seqs (fs:exp list) (es:exp list) =
           let e1 = Next.next () in
           let e2 = Next.next () in
           let tr_rel e1 e2 exp =
+            let exp = inline_rel exp in
             if O.flatten then
               ASTUtils.flatten exp |> tr_rel e1 e2 |> flatten_out |> rm_dups
             else tr_rel e1 e2 exp
           in
           let precond_tr = tr_rel e1 e2 precond_exp in
           let postcond_tr = tr_rel e2 e1 postcond_exp in
-          let pref = sprintf "For two effects %s and %s, if" (pp_evt e1) (pp_evt e2) in
-          pp_def pref "" precond_tr;
-          pp_def "then it is not the case that" "." postcond_tr
+
+          pp_check_def loc id postcond_tr precond_tr
 
     (* Translate and print a definition *)
     let get_id_e_type id e =
@@ -858,6 +891,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
              (makeuppercase
               @@ sprintf "\\%s{an Effect %s}"
                    (pp_id loc id) (pp_evt es.(0))) in
+      let d = inline_rel d in
       let d =
         if O.flatten then
          ASTUtils.flatten d |> tr |> flatten_out |> rm_dups
@@ -869,6 +903,20 @@ and cons_seqs (fs:exp list) (es:exp list) =
     (* Find definitions *)
     (********************)
 
+    (* Share file traversal and include handling while letting each pass process
+     * whole binding groups, including simultaneous and recursive bindings. *)
+    let rec fold_ast ~bindings ~test fname state =
+      let (_,_,ast) = P.parse fname in
+      List.fold_left
+        (fun state -> function
+          | Let (_,bds) -> bindings IsNotRec state bds
+          | Rec (_,bds,_) -> bindings IsRec state bds
+          | Test (check,kind) -> test state check kind
+          | Include (_,fname) when O.expand ->
+             fold_ast ~bindings ~test fname state
+          | _ -> state)
+        state ast
+
     let in_names = function
       | Pvar (Some id) -> if StringSet.mem id O.names then Some id else None
       | Pvar None|Ptuple _ -> None
@@ -877,34 +925,55 @@ and cons_seqs (fs:exp list) (es:exp list) =
       | Pvar id -> id
       | Ptuple _ ->  None
 
-    let rec tr_ast fname =
-      let (_,_,ast) = P.parse fname in
-      List.iter tr_ins ast
+    let collect_bds is_rec (defs,seen,used) bds =
+      (* Simultaneous bindings all refer to the preceding environment. Track
+       * every pattern, even when its definition cannot itself be inlined. *)
+      let used = List.fold_left
+          (fun used (_,_,d) ->
+            StringSet.union used (ASTUtils.free_body [] d)) used bds in
+      let add_id seen = function
+        | Some id when StringSet.mem id O.inline ->
+           if StringSet.mem id seen then begin
+             eprintf "Multiple definitions of %s, cannot inline.\n" id ;
+             exit 1
+           end ;
+           StringSet.add id seen
+        | _ -> seen in
+      List.fold_left
+        (fun (defs,seen,used) (_,p,d) ->
+          let seen = match p with
+            | Pvar id -> add_id seen id
+            | Ptuple ids -> List.fold_left add_id seen ids in
+          let defs = match p with
+            | Pvar (Some id)
+                when is_rec = IsNotRec && StringSet.mem id O.inline ->
+               begin match get_id_e_type id d with
+               | Some SET -> defs
+               | Some RLN|None ->
+                  (* A previous use, including a use in this RHS, refers to an
+                   * earlier binding (possibly a built-in), not this definition.
+                   * Reject it instead of capturing it or expanding forever. *)
+                  if StringSet.mem id used then begin
+                    eprintf
+                      "References to %s precede its definition, cannot inline.\n"
+                      id ;
+                    exit 1
+                  end ;
+                  StringMap.add id d defs
+               end
+            | _ -> defs in
+          defs,seen,used)
+        (defs,seen,used) bds
 
-    and tr_ins = function
-      | Let (_,bds) -> tr_bds in_names bds
-      | Rec (_,bds,_) ->
-         if
-           List.exists (fun (_,id,_) -> in_names id |> Misc.is_some) bds
-           && List.for_all
-                (function | (_,Pvar (Some _),_) -> true |_ -> false)
-                bds
-         then tr_bds as_name bds
-      | Test ((loc, _, test, exp, Some name), _) ->
-         if StringSet.mem name O.names then
-           let is_supported = (
-             match test with
-             | Yes Irreflexive  -> true
-             | _ -> false)
-           in
-           if is_supported then
-             tr_check loc name exp
-           else eprintf "%a: %S: Test type not supported\n" TxtLoc.pp loc name
-         else ()
-      | Include (_,fname) when O.expand -> tr_ast fname
-      | _ -> ()
+    let collect_inline_defs fname =
+      let test (defs,seen,used) (_,_,_,e,_) _ =
+        defs,seen,StringSet.union used (ASTUtils.free_body [] e) in
+      let defs,_,_ =
+        fold_ast ~bindings:collect_bds ~test fname
+          (StringMap.empty,StringSet.empty,StringSet.empty) in
+      defs
 
-    and tr_bds pred bds =
+    let tr_bds pred bds =
       List.iter
         (fun (loc,p,d) ->
           match pred p with
@@ -917,23 +986,41 @@ and cons_seqs (fs:exp list) (es:exp list) =
           | None -> ())
         bds
 
+    let tr_bindings is_rec () bds =
+      match is_rec with
+      | IsNotRec -> tr_bds in_names bds
+      | IsRec ->
+         if
+           List.exists (fun (_,id,_) -> in_names id |> Misc.is_some) bds
+           && List.for_all
+                (function | (_,Pvar (Some _),_) -> true |_ -> false)
+                bds
+         then tr_bds as_name bds
+
+    let tr_test () check _ =
+      match check with
+      | loc, _, test, exp, Some name ->
+         if StringSet.mem name O.names then
+           let is_supported = (
+             match test with
+             | Yes Irreflexive  -> true
+             | _ -> false)
+           in
+           if is_supported then
+             tr_check loc name exp
+           else eprintf "%a: %S: Test type not supported\n" TxtLoc.pp loc name
+         else ()
+      | _, _, _, _, None -> ()
+
+    let tr_ast fname =
+      fold_ast ~bindings:tr_bindings ~test:tr_test fname ()
+
     let ok_def pat e =
       match pat with
       | Pvar (Some id) when Misc.is_some (get_id_e_type id e) -> Some id
       | _ -> None
 
-    let rec tst_ast fname =
-      let (_,_,ast) = P.parse fname in
-      List.iter tst_ins ast
-
-    and tst_ins = function
-      | Let (_,bds)
-      | Rec (_,bds,_)
-        ->tst_bds bds
-      | Include (_,fname) when O.expand -> tst_ast fname
-      | _ -> ()
-
-    and tst_bds bds =
+    let tst_bds _ () bds =
       List.iter
         (fun (loc,p,d) ->
           match ok_def p d with
@@ -944,7 +1031,11 @@ and cons_seqs (fs:exp list) (es:exp list) =
           | None -> ())
         bds
 
+    let tst_ast fname =
+      fold_ast ~bindings:tst_bds ~test:(fun () _ _ -> ()) fname ()
+
     let tr_ast name =
+      inline_defs := collect_inline_defs name;
       (if O.testmode then tst_ast else tr_ast) name ;
       let defs = get_nodefs () in
       if not (StringSet.is_empty defs) then begin
@@ -964,6 +1055,7 @@ let verbose = ref 0
 let libdir = ref (Filename.concat Version.libdir "herd")
 let includes = ref []
 let names = ref StringSet.empty
+let inline = ref StringSet.empty
 let testmode = ref false
 let texfile = ref None
 let expand = ref true
@@ -983,6 +1075,8 @@ let options =
     "<path> set installation directory to <path>");
     LibOpts.parse_includes includes ;
     ArgUtils.parse_stringset "-show" names "show those names definitions";
+    ArgUtils.parse_stringset "-inline" inline
+      "inline those relation definitions at reference sites";
     ArgUtils.parse_bool "-test" testmode "translate as many names as possible";
     ArgUtils.parse_bool "-expand" expand "expand include statements";
     ArgUtils.parse_bool "-flatten" flatten "flatten associative operators";
@@ -1012,6 +1106,7 @@ let () =
         let includes = !includes
         let libdir = !libdir
         let names = !names
+        let inline = !inline
         let expand = !expand
         let flatten = !flatten
         let std = !std
