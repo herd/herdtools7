@@ -231,6 +231,24 @@ module Make
         | Some _ -> true
         | None -> false
 
+      module Tagcheck : sig
+        type t = private B.reg -> bool
+
+        val always : t
+
+        val never : t
+
+        val unless_sp : t
+      end = struct
+        type t = B.reg -> bool
+
+        let always _rA = true
+
+        let never _rA = false
+
+        let unless_sp rA = rA <> AArch64Base.SP
+      end
+
       let is_mte_sync dir =
         let open Precision in
         match C.mte_precision,dir with
@@ -1567,24 +1585,6 @@ module Make
         | Some rB -> AArch64.reg_compare rA rB=0
 
       module MTE = struct
-        module Tagcheck : sig
-          type t = private B.reg -> bool
-
-          val always : t
-
-          val never : t
-
-          val unless_sp : t
-        end = struct
-          type t = B.reg -> bool
-
-          let always _rA = true
-
-          let never _rA = false
-
-          let unless_sp rA = rA <> AArch64Base.SP
-        end
-
         let lift_fault_async mfault ii ma =
           let set_tfsr = write_reg AArch64Base.tfsr V.one ii in
           ma >>*= fun _ -> (set_tfsr >>| mfault) >>!
@@ -1797,7 +1797,7 @@ Arguments:
             domain in
         M.delay_kont "at::check_ptw" ma maccess
 
-      let do_ldr (tagchecked:MTE.Tagcheck.t) rA sz an mop ma ii =
+      let do_ldr (tagchecked:Tagcheck.t) rA sz an mop ma ii =
 (* Generic load *)
         let tagchecked = (tagchecked :> B.reg -> bool) rA in
         let checked = mte_check_load tagchecked in
@@ -1812,7 +1812,7 @@ Arguments:
           (to_perms "r" sz)
           ma mzero an ii
 
-      let do_str (tagchecked:MTE.Tagcheck.t) rA mop sz an ma mv ii =
+      let do_str (tagchecked:Tagcheck.t) rA mop sz an ma mv ii =
 (* Generic store *)
         let tagchecked = (tagchecked :> B.reg -> bool) rA in
         let checked = mte_check_store tagchecked in
@@ -1836,7 +1836,7 @@ Arguments:
 (* Atomic store *)
       let do_str_atomic rA updatedb mop perms ma mv an ii =
         (* STXR, SWP and LSE atomic ops *)
-        let tagchecked = (MTE.Tagcheck.unless_sp :> B.reg -> bool) rA in
+        let tagchecked = (Tagcheck.unless_sp :> B.reg -> bool) rA in
         let checked = mte_check_store tagchecked in
         let ma = mte_untag_address tagchecked ma in
         lift_memop rA Dir.W updatedb checked mop perms ma mv an ii
@@ -1959,12 +1959,12 @@ Arguments:
           do_read_mem_op op sz Annot.N aexp ac rd a ii in
         match e with
         | Imm (k,Idx) ->
-           do_ldr MTE.Tagcheck.unless_sp rs sz Annot.N mop (get_ea_idx rs k ii) ii
+           do_ldr Tagcheck.unless_sp rs sz Annot.N mop (get_ea_idx rs k ii) ii
         | Imm (k,PreIdx) ->
-           do_ldr MTE.Tagcheck.always rs sz Annot.N mop
+           do_ldr Tagcheck.always rs sz Annot.N mop
                 (get_ea_preindexed rs k ii) ii
         | Reg (v,ri,sext,s) ->
-           do_ldr MTE.Tagcheck.always rs sz Annot.N mop
+           do_ldr Tagcheck.always rs sz Annot.N mop
                 (get_ea_reg rs v ri sext s ii) ii
         | Imm (k,PostIdx) ->
            (* This case differs signicantly from others,
@@ -1975,7 +1975,7 @@ Arguments:
            M.delay_kont "ldr_postindex"
              (read_reg_addr rs ii)
              (fun a_virt ma ->
-               do_ldr MTE.Tagcheck.always rs sz Annot.N
+               do_ldr Tagcheck.always rs sz Annot.N
                  (fun ac a ->
                    read_mem_postindexed
                      a_virt op sz Annot.N aexp ac rd rs k a ii)
@@ -2013,7 +2013,7 @@ Arguments:
               M.delay_kont "ldp_wback"
                 (read_reg_addr rs ii >>= add_if (not post) k)
                 (fun a_virt ma ->
-                  do_ldr MTE.Tagcheck.always rs sz Annot.N
+                  do_ldr Tagcheck.always rs sz Annot.N
                     (fun ac a ->
                       (add_if post k a_virt >>=
                        fun b -> write_reg rs b ii) >>|
@@ -2048,7 +2048,7 @@ Arguments:
                   match an with
                   | Annot.Q -> M.seq_mem
                   | _ -> (>>|) in
-                do_ldr MTE.Tagcheck.unless_sp rs sz Annot.N
+                do_ldr Tagcheck.unless_sp rs sz Annot.N
                   (fun ac a ->
                     Read.read_mem sz an aexp ac rd1 a ii >>|
                 begin
@@ -2082,7 +2082,7 @@ Arguments:
         let open AArch64 in
         let open Annot in
         let an = match t with XP -> EX | AXP -> EXA in
-        do_ldr MTE.Tagcheck.unless_sp rs sz an
+        do_ldr Tagcheck.unless_sp rs sz an
           (fun ac a ->
             read_mem_reserve sz an aexp ac rd1 a ii >>||
             begin
@@ -2098,7 +2098,7 @@ Arguments:
         | AA -> Annot.A
         | AX -> Annot.EXA
         | AQ -> Annot.Q in
-        do_ldr MTE.Tagcheck.unless_sp rs sz an
+        do_ldr Tagcheck.unless_sp rs sz an
           (fun ac a ->
             let read =
               match t with
@@ -2123,13 +2123,13 @@ Arguments:
         let open MemExt in
         match e with
         | Imm (k,Idx) ->
-           str_simple MTE.Tagcheck.unless_sp sz rs rd (get_ea_idx rd k ii) ii
+           str_simple Tagcheck.unless_sp sz rs rd (get_ea_idx rd k ii) ii
         | Imm (k,PostIdx) ->
            let m =
              M.delay_kont "str_post"
                (read_reg_addr rd ii)
                (fun a_virt ma ->
-                 do_str MTE.Tagcheck.always rd
+                 do_str Tagcheck.always rd
                    (fun ac a v ii ->
                      M.add a_virt (V.intToV k) >>= fun b -> write_reg rd b ii
                      >>|
@@ -2141,10 +2141,10 @@ Arguments:
            if kvm then M.upOneRW (is_this_reg rd) m
            else m
         | Imm (k,PreIdx) ->
-           str_simple MTE.Tagcheck.always sz rs rd
+           str_simple Tagcheck.always sz rs rd
              (get_ea_preindexed rd k ii) ii
         | Reg (v,ri,sext,s) ->
-           str_simple MTE.Tagcheck.always sz rs rd
+           str_simple Tagcheck.always sz rs rd
              (get_ea_reg rd v ri sext s ii) ii
         | _ -> assert false
 
@@ -2156,7 +2156,7 @@ Arguments:
             M.delay_kont "stp_wback"
               (read_reg_addr rd ii >>= add_if (not post) k)
               (fun a_virt ma ->
-                do_str MTE.Tagcheck.always rd
+                do_str Tagcheck.always rd
                   (fun ac a _ ii ->
                     (add_if post k a_virt >>=
                        fun b -> write_reg rd b ii) >>|
@@ -2194,7 +2194,7 @@ Arguments:
               | AArch64.(`Pa|`PaN|`PaL) -> (>>|)
               | AArch64.(`PaIL) -> M.seq_mem in
             let (>>>) = M.data_input_next in
-            do_str MTE.Tagcheck.unless_sp rd
+            do_str Tagcheck.unless_sp rd
               (fun ac a _ ii ->
                 (read_reg_data_sz sz rs1 ii >>> fun v ->
                   do_write_mem sz an aexp ac a v ii) >>|
@@ -2211,7 +2211,7 @@ Arguments:
             stp_wback sz an rs1 rs2 rd k false ii
 
       let stlr sz rs rd ii =
-        do_str MTE.Tagcheck.unless_sp rd
+        do_str Tagcheck.unless_sp rd
           (do_write_mem sz Annot.L aexp) sz Annot.L
           (read_reg_addr rd ii) (read_reg_data_sz sz rs ii) ii
 
@@ -2352,7 +2352,7 @@ Arguments:
         else
           action tagchecked ma
 
-      let do_cas_with (tagchecked : MTE.Tagcheck.t) lift sz an rn ma mv
+      let do_cas_with (tagchecked : Tagcheck.t) lift sz an rn ma mv
           mop_success mop_fail_with_wb mop_fail_no_wb  ii =
         let tagchecked = (tagchecked :> B.reg -> bool) rn in
         let tagchecked = memtag && tagchecked in
@@ -2373,7 +2373,7 @@ Arguments:
           )
         )
 
-      let do_cas = do_cas_with MTE.Tagcheck.unless_sp (fun ~tag -> lift_memop ~tag)
+      let do_cas = do_cas_with Tagcheck.unless_sp (fun ~tag -> lift_memop ~tag)
 
       let cas sz rmw rs rt rn ii =
         let an = rmw_to_read rmw in
@@ -4071,7 +4071,7 @@ Arguments:
           let mv = read_reg_data rA ii in
           let lift_memop ~tag rA dir updatedb checked mop perms ma mv an ii =
             do_lift_memop ~tag rA dir updatedb checked mop perms ma mv an ii Fun.id DISide.Data in
-          do_cas_with MTE.Tagcheck.never lift_memop quad Annot.N r ma mv
+          do_cas_with Tagcheck.never lift_memop quad Annot.N r ma mv
             mop_success mop_fail_with_wb mop_fail_no_wb ii)
 
       let ( let@ ) = ( @@ )
@@ -5177,7 +5177,7 @@ Arguments:
               match C.variant Variant.NV2, off with
               | true, Some off ->
                 let rd = SysReg AArch64.VNCR_EL2 in
-                str_simple MTE.Tagcheck.never sz xt rd
+                str_simple Tagcheck.never sz xt rd
                   (get_ea_idx rd off ii) ii
               | _, _ ->
                 read_reg_ord_sz sz xt ii
