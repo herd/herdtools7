@@ -1,0 +1,11 @@
+Test C010 Forbidden
+States 2
+0:X1=0; 0:X3=0; ~Fault(P0);
+0:X1=y; 0:X3=1; ~Fault(P0);
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition ~exists (0:X1=y /\ 0:X3=0 /\ not (fault(P0)))
+Observation C010 Never 0 2
+Hash=660181679b65099b97e80d9320c741bb
+

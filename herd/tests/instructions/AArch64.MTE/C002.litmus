@@ -1,0 +1,22 @@
+AArch64 C002
+Variant=mixed,mte
+
+(* Check post-indexing of STG *)
+
+{
+    int x[8]={1,2,3,4,5,6,7,8};
+
+    tag(x)   =:red;
+    tag(x+16)=:red;
+
+    0:X0=x:green; 0:X1=x:yellow;
+}
+P0                ;
+MOV W2,#42        ;
+
+STG X1,[X0], #16 ; (* Offset with post-index + write-back *)
+STR W2,[X1]       ;
+STG X1,[X0]       ;
+STR W2,[X1, #16]  ;
+
+forall (x={42,2,3,4,42,6,7,8} /\ ~fault(P0,x,TagCheck))
