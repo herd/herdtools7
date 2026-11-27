@@ -1,0 +1,17 @@
+AArch64 Wide
+{
+0:X1=long_symbolic_address;
+}
+P0;
+MOV W0,#1;
+MOV W2,#2;
+MOV W3,#3;
+MOV W4,#4;
+MOV W5,#5;
+MOV W6,#6;
+MOV W7,#7;
+MOV W8,#8;
+MOV W9,#9;
+LDR W10,[X1];
+locations [0:X0;0:X1;0:X2;0:X3;0:X4;0:X5;0:X6;0:X7;0:X8;0:X9;0:X10;]
+exists (0:X0=1)

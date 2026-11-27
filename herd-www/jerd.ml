@@ -277,6 +277,7 @@ let run_herd bell cat litmus cfg cat_label =
       let labelbox = !PP.labelbox
       let showthread = !PP.showthread
       let showlegend = !PP.showlegend
+      let showfinalstate = !PP.showfinalstate
       let showfinalrf = !PP.showfinalrf
       let showinitrf = !PP.showinitrf
       let finaldotpos = !PP.finaldotpos

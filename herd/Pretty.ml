@@ -40,7 +40,7 @@ module type S = sig
 
   val dump_legend :
       out_channel -> Model.t -> S.test -> PrettyConf.show ->
-        S.concrete -> ?sets : S.set_pp -> S.rel_pp -> unit
+        S.concrete -> ?final_state:string -> ?sets : S.set_pp -> S.rel_pp -> unit
 
 (* Simpler function, just to dump event structures with and without rfmaps *)
   val dump_es :
@@ -111,10 +111,11 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
     for k=0 to String.length s-1 do
       let c = s.[k] in
       begin match c with
-      | '\\'|'"' -> Buffer.add_char buff '\\'
-      | _ -> ()
-      end ;
-      Buffer.add_char buff c
+      | '\n' -> Buffer.add_string buff "\\n"
+      | '\r' -> ()
+      | '\\'|'"' -> Buffer.add_char buff '\\'; Buffer.add_char buff c
+      | _ -> Buffer.add_char buff c
+      end
     done ;
     Buffer.contents buff
 
@@ -1573,7 +1574,36 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
 
 
 
-  let dump_legend chan model test show_mode conc ?(sets=StringMap.empty) vbs =
+  (* Wrap at spaces rather than cutting bindings or long symbolic values.
+     Keep each line short enough for a caption beneath a small graph. *)
+  let final_state_lines state =
+    let wrap line =
+      let rec collect current lines = function
+        | [] -> List.rev (current :: lines)
+        | word :: words ->
+            if current = "" then collect word lines words
+            else if String.length current + 1 + String.length word <= 60 then
+              collect (current ^ " " ^ word) lines words
+            else collect word (current :: lines) words in
+      collect "" [] (String.split_on_char ' ' line) in
+    if state = "" then ["(empty)"]
+    else List.concat_map wrap (String.split_on_char '\n' state)
+
+  let tex_final_state_line line =
+    let b = Buffer.create (String.length line) in
+    String.iter
+      (function
+        | '\\' -> Buffer.add_string b "\\textbackslash{}"
+        | '{' | '}' | '$' | '&' | '#' | '%' | '_' as c ->
+            Buffer.add_char b '\\'; Buffer.add_char b c
+        | '^' -> Buffer.add_string b "\\textasciicircum{}"
+        | '~' -> Buffer.add_string b "\\textasciitilde{}"
+        | c -> Buffer.add_char b c)
+      line;
+    sprintf "\\texttt{%s}" (Buffer.contents b)
+
+  let dump_legend chan model test show_mode conc ?final_state
+      ?(sets=StringMap.empty) vbs =
     let cstr = test.Test_herd.cond in
     let legend =
       let pp_flag =
@@ -1612,8 +1642,21 @@ module Make (S:SemExtra.S) : S with module S = S  = struct
             pp_flag
       end
     in
+    let legend = if PC.showlegend then Some legend else None in
+    let legend = match final_state with
+      | None -> legend
+      | Some state ->
+          let lines = final_state_lines state in
+          let lines =
+            if PC.texmacros || PC.dotmode = Fig then
+              List.map tex_final_state_line lines
+            else lines in
+          let caption = String.concat "\n" ("Final state:" :: lines) in
+          Some (match legend with
+            | None -> caption
+            | Some title -> title ^ "\n\n" ^ caption) in
     pp_dot_event_structure
-      chan test (if PC.showlegend then Some legend else None)
+      chan test legend
       conc.S.str conc.S.rfmap sets vbs S.conc_zero
 
   let dump_es_rfm_legend chan legend test es rfm =

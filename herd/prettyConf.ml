@@ -144,6 +144,7 @@ module type S = sig
   val labelbox : bool
   val showthread : bool
   val showlegend : bool
+  val showfinalstate : bool
   val showfinalrf : bool
   val showinitrf : bool
   val finaldotpos : float * float

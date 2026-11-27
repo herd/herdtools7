@@ -234,9 +234,13 @@ module Printer (O : PrinterConfig) (S : SemExtra.S) = struct
   module PP = Pretty.Make (S)
 
   let dump_exec_graph model test exec chan =
+    let state_caption =
+      if O.PC.showfinalstate then
+        Some (dump_final_state test (TestResult.final_state exec))
+      else None in
     TestResult.(
       PP.dump_legend chan model test O.show (concrete exec)
-        ~sets:(sets exec) (relations exec))
+        ?final_state:state_caption ~sets:(sets exec) (relations exec))
 end
 
 module Make(O:Config)(M:XXXMem.S) =
@@ -501,6 +505,14 @@ module Make(O:Config)(M:XXXMem.S) =
       let event_structures = List.map (fun (_, _, es) -> es) rfms in
 
       let exec_iter = fun emit_exec ->
+        (* The outcome register set is only known after exploration. Keep
+           selected executions until their states can use the same projection
+           as the aggregate outcomes. Relations remain lazy. *)
+        let pending = ref [] in
+        let collect_exec =
+          if O.outcomereads then
+            fun exec -> pending := exec :: !pending
+          else emit_exec in
         (* Thanks to the existence of check_test, XXMem modules
            apply their internal functors once *)
         let call_model conc ofail solver c =
@@ -515,34 +527,41 @@ module Make(O:Config)(M:XXXMem.S) =
           let c = check_test
               conc kfail
               (check_failed_model_kont cutoff
-                 ofail solver emit_exec test final_state_restrict_locs) c in
+                 ofail solver collect_exec test final_state_restrict_locs) c in
           O.Timer.stop O.Timer.model; c in
         let c =
         if O.statelessrc11
         then let module SL = Slrc11.Make(struct include MC let skipchecks = O.skipchecks end) in
              SL.check_event_structure test rfms kfail (fun _ c -> c)
-          (model_kont A.CS.empty_solver emit_exec test final_state_restrict_locs) start
+          (model_kont A.CS.empty_solver collect_exec test final_state_restrict_locs) start
         else
         try iter_rfms test rfms owls call_model start
         with
         | Over c -> c
         in
-(* Reduce final states, so as to show relevant locations only *)
-      let finals =
-        let open Count in
-        if O.outcomereads then
-          let do_restrict (st,flts,solver) =
-            let st =
-              A.rstate_filter
-                (fun rloc ->
-                  let loc = ConstrGen.loc_of_rloc rloc in
-                  match loc with
-                  | A.Location_global _ -> true
-                  | A.Location_reg _ -> A.LocSet.mem loc c.reads)
-                st in
-                st,flts,solver in
-          A.StateSet.map do_restrict c.states
-        else c.states in
+        (* Reduce both aggregate and execution states to the same locations. *)
+        let project_final_state (st,flts,solver) =
+          let st =
+            A.rstate_filter
+              (fun rloc ->
+                let loc = ConstrGen.loc_of_rloc rloc in
+                match loc with
+                | A.Location_global _ -> true
+                | A.Location_reg _ -> A.LocSet.mem loc c.Count.reads)
+              st in
+          st,flts,solver in
+        let finals =
+          if O.outcomereads then begin
+            let executions = List.rev !pending in
+            pending := [];
+            List.iter
+              (fun exec ->
+                emit_exec { exec with TestResult.final_state =
+                  project_final_state exec.TestResult.final_state })
+              executions;
+            A.StateSet.map project_final_state c.Count.states
+          end
+          else c.Count.states in
         O.Timer.stop O.Timer.run;
         {
           states = finals;

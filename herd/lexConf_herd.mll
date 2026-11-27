@@ -258,6 +258,7 @@ let handle_key dir main key arg = match key with
 | "showinitwrites" ->  lex_bool PP.showinitwrites arg
 | "showthread" ->  lex_bool PP.showthread arg
 | "showlegend" ->  lex_bool PP.showlegend arg
+| "showfinalstate" -> lex_bool PP.showfinalstate arg
 | "brackets" ->  lex_bool PP.brackets arg
 | "showobserved" ->  lex_bool PP.showobserved arg
 | "movelabel" ->  lex_bool PP.movelabel arg

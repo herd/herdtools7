@@ -112,6 +112,7 @@ module PP : sig
   val labelbox : bool ref
   val showthread : bool ref
   val showlegend : bool ref
+  val showfinalstate : bool ref
   val showfinalrf : bool ref
   val showinitrf : bool ref
   val finaldotpos : (float * float) ref

@@ -96,7 +96,10 @@ module TestResult : sig
 
       exec_iter : ('exec -> unit) -> 'stats
       (** [exec_iter f] iterates over a sequence of executions, applying [f] to
-          each. It then returns aggregate statistics for the test run. *)
+          each. It then returns aggregate statistics for the test run.
+          With [outcomereads], selected executions are retained until exploration
+          finishes, then delivered in order with the same final-state projection
+          as the aggregate outcomes. *)
     }
 
   module Make (S : SemExtra.S) : sig

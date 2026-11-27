@@ -253,6 +253,7 @@ let graph_presentation_options = Arg.align ~limit:40 [
     "highlight observed memory reads in execution graphs" ;
   parse_bool "-edgemerge" PP.edgemerge "merge edges, cppmem style" ;
   parse_bool "-showlegend" PP.showlegend  "show legend in pictures" ;
+  parse_bool "-showfinalstate" PP.showfinalstate "show final state in pictures" ;
   parse_bool "-showkind" PP.showkind  "show test kind in legends" ;
   parse_bool "-shortlegend" PP.shortlegend "show test name only in legends";
   parse_bool "-labelinit" PP.labelinit "show labels on the init node" ;
@@ -706,6 +707,7 @@ let () =
       let labelbox = !PP.labelbox
       let showthread = !PP.showthread
       let showlegend = !PP.showlegend
+      let showfinalstate = !PP.showfinalstate
       let showfinalrf = !PP.showfinalrf
       let showinitrf = !PP.showinitrf
       let finaldotpos = !PP.finaldotpos
