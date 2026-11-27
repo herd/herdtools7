@@ -276,7 +276,7 @@ module Make(O:Config) : Builder.S
 
       let compile_access pdp st p n =
         let e = n.C.evt in
-        if e.C.rmw then match e.C.dir,e.C.loc with
+        if Option.is_some e.C.rmw then match e.C.dir,e.C.loc with
         | Some R,Data loc ->
             let v = n.C.next.C.evt.C.v in
             let loc = A.Loc loc in
@@ -710,7 +710,7 @@ module Make(O:Config) : Builder.S
       | n::ns ->
           let e = n.C.evt in
           let o,fi,st =
-            if e.C.rmw then match  e.C.dir,e.C.loc with
+            if Option.is_some e.C.rmw then match  e.C.dir,e.C.loc with
             | Some R,Data x ->
                 let vw = n.C.next.C.evt.C.v
                 and mo = e.C.atom

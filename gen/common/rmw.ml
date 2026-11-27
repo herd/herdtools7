@@ -20,6 +20,7 @@ module type S = sig
 
   val pp_rmw : bool -> rmw -> string
   val equal_rmw : rmw -> rmw -> bool
+  val rmw_state : rmw -> bool
   val is_one_instruction : rmw -> bool
   val fold_rmw : bool -> (rmw -> 'a -> 'a) -> 'a -> 'a
   val fold_rmw_compat : (rmw -> 'a -> 'a) -> 'a -> 'a
@@ -39,6 +40,7 @@ module No(A:sig
 
   let pp_rmw _ _ = assert false
   let equal_rmw () () = true
+  let rmw_state _ = true
   let is_one_instruction _ = assert false
   let fold_rmw _ _ r = r
   let fold_rmw_compat _ r = r
@@ -65,6 +67,7 @@ module
     let pp_rmw compat () = if compat then "Rmw" else I.pp
     let equal_rmw () () = true
 
+    let rmw_state _ = true
     let is_one_instruction _ = I.is_one_instruction
 
     let fold_rmw _b f r = f () r

@@ -220,8 +220,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           match C.E.loc_sd e with
           | Same ->
               begin match  n.C.C.evt.C.C.dir with
-              | Some W -> true
-              | None|Some R -> do_rec n.C.C.prev
+              | Some W when n.C.C.evt.C.C.rmw <> Some false -> true
+              | None|Some R|Some W -> do_rec n.C.C.prev
               end
           | Diff -> false
           | UnspecLoc -> assert false in
@@ -232,8 +232,8 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
         let e = n.C.C.edge in
 (*        eprintf "After %s\n" (C.E.pp_edge e) ; *)
         begin match  n.C.C.evt.C.C.dir with
-        | Some W -> true
-        | None|Some R ->
+        | Some W when n.C.C.evt.C.C.rmw <> Some false -> true
+        | None|Some R|Some W ->
             let nxt = n.C.C.next in
             if nxt == m then false else
             begin match C.E.loc_sd e with
@@ -285,7 +285,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
           let e =  n.C.C.evt in
           match e.C.C.dir,e.C.C.loc with
           | Some W,Data loc -> StringSet.add loc k
-          | ((Some R|None),_)|(Some W,Code _) -> k in
+          | ((Some R|None),_)|(Some W,_) -> k in
          k in
       do_rec n0
 
@@ -330,7 +330,7 @@ module Make : functor (O:Config) -> functor (C:ArchRun.S) ->
       | C.E.Back(Fr|Co)  -> true
       | _-> false
 
-    let check_here n = match n.C.C.evt.C.C.bank with
+    let check_here n = n.C.C.evt.C.C.rmw <> Some false && n.C.C.next.C.C.evt.C.C.rmw <> Some false && match n.C.C.evt.C.C.bank with
       | Pte ->
          begin
            match find_next_pte_write n with
