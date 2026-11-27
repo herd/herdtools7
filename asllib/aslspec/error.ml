@@ -51,6 +51,16 @@ let unmatched_variables_in_template loc template unmatched_vars =
        template
        (String.concat ", " unmatched_vars)
 
+(** [unsubstitutable_variables_in_template expr ~relation_name ~template vars]
+    reports that [vars] in [template] cannot be bound when rendering [expr]. *)
+let unsubstitutable_variables_in_template expr ~relation_name ~template vars =
+  spec_error_loc_of_expr expr
+  @@ Format.asprintf
+       "The prose template \"%s\" for relation %s contains variables that \
+        cannot be substituted in the application %a: %s. Name an enclosing \
+        formal argument and use that name in the template."
+       template relation_name PP.pp_expr expr (String.concat ", " vars)
+
 let not_type_name_error relation_name term =
   spec_error_loc_of_term term
   @@ Format.asprintf

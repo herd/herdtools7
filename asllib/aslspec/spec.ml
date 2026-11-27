@@ -1166,15 +1166,19 @@ module Check = struct
     in
     List.iter check_alternative_outputs relations_defs
 
-  (** A module for checking that each prose template string ([prose_description]
-      and [prose_application] attributes) to ensure it does not contain a
-      [{var}] where [var] does not name any type term. If it does, LaTeX will
-      fail on [{var}], which would require debugging the generated code. *)
+  (** A module for checking that each [prose_description], [prose_transition],
+      and [prose_application] template does not contain a [{var}] where [var]
+      does not name any type term. If it does, LaTeX will fail on [{var}], which
+      would require debugging the generated code. *)
   module CheckProseTemplates : sig
     val check : t -> unit
     (** [check spec] checks all prose templates defined in [spec]. *)
+
+    val variables_in_prose_template : string -> string list
+    (** [variables_in_prose_template template] returns the template variables of
+        the form [{var}] in [template], excluding LaTeX command arguments. *)
   end = struct
-    let find_extra_vars_in_template template template_vars =
+    let variables_in_prose_template template =
       (* Remove things like [\texttt{a}], which do not (should not) reference variables. *)
       let reduce_template =
         Str.global_replace
@@ -1184,18 +1188,14 @@ module Check = struct
       in
       let template_var_regexp = Str.regexp "{[a-zA-Z0-9_']+}" in
       let blocks = Str.full_split template_var_regexp reduce_template in
-      let extra_vars =
-        List.fold_left
-          (fun acc_extra_vars block ->
-            match block with
-            | Str.Text _ -> acc_extra_vars
-            | Str.Delim var -> (
-                match StringSet.find_opt var template_vars with
-                | Some _ -> acc_extra_vars
-                | None -> var :: acc_extra_vars))
-          [] blocks
-      in
-      extra_vars
+      List.fold_left
+        (fun vars block ->
+          match block with Str.Text _ -> vars | Str.Delim var -> var :: vars)
+        [] blocks
+
+    let find_extra_vars_in_template template template_vars =
+      variables_in_prose_template template
+      |> List.filter (fun var -> not (StringSet.mem var template_vars))
 
     (** [check_extra_vars_in_prose_template template vars] checks that
         [template] does not contain a [{var}] where [var] is not in [vars].
@@ -3292,12 +3292,62 @@ module Check = struct
       | Node_Relation { Relation.input } -> input
       | _ -> failwith "Expected relation definition node."
 
-    (** [check_expr_well_formed id_to_defining_node expr] checks that the
-        expression [expr] is well-formed in the context of
-        [id_to_defining_node]. That is, it has the correct structure in terms of
-        number of arguments (or fields) with respect to the symbols it
-        references. If not, raises a [SpecError] describing the issue. *)
-    let rec check_expr_well_formed ({ id_to_defining_node } as spec) expr =
+    (** [bindable_vars_for_argument formal actual] returns the names in [formal]
+        that the renderer can bind when it is applied to [actual]. An outer
+        formal name is always bindable; nested tuple names are bindable only
+        when [actual] is itself a tuple with matching arity. *)
+    let rec bindable_vars_for_argument (opt_name, term) actual =
+      let outer_name = Option.to_list opt_name in
+      match (term, actual) with
+      | Term.Tuple { args = formal_args }, Expr.Tuple { args = actual_args }
+        when List.compare_lengths formal_args actual_args = 0 ->
+          outer_name
+          @ List.concat
+              (List.map2 bindable_vars_for_argument formal_args actual_args)
+      | _ -> outer_name
+
+    (** [check_prose_template_bindings ~is_transition_lhs expr relation args]
+        checks that all formal variables used by the applicable prose template
+        can be bound while rendering the relation application [expr]. For a
+        non-variadic [relation], [args] must have the same length as the formal
+        argument list; [check_expr_well_formed] checks this before calling this
+        function. *)
+    let check_prose_template_bindings ~is_transition_lhs expr relation args =
+      let formal_args = relation.Relation.input in
+      let template =
+        if is_transition_lhs then Relation.prose_transition relation
+        else Relation.prose_application relation
+      in
+      let bindable_vars =
+        if relation.Relation.is_variadic then
+          match formal_args with (Some name, _) :: _ -> [ name ] | _ -> []
+        else List.concat (List.map2 bindable_vars_for_argument formal_args args)
+      in
+      let formal_vars = vars_of_opt_named_type_terms formal_args in
+      let referenced_vars =
+        CheckProseTemplates.variables_in_prose_template template
+      in
+      let missing_vars =
+        List.filter
+          (fun var ->
+            List.mem (Latex.spec_var_to_template_var var) referenced_vars
+            && not (List.mem var bindable_vars))
+          formal_vars
+      in
+      if not (Utils.list_is_empty missing_vars) then
+        Error.unsubstitutable_variables_in_template expr
+          ~relation_name:relation.name ~template missing_vars
+
+    (** [check_expr_well_formed ~is_transition_lhs spec expr] checks that [expr]
+        has the correct number of arguments or fields for the symbols it
+        references and that relation prose templates can bind every referenced
+        formal variable. When [is_transition_lhs] is [true], a relation
+        expression is checked against its [prose_transition]; otherwise it is
+        checked against its [prose_application].
+
+        @raise [SpecError] if a structural or prose-template check fails. *)
+    let rec check_expr_well_formed ?(is_transition_lhs = false)
+        ({ id_to_defining_node } as spec) expr =
       let is_field id =
         match StringMap.find_opt id id_to_defining_node with
         | Some (Node_RecordField _) -> true
@@ -3311,13 +3361,17 @@ module Check = struct
       | Relation { name; args } ->
           let () = check_expr_list_in_context args in
           let formal_args = formals_of_relation id_to_defining_node name in
-          if
-            (not (is_variadic_operator spec name))
-            (* A variadic operator accepts any number of arguments. *)
-            && List.compare_lengths formal_args args <> 0
-          then
-            Error.invalid_number_of_arguments name expr
-              ~expected:(List.length formal_args) ~actual:(List.length args)
+          let () =
+            if
+              (not (is_variadic_operator spec name))
+              (* A variadic operator accepts any number of arguments. *)
+              && List.compare_lengths formal_args args <> 0
+            then
+              Error.invalid_number_of_arguments name expr
+                ~expected:(List.length formal_args) ~actual:(List.length args)
+          in
+          let relation = relation_for_id spec name in
+          check_prose_template_bindings ~is_transition_lhs expr relation args
       | Map { lhs; args } -> check_expr_list_in_context (lhs :: args)
       | Tuple { label_opt; args } -> (
           let () = check_expr_list_in_context args in
@@ -3363,7 +3417,7 @@ module Check = struct
               if not (is_field field_name) then Error.non_field field_name expr)
             update_field_names
       | Transition { lhs; rhs; short_circuit } ->
-          check_expr_in_context lhs;
+          check_expr_well_formed ~is_transition_lhs:true spec lhs;
           check_expr_in_context rhs;
           Option.iter check_expr_list_in_context short_circuit
       | Indexed { body } -> check_expr_in_context body
