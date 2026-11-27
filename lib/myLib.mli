@@ -36,4 +36,8 @@ module Make :
           candidate is returned. Non-implicit paths are returned unchanged.
 
           @raise Base.Misc.Fatal on implicit paths that cannot be resolved. *)
+
+      val is_dir_installed : string -> bool
+     (** [is_dir_installed path] checks that directory [path] exists
+         in search path. *)
     end

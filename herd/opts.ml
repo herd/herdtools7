@@ -166,4 +166,4 @@ let libfind includes debug =
         let libdir = !libdir
         let debug = debug
       end) in
-  ML.find
+  ML.find,ML.is_dir_installed

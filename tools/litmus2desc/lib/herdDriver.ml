@@ -130,8 +130,7 @@ module DefaultConfig = struct
 end
 
 let top ~libdir str =
-  let libfind =
-    let module ML = MyLib.Make (struct
+  let module ML = MyLib.Make (struct
       let includes = []
       let env = Some "HERDLIB"
 
@@ -141,13 +140,13 @@ let top ~libdir str =
         | None -> Filename.concat Version.libdir "herd"
 
       let debug = false
-    end) in
-    ML.find
+    end)
   in
   let module C = struct
     include DefaultConfig
 
-    let libfind = libfind
+    let libfind = ML.find
+    let is_dir_installed = ML.is_dir_installed
   end in
   let module T = ParseTest.Top (C) in
   let _, results = T.from_string ~filename:None ~contents:str StringMap.empty in

@@ -1179,9 +1179,17 @@ module Make (TopConf : AArch64Sig.Config) (V : Value.AArch64ASL) :
       let prog =
         let main =
           let execute =
-            Filename.concat "asl-pseudocode/aarch64" fname
-            |> TopConf.C.libfind
-            |> ASLBase.build_ast_from_file ~ast_type:`Opn `ASLv1
+            try
+              Filename.concat "asl-pseudocode/aarch64" fname
+              |> TopConf.C.libfind
+              |> ASLBase.build_ast_from_file ~ast_type:`Opn `ASLv1
+            with Misc.Fatal _ as e ->
+              if not (TopConf.C.is_dir_installed "asl-pseudocode/aarch64")
+              then
+                Warn.fatal
+                  "ASL pseudocode not installed, please install herdtools7 from sources (https://github.com/herd/herdtools7/)."
+              else
+                raise e
           in
           let open Asllib.AST in
           let open Asllib.ASTUtils in

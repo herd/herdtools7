@@ -24,6 +24,7 @@ module type Config = sig
   val macros : string option
   val check_name : string -> bool
   val libfind : string -> string
+  val is_dir_installed : string -> bool
   include GenParser.Config
   include Top_herd.CommonConfig
   include Sem.Config

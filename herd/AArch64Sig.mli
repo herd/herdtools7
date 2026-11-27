@@ -22,6 +22,7 @@ module type SubConfig = sig
   include Sem.Config
 
   val libfind : string -> string
+  val is_dir_installed : string -> bool
   val byte : MachSize.Tag.t
 end
 

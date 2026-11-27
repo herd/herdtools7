@@ -31,12 +31,13 @@ module Make =
     let debug = C.debug
 
     (* TODO: could refine this to check whether the file is a regular file or symlink *)
-    let nondir_file_exists path =
-      Sys.file_exists path && not (Sys.is_directory path)
+    let checkdir_file_exists nodir path =
+      Sys.file_exists path &&
+      (Sys.is_directory path |> if nodir then not else Fun.id)
 
-    let try_find name dir =
+    let try_find ~nodir name dir =
       let rname = Filename.concat dir name in
-      if nondir_file_exists rname then begin
+      if checkdir_file_exists nodir rname then begin
         if debug then pp_debug rname ;
         Some rname
       end else None
@@ -58,11 +59,17 @@ module Make =
     let all_locations =
       List.concat [ ["."] ; includes ; Option.to_list envlib; [ C.libdir ] ]
 
-    let find_lib name =
-      match List.find_map (try_find name) all_locations with
+    let find_lib ?(nodir=true) name =
+      match List.find_map (try_find ~nodir name) all_locations with
       | Some path -> path
       | None -> Warn.fatal "Cannot find file %s" name
 
     let find path =
       if Filename.is_implicit path then find_lib path else path
+
+    let is_dir_installed path =
+      try
+        ignore (find_lib ~nodir:false path) ; true
+      with Base.Misc.Fatal _ -> false
+
   end

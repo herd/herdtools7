@@ -42,8 +42,8 @@ open ArgUtils
 (* Option list *)
 
 let load_config s =
-  LexConf_herd.lex
-    (Opts.libfind !includes !debug.Debug_herd.files s)
+  let libfind,_ = Opts.libfind !includes !debug.Debug_herd.files in
+  LexConf_herd.lex (libfind s)
 
 let pp_default_model a =
   sprintf "%s=%s" (Archs.pp a)
@@ -559,7 +559,8 @@ let () =
 
 (* Read generic model, if any *)
 
-let libfind = Opts.libfind !includes !debug.Debug_herd.files
+let libfind,is_dir_installed
+  = Opts.libfind !includes !debug.Debug_herd.files
 
 module ParserConfig = struct
   let debug = !debug.Debug_herd.lexer
@@ -636,6 +637,7 @@ let () =
     let check_kind = TblRename.find_value_opt kinds
     let check_cond =  TblRename.find_value_opt conds
     let libfind = libfind
+    let is_dir_installed = is_dir_installed
     let macros = !macros
 
     let model_enumco = model_opts.ModelOption.co
