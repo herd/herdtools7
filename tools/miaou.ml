@@ -961,7 +961,7 @@ and cons_seqs (fs:exp list) (es:exp list) =
 (****************************************)
 
 let verbose = ref 0
-let libdir = ref (Filename.concat Version.libdir "herd")
+let libdir = ref (Libdir.path "herd")
 let includes = ref []
 let names = ref StringSet.empty
 let testmode = ref false
@@ -974,9 +974,8 @@ let options =
   LibOpts.parse_verbose verbose
   @ [
 (* Basic *)
-    ("-version", Arg.Unit
-     (fun () -> printf "%s, Rev: %s\n" Version.version Version.rev ; exit 0),
-   " show version number and exit") ;
+    ("-version", Arg.Unit (fun () -> Version.print () ; exit 0),
+    " show version number and exit") ;
     ("-libdir", Arg.Unit (fun () -> print_endline !libdir; exit 0),
     " show installation directory and exit");
     ("-set-libdir", Arg.String (fun s -> libdir := s),

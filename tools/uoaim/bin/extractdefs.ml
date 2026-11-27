@@ -28,7 +28,7 @@ let parse_options () =
       ( "-version",
         Arg.Unit
           (fun () ->
-            Printf.printf "%s, Rev: %s\n" Version.version Version.rev;
+            Version.print ();
             exit 0),
         " show version number and exit" );
       ( "-o",

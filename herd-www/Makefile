@@ -58,7 +58,6 @@ web: $(JSON_SHELVES) $(PROG) weblib
 	@cp -v $(PROG) www/$(PROG)
 
 $(PROG): force
-	make -C .. Version.ml
 	( cd .. && dune build --release @jerd )
 	cp $(DUNETGT)/jerd.bc.js $(PROG) && chmod u+w $(PROG)
 

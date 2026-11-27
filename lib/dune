@@ -94,9 +94,12 @@
  (wrapped false)
  (libraries
   (re_export base)
+  dune-site
   str
   aslref
   zarith)
+ (modules
+  (:standard \ libdir herdtools_paths root_path version))
  (modules_without_implementation
   myRel
   sign
@@ -111,3 +114,47 @@
   value
   wideScalar
   hashInfo))
+
+(library
+ (name libdir)
+ (modules libdir herdtools_paths root_path)
+ (libraries dune-site))
+
+(generate_sites_module
+ (module herdtools_paths)
+ (sites herdtools7))
+
+(rule
+ (target root_path.ml)
+ (deps
+  (sandbox none))
+ (action
+  (chdir
+   %{workspace_root}
+   (with-stdout-to
+    %{target}
+    (run sh -c "printf 'let v = \"%s\"\n' \"$(pwd -P)\"")))))
+
+(library
+ (name version)
+ (modules version))
+
+(rule
+ (target version.ml)
+ (deps
+  ../VERSION.txt
+  (universe)
+  (sandbox none))
+ (action
+  (chdir
+   %{workspace_root}
+   (with-stdout-to
+    %{target}
+    (progn
+     (echo "(* GENERATED, DO NOT EDIT *)\n")
+     (run sh -c "printf 'let version = \"%s\"\n' \"$(cat VERSION.txt)\"")
+     (run
+      sh
+      -c
+      "printf 'let rev = \"%s\"\n' \"$(git rev-parse HEAD 2>/dev/null || echo exported)\"")
+     (echo "let print () = Printf.printf \"%s, Rev: %s\\n\" version rev\n"))))))

@@ -34,7 +34,7 @@ type opts = {
 
 let parse_args () =
   let verbose = ref 0 in
-  let libdir = ref (Filename.concat Version.libdir "herd") in
+  let libdir = ref (Libdir.path "herd") in
   let includes = ref [] in
   let cat = ref "aarch64.cat" in
   let name = ref None in
@@ -53,7 +53,7 @@ let parse_args () =
         [ "-version"; "-V" ],
         Arg.Unit
           (fun () ->
-            Printf.printf "%s, Rev: %s\n" Version.version Version.rev;
+            Version.print ();
             exit 0),
         " show version number and exit" );
       ( "--libdir",

@@ -143,9 +143,7 @@ struct
     let env = Some "HERDLIB"
 
     let libdir =
-      match O.libdir with
-      | Some libdir -> libdir
-      | None -> Filename.concat Version.libdir "herd"
+      match O.libdir with Some libdir -> libdir | None -> Libdir.path "herd"
 
     let debug = O.debug
   end)

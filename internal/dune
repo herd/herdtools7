@@ -11,5 +11,12 @@
   herd_assumptions_test
   check_obs
   diyone_test)
+ (modules
+  (:standard \ print_version))
  (libraries internal_lib internal)
  (modes native))
+
+(executable
+ (name print_version)
+ (modules print_version)
+ (libraries version))

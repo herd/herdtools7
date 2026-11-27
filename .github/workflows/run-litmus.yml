@@ -41,7 +41,6 @@ jobs:
 
       - name: Build local dependencies
         run: |
-          opam exec -- make Version.ml
           opam exec -- dune build litmus/litmus.exe internal/check_obs.exe
 
       - name: Run tests

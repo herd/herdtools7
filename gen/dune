@@ -3,7 +3,7 @@
 (library
  (name gen_library)
  (wrapped false)
- (libraries herdtools unix gen_common)
+ (libraries herdtools unix gen_common version)
  (modules_without_implementation
   archLoc
   archRun

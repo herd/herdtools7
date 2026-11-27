@@ -39,20 +39,10 @@ all: build
 CATA_HERD_TEST_MODE := $(if $(ALL_TESTS), ,-fast)
 HERD_CATALOGUE_REGRESSION_TEST += $(CATA_HERD_TEST_MODE)
 
-.PHONY: Version.ml
-Version.ml:
-	sh ./version-gen.sh $(PREFIX)
-
-just-build: Version.ml
+just-build:
 	dune build -j $(J) --profile $(DUNE_PROFILE)
 
-build-release: Version.ml
-	dune build -j $(J) -p herdtools7 @install
-
 build: check-deps | just-build
-
-install-herdtools:
-	dune install herdtools7 --prefix=$(PREFIX)
 
 build-aslref:
 	dune build -p aslref --profile $(DUNE_PROFILE)
@@ -60,7 +50,8 @@ build-aslref:
 install-aslref:
 	dune install aslref --prefix=$(PREFIX)
 
-install: install-herdtools
+install:
+	dune install herdtools7 --prefix=$(PREFIX)
 
 uninstall:
 	dune uninstall herdtools7 --prefix=$(PREFIX)
@@ -69,12 +60,11 @@ uninstall-aslref:
 	dune uninstall aslref --prefix=$(PREFIX)
 
 clean: dune-clean clean-asl-pseudocode clean-asldoc
-	rm -f Version.ml
 
 dune-clean:
 	dune clean
 
-versions: Version.ml
+versions:
 	@ dune build -j $(J) --workspace dune-workspace.versions
 
 

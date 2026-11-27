@@ -35,6 +35,12 @@ runs:
         ocaml-compiler: ${{ inputs.ocaml-compiler }}
         dune-cache: true
 
+    - name: Pin local ASLRef
+      shell: bash
+      run: |
+        opam exec -- dune build asllib/aslref.opam
+        opam pin ./asllib --no-action
+
     - name: Install dependencies with opam
       if: ${{ inputs.install-dependencies == 'true' }}
       shell: bash
