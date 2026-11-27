@@ -3532,12 +3532,18 @@ Arguments:
           M.mk_singleton_es (Act.CMO (AArch64.CMO.IC op, None)) ii >>= B.next1T
         else
         begin (* IC IVAU *)
-          read_reg_addr rd ii
-          >>= fun a ->
+          let mop _ac a =
             let loc = A.Location_global a in
             let act = Act.CMO (AArch64.CMO.IC op,Some loc) in
-            M.mk_singleton_es act ii
-          >>= B.next1T
+            M.mk_singleton_es act ii in
+          lift_memop rd Dir.W false false
+            (fun ac ma _mv -> (* value fake here *)
+              if Access.is_physical ac then
+                M.bind_ctrldata ma (mop ac)
+              else
+                ma >>= mop ac)
+            (to_perms "r" MachSize.Word)
+            (read_reg_addr rd ii) mzero Annot.N ii
         end
 
       let ldg rt rn k ii =

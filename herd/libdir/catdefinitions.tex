@@ -192,11 +192,14 @@ do not match the memory contents at the OA of #2}
 \newcommand{\invscope}[2]{#1 is in the Invalidation Scope of #2}
 \newcommand{\invscopeemph}[2]{#1 is \emph{in the Invalidation Scope of} #2}
 \newcommand{\DCCVAU}[1]{#1 is a DC CVAU Effect}
-\newcommand{\genericDC}[1]{the DC #1 Effect of the instruction}
-\newcommand{\DCof}[2]{the DC #1 Effect of the label #2}
+\newcommand{\DCGVA}[1]{#1 is a DC GVA Effect}
+\newcommand{\DCGZVA}[1]{#1 is a DC GZVA Effect}
+\newcommand{\DCZVA}[1]{#1 is a DC ZVA Effect}
+\newcommand{\DCbyaddr}[1]{#1 is a DC-by-address Effect}
+\newcommand{\DCbyVA}[1]{#1 is a DC-by-VA Effect}
+\newcommand{\DCbyPA}[1]{#1 is a DC-by-PA Effect}
+\newcommand{\DC}[1]{#1 is a DC Effect}
 \newcommand{\IC}[1]{#1 is an IC Effect}
-\newcommand{\genericIC}[1]{the IC #1 Effect of the instruction}
-\newcommand{\ICof}[2]{the IC #1 Effect of the label #2}
 \newcommand{\ICIVAU}[1]{#1 is an IC IVAU Effect}
 
 \newcommand{\Fault}[1]{#1 is a Fault Effect}
@@ -459,3 +462,20 @@ do not match the memory contents at the OA of #2}
 
 \newcommand{\nointerv}[4]{there is no #1 in #2 between #3 and #4}
 \renewcommand{\int}[2]{#1 and #2 are from the same Processing Element}
+
+\newcommand{\samecacheabilityname}{Same Cacheability}
+\newcommand{\samecacheabilityemph}[2]{#1 and #2 have the \emph{\samecacheabilityname}}
+\newcommand{\samecacheability}[2]{#1 and #2 have the \samecacheabilityname{}}
+
+\newcommand{\marked}[2]{#1 to a Location marked #2}
+\newcommand{\iWB}[1]{\marked{#1}{Normal, Inner Write-Back Cacheable}}
+\newcommand{\WB}[1]{\marked{#1}{Normal, Write-Back Cacheable}}
+\newcommand{\WT}[1]{\marked{#1}{Normal, Write-Through}}
+\newcommand{\NC}[1]{\marked{#1}{Normal, Non-cacheable}}
+\newcommand{\DeviceGRE}[1]{\marked{#1}{Device-GRE}}
+\newcommand{\DevicenGRE}[1]{\marked{#1}{Device-nGRE}}
+\newcommand{\DevicenGnRE}[1]{\marked{#1}{Device-nGnRE}}
+\newcommand{\DevicenGnRnE}[1]{\marked{#1}{Device-nGnRnE}}
+\newcommand{\Device}[1]{\marked{#1}{Device}}
+
+\newcommand{\ExpMiWB}[1]{\iWB{\ExpM{#1}}}

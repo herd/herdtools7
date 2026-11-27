@@ -75,7 +75,7 @@ let enumerate-ordered-pairs (unordered-pairs,rel) =
 
 let TLBI-Imp_TTD_R-pairs = inv-scope &
   ((C_TLBI * (Imp & TTD & R)) \
-   (TLBInXS * PTEXS) \
+   (TLBInXS * TTDXS) \
    ((~TLBIIS) * (Imp & TTD & R)) & ext)
 
 let all-TLBI-Imp_TTD_R-enums rel =
@@ -86,8 +86,8 @@ let all-TLBI-Imp_TTD_R-enums rel =
 
 let all-DC-Exp_W-enums rel =
     enumerate-ordered-pairs (
-        scl & (DC.CVAU * (Exp & W)),
-        rel | (IW * (_\IW))
+        scl & (DC-by-addr * (M \ IW)),
+        rel
     )
 
 let all-IC-Imp_Instr_R-enums rel =

@@ -133,6 +133,8 @@ val same_instance : event -> event -> bool
 *)
   val is_isync : event -> bool
 
+  val is_cmo : event -> bool
+
 (* Commit *)
   val is_bcc : event -> bool
   val is_pred : event -> bool
@@ -757,6 +759,8 @@ module Make  (C:Config) (AI:Arch_herd.S) (Act:Action.S with module A = AI) :
   Act.same_barrier_id e1.action e2.action
  *)
     let is_isync e = Act.is_isync e.action
+
+    let is_cmo e = Act.is_cmo e.action
 
 (* Commits *)
     let is_bcc e = Act.is_bcc e.action
