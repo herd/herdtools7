@@ -1,0 +1,15 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc PteAF0 PosWW PteHD Coi *)
+AArch64 CoWW+pospteaf0ptehd-coiptehdpteaf0
+Variant=vmsa
+TTHM=P0:HD
+{
+ [x]=1;
+ [PTE(x)]=(oa:PA(x), db:0, dbm:1);
+ 0:X0=PTE(x); 0:X1=(oa:PA(x), af:0, dbm:1); 0:X3=x;
+}
+ P0               ;
+ STR X1,[X0]      ;
+ MOV W2,#2        ;
+ L00: STR W2,[X3] ;
+
+exists (not (fault(P0:L00,x)))
