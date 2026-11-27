@@ -1,0 +1,10 @@
+Test F008 Required
+States 1
+0:X5=1;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall (0:X5=1)
+Observation F008 Always 1 0
+Hash=8638c5e2417736359b4c28ea932c2ee0
+

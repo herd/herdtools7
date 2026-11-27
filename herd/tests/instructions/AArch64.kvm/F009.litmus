@@ -1,0 +1,17 @@
+AArch64 F009
+Variant=vmsa
+Unroll=0
+(* This test yields no outcome, because execution is prune at ERET. *)
+{
+ int x=1;
+ 0:X5=0;
+ 0:X0=x;
+ [PTE(x)]=(valid:0);
+ 0:X2=PTE(x);
+ 0:X3=(oa:PA(x));
+}
+ P0              | P0.F           ;
+ LDR W1,[X0]     | STR X3,[X2]    ;
+                 | ADD W5,W5,#1   ;
+                 | ERET           ;
+forall (0:X5<>0)

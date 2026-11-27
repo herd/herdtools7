@@ -1,0 +1,18 @@
+AArch64 F008
+(* This test was failing with "assert false" *)
+Variant=vmsa
+Unroll=0
+{
+ int x=1;
+ 0:X5=0;
+ 0:X0=x;
+ [PTE(x)]=(valid:0);
+ 0:X2=PTE(x);
+ 0:X3=(oa:PA(x));
+}
+ P0              | P0.F           ;
+ LDR W1,[X0]     | ADR X9,L0      ;
+L0:              | MSR ELR_EL1,X9 ;
+                 | ADD W5,W5,#1   ;
+                 | ERET           ;
+forall (0:X5=1)
