@@ -3,6 +3,8 @@ name: Run BNFC dependent tests
 on:
   pull_request:
     paths:
+      - 'VERSION.txt'
+      - 'version-gen.sh'
       - '.github/workflows/menhir2bnfc.yml'
       - 'asllib/menhir2bnfc/**'
       - 'asllib/Parser.mly'

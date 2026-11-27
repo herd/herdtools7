@@ -4,6 +4,8 @@ on:
   # On a pull request that edits one of the following:
   pull_request:
     paths:
+      - 'VERSION.txt'
+      - 'version-gen.sh'
       # This workflow file
       - '.github/workflows/check-opam-minimals.yml'
       # Definition of herdtools project

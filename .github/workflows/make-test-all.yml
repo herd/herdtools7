@@ -3,6 +3,8 @@ name: Make all tests
 on:
   pull_request:
     paths:
+      - 'VERSION.txt'
+      - 'version-gen.sh'
       - ".github/workflows/make-test-all.yml"
   # push:
   workflow_dispatch:

@@ -3,6 +3,8 @@ name: Check Build WWW + Upload Artifact
 on:
   pull_request:
     paths:
+      - 'VERSION.txt'
+      - 'version-gen.sh'
       - '.github/workflows/check-build-www.yml'
       - 'asllib/aslref.ml'
       - 'asllib/asllib-www/**'

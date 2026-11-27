@@ -1,4 +1,5 @@
 (cram
+ (package herdtools7)
  (alias runtest-litmus-cross-aarch64)
  (runtest_alias false)
  (deps

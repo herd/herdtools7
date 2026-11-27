@@ -18,6 +18,7 @@
  infoAlign)
 
 (executables
+ (package herdtools7)
  (names litmus klitmus)
  (public_names litmus7 klitmus7)
  (libraries herdtools)

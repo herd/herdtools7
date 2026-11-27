@@ -14,6 +14,7 @@
  lexLogSelect)
 
 (executables
+ (package herdtools7)
  (names
   mfind
   moutcomes

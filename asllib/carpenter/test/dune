@@ -1,4 +1,5 @@
 (test
+ (package aslref)
  (name aslref)
  (modules aslref)
  (build_if

@@ -1,4 +1,5 @@
 (tests
+ (package herdtools7)
  (names test_parser)
  (libraries gen_common gen_library))
 

@@ -1,0 +1,21 @@
+opam-version: "2.0"
+synopsis: "Arm machine-readable archives for herdtools7 ASL pseudocode"
+maintainer: [
+  "Pau Ruiz Safont <pau.ruizsafont@arm.com>"
+]
+authors: "Arm Limited and/or its affiliates <open-source-office@arm.com>"
+homepage: "https://github.com/herd/herdtools7"
+bug-reports: "https://github.com/herd/herdtools7/issues"
+dev-repo: "git+https://github.com/herd/herdtools7.git"
+# Archive URLs deliberately have no checksum field, so opam admin cache does
+# not mirror these proprietary archives.
+license: "LicenseRef-Arm-Proprietary"
+extra-source "ISA_A64_xml_A_profile-2026-06.tar.gz" {
+  src: "https://developer.arm.com/-/cdn-downloads/permalink/Exploration-Tools-A64-ISA/ISA_A64/ISA_A64_xml_A_profile-2026-06.tar.gz"
+}
+extra-source "SysReg_xml_A_profile_FAT-2026-06.tar.gz" {
+  src: "https://developer.arm.com/-/cdn-downloads/permalink/Exploration-Tools-Arm-Architecture-System-Registers/SysReg/SysReg_xml_A_profile_FAT-2026-06.tar.gz"
+}
+extra-source "AARCHMRS_A_profile_FAT-2026-06.tar.gz" {
+  src: "https://developer.arm.com/-/cdn-downloads/permalink/Exploration-Tools-Arm-Architecture-Features/AARCHMRS/AARCHMRS_A_profile_FAT-2026-06.tar.gz"
+}

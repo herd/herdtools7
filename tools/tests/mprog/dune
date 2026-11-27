@@ -1,3 +1,4 @@
 (cram
+ (package herdtools7)
  (deps %{bin:mprog7})
  (enabled_if %{bin-available:mprog7}))

@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: BSD-3-Clause
+ARCHITECTURE_RELEASE=2026-06
+BASE_URL=https://developer.arm.com/-/cdn-downloads/permalink
+ISA_A64_DIR=Exploration-Tools-A64-ISA/ISA_A64
+ISA_A64_PREFIX=ISA_A64_xml_A_profile
+ISA_A64_SHA256=63a01a1696483bbe2edfef9e0f0cd053d6c1c619ec0587876cb7a60bb344f354
+SYSREGS_DIR=Exploration-Tools-Arm-Architecture-System-Registers/SysReg
+SYSREGS_PREFIX=SysReg_xml_A_profile_FAT
+SYSREGS_SHA256=a2c13d741e608272db0cba36d651ac0401a3905ff70c2166f7b337c2274bf0e9
+FEATURES_DIR=Exploration-Tools-Arm-Architecture-Features/AARCHMRS
+FEATURES_PREFIX=AARCHMRS_A_profile_FAT
+FEATURES_SHA256=c9a187b6a0da7674f1628bb10d0987ac3e83dffddab4f3aea92790b7b057fc67

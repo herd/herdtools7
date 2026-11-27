@@ -10,6 +10,10 @@ Then, to get the newest version:
     % opam update
     % opam upgrade
 
+By default, the ASL feature is not available, to install it:
+
+    % opam install herdtools7-asl-pseudocode herdtools7
+
 Source build
 ============
 

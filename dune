@@ -24,4 +24,5 @@
  (deps
   (alias herd-www/all)))
 
-(documentation)
+(documentation
+ (package herdtools7))

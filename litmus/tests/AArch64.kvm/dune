@@ -1,4 +1,5 @@
 (cram
+ (package herdtools7)
  (alias runtest-litmus-kvm-aarch64)
  (runtest_alias false)
  ; Run these tests one at a time to limit concurrent QEMU instances and CPU contention.

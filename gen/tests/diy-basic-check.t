@@ -1,3 +1,13 @@
+Normalize the generator version while preserving the command's exit status.
+  $ diyone7 () {
+  >   output=$(mktemp /tmp/diyone7.XXXXXXXXXX) || return
+  >   command diyone7 "$@" > "$output"
+  >   status=$?
+  >   sed -E 's/^(Generator=diyone7 \(version ).*(\))$/\1VERSION\2/' "$output"
+  >   rm -f "$output"
+  >   return "$status"
+  > }
+
 A test for no metadata, `-metadata false`
   $ diyone7 -arch AArch64 -metadata false PodWR Fre PodWR Fre
   AArch64 SB
@@ -64,7 +74,7 @@ A diy7 filter check for incompatible after/before boundary predicates
 A VMSA test for a negated exists check, `-neg true`
   $ diyone7 -arch AArch64 -neg true -info "User-define=User-define" PodWR Fre PodWR Fre
   AArch64 SB
-  Generator=diyone7 (version 7.58+1)
+  Generator=diyone7 (version VERSION)
   Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
   Com=Fr Fr
   Orig=PodWR Fre PodWR Fre
@@ -83,7 +93,7 @@ A VMSA test for a negated exists check, `-neg true`
 A test for observing locations, `-cond observe`
   $ diyone7 -arch AArch64 -info "User-define=User-define" -cond observe PodWR Fre PodWR Fre
   AArch64 SB
-  Generator=diyone7 (version 7.58+1)
+  Generator=diyone7 (version VERSION)
   Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
   Com=Fr Fr
   Orig=PodWR Fre PodWR Fre
@@ -103,7 +113,7 @@ A test for observing locations, `-cond observe`
 A test for a forall check, `-cond unicond`
   $ diyone7 -arch AArch64 -info "User-define=User-define" -cond unicond PodWR Fre PodWR Fre
   AArch64 SB
-  Generator=diyone7 (version 7.58+1)
+  Generator=diyone7 (version VERSION)
   Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
   Com=Fr Fr
   Orig=PodWR Fre PodWR Fre
@@ -123,7 +133,7 @@ A memtag generation test with `Variant` duplicated in metadata, because of (1) `
   $ diyone7 -arch AArch64 -variant memtag -info "Variant=memtag" PodWR Fre PodWR Fre
   AArch64 SB
   Variant=memtag memtag
-  Generator=diyone7 (version 7.58+1)
+  Generator=diyone7 (version VERSION)
   Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
   Com=Fr Fr
   Orig=PodWR Fre PodWR Fre
@@ -143,7 +153,7 @@ A C test for exists
   Warning: optimised conditions are not supported by C arch
   C SB
   "PodWR Fre PodWR Fre"
-  Generator=diyone7 (version 7.58+1)
+  Generator=diyone7 (version VERSION)
   Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
   Com=Fr Fr
   Orig=PodWR Fre PodWR Fre
@@ -166,7 +176,7 @@ A C test for negated exists
   Warning: optimised conditions are not supported by C arch
   C SB
   "PodWR Fre PodWR Fre"
-  Generator=diyone7 (version 7.58+1)
+  Generator=diyone7 (version VERSION)
   Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
   Com=Fr Fr
   Orig=PodWR Fre PodWR Fre
@@ -189,7 +199,7 @@ A C test for forall
   Warning: optimised conditions are not supported by C arch
   C SB
   "PodWR Fre PodWR Fre"
-  Generator=diyone7 (version 7.58+1)
+  Generator=diyone7 (version VERSION)
   Prefetch=0:x=F,0:y=T,1:y=F,1:x=T
   Com=Fr Fr
   Orig=PodWR Fre PodWR Fre

@@ -1,4 +1,5 @@
 (cram
+ (package herdtools7)
  (deps
   %{bin:mlogselect7}
   %{bin:msum7}
