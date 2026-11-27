@@ -1,0 +1,12 @@
+(* diyone7 -arch AArch64 -variant vmsa -metadata false -oneloc Pte Amo.Swp PteV1 Rfi *)
+AArch64 CoRW1+amo.swppteptev1-rfiptev1pte
+Variant=vmsa
+{
+ [x]=1;
+ [PTE(x)]=(oa:PA(x), valid:0);
+ 0:X0=PTE(x); pteval_t 0:X1=0; 0:X2=(oa:PA(x));
+}
+ P0             ;
+ SWP X2,X1,[X0] ;
+
+exists (0:X1=(oa:PA(x)))
