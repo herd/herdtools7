@@ -173,7 +173,8 @@ let rec lob =
  | lob; lob
 
 let pick-lob =
-  pick-dep; lob; [Exp & W]
+ pick-chain; lob; [Exp & W | Imp & TTD & W]
+ | pick-chain; lob?; IFB-ob
 
 let rec local-hw-reqs =
  lob
