@@ -8,6 +8,7 @@ C CoRW1+pos-[fencesc]-rfi
 
 P0 (volatile int* x) {
   int r0 = *x;
+  atomic_thread_fence(memory_order_seq_cst);
   *x = 1;
 }
 

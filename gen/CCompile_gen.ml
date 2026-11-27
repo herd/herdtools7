@@ -664,10 +664,14 @@ module Make(O:Config) : Builder.S
             Warn.fatal "Local observers not complete in mode -check true"
         | _ -> (fun is -> is),f,st
 
+      let insert_fence fe (is,fs,st) = A.Seq (A.Fence fe,is),fs,st
+
       let rec compile_proc_std pdp loc_writes st p ns = match ns with
       | [] ->
           let f = C.EventMap.empty,[] in
           A.Nop,f,st
+      | {C.edge={E.edge=E.Insert fe;_};_}::ns ->
+          insert_fence fe (compile_proc_std pdp loc_writes st p ns)
       | n::ns ->
           begin match n.C.edge.E.edge with
           | E.Dp (A.CTRL,_,_) ->
@@ -701,6 +705,8 @@ module Make(O:Config) : Builder.S
       let rec do_compile_proc_check loc_writes st p ns = match ns with
       | [] -> assert false (* A.Nop,(C.EventMap.empty,[]),st *)
       | [_] -> compile_proc_std No loc_writes st p ns
+      | {C.edge={E.edge=E.Insert fe;_};_}::ns ->
+          insert_fence fe (do_compile_proc_check loc_writes st p ns)
       | n::ns ->
           let e = n.C.evt in
           let o,fi,st =

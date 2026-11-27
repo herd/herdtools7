@@ -13,6 +13,7 @@ P0 (volatile int* y,volatile int* x) {
 
 P1 (volatile int* y,volatile int* x) {
   int r0 = *y;
+  atomic_thread_fence(memory_order_acquire);
   int r1 = *x;
 }
 

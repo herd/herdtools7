@@ -8,6 +8,7 @@ C CoWR0+pos-[fencerel]-fri
 
 P0 (volatile int* x) {
   *x = 1;
+  atomic_thread_fence(memory_order_release);
   int r0 = *x;
 }
 
