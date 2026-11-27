@@ -98,6 +98,7 @@ let list_loc prog =
     | StoreReg(_,Some r,e) ->  LocSet.add r (expr s e)
     | StoreReg(_,None,e) -> expr s e
     | StoreMem(l,e,_) -> loc (expr s e) l
+    | StoreOp(l,_,e,_) -> loc (expr s e) l
     | Lock (l,_)
     | Unlock (l,_) -> loc s l
     | PCall (_,es) ->

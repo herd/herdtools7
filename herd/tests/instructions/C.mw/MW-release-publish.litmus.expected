@@ -1,0 +1,11 @@
+Test MW-release-publish Forbidden
+States 2
+1:r0=0x0; 1:r1=0x0;
+1:r0=0x1; 1:r1=0x1;
+Ok
+Witnesses
+Positive: 2 Negative: 0
+Condition ~exists (1:r0=0x1 /\ 1:r1=0x0)
+Observation MW-release-publish Never 0 2
+Hash=b68be8d65108a843e3f8cea4bff768f3
+

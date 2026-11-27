@@ -461,6 +461,59 @@ module
             build_semantics_expr Port.Data e ii) >>=
             fun (l,v) -> write_mem mo l v ii >>=
               fun _ -> M.unitT (ii.A.program_order_index, next0)
+        | C.StoreOp(loc,op,e,mo) ->
+            begin match mo with
+            | MemOrder.Rlx | MemOrder.Rel ->
+                (* The lookup is atomic but has no memory-order tag.  In
+                   particular, it cannot synchronize with an acquire fence. *)
+                let rloc = build_semantics_expr Port.Addr loc ii
+                and rexpr = build_semantics_expr Port.Data e ii
+                and wmem l v =
+                  write_mem_atomic (mo_as_anmo mo) l v ii >>! () in
+                (match op with
+                | Op.Max | Op.Min ->
+                    let ty = match loc with
+                      | C.LoadReg name ->
+                          begin match List.find_map (function
+                            | MiscParser.CExtra params -> Some params
+                            | _ -> None) test.Test_herd.extra_data with
+                          | Some params ->
+                              begin match List.nth_opt params ii.A.proc with
+                              | Some params ->
+                                  begin match List.find_opt
+                                    (fun p -> p.CAst.param_name = name) params with
+                                  | Some {CAst.param_ty = CType.Pointer ty; _} ->
+                                      CType.strip_attributes ty
+                                  | _ -> CType.word
+                                  end
+                              | None -> CType.word
+                              end
+                          | None -> CType.word
+                          end
+                      | _ -> CType.word in
+                    let sz,signed = match ty with
+                      | CType.Base name ->
+                          TestType.size_of V.Cst.Scalar.machsize name,
+                          TestType.is_signed name
+                      | _ -> MachSize.Word,true in
+                    let op = match op,signed with
+                      | Op.Max,false -> Op.UMax
+                      | Op.Min,false -> Op.UMin
+                      | _ -> op in
+                    let extend v =
+                      M.op1 (if signed then Op.Sxt sz else Op.Mask sz) v in
+                    M.amo op rloc
+                      (rexpr >>= extend)
+                      (fun l -> read_mem_atomic Port.Data no_mo l ii >>= extend)
+                      wmem
+                | _ ->
+                    M.amo op rloc rexpr
+                      (fun l -> read_mem_atomic Port.Data no_mo l ii)
+                      wmem) >>= fun _ ->
+                M.unitT (ii.A.program_order_index, next0)
+            | _ ->
+                Warn.user_error "atomic_store_*_explicit requires relaxed or release order"
+            end
 (* C11 mutex, not sure about them... *)
         | C.Lock (l,k) ->
             build_semantics_expr Port.Addr l ii >>=

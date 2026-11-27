@@ -1,0 +1,18 @@
+C MW-min
+{ [srlx]=-2; int64_t srel=-2;
+  uint32_t urlx=0xffffffff; uint32_t urel=0xffffffff;
+  __uint128_t u128=0x100000000; uintptr_t uptr=0x100000000; }
+
+P0 (int* srlx, int64_t* srel, uint32_t* urlx, uint32_t* urel,
+    __uint128_t* u128, uintptr_t* uptr) {
+  atomic_store_min_explicit(srlx, -5, memory_order_relaxed);
+  atomic_store_min_explicit(srel, -5, memory_order_release);
+  atomic_store_min_explicit(urlx, 1, memory_order_relaxed);
+  atomic_store_min_explicit(urel, 1, memory_order_release);
+  atomic_store_min_explicit(u128, 8589934591, memory_order_relaxed);
+  atomic_store_min_explicit(uptr, 8589934591, memory_order_release);
+}
+
+forall ([srlx]=0xfffffffb /\ [srel]=0xfffffffffffffffb
+        /\ [urlx]=1 /\ [urel]=1
+        /\ [u128]=0x100000000 /\ [uptr]=0x100000000)

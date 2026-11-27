@@ -1,0 +1,10 @@
+Test MW-add Required
+States 1
+[rel]=0x80000000; [rlx]=0x8; [zero]=0x7;
+Ok
+Witnesses
+Positive: 1 Negative: 0
+Condition forall ([rlx]=0x8 /\ [rel]=0x80000000 /\ [zero]=0x7)
+Observation MW-add Always 1 0
+Hash=653f9394c597bb6065e38f0c185ba789
+

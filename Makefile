@@ -148,6 +148,7 @@ test.herd.inst:: test.herd.inst.MIPS
 test.herd.inst:: test.herd.inst.X86_64
 test.herd.inst:: test.herd.inst.RISCV
 test.herd.inst:: test.herd.inst.C
+test.herd.inst:: test.herd.inst.C.mw
 
 test.herd.inst:: test.herd.inst.ASL
 test.herd.inst:: test.herd.inst.ASL-pseudo-arch
