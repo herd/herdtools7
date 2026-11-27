@@ -21,6 +21,7 @@ let libdir = ref (Filename.concat Version.libdir "herd")
 let nprocs = ref 4
 let size = ref 6
 let max_tests = ref None
+let init_value = ref 0
 let one = ref false
 let arch = ref (`PPC: Archs.t)
 let typ = ref TypBase.default
@@ -92,11 +93,22 @@ let same_loc = ref false
 type cond = Cycle | Unicond | Observe
 let cond = ref Cycle
 let hout = ref None
-type show = Edges | Annotations | Fences
-let show = ref (None:ShowGen.t option)
+type show = ShowAll | Edges | Annotations | Fences | Macro | Legacy | LegacyMacro
+let show = ref (None:show option)
 let debug = ref Debug_gen.none
 let moreedges = ref false
 let realdep = ref false
+
+let parse_show = function
+| "all" -> ShowAll
+| "edge"|"edges" -> Edges
+| "annot"|"annotation"|"annotations" -> Annotations
+| "fence"|"fences" -> Fences
+| "macro"|"macros" -> Macro
+| "legacy" -> Legacy
+| "legacymacro"|"legacymacros" -> LegacyMacro
+| _ -> raise (Arg.Bad
+    "Wrong show, choose all, edges, annotations, fences, macros, legacy or legacymacros")
 
 let parse_cond tag = match tag with
 | "cycle" -> Cycle
@@ -161,7 +173,7 @@ let diycross_parser_syntax_doc =
 let diy7_parser_syntax_doc =
   parser_syntax_doc ^ "\n\
    In `diy7`, top-level plain separators denote choice, so '[A B] C [D E]' has canonical form `[[A,B]|C|[D,E]]`.\n\
-   `diy7` also accepts `@before(E)` and `@after(E)` predicate decorators; they constrain adjacent relaxation chunks without adding E to the generated cycle.\n" ^
+   `diy7` also accepts `@before(E)`, `@after(E)`, and `@with(...)` predicate decorators; they constrain adjacent relaxation chunks without adding E to the generated cycle.\n" ^
   "  `@before(E)` must be a leading prefix and requires the preceding chunk to end with E.\n" ^
   "  `@after(E)` must be a trailing suffix and requires the following chunk to start with E.\n" ^
   "E may be one edge or a sequence, and every edge in the sequence must match at that boundary. These decorators are not accepted by the shared `diyone7` or `diycross7` parsers."
@@ -197,6 +209,8 @@ let common_specs () =
     | None -> false
     | Some a -> arch := a ; true)
     Archs.tags "specify architecture"::
+  ("-init-value", Arg.Int (fun n -> init_value := n),
+   "<n> set the initial value of ordinary memory (default 0)")::
   ("-bell",
    Arg.String (fun f -> arch := Archs.lisa ; bell := Some f),
    "<name> read bell file <name>, implies -arch LISA")::
@@ -235,10 +249,10 @@ let common_specs () =
    ("-c", Arg.Bool (fun b ->  canonical_only := b),
    sprintf "<b> avoid equivalent cycles (default %b)" !canonical_only)::
   ("-list",
-   Arg.Unit (fun () -> show := Some ShowGen.Edges),
-   "list accepted edge syntax and exit")::
-  ("-show", Arg.String (fun s -> show := Some (ShowGen.parse s)),
-    "<edges|annotations|fences> list accepted edges, annotations or fences, and exit")::
+   Arg.Unit (fun () -> show := Some ShowAll),
+   "list accepted edge and annotation syntax and exit")::
+  ("-show", Arg.String (fun s -> show := Some (parse_show s)),
+    "<all|edges|annotations|fences|macros|legacy|legacymacros> list accepted syntax and exit")::
   ("-switch", Arg.Set Base.Misc.switch, "switch something")::
   ("-obs",
    Arg.String (fun s -> do_observers := parse_do_observers s),
