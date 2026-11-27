@@ -43,6 +43,9 @@ module type S =
     and type I.arch_reg = reg
     and type I.instr = instruction
 
+    (* Source program with original instructions and static program-order indices *)
+    type annotated_prog = CodeInstr.t prog
+
 (* Levels are abstract, for AArch64, they are E0 to E3 *)
     type level
     val levels : level list
