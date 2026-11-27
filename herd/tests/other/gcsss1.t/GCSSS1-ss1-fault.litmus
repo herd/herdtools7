@@ -1,0 +1,10 @@
+AArch64 GCSSS1-ss1-fault
+variant=shadowstack
+{
+  SS(x,1);
+  SS(y,1) = ssval_t: {0};
+  0:GCSPR_EL1=x;
+  0:X0=y;
+}
+P0;
+GCSSS1 X0;

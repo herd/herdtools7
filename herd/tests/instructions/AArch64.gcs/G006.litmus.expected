@@ -4,9 +4,9 @@ States 2
  Fault(P0,GCS:SS2);
 No
 Witnesses
-Positive: 2 Negative: 2
+Positive: 1 Negative: 1
 Flag Guarded-Control-Stack-is-work-in-progress
 Condition forall (not (fault(P0)))
-Observation G006 Sometimes 2 2
+Observation G006 Sometimes 1 1
 Hash=28b2cd2cfd9fa18a88aab0bf42319cd8
 
